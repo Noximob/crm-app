@@ -78,20 +78,7 @@ const DashboardPage = () => {
       {/* Conteúdo Principal - Área vazia para futuras funcionalidades */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-softgray-800 mb-4">
-            Bem-vindo à Alume
-          </h2>
-          <p className="text-softgray-600 text-lg mb-8">
-            Sua plataforma de gestão imobiliária.
-          </p>
-          <Link href="/crm"
-            className="bg-primary-500 hover:bg-primary-600 text-white font-bold py-4 px-8 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 inline-flex items-center text-lg"
-          >
-            Acessar CRM
-            <svg className="w-5 h-5 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
-          </Link>
+          
         </div>
       </main>
     </div>
