@@ -43,7 +43,7 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
         try {
             const leadsCollectionRef = collection(db, 'leads', currentUser.uid, 'leads');
             await addDoc(leadsCollectionRef, {
-                name,
+                nome: name,
                 telefone: phone,
                 whatsapp: phone.replace(/\D/g, ''),
                 email,

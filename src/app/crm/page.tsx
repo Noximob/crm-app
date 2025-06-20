@@ -21,8 +21,8 @@ const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props}><
 
 interface Lead {
   id: string;
-  name: string;
-  phone: string;
+  nome: string;
+  telefone: string;
   situation: string;
   status: string;
   [key: string]: any; 
@@ -123,8 +123,8 @@ export default function CrmPage() {
                                     <tr key={lead.id} className="bg-white even:bg-primary-50/50 dark:bg-gray-800 dark:even:bg-primary-500/5">
                                         <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">
                                             <div>
-                                                <div>{lead.name}</div>
-                                                <div className="font-normal text-gray-500 dark:text-gray-400">{lead.phone}</div>
+                                                <div>{lead.nome}</div>
+                                                <div className="font-normal text-gray-500 dark:text-gray-400">{lead.telefone}</div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
