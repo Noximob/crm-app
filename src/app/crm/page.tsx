@@ -57,7 +57,7 @@ export default function CrmPage() {
     useEffect(() => {
         if (currentUser) {
             setLoading(true);
-            const q = query(collection(db, `usuarios/${currentUser.uid}/leads`));
+            const q = query(collection(db, `leads/${currentUser.uid}/leads`));
             
             const unsubscribe = onSnapshot(q, (querySnapshot) => {
                 const leadsData: Lead[] = [];
