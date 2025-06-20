@@ -4,9 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { auth, db } from '@/lib/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { auth, db, googleProvider } from '@/lib/firebase';
+import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export default function LoginPage() {
   const { user, loading } = useAuth();
@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const router = useRouter();
 
   if (loading) {
@@ -70,9 +71,58 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleLogin = () => {
-    // Aqui implementaremos o login com Google
-    console.log('Google login attempt');
+  const handleGoogleLogin = async () => {
+    setIsGoogleLoading(true);
+    setError(null);
+
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      // Verificar se o usuário já existe no Firestore
+      const userDocRef = doc(db, 'usuarios', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        // Usuário já existe, verificar se está aprovado
+        const userData = userDoc.data();
+        if (userData.aprovado === true) {
+          console.log("Login com Google bem-sucedido e aprovado!");
+          router.push('/dashboard');
+        } else {
+          setError("Seu cadastro ainda está pendente de aprovação.");
+          await auth.signOut();
+        }
+      } else {
+        // Usuário novo, criar documento no Firestore
+        const userData = {
+          email: user.email,
+          nome: user.displayName || 'Usuário Google',
+          telefone: user.phoneNumber || '',
+          empresa: '',
+          cargo: '',
+          aprovado: false, // Usuários do Google precisam ser aprovados também
+          dataCadastro: new Date(),
+          metodoCadastro: 'google'
+        };
+
+        await setDoc(userDocRef, userData);
+        setError("Seu cadastro foi criado com sucesso, mas precisa ser aprovado por um administrador.");
+        await auth.signOut();
+      }
+
+    } catch (error: any) {
+      if (error.code === 'auth/popup-closed-by-user') {
+        setError("Login cancelado pelo usuário.");
+      } else if (error.code === 'auth/popup-blocked') {
+        setError("Popup bloqueado pelo navegador. Permita popups para este site.");
+      } else {
+        setError("Erro ao fazer login com Google. Tente novamente.");
+      }
+      console.error("Erro no login com Google:", error);
+    } finally {
+      setIsGoogleLoading(false);
+    }
   };
 
   return (
@@ -182,15 +232,25 @@ export default function LoginPage() {
           {/* Botão Login com Google */}
           <button
             onClick={handleGoogleLogin}
+            disabled={isGoogleLoading}
             className="w-full bg-white border border-softgray-300 text-softgray-700 font-medium py-3 px-4 rounded-lg hover:bg-softgray-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 flex items-center justify-center"
           >
-            <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
-            Entrar com Google
+            {isGoogleLoading ? (
+              <svg className="w-5 h-5 mr-2 animate-spin" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8.41-2.2-10.96-5.56A16.06 16.06 0 0112 18c4.41 0 8.41-2.2 10.96-5.56A16.06 16.06 0 0112 18z"/>
+                <path fill="#34A853" d="M12 5.56C9.93 5.56 8.08 6.22 6.64 7.36A16.06 16.06 0 0112 12c4.04 0 7.64-2.96 9.08-6.96A16.06 16.06 0 0112 5.56z"/>
+                <path fill="#FBBC05" d="M12 18c2.08 0 4.03-.76 5.68-2.04A16.06 16.06 0 0112 18z"/>
+                <path fill="#EA4335" d="M12 5.56C14.07 5.56 15.92 6.22 17.36 7.36A16.06 16.06 0 0112 12c-4.04 0-7.64-2.96-9.08-6.96A16.06 16.06 0 0112 5.56z"/>
+              </svg>
+            ) : (
+              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+            )}
+            {isGoogleLoading ? 'Entrando...' : 'Entrar com Google'}
           </button>
 
           {/* Link para Cadastro */}
