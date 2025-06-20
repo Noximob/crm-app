@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import NewLeadModal from './NewLeadModal';
+import AgendaModal from './AgendaModal';
 
 const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props}><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>;
 const CalendarIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -15,7 +16,8 @@ const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props}><path
 
 const CrmHeader = () => {
     const pathname = usePathname();
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isNewLeadModalOpen, setNewLeadModalOpen] = useState(false);
+    const [isAgendaModalOpen, setAgendaModalOpen] = useState(false);
 
     const navLinks = [
         { href: '/crm', text: 'Gestão de Leads' },
@@ -46,17 +48,24 @@ const CrmHeader = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                        <CalendarIcon className="h-5 w-5" />
+                    <button 
+                        onClick={() => setAgendaModalOpen(true)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-sm font-semibold text-primary-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
+                    >
+                        <CalendarIcon className="h-4 w-4" />
                         Agenda
                     </button>
-                    <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors shadow-sm">
-                        <PlusIcon className="h-5 w-5 stroke-white" strokeWidth="2.5" />
+                    <button 
+                        onClick={() => setNewLeadModalOpen(true)} 
+                        className="flex items-center gap-2.5 px-4 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                    >
+                        <PlusIcon className="h-4 w-4" />
                         Novo Lead
                     </button>
                 </div>
             </header>
-            <NewLeadModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            <NewLeadModal isOpen={isNewLeadModalOpen} onClose={() => setNewLeadModalOpen(false)} />
+            <AgendaModal isOpen={isAgendaModalOpen} onClose={() => setAgendaModalOpen(false)} />
         </>
     );
 };

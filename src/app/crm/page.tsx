@@ -121,11 +121,9 @@ export default function CrmPage() {
                             ) : (
                                 leads.map((lead) => (
                                     <tr key={lead.id} className="bg-white even:bg-primary-50/50 dark:bg-gray-800 dark:even:bg-primary-500/5">
-                                        <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">
-                                            <div>
-                                                <div>{lead.nome}</div>
-                                                <div className="font-normal text-gray-500 dark:text-gray-400">{lead.telefone}</div>
-                                            </div>
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm font-medium text-gray-900 dark:text-white">{lead.nome}</div>
+                                            <div className="text-xs text-gray-500 dark:text-gray-400">{lead.telefone}</div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <button className="flex items-center gap-2 px-3 py-1 text-xs font-bold text-green-700 bg-green-100 rounded-full hover:bg-green-200 transition-colors dark:bg-green-500/20 dark:text-green-400 dark:hover:bg-green-500/30">

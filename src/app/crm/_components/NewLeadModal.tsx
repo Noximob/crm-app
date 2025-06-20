@@ -26,6 +26,25 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const rawValue = e.target.value.replace(/\\D/g, '');
+        let formattedValue = '';
+        if (rawValue.length > 0) {
+            formattedValue = `(${rawValue.slice(0, 2)}`;
+        }
+        if (rawValue.length > 2) {
+            // Permite 8 ou 9 dígitos no número principal
+            const mainNumberLength = rawValue.length > 10 ? 5 : 4;
+            const part1 = rawValue.slice(2, 2 + mainNumberLength);
+            const part2 = rawValue.slice(2 + mainNumberLength, 11);
+            formattedValue += `) ${part1}`;
+            if (part2) {
+                formattedValue += `-${part2}`;
+            }
+        }
+        setPhone(formattedValue);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!name || !phone) {
@@ -81,7 +100,7 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
                     </div>
                     <div>
                         <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Telefone *</label>
-                        <input type="tel" id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" required />
+                        <input type="tel" id="phone" value={phone} onChange={handlePhoneChange} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" required maxLength={15} />
                     </div>
                     <div>
                         <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">E-mail</label>
