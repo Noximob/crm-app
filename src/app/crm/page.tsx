@@ -40,11 +40,11 @@ const FilterChip = ({ children, selected }: { children: React.ReactNode, selecte
 
 const StatusIndicator = ({ status }: { status: string }) => {
     const statusColor = {
-        'Sem tarefa': 'bg-gray-400',
+        'Sem tarefa': 'bg-gray-500 dark:bg-gray-600',
         'Tarefa em atraso': 'bg-red-500',
-        'Tarefa do Dia': 'bg-yellow-500',
-        'Tarefa Futura': 'bg-blue-500',
-    }[status] || 'bg-gray-400';
+        'Tarefa do Dia': 'bg-yellow-400',
+        'Tarefa Futura': 'bg-green-500',
+    }[status] || 'bg-gray-500 dark:bg-gray-600';
 
     return <span className={`h-2.5 w-2.5 ${statusColor} rounded-full`}></span>;
 };
