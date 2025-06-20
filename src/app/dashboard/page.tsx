@@ -17,7 +17,7 @@ export default function DashboardPage() {
     return (
         <div className="flex-1 flex items-center justify-center p-6 bg-gray-50 dark:bg-gray-900/90">
             <div className="text-center">
-                <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-4">Bem-vindo ao seu Dashboard Principal</h2>
+                <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-4">Bem-vindo ao seu Dashboard</h2>
                 <p className="text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
                     Utilize a barra de navegação à esquerda para acessar as ferramentas e informações disponíveis ou clique no botão abaixo para ir diretamente ao CRM.
                 </p>
