@@ -59,7 +59,7 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen w-full bg-gray-100 dark:bg-gray-900 flex items-start p-4 gap-4">
-      <aside className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg flex flex-col transition-all duration-300 sticky top-4 ${collapsed ? 'w-20' : 'w-72'}`}>
+      <aside className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg flex flex-col transition-all duration-300 sticky top-4 ${collapsed ? 'w-20' : 'w-64'}`}>
         <div className="h-20 flex items-center justify-between px-6 border-b border-gray-200 dark:border-gray-700">
              <div className={`flex items-center overflow-hidden ${collapsed ? 'w-0' : 'w-auto'}`}>
                 <div className="h-10 w-10 bg-primary-500 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
