@@ -7,14 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "cache-buster": "echo 'Forçando a limpeza de cache do deploy'",
-    "postinstall": "touch .next/package.json || (mkdir -p .next && touch .next/package.json)"
+    "cache-buster": "echo 'Forçando a limpeza de cache do deploy'"
   },
   "dependencies": {
     "firebase": "^11.9.1",
-    "next": "15.3.4",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "next": "14.2.3",
+    "react": "^18",
+    "react-dom": "^18"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
