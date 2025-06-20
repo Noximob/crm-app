@@ -33,12 +33,12 @@ const CrmHeader = () => {
                         Voltar
                     </Link>
 
-                    <div className="flex items-center gap-1 bg-primary-100/60 dark:bg-gray-700 p-1 rounded-lg">
+                    <div className="flex items-center gap-2">
                         {navLinks.map(link => (
                             <Link key={link.href} href={link.href}>
-                                <span className={`block px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${pathname === link.href 
-                                    ? 'bg-primary-600 text-white shadow-md' 
-                                    : 'text-gray-600 dark:text-gray-300 hover:bg-primary-200/50 dark:hover:bg-gray-600'}`
+                                <span className={`block px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-colors ${pathname === link.href 
+                                    ? 'bg-primary-600 text-white' 
+                                    : 'bg-white text-primary-700 border border-gray-300 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600'}`
                                 }>
                                     {link.text}
                                 </span>
