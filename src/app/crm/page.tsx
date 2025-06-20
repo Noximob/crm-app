@@ -25,10 +25,10 @@ const pipelineStages = [
 ];
 
 const FilterChip = ({ children, selected }: { children: React.ReactNode, selected?: boolean }) => (
-    <button className={`px-3 py-1.5 text-sm font-semibold border rounded-lg transition-colors ${
+    <button className={`px-2.5 py-1 text-sm font-medium border rounded-lg transition-colors ${
         selected 
         ? 'bg-primary-500 border-primary-500 text-white' 
-        : 'text-gray-600 bg-white border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
+        : 'text-gray-600 bg-white border-gray-200 hover:bg-gray-100 dark:bg-gray-700/50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
     }`}>
         {children}
     </button>
@@ -50,16 +50,15 @@ export default function CrmPage() {
         <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">
             <CrmHeader />
             <main className="p-4 sm:p-6 lg:p-8 pt-0">
-                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md mb-4">
+                <div className="bg-white dark:bg-gray-800/80 dark:backdrop-blur-sm p-3 rounded-xl shadow-md mb-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
-                            <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                            <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors dark:bg-gray-700/50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">
                                 <SearchIcon className="h-4 w-4" />
                                 Filtrar
                             </button>
-                            <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-500 bg-red-100/80 border border-red-200 hover:bg-red-100 rounded-lg transition-colors dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 dark:border-red-500/20">
+                            <button className="flex items-center justify-center h-8 w-8 text-sm font-semibold text-red-500 bg-red-100/80 border border-red-200 hover:bg-red-100 rounded-lg transition-colors dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 dark:border-red-500/20">
                                 <XIcon className="h-4 w-4" />
-                                Remover Filtros
                             </button>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
