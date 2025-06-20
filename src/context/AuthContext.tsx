@@ -7,15 +7,15 @@ import { doc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
-  user: User | null;
+  currentUser: User | null;
   loading: boolean;
   isApproved: boolean;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: true, isApproved: false });
+export const AuthContext = createContext<AuthContextType>({ currentUser: null, loading: true, isApproved: false });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isApproved, setIsApproved] = useState(false);
   const router = useRouter();
@@ -28,17 +28,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const userDoc = await getDoc(userDocRef);
 
         if (userDoc.exists() && userDoc.data().aprovado) {
-          setUser(firebaseUser);
+          setCurrentUser(firebaseUser);
           setIsApproved(true);
         } else {
           // Usuário logado mas não aprovado ou sem documento
           setIsApproved(false);
           await auth.signOut(); // Força o logout
-          setUser(null);
+          setCurrentUser(null);
         }
       } else {
         // Usuário não está logado
-        setUser(null);
+        setCurrentUser(null);
         setIsApproved(false);
       }
       setLoading(false);
@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, isApproved }}>
+    <AuthContext.Provider value={{ currentUser, loading, isApproved }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { PIPELINE_STAGES } from '@/lib/constants';
 import CrmHeader from './_components/CrmHeader';
 
 const SearchIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -20,12 +21,6 @@ const leadsData = [
     { name: 'Renanzera', phone: '(47) 99694-4751', situation: 'Pós Venda e Fidelização', status: 'Tarefa em atraso' },
     { name: 'Renan Scheffel', phone: '(47) 99694-4751', situation: 'Pré Qualificação', status: 'Tarefa do Dia' },
     { name: 'Novo Lead', phone: '(47) 99999-9999', situation: 'Qualificação', status: 'Tarefa Futura' },
-];
-
-const pipelineStages = [
-    'Pré Qualificação', 'Qualificação', 'Apresentação do imóvel', 'Ligação agendada',
-    'Visita agendada', 'Negociação e Proposta', 'Contrato e fechamento',
-    'Pós Venda e Fidelização', 'Geladeira'
 ];
 
 const FilterChip = ({ children, selected }: { children: React.ReactNode, selected?: boolean }) => (
@@ -66,7 +61,7 @@ export default function CrmPage() {
                         </button>
                     </div>
                     <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-2">
-                        {pipelineStages.map(stage => <FilterChip key={stage}>{stage}</FilterChip>)}
+                        {PIPELINE_STAGES.map(stage => <FilterChip key={stage}>{stage}</FilterChip>)}
                     </div>
                 </div>
                 
