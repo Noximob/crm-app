@@ -2,16 +2,72 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { auth, db } from '@/lib/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function LoginPage() {
+  const { user, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Carregando...</p>
+      </div>
+    );
+  }
+
+  if (user) {
+    router.push('/dashboard');
+    return null;
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Aqui implementaremos a lógica de login
-    console.log('Login attempt:', { email, password, rememberMe });
+    setIsLoading(true);
+    setError(null);
+
+    if (!email || !password) {
+      setError("Por favor, preencha todos os campos.");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      const userDocRef = doc(db, 'usuarios', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        if (userData.aprovado === true) {
+          console.log("Login bem-sucedido e aprovado!");
+          router.push('/dashboard');
+        } else {
+          setError("Seu cadastro ainda está pendente de aprovação.");
+          await auth.signOut();
+        }
+      } else {
+        setError("Ocorreu um erro com seu cadastro. Por favor, contate o suporte.");
+        await auth.signOut();
+      }
+
+    } catch (error: any) {
+      setError("E-mail ou senha inválidos.");
+      console.error("Erro no login:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoogleLogin = () => {
@@ -75,27 +131,39 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* Checkbox Manter senha */}
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-softgray-300 rounded"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-softgray-700">
-                Manter senha
-              </label>
+            {/* Manter senha e link de esqueci a senha */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-softgray-300 rounded"
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-softgray-700">
+                  Manter senha
+                </label>
+              </div>
+
+              <div className="text-sm">
+                <a href="#" className="font-medium text-primary-600 hover:text-primary-500">
+                  Esqueceu a senha?
+                </a>
+              </div>
             </div>
+
+            {/* Mensagem de Erro */}
+            {error && <p className="text-sm text-red-600 bg-red-100 p-3 rounded-lg text-center">{error}</p>}
 
             {/* Botão de Login */}
             <button
               type="submit"
-              className="w-full bg-primary-500 hover:bg-primary-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              disabled={isLoading}
+              className="w-full bg-primary-500 hover:bg-primary-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:bg-primary-300 disabled:cursor-not-allowed"
             >
-              Entrar
+              {isLoading ? 'Entrando...' : 'Entrar'}
             </button>
           </form>
 

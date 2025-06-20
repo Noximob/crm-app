@@ -2,15 +2,59 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { auth, db } from '@/lib/firebase'; // Importando nossa config
+import { createUserWithEmailAndPassword } from 'firebase/auth'; // Função de criar usuário
+import { setDoc, doc } from 'firebase/firestore'; // Funções do banco de dados
 
 export default function CadastroPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Aqui implementaremos a lógica de cadastro
-    console.log('Cadastro attempt:', { email, password });
+    setIsLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    // Validação simples
+    if (!email || !password) {
+      setError("Por favor, preencha todos os campos.");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // 1. Criar o usuário no Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // 2. Criar o documento do usuário no Firestore
+      await setDoc(doc(db, "usuarios", user.uid), {
+        email: user.email,
+        aprovado: false, // O ponto-chave da nossa regra de negócio!
+        criadoEm: new Date(),
+      });
+      
+      setSuccess("Cadastro realizado com sucesso! Aguarde a aprovação do administrador para fazer o login.");
+      setEmail('');
+      setPassword('');
+
+    } catch (error: any) {
+      // Tratamento de erros comuns do Firebase
+      if (error.code === 'auth/email-already-in-use') {
+        setError("Este e-mail já está em uso.");
+      } else if (error.code === 'auth/weak-password') {
+        setError("A senha é muito fraca. Ela deve ter no mínimo 6 caracteres.");
+      } else {
+        setError("Ocorreu um erro ao realizar o cadastro. Tente novamente.");
+        console.error("Erro no cadastro:", error);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoogleCadastro = () => {
@@ -64,11 +108,16 @@ export default function CadastroPage() {
               />
             </div>
 
+            {/* Mensagens de Erro e Sucesso */}
+            {error && <p className="text-sm text-red-600 bg-red-100 p-3 rounded-lg">{error}</p>}
+            {success && <p className="text-sm text-green-600 bg-green-100 p-3 rounded-lg">{success}</p>}
+
             <button
               type="submit"
-              className="w-full bg-primary-500 hover:bg-primary-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              disabled={isLoading}
+              className="w-full bg-primary-500 hover:bg-primary-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:bg-primary-300 disabled:cursor-not-allowed"
             >
-              Cadastrar
+              {isLoading ? 'Cadastrando...' : 'Cadastrar'}
             </button>
           </form>
 
