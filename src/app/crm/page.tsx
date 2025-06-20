@@ -49,8 +49,8 @@ export default function CrmPage() {
     return (
         <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">
             <CrmHeader />
-            <main className="p-4 sm:p-6 lg:p-8 pt-0">
-                <div className="bg-white dark:bg-gray-800/80 dark:backdrop-blur-sm p-3 rounded-xl shadow-md mb-4">
+            <main className="px-4 sm:px-6 lg:px-8">
+                <div className="bg-white dark:bg-gray-800/80 dark:backdrop-blur-sm p-3 rounded-xl shadow-md">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
                             <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors dark:bg-gray-700/50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">
@@ -67,7 +67,7 @@ export default function CrmPage() {
                     </div>
                 </div>
                 
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden mt-4">
                     <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                         <thead className="text-xs text-mauve-800 uppercase bg-mauve-50 dark:bg-mauve-900/20 dark:text-mauve-300">
                             <tr>
