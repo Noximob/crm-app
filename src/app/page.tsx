@@ -9,7 +9,7 @@ import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export default function LoginPage() {
-  const { user, loading } = useAuth();
+  const { currentUser, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -26,7 +26,7 @@ export default function LoginPage() {
     );
   }
 
-  if (user) {
+  if (currentUser) {
     router.push('/dashboard');
     return null;
   }
