@@ -25,7 +25,7 @@ const pipelineStages = [
 ];
 
 const FilterChip = ({ children, selected }: { children: React.ReactNode, selected?: boolean }) => (
-    <button className={`px-2.5 py-1 text-sm font-medium border rounded-lg transition-colors ${
+    <button className={`px-2.5 py-1 text-xs font-semibold border rounded-lg transition-colors whitespace-nowrap ${
         selected 
         ? 'bg-primary-500 border-primary-500 text-white' 
         : 'text-gray-600 bg-white border-gray-200 hover:bg-gray-100 dark:bg-gray-700/50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
@@ -49,7 +49,7 @@ export default function CrmPage() {
     return (
         <div className="bg-gray-50 dark:bg-gray-900 min-h-screen p-4 sm:p-6 lg:p-8">
             <CrmHeader />
-            <main className="flex flex-col gap-4 mt-4">
+            <main className="flex flex-col gap-3 mt-4">
                 <div className="bg-white dark:bg-gray-800/80 dark:backdrop-blur-sm p-4 rounded-xl shadow-md">
                     <div className="flex items-center gap-2">
                         <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors dark:bg-gray-700/50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">
@@ -61,7 +61,7 @@ export default function CrmPage() {
                             Remover Filtros
                         </button>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 mt-4">
+                    <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-2">
                         {pipelineStages.map(stage => <FilterChip key={stage}>{stage}</FilterChip>)}
                     </div>
                 </div>
