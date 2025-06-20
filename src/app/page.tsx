@@ -138,10 +138,10 @@ export default function LoginPage() {
               </svg>
             </div>
             <h1 className="text-2xl font-bold text-softgray-800 mb-2">
-              Você já vendeu hoje?
+              Alume
             </h1>
             <p className="text-softgray-600 text-sm">
-              Acesse seu CRM e continue vendendo
+              Você já vendeu hoje?
             </p>
           </div>
 
