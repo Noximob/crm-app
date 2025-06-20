@@ -1,17 +1,16 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
-import Link from 'next/link';
 
-const DashboardPage = () => {
+const CrmPage = () => {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!loading && !user) {
       router.push('/');
     }
@@ -37,7 +36,7 @@ const DashboardPage = () => {
   if (!user) {
     return null;
   }
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100">
       {/* Cabeçalho */}
@@ -75,27 +74,15 @@ const DashboardPage = () => {
         </div>
       </header>
 
-      {/* Conteúdo Principal - Área vazia para futuras funcionalidades */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-softgray-800 mb-4">
-            Bem-vindo à Alume
-          </h2>
-          <p className="text-softgray-600 text-lg mb-8">
-            Sua plataforma de gestão imobiliária.
-          </p>
-          <Link href="/crm"
-            className="bg-primary-500 hover:bg-primary-600 text-white font-bold py-4 px-8 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 inline-flex items-center text-lg"
-          >
-            Acessar CRM
-            <svg className="w-5 h-5 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
-          </Link>
+      {/* Conteúdo Principal do CRM */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-primary-100">
+          <h2 className="text-2xl font-bold text-softgray-800">Área do CRM</h2>
+          <p className="text-softgray-600 mt-2">Aqui ficarão as ferramentas de gestão de clientes, propriedades, etc.</p>
         </div>
       </main>
     </div>
   );
 };
 
-export default DashboardPage; 
+export default CrmPage; 
