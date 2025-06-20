@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "cache-buster": "echo 'Forçando a limpeza de cache do deploy'"
+    "cache-buster": "echo 'Forçando a limpeza de cache do deploy'",
+    "postinstall": "touch .next/package.json || (mkdir -p .next && touch .next/package.json)"
   },
   "dependencies": {
     "firebase": "^11.9.1",
