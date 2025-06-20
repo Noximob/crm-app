@@ -8,6 +8,7 @@ import { signOut } from 'firebase/auth';
 import Link from 'next/link';
 
 // Ícones
+const AlertTriangleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>;
 const LayoutDashboardIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>;
 const NewspaperIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props}><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2V4" /><path d="M4 9h16" /><path d="M4 15h16" /><path d="M10 3v18" /></svg>;
 const BarChartIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="20" y2="10" /><line x1="18" x2="18" y1="20" y2="4" /><line x1="6" x2="6" y1="20" y2="16" /></svg>;
@@ -71,14 +72,21 @@ export default function DashboardLayout({
              </button>
         </div>
         
-        <nav className="px-4 py-6 space-y-2">
-            <NavLink href="/dashboard" icon={LayoutDashboardIcon} collapsed={collapsed}>Dashboard</NavLink>
+        <div className="p-4">
+            <Link href="/crm" className={`flex items-center justify-center h-12 bg-primary-500 text-white rounded-lg transition-all duration-300 font-semibold text-sm hover:bg-primary-600 ${collapsed ? 'w-12' : 'w-full'}`}>
+                <LayoutDashboardIcon className="h-6 w-6" />
+                {!collapsed && <span className="ml-3">Acessar CRM</span>}
+            </Link>
+        </div>
+
+        <nav className="flex-1 px-4 pb-6 space-y-2">
             <NavLink href="#" icon={BuildingIcon} collapsed={collapsed}>Material Construtoras</NavLink>
             <NavLink href="#" icon={BarChartIcon} collapsed={collapsed}>DWV</NavLink>
             <NavLink href="#" icon={MegaphoneIcon} collapsed={collapsed}>Material de Marketing</NavLink>
             <NavLink href="#" icon={TargetIcon} collapsed={collapsed}>Metas do time</NavLink>
             <NavLink href="#" icon={PresentationIcon} collapsed={collapsed}>Treinamentos</NavLink>
             <NavLink href="#" icon={MessageSquareIcon} collapsed={collapsed}>Chat Interno</NavLink>
+            <NavLink href="#" icon={AlertTriangleIcon} collapsed={collapsed}>Avisos Importantes</NavLink>
         </nav>
 
         <div className="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
