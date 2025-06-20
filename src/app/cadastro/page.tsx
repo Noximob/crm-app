@@ -59,21 +59,31 @@ export default function CadastroPage() {
   };
 
   const handleGoogleCadastro = async () => {
+    console.log('Iniciando cadastro com Google...');
     setIsGoogleLoading(true);
     setError(null);
     setSuccess(null);
     try {
+      console.log('Chamando signInWithPopup...');
       const result = await signInWithPopup(auth, googleProvider);
+      console.log('Popup do Google aberto com sucesso:', result);
       const user = result.user;
+      console.log('Usuário do Google:', user);
+      
       // Verificar se já existe no Firestore
       const userDocRef = doc(db, 'usuarios', user.uid);
+      console.log('Verificando se usuário já existe no Firestore...');
       const userDoc = await getDoc(userDocRef);
+      
       if (userDoc.exists()) {
+        console.log('Usuário já existe no Firestore');
         setError('Este e-mail já está cadastrado. Aguarde aprovação do administrador.');
         await signOut(auth);
         setIsGoogleLoading(false);
         return;
       }
+      
+      console.log('Criando novo usuário no Firestore...');
       // Criar documento no Firestore
       await setDoc(userDocRef, {
         email: user.email,
@@ -85,9 +95,12 @@ export default function CadastroPage() {
         criadoEm: new Date(),
         metodoCadastro: 'google',
       });
+      
+      console.log('Usuário criado com sucesso no Firestore');
       setSuccess('Cadastro realizado com sucesso! Aguarde a aprovação do administrador para fazer o login.');
       await signOut(auth);
     } catch (error: any) {
+      console.error('Erro completo no cadastro com Google:', error);
       if (error.code === 'auth/popup-closed-by-user') {
         setError('Cadastro cancelado pelo usuário.');
       } else if (error.code === 'auth/popup-blocked') {
