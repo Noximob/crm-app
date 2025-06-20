@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 
@@ -7,8 +7,12 @@ export const metadata: Metadata = {
   description: "Sistema de CRM completo para corretores imobiliários. Gerencie seus leads, imóveis e automações em um só lugar.",
   keywords: "CRM, imobiliária, corretores, leads, automação, vendas",
   authors: [{ name: "CRM Imobiliário" }],
-  viewport: "width=device-width, initial-scale=1",
   robots: "index, follow",
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({

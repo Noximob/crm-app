@@ -1,88 +1,33 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import React from 'react';
 import { useRouter } from 'next/navigation';
-import { auth } from '@/lib/firebase';
-import { signOut } from 'firebase/auth';
 import Link from 'next/link';
 
-const DashboardPage = () => {
-  const { user, loading } = useAuth();
-  const router = useRouter();
+const ArrowRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+        <polyline points="12 5 19 12 12 19"></polyline>
+    </svg>
+);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/');
-    }
-  }, [user, loading, router]);
+export default function DashboardPage() {
+    const router = useRouter();
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      router.push('/');
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error);
-    }
-  };
-
-  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Carregando...</p>
-      </div>
+        <div className="flex-1 flex items-center justify-center p-6 bg-gray-50 dark:bg-gray-900/90">
+            <div className="text-center">
+                <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-4">Bem-vindo ao seu Dashboard</h2>
+                <p className="text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
+                    Utilize a barra de navegação à esquerda para acessar as ferramentas e informações disponíveis ou clique no botão abaixo para ir diretamente ao CRM.
+                </p>
+                <Link href="/crm" legacyBehavior>
+                    <a className="inline-flex items-center justify-center px-8 py-4 bg-primary-600 text-white font-bold rounded-lg shadow-md hover:bg-primary-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        Acessar CRM
+                        <ArrowRightIcon className="ml-3 h-6 w-6" />
+                    </a>
+                </Link>
+            </div>
+        </div>
     );
-  }
-  
-  if (!user) {
-    return null;
-  }
-  
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100">
-      {/* Cabeçalho */}
-      <header className="bg-white shadow-sm border-b border-primary-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo/Nome do Sistema */}
-            <div className="flex items-center">
-              <div className="h-8 w-8 bg-primary-500 rounded-full flex items-center justify-center mr-3">
-                <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-              </div>
-              <h1 className="text-xl font-semibold text-softgray-800">
-                Alume
-              </h1>
-            </div>
-
-            {/* Área do Usuário e Logout */}
-            <div className="flex items-center space-x-4">
-              {/* Email do Usuário */}
-              <div className="text-sm text-softgray-600">
-                <span className="font-medium">{user.email}</span>
-              </div>
-
-              {/* Botão de Logout */}
-              <button
-                onClick={handleLogout}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Conteúdo Principal - Área vazia para futuras funcionalidades */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow flex items-center justify-center">
-        <div className="text-center">
-          
-        </div>
-      </main>
-    </div>
-  );
-};
-
-export default DashboardPage; 
+} 
