@@ -23,7 +23,7 @@ interface Lead {
   id: string;
   nome: string;
   telefone: string;
-  situation: string;
+  etapa: string;
   status: string;
   [key: string]: any; 
 }
@@ -133,7 +133,7 @@ export default function CrmPage() {
                                                 WhatsApp
                                             </button>
                                         </td>
-                                        <td className="px-6 py-4">{lead.situation}</td>
+                                        <td className="px-6 py-4">{lead.etapa}</td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
                                                 <StatusIndicator status={lead.status || 'Sem tarefa'} />
