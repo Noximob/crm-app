@@ -21,7 +21,7 @@ const CrmHeader = () => {
     ];
 
     return (
-        <header className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md flex items-center justify-between mb-6">
+        <header className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md flex items-center justify-between mb-4">
             <div className="flex items-center gap-6">
                 <Link href="/dashboard" className="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:text-primary-500 transition-colors">
                     <ArrowLeftIcon className="h-5 w-5" />

@@ -3,10 +3,13 @@
 import React from 'react';
 import CrmHeader from './_components/CrmHeader';
 
-const FilterIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props}><path d="M3 6h18"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>;
-const XIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>;
+const SearchIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3"/>
+    </svg>
+);
+const XIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} strokeWidth="2.5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>;
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>;
-
 
 const leadsData = [
     { name: 'Renan', phone: '(47) 99694-4751', situation: 'Geladeira', status: 'Sem tarefa' },
@@ -21,8 +24,12 @@ const pipelineStages = [
     'Pós Venda e Fidelização', 'Geladeira'
 ];
 
-const FilterChip = ({ children }: { children: React.ReactNode }) => (
-    <button className="px-3 py-1 text-sm font-semibold text-mauve-700 bg-mauve-100 rounded-full hover:bg-mauve-200 transition-colors dark:bg-mauve-900/40 dark:text-mauve-200 dark:hover:bg-mauve-900/60">
+const FilterChip = ({ children, selected }: { children: React.ReactNode, selected?: boolean }) => (
+    <button className={`px-3 py-1.5 text-sm font-semibold border rounded-lg transition-colors ${
+        selected 
+        ? 'bg-primary-500 border-primary-500 text-white' 
+        : 'text-gray-600 bg-white border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
+    }`}>
         {children}
     </button>
 );
@@ -43,18 +50,21 @@ export default function CrmPage() {
         <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">
             <CrmHeader />
             <main className="p-4 sm:p-6 lg:p-8 pt-0">
-                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md mb-6">
-                    <div className="flex flex-wrap items-center gap-3">
-                        <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                            <FilterIcon className="h-4 w-4" />
-                            Filtrar
-                        </button>
-                        <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-500 bg-red-100 hover:bg-red-200 rounded-lg transition-colors dark:bg-red-500/20 dark:text-red-400 dark:hover:bg-red-500/30">
-                            <XIcon className="h-4 w-4" />
-                            Remover Filtros
-                        </button>
-                        <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 mx-2"></div>
-                        {pipelineStages.map(stage => <FilterChip key={stage}>{stage}</FilterChip>)}
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md mb-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                            <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                                <SearchIcon className="h-4 w-4" />
+                                Filtrar
+                            </button>
+                            <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-500 bg-red-100/80 border border-red-200 hover:bg-red-100 rounded-lg transition-colors dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 dark:border-red-500/20">
+                                <XIcon className="h-4 w-4" />
+                                Remover Filtros
+                            </button>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            {pipelineStages.map(stage => <FilterChip key={stage}>{stage}</FilterChip>)}
+                        </div>
                     </div>
                 </div>
                 
