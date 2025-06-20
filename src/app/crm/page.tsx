@@ -10,8 +10,9 @@ const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props}><
 
 const leadsData = [
     { name: 'Renan', phone: '(47) 99694-4751', situation: 'Geladeira', status: 'Sem tarefa' },
-    { name: 'Renanzera', phone: '(47) 99694-4751', situation: 'Pós Venda e Fidelização', status: 'Sem tarefa' },
-    { name: 'Renan Scheffel', phone: '(47) 99694-4751', situation: 'Pré Qualificação', status: 'Sem tarefa' },
+    { name: 'Renanzera', phone: '(47) 99694-4751', situation: 'Pós Venda e Fidelização', status: 'Tarefa em atraso' },
+    { name: 'Renan Scheffel', phone: '(47) 99694-4751', situation: 'Pré Qualificação', status: 'Tarefa do Dia' },
+    { name: 'Novo Lead', phone: '(47) 99999-9999', situation: 'Qualificação', status: 'Tarefa Futura' },
 ];
 
 const pipelineStages = [
@@ -25,6 +26,17 @@ const FilterChip = ({ children }: { children: React.ReactNode }) => (
         {children}
     </button>
 );
+
+const StatusIndicator = ({ status }: { status: string }) => {
+    const statusColor = {
+        'Sem tarefa': 'bg-gray-400',
+        'Tarefa em atraso': 'bg-red-500',
+        'Tarefa do Dia': 'bg-yellow-500',
+        'Tarefa Futura': 'bg-blue-500',
+    }[status] || 'bg-gray-400';
+
+    return <span className={`h-2.5 w-2.5 ${statusColor} rounded-full`}></span>;
+};
 
 export default function CrmPage() {
     return (
@@ -76,7 +88,12 @@ export default function CrmPage() {
                                         </button>
                                     </td>
                                     <td className="px-6 py-4">{lead.situation}</td>
-                                    <td className="px-6 py-4">{lead.status}</td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-2">
+                                            <StatusIndicator status={lead.status} />
+                                            {lead.status}
+                                        </div>
+                                    </td>
                                     <td className="px-6 py-4 text-right">
                                         <button className="px-5 py-2 text-sm font-semibold text-white bg-mauve-600 hover:bg-mauve-700 rounded-lg transition-colors shadow-sm">
                                             Abrir
