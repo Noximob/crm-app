@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "cache-buster": "echo 'Forçando a limpeza de cache do deploy'"
   },
   "dependencies": {
     "firebase": "^11.9.1",
