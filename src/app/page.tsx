@@ -20,11 +20,11 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full space-y-8">
+      <div className="max-w-md w-full space-y-6">
         {/* Card principal */}
-        <div className="bg-offwhite-50 rounded-2xl shadow-xl p-8 border border-primary-100">
+        <div className="bg-offwhite-50 rounded-2xl shadow-xl p-6 md:p-8 border border-primary-100">
           {/* Logo e título */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             <div className="mx-auto h-16 w-16 bg-primary-500 rounded-full flex items-center justify-center mb-4">
               <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -39,10 +39,10 @@ export default function LoginPage() {
           </div>
 
           {/* Formulário de login */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {/* Campo Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-softgray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-softgray-700 mb-1">
                 Email
               </label>
               <input
@@ -59,7 +59,7 @@ export default function LoginPage() {
 
             {/* Campo Senha */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-softgray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-softgray-700 mb-1">
                 Senha
               </label>
               <input
@@ -99,7 +99,7 @@ export default function LoginPage() {
           </form>
 
           {/* Divisor */}
-          <div className="my-6">
+          <div className="my-4">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-softgray-300" />
@@ -125,7 +125,7 @@ export default function LoginPage() {
           </button>
 
           {/* Link para Cadastro */}
-          <div className="text-center mt-6">
+          <div className="text-center mt-4">
             <p className="text-sm text-softgray-600">
               Não tem uma conta?{' '}
               <a href="/cadastro" className="font-medium text-primary-600 hover:text-primary-500 transition-colors">
