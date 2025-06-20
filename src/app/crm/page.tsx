@@ -8,7 +8,11 @@ const SearchIcon = (props: React.SVGProps<SVGSVGElement>) => (
         <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3"/>
     </svg>
 );
-const XIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} strokeWidth="2.5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>;
+const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+    </svg>
+);
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>;
 
 const leadsData = [
@@ -27,8 +31,8 @@ const pipelineStages = [
 const FilterChip = ({ children, selected }: { children: React.ReactNode, selected?: boolean }) => (
     <button className={`px-2.5 py-1 text-xs font-semibold border rounded-lg transition-colors whitespace-nowrap ${
         selected 
-        ? 'bg-primary-500 border-primary-500 text-white' 
-        : 'text-gray-600 bg-white border-gray-200 hover:bg-gray-100 dark:bg-gray-700/50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
+        ? 'bg-primary-600 border-primary-600 text-white shadow' 
+        : 'border-transparent text-primary-800 bg-primary-100/80 hover:bg-primary-200/70 dark:bg-primary-500/10 dark:text-primary-200 dark:hover:bg-primary-500/20'
     }`}>
         {children}
     </button>
@@ -47,16 +51,16 @@ const StatusIndicator = ({ status }: { status: string }) => {
 
 export default function CrmPage() {
     return (
-        <div className="bg-gray-50 dark:bg-gray-900 min-h-screen p-4 sm:p-6 lg:p-8">
+        <div className="bg-slate-100 dark:bg-gray-900 min-h-screen p-4 sm:p-6 lg:p-8">
             <CrmHeader />
             <main className="flex flex-col gap-3 mt-4">
                 <div className="bg-white dark:bg-gray-800/80 dark:backdrop-blur-sm p-4 rounded-xl shadow-md">
                     <div className="flex items-center gap-2">
-                        <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors dark:bg-gray-700/50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">
+                        <button className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors shadow-sm">
                             <SearchIcon className="h-4 w-4" />
                             Filtrar
                         </button>
-                        <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors dark:bg-gray-700/50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 whitespace-nowrap">
+                        <button className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors shadow-sm">
                             <XIcon className="h-4 w-4" />
                             Remover Filtros
                         </button>
@@ -68,7 +72,7 @@ export default function CrmPage() {
                 
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
                     <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                        <thead className="text-xs text-mauve-800 uppercase bg-mauve-50 dark:bg-mauve-900/20 dark:text-mauve-300">
+                        <thead className="text-xs text-primary-800 uppercase bg-primary-100/60 dark:bg-primary-900/20 dark:text-primary-300">
                             <tr>
                                 <th scope="col" className="px-6 py-3">Nome</th>
                                 <th scope="col" className="px-6 py-3">WhatsApp</th>
@@ -79,7 +83,7 @@ export default function CrmPage() {
                         </thead>
                         <tbody>
                             {leadsData.map((lead, index) => (
-                                <tr key={index} className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                <tr key={index} className="bg-white even:bg-primary-50/50 dark:bg-gray-800 dark:even:bg-primary-500/5">
                                     <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">
                                         <div>
                                             <div>{lead.name}</div>
@@ -100,7 +104,7 @@ export default function CrmPage() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <button className="px-5 py-2 text-sm font-semibold text-white bg-mauve-600 hover:bg-mauve-700 rounded-lg transition-colors shadow-sm">
+                                        <button className="px-5 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors shadow-sm">
                                             Abrir
                                         </button>
                                     </td>
