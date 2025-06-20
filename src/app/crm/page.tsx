@@ -45,11 +45,11 @@ export default function CrmPage() {
             <main className="p-4 sm:p-6 lg:p-8 pt-0">
                 <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md mb-6">
                     <div className="flex flex-wrap items-center gap-3">
-                        <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">
+                        <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">
                             <FilterIcon className="h-4 w-4" />
                             Filtrar
                         </button>
-                        <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-600 bg-red-100 hover:bg-red-200 rounded-lg transition-colors dark:bg-red-500/20 dark:text-red-400 dark:hover:bg-red-500/30">
+                        <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-500 bg-red-100 hover:bg-red-200 rounded-lg transition-colors dark:bg-red-500/20 dark:text-red-400 dark:hover:bg-red-500/30">
                             <XIcon className="h-4 w-4" />
                             Remover Filtros
                         </button>
@@ -73,12 +73,9 @@ export default function CrmPage() {
                             {leadsData.map((lead, index) => (
                                 <tr key={index} className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                     <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">
-                                        <div className="flex items-center gap-3">
-                                            <span className="h-2.5 w-2.5 bg-gray-400 rounded-full"></span>
-                                            <div>
-                                                <div>{lead.name}</div>
-                                                <div className="font-normal text-gray-500 dark:text-gray-400">{lead.phone}</div>
-                                            </div>
+                                        <div>
+                                            <div>{lead.name}</div>
+                                            <div className="font-normal text-gray-500 dark:text-gray-400">{lead.phone}</div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">

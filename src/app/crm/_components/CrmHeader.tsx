@@ -5,8 +5,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props}><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>;
-const CalendarIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>;
-const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>;
+const CalendarIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/>
+    </svg>
+);
+const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props}><path d="M5 12h14"/><path d="M12 5v14"/></svg>;
 
 const CrmHeader = () => {
     const pathname = usePathname();
@@ -39,12 +43,12 @@ const CrmHeader = () => {
             </div>
 
             <div className="flex items-center gap-3">
-                <button className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">
+                <button className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">
                     <CalendarIcon className="h-5 w-5" />
                     Agenda
                 </button>
                 <button className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors shadow-sm">
-                    <PlusIcon className="h-5 w-5" />
+                    <PlusIcon className="h-5 w-5 stroke-white" strokeWidth="2.5" />
                     Novo Lead
                 </button>
             </div>
