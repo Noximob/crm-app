@@ -47,27 +47,26 @@ const StatusIndicator = ({ status }: { status: string }) => {
 
 export default function CrmPage() {
     return (
-        <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">
+        <div className="bg-gray-50 dark:bg-gray-900 min-h-screen p-4 sm:p-6 lg:p-8">
             <CrmHeader />
-            <main className="px-4 sm:px-6 lg:px-8">
-                <div className="bg-white dark:bg-gray-800/80 dark:backdrop-blur-sm p-3 rounded-xl shadow-md">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                            <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors dark:bg-gray-700/50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">
-                                <SearchIcon className="h-4 w-4" />
-                                Filtrar
-                            </button>
-                            <button className="flex items-center justify-center h-8 w-8 text-sm font-semibold text-red-500 bg-red-100/80 border border-red-200 hover:bg-red-100 rounded-lg transition-colors dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 dark:border-red-500/20">
-                                <XIcon className="h-4 w-4" />
-                            </button>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                            {pipelineStages.map(stage => <FilterChip key={stage}>{stage}</FilterChip>)}
-                        </div>
+            <main className="flex flex-col gap-4 mt-4">
+                <div className="bg-white dark:bg-gray-800/80 dark:backdrop-blur-sm p-4 rounded-xl shadow-md">
+                    <div className="flex items-center gap-2">
+                        <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors dark:bg-gray-700/50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">
+                            <SearchIcon className="h-4 w-4" />
+                            Filtrar
+                        </button>
+                        <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors dark:bg-gray-700/50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 whitespace-nowrap">
+                            <XIcon className="h-4 w-4" />
+                            Remover Filtros
+                        </button>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 mt-4">
+                        {pipelineStages.map(stage => <FilterChip key={stage}>{stage}</FilterChip>)}
                     </div>
                 </div>
                 
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden mt-4">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
                     <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                         <thead className="text-xs text-mauve-800 uppercase bg-mauve-50 dark:bg-mauve-900/20 dark:text-mauve-300">
                             <tr>
