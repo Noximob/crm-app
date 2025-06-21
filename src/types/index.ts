@@ -7,6 +7,7 @@ export interface Lead extends DocumentData {
     telefone: string;
     etapa: string;
     anotacoes?: string;
+    status?: string; // Tarefa em Atraso, Tarefa do Dia, etc.
     [key: string]: any;
 }
 

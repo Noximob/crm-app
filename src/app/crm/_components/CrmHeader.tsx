@@ -4,7 +4,10 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import NewLeadModal from './NewLeadModal';
-import AgendaModal from './AgendaModal';
+import TaskListModal from './TaskListModal';
+import { useAuth } from '@/context/AuthContext';
+import { auth } from '@/lib/firebase';
+import { useRouter } from 'next/navigation';
 
 const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props}><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>;
 const CalendarIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -18,15 +21,22 @@ const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
-const CrmHeader = () => {
+export const CrmHeader = () => {
     const pathname = usePathname();
     const [isNewLeadModalOpen, setNewLeadModalOpen] = useState(false);
     const [isAgendaModalOpen, setAgendaModalOpen] = useState(false);
+    const { currentUser, loading } = useAuth();
+    const router = useRouter();
 
     const navLinks = [
         { href: '/crm', text: 'Gestão de Leads' },
         { href: '/crm/andamento', text: 'Andamento dos Leads' }
     ];
+
+    const handleSignOut = async () => {
+        await auth.signOut();
+        router.push('/');
+    };
 
     return (
         <>
@@ -54,7 +64,7 @@ const CrmHeader = () => {
                 <div className="flex items-center gap-3">
                     <button 
                         onClick={() => setAgendaModalOpen(true)}
-                        className="flex items-center gap-2.5 px-4 py-2 text-sm font-semibold text-primary-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-primary-700 bg-primary-100/80 rounded-lg hover:bg-primary-200/70 transition-colors shadow-sm dark:bg-primary-500/10 dark:text-primary-200 dark:hover:bg-primary-500/20"
                     >
                         <CalendarIcon className="h-4 w-4" />
                         Agenda
@@ -69,7 +79,7 @@ const CrmHeader = () => {
                 </div>
             </header>
             <NewLeadModal isOpen={isNewLeadModalOpen} onClose={() => setNewLeadModalOpen(false)} />
-            <AgendaModal isOpen={isAgendaModalOpen} onClose={() => setAgendaModalOpen(false)} />
+            <TaskListModal isOpen={isAgendaModalOpen} onClose={() => setAgendaModalOpen(false)} />
         </>
     );
 };
