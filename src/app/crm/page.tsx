@@ -110,7 +110,10 @@ export default function CrmPage() {
             
             const unsubscribe = onSnapshot(leadsRef, async (querySnapshot) => {
                 const leadsDataPromises = querySnapshot.docs.map(async (leadDoc) => {
-                    const leadData = { id: leadDoc.id, ...leadDoc.data() };
+                    const leadData = { id: leadDoc.id, ...leadDoc.data() } as Lead;
+                    
+                    console.log('Lead data:', leadData);
+                    console.log('Qualification data:', leadData.qualification);
                     
                     const tasksCol = collection(db, `leads/${currentUser.uid}/leads`, leadDoc.id, 'tarefas');
                     const q = query(tasksCol, where('status', '==', 'pendente'));
