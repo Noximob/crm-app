@@ -3,9 +3,11 @@ import { DocumentData } from 'firebase/firestore';
 export interface Lead extends DocumentData {
     id: string;
     nome: string;
+    email: string;
     telefone: string;
     etapa: string;
-    status: string;
+    anotacoes?: string;
+    [key: string]: any;
 }
 
 // Podemos adicionar outras interfaces aqui no futuro
