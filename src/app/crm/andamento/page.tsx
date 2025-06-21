@@ -4,17 +4,19 @@ import React, { useState, useEffect } from 'react';
 import CrmHeader from '../_components/CrmHeader';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, doc, updateDoc, DocumentData } from 'firebase/firestore';
+import { collection, onSnapshot, query, doc, updateDoc } from 'firebase/firestore';
 import { PIPELINE_STAGES } from '@/lib/constants';
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay } from '@dnd-kit/core';
 import KanbanColumn from './_components/KanbanColumn';
 import { Lead } from '@/types';
+import LeadCard from './_components/LeadCard';
 
 type LeadsByStage = { [key: string]: Lead[] };
 
 export default function AndamentoPage() {
     const { currentUser } = useAuth();
     const [leads, setLeads] = useState<LeadsByStage>({});
+    const [activeLead, setActiveLead] = useState<Lead | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -46,7 +48,17 @@ export default function AndamentoPage() {
         })
     );
     
+    const handleDragStart = (event: DragStartEvent) => {
+        const { active } = event;
+        const stage = findContainer(active.id);
+        if (stage) {
+            const lead = leads[stage].find(l => l.id === active.id);
+            setActiveLead(lead || null);
+        }
+    };
+
     const handleDragEnd = async (event: DragEndEvent) => {
+        setActiveLead(null);
         const { active, over } = event;
     
         if (over && active.id !== over.id) {
@@ -57,32 +69,25 @@ export default function AndamentoPage() {
                 return;
             }
 
-            // Atualiza o estado visualmente de forma otimista
             setLeads((prev) => {
                 const newLeads = { ...prev };
                 const activeItems = newLeads[activeContainer];
                 const overItems = newLeads[overContainer];
         
-                const [movedItem] = activeItems.splice(activeItems.findIndex(item => item.id === active.id), 1);
-                overItems.push(movedItem);
+                const activeIndex = activeItems.findIndex(item => item.id === active.id);
+                const [movedItem] = activeItems.splice(activeIndex, 1);
                 
-                // Crie uma cópia do item movido antes de modificar
-                const updatedMovedItem = { ...movedItem, etapa: overContainer };
-                
-                // Substitua o item antigo pelo novo no array de destino
-                overItems[overItems.length - 1] = updatedMovedItem;
+                overItems.push({ ...movedItem, etapa: overContainer });
         
                 return newLeads;
             });
 
-            // Atualiza no Firebase
             if (currentUser) {
                 const leadRef = doc(db, `leads/${currentUser.uid}/leads`, active.id.toString());
                 try {
                     await updateDoc(leadRef, { etapa: overContainer });
                 } catch (error) {
                     console.error("Failed to update lead stage: ", error);
-                    // Reverter a mudança otimista em caso de erro
                 }
             }
         }
@@ -105,12 +110,20 @@ export default function AndamentoPage() {
                 {loading ? (
                     <div className="text-center py-10">Carregando quadro...</div>
                 ) : (
-                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <DndContext 
+                        sensors={sensors} 
+                        collisionDetection={closestCenter} 
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                    >
                         <div className="flex gap-4 overflow-x-auto pb-4">
                             {PIPELINE_STAGES.map(stage => (
                                 <KanbanColumn key={stage} id={stage} title={stage} leads={leads[stage] || []} />
                             ))}
                         </div>
+                        <DragOverlay>
+                            {activeLead ? <LeadCard lead={activeLead} /> : null}
+                        </DragOverlay>
                     </DndContext>
                 )}
             </main>

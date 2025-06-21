@@ -28,22 +28,23 @@ export default function LeadCard({ lead }: { lead: Lead }) {
       style={style}
       {...attributes}
       {...listeners}
-      className="bg-white dark:bg-gray-900 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-700 cursor-grab active:cursor-grabbing"
+      className="bg-white dark:bg-gray-900 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-700 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-primary-300 dark:hover:border-primary-500 transition-all duration-200"
     >
       <div className="font-semibold text-sm text-gray-800 dark:text-gray-100 mb-1">{lead.nome}</div>
       <div className="text-xs text-gray-500 dark:text-gray-400 mb-3">{lead.telefone}</div>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mt-4">
         <a 
-          href={`https://wa.me/${lead.telefone.replace(/\D/g, '')}`} 
+          href={`https://wa.me/${lead.telefone.replace(/\\D/g, '')}`} 
           target="_blank" 
           rel="noopener noreferrer"
-          onClick={e => e.stopPropagation()} // Impede que o drag seja acionado ao clicar no botão
-          className="text-green-500 hover:text-green-600"
+          onClick={e => e.stopPropagation()}
+          className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-green-600 dark:text-green-400 border border-green-300 dark:border-green-500/50 rounded-md hover:bg-green-50 dark:hover:bg-green-500/10 transition-colors"
         >
-          <WhatsAppIcon className="h-5 w-5" />
+          <WhatsAppIcon className="h-3.5 w-3.5" />
+          WhatsApp
         </a>
         <Link href={`/crm/${lead.id}`} onClick={e => e.stopPropagation()}>
-            <span className="text-xs font-semibold text-primary-600 hover:underline dark:text-primary-400">
+            <span className="px-2.5 py-1 text-xs font-semibold text-white bg-primary-600 rounded-md hover:bg-primary-700 transition-colors">
                 + Informações
             </span>
         </Link>
