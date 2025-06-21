@@ -4,12 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, onSnapshot, updateDoc, collection, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, updateDoc, collection, query, orderBy, addDoc, serverTimestamp, where } from 'firebase/firestore';
 import Link from 'next/link';
 import { PIPELINE_STAGES } from '@/lib/constants';
 import { Lead } from '@/types';
 import LogInteractionModal from '../_components/LogInteractionModal';
 import CrmHeader from '../_components/CrmHeader';
+import AgendaModal, { TaskPayload } from '../_components/AgendaModal';
 
 // --- Ícones ---
 const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>;
@@ -43,6 +44,14 @@ interface Interaction {
     timestamp: any;
 }
 
+interface Task {
+    id: string;
+    description: string;
+    type: 'Ligação' | 'WhatsApp' | 'Visita';
+    dueDate: any; // Firestore timestamp
+    status: 'pendente' | 'concluída';
+}
+
 export default function LeadDetailPage() {
     const { currentUser } = useAuth();
     const params = useParams();
@@ -56,6 +65,9 @@ export default function LeadDetailPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [isEditingAnnotations, setIsEditingAnnotations] = useState(false);
     const [tempAnnotations, setTempAnnotations] = useState('');
+    const [isSavingTask, setIsSavingTask] = useState(false);
+    const [isAgendaModalOpen, setIsAgendaModalOpen] = useState(false);
+    const [tasks, setTasks] = useState<Task[]>([]);
 
     // --- Lógica para buscar os dados do lead ---
     useEffect(() => {
@@ -84,6 +96,19 @@ export default function LeadDetailPage() {
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const fetchedInteractions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Interaction));
             setInteractions(fetchedInteractions);
+        });
+
+        return () => unsubscribe();
+    }, [currentUser, leadId]);
+
+    useEffect(() => {
+        if (!currentUser || !leadId) return;
+        const tasksCol = collection(db, `leads/${currentUser.uid}/leads`, leadId, 'tarefas');
+        const q = query(tasksCol, where('status', '==', 'pendente'));
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+            setTasks(fetchedTasks);
         });
 
         return () => unsubscribe();
@@ -134,6 +159,71 @@ export default function LeadDetailPage() {
         }
     };
 
+    const handleSaveTask = async (task: TaskPayload) => {
+        if (!currentUser || !leadId) return;
+        setIsSavingTask(true);
+
+        const { description, type, date, time } = task;
+        const dueDate = new Date(`${date}T${time}`);
+
+        // 1. Salvar na coleção de tarefas
+        const tasksCol = collection(db, `leads/${currentUser.uid}/leads`, leadId, 'tarefas');
+        await addDoc(tasksCol, {
+            description,
+            type,
+            dueDate: dueDate,
+            status: 'pendente',
+            createdAt: serverTimestamp()
+        });
+
+        // 2. Registrar no histórico de ações
+        const interactionsCol = collection(db, `leads/${currentUser.uid}/leads`, leadId, 'interactions');
+        const formattedDate = dueDate.toLocaleDateString('pt-BR');
+        const formattedTime = dueDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        await addDoc(interactionsCol, {
+            type: 'Tarefa Agendada',
+            notes: `${type}: ${description} para ${formattedDate} às ${formattedTime}`,
+            timestamp: serverTimestamp()
+        });
+
+        setIsSavingTask(false);
+        setIsAgendaModalOpen(false);
+    };
+
+    const getTaskStatusInfo = () => {
+        if (tasks.length === 0) {
+            return { text: 'Sem tarefa', color: 'bg-gray-400' };
+        }
+
+        const now = new Date();
+        // Reset a hora para comparar apenas a data
+        now.setHours(0, 0, 0, 0);
+
+        const hasOverdue = tasks.some(task => {
+            const dueDate = task.dueDate.toDate();
+            dueDate.setHours(0,0,0,0);
+            return dueDate < now;
+        });
+
+        if (hasOverdue) {
+            return { text: 'Tarefa em Atraso', color: 'bg-red-500' };
+        }
+
+        const hasTodayTask = tasks.some(task => {
+            const dueDate = task.dueDate.toDate();
+            dueDate.setHours(0,0,0,0);
+            return dueDate.getTime() === now.getTime();
+        });
+
+        if (hasTodayTask) {
+            return { text: 'Tarefa do Dia', color: 'bg-yellow-400' };
+        }
+
+        return { text: 'Tarefa Futura', color: 'bg-sky-500' };
+    };
+
+    const taskStatus = getTaskStatusInfo();
+
     return (
         <div className="bg-slate-100 dark:bg-gray-900 min-h-screen p-4 sm:p-6 lg:p-8">
             <CrmHeader />
@@ -157,8 +247,8 @@ export default function LeadDetailPage() {
                                 </div>
                             </div>
                             <div className="mt-4 flex items-center gap-2">
-                                <span className={`h-2.5 w-2.5 rounded-full ${getTaskStatusColor('Sem tarefa')}`}></span>
-                                <span className="text-sm text-gray-600 dark:text-gray-300">Sem tarefa</span>
+                                <span className={`h-2.5 w-2.5 rounded-full ${taskStatus.color}`}></span>
+                                <span className="text-sm text-gray-600 dark:text-gray-300">{taskStatus.text}</span>
                             </div>
                         </div>
 
@@ -211,7 +301,7 @@ export default function LeadDetailPage() {
                                     <button onClick={() => openInteractionModal('Ligação')} className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-primary-700 bg-primary-100/80 rounded-lg hover:bg-primary-200/70 transition-colors"><PhoneIcon className="h-4 w-4"/>Ligação</button>
                                     <button onClick={() => openInteractionModal('WhatsApp')} className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-green-700 bg-green-100/80 rounded-lg hover:bg-green-200/70 transition-colors"><WhatsAppIcon className="h-4 w-4 fill-current"/>WhatsApp</button>
                                     <button onClick={() => openInteractionModal('Visita')} className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-indigo-700 bg-indigo-100/80 rounded-lg hover:bg-indigo-200/70 transition-colors"><BuildingIcon className="h-4 w-4"/>Visita</button>
-                                    <button onClick={() => alert('Funcionalidade de Tarefa em breve!')} className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-sky-700 bg-sky-100/80 rounded-lg hover:bg-sky-200/70 transition-colors"><TaskIcon className="h-4 w-4"/>Tarefa</button>
+                                    <button onClick={() => setIsAgendaModalOpen(true)} className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-sky-700 bg-sky-100/80 rounded-lg hover:bg-sky-200/70 transition-colors"><TaskIcon className="h-4 w-4"/>Tarefa</button>
                                 </div>
                             </div>
                             {/* Card de Automação de Mensagens */}
@@ -270,6 +360,13 @@ export default function LeadDetailPage() {
                 onSave={handleLogInteraction}
                 interactionType={interactionType}
                 isLoading={isSaving}
+            />
+
+            <AgendaModal 
+                isOpen={isAgendaModalOpen}
+                onClose={() => setIsAgendaModalOpen(false)}
+                onSave={handleSaveTask}
+                isLoading={isSavingTask}
             />
         </div>
     );
