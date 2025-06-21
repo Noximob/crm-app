@@ -41,8 +41,8 @@ const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props}><
 
 
 // --- Componentes ---
-const FilterChip = ({ children, selected }: { children: React.ReactNode, selected?: boolean }) => (
-    <button className={`px-2.5 py-1 text-xs font-semibold border rounded-lg transition-colors whitespace-nowrap ${
+const FilterChip = ({ children, selected, onClick }: { children: React.ReactNode, selected?: boolean, onClick: () => void }) => (
+    <button onClick={onClick} className={`px-2.5 py-1 text-xs font-semibold border rounded-lg transition-colors whitespace-nowrap ${
         selected 
         ? 'bg-primary-600 border-primary-600 text-white shadow' 
         : 'border-transparent text-primary-800 bg-primary-100/80 hover:bg-primary-200/70 dark:bg-primary-500/10 dark:text-primary-200 dark:hover:bg-primary-500/20'
@@ -97,6 +97,7 @@ export default function CrmPage() {
     const { currentUser } = useAuth();
     const [leads, setLeads] = useState<Lead[]>([]);
     const [loading, setLoading] = useState(true);
+    const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
     useEffect(() => {
         if (currentUser) {
@@ -132,6 +133,10 @@ export default function CrmPage() {
         }
     }, [currentUser]);
 
+    const filteredLeads = activeFilter
+        ? leads.filter(lead => lead.etapa === activeFilter)
+        : leads;
+
     return (
         <div className="bg-slate-100 dark:bg-gray-900 min-h-screen p-4 sm:p-6 lg:p-8">
             <CrmHeader />
@@ -142,13 +147,21 @@ export default function CrmPage() {
                             <SearchIcon className="h-4 w-4" />
                             Filtrar
                         </button>
-                        <button className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors shadow-sm">
+                        <button onClick={() => setActiveFilter(null)} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors shadow-sm">
                             <XIcon className="h-4 w-4" />
                             Remover Filtros
                         </button>
                     </div>
                     <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-2">
-                        {PIPELINE_STAGES.map(stage => <FilterChip key={stage}>{stage}</FilterChip>)}
+                        {PIPELINE_STAGES.map(stage => (
+                            <FilterChip 
+                                key={stage} 
+                                selected={activeFilter === stage}
+                                onClick={() => setActiveFilter(stage)}
+                            >
+                                {stage}
+                            </FilterChip>
+                        ))}
                     </div>
                 </div>
                 
@@ -168,12 +181,12 @@ export default function CrmPage() {
                                 <tr>
                                     <td colSpan={5} className="text-center p-6">Carregando leads...</td>
                                 </tr>
-                            ) : leads.length === 0 ? (
+                            ) : filteredLeads.length === 0 ? (
                                 <tr>
                                     <td colSpan={5} className="text-center p-6">Nenhum lead encontrado.</td>
                                 </tr>
                             ) : (
-                                leads.map((lead) => (
+                                filteredLeads.map((lead) => (
                                     <tr key={lead.id} className="bg-white even:bg-primary-50/50 dark:bg-gray-800 dark:even:bg-primary-500/5">
                                         <td className="px-6 py-4">
                                             <div className="text-sm font-medium text-gray-900 dark:text-white">{lead.nome}</div>
