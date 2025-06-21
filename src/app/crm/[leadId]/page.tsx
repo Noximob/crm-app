@@ -384,7 +384,7 @@ export default function LeadDetailPage() {
                         {/* Card de Qualificação do Lead */}
                         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
                             <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Qualificação do Lead</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
                                 {QUALIFICATION_QUESTIONS.map((group) => (
                                     <div key={group.key}>
                                         <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">{group.title}</h4>
@@ -393,10 +393,10 @@ export default function LeadDetailPage() {
                                                 <button
                                                     key={option}
                                                     onClick={() => handleQualificationChange(group.key, option)}
-                                                    className={`px-3 py-1.5 text-xs font-semibold border rounded-lg transition-all duration-150 ${
+                                                    className={`px-2.5 py-1 text-xs font-medium border rounded-md transition-all duration-150 ${
                                                         qualifications[group.key] === option
-                                                        ? 'bg-primary-600 border-primary-600 text-white shadow-md'
-                                                        : 'bg-gray-100 hover:bg-gray-200 border-gray-200 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600'
+                                                        ? 'bg-primary-600 border-primary-700 text-white shadow'
+                                                        : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-600 dark:bg-gray-900/50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'
                                                     }`}
                                                 >
                                                     {option}
