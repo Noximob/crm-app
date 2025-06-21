@@ -8,6 +8,7 @@
  */
 
 import {onDocumentUpdated} from "firebase-functions/v2/firestore";
+import {onRequest} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import * as admin from "firebase-admin";
 import axios from "axios";
@@ -94,14 +95,22 @@ export const onLeadAutomationStarted = onDocumentUpdated("leads/{leadId}", async
         
         // Remove caracteres não numéricos do telefone
         const telefoneLimpo = afterData.telefone.replace(/\D/g, "");
+        // Garante que o código do país (55) está presente
+        const telefoneComCodigo = telefoneLimpo.startsWith("55") ? telefoneLimpo : `55${telefoneLimpo}`;
 
-        const url = `https://api.z-api.io/instances/${zapiInstanceId}/token/${zapiInstanceToken}/send-text`;
+        // A URL agora não contém mais o token
+        const url = `https://api.z-api.io/instances/${zapiInstanceId}/send-text`;
         
-        logger.info(`Enviando para: ${url} com o telefone: ${telefoneLimpo}`);
+        logger.info(`Enviando para: ${url} com o telefone: ${telefoneComCodigo}`);
 
+        // O token agora é enviado no cabeçalho (header) da requisição
         await axios.post(url, {
-            phone: telefoneLimpo,
+            phone: telefoneComCodigo,
             message: textoFinal,
+        }, {
+            headers: {
+                'Client-Token': zapiInstanceToken
+            }
         });
 
         logger.info(`Mensagem do dia 0 enviada com sucesso para o lead ${event.params.leadId}.`);
@@ -109,4 +118,17 @@ export const onLeadAutomationStarted = onDocumentUpdated("leads/{leadId}", async
         logger.error(`Erro ao processar automação para o lead ${event.params.leadId}:`, error);
         // Opcional: Adicionar lógica para lidar com o erro, como reverter o status do lead.
     }
+});
+
+// Nova função para receber os webhooks da Z-API
+export const zapiWebhookHandler = onRequest((request, response) => {
+    // Log do corpo da requisição para vermos o que a Z-API nos enviou
+    logger.info("Webhook da Z-API recebido!", {
+        body: request.body,
+        query: request.query,
+        headers: request.headers,
+    });
+
+    // Responde com status 200 (OK) para a Z-API saber que recebemos
+    response.status(200).send("Webhook recebido com sucesso.");
 });

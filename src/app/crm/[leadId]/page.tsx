@@ -325,44 +325,35 @@ export default function LeadDetailPage() {
     const handleStartAutomation = async (treatmentName: string) => {
         if (!currentUser || !leadId) return;
         setIsUpdatingAutomation(true);
-        const leadRef = doc(db, `leads`, leadId);
+        const leadRef = doc(db, 'leads', leadId);
         try {
             await updateDoc(leadRef, {
-                automacao: {
-                    status: 'ativa',
-                    nomeTratamento: treatmentName,
-                    dataInicio: serverTimestamp(),
-                    dataCancelamento: null,
-                }
+                'automacao.status': 'ativa',
+                'automacao.nomeTratamento': treatmentName,
+                'automacao.dataInicio': serverTimestamp(),
             });
-            setIsAutomationModalOpen(false);
+            // O onSnapshot vai cuidar de atualizar o lead no estado local.
         } catch (error) {
             console.error("Erro ao iniciar automação:", error);
+            // Adicionar feedback para o usuário aqui se desejar
         } finally {
             setIsUpdatingAutomation(false);
+            setIsAutomationModalOpen(false);
         }
     };
 
     const handleCancelAutomation = async () => {
-        if (!currentUser || !leadId || !lead?.automacao) return;
-        
-        // Adiciona uma confirmação antes de cancelar
-        if (!window.confirm("Tem certeza que deseja cancelar a automação de mensagens para este lead? Esta ação não pode ser desfeita.")) {
-            return;
-        }
-
+        if (!currentUser || !leadId) return;
         setIsUpdatingAutomation(true);
-        const leadRef = doc(db, `leads`, leadId);
+        const leadRef = doc(db, 'leads', leadId);
         try {
             await updateDoc(leadRef, {
                 'automacao.status': 'cancelada',
-                'automacao.dataCancelamento': serverTimestamp()
+                'automacao.dataCancelamento': serverTimestamp(),
             });
-            // Alerta de sucesso para o usuário
-            alert("Automação de mensagens cancelada com sucesso!");
+             // O onSnapshot vai cuidar de atualizar o lead no estado local.
         } catch (error) {
             console.error("Erro ao cancelar automação:", error);
-            alert("Ocorreu um erro ao cancelar a automação. Tente novamente.");
         } finally {
             setIsUpdatingAutomation(false);
         }
@@ -613,7 +604,7 @@ export default function LeadDetailPage() {
                 isOpen={isAutomationModalOpen}
                 onClose={() => setIsAutomationModalOpen(false)}
                 onConfirm={handleStartAutomation}
-                leadName={lead.nome || ''}
+                leadName={lead?.nome || ''}
                 isLoading={isUpdatingAutomation}
             />
         </div>
