@@ -197,17 +197,17 @@ export default function LeadDetailPage() {
         setIsAgendaModalOpen(false);
     };
 
-    const handleUpdateTaskStatus = async (taskId: string, status: 'concluída' | 'cancelada') => {
+    const handleUpdateTaskStatus = async (interactionId: string, taskId: string, status: 'concluída' | 'cancelada') => {
         if (!currentUser || !leadId) return;
 
+        // Atualiza o status na coleção de tarefas
         const taskRef = doc(db, `leads/${currentUser.uid}/leads`, leadId, 'tarefas', taskId);
         await updateDoc(taskRef, { status });
 
-        const interactionsCol = collection(db, `leads/${currentUser.uid}/leads`, leadId, 'interactions');
-        await addDoc(interactionsCol, {
+        // Atualiza o tipo na interação original do histórico
+        const interactionRef = doc(db, `leads/${currentUser.uid}/leads`, leadId, 'interactions', interactionId);
+        await updateDoc(interactionRef, {
             type: status === 'concluída' ? 'Tarefa Concluída' : 'Tarefa Cancelada',
-            notes: `A tarefa foi marcada como ${status}.`,
-            timestamp: serverTimestamp()
         });
     };
 
@@ -364,13 +364,13 @@ export default function LeadDetailPage() {
                                                         {isPendingTask && (
                                                             <div className="mt-2 flex items-center gap-3">
                                                                 <button
-                                                                    onClick={() => handleUpdateTaskStatus(interaction.taskId!, 'concluída')}
+                                                                    onClick={() => handleUpdateTaskStatus(interaction.id, interaction.taskId!, 'concluída')}
                                                                     className="px-2.5 py-1 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors"
                                                                 >
                                                                     Tarefa Concluída
                                                                 </button>
                                                                 <button
-                                                                    onClick={() => handleUpdateTaskStatus(interaction.taskId!, 'cancelada')}
+                                                                    onClick={() => handleUpdateTaskStatus(interaction.id, interaction.taskId!, 'cancelada')}
                                                                     className="px-2.5 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
                                                                 >
                                                                     Tarefa Cancelada
