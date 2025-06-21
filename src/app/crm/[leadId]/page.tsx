@@ -55,7 +55,7 @@ interface Task {
     description: string;
     type: 'Ligação' | 'WhatsApp' | 'Visita';
     dueDate: any; // Firestore timestamp
-    status: 'pendente' | 'concluída';
+    status: 'pendente' | 'concluída' | 'cancelada';
 }
 
 export default function LeadDetailPage() {
@@ -348,7 +348,9 @@ export default function LeadDetailPage() {
                                 {interactions.length > 0 ? (
                                     <ul className="space-y-4">
                                         {interactions.map(interaction => {
-                                            const isPendingTask = interaction.type === 'Tarefa Agendada' && interaction.taskId && tasks.some(task => task.id === interaction.taskId);
+                                            const isPendingTask = interaction.type === 'Tarefa Agendada' &&
+                                                interaction.taskId &&
+                                                tasks.some(task => task.id === interaction.taskId && task.status === 'pendente');
 
                                             return (
                                                 <li key={interaction.id} className="flex items-start gap-3">
