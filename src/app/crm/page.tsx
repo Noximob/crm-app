@@ -102,7 +102,6 @@ export default function CrmPage() {
     const [activeFilter, setActiveFilter] = useState<string | null>(null);
     const [isFilterModalOpen, setFilterModalOpen] = useState(false);
     const [advancedFilters, setAdvancedFilters] = useState<Filters>({});
-    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         if (currentUser) {
@@ -150,15 +149,6 @@ export default function CrmPage() {
 
     const filteredLeads = useMemo(() => {
         let leadsToFilter = [...leads];
-
-        // Filtro de busca textual
-        if (searchTerm) {
-            const lowerCaseSearch = searchTerm.toLowerCase();
-            leadsToFilter = leadsToFilter.filter(lead =>
-                lead.nome.toLowerCase().includes(lowerCaseSearch) ||
-                lead.telefone.toLowerCase().includes(lowerCaseSearch)
-            );
-        }
         
         // Filtro rápido por situação
         if (activeFilter) {
@@ -171,13 +161,13 @@ export default function CrmPage() {
             leadsToFilter = leadsToFilter.filter(lead => {
                 return Object.entries(advancedFilters).every(([key, selectedOptions]: [string, string[]]) => {
                     if (selectedOptions.length === 0) {
-                        return true; // Se não há opções selecionadas para esta chave, não filtra
+                        return true; 
                     }
 
                     const leadValue = key === 'etapa' ? lead.etapa : lead.qualification?.[key];
                     
-                    if (!leadValue) {
-                        return false; // Se o lead não tem o campo de qualificação, não passa
+                    if (leadValue === undefined) {
+                        return false; 
                     }
 
                     return selectedOptions.includes(leadValue);
@@ -186,7 +176,7 @@ export default function CrmPage() {
         }
 
         return leadsToFilter;
-    }, [leads, activeFilter, searchTerm, advancedFilters]);
+    }, [leads, activeFilter, advancedFilters]);
     
     const activeAdvancedFilterCount = Object.values(advancedFilters).reduce((count, options: string[]) => count + options.length, 0);
 
@@ -197,16 +187,6 @@ export default function CrmPage() {
             <main className="flex flex-col gap-3 mt-4">
                 <div className="bg-white dark:bg-gray-800/80 dark:backdrop-blur-sm p-4 rounded-xl shadow-md">
                     <div className="flex items-center gap-2">
-                        <div className="relative w-full sm:w-72">
-                             <input
-                                type="text"
-                                placeholder="Buscar por nome, e-mail, tel..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            />
-                            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        </div>
                         <button
                             onClick={() => setFilterModalOpen(true)}
                             className="relative flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors shadow-sm"
