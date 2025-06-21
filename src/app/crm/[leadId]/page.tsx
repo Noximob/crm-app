@@ -350,7 +350,7 @@ export default function LeadDetailPage() {
                                         {interactions.map(interaction => {
                                             const isPendingTask = interaction.type === 'Tarefa Agendada' &&
                                                 interaction.taskId &&
-                                                tasks.some(task => task.id === interaction.taskId && task.status === 'pendente');
+                                                tasks.some(task => task.id === interaction.taskId);
 
                                             return (
                                                 <li key={interaction.id} className="flex items-start gap-3">
