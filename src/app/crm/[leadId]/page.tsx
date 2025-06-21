@@ -388,7 +388,7 @@ export default function LeadDetailPage() {
                                 {QUALIFICATION_QUESTIONS.map((group) => (
                                     <div key={group.key}>
                                         <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">{group.title}</h4>
-                                        <div className="flex flex-wrap gap-2">
+                                        <div className="flex flex-wrap gap-1.5">
                                             {group.options.map((option) => (
                                                 <button
                                                     key={option}
@@ -562,7 +562,7 @@ const QUALIFICATION_QUESTIONS = [
     {
         title: 'Valor do Imóvel',
         key: 'valor',
-        options: ['Até 500 mil', '500-800 mil', '800mil-1.2M', '1.2M-2M', '2M+'],
+        options: ['< 500k', '500k-800k', '800k-1.2M', '1.2M-2M', '> 2M'],
     },
 ];
 
