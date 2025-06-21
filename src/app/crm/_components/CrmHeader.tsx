@@ -12,7 +12,11 @@ const CalendarIcon = (props: React.SVGProps<SVGSVGElement>) => (
         <path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/>
     </svg>
 );
-const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props}><path d="M5 12h14"/><path d="M12 5v14"/></svg>;
+const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg {...props} fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor">
+        <path d="M12 5v14M5 12h14" />
+    </svg>
+);
 
 const CrmHeader = () => {
     const pathname = usePathname();
