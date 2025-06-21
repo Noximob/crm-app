@@ -164,7 +164,7 @@ export default function LeadDetailPage() {
                     </div>
 
                     {/* Histórico de Ações */}
-                    <div className="lg:col-span-2 lg:row-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col">
+                    <div className="lg:col-span-2 lg:row-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col overflow-hidden">
                         <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex-shrink-0">Histórico de Ações</h3>
                         <div className="flex-grow overflow-y-auto min-h-0 pr-2">
                             {interactions.length > 0 ? (
