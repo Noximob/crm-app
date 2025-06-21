@@ -6,6 +6,7 @@ import CrmHeader from './_components/CrmHeader';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, query, where, DocumentData } from 'firebase/firestore';
+import Link from 'next/link';
 
 const SearchIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -144,9 +145,11 @@ export default function CrmPage() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button className="px-5 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors shadow-sm">
-                                                Abrir
-                                            </button>
+                                            <Link href={`/crm/${lead.id}`}>
+                                                <span className="px-5 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors shadow-sm">
+                                                    Abrir
+                                                </span>
+                                            </Link>
                                         </td>
                                     </tr>
                                 ))
