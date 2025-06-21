@@ -1,26 +1,45 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { Lead } from '@/types';
 
-const StatusIndicator = ({ status }: { status: string }) => {
-    const statusColor = {
-        'Sem tarefa': 'bg-gray-500 dark:bg-gray-600',
-        'Tarefa em Atraso': 'bg-red-500',
-        'Tarefa do Dia': 'bg-yellow-400',
-        'Tarefa Futura': 'bg-sky-500',
-    }[status] || 'bg-gray-500 dark:bg-gray-600';
-
-    return <span className={`h-2.5 w-2.5 ${statusColor} rounded-full`}></span>;
-};
-
-interface TaskListModalProps {
-    isOpen: boolean;
-    onClose: () => void;
+// --- Tipos e Constantes ---
+interface Task {
+    id: string;
+    description: string;
+    type: 'Ligação' | 'WhatsApp' | 'Visita';
+    dueDate: Timestamp;
+    status: 'pendente' | 'concluída';
 }
+
+type TaskStatus = 'Tarefa em Atraso' | 'Tarefa do Dia' | 'Tarefa Futura';
+
+interface LeadWithTaskStatus extends Lead {
+    taskStatus: TaskStatus;
+}
+
+const TAREFA_STATUS_ORDER: TaskStatus[] = ['Tarefa em Atraso', 'Tarefa do Dia', 'Tarefa Futura'];
+
+// --- Componentes de UI ---
+const StatusIndicator = ({ status }: { status: TaskStatus }) => {
+    const statusInfo = {
+        'Tarefa em Atraso': { color: 'bg-red-500', text: 'Atrasada' },
+        'Tarefa do Dia': { color: 'bg-yellow-400', text: 'Para Hoje' },
+        'Tarefa Futura': { color: 'bg-sky-500', text: 'Futura' },
+    };
+    const { color, text } = statusInfo[status];
+
+    return (
+        <div className="flex items-center gap-2 text-sm">
+            <span className={`h-2.5 w-2.5 ${color} rounded-full`}></span>
+            <span className="text-gray-600 dark:text-gray-300">{text}</span>
+        </div>
+    );
+};
 
 const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -28,43 +47,74 @@ const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
-const TAREFA_STATUS_ORDER = ['Tarefa em Atraso', 'Tarefa do Dia', 'Tarefa Futura', 'Sem tarefa'];
+// --- Funções de Ajuda ---
+const getTaskStatusInfo = (tasks: Task[]): TaskStatus | null => {
+    if (tasks.length === 0) return null;
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    const hasOverdue = tasks.some(task => {
+        const dueDate = task.dueDate.toDate();
+        dueDate.setHours(0, 0, 0, 0);
+        return dueDate < now;
+    });
+    if (hasOverdue) return 'Tarefa em Atraso';
+
+    const hasTodayTask = tasks.some(task => {
+        const dueDate = task.dueDate.toDate();
+        dueDate.setHours(0, 0, 0, 0);
+        return dueDate.getTime() === now.getTime();
+    });
+    if (hasTodayTask) return 'Tarefa do Dia';
+
+    return 'Tarefa Futura';
+};
+
+// --- Componente Principal ---
+interface TaskListModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+}
 
 export default function TaskListModal({ isOpen, onClose }: TaskListModalProps) {
     const { currentUser } = useAuth();
-    const [tasks, setTasks] = useState<Lead[]>([]);
+    const [leadsWithTasks, setLeadsWithTasks] = useState<LeadWithTaskStatus[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!isOpen || !currentUser) {
-            setTasks([]);
-            return;
+        const fetchTasks = async () => {
+            if (!currentUser) return;
+            setLoading(true);
+
+            const leadsRef = collection(db, `leads/${currentUser.uid}/leads`);
+            const leadsSnapshot = await getDocs(leadsRef);
+            const allLeads: Lead[] = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
+
+            const leadsWithStatusPromises = allLeads.map(async (lead) => {
+                const tasksCol = collection(db, `leads/${currentUser.uid}/leads`, lead.id, 'tarefas');
+                const q = query(tasksCol, where('status', '==', 'pendente'));
+                const tasksSnapshot = await getDocs(q);
+                const tasks = tasksSnapshot.docs.map(doc => doc.data() as Task);
+
+                const taskStatus = getTaskStatusInfo(tasks);
+                return taskStatus ? { ...lead, taskStatus } : null;
+            });
+
+            const settledLeads = await Promise.all(leadsWithStatusPromises);
+            const filteredAndTypedLeads = settledLeads.filter(Boolean) as LeadWithTaskStatus[];
+
+            filteredAndTypedLeads.sort((a, b) => {
+                return TAREFA_STATUS_ORDER.indexOf(a.taskStatus) - TAREFA_STATUS_ORDER.indexOf(b.taskStatus);
+            });
+
+            setLeadsWithTasks(filteredAndTypedLeads);
+            setLoading(false);
         };
 
-        setLoading(true);
-        const leadsRef = collection(db, `leads/${currentUser.uid}/leads`);
-        const q = query(leadsRef, where('status', 'in', ['Tarefa em Atraso', 'Tarefa do Dia', 'Tarefa Futura']));
-
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
-            const leadsData: Lead[] = [];
-            querySnapshot.forEach((doc) => {
-                leadsData.push({ id: doc.id, ...doc.data() } as Lead);
-            });
-            
-            const sortedLeads = leadsData.sort((a, b) => {
-                const statusA = a.status || '';
-                const statusB = b.status || '';
-                return TAREFA_STATUS_ORDER.indexOf(statusA) - TAREFA_STATUS_ORDER.indexOf(statusB);
-            });
-
-            setTasks(sortedLeads);
-            setLoading(false);
-        }, (error) => {
-            console.error("Erro ao buscar tarefas: ", error);
-            setLoading(false);
-        });
-
-        return () => unsubscribe();
+        if (isOpen) {
+            fetchTasks();
+        }
     }, [isOpen, currentUser]);
 
     if (!isOpen) return null;
@@ -79,22 +129,36 @@ export default function TaskListModal({ isOpen, onClose }: TaskListModalProps) {
                 
                 <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
                     {loading ? (
-                        <p>Carregando tarefas...</p>
-                    ) : tasks.length === 0 ? (
-                        <p className="text-gray-600 dark:text-gray-300">Nenhuma tarefa encontrada.</p>
+                        <p className="text-gray-600 dark:text-gray-300 text-center py-4">Carregando tarefas...</p>
+                    ) : leadsWithTasks.length === 0 ? (
+                        <p className="text-gray-600 dark:text-gray-300 text-center py-4">Nenhuma tarefa pendente encontrada.</p>
                     ) : (
-                        tasks.map(task => (
-                            <div key={task.id} className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg flex justify-between items-center">
-                                <div>
-                                    <p className="font-semibold text-gray-800 dark:text-white">{task.nome}</p>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">{task.telefone}</p>
-                                </div>
-                                <div className="flex items-center gap-2 text-sm">
-                                    <StatusIndicator status={task.status || 'Sem tarefa'} />
-                                    <span>{task.status}</span>
-                                </div>
-                            </div>
-                        ))
+                        <table className="w-full text-left">
+                            <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase">
+                                <tr>
+                                    <th className="py-2 px-3">Lead</th>
+                                    <th className="py-2 px-3">Status</th>
+                                    <th className="py-2 px-3">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {leadsWithTasks.map(lead => (
+                                    <tr key={lead.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                        <td className="py-3 px-3 font-semibold text-gray-800 dark:text-white">{lead.nome}</td>
+                                        <td className="py-3 px-3">
+                                            <StatusIndicator status={lead.taskStatus} />
+                                        </td>
+                                        <td className="py-3 px-3">
+                                            <Link href={`/crm/${lead.id}`} onClick={onClose}>
+                                                <span className="px-3 py-1 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors cursor-pointer">
+                                                    Abrir
+                                                </span>
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     )}
                 </div>
 
