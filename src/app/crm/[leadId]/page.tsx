@@ -161,7 +161,7 @@ export default function LeadDetailPage() {
                         </div>
 
                         {/* Card de Anotações */}
-                        <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col min-h-[220px]">
+                        <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col h-56">
                             <div className="flex justify-between items-center mb-4 flex-shrink-0">
                                 <h3 className="text-lg font-bold text-gray-800 dark:text-white">Anotações</h3>
                                 {!isEditingAnnotations && (
@@ -197,7 +197,7 @@ export default function LeadDetailPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Coluna da Esquerda (Situação e Ações) */}
                         <div className="lg:col-span-1 flex flex-col gap-6">
-                             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
                                 <label htmlFor="lead-situation" className="block text-base font-semibold text-gray-800 dark:text-white mb-2">Situação do Lead</label>
                                 <select id="lead-situation" value={lead.etapa} onChange={handleStageChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                     {PIPELINE_STAGES.map(stage => (<option key={stage} value={stage}>{stage}</option>))}
@@ -215,33 +215,31 @@ export default function LeadDetailPage() {
                         </div>
 
                         {/* Coluna da Direita (Histórico) */}
-                        <div className="lg:col-span-2">
-                            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col h-full">
-                                <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex-shrink-0">Histórico de Ações</h3>
-                                <div className="flex-grow overflow-y-auto min-h-0 pr-2">
-                                    {interactions.length > 0 ? (
-                                        <ul className="space-y-4">
-                                            {interactions.map(interaction => (
-                                                <li key={interaction.id} className="flex items-start gap-3">
-                                                    <div className="bg-slate-100 dark:bg-gray-700 p-2 rounded-full">
-                                                    {getIconForInteraction(interaction.type)}
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-semibold text-gray-700 dark:text-gray-200">{interaction.type}</p>
-                                                        <p className="text-sm text-gray-600 dark:text-gray-400">{interaction.notes}</p>
-                                                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                                            {interaction.timestamp ? new Date(interaction.timestamp.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}
-                                                        </p>
-                                                    </div>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    ) : (
-                                        <div className="h-full flex items-center justify-center">
-                                            <p className="text-center text-gray-500 dark:text-gray-400">Nenhuma interação registrada ainda.</p>
-                                        </div>
-                                    )}
-                                </div>
+                        <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col">
+                            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex-shrink-0">Histórico de Ações</h3>
+                            <div className="flex-grow overflow-y-auto min-h-0 pr-2">
+                                {interactions.length > 0 ? (
+                                    <ul className="space-y-4">
+                                        {interactions.map(interaction => (
+                                            <li key={interaction.id} className="flex items-start gap-3">
+                                                <div className="bg-slate-100 dark:bg-gray-700 p-2 rounded-full">
+                                                {getIconForInteraction(interaction.type)}
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-gray-700 dark:text-gray-200">{interaction.type}</p>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400">{interaction.notes}</p>
+                                                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                                        {interaction.timestamp ? new Date(interaction.timestamp.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}
+                                                    </p>
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <div className="h-full flex items-center justify-center">
+                                        <p className="text-center text-gray-500 dark:text-gray-400">Nenhuma interação registrada ainda.</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
