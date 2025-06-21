@@ -384,7 +384,7 @@ export default function LeadDetailPage() {
                         {/* Card de Qualificação do Lead */}
                         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
                             <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Qualificação do Lead</h3>
-                            <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                                 {QUALIFICATION_QUESTIONS.map((group) => (
                                     <div key={group.key}>
                                         <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">{group.title}</h4>
