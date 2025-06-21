@@ -164,28 +164,32 @@ export default function LeadDetailPage() {
                     </div>
 
                     {/* Histórico de Ações */}
-                    <div className="lg:col-span-2 lg:row-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                        <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Histórico de Ações</h3>
-                        {interactions.length > 0 ? (
-                            <ul className="space-y-4">
-                                {interactions.map(interaction => (
-                                    <li key={interaction.id} className="flex items-start gap-3">
-                                        <div className="bg-slate-100 dark:bg-gray-700 p-2 rounded-full">
-                                          {getIconForInteraction(interaction.type)}
-                                        </div>
-                                        <div>
-                                            <p className="font-semibold text-gray-700 dark:text-gray-200">{interaction.type}</p>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">{interaction.notes}</p>
-                                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                                {interaction.timestamp ? new Date(interaction.timestamp.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}
-                                            </p>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <p className="text-center text-gray-500 dark:text-gray-400 py-8">Nenhuma interação registrada ainda.</p>
-                        )}
+                    <div className="lg:col-span-2 lg:row-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col">
+                        <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex-shrink-0">Histórico de Ações</h3>
+                        <div className="flex-grow overflow-y-auto min-h-0 pr-2">
+                            {interactions.length > 0 ? (
+                                <ul className="space-y-4">
+                                    {interactions.map(interaction => (
+                                        <li key={interaction.id} className="flex items-start gap-3">
+                                            <div className="bg-slate-100 dark:bg-gray-700 p-2 rounded-full">
+                                                {getIconForInteraction(interaction.type)}
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-gray-700 dark:text-gray-200">{interaction.type}</p>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">{interaction.notes}</p>
+                                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                                    {interaction.timestamp ? new Date(interaction.timestamp.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}
+                                                </p>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <div className="h-full flex items-center justify-center">
+                                    <p className="text-center text-gray-500 dark:text-gray-400">Nenhuma interação registrada ainda.</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                     
                     {/* Caixa de Ações */}
