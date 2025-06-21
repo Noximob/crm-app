@@ -126,10 +126,15 @@ export default function CrmPage() {
                                             <div className="text-xs text-gray-500 dark:text-gray-400">{lead.telefone}</div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <button className="flex items-center gap-2 px-3 py-1 text-xs font-bold text-green-700 bg-green-100 rounded-full hover:bg-green-200 transition-colors dark:bg-green-500/20 dark:text-green-400 dark:hover:bg-green-500/30">
+                                            <a 
+                                                href={`https://wa.me/${lead.telefone.replace(/\\D/g, '')}`} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="flex items-center justify-center gap-2 w-fit px-3 py-1 text-xs font-bold text-green-700 bg-green-100 rounded-full hover:bg-green-200 transition-colors dark:bg-green-500/20 dark:text-green-400 dark:hover:bg-green-500/30"
+                                            >
                                                 <WhatsAppIcon className="h-3.5 w-3.5"/>
                                                 WhatsApp
-                                            </button>
+                                            </a>
                                         </td>
                                         <td className="px-6 py-4">{lead.etapa}</td>
                                         <td className="px-6 py-4">
