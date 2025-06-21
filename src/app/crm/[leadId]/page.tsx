@@ -208,6 +208,7 @@ export default function LeadDetailPage() {
         const interactionRef = doc(db, `leads/${currentUser.uid}/leads`, leadId, 'interactions', interactionId);
         await updateDoc(interactionRef, {
             type: status === 'concluída' ? 'Tarefa Concluída' : 'Tarefa Cancelada',
+            timestamp: serverTimestamp()
         });
     };
 
