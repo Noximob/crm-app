@@ -106,14 +106,15 @@ export default function CrmPage() {
     useEffect(() => {
         if (currentUser) {
             setLoading(true);
-            const leadsRef = collection(db, `leads/${currentUser.uid}/leads`);
+            const leadsRef = collection(db, 'leads');
+            const q = query(leadsRef, where("userId", "==", currentUser.uid));
             
-            const unsubscribe = onSnapshot(leadsRef, async (querySnapshot) => {
+            const unsubscribe = onSnapshot(q, async (querySnapshot) => {
                 const leadsDataPromises = querySnapshot.docs.map(async (leadDoc) => {
                     try {
                         const leadData = { id: leadDoc.id, ...leadDoc.data() } as Lead;
                         
-                        const tasksCol = collection(db, `leads/${currentUser.uid}/leads`, leadDoc.id, 'tarefas');
+                        const tasksCol = collection(db, 'leads', leadDoc.id, 'tarefas');
                         const tasksQuery = query(tasksCol, where('status', '==', 'pendente'));
                         const tasksSnapshot = await getDocs(tasksQuery);
                         const tasks = tasksSnapshot.docs.map(doc => doc.data() as Task);

@@ -91,10 +91,20 @@ export default function LeadDetailPage() {
     // --- Lógica para buscar os dados do lead ---
     useEffect(() => {
         if (!currentUser || !leadId) return;
-        const leadRef = doc(db, `leads/${currentUser.uid}/leads`, leadId);
+        // Busca o lead diretamente da coleção principal 'leads'
+        const leadRef = doc(db, 'leads', leadId);
         const unsubscribe = onSnapshot(leadRef, (docSnap) => {
             if (docSnap.exists()) {
                 const leadData = { id: docSnap.id, ...docSnap.data() } as Lead;
+
+                // Verificação de segurança para garantir que o usuário só veja seus próprios leads
+                if (leadData.userId !== currentUser.uid) {
+                    console.error("Acesso negado: Este lead não pertence a você.");
+                    setLead(null);
+                    setLoading(false);
+                    return;
+                }
+
                 if (!leadData.automacao) {
                     leadData.automacao = { status: 'inativa' };
                 }
@@ -113,7 +123,8 @@ export default function LeadDetailPage() {
 
     useEffect(() => {
         if (!currentUser || !leadId) return;
-        const interactionsCol = collection(db, `leads/${currentUser.uid}/leads`, leadId, 'interactions');
+        // Caminhos atualizados para as sub-coleções
+        const interactionsCol = collection(db, 'leads', leadId, 'interactions');
         const q = query(interactionsCol, orderBy('timestamp', 'desc'));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -126,7 +137,7 @@ export default function LeadDetailPage() {
 
     useEffect(() => {
         if (!currentUser || !leadId) return;
-        const tasksCol = collection(db, `leads/${currentUser.uid}/leads`, leadId, 'tarefas');
+        const tasksCol = collection(db, 'leads', leadId, 'tarefas');
         const q = query(tasksCol, where('status', '==', 'pendente'));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -140,7 +151,7 @@ export default function LeadDetailPage() {
     const handleStageChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
         if (!currentUser || !lead) return;
         const newEtapa = e.target.value;
-        const leadRef = doc(db, `leads/${currentUser.uid}/leads`, lead.id);
+        const leadRef = doc(db, 'leads', lead.id);
         try {
             await updateDoc(leadRef, { etapa: newEtapa });
         } catch (error) {
@@ -156,7 +167,7 @@ export default function LeadDetailPage() {
     const handleLogInteraction = async (notes: string) => {
         if (!currentUser || !leadId) return;
         setIsSaving(true);
-        const interactionsCol = collection(db, `leads/${currentUser.uid}/leads`, leadId, 'interactions');
+        const interactionsCol = collection(db, 'leads', leadId, 'interactions');
         try {
             await addDoc(interactionsCol, {
                 type: interactionType,
@@ -173,7 +184,7 @@ export default function LeadDetailPage() {
 
     const handleSaveAnnotations = async () => {
         if (!currentUser || !lead) return;
-        const leadRef = doc(db, `leads/${currentUser.uid}/leads`, lead.id);
+        const leadRef = doc(db, 'leads', lead.id);
         try {
             await updateDoc(leadRef, { anotacoes: tempAnnotations });
             setIsEditingAnnotations(false);
@@ -190,7 +201,7 @@ export default function LeadDetailPage() {
         const dueDate = new Date(`${date}T${time}`);
 
         // 1. Salvar na coleção de tarefas
-        const tasksCol = collection(db, `leads/${currentUser.uid}/leads`, leadId, 'tarefas');
+        const tasksCol = collection(db, 'leads', leadId, 'tarefas');
         const taskDocRef = await addDoc(tasksCol, {
             description,
             type,
@@ -200,7 +211,7 @@ export default function LeadDetailPage() {
         });
 
         // 2. Registrar no histórico de ações
-        const interactionsCol = collection(db, `leads/${currentUser.uid}/leads`, leadId, 'interactions');
+        const interactionsCol = collection(db, 'leads', leadId, 'interactions');
         const formattedDate = dueDate.toLocaleDateString('pt-BR');
         const formattedTime = dueDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         await addDoc(interactionsCol, {
@@ -223,11 +234,11 @@ export default function LeadDetailPage() {
 
         try {
             // Atualiza o status na coleção de tarefas
-            const taskRef = doc(db, `leads/${currentUser.uid}/leads`, leadId, 'tarefas', taskId);
+            const taskRef = doc(db, 'leads', leadId, 'tarefas', taskId);
             await updateDoc(taskRef, { status });
 
             // Atualiza a interação original do histórico
-            const interactionRef = doc(db, `leads/${currentUser.uid}/leads`, leadId, 'interactions', interactionId);
+            const interactionRef = doc(db, 'leads', leadId, 'interactions', interactionId);
             const updatePayload: { type: string; timestamp: any; cancellationNotes?: string } = {
                 type: status === 'concluída' ? 'Tarefa Concluída' : 'Tarefa Cancelada',
                 timestamp: serverTimestamp()
@@ -265,7 +276,7 @@ export default function LeadDetailPage() {
 
         setQualifications(newQualifications);
 
-        const leadRef = doc(db, `leads/${currentUser.uid}/leads`, leadId);
+        const leadRef = doc(db, 'leads', leadId);
         try {
             await updateDoc(leadRef, {
                 qualificacao: newQualifications
@@ -314,7 +325,7 @@ export default function LeadDetailPage() {
     const handleStartAutomation = async (treatmentName: string) => {
         if (!currentUser || !leadId) return;
         setIsUpdatingAutomation(true);
-        const leadRef = doc(db, `leads/${currentUser.uid}/leads`, leadId);
+        const leadRef = doc(db, `leads`, leadId);
         try {
             await updateDoc(leadRef, {
                 automacao: {
@@ -341,7 +352,7 @@ export default function LeadDetailPage() {
         }
 
         setIsUpdatingAutomation(true);
-        const leadRef = doc(db, `leads/${currentUser.uid}/leads`, leadId);
+        const leadRef = doc(db, `leads`, leadId);
         try {
             await updateDoc(leadRef, {
                 'automacao.status': 'cancelada',

@@ -60,20 +60,29 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
         setError('');
 
         try {
-            const leadsCollectionRef = collection(db, 'leads', currentUser.uid, 'leads');
+            // Salva na coleção principal 'leads'
+            const leadsCollectionRef = collection(db, 'leads');
             await addDoc(leadsCollectionRef, {
+                userId: currentUser.uid, // Adiciona o ID do usuário ao lead
                 nome: name,
                 telefone: phone,
-                whatsapp: phone.replace(/\D/g, ''),
+                whatsapp: phone.replace(/\\D/g, ''),
                 email,
                 etapa: situation,
-                status: 'Sem tarefa',
                 origem: 'Cadastro Manual via CRM',
                 createdAt: serverTimestamp(),
-                primeiroContato: serverTimestamp(),
-                followUps: 0,
-                sequenciaAtiva: false,
-                // Adicionar outros campos com valores padrão se necessário
+                // Adiciona o novo campo de automação com valores padrão
+                automacao: {
+                    status: 'inativa',
+                    nomeTratamento: null,
+                    dataInicio: null,
+                    dataCancelamento: null,
+                },
+                // Remove campos antigos se não forem mais necessários
+                // status: 'Sem tarefa',
+                // primeiroContato: serverTimestamp(),
+                // followUps: 0,
+                // sequenciaAtiva: false,
             });
             onClose(); // Fecha o modal após o sucesso
         } catch (err) {
