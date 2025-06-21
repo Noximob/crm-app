@@ -106,33 +106,31 @@ export default function CrmPage() {
     useEffect(() => {
         if (currentUser) {
             setLoading(true);
-            const leadsRef = collection(db, 'leads');
-            const q = query(leadsRef, where("userId", "==", currentUser.uid));
+            const leadsRef = collection(db, `leads/${currentUser.uid}/leads`);
             
-            const unsubscribe = onSnapshot(q, async (querySnapshot) => {
+            const unsubscribe = onSnapshot(leadsRef, async (querySnapshot) => {
                 const leadsDataPromises = querySnapshot.docs.map(async (leadDoc) => {
                     try {
                         const leadData = { id: leadDoc.id, ...leadDoc.data() } as Lead;
                         
-                        const tasksCol = collection(db, `leads`, leadDoc.id, 'tarefas');
+                        const tasksCol = collection(db, `leads/${currentUser.uid}/leads`, leadDoc.id, 'tarefas');
                         const tasksQuery = query(tasksCol, where('status', '==', 'pendente'));
                         const tasksSnapshot = await getDocs(tasksQuery);
                         const tasks = tasksSnapshot.docs.map(doc => doc.data() as Task);
 
                         leadData.taskStatus = getTaskStatusInfo(tasks);
                         
-                        // Garante que 'qualificacao' seja um objeto, mesmo que vazio
                         leadData.qualificacao = leadDoc.data().qualificacao || {};
 
                         return leadData;
                     } catch (error) {
                         console.error("Erro ao processar o lead:", leadDoc.id, error);
-                        return null; // Retorna nulo se houver um erro com este lead
+                        return null;
                     }
                 });
 
                 const leadsWithStatus = (await Promise.all(leadsDataPromises))
-                    .filter((lead): lead is Lead => lead !== null); // Filtra os leads que falharam
+                    .filter((lead): lead is Lead => lead !== null);
                 
                 setLeads(leadsWithStatus);
                 setLoading(false);
@@ -150,7 +148,7 @@ export default function CrmPage() {
 
     const handleApplyFilters = (filters: Filters) => {
         setAdvancedFilters(filters);
-        setFilterModalOpen(false); // Fechar o modal ao aplicar
+        setFilterModalOpen(false);
     };
 
     const handleClearFilters = () => {
@@ -161,12 +159,10 @@ export default function CrmPage() {
     const filteredLeads = useMemo(() => {
         let leadsToFilter = [...leads];
         
-        // Filtro rápido por situação
         if (activeFilter) {
             leadsToFilter = leadsToFilter.filter(lead => lead.etapa === activeFilter);
         }
 
-        // Filtro avançado do modal
         const hasAdvancedFilters = Object.values(advancedFilters).some((options: string[]) => options.length > 0);
         if (hasAdvancedFilters) {
             leadsToFilter = leadsToFilter.filter(lead => {
