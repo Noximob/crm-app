@@ -56,7 +56,7 @@ export default function LeadDetailPage() {
     // --- Lógica para buscar os dados do lead ---
     useEffect(() => {
         if (!currentUser || !leadId) return;
-        const leadRef = doc(db, 'users', currentUser.uid, 'leads', leadId);
+        const leadRef = doc(db, `leads/${currentUser.uid}/leads`, leadId);
         const unsubscribe = onSnapshot(leadRef, (docSnap) => {
             if (docSnap.exists()) {
                 setLead({ id: docSnap.id, ...docSnap.data() } as Lead);
@@ -72,7 +72,7 @@ export default function LeadDetailPage() {
 
     useEffect(() => {
         if (!currentUser || !leadId) return;
-        const interactionsCol = collection(db, 'users', currentUser.uid, 'leads', leadId, 'interactions');
+        const interactionsCol = collection(db, `leads/${currentUser.uid}/leads`, leadId, 'interactions');
         const q = query(interactionsCol, orderBy('timestamp', 'desc'));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -86,7 +86,7 @@ export default function LeadDetailPage() {
     const handleStageChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
         if (!currentUser || !lead) return;
         const newEtapa = e.target.value;
-        const leadRef = doc(db, 'users', currentUser.uid, 'leads', lead.id);
+        const leadRef = doc(db, `leads/${currentUser.uid}/leads`, lead.id);
         try {
             await updateDoc(leadRef, { etapa: newEtapa });
         } catch (error) {
@@ -102,7 +102,7 @@ export default function LeadDetailPage() {
     const handleLogInteraction = async (notes: string) => {
         if (!currentUser || !leadId) return;
         setIsSaving(true);
-        const interactionsCol = collection(db, 'users', currentUser.uid, 'leads', leadId, 'interactions');
+        const interactionsCol = collection(db, `leads/${currentUser.uid}/leads`, leadId, 'interactions');
         try {
             await addDoc(interactionsCol, {
                 type: interactionType,
