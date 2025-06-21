@@ -30,6 +30,22 @@ const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
+const FilterTag = ({ label, isSelected, onClick }: { label: string; isSelected: boolean; onClick: () => void; }) => (
+    <button
+        type="button"
+        onClick={onClick}
+        className={`
+            w-full text-left px-3 py-2 text-sm rounded-lg border transition-all duration-200
+            ${isSelected
+                ? 'bg-primary-500 border-primary-500 text-white font-semibold shadow'
+                : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200 hover:border-slate-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600'
+            }
+        `}
+    >
+        {label}
+    </button>
+);
+
 export default function FilterModal({ isOpen, onClose, onApply, initialFilters, pipelineStages }: FilterModalProps) {
     const [selectedFilters, setSelectedFilters] = useState<Filters>(initialFilters);
 
@@ -37,60 +53,66 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters, 
         setSelectedFilters(initialFilters);
     }, [initialFilters]);
 
-    const handleCheckboxChange = (groupKey: string, option: string) => {
+    const handleTagClick = (groupKey: string, option: string) => {
         const currentGroupFilters = selectedFilters[groupKey] || [];
         const newGroupFilters = currentGroupFilters.includes(option)
             ? currentGroupFilters.filter(item => item !== option)
             : [...currentGroupFilters, option];
 
-        setSelectedFilters({
-            ...selectedFilters,
+        setSelectedFilters(prev => ({
+            ...prev,
             [groupKey]: newGroupFilters,
-        });
+        }));
     };
     
-    const hasActiveFilters = Object.values(selectedFilters).some(arr => arr.length > 0);
+    const handleClearFilters = () => {
+        setSelectedFilters({});
+    }
+
+    const hasActiveFilters = Object.values(selectedFilters).some(arr => arr && arr.length > 0);
     const situationQuestion = { title: 'Situação do Cliente', key: 'etapa', options: pipelineStages };
 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-start pt-10 sm:pt-16" onMouseDown={onClose}>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-3xl relative" onMouseDown={(e) => e.stopPropagation()}>
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-                    <XIcon className="h-6 w-6" />
-                </button>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Filtrar Leads</h2>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4" onMouseDown={onClose}>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl relative flex flex-col" onMouseDown={(e) => e.stopPropagation()}>
+                {/* Cabeçalho */}
+                <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-white">Filtrar Leads</h2>
+                    <button onClick={onClose} className="p-1 rounded-full text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                        <XIcon className="h-6 w-6" />
+                    </button>
+                </div>
                 
-                <div className="space-y-6 max-h-[65vh] overflow-y-auto pr-4">
+                {/* Conteúdo com scroll */}
+                <div className="p-6 space-y-6 max-h-[65vh] overflow-y-auto">
                     {[situationQuestion, ...QUALIFICATION_QUESTIONS].map(group => (
                         <div key={group.key}>
-                            <h4 className="text-base font-bold text-gray-700 dark:text-gray-200 mb-3 border-b border-gray-200 dark:border-gray-700 pb-2">{group.title}</h4>
+                            <h4 className="text-base font-semibold text-gray-600 dark:text-gray-300 mb-3">{group.title}</h4>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                                 {group.options.map(option => (
-                                    <label key={option} className="flex items-center gap-2 cursor-pointer p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700/50">
-                                        <input
-                                            type="checkbox"
-                                            checked={(selectedFilters[group.key] || []).includes(option)}
-                                            onChange={() => handleCheckboxChange(group.key, option)}
-                                            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                                        />
-                                        <span className="text-sm text-gray-700 dark:text-gray-300">{option}</span>
-                                    </label>
+                                    <FilterTag 
+                                        key={option}
+                                        label={option}
+                                        isSelected={(selectedFilters[group.key] || []).includes(option)}
+                                        onClick={() => handleTagClick(group.key, option)}
+                                    />
                                 ))}
                             </div>
                         </div>
                     ))}
                 </div>
 
-                <div className="flex justify-end gap-4 pt-6 mt-4 border-t border-gray-200 dark:border-gray-700">
+                {/* Rodapé */}
+                <div className="flex justify-end gap-4 p-6 border-t border-gray-200 dark:border-gray-700">
                     <button 
                         type="button" 
-                        onClick={() => setSelectedFilters({})} 
+                        onClick={handleClearFilters} 
                         disabled={!hasActiveFilters}
-                        className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors dark:text-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 disabled:opacity-50"
+                        className="px-5 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors dark:text-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Limpar Filtros
+                        Limpar
                     </button>
                     <button 
                         type="button" 
@@ -98,7 +120,7 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters, 
                             onApply(selectedFilters);
                             onClose();
                         }}
-                        className="px-6 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors shadow"
+                        className="px-6 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
                     >
                         Aplicar Filtros
                     </button>
