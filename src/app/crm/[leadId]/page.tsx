@@ -33,7 +33,8 @@ const getIconForInteraction = (type: string) => {
         case 'Ligação': return <PhoneIcon className="h-5 w-5 text-primary-600" />;
         case 'WhatsApp': return <WhatsAppIcon className="h-5 w-5 text-green-600" />;
         case 'Visita': return <BuildingIcon className="h-5 w-5 text-indigo-600" />;
-        default: return null;
+        case 'Tarefa Agendada': return <TaskIcon className="h-5 w-5 text-sky-600" />;
+        default: return <div className="h-5 w-5 bg-gray-300 rounded-full" />; // Um ícone padrão
     }
 };
 
@@ -371,3 +372,5 @@ export default function LeadDetailPage() {
         </div>
     );
 } 
+
+// Trigger deploy 22/06 
