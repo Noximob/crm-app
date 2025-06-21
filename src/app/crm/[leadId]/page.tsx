@@ -124,85 +124,90 @@ export default function LeadDetailPage() {
             {loading ? (
                 <div className="text-center py-10 mt-6">Carregando dados do lead...</div>
             ) : lead ? (
-                <main className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-                    {/* Card de Informações do Lead (Linha 1, Coluna 1) */}
-                    <div className="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                        <div className="flex items-center gap-4">
-                            <div className="bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-300 font-bold text-xl rounded-lg h-14 w-14 flex items-center justify-center">
-                                {lead.nome.charAt(0).toUpperCase()}
+                <div className="mt-6">
+                    {/* Linha Superior: apenas o Card de Informações */}
+                    <div className="lg:w-1/3 pr-3 mb-6">
+                         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-300 font-bold text-xl rounded-lg h-14 w-14 flex items-center justify-center">
+                                    {lead.nome.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-800 dark:text-white">{lead.nome}</h2>
+                                    <p className="text-gray-500 dark:text-gray-400">{lead.telefone}</p>
+                                    <p className="text-gray-500 dark:text-gray-400">{lead.email}</p>
+                                </div>
                             </div>
-                            <div>
-                                <h2 className="text-xl font-bold text-gray-800 dark:text-white">{lead.nome}</h2>
-                                <p className="text-gray-500 dark:text-gray-400">{lead.telefone}</p>
-                                <p className="text-gray-500 dark:text-gray-400">{lead.email}</p>
-                            </div>
-                        </div>
-                        <div className="mt-4 flex items-center gap-2">
-                            <span className={`h-2.5 w-2.5 rounded-full ${getTaskStatusColor('Sem tarefa')}`}></span>
-                            <span className="text-sm text-gray-600 dark:text-gray-300">Sem tarefa</span>
-                        </div>
-                    </div>
-
-                    {/* Placeholder para o espaço vazio (Linha 1, Coluna 2-3) */}
-                    <div className="hidden lg:block lg:col-span-2"></div>
-
-                    {/* Card de Situação do Lead (Linha 2, Coluna 1) */}
-                    <div className="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                        <label htmlFor="lead-situation" className="block text-base font-semibold text-gray-800 dark:text-white mb-2">Situação do Lead</label>
-                        <select
-                            id="lead-situation"
-                            value={lead.etapa}
-                            onChange={handleStageChange}
-                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        >
-                            {PIPELINE_STAGES.map(stage => (
-                                <option key={stage} value={stage}>{stage}</option>
-                            ))}
-                        </select>
-                    </div>
-                    
-                    {/* Caixa de Ações (Linha 3, Coluna 1) */}
-                    <div className="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                        <h3 className="text-base font-semibold text-gray-800 dark:text-white mb-4">O que deseja fazer?</h3>
-                        <div className="grid grid-cols-2 gap-3">
-                            <button onClick={() => openInteractionModal('Ligação')} className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-primary-700 bg-primary-100/80 rounded-lg hover:bg-primary-200/70 transition-colors"><PhoneIcon className="h-4 w-4"/>Ligação</button>
-                            <button onClick={() => openInteractionModal('WhatsApp')} className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-green-700 bg-green-100/80 rounded-lg hover:bg-green-200/70 transition-colors"><WhatsAppIcon className="h-4 w-4 fill-current"/>WhatsApp</button>
-                            <button onClick={() => openInteractionModal('Visita')} className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-indigo-700 bg-indigo-100/80 rounded-lg hover:bg-indigo-200/70 transition-colors"><BuildingIcon className="h-4 w-4"/>Visita</button>
-                            <button onClick={() => alert('Funcionalidade de Tarefa em breve!')} className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-sky-700 bg-sky-100/80 rounded-lg hover:bg-sky-200/70 transition-colors"><TaskIcon className="h-4 w-4"/>Tarefa</button>
-                        </div>
-                    </div>
-
-                    {/* Histórico de Ações (Começa na Linha 2, Coluna 2 e se expande) */}
-                    <div className="relative lg:col-span-2 lg:row-start-2 lg:row-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-md">
-                         <div className="absolute inset-0 p-6 flex flex-col">
-                            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex-shrink-0">Histórico de Ações</h3>
-                            <div className="flex-grow overflow-y-auto min-h-0 pr-2">
-                                {interactions.length > 0 ? (
-                                    <ul className="space-y-4">
-                                        {interactions.map(interaction => (
-                                            <li key={interaction.id} className="flex items-start gap-3">
-                                                <div className="bg-slate-100 dark:bg-gray-700 p-2 rounded-full">
-                                                {getIconForInteraction(interaction.type)}
-                                                </div>
-                                                <div>
-                                                    <p className="font-semibold text-gray-700 dark:text-gray-200">{interaction.type}</p>
-                                                    <p className="text-sm text-gray-600 dark:text-gray-400">{interaction.notes}</p>
-                                                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                                        {interaction.timestamp ? new Date(interaction.timestamp.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}
-                                                    </p>
-                                                </div>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ) : (
-                                    <div className="h-full flex items-center justify-center">
-                                        <p className="text-center text-gray-500 dark:text-gray-400">Nenhuma interação registrada ainda.</p>
-                                    </div>
-                                )}
+                            <div className="mt-4 flex items-center gap-2">
+                                <span className={`h-2.5 w-2.5 rounded-full ${getTaskStatusColor('Sem tarefa')}`}></span>
+                                <span className="text-sm text-gray-600 dark:text-gray-300">Sem tarefa</span>
                             </div>
                         </div>
                     </div>
-                </main>
+
+                    {/* Linha Inferior: Duas Colunas */}
+                    <main className="flex flex-col lg:flex-row gap-6">
+                        {/* Coluna Esquerda Inferior */}
+                        <div className="lg:w-1/3 flex flex-col gap-6">
+                            {/* Card de Situação do Lead */}
+                            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                                <label htmlFor="lead-situation" className="block text-base font-semibold text-gray-800 dark:text-white mb-2">Situação do Lead</label>
+                                <select
+                                    id="lead-situation"
+                                    value={lead.etapa}
+                                    onChange={handleStageChange}
+                                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                >
+                                    {PIPELINE_STAGES.map(stage => (
+                                        <option key={stage} value={stage}>{stage}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            
+                            {/* Caixa de Ações */}
+                            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                                <h3 className="text-base font-semibold text-gray-800 dark:text-white mb-4">O que deseja fazer?</h3>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button onClick={() => openInteractionModal('Ligação')} className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-primary-700 bg-primary-100/80 rounded-lg hover:bg-primary-200/70 transition-colors"><PhoneIcon className="h-4 w-4"/>Ligação</button>
+                                    <button onClick={() => openInteractionModal('WhatsApp')} className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-green-700 bg-green-100/80 rounded-lg hover:bg-green-200/70 transition-colors"><WhatsAppIcon className="h-4 w-4 fill-current"/>WhatsApp</button>
+                                    <button onClick={() => openInteractionModal('Visita')} className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-indigo-700 bg-indigo-100/80 rounded-lg hover:bg-indigo-200/70 transition-colors"><BuildingIcon className="h-4 w-4"/>Visita</button>
+                                    <button onClick={() => alert('Funcionalidade de Tarefa em breve!')} className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-sky-700 bg-sky-100/80 rounded-lg hover:bg-sky-200/70 transition-colors"><TaskIcon className="h-4 w-4"/>Tarefa</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Coluna Direita (Histórico) */}
+                        <div className="lg:w-2/3">
+                            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col h-full">
+                                <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex-shrink-0">Histórico de Ações</h3>
+                                <div className="flex-grow overflow-y-auto min-h-0 pr-2">
+                                    {interactions.length > 0 ? (
+                                        <ul className="space-y-4">
+                                            {interactions.map(interaction => (
+                                                <li key={interaction.id} className="flex items-start gap-3">
+                                                    <div className="bg-slate-100 dark:bg-gray-700 p-2 rounded-full">
+                                                    {getIconForInteraction(interaction.type)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-gray-700 dark:text-gray-200">{interaction.type}</p>
+                                                        <p className="text-sm text-gray-600 dark:text-gray-400">{interaction.notes}</p>
+                                                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                                            {interaction.timestamp ? new Date(interaction.timestamp.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}
+                                                        </p>
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <div className="h-full flex items-center justify-center">
+                                            <p className="text-center text-gray-500 dark:text-gray-400">Nenhuma interação registrada ainda.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>
             ) : (
                 <div className="text-center py-10 mt-6">Lead não encontrado.</div>
             )}
