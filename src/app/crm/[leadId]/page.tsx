@@ -295,7 +295,18 @@ export default function LeadDetailPage() {
                                 </div>
                                 <div>
                                     <h2 className="text-xl font-bold text-gray-800 dark:text-white">{lead.nome}</h2>
-                                    <p className="text-gray-500 dark:text-gray-400">{lead.telefone}</p>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-gray-500 dark:text-gray-400">{lead.telefone}</p>
+                                        <a 
+                                            href={`https://wa.me/55${lead.telefone.replace(/\D/g, '')}`} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="text-green-500 hover:text-green-600 transition-colors"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <WhatsAppIcon className="h-4 w-4 fill-current"/>
+                                        </a>
+                                    </div>
                                     <p className="text-gray-500 dark:text-gray-400">{lead.email}</p>
                                 </div>
                             </div>
