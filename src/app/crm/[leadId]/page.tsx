@@ -18,6 +18,8 @@ const PhoneIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="currentColor" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>;
 const BuildingIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>;
 const TaskIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
+const CheckCircleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>;
+const XCircleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>;
 const PlayIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>;
 const StopIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z" /></svg>;
 
@@ -34,6 +36,8 @@ const getIconForInteraction = (type: string) => {
         case 'WhatsApp': return <WhatsAppIcon className="h-5 w-5 text-green-600" />;
         case 'Visita': return <BuildingIcon className="h-5 w-5 text-indigo-600" />;
         case 'Tarefa Agendada': return <TaskIcon className="h-5 w-5 text-sky-600" />;
+        case 'Tarefa Concluída': return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
+        case 'Tarefa Cancelada': return <XCircleIcon className="h-5 w-5 text-red-500" />;
         default: return <div className="h-5 w-5 bg-gray-300 rounded-full" />; // Um ícone padrão
     }
 };
@@ -43,6 +47,7 @@ interface Interaction {
     type: string;
     notes: string;
     timestamp: any;
+    taskId?: string;
 }
 
 interface Task {
@@ -169,7 +174,7 @@ export default function LeadDetailPage() {
 
         // 1. Salvar na coleção de tarefas
         const tasksCol = collection(db, `leads/${currentUser.uid}/leads`, leadId, 'tarefas');
-        await addDoc(tasksCol, {
+        const taskDocRef = await addDoc(tasksCol, {
             description,
             type,
             dueDate: dueDate,
@@ -184,11 +189,26 @@ export default function LeadDetailPage() {
         await addDoc(interactionsCol, {
             type: 'Tarefa Agendada',
             notes: `${type}: ${description} para ${formattedDate} às ${formattedTime}`,
-            timestamp: serverTimestamp()
+            timestamp: serverTimestamp(),
+            taskId: taskDocRef.id
         });
 
         setIsSavingTask(false);
         setIsAgendaModalOpen(false);
+    };
+
+    const handleUpdateTaskStatus = async (taskId: string, status: 'concluída' | 'cancelada') => {
+        if (!currentUser || !leadId) return;
+
+        const taskRef = doc(db, `leads/${currentUser.uid}/leads`, leadId, 'tarefas', taskId);
+        await updateDoc(taskRef, { status });
+
+        const interactionsCol = collection(db, `leads/${currentUser.uid}/leads`, leadId, 'interactions');
+        await addDoc(interactionsCol, {
+            type: status === 'concluída' ? 'Tarefa Concluída' : 'Tarefa Cancelada',
+            notes: `A tarefa foi marcada como ${status}.`,
+            timestamp: serverTimestamp()
+        });
     };
 
     const getTaskStatusInfo = () => {
@@ -327,20 +347,42 @@ export default function LeadDetailPage() {
                             <div className="flex-grow overflow-y-auto min-h-0 pr-2">
                                 {interactions.length > 0 ? (
                                     <ul className="space-y-4">
-                                        {interactions.map(interaction => (
-                                            <li key={interaction.id} className="flex items-start gap-3">
-                                                <div className="bg-slate-100 dark:bg-gray-700 p-2 rounded-full">
-                                                {getIconForInteraction(interaction.type)}
-                                                </div>
-                                                <div>
-                                                    <p className="font-semibold text-gray-700 dark:text-gray-200">{interaction.type}</p>
-                                                    <p className="text-sm text-gray-600 dark:text-gray-400">{interaction.notes}</p>
-                                                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                                        {interaction.timestamp ? new Date(interaction.timestamp.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}
-                                                    </p>
-                                                </div>
-                                            </li>
-                                        ))}
+                                        {interactions.map(interaction => {
+                                            const isPendingTask = interaction.type === 'Tarefa Agendada' && interaction.taskId && tasks.some(task => task.id === interaction.taskId);
+
+                                            return (
+                                                <li key={interaction.id} className="flex items-start gap-3">
+                                                    <div className="bg-slate-100 dark:bg-gray-700 p-2 rounded-full">
+                                                        {getIconForInteraction(interaction.type)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-gray-700 dark:text-gray-200">{interaction.type}</p>
+                                                        <p className="text-sm text-gray-600 dark:text-gray-400">{interaction.notes}</p>
+                                                        
+                                                        {isPendingTask && (
+                                                            <div className="mt-2 flex items-center gap-3">
+                                                                <button
+                                                                    onClick={() => handleUpdateTaskStatus(interaction.taskId!, 'concluída')}
+                                                                    className="px-2.5 py-1 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors"
+                                                                >
+                                                                    Tarefa Concluída
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleUpdateTaskStatus(interaction.taskId!, 'cancelada')}
+                                                                    className="px-2.5 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+                                                                >
+                                                                    Tarefa Cancelada
+                                                                </button>
+                                                            </div>
+                                                        )}
+
+                                                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                                            {interaction.timestamp ? new Date(interaction.timestamp.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}
+                                                        </p>
+                                                    </div>
+                                                </li>
+                                            );
+                                        })}
                                     </ul>
                                 ) : (
                                     <div className="h-full flex items-center justify-center">
