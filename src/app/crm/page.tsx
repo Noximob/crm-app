@@ -5,9 +5,28 @@ import { PIPELINE_STAGES } from '@/lib/constants';
 import CrmHeader from './_components/CrmHeader';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, where, DocumentData } from 'firebase/firestore';
+import { collection, getDocs, onSnapshot, query, where, Timestamp } from 'firebase/firestore';
 import Link from 'next/link';
 
+// --- Tipos ---
+interface Task {
+    id: string;
+    dueDate: Timestamp;
+    status: 'pendente' | 'concluída' | 'cancelada';
+}
+
+type TaskStatus = 'Tarefa em Atraso' | 'Tarefa do Dia' | 'Tarefa Futura' | 'Sem tarefa';
+
+interface Lead {
+  id: string;
+  nome: string;
+  telefone: string;
+  etapa: string;
+  taskStatus: TaskStatus;
+  [key: string]: any; 
+}
+
+// --- Ícones ---
 const SearchIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3"/>
@@ -20,15 +39,8 @@ const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>;
 
-interface Lead {
-  id: string;
-  nome: string;
-  telefone: string;
-  etapa: string;
-  status: string;
-  [key: string]: any; 
-}
 
+// --- Componentes ---
 const FilterChip = ({ children, selected }: { children: React.ReactNode, selected?: boolean }) => (
     <button className={`px-2.5 py-1 text-xs font-semibold border rounded-lg transition-colors whitespace-nowrap ${
         selected 
@@ -39,16 +51,47 @@ const FilterChip = ({ children, selected }: { children: React.ReactNode, selecte
     </button>
 );
 
-const StatusIndicator = ({ status }: { status: string }) => {
-    const statusColor = {
-        'Sem tarefa': 'bg-gray-500 dark:bg-gray-600',
-        'Tarefa em atraso': 'bg-red-500',
-        'Tarefa do Dia': 'bg-yellow-400',
-        'Tarefa Futura': 'bg-green-500',
-    }[status] || 'bg-gray-500 dark:bg-gray-600';
+const StatusIndicator = ({ status }: { status: TaskStatus }) => {
+    const statusInfo = {
+        'Tarefa em Atraso': { color: 'bg-red-500', text: 'Atrasada' },
+        'Tarefa do Dia': { color: 'bg-yellow-400', text: 'Para Hoje' },
+        'Tarefa Futura': { color: 'bg-sky-500', text: 'Futura' },
+        'Sem tarefa': { color: 'bg-gray-400', text: 'Sem Tarefa' },
+    };
+    const { color, text } = statusInfo[status] || statusInfo['Sem tarefa'];
 
-    return <span className={`h-2.5 w-2.5 ${statusColor} rounded-full`}></span>;
+    return (
+        <div className="flex items-center gap-2">
+            <span className={`h-2.5 w-2.5 ${color} rounded-full`}></span>
+            {text}
+        </div>
+    )
 };
+
+// --- Funções de Ajuda ---
+const getTaskStatusInfo = (tasks: Task[]): TaskStatus => {
+    if (tasks.length === 0) return 'Sem tarefa';
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    const hasOverdue = tasks.some(task => {
+        const dueDate = task.dueDate.toDate();
+        dueDate.setHours(0, 0, 0, 0);
+        return dueDate < now;
+    });
+    if (hasOverdue) return 'Tarefa em Atraso';
+
+    const hasTodayTask = tasks.some(task => {
+        const dueDate = task.dueDate.toDate();
+        dueDate.setHours(0, 0, 0, 0);
+        return dueDate.getTime() === now.getTime();
+    });
+    if (hasTodayTask) return 'Tarefa do Dia';
+
+    return 'Tarefa Futura';
+};
+
 
 export default function CrmPage() {
     const { currentUser } = useAuth();
@@ -58,14 +101,24 @@ export default function CrmPage() {
     useEffect(() => {
         if (currentUser) {
             setLoading(true);
-            const q = query(collection(db, `leads/${currentUser.uid}/leads`));
+            const leadsRef = collection(db, `leads/${currentUser.uid}/leads`);
             
-            const unsubscribe = onSnapshot(q, (querySnapshot) => {
-                const leadsData: Lead[] = [];
-                querySnapshot.forEach((doc) => {
-                    leadsData.push({ id: doc.id, ...doc.data() } as Lead);
+            const unsubscribe = onSnapshot(leadsRef, async (querySnapshot) => {
+                const leadsDataPromises = querySnapshot.docs.map(async (leadDoc) => {
+                    const leadData = { id: leadDoc.id, ...leadDoc.data() };
+                    
+                    const tasksCol = collection(db, `leads/${currentUser.uid}/leads`, leadDoc.id, 'tarefas');
+                    const q = query(tasksCol, where('status', '==', 'pendente'));
+                    const tasksSnapshot = await getDocs(q);
+                    const tasks = tasksSnapshot.docs.map(doc => doc.data() as Task);
+
+                    const taskStatus = getTaskStatusInfo(tasks);
+                    
+                    return { ...leadData, taskStatus } as Lead;
                 });
-                setLeads(leadsData);
+
+                const leadsWithStatus = await Promise.all(leadsDataPromises);
+                setLeads(leadsWithStatus);
                 setLoading(false);
             }, (error) => {
                 console.error("Erro ao buscar leads: ", error);
@@ -128,21 +181,18 @@ export default function CrmPage() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <a 
-                                                href={`https://wa.me/${lead.telefone.replace(/\\D/g, '')}`} 
+                                                href={`https://wa.me/55${lead.telefone.replace(/\\D/g, '')}`} 
                                                 target="_blank" 
                                                 rel="noopener noreferrer"
                                                 className="flex items-center justify-center gap-2 w-fit px-3 py-1 text-xs font-bold text-green-700 bg-green-100 rounded-full hover:bg-green-200 transition-colors dark:bg-green-500/20 dark:text-green-400 dark:hover:bg-green-500/30"
                                             >
-                                                <WhatsAppIcon className="h-3.5 w-3.5"/>
+                                                <WhatsAppIcon className="h-3.5 w-3.5 fill-current"/>
                                                 WhatsApp
                                             </a>
                                         </td>
                                         <td className="px-6 py-4">{lead.etapa}</td>
                                         <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <StatusIndicator status={lead.status || 'Sem tarefa'} />
-                                                {lead.status || 'Sem tarefa'}
-                                            </div>
+                                            <StatusIndicator status={lead.taskStatus || 'Sem tarefa'} />
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <Link href={`/crm/${lead.id}`}>
