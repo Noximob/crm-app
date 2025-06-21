@@ -52,7 +52,9 @@ export default function TaskListModal({ isOpen, onClose }: TaskListModalProps) {
             });
             
             const sortedLeads = leadsData.sort((a, b) => {
-                return TAREFA_STATUS_ORDER.indexOf(a.status) - TAREFA_STATUS_ORDER.indexOf(b.status);
+                const statusA = a.status || '';
+                const statusB = b.status || '';
+                return TAREFA_STATUS_ORDER.indexOf(statusA) - TAREFA_STATUS_ORDER.indexOf(statusB);
             });
 
             setTasks(sortedLeads);
@@ -88,7 +90,7 @@ export default function TaskListModal({ isOpen, onClose }: TaskListModalProps) {
                                     <p className="text-sm text-gray-500 dark:text-gray-400">{task.telefone}</p>
                                 </div>
                                 <div className="flex items-center gap-2 text-sm">
-                                    <StatusIndicator status={task.status} />
+                                    <StatusIndicator status={task.status || 'Sem tarefa'} />
                                     <span>{task.status}</span>
                                 </div>
                             </div>
