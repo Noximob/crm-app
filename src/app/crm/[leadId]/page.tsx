@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, onSnapshot, updateDoc, collection, query, orderBy, addDoc, serverTimestamp, where } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, updateDoc, collection, query, orderBy, addDoc, serverTimestamp, where, writeBatch } from 'firebase/firestore';
 import Link from 'next/link';
 import { PIPELINE_STAGES } from '@/lib/constants';
 import { Lead } from '@/types';
@@ -12,6 +12,7 @@ import LogInteractionModal from '../_components/LogInteractionModal';
 import CrmHeader from '../_components/CrmHeader';
 import AgendaModal, { TaskPayload } from '../_components/AgendaModal';
 import CancelTaskModal from '../_components/CancelTaskModal';
+import StartAutomationModal from '../_components/StartAutomationModal';
 
 // --- Ícones ---
 const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>;
@@ -84,6 +85,8 @@ export default function LeadDetailPage() {
     const [taskToCancel, setTaskToCancel] = useState<{ interactionId: string; taskId: string } | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
     const [qualifications, setQualifications] = useState<QualificationData>({});
+    const [isAutomationModalOpen, setIsAutomationModalOpen] = useState(false);
+    const [isUpdatingAutomation, setIsUpdatingAutomation] = useState(false);
 
     // --- Lógica para buscar os dados do lead ---
     useEffect(() => {
@@ -92,6 +95,9 @@ export default function LeadDetailPage() {
         const unsubscribe = onSnapshot(leadRef, (docSnap) => {
             if (docSnap.exists()) {
                 const leadData = { id: docSnap.id, ...docSnap.data() } as Lead;
+                if (!leadData.automacao) {
+                    leadData.automacao = { status: 'inativa' };
+                }
                 setLead(leadData);
                 setTempAnnotations(leadData.anotacoes || '');
                 setQualifications(leadData.qualificacao || {});
@@ -305,6 +311,49 @@ export default function LeadDetailPage() {
 
     const taskStatus = getTaskStatusInfo();
 
+    const handleStartAutomation = async (treatmentName: string) => {
+        if (!currentUser || !leadId) return;
+        setIsUpdatingAutomation(true);
+        const leadRef = doc(db, `leads/${currentUser.uid}/leads`, leadId);
+        try {
+            await updateDoc(leadRef, {
+                automacao: {
+                    status: 'ativa',
+                    nomeTratamento: treatmentName,
+                    dataInicio: serverTimestamp(),
+                    dataCancelamento: null,
+                }
+            });
+            setIsAutomationModalOpen(false);
+        } catch (error) {
+            console.error("Erro ao iniciar automação:", error);
+        } finally {
+            setIsUpdatingAutomation(false);
+        }
+    };
+
+    const handleCancelAutomation = async () => {
+        if (!currentUser || !leadId || !lead?.automacao) return;
+        setIsUpdatingAutomation(true);
+        const leadRef = doc(db, `leads/${currentUser.uid}/leads`, leadId);
+        try {
+            await updateDoc(leadRef, {
+                'automacao.status': 'cancelada',
+                'automacao.dataCancelamento': serverTimestamp()
+            });
+        } catch (error) {
+            console.error("Erro ao cancelar automação:", error);
+        } finally {
+            setIsUpdatingAutomation(false);
+        }
+    };
+
+    if (!lead) {
+        return <div className="p-8 text-center">Lead não encontrado.</div>;
+    }
+
+    const automationStatus = lead.automacao?.status || 'inativa';
+
     return (
         <div className="bg-slate-100 dark:bg-gray-900 min-h-screen p-4 sm:p-6 lg:p-8">
             <CrmHeader />
@@ -367,11 +416,21 @@ export default function LeadDetailPage() {
                         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
                             <h3 className="text-base font-semibold text-gray-800 dark:text-white mb-4">Automação Mensagens</h3>
                             <div className="flex flex-col gap-3">
-                                <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors shadow-sm">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAutomationModalOpen(true)}
+                                    disabled={automationStatus !== 'inativa' || isUpdatingAutomation}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
                                     <PlayIcon className="h-4 w-4" />
                                     Iniciar Disparo
                                 </button>
-                                <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-sm">
+                                <button
+                                    type="button"
+                                    onClick={handleCancelAutomation}
+                                    disabled={automationStatus !== 'ativa' || isUpdatingAutomation}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
                                     <StopIcon className="h-4 w-4" />
                                     Cancelar Disparo
                                 </button>
@@ -528,6 +587,14 @@ export default function LeadDetailPage() {
                     }
                 }}
                 isLoading={isCancelling}
+            />
+
+            <StartAutomationModal
+                isOpen={isAutomationModalOpen}
+                onClose={() => setIsAutomationModalOpen(false)}
+                onConfirm={handleStartAutomation}
+                leadName={lead.nome || ''}
+                isLoading={isUpdatingAutomation}
             />
         </div>
     );
