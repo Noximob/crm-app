@@ -27,21 +27,29 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
     const [error, setError] = useState('');
 
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const rawValue = e.target.value.replace(/\\D/g, '');
-        let formattedValue = '';
-        if (rawValue.length > 0) {
-            formattedValue = `(${rawValue.slice(0, 2)}`;
+        // 1. Limpa tudo que não for dígito
+        const rawValue = e.target.value.replace(/\D/g, '');
+
+        // 2. Limita a 11 dígitos (DDD + 9 dígitos)
+        const limitedValue = rawValue.slice(0, 11);
+        
+        let formattedValue = limitedValue;
+
+        // 3. Aplica a máscara dinamicamente
+        if (limitedValue.length > 2) {
+            formattedValue = `(${limitedValue.slice(0, 2)}) ${limitedValue.slice(2)}`;
         }
-        if (rawValue.length > 2) {
-            // Permite 8 ou 9 dígitos no número principal
-            const mainNumberLength = rawValue.length > 10 ? 5 : 4;
-            const part1 = rawValue.slice(2, 2 + mainNumberLength);
-            const part2 = rawValue.slice(2 + mainNumberLength, 11);
-            formattedValue += `) ${part1}`;
-            if (part2) {
-                formattedValue += `-${part2}`;
-            }
+        if (limitedValue.length > 6) {
+            const hasNinthDigit = limitedValue.length > 10;
+            const splitIndex = hasNinthDigit ? 7 : 6;
+            
+            const part1 = limitedValue.slice(0, 2);
+            const part2 = limitedValue.slice(2, splitIndex);
+            const part3 = limitedValue.slice(splitIndex);
+
+            formattedValue = `(${part1}) ${part2}-${part3}`;
         }
+        
         setPhone(formattedValue);
     };
 
