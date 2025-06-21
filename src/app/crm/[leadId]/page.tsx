@@ -334,6 +334,12 @@ export default function LeadDetailPage() {
 
     const handleCancelAutomation = async () => {
         if (!currentUser || !leadId || !lead?.automacao) return;
+        
+        // Adiciona uma confirmação antes de cancelar
+        if (!window.confirm("Tem certeza que deseja cancelar a automação de mensagens para este lead? Esta ação não pode ser desfeita.")) {
+            return;
+        }
+
         setIsUpdatingAutomation(true);
         const leadRef = doc(db, `leads/${currentUser.uid}/leads`, leadId);
         try {
@@ -341,8 +347,11 @@ export default function LeadDetailPage() {
                 'automacao.status': 'cancelada',
                 'automacao.dataCancelamento': serverTimestamp()
             });
+            // Alerta de sucesso para o usuário
+            alert("Automação de mensagens cancelada com sucesso!");
         } catch (error) {
             console.error("Erro ao cancelar automação:", error);
+            alert("Ocorreu um erro ao cancelar a automação. Tente novamente.");
         } finally {
             setIsUpdatingAutomation(false);
         }
