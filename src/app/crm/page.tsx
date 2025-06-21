@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { PIPELINE_STAGES } from '@/lib/constants';
 import CrmHeader from './_components/CrmHeader';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, onSnapshot, query, where, Timestamp } from 'firebase/firestore';
 import Link from 'next/link';
+import FilterModal, { Filters } from './_components/FilterModal';
 
 // --- Tipos ---
 interface Task {
@@ -23,6 +24,7 @@ interface Lead {
   telefone: string;
   etapa: string;
   taskStatus: TaskStatus;
+  qualification?: { [key: string]: string };
   [key: string]: any; 
 }
 
@@ -98,6 +100,9 @@ export default function CrmPage() {
     const [leads, setLeads] = useState<Lead[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState<string | null>(null);
+    const [isFilterModalOpen, setFilterModalOpen] = useState(false);
+    const [advancedFilters, setAdvancedFilters] = useState<Filters>({});
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         if (currentUser) {
@@ -133,23 +138,93 @@ export default function CrmPage() {
         }
     }, [currentUser]);
 
-    const filteredLeads = activeFilter
-        ? leads.filter(lead => lead.etapa === activeFilter)
-        : leads;
+    const handleApplyFilters = (filters: Filters) => {
+        setAdvancedFilters(filters);
+        setFilterModalOpen(false); // Fechar o modal ao aplicar
+    };
+
+    const handleClearFilters = () => {
+        setActiveFilter(null);
+        setAdvancedFilters({});
+    };
+
+    const filteredLeads = useMemo(() => {
+        let leadsToFilter = [...leads];
+
+        // Filtro de busca textual
+        if (searchTerm) {
+            const lowerCaseSearch = searchTerm.toLowerCase();
+            leadsToFilter = leadsToFilter.filter(lead =>
+                lead.nome.toLowerCase().includes(lowerCaseSearch) ||
+                lead.telefone.toLowerCase().includes(lowerCaseSearch)
+            );
+        }
+        
+        // Filtro rápido por situação
+        if (activeFilter) {
+            leadsToFilter = leadsToFilter.filter(lead => lead.etapa === activeFilter);
+        }
+
+        // Filtro avançado do modal
+        const hasAdvancedFilters = Object.values(advancedFilters).some((options: string[]) => options.length > 0);
+        if (hasAdvancedFilters) {
+            leadsToFilter = leadsToFilter.filter(lead => {
+                return Object.entries(advancedFilters).every(([key, selectedOptions]: [string, string[]]) => {
+                    if (selectedOptions.length === 0) {
+                        return true; // Se não há opções selecionadas para esta chave, não filtra
+                    }
+
+                    const leadValue = key === 'etapa' ? lead.etapa : lead.qualification?.[key];
+                    
+                    if (!leadValue) {
+                        return false; // Se o lead não tem o campo de qualificação, não passa
+                    }
+
+                    return selectedOptions.includes(leadValue);
+                });
+            });
+        }
+
+        return leadsToFilter;
+    }, [leads, activeFilter, searchTerm, advancedFilters]);
+    
+    const activeAdvancedFilterCount = Object.values(advancedFilters).reduce((count, options: string[]) => count + options.length, 0);
 
     return (
+        <>
         <div className="bg-slate-100 dark:bg-gray-900 min-h-screen p-4 sm:p-6 lg:p-8">
             <CrmHeader />
             <main className="flex flex-col gap-3 mt-4">
                 <div className="bg-white dark:bg-gray-800/80 dark:backdrop-blur-sm p-4 rounded-xl shadow-md">
                     <div className="flex items-center gap-2">
-                        <button className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors shadow-sm">
-                            <SearchIcon className="h-4 w-4" />
+                        <div className="relative w-full sm:w-72">
+                             <input
+                                type="text"
+                                placeholder="Buscar por nome, e-mail, tel..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            />
+                            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        </div>
+                        <button
+                            onClick={() => setFilterModalOpen(true)}
+                            className="relative flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors shadow-sm"
+                        >
+                            <FilterIcon className="h-4 w-4" />
                             Filtrar
+                            {activeAdvancedFilterCount > 0 && (
+                                <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                                    {activeAdvancedFilterCount}
+                                </span>
+                            )}
                         </button>
-                        <button onClick={() => setActiveFilter(null)} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors shadow-sm">
+                         <button 
+                            onClick={handleClearFilters} 
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors shadow-sm"
+                        >
                             <XIcon className="h-4 w-4" />
-                            Remover Filtros
+                            Limpar Filtros
                         </button>
                     </div>
                     <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-2">
@@ -157,7 +232,7 @@ export default function CrmPage() {
                             <FilterChip 
                                 key={stage} 
                                 selected={activeFilter === stage}
-                                onClick={() => setActiveFilter(stage)}
+                                onClick={() => setActiveFilter(prev => (prev === stage ? null : stage))}
                             >
                                 {stage}
                             </FilterChip>
@@ -222,5 +297,19 @@ export default function CrmPage() {
                 </div>
             </main>
         </div>
+        <FilterModal 
+            isOpen={isFilterModalOpen}
+            onClose={() => setFilterModalOpen(false)}
+            onApply={handleApplyFilters}
+            initialFilters={advancedFilters}
+            pipelineStages={PIPELINE_STAGES}
+        />
+        </>
     );
-} 
+}
+
+const FilterIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+    </svg>
+); 
