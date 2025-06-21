@@ -24,7 +24,7 @@ interface Lead {
   telefone: string;
   etapa: string;
   taskStatus: TaskStatus;
-  qualification?: { [key: string]: string };
+  qualificacao?: { [key: string]: string };
   [key: string]: any; 
 }
 
@@ -106,26 +106,34 @@ export default function CrmPage() {
     useEffect(() => {
         if (currentUser) {
             setLoading(true);
-            const leadsRef = collection(db, `leads/${currentUser.uid}/leads`);
+            const leadsRef = collection(db, 'leads');
+            const q = query(leadsRef, where("userId", "==", currentUser.uid));
             
-            const unsubscribe = onSnapshot(leadsRef, async (querySnapshot) => {
+            const unsubscribe = onSnapshot(q, async (querySnapshot) => {
                 const leadsDataPromises = querySnapshot.docs.map(async (leadDoc) => {
-                    const leadData = { id: leadDoc.id, ...leadDoc.data() } as Lead;
-                    
-                    console.log('Lead data:', leadData);
-                    console.log('Qualification data:', leadData.qualification);
-                    
-                    const tasksCol = collection(db, `leads/${currentUser.uid}/leads`, leadDoc.id, 'tarefas');
-                    const q = query(tasksCol, where('status', '==', 'pendente'));
-                    const tasksSnapshot = await getDocs(q);
-                    const tasks = tasksSnapshot.docs.map(doc => doc.data() as Task);
+                    try {
+                        const leadData = { id: leadDoc.id, ...leadDoc.data() } as Lead;
+                        
+                        const tasksCol = collection(db, `leads`, leadDoc.id, 'tarefas');
+                        const tasksQuery = query(tasksCol, where('status', '==', 'pendente'));
+                        const tasksSnapshot = await getDocs(tasksQuery);
+                        const tasks = tasksSnapshot.docs.map(doc => doc.data() as Task);
 
-                    const taskStatus = getTaskStatusInfo(tasks);
-                    
-                    return { ...leadData, taskStatus } as Lead;
+                        leadData.taskStatus = getTaskStatusInfo(tasks);
+                        
+                        // Garante que 'qualificacao' seja um objeto, mesmo que vazio
+                        leadData.qualificacao = leadDoc.data().qualificacao || {};
+
+                        return leadData;
+                    } catch (error) {
+                        console.error("Erro ao processar o lead:", leadDoc.id, error);
+                        return null; // Retorna nulo se houver um erro com este lead
+                    }
                 });
 
-                const leadsWithStatus = await Promise.all(leadsDataPromises);
+                const leadsWithStatus = (await Promise.all(leadsDataPromises))
+                    .filter((lead): lead is Lead => lead !== null); // Filtra os leads que falharam
+                
                 setLeads(leadsWithStatus);
                 setLoading(false);
             }, (error) => {
@@ -167,7 +175,7 @@ export default function CrmPage() {
                         return true; 
                     }
 
-                    const leadValue = key === 'etapa' ? lead.etapa : lead.qualification?.[key];
+                    const leadValue = key === 'etapa' ? lead.etapa : lead.qualificacao?.[key];
                     
                     if (leadValue === undefined) {
                         return false; 
