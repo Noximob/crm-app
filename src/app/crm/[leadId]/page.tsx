@@ -52,6 +52,10 @@ interface Interaction {
     cancellationNotes?: string;
 }
 
+interface QualificationData {
+    [key: string]: string;
+}
+
 interface Task {
     id: string;
     description: string;
@@ -79,6 +83,7 @@ export default function LeadDetailPage() {
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const [taskToCancel, setTaskToCancel] = useState<{ interactionId: string; taskId: string } | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
+    const [qualifications, setQualifications] = useState<QualificationData>({});
 
     // --- Lógica para buscar os dados do lead ---
     useEffect(() => {
@@ -89,6 +94,7 @@ export default function LeadDetailPage() {
                 const leadData = { id: docSnap.id, ...docSnap.data() } as Lead;
                 setLead(leadData);
                 setTempAnnotations(leadData.anotacoes || '');
+                setQualifications(leadData.qualificacao || {});
             } else {
                 console.log("No such document!");
                 setLead(null);
@@ -243,6 +249,28 @@ export default function LeadDetailPage() {
         setIsCancelModalOpen(true);
     };
 
+    const handleQualificationChange = async (groupKey: string, value: string) => {
+        if (!currentUser || !leadId) return;
+
+        const newQualifications = {
+            ...qualifications,
+            [groupKey]: qualifications[groupKey] === value ? '' : value, // Permite desmarcar
+        };
+
+        setQualifications(newQualifications);
+
+        const leadRef = doc(db, `leads/${currentUser.uid}/leads`, leadId);
+        try {
+            await updateDoc(leadRef, {
+                qualificacao: newQualifications
+            });
+        } catch (error) {
+            console.error("Erro ao salvar qualificação:", error);
+            // Opcional: Reverter o estado em caso de erro
+            setQualifications(qualifications);
+        }
+    };
+
     const getTaskStatusInfo = () => {
         if (tasks.length === 0) {
             return { text: 'Sem tarefa', color: 'bg-gray-400' };
@@ -355,9 +383,28 @@ export default function LeadDetailPage() {
                     <div className="lg:col-span-2 flex flex-col gap-6">
                         {/* Card de Qualificação do Lead */}
                         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                            <h3 className="text-lg font-bold text-gray-800 dark:text-white">Qualificação do Lead</h3>
-                            <div className="mt-4">
-                                <p className="text-gray-500 dark:text-gray-400">A funcionalidade de qualificação será implementada aqui.</p>
+                            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Qualificação do Lead</h3>
+                            <div className="space-y-4">
+                                {QUALIFICATION_QUESTIONS.map((group) => (
+                                    <div key={group.key}>
+                                        <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">{group.title}</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {group.options.map((option) => (
+                                                <button
+                                                    key={option}
+                                                    onClick={() => handleQualificationChange(group.key, option)}
+                                                    className={`px-3 py-1.5 text-xs font-semibold border rounded-lg transition-all duration-150 ${
+                                                        qualifications[group.key] === option
+                                                        ? 'bg-primary-600 border-primary-600 text-white shadow-md'
+                                                        : 'bg-gray-100 hover:bg-gray-200 border-gray-200 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600'
+                                                    }`}
+                                                >
+                                                    {option}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
@@ -484,6 +531,39 @@ export default function LeadDetailPage() {
             />
         </div>
     );
-} 
+}
+
+const QUALIFICATION_QUESTIONS = [
+    {
+        title: 'Finalidade',
+        key: 'finalidade',
+        options: ['Moradia', 'Veraneio', 'Investimento'],
+    },
+    {
+        title: 'Estágio do Imóvel',
+        key: 'estagio',
+        options: ['Lançamento', 'Em Construção', 'Pronto para Morar'],
+    },
+    {
+        title: 'Quartos',
+        key: 'quartos',
+        options: ['2 quartos', '1 Suíte + 1 Quarto', '3 quartos', '4 quartos'],
+    },
+    {
+        title: 'Tipo do Imóvel',
+        key: 'tipo',
+        options: ['Apartamento', 'Casa', 'Terreno'],
+    },
+    {
+        title: 'Vagas de Garagem',
+        key: 'vagas',
+        options: ['1', '2', '3+'],
+    },
+    {
+        title: 'Valor do Imóvel',
+        key: 'valor',
+        options: ['Até 500 mil', '500-800 mil', '800mil-1.2M', '1.2M-2M', '2M+'],
+    },
+];
 
 // Trigger deploy 22/06 
