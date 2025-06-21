@@ -168,33 +168,35 @@ export default function LeadDetailPage() {
                                     <button onClick={() => setIsEditingAnnotations(true)} className="text-sm font-semibold text-primary-600 hover:text-primary-800 transition-colors">Editar</button>
                                 )}
                             </div>
-                            {isEditingAnnotations ? (
-                                <div className="flex flex-col h-full flex-grow">
-                                    <textarea
-                                        value={tempAnnotations}
-                                        onChange={(e) => setTempAnnotations(e.target.value)}
-                                        className="w-full flex-grow border border-gray-300 dark:border-gray-600 rounded-md p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
-                                        placeholder="Adicione suas anotações aqui..."
-                                    />
-                                    <div className="flex justify-end gap-2 mt-4 flex-shrink-0">
-                                        <button onClick={() => { setIsEditingAnnotations(false); setTempAnnotations(lead.anotacoes || ''); }} className="px-3 py-1 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 rounded-lg transition-colors">Cancelar</button>
-                                        <button onClick={handleSaveAnnotations} className="px-3 py-1 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors">Confirmar</button>
+                            <div className="flex-grow min-h-0">
+                                {isEditingAnnotations ? (
+                                    <div className="flex flex-col h-full">
+                                        <textarea
+                                            value={tempAnnotations}
+                                            onChange={(e) => setTempAnnotations(e.target.value)}
+                                            className="w-full flex-grow border border-gray-300 dark:border-gray-600 rounded-md p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+                                            placeholder="Adicione suas anotações aqui..."
+                                        />
+                                        <div className="flex justify-end gap-2 mt-4 flex-shrink-0">
+                                            <button onClick={() => { setIsEditingAnnotations(false); setTempAnnotations(lead.anotacoes || ''); }} className="px-3 py-1 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 rounded-lg transition-colors">Cancelar</button>
+                                            <button onClick={handleSaveAnnotations} className="px-3 py-1 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors">Confirmar</button>
+                                        </div>
                                     </div>
-                                </div>
-                            ) : (
-                                <div className="prose prose-sm dark:prose-invert max-w-none overflow-y-auto flex-grow pr-2">
-                                    <p className="whitespace-pre-wrap text-gray-600 dark:text-gray-400">
-                                        {lead.anotacoes || 'Nenhuma anotação registrada.'}
-                                    </p>
-                                </div>
-                            )}
+                                ) : (
+                                    <div className="prose prose-sm dark:prose-invert max-w-none overflow-y-auto h-full pr-2">
+                                        <p className="whitespace-pre-wrap text-gray-600 dark:text-gray-400">
+                                            {lead.anotacoes || 'Nenhuma anotação registrada.'}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 
                     {/* --- LINHA INFERIOR --- */}
-                    <div className="flex flex-col lg:flex-row gap-6 lg:items-stretch">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Coluna da Esquerda (Situação e Ações) */}
-                        <div className="lg:w-1/3 flex flex-col gap-6">
+                        <div className="lg:col-span-1 flex flex-col gap-6">
                              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
                                 <label htmlFor="lead-situation" className="block text-base font-semibold text-gray-800 dark:text-white mb-2">Situação do Lead</label>
                                 <select id="lead-situation" value={lead.etapa} onChange={handleStageChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
@@ -213,7 +215,7 @@ export default function LeadDetailPage() {
                         </div>
 
                         {/* Coluna da Direita (Histórico) */}
-                        <div className="lg:w-2/3">
+                        <div className="lg:col-span-2">
                             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col h-full">
                                 <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex-shrink-0">Histórico de Ações</h3>
                                 <div className="flex-grow overflow-y-auto min-h-0 pr-2">
