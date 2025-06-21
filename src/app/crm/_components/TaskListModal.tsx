@@ -13,16 +13,16 @@ interface Task {
     description: string;
     type: 'Ligação' | 'WhatsApp' | 'Visita';
     dueDate: Timestamp;
-    status: 'pendente' | 'concluída';
+    status: 'pendente' | 'concluída' | 'cancelada';
 }
 
-type TaskStatus = 'Tarefa em Atraso' | 'Tarefa do Dia' | 'Tarefa Futura';
+type TaskStatus = 'Tarefa em Atraso' | 'Tarefa do Dia' | 'Tarefa Futura' | 'Sem tarefa';
 
 interface LeadWithTaskStatus extends Lead {
     taskStatus: TaskStatus;
 }
 
-const TAREFA_STATUS_ORDER: TaskStatus[] = ['Tarefa em Atraso', 'Tarefa do Dia', 'Tarefa Futura'];
+const TAREFA_STATUS_ORDER: TaskStatus[] = ['Tarefa em Atraso', 'Tarefa do Dia', 'Sem tarefa'];
 
 // --- Componentes de UI ---
 const StatusIndicator = ({ status }: { status: TaskStatus }) => {
@@ -30,8 +30,9 @@ const StatusIndicator = ({ status }: { status: TaskStatus }) => {
         'Tarefa em Atraso': { color: 'bg-red-500', text: 'Atrasada' },
         'Tarefa do Dia': { color: 'bg-yellow-400', text: 'Para Hoje' },
         'Tarefa Futura': { color: 'bg-sky-500', text: 'Futura' },
+        'Sem tarefa': { color: 'bg-gray-400', text: 'Sem Tarefa' },
     };
-    const { color, text } = statusInfo[status];
+    const { color, text } = statusInfo[status] || statusInfo['Sem tarefa'];
 
     return (
         <div className="flex items-center gap-2 text-sm">
@@ -48,8 +49,8 @@ const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 // --- Funções de Ajuda ---
-const getTaskStatusInfo = (tasks: Task[]): TaskStatus | null => {
-    if (tasks.length === 0) return null;
+const getTaskStatusInfo = (tasks: Task[]): TaskStatus => {
+    if (tasks.length === 0) return 'Sem tarefa';
 
     const now = new Date();
     now.setHours(0, 0, 0, 0);
@@ -98,17 +99,21 @@ export default function TaskListModal({ isOpen, onClose }: TaskListModalProps) {
                 const tasks = tasksSnapshot.docs.map(doc => doc.data() as Task);
 
                 const taskStatus = getTaskStatusInfo(tasks);
-                return taskStatus ? { ...lead, taskStatus } : null;
+                return { ...lead, taskStatus };
             });
 
             const settledLeads = await Promise.all(leadsWithStatusPromises);
-            const filteredAndTypedLeads = settledLeads.filter(Boolean) as LeadWithTaskStatus[];
+            
+            // Filtra para não mostrar tarefas futuras
+            const leadsToShow = settledLeads.filter(
+                lead => lead.taskStatus !== 'Tarefa Futura'
+            );
 
-            filteredAndTypedLeads.sort((a, b) => {
+            leadsToShow.sort((a, b) => {
                 return TAREFA_STATUS_ORDER.indexOf(a.taskStatus) - TAREFA_STATUS_ORDER.indexOf(b.taskStatus);
             });
 
-            setLeadsWithTasks(filteredAndTypedLeads);
+            setLeadsWithTasks(leadsToShow);
             setLoading(false);
         };
 
@@ -131,7 +136,7 @@ export default function TaskListModal({ isOpen, onClose }: TaskListModalProps) {
                     {loading ? (
                         <p className="text-gray-600 dark:text-gray-300 text-center py-4">Carregando tarefas...</p>
                     ) : leadsWithTasks.length === 0 ? (
-                        <p className="text-gray-600 dark:text-gray-300 text-center py-4">Nenhuma tarefa pendente encontrada.</p>
+                        <p className="text-gray-600 dark:text-gray-300 text-center py-4">Nenhuma tarefa encontrada.</p>
                     ) : (
                         <table className="w-full text-left">
                             <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase">
