@@ -11,6 +11,7 @@ import { Lead } from '@/types';
 import LogInteractionModal from '../_components/LogInteractionModal';
 import CrmHeader from '../_components/CrmHeader';
 import AgendaModal, { TaskPayload } from '../_components/AgendaModal';
+import CancelTaskModal from '../_components/CancelTaskModal';
 
 // --- Ícones ---
 const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>;
@@ -48,6 +49,7 @@ interface Interaction {
     notes: string;
     timestamp: any;
     taskId?: string;
+    cancellationNotes?: string;
 }
 
 interface Task {
@@ -74,6 +76,9 @@ export default function LeadDetailPage() {
     const [isSavingTask, setIsSavingTask] = useState(false);
     const [isAgendaModalOpen, setIsAgendaModalOpen] = useState(false);
     const [tasks, setTasks] = useState<Task[]>([]);
+    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+    const [taskToCancel, setTaskToCancel] = useState<{ interactionId: string; taskId: string } | null>(null);
+    const [isCancelling, setIsCancelling] = useState(false);
 
     // --- Lógica para buscar os dados do lead ---
     useEffect(() => {
@@ -197,19 +202,45 @@ export default function LeadDetailPage() {
         setIsAgendaModalOpen(false);
     };
 
-    const handleUpdateTaskStatus = async (interactionId: string, taskId: string, status: 'concluída' | 'cancelada') => {
+    const handleUpdateTaskStatus = async (interactionId: string, taskId: string, status: 'concluída' | 'cancelada', reason?: string) => {
         if (!currentUser || !leadId) return;
 
-        // Atualiza o status na coleção de tarefas
-        const taskRef = doc(db, `leads/${currentUser.uid}/leads`, leadId, 'tarefas', taskId);
-        await updateDoc(taskRef, { status });
+        if (status === 'cancelada') {
+            setIsCancelling(true);
+        }
 
-        // Atualiza o tipo na interação original do histórico
-        const interactionRef = doc(db, `leads/${currentUser.uid}/leads`, leadId, 'interactions', interactionId);
-        await updateDoc(interactionRef, {
-            type: status === 'concluída' ? 'Tarefa Concluída' : 'Tarefa Cancelada',
-            timestamp: serverTimestamp()
-        });
+        try {
+            // Atualiza o status na coleção de tarefas
+            const taskRef = doc(db, `leads/${currentUser.uid}/leads`, leadId, 'tarefas', taskId);
+            await updateDoc(taskRef, { status });
+
+            // Atualiza a interação original do histórico
+            const interactionRef = doc(db, `leads/${currentUser.uid}/leads`, leadId, 'interactions', interactionId);
+            const updatePayload: { type: string; timestamp: any; cancellationNotes?: string } = {
+                type: status === 'concluída' ? 'Tarefa Concluída' : 'Tarefa Cancelada',
+                timestamp: serverTimestamp()
+            };
+
+            if (status === 'cancelada' && reason) {
+                updatePayload.cancellationNotes = reason;
+            }
+
+            await updateDoc(interactionRef, updatePayload);
+
+        } catch (error) {
+            console.error(`Erro ao atualizar tarefa para ${status}:`, error);
+        } finally {
+            if (status === 'cancelada') {
+                setIsCancelling(false);
+                setIsCancelModalOpen(false);
+                setTaskToCancel(null);
+            }
+        }
+    };
+
+    const openCancelModal = (interactionId: string, taskId: string) => {
+        setTaskToCancel({ interactionId, taskId });
+        setIsCancelModalOpen(true);
     };
 
     const getTaskStatusInfo = () => {
@@ -362,6 +393,12 @@ export default function LeadDetailPage() {
                                                         <p className="font-semibold text-gray-700 dark:text-gray-200">{interaction.type}</p>
                                                         <p className="text-sm text-gray-600 dark:text-gray-400">{interaction.notes}</p>
                                                         
+                                                        {interaction.type === 'Tarefa Cancelada' && interaction.cancellationNotes && (
+                                                            <p className="text-sm text-red-500 mt-1">
+                                                                <span className="font-semibold">Motivo:</span> {interaction.cancellationNotes}
+                                                            </p>
+                                                        )}
+
                                                         {isPendingTask && (
                                                             <div className="mt-2 flex items-center gap-3">
                                                                 <button
@@ -371,10 +408,10 @@ export default function LeadDetailPage() {
                                                                     Tarefa Concluída
                                                                 </button>
                                                                 <button
-                                                                    onClick={() => handleUpdateTaskStatus(interaction.id, interaction.taskId!, 'cancelada')}
+                                                                    onClick={() => openCancelModal(interaction.id, interaction.taskId!)}
                                                                     className="px-2.5 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
                                                                 >
-                                                                    Tarefa Cancelada
+                                                                    Cancelar Tarefa
                                                                 </button>
                                                             </div>
                                                         )}
@@ -413,6 +450,17 @@ export default function LeadDetailPage() {
                 onClose={() => setIsAgendaModalOpen(false)}
                 onSave={handleSaveTask}
                 isLoading={isSavingTask}
+            />
+
+            <CancelTaskModal
+                isOpen={isCancelModalOpen}
+                onClose={() => setIsCancelModalOpen(false)}
+                onConfirm={(reason) => {
+                    if (taskToCancel) {
+                        handleUpdateTaskStatus(taskToCancel.interactionId, taskToCancel.taskId, 'cancelada', reason);
+                    }
+                }}
+                isLoading={isCancelling}
             />
         </div>
     );
