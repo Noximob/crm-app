@@ -8,12 +8,8 @@ import { collection, onSnapshot, query, doc, updateDoc, DocumentData } from 'fir
 import { PIPELINE_STAGES } from '@/lib/constants';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import KanbanColumn from './_components/KanbanColumn';
+import { Lead } from '@/types';
 
-interface Lead extends DocumentData {
-    id: string;
-    etapa: string;
-}
-  
 type LeadsByStage = { [key: string]: Lead[] };
 
 export default function AndamentoPage() {

@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
+  // output: 'export', // Removido para suportar páginas dinâmicas
   trailingSlash: true,
   images: {
     unoptimized: true

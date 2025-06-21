@@ -1,12 +1,8 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import LeadCard from './LeadCard'; // Será criado a seguir
-
-interface Lead {
-  id: string;
-  [key: string]: any;
-}
+import LeadCard from './LeadCard';
+import { Lead } from '@/types'; // Importa do local central
 
 interface KanbanColumnProps {
   id: string;
