@@ -35,10 +35,10 @@ const FilterTag = ({ label, isSelected, onClick }: { label: string; isSelected: 
         type="button"
         onClick={onClick}
         className={`
-            w-full text-left px-3 py-2 text-sm rounded-lg border transition-all duration-200
+            w-full text-left px-2.5 py-1.5 text-sm rounded-md border transition-all duration-200
             ${isSelected
-                ? 'bg-primary-500 border-primary-500 text-white font-semibold shadow'
-                : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200 hover:border-slate-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600'
+                ? 'bg-primary-500 border-primary-500 text-white font-semibold shadow-sm'
+                : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300 dark:bg-gray-700/80 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700'
             }
         `}
     >
@@ -76,21 +76,21 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters, 
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4" onMouseDown={onClose}>
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl relative flex flex-col" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl relative flex flex-col" onMouseDown={(e) => e.stopPropagation()}>
                 {/* Cabeçalho */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-                    <h2 className="text-xl font-bold text-gray-800 dark:text-white">Filtrar Leads</h2>
+                <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700">
+                    <h2 className="text-lg font-bold text-gray-800 dark:text-white">Filtrar Leads</h2>
                     <button onClick={onClose} className="p-1 rounded-full text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-                        <XIcon className="h-6 w-6" />
+                        <XIcon className="h-5 w-5" />
                     </button>
                 </div>
                 
                 {/* Conteúdo com scroll */}
-                <div className="p-6 space-y-6 max-h-[65vh] overflow-y-auto">
+                <div className="p-5 space-y-5 max-h-[70vh] overflow-y-auto">
                     {[situationQuestion, ...QUALIFICATION_QUESTIONS].map(group => (
                         <div key={group.key}>
-                            <h4 className="text-base font-semibold text-gray-600 dark:text-gray-300 mb-3">{group.title}</h4>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                            <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2.5">{group.title}</h4>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
                                 {group.options.map(option => (
                                     <FilterTag 
                                         key={option}
@@ -105,12 +105,12 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters, 
                 </div>
 
                 {/* Rodapé */}
-                <div className="flex justify-end gap-4 p-6 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl">
                     <button 
                         type="button" 
                         onClick={handleClearFilters} 
                         disabled={!hasActiveFilters}
-                        className="px-5 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors dark:text-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors dark:text-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Limpar
                     </button>
@@ -120,7 +120,7 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters, 
                             onApply(selectedFilters);
                             onClose();
                         }}
-                        className="px-6 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                        className="px-5 py-2 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
                     >
                         Aplicar Filtros
                     </button>
