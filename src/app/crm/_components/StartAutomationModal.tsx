@@ -27,6 +27,7 @@ export default function StartAutomationModal({ isOpen, onClose, onConfirm, leadN
     if (!isOpen) return null;
 
     const handleConfirm = () => {
+        console.log("Modal: Botão Confirmar clicado. Chamando onConfirm...");
         onConfirm(treatmentName);
     };
 

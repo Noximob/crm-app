@@ -323,7 +323,12 @@ export default function LeadDetailPage() {
     const taskStatus = getTaskStatusInfo();
 
     const handleStartAutomation = async (treatmentName: string) => {
-        if (!currentUser || !leadId) return;
+        console.log("Página do Lead: Função handleStartAutomation foi chamada com o nome:", treatmentName);
+        if (!currentUser || !leadId) {
+            console.error("Usuário ou ID do lead não encontrado. Saindo.");
+            return;
+        }
+        
         setIsUpdatingAutomation(true);
         const leadRef = doc(db, 'leads', leadId);
         try {
