@@ -98,25 +98,25 @@ export const onLeadAutomationStarted = onDocumentUpdated("leads/{leadId}", async
         // Garante que o código do país (55) está presente
         const telefoneComCodigo = telefoneLimpo.startsWith("55") ? telefoneLimpo : `55${telefoneLimpo}`;
 
-        // A URL agora não contém mais o token
-        const url = `https://api.z-api.io/instances/${zapiInstanceId}/send-text`;
+        // CORREÇÃO: A URL correta, de acordo com a documentação do Z-API, inclui o token.
+        const url = `https://api.z-api.io/instances/${zapiInstanceId}/token/${zapiInstanceToken}/send-text`;
         
         logger.info(`Enviando para: ${url} com o telefone: ${telefoneComCodigo}`);
 
-        // O token agora é enviado no cabeçalho (header) da requisição
         await axios.post(url, {
             phone: telefoneComCodigo,
             message: textoFinal,
         }, {
             headers: {
-                'Client-Token': zapiInstanceToken
+                // A documentação do Z-API sugere um 'Client-Token' aqui, que seria um token de segurança da conta.
+                // Como não temos esse campo, vamos manter o que funcionava antes e não enviar headers extras por enquanto,
+                // já que o token principal já está na URL.
             }
         });
 
         logger.info(`Mensagem do dia 0 enviada com sucesso para o lead ${event.params.leadId}.`);
     } catch (error) {
         logger.error(`Erro ao processar automação para o lead ${event.params.leadId}:`, error);
-        // Opcional: Adicionar lógica para lidar com o erro, como reverter o status do lead.
     }
 });
 
