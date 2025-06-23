@@ -88,33 +88,41 @@ export default function TaskListModal({ isOpen, onClose }: TaskListModalProps) {
             if (!currentUser) return;
             setLoading(true);
 
-            const leadsRef = collection(db, `leads/${currentUser.uid}/leads`);
-            const leadsSnapshot = await getDocs(leadsRef);
-            const allLeads: Lead[] = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
+            try {
+                // Buscar leads do usuário na estrutura correta
+                const leadsRef = collection(db, 'leads');
+                const leadsQuery = query(leadsRef, where('userId', '==', currentUser.uid));
+                const leadsSnapshot = await getDocs(leadsQuery);
+                const allLeads: Lead[] = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
 
-            const leadsWithStatusPromises = allLeads.map(async (lead) => {
-                const tasksCol = collection(db, `leads/${currentUser.uid}/leads`, lead.id, 'tarefas');
-                const q = query(tasksCol, where('status', '==', 'pendente'));
-                const tasksSnapshot = await getDocs(q);
-                const tasks = tasksSnapshot.docs.map(doc => doc.data() as Task);
+                const leadsWithStatusPromises = allLeads.map(async (lead) => {
+                    // Buscar tarefas do lead na estrutura correta
+                    const tasksCol = collection(db, 'leads', lead.id, 'tarefas');
+                    const q = query(tasksCol, where('status', '==', 'pendente'));
+                    const tasksSnapshot = await getDocs(q);
+                    const tasks = tasksSnapshot.docs.map(doc => doc.data() as Task);
 
-                const taskStatus = getTaskStatusInfo(tasks);
-                return { ...lead, taskStatus };
-            });
+                    const taskStatus = getTaskStatusInfo(tasks);
+                    return { ...lead, taskStatus };
+                });
 
-            const settledLeads = await Promise.all(leadsWithStatusPromises);
-            
-            // Filtra para não mostrar tarefas futuras
-            const leadsToShow = settledLeads.filter(
-                lead => lead.taskStatus !== 'Tarefa Futura'
-            );
+                const settledLeads = await Promise.all(leadsWithStatusPromises);
+                
+                // Filtra para não mostrar tarefas futuras
+                const leadsToShow = settledLeads.filter(
+                    lead => lead.taskStatus !== 'Tarefa Futura'
+                );
 
-            leadsToShow.sort((a, b) => {
-                return TAREFA_STATUS_ORDER.indexOf(a.taskStatus) - TAREFA_STATUS_ORDER.indexOf(b.taskStatus);
-            });
+                leadsToShow.sort((a, b) => {
+                    return TAREFA_STATUS_ORDER.indexOf(a.taskStatus) - TAREFA_STATUS_ORDER.indexOf(b.taskStatus);
+                });
 
-            setLeadsWithTasks(leadsToShow);
-            setLoading(false);
+                setLeadsWithTasks(leadsToShow);
+            } catch (error) {
+                console.error('Erro ao buscar tarefas:', error);
+            } finally {
+                setLoading(false);
+            }
         };
 
         if (isOpen) {

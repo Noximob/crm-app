@@ -20,6 +20,7 @@ admin.initializeApp();
 interface Automacao {
     status: "inativa" | "ativa" | "cancelada";
     nomeTratamento?: string;
+    initialMessageSent?: boolean; // Campo de segurança para evitar envios duplicados
 }
 
 interface Lead {
@@ -31,6 +32,7 @@ interface Lead {
 interface User {
     zapiInstanceId?: string;
     zapiInstanceToken?: string;
+    clientToken?: string;
 }
 
 interface Mensagem {
@@ -38,43 +40,71 @@ interface Mensagem {
     texto: string;
 }
 
-// Função que é acionada quando um lead é atualizado
-export const onLeadAutomationStarted = onDocumentUpdated("leads/{leadId}", async (event) => {
-    logger.info(`Iniciando verificação para o lead: ${event.params.leadId}`);
-
-    const beforeData = event.data?.before.data() as Lead | undefined;
-    const afterData = event.data?.after.data() as Lead | undefined;
-
-    // Se não houver dados antes ou depois, ou se o status não mudou para 'ativa', encerra a função.
-    if (!beforeData || !afterData) {
-        logger.info("Dados do lead não encontrados. Encerrando.");
-        return;
+const logToLead = async (leadId: string, message: string, data: object = {}) => {
+    try {
+        const logData = {
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            message,
+            ...data,
+        };
+        await admin.firestore().collection("leads").doc(leadId).collection("function_logs").add(logData);
+    } catch (error) {
+        logger.error(`Falha ao escrever log na 'caixa-preta' do lead ${leadId}`, error);
     }
+};
 
-    const beforeStatus = beforeData.automacao?.status;
-    const afterStatus = afterData.automacao?.status;
-
-    if (beforeStatus === "ativa" || afterStatus !== "ativa") {
-        logger.info(`Status não mudou para 'ativa' ou já estava 'ativa'. Status anterior: ${beforeStatus}, Status novo: ${afterStatus}. Encerrando.`);
-        return;
-    }
-
-    logger.info(`Automação ativada para o lead ${event.params.leadId}. Procedendo com o envio.`);
+// Renomeando a função para forçar uma nova implantação e limpar qualquer cache.
+export const sendInitialMessage = onDocumentUpdated("leads/{leadId}", async (event) => {
+    const leadId = event.params.leadId;
+    
+    await logToLead(leadId, "=== Início da execução (v5 - Caixa-Preta) ===");
 
     try {
-        // 1. Obter os dados do usuário (corretor) para pegar as credenciais do Z-API
-        const userDoc = await admin.firestore().collection("usuarios").doc(afterData.userId).get();
+        // PASSO 1: Buscar os dados MAIS RECENTES diretamente do Firestore.
+        const leadRef = admin.firestore().collection("leads").doc(leadId);
+        const leadSnap = await leadRef.get();
+
+        if (!leadSnap.exists) {
+            await logToLead(leadId, "❌ Lead não encontrado no banco de dados.", { fatal: true });
+            return;
+        }
+
+        const leadData = leadSnap.data() as Lead;
+        await logToLead(leadId, "Dados atuais lidos do DB", { automacao: leadData.automacao });
+
+        // PASSO 2: A CONDIÇÃO DE ENVIO.
+        const shouldSend = leadData.automacao?.status === 'ativa' && !leadData.automacao?.initialMessageSent;
+
+        if (!shouldSend) {
+            await logToLead(leadId, "❌ Condição de envio não atendida.", { status: leadData.automacao?.status, sent: leadData.automacao?.initialMessageSent });
+            return;
+        }
+        
+        await logToLead(leadId, "✅ Condição de envio atendida. Preparando para enviar.");
+        
+        // 3. Obter os dados do usuário
+        const userDoc = await admin.firestore().collection("usuarios").doc(leadData.userId).get();
         if (!userDoc.exists) {
-            throw new Error(`Usuário ${afterData.userId} não encontrado.`);
+            throw new Error(`Usuário ${leadData.userId} não encontrado.`);
         }
         const userData = userDoc.data() as User;
-        const {zapiInstanceId, zapiInstanceToken} = userData;
+        const {zapiInstanceId, zapiInstanceToken, clientToken} = userData;
 
-        if (!zapiInstanceId || !zapiInstanceToken) {
-            throw new Error(`Credenciais do Z-API não configuradas para o usuário ${afterData.userId}.`);
+        await logToLead(leadId, "ℹ️ Credenciais lidas do documento do usuário", {
+            userId: leadData.userId,
+            credentials: {
+                hasInstanceId: !!zapiInstanceId,
+                hasInstanceToken: !!zapiInstanceToken,
+                hasClientToken: !!clientToken,
+            },
+        });
+
+        if (!zapiInstanceId || !zapiInstanceToken || !clientToken) {
+            throw new Error(`Credenciais do Z-API (instanceId, instanceToken ou clientToken) não configuradas para o usuário ${leadData.userId}.`);
         }
+        await logToLead(leadId, "✅ Credenciais Z-API encontradas.");
 
-        // 2. Obter as configurações de mensagens
+        // 4. Obter as configurações de mensagens
         const configDoc = await admin.firestore().collection("configuracoes").doc("automacaoMensagens").get();
         if (!configDoc.exists) {
             throw new Error("Documento de configuração 'automacaoMensagens' não encontrado.");
@@ -83,40 +113,52 @@ export const onLeadAutomationStarted = onDocumentUpdated("leads/{leadId}", async
         const primeiraMensagem = mensagens.find((m) => m.dia === 0);
 
         if (!primeiraMensagem || !primeiraMensagem.texto) {
-            logger.info("Nenhuma mensagem configurada para o dia 0. Encerrando.");
+            await logToLead(leadId, "❌ Nenhuma mensagem configurada para o dia 0.");
             return;
         }
+        await logToLead(leadId, "✅ Mensagem do dia 0 encontrada.");
 
-        // 3. Preparar e enviar a mensagem via Z-API
-        let textoFinal = primeiraMensagem.texto;
-        if (afterData.automacao.nomeTratamento) {
-            textoFinal = textoFinal.replace(/{{nomeTratamento}}/g, afterData.automacao.nomeTratamento);
-        }
+        // 5. Preparar e enviar a mensagem via Z-API
+        const nomeTratamento = leadData.automacao.nomeTratamento || "Cliente";
+        const textoFinal = primeiraMensagem.texto.replace(/{{nomeTratamento}}/g, nomeTratamento);
         
-        // Remove caracteres não numéricos do telefone
-        const telefoneLimpo = afterData.telefone.replace(/\D/g, "");
-        // Garante que o código do país (55) está presente
+        const telefoneLimpo = leadData.telefone.replace(/\D/g, "");
         const telefoneComCodigo = telefoneLimpo.startsWith("55") ? telefoneLimpo : `55${telefoneLimpo}`;
 
-        // CORREÇÃO: A URL correta, de acordo com a documentação do Z-API, inclui o token.
         const url = `https://api.z-api.io/instances/${zapiInstanceId}/token/${zapiInstanceToken}/send-text`;
-        
-        logger.info(`Enviando para: ${url} com o telefone: ${telefoneComCodigo}`);
-
-        await axios.post(url, {
+        const payload = {
             phone: telefoneComCodigo,
             message: textoFinal,
-        }, {
+        };
+        
+        await logToLead(leadId, "📤 Enviando para Z-API...", { url, payload });
+
+        await axios.post(url, payload, {
             headers: {
-                // A documentação do Z-API sugere um 'Client-Token' aqui, que seria um token de segurança da conta.
-                // Como não temos esse campo, vamos manter o que funcionava antes e não enviar headers extras por enquanto,
-                // já que o token principal já está na URL.
+                'Content-Type': 'application/json',
+                'Client-Token': clientToken,
             }
         });
 
-        logger.info(`Mensagem do dia 0 enviada com sucesso para o lead ${event.params.leadId}.`);
+        await logToLead(leadId, "✅ Mensagem enviada com sucesso para Z-API.");
+
+        // 6. "CARIMBAR" O LEAD para não enviar de novo.
+        await leadRef.update({
+            'automacao.initialMessageSent': true
+        });
+        await logToLead(leadId, "✅ Lead carimbado como 'initialMessageSent: true'.");
+
     } catch (error) {
-        logger.error(`Erro ao processar automação para o lead ${event.params.leadId}:`, error);
+        const errorDetails: { message?: string; status?: number; data?: any } = {};
+        if (axios.isAxiosError(error)) {
+            errorDetails.message = error.message;
+            errorDetails.status = error.response?.status;
+            errorDetails.data = error.response?.data;
+        } else if (error instanceof Error) {
+            errorDetails.message = error.message;
+        }
+        
+        await logToLead(leadId, "💥 ERRO CAPTURADO 💥", { error: errorDetails });
     }
 });
 
