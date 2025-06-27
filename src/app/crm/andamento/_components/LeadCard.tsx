@@ -28,24 +28,24 @@ export default function LeadCard({ lead }: { lead: Lead }) {
       style={style}
       {...attributes}
       {...listeners}
-      className="bg-[#F5F8FF] dark:bg-[#23283A] rounded-xl p-4 shadow-soft border border-[#A3C8F7] dark:border-[#3478F6]/40 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-[#3478F6] transition-all duration-200 min-h-[90px] flex flex-col gap-1 w-full max-w-[260px] mx-auto"
+      className="bg-[#F5F8FF] dark:bg-[#23283A] rounded-lg p-2 shadow-soft border border-[#A3C8F7] dark:border-[#3478F6]/40 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-[#3478F6] transition-all duration-200 min-h-[60px] flex flex-col gap-1 w-full max-w-[180px] mx-auto"
     >
-      <div className="font-semibold text-sm text-[#2E2F38] dark:text-white mb-0.5 truncate">{lead.nome}</div>
-      <div className="text-xs text-[#6B6F76] dark:text-gray-400 mb-2 truncate">{lead.telefone}</div>
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2 justify-between mt-2">
+      <div className="font-semibold text-xs text-[#2E2F38] dark:text-white mb-0.5 truncate">{lead.nome}</div>
+      <div className="text-[11px] text-[#6B6F76] dark:text-gray-400 mb-1 truncate">{lead.telefone}</div>
+      <div className="flex flex-col gap-1 mt-1">
         <a 
           href={`https://wa.me/${lead.telefone.replace(/\\D/g, '')}`} 
           target="_blank" 
           rel="noopener noreferrer"
           onClick={e => e.stopPropagation()}
-          className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-green-600 dark:text-green-400 border border-green-200 dark:border-green-500/40 rounded-md hover:bg-green-50 dark:hover:bg-green-500/10 transition-colors w-full sm:w-auto justify-center"
+          className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-green-600 dark:text-green-400 border border-green-200 dark:border-green-500/40 rounded-md hover:bg-green-50 dark:hover:bg-green-500/10 transition-colors w-full justify-center"
         >
-          <WhatsAppIcon className="h-4 w-4" />
+          <WhatsAppIcon className="h-3 w-3" />
           WhatsApp
         </a>
-        <Link href={`/crm/${lead.id}`} onClick={e => e.stopPropagation()} className="w-full sm:w-auto">
-          <span className="block px-2.5 py-1 text-xs font-semibold text-white bg-[#3478F6] rounded-md hover:bg-[#255FD1] transition-colors text-center">
-            + Informações
+        <Link href={`/crm/${lead.id}`} onClick={e => e.stopPropagation()} className="w-full">
+          <span className="block px-2 py-0.5 text-[11px] font-semibold text-white bg-[#3478F6] rounded-md hover:bg-[#255FD1] transition-colors text-center">
+            + Info
           </span>
         </Link>
       </div>
