@@ -371,25 +371,25 @@ export default function LeadDetailPage() {
     const automationStatus = lead.automacao?.status || 'inativa';
 
     return (
-        <div className="bg-slate-100 dark:bg-gray-900 min-h-screen p-4 sm:p-6 lg:p-8">
+        <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
             <CrmHeader />
 
             {loading ? (
                 <div className="text-center py-10 mt-6">Carregando dados do lead...</div>
             ) : lead ? (
-                 <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                 <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* --- COLUNA DA ESQUERDA --- */}
                     <div className="lg:col-span-1 flex flex-col gap-6">
                         {/* Card de Informações do Lead */}
-                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                        <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
                             <div className="flex items-center gap-4">
-                                <div className="bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-300 font-bold text-xl rounded-lg h-14 w-14 flex items-center justify-center">
+                                <div className="bg-[#E8E9F1] dark:bg-[#23283A] text-[#3478F6] dark:text-[#A3C8F7] font-bold text-xl rounded-lg h-14 w-14 flex items-center justify-center">
                                     {lead.nome.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold text-gray-800 dark:text-white">{lead.nome}</h2>
+                                    <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white tracking-tight">{lead.nome}</h2>
                                     <div className="flex items-center gap-2">
-                                        <p className="text-gray-500 dark:text-gray-400">{lead.telefone}</p>
+                                        <p className="text-[#6B6F76] dark:text-gray-400">{lead.telefone}</p>
                                         <a 
                                             href={`https://wa.me/55${lead.telefone.replace(/\D/g, '')}`} 
                                             target="_blank" 
@@ -400,43 +400,43 @@ export default function LeadDetailPage() {
                                             <WhatsAppIcon className="h-4 w-4 fill-current"/>
                                         </a>
                                     </div>
-                                    <p className="text-gray-500 dark:text-gray-400">{lead.email}</p>
+                                    <p className="text-[#6B6F76] dark:text-gray-400">{lead.email}</p>
                                 </div>
                             </div>
                             <div className="mt-4 flex items-center gap-2">
                                 <span className={`h-2.5 w-2.5 rounded-full ${taskStatus.color}`}></span>
-                                <span className="text-sm text-gray-600 dark:text-gray-300">{taskStatus.text}</span>
+                                <span className="text-sm text-[#6B6F76] dark:text-gray-300">{taskStatus.text}</span>
                             </div>
                         </div>
 
                         {/* Card de Situação do Lead */}
-                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                            <label htmlFor="lead-situation" className="block text-base font-semibold text-gray-800 dark:text-white mb-2">Situação do Lead</label>
-                            <select id="lead-situation" value={lead.etapa} onChange={handleStageChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+                            <label htmlFor="lead-situation" className="block text-base font-semibold text-[#2E2F38] dark:text-white mb-2">Situação do Lead</label>
+                            <select id="lead-situation" value={lead.etapa} onChange={handleStageChange} className="w-full p-2 border border-[#A3C8F7] dark:border-[#3478F6] rounded-lg bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white focus:ring-2 focus:ring-[#3478F6]">
                                 {PIPELINE_STAGES.map(stage => (<option key={stage} value={stage}>{stage}</option>))}
                             </select>
                         </div>
 
                         {/* Card O que deseja fazer? */}
-                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                            <h3 className="text-base font-semibold text-gray-800 dark:text-white mb-4">O que deseja fazer?</h3>
+                        <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+                            <h3 className="text-base font-semibold text-[#2E2F38] dark:text-white mb-4">O que deseja fazer?</h3>
                             <div className="grid grid-cols-2 gap-3">
-                                <button onClick={() => openInteractionModal('Ligação')} className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-primary-700 bg-primary-100/80 rounded-lg hover:bg-primary-200/70 transition-colors"><PhoneIcon className="h-4 w-4"/>Ligação</button>
-                                <button onClick={() => openInteractionModal('WhatsApp')} className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-green-700 bg-green-100/80 rounded-lg hover:bg-green-200/70 transition-colors"><WhatsAppIcon className="h-4 w-4 fill-current"/>WhatsApp</button>
-                                <button onClick={() => openInteractionModal('Visita')} className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-indigo-700 bg-indigo-100/80 rounded-lg hover:bg-indigo-200/70 transition-colors"><BuildingIcon className="h-4 w-4"/>Visita</button>
-                                <button onClick={() => setIsAgendaModalOpen(true)} className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-sky-700 bg-sky-100/80 rounded-lg hover:bg-sky-200/70 transition-colors"><TaskIcon className="h-4 w-4"/>Tarefa</button>
+                                <button onClick={() => openInteractionModal('Ligação')} className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-[#3478F6] bg-[#E8E9F1] rounded-lg hover:bg-[#A3C8F7]/40 transition-colors"><PhoneIcon className="h-4 w-4"/>Ligação</button>
+                                <button onClick={() => openInteractionModal('WhatsApp')} className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-green-700 bg-green-100/80 rounded-lg hover:bg-green-200/70 transition-colors"><WhatsAppIcon className="h-4 w-4 fill-current"/>WhatsApp</button>
+                                <button onClick={() => openInteractionModal('Visita')} className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-indigo-700 bg-indigo-100/80 rounded-lg hover:bg-indigo-200/70 transition-colors"><BuildingIcon className="h-4 w-4"/>Visita</button>
+                                <button onClick={() => setIsAgendaModalOpen(true)} className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-[#3478F6] bg-[#E8E9F1] rounded-lg hover:bg-[#A3C8F7]/40 transition-colors"><TaskIcon className="h-4 w-4"/>Tarefa</button>
                             </div>
                         </div>
 
                         {/* Card de Automação de Mensagens */}
-                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                            <h3 className="text-base font-semibold text-gray-800 dark:text-white mb-4">Automação Mensagens</h3>
+                        <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+                            <h3 className="text-base font-semibold text-[#2E2F38] dark:text-white mb-4">Automação Mensagens</h3>
                             <div className="flex flex-col gap-3">
                                 <button
                                     type="button"
                                     onClick={() => setIsAutomationModalOpen(true)}
                                     disabled={automationStatus !== 'inativa' || isUpdatingAutomation}
-                                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <PlayIcon className="h-4 w-4" />
                                     Iniciar Disparo
@@ -445,7 +445,7 @@ export default function LeadDetailPage() {
                                     type="button"
                                     onClick={handleCancelAutomation}
                                     disabled={automationStatus !== 'ativa' || isUpdatingAutomation}
-                                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <StopIcon className="h-4 w-4" />
                                     Cancelar Disparo
@@ -457,12 +457,12 @@ export default function LeadDetailPage() {
                     {/* --- COLUNA DA DIREITA --- */}
                     <div className="lg:col-span-2 flex flex-col gap-6">
                         {/* Card de Qualificação do Lead */}
-                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Qualificação do Lead</h3>
+                        <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+                            <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4">Qualificação do Lead</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
                                 {QUALIFICATION_QUESTIONS.map((group) => (
                                     <div key={group.key}>
-                                        <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">{group.title}</h4>
+                                        <h4 className="text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">{group.title}</h4>
                                         <div className="flex flex-wrap gap-1.5">
                                             {group.options.map((option) => (
                                                 <button
@@ -484,9 +484,9 @@ export default function LeadDetailPage() {
                         </div>
 
                         {/* Card de Anotações */}
-                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col h-56">
+                        <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] flex flex-col h-56">
                             <div className="flex justify-between items-center mb-4 flex-shrink-0">
-                                <h3 className="text-lg font-bold text-gray-800 dark:text-white">Anotações</h3>
+                                <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white">Anotações</h3>
                                 {!isEditingAnnotations && (
                                     <button onClick={() => setIsEditingAnnotations(true)} className="text-sm font-semibold text-primary-600 hover:text-primary-800 transition-colors">Editar</button>
                                 )}
@@ -516,8 +516,8 @@ export default function LeadDetailPage() {
                         </div>
 
                         {/* Card de Histórico */}
-                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col">
-                            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex-shrink-0">Histórico de Ações</h3>
+                        <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] flex flex-col">
+                            <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex-shrink-0">Histórico de Ações</h3>
                             <div className="flex-grow overflow-y-auto min-h-0 pr-2">
                                 {interactions.length > 0 ? (
                                     <ul className="space-y-4">
