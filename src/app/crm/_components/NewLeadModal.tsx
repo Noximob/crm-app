@@ -105,34 +105,36 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
 
     return (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md relative">
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+            <div className="bg-[#F5F6FA] dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-6 w-full max-w-md relative">
+                <button onClick={onClose} className="absolute top-4 right-4 text-[#6B6F76] hover:text-[#3478F6] dark:hover:text-[#A3C8F7] transition-colors">
                     <XIcon className="h-6 w-6" />
                 </button>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Cadastrar Novo Lead</h2>
+                <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white mb-6">Cadastrar Novo Lead</h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome *</label>
-                        <input type="text" id="name" value={name} onChange={(e) => setName(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" required />
+                        <label htmlFor="name" className="block text-sm font-semibold text-[#2E2F38] dark:text-white">Nome *</label>
+                        <input type="text" id="name" value={name} onChange={(e) => setName(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-[#181C23] border border-[#A3C8F7] dark:border-[#3478F6] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38] dark:text-white" required />
                     </div>
                     <div>
-                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Telefone *</label>
-                        <input type="tel" id="phone" value={phone} onChange={handlePhoneChange} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" required maxLength={15} />
+                        <label htmlFor="phone" className="block text-sm font-semibold text-[#2E2F38] dark:text-white">Telefone *</label>
+                        <input type="tel" id="phone" value={phone} onChange={handlePhoneChange} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-[#181C23] border border-[#A3C8F7] dark:border-[#3478F6] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38] dark:text-white" required maxLength={15} />
                     </div>
                     <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">E-mail</label>
-                        <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
+                        <label htmlFor="email" className="block text-sm font-semibold text-[#2E2F38] dark:text-white">E-mail</label>
+                        <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-[#181C23] border border-[#A3C8F7] dark:border-[#3478F6] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38] dark:text-white" />
                     </div>
                     <div>
-                        <label htmlFor="situation" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Situação</label>
-                        <select id="situation" value={situation} onChange={(e) => setSituation(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                        <label htmlFor="situation" className="block text-sm font-semibold text-[#2E2F38] dark:text-white">Situação</label>
+                        <select id="situation" value={situation} onChange={(e) => setSituation(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-[#181C23] border border-[#A3C8F7] dark:border-[#3478F6] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38] dark:text-white">
                             {PIPELINE_STAGES.map(stage => <option key={stage} value={stage}>{stage}</option>)}
                         </select>
                     </div>
                     {error && <p className="text-sm text-red-500">{error}</p>}
                     <div className="flex justify-end gap-4 pt-4">
-                        <button type="button" onClick={onClose} disabled={isLoading} className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50">Cancelar</button>
-                        <button type="submit" disabled={isLoading} className="px-4 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:bg-primary-400">
+                        <button type="button" onClick={onClose} disabled={isLoading} className="px-4 py-2 text-sm font-semibold text-[#6B6F76] bg-[#E8E9F1] hover:bg-[#A3C8F7]/40 rounded-lg transition-colors disabled:opacity-50 dark:bg-[#181C23] dark:text-[#A3C8F7] dark:hover:bg-[#23283A]">
+                            Cancelar
+                        </button>
+                        <button type="submit" disabled={isLoading} className="px-4 py-2 text-sm font-semibold text-white bg-[#3478F6] hover:bg-[#255FD1] rounded-lg shadow-sm disabled:opacity-50 disabled:bg-[#A3C8F7]">
                             {isLoading ? 'Cadastrando...' : 'Cadastrar'}
                         </button>
                     </div>
