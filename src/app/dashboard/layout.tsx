@@ -64,7 +64,7 @@ export default function DashboardLayout({
     { href: '#', icon: TargetIcon, label: 'Metas' },
     { href: '#', icon: PresentationIcon, label: 'Treinamentos' },
     { href: '#', icon: AlertTriangleIcon, label: 'Avisos' },
-    { href: '#', icon: CreditCardIcon, label: 'Pagamentos' },
+    { href: '/dashboard/pagamentos', icon: CreditCardIcon, label: 'Pagamentos' },
     { href: '#', icon: SettingsIcon, label: 'Configurações' },
   ];
 
