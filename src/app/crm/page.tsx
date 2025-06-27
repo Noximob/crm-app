@@ -266,18 +266,12 @@ export default function CrmPage() {
                                             <StatusIndicator status={lead.taskStatus} />
                                         </td>
                                         <td className="px-4 py-3 w-1/5 text-center">
-                                            <div className="flex justify-center gap-2">
+                                            <div className="flex justify-center">
                                                 <Link
                                                     href={`/crm/${lead.id}`}
                                                     className="px-3 py-1.5 text-xs font-semibold bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg shadow-soft transition-colors"
                                                 >
                                                     Ver
-                                                </Link>
-                                                <Link
-                                                    href={`/crm/${lead.id}`}
-                                                    className="px-3 py-1.5 text-xs font-semibold bg-[#E8E9F1] hover:bg-[#A3C8F7]/30 text-[#3478F6] rounded-lg border border-[#A3C8F7] transition-colors"
-                                                >
-                                                    Editar
                                                 </Link>
                                             </div>
                                         </td>
