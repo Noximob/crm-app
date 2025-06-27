@@ -40,9 +40,9 @@ export const CrmHeader = () => {
 
     return (
         <>
-            <header className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md flex items-center justify-between">
+            <header className="bg-[#F5F6FA] dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] p-4 rounded-2xl shadow-soft flex items-center justify-between mb-4">
                 <div className="flex items-center gap-6">
-                    <Link href="/dashboard" className="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:text-primary-500 transition-colors">
+                    <Link href="/dashboard" className="flex items-center gap-2 text-sm font-semibold text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] transition-colors">
                         <ArrowLeftIcon className="h-5 w-5" />
                         Voltar
                     </Link>
@@ -50,10 +50,10 @@ export const CrmHeader = () => {
                     <div className="flex items-center gap-2">
                         {navLinks.map(link => (
                             <Link key={link.href} href={link.href}>
-                                <span className={`block px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-colors ${pathname === link.href 
-                                    ? 'bg-primary-600 text-white' 
-                                    : 'bg-white text-primary-700 border border-gray-300 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600'}`
-                                }>
+                                <span className={`block px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-colors border border-transparent ${pathname === link.href 
+                                    ? 'bg-[#3478F6] text-white' 
+                                    : 'bg-white text-[#3478F6] border border-[#A3C8F7] hover:bg-[#E8E9F1] dark:bg-[#181C23] dark:text-[#A3C8F7] dark:border-[#23283A] dark:hover:bg-[#23283A]'}
+                                `}>
                                     {link.text}
                                 </span>
                             </Link>
@@ -64,14 +64,14 @@ export const CrmHeader = () => {
                 <div className="flex items-center gap-3">
                     <button 
                         onClick={() => setAgendaModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-primary-700 bg-primary-100/80 rounded-lg hover:bg-primary-200/70 transition-colors shadow-sm dark:bg-primary-500/10 dark:text-primary-200 dark:hover:bg-primary-500/20"
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[#3478F6] bg-[#E8E9F1] rounded-lg hover:bg-[#A3C8F7]/40 transition-colors shadow-sm border border-[#A3C8F7] dark:bg-[#181C23] dark:text-[#A3C8F7] dark:border-[#23283A] dark:hover:bg-[#23283A]"
                     >
                         <CalendarIcon className="h-4 w-4" />
                         Agenda
                     </button>
                     <button 
                         onClick={() => setNewLeadModalOpen(true)} 
-                        className="flex items-center gap-2.5 px-4 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                        className="flex items-center gap-2.5 px-4 py-2 text-sm font-semibold text-white bg-[#3478F6] rounded-lg shadow-sm hover:bg-[#255FD1] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#A3C8F7]"
                     >
                         <PlusIcon className="h-4 w-4" />
                         Novo Lead
