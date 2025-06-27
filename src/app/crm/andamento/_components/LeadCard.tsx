@@ -28,7 +28,7 @@ export default function LeadCard({ lead }: { lead: Lead }) {
       style={style}
       {...attributes}
       {...listeners}
-      className="bg-white dark:bg-[#23283A] rounded-xl p-3 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] cursor-grab active:cursor-grabbing hover:shadow-md hover:border-[#A3C8F7] dark:hover:border-[#3478F6]/40 transition-all duration-200 min-h-[90px] flex flex-col gap-1"
+      className="bg-[#F5F8FF] dark:bg-[#23283A] rounded-xl p-4 shadow-soft border border-[#A3C8F7] dark:border-[#3478F6]/40 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-[#3478F6] transition-all duration-200 min-h-[90px] flex flex-col gap-1 w-full max-w-[260px] mx-auto"
     >
       <div className="font-semibold text-sm text-[#2E2F38] dark:text-white mb-0.5 truncate">{lead.nome}</div>
       <div className="text-xs text-[#6B6F76] dark:text-gray-400 mb-2 truncate">{lead.telefone}</div>
