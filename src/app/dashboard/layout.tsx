@@ -60,7 +60,7 @@ export default function DashboardLayout({
   const navItems = [
     { href: '/dashboard', icon: LayoutDashboardIcon, label: 'Dashboard CRM' },
     { href: '/crm', icon: BarChartIcon, label: 'CRM' },
-    { href: '#', icon: FileTextIcon, label: 'Materiais' },
+    { href: '/dashboard/materiais', icon: FileTextIcon, label: 'Materiais' },
     { href: '#', icon: TargetIcon, label: 'Metas' },
     { href: '#', icon: PresentationIcon, label: 'Treinamentos' },
     { href: '#', icon: AlertTriangleIcon, label: 'Avisos' },
