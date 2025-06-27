@@ -17,7 +17,7 @@ export default function KanbanColumn({ id, title, leads }: KanbanColumnProps) {
     <SortableContext id={id} items={leads} strategy={verticalListSortingStrategy}>
       <div
         ref={setNodeRef}
-        className="flex flex-col flex-shrink-0 w-80 bg-white dark:bg-[#181C23] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] transition-all duration-200 min-h-[340px]"
+        className="flex flex-col flex-shrink-0 w-48 bg-white dark:bg-[#181C23] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] transition-all duration-200 min-h-[340px]"
       >
         <div className="flex items-center justify-between p-4 border-b border-[#E8E9F1] dark:border-[#23283A] bg-[#F5F6FA] dark:bg-[#23283A] rounded-t-2xl">
           <h3 className="text-base font-bold text-[#2E2F38] dark:text-white tracking-tight">
