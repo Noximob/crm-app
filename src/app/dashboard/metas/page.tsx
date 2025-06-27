@@ -34,12 +34,9 @@ export default function MetasPage() {
   return (
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2 text-left">Metas</h1>
-            <p className="text-[#6B6F76] dark:text-gray-300 text-left text-base">Acompanhe seu progresso, motive-se e bata suas metas!</p>
-          </div>
-          <button className="px-5 py-2 rounded-lg font-semibold text-white bg-[#3478F6] hover:bg-[#255FD1] shadow-soft transition-colors text-base">+ Definir nova meta</button>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2 text-left">Metas</h1>
+          <p className="text-[#6B6F76] dark:text-gray-300 text-left text-base">Acompanhe seu progresso, motive-se e bata suas metas!</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
           {metas.map((meta) => (
