@@ -28,25 +28,25 @@ export default function LeadCard({ lead }: { lead: Lead }) {
       style={style}
       {...attributes}
       {...listeners}
-      className="bg-white dark:bg-gray-900 rounded-lg p-3 shadow-sm border border-primary-200/70 dark:border-primary-500/20 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-primary-300 dark:hover:border-primary-500/60 transition-all duration-200"
+      className="bg-white dark:bg-[#23283A] rounded-xl p-3 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] cursor-grab active:cursor-grabbing hover:shadow-md hover:border-[#A3C8F7] dark:hover:border-[#3478F6]/40 transition-all duration-200 min-h-[90px] flex flex-col gap-1"
     >
-      <div className="font-semibold text-sm text-gray-800 dark:text-gray-100 mb-1">{lead.nome}</div>
-      <div className="text-xs text-gray-500 dark:text-gray-400 mb-3">{lead.telefone}</div>
-      <div className="flex items-center justify-between mt-4">
+      <div className="font-semibold text-sm text-[#2E2F38] dark:text-white mb-0.5 truncate">{lead.nome}</div>
+      <div className="text-xs text-[#6B6F76] dark:text-gray-400 mb-2 truncate">{lead.telefone}</div>
+      <div className="flex items-center justify-between mt-2">
         <a 
           href={`https://wa.me/${lead.telefone.replace(/\\D/g, '')}`} 
           target="_blank" 
           rel="noopener noreferrer"
           onClick={e => e.stopPropagation()}
-          className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-green-600 dark:text-green-400 border border-green-300 dark:border-green-500/50 rounded-md hover:bg-green-50 dark:hover:bg-green-500/10 transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-green-600 dark:text-green-400 border border-green-200 dark:border-green-500/40 rounded-md hover:bg-green-50 dark:hover:bg-green-500/10 transition-colors"
         >
-          <WhatsAppIcon className="h-3.5 w-3.5" />
+          <WhatsAppIcon className="h-4 w-4" />
           WhatsApp
         </a>
         <Link href={`/crm/${lead.id}`} onClick={e => e.stopPropagation()}>
-            <span className="px-2.5 py-1 text-xs font-semibold text-white bg-primary-600 rounded-md hover:bg-primary-700 transition-colors">
-                + Informações
-            </span>
+          <span className="px-2.5 py-1 text-xs font-semibold text-white bg-[#3478F6] rounded-md hover:bg-[#255FD1] transition-colors">
+            + Informações
+          </span>
         </Link>
       </div>
     </div>

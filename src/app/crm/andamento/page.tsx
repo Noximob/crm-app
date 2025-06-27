@@ -108,9 +108,9 @@ export default function AndamentoPage() {
 
 
     return (
-        <div className="bg-slate-100 dark:bg-gray-900 min-h-screen p-4 sm:p-6 lg:p-8">
+        <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
             <CrmHeader />
-            <main className="mt-4">
+            <main className="mt-6">
                 {loading ? (
                     <div className="text-center py-10">Carregando quadro...</div>
                 ) : (
@@ -120,7 +120,7 @@ export default function AndamentoPage() {
                         onDragStart={handleDragStart}
                         onDragEnd={handleDragEnd}
                     >
-                        <div className="flex gap-4 overflow-x-auto pb-4">
+                        <div className="flex gap-6 overflow-x-auto pb-4">
                             {PIPELINE_STAGES.map(stage => (
                                 <KanbanColumn key={stage} id={stage} title={stage} leads={leads[stage] || []} />
                             ))}
