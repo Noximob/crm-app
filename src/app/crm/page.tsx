@@ -94,6 +94,13 @@ const getTaskStatusInfo = (tasks: Task[]): TaskStatus => {
     return 'Tarefa Futura';
 };
 
+// Novo componente para título com barra colorida
+const SectionTitle = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
+  <div className={`relative ${className}`}>
+    <h2 className="text-lg font-bold text-[#2E2F38] relative z-10">{children}</h2>
+    <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-[#3478F6] to-[#A3C8F7] rounded-r-full opacity-60"></div>
+  </div>
+);
 
 export default function CrmPage() {
     const { currentUser } = useAuth();
@@ -190,108 +197,107 @@ export default function CrmPage() {
 
     return (
         <>
-        <div className="bg-slate-100 dark:bg-gray-900 min-h-screen p-4 sm:p-6 lg:p-8">
+        <div className="bg-[#F5F6FA] min-h-screen p-4 sm:p-6 lg:p-8">
             <CrmHeader />
-            <main className="flex flex-col gap-3 mt-4">
-                <div className="bg-white dark:bg-gray-800/80 dark:backdrop-blur-sm p-4 rounded-xl shadow-md">
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setFilterModalOpen(true)}
-                            className="relative flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors shadow-sm"
-                        >
-                            <FilterIcon className="h-4 w-4" />
-                            Filtrar
-                            {activeAdvancedFilterCount > 0 && (
-                                <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
-                                    {activeAdvancedFilterCount}
-                                </span>
+            <main className="flex flex-col gap-4 mt-4">
+                <div className="bg-white p-4 rounded-2xl shadow-soft border border-[#E8E9F1]">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
+                        <SectionTitle>Gestão de Leads</SectionTitle>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setFilterModalOpen(true)}
+                                className="relative flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-[#3478F6] hover:bg-[#255FD1] rounded-lg transition-colors shadow-soft"
+                            >
+                                <span>Filtrar</span>
+                                {activeAdvancedFilterCount > 0 && (
+                                    <span className="bg-[#3AC17C] text-white text-[10px] font-bold rounded-full px-2 py-0.5 ml-1 animate-pulse-slow">
+                                        {activeAdvancedFilterCount}
+                                    </span>
+                                )}
+                            </button>
+                            {(activeFilter || activeAdvancedFilterCount > 0) && (
+                                <button
+                                    onClick={handleClearFilters}
+                                    className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-[#F45B69] bg-[#F45B69]/10 hover:bg-[#F45B69]/20 rounded-lg transition-colors"
+                                >
+                                    <XIcon className="h-4 w-4" /> Limpar filtros
+                                </button>
                             )}
-                        </button>
-                         <button 
-                            onClick={handleClearFilters} 
-                            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors shadow-sm"
-                        >
-                            <XIcon className="h-4 w-4" />
-                            Limpar Filtros
-                        </button>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-2">
-                        {PIPELINE_STAGES.map(stage => (
-                            <FilterChip 
-                                key={stage} 
+                    {/* Chips de filtro rápido */}
+                    <div className="flex flex-wrap gap-2 mb-4">
+                        {PIPELINE_STAGES.map((stage) => (
+                            <FilterChip
+                                key={stage}
                                 selected={activeFilter === stage}
-                                onClick={() => setActiveFilter(prev => (prev === stage ? null : stage))}
+                                onClick={() => setActiveFilter(activeFilter === stage ? null : stage)}
                             >
                                 {stage}
                             </FilterChip>
                         ))}
                     </div>
-                </div>
-                
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-                    <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                        <thead className="text-xs text-primary-800 uppercase bg-primary-100/60 dark:bg-primary-900/20 dark:text-primary-300">
-                            <tr>
-                                <th scope="col" className="px-6 py-3">Nome</th>
-                                <th scope="col" className="px-6 py-3">WhatsApp</th>
-                                <th scope="col" className="px-6 py-3">Situação</th>
-                                <th scope="col" className="px-6 py-3">Status</th>
-                                <th scope="col" className="px-6 py-3 text-right">Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {loading ? (
-                                <tr>
-                                    <td colSpan={5} className="text-center p-6">Carregando leads...</td>
+                    {/* Lista de leads */}
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full bg-white rounded-xl shadow-soft border border-[#E8E9F1] table-fixed">
+                            <thead>
+                                <tr className="bg-[#F5F6FA] text-[#6B6F76] text-xs">
+                                    <th className="px-4 py-2 font-semibold text-left w-1/5 rounded-tl-xl">Nome</th>
+                                    <th className="px-4 py-2 font-semibold text-left w-1/5">Telefone</th>
+                                    <th className="px-4 py-2 font-semibold text-left w-1/5">Etapa</th>
+                                    <th className="px-4 py-2 font-semibold text-left w-1/5">Status da Tarefa</th>
+                                    <th className="px-4 py-2 font-semibold text-center w-1/5">Ações</th>
                                 </tr>
-                            ) : filteredLeads.length === 0 ? (
-                                <tr>
-                                    <td colSpan={5} className="text-center p-6">Nenhum lead encontrado.</td>
-                                </tr>
-                            ) : (
-                                filteredLeads.map((lead) => (
-                                    <tr key={lead.id} className="bg-white even:bg-primary-50/50 dark:bg-gray-800 dark:even:bg-primary-500/5">
-                                        <td className="px-6 py-4">
-                                            <div className="text-sm font-medium text-gray-900 dark:text-white">{lead.nome}</div>
-                                            <div className="text-xs text-gray-500 dark:text-gray-400">{lead.telefone}</div>
+                            </thead>
+                            <tbody>
+                                {filteredLeads.length === 0 && (
+                                    <tr>
+                                        <td colSpan={5} className="text-center text-[#6B6F76] py-8">Nenhum lead encontrado.</td>
+                                    </tr>
+                                )}
+                                {filteredLeads.map((lead) => (
+                                    <tr key={lead.id} className="border-b last:border-b-0 hover:bg-[#F5F6FA] transition-colors">
+                                        <td className="px-4 py-3 text-sm font-medium text-[#2E2F38] w-1/5 truncate max-w-[180px]">{lead.nome}</td>
+                                        <td className="px-4 py-3 text-xs text-[#6B6F76] w-1/5 truncate max-w-[140px]">{lead.telefone}</td>
+                                        <td className="px-4 py-3 text-xs w-1/5">
+                                            <span className="inline-block px-2 py-1 rounded bg-[#E8E9F1] text-[#3478F6] font-semibold text-[11px] truncate max-w-[120px]">{lead.etapa}</span>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <a 
-                                                href={`https://wa.me/55${lead.telefone.replace(/\\D/g, '')}`} 
-                                                target="_blank" 
-                                                rel="noopener noreferrer"
-                                                className="flex items-center justify-center gap-2 w-fit px-3 py-1 text-xs font-bold text-green-700 bg-green-100 rounded-full hover:bg-green-200 transition-colors dark:bg-green-500/20 dark:text-green-400 dark:hover:bg-green-500/30"
-                                            >
-                                                <WhatsAppIcon className="h-3.5 w-3.5 fill-current"/>
-                                                WhatsApp
-                                            </a>
+                                        <td className="px-4 py-3 text-xs w-1/5">
+                                            <StatusIndicator status={lead.taskStatus} />
                                         </td>
-                                        <td className="px-6 py-4">{lead.etapa}</td>
-                                        <td className="px-6 py-4">
-                                            <StatusIndicator status={lead.taskStatus || 'Sem tarefa'} />
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <Link href={`/crm/${lead.id}`}>
-                                                <span className="px-5 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors shadow-sm">
-                                                    Abrir
-                                                </span>
-                                            </Link>
+                                        <td className="px-4 py-3 w-1/5 text-center">
+                                            <div className="flex justify-center gap-2">
+                                                <Link
+                                                    href={`/crm/${lead.id}`}
+                                                    className="px-3 py-1.5 text-xs font-semibold bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg shadow-soft transition-colors"
+                                                >
+                                                    Ver
+                                                </Link>
+                                                <Link
+                                                    href={`/crm/${lead.id}`}
+                                                    className="px-3 py-1.5 text-xs font-semibold bg-[#E8E9F1] hover:bg-[#A3C8F7]/30 text-[#3478F6] rounded-lg border border-[#A3C8F7] transition-colors"
+                                                >
+                                                    Editar
+                                                </Link>
+                                            </div>
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </main>
+            {isFilterModalOpen && (
+                <FilterModal
+                    isOpen={isFilterModalOpen}
+                    onClose={() => setFilterModalOpen(false)}
+                    onApply={handleApplyFilters}
+                    initialFilters={advancedFilters}
+                    pipelineStages={PIPELINE_STAGES}
+                />
+            )}
         </div>
-        <FilterModal 
-            isOpen={isFilterModalOpen}
-            onClose={() => setFilterModalOpen(false)}
-            onApply={handleApplyFilters}
-            initialFilters={advancedFilters}
-            pipelineStages={PIPELINE_STAGES}
-        />
         </>
     );
 }

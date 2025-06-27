@@ -38,6 +38,7 @@ interface User {
 interface Mensagem {
     dia: number;
     texto: string;
+    horario?: string; // novo campo
 }
 
 const logToLead = async (leadId: string, message: string, data: object = {}) => {
@@ -52,6 +53,24 @@ const logToLead = async (leadId: string, message: string, data: object = {}) => 
         logger.error(`Falha ao escrever log na 'caixa-preta' do lead ${leadId}`, error);
     }
 };
+
+function calcularDataEnvio(dataInicial: Date, dia: number, horario: string): Date {
+  let dataEnvio = new Date(dataInicial);
+  dataEnvio.setDate(dataEnvio.getDate() + dia);
+
+  // Se cair no domingo, pula para segunda
+  if (dataEnvio.getDay() === 0) {
+    dataEnvio.setDate(dataEnvio.getDate() + 1);
+  }
+
+  // Define o horário, se houver
+  if (horario && horario.includes(':')) {
+    const [horas, minutos] = horario.split(':').map(Number);
+    dataEnvio.setHours(horas, minutos, 0, 0);
+  }
+
+  return dataEnvio;
+}
 
 // Renomeando a função para forçar uma nova implantação e limpar qualquer cache.
 export const sendInitialMessage = onDocumentUpdated("leads/{leadId}", async (event) => {
@@ -147,6 +166,15 @@ export const sendInitialMessage = onDocumentUpdated("leads/{leadId}", async (eve
             'automacao.initialMessageSent': true
         });
         await logToLead(leadId, "✅ Lead carimbado como 'initialMessageSent: true'.");
+
+        // 7. Agendar as próximas mensagens (dias > 0)
+        const mensagensFuturas = mensagens.filter((m) => m.dia > 0 && m.texto && m.horario);
+        for (const msg of mensagensFuturas) {
+            const dataEnvio = calcularDataEnvio(new Date(), msg.dia, msg.horario!);
+            // Aqui você pode usar Cloud Tasks, agendamento próprio, ou apenas logar para testar:
+            await logToLead(leadId, `Mensagem agendada para ${dataEnvio.toLocaleString()}: ${msg.texto}`);
+            // Exemplo: se for usar Cloud Tasks, aqui você criaria a task para dataEnvio
+        }
 
     } catch (error) {
         const errorDetails: { message?: string; status?: number; data?: any } = {};

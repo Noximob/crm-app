@@ -9,20 +9,85 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Cores personalizadas para o CRM
-        primary: {
-          50: '#f0f8ff',   // Azul muito claro
-          100: '#e0f2fe',  // Azul claro
-          200: '#bae6fd',  // Azul médio claro
-          300: '#7dd3fc',  // Azul médio
-          400: '#38bdf8',  // Azul
-          500: '#0ea5e9',  // Azul principal
-          600: '#0284c7',  // Azul escuro
-          700: '#0369a1',  // Azul mais escuro
-          800: '#075985',  // Azul muito escuro
-          900: '#0c4a6e',  // Azul mais escuro ainda
+        // Nova paleta de cores do Dashboard
+        // Paleta Principal (Interface Base)
+        background: {
+          primary: '#F5F6FA',    // Fundo principal claro
+          secondary: '#E8E9F1',   // Fundo alternativo (cards)
         },
-        // Branco menos branco para não cansar a vista
+        text: {
+          primary: '#2E2F38',     // Texto principal
+          secondary: '#6B6F76',   // Texto secundário
+        },
+        
+        // Cor Primária (Ação e Identidade)
+        primary: {
+          50: '#f0f8ff',
+          100: '#e0f2fe',
+          200: '#bae6fd',
+          300: '#7dd3fc',
+          400: '#38bdf8',
+          500: '#3478F6',         // Azul petróleo - Cor principal
+          600: '#255FD1',         // Azul um tom mais escuro - Hover
+          700: '#1e4bb8',
+          800: '#1e3a8a',
+          900: '#1e293b',
+        },
+        
+        // Cores de Estado / Feedback Visual
+        success: {
+          50: '#f0fdf4',
+          100: '#dcfce7',
+          200: '#bbf7d0',
+          300: '#86efac',
+          400: '#4ade80',
+          500: '#3AC17C',         // Verde menta - Sucesso
+          600: '#16a34a',
+          700: '#15803d',
+          800: '#166534',
+          900: '#14532d',
+        },
+        
+        warning: {
+          50: '#fffbeb',
+          100: '#fef3c7',
+          200: '#fde68a',
+          300: '#fcd34d',
+          400: '#fbbf24',
+          500: '#FFCC66',         // Amarelo suave - Aviso
+          600: '#d97706',
+          700: '#b45309',
+          800: '#92400e',
+          900: '#78350f',
+        },
+        
+        error: {
+          50: '#fef2f2',
+          100: '#fee2e2',
+          200: '#fecaca',
+          300: '#fca5a5',
+          400: '#f87171',
+          500: '#F45B69',         // Vermelho rosado - Erro
+          600: '#dc2626',
+          700: '#b91c1c',
+          800: '#991b1b',
+          900: '#7f1d1d',
+        },
+        
+        info: {
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#A3C8F7',         // Azul claro - Info leve
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
+        },
+        
+        // Cores legadas para compatibilidade
         offwhite: {
           50: '#fafafa',
           100: '#f5f5f5',
@@ -30,7 +95,6 @@ const config: Config = {
           300: '#d4d4d4',
           400: '#a3a3a3',
         },
-        // Cinza suave para textos
         softgray: {
           50: '#f9fafb',
           100: '#f3f4f6',
