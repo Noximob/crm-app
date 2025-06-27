@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, onSnapshot } from 'firebase/firestore';
+import Link from 'next/link';
 
 // Ícones
 const TrendingUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -430,6 +431,11 @@ export default function DashboardPage() {
           </div>
         </Card>
       </div>
+
+      {/* Adicionar link para Pagamentos na navegação lateral, se não existir */}
+      <Link href="/dashboard/pagamentos" className="block px-4 py-2 rounded-lg text-[#3478F6] hover:bg-[#E8E9F1] font-semibold transition-colors">
+        Pagamentos
+      </Link>
     </div>
   );
 } 
