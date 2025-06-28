@@ -1,25 +1,32 @@
+'use client';
+
 import React from 'react';
+import Link from 'next/link';
 
 const treinamentos = [
   {
     title: 'Treinamento Sistema',
     description: 'Aprenda a usar todas as funcionalidades do CRM e do sistema.',
     icon: '💻',
+    href: '/dashboard/treinamentos/sistema',
   },
   {
     title: 'Funil de Vendas',
     description: 'Entenda o processo de vendas e como conduzir leads até o fechamento.',
     icon: '🔄',
+    href: '/dashboard/treinamentos/funil-vendas',
   },
   {
     title: 'Vendas',
     description: 'Dicas, técnicas e estratégias para aumentar sua conversão.',
     icon: '📈',
+    href: '/dashboard/treinamentos/vendas',
   },
   {
     title: 'Materiais Auxiliares',
     description: 'Acesse roteiros, scripts, apresentações e outros recursos de apoio.',
     icon: '🗂️',
+    href: '/dashboard/treinamentos/materiais-auxiliares',
   },
 ];
 
@@ -31,14 +38,16 @@ export default function TreinamentosPage() {
         <p className="text-[#6B6F76] dark:text-gray-300 mb-8 text-left text-base">Capacite-se e potencialize seus resultados com nossos treinamentos e materiais exclusivos.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
           {treinamentos.map((item) => (
-            <button
+            <Link
               key={item.title}
-              className="flex flex-col items-center justify-center bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-8 transition-all duration-200 hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] group"
+              href={item.href}
+              className="flex flex-col items-center justify-center bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-8 transition-all duration-200 hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] group cursor-pointer"
+              tabIndex={0}
             >
               <span className="text-4xl mb-4 group-hover:scale-110 transition-transform">{item.icon}</span>
               <span className="text-xl font-bold text-[#3478F6] dark:text-[#A3C8F7] mb-2 text-center">{item.title}</span>
               <span className="text-sm text-[#6B6F76] dark:text-gray-300 text-center">{item.description}</span>
-            </button>
+            </Link>
           ))}
         </div>
       </div>
