@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
+import { useTheme } from '@/context/ThemeContext';
 
 // Ícones
 const AlertTriangleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>;
@@ -38,6 +39,7 @@ export default function DashboardLayout({
   const [collapsed, setCollapsed] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -65,60 +67,82 @@ export default function DashboardLayout({
     { href: '/dashboard/treinamentos', icon: PresentationIcon, label: 'Treinamentos' },
     { href: '#', icon: AlertTriangleIcon, label: 'Avisos' },
     { href: '/dashboard/pagamentos', icon: CreditCardIcon, label: 'Pagamentos' },
-    { href: '#', icon: SettingsIcon, label: 'Configurações' },
+    { href: '/dashboard/configuracoes', icon: SettingsIcon, label: 'Configurações' },
   ];
 
   return (
-    <div className="min-h-screen w-full bg-[#F5F6FA] flex items-start p-4 gap-4">
-      <aside className={`bg-white rounded-xl shadow-sm border border-[#E8E9F1] flex flex-col transition-all duration-300 sticky top-4 ${collapsed ? 'w-16' : 'w-56'}`}>
-        <div className="h-16 flex items-center justify-between px-4 border-b border-[#E8E9F1]">
-             <div className={`flex items-center overflow-hidden ${collapsed ? 'w-0' : 'w-auto'}`}>
-                <div className="h-8 w-8 bg-[#3478F6] rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
-                    <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                </div>
-                <h1 className="text-xl font-bold text-[#2E2F38] whitespace-nowrap">Alume</h1>
-             </div>
-             <button onClick={() => setCollapsed(!collapsed)} className="p-1 rounded-lg hover:bg-[#E8E9F1] transition-colors">
-                <ChevronLeftIcon className={`h-5 w-5 text-[#6B6F76] transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`} />
-             </button>
+    <div className="flex h-screen bg-[#F5F6FA] dark:bg-[#181C23]">
+      {/* Sidebar */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-[#23283A] shadow-lg transform transition-transform duration-300 ease-in-out ${collapsed ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+        <div className="flex items-center justify-between p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
+          <h1 className="text-xl font-bold text-[#2E2F38] dark:text-white">CRM Imobiliário</h1>
+          <button
+            onClick={() => setCollapsed(false)}
+            className="md:hidden text-[#6B6F76] dark:text-gray-300 hover:text-[#2E2F38] dark:hover:text-white"
+          >
+            ✕
+          </button>
         </div>
         
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="p-4">
+          <ul className="space-y-2">
             {navItems.map((item) => (
-                <NavLink 
-                    key={item.href}
-                    href={item.href} 
-                    icon={item.icon} 
-                    collapsed={collapsed}
-                    isActive={pathname === item.href}
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
+                    pathname === item.href
+                      ? 'bg-[#3478F6] text-white'
+                      : 'text-[#6B6F76] dark:text-gray-300 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] hover:text-[#2E2F38] dark:hover:text-white'
+                  }`}
+                  onClick={() => setCollapsed(false)}
                 >
-                    {item.label}
-                </NavLink>
+                  <span className="mr-3">{item.icon}</span>
+                  {item.label}
+                </Link>
+              </li>
             ))}
+          </ul>
         </nav>
+      </div>
 
-        <div className="px-3 py-3 border-t border-[#E8E9F1]">
-            <div className="flex items-center">
-                <div className="h-8 w-8 rounded-full bg-[#3478F6] flex items-center justify-center text-white font-bold flex-shrink-0 text-sm">
-                  {user.email ? user.email.charAt(0).toUpperCase() : ''}
-                </div>
-                {!collapsed && (
-                    <div className="ml-3 text-sm overflow-hidden">
-                        <p className="font-semibold text-[#2E2F38] truncate text-xs">{user.email}</p>
-                        <p className="text-[#6B6F76] text-xs">Corretor(a)</p>
-                    </div>
-                )}
-            </div>
-            <button onClick={handleLogout} className="w-full flex items-center justify-center mt-3 bg-[#E8E9F1] hover:bg-[#F45B69] hover:text-white text-[#6B6F76] px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200">
-                <LogOutIcon className="h-4 w-4" />
-                {!collapsed && <span className="ml-2">Logout</span>}
+      {/* Main content */}
+      <div className="flex-1 flex flex-col md:ml-64">
+        {/* Header */}
+        <header className="bg-white dark:bg-[#23283A] shadow-sm border-b border-[#E8E9F1] dark:border-[#23283A] p-4">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setCollapsed(true)}
+              className="md:hidden text-[#6B6F76] dark:text-gray-300 hover:text-[#2E2F38] dark:hover:text-white"
+            >
+              ☰
             </button>
-        </div>
-      </aside>
+            
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:text-[#2E2F38] dark:hover:text-white transition-colors"
+                title={theme === 'light' ? 'Alternar para modo escuro' : 'Alternar para modo claro'}
+              >
+                {theme === 'light' ? '🌙' : '☀️'}
+              </button>
+            </div>
+          </div>
+        </header>
 
-      <main className="flex-1">
+        {/* Content */}
+        <main className="flex-1 overflow-auto">
           {children}
-      </main>
+        </main>
+      </div>
+
+      {/* Overlay */}
+      {collapsed && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          onClick={() => setCollapsed(false)}
+        />
+      )}
     </div>
   );
 } 
