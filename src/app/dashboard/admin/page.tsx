@@ -39,6 +39,8 @@ export default function AdminPage() {
               onClick={() => {
                 if (item.title === 'Financeiro') {
                   window.location.href = '/dashboard/admin/financeiro';
+                } else if (item.title === 'Site') {
+                  window.location.href = '/dashboard/admin/site';
                 }
               }}
             >
