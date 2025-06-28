@@ -21,6 +21,25 @@ const ChevronLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props
 const SettingsIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>;
 const CreditCardIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>;
 
+// Novo ícone de casa para 'Incluir imóvel'
+const HouseIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3478F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 10L12 3l9 7" />
+    <path d="M9 21V14h6v7" />
+    <path d="M21 10v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V10" />
+  </svg>
+);
+
+// Ícone de chave para Área administrador
+const KeyIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3478F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="7.5" cy="15.5" r="3.5" />
+    <path d="M21 2l-9.6 9.6" />
+    <path d="M15.5 7.5l1.5 1.5" />
+    <path d="M17.5 5.5l1.5 1.5" />
+  </svg>
+);
+
 // Adicionar logo fictícia SVG
 const AlumeLogo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} width="32" height="32" viewBox="0 0 32 32" fill="none">
@@ -74,9 +93,10 @@ export default function DashboardLayout({
     { href: '/dashboard/materiais', icon: FileTextIcon, label: 'Materiais' },
     { href: '/dashboard/metas', icon: TargetIcon, label: 'Metas' },
     { href: '/dashboard/treinamentos', icon: PresentationIcon, label: 'Treinamentos' },
-    { href: '#', icon: AlertTriangleIcon, label: 'Avisos' },
+    { href: '/dashboard/incluir-imovel', icon: HouseIcon, label: 'Incluir imóvel' },
     { href: '/dashboard/pagamentos', icon: CreditCardIcon, label: 'Pagamentos' },
     { href: '/dashboard/configuracoes', icon: SettingsIcon, label: 'Configurações' },
+    { href: '/dashboard/admin', icon: KeyIcon, label: 'Área administrador' },
   ];
 
   return (
@@ -84,12 +104,10 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <div className={`flex flex-col fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-white dark:bg-[#23283A] shadow-lg transition-all duration-300`}>
         <div className="flex items-center justify-between p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
-          {!collapsed && (
-            <div className="flex items-center gap-2">
-              <AlumeLogo className="h-8 w-8" />
-              <h1 className="text-xl font-bold text-[#2E2F38] dark:text-white transition-all">Alume</h1>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <AlumeLogo className="h-8 w-8" />
+            {!collapsed && <h1 className="text-xl font-bold text-[#2E2F38] dark:text-white transition-all">Alume</h1>}
+          </div>
           <button
             onClick={() => setCollapsed(!collapsed)}
             className="p-1 rounded-lg hover:bg-[#E8E9F1] transition-colors"
