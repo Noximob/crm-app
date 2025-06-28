@@ -75,12 +75,14 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-[#23283A] shadow-lg transform transition-transform duration-300 ease-in-out ${collapsed ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
         <div className="flex items-center justify-between p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
-          <h1 className="text-xl font-bold text-[#2E2F38] dark:text-white">CRM Imobiliário</h1>
+          <div className={`flex items-center overflow-hidden ${collapsed ? 'w-0' : 'w-auto'}`}>
+            <h1 className="text-xl font-bold text-[#2E2F38] dark:text-white">Alume</h1>
+          </div>
           <button
-            onClick={() => setCollapsed(false)}
+            onClick={() => setCollapsed(!collapsed)}
             className="md:hidden text-[#6B6F76] dark:text-gray-300 hover:text-[#2E2F38] dark:hover:text-white"
           >
-            ✕
+            {collapsed ? <ChevronLeftIcon className="h-5 w-5 text-[#6B6F76] rotate-180" /> : <ChevronLeftIcon className="h-5 w-5 text-[#6B6F76]" />}
           </button>
         </div>
         
