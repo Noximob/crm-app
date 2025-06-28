@@ -113,7 +113,7 @@ export default function DashboardLayout({
   return (
     <div className={`flex h-screen bg-[#F5F6FA] dark:bg-[#181C23]`}>
       {/* Sidebar */}
-      <div className={`flex flex-col justify-between h-screen fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-white dark:bg-[#23283A] shadow-lg transition-all duration-300`}>
+      <div className={`flex flex-col justify-between h-screen fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-white dark:bg-[#23283A] shadow-lg transition-all duration-300 text-xs`}>
         <div>
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
