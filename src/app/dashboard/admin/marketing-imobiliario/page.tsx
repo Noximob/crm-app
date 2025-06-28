@@ -10,7 +10,28 @@ const tipos = [
 ];
 
 export default function MarketingImobiliarioAdminPage() {
-  const [materiais, setMateriais] = useState<any[]>([]);
+  const [materiais, setMateriais] = useState<any[]>([
+    {
+      id: 1,
+      titulo: 'Folder de lançamento',
+      descricao: 'Material em PDF para divulgação do novo prédio.',
+      tipo: 'pdf',
+      data: '10/07/2024',
+      arquivo: null,
+      link: '',
+      preview: '',
+    },
+    {
+      id: 2,
+      titulo: 'Campanha Google Ads',
+      descricao: 'Link da campanha ativa no Google.',
+      tipo: 'link',
+      data: '09/07/2024',
+      arquivo: null,
+      link: 'https://ads.google.com/campanha123',
+      preview: '',
+    },
+  ]);
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
   const [tipo, setTipo] = useState('imagem');
