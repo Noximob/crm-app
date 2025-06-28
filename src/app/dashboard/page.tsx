@@ -204,7 +204,7 @@ const WeatherWidget = () => {
     <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-[#A3C8F7]/10 to-[#3478F6]/10 rounded-lg border border-[#A3C8F7]/20">
       <div className="text-2xl">{weather.icon}</div>
       <div>
-        <div className="text-sm font-bold text-[#2E2F38]">{weather.temp}°C</div>
+        <div className="text-sm font-bold text-[#3478F6]">{weather.temp}°C</div>
         <div className="text-xs text-[#6B6F76]">{weather.condition}</div>
       </div>
     </div>

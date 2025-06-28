@@ -71,28 +71,28 @@ export default function DashboardLayout({
   ];
 
   return (
-    <div className="flex h-screen bg-[#F5F6FA] dark:bg-[#181C23]">
+    <div className={`flex h-screen bg-[#F5F6FA] dark:bg-[#181C23]`}>
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-[#23283A] shadow-lg transform transition-transform duration-300 ease-in-out ${collapsed ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+      <div className={`flex flex-col fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-white dark:bg-[#23283A] shadow-lg transition-all duration-300`}>
         <div className="flex items-center justify-between p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
-          <div className={`flex items-center overflow-hidden ${collapsed ? 'w-0' : 'w-auto'}`}>
-            <h1 className="text-xl font-bold text-[#2E2F38] dark:text-white">Alume</h1>
-          </div>
+          {!collapsed && (
+            <h1 className="text-xl font-bold text-[#2E2F38] dark:text-white transition-all">Alume</h1>
+          )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="md:hidden text-[#6B6F76] dark:text-gray-300 hover:text-[#2E2F38] dark:hover:text-white"
+            className="p-1 rounded-lg hover:bg-[#E8E9F1] transition-colors"
+            title={collapsed ? 'Expandir menu' : 'Recolher menu'}
           >
-            {collapsed ? <ChevronLeftIcon className="h-5 w-5 text-[#6B6F76] rotate-180" /> : <ChevronLeftIcon className="h-5 w-5 text-[#6B6F76]" />}
+            <ChevronLeftIcon className={`h-5 w-5 text-[#6B6F76] transition-transform ${collapsed ? 'rotate-180' : ''}`} />
           </button>
         </div>
-        
-        <nav className="p-4">
+        <nav className="p-4 flex-1">
           <ul className="space-y-2">
             {navItems.map((item) => (
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
+                  className={`flex items-center ${collapsed ? 'justify-center' : ''} px-4 py-3 rounded-lg transition-colors ${
                     pathname === item.href
                       ? 'bg-[#3478F6] text-white'
                       : 'text-[#6B6F76] dark:text-gray-300 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] hover:text-[#2E2F38] dark:hover:text-white'
@@ -100,7 +100,7 @@ export default function DashboardLayout({
                   onClick={() => setCollapsed(false)}
                 >
                   <span className="mr-3"><item.icon className="h-5 w-5" /></span>
-                  {item.label}
+                  {!collapsed && item.label}
                 </Link>
               </li>
             ))}
@@ -109,7 +109,7 @@ export default function DashboardLayout({
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col md:ml-64">
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${collapsed ? 'ml-16' : 'ml-64'}`}>
         {/* Header */}
         <header className="bg-white dark:bg-[#23283A] shadow-sm border-b border-[#E8E9F1] dark:border-[#23283A] p-4">
           <div className="flex items-center justify-between">
