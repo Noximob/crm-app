@@ -97,7 +97,7 @@ export default function DashboardLayout({
                   }`}
                   onClick={() => setCollapsed(false)}
                 >
-                  <span className="mr-3">{item.icon}</span>
+                  <span className="mr-3"><item.icon className="h-5 w-5" /></span>
                   {item.label}
                 </Link>
               </li>
