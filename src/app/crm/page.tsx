@@ -258,12 +258,25 @@ export default function CrmPage() {
                                 {filteredLeads.map((lead) => (
                                     <tr key={lead.id} className="border-b last:border-b-0 hover:bg-[#F5F6FA] dark:hover:bg-[#23283A] transition-colors">
                                         <td className="px-4 py-3 text-sm font-medium text-[#2E2F38] dark:text-white w-1/5 truncate max-w-[180px]">{lead.nome}</td>
-                                        <td className="px-4 py-3 text-xs text-[#6B6F76] dark:text-gray-300 w-1/5 truncate max-w-[140px]">{lead.telefone}</td>
+                                        <td className="px-4 py-3 text-xs text-[#6B6F76] dark:text-gray-100 w-1/5 truncate max-w-[140px] flex items-center gap-2">
+                                            {lead.telefone}
+                                            <a
+                                                href={`https://wa.me/${lead.telefone.replace(/\D/g, '')}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="ml-2 text-[#25D366] hover:text-[#128C7E]"
+                                                title="Conversar no WhatsApp"
+                                            >
+                                                <WhatsAppIcon className="h-5 w-5" />
+                                            </a>
+                                        </td>
                                         <td className="px-4 py-3 text-xs w-1/5">
                                             <span className="inline-block px-2 py-1 rounded bg-[#E8E9F1] dark:bg-[#181C23] text-[#3478F6] dark:text-primary-200 font-semibold text-[11px] truncate max-w-[120px]">{lead.etapa}</span>
                                         </td>
                                         <td className="px-4 py-3 text-xs w-1/5">
-                                            <StatusIndicator status={lead.taskStatus} />
+                                            <span className="dark:text-white">
+                                                <StatusIndicator status={lead.taskStatus} />
+                                            </span>
                                         </td>
                                         <td className="px-4 py-3 w-1/5 text-center">
                                             <div className="flex justify-center">
