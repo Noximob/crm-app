@@ -120,8 +120,8 @@ const EconomicIndicator = ({ title, value, change, trend = 'up' }: {
 }) => (
   <div className="flex items-center justify-between p-3 bg-gradient-to-r from-[#3478F6]/5 to-[#A3C8F7]/5 rounded-lg border border-[#A3C8F7]/20 hover-lift animate-slide-in">
     <div>
-      <div className="text-xs text-[#6B6F76]">{title}</div>
-      <div className="text-sm font-bold text-[#2E2F38]">{value}</div>
+      <div className="text-xs text-[#6B6F76] dark:text-gray-300">{title}</div>
+      <div className="text-sm font-bold text-[#2E2F38] dark:text-white">{value}</div>
     </div>
     <div className={`flex items-center text-xs font-medium ${trend === 'up' ? 'text-[#3AC17C]' : 'text-[#F45B69]'}`}>
       {trend === 'up' ? <TrendingUpIcon className="h-3 w-3 mr-1" /> : <TrendingDownIcon className="h-3 w-3 mr-1" />}
@@ -147,13 +147,13 @@ const TaskItem = ({ time, title, status = 'pending' }: {
     <div className="flex items-center gap-3 p-3 hover:bg-[#F5F6FA] rounded-xl transition-colors">
       <div className={`w-2 h-2 rounded-full ${config.color}`}></div>
       <div className="flex-1">
-        <div className="text-sm font-medium text-[#2E2F38]">{title}</div>
-        <div className="text-xs text-[#6B6F76] flex items-center gap-1">
+        <div className="text-sm font-medium text-[#2E2F38] dark:text-white">{title}</div>
+        <div className="text-xs text-[#6B6F76] dark:text-gray-100 flex items-center gap-1">
           <ClockIcon className="h-3 w-3" />
           {time}
         </div>
       </div>
-      <div className="text-xs text-[#6B6F76]">{config.text}</div>
+      <div className="text-xs text-[#6B6F76] dark:text-gray-100">{config.text}</div>
     </div>
   );
 };
@@ -182,7 +182,7 @@ const RankingItem = ({ position, name, sales, avatar, rating }: {
       <img src={avatar} alt={name} className="w-10 h-10 rounded-full" />
       <div className="flex-1">
         <div className="text-sm font-medium text-[#2E2F38] dark:text-white">{name}</div>
-        <div className="text-xs text-[#6B6F76] flex items-center gap-2">
+        <div className="text-xs text-[#6B6F76] dark:text-gray-100 flex items-center gap-2">
           <span>{sales} vendas</span>
           {rating && (
             <div className="flex items-center gap-1">
@@ -360,9 +360,7 @@ export default function DashboardPage() {
         <Card className="lg:col-span-2 animate-fade-in">
           <div className="flex items-center justify-between mb-6">
             <SectionTitle>Agenda do Dia</SectionTitle>
-            <button className="text-[#3478F6] hover:text-[#255FD1] text-sm font-medium transition-colors">
-              Ver todas
-            </button>
+            <a className="text-[#3478F6] dark:text-white font-bold">Ver todas</a>
           </div>
           <div className="space-y-2">
             {todayTasks.map((task, index) => (
@@ -411,21 +409,21 @@ export default function DashboardPage() {
               <AlertCircleIcon className="h-5 w-5 text-[#FFCC66] mt-0.5" />
               <div>
                 <div className="text-sm font-medium text-[#2E2F38] dark:text-white">Reunião de Equipe</div>
-                <div className="text-xs text-[#6B6F76] dark:text-gray-300">Amanhã às 10h - Novas metas do mês</div>
+                <div className="text-xs text-[#6B6F76] dark:text-gray-100">Amanhã às 10h - Novas metas do mês</div>
               </div>
             </div>
             <div className="flex items-start gap-3 p-3 bg-[#A3C8F7]/10 rounded-xl border border-[#A3C8F7]/20">
               <CheckCircleIcon className="h-5 w-5 text-[#A3C8F7] mt-0.5" />
               <div>
                 <div className="text-sm font-medium text-[#2E2F38] dark:text-white">Sistema Atualizado</div>
-                <div className="text-xs text-[#6B6F76] dark:text-gray-300">Nova funcionalidade de automação disponível</div>
+                <div className="text-xs text-[#6B6F76] dark:text-gray-100">Nova funcionalidade de automação disponível</div>
               </div>
             </div>
             <div className="flex items-start gap-3 p-3 bg-[#3AC17C]/10 rounded-xl border border-[#3AC17C]/20">
               <StarIcon className="h-5 w-5 text-[#3AC17C] mt-0.5" />
               <div>
                 <div className="text-sm font-medium text-[#2E2F38] dark:text-white">Meta Atingida!</div>
-                <div className="text-xs text-[#6B6F76] dark:text-gray-300">Você atingiu 75% da meta mensal</div>
+                <div className="text-xs text-[#6B6F76] dark:text-gray-100">Você atingiu 75% da meta mensal</div>
               </div>
             </div>
           </div>
