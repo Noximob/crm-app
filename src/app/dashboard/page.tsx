@@ -181,7 +181,7 @@ const RankingItem = ({ position, name, sales, avatar, rating }: {
       </div>
       <img src={avatar} alt={name} className="w-10 h-10 rounded-full" />
       <div className="flex-1">
-        <div className="text-sm font-medium text-[#2E2F38]">{name}</div>
+        <div className="text-sm font-medium text-[#2E2F38] dark:text-white">{name}</div>
         <div className="text-xs text-[#6B6F76] flex items-center gap-2">
           <span>{sales} vendas</span>
           {rating && (
@@ -213,8 +213,8 @@ const WeatherWidget = () => {
 
 const SectionTitle = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
   <div className={`relative ${className}`}>
-    <h2 className="text-xl font-bold text-[#2E2F38] relative z-10">{children}</h2>
-    <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-[#3478F6] to-[#A3C8F7] rounded-r-full opacity-60"></div>
+    <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white relative z-10">{children}</h2>
+    <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-[#3478F6] to-[#A3C8F7] rounded-r-full opacity-60"></div>
   </div>
 );
 
