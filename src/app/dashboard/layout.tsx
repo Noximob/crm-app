@@ -117,16 +117,6 @@ export default function DashboardLayout({
             >
               ☰
             </button>
-            
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={toggleTheme}
-                className="p-2 rounded-lg bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:text-[#2E2F38] dark:hover:text-white transition-colors"
-                title={theme === 'light' ? 'Alternar para modo escuro' : 'Alternar para modo claro'}
-              >
-                {theme === 'light' ? '🌙' : '☀️'}
-              </button>
-            </div>
           </div>
         </header>
 
