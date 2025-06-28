@@ -113,46 +113,60 @@ export default function DashboardLayout({
   return (
     <div className={`flex h-screen bg-[#F5F6FA] dark:bg-[#181C23]`}>
       {/* Sidebar */}
-      <div className={`flex flex-col fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-white dark:bg-[#23283A] shadow-lg transition-all duration-300`}>
-        <div className="flex items-center justify-between p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
-          <div className="flex items-center gap-2">
-            <AlumeLogo className="h-8 w-8" />
-            {!collapsed && <h1 className="text-xl font-bold text-[#2E2F38] dark:text-white transition-all">Alume</h1>}
+      <div className={`flex flex-col h-screen fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-white dark:bg-[#23283A] shadow-lg transition-all duration-300`}>
+        <div className="flex-1 flex flex-col">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
+            <div className="flex items-center gap-2">
+              <AlumeLogo className="h-8 w-8" />
+              {!collapsed && <h1 className="text-xl font-bold text-[#2E2F38] dark:text-white transition-all">Alume</h1>}
+            </div>
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="p-1 rounded-lg hover:bg-[#E8E9F1] transition-colors"
+              title={collapsed ? 'Expandir menu' : 'Recolher menu'}
+            >
+              <ChevronLeftIcon className={`h-5 w-5 text-[#6B6F76] transition-transform ${collapsed ? 'rotate-180' : ''}`} />
+            </button>
           </div>
+          <nav className="p-4 flex-1">
+            <ul className="space-y-1">
+              {navItems.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className={`flex items-center ${collapsed ? 'justify-center' : ''} px-4 py-3 rounded-lg transition-colors ${
+                      pathname === item.href
+                        ? 'bg-[#3478F6] text-white'
+                        : 'text-[#6B6F76] dark:text-gray-300 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] hover:text-[#2E2F38] dark:hover:text-white'
+                    }`}
+                    onClick={() => setCollapsed(false)}
+                  >
+                    <span className="mr-3">
+                      {item.label === 'Incluir imóvel' ? (
+                        <HouseIcon active={pathname === item.href} className="h-5 w-5" />
+                      ) : (
+                        <item.icon className="h-5 w-5" />
+                      )}
+                    </span>
+                    {!collapsed && item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+        {/* Botão Desconectar */}
+        <div className="p-4 border-t border-[#E8E9F1] dark:border-[#23283A]">
           <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="p-1 rounded-lg hover:bg-[#E8E9F1] transition-colors"
-            title={collapsed ? 'Expandir menu' : 'Recolher menu'}
+            onClick={handleLogout}
+            className={`flex items-center ${collapsed ? 'justify-center' : ''} w-full px-4 py-3 rounded-lg transition-colors text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-400`}
+            title="Desconectar"
           >
-            <ChevronLeftIcon className={`h-5 w-5 text-[#6B6F76] transition-transform ${collapsed ? 'rotate-180' : ''}`} />
+            <LogOutIcon className="h-5 w-5 mr-3" />
+            {!collapsed && <span>Desconectar</span>}
           </button>
         </div>
-        <nav className="p-4 flex-1">
-          <ul className="space-y-1">
-            {navItems.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={`flex items-center ${collapsed ? 'justify-center' : ''} px-4 py-3 rounded-lg transition-colors ${
-                    pathname === item.href
-                      ? 'bg-[#3478F6] text-white'
-                      : 'text-[#6B6F76] dark:text-gray-300 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] hover:text-[#2E2F38] dark:hover:text-white'
-                  }`}
-                  onClick={() => setCollapsed(false)}
-                >
-                  <span className="mr-3">
-                    {item.label === 'Incluir imóvel' ? (
-                      <HouseIcon active={pathname === item.href} className="h-5 w-5" />
-                    ) : (
-                      <item.icon className="h-5 w-5" />
-                    )}
-                  </span>
-                  {!collapsed && item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
       </div>
 
       {/* Main content */}
