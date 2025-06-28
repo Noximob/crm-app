@@ -113,8 +113,8 @@ export default function DashboardLayout({
   return (
     <div className={`flex h-screen bg-[#F5F6FA] dark:bg-[#181C23]`}>
       {/* Sidebar */}
-      <div className={`flex flex-col justify-between h-screen fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-white dark:bg-[#23283A] shadow-lg transition-all duration-300 text-xs`}>
-        <div>
+      <div className={`flex flex-col h-screen fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-white dark:bg-[#23283A] shadow-lg transition-all duration-300 text-xs`}>
+        <div className="flex-1 flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
             <div className="flex items-center gap-2">
@@ -157,7 +157,7 @@ export default function DashboardLayout({
           </nav>
         </div>
         {/* Botão Desconectar */}
-        <div className="p-4 border-t border-[#E8E9F1] dark:border-[#23283A] mb-4">
+        <div className="p-4 border-t border-[#E8E9F1] dark:border-[#23283A] mb-8">
           <button
             onClick={handleLogout}
             className={`flex items-center ${collapsed ? 'justify-center' : ''} w-full px-4 py-3 rounded-lg transition-colors text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-400`}
