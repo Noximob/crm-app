@@ -9,7 +9,7 @@ const adminCards = [
   { title: 'Site', icon: '🌐', description: 'Gerencie o site institucional e vitrines.', href: '/dashboard/admin/site' },
   { title: 'Marketing Imobiliário', icon: '📢', description: 'Ferramentas e campanhas de marketing.', href: '/dashboard/admin/marketing-imobiliario' },
   { title: 'Materiais Construtora', icon: '🏗️', description: 'Adicione e gerencie materiais das construtoras.', href: '/dashboard/admin/materiais-construtora' },
-  { title: 'Gestão de Corretores', icon: '🧑‍💼', description: 'Administre os corretores da sua equipe.', href: '#' },
+  { title: 'Gestão de Corretores', icon: '🧑‍💼', description: 'Administre os corretores da sua equipe.', href: '/dashboard/admin/gestao-corretores' },
 ];
 
 const financeiroTabs = [
