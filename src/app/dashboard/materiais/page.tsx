@@ -13,7 +13,7 @@ const materiais = [
     title: 'DWV',
     description: 'Documentos, workflows e materiais para vendas e processos internos.',
     icon: '📄',
-    href: '#',
+    href: '/dashboard/materiais/dwv',
   },
   {
     title: 'Materiais Construtoras',
