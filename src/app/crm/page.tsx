@@ -243,7 +243,8 @@ export default function CrmPage() {
                             <thead>
                                 <tr className="bg-[#F5F6FA] dark:bg-[#23283A] text-[#6B6F76] dark:text-gray-300 text-xs">
                                     <th className="px-4 py-2 font-semibold text-left w-1/5 rounded-tl-xl">Nome</th>
-                                    <th className="px-4 py-2 font-semibold text-left w-1/5">Telefone</th>
+                                    <th className="px-4 py-2 font-semibold text-left w-1/6">Telefone</th>
+                                    <th className="px-4 py-2 font-semibold text-center w-1/12">WhatsApp</th>
                                     <th className="px-4 py-2 font-semibold text-left w-1/5">Etapa</th>
                                     <th className="px-4 py-2 font-semibold text-left w-1/5">Status da Tarefa</th>
                                     <th className="px-4 py-2 font-semibold text-center w-1/5">Ações</th>
@@ -252,19 +253,19 @@ export default function CrmPage() {
                             <tbody>
                                 {filteredLeads.length === 0 && (
                                     <tr>
-                                        <td colSpan={5} className="text-center text-[#6B6F76] dark:text-gray-300 py-8">Nenhum lead encontrado.</td>
+                                        <td colSpan={6} className="text-center text-[#6B6F76] dark:text-gray-300 py-8">Nenhum lead encontrado.</td>
                                     </tr>
                                 )}
                                 {filteredLeads.map((lead) => (
                                     <tr key={lead.id} className="border-b last:border-b-0 hover:bg-[#F5F6FA] dark:hover:bg-[#23283A] transition-colors">
                                         <td className="px-4 py-3 text-sm font-medium text-[#2E2F38] dark:text-white w-1/5 truncate max-w-[180px]">{lead.nome}</td>
-                                        <td className="px-4 py-3 text-xs text-[#6B6F76] dark:text-gray-100 w-1/5 truncate max-w-[140px] flex items-center gap-2">
-                                            {lead.telefone}
+                                        <td className="px-4 py-3 text-xs text-[#6B6F76] dark:text-gray-100 w-1/6 truncate max-w-[140px]">{lead.telefone}</td>
+                                        <td className="px-4 py-3 text-center w-1/12">
                                             <a
                                                 href={`https://wa.me/${lead.telefone.replace(/\D/g, '')}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="ml-2 text-[#25D366] hover:text-[#128C7E]"
+                                                className="inline-flex items-center justify-center text-[#25D366] hover:text-[#128C7E]"
                                                 title="Conversar no WhatsApp"
                                             >
                                                 <WhatsAppIcon className="h-5 w-5" />
