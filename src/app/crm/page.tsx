@@ -200,7 +200,7 @@ export default function CrmPage() {
         <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
             <CrmHeader />
             <main className="flex flex-col gap-4 mt-4">
-                <div className="bg-white p-4 rounded-2xl shadow-soft border border-[#E8E9F1]">
+                <div className="bg-white dark:bg-[#23283A] p-4 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
                         <SectionTitle>Gestão de Leads</SectionTitle>
                         <div className="flex items-center gap-2">
@@ -239,9 +239,9 @@ export default function CrmPage() {
                     </div>
                     {/* Lista de leads */}
                     <div className="overflow-x-auto">
-                        <table className="min-w-full bg-white rounded-xl shadow-soft border border-[#E8E9F1] table-fixed">
+                        <table className="min-w-full bg-white dark:bg-[#23283A] rounded-xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] table-fixed">
                             <thead>
-                                <tr className="bg-[#F5F6FA] text-[#6B6F76] text-xs">
+                                <tr className="bg-[#F5F6FA] dark:bg-[#23283A] text-[#6B6F76] dark:text-gray-300 text-xs">
                                     <th className="px-4 py-2 font-semibold text-left w-1/5 rounded-tl-xl">Nome</th>
                                     <th className="px-4 py-2 font-semibold text-left w-1/5">Telefone</th>
                                     <th className="px-4 py-2 font-semibold text-left w-1/5">Etapa</th>
@@ -252,15 +252,15 @@ export default function CrmPage() {
                             <tbody>
                                 {filteredLeads.length === 0 && (
                                     <tr>
-                                        <td colSpan={5} className="text-center text-[#6B6F76] py-8">Nenhum lead encontrado.</td>
+                                        <td colSpan={5} className="text-center text-[#6B6F76] dark:text-gray-300 py-8">Nenhum lead encontrado.</td>
                                     </tr>
                                 )}
                                 {filteredLeads.map((lead) => (
-                                    <tr key={lead.id} className="border-b last:border-b-0 hover:bg-[#F5F6FA] transition-colors">
-                                        <td className="px-4 py-3 text-sm font-medium text-[#2E2F38] w-1/5 truncate max-w-[180px]">{lead.nome}</td>
-                                        <td className="px-4 py-3 text-xs text-[#6B6F76] w-1/5 truncate max-w-[140px]">{lead.telefone}</td>
+                                    <tr key={lead.id} className="border-b last:border-b-0 hover:bg-[#F5F6FA] dark:hover:bg-[#23283A] transition-colors">
+                                        <td className="px-4 py-3 text-sm font-medium text-[#2E2F38] dark:text-white w-1/5 truncate max-w-[180px]">{lead.nome}</td>
+                                        <td className="px-4 py-3 text-xs text-[#6B6F76] dark:text-gray-300 w-1/5 truncate max-w-[140px]">{lead.telefone}</td>
                                         <td className="px-4 py-3 text-xs w-1/5">
-                                            <span className="inline-block px-2 py-1 rounded bg-[#E8E9F1] text-[#3478F6] font-semibold text-[11px] truncate max-w-[120px]">{lead.etapa}</span>
+                                            <span className="inline-block px-2 py-1 rounded bg-[#E8E9F1] dark:bg-[#181C23] text-[#3478F6] dark:text-primary-200 font-semibold text-[11px] truncate max-w-[120px]">{lead.etapa}</span>
                                         </td>
                                         <td className="px-4 py-3 text-xs w-1/5">
                                             <StatusIndicator status={lead.taskStatus} />
