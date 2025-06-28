@@ -157,7 +157,7 @@ export default function DashboardLayout({
           </nav>
         </div>
         {/* Botão Desconectar */}
-        <div className="p-4 border-t border-[#E8E9F1] dark:border-[#23283A]">
+        <div className="p-4 border-t border-[#E8E9F1] dark:border-[#23283A] mb-4">
           <button
             onClick={handleLogout}
             className={`flex items-center ${collapsed ? 'justify-center' : ''} w-full px-4 py-3 rounded-lg transition-colors text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-400`}
