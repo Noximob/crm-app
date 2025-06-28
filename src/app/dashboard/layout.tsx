@@ -22,8 +22,8 @@ const SettingsIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} x
 const CreditCardIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>;
 
 // Novo ícone de casa para 'Incluir imóvel'
-const HouseIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3478F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const HouseIcon = ({active, ...props}: React.SVGProps<SVGSVGElement> & {active?: boolean}) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={active ? '#fff' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M3 10L12 3l9 7" />
     <path d="M9 21V14h6v7" />
     <path d="M21 10v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V10" />
@@ -129,7 +129,13 @@ export default function DashboardLayout({
                   }`}
                   onClick={() => setCollapsed(false)}
                 >
-                  <span className="mr-3"><item.icon className="h-5 w-5" /></span>
+                  <span className="mr-3">
+                    {item.label === 'Incluir imóvel' ? (
+                      <HouseIcon active={pathname === item.href} className="h-5 w-5" />
+                    ) : (
+                      <item.icon className="h-5 w-5" />
+                    )}
+                  </span>
                   {!collapsed && item.label}
                 </Link>
               </li>
