@@ -62,7 +62,7 @@ export default function DashboardLayout({
     { href: '/crm', icon: BarChartIcon, label: 'CRM' },
     { href: '/dashboard/materiais', icon: FileTextIcon, label: 'Materiais' },
     { href: '/dashboard/metas', icon: TargetIcon, label: 'Metas' },
-    { href: '#', icon: PresentationIcon, label: 'Treinamentos' },
+    { href: '/dashboard/treinamentos', icon: PresentationIcon, label: 'Treinamentos' },
     { href: '#', icon: AlertTriangleIcon, label: 'Avisos' },
     { href: '/dashboard/pagamentos', icon: CreditCardIcon, label: 'Pagamentos' },
     { href: '#', icon: SettingsIcon, label: 'Configurações' },
