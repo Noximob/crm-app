@@ -218,6 +218,49 @@ const SectionTitle = ({ children, className = '' }: { children: React.ReactNode,
   </div>
 );
 
+// Mock dos trending posts
+const trendingPosts = [
+  {
+    id: 1,
+    user: {
+      name: 'Ana Corretora',
+      avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
+      handle: '@anacorretora',
+    },
+    time: '2h',
+    content: 'Novo lançamento no centro! 🏢 #imobiliaria #oportunidade',
+    reposts: 12,
+    likes: 30,
+    comments: 8,
+  },
+  {
+    id: 2,
+    user: {
+      name: 'Equipe Alume',
+      avatar: '/favicon.ico',
+      handle: '@alume',
+    },
+    time: '1d',
+    content: 'Parabéns a todos os corretores que bateram meta este mês! 🎉 #sucesso',
+    reposts: 9,
+    likes: 25,
+    comments: 5,
+  },
+  {
+    id: 3,
+    user: {
+      name: 'Carlos Santos',
+      avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
+      handle: '@carlossantos',
+    },
+    time: '5h',
+    content: 'Dica: sempre atualize suas fotos profissionais! 📸 #marketingimobiliario',
+    reposts: 7,
+    likes: 18,
+    comments: 2,
+  },
+];
+
 export default function DashboardPage() {
   const { currentUser } = useAuth();
   const [leads, setLeads] = useState<any[]>([]);
@@ -369,15 +412,29 @@ export default function DashboardPage() {
           </div>
         </Card>
 
-        {/* Ranking de Corretores */}
+        {/* Top Trending */}
         <Card className="animate-fade-in">
           <div className="flex items-center justify-between mb-6">
-            <SectionTitle>Top Corretores</SectionTitle>
-            <TrophyIcon className="h-6 w-6 text-yellow-500" />
+            <SectionTitle>Top Trending</SectionTitle>
+            <span className="text-[#3478F6] font-bold text-sm cursor-pointer hover:underline" onClick={() => window.location.href='/dashboard/comunidade'}>Ver comunidade</span>
           </div>
-          <div className="space-y-2">
-            {topCorretores.map((corretor) => (
-              <RankingItem key={corretor.position} {...corretor} />
+          <div className="flex flex-col gap-4">
+            {trendingPosts.map((post) => (
+              <div key={post.id} className="flex items-start gap-3">
+                <img src={post.user.avatar} alt={post.user.name} className="w-10 h-10 rounded-full object-cover" />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-[#2E2F38] dark:text-white text-sm">{post.user.name}</span>
+                    <span className="text-xs text-[#6B6F76] dark:text-gray-300">{post.user.handle} · {post.time}</span>
+                  </div>
+                  <div className="text-xs text-[#2E2F38] dark:text-white truncate max-w-[180px]">{post.content}</div>
+                  <div className="flex gap-3 mt-1 text-xs text-[#6B6F76] dark:text-gray-300">
+                    <span>🔁 {post.reposts}</span>
+                    <span>❤️ {post.likes}</span>
+                    <span>💬 {post.comments}</span>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         </Card>
