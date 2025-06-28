@@ -85,7 +85,7 @@ const StarIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 const Card = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
-  <div className={`bg-white rounded-2xl shadow-sm border border-[#E8E9F1] p-6 hover-lift ${className}`}>{children}</div>
+  <div className={`bg-white dark:bg-[#23283A] rounded-2xl shadow-sm border border-[#E8E9F1] dark:border-[#23283A] p-6 hover-lift ${className}`}>{children}</div>
 );
 
 const MetricCard = ({ title, value, change, icon: Icon, trend = 'up' }: {
@@ -107,8 +107,8 @@ const MetricCard = ({ title, value, change, icon: Icon, trend = 'up' }: {
         </div>
       )}
     </div>
-    <div className="text-xl font-bold text-[#2E2F38] mb-1">{value}</div>
-    <div className="text-xs text-[#6B6F76]">{title}</div>
+    <div className="text-xl font-bold text-[#2E2F38] dark:text-white mb-1">{value}</div>
+    <div className="text-xs text-[#6B6F76] dark:text-gray-300">{title}</div>
   </Card>
 );
 
@@ -289,13 +289,13 @@ export default function DashboardPage() {
   });
 
   return (
-    <div className="w-full min-h-screen bg-[#F5F6FA] p-6">
+    <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
       {/* Header com boas-vindas, indicadores econômicos, clima e hora */}
       <div className="mb-4">
         <div className="flex flex-col gap-2">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
             <div>
-              <h1 className="text-2xl font-bold text-[#2E2F38] mb-1">
+              <h1 className="text-2xl font-bold text-[#2E2F38] dark:text-white mb-1">
                 Olá, {currentUser?.email?.split('@')[0] || 'Corretor'}! 👋
               </h1>
               <p className="text-[#6B6F76] capitalize text-sm">{currentDate}</p>
@@ -325,32 +325,32 @@ export default function DashboardPage() {
             <UsersIcon className="h-4 w-4 text-[#3AC17C]" />
             <span className="text-[10px] text-[#3AC17C] font-semibold">+12%</span>
           </div>
-          <div className="text-base font-bold text-[#2E2F38]">{leads.length}</div>
-          <div className="text-[10px] text-[#6B6F76]">Leads Ativos</div>
+          <div className="text-base font-bold text-[#2E2F38] dark:text-white">{leads.length}</div>
+          <div className="text-[10px] text-[#6B6F76] dark:text-gray-300">Leads Ativos</div>
         </Card>
         <Card className="flex flex-col items-center justify-center h-14 p-1.5">
           <div className="flex items-center gap-1 mb-0.5">
             <CheckCircleIcon className="h-4 w-4 text-[#3AC17C]" />
             <span className="text-[10px] text-[#3AC17C] font-semibold">+5%</span>
           </div>
-          <div className="text-base font-bold text-[#2E2F38]">8</div>
-          <div className="text-[10px] text-[#6B6F76]">Propostas Enviadas</div>
+          <div className="text-base font-bold text-[#2E2F38] dark:text-white">8</div>
+          <div className="text-[10px] text-[#6B6F76] dark:text-gray-300">Propostas Enviadas</div>
         </Card>
         <Card className="flex flex-col items-center justify-center h-14 p-1.5">
           <div className="flex items-center gap-1 mb-0.5">
             <CalendarIcon className="h-4 w-4 text-[#F45B69]" />
             <span className="text-[10px] text-[#F45B69] font-semibold">-2%</span>
           </div>
-          <div className="text-base font-bold text-[#2E2F38]">3</div>
-          <div className="text-[10px] text-[#6B6F76]">Visitas Agendadas</div>
+          <div className="text-base font-bold text-[#2E2F38] dark:text-white">3</div>
+          <div className="text-[10px] text-[#6B6F76] dark:text-gray-300">Visitas Agendadas</div>
         </Card>
         <Card className="flex flex-col items-center justify-center h-14 p-1.5">
           <div className="flex items-center gap-1 mb-0.5">
             <DollarSignIcon className="h-4 w-4 text-[#3AC17C]" />
             <span className="text-[10px] text-[#3AC17C] font-semibold">75%</span>
           </div>
-          <div className="text-base font-bold text-[#2E2F38]">R$ 180.000</div>
-          <div className="text-[10px] text-[#6B6F76]">Meta Mensal</div>
+          <div className="text-base font-bold text-[#2E2F38] dark:text-white">R$ 180.000</div>
+          <div className="text-[10px] text-[#6B6F76] dark:text-gray-300">Meta Mensal</div>
         </Card>
       </div>
 
@@ -397,7 +397,7 @@ export default function DashboardPage() {
                   className="w-8 bg-gradient-to-t from-[#3478F6] to-[#A3C8F7] rounded-t-lg transition-all duration-300 hover:opacity-80"
                   style={{ height: `${performanceData[index] || 50}px` }}
                 ></div>
-                <span className="text-xs text-[#6B6F76] mt-2">{day}</span>
+                <span className="text-xs text-[#6B6F76] dark:text-gray-300 mt-2">{day}</span>
               </div>
             ))}
           </div>
@@ -410,22 +410,22 @@ export default function DashboardPage() {
             <div className="flex items-start gap-3 p-3 bg-[#FFCC66]/10 rounded-xl border border-[#FFCC66]/20">
               <AlertCircleIcon className="h-5 w-5 text-[#FFCC66] mt-0.5" />
               <div>
-                <div className="text-sm font-medium text-[#2E2F38]">Reunião de Equipe</div>
-                <div className="text-xs text-[#6B6F76]">Amanhã às 10h - Novas metas do mês</div>
+                <div className="text-sm font-medium text-[#2E2F38] dark:text-white">Reunião de Equipe</div>
+                <div className="text-xs text-[#6B6F76] dark:text-gray-300">Amanhã às 10h - Novas metas do mês</div>
               </div>
             </div>
             <div className="flex items-start gap-3 p-3 bg-[#A3C8F7]/10 rounded-xl border border-[#A3C8F7]/20">
               <CheckCircleIcon className="h-5 w-5 text-[#A3C8F7] mt-0.5" />
               <div>
-                <div className="text-sm font-medium text-[#2E2F38]">Sistema Atualizado</div>
-                <div className="text-xs text-[#6B6F76]">Nova funcionalidade de automação disponível</div>
+                <div className="text-sm font-medium text-[#2E2F38] dark:text-white">Sistema Atualizado</div>
+                <div className="text-xs text-[#6B6F76] dark:text-gray-300">Nova funcionalidade de automação disponível</div>
               </div>
             </div>
             <div className="flex items-start gap-3 p-3 bg-[#3AC17C]/10 rounded-xl border border-[#3AC17C]/20">
               <StarIcon className="h-5 w-5 text-[#3AC17C] mt-0.5" />
               <div>
-                <div className="text-sm font-medium text-[#2E2F38]">Meta Atingida!</div>
-                <div className="text-xs text-[#6B6F76]">Você atingiu 75% da meta mensal</div>
+                <div className="text-sm font-medium text-[#2E2F38] dark:text-white">Meta Atingida!</div>
+                <div className="text-xs text-[#6B6F76] dark:text-gray-300">Você atingiu 75% da meta mensal</div>
               </div>
             </div>
           </div>

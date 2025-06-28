@@ -97,7 +97,7 @@ const getTaskStatusInfo = (tasks: Task[]): TaskStatus => {
 // Novo componente para título com barra colorida
 const SectionTitle = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
   <div className={`relative ${className}`}>
-    <h2 className="text-lg font-bold text-[#2E2F38] relative z-10">{children}</h2>
+    <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white relative z-10">{children}</h2>
     <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-[#3478F6] to-[#A3C8F7] rounded-r-full opacity-60"></div>
   </div>
 );
@@ -197,7 +197,7 @@ export default function CrmPage() {
 
     return (
         <>
-        <div className="bg-[#F5F6FA] min-h-screen p-4 sm:p-6 lg:p-8">
+        <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
             <CrmHeader />
             <main className="flex flex-col gap-4 mt-4">
                 <div className="bg-white p-4 rounded-2xl shadow-soft border border-[#E8E9F1]">

@@ -36,13 +36,13 @@ export default function ConfiguracoesPage() {
                   className={`px-4 py-2 rounded-lg font-semibold border transition-colors ${theme === 'light' ? 'bg-[#3478F6] text-white border-[#3478F6]' : 'bg-[#E8E9F1] text-[#2E2F38] border-[#E8E9F1]'}`}
                   onClick={() => setTheme('light')}
                 >
-                  Claro
+                  <span className="mr-2">☀️</span>Claro
                 </button>
                 <button
                   className={`px-4 py-2 rounded-lg font-semibold border transition-colors ${theme === 'dark' ? 'bg-[#23283A] text-white border-[#23283A]' : 'bg-[#E8E9F1] text-[#2E2F38] border-[#E8E9F1]'}`}
                   onClick={() => setTheme('dark')}
                 >
-                  Escuro
+                  <span className="mr-2">🌙</span>Escuro
                 </button>
               </div>
             </div>
