@@ -113,8 +113,8 @@ export default function DashboardLayout({
   return (
     <div className={`flex h-screen bg-[#F5F6FA] dark:bg-[#181C23]`}>
       {/* Sidebar */}
-      <div className={`flex flex-col h-screen fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-white dark:bg-[#23283A] shadow-lg transition-all duration-300`}>
-        <div className="flex-1 flex flex-col">
+      <div className={`flex flex-col justify-between h-screen fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-white dark:bg-[#23283A] shadow-lg transition-all duration-300`}>
+        <div>
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
             <div className="flex items-center gap-2">
@@ -129,7 +129,7 @@ export default function DashboardLayout({
               <ChevronLeftIcon className={`h-5 w-5 text-[#6B6F76] transition-transform ${collapsed ? 'rotate-180' : ''}`} />
             </button>
           </div>
-          <nav className="p-4 flex-1">
+          <nav className="p-4">
             <ul className="space-y-1">
               {navItems.map((item) => (
                 <li key={item.href}>
