@@ -1,19 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useTheme } from '@/context/ThemeContext';
-
-const cores = [
-  { nome: 'Azul', cor: '#3478F6' },
-  { nome: 'Verde', cor: '#22C55E' },
-  { nome: 'Laranja', cor: '#F59E42' },
-  { nome: 'Roxo', cor: '#8B5CF6' },
-];
 
 export default function ConfiguracoesPage() {
   const { theme, setTheme } = useTheme();
-  const [corPrimaria, setCorPrimaria] = useState('#3478F6');
-  const [zapiToken, setZapiToken] = useState('');
+  const [zapiToken, setZapiToken] = React.useState('');
 
   return (
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
@@ -52,19 +44,6 @@ export default function ConfiguracoesPage() {
                 >
                   Escuro
                 </button>
-              </div>
-            </div>
-            <div className="flex-1">
-              <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Cor primária</label>
-              <div className="flex gap-3">
-                {cores.map((c) => (
-                  <button
-                    key={c.cor}
-                    className={`w-8 h-8 rounded-full border-2 transition-all ${corPrimaria === c.cor ? 'border-[#3478F6] ring-2 ring-[#3478F6]' : 'border-[#E8E9F1]'}`}
-                    style={{ background: c.cor }}
-                    onClick={() => setCorPrimaria(c.cor)}
-                  />
-                ))}
               </div>
             </div>
           </div>
