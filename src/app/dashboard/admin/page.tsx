@@ -41,6 +41,8 @@ export default function AdminPage() {
                   window.location.href = '/dashboard/admin/financeiro';
                 } else if (item.title === 'Site') {
                   window.location.href = '/dashboard/admin/site';
+                } else if (item.title === 'Marketing Imobiliário') {
+                  window.location.href = '/dashboard/admin/marketing-imobiliario';
                 }
               }}
             >
