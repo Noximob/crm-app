@@ -29,6 +29,13 @@ export default function MateriaisPage() {
             <button
               key={mat.title}
               className="flex flex-col items-center justify-center bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-8 transition-all duration-200 hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] group"
+              onClick={() => {
+                if (mat.title === 'Marketing Imobiliário') {
+                  window.location.href = '/dashboard/materiais/marketing-imobiliario';
+                } else if (mat.title === 'Materiais Construtoras') {
+                  window.location.href = '/dashboard/materiais/materiais-construtoras';
+                }
+              }}
             >
               <span className="text-4xl mb-4 group-hover:scale-110 transition-transform">{mat.icon}</span>
               <span className="text-xl font-bold text-[#3478F6] dark:text-[#A3C8F7] mb-2 text-center">{mat.title}</span>
