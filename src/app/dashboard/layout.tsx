@@ -49,6 +49,16 @@ const AlumeLogo = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+// Ícone de comunidade (balão de diálogo)
+const CommunityIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    <circle cx="8.5" cy="10.5" r="1" />
+    <circle cx="12" cy="10.5" r="1" />
+    <circle cx="15.5" cy="10.5" r="1" />
+  </svg>
+);
+
 const NavLink = ({ href, icon: Icon, children, collapsed, isActive }: any) => (
     <Link href={href} className={`flex items-center px-3 py-2.5 text-[#2E2F38] hover:bg-[#E8E9F1] rounded-lg transition-all duration-200 text-sm font-medium ${
         isActive ? 'bg-[#3478F6] text-white shadow-md' : 'hover:text-[#3478F6]'
@@ -91,6 +101,7 @@ export default function DashboardLayout({
     { href: '/dashboard', icon: LayoutDashboardIcon, label: 'Dashboard' },
     { href: '/crm', icon: BarChartIcon, label: 'CRM' },
     { href: '/dashboard/materiais', icon: FileTextIcon, label: 'Materiais' },
+    { href: '/dashboard/comunidade', icon: CommunityIcon, label: 'Comunidade' },
     { href: '/dashboard/metas', icon: TargetIcon, label: 'Metas' },
     { href: '/dashboard/treinamentos', icon: PresentationIcon, label: 'Treinamentos' },
     { href: '/dashboard/incluir-imovel', icon: HouseIcon, label: 'Incluir imóvel' },
@@ -117,7 +128,7 @@ export default function DashboardLayout({
           </button>
         </div>
         <nav className="p-4 flex-1">
-          <ul className="space-y-2">
+          <ul className="space-y-1">
             {navItems.map((item) => (
               <li key={item.href}>
                 <Link
