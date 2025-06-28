@@ -43,6 +43,8 @@ export default function AdminPage() {
                   window.location.href = '/dashboard/admin/site';
                 } else if (item.title === 'Marketing Imobiliário') {
                   window.location.href = '/dashboard/admin/marketing-imobiliario';
+                } else if (item.title === 'Materiais Construtora') {
+                  window.location.href = '/dashboard/admin/materiais-construtora';
                 }
               }}
             >
