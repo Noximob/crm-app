@@ -28,9 +28,9 @@ export const CrmHeader = () => {
     const { currentUser, loading } = useAuth();
     const router = useRouter();
 
-    const navLinks = [
-        { href: '/crm', text: 'Gestão de Leads' },
-        { href: '/crm/andamento', text: 'Andamento dos Leads' }
+    const links = [
+        { href: '/dashboard/crm', text: 'Gestão de Leads' },
+        { href: '/dashboard/crm/andamento', text: 'Andamento dos Leads' }
     ];
 
     const handleSignOut = async () => {
@@ -48,7 +48,7 @@ export const CrmHeader = () => {
                     </Link>
 
                     <div className="flex items-center gap-2">
-                        {navLinks.map(link => (
+                        {links.map(link => (
                             <Link key={link.href} href={link.href}>
                                 <span className={`block px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-colors border border-transparent ${pathname === link.href 
                                     ? 'bg-[#3478F6] text-white' 
