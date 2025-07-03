@@ -338,7 +338,7 @@ export default function LeadDetailPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
+            <div className="p-4 sm:p-6 lg:p-8">
                 <div className="max-w-6xl mx-auto">
                     <div className="text-center">
                         <p>Carregando detalhes do lead...</p>
@@ -350,7 +350,7 @@ export default function LeadDetailPage() {
 
     if (!lead) {
         return (
-            <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
+            <div className="p-4 sm:p-6 lg:p-8">
                 <div className="max-w-6xl mx-auto">
                     <div className="text-center">
                         <p>Lead não encontrado ou acesso negado.</p>
@@ -366,7 +366,7 @@ export default function LeadDetailPage() {
     const taskStatusInfo = getTaskStatusInfo();
 
     return (
-        <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
+        <div className="p-4 sm:p-6 lg:p-8">
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
