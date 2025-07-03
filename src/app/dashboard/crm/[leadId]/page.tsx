@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { PIPELINE_STAGES } from '@/lib/constants';
 import { Lead } from '@/types';
 import LogInteractionModal from '../../../crm/_components/LogInteractionModal';
-import CrmHeader from '../../../crm/_components/CrmHeader';
+import CrmHeader from '../../_components/CrmHeader';
 import AgendaModal, { TaskPayload } from '../../../crm/_components/AgendaModal';
 import CancelTaskModal from '../../../crm/_components/CancelTaskModal';
 import StartAutomationModal from '../../../crm/_components/StartAutomationModal';
