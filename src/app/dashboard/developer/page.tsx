@@ -159,17 +159,7 @@ export default function DeveloperPage() {
   return (
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
-          <div className="flex items-center gap-4 mb-4 sm:mb-0">
-            <Link 
-              href="/dashboard"
-              className="text-[#3478F6] hover:text-[#2E6FD9] transition-colors"
-            >
-              ← Voltar ao Dashboard
-            </Link>
-          </div>
-        </div>
+
 
         {/* Título e Descrição */}
         <div className="text-center mb-8">
@@ -238,41 +228,49 @@ export default function DeveloperPage() {
             </div>
           </Card>
 
-          {/* Ferramentas Rápidas */}
+          {/* Admin Imobiliárias */}
           <Card>
-            <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-6">Ferramentas Rápidas</h2>
+            <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-6">Admin Imobiliárias</h2>
             <div className="space-y-4">
-              <button className="w-full flex items-center justify-between p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
+              <Link href="/dashboard/developer/admin-imobiliarias" className="w-full flex items-center justify-between p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
                 <div className="flex items-center gap-3">
-                  <TerminalIcon className="h-5 w-5 text-[#3478F6]" />
-                  <span className="text-[#2E2F38] dark:text-white font-medium">Console de Debug</span>
+                  <svg className="h-5 w-5 text-[#3478F6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  <span className="text-[#2E2F38] dark:text-white font-medium">Gestão de Imobiliárias</span>
                 </div>
                 <span className="text-[#6B6F76] dark:text-gray-300">→</span>
-              </button>
+              </Link>
               
-              <button className="w-full flex items-center justify-between p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
+              <Link href="/dashboard/developer/admin-corretores" className="w-full flex items-center justify-between p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
                 <div className="flex items-center gap-3">
-                  <DatabaseIcon className="h-5 w-5 text-[#3AC17C]" />
-                  <span className="text-[#2E2F38] dark:text-white font-medium">Backup do Banco</span>
+                  <svg className="h-5 w-5 text-[#3AC17C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                  </svg>
+                  <span className="text-[#2E2F38] dark:text-white font-medium">Gestão de Corretores</span>
                 </div>
                 <span className="text-[#6B6F76] dark:text-gray-300">→</span>
-              </button>
+              </Link>
               
-              <button className="w-full flex items-center justify-between p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
+              <Link href="/dashboard/developer/admin-leads" className="w-full flex items-center justify-between p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
                 <div className="flex items-center gap-3">
-                  <ActivityIcon className="h-5 w-5 text-[#FF6B6B]" />
-                  <span className="text-[#2E2F38] dark:text-white font-medium">Monitor de Performance</span>
+                  <svg className="h-5 w-5 text-[#FF6B6B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <span className="text-[#2E2F38] dark:text-white font-medium">Gestão de Leads</span>
                 </div>
                 <span className="text-[#6B6F76] dark:text-gray-300">→</span>
-              </button>
+              </Link>
               
-              <button className="w-full flex items-center justify-between p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
+              <Link href="/dashboard/developer/admin-permissoes" className="w-full flex items-center justify-between p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
                 <div className="flex items-center gap-3">
-                  <SettingsIcon className="h-5 w-5 text-[#F45B69]" />
-                  <span className="text-[#2E2F38] dark:text-white font-medium">Configurações Avançadas</span>
+                  <svg className="h-5 w-5 text-[#F45B69]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                  <span className="text-[#2E2F38] dark:text-white font-medium">Gestão de Permissões</span>
                 </div>
                 <span className="text-[#6B6F76] dark:text-gray-300">→</span>
-              </button>
+              </Link>
             </div>
           </Card>
         </div>
