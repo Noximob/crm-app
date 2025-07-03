@@ -40,6 +40,14 @@ const KeyIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+// Ícone de código para Área do Desenvolvedor
+const CodeIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF6B6B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="16 18 22 12 16 6" />
+    <polyline points="8 6 2 12 8 18" />
+  </svg>
+);
+
 // Adicionar logo fictícia SVG
 const AlumeLogo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} width="32" height="32" viewBox="0 0 32 32" fill="none">
@@ -108,6 +116,7 @@ export default function DashboardLayout({
     { href: '/dashboard/pagamentos', icon: CreditCardIcon, label: 'Pagamentos' },
     { href: '/dashboard/configuracoes', icon: SettingsIcon, label: 'Configurações' },
     { href: '/dashboard/admin', icon: KeyIcon, label: 'Área administrador' },
+    { href: '/dashboard/developer', icon: CodeIcon, label: 'Área do Desenvolvedor' },
     { href: '#', icon: LogOutIcon, label: 'Desconectar', isLogout: true },
   ];
 
@@ -131,13 +140,13 @@ export default function DashboardLayout({
             </button>
           </div>
           <nav className="p-4">
-            <ul className="space-y-1">
+            <ul className="space-y-0.5">
               {navItems.map((item) => (
                 <li key={item.href}>
                   {item.isLogout ? (
                     <button
                       onClick={handleLogout}
-                      className={`flex items-center ${collapsed ? 'justify-center' : ''} w-full px-4 py-3 rounded-lg transition-colors text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-400`}
+                      className={`flex items-center ${collapsed ? 'justify-center' : ''} w-full px-4 py-2.5 rounded-lg transition-colors text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-400`}
                       title="Desconectar"
                     >
                       <span className="mr-3">
@@ -148,7 +157,7 @@ export default function DashboardLayout({
                   ) : (
                     <Link
                       href={item.href}
-                      className={`flex items-center ${collapsed ? 'justify-center' : ''} px-4 py-3 rounded-lg transition-colors ${
+                      className={`flex items-center ${collapsed ? 'justify-center' : ''} px-4 py-2.5 rounded-lg transition-colors ${
                         pathname === item.href
                           ? 'bg-[#3478F6] text-white'
                           : 'text-[#6B6F76] dark:text-gray-300 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] hover:text-[#2E2F38] dark:hover:text-white'
@@ -158,6 +167,8 @@ export default function DashboardLayout({
                       <span className="mr-3">
                         {item.label === 'Incluir imóvel' ? (
                           <HouseIcon active={pathname === item.href} className="h-5 w-5" />
+                        ) : item.label === 'Área do Desenvolvedor' ? (
+                          <CodeIcon className="h-5 w-5" />
                         ) : (
                           <item.icon className="h-5 w-5" />
                         )}
