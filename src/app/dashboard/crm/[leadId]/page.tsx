@@ -8,11 +8,11 @@ import { doc, getDoc, onSnapshot, updateDoc, collection, query, orderBy, addDoc,
 import Link from 'next/link';
 import { PIPELINE_STAGES } from '@/lib/constants';
 import { Lead } from '@/types';
-import LogInteractionModal from '../../crm/_components/LogInteractionModal';
-import CrmHeader from '../../crm/_components/CrmHeader';
-import AgendaModal, { TaskPayload } from '../../crm/_components/AgendaModal';
-import CancelTaskModal from '../../crm/_components/CancelTaskModal';
-import StartAutomationModal from '../../crm/_components/StartAutomationModal';
+import LogInteractionModal from '../../../crm/_components/LogInteractionModal';
+import CrmHeader from '../../../crm/_components/CrmHeader';
+import AgendaModal, { TaskPayload } from '../../../crm/_components/AgendaModal';
+import CancelTaskModal from '../../../crm/_components/CancelTaskModal';
+import StartAutomationModal from '../../../crm/_components/StartAutomationModal';
 
 // --- Ícones ---
 const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>;
@@ -199,18 +199,19 @@ export default function LeadDetailPage() {
 
         const { description, type, date, time } = task;
         const dueDate = new Date(`${date}T${time}`);
+        const dueDateTimestamp = new Date(dueDate.getTime() - dueDate.getTimezoneOffset() * 60000);
 
         try {
-            // Adicionar tarefa à sub-coleção 'tarefas'
+            // Adicionar a tarefa
             const tasksCol = collection(db, 'leads', leadId, 'tarefas');
             const taskDoc = await addDoc(tasksCol, {
                 description,
                 type,
-                dueDate,
+                dueDate: dueDateTimestamp,
                 status: 'pendente'
             });
 
-            // Adicionar interação à sub-coleção 'interactions'
+            // Adicionar a interação
             const interactionsCol = collection(db, 'leads', leadId, 'interactions');
             await addDoc(interactionsCol, {
                 type: 'Tarefa Agendada',
@@ -232,7 +233,7 @@ export default function LeadDetailPage() {
 
         const batch = writeBatch(db);
 
-        // Atualizar status da tarefa
+        // Atualizar o status da tarefa
         const taskRef = doc(db, 'leads', leadId, 'tarefas', taskId);
         batch.update(taskRef, { status });
 
@@ -240,12 +241,12 @@ export default function LeadDetailPage() {
         const interactionsCol = collection(db, 'leads', leadId, 'interactions');
         const interactionData: any = {
             type: status === 'concluída' ? 'Tarefa Concluída' : 'Tarefa Cancelada',
-            notes: status === 'concluída' ? 'Tarefa concluída com sucesso' : `Tarefa cancelada${reason ? `: ${reason}` : ''}`,
+            notes: status === 'concluída' ? 'Tarefa marcada como concluída' : 'Tarefa cancelada',
             timestamp: serverTimestamp(),
             taskId
         };
 
-        if (status === 'cancelada' && reason) {
+        if (reason) {
             interactionData.cancellationNotes = reason;
         }
 
@@ -253,6 +254,8 @@ export default function LeadDetailPage() {
 
         try {
             await batch.commit();
+            setIsCancelModalOpen(false);
+            setTaskToCancel(null);
         } catch (error) {
             console.error("Erro ao atualizar status da tarefa:", error);
         }
@@ -278,26 +281,36 @@ export default function LeadDetailPage() {
     };
 
     const getTaskStatusInfo = () => {
-        if (tasks.length === 0) return { status: 'Sem tarefa', color: 'bg-gray-400' };
+        const pendingTasks = tasks.filter(task => task.status === 'pendente');
+        
+        if (pendingTasks.length === 0) {
+            return {
+                text: 'Sem tarefa',
+                color: 'bg-gray-400'
+            };
+        }
 
+        const nextTask = pendingTasks.sort((a, b) => a.dueDate.seconds - b.dueDate.seconds)[0];
         const now = new Date();
-        now.setHours(0, 0, 0, 0);
+        const taskDate = new Date(nextTask.dueDate.seconds * 1000);
+        const diffHours = (taskDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-        const hasOverdue = tasks.some(task => {
-            const dueDate = task.dueDate.toDate();
-            dueDate.setHours(0, 0, 0, 0);
-            return dueDate < now;
-        });
-        if (hasOverdue) return { status: 'Tarefa em Atraso', color: 'bg-red-500' };
-
-        const hasTodayTask = tasks.some(task => {
-            const dueDate = task.dueDate.toDate();
-            dueDate.setHours(0, 0, 0, 0);
-            return dueDate.getTime() === now.getTime();
-        });
-        if (hasTodayTask) return { status: 'Tarefa do Dia', color: 'bg-yellow-400' };
-
-        return { status: 'Tarefa Futura', color: 'bg-sky-500' };
+        if (diffHours < 0) {
+            return {
+                text: 'Tarefa atrasada',
+                color: 'bg-red-500'
+            };
+        } else if (diffHours < 24) {
+            return {
+                text: 'Tarefa hoje',
+                color: 'bg-yellow-500'
+            };
+        } else {
+            return {
+                text: 'Tarefa agendada',
+                color: 'bg-green-500'
+            };
+        }
     };
 
     const handleStartAutomation = async (treatmentName: string) => {
@@ -309,7 +322,7 @@ export default function LeadDetailPage() {
             await updateDoc(leadRef, {
                 'automacao.status': 'ativa',
                 'automacao.tratamento': treatmentName,
-                'automacao.dataInicio': serverTimestamp()
+                'automacao.inicio': serverTimestamp()
             });
             setIsAutomationModalOpen(false);
         } catch (error) {
@@ -327,7 +340,7 @@ export default function LeadDetailPage() {
         try {
             await updateDoc(leadRef, {
                 'automacao.status': 'inativa',
-                'automacao.dataFim': serverTimestamp()
+                'automacao.fim': serverTimestamp()
             });
         } catch (error) {
             console.error("Erro ao cancelar automação:", error);
@@ -338,11 +351,10 @@ export default function LeadDetailPage() {
 
     if (loading) {
         return (
-            <div className="p-4 sm:p-6 lg:p-8">
-                <div className="max-w-6xl mx-auto">
-                    <div className="text-center">
-                        <p>Carregando detalhes do lead...</p>
-                    </div>
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6] mx-auto mb-4"></div>
+                    <p className="text-[#6B6F76] dark:text-gray-300">Carregando dados do lead...</p>
                 </div>
             </div>
         );
@@ -350,304 +362,220 @@ export default function LeadDetailPage() {
 
     if (!lead) {
         return (
-            <div className="p-4 sm:p-6 lg:p-8">
-                <div className="max-w-6xl mx-auto">
-                    <div className="text-center">
-                        <p>Lead não encontrado ou acesso negado.</p>
-                        <Link href="/dashboard/crm" className="text-[#3478F6] hover:text-[#2E6FD9] transition-colors">
-                            Voltar ao CRM
-                        </Link>
-                    </div>
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <p className="text-[#6B6F76] dark:text-gray-300">Lead não encontrado.</p>
                 </div>
             </div>
         );
     }
 
-    const taskStatusInfo = getTaskStatusInfo();
+    const taskStatus = getTaskStatusInfo();
+    const automationStatus = lead.automacao?.status || 'inativa';
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8">
-            <div className="max-w-6xl mx-auto">
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
-                    <div className="flex items-center gap-4 mb-4 sm:mb-0">
-                        <Link 
-                            href="/dashboard/crm"
-                            className="text-[#3478F6] hover:text-[#2E6FD9] transition-colors flex items-center gap-2"
-                        >
-                            <ArrowLeftIcon className="h-5 w-5" />
-                            Voltar ao CRM
-                        </Link>
-                    </div>
-                </div>
+        <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
+            <CrmHeader />
 
-                {/* Informações do Lead */}
-                <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-6 mb-8">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
-                        <div>
-                            <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">
-                                {lead.nome}
-                            </h1>
-                            <p className="text-[#6B6F76] dark:text-gray-300">
-                                {lead.telefone} • {lead.email}
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-4 mt-4 lg:mt-0">
-                            <div className="flex items-center gap-2">
-                                <span className={`h-3 w-3 ${taskStatusInfo.color} rounded-full`}></span>
-                                <span className="text-sm text-[#6B6F76] dark:text-gray-300">
-                                    {taskStatusInfo.status}
-                                </span>
+            <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* --- COLUNA DA ESQUERDA --- */}
+                <div className="lg:col-span-1 flex flex-col gap-6">
+                    {/* Card de Informações do Lead */}
+                    <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+                        <div className="flex items-center gap-4">
+                            <div className="bg-[#E8E9F1] dark:bg-[#23283A] text-[#3478F6] dark:text-[#A3C8F7] font-bold text-xl rounded-lg h-14 w-14 flex items-center justify-center">
+                                {lead.nome.charAt(0).toUpperCase()}
                             </div>
-                            <select
-                                value={lead.etapa}
-                                onChange={handleStageChange}
-                                className="px-4 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
-                            >
-                                {PIPELINE_STAGES.map((stage) => (
-                                    <option key={stage} value={stage}>
-                                        {stage}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Botões de Ação */}
-                    <div className="flex flex-wrap gap-3">
-                        <button
-                            onClick={() => openInteractionModal('Ligação')}
-                            className="flex items-center gap-2 px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#2E6FD9] transition-colors"
-                        >
-                            <PhoneIcon className="h-4 w-4" />
-                            Ligação
-                        </button>
-                        <button
-                            onClick={() => openInteractionModal('WhatsApp')}
-                            className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                        >
-                            <WhatsAppIcon className="h-4 w-4" />
-                            WhatsApp
-                        </button>
-                        <button
-                            onClick={() => openInteractionModal('Visita')}
-                            className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors"
-                        >
-                            <BuildingIcon className="h-4 w-4" />
-                            Visita
-                        </button>
-                        <button
-                            onClick={() => setIsAgendaModalOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors"
-                        >
-                            <TaskIcon className="h-4 w-4" />
-                            Agendar Tarefa
-                        </button>
-                        <button
-                            onClick={() => setIsAutomationModalOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
-                        >
-                            <PlayIcon className="h-4 w-4" />
-                            Automação
-                        </button>
-                    </div>
-                </div>
-
-                {/* Grid de Conteúdo */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Coluna 1: Interações */}
-                    <div className="lg:col-span-2">
-                        <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-6">
-                            <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-6">Interações</h2>
-                            <div className="space-y-4">
-                                {interactions.map((interaction) => (
-                                    <div key={interaction.id} className="border border-[#E8E9F1] dark:border-[#23283A] rounded-lg p-4">
-                                        <div className="flex items-start justify-between mb-2">
-                                            <div className="flex items-center gap-3">
-                                                {getIconForInteraction(interaction.type)}
-                                                <span className="font-medium text-[#2E2F38] dark:text-white">
-                                                    {interaction.type}
-                                                </span>
-                                            </div>
-                                            <span className="text-sm text-[#6B6F76] dark:text-gray-300">
-                                                {interaction.timestamp?.toDate?.()?.toLocaleString('pt-BR') || 'N/A'}
-                                            </span>
-                                        </div>
-                                        <p className="text-[#6B6F76] dark:text-gray-300 mb-2">{interaction.notes}</p>
-                                        
-                                        {/* Botões de ação para tarefas */}
-                                        {interaction.taskId && (
-                                            <div className="flex gap-2 mt-3">
-                                                <button
-                                                    onClick={() => handleUpdateTaskStatus(interaction.id, interaction.taskId!, 'concluída')}
-                                                    className="px-3 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600 transition-colors"
-                                                >
-                                                    Concluir
-                                                </button>
-                                                <button
-                                                    onClick={() => openCancelModal(interaction.id, interaction.taskId!)}
-                                                    className="px-3 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition-colors"
-                                                >
-                                                    Cancelar
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                                
-                                {interactions.length === 0 && (
-                                    <p className="text-[#6B6F76] dark:text-gray-300 text-center py-8">
-                                        Nenhuma interação registrada ainda.
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Coluna 2: Anotações e Qualificação */}
-                    <div className="space-y-6">
-                        {/* Anotações */}
-                        <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white">Anotações</h3>
-                                {!isEditingAnnotations ? (
-                                    <button
-                                        onClick={() => setIsEditingAnnotations(true)}
-                                        className="text-[#3478F6] hover:text-[#2E6FD9] text-sm font-medium"
+                            <div>
+                                <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white tracking-tight">{lead.nome}</h2>
+                                <div className="flex items-center gap-2">
+                                    <p className="text-[#6B6F76] dark:text-gray-400">{lead.telefone}</p>
+                                    <a 
+                                        href={`https://wa.me/55${lead.telefone.replace(/\D/g, '')}`} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-green-500 hover:text-green-600 transition-colors"
+                                        onClick={(e) => e.stopPropagation()}
                                     >
-                                        Editar
-                                    </button>
-                                ) : (
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={handleSaveAnnotations}
-                                            className="text-green-600 hover:text-green-700 text-sm font-medium"
-                                        >
-                                            Salvar
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                setIsEditingAnnotations(false);
-                                                setTempAnnotations(lead.anotacoes || '');
-                                            }}
-                                            className="text-red-600 hover:text-red-700 text-sm font-medium"
-                                        >
-                                            Cancelar
-                                        </button>
-                                    </div>
-                                )}
+                                        <WhatsAppIcon className="h-4 w-4 fill-current"/>
+                                    </a>
+                                </div>
+                                <p className="text-[#6B6F76] dark:text-gray-400">{lead.email}</p>
                             </div>
-                            
+                        </div>
+                        <div className="mt-4 flex items-center gap-2">
+                            <span className={`h-2.5 w-2.5 rounded-full ${taskStatus.color}`}></span>
+                            <span className="text-sm text-[#6B6F76] dark:text-gray-300">{taskStatus.text}</span>
+                        </div>
+                    </div>
+
+                    {/* Card de Situação do Lead */}
+                    <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+                        <label htmlFor="lead-situation" className="block text-base font-semibold text-[#2E2F38] dark:text-white mb-2">Situação do Lead</label>
+                        <select id="lead-situation" value={lead.etapa} onChange={handleStageChange} className="w-full p-2 border border-[#A3C8F7] dark:border-[#3478F6] rounded-lg bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white focus:ring-2 focus:ring-[#3478F6]">
+                            {PIPELINE_STAGES.map(stage => (<option key={stage} value={stage}>{stage}</option>))}
+                        </select>
+                    </div>
+
+                    {/* Card O que deseja fazer? */}
+                    <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+                        <h3 className="text-base font-semibold text-[#2E2F38] dark:text-white mb-4">O que deseja fazer?</h3>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button onClick={() => openInteractionModal('Ligação')} className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-[#3478F6] bg-[#E8E9F1] rounded-lg hover:bg-[#A3C8F7]/40 transition-colors"><PhoneIcon className="h-4 w-4"/>Ligação</button>
+                            <button onClick={() => openInteractionModal('WhatsApp')} className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-green-700 bg-green-100/80 rounded-lg hover:bg-green-200/70 transition-colors"><WhatsAppIcon className="h-4 w-4 fill-current"/>WhatsApp</button>
+                            <button onClick={() => openInteractionModal('Visita')} className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-indigo-700 bg-indigo-100/80 rounded-lg hover:bg-indigo-200/70 transition-colors"><BuildingIcon className="h-4 w-4"/>Visita</button>
+                            <button onClick={() => setIsAgendaModalOpen(true)} className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-[#3478F6] bg-[#E8E9F1] rounded-lg hover:bg-[#A3C8F7]/40 transition-colors"><TaskIcon className="h-4 w-4"/>Tarefa</button>
+                        </div>
+                    </div>
+
+                    {/* Card de Automação de Mensagens */}
+                    <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+                        <h3 className="text-base font-semibold text-[#2E2F38] dark:text-white mb-4">Automação Mensagens</h3>
+                        <div className="flex flex-col gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setIsAutomationModalOpen(true)}
+                                disabled={automationStatus !== 'inativa' || isUpdatingAutomation}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <PlayIcon className="h-4 w-4" />
+                                Iniciar Disparo
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleCancelAutomation}
+                                disabled={automationStatus !== 'ativa' || isUpdatingAutomation}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <StopIcon className="h-4 w-4" />
+                                Cancelar Disparo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* --- COLUNA DA DIREITA --- */}
+                <div className="lg:col-span-2 flex flex-col gap-6">
+                    {/* Card de Qualificação do Lead */}
+                    <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+                        <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4">Qualificação do Lead</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                            {QUALIFICATION_QUESTIONS.map((group) => (
+                                <div key={group.key}>
+                                    <h4 className="text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">{group.title}</h4>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {group.options.map((option) => (
+                                            <button
+                                                key={option}
+                                                onClick={() => handleQualificationChange(group.key, option)}
+                                                className={`px-2.5 py-1 text-xs font-medium border rounded-md transition-all duration-150 ${
+                                                    qualifications[group.key] === option
+                                                    ? 'bg-primary-600 border-primary-700 text-white shadow'
+                                                    : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-600 dark:bg-gray-900/50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'
+                                                }`}
+                                            >
+                                                {option}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Card de Anotações */}
+                    <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] flex flex-col h-56">
+                        <div className="flex justify-between items-center mb-4 flex-shrink-0">
+                            <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white">Anotações</h3>
+                            {!isEditingAnnotations && (
+                                <button onClick={() => setIsEditingAnnotations(true)} className="text-sm font-semibold text-primary-600 hover:text-primary-800 transition-colors">Editar</button>
+                            )}
+                        </div>
+                        <div className="flex-grow min-h-0">
                             {isEditingAnnotations ? (
-                                <textarea
-                                    value={tempAnnotations}
-                                    onChange={(e) => setTempAnnotations(e.target.value)}
-                                    className="w-full h-32 p-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
-                                    placeholder="Digite suas anotações..."
-                                />
+                                <div className="flex flex-col h-full">
+                                    <textarea
+                                        value={tempAnnotations}
+                                        onChange={(e) => setTempAnnotations(e.target.value)}
+                                        className="w-full flex-grow border border-gray-300 dark:border-gray-600 rounded-md p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+                                        placeholder="Adicione suas anotações aqui..."
+                                    />
+                                    <div className="flex justify-end gap-2 mt-4 flex-shrink-0">
+                                        <button onClick={() => { setIsEditingAnnotations(false); setTempAnnotations(lead.anotacoes || ''); }} className="px-3 py-1 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 rounded-lg transition-colors">Cancelar</button>
+                                        <button onClick={handleSaveAnnotations} className="px-3 py-1 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors">Confirmar</button>
+                                    </div>
+                                </div>
                             ) : (
-                                <div className="text-[#6B6F76] dark:text-gray-300 whitespace-pre-wrap">
-                                    {lead.anotacoes || 'Nenhuma anotação registrada.'}
+                                <div className="prose prose-sm dark:prose-invert max-w-none overflow-y-auto h-full pr-2">
+                                    <p className="whitespace-pre-wrap text-gray-600 dark:text-gray-400">
+                                        {lead.anotacoes || 'Nenhuma anotação registrada.'}
+                                    </p>
                                 </div>
                             )}
                         </div>
+                    </div>
 
-                        {/* Qualificação */}
-                        <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-6">
-                            <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4">Qualificação</h3>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-[#6B6F76] dark:text-gray-300 mb-2">
-                                        Interesse
-                                    </label>
-                                    <select
-                                        value={qualifications.interesse || ''}
-                                        onChange={(e) => handleQualificationChange('interesse', e.target.value)}
-                                        className="w-full px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
-                                    >
-                                        <option value="">Selecione...</option>
-                                        <option value="Alto">Alto</option>
-                                        <option value="Médio">Médio</option>
-                                        <option value="Baixo">Baixo</option>
-                                    </select>
-                                </div>
-                                
-                                <div>
-                                    <label className="block text-sm font-medium text-[#6B6F76] dark:text-gray-300 mb-2">
-                                        Orçamento
-                                    </label>
-                                    <select
-                                        value={qualifications.orcamento || ''}
-                                        onChange={(e) => handleQualificationChange('orcamento', e.target.value)}
-                                        className="w-full px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
-                                    >
-                                        <option value="">Selecione...</option>
-                                        <option value="Até R$ 200k">Até R$ 200k</option>
-                                        <option value="R$ 200k - R$ 500k">R$ 200k - R$ 500k</option>
-                                        <option value="R$ 500k - R$ 1M">R$ 500k - R$ 1M</option>
-                                        <option value="Acima de R$ 1M">Acima de R$ 1M</option>
-                                    </select>
-                                </div>
-                                
-                                <div>
-                                    <label className="block text-sm font-medium text-[#6B6F76] dark:text-gray-300 mb-2">
-                                        Urgência
-                                    </label>
-                                    <select
-                                        value={qualifications.urgencia || ''}
-                                        onChange={(e) => handleQualificationChange('urgencia', e.target.value)}
-                                        className="w-full px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
-                                    >
-                                        <option value="">Selecione...</option>
-                                        <option value="Imediata">Imediata</option>
-                                        <option value="Alta">Alta</option>
-                                        <option value="Média">Média</option>
-                                        <option value="Baixa">Baixa</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
+                    {/* Card de Histórico */}
+                    <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] flex flex-col">
+                        <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex-shrink-0">Histórico de Ações</h3>
+                        <div className="flex-grow overflow-y-auto min-h-0 pr-2">
+                            {interactions.length > 0 ? (
+                                <ul className="space-y-4">
+                                    {interactions.map(interaction => {
+                                        const isPendingTask = interaction.type === 'Tarefa Agendada' &&
+                                            interaction.taskId &&
+                                            tasks.some(task => task.id === interaction.taskId);
 
-                        {/* Status da Automação */}
-                        <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-6">
-                            <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4">Automação</h3>
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-[#6B6F76] dark:text-gray-300">Status:</span>
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                        lead.automacao?.status === 'ativa' 
-                                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                            : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
-                                    }`}>
-                                        {lead.automacao?.status === 'ativa' ? 'Ativa' : 'Inativa'}
-                                    </span>
+                                        return (
+                                            <li key={interaction.id} className="flex items-start gap-3">
+                                                <div className="bg-slate-100 dark:bg-gray-700 p-2 rounded-full">
+                                                    {getIconForInteraction(interaction.type)}
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-gray-700 dark:text-gray-200">{interaction.type}</p>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400">{interaction.notes}</p>
+                                                    
+                                                    {interaction.type === 'Tarefa Cancelada' && interaction.cancellationNotes && (
+                                                        <p className="text-sm text-red-500 mt-1">
+                                                            <span className="font-semibold">Motivo:</span> {interaction.cancellationNotes}
+                                                        </p>
+                                                    )}
+
+                                                    {isPendingTask && (
+                                                        <div className="mt-2 flex items-center gap-3">
+                                                            <button
+                                                                onClick={() => handleUpdateTaskStatus(interaction.id, interaction.taskId!, 'concluída')}
+                                                                className="px-2.5 py-1 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors"
+                                                            >
+                                                                Tarefa Concluída
+                                                            </button>
+                                                            <button
+                                                                onClick={() => openCancelModal(interaction.id, interaction.taskId!)}
+                                                                className="px-2.5 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+                                                            >
+                                                                Cancelar Tarefa
+                                                            </button>
+                                                        </div>
+                                                    )}
+
+                                                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                                        {interaction.timestamp ? new Date(interaction.timestamp.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}
+                                                    </p>
+                                                </div>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            ) : (
+                                <div className="h-full flex items-center justify-center">
+                                    <p className="text-center text-gray-500 dark:text-gray-400">Nenhuma interação registrada ainda.</p>
                                 </div>
-                                
-                                {lead.automacao?.status === 'ativa' && (
-                                    <>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-[#6B6F76] dark:text-gray-300">Tratamento:</span>
-                                            <span className="text-sm font-medium text-[#2E2F38] dark:text-white">
-                                                {lead.automacao?.tratamento || 'N/A'}
-                                            </span>
-                                        </div>
-                                        
-                                        <button
-                                            onClick={handleCancelAutomation}
-                                            disabled={isUpdatingAutomation}
-                                            className="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
-                                        >
-                                            {isUpdatingAutomation ? 'Cancelando...' : 'Cancelar Automação'}
-                                        </button>
-                                    </>
-                                )}
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
-
-            {/* Modais */}
+            
             <LogInteractionModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
@@ -656,7 +584,7 @@ export default function LeadDetailPage() {
                 isLoading={isSaving}
             />
 
-            <AgendaModal
+            <AgendaModal 
                 isOpen={isAgendaModalOpen}
                 onClose={() => setIsAgendaModalOpen(false)}
                 onSave={handleSaveTask}
@@ -666,12 +594,10 @@ export default function LeadDetailPage() {
             <CancelTaskModal
                 isOpen={isCancelModalOpen}
                 onClose={() => setIsCancelModalOpen(false)}
-                onConfirm={(reason) => {
+                onConfirm={(reason: string) => {
                     if (taskToCancel) {
                         handleUpdateTaskStatus(taskToCancel.interactionId, taskToCancel.taskId, 'cancelada', reason);
                     }
-                    setIsCancelModalOpen(false);
-                    setTaskToCancel(null);
                 }}
                 isLoading={isCancelling}
             />
@@ -680,9 +606,42 @@ export default function LeadDetailPage() {
                 isOpen={isAutomationModalOpen}
                 onClose={() => setIsAutomationModalOpen(false)}
                 onConfirm={handleStartAutomation}
-                leadName={lead.nome}
+                leadName={lead?.nome || ''}
                 isLoading={isUpdatingAutomation}
             />
         </div>
     );
-} 
+}
+
+const QUALIFICATION_QUESTIONS = [
+    {
+        title: 'Finalidade',
+        key: 'finalidade',
+        options: ['Moradia', 'Veraneio', 'Investimento'],
+    },
+    {
+        title: 'Estágio do Imóvel',
+        key: 'estagio',
+        options: ['Lançamento', 'Em Construção', 'Pronto para Morar'],
+    },
+    {
+        title: 'Quartos',
+        key: 'quartos',
+        options: ['2 quartos', '1 Suíte + 1 Quarto', '3 quartos', '4 quartos'],
+    },
+    {
+        title: 'Tipo do Imóvel',
+        key: 'tipo',
+        options: ['Apartamento', 'Casa', 'Terreno'],
+    },
+    {
+        title: 'Vagas de Garagem',
+        key: 'vagas',
+        options: ['1', '2', '3+'],
+    },
+    {
+        title: 'Valor do Imóvel',
+        key: 'valor',
+        options: ['< 500k', '500k-800k', '800k-1.2M', '1.2M-2M', '> 2M'],
+    },
+]; 
