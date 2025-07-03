@@ -109,19 +109,8 @@ export default function AndamentoPage() {
 
     return (
         <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
-            <CrmHeader />
-            <div className="sticky top-0 z-20 bg-[#F5F6FA] dark:bg-[#181C23] pb-4 mb-2" style={{marginLeft: -32, marginRight: -32, paddingLeft: 32, paddingRight: 32}}>
-                <div className="flex flex-wrap items-center gap-2 md:gap-4 justify-between">
-                    <div className="flex gap-2 md:gap-4">
-                        <button onClick={() => window.history.back()} className="px-4 py-2 rounded-lg bg-[#23283A] text-white font-semibold text-sm hover:bg-[#181C23] transition-colors">← Voltar</button>
-                        <button className="px-4 py-2 rounded-lg font-semibold text-sm bg-[#3478F6] text-white shadow-soft">Gestão de Leads</button>
-                        <button className="px-4 py-2 rounded-lg font-semibold text-sm bg-[#23283A] text-white shadow-soft">Andamento dos Leads</button>
-                    </div>
-                    <div className="flex gap-2 md:gap-4">
-                        <button className="px-4 py-2 rounded-lg font-semibold text-sm bg-[#23283A] text-white shadow-soft">Agenda</button>
-                        <button className="px-4 py-2 rounded-lg font-semibold text-sm bg-[#3478F6] text-white shadow-soft">+ Novo Lead</button>
-                    </div>
-                </div>
+            <div className="sticky top-0 z-20 bg-[#F5F6FA] dark:bg-[#181C23] pb-2" style={{marginLeft: -32, marginRight: -32, paddingLeft: 32, paddingRight: 32}}>
+                <CrmHeader />
             </div>
             <main className="mt-2">
                 {loading ? (
