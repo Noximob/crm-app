@@ -27,7 +27,7 @@ export default function KanbanColumn({ id, title, leads }: KanbanColumnProps) {
             {leads.length}
           </span>
         </div>
-        <div className="flex-grow min-h-[100px] max-h-[60vh] p-3 space-y-3 overflow-y-auto flex flex-col items-center bg-[#F8F9FB] dark:bg-[#181C23] rounded-b-2xl">
+        <div className="flex-grow min-h-[100px] p-3 space-y-3 overflow-y-auto flex flex-col items-center bg-[#F8F9FB] dark:bg-[#181C23] rounded-b-2xl">
           {leads.map(lead => (
             <LeadCard key={lead.id} lead={lead} />
           ))}
