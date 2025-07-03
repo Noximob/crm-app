@@ -76,6 +76,7 @@ export default function AndamentoPage() {
             setLeads((prev) => {
                 const newLeads = { ...prev };
                 const activeItems = newLeads[activeContainer];
+                if (!newLeads[overContainer]) newLeads[overContainer] = [];
                 const overItems = newLeads[overContainer];
         
                 const activeIndex = activeItems.findIndex(item => item.id === active.id);
