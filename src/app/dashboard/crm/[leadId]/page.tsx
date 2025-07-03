@@ -405,8 +405,8 @@ export default function LeadDetailPage() {
                                 className="px-4 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
                             >
                                 {PIPELINE_STAGES.map((stage) => (
-                                    <option key={stage.value} value={stage.value}>
-                                        {stage.label}
+                                    <option key={stage} value={stage}>
+                                        {stage}
                                     </option>
                                 ))}
                             </select>
@@ -652,15 +652,15 @@ export default function LeadDetailPage() {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSave={handleLogInteraction}
-                type={interactionType}
-                isSaving={isSaving}
+                interactionType={interactionType}
+                isLoading={isSaving}
             />
 
             <AgendaModal
                 isOpen={isAgendaModalOpen}
                 onClose={() => setIsAgendaModalOpen(false)}
                 onSave={handleSaveTask}
-                isSaving={isSavingTask}
+                isLoading={isSavingTask}
             />
 
             <CancelTaskModal
@@ -673,14 +673,15 @@ export default function LeadDetailPage() {
                     setIsCancelModalOpen(false);
                     setTaskToCancel(null);
                 }}
-                isCancelling={isCancelling}
+                isLoading={isCancelling}
             />
 
             <StartAutomationModal
                 isOpen={isAutomationModalOpen}
                 onClose={() => setIsAutomationModalOpen(false)}
-                onStart={handleStartAutomation}
-                isStarting={isUpdatingAutomation}
+                onConfirm={handleStartAutomation}
+                leadName={lead.nome}
+                isLoading={isUpdatingAutomation}
             />
         </div>
     );
