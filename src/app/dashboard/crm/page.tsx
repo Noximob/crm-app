@@ -287,7 +287,7 @@ export default function CrmPage() {
                                         <td className="px-4 py-3 w-1/5 text-center">
                                             <div className="flex justify-center">
                                                 <Link
-                                                    href={`/crm/${lead.id}`}
+                                                    href={`/dashboard/crm/${lead.id}`}
                                                     className="px-3 py-1.5 text-xs font-semibold bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg shadow-soft transition-colors"
                                                 >
                                                     Ver

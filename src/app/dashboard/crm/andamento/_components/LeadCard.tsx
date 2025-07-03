@@ -43,7 +43,7 @@ export default function LeadCard({ lead }: { lead: Lead }) {
           <WhatsAppIcon className="h-3 w-3" />
           WhatsApp
         </a>
-        <Link href={`/crm/${lead.id}`} onClick={e => e.stopPropagation()} className="w-full">
+                            <Link href={`/dashboard/crm/${lead.id}`} onClick={e => e.stopPropagation()} className="w-full">
           <span className="block px-2 py-0.5 text-[11px] font-semibold text-white bg-[#3478F6] rounded-md hover:bg-[#255FD1] transition-colors text-center">
             + Info
           </span>

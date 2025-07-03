@@ -162,7 +162,7 @@ export default function TaskListModal({ isOpen, onClose }: TaskListModalProps) {
                                             <StatusIndicator status={lead.taskStatus} />
                                         </td>
                                         <td className="py-3 px-3">
-                                            <Link href={`/crm/${lead.id}`} onClick={onClose}>
+                                            <Link href={`/dashboard/crm/${lead.id}`} onClick={onClose}>
                                                 <span className="px-3 py-1 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors cursor-pointer">
                                                     Abrir
                                                 </span>
