@@ -107,13 +107,11 @@ export default function AndamentoPage() {
         return null;
     };
 
-
     return (
         <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
-            <div className="sticky top-0 z-20 bg-[#F5F6FA] dark:bg-[#181C23] pb-2" style={{marginLeft: -32, marginRight: -32, paddingLeft: 32, paddingRight: 32}}>
-                <CrmHeader />
-            </div>
-            <main className="mt-2">
+            <CrmHeader />
+            
+            <main className="mt-6">
                 {loading ? (
                     <div className="text-center py-10">Carregando quadro...</div>
                 ) : (
