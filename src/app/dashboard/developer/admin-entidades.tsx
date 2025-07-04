@@ -2,16 +2,16 @@ import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 
 const TABS = [
+  { label: 'Permissões', value: 'permissoes' },
   { label: 'Imobiliárias', value: 'imobiliarias' },
   { label: 'Corretores', value: 'corretores' },
-  { label: 'Permissões', value: 'permissoes' },
   { label: 'Transferência de Leads', value: 'transferencia' },
 ];
 
 export default function AdminEntidades() {
   // const { currentUser } = useAuth();
   // const isDev = currentUser?.role === 'superadmin' || currentUser?.acessoDesenvolvedor;
-  const [tab, setTab] = useState('imobiliarias');
+  const [tab, setTab] = useState('permissoes');
 
   // if (!isDev) {
   //   return (
@@ -42,9 +42,9 @@ export default function AdminEntidades() {
       </div>
       {/* Conteúdo das Abas */}
       <div className="mt-4">
+        {tab === 'permissoes' && <PermissoesMockup />}
         {tab === 'imobiliarias' && <ImobiliariasMockup />}
         {tab === 'corretores' && <CorretoresMockup />}
-        {tab === 'permissoes' && <PermissoesMockup />}
         {tab === 'transferencia' && <TransferenciaMockup />}
       </div>
     </section>
@@ -60,7 +60,6 @@ function ImobiliariasMockup() {
             <th className="px-4 py-2 text-left dark:text-[#E8E9F1]">Imobiliária / Autônomo</th>
             <th className="px-4 py-2 text-center dark:text-[#E8E9F1]">Corretores</th>
             <th className="px-4 py-2 text-center dark:text-[#E8E9F1]">Status</th>
-            <th className="px-4 py-2 text-center dark:text-[#E8E9F1]">Ativo</th>
             <th className="px-4 py-2 text-center dark:text-[#E8E9F1]">Ações</th>
           </tr>
         </thead>
@@ -69,7 +68,6 @@ function ImobiliariasMockup() {
             <td className="px-4 py-2 dark:text-white">Imob Exemplo</td>
             <td className="px-4 py-2 text-center dark:text-white">12</td>
             <td className="px-4 py-2 text-center"><span className="px-2 py-1 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">Ativa</span></td>
-            <td className="px-4 py-2 text-center"><input type="checkbox" checked readOnly /></td>
             <td className="px-4 py-2 text-center flex gap-2 justify-center">
               <button className="px-2 py-1 text-xs bg-yellow-400/80 rounded">Desativar</button>
             </td>
@@ -78,7 +76,6 @@ function ImobiliariasMockup() {
             <td className="px-4 py-2 dark:text-white">Carlos Autônomo (Autônomo)</td>
             <td className="px-4 py-2 text-center dark:text-white">1</td>
             <td className="px-4 py-2 text-center"><span className="px-2 py-1 rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs">Inativa</span></td>
-            <td className="px-4 py-2 text-center"><input type="checkbox" readOnly /></td>
             <td className="px-4 py-2 text-center flex gap-2 justify-center">
               <button className="px-2 py-1 text-xs bg-green-400/80 rounded">Ativar</button>
             </td>
@@ -91,50 +88,51 @@ function ImobiliariasMockup() {
 }
 
 function CorretoresMockup() {
-  const [openImob, setOpenImob] = useState('Imob Exemplo');
   return (
     <div>
       <input className="px-2 py-1 border rounded text-sm mb-4 dark:bg-[#181C23] dark:text-white dark:border-[#23283A] w-full max-w-xs" placeholder="Filtrar por imobiliária" />
-      {/* Lista de imobiliárias */}
       <div className="mb-6">
-        <div className="font-bold text-[#3478F6] dark:text-[#A3C8F7] mb-2 cursor-pointer" onClick={() => setOpenImob(openImob === 'Imob Exemplo' ? '' : 'Imob Exemplo')}>Imobiliária: Imob Exemplo {openImob === 'Imob Exemplo' ? '▼' : '▶'}</div>
-        {openImob === 'Imob Exemplo' && (
-          <table className="min-w-full text-sm bg-white dark:bg-[#23283A] rounded-xl overflow-hidden mb-2">
-            <thead>
-              <tr className="bg-[#F5F6FA] dark:bg-[#23283A] text-[#6B6F76] dark:text-[#E8E9F1]">
-                <th className="px-4 py-2 text-left dark:text-[#E8E9F1]">Nome</th>
-                <th className="px-4 py-2 text-left dark:text-[#E8E9F1]">E-mail</th>
-                <th className="px-4 py-2 text-center dark:text-[#E8E9F1]">Leads</th>
-                <th className="px-4 py-2 text-center dark:text-[#E8E9F1]">Status</th>
-                <th className="px-4 py-2 text-center dark:text-[#E8E9F1]">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="dark:bg-[#23283A]">
-                <td className="px-4 py-2 dark:text-white">João Corretor</td>
-                <td className="px-4 py-2 dark:text-white">joao@email.com</td>
-                <td className="px-4 py-2 text-center dark:text-white">8</td>
-                <td className="px-4 py-2 text-center"><input type="checkbox" checked readOnly /></td>
-                <td className="px-4 py-2 text-center flex gap-2 justify-center">
-                  <button className="px-2 py-1 text-xs bg-blue-500 text-white rounded">Transferir Leads</button>
-                  <button className="px-2 py-1 text-xs bg-red-500 text-white rounded">Excluir Lead</button>
-                </td>
-              </tr>
-              <tr className="bg-[#F5F6FA] dark:bg-[#23283A]">
-                <td className="px-4 py-2 dark:text-white">Maria Silva</td>
-                <td className="px-4 py-2 dark:text-white">maria@email.com</td>
-                <td className="px-4 py-2 text-center dark:text-white">4</td>
-                <td className="px-4 py-2 text-center"><input type="checkbox" readOnly /></td>
-                <td className="px-4 py-2 text-center flex gap-2 justify-center">
-                  <button className="px-2 py-1 text-xs bg-blue-500 text-white rounded">Transferir Leads</button>
-                  <button className="px-2 py-1 text-xs bg-red-500 text-white rounded">Excluir Lead</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        )}
+        <div className="font-bold text-[#3478F6] dark:text-[#A3C8F7] mb-2">Imobiliária: Imob Exemplo</div>
+        <table className="min-w-full text-sm bg-white dark:bg-[#23283A] rounded-xl overflow-hidden mb-2">
+          <thead>
+            <tr className="bg-[#F5F6FA] dark:bg-[#23283A] text-[#6B6F76] dark:text-[#E8E9F1]">
+              <th className="px-4 py-2 text-left dark:text-[#E8E9F1]">Nome</th>
+              <th className="px-4 py-2 text-left dark:text-[#E8E9F1]">E-mail</th>
+              <th className="px-4 py-2 text-center dark:text-[#E8E9F1]">Último Acesso</th>
+              <th className="px-4 py-2 text-center dark:text-[#E8E9F1]">Leads Ativos</th>
+              <th className="px-4 py-2 text-center dark:text-[#E8E9F1]">Leads Geladeira</th>
+              <th className="px-4 py-2 text-center dark:text-[#E8E9F1]">Status Integração</th>
+              <th className="px-4 py-2 text-center dark:text-[#E8E9F1]">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="dark:bg-[#23283A]">
+              <td className="px-4 py-2 dark:text-white">João Corretor</td>
+              <td className="px-4 py-2 dark:text-white">joao@email.com</td>
+              <td className="px-4 py-2 text-center dark:text-white">10/07/2024 14:32</td>
+              <td className="px-4 py-2 text-center dark:text-white">8</td>
+              <td className="px-4 py-2 text-center dark:text-white">2</td>
+              <td className="px-4 py-2 text-center"><span className="px-2 py-1 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">OK</span></td>
+              <td className="px-4 py-2 text-center flex gap-2 justify-center">
+                <button className="px-2 py-1 text-xs bg-gray-400 text-white rounded">Resetar Senha</button>
+                <button className="px-2 py-1 text-xs bg-red-500 text-white rounded">Bloquear</button>
+              </td>
+            </tr>
+            <tr className="bg-[#F5F6FA] dark:bg-[#23283A]">
+              <td className="px-4 py-2 dark:text-white">Maria Silva</td>
+              <td className="px-4 py-2 dark:text-white">maria@email.com</td>
+              <td className="px-4 py-2 text-center dark:text-white">09/07/2024 09:10</td>
+              <td className="px-4 py-2 text-center dark:text-white">4</td>
+              <td className="px-4 py-2 text-center dark:text-white">1</td>
+              <td className="px-4 py-2 text-center"><span className="px-2 py-1 rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs">Erro</span></td>
+              <td className="px-4 py-2 text-center flex gap-2 justify-center">
+                <button className="px-2 py-1 text-xs bg-gray-400 text-white rounded">Resetar Senha</button>
+                <button className="px-2 py-1 text-xs bg-green-500 text-white rounded">Desbloquear</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      {/* Corretor Autônomo */}
       <div>
         <div className="font-bold text-[#3478F6] dark:text-[#A3C8F7] mb-2">Corretor Autônomo</div>
         <table className="min-w-full text-sm bg-white dark:bg-[#23283A] rounded-xl overflow-hidden">
@@ -142,8 +140,10 @@ function CorretoresMockup() {
             <tr className="bg-[#F5F6FA] dark:bg-[#23283A] text-[#6B6F76] dark:text-[#E8E9F1]">
               <th className="px-4 py-2 text-left dark:text-[#E8E9F1]">Nome</th>
               <th className="px-4 py-2 text-left dark:text-[#E8E9F1]">E-mail</th>
-              <th className="px-4 py-2 text-center dark:text-[#E8E9F1]">Leads</th>
-              <th className="px-4 py-2 text-center dark:text-[#E8E9F1]">Status</th>
+              <th className="px-4 py-2 text-center dark:text-[#E8E9F1]">Último Acesso</th>
+              <th className="px-4 py-2 text-center dark:text-[#E8E9F1]">Leads Ativos</th>
+              <th className="px-4 py-2 text-center dark:text-[#E8E9F1]">Leads Geladeira</th>
+              <th className="px-4 py-2 text-center dark:text-[#E8E9F1]">Status Integração</th>
               <th className="px-4 py-2 text-center dark:text-[#E8E9F1]">Ações</th>
             </tr>
           </thead>
@@ -151,11 +151,13 @@ function CorretoresMockup() {
             <tr className="dark:bg-[#23283A]">
               <td className="px-4 py-2 dark:text-white">Carlos Autônomo</td>
               <td className="px-4 py-2 dark:text-white">carlos@autonomo.com</td>
+              <td className="px-4 py-2 text-center dark:text-white">10/07/2024 08:00</td>
               <td className="px-4 py-2 text-center dark:text-white">3</td>
-              <td className="px-4 py-2 text-center"><input type="checkbox" checked readOnly /></td>
+              <td className="px-4 py-2 text-center dark:text-white">0</td>
+              <td className="px-4 py-2 text-center"><span className="px-2 py-1 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">OK</span></td>
               <td className="px-4 py-2 text-center flex gap-2 justify-center">
-                <button className="px-2 py-1 text-xs bg-blue-500 text-white rounded">Transferir Leads</button>
-                <button className="px-2 py-1 text-xs bg-red-500 text-white rounded">Excluir Lead</button>
+                <button className="px-2 py-1 text-xs bg-gray-400 text-white rounded">Resetar Senha</button>
+                <button className="px-2 py-1 text-xs bg-red-500 text-white rounded">Bloquear</button>
               </td>
             </tr>
           </tbody>
