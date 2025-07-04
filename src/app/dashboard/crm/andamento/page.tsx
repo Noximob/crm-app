@@ -13,6 +13,14 @@ import LeadCard from './_components/LeadCard';
 
 type LeadsByStage = { [key: string]: Lead[] };
 
+// Componente para título com barra colorida (igual ao usado nas outras páginas)
+const SectionTitle = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
+  <div className={`relative ${className}`}>
+    <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white relative z-10">{children}</h2>
+    <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-[#3478F6] to-[#A3C8F7] rounded-r-full opacity-60"></div>
+  </div>
+);
+
 export default function AndamentoPage() {
     const { currentUser } = useAuth();
     const [leads, setLeads] = useState<LeadsByStage>({});
@@ -111,26 +119,32 @@ export default function AndamentoPage() {
         <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
             <CrmHeader />
             
-            <main className="mt-6">
-                {loading ? (
-                    <div className="text-center py-10">Carregando quadro...</div>
-                ) : (
-                    <DndContext 
-                        sensors={sensors} 
-                        collisionDetection={closestCenter} 
-                        onDragStart={handleDragStart}
-                        onDragEnd={handleDragEnd}
-                    >
-                        <div className="flex gap-6 overflow-x-auto pb-4">
-                            {PIPELINE_STAGES.map(stage => (
-                                <KanbanColumn key={stage} id={stage} title={stage} leads={leads[stage] || []} />
-                            ))}
-                        </div>
-                        <DragOverlay>
-                            {activeLead ? <LeadCard lead={activeLead} /> : null}
-                        </DragOverlay>
-                    </DndContext>
-                )}
+            <main className="flex flex-col gap-4 mt-4">
+                <div className="bg-white dark:bg-[#23283A] p-4 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+                    <div className="mb-4">
+                        <SectionTitle>Andamento dos Leads</SectionTitle>
+                    </div>
+                    
+                    {loading ? (
+                        <div className="text-center py-10">Carregando quadro...</div>
+                    ) : (
+                        <DndContext 
+                            sensors={sensors} 
+                            collisionDetection={closestCenter} 
+                            onDragStart={handleDragStart}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <div className="flex gap-6 overflow-x-auto pb-4">
+                                {PIPELINE_STAGES.map(stage => (
+                                    <KanbanColumn key={stage} id={stage} title={stage} leads={leads[stage] || []} />
+                                ))}
+                            </div>
+                            <DragOverlay>
+                                {activeLead ? <LeadCard lead={activeLead} /> : null}
+                            </DragOverlay>
+                        </DndContext>
+                    )}
+                </div>
             </main>
         </div>
     );
