@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, onSnapshot } from 'firebase/firestore';
 import Link from 'next/link';
+import AdminEntidades from './admin-entidades';
 
 // Ícones
 const BugIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -199,6 +200,7 @@ export default function DeveloperPage() {
             color="red"
           />
         </div>
+        <AdminEntidades />
 
         {/* Ferramentas de Desenvolvimento */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
