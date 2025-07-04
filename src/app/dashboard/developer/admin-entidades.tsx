@@ -10,16 +10,15 @@ const TABS = [
 ];
 
 export default function AdminEntidades() {
-  const { currentUser } = useAuth();
-  // Simulação de permissão (troque para sua lógica real)
-  const isDev = currentUser?.role === 'superadmin' || currentUser?.acessoDesenvolvedor;
+  // const { currentUser } = useAuth();
+  // const isDev = currentUser?.role === 'superadmin' || currentUser?.acessoDesenvolvedor;
   const [tab, setTab] = useState('imobiliarias');
 
-  if (!isDev) {
-    return (
-      <div className="text-center text-red-500 font-bold py-10">Acesso restrito à Administração de Entidades.</div>
-    );
-  }
+  // if (!isDev) {
+  //   return (
+  //     <div className="text-center text-red-500 font-bold py-10">Acesso restrito à Administração de Entidades.</div>
+  //   );
+  // }
 
   return (
     <section className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-6 mt-8">
