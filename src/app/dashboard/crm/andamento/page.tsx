@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import CrmHeader from '../_components/CrmHeader';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, query, doc, updateDoc, where } from 'firebase/firestore';
@@ -117,9 +116,7 @@ export default function AndamentoPage() {
 
     return (
         <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
-            <CrmHeader />
-            
-            <main className="flex flex-col gap-4 mt-4">
+            <main className="flex flex-col gap-4">
                 <div className="bg-white dark:bg-[#23283A] p-4 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
                     <div className="mb-4">
                         <SectionTitle>Andamento dos Leads</SectionTitle>
