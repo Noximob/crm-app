@@ -160,8 +160,6 @@ export default function DeveloperPage() {
   return (
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
       <div className="max-w-6xl mx-auto">
-
-
         {/* Título e Descrição */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-4 mb-4">
@@ -172,7 +170,6 @@ export default function DeveloperPage() {
             Ferramentas e informações para desenvolvimento, debugging e monitoramento do sistema.
           </p>
         </div>
-
         {/* Métricas do Sistema */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <MetricCard
@@ -201,111 +198,6 @@ export default function DeveloperPage() {
           />
         </div>
         <AdminEntidades />
-
-        {/* Ferramentas de Desenvolvimento */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Console de Logs */}
-          <Card>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Logs do Sistema</h2>
-              <button className="text-[#3478F6] hover:text-[#2E6FD9] text-sm font-medium">
-                Ver Todos
-              </button>
-            </div>
-            <div className="space-y-3 max-h-80 overflow-y-auto">
-              {logs.map((log) => (
-                <div key={log.id} className="p-3 rounded-lg border border-[#E8E9F1] dark:border-[#23283A]">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getLogLevelColor(log.level)}`}>
-                      {log.level.toUpperCase()}
-                    </span>
-                    <span className="text-xs text-[#6B6F76] dark:text-gray-300">
-                      {formatTimestamp(log.timestamp)}
-                    </span>
-                  </div>
-                  <p className="text-sm text-[#2E2F38] dark:text-white mb-1">{log.message}</p>
-                  <p className="text-xs text-[#6B6F76] dark:text-gray-300">Usuário: {log.user}</p>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* Admin Imobiliárias */}
-          <Card>
-            <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-6">Admin Imobiliárias</h2>
-            <div className="space-y-4">
-              <Link href="/dashboard/developer/admin-imobiliarias" className="w-full flex items-center justify-between p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
-                <div className="flex items-center gap-3">
-                  <svg className="h-5 w-5 text-[#3478F6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                  <span className="text-[#2E2F38] dark:text-white font-medium">Gestão de Imobiliárias</span>
-                </div>
-                <span className="text-[#6B6F76] dark:text-gray-300">→</span>
-              </Link>
-              
-              <Link href="/dashboard/developer/admin-corretores" className="w-full flex items-center justify-between p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
-                <div className="flex items-center gap-3">
-                  <svg className="h-5 w-5 text-[#3AC17C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                  </svg>
-                  <span className="text-[#2E2F38] dark:text-white font-medium">Gestão de Corretores</span>
-                </div>
-                <span className="text-[#6B6F76] dark:text-gray-300">→</span>
-              </Link>
-              
-              <Link href="/dashboard/developer/admin-leads" className="w-full flex items-center justify-between p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
-                <div className="flex items-center gap-3">
-                  <svg className="h-5 w-5 text-[#FF6B6B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  <span className="text-[#2E2F38] dark:text-white font-medium">Gestão de Leads</span>
-                </div>
-                <span className="text-[#6B6F76] dark:text-gray-300">→</span>
-              </Link>
-              
-              <Link href="/dashboard/developer/admin-permissoes" className="w-full flex items-center justify-between p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
-                <div className="flex items-center gap-3">
-                  <svg className="h-5 w-5 text-[#F45B69]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                  <span className="text-[#2E2F38] dark:text-white font-medium">Gestão de Permissões</span>
-                </div>
-                <span className="text-[#6B6F76] dark:text-gray-300">→</span>
-              </Link>
-            </div>
-          </Card>
-        </div>
-
-        {/* Status do Sistema */}
-        <Card>
-          <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-6">Status do Sistema</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex items-center justify-between p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-              <div>
-                <p className="font-medium text-green-800 dark:text-green-200">Firebase</p>
-                <p className="text-sm text-green-600 dark:text-green-300">Conectado</p>
-              </div>
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-            </div>
-            
-            <div className="flex items-center justify-between p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-              <div>
-                <p className="font-medium text-green-800 dark:text-green-200">API</p>
-                <p className="text-sm text-green-600 dark:text-green-300">Online</p>
-              </div>
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-            </div>
-            
-            <div className="flex items-center justify-between p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-              <div>
-                <p className="font-medium text-green-800 dark:text-green-200">Banco de Dados</p>
-                <p className="text-sm text-green-600 dark:text-green-300">Ativo</p>
-              </div>
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-            </div>
-          </div>
-        </Card>
       </div>
     </div>
   );
