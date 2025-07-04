@@ -8,11 +8,11 @@ import { doc, getDoc, onSnapshot, updateDoc, collection, query, orderBy, addDoc,
 import Link from 'next/link';
 import { PIPELINE_STAGES } from '@/lib/constants';
 import { Lead } from '@/types';
-import LogInteractionModal from '../../../crm/_components/LogInteractionModal';
+import LogInteractionModal from '../_components/LogInteractionModal';
 import CrmHeader from '../_components/CrmHeader';
-import AgendaModal, { TaskPayload } from '../../../crm/_components/AgendaModal';
-import CancelTaskModal from '../../../crm/_components/CancelTaskModal';
-import StartAutomationModal from '../../../crm/_components/StartAutomationModal';
+import AgendaModal, { TaskPayload } from '../_components/AgendaModal';
+import CancelTaskModal from '../_components/CancelTaskModal';
+import StartAutomationModal from '../_components/StartAutomationModal';
 
 // --- Ícones ---
 const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>;
