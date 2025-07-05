@@ -214,131 +214,38 @@ function EntidadesMockup() {
 }
 
 function GestaoLeadsMockup() {
+  // Importar PIPELINE_STAGES do constants
+  const etapas = [
+    'Pré Qualificação',
+    'Qualificação',
+    'Apresentação do imóvel',
+    'Ligação agendada',
+    'Visita agendada',
+    'Negociação e Proposta',
+    'Contrato e fechamento',
+    'Pós Venda e Fidelização',
+    'Geladeira',
+  ];
+
   return (
     <div>
       <div className="mb-6">
-        <h3 className="text-lg font-semibold mb-4 text-[#2E2F38] dark:text-white">Transferência e Exclusão de Leads</h3>
-        <p className="text-sm text-[#6B6F76] dark:text-[#E8E9F1] mb-4">
-          Transfira leads entre corretores da mesma imobiliária ou exclua leads específicos.
-        </p>
+        <h3 className="text-2xl font-bold mb-2 text-[#2E2F38] dark:text-white">Gestão de Leads</h3>
       </div>
-
-      {/* Seleção de Imobiliária */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">Selecionar Imobiliária</label>
-        <div className="flex gap-2 items-end">
-          <select className="px-3 py-2 border rounded-lg text-sm dark:bg-[#181C23] dark:text-white dark:border-[#23283A] w-full max-w-xs">
-            <option>Selecione uma imobiliária</option>
-            <option>Imob Exemplo</option>
-            <option>Imob Premium</option>
-          </select>
-          <div className="flex gap-2">
-            <input 
-              type="text" 
-              placeholder="Buscar por nome..." 
-              className="px-3 py-2 border rounded-lg text-sm dark:bg-[#181C23] dark:text-white dark:border-[#23283A] w-48"
-            />
-            <button className="px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#2E6FD9] transition-colors">
-              Buscar
-            </button>
-          </div>
-        </div>
+      {/* Etapas estilo pill */}
+      <div className="flex flex-wrap gap-2 mb-8">
+        {etapas.map((etapa) => (
+          <button
+            key={etapa}
+            className="px-4 py-1.5 rounded-full bg-[#1A2B49] text-[#A3C8F7] font-semibold text-sm shadow-sm hover:bg-[#3478F6] hover:text-white transition-colors"
+            style={{ minWidth: 'fit-content' }}
+            type="button"
+          >
+            {etapa}
+          </button>
+        ))}
       </div>
-
-      {/* Corretores Origem e Destino */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div>
-          <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">Corretor Origem</label>
-          <select className="px-3 py-2 border rounded-lg text-sm dark:bg-[#181C23] dark:text-white dark:border-[#23283A] w-full">
-            <option>Selecione o corretor origem</option>
-            <option>João Corretor (8 leads)</option>
-            <option>Maria Silva (4 leads)</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">Corretor Destino</label>
-          <select className="px-3 py-2 border rounded-lg text-sm dark:bg-[#181C23] dark:text-white dark:border-[#23283A] w-full">
-            <option>Selecione o corretor destino</option>
-            <option>João Corretor (8 leads)</option>
-            <option>Maria Silva (4 leads)</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Filtros por Situação do Lead */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">Filtrar por Situação do Lead</label>
-        <div className="flex flex-wrap gap-2">
-          <label className="flex items-center">
-            <input type="checkbox" className="mr-2" />
-            <span className="text-sm text-[#2E2F38] dark:text-white">Todos os Leads</span>
-          </label>
-          {PIPELINE_STAGES.map(stage => (
-            <label key={stage} className="flex items-center">
-              <input type="checkbox" className="mr-2" />
-              <span className="text-sm text-[#2E2F38] dark:text-white">{stage}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Ações */}
-      <div className="flex flex-wrap gap-3 mb-6">
-        <button className="px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#2E6FD9] transition-colors">
-          Transferir Leads Selecionados
-        </button>
-        <button className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
-          Excluir Leads Selecionados
-        </button>
-      </div>
-
-      {/* Lista de Leads */}
-      <div>
-        <h4 className="text-md font-semibold mb-3 text-[#3478F6] dark:text-[#A3C8F7]">Leads do Corretor Origem</h4>
-        <p className="text-sm text-[#6B6F76] dark:text-[#E8E9F1] mb-4">
-          Selecione os leads que deseja transferir para o corretor destino ou excluir.
-        </p>
-        <table className="min-w-full text-sm bg-white dark:bg-[#23283A] rounded-xl overflow-hidden">
-          <thead>
-            <tr className="bg-[#F5F6FA] dark:bg-[#23283A] text-[#6B6F76] dark:text-[#E8E9F1]">
-              <th className="px-4 py-2 text-left dark:text-[#E8E9F1]">
-                <input type="checkbox" className="mr-2" />
-                Lead
-              </th>
-              <th className="px-4 py-2 text-left dark:text-[#E8E9F1]">Cliente</th>
-              <th className="px-4 py-2 text-center dark:text-[#E8E9F1]">Situação</th>
-              <th className="px-4 py-2 text-center dark:text-[#E8E9F1]">Última Atividade</th>
-              <th className="px-4 py-2 text-center dark:text-[#E8E9F1]">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="dark:bg-[#23283A]">
-              <td className="px-4 py-2 dark:text-white">
-                <input type="checkbox" className="mr-2" />
-                #001
-              </td>
-              <td className="px-4 py-2 dark:text-white">João Silva</td>
-              <td className="px-4 py-2 text-center"><span className="px-2 py-1 rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-xs">Qualificação</span></td>
-              <td className="px-4 py-2 text-center dark:text-white">10/07/2024</td>
-              <td className="px-4 py-2 text-center">
-                <button className="px-2 py-1 text-xs bg-red-500 text-white rounded">Excluir</button>
-              </td>
-            </tr>
-            <tr className="bg-[#F5F6FA] dark:bg-[#23283A]">
-              <td className="px-4 py-2 dark:text-white">
-                <input type="checkbox" className="mr-2" />
-                #002
-              </td>
-              <td className="px-4 py-2 dark:text-white">Maria Santos</td>
-              <td className="px-4 py-2 text-center"><span className="px-2 py-1 rounded bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200 text-xs">Geladeira</span></td>
-              <td className="px-4 py-2 text-center dark:text-white">08/07/2024</td>
-              <td className="px-4 py-2 text-center">
-                <button className="px-2 py-1 text-xs bg-red-500 text-white rounded">Excluir</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      {/* ...restante do conteúdo da gestão de leads... */}
     </div>
   );
 }
