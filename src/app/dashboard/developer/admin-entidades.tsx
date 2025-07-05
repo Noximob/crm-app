@@ -83,7 +83,6 @@ function EntidadesMockup() {
               <td className="px-4 py-2 text-center dark:text-white">10/07/2024</td>
               <td className="px-4 py-2 text-center">
                 <div className="flex gap-1 justify-center">
-                  <button className="px-3 py-1 text-xs bg-blue-500 text-white rounded w-24">Ver Corretores</button>
                   <button className="px-3 py-1 text-xs bg-yellow-400/80 rounded w-20">Suspender</button>
                   <button className="px-3 py-1 text-xs bg-red-500 text-white rounded w-16">Excluir</button>
                 </div>
@@ -96,7 +95,6 @@ function EntidadesMockup() {
               <td className="px-4 py-2 text-center dark:text-white">05/07/2024</td>
               <td className="px-4 py-2 text-center">
                 <div className="flex gap-1 justify-center">
-                  <button className="px-3 py-1 text-xs bg-blue-500 text-white rounded w-24">Ver Corretores</button>
                   <button className="px-3 py-1 text-xs bg-green-400/80 rounded w-20">Reativar</button>
                   <button className="px-3 py-1 text-xs bg-red-500 text-white rounded w-16">Excluir</button>
                 </div>
@@ -143,11 +141,18 @@ function EntidadesMockup() {
         {/* Filtro por Imobiliária */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">Filtrar por Imobiliária</label>
-          <select className="px-3 py-2 border rounded-lg text-sm dark:bg-[#181C23] dark:text-white dark:border-[#23283A] w-full max-w-xs">
-            <option>Selecione uma imobiliária</option>
-            <option>Imob Exemplo</option>
-            <option>Imob Premium</option>
-          </select>
+          <div className="flex gap-2 items-end">
+            <select className="px-3 py-2 border rounded-lg text-sm dark:bg-[#181C23] dark:text-white dark:border-[#23283A] w-full max-w-xs">
+              <option>Selecione uma imobiliária</option>
+              <option>Imob Exemplo</option>
+              <option>Imob Premium</option>
+            </select>
+            <input 
+              type="text" 
+              placeholder="Buscar por nome..." 
+              className="px-3 py-2 border rounded-lg text-sm dark:bg-[#181C23] dark:text-white dark:border-[#23283A] w-48"
+            />
+          </div>
         </div>
 
         <div className="mb-4">
