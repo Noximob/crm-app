@@ -298,7 +298,7 @@ function GestaoLeadsMockup() {
         ))}
         {etapaSelecionada && (
           <button
-            className="ml-2 px-3 py-1 rounded-full bg-gray-200 dark:bg-[#23283A] text-[#2E2F38] dark:text-white text-xs font-semibold border border-gray-300 dark:border-[#23283A] hover:bg-gray-300 dark:hover:bg-[#181C23] transition-colors"
+            className="ml-2 px-3 py-1 rounded-full bg-red-500 text-white text-xs font-semibold shadow-sm border border-red-500 hover:bg-red-600 transition-colors"
             onClick={() => setEtapaSelecionada('')}
             type="button"
           >
