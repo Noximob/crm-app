@@ -214,25 +214,12 @@ function EntidadesMockup() {
 }
 
 function GestaoLeadsMockup() {
-  const etapas = [
-    'Pré Qualificação',
-    'Qualificação',
-    'Apresentação do imóvel',
-    'Ligação agendada',
-    'Visita agendada',
-    'Negociação e Proposta',
-    'Contrato e fechamento',
-    'Pós Venda e Fidelização',
-    'Geladeira',
-  ];
   const allLeads = [
     { id: '#001', cliente: 'João Silva', etapa: 'Qualificação', ultimaAtividade: '10/07/2024' },
     { id: '#002', cliente: 'Maria Santos', etapa: 'Geladeira', ultimaAtividade: '08/07/2024' },
     { id: '#003', cliente: 'Carlos Souza', etapa: 'Pré Qualificação', ultimaAtividade: '09/07/2024' },
     { id: '#004', cliente: 'Ana Paula', etapa: 'Negociação e Proposta', ultimaAtividade: '07/07/2024' },
   ];
-  const [etapaSelecionada, setEtapaSelecionada] = useState('');
-  const leadsFiltrados = etapaSelecionada ? allLeads.filter((lead) => lead.etapa === etapaSelecionada) : allLeads;
 
   return (
     <div>
@@ -282,21 +269,7 @@ function GestaoLeadsMockup() {
           </select>
         </div>
       </div>
-      {/* Filtro de etapas (pílulas) entre selects e botões de ação */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {etapas.map((etapa) => (
-          <button
-            key={etapa}
-            className={`px-4 py-1.5 rounded-full font-semibold text-sm shadow-sm transition-colors min-w-fit
-              ${etapaSelecionada === etapa ? 'bg-[#3478F6] text-white' : 'bg-[#1A2B49] text-[#A3C8F7] hover:bg-[#3478F6] hover:text-white'}`}
-            type="button"
-            onClick={() => setEtapaSelecionada(etapaSelecionada === etapa ? '' : etapa)}
-          >
-            {etapa}
-          </button>
-        ))}
-      </div>
-      {/* Ações */}
+      {/* Ações em massa */}
       <div className="flex flex-wrap gap-3 mb-6">
         <button className="px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#2E6FD9] transition-colors">
           Transferir Leads Selecionados
@@ -305,7 +278,7 @@ function GestaoLeadsMockup() {
           Excluir Leads Selecionados
         </button>
       </div>
-      {/* Lista de Leads filtrada */}
+      {/* Lista de Leads */}
       <div>
         <h4 className="text-md font-semibold mb-3 text-[#3478F6] dark:text-[#A3C8F7]">Leads do Corretor Origem</h4>
         <p className="text-sm text-[#6B6F76] dark:text-[#E8E9F1] mb-4">
@@ -325,19 +298,22 @@ function GestaoLeadsMockup() {
             </tr>
           </thead>
           <tbody>
-            {leadsFiltrados.length === 0 ? (
-              <tr><td colSpan={5} className="text-center py-6 text-[#6B6F76] dark:text-[#E8E9F1]">Nenhum lead encontrado para esta etapa.</td></tr>
-            ) : leadsFiltrados.map((lead) => (
+            {allLeads.map((lead) => (
               <tr key={lead.id} className="dark:bg-[#23283A]">
                 <td className="px-4 py-2 dark:text-white">
                   <input type="checkbox" className="mr-2" />
                   {lead.id}
                 </td>
                 <td className="px-4 py-2 dark:text-white">{lead.cliente}</td>
-                <td className="px-4 py-2 text-center"><span className="px-2 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs">{lead.etapa}</span></td>
+                <td className="px-4 py-2 text-center">
+                  <span className="px-2 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs">{lead.etapa}</span>
+                </td>
                 <td className="px-4 py-2 text-center dark:text-white">{lead.ultimaAtividade}</td>
                 <td className="px-4 py-2 text-center">
-                  <button className="px-2 py-1 text-xs bg-red-500 text-white rounded">Excluir</button>
+                  <div className="flex gap-2 justify-center">
+                    <button className="px-3 py-1 text-xs bg-[#3478F6] text-white rounded hover:bg-[#255FD1] transition-colors">Transferir Lead</button>
+                    <button className="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition-colors">Excluir</button>
+                  </div>
                 </td>
               </tr>
             ))}
