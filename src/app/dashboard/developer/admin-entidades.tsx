@@ -79,7 +79,9 @@ function EntidadesMockup() {
             <tr className="dark:bg-[#23283A]">
               <td className="px-4 py-2 dark:text-white">Imob Exemplo</td>
               <td className="px-4 py-2 text-center dark:text-white">12</td>
-              <td className="px-4 py-2 text-center"><span className="px-2 py-1 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">Ativo</span></td>
+              <td className="px-4 py-2 text-center">
+                <span className="px-3 py-1 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs w-20 inline-block">Ativo</span>
+              </td>
               <td className="px-4 py-2 text-center dark:text-white">10/07/2024</td>
               <td className="px-4 py-2 text-center">
                 <div className="flex gap-1 justify-center">
@@ -91,7 +93,9 @@ function EntidadesMockup() {
             <tr className="bg-[#F5F6FA] dark:bg-[#23283A]">
               <td className="px-4 py-2 dark:text-white">Imob Premium</td>
               <td className="px-4 py-2 text-center dark:text-white">8</td>
-              <td className="px-4 py-2 text-center"><span className="px-2 py-1 rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs">Suspenso</span></td>
+              <td className="px-4 py-2 text-center">
+                <span className="px-3 py-1 rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs w-20 inline-block">Suspenso</span>
+              </td>
               <td className="px-4 py-2 text-center dark:text-white">05/07/2024</td>
               <td className="px-4 py-2 text-center">
                 <div className="flex gap-1 justify-center">
@@ -121,7 +125,9 @@ function EntidadesMockup() {
             <tr className="dark:bg-[#23283A]">
               <td className="px-4 py-2 dark:text-white">Carlos Autônomo</td>
               <td className="px-4 py-2 dark:text-white">carlos@autonomo.com</td>
-              <td className="px-4 py-2 text-center"><span className="px-2 py-1 rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs">Suspenso</span></td>
+              <td className="px-4 py-2 text-center">
+                <span className="px-3 py-1 rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs w-20 inline-block">Suspenso</span>
+              </td>
               <td className="px-4 py-2 text-center dark:text-white">01/07/2024</td>
               <td className="px-4 py-2 text-center">
                 <div className="flex gap-1 justify-center">
@@ -178,12 +184,15 @@ function EntidadesMockup() {
               <tr className="dark:bg-[#23283A]">
                 <td className="px-4 py-2 dark:text-white">João Corretor</td>
                 <td className="px-4 py-2 dark:text-white">joao@email.com</td>
-                <td className="px-4 py-2 text-center"><span className="px-3 py-1 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs w-16 inline-block">Ativo</span></td>
+                <td className="px-4 py-2 text-center">
+                  <span className="px-3 py-1 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs w-20 inline-block">Ativo</span>
+                </td>
                 <td className="px-4 py-2 text-center dark:text-white">8</td>
                 <td className="px-4 py-2 text-center">
-                  <div className="flex gap-1 justify-center">
+                  <div className="flex flex-wrap gap-1 justify-center min-w-[260px]">
                     <button className="px-3 py-1 text-xs bg-gray-400 text-white rounded w-24">Resetar Senha</button>
-                    <button className="px-3 py-1 text-xs bg-red-500 text-white rounded w-20">Bloquear</button>
+                    <button className="px-3 py-1 text-xs bg-red-500 text-white rounded w-24">Bloquear</button>
+                    <button className="px-3 py-1 text-xs bg-green-500 text-white rounded w-24">Desbloquear</button>
                     <button className="px-3 py-1 text-xs bg-red-500 text-white rounded w-16">Excluir</button>
                   </div>
                 </td>
@@ -191,12 +200,14 @@ function EntidadesMockup() {
               <tr className="bg-[#F5F6FA] dark:bg-[#23283A]">
                 <td className="px-4 py-2 dark:text-white">Maria Silva</td>
                 <td className="px-4 py-2 dark:text-white">maria@email.com</td>
-                <td className="px-4 py-2 text-center"><span className="px-3 py-1 rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs w-20 inline-block">Bloqueado</span></td>
+                <td className="px-4 py-2 text-center">
+                  <span className="px-3 py-1 rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs w-20 inline-block">Suspenso</span>
+                </td>
                 <td className="px-4 py-2 text-center dark:text-white">4</td>
                 <td className="px-4 py-2 text-center">
-                  <div className="flex gap-1 justify-center">
+                  <div className="flex flex-wrap gap-1 justify-center min-w-[260px]">
                     <button className="px-3 py-1 text-xs bg-gray-400 text-white rounded w-24">Resetar Senha</button>
-                    <button className="px-3 py-1 text-xs bg-green-500 text-white rounded w-20">Desbloquear</button>
+                    <button className="px-3 py-1 text-xs bg-green-500 text-white rounded w-24">Desbloquear</button>
                     <button className="px-3 py-1 text-xs bg-red-500 text-white rounded w-16">Excluir</button>
                   </div>
                 </td>
@@ -599,6 +610,45 @@ function MonitoramentoMockup() {
           <div className="bg-[#F5F6FA] dark:bg-[#23283A] p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] text-center">
             <div className="text-2xl font-bold text-[#3478F6] dark:text-[#A3C8F7]">98.5%</div>
             <div className="text-sm text-[#6B6F76] dark:text-[#E8E9F1]">Uptime</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filtro e controle de permissões */}
+      <div className="mt-10 p-6 bg-[#F5F6FA] dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A]">
+        <h4 className="text-md font-semibold mb-4 text-[#3478F6] dark:text-[#A3C8F7]">Controle Rápido de Permissões</h4>
+        <div className="flex flex-wrap gap-4 mb-4">
+          <select className="px-3 py-2 border rounded-lg text-sm dark:bg-[#181C23] dark:text-white dark:border-[#23283A] w-56">
+            <option>Filtrar por tipo</option>
+            <option>Imobiliária</option>
+            <option>Corretor</option>
+            <option>Autônomo</option>
+          </select>
+          <input type="text" placeholder="Buscar por nome ou e-mail..." className="px-3 py-2 border rounded-lg text-sm dark:bg-[#181C23] dark:text-white dark:border-[#23283A] w-64" />
+          <button className="px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#2E6FD9] transition-colors">Buscar</button>
+        </div>
+        {/* Mock de resultado de busca e edição de permissões */}
+        <div className="bg-white dark:bg-[#181C23] p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A]">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <span className="font-semibold text-[#2E2F38] dark:text-white">João Corretor</span>
+              <span className="ml-2 text-xs text-[#6B6F76] dark:text-[#E8E9F1]">(joao@email.com)</span>
+            </div>
+            <button className="px-3 py-1 text-xs bg-[#3478F6] text-white rounded">Salvar Permissões</button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-[#2E2F38] dark:text-white">Área do Administrador</span>
+              <span className="px-2 py-1 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">Liberado</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-[#2E2F38] dark:text-white">Treinamento</span>
+              <span className="px-2 py-1 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">Liberado</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-[#2E2F38] dark:text-white">Incluir Imóvel</span>
+              <span className="px-2 py-1 rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs">Bloqueado</span>
+            </div>
           </div>
         </div>
       </div>
