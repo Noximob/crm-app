@@ -147,11 +147,18 @@ function EntidadesMockup() {
               <option>Imob Exemplo</option>
               <option>Imob Premium</option>
             </select>
-            <input 
-              type="text" 
-              placeholder="Buscar por nome..." 
-              className="px-3 py-2 border rounded-lg text-sm dark:bg-[#181C23] dark:text-white dark:border-[#23283A] w-48"
-            />
+            <div className="relative">
+              <input 
+                type="text" 
+                placeholder="Buscar por nome..." 
+                className="px-3 py-2 pr-10 border rounded-lg text-sm dark:bg-[#181C23] dark:text-white dark:border-[#23283A] w-48"
+              />
+              <button className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[#6B6F76] dark:text-[#E8E9F1] hover:text-[#3478F6] dark:hover:text-[#A3C8F7]">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -171,7 +178,7 @@ function EntidadesMockup() {
               <tr className="dark:bg-[#23283A]">
                 <td className="px-4 py-2 dark:text-white">João Corretor</td>
                 <td className="px-4 py-2 dark:text-white">joao@email.com</td>
-                <td className="px-4 py-2 text-center"><span className="px-2 py-1 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">Ativo</span></td>
+                <td className="px-4 py-2 text-center"><span className="px-3 py-1 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs w-16 inline-block">Ativo</span></td>
                 <td className="px-4 py-2 text-center dark:text-white">8</td>
                 <td className="px-4 py-2 text-center">
                   <div className="flex gap-1 justify-center">
@@ -184,7 +191,7 @@ function EntidadesMockup() {
               <tr className="bg-[#F5F6FA] dark:bg-[#23283A]">
                 <td className="px-4 py-2 dark:text-white">Maria Silva</td>
                 <td className="px-4 py-2 dark:text-white">maria@email.com</td>
-                <td className="px-4 py-2 text-center"><span className="px-2 py-1 rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs">Bloqueado</span></td>
+                <td className="px-4 py-2 text-center"><span className="px-3 py-1 rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs w-20 inline-block">Bloqueado</span></td>
                 <td className="px-4 py-2 text-center dark:text-white">4</td>
                 <td className="px-4 py-2 text-center">
                   <div className="flex gap-1 justify-center">
