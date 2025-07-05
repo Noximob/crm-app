@@ -283,7 +283,8 @@ function GestaoLeadsMockup() {
         </div>
       </div>
       {/* Filtro de etapas (pílulas) entre selects e botões de ação */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex flex-wrap items-center gap-2 mb-6">
+        <span className="font-semibold text-[#2E2F38] dark:text-white mr-2">Filtro:</span>
         {etapas.map((etapa) => (
           <button
             key={etapa}
@@ -295,6 +296,15 @@ function GestaoLeadsMockup() {
             {etapa}
           </button>
         ))}
+        {etapaSelecionada && (
+          <button
+            className="ml-2 px-3 py-1 rounded-full bg-gray-200 dark:bg-[#23283A] text-[#2E2F38] dark:text-white text-xs font-semibold border border-gray-300 dark:border-[#23283A] hover:bg-gray-300 dark:hover:bg-[#181C23] transition-colors"
+            onClick={() => setEtapaSelecionada('')}
+            type="button"
+          >
+            Limpar filtro
+          </button>
+        )}
       </div>
       {/* Ações em massa */}
       <div className="flex flex-wrap gap-3 mb-6">
