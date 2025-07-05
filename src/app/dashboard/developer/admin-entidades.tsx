@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { PIPELINE_STAGES } from '@/lib/constants';
 
 const TABS = [
   { label: 'Entidades e Planos', value: 'entidades' },
@@ -82,9 +83,9 @@ function EntidadesMockup() {
               <td className="px-4 py-2 text-center dark:text-white">10/07/2024</td>
               <td className="px-4 py-2 text-center">
                 <div className="flex gap-1 justify-center">
-                  <button className="px-2 py-1 text-xs bg-blue-500 text-white rounded">Ver Corretores</button>
-                  <button className="px-2 py-1 text-xs bg-yellow-400/80 rounded">Suspender</button>
-                  <button className="px-2 py-1 text-xs bg-red-500 text-white rounded">Excluir</button>
+                  <button className="px-3 py-1 text-xs bg-blue-500 text-white rounded w-24">Ver Corretores</button>
+                  <button className="px-3 py-1 text-xs bg-yellow-400/80 rounded w-20">Suspender</button>
+                  <button className="px-3 py-1 text-xs bg-red-500 text-white rounded w-16">Excluir</button>
                 </div>
               </td>
             </tr>
@@ -95,9 +96,9 @@ function EntidadesMockup() {
               <td className="px-4 py-2 text-center dark:text-white">05/07/2024</td>
               <td className="px-4 py-2 text-center">
                 <div className="flex gap-1 justify-center">
-                  <button className="px-2 py-1 text-xs bg-blue-500 text-white rounded">Ver Corretores</button>
-                  <button className="px-2 py-1 text-xs bg-green-400/80 rounded">Reativar</button>
-                  <button className="px-2 py-1 text-xs bg-red-500 text-white rounded">Excluir</button>
+                  <button className="px-3 py-1 text-xs bg-blue-500 text-white rounded w-24">Ver Corretores</button>
+                  <button className="px-3 py-1 text-xs bg-green-400/80 rounded w-20">Reativar</button>
+                  <button className="px-3 py-1 text-xs bg-red-500 text-white rounded w-16">Excluir</button>
                 </div>
               </td>
             </tr>
@@ -126,8 +127,8 @@ function EntidadesMockup() {
               <td className="px-4 py-2 text-center dark:text-white">01/07/2024</td>
               <td className="px-4 py-2 text-center">
                 <div className="flex gap-1 justify-center">
-                  <button className="px-2 py-1 text-xs bg-green-400/80 rounded">Reativar</button>
-                  <button className="px-2 py-1 text-xs bg-red-500 text-white rounded">Excluir</button>
+                  <button className="px-3 py-1 text-xs bg-green-400/80 rounded w-20">Reativar</button>
+                  <button className="px-3 py-1 text-xs bg-red-500 text-white rounded w-16">Excluir</button>
                 </div>
               </td>
             </tr>
@@ -169,9 +170,9 @@ function EntidadesMockup() {
                 <td className="px-4 py-2 text-center dark:text-white">8</td>
                 <td className="px-4 py-2 text-center">
                   <div className="flex gap-1 justify-center">
-                    <button className="px-2 py-1 text-xs bg-gray-400 text-white rounded">Resetar Senha</button>
-                    <button className="px-2 py-1 text-xs bg-red-500 text-white rounded">Bloquear</button>
-                    <button className="px-2 py-1 text-xs bg-red-500 text-white rounded">Excluir</button>
+                    <button className="px-3 py-1 text-xs bg-gray-400 text-white rounded w-24">Resetar Senha</button>
+                    <button className="px-3 py-1 text-xs bg-red-500 text-white rounded w-20">Bloquear</button>
+                    <button className="px-3 py-1 text-xs bg-red-500 text-white rounded w-16">Excluir</button>
                   </div>
                 </td>
               </tr>
@@ -182,9 +183,9 @@ function EntidadesMockup() {
                 <td className="px-4 py-2 text-center dark:text-white">4</td>
                 <td className="px-4 py-2 text-center">
                   <div className="flex gap-1 justify-center">
-                    <button className="px-2 py-1 text-xs bg-gray-400 text-white rounded">Resetar Senha</button>
-                    <button className="px-2 py-1 text-xs bg-green-500 text-white rounded">Desbloquear</button>
-                    <button className="px-2 py-1 text-xs bg-red-500 text-white rounded">Excluir</button>
+                    <button className="px-3 py-1 text-xs bg-gray-400 text-white rounded w-24">Resetar Senha</button>
+                    <button className="px-3 py-1 text-xs bg-green-500 text-white rounded w-20">Desbloquear</button>
+                    <button className="px-3 py-1 text-xs bg-red-500 text-white rounded w-16">Excluir</button>
                   </div>
                 </td>
               </tr>
@@ -256,38 +257,12 @@ function GestaoLeadsMockup() {
             <input type="checkbox" className="mr-2" />
             <span className="text-sm text-[#2E2F38] dark:text-white">Todos os Leads</span>
           </label>
-          <label className="flex items-center">
-            <input type="checkbox" className="mr-2" />
-            <span className="text-sm text-[#2E2F38] dark:text-white">Novo</span>
-          </label>
-          <label className="flex items-center">
-            <input type="checkbox" className="mr-2" />
-            <span className="text-sm text-[#2E2F38] dark:text-white">Contatado</span>
-          </label>
-          <label className="flex items-center">
-            <input type="checkbox" className="mr-2" />
-            <span className="text-sm text-[#2E2F38] dark:text-white">Qualificado</span>
-          </label>
-          <label className="flex items-center">
-            <input type="checkbox" className="mr-2" />
-            <span className="text-sm text-[#2E2F38] dark:text-white">Proposta</span>
-          </label>
-          <label className="flex items-center">
-            <input type="checkbox" className="mr-2" />
-            <span className="text-sm text-[#2E2F38] dark:text-white">Negociação</span>
-          </label>
-          <label className="flex items-center">
-            <input type="checkbox" className="mr-2" />
-            <span className="text-sm text-[#2E2F38] dark:text-white">Fechado</span>
-          </label>
-          <label className="flex items-center">
-            <input type="checkbox" className="mr-2" />
-            <span className="text-sm text-[#2E2F38] dark:text-white">Perdido</span>
-          </label>
-          <label className="flex items-center">
-            <input type="checkbox" className="mr-2" />
-            <span className="text-sm text-[#2E2F38] dark:text-white">Geladeira</span>
-          </label>
+          {PIPELINE_STAGES.map(stage => (
+            <label key={stage} className="flex items-center">
+              <input type="checkbox" className="mr-2" />
+              <span className="text-sm text-[#2E2F38] dark:text-white">{stage}</span>
+            </label>
+          ))}
         </div>
       </div>
 
@@ -327,7 +302,7 @@ function GestaoLeadsMockup() {
                 #001
               </td>
               <td className="px-4 py-2 dark:text-white">João Silva</td>
-              <td className="px-4 py-2 text-center"><span className="px-2 py-1 rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-xs">Qualificado</span></td>
+              <td className="px-4 py-2 text-center"><span className="px-2 py-1 rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-xs">Qualificação</span></td>
               <td className="px-4 py-2 text-center dark:text-white">10/07/2024</td>
               <td className="px-4 py-2 text-center">
                 <button className="px-2 py-1 text-xs bg-red-500 text-white rounded">Excluir</button>
@@ -365,12 +340,19 @@ function PermissoesMockup() {
       {/* Seleção de Cliente */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">Selecionar Cliente</label>
-        <select className="px-3 py-2 border rounded-lg text-sm dark:bg-[#181C23] dark:text-white dark:border-[#23283A] w-full max-w-xs">
-          <option>Selecione uma imobiliária ou corretor autônomo</option>
-          <option>Imob Exemplo</option>
-          <option>Imob Premium</option>
-          <option>Carlos Autônomo</option>
-        </select>
+        <div className="flex gap-2 items-end">
+          <select className="px-3 py-2 border rounded-lg text-sm dark:bg-[#181C23] dark:text-white dark:border-[#23283A] w-full max-w-xs">
+            <option>Selecione uma imobiliária ou corretor autônomo</option>
+            <option>Imob Exemplo</option>
+            <option>Imob Premium</option>
+            <option>Carlos Autônomo</option>
+          </select>
+          <input 
+            type="text" 
+            placeholder="Buscar por imobiliária..." 
+            className="px-3 py-2 border rounded-lg text-sm dark:bg-[#181C23] dark:text-white dark:border-[#23283A] w-48"
+          />
+        </div>
       </div>
 
       {/* Permissões da Imobiliária */}
