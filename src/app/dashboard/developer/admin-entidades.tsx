@@ -344,56 +344,78 @@ function GestaoLeadsMockup() {
 }
 
 function PermissoesMockup() {
+  // Mock de dados para exibição
+  const permissoes = [
+    { nome: 'Imob Exemplo', tipo: 'Imobiliária', email: 'imob@exemplo.com', incluir: true, treinamentos: true, admin: true },
+    { nome: 'Carlos Autônomo', tipo: 'Autônomo', email: 'carlos@autonomo.com', incluir: false, treinamentos: true, admin: false },
+    { nome: 'João Corretor', tipo: 'Corretor', imobiliaria: 'Imob Exemplo', email: 'joao@email.com', incluir: true, treinamentos: false, admin: false },
+    { nome: 'Maria Silva', tipo: 'Corretor', imobiliaria: 'Imob Exemplo', email: 'maria@email.com', incluir: true, treinamentos: true, admin: false },
+  ];
+
   return (
     <div>
       <div className="mb-6">
-        <h3 className="text-lg font-semibold mb-4 text-[#2E2F38] dark:text-white">Permissões</h3>
-        <p className="text-sm text-[#6B6F76] dark:text-[#E8E9F1] mb-4">
-          Busque uma imobiliária, corretor ou autônomo e gerencie permissões conforme o plano.
-        </p>
+        <h3 className="text-2xl font-bold mb-2 text-[#2E2F38] dark:text-white">Permissões</h3>
+        <p className="text-sm text-[#6B6F76] dark:text-[#E8E9F1] mb-4">Gerencie permissões de acesso para imobiliárias, autônomos e corretores.</p>
       </div>
-      {/* Painel de busca/filtro */}
-      <div className="mb-8 p-6 bg-[#F5F6FA] dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A]">
-        <div className="flex flex-wrap gap-4 mb-4">
-          <select className="px-3 py-2 border rounded-lg text-sm dark:bg-[#181C23] dark:text-white dark:border-[#23283A] w-56">
-            <option>Filtrar por tipo</option>
-            <option>Imobiliária</option>
-            <option>Corretor</option>
-            <option>Autônomo</option>
-          </select>
-          <input type="text" placeholder="Buscar por nome ou e-mail..." className="px-3 py-2 border rounded-lg text-sm dark:bg-[#181C23] dark:text-white dark:border-[#23283A] w-64" />
-          <button className="px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#2E6FD9] transition-colors">Buscar</button>
-        </div>
-        {/* Mock de resultado de busca e switches de permissões */}
-        <div className="bg-white dark:bg-[#181C23] p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A]">
-          <div className="mb-4">
-            <span className="font-semibold text-[#2E2F38] dark:text-white">Imob Exemplo</span>
-            <span className="ml-2 text-xs text-[#6B6F76] dark:text-[#E8E9F1]">(imob@exemplo.com)</span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-[#2E2F38] dark:text-white">Treinamento</span>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" defaultChecked />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#3478F6]" />
-              </label>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-[#2E2F38] dark:text-white">Incluir Imóvel</span>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#3478F6]" />
-              </label>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-[#2E2F38] dark:text-white">Área do Administrador</span>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" defaultChecked />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#3478F6]" />
-              </label>
-            </div>
-          </div>
-        </div>
+      {/* Filtros */}
+      <div className="flex flex-wrap gap-4 mb-6 items-end">
+        <input type="text" placeholder="Buscar por nome ou e-mail..." className="px-3 py-2 border rounded-lg text-sm dark:bg-[#181C23] dark:text-white dark:border-[#23283A] w-64" />
+        <select className="px-3 py-2 border rounded-lg text-sm dark:bg-[#181C23] dark:text-white dark:border-[#23283A] w-48">
+          <option value="">Todos os Tipos</option>
+          <option value="Imobiliária">Imobiliária</option>
+          <option value="Corretor">Corretor</option>
+          <option value="Autônomo">Autônomo</option>
+        </select>
+        <select className="px-3 py-2 border rounded-lg text-sm dark:bg-[#181C23] dark:text-white dark:border-[#23283A] w-48">
+          <option value="">Todas as Imobiliárias</option>
+          <option value="Imob Exemplo">Imob Exemplo</option>
+        </select>
+        <button className="px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#2E6FD9] transition-colors">Filtrar</button>
+      </div>
+      {/* Lista de permissões */}
+      <div className="overflow-x-auto rounded-xl shadow-soft">
+        <table className="min-w-full text-sm bg-white dark:bg-[#23283A] rounded-xl overflow-hidden">
+          <thead>
+            <tr className="bg-[#F5F6FA] dark:bg-[#23283A] text-[#6B6F76] dark:text-[#E8E9F1]">
+              <th className="px-4 py-3 text-left">Nome</th>
+              <th className="px-4 py-3 text-left">Tipo</th>
+              <th className="px-4 py-3 text-left">Imobiliária</th>
+              <th className="px-4 py-3 text-left">E-mail</th>
+              <th className="px-4 py-3 text-center">Incluir Imóvel</th>
+              <th className="px-4 py-3 text-center">Treinamentos</th>
+              <th className="px-4 py-3 text-center">Área do Administrador</th>
+            </tr>
+          </thead>
+          <tbody>
+            {permissoes.map((item, idx) => (
+              <tr key={item.email} className={idx % 2 === 0 ? 'dark:bg-[#23283A]' : 'bg-[#F5F6FA] dark:bg-[#23283A]'}>
+                <td className="px-4 py-2 dark:text-white font-medium">{item.nome}</td>
+                <td className="px-4 py-2 dark:text-white">{item.tipo}</td>
+                <td className="px-4 py-2 dark:text-white">{item.imobiliaria || '-'}</td>
+                <td className="px-4 py-2 dark:text-white">{item.email}</td>
+                <td className="px-4 py-2 text-center">
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" defaultChecked={item.incluir} />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#3478F6]" />
+                  </label>
+                </td>
+                <td className="px-4 py-2 text-center">
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" defaultChecked={item.treinamentos} />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#3478F6]" />
+                  </label>
+                </td>
+                <td className="px-4 py-2 text-center">
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" defaultChecked={item.admin} />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#3478F6]" />
+                  </label>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
