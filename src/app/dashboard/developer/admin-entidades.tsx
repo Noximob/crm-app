@@ -164,6 +164,7 @@ function EntidadesMockup() {
                 <td className="px-4 py-2 text-center flex gap-2 justify-center">
                   <button className="px-2 py-1 text-xs bg-gray-400 text-white rounded">Resetar Senha</button>
                   <button className="px-2 py-1 text-xs bg-red-500 text-white rounded">Bloquear</button>
+                  <button className="px-2 py-1 text-xs bg-red-500 text-white rounded">Excluir</button>
                 </td>
               </tr>
               <tr className="bg-[#F5F6FA] dark:bg-[#23283A]">
@@ -174,6 +175,7 @@ function EntidadesMockup() {
                 <td className="px-4 py-2 text-center flex gap-2 justify-center">
                   <button className="px-2 py-1 text-xs bg-gray-400 text-white rounded">Resetar Senha</button>
                   <button className="px-2 py-1 text-xs bg-green-500 text-white rounded">Desbloquear</button>
+                  <button className="px-2 py-1 text-xs bg-red-500 text-white rounded">Excluir</button>
                 </td>
               </tr>
             </tbody>
@@ -194,9 +196,24 @@ function GestaoLeadsMockup() {
         </p>
       </div>
 
+      {/* Busca por Imobiliária */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">Buscar Imobiliária</label>
+        <div className="flex gap-2">
+          <input 
+            type="text" 
+            placeholder="Digite o nome da imobiliária..." 
+            className="px-3 py-2 border rounded-lg text-sm dark:bg-[#181C23] dark:text-white dark:border-[#23283A] flex-1 max-w-md"
+          />
+          <button className="px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#2E6FD9] transition-colors">
+            Buscar
+          </button>
+        </div>
+      </div>
+
       {/* Seleção de Imobiliária */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">Imobiliária</label>
+        <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">Imobiliária Selecionada</label>
         <select className="px-3 py-2 border rounded-lg text-sm dark:bg-[#181C23] dark:text-white dark:border-[#23283A] w-full max-w-xs">
           <option>Selecione uma imobiliária</option>
           <option>Imob Exemplo</option>
@@ -234,15 +251,11 @@ function GestaoLeadsMockup() {
           </label>
           <label className="flex items-center">
             <input type="checkbox" className="mr-2" />
-            <span className="text-sm text-[#2E2F38] dark:text-white">Novo</span>
+            <span className="text-sm text-[#2E2F38] dark:text-white">Pré-qualificação</span>
           </label>
           <label className="flex items-center">
             <input type="checkbox" className="mr-2" />
-            <span className="text-sm text-[#2E2F38] dark:text-white">Contatado</span>
-          </label>
-          <label className="flex items-center">
-            <input type="checkbox" className="mr-2" />
-            <span className="text-sm text-[#2E2F38] dark:text-white">Qualificado</span>
+            <span className="text-sm text-[#2E2F38] dark:text-white">Qualificação</span>
           </label>
           <label className="flex items-center">
             <input type="checkbox" className="mr-2" />
@@ -303,7 +316,7 @@ function GestaoLeadsMockup() {
                 #001
               </td>
               <td className="px-4 py-2 dark:text-white">João Silva</td>
-              <td className="px-4 py-2 text-center"><span className="px-2 py-1 rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-xs">Qualificado</span></td>
+              <td className="px-4 py-2 text-center"><span className="px-2 py-1 rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-xs">Qualificação</span></td>
               <td className="px-4 py-2 text-center dark:text-white">10/07/2024</td>
               <td className="px-4 py-2 text-center">
                 <button className="px-2 py-1 text-xs bg-red-500 text-white rounded">Excluir</button>
@@ -334,7 +347,7 @@ function PermissoesMockup() {
       <div className="mb-6">
         <h3 className="text-lg font-semibold mb-4 text-[#2E2F38] dark:text-white">Controle de Permissões</h3>
         <p className="text-sm text-[#6B6F76] dark:text-[#E8E9F1] mb-4">
-          Configure permissões individuais por imobiliária ou corretor autônomo conforme o pacote contratado.
+          Configure permissões individuais por imobiliária e seus corretores conforme o pacote contratado.
         </p>
       </div>
 
@@ -349,10 +362,10 @@ function PermissoesMockup() {
         </select>
       </div>
 
-      {/* Permissões do Cliente Selecionado */}
+      {/* Permissões da Imobiliária */}
       <div className="mb-8">
-        <h4 className="text-md font-semibold mb-4 text-[#3478F6] dark:text-[#A3C8F7]">Permissões: Imob Exemplo</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <h4 className="text-md font-semibold mb-4 text-[#3478F6] dark:text-[#A3C8F7]">Permissões da Imobiliária: Imob Exemplo</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-[#F5F6FA] dark:bg-[#23283A] p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A]">
             <div className="flex items-center justify-between mb-2">
               <span className="font-medium text-[#2E2F38] dark:text-white">Treinamento</span>
@@ -384,6 +397,56 @@ function PermissoesMockup() {
               </label>
             </div>
             <p className="text-xs text-[#6B6F76] dark:text-[#E8E9F1]">Painel administrativo da imobiliária</p>
+          </div>
+
+          <div className="bg-[#F5F6FA] dark:bg-[#23283A] p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A]">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-medium text-[#2E2F38] dark:text-white">Área do Desenvolvedor</span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" disabled />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#3478F6] opacity-50"></div>
+              </label>
+            </div>
+            <p className="text-xs text-[#6B6F76] dark:text-[#E8E9F1]">Apenas superadmin/desenvolvedor</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Permissões dos Corretores */}
+      <div className="mb-8">
+        <h4 className="text-md font-semibold mb-4 text-[#3478F6] dark:text-[#A3C8F7]">Permissões dos Corretores da Imobiliária</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-[#F5F6FA] dark:bg-[#23283A] p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A]">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-medium text-[#2E2F38] dark:text-white">Treinamento</span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" defaultChecked />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#3478F6]"></div>
+              </label>
+            </div>
+            <p className="text-xs text-[#6B6F76] dark:text-[#E8E9F1]">Acesso aos treinamentos e materiais</p>
+          </div>
+
+          <div className="bg-[#F5F6FA] dark:bg-[#23283A] p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A]">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-medium text-[#2E2F38] dark:text-white">Incluir Imóvel</span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" defaultChecked />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#3478F6]"></div>
+              </label>
+            </div>
+            <p className="text-xs text-[#6B6F76] dark:text-[#E8E9F1]">Cadastro de novos imóveis</p>
+          </div>
+
+          <div className="bg-[#F5F6FA] dark:bg-[#23283A] p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A]">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-medium text-[#2E2F38] dark:text-white">Área do Administrador</span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#3478F6]"></div>
+              </label>
+            </div>
+            <p className="text-xs text-[#6B6F76] dark:text-[#E8E9F1]">Painel administrativo (gerente)</p>
           </div>
 
           <div className="bg-[#F5F6FA] dark:bg-[#23283A] p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A]">
