@@ -214,7 +214,6 @@ function EntidadesMockup() {
 }
 
 function GestaoLeadsMockup() {
-  // Importar PIPELINE_STAGES do constants
   const etapas = [
     'Pré Qualificação',
     'Qualificação',
@@ -226,6 +225,21 @@ function GestaoLeadsMockup() {
     'Pós Venda e Fidelização',
     'Geladeira',
   ];
+
+  // Mock de leads do corretor origem
+  const allLeads = [
+    { id: '#001', cliente: 'João Silva', etapa: 'Qualificação', ultimaAtividade: '10/07/2024' },
+    { id: '#002', cliente: 'Maria Santos', etapa: 'Geladeira', ultimaAtividade: '08/07/2024' },
+    { id: '#003', cliente: 'Carlos Souza', etapa: 'Pré Qualificação', ultimaAtividade: '09/07/2024' },
+    { id: '#004', cliente: 'Ana Paula', etapa: 'Negociação e Proposta', ultimaAtividade: '07/07/2024' },
+  ];
+
+  const [etapaSelecionada, setEtapaSelecionada] = useState('');
+
+  // Filtra os leads conforme etapa selecionada
+  const leadsFiltrados = etapaSelecionada
+    ? allLeads.filter((lead) => lead.etapa === etapaSelecionada)
+    : allLeads;
 
   return (
     <div>
@@ -240,9 +254,10 @@ function GestaoLeadsMockup() {
         {etapas.map((etapa) => (
           <button
             key={etapa}
-            className="px-4 py-1.5 rounded-full bg-[#1A2B49] text-[#A3C8F7] font-semibold text-sm shadow-sm hover:bg-[#3478F6] hover:text-white transition-colors"
-            style={{ minWidth: 'fit-content' }}
+            className={`px-4 py-1.5 rounded-full font-semibold text-sm shadow-sm transition-colors min-w-fit
+              ${etapaSelecionada === etapa ? 'bg-[#3478F6] text-white' : 'bg-[#1A2B49] text-[#A3C8F7] hover:bg-[#3478F6] hover:text-white'}`}
             type="button"
+            onClick={() => setEtapaSelecionada(etapaSelecionada === etapa ? '' : etapa)}
           >
             {etapa}
           </button>
@@ -297,7 +312,7 @@ function GestaoLeadsMockup() {
           Excluir Leads Selecionados
         </button>
       </div>
-      {/* Lista de Leads */}
+      {/* Lista de Leads filtrada */}
       <div>
         <h4 className="text-md font-semibold mb-3 text-[#3478F6] dark:text-[#A3C8F7]">Leads do Corretor Origem</h4>
         <p className="text-sm text-[#6B6F76] dark:text-[#E8E9F1] mb-4">
@@ -317,30 +332,22 @@ function GestaoLeadsMockup() {
             </tr>
           </thead>
           <tbody>
-            <tr className="dark:bg-[#23283A]">
-              <td className="px-4 py-2 dark:text-white">
-                <input type="checkbox" className="mr-2" />
-                #001
-              </td>
-              <td className="px-4 py-2 dark:text-white">João Silva</td>
-              <td className="px-4 py-2 text-center"><span className="px-2 py-1 rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-xs">Qualificação</span></td>
-              <td className="px-4 py-2 text-center dark:text-white">10/07/2024</td>
-              <td className="px-4 py-2 text-center">
-                <button className="px-2 py-1 text-xs bg-red-500 text-white rounded">Excluir</button>
-              </td>
-            </tr>
-            <tr className="bg-[#F5F6FA] dark:bg-[#23283A]">
-              <td className="px-4 py-2 dark:text-white">
-                <input type="checkbox" className="mr-2" />
-                #002
-              </td>
-              <td className="px-4 py-2 dark:text-white">Maria Santos</td>
-              <td className="px-4 py-2 text-center"><span className="px-2 py-1 rounded bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200 text-xs">Geladeira</span></td>
-              <td className="px-4 py-2 text-center dark:text-white">08/07/2024</td>
-              <td className="px-4 py-2 text-center">
-                <button className="px-2 py-1 text-xs bg-red-500 text-white rounded">Excluir</button>
-              </td>
-            </tr>
+            {leadsFiltrados.length === 0 ? (
+              <tr><td colSpan={5} className="text-center py-6 text-[#6B6F76] dark:text-[#E8E9F1]">Nenhum lead encontrado para esta etapa.</td></tr>
+            ) : leadsFiltrados.map((lead) => (
+              <tr key={lead.id} className="dark:bg-[#23283A]">
+                <td className="px-4 py-2 dark:text-white">
+                  <input type="checkbox" className="mr-2" />
+                  {lead.id}
+                </td>
+                <td className="px-4 py-2 dark:text-white">{lead.cliente}</td>
+                <td className="px-4 py-2 text-center"><span className="px-2 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs">{lead.etapa}</span></td>
+                <td className="px-4 py-2 text-center dark:text-white">{lead.ultimaAtividade}</td>
+                <td className="px-4 py-2 text-center">
+                  <button className="px-2 py-1 text-xs bg-red-500 text-white rounded">Excluir</button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
