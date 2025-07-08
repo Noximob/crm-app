@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { auth, db, googleProvider } from '@/lib/firebase';
 import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function LoginPage() {
-  const { currentUser, loading } = useAuth();
+  const { currentUser, userData, loading, isApproved } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -26,9 +26,37 @@ export default function LoginPage() {
     );
   }
 
-  if (currentUser) {
+  // Se usuário está logado e aprovado, redireciona para dashboard
+  if (currentUser && isApproved) {
     router.push('/dashboard');
     return null;
+  }
+
+  // Se usuário está logado mas não aprovado, mostra mensagem
+  if (currentUser && !isApproved) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="bg-offwhite-50 rounded-2xl shadow-xl p-8 border border-primary-100 text-center">
+            <div className="mx-auto h-16 w-16 bg-yellow-500 rounded-full flex items-center justify-center mb-4">
+              <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h1 className="text-xl font-bold text-softgray-800 mb-2">Aguardando Aprovação</h1>
+            <p className="text-softgray-600 mb-4">
+              Olá {userData?.nome}! Seu cadastro está sendo analisado. Você receberá um e-mail quando for aprovado.
+            </p>
+            <button
+              onClick={() => auth.signOut()}
+              className="w-full bg-primary-500 hover:bg-primary-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
+            >
+              Sair
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,28 +71,16 @@ export default function LoginPage() {
     }
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      const userDocRef = doc(db, 'usuarios', user.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        if (userData.aprovado === true) {
-          console.log("Login bem-sucedido e aprovado!");
-          router.push('/dashboard');
-        } else {
-          setError("Seu cadastro ainda está pendente de aprovação.");
-          await auth.signOut();
-        }
-      } else {
-        setError("Ocorreu um erro com seu cadastro. Por favor, contate o suporte.");
-        await auth.signOut();
-      }
-
+      await signInWithEmailAndPassword(auth, email, password);
+      // O AuthContext vai cuidar da verificação de aprovação e redirecionamento
     } catch (error: any) {
-      setError("E-mail ou senha inválidos.");
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        setError("E-mail ou senha inválidos.");
+      } else if (error.code === 'auth/too-many-requests') {
+        setError("Muitas tentativas. Tente novamente em alguns minutos.");
+      } else {
+        setError("Erro ao fazer login. Tente novamente.");
+      }
       console.error("Erro no login:", error);
     } finally {
       setIsLoading(false);
@@ -76,41 +92,8 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-
-      // Verificar se o usuário já existe no Firestore
-      const userDocRef = doc(db, 'usuarios', user.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists()) {
-        // Usuário já existe, verificar se está aprovado
-        const userData = userDoc.data();
-        if (userData.aprovado === true) {
-          console.log("Login com Google bem-sucedido e aprovado!");
-          router.push('/dashboard');
-        } else {
-          setError("Seu cadastro ainda está pendente de aprovação.");
-          await auth.signOut();
-        }
-      } else {
-        // Usuário novo, criar documento no Firestore
-        const userData = {
-          email: user.email,
-          nome: user.displayName || 'Usuário Google',
-          telefone: user.phoneNumber || '',
-          empresa: '',
-          cargo: '',
-          aprovado: false, // Usuários do Google precisam ser aprovados também
-          dataCadastro: new Date(),
-          metodoCadastro: 'google'
-        };
-
-        await setDoc(userDocRef, userData);
-        setError("Seu cadastro foi criado com sucesso, mas precisa ser aprovado por um administrador.");
-        await auth.signOut();
-      }
-
+      await signInWithPopup(auth, googleProvider);
+      // O AuthContext vai cuidar da verificação de aprovação e redirecionamento
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user') {
         setError("Login cancelado pelo usuário.");

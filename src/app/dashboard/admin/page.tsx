@@ -1,9 +1,22 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { collection, getDocs, doc, updateDoc, query, where, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+
+interface UsuarioPendente {
+  id: string;
+  nome: string;
+  email: string;
+  tipoConta: 'imobiliaria' | 'corretor-vinculado' | 'corretor-autonomo';
+  imobiliariaId?: string;
+  criadoEm: any;
+  metodoCadastro: 'email' | 'google';
+}
 
 const adminCards = [
+  { title: 'Aprovação de Usuários', icon: '✅', description: 'Aprove ou rejeite novos cadastros.', href: '#', special: true },
   { title: 'Relatórios', icon: '📊', description: 'Acompanhe métricas e resultados detalhados.', href: '/dashboard/admin/relatorios' },
   { title: 'Financeiro', icon: '💰', description: 'Controle financeiro da imobiliária.', href: '/dashboard/admin/financeiro' },
   { title: 'Site', icon: '🌐', description: 'Gerencie o site institucional e vitrines.', href: '/dashboard/admin/site' },
@@ -24,8 +37,90 @@ const financeiroTabs = [
 
 export default function AdminPage() {
   const [showFinanceiro, setShowFinanceiro] = useState(false);
+  const [showAprovacao, setShowAprovacao] = useState(false);
   const [activeTab, setActiveTab] = useState('Visão geral');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [usuariosPendentes, setUsuariosPendentes] = useState<UsuarioPendente[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [imobiliarias, setImobiliarias] = useState<{ id: string, nome: string }[]>([]);
+
+  // Buscar usuários pendentes
+  useEffect(() => {
+    if (showAprovacao) {
+      fetchUsuariosPendentes();
+      fetchImobiliarias();
+    }
+  }, [showAprovacao]);
+
+  const fetchUsuariosPendentes = async () => {
+    setLoading(true);
+    try {
+      const q = query(
+        collection(db, 'usuarios'),
+        where('aprovado', '==', false),
+        orderBy('criadoEm', 'desc')
+      );
+      const snapshot = await getDocs(q);
+      const usuarios = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as UsuarioPendente[];
+      setUsuariosPendentes(usuarios);
+    } catch (error) {
+      console.error('Erro ao buscar usuários pendentes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchImobiliarias = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, 'imobiliarias'));
+      setImobiliarias(snapshot.docs.map(doc => ({ id: doc.id, nome: doc.data().nome })));
+    } catch (error) {
+      console.error('Erro ao buscar imobiliárias:', error);
+    }
+  };
+
+  const aprovarUsuario = async (userId: string) => {
+    try {
+      await updateDoc(doc(db, 'usuarios', userId), {
+        aprovado: true,
+        aprovadoEm: new Date()
+      });
+      await fetchUsuariosPendentes(); // Recarregar lista
+    } catch (error) {
+      console.error('Erro ao aprovar usuário:', error);
+    }
+  };
+
+  const rejeitarUsuario = async (userId: string) => {
+    try {
+      await updateDoc(doc(db, 'usuarios', userId), {
+        aprovado: false,
+        rejeitadoEm: new Date(),
+        rejeitado: true
+      });
+      await fetchUsuariosPendentes(); // Recarregar lista
+    } catch (error) {
+      console.error('Erro ao rejeitar usuário:', error);
+    }
+  };
+
+  const getNomeImobiliaria = (imobiliariaId?: string) => {
+    if (!imobiliariaId) return 'N/A';
+    const imobiliaria = imobiliarias.find(i => i.id === imobiliariaId);
+    return imobiliaria ? imobiliaria.nome : 'Imobiliária não encontrada';
+  };
+
+  const getTipoContaLabel = (tipo: string) => {
+    switch (tipo) {
+      case 'imobiliaria': return 'Imobiliária';
+      case 'corretor-vinculado': return 'Corretor Vinculado';
+      case 'corretor-autonomo': return 'Corretor Autônomo';
+      default: return tipo;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
@@ -34,19 +129,87 @@ export default function AdminPage() {
         <p className="text-[#6B6F76] dark:text-gray-300 mb-8 text-left text-base">Gerencie recursos avançados da sua imobiliária.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {adminCards.map((item) => (
-            <Link
+            <div
               key={item.title}
-              href={item.href}
               className="flex flex-col items-center justify-center bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-8 transition-all duration-200 hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] group cursor-pointer"
+              onClick={() => item.special ? setShowAprovacao(true) : null}
               tabIndex={0}
             >
               <span className="text-4xl mb-4 group-hover:scale-110 transition-transform">{item.icon}</span>
               <span className="text-xl font-bold text-[#3478F6] dark:text-[#A3C8F7] mb-2 text-center">{item.title}</span>
               <span className="text-sm text-[#6B6F76] dark:text-gray-300 text-center">{item.description}</span>
-            </Link>
+            </div>
           ))}
         </div>
       </div>
+
+      {/* Modal Aprovação de Usuários */}
+      {showAprovacao && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-lg w-full max-w-6xl p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto">
+            <button className="absolute top-4 right-4 text-2xl text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6]" onClick={() => setShowAprovacao(false)}>&times;</button>
+            <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white mb-6">Aprovação de Usuários</h2>
+            
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3478F6]"></div>
+              </div>
+            ) : usuariosPendentes.length === 0 ? (
+              <div className="text-center py-8 text-[#6B6F76] dark:text-gray-300">
+                <p className="text-lg">Nenhum usuário pendente de aprovação.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {usuariosPendentes.map((usuario) => (
+                  <div key={usuario.id} className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg p-4 border border-[#E8E9F1] dark:border-[#23283A]">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="font-semibold text-[#2E2F38] dark:text-white">{usuario.nome}</h3>
+                        <p className="text-sm text-[#6B6F76] dark:text-gray-300">{usuario.email}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => aprovarUsuario(usuario.id)}
+                          className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors"
+                        >
+                          Aprovar
+                        </button>
+                        <button
+                          onClick={() => rejeitarUsuario(usuario.id)}
+                          className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
+                        >
+                          Rejeitar
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <span className="text-[#6B6F76] dark:text-gray-300">Tipo:</span>
+                        <p className="font-medium text-[#2E2F38] dark:text-white">{getTipoContaLabel(usuario.tipoConta)}</p>
+                      </div>
+                      <div>
+                        <span className="text-[#6B6F76] dark:text-gray-300">Imobiliária:</span>
+                        <p className="font-medium text-[#2E2F38] dark:text-white">{getNomeImobiliaria(usuario.imobiliariaId)}</p>
+                      </div>
+                      <div>
+                        <span className="text-[#6B6F76] dark:text-gray-300">Cadastro:</span>
+                        <p className="font-medium text-[#2E2F38] dark:text-white">{usuario.metodoCadastro === 'google' ? 'Google' : 'E-mail'}</p>
+                      </div>
+                      <div>
+                        <span className="text-[#6B6F76] dark:text-gray-300">Data:</span>
+                        <p className="font-medium text-[#2E2F38] dark:text-white">
+                          {usuario.criadoEm?.toDate ? usuario.criadoEm.toDate().toLocaleDateString('pt-BR') : 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Modal Financeiro */}
       {showFinanceiro && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">

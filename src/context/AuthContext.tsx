@@ -6,16 +6,33 @@ import { auth, db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 
+interface UserData {
+  nome: string;
+  email: string;
+  tipoConta: 'imobiliaria' | 'corretor-vinculado' | 'corretor-autonomo';
+  imobiliariaId?: string;
+  aprovado: boolean;
+  criadoEm: any;
+  metodoCadastro: 'email' | 'google';
+}
+
 interface AuthContextType {
   currentUser: User | null;
+  userData: UserData | null;
   loading: boolean;
   isApproved: boolean;
 }
 
-export const AuthContext = createContext<AuthContextType>({ currentUser: null, loading: true, isApproved: false });
+export const AuthContext = createContext<AuthContextType>({ 
+  currentUser: null, 
+  userData: null,
+  loading: true, 
+  isApproved: false 
+});
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isApproved, setIsApproved] = useState(false);
   const router = useRouter();
@@ -27,18 +44,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const userDocRef = doc(db, 'usuarios', firebaseUser.uid);
         const userDoc = await getDoc(userDocRef);
 
-        if (userDoc.exists() && userDoc.data().aprovado) {
+        if (userDoc.exists()) {
+          const data = userDoc.data() as UserData;
           setCurrentUser(firebaseUser);
-          setIsApproved(true);
+          setUserData(data);
+          
+          if (data.aprovado) {
+            setIsApproved(true);
+          } else {
+            // Usuário logado mas não aprovado
+            setIsApproved(false);
+            // Não forçar logout automaticamente - deixar o usuário ver a mensagem de aguardando aprovação
+          }
         } else {
-          // Usuário logado mas não aprovado ou sem documento
+          // Usuário logado mas sem documento no Firestore
           setIsApproved(false);
+          setUserData(null);
           await auth.signOut(); // Força o logout
           setCurrentUser(null);
         }
       } else {
         // Usuário não está logado
         setCurrentUser(null);
+        setUserData(null);
         setIsApproved(false);
       }
       setLoading(false);
@@ -48,7 +76,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ currentUser, loading, isApproved }}>
+    <AuthContext.Provider value={{ currentUser, userData, loading, isApproved }}>
       {children}
     </AuthContext.Provider>
   );
