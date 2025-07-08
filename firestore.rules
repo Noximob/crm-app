@@ -8,8 +8,8 @@ service cloud.firestore {
     
     // Regras para imobiliárias
     match /imobiliarias/{imobiliariaId} {
-      // Qualquer usuário autenticado pode ler imobiliárias (para o autocomplete)
-      allow read: if request.auth != null;
+      // Leitura pública para autocomplete
+      allow read: if true;
       // Apenas usuários autenticados podem criar imobiliárias (durante cadastro)
       allow create: if request.auth != null;
       // Apenas usuários da própria imobiliária podem editar
