@@ -170,6 +170,8 @@ export default function CadastroPage() {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
       console.log('Usuário autenticado com Google:', user.uid);
+      // Força refresh do token do usuário Google
+      await user.getIdToken(true);
       // Aguarda o estado de autenticação estar pronto
       await new Promise(resolve => {
         const unsubscribe = auth.onAuthStateChanged(firebaseUser => {
