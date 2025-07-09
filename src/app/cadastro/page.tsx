@@ -108,18 +108,23 @@ export default function CadastroPage() {
     if (!email) { setError('Preencha o e-mail.'); setIsLoading(false); return; }
     if (!password) { setError('Preencha a senha.'); setIsLoading(false); return; }
     try {
+      console.log('Iniciando cadastro...');
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
+      console.log('Usuário criado no Auth:', user.uid);
       let imobiliariaId = '';
       if (perfil === 'imobiliaria') {
+        console.log('Criando imobiliária no Firestore...');
         const imobiliariaDoc = await addDoc(collection(db, 'imobiliarias'), {
           nome: nomeImobiliaria,
           criadoEm: new Date(),
         });
         imobiliariaId = imobiliariaDoc.id;
+        console.log('Imobiliária criada com ID:', imobiliariaId);
       } else if (perfil === 'corretor-vinculado') {
         imobiliariaId = imobiliariaSelecionada!.id;
       }
+      console.log('Criando documento do usuário no Firestore...');
       await setDoc(doc(db, 'usuarios', user.uid), {
         nome,
         email,
@@ -129,12 +134,14 @@ export default function CadastroPage() {
         criadoEm: new Date(),
         metodoCadastro: 'email',
       });
+      console.log('Usuário criado no Firestore!');
       setSuccess('Cadastro realizado com sucesso! Aguarde aprovação.');
       setEmail(''); setPassword(''); setNome('');
     } catch (error: any) {
+      console.error('Erro no cadastro:', error);
       if (error.code === 'auth/email-already-in-use') setError('E-mail já em uso.');
       else if (error.code === 'auth/weak-password') setError('Senha fraca.');
-      else setError('Erro ao cadastrar. Tente novamente.');
+      else setError(error.message || 'Erro ao cadastrar. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -145,18 +152,23 @@ export default function CadastroPage() {
     setError(null);
     setSuccess(null);
     try {
+      console.log('Iniciando cadastro com Google...');
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
+      console.log('Usuário autenticado com Google:', user.uid);
       let imobiliariaId = '';
       if (perfil === 'imobiliaria') {
+        console.log('Criando imobiliária no Firestore...');
         const imobiliariaDoc = await addDoc(collection(db, 'imobiliarias'), {
           nome: nomeImobiliaria,
           criadoEm: new Date(),
         });
         imobiliariaId = imobiliariaDoc.id;
+        console.log('Imobiliária criada com ID:', imobiliariaId);
       } else if (perfil === 'corretor-vinculado') {
         imobiliariaId = imobiliariaSelecionada!.id;
       }
+      console.log('Criando documento do usuário no Firestore...');
       await setDoc(doc(db, 'usuarios', user.uid), {
         nome: user.displayName || '',
         email: user.email,
@@ -166,11 +178,13 @@ export default function CadastroPage() {
         criadoEm: new Date(),
         metodoCadastro: 'google',
       });
+      console.log('Usuário criado no Firestore!');
       setSuccess('Cadastro realizado com sucesso! Aguarde aprovação.');
       setEmail(''); setPassword(''); setNome('');
       await signOut(auth);
     } catch (error: any) {
-      setError('Erro ao cadastrar com Google. Tente novamente.');
+      console.error('Erro no cadastro com Google:', error);
+      setError(error.message || 'Erro ao cadastrar com Google. Tente novamente.');
     } finally {
       setIsGoogleLoading(false);
     }
