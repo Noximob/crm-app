@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { auth, db, googleProvider } from '@/lib/firebase'; // Importando nossa config
 import { createUserWithEmailAndPassword, signInWithPopup, signOut } from 'firebase/auth'; // Função de criar usuário
-import { setDoc, doc, collection, addDoc, getDocs } from 'firebase/firestore'; // Funções do banco de dados
+import { setDoc, doc, collection, addDoc, getDocs, serverTimestamp } from 'firebase/firestore'; // Funções do banco de dados
 
 // Função utilitária para timeout de promessas
 function timeoutPromise<T>(promise: Promise<T>, ms: number): Promise<T> {
@@ -185,7 +185,7 @@ export default function CadastroPage() {
         const imobiliariaDoc = await timeoutPromise(
           addDoc(collection(db, 'imobiliarias'), {
             nome: nomeImobiliaria,
-            criadoEm: new Date(),
+            criadoEm: serverTimestamp(),
           }),
           8000 // 8 segundos de timeout
         );
