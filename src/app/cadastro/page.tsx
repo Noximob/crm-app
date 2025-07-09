@@ -183,16 +183,30 @@ export default function CadastroPage() {
         });
       });
       // Pequeno delay para garantir propagação do token
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, 2000));
+      // Log dos dados do usuário Google
+      console.log('Dados do usuário Google:', user);
+      if (!user.email) {
+        setError('Não foi possível obter o e-mail do Google. Tente novamente ou use outro método.');
+        setIsGoogleLoading(false);
+        return;
+      }
       let imobiliariaId = '';
       if (perfil === 'imobiliaria') {
+        // Log dos dados enviados para o Firestore
+        console.log('Dados enviados para imobiliaria:', {
+          nome: nomeImobiliaria,
+          criadoEm: serverTimestamp(),
+          aprovado: false,
+          // email: user.email || '', // Removido temporariamente para teste
+          metodoCadastro: 'google',
+        });
         console.log('Criando imobiliária no Firestore...');
         const imobiliariaDoc = await timeoutPromise(
           addDoc(collection(db, 'imobiliarias'), {
             nome: nomeImobiliaria,
             criadoEm: serverTimestamp(),
             aprovado: false,
-            email: user.email || '',
             metodoCadastro: 'google',
           }),
           8000 // 8 segundos de timeout
