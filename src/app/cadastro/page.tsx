@@ -165,6 +165,7 @@ export default function CadastroPage() {
     setIsGoogleLoading(true);
     setError(null);
     setSuccess(null);
+    let cadastroFinalizado = false;
     try {
       console.log('Iniciando cadastro com Google...');
       const result = await signInWithPopup(auth, googleProvider);
@@ -181,6 +182,8 @@ export default function CadastroPage() {
           }
         });
       });
+      // Pequeno delay para garantir propagação do token
+      await new Promise(r => setTimeout(r, 500));
       let imobiliariaId = '';
       if (perfil === 'imobiliaria') {
         console.log('Criando imobiliária no Firestore...');
@@ -196,8 +199,6 @@ export default function CadastroPage() {
         );
         imobiliariaId = imobiliariaDoc.id;
         console.log('Imobiliária criada com ID:', imobiliariaId);
-      } else if (perfil === 'corretor-vinculado') {
-        imobiliariaId = imobiliariaSelecionada!.id;
       }
       // Log antes do setDoc
       console.log('Criando documento do usuário no Firestore...');
@@ -213,12 +214,22 @@ export default function CadastroPage() {
       console.log('Usuário criado no Firestore!');
       setSuccess('Cadastro realizado com sucesso! Aguarde aprovação.');
       setEmail(''); setPassword(''); setNome('');
+      cadastroFinalizado = true;
       await signOut(auth);
     } catch (error: any) {
       console.error('Erro no cadastro com Google:', error);
       setError(error.message || 'Erro ao cadastrar com Google. Tente novamente.');
+      // Se der timeout, faz signOut e limpa estado para evitar duplicidade
+      if (error.message && error.message.includes('Timeout')) {
+        console.log('Timeout detectado, limpando estado e deslogando usuário Google.');
+        await signOut(auth);
+        setIsGoogleLoading(false);
+        setSuccess(null);
+        setEmail(''); setPassword(''); setNome('');
+        return;
+      }
     } finally {
-      setIsGoogleLoading(false);
+      if (!cadastroFinalizado) setIsGoogleLoading(false);
     }
   };
 
