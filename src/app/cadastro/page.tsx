@@ -188,6 +188,9 @@ export default function CadastroPage() {
           addDoc(collection(db, 'imobiliarias'), {
             nome: nomeImobiliaria,
             criadoEm: serverTimestamp(),
+            aprovado: false,
+            email: user.email || '',
+            metodoCadastro: 'google',
           }),
           8000 // 8 segundos de timeout
         );
@@ -196,6 +199,7 @@ export default function CadastroPage() {
       } else if (perfil === 'corretor-vinculado') {
         imobiliariaId = imobiliariaSelecionada!.id;
       }
+      // Log antes do setDoc
       console.log('Criando documento do usuário no Firestore...');
       await setDoc(doc(db, 'usuarios', user.uid), {
         nome: user.displayName || '',
@@ -203,7 +207,7 @@ export default function CadastroPage() {
         tipoConta: perfil,
         imobiliariaId: imobiliariaId || '',
         aprovado: false,
-        criadoEm: new Date(),
+        criadoEm: serverTimestamp(),
         metodoCadastro: 'google',
       });
       console.log('Usuário criado no Firestore!');
