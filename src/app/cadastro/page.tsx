@@ -6,6 +6,20 @@ import { auth, db, googleProvider } from '@/lib/firebase'; // Importando nossa c
 import { createUserWithEmailAndPassword, signInWithPopup, signOut } from 'firebase/auth'; // Função de criar usuário
 import { setDoc, doc, collection, addDoc, getDocs } from 'firebase/firestore'; // Funções do banco de dados
 
+// Função utilitária para timeout de promessas
+function timeoutPromise<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Timeout ao criar imobiliária no Firestore')), ms);
+    promise.then(res => {
+      clearTimeout(timer);
+      resolve(res);
+    }).catch(err => {
+      clearTimeout(timer);
+      reject(err);
+    });
+  });
+}
+
 export default function CadastroPage() {
   const [step, setStep] = useState(1);
   const [perfil, setPerfil] = useState('');
@@ -168,10 +182,13 @@ export default function CadastroPage() {
       let imobiliariaId = '';
       if (perfil === 'imobiliaria') {
         console.log('Criando imobiliária no Firestore...');
-        const imobiliariaDoc = await addDoc(collection(db, 'imobiliarias'), {
-          nome: nomeImobiliaria,
-          criadoEm: new Date(),
-        });
+        const imobiliariaDoc = await timeoutPromise(
+          addDoc(collection(db, 'imobiliarias'), {
+            nome: nomeImobiliaria,
+            criadoEm: new Date(),
+          }),
+          8000 // 8 segundos de timeout
+        );
         imobiliariaId = imobiliariaDoc.id;
         console.log('Imobiliária criada com ID:', imobiliariaId);
       } else if (perfil === 'corretor-vinculado') {
