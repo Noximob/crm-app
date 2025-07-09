@@ -156,6 +156,15 @@ export default function CadastroPage() {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
       console.log('Usuário autenticado com Google:', user.uid);
+      // Aguarda o estado de autenticação estar pronto
+      await new Promise(resolve => {
+        const unsubscribe = auth.onAuthStateChanged(firebaseUser => {
+          if (firebaseUser && firebaseUser.uid === user.uid) {
+            unsubscribe();
+            resolve(true);
+          }
+        });
+      });
       let imobiliariaId = '';
       if (perfil === 'imobiliaria') {
         console.log('Criando imobiliária no Firestore...');
