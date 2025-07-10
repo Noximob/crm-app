@@ -177,13 +177,14 @@ export default function CadastroPage() {
         // Para corretor autônomo, o nome da imobiliária é o nome do corretor
         const nomeImob = perfil === 'imobiliaria' ? nomeImobiliaria : nome;
         const tipoImob = perfil === 'imobiliaria' ? 'imobiliaria' : 'corretor-autonomo';
-        console.log('Criando imobiliária/corretor autônomo no Firestore...');
+        // Detecta se é cadastro Google pelo estado do botão ou variável de fluxo
+        const metodoCadastro = isGoogleLoading ? 'google' : 'email';
         const dadosImobiliaria = {
           nome: nomeImob,
           tipo: tipoImob, // <-- ESSENCIAL
           criadoEm: new Date(),
           aprovado: false,
-          metodoCadastro: 'email',
+          metodoCadastro: metodoCadastro,
         };
         console.log('Dados enviados para imobiliaria:', dadosImobiliaria);
         const imobiliariaDoc = await addDoc(collection(db, 'imobiliarias'), dadosImobiliaria);
