@@ -155,14 +155,20 @@ export default function CadastroPage() {
           setIsLoading(false);
           return;
         }
-        console.log('Criando imobiliária no Firestore...');
-        const imobiliariaDoc = await addDoc(collection(db, 'imobiliarias'), {
-          nome: nomeImobiliaria,
-          tipo: 'imobiliaria',
-          criadoEm: new Date(),
-        });
-        imobiliariaId = imobiliariaDoc.id;
-        console.log('Imobiliária criada com ID:', imobiliariaId);
+        try {
+          console.log('Criando imobiliária no Firestore...');
+          const imobiliariaDoc = await addDoc(collection(db, 'imobiliarias'), {
+            nome: nomeImobiliaria,
+            tipo: 'imobiliaria',
+            criadoEm: new Date(),
+          });
+          imobiliariaId = imobiliariaDoc.id;
+          console.log('Imobiliária criada com ID:', imobiliariaId);
+        } catch (err: any) {
+          setError('Erro ao criar imobiliária: ' + (err.message || err));
+          setIsLoading(false);
+          return;
+        }
       } else if (perfil === 'corretor-autonomo') {
         // Cadastro de corretor autônomo
         if (!nome) {
@@ -170,14 +176,20 @@ export default function CadastroPage() {
           setIsLoading(false);
           return;
         }
-        console.log('Criando corretor autônomo no Firestore...');
-        const imobiliariaDoc = await addDoc(collection(db, 'imobiliarias'), {
-          nome: nome,
-          tipo: 'corretor-autonomo',
-          criadoEm: new Date(),
-        });
-        imobiliariaId = imobiliariaDoc.id;
-        console.log('Corretor autônomo criado com ID:', imobiliariaId);
+        try {
+          console.log('Criando corretor autônomo no Firestore...');
+          const imobiliariaDoc = await addDoc(collection(db, 'imobiliarias'), {
+            nome: nome,
+            tipo: 'corretor-autonomo',
+            criadoEm: new Date(),
+          });
+          imobiliariaId = imobiliariaDoc.id;
+          console.log('Corretor autônomo criado com ID:', imobiliariaId);
+        } catch (err: any) {
+          setError('Erro ao criar corretor autônomo: ' + (err.message || err));
+          setIsLoading(false);
+          return;
+        }
       } else if (perfil === 'corretor-vinculado') {
         // Cadastro de corretor vinculado
         if (!imobiliariaSelecionada) {
