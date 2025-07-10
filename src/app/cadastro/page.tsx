@@ -178,13 +178,15 @@ export default function CadastroPage() {
         const nomeImob = perfil === 'imobiliaria' ? nomeImobiliaria : nome;
         const tipoImob = perfil === 'imobiliaria' ? 'imobiliaria' : 'corretor-autonomo';
         console.log('Criando imobiliária/corretor autônomo no Firestore...');
-        const imobiliariaDoc = await addDoc(collection(db, 'imobiliarias'), {
+        const dadosImobiliaria = {
           nome: nomeImob,
           tipo: tipoImob, // <-- ESSENCIAL
           criadoEm: new Date(),
           aprovado: false,
           metodoCadastro: 'email',
-        });
+        };
+        console.log('Dados enviados para imobiliaria:', dadosImobiliaria);
+        const imobiliariaDoc = await addDoc(collection(db, 'imobiliarias'), dadosImobiliaria);
         imobiliariaId = imobiliariaDoc.id;
         console.log('Imobiliária/corretor autônomo criado com ID:', imobiliariaId);
       } else if (perfil === 'corretor-vinculado') {
