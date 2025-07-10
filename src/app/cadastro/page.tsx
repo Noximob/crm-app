@@ -41,12 +41,36 @@ export default function CadastroPage() {
   // Buscar imobiliárias para autocomplete (apenas uma vez)
   useEffect(() => {
     async function fetchImobiliarias() {
-      // Buscar apenas imobiliárias do tipo 'imobiliaria' para o autocomplete
+      // Buscar todas as imobiliárias para o autocomplete
       const { query, where, collection } = await import('firebase/firestore');
       const imobiliariasRef = collection(db, 'imobiliarias');
-      const q = query(imobiliariasRef, where('tipo', '==', 'imobiliaria'));
-      const snapshot = await getDocs(q);
-      setImobiliarias(snapshot.docs.map(doc => ({ id: doc.id, nome: doc.data().nome })));
+      
+      try {
+        // Buscar imobiliárias aprovadas (corretores só podem se vincular a imobiliárias aprovadas)
+        const q = query(
+          imobiliariasRef, 
+          where('tipo', '==', 'imobiliaria'),
+          where('aprovado', '==', true)
+        );
+        const snapshot = await getDocs(q);
+        const imobiliariasComTipo = snapshot.docs.map(doc => ({ id: doc.id, nome: doc.data().nome }));
+        
+        // Se não encontrou nenhuma com tipo específico, busca todas as aprovadas (para compatibilidade com dados antigos)
+        if (imobiliariasComTipo.length === 0) {
+          const qAprovadas = query(imobiliariasRef, where('aprovado', '==', true));
+          const allSnapshot = await getDocs(qAprovadas);
+          const todasImobiliarias = allSnapshot.docs.map(doc => ({ id: doc.id, nome: doc.data().nome }));
+          setImobiliarias(todasImobiliarias);
+        } else {
+          setImobiliarias(imobiliariasComTipo);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar imobiliárias:', error);
+        // Em caso de erro, busca todas as imobiliárias
+        const allSnapshot = await getDocs(imobiliariasRef);
+        const todasImobiliarias = allSnapshot.docs.map(doc => ({ id: doc.id, nome: doc.data().nome }));
+        setImobiliarias(todasImobiliarias);
+      }
     }
     fetchImobiliarias();
   }, []);
@@ -101,6 +125,9 @@ export default function CadastroPage() {
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 p-4">
           <div className="max-w-md w-full bg-offwhite-50 rounded-2xl shadow-xl p-8 border border-primary-100">
             <h1 className="text-2xl font-bold text-softgray-800 mb-4 text-center">Cadastro de Corretor Vinculado</h1>
+            <p className="text-sm text-softgray-600 mb-4 text-center">
+              Selecione uma imobiliária aprovada para se vincular. Apenas imobiliárias aprovadas aparecem na lista.
+            </p>
             <div className="mb-4 relative">
               <label className="block text-sm font-medium text-softgray-700 mb-1">Imobiliária</label>
               <input
@@ -141,7 +168,11 @@ export default function CadastroPage() {
                       </li>
                     ))}
                   {imobiliarias.filter(i => i.nome.toLowerCase().includes(nomeImobiliaria.toLowerCase())).length === 0 && (
-                    <li className="px-4 py-2 text-softgray-400">Nenhuma imobiliária encontrada</li>
+                    <li className="px-4 py-2 text-softgray-400">
+                      {imobiliarias.length === 0 
+                        ? "Nenhuma imobiliária aprovada disponível. Entre em contato com o suporte." 
+                        : "Nenhuma imobiliária encontrada com esse nome"}
+                    </li>
                   )}
                 </ul>
               )}
@@ -178,7 +209,8 @@ export default function CadastroPage() {
           nome: nomeImobiliaria || nome,
           tipo: 'imobiliaria', // Força o campo tipo SEMPRE
           criadoEm: new Date(),
-          aprovado: false,
+          aprovado: true, // Imobiliárias são aprovadas automaticamente
+          status: 'ativo', // Status ativo para imobiliárias
           metodoCadastro: isGoogleLoading ? 'google' : 'email',
         };
         console.log('Dados enviados para imobiliaria:', dadosImobiliaria);
@@ -194,7 +226,7 @@ export default function CadastroPage() {
         email,
         tipoConta: perfil,
         imobiliariaId: imobiliariaId || '',
-        aprovado: false,
+        aprovado: perfil === 'imobiliaria' ? true : false, // Imobiliárias são aprovadas automaticamente
         criadoEm: new Date(),
         metodoCadastro: 'email',
       });
@@ -254,8 +286,10 @@ export default function CadastroPage() {
         const imobiliariaDoc = await timeoutPromise(
           addDoc(collection(db, 'imobiliarias'), {
             nome: nomeImobiliaria,
+            tipo: 'imobiliaria', // Adicionando o campo tipo que estava faltando
             criadoEm: serverTimestamp(),
-            aprovado: false,
+            aprovado: true, // Imobiliárias são aprovadas automaticamente
+            status: 'ativo', // Status ativo para imobiliárias
             metodoCadastro: 'google',
           }),
           8000 // 8 segundos de timeout
@@ -274,7 +308,7 @@ export default function CadastroPage() {
             email: user.email,
             tipoConta: perfil,
             imobiliariaId: imobiliariaId || '',
-            aprovado: false,
+            aprovado: perfil === 'imobiliaria' ? true : false, // Imobiliárias são aprovadas automaticamente
             criadoEm: serverTimestamp(),
             metodoCadastro: 'google',
           });
