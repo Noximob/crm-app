@@ -174,17 +174,12 @@ export default function CadastroPage() {
       console.log('Usuário criado no Auth:', user.uid);
       let imobiliariaId = '';
       if (perfil === 'imobiliaria' || perfil === 'corretor-autonomo') {
-        // Para corretor autônomo, o nome da imobiliária é o nome do corretor
-        const nomeImob = perfil === 'imobiliaria' ? nomeImobiliaria : nome;
-        const tipoImob = perfil === 'imobiliaria' ? 'imobiliaria' : 'corretor-autonomo';
-        // Detecta se é cadastro Google pelo estado do botão ou variável de fluxo
-        const metodoCadastro = isGoogleLoading ? 'google' : 'email';
         const dadosImobiliaria = {
-          nome: nomeImob,
-          tipo: tipoImob, // <-- ESSENCIAL
+          nome: perfil === 'imobiliaria' ? nomeImobiliaria : nome,
+          tipo: perfil === 'imobiliaria' ? 'imobiliaria' : 'corretor-autonomo',
           criadoEm: new Date(),
           aprovado: false,
-          metodoCadastro: metodoCadastro,
+          metodoCadastro: isGoogleLoading ? 'google' : 'email',
         };
         console.log('Dados enviados para imobiliaria:', dadosImobiliaria);
         const imobiliariaDoc = await addDoc(collection(db, 'imobiliarias'), dadosImobiliaria);
