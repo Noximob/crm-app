@@ -40,7 +40,11 @@ export default function CadastroPage() {
   // Buscar imobiliárias para autocomplete (apenas uma vez)
   useEffect(() => {
     async function fetchImobiliarias() {
-      const snapshot = await getDocs(collection(db, 'imobiliarias'));
+      // Buscar apenas imobiliárias do tipo 'imobiliaria' para o autocomplete
+      const { query, where, collection } = await import('firebase/firestore');
+      const imobiliariasRef = collection(db, 'imobiliarias');
+      const q = query(imobiliariasRef, where('tipo', '==', 'imobiliaria'));
+      const snapshot = await getDocs(q);
       setImobiliarias(snapshot.docs.map(doc => ({ id: doc.id, nome: doc.data().nome })));
     }
     fetchImobiliarias();
@@ -168,14 +172,18 @@ export default function CadastroPage() {
       const user = userCredential.user;
       console.log('Usuário criado no Auth:', user.uid);
       let imobiliariaId = '';
-      if (perfil === 'imobiliaria') {
-        console.log('Criando imobiliária no Firestore...');
+      if (perfil === 'imobiliaria' || perfil === 'corretor-autonomo') {
+        // Para corretor autônomo, o nome da imobiliária é o nome do corretor
+        const nomeImob = perfil === 'imobiliaria' ? nomeImobiliaria : nome;
+        const tipoImob = perfil === 'imobiliaria' ? 'imobiliaria' : 'corretor-autonomo';
+        console.log('Criando imobiliária/corretor autônomo no Firestore...');
         const imobiliariaDoc = await addDoc(collection(db, 'imobiliarias'), {
-          nome: nomeImobiliaria,
+          nome: nomeImob,
+          tipo: tipoImob,
           criadoEm: new Date(),
         });
         imobiliariaId = imobiliariaDoc.id;
-        console.log('Imobiliária criada com ID:', imobiliariaId);
+        console.log('Imobiliária/corretor autônomo criado com ID:', imobiliariaId);
       } else if (perfil === 'corretor-vinculado') {
         imobiliariaId = imobiliariaSelecionada!.id;
       }
@@ -224,7 +232,7 @@ export default function CadastroPage() {
         });
       });
       // Pequeno delay para garantir propagação do token
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 3000)); // aumentado para 3 segundos
       // Log dos dados do usuário Google
       console.log('Dados do usuário Google:', user);
       if (!user.email) {
@@ -239,7 +247,6 @@ export default function CadastroPage() {
           nome: nomeImobiliaria,
           criadoEm: serverTimestamp(),
           aprovado: false,
-          // email: user.email || '', // Removido temporariamente para teste
           metodoCadastro: 'google',
         });
         console.log('Criando imobiliária no Firestore...');
@@ -257,15 +264,37 @@ export default function CadastroPage() {
       }
       // Log antes do setDoc
       console.log('Criando documento do usuário no Firestore...');
-      await setDoc(doc(db, 'usuarios', user.uid), {
-        nome: user.displayName || '',
-        email: user.email,
-        tipoConta: perfil,
-        imobiliariaId: imobiliariaId || '',
-        aprovado: false,
-        criadoEm: serverTimestamp(),
-        metodoCadastro: 'google',
-      });
+      let userDocCreated = false;
+      let lastError = null;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          await setDoc(doc(db, 'usuarios', user.uid), {
+            nome: user.displayName || '',
+            email: user.email,
+            tipoConta: perfil,
+            imobiliariaId: imobiliariaId || '',
+            aprovado: false,
+            criadoEm: serverTimestamp(),
+            metodoCadastro: 'google',
+          });
+          userDocCreated = true;
+          break;
+        } catch (err: any) {
+          lastError = err;
+          console.error(`Erro ao criar documento do usuário no Firestore (tentativa ${attempt}):`, err);
+          if (attempt === 1 && err.code === 'permission-denied') {
+            // Espera 1 segundo e tenta de novo
+            await new Promise(r => setTimeout(r, 1000));
+          } else {
+            break;
+          }
+        }
+      }
+      if (!userDocCreated) {
+        setError('Erro de permissão ao criar seu cadastro. Aguarde alguns segundos e tente novamente. Se o erro persistir, entre em contato com o suporte.');
+        setIsGoogleLoading(false);
+        return;
+      }
       console.log('Usuário criado no Firestore!');
       setSuccess('Cadastro realizado com sucesso! Aguarde aprovação.');
       setEmail(''); setPassword(''); setNome('');
