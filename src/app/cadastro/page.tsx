@@ -253,9 +253,7 @@ export default function CadastroPage() {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
       console.log('Usuário autenticado com Google:', user.uid);
-      // Força refresh do token do usuário Google
       await user.getIdToken(true);
-      // Aguarda o estado de autenticação estar pronto
       await new Promise(resolve => {
         const unsubscribe = auth.onAuthStateChanged(firebaseUser => {
           if (firebaseUser && firebaseUser.uid === user.uid) {
@@ -264,73 +262,59 @@ export default function CadastroPage() {
           }
         });
       });
-      // Pequeno delay para garantir propagação do token
-      await new Promise(r => setTimeout(r, 3000)); // aumentado para 3 segundos
-      // Log dos dados do usuário Google
-      console.log('Dados do usuário Google:', user);
+      await new Promise(r => setTimeout(r, 2000)); // delay reduzido
       if (!user.email) {
         setError('Não foi possível obter o e-mail do Google. Tente novamente ou use outro método.');
         setIsGoogleLoading(false);
         return;
       }
       let imobiliariaId = '';
-      if (perfil === 'imobiliaria') {
-        // Log dos dados enviados para o Firestore
-        console.log('Dados enviados para imobiliaria:', {
-          nome: nomeImobiliaria,
-          criadoEm: serverTimestamp(),
-          aprovado: false,
+      if (perfil === 'imobiliaria' || perfil === 'corretor-autonomo') {
+        try {
+          const dadosImobiliaria = {
+            nome: nomeImobiliaria || user.displayName || 'Imobiliária',
+            tipo: 'imobiliaria',
+            criadoEm: new Date(),
+            aprovado: true,
+            status: 'ativo',
+            metodoCadastro: 'google',
+          };
+          console.log('Criando imobiliária:', dadosImobiliaria);
+          const imobiliariaDoc = await addDoc(collection(db, 'imobiliarias'), dadosImobiliaria);
+          imobiliariaId = imobiliariaDoc.id;
+          console.log('Imobiliária criada com ID:', imobiliariaId);
+        } catch (err) {
+          console.error('Erro ao criar imobiliária:', err);
+          setError('Erro ao criar imobiliária. Tente novamente.');
+          setIsGoogleLoading(false);
+          return;
+        }
+      } else if (perfil === 'corretor-vinculado') {
+        if (!imobiliariaSelecionada) {
+          setError('Selecione uma imobiliária para se vincular.');
+          setIsGoogleLoading(false);
+          return;
+        }
+        imobiliariaId = imobiliariaSelecionada.id;
+      }
+      // Criação do usuário
+      try {
+        await setDoc(doc(db, 'usuarios', user.uid), {
+          nome: user.displayName || '',
+          email: user.email,
+          tipoConta: perfil,
+          imobiliariaId: imobiliariaId || '',
+          aprovado: perfil === 'imobiliaria' ? true : false,
+          criadoEm: new Date(),
           metodoCadastro: 'google',
         });
-        console.log('Criando imobiliária no Firestore...');
-        const imobiliariaDoc = await timeoutPromise(
-          addDoc(collection(db, 'imobiliarias'), {
-            nome: nomeImobiliaria,
-            tipo: 'imobiliaria', // Adicionando o campo tipo que estava faltando
-            criadoEm: serverTimestamp(),
-            aprovado: true, // Imobiliárias são aprovadas automaticamente
-            status: 'ativo', // Status ativo para imobiliárias
-            metodoCadastro: 'google',
-          }),
-          8000 // 8 segundos de timeout
-        );
-        imobiliariaId = imobiliariaDoc.id;
-        console.log('Imobiliária criada com ID:', imobiliariaId);
-      }
-      // Log antes do setDoc
-      console.log('Criando documento do usuário no Firestore...');
-      let userDocCreated = false;
-      let lastError = null;
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        try {
-          await setDoc(doc(db, 'usuarios', user.uid), {
-            nome: user.displayName || '',
-            email: user.email,
-            tipoConta: perfil,
-            imobiliariaId: imobiliariaId || '',
-            aprovado: perfil === 'imobiliaria' ? true : false, // Imobiliárias são aprovadas automaticamente
-            criadoEm: serverTimestamp(),
-            metodoCadastro: 'google',
-          });
-          userDocCreated = true;
-          break;
-        } catch (err: any) {
-          lastError = err;
-          console.error(`Erro ao criar documento do usuário no Firestore (tentativa ${attempt}):`, err);
-          if (attempt === 1 && err.code === 'permission-denied') {
-            // Espera 1 segundo e tenta de novo
-            await new Promise(r => setTimeout(r, 1000));
-          } else {
-            break;
-          }
-        }
-      }
-      if (!userDocCreated) {
-        setError('Erro de permissão ao criar seu cadastro. Aguarde alguns segundos e tente novamente. Se o erro persistir, entre em contato com o suporte.');
+        console.log('Usuário criado no Firestore!');
+      } catch (err) {
+        console.error('Erro ao criar documento do usuário no Firestore:', err);
+        setError('Erro ao criar usuário no Firestore. Tente novamente.');
         setIsGoogleLoading(false);
         return;
       }
-      console.log('Usuário criado no Firestore!');
       setSuccess('Cadastro realizado com sucesso! Aguarde aprovação.');
       setEmail(''); setPassword(''); setNome('');
       cadastroFinalizado = true;
@@ -338,15 +322,7 @@ export default function CadastroPage() {
     } catch (error: any) {
       console.error('Erro no cadastro com Google:', error);
       setError(error.message || 'Erro ao cadastrar com Google. Tente novamente.');
-      // Se der timeout, faz signOut e limpa estado para evitar duplicidade
-      if (error.message && error.message.includes('Timeout')) {
-        console.log('Timeout detectado, limpando estado e deslogando usuário Google.');
-        await signOut(auth);
-        setIsGoogleLoading(false);
-        setSuccess(null);
-        setEmail(''); setPassword(''); setNome('');
-        return;
-      }
+      await signOut(auth);
     } finally {
       if (!cadastroFinalizado) setIsGoogleLoading(false);
     }
