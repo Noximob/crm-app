@@ -181,6 +181,8 @@ export default function CadastroPage() {
           nome: nomeImob,
           tipo: tipoImob,
           criadoEm: new Date(),
+          aprovado: false,
+          metodoCadastro: 'email',
         });
         imobiliariaId = imobiliariaDoc.id;
         console.log('Imobiliária/corretor autônomo criado com ID:', imobiliariaId);
