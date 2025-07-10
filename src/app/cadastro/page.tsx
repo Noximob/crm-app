@@ -74,7 +74,7 @@ export default function CadastroPage() {
 
   // Passo 2: Campo obrigatório do perfil
   if (step === 2) {
-    if (perfil && perfil === 'imobiliaria') {
+    if (perfil === 'imobiliaria') {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 p-4">
           <div className="max-w-md w-full bg-offwhite-50 rounded-2xl shadow-xl p-8 border border-primary-100">
@@ -113,8 +113,7 @@ export default function CadastroPage() {
           </div>
         </div>
       );
-    }
-    if (perfil && perfil === 'corretor-vinculado') {
+    } else if (perfil === 'corretor-vinculado') {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 p-4">
           <div className="max-w-md w-full bg-offwhite-50 rounded-2xl shadow-xl p-8 border border-primary-100">
@@ -173,6 +172,7 @@ export default function CadastroPage() {
         </div>
       );
     }
+    return null;
   }
 
   // Passo 3: Escolha do método de cadastro
