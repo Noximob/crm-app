@@ -54,7 +54,6 @@ export default function CadastroPage() {
   const validateStep2 = () => {
     if (perfil === 'imobiliaria' && !nomeImobiliaria) return 'Informe o nome da imobiliária.';
     if (perfil === 'corretor-vinculado' && !imobiliariaSelecionada) return 'Selecione uma imobiliária.';
-    // Para corretor-autonomo, não há validação extra
     return null;
   };
 
@@ -77,60 +76,85 @@ export default function CadastroPage() {
     );
   }
 
-  // Passo 2: Dados específicos do perfil
+  // Passo 2: Campo obrigatório do perfil
   if (step === 2) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 p-4">
-        <div className="max-w-md w-full bg-offwhite-50 rounded-2xl shadow-xl p-8 border border-primary-100">
-          <h1 className="text-xl font-bold text-softgray-800 mb-4 text-center">Informações do Perfil</h1>
-          {perfil === 'imobiliaria' && (
-            <div>
+    if (perfil === 'imobiliaria') {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 p-4">
+          <div className="max-w-md w-full bg-offwhite-50 rounded-2xl shadow-xl p-8 border border-primary-100">
+            <h1 className="text-xl font-bold text-softgray-800 mb-4 text-center">Cadastro de Imobiliária</h1>
+            <div className="mb-4">
               <label className="block text-sm font-medium text-softgray-700 mb-1">Nome da Imobiliária</label>
-              <input type="text" value={nomeImobiliaria} onChange={e => setNomeImobiliaria(e.target.value)} className="w-full px-4 py-3 border border-softgray-300 rounded-lg" placeholder="Digite o nome da imobiliária" />
+              <input type="text" value={nomeImobiliaria} onChange={e => setNomeImobiliaria(e.target.value)} className="w-full px-4 py-3 border border-softgray-300 rounded-lg" placeholder="Nome da imobiliária" />
             </div>
-          )}
-          {perfil === 'corretor-vinculado' && (
-            <div>
-              <label className="block text-sm font-medium text-softgray-700 mb-1">Selecione a Imobiliária</label>
+            {validateStep2() && <p className="text-sm text-red-600 bg-red-100 p-3 rounded-lg mb-4">{validateStep2()}</p>}
+            <div className="flex gap-2 mt-4">
+              <button onClick={() => setStep(1)} className="w-1/2 bg-softgray-200 hover:bg-softgray-300 text-softgray-700 font-medium py-3 px-4 rounded-lg transition-colors duration-200">Voltar</button>
+              <button disabled={!!validateStep2()} onClick={() => setStep(3)} className="w-1/2 bg-primary-500 hover:bg-primary-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 disabled:bg-primary-300 disabled:cursor-not-allowed">Avançar</button>
+            </div>
+          </div>
+        </div>
+      );
+    } else if (perfil === 'corretor-vinculado') {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 p-4">
+          <div className="max-w-md w-full bg-offwhite-50 rounded-2xl shadow-xl p-8 border border-primary-100">
+            <h1 className="text-2xl font-bold text-softgray-800 mb-4 text-center">Cadastro de Corretor Vinculado</h1>
+            <div className="mb-4 relative">
+              <label className="block text-sm font-medium text-softgray-700 mb-1">Imobiliária</label>
               <input
                 type="text"
-                value={imobiliariaSelecionada ? imobiliariaSelecionada.nome : ''}
-                onFocus={() => setShowImobiliarias(true)}
+                value={imobiliariaSelecionada ? imobiliariaSelecionada.nome : nomeImobiliaria}
                 onChange={e => {
+                  setNomeImobiliaria(e.target.value);
                   setShowImobiliarias(true);
                   setImobiliariaSelecionada(null);
                 }}
+                onFocus={() => setShowImobiliarias(true)}
+                onBlur={() => setTimeout(() => setShowImobiliarias(false), 150)}
                 className="w-full px-4 py-3 border border-softgray-300 rounded-lg"
-                placeholder="Busque pelo nome da imobiliária"
-                readOnly
+                placeholder="Digite para buscar..."
+                autoComplete="off"
               />
-              {showImobiliarias && (
-                <div className="border border-softgray-200 rounded-lg mt-2 max-h-40 overflow-y-auto bg-white z-10">
-                  {imobiliarias.map(imob => (
-                    <div
-                      key={imob.id}
-                      className="px-4 py-2 hover:bg-primary-100 cursor-pointer"
-                      onClick={() => {
-                        setImobiliariaSelecionada(imob);
-                        setShowImobiliarias(false);
-                      }}
-                    >
-                      {imob.nome}
-                    </div>
-                  ))}
-                  {imobiliarias.length === 0 && <div className="px-4 py-2 text-softgray-400">Nenhuma imobiliária encontrada</div>}
-                </div>
+              {showImobiliarias && nomeImobiliaria && (
+                <ul className="absolute z-20 bg-white border border-softgray-300 rounded-lg mt-1 w-full max-h-60 overflow-y-auto shadow-lg">
+                  {imobiliarias
+                    .filter(i => i.nome.toLowerCase().includes(nomeImobiliaria.toLowerCase()))
+                    .slice(0, 8)
+                    .map(i => (
+                      <li
+                        key={i.id}
+                        className="px-4 py-2 cursor-pointer hover:bg-primary-50"
+                        onMouseDown={() => {
+                          setImobiliariaSelecionada(i);
+                          setNomeImobiliaria(i.nome);
+                          setShowImobiliarias(false);
+                        }}
+                      >
+                        {/* Destaca o texto digitado */}
+                        {(() => {
+                          const idx = i.nome.toLowerCase().indexOf(nomeImobiliaria.toLowerCase());
+                          if (idx === -1) return i.nome;
+                          return <>{i.nome.slice(0, idx)}<span className="bg-yellow-100 font-semibold">{i.nome.slice(idx, idx + nomeImobiliaria.length)}</span>{i.nome.slice(idx + nomeImobiliaria.length)}</>;
+                        })()}
+                      </li>
+                    ))}
+                  {imobiliarias.filter(i => i.nome.toLowerCase().includes(nomeImobiliaria.toLowerCase())).length === 0 && (
+                    <li className="px-4 py-2 text-softgray-400">Nenhuma imobiliária encontrada</li>
+                  )}
+                </ul>
               )}
             </div>
-          )}
-          {/* Para corretor-autonomo, não exibe nenhum campo extra */}
-          <div className="flex gap-2 mt-4">
-            <button onClick={() => setStep(1)} className="w-1/2 bg-softgray-200 hover:bg-softgray-300 text-softgray-700 font-medium py-3 px-4 rounded-lg transition-colors duration-200">Voltar</button>
-            <button disabled={!!validateStep2()} onClick={() => setStep(3)} className="w-1/2 bg-primary-500 hover:bg-primary-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 disabled:bg-primary-300 disabled:cursor-not-allowed">Avançar</button>
+            {validateStep2() && <p className="text-sm text-red-600 bg-red-100 p-3 rounded-lg mb-4">{validateStep2()}</p>}
+            <div className="flex gap-2 mt-4">
+              <button onClick={() => setStep(1)} className="w-1/2 bg-softgray-200 hover:bg-softgray-300 text-softgray-700 font-medium py-3 px-4 rounded-lg transition-colors duration-200">Voltar</button>
+              <button disabled={!!validateStep2()} onClick={() => setStep(3)} className="w-1/2 bg-primary-500 hover:bg-primary-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 disabled:bg-primary-300 disabled:cursor-not-allowed">Avançar</button>
+            </div>
           </div>
         </div>
-      </div>
-    );
+      );
+    }
+    return null;
   }
 
   // Passo 3: Escolha do método de cadastro
@@ -148,57 +172,21 @@ export default function CadastroPage() {
       const user = userCredential.user;
       console.log('Usuário criado no Auth:', user.uid);
       let imobiliariaId = '';
-      if (perfil === 'imobiliaria') {
-        // Cadastro de imobiliária
-        if (!nomeImobiliaria) {
-          setError('Informe o nome da imobiliária.');
-          setIsLoading(false);
-          return;
-        }
-        try {
-          console.log('Criando imobiliária no Firestore...');
-          const imobiliariaDoc = await addDoc(collection(db, 'imobiliarias'), {
-            nome: nomeImobiliaria,
-            tipo: 'imobiliaria',
-            criadoEm: new Date(),
-          });
-          imobiliariaId = imobiliariaDoc.id;
-          console.log('Imobiliária criada com ID:', imobiliariaId);
-        } catch (err: any) {
-          setError('Erro ao criar imobiliária: ' + (err.message || err));
-          setIsLoading(false);
-          return;
-        }
-      } else if (perfil === 'corretor-autonomo') {
-        // Cadastro de corretor autônomo
-        if (!nome) {
-          setError('Informe seu nome.');
-          setIsLoading(false);
-          return;
-        }
-        try {
-          console.log('Criando corretor autônomo no Firestore...');
-          const imobiliariaDoc = await addDoc(collection(db, 'imobiliarias'), {
-            nome: nome,
-            tipo: 'corretor-autonomo',
-            criadoEm: new Date(),
-          });
-          imobiliariaId = imobiliariaDoc.id;
-          console.log('Corretor autônomo criado com ID:', imobiliariaId);
-        } catch (err: any) {
-          setError('Erro ao criar corretor autônomo: ' + (err.message || err));
-          setIsLoading(false);
-          return;
-        }
+      if (perfil === 'imobiliaria' || perfil === 'corretor-autonomo') {
+        // Para corretor autônomo, o nome da imobiliária é o nome do corretor
+        const nomeImob = perfil === 'imobiliaria' ? nomeImobiliaria : nome;
+        const tipoImob = perfil === 'imobiliaria' ? 'imobiliaria' : 'corretor-autonomo';
+        console.log('Criando imobiliária/corretor autônomo no Firestore...');
+        const imobiliariaDoc = await addDoc(collection(db, 'imobiliarias'), {
+          nome: nomeImob,
+          tipo: tipoImob,
+          criadoEm: new Date(),
+        });
+        imobiliariaId = imobiliariaDoc.id;
+        console.log('Imobiliária/corretor autônomo criado com ID:', imobiliariaId);
       } else if (perfil === 'corretor-vinculado') {
-        // Cadastro de corretor vinculado
-        if (!imobiliariaSelecionada) {
-          setError('Selecione uma imobiliária.');
-          setIsLoading(false);
-          return;
+        imobiliariaId = imobiliariaSelecionada!.id;
         }
-        imobiliariaId = imobiliariaSelecionada.id;
-      }
       console.log('Criando documento do usuário no Firestore...');
       await setDoc(doc(db, 'usuarios', user.uid), {
         nome,
@@ -330,7 +318,7 @@ export default function CadastroPage() {
   };
 
   if (step === 3) {
-    return (
+  return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 p-4">
         <div className="max-w-md w-full bg-offwhite-50 rounded-2xl shadow-xl p-8 border border-primary-100">
           <h1 className="text-xl font-bold text-softgray-800 mb-4 text-center">Finalizar Cadastro</h1>
@@ -371,9 +359,9 @@ export default function CadastroPage() {
             >
               Voltar ao início
             </button>
-          </div>
         </div>
       </div>
-    );
+    </div>
+  );
   }
 } 
