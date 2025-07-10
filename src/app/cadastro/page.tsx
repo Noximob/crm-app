@@ -174,10 +174,9 @@ export default function CadastroPage() {
       console.log('Usuário criado no Auth:', user.uid);
       let imobiliariaId = '';
       if (perfil === 'imobiliaria' || perfil === 'corretor-autonomo') {
-        console.log('Perfil no momento da criação:', perfil);
         const dadosImobiliaria = {
-          nome: perfil === 'imobiliaria' ? nomeImobiliaria : nome,
-          tipo: perfil === 'imobiliaria' ? 'imobiliaria' : (perfil === 'corretor-autonomo' ? 'corretor-autonomo' : 'imobiliaria'),
+          nome: nomeImobiliaria || nome,
+          tipo: 'imobiliaria', // Força o campo tipo SEMPRE
           criadoEm: new Date(),
           aprovado: false,
           metodoCadastro: isGoogleLoading ? 'google' : 'email',
