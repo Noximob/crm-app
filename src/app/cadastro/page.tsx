@@ -149,7 +149,12 @@ export default function CadastroPage() {
       console.log('Usuário criado no Auth:', user.uid);
       let imobiliariaId = '';
       if (perfil === 'imobiliaria') {
-        // Para imobiliária, usa o nomeImobiliaria
+        // Cadastro de imobiliária
+        if (!nomeImobiliaria) {
+          setError('Informe o nome da imobiliária.');
+          setIsLoading(false);
+          return;
+        }
         console.log('Criando imobiliária no Firestore...');
         const imobiliariaDoc = await addDoc(collection(db, 'imobiliarias'), {
           nome: nomeImobiliaria,
@@ -159,7 +164,12 @@ export default function CadastroPage() {
         imobiliariaId = imobiliariaDoc.id;
         console.log('Imobiliária criada com ID:', imobiliariaId);
       } else if (perfil === 'corretor-autonomo') {
-        // Para corretor autônomo, usa o nome do corretor
+        // Cadastro de corretor autônomo
+        if (!nome) {
+          setError('Informe seu nome.');
+          setIsLoading(false);
+          return;
+        }
         console.log('Criando corretor autônomo no Firestore...');
         const imobiliariaDoc = await addDoc(collection(db, 'imobiliarias'), {
           nome: nome,
@@ -169,7 +179,13 @@ export default function CadastroPage() {
         imobiliariaId = imobiliariaDoc.id;
         console.log('Corretor autônomo criado com ID:', imobiliariaId);
       } else if (perfil === 'corretor-vinculado') {
-        imobiliariaId = imobiliariaSelecionada!.id;
+        // Cadastro de corretor vinculado
+        if (!imobiliariaSelecionada) {
+          setError('Selecione uma imobiliária.');
+          setIsLoading(false);
+          return;
+        }
+        imobiliariaId = imobiliariaSelecionada.id;
       }
       console.log('Criando documento do usuário no Firestore...');
       await setDoc(doc(db, 'usuarios', user.uid), {
