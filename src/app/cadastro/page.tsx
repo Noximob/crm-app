@@ -1,3 +1,4 @@
+// Forçando deploy no Netlify
 'use client';
 
 import { useState, useEffect } from 'react';
