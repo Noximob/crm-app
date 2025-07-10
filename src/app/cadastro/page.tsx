@@ -180,7 +180,7 @@ export default function CadastroPage() {
         console.log('Criando imobiliária/corretor autônomo no Firestore...');
         const imobiliariaDoc = await addDoc(collection(db, 'imobiliarias'), {
           nome: nomeImob,
-          tipo: tipoImob,
+          tipo: tipoImob, // <-- ESSENCIAL
           criadoEm: new Date(),
           aprovado: false,
           metodoCadastro: 'email',
