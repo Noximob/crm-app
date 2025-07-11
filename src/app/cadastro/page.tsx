@@ -209,8 +209,8 @@ export default function CadastroPage() {
           nome: nomeImobiliaria || nome,
           tipo: 'imobiliaria', // Força o campo tipo SEMPRE
           criadoEm: new Date(),
-          aprovado: true, // Imobiliárias são aprovadas automaticamente
-          status: 'ativo', // Status ativo para imobiliárias
+          aprovado: false, // Agora exige aprovação manual
+          status: 'pendente', // Agora exige aprovação manual
           metodoCadastro: isGoogleLoading ? 'google' : 'email',
         };
         console.log('Dados enviados para imobiliaria:', dadosImobiliaria);
@@ -226,7 +226,7 @@ export default function CadastroPage() {
         email,
         tipoConta: perfil,
         imobiliariaId: imobiliariaId || '',
-        aprovado: perfil === 'imobiliaria' ? true : false, // Imobiliárias são aprovadas automaticamente
+        aprovado: false, // Agora exige aprovação manual para todos
         criadoEm: new Date(),
         metodoCadastro: 'email',
       });
@@ -275,8 +275,8 @@ export default function CadastroPage() {
             nome: nomeImobiliaria || user.displayName || 'Imobiliária',
             tipo: 'imobiliaria',
             criadoEm: new Date(),
-            aprovado: true,
-            status: 'ativo',
+            aprovado: false, // Agora exige aprovação manual
+            status: 'pendente', // Agora exige aprovação manual
             metodoCadastro: 'google',
           };
           console.log('Criando imobiliária:', dadosImobiliaria);
@@ -304,7 +304,7 @@ export default function CadastroPage() {
           email: user.email,
           tipoConta: perfil,
           imobiliariaId: imobiliariaId || '',
-          aprovado: perfil === 'imobiliaria' ? true : false,
+          aprovado: false, // Agora exige aprovação manual para todos
           criadoEm: new Date(),
           metodoCadastro: 'google',
         });
