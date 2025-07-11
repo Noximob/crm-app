@@ -31,7 +31,7 @@ export default function GestaoLeadsPage() {
   const [loadingCorretores, setLoadingCorretores] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
 
-  // Buscar corretores vinculados à imobiliária logada
+  // Buscar corretores vinculados à imobiliária logada e aprovados
   useEffect(() => {
     if (!userData?.imobiliariaId) return;
     setLoadingCorretores(true);
@@ -39,7 +39,8 @@ export default function GestaoLeadsPage() {
       const q = query(
         collection(db, 'usuarios'),
         where('imobiliariaId', '==', userData.imobiliariaId),
-        where('tipoConta', 'in', ['corretor-vinculado', 'corretor-autonomo', 'imobiliaria'])
+        where('tipoConta', 'in', ['corretor-vinculado', 'corretor-autonomo', 'imobiliaria']),
+        where('aprovado', '==', true)
       );
       const snapshot = await getDocs(q);
       const lista = snapshot.docs.map(doc => ({ id: doc.id, nome: doc.data().nome, tipoConta: doc.data().tipoConta }));
@@ -49,10 +50,12 @@ export default function GestaoLeadsPage() {
     fetchCorretores();
   }, [userData]);
 
-  // Buscar leads do corretor selecionado
+  // Buscar leads do corretor selecionado e etapas únicas
+  const [etapasUnicas, setEtapasUnicas] = useState<string[]>([]);
   useEffect(() => {
     if (!corretorOrigem) {
       setLeads([]);
+      setEtapasUnicas([]);
       return;
     }
     setLoadingLeads(true);
@@ -60,6 +63,10 @@ export default function GestaoLeadsPage() {
       let qLeads = query(collection(db, 'leads'), where('userId', '==', corretorOrigem));
       const snapshot = await getDocs(qLeads);
       let lista = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
+      // Etapas únicas
+      const etapas = Array.from(new Set(lista.map(lead => lead.etapa).filter(Boolean)));
+      setEtapasUnicas(etapas);
+      // Filtro
       if (filtroEtapa) {
         lista = lista.filter(lead => lead.etapa === filtroEtapa);
       }
@@ -155,7 +162,7 @@ export default function GestaoLeadsPage() {
               disabled={loadingLeads}
             >
               <option value="">Todas</option>
-              {PIPELINE_STAGES.map(stage => <option key={stage} value={stage}>{stage}</option>)}
+              {etapasUnicas.map(stage => <option key={stage} value={stage}>{stage}</option>)}
             </select>
           </div>
         </div>
