@@ -16,13 +16,13 @@ interface UsuarioPendente {
 }
 
 const adminCards = [
-  { title: 'Aprovação de Usuários', icon: '✅', description: 'Aprove ou rejeite novos cadastros.', href: '#', special: true },
-  { title: 'Relatórios', icon: '📊', description: 'Acompanhe métricas e resultados detalhados.', href: '/dashboard/admin/relatorios' },
-  { title: 'Financeiro', icon: '💰', description: 'Controle financeiro da imobiliária.', href: '/dashboard/admin/financeiro' },
-  { title: 'Site', icon: '🌐', description: 'Gerencie o site institucional e vitrines.', href: '/dashboard/admin/site' },
-  { title: 'Marketing Imobiliário', icon: '📢', description: 'Ferramentas e campanhas de marketing.', href: '/dashboard/admin/marketing-imobiliario' },
-  { title: 'Materiais Construtora', icon: '🏗️', description: 'Adicione e gerencie materiais das construtoras.', href: '/dashboard/admin/materiais-construtora' },
   { title: 'Gestão de Corretores', icon: '🧑‍💼', description: 'Administre os corretores da sua equipe.', href: '/dashboard/admin/gestao-corretores' },
+  { title: 'Materiais Construtora', icon: '🏗️', description: 'Adicione e gerencie materiais das construtoras.', href: '/dashboard/admin/materiais-construtora' },
+  { title: 'Marketing Imobiliário', icon: '📢', description: 'Ferramentas e campanhas de marketing.', href: '/dashboard/admin/marketing-imobiliario' },
+  { title: 'Financeiro', icon: '💰', description: 'Controle financeiro da imobiliária.', href: '/dashboard/admin/financeiro' },
+  { title: 'Relatórios', icon: '📊', description: 'Acompanhe métricas e resultados detalhados.', href: '/dashboard/admin/relatorios' },
+  { title: 'Site', icon: '🌐', description: 'Gerencie o site institucional e vitrines.', href: '/dashboard/admin/site' },
+  { title: 'Aprovação de Usuários', icon: '✅', description: 'Aprove ou rejeite novos cadastros.', href: '#', special: true },
 ];
 
 const financeiroTabs = [
