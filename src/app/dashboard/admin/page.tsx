@@ -16,7 +16,7 @@ interface UsuarioPendente {
 }
 
 const adminCards = [
-  { title: 'Gestão de Corretores', icon: '🧑‍💼', description: 'Administre os corretores da sua equipe.', href: '/dashboard/admin/gestao-corretores' },
+  { title: 'Gestão de Corretores', icon: '🧑‍💼', description: 'Administre os leads dos seus corretores', href: '#', special: 'gestao-leads' },
   { title: 'Materiais Construtora', icon: '🏗️', description: 'Adicione e gerencie materiais das construtoras.', href: '/dashboard/admin/materiais-construtora' },
   { title: 'Marketing Imobiliário', icon: '📢', description: 'Ferramentas e campanhas de marketing.', href: '/dashboard/admin/marketing-imobiliario' },
   { title: 'Financeiro', icon: '💰', description: 'Controle financeiro da imobiliária.', href: '/dashboard/admin/financeiro' },
@@ -43,6 +43,7 @@ export default function AdminPage() {
   const [usuariosPendentes, setUsuariosPendentes] = useState<UsuarioPendente[]>([]);
   const [loading, setLoading] = useState(false);
   const [imobiliarias, setImobiliarias] = useState<{ id: string, nome: string }[]>([]);
+  const [showGestaoLeads, setShowGestaoLeads] = useState(false);
 
   // Buscar usuários pendentes
   useEffect(() => {
@@ -132,7 +133,7 @@ export default function AdminPage() {
             <div
               key={item.title}
               className="flex flex-col items-center justify-center bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-8 transition-all duration-200 hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] group cursor-pointer"
-              onClick={() => item.special ? setShowAprovacao(true) : null}
+              onClick={() => item.special === 'gestao-leads' ? setShowGestaoLeads(true) : item.special ? setShowAprovacao(true) : null}
               tabIndex={0}
             >
               <span className="text-4xl mb-4 group-hover:scale-110 transition-transform">{item.icon}</span>
@@ -256,6 +257,50 @@ export default function AdminPage() {
             {/* Conteúdo da aba selecionada (mock) */}
             <div className="min-h-[200px] flex items-center justify-center text-[#6B6F76] dark:text-gray-300 text-lg">
               <span>Conteúdo: <b>{activeTab}</b> (mock)</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Gestão de Leads dos Corretores */}
+      {showGestaoLeads && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-lg w-full max-w-6xl p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto">
+            <button className="absolute top-4 right-4 text-2xl text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6]" onClick={() => setShowGestaoLeads(false)}>&times;</button>
+            <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white mb-6">Gestão de Leads dos Corretores</h2>
+            {/* Filtros por etapa, seleção de leads, botão transferir e apagar - estrutura inicial */}
+            <div className="mb-4 flex flex-col md:flex-row md:items-center gap-4">
+              <label className="font-medium text-[#6B6F76] dark:text-gray-300">Filtrar por etapa:</label>
+              <select className="px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white">
+                <option value="">Todas</option>
+                <option value="Pré-qualificação">Pré-qualificação</option>
+                <option value="Qualificação">Qualificação</option>
+                <option value="Proposta">Proposta</option>
+                <option value="Geladeira">Geladeira</option>
+                {/* Adicione outras etapas conforme necessário */}
+              </select>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Aqui será renderizada a lista de corretores e seus leads, com seleção e botões de ação */}
+              <div className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl p-4 border border-[#E8E9F1] dark:border-[#23283A]">
+                <p className="text-[#6B6F76] dark:text-gray-300">(Exemplo) Corretor: João Silva</p>
+                <ul className="mt-2 space-y-2">
+                  <li className="flex items-center gap-2">
+                    <input type="checkbox" />
+                    <span className="flex-1 text-[#2E2F38] dark:text-white">Lead: Maria Souza (Pré-qualificação)</span>
+                    <button className="text-red-500 hover:text-red-700 text-xs">Apagar</button>
+                  </li>
+                  {/* Repita para outros leads */}
+                </ul>
+              </div>
+              {/* Repita para outros corretores */}
+            </div>
+            <div className="mt-6 flex gap-4 justify-end">
+              <select className="px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white">
+                <option value="">Selecione corretor de destino</option>
+                {/* Listar corretores */}
+              </select>
+              <button className="px-6 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg font-semibold transition-colors">Transferir</button>
             </div>
           </div>
         </div>
