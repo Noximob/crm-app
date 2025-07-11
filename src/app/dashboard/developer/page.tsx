@@ -91,25 +91,25 @@ export default function DeveloperPage() {
     <div className="max-w-5xl mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-6 text-[#2E2F38]">Área do Desenvolvedor</h1>
       {message && <div className="mb-4 p-3 rounded bg-yellow-100 text-yellow-800">{message}</div>}
-      <div className="bg-white rounded-xl shadow p-6 mb-8">
+      <div className="bg-white rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-6 mb-8">
         <h2 className="text-xl font-bold mb-4">Imobiliárias</h2>
         {loading ? <p>Carregando...</p> : (
           <table className="w-full text-left">
             <thead>
-              <tr>
-                <th className="py-2">Nome</th>
-                <th className="py-2">Status</th>
-                <th className="py-2">Aprovada</th>
-                <th className="py-2">Ações</th>
+              <tr className="bg-[#F5F6FA] dark:bg-[#181C23] text-[#2E2F38] dark:text-white font-semibold">
+                <th className="px-4 py-3">Nome</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Aprovada</th>
+                <th className="px-4 py-3">Ações</th>
               </tr>
             </thead>
             <tbody>
               {imobiliarias.map(imob => (
-                <tr key={imob.id} className="border-t">
-                  <td className="py-2 font-medium">{imob.nome}</td>
-                  <td className="py-2">{imob.status || '-'}</td>
-                  <td className="py-2">{imob.aprovado ? 'Sim' : 'Não'}</td>
-                  <td className="py-2">
+                <tr key={imob.id} className="border-t hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
+                  <td className="px-4 py-3 font-medium">{imob.nome}</td>
+                  <td className="px-4 py-3">{imob.status || '-'}</td>
+                  <td className="px-4 py-3">{imob.aprovado ? 'Sim' : 'Não'}</td>
+                  <td className="px-4 py-3">
                     <button className="text-blue-600 hover:underline mr-2" onClick={() => { setSelectedImobiliaria(imob); loadCorretores(imob.id); }}>Ver corretores</button>
                   </td>
                 </tr>
@@ -119,36 +119,32 @@ export default function DeveloperPage() {
         )}
       </div>
       {selectedImobiliaria && (
-        <div className="bg-white rounded-xl shadow p-6 mb-8">
+        <div className="bg-white rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold">Corretores de {selectedImobiliaria.nome}</h2>
-            <button className="text-sm text-gray-500 hover:underline" onClick={() => { setSelectedImobiliaria(null); setCorretores([]); }}>Fechar</button>
+            <button className="ml-auto text-[#6B6F76] dark:text-gray-400 text-xs font-medium hover:underline" onClick={() => { setSelectedImobiliaria(null); setCorretores([]); }}>Fechar</button>
           </div>
           {loadingCorretores ? <p>Carregando corretores...</p> : (
             <table className="w-full text-left">
               <thead>
-                <tr>
-                  <th className="py-2">Nome</th>
-                  <th className="py-2">E-mail</th>
-                  <th className="py-2">Tipo</th>
-                  <th className="py-2 text-center">Aprovado</th>
-                  <th className="py-2 text-center">Admin</th>
-                  <th className="py-2 text-center">Desenvolvedor</th>
-                  <th className="py-2">Ações</th>
+                <tr className="bg-[#F5F6FA] dark:bg-[#181C23] text-[#2E2F38] dark:text-white font-semibold">
+                  <th className="px-4 py-3">Nome</th>
+                  <th className="px-4 py-3">E-mail</th>
+                  <th className="px-4 py-3">Tipo</th>
+                  <th className="px-4 py-3 text-center">Aprovado</th>
+                  <th className="px-4 py-3 text-center">Admin</th>
+                  <th className="px-4 py-3 text-center">Desenvolvedor</th>
                 </tr>
               </thead>
               <tbody>
                 {corretores.map(corretor => (
-                  <tr key={corretor.id} className="border-t hover:bg-[#F5F6FA] dark:hover:bg-[#181C23]">
-                    <td className="py-2 font-medium">{corretor.nome}</td>
-                    <td className="py-2">{corretor.email}</td>
-                    <td className="py-2">{corretor.tipoConta}</td>
-                    <td className="py-2 text-center"><input type="checkbox" checked={!!corretor.aprovado} onChange={e => handleAprovarCheckbox(corretor, e.target.checked)} /></td>
-                    <td className="py-2 text-center"><input type="checkbox" checked={!!corretor.permissoes?.admin} onChange={e => handlePermissao(corretor, 'admin', e.target.checked)} /></td>
-                    <td className="py-2 text-center"><input type="checkbox" checked={!!corretor.permissoes?.developer} onChange={e => handlePermissao(corretor, 'developer', e.target.checked)} /></td>
-                    <td className="py-2">
-                      {/* Futuro: botão para ver leads, permissões, etc */}
-                    </td>
+                  <tr key={corretor.id} className="border-t hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
+                    <td className="px-4 py-3 font-medium">{corretor.nome}</td>
+                    <td className="px-4 py-3">{corretor.email}</td>
+                    <td className="px-4 py-3">{corretor.tipoConta}</td>
+                    <td className="px-4 py-3 text-center"><input type="checkbox" checked={!!corretor.aprovado} onChange={e => handleAprovarCheckbox(corretor, e.target.checked)} /></td>
+                    <td className="px-4 py-3 text-center"><input type="checkbox" checked={!!corretor.permissoes?.admin} onChange={e => handlePermissao(corretor, 'admin', e.target.checked)} /></td>
+                    <td className="px-4 py-3 text-center"><input type="checkbox" checked={!!corretor.permissoes?.developer} onChange={e => handlePermissao(corretor, 'developer', e.target.checked)} /></td>
                   </tr>
                 ))}
               </tbody>
