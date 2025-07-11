@@ -262,7 +262,7 @@ export default function CadastroPage() {
           }
         });
       });
-      await new Promise(r => setTimeout(r, 2000)); // delay reduzido
+      await new Promise(r => setTimeout(r, 2000));
       if (!user.email) {
         setError('Não foi possível obter o e-mail do Google. Tente novamente ou use outro método.');
         setIsGoogleLoading(false);
@@ -275,8 +275,8 @@ export default function CadastroPage() {
             nome: nomeImobiliaria || user.displayName || 'Imobiliária',
             tipo: 'imobiliaria',
             criadoEm: new Date(),
-            aprovado: false, // Agora exige aprovação manual
-            status: 'pendente', // Agora exige aprovação manual
+            aprovado: false,
+            status: 'pendente',
             metodoCadastro: 'google',
           };
           console.log('Criando imobiliária:', dadosImobiliaria);
@@ -290,6 +290,7 @@ export default function CadastroPage() {
           return;
         }
       } else if (perfil === 'corretor-vinculado') {
+        console.log('Perfil corretor-vinculado, verificando imobiliariaSelecionada:', imobiliariaSelecionada);
         if (!imobiliariaSelecionada) {
           setError('Selecione uma imobiliária para se vincular.');
           setIsGoogleLoading(false);
@@ -299,12 +300,13 @@ export default function CadastroPage() {
       }
       // Criação do usuário
       try {
+        console.log('Criando documento do usuário no Firestore...');
         await setDoc(doc(db, 'usuarios', user.uid), {
           nome: user.displayName || '',
           email: user.email,
           tipoConta: perfil,
           imobiliariaId: imobiliariaId || '',
-          aprovado: false, // Agora exige aprovação manual para todos
+          aprovado: false,
           criadoEm: new Date(),
           metodoCadastro: 'google',
         });
