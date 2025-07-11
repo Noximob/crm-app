@@ -1,204 +1,144 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, onSnapshot } from 'firebase/firestore';
-import Link from 'next/link';
-import AdminEntidades from './admin-entidades';
+import { collection, getDocs, doc, updateDoc, query, where } from 'firebase/firestore';
 
-// Ícones
-const BugIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="m8 2 1.88 1.88"/>
-    <path d="M14.12 3.88 16 2"/>
-    <path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/>
-    <path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/>
-    <path d="M12 20v-9"/>
-    <path d="M6.53 9C4.6 8.8 3 7.1 3 5"/>
-    <path d="M6 13H2"/>
-    <path d="M3 21c0-2.1 1.7-3.9 3.8-4"/>
-    <path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/>
-    <path d="M22 13h-4"/>
-    <path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/>
-  </svg>
-);
+interface Imobiliaria {
+  id: string;
+  nome: string;
+  status?: string;
+  aprovado?: boolean;
+}
 
-const DatabaseIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <ellipse cx="12" cy="5" rx="9" ry="3"/>
-    <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
-    <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
-  </svg>
-);
-
-const ActivityIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-  </svg>
-);
-
-const SettingsIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
-    <circle cx="12" cy="12" r="3"/>
-  </svg>
-);
-
-const TerminalIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="4 17 10 11 4 5"/>
-    <line x1="12" x2="20" y1="19" y2="19"/>
-  </svg>
-);
-
-const Card = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
-  <div className={`bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-6 ${className}`}>
-    {children}
-  </div>
-);
-
-const MetricCard = ({ title, value, icon: Icon, color = 'blue' }: {
-  title: string;
-  value: string | number;
-  icon: any;
-  color?: 'blue' | 'green' | 'red' | 'orange';
-}) => {
-  const colorClasses = {
-    blue: 'bg-[#3478F6]/10 text-[#3478F6]',
-    green: 'bg-[#3AC17C]/10 text-[#3AC17C]',
-    red: 'bg-[#F45B69]/10 text-[#F45B69]',
-    orange: 'bg-[#FF6B6B]/10 text-[#FF6B6B]'
-  };
-
-  return (
-    <Card className="flex flex-col">
-      <div className="flex items-center justify-between mb-4">
-        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
-          <Icon className="h-6 w-6" />
-        </div>
-      </div>
-      <div className="text-2xl font-bold text-[#2E2F38] dark:text-white mb-1">{value}</div>
-      <div className="text-sm text-[#6B6F76] dark:text-gray-300">{title}</div>
-    </Card>
-  );
-};
+interface Usuario {
+  id: string;
+  nome: string;
+  email: string;
+  tipoConta: string;
+  aprovado: boolean;
+  imobiliariaId?: string;
+}
 
 export default function DeveloperPage() {
-  const { currentUser } = useAuth();
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalLeads: 0,
-    activeSessions: 0,
-    errors: 0
-  });
-  const [logs, setLogs] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [imobiliarias, setImobiliarias] = useState<Imobiliaria[]>([]);
+  const [selectedImobiliaria, setSelectedImobiliaria] = useState<Imobiliaria | null>(null);
+  const [corretores, setCorretores] = useState<Usuario[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingCorretores, setLoadingCorretores] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (currentUser) {
-      loadDeveloperStats();
-      loadSystemLogs();
-    }
-  }, [currentUser]);
+    loadImobiliarias();
+  }, []);
 
-  const loadDeveloperStats = async () => {
+  const loadImobiliarias = async () => {
+    setLoading(true);
     try {
-      // Buscar estatísticas do sistema
-      const usersSnapshot = await getDocs(collection(db, 'usuarios'));
-      const leadsSnapshot = await getDocs(collection(db, 'leads'));
-      
-      setStats({
-        totalUsers: usersSnapshot.size,
-        totalLeads: leadsSnapshot.size,
-        activeSessions: Math.floor(Math.random() * 50) + 10, // Simulado
-        errors: Math.floor(Math.random() * 5) // Simulado
-      });
-    } catch (error) {
-      console.error('Erro ao carregar estatísticas:', error);
+      const snapshot = await getDocs(collection(db, 'imobiliarias'));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Imobiliaria[];
+      setImobiliarias(data);
+    } catch (err) {
+      setMessage('Erro ao carregar imobiliárias');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const loadSystemLogs = () => {
-    // Simular logs do sistema
-    const mockLogs = [
-      { id: 1, level: 'info', message: 'Sistema iniciado com sucesso', timestamp: new Date(), user: 'Sistema' },
-      { id: 2, level: 'warning', message: 'Tentativa de login falhou', timestamp: new Date(Date.now() - 300000), user: 'user@example.com' },
-      { id: 3, level: 'error', message: 'Erro na conexão com Firebase', timestamp: new Date(Date.now() - 600000), user: 'Sistema' },
-      { id: 4, level: 'info', message: 'Novo usuário registrado', timestamp: new Date(Date.now() - 900000), user: 'admin@alume.com' },
-      { id: 5, level: 'info', message: 'Backup automático realizado', timestamp: new Date(Date.now() - 1200000), user: 'Sistema' }
-    ];
-    setLogs(mockLogs);
-    setIsLoading(false);
-  };
-
-  const getLogLevelColor = (level: string) => {
-    switch (level) {
-      case 'error': return 'text-red-600 bg-red-50 dark:bg-red-900/20';
-      case 'warning': return 'text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20';
-      case 'info': return 'text-blue-600 bg-blue-50 dark:bg-blue-900/20';
-      default: return 'text-gray-600 bg-gray-50 dark:bg-gray-900/20';
+  const loadCorretores = async (imobiliariaId: string) => {
+    setLoadingCorretores(true);
+    setCorretores([]);
+    try {
+      const q = query(collection(db, 'usuarios'), where('imobiliariaId', '==', imobiliariaId));
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Usuario[];
+      setCorretores(data);
+    } catch (err) {
+      setMessage('Erro ao carregar corretores');
+    } finally {
+      setLoadingCorretores(false);
     }
   };
 
-  const formatTimestamp = (timestamp: Date) => {
-    return timestamp.toLocaleString('pt-BR');
+  const handleAprovar = async (user: Usuario, aprovado: boolean) => {
+    setMessage(null);
+    try {
+      await updateDoc(doc(db, 'usuarios', user.id), { aprovado });
+      setCorretores(corretores => corretores.map(c => c.id === user.id ? { ...c, aprovado } : c));
+      setMessage(aprovado ? 'Usuário aprovado!' : 'Usuário reprovado!');
+    } catch (err) {
+      setMessage('Erro ao atualizar usuário');
+    }
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center">
-            <p>Carregando área do desenvolvedor...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
-      <div className="max-w-6xl mx-auto">
-        {/* Título e Descrição */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-4 mb-4">
-            <span className="text-5xl">💻</span>
-            <h1 className="text-4xl font-bold text-[#2E2F38] dark:text-white">Área do Desenvolvedor</h1>
-          </div>
-          <p className="text-xl text-[#6B6F76] dark:text-gray-300 max-w-3xl mx-auto">
-            Ferramentas e informações para desenvolvimento, debugging e monitoramento do sistema.
-          </p>
-        </div>
-        {/* Métricas do Sistema */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <MetricCard
-            title="Usuários Totais"
-            value={stats.totalUsers}
-            icon={DatabaseIcon}
-            color="blue"
-          />
-          <MetricCard
-            title="Leads no Sistema"
-            value={stats.totalLeads}
-            icon={ActivityIcon}
-            color="green"
-          />
-          <MetricCard
-            title="Sessões Ativas"
-            value={stats.activeSessions}
-            icon={SettingsIcon}
-            color="orange"
-          />
-          <MetricCard
-            title="Erros Hoje"
-            value={stats.errors}
-            icon={BugIcon}
-            color="red"
-          />
-        </div>
-        <AdminEntidades />
+    <div className="max-w-5xl mx-auto py-8 px-4">
+      <h1 className="text-3xl font-bold mb-6 text-[#2E2F38]">Área do Desenvolvedor</h1>
+      {message && <div className="mb-4 p-3 rounded bg-yellow-100 text-yellow-800">{message}</div>}
+      <div className="bg-white rounded-xl shadow p-6 mb-8">
+        <h2 className="text-xl font-bold mb-4">Imobiliárias</h2>
+        {loading ? <p>Carregando...</p> : (
+          <table className="w-full text-left">
+            <thead>
+              <tr>
+                <th className="py-2">Nome</th>
+                <th className="py-2">Status</th>
+                <th className="py-2">Aprovada</th>
+                <th className="py-2">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {imobiliarias.map(imob => (
+                <tr key={imob.id} className="border-t">
+                  <td className="py-2 font-medium">{imob.nome}</td>
+                  <td className="py-2">{imob.status || '-'}</td>
+                  <td className="py-2">{imob.aprovado ? 'Sim' : 'Não'}</td>
+                  <td className="py-2">
+                    <button className="text-blue-600 hover:underline mr-2" onClick={() => { setSelectedImobiliaria(imob); loadCorretores(imob.id); }}>Ver corretores</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
+      {selectedImobiliaria && (
+        <div className="bg-white rounded-xl shadow p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold">Corretores de {selectedImobiliaria.nome}</h2>
+            <button className="text-sm text-gray-500 hover:underline" onClick={() => { setSelectedImobiliaria(null); setCorretores([]); }}>Fechar</button>
+          </div>
+          {loadingCorretores ? <p>Carregando corretores...</p> : (
+            <table className="w-full text-left">
+              <thead>
+                <tr>
+                  <th className="py-2">Nome</th>
+                  <th className="py-2">E-mail</th>
+                  <th className="py-2">Tipo</th>
+                  <th className="py-2">Aprovado</th>
+                  <th className="py-2">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {corretores.map(corretor => (
+                  <tr key={corretor.id} className="border-t">
+                    <td className="py-2 font-medium">{corretor.nome}</td>
+                    <td className="py-2">{corretor.email}</td>
+                    <td className="py-2">{corretor.tipoConta}</td>
+                    <td className="py-2">{corretor.aprovado ? 'Sim' : 'Não'}</td>
+                    <td className="py-2">
+                      <button className="text-green-600 hover:underline mr-2" onClick={() => handleAprovar(corretor, true)}>Aprovar</button>
+                      <button className="text-red-600 hover:underline" onClick={() => handleAprovar(corretor, false)}>Reprovar</button>
+                      {/* Futuro: botão para ver leads, permissões, etc */}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+      {/* Futuro: gestão de permissões e leads */}
     </div>
   );
 } 
