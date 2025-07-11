@@ -105,6 +105,11 @@ export default function DashboardLayout({
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#F5F6FA]"><p className="text-[#2E2F38]">Carregando...</p></div>;
   if (!user) return null;
 
+  // Adicionar uma tipagem local para userData que inclua permissoes opcional
+  // (isso é só para evitar erro de linter, pois o campo pode existir no Firestore)
+  type UserDataWithPerms = typeof userData & { permissoes?: { admin?: boolean; developer?: boolean } };
+  const userDataWithPerms = userData as UserDataWithPerms;
+
   const navItems = [
     { href: '/dashboard', icon: LayoutDashboardIcon, label: 'Dashboard' },
     { href: '/dashboard/crm', icon: BarChartIcon, label: 'CRM' },
@@ -115,9 +120,12 @@ export default function DashboardLayout({
     { href: '/dashboard/incluir-imovel', icon: HouseIcon, label: 'Incluir imóvel' },
     { href: '/dashboard/pagamentos', icon: CreditCardIcon, label: 'Pagamentos' },
     { href: '/dashboard/configuracoes', icon: SettingsIcon, label: 'Configurações' },
-    // Os dois abaixo só aparecem para imobiliária
-    ...(userData?.tipoConta === 'imobiliaria' ? [
+    // Exibir admin se for imobiliaria OU tiver permissao admin
+    ...((userDataWithPerms?.tipoConta === 'imobiliaria' || userDataWithPerms?.permissoes?.admin) ? [
       { href: '/dashboard/admin', icon: KeyIcon, label: 'Área administrador' },
+    ] : []),
+    // Exibir dev se for imobiliaria OU tiver permissao developer
+    ...((userDataWithPerms?.tipoConta === 'imobiliaria' || userDataWithPerms?.permissoes?.developer) ? [
       { href: '/dashboard/developer', icon: CodeIcon, label: 'Área do Desenvolvedor' },
     ] : []),
     { href: '#', icon: LogOutIcon, label: 'Desconectar', isLogout: true },
