@@ -121,11 +121,11 @@ export default function AdminEntidadesPage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center">
             <p>Carregando imobiliárias...</p>
-          </div>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   return (
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
@@ -158,7 +158,7 @@ export default function AdminEntidadesPage() {
             message.includes('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
           }`}>
             {message}
-          </div>
+      </div>
         )}
 
         {/* Botão de Atualização */}
@@ -171,15 +171,15 @@ export default function AdminEntidadesPage() {
               <p className="text-sm text-[#6B6F76] dark:text-gray-300">
                 Adiciona campos obrigatórios (tipo, status, aprovado) às imobiliárias existentes
               </p>
-            </div>
+      </div>
             <button
               onClick={updateImobiliarias}
               disabled={updating}
               className="bg-[#3478F6] hover:bg-[#2E6FD9] disabled:bg-[#6B6F76] text-white font-medium px-6 py-3 rounded-lg transition-colors"
             >
               {updating ? 'Atualizando...' : 'Atualizar Todas'}
-            </button>
-          </div>
+        </button>
+      </div>
         </div>
 
         {/* Lista de Imobiliárias */}
@@ -193,8 +193,8 @@ export default function AdminEntidadesPage() {
                   <th className="px-6 py-4 text-left text-sm font-medium text-[#2E2F38] dark:text-white">Status</th>
                   <th className="px-6 py-4 text-left text-sm font-medium text-[#2E2F38] dark:text-white">Aprovado</th>
                   <th className="px-6 py-4 text-left text-sm font-medium text-[#2E2F38] dark:text-white">Estado</th>
-                </tr>
-              </thead>
+            </tr>
+          </thead>
               <tbody className="divide-y divide-[#E8E9F1] dark:divide-[#23283A]">
                 {imobiliarias.map((imobiliaria) => {
                   const statusInfo = getStatusInfo(imobiliaria);
@@ -202,28 +202,28 @@ export default function AdminEntidadesPage() {
                     <tr key={imobiliaria.id} className="hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
                       <td className="px-6 py-4">
                         <div className="text-sm font-medium text-[#2E2F38] dark:text-white">{imobiliaria.nome}</div>
-                      </td>
+                </td>
                       <td className="px-6 py-4 text-sm text-[#6B6F76] dark:text-gray-300">
                         {imobiliaria.tipo || 'Não definido'}
-                      </td>
+                </td>
                       <td className="px-6 py-4 text-sm text-[#6B6F76] dark:text-gray-300">
                         {imobiliaria.status || 'Não definido'}
-                      </td>
+                </td>
                       <td className="px-6 py-4 text-sm text-[#6B6F76] dark:text-gray-300">
                         {typeof imobiliaria.aprovado === 'boolean' ? (imobiliaria.aprovado ? 'Sim' : 'Não') : 'Não definido'}
-                      </td>
+                </td>
                       <td className="px-6 py-4">
                         <span className={`text-sm font-medium ${statusInfo.color}`}>
                           {statusInfo.text}
                         </span>
-                      </td>
-                    </tr>
+                </td>
+              </tr>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
         {imobiliarias.length === 0 && (
           <div className="text-center py-8 text-[#6B6F76] dark:text-gray-300">
