@@ -304,7 +304,7 @@ export default function CadastroPage() {
         await setDoc(doc(db, 'usuarios', user.uid), {
           nome: user.displayName || '',
           email: user.email,
-          tipoConta: perfil,
+          tipoConta: perfil === 'imobiliaria' ? 'imobiliaria' : perfil,
           imobiliariaId: imobiliariaId || '',
           aprovado: false,
           criadoEm: new Date(),
