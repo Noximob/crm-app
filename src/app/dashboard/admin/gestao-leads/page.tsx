@@ -110,27 +110,54 @@ export default function GestaoLeadsPage() {
         <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2 text-left">Gestão de Leads dos Corretores</h1>
         <p className="text-[#6B6F76] dark:text-gray-300 mb-8 text-left text-base">Transfira, filtre e organize os leads entre os corretores da sua imobiliária.</p>
         {mensagem && <div className="mb-4 p-3 rounded bg-yellow-100 text-yellow-800">{mensagem}</div>}
-        <div className="mb-6 flex flex-col md:flex-row md:items-center gap-4">
-          <label className="font-medium text-[#6B6F76] dark:text-gray-300">Corretor de origem:</label>
-          <select
-            className="px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
-            value={corretorOrigem}
-            onChange={e => { setCorretorOrigem(e.target.value); setLeadsSelecionados([]); }}
-            disabled={loadingCorretores}
-          >
-            <option value="">Selecione um corretor</option>
-            {corretores.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-          </select>
-          <label className="font-medium text-[#6B6F76] dark:text-gray-300">Filtrar por etapa:</label>
-          <select
-            className="px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
-            value={filtroEtapa}
-            onChange={e => setFiltroEtapa(e.target.value)}
-            disabled={loadingLeads}
-          >
-            <option value="">Todas</option>
-            {PIPELINE_STAGES.map(stage => <option key={stage} value={stage}>{stage}</option>)}
-          </select>
+        <div className="mb-6 flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex-1">
+              <label className="font-medium text-[#6B6F76] dark:text-gray-300 block mb-1">Corretor de origem:</label>
+              <select
+                className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                value={corretorOrigem}
+                onChange={e => { setCorretorOrigem(e.target.value); setLeadsSelecionados([]); }}
+                disabled={loadingCorretores}
+              >
+                <option value="">Selecione um corretor</option>
+                {corretores.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              </select>
+            </div>
+            <div className="flex-1 flex items-end gap-2 justify-end">
+              <div className="w-full">
+                <label className="font-medium text-[#6B6F76] dark:text-gray-300 block mb-1">Corretor de destino:</label>
+                <select
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                  value={corretorDestino}
+                  onChange={e => setCorretorDestino(e.target.value)}
+                  disabled={loadingCorretores || !corretorOrigem}
+                >
+                  <option value="">Selecione corretor de destino</option>
+                  {corretores.filter(c => c.id !== corretorOrigem).map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                </select>
+              </div>
+              <button
+                className="h-11 px-6 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg font-semibold transition-colors disabled:opacity-50 mt-6"
+                onClick={handleTransferir}
+                disabled={!corretorDestino || leadsSelecionados.length === 0}
+              >
+                Transferir
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 mt-2 max-w-xs">
+            <label className="font-medium text-[#6B6F76] dark:text-gray-300 block mb-1">Filtrar por etapa:</label>
+            <select
+              className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+              value={filtroEtapa}
+              onChange={e => setFiltroEtapa(e.target.value)}
+              disabled={loadingLeads}
+            >
+              <option value="">Todas</option>
+              {PIPELINE_STAGES.map(stage => <option key={stage} value={stage}>{stage}</option>)}
+            </select>
+          </div>
         </div>
         <div className="mb-6">
           {loadingLeads ? (
@@ -170,24 +197,6 @@ export default function GestaoLeadsPage() {
               ))}
             </ul>
           )}
-        </div>
-        <div className="mt-6 flex gap-4 justify-end">
-          <select
-            className="px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
-            value={corretorDestino}
-            onChange={e => setCorretorDestino(e.target.value)}
-            disabled={loadingCorretores || !corretorOrigem}
-          >
-            <option value="">Selecione corretor de destino</option>
-            {corretores.filter(c => c.id !== corretorOrigem).map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-          </select>
-          <button
-            className="px-6 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
-            onClick={handleTransferir}
-            disabled={!corretorDestino || leadsSelecionados.length === 0}
-          >
-            Transferir
-          </button>
         </div>
       </div>
     </div>
