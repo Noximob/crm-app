@@ -81,7 +81,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { currentUser: user, loading } = useAuth();
+  const { currentUser: user, userData, loading } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
@@ -115,8 +115,11 @@ export default function DashboardLayout({
     { href: '/dashboard/incluir-imovel', icon: HouseIcon, label: 'Incluir imóvel' },
     { href: '/dashboard/pagamentos', icon: CreditCardIcon, label: 'Pagamentos' },
     { href: '/dashboard/configuracoes', icon: SettingsIcon, label: 'Configurações' },
-    { href: '/dashboard/admin', icon: KeyIcon, label: 'Área administrador' },
-    { href: '/dashboard/developer', icon: CodeIcon, label: 'Área do Desenvolvedor' },
+    // Os dois abaixo só aparecem para imobiliária
+    ...(userData?.tipoConta === 'imobiliaria' ? [
+      { href: '/dashboard/admin', icon: KeyIcon, label: 'Área administrador' },
+      { href: '/dashboard/developer', icon: CodeIcon, label: 'Área do Desenvolvedor' },
+    ] : []),
     { href: '#', icon: LogOutIcon, label: 'Desconectar', isLogout: true },
   ];
 
