@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { collection, getDocs, doc, updateDoc, query, where, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useAuth } from '@/context/AuthContext';
 
 interface UsuarioPendente {
   id: string;
@@ -45,6 +46,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [imobiliarias, setImobiliarias] = useState<{ id: string, nome: string }[]>([]);
   const [showGestaoLeads, setShowGestaoLeads] = useState(false);
+  const { userData } = useAuth();
 
   // Buscar usuários pendentes
   useEffect(() => {
@@ -57,11 +59,23 @@ export default function AdminPage() {
   const fetchUsuariosPendentes = async () => {
     setLoading(true);
     try {
-      const q = query(
-        collection(db, 'usuarios'),
-        where('aprovado', '==', false),
-        orderBy('criadoEm', 'desc')
-      );
+      let q;
+      if (userData?.tipoConta === 'imobiliaria') {
+        // Imobiliária só vê corretores vinculados a ela
+        q = query(
+          collection(db, 'usuarios'),
+          where('imobiliariaId', '==', userData.imobiliariaId),
+          where('tipoConta', 'in', ['corretor-vinculado', 'corretor-autonomo']),
+          where('aprovado', '==', false)
+        );
+      } else {
+        // Admin vê todos pendentes
+        q = query(
+          collection(db, 'usuarios'),
+          where('aprovado', '==', false),
+          orderBy('criadoEm', 'desc')
+        );
+      }
       const snapshot = await getDocs(q);
       const usuarios = snapshot.docs.map(doc => ({
         id: doc.id,
