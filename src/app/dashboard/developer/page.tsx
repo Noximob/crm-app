@@ -64,12 +64,12 @@ export default function DeveloperPage() {
     }
   };
 
-  const handleAprovar = async (user: Usuario, aprovado: boolean) => {
+  const handleAprovarCheckbox = async (user: Usuario, valor: boolean) => {
     setMessage(null);
     try {
-      await updateDoc(doc(db, 'usuarios', user.id), { aprovado });
-      setCorretores(corretores => corretores.map(c => c.id === user.id ? { ...c, aprovado } : c));
-      setMessage(aprovado ? 'Usuário aprovado!' : 'Usuário reprovado!');
+      await updateDoc(doc(db, 'usuarios', user.id), { aprovado: valor });
+      setCorretores(corretores => corretores.map(c => c.id === user.id ? { ...c, aprovado: valor } : c));
+      setMessage(valor ? 'Usuário aprovado!' : 'Usuário reprovado!');
     } catch (err) {
       setMessage('Erro ao atualizar usuário');
     }
@@ -131,24 +131,22 @@ export default function DeveloperPage() {
                   <th className="py-2">Nome</th>
                   <th className="py-2">E-mail</th>
                   <th className="py-2">Tipo</th>
-                  <th className="py-2">Aprovado</th>
-                  <th className="py-2">Admin</th>
-                  <th className="py-2">Desenvolvedor</th>
+                  <th className="py-2 text-center">Aprovado</th>
+                  <th className="py-2 text-center">Admin</th>
+                  <th className="py-2 text-center">Desenvolvedor</th>
                   <th className="py-2">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {corretores.map(corretor => (
-                  <tr key={corretor.id} className="border-t">
+                  <tr key={corretor.id} className="border-t hover:bg-[#F5F6FA] dark:hover:bg-[#181C23]">
                     <td className="py-2 font-medium">{corretor.nome}</td>
                     <td className="py-2">{corretor.email}</td>
                     <td className="py-2">{corretor.tipoConta}</td>
-                    <td className="py-2">{corretor.aprovado ? 'Sim' : 'Não'}</td>
+                    <td className="py-2 text-center"><input type="checkbox" checked={!!corretor.aprovado} onChange={e => handleAprovarCheckbox(corretor, e.target.checked)} /></td>
                     <td className="py-2 text-center"><input type="checkbox" checked={!!corretor.permissoes?.admin} onChange={e => handlePermissao(corretor, 'admin', e.target.checked)} /></td>
                     <td className="py-2 text-center"><input type="checkbox" checked={!!corretor.permissoes?.developer} onChange={e => handlePermissao(corretor, 'developer', e.target.checked)} /></td>
                     <td className="py-2">
-                      <button className="text-green-600 hover:underline mr-2" onClick={() => handleAprovar(corretor, true)}>Aprovar</button>
-                      <button className="text-red-600 hover:underline" onClick={() => handleAprovar(corretor, false)}>Reprovar</button>
                       {/* Futuro: botão para ver leads, permissões, etc */}
                     </td>
                   </tr>
