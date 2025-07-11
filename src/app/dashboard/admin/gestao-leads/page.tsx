@@ -39,10 +39,10 @@ export default function GestaoLeadsPage() {
       const q = query(
         collection(db, 'usuarios'),
         where('imobiliariaId', '==', userData.imobiliariaId),
-        where('tipoConta', 'in', ['corretor-vinculado', 'corretor-autonomo'])
+        where('tipoConta', 'in', ['corretor-vinculado', 'corretor-autonomo', 'imobiliaria'])
       );
       const snapshot = await getDocs(q);
-      const lista = snapshot.docs.map(doc => ({ id: doc.id, nome: doc.data().nome }));
+      const lista = snapshot.docs.map(doc => ({ id: doc.id, nome: doc.data().nome, tipoConta: doc.data().tipoConta }));
       setCorretores(lista);
       setLoadingCorretores(false);
     };
@@ -139,15 +139,33 @@ export default function GestaoLeadsPage() {
             <div className="text-center py-8 text-[#6B6F76] dark:text-gray-300">Nenhum lead encontrado para este corretor.</div>
           ) : (
             <ul className="space-y-2">
+              {leads.length > 0 && (
+                <div className="flex items-center mb-2">
+                  <input
+                    type="checkbox"
+                    checked={leadsSelecionados.length === leads.length}
+                    onChange={e => setLeadsSelecionados(e.target.checked ? leads.map(l => l.id) : [])}
+                    className="mr-2 accent-[#3478F6]"
+                  />
+                  <span className="text-sm text-[#2E2F38] dark:text-white cursor-pointer select-none" onClick={() => setLeadsSelecionados(leadsSelecionados.length === leads.length ? [] : leads.map(l => l.id))}>
+                    Selecionar Tudo
+                  </span>
+                </div>
+              )}
               {leads.map(lead => (
-                <li key={lead.id} className="flex items-center gap-2 bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl p-3 border border-[#E8E9F1] dark:border-[#23283A]">
+                <li key={lead.id} className="flex items-center gap-4 bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl p-3 border border-[#E8E9F1] dark:border-[#23283A]">
                   <input
                     type="checkbox"
                     checked={leadsSelecionados.includes(lead.id)}
                     onChange={() => handleSelectLead(lead.id)}
+                    className="accent-[#3478F6] h-5 w-5"
                   />
-                  <span className="flex-1 text-[#2E2F38] dark:text-white">{lead.nome} ({lead.etapa})</span>
-                  <button className="text-red-500 hover:text-red-700 text-xs" onClick={() => handleApagar(lead.id)}>Apagar</button>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-[#2E2F38] dark:text-white truncate">{lead.nome}</div>
+                    <div className="text-sm text-[#6B6F76] dark:text-gray-300">{formatPhone(lead.telefone)}</div>
+                  </div>
+                  <span className="inline-block px-2 py-1 rounded bg-[#E8E9F1] dark:bg-[#181C23] text-[#3478F6] dark:text-primary-200 font-semibold text-xs truncate max-w-[120px]">{lead.etapa}</span>
+                  <button className="text-red-500 hover:text-red-700 text-xs ml-2" onClick={() => handleApagar(lead.id)}>Apagar</button>
                 </li>
               ))}
             </ul>
@@ -174,4 +192,17 @@ export default function GestaoLeadsPage() {
       </div>
     </div>
   );
+}
+
+// Função utilitária para formatar telefone (adicione no topo ou em um utils)
+function formatPhone(phone: string) {
+  if (!phone) return '';
+  const cleaned = phone.replace(/\D/g, '');
+  if (cleaned.length === 11) {
+    return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`;
+  }
+  if (cleaned.length === 10) {
+    return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 6)}-${cleaned.slice(6)}`;
+  }
+  return phone;
 } 
