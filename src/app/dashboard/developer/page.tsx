@@ -18,6 +18,10 @@ interface Usuario {
   tipoConta: string;
   aprovado: boolean;
   imobiliariaId?: string;
+  permissoes?: {
+    admin?: boolean;
+    developer?: boolean;
+  };
 }
 
 export default function DeveloperPage() {
@@ -71,6 +75,18 @@ export default function DeveloperPage() {
     }
   };
 
+  const handlePermissao = async (user: Usuario, tipo: 'admin' | 'developer', valor: boolean) => {
+    setMessage(null);
+    try {
+      const novasPerms = { ...user.permissoes, [tipo]: valor };
+      await updateDoc(doc(db, 'usuarios', user.id), { permissoes: novasPerms });
+      setCorretores(corretores => corretores.map(c => c.id === user.id ? { ...c, permissoes: novasPerms } : c));
+      setMessage(`Permissão de ${tipo === 'admin' ? 'Admin' : 'Desenvolvedor'} ${valor ? 'concedida' : 'removida'}!`);
+    } catch (err) {
+      setMessage('Erro ao atualizar permissões');
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-6 text-[#2E2F38]">Área do Desenvolvedor</h1>
@@ -116,6 +132,8 @@ export default function DeveloperPage() {
                   <th className="py-2">E-mail</th>
                   <th className="py-2">Tipo</th>
                   <th className="py-2">Aprovado</th>
+                  <th className="py-2">Admin</th>
+                  <th className="py-2">Desenvolvedor</th>
                   <th className="py-2">Ações</th>
                 </tr>
               </thead>
@@ -126,6 +144,8 @@ export default function DeveloperPage() {
                     <td className="py-2">{corretor.email}</td>
                     <td className="py-2">{corretor.tipoConta}</td>
                     <td className="py-2">{corretor.aprovado ? 'Sim' : 'Não'}</td>
+                    <td className="py-2 text-center"><input type="checkbox" checked={!!corretor.permissoes?.admin} onChange={e => handlePermissao(corretor, 'admin', e.target.checked)} /></td>
+                    <td className="py-2 text-center"><input type="checkbox" checked={!!corretor.permissoes?.developer} onChange={e => handlePermissao(corretor, 'developer', e.target.checked)} /></td>
                     <td className="py-2">
                       <button className="text-green-600 hover:underline mr-2" onClick={() => handleAprovar(corretor, true)}>Aprovar</button>
                       <button className="text-red-600 hover:underline" onClick={() => handleAprovar(corretor, false)}>Reprovar</button>
