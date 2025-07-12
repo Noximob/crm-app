@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db, storage } from '@/lib/firebase';
-import { collection, query, where, getDocs, addDoc, deleteDoc, orderBy, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, deleteDoc, orderBy, doc, Timestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 interface Construtora {
@@ -86,9 +86,17 @@ export default function MateriaisConstrutoraAdminPage() {
         orderBy('nome')
       );
       const snap = await getDocs(q);
-      setConstrutoras(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Construtora)));
-    } catch (err) {
-      setMsg('Erro ao carregar construtoras.');
+      setConstrutoras(snap.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          criadoEm: data.criadoEm?.toDate ? data.criadoEm.toDate() : data.criadoEm
+        } as Construtora;
+      }));
+      if (snap.empty) setMsg('Nenhuma construtora encontrada para esta imobiliária.');
+    } catch (err: any) {
+      setMsg('Erro ao carregar construtoras: ' + (err?.message || err));
     } finally {
       setLoading(false);
     }
@@ -138,7 +146,7 @@ export default function MateriaisConstrutoraAdminPage() {
       const construtora = {
         nome: formConstrutora.nome.trim(),
         imobiliariaId: userData?.imobiliariaId,
-        criadoEm: new Date(),
+        criadoEm: Timestamp.now(),
       };
       await addDoc(collection(db, 'construtoras'), construtora);
       setFormConstrutora({ nome: '' });
@@ -176,7 +184,7 @@ export default function MateriaisConstrutoraAdminPage() {
         nome: formEmpreendimento.nome.trim(),
         descricao: formEmpreendimento.descricao.trim(),
         construtoraId: selectedConstrutora.id,
-        criadoEm: new Date(),
+        criadoEm: Timestamp.now(),
       };
       await addDoc(collection(db, 'empreendimentos'), empreendimento);
       setFormEmpreendimento({ nome: '', descricao: '' });
@@ -215,7 +223,7 @@ export default function MateriaisConstrutoraAdminPage() {
         tipo: formMaterial.tipo,
         categoria: formMaterial.categoria,
         empreendimentoId: selectedEmpreendimento.id,
-        criadoEm: new Date(),
+        criadoEm: Timestamp.now(),
       };
       await addDoc(collection(db, 'materiais'), material);
       setFormMaterial({ nome: '', categoria: 'outro', tipo: 'arquivo' });
@@ -248,7 +256,7 @@ export default function MateriaisConstrutoraAdminPage() {
         tamanho: file.size,
         extensao: file.name.split('.').pop(),
         empreendimentoId: selectedEmpreendimento.id,
-        criadoEm: new Date(),
+        criadoEm: Timestamp.now(),
       };
       await addDoc(collection(db, 'materiais'), material);
       fetchMateriais(selectedEmpreendimento.id);
