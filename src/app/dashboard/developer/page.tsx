@@ -261,11 +261,11 @@ export default function DeveloperPage() {
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
-            <h2 className="text-xl font-bold mb-4">Indicadores Externos</h2>
+            <h2 className="text-xl font-bold mb-4 text-white">Indicadores Externos</h2>
             <form onSubmit={e => { e.preventDefault(); salvarIndicadores(); }}>
               <div className="grid grid-cols-2 gap-8">
                 <div>
-                  <h3 className="font-semibold mb-2">Mês Atual</h3>
+                  <h3 className="font-semibold mb-2 text-white">Mês Atual</h3>
                   <div className="space-y-3">
                     <div>
                       <label className="block text-sm font-medium mb-1 text-white">CUB (SC)</label>
@@ -290,7 +290,7 @@ export default function DeveloperPage() {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-2">Mês Anterior</h3>
+                  <h3 className="font-semibold mb-2 text-white">Mês Anterior</h3>
                   <div className="space-y-3">
                     <div>
                       <label className="block text-sm font-medium mb-1 text-white">CUB (SC)</label>
