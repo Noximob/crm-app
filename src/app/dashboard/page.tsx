@@ -335,7 +335,6 @@ export default function DashboardPage() {
     { key: 'ipca', label: 'IPCA' },
     { key: 'igpm', label: 'IGP-M' },
     { key: 'incc', label: 'INCC' },
-    { key: 'financiamento', label: 'Financiamento' },
   ];
 
   const EconomicIndicator = ({ title, value, variacao }: { title: string; value: string; variacao: number | null }) => (
