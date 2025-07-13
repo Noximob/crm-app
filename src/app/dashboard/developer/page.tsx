@@ -151,6 +151,11 @@ export default function DeveloperPage() {
     }
   };
 
+  // Adicionar ícone SVG para o botão
+  const ChartBarIcon = () => (
+    <svg className="h-5 w-5 mr-2 -ml-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="12" width="4" height="8" rx="1"/><rect x="9" y="8" width="4" height="12" rx="1"/><rect x="15" y="4" width="4" height="16" rx="1"/></svg>
+  );
+
   return (
     <div className="max-w-5xl mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-6 text-[#2E2F38]">Área do Desenvolvedor</h1>
@@ -236,12 +241,13 @@ export default function DeveloperPage() {
           )}
         </div>
       )}
-      {/* Botão e modal de indicadores externos SEMPRE visíveis */}
-      <div className="flex justify-end mt-8">
+      {/* Botão ajustado visualmente */}
+      <div className="mt-6">
         <button
-          className="bg-[#3478F6] hover:bg-[#245bb5] text-white font-semibold py-2 px-6 rounded-lg shadow transition-colors"
+          className="flex items-center bg-[#3478F6] hover:bg-[#245bb5] text-white font-semibold py-2 px-5 rounded-lg shadow transition-colors"
           onClick={abrirModalIndicadores}
         >
+          <ChartBarIcon />
           Cadastrar Indicadores Externos
         </button>
       </div>
