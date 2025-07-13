@@ -112,21 +112,11 @@ const MetricCard = ({ title, value, change, icon: Icon, trend = 'up' }: {
   </Card>
 );
 
-const EconomicIndicator = ({ title, value, change, trend = 'up' }: {
-  title: string;
-  value: string;
-  change: string;
-  trend?: 'up' | 'down';
-}) => (
-  <div className="flex items-center justify-between p-3 bg-gradient-to-r from-[#3478F6]/5 to-[#A3C8F7]/5 rounded-lg border border-[#A3C8F7]/20 hover-lift animate-slide-in">
-    <div>
-      <div className="text-xs text-[#6B6F76] dark:text-gray-300">{title}</div>
-      <div className="text-sm font-bold text-[#2E2F38] dark:text-white">{value}</div>
-    </div>
-    <div className={`flex items-center text-xs font-medium ${trend === 'up' ? 'text-[#3AC17C]' : 'text-[#F45B69]'}`}>
-      {trend === 'up' ? <TrendingUpIcon className="h-3 w-3 mr-1" /> : <TrendingDownIcon className="h-3 w-3 mr-1" />}
-      {change}
-    </div>
+// Substituir EconomicIndicator por um componente mais simples, sem variação
+const SimpleIndicator = ({ title, value }: { title: string; value: string }) => (
+  <div className="flex flex-col items-center justify-center p-3 bg-gradient-to-r from-[#3478F6]/5 to-[#A3C8F7]/5 rounded-lg border border-[#A3C8F7]/20 min-w-[120px] animate-slide-in">
+    <div className="text-xs text-[#6B6F76] dark:text-gray-300 mb-1">{title}</div>
+    <div className="text-lg font-bold text-[#2E2F38] dark:text-white">{value}</div>
   </div>
 );
 
@@ -370,50 +360,14 @@ export default function DashboardPage() {
           </div>
           {/* Indicadores econômicos logo abaixo do Olá, corretor... */}
           <div className="flex gap-3 mt-2 flex-wrap">
-            <EconomicIndicator title="CUB (SP)" value={indicadoresExternos?.cub || '--'} change="" trend="up" />
-            <EconomicIndicator title="SELIC" value={indicadoresExternos?.selic || '--'} change="" trend="up" />
-            <EconomicIndicator title="IPCA" value={indicadoresExternos?.ipca || '--'} change="" trend="up" />
-            <EconomicIndicator title="IGP-M" value={indicadoresExternos?.igpm || '--'} change="" trend="up" />
-            <EconomicIndicator title="INCC" value={indicadoresExternos?.incc || '--'} change="" trend="up" />
-            <EconomicIndicator title="Financiamento" value={indicadoresExternos?.financiamento || '--'} change="" trend="up" />
+            <SimpleIndicator title="CUB (SP)" value={indicadoresExternos?.cub || '--'} />
+            <SimpleIndicator title="SELIC" value={indicadoresExternos?.selic || '--'} />
+            <SimpleIndicator title="IPCA" value={indicadoresExternos?.ipca || '--'} />
+            <SimpleIndicator title="IGP-M" value={indicadoresExternos?.igpm || '--'} />
+            <SimpleIndicator title="INCC" value={indicadoresExternos?.incc || '--'} />
+            <SimpleIndicator title="Financiamento" value={indicadoresExternos?.financiamento || '--'} />
           </div>
         </div>
-      </div>
-
-      {/* Cards de métricas ainda mais achatados (mais retangulares) */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <Card className="flex flex-col items-center justify-center h-14 p-1.5">
-          <div className="flex items-center gap-1 mb-0.5">
-            <UsersIcon className="h-4 w-4 text-[#3AC17C]" />
-            <span className="text-[10px] text-[#3AC17C] font-semibold">+12%</span>
-          </div>
-          <div className="text-base font-bold text-[#2E2F38] dark:text-white">{leads.length}</div>
-          <div className="text-[10px] text-[#6B6F76] dark:text-gray-300">Leads Ativos</div>
-        </Card>
-        <Card className="flex flex-col items-center justify-center h-14 p-1.5">
-          <div className="flex items-center gap-1 mb-0.5">
-            <CheckCircleIcon className="h-4 w-4 text-[#3AC17C]" />
-            <span className="text-[10px] text-[#3AC17C] font-semibold">+5%</span>
-          </div>
-          <div className="text-base font-bold text-[#2E2F38] dark:text-white">8</div>
-          <div className="text-[10px] text-[#6B6F76] dark:text-gray-300">Propostas Enviadas</div>
-        </Card>
-        <Card className="flex flex-col items-center justify-center h-14 p-1.5">
-          <div className="flex items-center gap-1 mb-0.5">
-            <CalendarIcon className="h-4 w-4 text-[#F45B69]" />
-            <span className="text-[10px] text-[#F45B69] font-semibold">-2%</span>
-          </div>
-          <div className="text-base font-bold text-[#2E2F38] dark:text-white">3</div>
-          <div className="text-[10px] text-[#6B6F76] dark:text-gray-300">Visitas Agendadas</div>
-        </Card>
-        <Card className="flex flex-col items-center justify-center h-14 p-1.5">
-          <div className="flex items-center gap-1 mb-0.5">
-            <DollarSignIcon className="h-4 w-4 text-[#3AC17C]" />
-            <span className="text-[10px] text-[#3AC17C] font-semibold">75%</span>
-          </div>
-          <div className="text-base font-bold text-[#2E2F38] dark:text-white">R$ 180.000</div>
-          <div className="text-[10px] text-[#6B6F76] dark:text-gray-300">Meta Mensal</div>
-        </Card>
       </div>
 
       {/* Grid de conteúdo principal */}
