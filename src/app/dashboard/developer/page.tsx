@@ -40,6 +40,14 @@ export default function DeveloperPage() {
     incc: '',
     financiamento: '',
   });
+  const [indicadoresAnterior, setIndicadoresAnterior] = useState({
+    cub: '',
+    selic: '',
+    ipca: '',
+    igpm: '',
+    incc: '',
+    financiamento: '',
+  });
   const [salvandoIndicadores, setSalvandoIndicadores] = useState(false);
   const [indicadoresMsg, setIndicadoresMsg] = useState<string|null>(null);
 
@@ -98,17 +106,25 @@ export default function DeveloperPage() {
     }
   };
 
-  // Buscar indicadores do mês atual ao abrir modal
+  // Buscar indicadores do mês atual e anterior ao abrir modal
   const carregarIndicadores = async () => {
     setIndicadoresMsg(null);
     const now = new Date();
-    const docId = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-    const ref = firestoreDoc(db, 'indicadoresExternos', docId);
-    const snap = await getDoc(ref);
-    if (snap.exists()) {
-      setIndicadores(snap.data() as any);
+    const docIdAtual = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const docIdAnterior = `${now.getMonth() === 0 ? now.getFullYear()-1 : now.getFullYear()}-${String(now.getMonth() === 0 ? 12 : now.getMonth()).padStart(2,'0')}`;
+    const refAtual = firestoreDoc(db, 'indicadoresExternos', docIdAtual);
+    const refAnterior = firestoreDoc(db, 'indicadoresExternos', docIdAnterior);
+    const snapAtual = await getDoc(refAtual);
+    const snapAnterior = await getDoc(refAnterior);
+    if (snapAtual.exists()) {
+      setIndicadores(snapAtual.data() as any);
     } else {
       setIndicadores({ cub: '', selic: '', ipca: '', igpm: '', incc: '', financiamento: '' });
+    }
+    if (snapAnterior.exists()) {
+      setIndicadoresAnterior(snapAnterior.data() as any);
+    } else {
+      setIndicadoresAnterior({ cub: '', selic: '', ipca: '', igpm: '', incc: '', financiamento: '' });
     }
   };
 
@@ -122,8 +138,10 @@ export default function DeveloperPage() {
     setIndicadoresMsg(null);
     try {
       const now = new Date();
-      const docId = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-      await setDoc(firestoreDoc(db, 'indicadoresExternos', docId), indicadores);
+      const docIdAtual = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+      const docIdAnterior = `${now.getMonth() === 0 ? now.getFullYear()-1 : now.getFullYear()}-${String(now.getMonth() === 0 ? 12 : now.getMonth()).padStart(2,'0')}`;
+      await setDoc(firestoreDoc(db, 'indicadoresExternos', docIdAtual), indicadores);
+      await setDoc(firestoreDoc(db, 'indicadoresExternos', docIdAnterior), indicadoresAnterior);
       setIndicadoresMsg('Indicadores salvos com sucesso!');
     } catch (err) {
       setIndicadoresMsg('Erro ao salvar indicadores.');
@@ -228,7 +246,7 @@ export default function DeveloperPage() {
       </div>
       {showIndicadoresModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white dark:bg-[#23283A] rounded-xl p-8 w-full max-w-md shadow-lg relative">
+          <div className="bg-white dark:bg-[#23283A] rounded-xl p-8 w-full max-w-2xl shadow-lg relative">
             <button
               className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 dark:hover:text-white"
               onClick={() => setShowIndicadoresModal(false)}
@@ -236,32 +254,66 @@ export default function DeveloperPage() {
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
-            <h2 className="text-xl font-bold mb-4">Indicadores Externos do Mês</h2>
+            <h2 className="text-xl font-bold mb-4">Indicadores Externos</h2>
             <form onSubmit={e => { e.preventDefault(); salvarIndicadores(); }}>
-              <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-8">
                 <div>
-                  <label className="block text-sm font-medium mb-1">CUB (SP)</label>
-                  <input type="text" className="w-full rounded border px-3 py-2" value={indicadores.cub} onChange={e => setIndicadores({ ...indicadores, cub: e.target.value })} />
+                  <h3 className="font-semibold mb-2">Mês Atual</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">CUB (SC)</label>
+                      <input type="text" className="w-full rounded border px-3 py-2" value={indicadores.cub} onChange={e => setIndicadores({ ...indicadores, cub: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">SELIC</label>
+                      <input type="text" className="w-full rounded border px-3 py-2" value={indicadores.selic} onChange={e => setIndicadores({ ...indicadores, selic: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">IPCA</label>
+                      <input type="text" className="w-full rounded border px-3 py-2" value={indicadores.ipca} onChange={e => setIndicadores({ ...indicadores, ipca: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">IGP-M</label>
+                      <input type="text" className="w-full rounded border px-3 py-2" value={indicadores.igpm} onChange={e => setIndicadores({ ...indicadores, igpm: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">INCC</label>
+                      <input type="text" className="w-full rounded border px-3 py-2" value={indicadores.incc} onChange={e => setIndicadores({ ...indicadores, incc: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Taxa média de financiamento imobiliário</label>
+                      <input type="text" className="w-full rounded border px-3 py-2" value={indicadores.financiamento} onChange={e => setIndicadores({ ...indicadores, financiamento: e.target.value })} />
+                    </div>
+                  </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">SELIC</label>
-                  <input type="text" className="w-full rounded border px-3 py-2" value={indicadores.selic} onChange={e => setIndicadores({ ...indicadores, selic: e.target.value })} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">IPCA</label>
-                  <input type="text" className="w-full rounded border px-3 py-2" value={indicadores.ipca} onChange={e => setIndicadores({ ...indicadores, ipca: e.target.value })} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">IGP-M</label>
-                  <input type="text" className="w-full rounded border px-3 py-2" value={indicadores.igpm} onChange={e => setIndicadores({ ...indicadores, igpm: e.target.value })} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">INCC</label>
-                  <input type="text" className="w-full rounded border px-3 py-2" value={indicadores.incc} onChange={e => setIndicadores({ ...indicadores, incc: e.target.value })} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Taxa média de financiamento imobiliário</label>
-                  <input type="text" className="w-full rounded border px-3 py-2" value={indicadores.financiamento} onChange={e => setIndicadores({ ...indicadores, financiamento: e.target.value })} />
+                  <h3 className="font-semibold mb-2">Mês Anterior</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">CUB (SC)</label>
+                      <input type="text" className="w-full rounded border px-3 py-2" value={indicadoresAnterior.cub} onChange={e => setIndicadoresAnterior({ ...indicadoresAnterior, cub: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">SELIC</label>
+                      <input type="text" className="w-full rounded border px-3 py-2" value={indicadoresAnterior.selic} onChange={e => setIndicadoresAnterior({ ...indicadoresAnterior, selic: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">IPCA</label>
+                      <input type="text" className="w-full rounded border px-3 py-2" value={indicadoresAnterior.ipca} onChange={e => setIndicadoresAnterior({ ...indicadoresAnterior, ipca: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">IGP-M</label>
+                      <input type="text" className="w-full rounded border px-3 py-2" value={indicadoresAnterior.igpm} onChange={e => setIndicadoresAnterior({ ...indicadoresAnterior, igpm: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">INCC</label>
+                      <input type="text" className="w-full rounded border px-3 py-2" value={indicadoresAnterior.incc} onChange={e => setIndicadoresAnterior({ ...indicadoresAnterior, incc: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Taxa média de financiamento imobiliário</label>
+                      <input type="text" className="w-full rounded border px-3 py-2" value={indicadoresAnterior.financiamento} onChange={e => setIndicadoresAnterior({ ...indicadoresAnterior, financiamento: e.target.value })} />
+                    </div>
+                  </div>
                 </div>
               </div>
               {indicadoresMsg && <div className="mt-3 text-sm text-green-600 dark:text-green-400">{indicadoresMsg}</div>}

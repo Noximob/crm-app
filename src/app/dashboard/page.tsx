@@ -258,6 +258,7 @@ export default function DashboardPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [performanceData, setPerformanceData] = useState<number[]>([]);
   const [indicadoresExternos, setIndicadoresExternos] = useState<any>(null);
+  const [indicadoresExternosAnterior, setIndicadoresExternosAnterior] = useState<any>(null);
 
   useEffect(() => {
     if (currentUser) {
@@ -301,17 +302,58 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchIndicadores = async () => {
       const now = new Date();
-      const docId = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-      const ref = firestoreDoc(db, 'indicadoresExternos', docId);
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        setIndicadoresExternos(snap.data());
+      const docIdAtual = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+      const docIdAnterior = `${now.getMonth() === 0 ? now.getFullYear()-1 : now.getFullYear()}-${String(now.getMonth() === 0 ? 12 : now.getMonth()).padStart(2,'0')}`;
+      const refAtual = firestoreDoc(db, 'indicadoresExternos', docIdAtual);
+      const refAnterior = firestoreDoc(db, 'indicadoresExternos', docIdAnterior);
+      const snapAtual = await getDoc(refAtual);
+      const snapAnterior = await getDoc(refAnterior);
+      if (snapAtual.exists()) {
+        setIndicadoresExternos(snapAtual.data());
       } else {
         setIndicadoresExternos(null);
+      }
+      if (snapAnterior.exists()) {
+        setIndicadoresExternosAnterior(snapAnterior.data());
+      } else {
+        setIndicadoresExternosAnterior(null);
       }
     };
     fetchIndicadores();
   }, []);
+
+  function calcularVariacao(atual: string, anterior: string) {
+    const a = parseFloat((atual || '').replace(/[^\d,.-]/g, '').replace(',', '.'));
+    const b = parseFloat((anterior || '').replace(/[^\d,.-]/g, '').replace(',', '.'));
+    if (isNaN(a) || isNaN(b) || b === 0) return null;
+    return ((a - b) / b) * 100;
+  }
+
+  const indicadoresList = [
+    { key: 'cub', label: 'CUB (SC)' },
+    { key: 'selic', label: 'SELIC' },
+    { key: 'ipca', label: 'IPCA' },
+    { key: 'igpm', label: 'IGP-M' },
+    { key: 'incc', label: 'INCC' },
+    { key: 'financiamento', label: 'Financiamento' },
+  ];
+
+  const EconomicIndicator = ({ title, value, variacao }: { title: string; value: string; variacao: number | null }) => (
+    <div className="flex flex-col items-center justify-center p-3 bg-gradient-to-r from-[#3478F6]/5 to-[#A3C8F7]/5 rounded-lg border border-[#A3C8F7]/20 min-w-[120px] animate-slide-in">
+      <div className="text-xs text-[#6B6F76] dark:text-gray-300 mb-1">{title}</div>
+      <div className="text-lg font-bold text-[#2E2F38] dark:text-white">{value}</div>
+      {variacao !== null && (
+        <div className={`flex items-center text-xs font-medium ${variacao >= 0 ? 'text-[#3AC17C]' : 'text-[#F45B69]'}`}> 
+          {variacao >= 0 ? (
+            <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
+          ) : (
+            <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6" /><polyline points="17 18 23 18 23 12" /></svg>
+          )}
+          {variacao > 0 ? '+' : ''}{variacao.toFixed(2)}%
+        </div>
+      )}
+    </div>
+  );
 
   const todayTasks = [
     { time: '09:00', title: 'Follow-up com João Silva', status: 'pending' as const },
@@ -360,12 +402,14 @@ export default function DashboardPage() {
           </div>
           {/* Indicadores econômicos logo abaixo do Olá, corretor... */}
           <div className="flex gap-3 mt-2 flex-wrap">
-            <SimpleIndicator title="CUB (SP)" value={indicadoresExternos?.cub || '--'} />
-            <SimpleIndicator title="SELIC" value={indicadoresExternos?.selic || '--'} />
-            <SimpleIndicator title="IPCA" value={indicadoresExternos?.ipca || '--'} />
-            <SimpleIndicator title="IGP-M" value={indicadoresExternos?.igpm || '--'} />
-            <SimpleIndicator title="INCC" value={indicadoresExternos?.incc || '--'} />
-            <SimpleIndicator title="Financiamento" value={indicadoresExternos?.financiamento || '--'} />
+            {indicadoresList.map(ind => (
+              <EconomicIndicator
+                key={ind.key}
+                title={ind.label}
+                value={indicadoresExternos?.[ind.key] || '--'}
+                variacao={calcularVariacao(indicadoresExternos?.[ind.key], indicadoresExternosAnterior?.[ind.key])}
+              />
+            ))}
           </div>
         </div>
       </div>
