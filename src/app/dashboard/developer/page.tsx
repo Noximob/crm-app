@@ -217,7 +217,7 @@ export default function DeveloperPage() {
           )}
         </div>
       )}
-      {/* Futuro: gestão de permissões e leads */}
+      {/* Botão e modal de indicadores externos SEMPRE visíveis */}
       <div className="flex justify-end mt-8">
         <button
           className="bg-[#3478F6] hover:bg-[#245bb5] text-white font-semibold py-2 px-6 rounded-lg shadow transition-colors"
