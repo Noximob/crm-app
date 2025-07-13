@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, getDoc } from 'firebase/firestore';
 import Link from 'next/link';
 
 // Ícones
@@ -267,6 +267,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [performanceData, setPerformanceData] = useState<number[]>([]);
+  const [indicadoresExternos, setIndicadoresExternos] = useState<any>(null);
 
   useEffect(() => {
     if (currentUser) {
@@ -305,6 +306,21 @@ export default function DashboardPage() {
     const interval = setInterval(generatePerformanceData, 30000); // Atualiza a cada 30 segundos
 
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const fetchIndicadores = async () => {
+      const now = new Date();
+      const docId = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+      const ref = firestoreDoc(db, 'indicadoresExternos', docId);
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        setIndicadoresExternos(snap.data());
+      } else {
+        setIndicadoresExternos(null);
+      }
+    };
+    fetchIndicadores();
   }, []);
 
   const todayTasks = [
@@ -354,9 +370,12 @@ export default function DashboardPage() {
           </div>
           {/* Indicadores econômicos logo abaixo do Olá, corretor... */}
           <div className="flex gap-3 mt-2 flex-wrap">
-            <EconomicIndicator title="CUB (SP)" value="R$ 1.847,23" change="+2,3%" trend="up" />
-            <EconomicIndicator title="SELIC" value="11,75%" change="-0,25%" trend="down" />
-            <EconomicIndicator title="IPCA" value="4,18%" change="+0,12%" trend="up" />
+            <EconomicIndicator title="CUB (SP)" value={indicadoresExternos?.cub || '--'} change="" trend="up" />
+            <EconomicIndicator title="SELIC" value={indicadoresExternos?.selic || '--'} change="" trend="up" />
+            <EconomicIndicator title="IPCA" value={indicadoresExternos?.ipca || '--'} change="" trend="up" />
+            <EconomicIndicator title="IGP-M" value={indicadoresExternos?.igpm || '--'} change="" trend="up" />
+            <EconomicIndicator title="INCC" value={indicadoresExternos?.incc || '--'} change="" trend="up" />
+            <EconomicIndicator title="Financiamento" value={indicadoresExternos?.financiamento || '--'} change="" trend="up" />
           </div>
         </div>
       </div>

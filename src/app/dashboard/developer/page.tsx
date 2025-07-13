@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, updateDoc, query, where } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, query, where, Timestamp, setDoc, doc as firestoreDoc, getDoc } from 'firebase/firestore';
 
 interface Imobiliaria {
   id: string;
@@ -31,6 +31,17 @@ export default function DeveloperPage() {
   const [loading, setLoading] = useState(false);
   const [loadingCorretores, setLoadingCorretores] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [showIndicadoresModal, setShowIndicadoresModal] = useState(false);
+  const [indicadores, setIndicadores] = useState({
+    cub: '',
+    selic: '',
+    ipca: '',
+    igpm: '',
+    incc: '',
+    financiamento: '',
+  });
+  const [salvandoIndicadores, setSalvandoIndicadores] = useState(false);
+  const [indicadoresMsg, setIndicadoresMsg] = useState<string|null>(null);
 
   useEffect(() => {
     loadImobiliarias();
@@ -84,6 +95,40 @@ export default function DeveloperPage() {
       setMessage(`Permissão de ${tipo === 'admin' ? 'Admin' : 'Desenvolvedor'} ${valor ? 'concedida' : 'removida'}!`);
     } catch (err) {
       setMessage('Erro ao atualizar permissões');
+    }
+  };
+
+  // Buscar indicadores do mês atual ao abrir modal
+  const carregarIndicadores = async () => {
+    setIndicadoresMsg(null);
+    const now = new Date();
+    const docId = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const ref = firestoreDoc(db, 'indicadoresExternos', docId);
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      setIndicadores(snap.data() as any);
+    } else {
+      setIndicadores({ cub: '', selic: '', ipca: '', igpm: '', incc: '', financiamento: '' });
+    }
+  };
+
+  const abrirModalIndicadores = async () => {
+    await carregarIndicadores();
+    setShowIndicadoresModal(true);
+  };
+
+  const salvarIndicadores = async () => {
+    setSalvandoIndicadores(true);
+    setIndicadoresMsg(null);
+    try {
+      const now = new Date();
+      const docId = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+      await setDoc(firestoreDoc(db, 'indicadoresExternos', docId), indicadores);
+      setIndicadoresMsg('Indicadores salvos com sucesso!');
+    } catch (err) {
+      setIndicadoresMsg('Erro ao salvar indicadores.');
+    } finally {
+      setSalvandoIndicadores(false);
     }
   };
 
@@ -173,6 +218,64 @@ export default function DeveloperPage() {
         </div>
       )}
       {/* Futuro: gestão de permissões e leads */}
+      <div className="flex justify-end mt-8">
+        <button
+          className="bg-[#3478F6] hover:bg-[#245bb5] text-white font-semibold py-2 px-6 rounded-lg shadow transition-colors"
+          onClick={abrirModalIndicadores}
+        >
+          Cadastrar Indicadores Externos
+        </button>
+      </div>
+      {showIndicadoresModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white dark:bg-[#23283A] rounded-xl p-8 w-full max-w-md shadow-lg relative">
+            <button
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 dark:hover:text-white"
+              onClick={() => setShowIndicadoresModal(false)}
+              title="Fechar"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <h2 className="text-xl font-bold mb-4">Indicadores Externos do Mês</h2>
+            <form onSubmit={e => { e.preventDefault(); salvarIndicadores(); }}>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">CUB (SP)</label>
+                  <input type="text" className="w-full rounded border px-3 py-2" value={indicadores.cub} onChange={e => setIndicadores({ ...indicadores, cub: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">SELIC</label>
+                  <input type="text" className="w-full rounded border px-3 py-2" value={indicadores.selic} onChange={e => setIndicadores({ ...indicadores, selic: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">IPCA</label>
+                  <input type="text" className="w-full rounded border px-3 py-2" value={indicadores.ipca} onChange={e => setIndicadores({ ...indicadores, ipca: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">IGP-M</label>
+                  <input type="text" className="w-full rounded border px-3 py-2" value={indicadores.igpm} onChange={e => setIndicadores({ ...indicadores, igpm: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">INCC</label>
+                  <input type="text" className="w-full rounded border px-3 py-2" value={indicadores.incc} onChange={e => setIndicadores({ ...indicadores, incc: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Taxa média de financiamento imobiliário</label>
+                  <input type="text" className="w-full rounded border px-3 py-2" value={indicadores.financiamento} onChange={e => setIndicadores({ ...indicadores, financiamento: e.target.value })} />
+                </div>
+              </div>
+              {indicadoresMsg && <div className="mt-3 text-sm text-green-600 dark:text-green-400">{indicadoresMsg}</div>}
+              <button
+                type="submit"
+                className="mt-6 w-full bg-[#3478F6] hover:bg-[#245bb5] text-white font-semibold py-2 px-6 rounded-lg shadow transition-colors disabled:opacity-60"
+                disabled={salvandoIndicadores}
+              >
+                {salvandoIndicadores ? 'Salvando...' : 'Salvar'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
