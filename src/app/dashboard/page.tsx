@@ -488,7 +488,7 @@ export default function DashboardPage() {
       {/* Grid de conteúdo principal */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Agenda do Dia */}
-        <div className="bg-[#23283A] rounded-2xl p-6 mb-6">
+        <div className="bg-[#23283A] rounded-2xl p-6 mb-6 lg:col-span-2">
           <h2 className="text-lg font-bold text-white mb-4">Agenda do Dia</h2>
           {agendaLoading ? (
             <p className="text-gray-300">Carregando tarefas...</p>
@@ -498,15 +498,15 @@ export default function DashboardPage() {
             <table className="w-full text-left">
               <thead className="text-xs text-gray-400 uppercase">
                 <tr>
-                  <th className="py-2 px-3">Lead</th>
-                  <th className="py-2 px-3">Status</th>
-                  <th className="py-2 px-3">Ação</th>
+                  <th className="py-2 px-3 font-semibold">Lead</th>
+                  <th className="py-2 px-3 font-semibold">Status</th>
+                  <th className="py-2 px-3 font-semibold">Ação</th>
                 </tr>
               </thead>
               <tbody>
                 {agendaLeads.map(lead => (
-                  <tr key={lead.id} className="border-b border-gray-700 hover:bg-gray-700/50">
-                    <td className="py-3 px-3 font-semibold text-white">{lead.nome}</td>
+                  <tr key={lead.id} className="border-b border-gray-700 last:border-0 hover:bg-gray-700/30 transition-colors">
+                    <td className="py-3 px-3 font-semibold text-white whitespace-nowrap">{lead.nome}</td>
                     <td className="py-3 px-3">
                       <div className={`flex items-center gap-2 text-sm`}>
                         <span className={`h-2.5 w-2.5 ${statusInfo[lead.taskStatus as TaskStatus].color} rounded-full`}></span>
@@ -515,7 +515,7 @@ export default function DashboardPage() {
                     </td>
                     <td className="py-3 px-3">
                       <Link href={`/dashboard/crm/${lead.id}`}>
-                        <span className="px-3 py-1 text-sm font-semibold text-white bg-[#3478F6] hover:bg-[#255FD1] rounded-lg transition-colors cursor-pointer">
+                        <span className="px-4 py-1 text-sm font-semibold text-white bg-[#3478F6] hover:bg-[#255FD1] rounded-lg transition-colors cursor-pointer">
                           Abrir
                         </span>
                       </Link>
@@ -526,13 +526,9 @@ export default function DashboardPage() {
             </table>
           )}
         </div>
-
         {/* Top Trending */}
-        <Card className="animate-fade-in">
-          <div className="flex items-center justify-between mb-6">
-            <SectionTitle>Top Trending</SectionTitle>
-            <span className="text-[#3478F6] font-bold text-sm cursor-pointer hover:underline" onClick={() => window.location.href='/dashboard/comunidade'}>Ver comunidade</span>
-          </div>
+        <div className="bg-[#23283A] rounded-2xl p-6 mb-6 flex flex-col justify-between lg:col-span-1">
+          <h2 className="text-lg font-bold text-white mb-4">Top Trending</h2>
           <div className="flex flex-col gap-4">
             {trendingPosts.map((post) => (
               <div key={post.id} className="flex items-start gap-3">
@@ -552,7 +548,7 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
-        </Card>
+        </div>
       </div>
 
       {/* Seção inferior */}
