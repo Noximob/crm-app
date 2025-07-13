@@ -330,17 +330,18 @@ export default function DashboardPage() {
   }
 
   const indicadoresList = [
-    { key: 'cub', label: 'CUB (SC)' },
-    { key: 'selic', label: 'SELIC' },
-    { key: 'ipca', label: 'IPCA' },
-    { key: 'igpm', label: 'IGP-M' },
-    { key: 'incc', label: 'INCC' },
+    { key: 'cub', label: 'CUB (SC)', tipo: 'mensal' },
+    { key: 'selic', label: 'SELIC', tipo: 'mensal' },
+    { key: 'ipca', label: 'IPCA', tipo: 'anual' },
+    { key: 'igpm', label: 'IGP-M', tipo: 'anual' },
+    { key: 'incc', label: 'INCC', tipo: 'anual' },
   ];
 
-  const EconomicIndicator = ({ title, value, variacao }: { title: string; value: string; variacao: number | null }) => (
+  const EconomicIndicator = ({ title, value, variacao, subtitulo }: { title: string; value: string; variacao: number | null; subtitulo: string }) => (
     <div className="flex flex-col items-center justify-center p-3 bg-gradient-to-r from-[#3478F6]/5 to-[#A3C8F7]/5 rounded-lg border border-[#A3C8F7]/20 min-w-[120px] animate-slide-in">
       <div className="text-xs text-[#6B6F76] dark:text-gray-300 mb-1">{title}</div>
       <div className="text-lg font-bold text-[#2E2F38] dark:text-white">{value}</div>
+      <div className="text-[10px] text-[#6B6F76] dark:text-gray-400 mb-1">({subtitulo})</div>
       {variacao !== null && (
         <div className={`flex items-center text-xs font-medium ${variacao >= 0 ? 'text-[#3AC17C]' : 'text-[#F45B69]'}`}> 
           {variacao >= 0 ? (
@@ -401,12 +402,13 @@ export default function DashboardPage() {
           </div>
           {/* Indicadores econômicos logo abaixo do Olá, corretor... */}
           <div className="flex gap-3 mt-2 flex-wrap">
-            {indicadoresList.map(ind => (
+            {indicadoresExternos && indicadoresExternosAnterior && indicadoresList.map(ind => (
               <EconomicIndicator
                 key={ind.key}
                 title={ind.label}
                 value={indicadoresExternos?.[ind.key] || '--'}
                 variacao={calcularVariacao(indicadoresExternos?.[ind.key], indicadoresExternosAnterior?.[ind.key])}
+                subtitulo={ind.tipo}
               />
             ))}
           </div>
