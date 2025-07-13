@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, getDoc, Timestamp } from 'firebase/firestore';
 import Link from 'next/link';
 
 // Ícones
@@ -251,6 +251,43 @@ const trendingPosts = [
   },
 ];
 
+// --- Tipos para tarefas ---
+interface Task {
+  id: string;
+  description: string;
+  type: 'Ligação' | 'WhatsApp' | 'Visita';
+  dueDate: Timestamp;
+  status: 'pendente' | 'concluída' | 'cancelada';
+}
+
+// --- Status e cores ---
+type TaskStatus = 'Tarefa em Atraso' | 'Tarefa do Dia' | 'Sem tarefa' | 'Tarefa Futura';
+const TAREFA_STATUS_ORDER: TaskStatus[] = ['Tarefa em Atraso', 'Tarefa do Dia', 'Sem tarefa', 'Tarefa Futura'];
+const statusInfo: Record<TaskStatus, { color: string; text: string }> = {
+  'Tarefa em Atraso': { color: 'bg-red-500', text: 'Atrasada' },
+  'Tarefa do Dia': { color: 'bg-yellow-400', text: 'Para Hoje' },
+  'Tarefa Futura': { color: 'bg-sky-500', text: 'Futura' },
+  'Sem tarefa': { color: 'bg-gray-400', text: 'Sem Tarefa' },
+};
+function getTaskStatusInfo(tasks: Task[]): TaskStatus {
+  if (tasks.length === 0) return 'Sem tarefa';
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const hasOverdue = tasks.some(task => {
+    const dueDate = task.dueDate.toDate();
+    dueDate.setHours(0, 0, 0, 0);
+    return dueDate < now;
+  });
+  if (hasOverdue) return 'Tarefa em Atraso';
+  const hasTodayTask = tasks.some(task => {
+    const dueDate = task.dueDate.toDate();
+    dueDate.setHours(0, 0, 0, 0);
+    return dueDate.getTime() === now.getTime();
+  });
+  if (hasTodayTask) return 'Tarefa do Dia';
+  return 'Tarefa Futura';
+}
+
 export default function DashboardPage() {
   const { currentUser } = useAuth();
   const [leads, setLeads] = useState<any[]>([]);
@@ -259,6 +296,8 @@ export default function DashboardPage() {
   const [performanceData, setPerformanceData] = useState<number[]>([]);
   const [indicadoresExternos, setIndicadoresExternos] = useState<any>(null);
   const [indicadoresExternosAnterior, setIndicadoresExternosAnterior] = useState<any>(null);
+  const [agendaLeads, setAgendaLeads] = useState<Array<any>>([]);
+  const [agendaLoading, setAgendaLoading] = useState(true);
 
   useEffect(() => {
     if (currentUser) {
@@ -321,6 +360,37 @@ export default function DashboardPage() {
     };
     fetchIndicadores();
   }, []);
+
+  useEffect(() => {
+    const fetchAgenda = async () => {
+      if (!currentUser) return;
+      setAgendaLoading(true);
+      try {
+        const leadsRef = collection(db, 'leads');
+        const leadsQuery = query(leadsRef, where('userId', '==', currentUser.uid));
+        const leadsSnapshot = await getDocs(leadsQuery);
+        const allLeads = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const leadsWithTasksPromises = allLeads.map(async (lead) => {
+          const tasksCol = collection(db, 'leads', lead.id, 'tarefas');
+          const q = query(tasksCol, where('status', '==', 'pendente'));
+          const tasksSnapshot = await getDocs(q);
+          const tasks = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+          const taskStatus = getTaskStatusInfo(tasks);
+          return { ...lead, taskStatus, tasks };
+        });
+        const settledLeads = await Promise.all(leadsWithTasksPromises);
+        // Filtra para não mostrar tarefas futuras
+        const leadsToShow = settledLeads.filter(lead => lead.taskStatus !== 'Tarefa Futura');
+        leadsToShow.sort((a, b) => TAREFA_STATUS_ORDER.indexOf(a.taskStatus) - TAREFA_STATUS_ORDER.indexOf(b.taskStatus));
+        setAgendaLeads(leadsToShow.slice(0, 3));
+      } catch (error) {
+        setAgendaLeads([]);
+      } finally {
+        setAgendaLoading(false);
+      }
+    };
+    fetchAgenda();
+  }, [currentUser]);
 
   function calcularVariacao(atual: string, anterior: string) {
     const a = parseFloat((atual || '').replace(/[^\d,.-]/g, '').replace(',', '.'));
@@ -418,17 +488,44 @@ export default function DashboardPage() {
       {/* Grid de conteúdo principal */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Agenda do Dia */}
-        <Card className="lg:col-span-2 animate-fade-in">
-          <div className="flex items-center justify-between mb-6">
-            <SectionTitle>Agenda do Dia</SectionTitle>
-            <a className="text-[#3478F6] dark:text-white font-bold">Ver todas</a>
-          </div>
-          <div className="space-y-2">
-            {todayTasks.map((task, index) => (
-              <TaskItem key={index} {...task} />
-            ))}
-          </div>
-        </Card>
+        <div className="bg-[#23283A] rounded-2xl p-6 mb-6">
+          <h2 className="text-lg font-bold text-white mb-4">Agenda do Dia</h2>
+          {agendaLoading ? (
+            <p className="text-gray-300">Carregando tarefas...</p>
+          ) : agendaLeads.length === 0 ? (
+            <p className="text-gray-300">Nenhuma tarefa prioritária encontrada.</p>
+          ) : (
+            <table className="w-full text-left">
+              <thead className="text-xs text-gray-400 uppercase">
+                <tr>
+                  <th className="py-2 px-3">Lead</th>
+                  <th className="py-2 px-3">Status</th>
+                  <th className="py-2 px-3">Ação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {agendaLeads.map(lead => (
+                  <tr key={lead.id} className="border-b border-gray-700 hover:bg-gray-700/50">
+                    <td className="py-3 px-3 font-semibold text-white">{lead.nome}</td>
+                    <td className="py-3 px-3">
+                      <div className={`flex items-center gap-2 text-sm`}>
+                        <span className={`h-2.5 w-2.5 ${statusInfo[lead.taskStatus as TaskStatus].color} rounded-full`}></span>
+                        <span className="text-gray-300">{statusInfo[lead.taskStatus as TaskStatus].text}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-3">
+                      <Link href={`/dashboard/crm/${lead.id}`}>
+                        <span className="px-3 py-1 text-sm font-semibold text-white bg-[#3478F6] hover:bg-[#255FD1] rounded-lg transition-colors cursor-pointer">
+                          Abrir
+                        </span>
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
 
         {/* Top Trending */}
         <Card className="animate-fade-in">
