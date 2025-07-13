@@ -131,6 +131,7 @@ export default function DeveloperPage() {
   const abrirModalIndicadores = async () => {
     await carregarIndicadores();
     setShowIndicadoresModal(true);
+    console.log('Abrindo modal de indicadores externos');
   };
 
   const salvarIndicadores = async () => {
