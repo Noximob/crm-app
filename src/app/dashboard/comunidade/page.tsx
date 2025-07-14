@@ -513,11 +513,6 @@ export default function ComunidadePage() {
                       onClick={() => handleLike(post.id)}
                       active={isLiked}
                     />
-                    <ActionIcon 
-                      icon={<span title="Visualizações">👁️</span>}
-                      label={(viewsMap[post.id] ?? 0).toString()}
-                      onClick={() => {}}
-                    />
                   </div>
                   {/* Indicação de repost na timeline */}
                   {post.repostOf && (
