@@ -83,6 +83,7 @@ export default function ComunidadePage() {
   const [repostWithComment, setRepostWithComment] = useState(false);
   const [showEmojiRepost, setShowEmojiRepost] = useState(false);
   const emojiRepostRef = useRef<HTMLDivElement>(null);
+  const [originalAuthors, setOriginalAuthors] = useState<Record<string, { nome: string, handle: string }>>({});
 
   useEffect(() => {
     const q = query(collection(db, "comunidadePosts"), orderBy("createdAt", "desc"));
@@ -178,6 +179,32 @@ export default function ComunidadePage() {
       });
     }
   }, [posts, currentUser]);
+
+  // Buscar nome/handle do autor original dos reposts
+  useEffect(() => {
+    const fetchOriginalAuthors = async () => {
+      const repostPosts = posts.filter(p => p.repostOf);
+      const updates: Record<string, { nome: string, handle: string }> = {};
+      for (const post of repostPosts) {
+        if (post.repostOf && !originalAuthors[post.repostOf]) {
+          const docRef = doc(db, "comunidadePosts", post.repostOf);
+          const snap = await getDoc(docRef);
+          if (snap.exists()) {
+            const data = snap.data();
+            updates[post.repostOf] = {
+              nome: data.nome || 'Usuário',
+              handle: gerarHandle(data.nome, data.email),
+            };
+          }
+        }
+      }
+      if (Object.keys(updates).length > 0) {
+        setOriginalAuthors(prev => ({ ...prev, ...updates }));
+      }
+    };
+    fetchOriginalAuthors();
+    // eslint-disable-next-line
+  }, [posts]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -496,7 +523,13 @@ export default function ComunidadePage() {
                   {post.repostOf && (
                     <div className="flex items-center gap-1 text-xs text-[#3478F6] dark:text-[#A3C8F7] mb-1">
                       <span>🔁</span>
-                      <span>{post.userId === currentUser?.uid ? 'Você repostou' : `Repostado por ${post.nome}`}</span>
+                      {post.userId === currentUser?.uid ? (
+                        <span>Você repostou</span>
+                      ) : originalAuthors[post.repostOf] ? (
+                        <span>Repostado de <span className="underline cursor-pointer hover:text-[#255FD1]" title={originalAuthors[post.repostOf].handle}>{originalAuthors[post.repostOf].nome}</span></span>
+                      ) : (
+                        <span>Repost</span>
+                      )}
                     </div>
                   )}
                 </div>
