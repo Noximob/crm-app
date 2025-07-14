@@ -584,13 +584,11 @@ export default function DashboardPage() {
           <SectionTitle className="mb-6">Avisos Importantes</SectionTitle>
           <div className="space-y-4">
             {avisosImportantes
-              .filter(aviso => !aviso.dataHora || (aviso.dataHora?.toDate && aviso.dataHora.toDate() <= new Date()))
               .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
               .length === 0 ? (
               <p className="text-gray-300">Nenhum aviso importante cadastrado pela imobiliária.</p>
             ) : (
               avisosImportantes
-                .filter(aviso => !aviso.dataHora || (aviso.dataHora?.toDate && aviso.dataHora.toDate() <= new Date()))
                 .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
                 .map((aviso, idx) => {
                   // Alterna cor e ícone para dar destaque visual
