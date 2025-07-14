@@ -44,8 +44,9 @@ export default function ComunidadePage() {
   const [loading, setLoading] = useState(false);
   const [deletando, setDeletando] = useState<string | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [fileType, setFileType] = useState<string | null>(null);
   const [gifFile, setGifFile] = useState<File | null>(null);
   const [gifPreview, setGifPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -77,24 +78,39 @@ export default function ComunidadePage() {
     };
   }, [showEmoji]);
 
-  const handlePostar = async () => {
-    if (!novoPost.trim() && !imageFile && !gifFile) return;
-    if (!currentUser) return;
-    
-    setLoading(true);
-    let imageUrl = null;
-    let gifUrl = null;
-    if (imageFile) {
-      const fileName = `${Date.now()}_${imageFile.name}`;
-      const storageRef = ref(storage, `comunidade/${currentUser.uid}/images/${fileName}`);
-      const snapshot = await uploadBytes(storageRef, imageFile);
-      imageUrl = await getDownloadURL(snapshot.ref);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFile(file);
+      setFileType(file.type);
+      if (file.type.startsWith('image/')) {
+        setFilePreview(URL.createObjectURL(file));
+      } else if (file.type.startsWith('video/')) {
+        setFilePreview(URL.createObjectURL(file));
+      } else if (file.type === 'application/pdf') {
+        setFilePreview('pdf');
+      } else {
+        setFilePreview(null);
+      }
     }
-    if (gifFile) {
-      const fileName = `${Date.now()}_${gifFile.name}`;
-      const storageRef = ref(storage, `comunidade/${currentUser.uid}/gifs/${fileName}`);
-      const snapshot = await uploadBytes(storageRef, gifFile);
-      gifUrl = await getDownloadURL(snapshot.ref);
+  };
+
+  const handlePostar = async () => {
+    if (!novoPost.trim() && !file) return;
+    if (!currentUser) return;
+    setLoading(true);
+    let fileUrl = null;
+    let fileMeta = null;
+    if (file) {
+      const fileName = `${Date.now()}_${file.name}`;
+      let folder = 'outros';
+      if (file.type.startsWith('image/')) folder = 'images';
+      else if (file.type.startsWith('video/')) folder = 'videos';
+      else if (file.type === 'application/pdf') folder = 'pdfs';
+      const storageRef = ref(storage, `comunidade/${currentUser.uid}/${folder}/${fileName}`);
+      const snapshot = await uploadBytes(storageRef, file);
+      fileUrl = await getDownloadURL(snapshot.ref);
+      fileMeta = { name: file.name, type: file.type };
     }
     await addDoc(collection(db, "comunidadePosts"), {
       texto: novoPost,
@@ -106,14 +122,13 @@ export default function ComunidadePage() {
       likes: 0,
       likedBy: [],
       comments: [],
-      image: imageUrl,
-      gif: gifUrl,
+      file: fileUrl,
+      fileMeta,
     });
     setNovoPost("");
-    setImageFile(null);
-    setImagePreview(null);
-    setGifFile(null);
-    setGifPreview(null);
+    setFile(null);
+    setFilePreview(null);
+    setFileType(null);
     setLoading(false);
     setShowEmoji(false);
   };
@@ -155,22 +170,6 @@ export default function ComunidadePage() {
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
-  };
-
-  const handleGifChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setGifFile(file);
-      setGifPreview(URL.createObjectURL(file));
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
       <div className="max-w-2xl mx-auto">
@@ -186,28 +185,43 @@ export default function ComunidadePage() {
               onChange={(e) => setNovoPost(e.target.value)}
               disabled={loading}
             />
-            {(imagePreview || gifPreview) && (
+            {filePreview && (
               <div className="flex gap-2 mt-2">
-                {imagePreview && (
+                {fileType && fileType.startsWith('image/') && (
                   <div className="relative">
-                    <img src={imagePreview} alt="preview" className="max-h-40 rounded-xl border border-[#E8E9F1] dark:border-[#23283A]" />
-                    <span className="block text-sm text-white font-medium">Pré-visualização</span>
+                    <img src={filePreview} alt="preview" className="max-h-40 rounded-xl border border-[#E8E9F1] dark:border-[#23283A]" />
+                    <span className="block text-sm text-white font-medium">{file?.name}</span>
                     <button
                       className="absolute top-1 right-1 bg-white/80 dark:bg-[#23283A]/80 rounded-full p-1 text-[#F45B69] hover:bg-[#F45B69]/10"
-                      onClick={() => { setImageFile(null); setImagePreview(null); }}
+                      onClick={() => { setFile(null); setFilePreview(null); setFileType(null); }}
                       type="button"
                     >
                       ✕
                     </button>
                   </div>
                 )}
-                {gifPreview && (
+                {fileType && fileType.startsWith('video/') && (
                   <div className="relative">
-                    <img src={gifPreview} alt="preview" className="max-h-40 rounded-xl border border-[#E8E9F1] dark:border-[#23283A]" />
-                    <span className="block text-sm text-white font-medium">Pré-visualização GIF</span>
+                    <video src={filePreview!} controls className="max-h-40 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] bg-black" />
+                    <span className="block text-sm text-white font-medium">{file?.name}</span>
                     <button
                       className="absolute top-1 right-1 bg-white/80 dark:bg-[#23283A]/80 rounded-full p-1 text-[#F45B69] hover:bg-[#F45B69]/10"
-                      onClick={() => { setGifFile(null); setGifPreview(null); }}
+                      onClick={() => { setFile(null); setFilePreview(null); setFileType(null); }}
+                      type="button"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+                {fileType === 'application/pdf' && (
+                  <div className="relative flex flex-col items-center justify-center">
+                    <a href={filePreview === 'pdf' ? undefined : filePreview!} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center">
+                      <span className="text-4xl text-red-500">📄</span>
+                      <span className="block text-sm text-white font-medium">{file?.name}</span>
+                    </a>
+                    <button
+                      className="absolute top-1 right-1 bg-white/80 dark:bg-[#23283A]/80 rounded-full p-1 text-[#F45B69] hover:bg-[#F45B69]/10"
+                      onClick={() => { setFile(null); setFilePreview(null); setFileType(null); }}
                       type="button"
                     >
                       ✕
@@ -220,29 +234,16 @@ export default function ComunidadePage() {
               <div className="flex gap-2 relative">
                 <button
                   className="text-[#3478F6] hover:text-[#255FD1] text-xl"
-                  title="Adicionar imagem"
+                  title="Adicionar arquivo"
                   onClick={() => fileInputRef.current?.click()}
                   type="button"
-                >📷</button>
+                >📎</button>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/*,video/*,application/pdf"
                   ref={fileInputRef}
                   className="hidden"
-                  onChange={handleImageChange}
-                />
-                <button
-                  className="text-[#3478F6] hover:text-[#255FD1] text-xl"
-                  title="Adicionar GIF"
-                  onClick={() => gifInputRef.current?.click()}
-                  type="button"
-                >🎞️</button>
-                <input
-                  type="file"
-                  accept="image/gif"
-                  ref={gifInputRef}
-                  className="hidden"
-                  onChange={handleGifChange}
+                  onChange={handleFileChange}
                 />
                 <button
                   className="text-[#3478F6] hover:text-[#255FD1] text-xl"
@@ -263,7 +264,7 @@ export default function ComunidadePage() {
               <button
                 className="px-5 py-2 rounded-lg bg-[#3478F6] text-white font-bold shadow-soft hover:bg-[#255FD1] transition-colors disabled:opacity-60"
                 onClick={handlePostar}
-                disabled={loading || (!novoPost.trim() && !imageFile && !gifFile)}
+                disabled={loading || (!novoPost.trim() && !file)}
               >
                 {loading ? "Postando..." : "Postar"}
               </button>
@@ -301,16 +302,26 @@ export default function ComunidadePage() {
                     )}
                   </div>
                   <div className="text-[#2E2F38] dark:text-white text-base whitespace-pre-line mb-2">{post.texto}</div>
-                  {(post.image || post.gif) && (
+                  {(post.file && post.fileMeta) && (
                     <div className="flex gap-2 mt-2">
-                      {post.image && (
+                      {post.fileMeta.type.startsWith('image/') && (
                         <div className="relative">
-                          <img src={post.image} alt="imagem do post" className="max-h-60 rounded-xl border border-[#E8E9F1] dark:border-[#23283A]" />
+                          <img src={post.file} alt={post.fileMeta.name} className="max-h-60 rounded-xl border border-[#E8E9F1] dark:border-[#23283A]" />
+                          <span className="block text-sm text-white font-medium">{post.fileMeta.name}</span>
                         </div>
                       )}
-                      {post.gif && (
+                      {post.fileMeta.type.startsWith('video/') && (
                         <div className="relative">
-                          <img src={post.gif} alt="gif do post" className="max-h-60 rounded-xl border border-[#E8E9F1] dark:border-[#23283A]" />
+                          <video src={post.file} controls className="max-h-60 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] bg-black" />
+                          <span className="block text-sm text-white font-medium">{post.fileMeta.name}</span>
+                        </div>
+                      )}
+                      {post.fileMeta.type === 'application/pdf' && (
+                        <div className="relative flex flex-col items-center justify-center">
+                          <a href={post.file} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center">
+                            <span className="text-4xl text-red-500">📄</span>
+                            <span className="block text-sm text-white font-medium">{post.fileMeta.name}</span>
+                          </a>
                         </div>
                       )}
                     </div>
