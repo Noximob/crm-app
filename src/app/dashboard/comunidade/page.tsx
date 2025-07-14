@@ -70,6 +70,9 @@ export default function ComunidadePage() {
   const [modalPostId, setModalPostId] = useState<string | null>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
+  const [commentsMap, setCommentsMap] = useState<Record<string, number>>({});
+  const [showEmojiComment, setShowEmojiComment] = useState(false);
+  const emojiCommentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const q = query(collection(db, "comunidadePosts"), orderBy("createdAt", "desc"));
@@ -108,6 +111,21 @@ export default function ComunidadePage() {
       return () => unsub();
     }
   }, [modalPostId]);
+
+  // Atualizar contador de comentários de todos os posts em tempo real
+  useEffect(() => {
+    const unsubscribes: any[] = [];
+    posts.forEach((post) => {
+      const unsub = onSnapshot(
+        collection(db, "comunidadePosts", post.id, "comments"),
+        (snapshot) => {
+          setCommentsMap((prev) => ({ ...prev, [post.id]: snapshot.size }));
+        }
+      );
+      unsubscribes.push(unsub);
+    });
+    return () => { unsubscribes.forEach((unsub) => unsub()); };
+  }, [posts]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -370,7 +388,7 @@ export default function ComunidadePage() {
                   <div className="flex gap-4 mt-3">
                     <ActionIcon 
                       icon={<span>💬</span>} 
-                      label={commentsCount.toString()} 
+                      label={(commentsMap[post.id] ?? 0).toString()} 
                       onClick={() => { setModalImage(post.fileMeta.type.startsWith('image/') ? post.file : null); setModalPostId(post.id); setModalOpen(true); }}
                     />
                     <ActionIcon 
@@ -408,7 +426,7 @@ export default function ComunidadePage() {
                 </div>
               ))}
             </div>
-            <div className="flex gap-2 mt-2">
+            <div className="flex gap-2 mt-2 relative">
               <input
                 type="text"
                 className="flex-1 px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
@@ -417,6 +435,21 @@ export default function ComunidadePage() {
                 onChange={e => setNewComment(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') handleAddComment(); }}
               />
+              <button
+                className="text-[#3478F6] hover:text-[#255FD1] text-xl"
+                title="Adicionar emoji"
+                onClick={() => setShowEmojiComment((v) => !v)}
+                type="button"
+              >😊</button>
+              {showEmojiComment && (
+                <div ref={emojiCommentRef} className="absolute z-50 top-12 right-0">
+                  <Picker
+                    data={data}
+                    onEmojiSelect={(emoji: any) => { setNewComment((prev) => prev + emoji.native); setShowEmojiComment(false); }}
+                    theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
+                  />
+                </div>
+              )}
               <button
                 className="px-4 py-2 rounded-lg bg-[#3478F6] text-white font-bold shadow-soft hover:bg-[#255FD1] transition-colors"
                 onClick={handleAddComment}
