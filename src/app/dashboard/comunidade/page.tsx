@@ -174,6 +174,7 @@ export default function ComunidadePage() {
   return (
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
       <div className="max-w-2xl mx-auto">
+        {/* Comunidade Estilo Twitter */}
         {/* Campo de novo post */}
         <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-6 mb-8 flex gap-4">
           <img src={`https://api.dicebear.com/7.x/initials/svg?seed=${userData?.nome || currentUser?.email?.[0] || "U"}`} alt="avatar" className="w-12 h-12 rounded-full object-cover" />
