@@ -545,9 +545,9 @@ export default function MateriaisConstrutoraAdminPage() {
                       Excluir
                     </button>
                   </div>
-                </div>
-              ))}
             </div>
+          ))}
+        </div>
           </div>
         )}
       </div>

@@ -52,7 +52,7 @@ export default function CadastroPage() {
           where('tipo', '==', 'imobiliaria'),
           where('aprovado', '==', true)
         );
-        const snapshot = await getDocs(q);
+      const snapshot = await getDocs(q);
         const imobiliariasComTipo = snapshot.docs.map(doc => ({ id: doc.id, nome: doc.data().nome }));
         
         // Se não encontrou nenhuma com tipo específico, busca todas as aprovadas (para compatibilidade com dados antigos)
@@ -281,8 +281,8 @@ export default function CadastroPage() {
           };
           console.log('Criando imobiliária:', dadosImobiliaria);
           const imobiliariaDoc = await addDoc(collection(db, 'imobiliarias'), dadosImobiliaria);
-          imobiliariaId = imobiliariaDoc.id;
-          console.log('Imobiliária criada com ID:', imobiliariaId);
+        imobiliariaId = imobiliariaDoc.id;
+        console.log('Imobiliária criada com ID:', imobiliariaId);
         } catch (err) {
           console.error('Erro ao criar imobiliária:', err);
           setError('Erro ao criar imobiliária. Tente novamente.');
@@ -300,16 +300,16 @@ export default function CadastroPage() {
       }
       // Criação do usuário
       try {
-        console.log('Criando documento do usuário no Firestore...');
-        await setDoc(doc(db, 'usuarios', user.uid), {
-          nome: user.displayName || '',
-          email: user.email,
+      console.log('Criando documento do usuário no Firestore...');
+          await setDoc(doc(db, 'usuarios', user.uid), {
+            nome: user.displayName || '',
+            email: user.email,
           tipoConta: perfil === 'imobiliaria' ? 'imobiliaria' : perfil,
-          imobiliariaId: imobiliariaId || '',
-          aprovado: false,
+            imobiliariaId: imobiliariaId || '',
+            aprovado: false,
           criadoEm: new Date(),
-          metodoCadastro: 'google',
-        });
+            metodoCadastro: 'google',
+          });
         console.log('Usuário criado no Firestore!');
       } catch (err) {
         console.error('Erro ao criar documento do usuário no Firestore:', err);
@@ -324,7 +324,7 @@ export default function CadastroPage() {
     } catch (error: any) {
       console.error('Erro no cadastro com Google:', error);
       setError(error.message || 'Erro ao cadastrar com Google. Tente novamente.');
-      await signOut(auth);
+        await signOut(auth);
     } finally {
       if (!cadastroFinalizado) setIsGoogleLoading(false);
     }

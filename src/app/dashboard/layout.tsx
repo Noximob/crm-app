@@ -122,11 +122,11 @@ export default function DashboardLayout({
     { href: '/dashboard/configuracoes', icon: SettingsIcon, label: 'Configurações' },
     // Exibir admin se for imobiliaria OU tiver permissao admin
     ...((userDataWithPerms?.tipoConta === 'imobiliaria' || userDataWithPerms?.permissoes?.admin) ? [
-      { href: '/dashboard/admin', icon: KeyIcon, label: 'Área administrador' },
+    { href: '/dashboard/admin', icon: KeyIcon, label: 'Área administrador' },
     ] : []),
     // Exibir dev se for imobiliaria OU tiver permissao developer
     ...((userDataWithPerms?.tipoConta === 'imobiliaria' || userDataWithPerms?.permissoes?.developer) ? [
-      { href: '/dashboard/developer', icon: CodeIcon, label: 'Área do Desenvolvedor' },
+    { href: '/dashboard/developer', icon: CodeIcon, label: 'Área do Desenvolvedor' },
     ] : []),
     { href: '#', icon: LogOutIcon, label: 'Desconectar', isLogout: true },
   ];

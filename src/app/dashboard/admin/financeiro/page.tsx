@@ -124,15 +124,15 @@ export default function FinanceiroPage() {
         {/* Abas */}
         <div className="flex gap-6 mb-6">
           {TABS.map(t => (
-            <button
+              <button
               key={t.key}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors duration-150 ${tab === t.key ? 'bg-[#23283A] text-[#3478F6]' : 'text-gray-300 hover:bg-[#23283A]'}`}
               onClick={() => setTab(t.key)}
-            >
+              >
               <span>{t.icon}</span> {t.label}
-            </button>
-          ))}
-        </div>
+                    </button>
+                  ))}
+                </div>
         {/* Dashboard Visão Geral */}
         {tab === 'visao' && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
@@ -235,8 +235,8 @@ export default function FinanceiroPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          </div>
+        </div>
+        </div>
         )}
         {/* Outras abas podem ser implementadas depois */}
       </div>

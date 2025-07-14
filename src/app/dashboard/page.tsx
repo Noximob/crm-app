@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, getDoc, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, getDoc, Timestamp, orderBy } from 'firebase/firestore';
 import Link from 'next/link';
 
 // Ícones
@@ -208,48 +208,7 @@ const SectionTitle = ({ children, className = '' }: { children: React.ReactNode,
   </div>
 );
 
-// Mock dos trending posts
-const trendingPosts = [
-  {
-    id: 1,
-    user: {
-      name: 'Ana Corretora',
-      avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-      handle: '@anacorretora',
-    },
-    time: '2h',
-    content: 'Novo lançamento no centro! 🏢 #imobiliaria #oportunidade',
-    reposts: 12,
-    likes: 30,
-    comments: 8,
-  },
-  {
-    id: 2,
-    user: {
-      name: 'Equipe Alume',
-      avatar: '/favicon.ico',
-      handle: '@alume',
-    },
-    time: '1d',
-    content: 'Parabéns a todos os corretores que bateram meta este mês! 🎉 #sucesso',
-    reposts: 9,
-    likes: 25,
-    comments: 5,
-  },
-  {
-    id: 3,
-    user: {
-      name: 'Carlos Santos',
-      avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-      handle: '@carlossantos',
-    },
-    time: '5h',
-    content: 'Dica: sempre atualize suas fotos profissionais! 📸 #marketingimobiliario',
-    reposts: 7,
-    likes: 18,
-    comments: 2,
-  },
-];
+
 
 // --- Tipos para tarefas ---
 interface Task {
@@ -299,6 +258,8 @@ export default function DashboardPage() {
   const [agendaLeads, setAgendaLeads] = useState<Array<any>>([]);
   const [agendaLoading, setAgendaLoading] = useState(true);
   const [avisosImportantes, setAvisosImportantes] = useState<any[]>([]);
+  const [trendingPosts, setTrendingPosts] = useState<any[]>([]);
+  const [trendingLoading, setTrendingLoading] = useState(true);
 
   useEffect(() => {
     if (currentUser) {
@@ -401,6 +362,44 @@ export default function DashboardPage() {
       setAvisosImportantes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     };
     fetchAvisos();
+  }, [userData]);
+
+  useEffect(() => {
+    const fetchTrendingPosts = async () => {
+      if (!userData?.imobiliariaId) return;
+      setTrendingLoading(true);
+      try {
+        const postsRef = collection(db, 'comunidadePosts');
+        const q = query(postsRef, orderBy('createdAt', 'desc'));
+        const snapshot = await getDocs(q);
+        const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Buscar contadores de comentários e reposts para cada post
+        const postsWithCounts = await Promise.all(
+          posts.map(async (post: any) => {
+            const commentsSnapshot = await getDocs(collection(db, 'comunidadePosts', post.id, 'comments'));
+            const repostsSnapshot = await getDocs(collection(db, 'comunidadePosts', post.id, 'reposts'));
+            
+            return {
+              ...post,
+              commentsCount: commentsSnapshot.size,
+              repostsCount: repostsSnapshot.size,
+              totalEngagement: (post.likes || 0) + commentsSnapshot.size + repostsSnapshot.size
+            };
+          })
+        );
+        
+        // Ordena por engajamento total (likes + comentários + reposts)
+        const sortedPosts = postsWithCounts.sort((a, b) => b.totalEngagement - a.totalEngagement);
+        setTrendingPosts(sortedPosts.slice(0, 3));
+      } catch (error) {
+        console.error('Erro ao buscar posts trending:', error);
+        setTrendingPosts([]);
+      } finally {
+        setTrendingLoading(false);
+      }
+    };
+    fetchTrendingPosts();
   }, [userData]);
 
   function calcularVariacao(atual: string, anterior: string) {
@@ -540,25 +539,40 @@ export default function DashboardPage() {
         {/* Top Trending */}
         <div className="bg-[#23283A] rounded-2xl p-6 mb-6 flex flex-col justify-between lg:col-span-1">
           <h2 className="text-lg font-bold text-white mb-4">Top Trending</h2>
-          <div className="flex flex-col gap-4">
-            {trendingPosts.map((post) => (
-              <div key={post.id} className="flex items-start gap-3">
-                <img src={post.user.avatar} alt={post.user.name} className="w-10 h-10 rounded-full object-cover" />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-[#2E2F38] dark:text-white text-sm">{post.user.name}</span>
-                    <span className="text-xs text-[#6B6F76] dark:text-gray-300">{post.user.handle} · {post.time}</span>
-                  </div>
-                  <div className="text-xs text-[#2E2F38] dark:text-white truncate max-w-[180px]">{post.content}</div>
-                  <div className="flex gap-3 mt-1 text-xs text-[#6B6F76] dark:text-gray-300">
-                    <span>🔁 {post.reposts}</span>
-                    <span>❤️ {post.likes}</span>
-                    <span>💬 {post.comments}</span>
+          {trendingLoading ? (
+            <p className="text-gray-300">Carregando posts...</p>
+          ) : trendingPosts.length === 0 ? (
+            <p className="text-gray-300">Nenhum post encontrado.</p>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {trendingPosts.map((post) => (
+                <div key={post.id} className="flex items-start gap-3">
+                  <img src={post.avatar} alt={post.nome} className="w-10 h-10 rounded-full object-cover" />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-[#2E2F38] dark:text-white text-sm">{post.nome}</span>
+                      <span className="text-xs text-[#6B6F76] dark:text-gray-300">
+                        {post.createdAt?.toDate ? 
+                          post.createdAt.toDate().toLocaleString('pt-BR', { 
+                            day: '2-digit', 
+                            month: '2-digit', 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          }) : ''
+                        }
+                      </span>
+                    </div>
+                    <div className="text-xs text-[#2E2F38] dark:text-white truncate max-w-[180px]">{post.texto}</div>
+                    <div className="flex gap-3 mt-1 text-xs text-[#6B6F76] dark:text-gray-300">
+                      <span>🔁 {post.repostsCount || 0}</span>
+                      <span>❤️ {post.likes || 0}</span>
+                      <span>💬 {post.commentsCount || 0}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
