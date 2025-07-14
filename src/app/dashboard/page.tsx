@@ -601,34 +601,6 @@ export default function DashboardPage() {
             ))}
           </div>
         </Card>
-
-        {/* Avisos Importantes */}
-        <Card className="animate-fade-in">
-          <SectionTitle className="mb-6">Avisos Importantes</SectionTitle>
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 p-3 bg-[#FFCC66]/10 rounded-xl border border-[#FFCC66]/20">
-              <AlertCircleIcon className="h-5 w-5 text-[#FFCC66] mt-0.5" />
-              <div>
-                <div className="text-sm font-medium text-[#2E2F38] dark:text-white">Reunião de Equipe</div>
-                <div className="text-xs text-[#6B6F76] dark:text-gray-100">Amanhã às 10h - Novas metas do mês</div>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 p-3 bg-[#A3C8F7]/10 rounded-xl border border-[#A3C8F7]/20">
-              <CheckCircleIcon className="h-5 w-5 text-[#A3C8F7] mt-0.5" />
-              <div>
-                <div className="text-sm font-medium text-[#2E2F38] dark:text-white">Sistema Atualizado</div>
-                <div className="text-xs text-[#6B6F76] dark:text-gray-100">Nova funcionalidade de automação disponível</div>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 p-3 bg-[#3AC17C]/10 rounded-xl border border-[#3AC17C]/20">
-              <StarIcon className="h-5 w-5 text-[#3AC17C] mt-0.5" />
-              <div>
-                <div className="text-sm font-medium text-[#2E2F38] dark:text-white">Meta Atingida!</div>
-                <div className="text-xs text-[#6B6F76] dark:text-gray-100">Você atingiu 75% da meta mensal</div>
-              </div>
-            </div>
-          </div>
-        </Card>
       </div>
 
       {/* Adicionar link para Pagamentos na navegação lateral, se não existir */}
