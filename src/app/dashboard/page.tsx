@@ -564,17 +564,22 @@ export default function DashboardPage() {
       {/* Avisos Importantes */}
       <div className="bg-[#23283A] rounded-2xl p-6 mb-6">
         <h2 className="text-lg font-bold text-white mb-4">Avisos Importantes</h2>
-        {avisosImportantes.length === 0 ? (
+        {avisosImportantes.filter(aviso => !aviso.dataHora || (aviso.dataHora?.toDate && aviso.dataHora.toDate() <= new Date()))
+          .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
+          .length === 0 ? (
           <p className="text-gray-300">Nenhum aviso importante cadastrado pela imobiliária.</p>
         ) : (
           <ul className="space-y-4">
-            {avisosImportantes.map(aviso => (
-              <li key={aviso.id} className="border-b border-gray-700 last:border-0 pb-3">
-                <div className="font-semibold text-[#3478F6] dark:text-[#A3C8F7]">{aviso.titulo}</div>
-                <div className="text-white text-sm mb-1">{aviso.mensagem}</div>
-                <div className="text-xs text-[#6B6F76] dark:text-gray-300">{aviso.data?.toDate ? aviso.data.toDate().toLocaleString('pt-BR') : ''}</div>
-              </li>
-            ))}
+            {avisosImportantes
+              .filter(aviso => !aviso.dataHora || (aviso.dataHora?.toDate && aviso.dataHora.toDate() <= new Date()))
+              .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
+              .map(aviso => (
+                <li key={aviso.id} className="border-b border-gray-700 last:border-0 pb-3">
+                  <div className="font-semibold text-[#3478F6] dark:text-[#A3C8F7]">{aviso.titulo}</div>
+                  <div className="text-white text-sm mb-1">{aviso.mensagem}</div>
+                  <div className="text-xs text-[#6B6F76] dark:text-gray-300">{aviso.dataHora?.toDate ? aviso.dataHora.toDate().toLocaleString('pt-BR') : ''}</div>
+                </li>
+              ))}
           </ul>
         )}
       </div>
