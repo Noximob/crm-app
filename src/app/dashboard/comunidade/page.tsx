@@ -15,6 +15,7 @@ import {
   updateDoc,
   arrayUnion,
   arrayRemove,
+  getDoc,
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import data from '@emoji-mart/data';
@@ -37,6 +38,18 @@ function gerarHandle(nome: string, email: string) {
   return '@usuario';
 }
 
+function Modal({ open, onClose, children }: { open: boolean, onClose: () => void, children: React.ReactNode }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={onClose}>
+      <div className="relative max-w-2xl w-full mx-2 bg-white dark:bg-[#23283A] rounded-2xl shadow-xl p-0" onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute top-4 right-4 text-white text-2xl z-10 hover:text-[#F45B69]">✕</button>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export default function ComunidadePage() {
   const { currentUser, userData } = useAuth();
   const [posts, setPosts] = useState<any[]>([]);
@@ -52,6 +65,11 @@ export default function ComunidadePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const gifInputRef = useRef<HTMLInputElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalImage, setModalImage] = useState<string | null>(null);
+  const [modalPostId, setModalPostId] = useState<string | null>(null);
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
 
   useEffect(() => {
     const q = query(collection(db, "comunidadePosts"), orderBy("createdAt", "desc"));
@@ -77,6 +95,19 @@ export default function ComunidadePage() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showEmoji]);
+
+  // Carregar comentários do post selecionado
+  useEffect(() => {
+    if (modalPostId) {
+      const unsub = onSnapshot(
+        collection(db, "comunidadePosts", modalPostId, "comments"),
+        (snapshot) => {
+          setComments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        }
+      );
+      return () => unsub();
+    }
+  }, [modalPostId]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -168,6 +199,18 @@ export default function ComunidadePage() {
         likes: (post.likes || 0) + 1
       });
     }
+  };
+
+  const handleAddComment = async () => {
+    if (!modalPostId || !currentUser || !newComment.trim()) return;
+    await addDoc(collection(db, "comunidadePosts", modalPostId, "comments"), {
+      texto: newComment,
+      userId: currentUser.uid,
+      nome: userData?.nome || currentUser.email?.split("@")[0] || "Usuário",
+      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${userData?.nome || currentUser.email?.[0] || "U"}`,
+      createdAt: serverTimestamp(),
+    });
+    setNewComment("");
   };
 
   return (
@@ -305,7 +348,7 @@ export default function ComunidadePage() {
                   {(post.file && post.fileMeta) && (
                     <div className="flex gap-2 mt-2">
                       {post.fileMeta.type.startsWith('image/') && (
-                        <div className="relative">
+                        <div className="relative cursor-pointer" onClick={() => { setModalImage(post.file); setModalPostId(post.id); setModalOpen(true); }}>
                           <img src={post.file} alt={post.fileMeta.name} className="max-h-60 rounded-xl border border-[#E8E9F1] dark:border-[#23283A]" />
                         </div>
                       )}
@@ -328,6 +371,7 @@ export default function ComunidadePage() {
                     <ActionIcon 
                       icon={<span>💬</span>} 
                       label={commentsCount.toString()} 
+                      onClick={() => { setModalImage(post.fileMeta.type.startsWith('image/') ? post.file : null); setModalPostId(post.id); setModalOpen(true); }}
                     />
                     <ActionIcon 
                       icon={<span>{isLiked ? '❤️' : '🤍'}</span>} 
@@ -342,6 +386,45 @@ export default function ComunidadePage() {
           })}
         </div>
       </div>
+      <Modal open={modalOpen} onClose={() => { setModalOpen(false); setModalImage(null); setModalPostId(null); }}>
+        {modalImage && (
+          <div className="flex justify-center items-center p-4">
+            <img src={modalImage} alt="imagem ampliada" className="max-h-[60vh] rounded-xl mx-auto" />
+          </div>
+        )}
+        {modalPostId && (
+          <div className="p-4 border-t border-[#E8E9F1] dark:border-[#23283A]">
+            <h3 className="font-bold text-lg mb-2 text-[#2E2F38] dark:text-white">Comentários</h3>
+            <div className="max-h-60 overflow-y-auto space-y-3 mb-3">
+              {comments.length === 0 && <div className="text-gray-400 text-sm">Nenhum comentário ainda.</div>}
+              {comments.map((c) => (
+                <div key={c.id} className="flex items-start gap-2">
+                  <img src={c.avatar} alt={c.nome} className="w-8 h-8 rounded-full object-cover" />
+                  <div>
+                    <div className="font-semibold text-[#2E2F38] dark:text-white text-sm">{c.nome}</div>
+                    <div className="text-[#2E2F38] dark:text-gray-200 text-sm">{c.texto}</div>
+                    <div className="text-xs text-gray-400">{c.createdAt?.toDate ? c.createdAt.toDate().toLocaleString('pt-BR') : ''}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2 mt-2">
+              <input
+                type="text"
+                className="flex-1 px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                placeholder="Adicionar comentário..."
+                value={newComment}
+                onChange={e => setNewComment(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleAddComment(); }}
+              />
+              <button
+                className="px-4 py-2 rounded-lg bg-[#3478F6] text-white font-bold shadow-soft hover:bg-[#255FD1] transition-colors"
+                onClick={handleAddComment}
+              >Comentar</button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 } 
