@@ -34,9 +34,19 @@ const ActionIcon = ({ icon, label, onClick, active = false, danger = false }: { 
 );
 
 function gerarHandle(nome: string, email: string) {
-  if (nome) return '@' + nome.toLowerCase().replace(/[^a-z0-9]/g, '');
-  if (email) return '@' + email.split('@')[0].toLowerCase();
-  return '@usuario';
+  const handle = nome.toLowerCase().replace(/\s+/g, '') + Math.floor(Math.random() * 1000);
+  return `@${handle}`;
+}
+
+function gerarAvatar(userData: any, currentUser: any) {
+  // Prioriza foto do Google, depois foto salva no Firestore, depois avatar de iniciais
+  if (currentUser?.photoURL) {
+    return currentUser.photoURL;
+  }
+  if (userData?.photoURL) {
+    return userData.photoURL;
+  }
+  return `https://api.dicebear.com/7.x/initials/svg?seed=${userData?.nome || currentUser?.email?.[0] || "U"}`;
 }
 
 function Modal({ open, onClose, children }: { open: boolean, onClose: () => void, children: React.ReactNode }) {
@@ -245,7 +255,7 @@ export default function ComunidadePage() {
       userId: currentUser.uid,
       nome: userData?.nome || currentUser.email?.split("@")[0] || "Usuário",
       email: currentUser.email || "",
-      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${userData?.nome || currentUser.email?.[0] || "U"}`,
+      avatar: gerarAvatar(userData, currentUser),
       createdAt: serverTimestamp(),
       likes: 0,
       likedBy: [],
@@ -304,7 +314,7 @@ export default function ComunidadePage() {
       texto: newComment,
       userId: currentUser.uid,
       nome: userData?.nome || currentUser.email?.split("@")[0] || "Usuário",
-      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${userData?.nome || currentUser.email?.[0] || "U"}`,
+      avatar: gerarAvatar(userData, currentUser),
       createdAt: serverTimestamp(),
     });
     setNewComment("");
@@ -323,7 +333,7 @@ export default function ComunidadePage() {
       userId: currentUser.uid,
       nome: userData?.nome || currentUser.email?.split("@")[0] || "Usuário",
       email: currentUser.email || "",
-      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${userData?.nome || currentUser.email?.[0] || "U"}`,
+      avatar: gerarAvatar(userData, currentUser),
       createdAt: serverTimestamp(),
       likes: 0,
       likedBy: [],
@@ -348,7 +358,7 @@ export default function ComunidadePage() {
         {/* Comunidade Estilo Twitter */}
         {/* Campo de novo post */}
         <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-6 mb-8 flex gap-4">
-          <img src={`https://api.dicebear.com/7.x/initials/svg?seed=${userData?.nome || currentUser?.email?.[0] || "U"}`} alt="avatar" className="w-12 h-12 rounded-full object-cover" />
+          <img src={gerarAvatar(userData, currentUser)} alt="avatar" className="w-12 h-12 rounded-full object-cover" />
           <div className="flex-1 flex flex-col gap-2">
             <textarea
               className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white resize-none min-h-[60px]"

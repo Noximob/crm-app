@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 
 interface UserData {
@@ -14,6 +14,7 @@ interface UserData {
   aprovado: boolean;
   criadoEm: any;
   metodoCadastro: 'email' | 'google';
+  photoURL?: string;
 }
 
 interface AuthContextType {
@@ -46,6 +47,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (userDoc.exists()) {
           const data = userDoc.data() as UserData;
+          
+          // Se o usuário tem foto do Google e ela não está salva no Firestore, salvar
+          if (firebaseUser.photoURL && !data.photoURL) {
+            await updateDoc(userDocRef, {
+              photoURL: firebaseUser.photoURL
+            });
+            data.photoURL = firebaseUser.photoURL;
+          }
+          
           setCurrentUser(firebaseUser);
           setUserData(data);
           

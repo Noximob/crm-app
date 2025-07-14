@@ -229,6 +229,7 @@ export default function CadastroPage() {
         aprovado: false, // Agora exige aprovação manual para todos
         criadoEm: new Date(),
         metodoCadastro: 'email',
+        photoURL: user.photoURL || null,
       });
       console.log('Usuário criado no Firestore!');
       setSuccess('Cadastro realizado com sucesso! Aguarde aprovação.');
@@ -309,6 +310,7 @@ export default function CadastroPage() {
             aprovado: false,
           criadoEm: new Date(),
             metodoCadastro: 'google',
+            photoURL: user.photoURL || null,
           });
         console.log('Usuário criado no Firestore!');
       } catch (err) {
