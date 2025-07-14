@@ -289,7 +289,7 @@ function getTaskStatusInfo(tasks: Task[]): TaskStatus {
 }
 
 export default function DashboardPage() {
-  const { currentUser } = useAuth();
+  const { currentUser, userData } = useAuth();
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -298,6 +298,7 @@ export default function DashboardPage() {
   const [indicadoresExternosAnterior, setIndicadoresExternosAnterior] = useState<any>(null);
   const [agendaLeads, setAgendaLeads] = useState<Array<any>>([]);
   const [agendaLoading, setAgendaLoading] = useState(true);
+  const [avisosImportantes, setAvisosImportantes] = useState<any[]>([]);
 
   useEffect(() => {
     if (currentUser) {
@@ -391,6 +392,16 @@ export default function DashboardPage() {
     };
     fetchAgenda();
   }, [currentUser]);
+
+  useEffect(() => {
+    const fetchAvisos = async () => {
+      if (!userData?.imobiliariaId) return;
+      const q = query(collection(db, 'avisosImportantes'), where('imobiliariaId', '==', userData.imobiliariaId));
+      const snapshot = await getDocs(q);
+      setAvisosImportantes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    };
+    fetchAvisos();
+  }, [userData]);
 
   function calcularVariacao(atual: string, anterior: string) {
     const a = parseFloat((atual || '').replace(/[^\d,.-]/g, '').replace(',', '.'));
@@ -549,6 +560,23 @@ export default function DashboardPage() {
             ))}
           </div>
         </div>
+      </div>
+      {/* Avisos Importantes */}
+      <div className="bg-[#23283A] rounded-2xl p-6 mb-6">
+        <h2 className="text-lg font-bold text-white mb-4">Avisos Importantes</h2>
+        {avisosImportantes.length === 0 ? (
+          <p className="text-gray-300">Nenhum aviso importante cadastrado pela imobiliária.</p>
+        ) : (
+          <ul className="space-y-4">
+            {avisosImportantes.map(aviso => (
+              <li key={aviso.id} className="border-b border-gray-700 last:border-0 pb-3">
+                <div className="font-semibold text-[#3478F6] dark:text-[#A3C8F7]">{aviso.titulo}</div>
+                <div className="text-white text-sm mb-1">{aviso.mensagem}</div>
+                <div className="text-xs text-[#6B6F76] dark:text-gray-300">{aviso.data?.toDate ? aviso.data.toDate().toLocaleString('pt-BR') : ''}</div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* Seção inferior */}

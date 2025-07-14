@@ -24,6 +24,7 @@ const adminCards = [
   { title: 'Relatórios', icon: '📊', description: 'Acompanhe métricas e resultados detalhados.', href: '/dashboard/admin/relatorios' },
   { title: 'Site', icon: '🌐', description: 'Gerencie o site institucional e vitrines.', href: '/dashboard/admin/site' },
   { title: 'Importar Leads', icon: '⬆️', description: 'Importe vários leads de uma vez, colando nomes e telefones.', href: '/dashboard/admin/importar-leads' },
+  { title: 'Avisos Importantes', icon: '📢', description: 'Crie e edite avisos para os corretores.', href: '/dashboard/admin/avisos-importantes' },
   { title: 'Aprovação de Usuários', icon: '✅', description: 'Aprove ou rejeite novos cadastros.', href: '#', special: true },
 ];
 
