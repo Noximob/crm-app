@@ -80,6 +80,9 @@ export default function ComunidadePage() {
   const [repostTarget, setRepostTarget] = useState<any>(null);
   const [repostComment, setRepostComment] = useState("");
   const [repostLoading, setRepostLoading] = useState(false);
+  const [repostWithComment, setRepostWithComment] = useState(false);
+  const [showEmojiRepost, setShowEmojiRepost] = useState(false);
+  const emojiRepostRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const q = query(collection(db, "comunidadePosts"), orderBy("createdAt", "desc"));
@@ -475,7 +478,7 @@ export default function ComunidadePage() {
                     <ActionIcon 
                       icon={<span title="Repostar">🔁</span>}
                       label={(repostsMap[post.id] ?? 0).toString()}
-                      onClick={() => handleRepost(post)}
+                      onClick={() => { setRepostWithComment(false); setShowEmojiRepost(false); handleRepost(post); }}
                     />
                     <ActionIcon 
                       icon={<span>{isLiked ? '❤️' : '🤍'}</span>} 
@@ -489,6 +492,13 @@ export default function ComunidadePage() {
                       onClick={() => {}}
                     />
                   </div>
+                  {/* Indicação de repost na timeline */}
+                  {post.repostOf && (
+                    <div className="flex items-center gap-1 text-xs text-[#3478F6] dark:text-[#A3C8F7] mb-1">
+                      <span>🔁</span>
+                      <span>{post.userId === currentUser?.uid ? 'Você repostou' : `Repostado por ${post.nome}`}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -550,28 +560,60 @@ export default function ComunidadePage() {
         )}
       </Modal>
       {/* Modal de Repost */}
-      <Modal open={repostModalOpen} onClose={() => { setRepostModalOpen(false); setRepostTarget(null); setRepostComment(""); }}>
+      <Modal open={repostModalOpen} onClose={() => { setRepostModalOpen(false); setRepostTarget(null); setRepostComment(""); setRepostWithComment(false); }}>
         <div className="p-6">
           <h2 className="font-bold text-lg mb-4 text-[#2E2F38] dark:text-white">Repostar</h2>
-          <div className="mb-4">
-            <button
-              className="px-4 py-2 rounded-lg bg-[#3478F6] text-white font-bold shadow-soft hover:bg-[#255FD1] transition-colors mr-2"
-              onClick={() => confirmRepost(false)}
-              disabled={repostLoading}
-            >Repostar direto</button>
-            <button
-              className="px-4 py-2 rounded-lg bg-[#E8E9F1] text-[#2E2F38] dark:bg-[#23283A] dark:text-white font-bold shadow-soft hover:bg-[#A3C8F7] transition-colors"
-              onClick={() => confirmRepost(true)}
-              disabled={repostLoading || !repostComment.trim()}
-            >Repostar com comentário</button>
-          </div>
-          <textarea
-            className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white resize-none min-h-[60px]"
-            placeholder="Adicione um comentário (opcional)"
-            value={repostComment}
-            onChange={e => setRepostComment(e.target.value)}
-            disabled={repostLoading}
-          />
+          {!repostWithComment ? (
+            <div className="flex flex-col gap-4">
+              <button
+                className="px-4 py-2 rounded-lg bg-[#3478F6] text-white font-bold shadow-soft hover:bg-[#255FD1] transition-colors"
+                onClick={() => { confirmRepost(false); }}
+                disabled={repostLoading}
+              >Repostar direto</button>
+              <button
+                className="px-4 py-2 rounded-lg bg-[#E8E9F1] text-[#2E2F38] dark:bg-[#23283A] dark:text-white font-bold shadow-soft hover:bg-[#A3C8F7] transition-colors"
+                onClick={() => setRepostWithComment(true)}
+                disabled={repostLoading}
+              >Repostar com comentário</button>
+            </div>
+          ) : (
+            <>
+              <textarea
+                className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white resize-none min-h-[60px]"
+                placeholder="Adicione um comentário"
+                value={repostComment}
+                onChange={e => setRepostComment(e.target.value)}
+                disabled={repostLoading}
+              />
+              <div className="flex items-center gap-2 mt-2 relative">
+                <button
+                  className="text-[#3478F6] hover:text-[#255FD1] text-xl"
+                  title="Adicionar emoji"
+                  onClick={() => setShowEmojiRepost((v) => !v)}
+                  type="button"
+                >😊</button>
+                {showEmojiRepost && (
+                  <div ref={emojiRepostRef} className="absolute z-50 top-12 left-0">
+                    <Picker
+                      data={data}
+                      onEmojiSelect={(emoji: any) => { setRepostComment((prev) => prev + emoji.native); setShowEmojiRepost(false); }}
+                      theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
+                    />
+                  </div>
+                )}
+                <button
+                  className="px-4 py-2 rounded-lg bg-[#3478F6] text-white font-bold shadow-soft hover:bg-[#255FD1] transition-colors"
+                  onClick={() => confirmRepost(true)}
+                  disabled={repostLoading || !repostComment.trim()}
+                >Ok</button>
+                <button
+                  className="px-4 py-2 rounded-lg bg-[#F45B69] text-white font-bold shadow-soft hover:bg-[#F45B69]/80 transition-colors"
+                  onClick={() => { setRepostWithComment(false); setRepostComment(""); setShowEmojiRepost(false); }}
+                  disabled={repostLoading}
+                >Cancelar</button>
+              </div>
+            </>
+          )}
           {repostLoading && <div className="mt-4 text-[#3478F6] font-bold">Repostando...</div>}
         </div>
       </Modal>
