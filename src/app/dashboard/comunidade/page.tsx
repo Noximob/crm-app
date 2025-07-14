@@ -16,6 +16,7 @@ import {
   arrayUnion,
   arrayRemove,
   getDoc,
+  setDoc,
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import data from '@emoji-mart/data';
@@ -73,6 +74,8 @@ export default function ComunidadePage() {
   const [commentsMap, setCommentsMap] = useState<Record<string, number>>({});
   const [showEmojiComment, setShowEmojiComment] = useState(false);
   const emojiCommentRef = useRef<HTMLDivElement>(null);
+  const [viewsMap, setViewsMap] = useState<Record<string, number>>({});
+  const [repostsMap, setRepostsMap] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const q = query(collection(db, "comunidadePosts"), orderBy("createdAt", "desc"));
@@ -126,6 +129,48 @@ export default function ComunidadePage() {
     });
     return () => { unsubscribes.forEach((unsub) => unsub()); };
   }, [posts]);
+
+  // Atualizar contador de visualizações e reposts de todos os posts em tempo real
+  useEffect(() => {
+    const unsubscribes: any[] = [];
+    posts.forEach((post) => {
+      // Visualizações
+      const unsubViews = onSnapshot(
+        collection(db, "comunidadePosts", post.id, "views"),
+        (snapshot) => {
+          setViewsMap((prev) => ({ ...prev, [post.id]: snapshot.size }));
+        }
+      );
+      unsubscribes.push(unsubViews);
+      // Reposts
+      const unsubReposts = onSnapshot(
+        collection(db, "comunidadePosts", post.id, "reposts"),
+        (snapshot) => {
+          setRepostsMap((prev) => ({ ...prev, [post.id]: snapshot.size }));
+        }
+      );
+      unsubscribes.push(unsubReposts);
+    });
+    return () => { unsubscribes.forEach((unsub) => unsub()); };
+  }, [posts]);
+
+  // Registrar visualização única ao abrir modal
+  useEffect(() => {
+    if (modalOpen && modalPostId && currentUser) {
+      const viewRef = doc(db, "comunidadePosts", modalPostId, "views", currentUser.uid);
+      setDoc(viewRef, { viewedAt: serverTimestamp() }, { merge: true });
+    }
+  }, [modalOpen, modalPostId, currentUser]);
+
+  // Registrar visualização ao renderizar post (primeira vez)
+  useEffect(() => {
+    if (currentUser) {
+      posts.forEach((post) => {
+        const viewRef = doc(db, "comunidadePosts", post.id, "views", currentUser.uid);
+        setDoc(viewRef, { viewedAt: serverTimestamp() }, { merge: true });
+      });
+    }
+  }, [posts, currentUser]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -229,6 +274,29 @@ export default function ComunidadePage() {
       createdAt: serverTimestamp(),
     });
     setNewComment("");
+  };
+
+  const handleRepost = async (post: any) => {
+    if (!currentUser) return;
+    // Cria novo post referenciando o original
+    await addDoc(collection(db, "comunidadePosts"), {
+      texto: post.texto,
+      userId: currentUser.uid,
+      nome: userData?.nome || currentUser.email?.split("@")[0] || "Usuário",
+      email: currentUser.email || "",
+      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${userData?.nome || currentUser.email?.[0] || "U"}`,
+      createdAt: serverTimestamp(),
+      likes: 0,
+      likedBy: [],
+      comments: [],
+      file: post.file,
+      fileMeta: post.fileMeta,
+      repostOf: post.id,
+    });
+    // Marca repost no post original
+    await setDoc(doc(db, "comunidadePosts", post.id, "reposts", currentUser.uid), {
+      repostedAt: serverTimestamp(),
+    });
   };
 
   return (
@@ -392,10 +460,20 @@ export default function ComunidadePage() {
                       onClick={() => { setModalImage(post.fileMeta.type.startsWith('image/') ? post.file : null); setModalPostId(post.id); setModalOpen(true); }}
                     />
                     <ActionIcon 
+                      icon={<span title="Repostar">🔁</span>}
+                      label={(repostsMap[post.id] ?? 0).toString()}
+                      onClick={() => handleRepost(post)}
+                    />
+                    <ActionIcon 
                       icon={<span>{isLiked ? '❤️' : '🤍'}</span>} 
                       label={likesCount.toString()} 
                       onClick={() => handleLike(post.id)}
                       active={isLiked}
+                    />
+                    <ActionIcon 
+                      icon={<span title="Visualizações">👁️</span>}
+                      label={(viewsMap[post.id] ?? 0).toString()}
+                      onClick={() => {}}
                     />
                   </div>
                 </div>
