@@ -627,11 +627,6 @@ export default function DashboardPage() {
           </div>
         </Card>
       </div>
-
-      {/* Adicionar link para Pagamentos na navegação lateral, se não existir */}
-      <Link href="/dashboard/pagamentos" className="block px-4 py-2 rounded-lg text-[#3478F6] hover:bg-[#E8E9F1] font-semibold transition-colors">
-        Pagamentos
-      </Link>
     </div>
   );
 } 
