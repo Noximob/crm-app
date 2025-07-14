@@ -76,6 +76,10 @@ export default function ComunidadePage() {
   const emojiCommentRef = useRef<HTMLDivElement>(null);
   const [viewsMap, setViewsMap] = useState<Record<string, number>>({});
   const [repostsMap, setRepostsMap] = useState<Record<string, number>>({});
+  const [repostModalOpen, setRepostModalOpen] = useState(false);
+  const [repostTarget, setRepostTarget] = useState<any>(null);
+  const [repostComment, setRepostComment] = useState("");
+  const [repostLoading, setRepostLoading] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, "comunidadePosts"), orderBy("createdAt", "desc"));
@@ -276,11 +280,16 @@ export default function ComunidadePage() {
     setNewComment("");
   };
 
-  const handleRepost = async (post: any) => {
-    if (!currentUser) return;
-    // Cria novo post referenciando o original
+  const handleRepost = (post: any) => {
+    setRepostTarget(post);
+    setRepostModalOpen(true);
+  };
+
+  const confirmRepost = async (withComment: boolean) => {
+    if (!currentUser || !repostTarget) return;
+    setRepostLoading(true);
     await addDoc(collection(db, "comunidadePosts"), {
-      texto: post.texto,
+      texto: withComment ? repostComment : repostTarget.texto,
       userId: currentUser.uid,
       nome: userData?.nome || currentUser.email?.split("@")[0] || "Usuário",
       email: currentUser.email || "",
@@ -289,14 +298,18 @@ export default function ComunidadePage() {
       likes: 0,
       likedBy: [],
       comments: [],
-      file: post.file,
-      fileMeta: post.fileMeta,
-      repostOf: post.id,
+      file: repostTarget.file,
+      fileMeta: repostTarget.fileMeta,
+      repostOf: repostTarget.id,
+      repostComment: withComment ? repostComment : null,
     });
-    // Marca repost no post original
-    await setDoc(doc(db, "comunidadePosts", post.id, "reposts", currentUser.uid), {
+    await setDoc(doc(db, "comunidadePosts", repostTarget.id, "reposts", currentUser.uid), {
       repostedAt: serverTimestamp(),
     });
+    setRepostModalOpen(false);
+    setRepostTarget(null);
+    setRepostComment("");
+    setRepostLoading(false);
   };
 
   return (
@@ -535,6 +548,32 @@ export default function ComunidadePage() {
             </div>
           </div>
         )}
+      </Modal>
+      {/* Modal de Repost */}
+      <Modal open={repostModalOpen} onClose={() => { setRepostModalOpen(false); setRepostTarget(null); setRepostComment(""); }}>
+        <div className="p-6">
+          <h2 className="font-bold text-lg mb-4 text-[#2E2F38] dark:text-white">Repostar</h2>
+          <div className="mb-4">
+            <button
+              className="px-4 py-2 rounded-lg bg-[#3478F6] text-white font-bold shadow-soft hover:bg-[#255FD1] transition-colors mr-2"
+              onClick={() => confirmRepost(false)}
+              disabled={repostLoading}
+            >Repostar direto</button>
+            <button
+              className="px-4 py-2 rounded-lg bg-[#E8E9F1] text-[#2E2F38] dark:bg-[#23283A] dark:text-white font-bold shadow-soft hover:bg-[#A3C8F7] transition-colors"
+              onClick={() => confirmRepost(true)}
+              disabled={repostLoading || !repostComment.trim()}
+            >Repostar com comentário</button>
+          </div>
+          <textarea
+            className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white resize-none min-h-[60px]"
+            placeholder="Adicione um comentário (opcional)"
+            value={repostComment}
+            onChange={e => setRepostComment(e.target.value)}
+            disabled={repostLoading}
+          />
+          {repostLoading && <div className="mt-4 text-[#3478F6] font-bold">Repostando...</div>}
+        </div>
       </Modal>
     </div>
   );
