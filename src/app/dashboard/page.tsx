@@ -562,27 +562,40 @@ export default function DashboardPage() {
         </div>
       </div>
       {/* Avisos Importantes */}
-      <div className="bg-[#23283A] rounded-2xl p-6 mb-6">
-        <h2 className="text-lg font-bold text-white mb-4">Avisos Importantes</h2>
-        {avisosImportantes.filter(aviso => !aviso.dataHora || (aviso.dataHora?.toDate && aviso.dataHora.toDate() <= new Date()))
-          .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
-          .length === 0 ? (
-          <p className="text-gray-300">Nenhum aviso importante cadastrado pela imobiliária.</p>
-        ) : (
-          <ul className="space-y-4">
-            {avisosImportantes
+      <Card className="animate-fade-in bg-[#23283A] mb-6">
+        <SectionTitle className="mb-6 text-white">Avisos Importantes</SectionTitle>
+        <div className="space-y-4">
+          {avisosImportantes
+            .filter(aviso => !aviso.dataHora || (aviso.dataHora?.toDate && aviso.dataHora.toDate() <= new Date()))
+            .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
+            .length === 0 ? (
+            <p className="text-gray-300">Nenhum aviso importante cadastrado pela imobiliária.</p>
+          ) : (
+            avisosImportantes
               .filter(aviso => !aviso.dataHora || (aviso.dataHora?.toDate && aviso.dataHora.toDate() <= new Date()))
               .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
-              .map(aviso => (
-                <li key={aviso.id} className="border-b border-gray-700 last:border-0 pb-3">
-                  <div className="font-semibold text-[#3478F6] dark:text-[#A3C8F7]">{aviso.titulo}</div>
-                  <div className="text-white text-sm mb-1">{aviso.mensagem}</div>
-                  <div className="text-xs text-[#6B6F76] dark:text-gray-300">{aviso.dataHora?.toDate ? aviso.dataHora.toDate().toLocaleString('pt-BR') : ''}</div>
-                </li>
-              ))}
-          </ul>
-        )}
-      </div>
+              .map((aviso, idx) => {
+                // Alterna cor e ícone para dar destaque visual
+                const cardStyles = [
+                  { bg: 'bg-[#FFCC66]/10', border: 'border-[#FFCC66]/20', icon: <AlertCircleIcon className="h-5 w-5 text-[#FFCC66] mt-0.5" /> },
+                  { bg: 'bg-[#A3C8F7]/10', border: 'border-[#A3C8F7]/20', icon: <CheckCircleIcon className="h-5 w-5 text-[#A3C8F7] mt-0.5" /> },
+                  { bg: 'bg-[#3AC17C]/10', border: 'border-[#3AC17C]/20', icon: <StarIcon className="h-5 w-5 text-[#3AC17C] mt-0.5" /> },
+                ];
+                const style = cardStyles[idx % cardStyles.length];
+                return (
+                  <div key={aviso.id} className={`flex items-start gap-3 p-3 rounded-xl border ${style.bg} ${style.border}`}>
+                    {style.icon}
+                    <div>
+                      <div className="text-sm font-medium text-[#2E2F38] dark:text-white">{aviso.titulo}</div>
+                      <div className="text-xs text-[#6B6F76] dark:text-gray-100">{aviso.mensagem}</div>
+                      <div className="text-[10px] text-[#6B6F76] dark:text-gray-300 mt-1">{aviso.dataHora?.toDate ? aviso.dataHora.toDate().toLocaleString('pt-BR') : ''}</div>
+                    </div>
+                  </div>
+                );
+              })
+          )}
+        </div>
+      </Card>
 
       {/* Seção inferior */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
@@ -599,6 +612,41 @@ export default function DashboardPage() {
                 <span className="text-xs text-[#6B6F76] dark:text-gray-300 mt-2">{day}</span>
               </div>
             ))}
+          </div>
+        </Card>
+        {/* Avisos Importantes - restaurado, integrado ao Firestore */}
+        <Card className="animate-fade-in">
+          <SectionTitle className="mb-6">Avisos Importantes</SectionTitle>
+          <div className="space-y-4">
+            {avisosImportantes
+              .filter(aviso => !aviso.dataHora || (aviso.dataHora?.toDate && aviso.dataHora.toDate() <= new Date()))
+              .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
+              .length === 0 ? (
+              <p className="text-gray-300">Nenhum aviso importante cadastrado pela imobiliária.</p>
+            ) : (
+              avisosImportantes
+                .filter(aviso => !aviso.dataHora || (aviso.dataHora?.toDate && aviso.dataHora.toDate() <= new Date()))
+                .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
+                .map((aviso, idx) => {
+                  // Alterna cor e ícone para dar destaque visual
+                  const cardStyles = [
+                    { bg: 'bg-[#FFCC66]/10', border: 'border-[#FFCC66]/20', icon: <AlertCircleIcon className="h-5 w-5 text-[#FFCC66] mt-0.5" /> },
+                    { bg: 'bg-[#A3C8F7]/10', border: 'border-[#A3C8F7]/20', icon: <CheckCircleIcon className="h-5 w-5 text-[#A3C8F7] mt-0.5" /> },
+                    { bg: 'bg-[#3AC17C]/10', border: 'border-[#3AC17C]/20', icon: <StarIcon className="h-5 w-5 text-[#3AC17C] mt-0.5" /> },
+                  ];
+                  const style = cardStyles[idx % cardStyles.length];
+                  return (
+                    <div key={aviso.id} className={`flex items-start gap-3 p-3 rounded-xl border ${style.bg} ${style.border}`}>
+                      {style.icon}
+                      <div>
+                        <div className="text-sm font-medium text-[#2E2F38] dark:text-white">{aviso.titulo}</div>
+                        <div className="text-xs text-[#6B6F76] dark:text-gray-100">{aviso.mensagem}</div>
+                        <div className="text-[10px] text-[#6B6F76] dark:text-gray-300 mt-1">{aviso.dataHora?.toDate ? aviso.dataHora.toDate().toLocaleString('pt-BR') : ''}</div>
+                      </div>
+                    </div>
+                  );
+                })
+            )}
           </div>
         </Card>
       </div>
