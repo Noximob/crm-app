@@ -307,13 +307,11 @@ export default function ComunidadePage() {
                       {post.fileMeta.type.startsWith('image/') && (
                         <div className="relative">
                           <img src={post.file} alt={post.fileMeta.name} className="max-h-60 rounded-xl border border-[#E8E9F1] dark:border-[#23283A]" />
-                          <span className="block text-sm text-white font-medium">{post.fileMeta.name}</span>
                         </div>
                       )}
                       {post.fileMeta.type.startsWith('video/') && (
                         <div className="relative">
                           <video src={post.file} controls className="max-h-60 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] bg-black" />
-                          <span className="block text-sm text-white font-medium">{post.fileMeta.name}</span>
                         </div>
                       )}
                       {post.fileMeta.type === 'application/pdf' && (
