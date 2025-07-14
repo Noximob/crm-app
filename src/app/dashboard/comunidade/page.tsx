@@ -189,8 +189,9 @@ export default function ComunidadePage() {
             {(imagePreview || gifPreview) && (
               <div className="flex gap-2 mt-2">
                 {imagePreview && (
-                  <div className="relative">
-                    <img src={imagePreview} alt="preview" className="max-h-40 rounded-xl border border-[#E8E9F1] dark:border-[#23283A]" />
+                  <div className="relative flex flex-col items-center justify-center bg-[#F5F6FA] dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] shadow-md p-2 max-w-xs mx-auto">
+                    <img src={imagePreview} alt="preview" className="max-h-40 rounded-xl mb-2" />
+                    <span className="block text-center text-sm text-[#2E2F38] dark:text-white font-medium">Pré-visualização</span>
                     <button
                       className="absolute top-1 right-1 bg-white/80 dark:bg-[#23283A]/80 rounded-full p-1 text-[#F45B69] hover:bg-[#F45B69]/10"
                       onClick={() => { setImageFile(null); setImagePreview(null); }}
@@ -201,8 +202,9 @@ export default function ComunidadePage() {
                   </div>
                 )}
                 {gifPreview && (
-                  <div className="relative">
-                    <img src={gifPreview} alt="preview" className="max-h-40 rounded-xl border border-[#E8E9F1] dark:border-[#23283A]" />
+                  <div className="relative flex flex-col items-center justify-center bg-[#F5F6FA] dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] shadow-md p-2 max-w-xs mx-auto">
+                    <img src={gifPreview} alt="preview" className="max-h-40 rounded-xl mb-2" />
+                    <span className="block text-center text-sm text-[#2E2F38] dark:text-white font-medium">Pré-visualização GIF</span>
                     <button
                       className="absolute top-1 right-1 bg-white/80 dark:bg-[#23283A]/80 rounded-full p-1 text-[#F45B69] hover:bg-[#F45B69]/10"
                       onClick={() => { setGifFile(null); setGifPreview(null); }}
@@ -300,9 +302,19 @@ export default function ComunidadePage() {
                   </div>
                   <div className="text-[#2E2F38] dark:text-white text-base whitespace-pre-line mb-2">{post.texto}</div>
                   {(post.image || post.gif) && (
-                    <div className="flex gap-2 mt-2">
-                      {post.image && <img src={post.image} alt="imagem do post" className="max-h-60 rounded-xl border border-[#E8E9F1] dark:border-[#23283A]" />}
-                      {post.gif && <img src={post.gif} alt="gif do post" className="max-h-60 rounded-xl border border-[#E8E9F1] dark:border-[#23283A]" />}
+                    <div className="flex gap-2 mt-2 items-center justify-center">
+                      {post.image && (
+                        <div className="flex flex-col items-center justify-center bg-[#F5F6FA] dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] shadow-md p-2 max-w-xs mx-auto">
+                          <img src={post.image} alt="imagem do post" className="max-h-60 rounded-xl mb-2" />
+                          <span className="block text-center text-sm text-[#2E2F38] dark:text-white font-medium">Imagem do post</span>
+                        </div>
+                      )}
+                      {post.gif && (
+                        <div className="flex flex-col items-center justify-center bg-[#F5F6FA] dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] shadow-md p-2 max-w-xs mx-auto">
+                          <img src={post.gif} alt="gif do post" className="max-h-60 rounded-xl mb-2" />
+                          <span className="block text-center text-sm text-[#2E2F38] dark:text-white font-medium">GIF do post</span>
+                        </div>
+                      )}
                     </div>
                   )}
                   <div className="flex gap-4 mt-3">
