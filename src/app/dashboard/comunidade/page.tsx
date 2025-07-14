@@ -3,20 +3,31 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
-import { collection, addDoc, onSnapshot, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, serverTimestamp, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
 
-const ActionIcon = ({ icon, label }: { icon: React.ReactNode; label: string }) => (
-  <button className="flex items-center gap-1 text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] dark:hover:text-[#A3C8F7] text-sm font-medium transition-colors">
+const ActionIcon = ({ icon, label, onClick, active = false, danger = false }: { icon: React.ReactNode; label?: string; onClick?: () => void; active?: boolean; danger?: boolean }) => (
+  <button
+    className={`flex items-center gap-1 text-sm font-medium transition-colors px-2 py-1 rounded hover:bg-[#E8E9F1] dark:hover:bg-[#23283A] ${danger ? 'text-[#F45B69] hover:bg-[#F45B69]/10' : active ? 'text-[#3478F6]' : 'text-[#6B6F76] dark:text-gray-300'}`}
+    onClick={onClick}
+    type="button"
+  >
     {icon}
-    <span>{label}</span>
+    {label && <span>{label}</span>}
   </button>
 );
+
+function gerarHandle(nome: string, email: string) {
+  if (nome) return '@' + nome.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (email) return '@' + email.split('@')[0].toLowerCase();
+  return '@usuario';
+}
 
 export default function ComunidadePage() {
   const { currentUser, userData } = useAuth();
   const [posts, setPosts] = useState<any[]>([]);
   const [novoPost, setNovoPost] = useState('');
   const [loading, setLoading] = useState(false);
+  const [deletando, setDeletando] = useState<string | null>(null);
 
   useEffect(() => {
     const q = query(collection(db, 'comunidadePosts'), orderBy('createdAt', 'desc'));
@@ -33,6 +44,7 @@ export default function ComunidadePage() {
       texto: novoPost,
       userId: currentUser.uid,
       nome: userData?.nome || currentUser.email?.split('@')[0] || 'Usuário',
+      email: currentUser.email || '',
       avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${userData?.nome || currentUser.email?.[0] || 'U'}`,
       createdAt: serverTimestamp(),
       likes: 0,
@@ -41,6 +53,13 @@ export default function ComunidadePage() {
     });
     setNovoPost('');
     setLoading(false);
+  };
+
+  const handleDelete = async (postId: string) => {
+    if (!window.confirm('Tem certeza que deseja apagar este post?')) return;
+    setDeletando(postId);
+    await deleteDoc(doc(db, 'comunidadePosts', postId));
+    setDeletando(null);
   };
 
   return (
@@ -75,27 +94,37 @@ export default function ComunidadePage() {
         </div>
         {/* Feed de posts */}
         <div className="flex flex-col gap-6">
-          {posts.map((post) => (
-            <div key={post.id} className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-6 flex gap-4">
-              <img src={post.avatar} alt={post.nome} className="w-12 h-12 rounded-full object-cover" />
-              <div className="flex-1 flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-[#2E2F38] dark:text-white">{post.nome}</span>
-                  <span className="text-xs text-[#6B6F76] dark:text-gray-300">{post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString('pt-BR') : ''}</span>
-                </div>
-                <div className="text-[#2E2F38] dark:text-white text-base whitespace-pre-line">{post.texto}</div>
-                {post.image && (
-                  <img src={post.image} alt="imagem do post" className="rounded-xl mt-2 max-h-60 object-cover border border-[#E8E9F1] dark:border-[#23283A]" />
-                )}
-                <div className="flex gap-6 mt-2">
-                  <ActionIcon icon={<span>💬</span>} label={post.comments?.toString() || '0'} />
-                  <ActionIcon icon={<span>🔁</span>} label={post.reposts?.toString() || '0'} />
-                  <ActionIcon icon={<span>❤️</span>} label={post.likes?.toString() || '0'} />
-                  <ActionIcon icon={<span>↗️</span>} label={"Compartilhar"} />
+          {posts.map((post) => {
+            const isAuthor = currentUser && post.userId === currentUser.uid;
+            return (
+              <div
+                key={post.id}
+                className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-6 flex gap-4 group hover:shadow-lg transition-all"
+              >
+                <img src={post.avatar} alt={post.nome} className="w-12 h-12 rounded-full object-cover mt-1" />
+                <div className="flex-1 flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-[#2E2F38] dark:text-white text-base">{post.nome}</span>
+                    <span className="text-xs text-[#6B6F76] dark:text-gray-400">{gerarHandle(post.nome, post.email)}</span>
+                    <span className="text-xs text-[#6B6F76] dark:text-gray-400">{post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString('pt-BR') : ''}</span>
+                    {isAuthor && (
+                      <ActionIcon
+                        icon={deletando === post.id ? <span className="animate-spin">🗑️</span> : <span>🗑️</span>}
+                        label=""
+                        onClick={() => handleDelete(post.id)}
+                        danger
+                      />
+                    )}
+                  </div>
+                  <div className="text-[#2E2F38] dark:text-white text-base whitespace-pre-line mb-2">{post.texto}</div>
+                  <div className="flex gap-4 mt-1">
+                    <ActionIcon icon={<span>💬</span>} label={post.comments?.toString() || '0'} />
+                    <ActionIcon icon={<span>❤️</span>} label={post.likes?.toString() || '0'} />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
