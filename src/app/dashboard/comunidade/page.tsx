@@ -285,8 +285,8 @@ export default function ComunidadePage() {
                 <div className="flex-1 flex flex-col gap-1">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-[#2E2F38] dark:text-white text-base">{post.nome}</span>
-                    <span className="text-xs text-[#6B6F76] dark:text-gray-300">{gerarHandle(post.nome, post.email)}</span>
-                    <span className="text-xs text-[#6B6F76] dark:text-gray-300">
+                    <span className="text-xs text-[#6B6F76] dark:text-white">{gerarHandle(post.nome, post.email)}</span>
+                    <span className="text-xs text-[#6B6F76] dark:text-white">
                       {post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString('pt-BR') : ''}
                     </span>
                     {isAuthor && (
