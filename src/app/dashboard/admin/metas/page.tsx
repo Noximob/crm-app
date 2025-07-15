@@ -5,6 +5,18 @@ import { db } from '@/lib/firebase';
 import { collection, query, where, orderBy, limit, getDocs, doc, setDoc, Timestamp } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 
+// Função para formatar números como moeda brasileira
+const formatCurrency = (value: string | number): string => {
+  const num = typeof value === 'string' ? parseFloat(value.replace(/[^\d,.-]/g, '').replace(',', '.')) : value;
+  if (isNaN(num)) return '';
+  return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+// Função para converter string formatada em número
+const parseCurrency = (value: string): number => {
+  return parseFloat(value.replace(/[^\d,.-]/g, '').replace(',', '.'));
+};
+
 export default function AdminMetasPage() {
   const { userData } = useAuth();
   const [inicio, setInicio] = useState('');
@@ -35,8 +47,8 @@ export default function AdminMetasPage() {
           console.log('Meta encontrada:', meta);
           setInicio(meta.inicio ? meta.inicio.split('T')[0] : '');
           setFim(meta.fim ? meta.fim.split('T')[0] : '');
-          setVgv(meta.valor ? meta.valor.toString() : '');
-          setRealizado(meta.alcancado ? meta.alcancado.toString() : '');
+          setVgv(meta.valor ? formatCurrency(meta.valor) : '');
+          setRealizado(meta.alcancado ? formatCurrency(meta.alcancado) : '');
           setPercentualManual(meta.percentual ? meta.percentual.toString() : '');
         } else {
           console.log('Nenhuma meta encontrada');
@@ -52,7 +64,7 @@ export default function AdminMetasPage() {
   }, [userData]);
 
   // Calcular percentual automático baseado nos valores
-  const percentualCalculado = vgv && realizado ? Math.round((parseFloat(realizado) / parseFloat(vgv)) * 100) : 0;
+  const percentualCalculado = vgv && realizado ? Math.round((parseCurrency(realizado) / parseCurrency(vgv)) * 100) : 0;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -70,8 +82,8 @@ export default function AdminMetasPage() {
         imobiliariaId: userData.imobiliariaId,
         inicio,
         fim,
-        valor: parseFloat(vgv),
-        alcancado: parseFloat(realizado),
+        valor: parseCurrency(vgv),
+        alcancado: parseCurrency(realizado),
         percentual: percentualFinal,
         createdAt: Timestamp.now(),
       };
@@ -89,6 +101,21 @@ export default function AdminMetasPage() {
       setLoading(false);
     }
   }
+
+  // Função para formatar input de moeda
+  const handleCurrencyInput = (value: string, setter: (value: string) => void) => {
+    // Remove tudo exceto números
+    const numericValue = value.replace(/[^\d]/g, '');
+    
+    if (numericValue === '') {
+      setter('');
+      return;
+    }
+    
+    // Converte para número e formata
+    const num = parseInt(numericValue) / 100;
+    setter(formatCurrency(num));
+  };
 
   if (fetching) {
     return (
@@ -121,11 +148,25 @@ export default function AdminMetasPage() {
         <div className="flex gap-4">
           <div className="flex-1">
             <label className="block text-sm font-medium mb-1 text-white">VGV Estimado (R$)</label>
-            <input type="number" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#3478F6]/30" value={vgv} onChange={e => setVgv(e.target.value)} required min="0" step="0.01" />
+            <input 
+              type="text" 
+              className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#3478F6]/30" 
+              value={vgv} 
+              onChange={e => handleCurrencyInput(e.target.value, setVgv)}
+              placeholder="0,00"
+              required 
+            />
           </div>
           <div className="flex-1">
             <label className="block text-sm font-medium mb-1 text-white">VGV Realizado (R$)</label>
-            <input type="number" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#3478F6]/30" value={realizado} onChange={e => setRealizado(e.target.value)} required min="0" step="0.01" />
+            <input 
+              type="text" 
+              className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#3478F6]/30" 
+              value={realizado} 
+              onChange={e => handleCurrencyInput(e.target.value, setRealizado)}
+              placeholder="0,00"
+              required 
+            />
           </div>
         </div>
         <div>
