@@ -61,19 +61,29 @@ export default function AdminMetasPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!userData?.imobiliariaId) return;
+    
     setLoading(true);
     try {
       const metaRef = doc(db, 'metas', userData.imobiliariaId);
+      
+      // Converter valores formatados para números
+      const valorNumerico = parseCurrency(vgv);
+      const realizadoNumerico = parseCurrency(realizado);
+      
       const novaMeta = {
         imobiliariaId: userData.imobiliariaId,
         inicio,
         fim,
-        valor: parseCurrency(vgv),
-        alcancado: parseCurrency(realizado),
+        valor: valorNumerico,
+        alcancado: realizadoNumerico,
         percentual: percentualCalculado,
         updatedAt: Timestamp.now(),
       };
+      
+      console.log('Salvando meta:', novaMeta);
       await setDoc(metaRef, novaMeta, { merge: true });
+      console.log('Meta salva com sucesso!');
+      
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2000);
     } catch (error) {
@@ -111,26 +121,10 @@ export default function AdminMetasPage() {
 
   return (
     <div className="max-w-xl mx-auto mt-10 bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-8 shadow-xl">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-          <svg className="h-7 w-7 text-[#3478F6]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-          Gerenciar Meta da Imobiliária
-        </h1>
-        <button 
-          type="button" 
-          onClick={fetchMeta}
-          disabled={fetching}
-          className="flex items-center gap-2 px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg transition-all disabled:opacity-60"
-        >
-          <svg className={`h-4 w-4 ${fetching ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="M21 2v6h-6"/>
-            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
-            <path d="M3 22v-6h6"/>
-            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
-          </svg>
-          {fetching ? 'Atualizando...' : 'Atualizar'}
-        </button>
-      </div>
+      <h1 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+        <svg className="h-7 w-7 text-[#3478F6]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        Gerenciar Meta da Imobiliária
+      </h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex gap-4">
           <div className="flex-1">
