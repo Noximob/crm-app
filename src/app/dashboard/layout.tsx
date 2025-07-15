@@ -115,7 +115,6 @@ export default function DashboardLayout({
     { href: '/dashboard/crm', icon: BarChartIcon, label: 'CRM' },
     { href: '/dashboard/materiais', icon: FileTextIcon, label: 'Materiais' },
     { href: '/dashboard/comunidade', icon: CommunityIcon, label: 'Comunidade' },
-    { href: '/dashboard/metas', icon: TargetIcon, label: 'Metas' },
     { href: '/dashboard/treinamentos', icon: PresentationIcon, label: 'Treinamentos' },
     { href: '/dashboard/incluir-imovel', icon: HouseIcon, label: 'Incluir imóvel' },
     { href: '/dashboard/pagamentos', icon: CreditCardIcon, label: 'Pagamentos' },
