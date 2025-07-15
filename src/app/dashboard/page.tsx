@@ -660,15 +660,17 @@ export default function DashboardPage() {
 
       {/* Seção inferior */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        {/* Gráfico de Performance */}
-        <Card className="animate-fade-in">
+        {/* Metas */}
+        <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-8 min-h-[220px] relative overflow-hidden shadow-xl animate-fade-in">
+          <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
           <MetasCard meta={meta} nomeImobiliaria={nomeImobiliaria} />
-        </Card>
-        {/* Avisos Importantes - design azulado moderno */}
-        <div className="flex flex-col gap-4 p-8 rounded-3xl shadow-xl bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 min-h-[220px] relative overflow-hidden animate-fade-in">
+        </div>
+        {/* Avisos Importantes */}
+        <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-8 min-h-[220px] relative overflow-hidden shadow-xl animate-fade-in flex flex-col gap-4">
+          <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
           <div className="flex items-center gap-3 mb-4">
             <svg className="h-8 w-8 text-[#3478F6] drop-shadow-lg" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
-            <span className="font-extrabold text-[#2E2F38] dark:text-white text-2xl tracking-tight">Avisos Importantes</span>
+            <span className="font-extrabold text-white text-2xl tracking-tight">Avisos Importantes</span>
           </div>
           <div className="space-y-3">
             {avisosImportantes
