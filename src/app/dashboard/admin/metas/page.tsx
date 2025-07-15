@@ -5,18 +5,6 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 
-// Função para formatar números como moeda brasileira
-const formatCurrency = (value: string | number): string => {
-  const num = typeof value === 'string' ? parseFloat(value.replace(/[^\d,.-]/g, '').replace(',', '.')) : value;
-  if (isNaN(num)) return '';
-  return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-};
-
-// Função para converter string formatada em número
-const parseCurrency = (value: string): number => {
-  return parseFloat(value.replace(/[^\d,.-]/g, '').replace(',', '.'));
-};
-
 export default function AdminMetasPage() {
   const { userData } = useAuth();
   const [inicio, setInicio] = useState('');
@@ -41,8 +29,8 @@ export default function AdminMetasPage() {
         const meta = snap.data();
         setInicio(meta.inicio ? meta.inicio.split('T')[0] : '');
         setFim(meta.fim ? meta.fim.split('T')[0] : '');
-        setVgv(meta.valor ? formatCurrency(meta.valor) : '');
-        setRealizado(meta.alcancado ? formatCurrency(meta.alcancado) : '');
+        setVgv(meta.valor ? meta.valor.toString() : '');
+        setRealizado(meta.alcancado ? meta.alcancado.toString() : '');
       }
     } catch (error) {
       console.error('Erro ao buscar meta:', error);
@@ -56,7 +44,7 @@ export default function AdminMetasPage() {
   }, [userData]);
 
   // Calcular percentual automático baseado nos valores
-  const percentualCalculado = vgv && realizado ? Math.round((parseCurrency(realizado) / parseCurrency(vgv)) * 100) : 0;
+  const percentualCalculado = vgv && realizado ? Math.round((parseFloat(realizado) / parseFloat(vgv)) * 100) : 0;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -66,16 +54,12 @@ export default function AdminMetasPage() {
     try {
       const metaRef = doc(db, 'metas', userData.imobiliariaId);
       
-      // Converter valores formatados para números
-      const valorNumerico = parseCurrency(vgv);
-      const realizadoNumerico = parseCurrency(realizado);
-      
       const novaMeta = {
         imobiliariaId: userData.imobiliariaId,
         inicio,
         fim,
-        valor: valorNumerico,
-        alcancado: realizadoNumerico,
+        valor: parseFloat(vgv),
+        alcancado: parseFloat(realizado),
         percentual: percentualCalculado,
         updatedAt: Timestamp.now(),
       };
@@ -92,21 +76,6 @@ export default function AdminMetasPage() {
       setLoading(false);
     }
   }
-
-  // Função para formatar input de moeda
-  const handleCurrencyInput = (value: string, setter: (value: string) => void) => {
-    // Remove tudo exceto números
-    const numericValue = value.replace(/[^\d]/g, '');
-    
-    if (numericValue === '') {
-      setter('');
-      return;
-    }
-    
-    // Converte para número (sem dividir por 100)
-    const num = parseInt(numericValue);
-    setter(formatCurrency(num));
-  };
 
   if (fetching) {
     return (
@@ -140,22 +109,26 @@ export default function AdminMetasPage() {
           <div className="flex-1">
             <label className="block text-sm font-medium mb-1 text-white">VGV Estimado (R$)</label>
             <input 
-              type="text" 
+              type="number" 
               className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#3478F6]/30" 
               value={vgv} 
-              onChange={e => handleCurrencyInput(e.target.value, setVgv)}
-              placeholder="0,00"
+              onChange={e => setVgv(e.target.value)}
+              placeholder="0"
+              min="0"
+              step="0.01"
               required 
             />
           </div>
           <div className="flex-1">
             <label className="block text-sm font-medium mb-1 text-white">VGV Realizado (R$)</label>
             <input 
-              type="text" 
+              type="number" 
               className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#3478F6]/30" 
               value={realizado} 
-              onChange={e => handleCurrencyInput(e.target.value, setRealizado)}
-              placeholder="0,00"
+              onChange={e => setRealizado(e.target.value)}
+              placeholder="0"
+              min="0"
+              step="0.01"
               required 
             />
           </div>
