@@ -253,77 +253,44 @@ const MetasCard = ({ meta, nomeImobiliaria }: { meta: any, nomeImobiliaria: stri
   const progresso = meta?.percentual !== undefined ? meta.percentual : (meta && meta.valor > 0 ? Math.round((meta.alcancado / meta.valor) * 100) : 0);
   const progressoDisplay = progresso > 100 ? 100 : progresso;
   const corBarra = progresso >= 100 ? 'bg-[#3AC17C]' : 'bg-[#3478F6]';
-  
+
   return (
-    <div className="h-full rounded-3xl shadow-xl bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 relative overflow-hidden">
+    <div className="flex flex-col gap-3 p-6 rounded-2xl shadow-xl bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 min-h-[200px] relative overflow-hidden">
       {/* Borda azul à esquerda */}
-      <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
-      
-      {/* Conteúdo principal */}
-      <div className="p-6 h-full flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <svg className="h-8 w-8 text-[#3478F6] drop-shadow-lg" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-            </svg>
-            <span className="font-extrabold text-white text-2xl tracking-tight">Metas</span>
-          </div>
-          <span className="px-4 py-2 rounded-full bg-[#3478F6]/20 text-[#3478F6] text-sm font-bold border border-[#3478F6]/30">
-            {nomeImobiliaria}
-          </span>
+      <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]" />
+      {/* Header */}
+      <div className="flex items-center gap-2 mb-1">
+        <svg className="h-6 w-6 text-[#3478F6]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <span className="font-bold text-white text-lg tracking-tight">Metas</span>
+        {nomeImobiliaria && (
+          <span className="ml-2 px-2 py-0.5 rounded bg-[#3478F6]/10 text-[#3478F6] text-xs font-semibold">{nomeImobiliaria}</span>
+        )}
+      </div>
+      {/* Datas */}
+      <div className="flex items-center gap-2 text-xs text-[#A3C8F7] mb-2">
+        <span className="font-semibold">Início:</span>
+        <span className="text-white">{meta?.inicio ? new Date(meta.inicio).toLocaleDateString('pt-BR') : '--'}</span>
+        <span>|</span>
+        <span className="font-semibold">Fim:</span>
+        <span className="text-white">{meta?.fim ? new Date(meta.fim).toLocaleDateString('pt-BR') : '--'}</span>
+      </div>
+      {/* Valores principais */}
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex flex-col">
+          <span className="text-xs text-[#A3C8F7]">VGV da Meta</span>
+          <span className="text-xl font-bold text-[#3478F6]">{meta?.valor ? meta.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}</span>
         </div>
-
-        {/* Datas */}
-        <div className="flex items-center gap-4 text-sm text-gray-300 mb-8">
-          <div className="flex items-center gap-2">
-            <span className="text-[#3478F6] font-semibold">Início:</span>
-            <span className="text-white">{meta?.inicio ? new Date(meta.inicio).toLocaleDateString('pt-BR') : '--'}</span>
-          </div>
-          <div className="w-px h-4 bg-gray-600"></div>
-          <div className="flex items-center gap-2">
-            <span className="text-[#3478F6] font-semibold">Fim:</span>
-            <span className="text-white">{meta?.fim ? new Date(meta.fim).toLocaleDateString('pt-BR') : '--'}</span>
-          </div>
-        </div>
-
-        {/* Valores principais */}
-        <div className="flex-1 flex flex-col justify-center">
-          <div className="grid grid-cols-2 gap-8 mb-6">
-            {/* VGV da Meta */}
-            <div className="text-center">
-              <div className="text-sm text-gray-300 mb-2">VGV da Meta</div>
-              <div className="text-3xl font-extrabold text-[#3478F6]">
-                {meta?.valor ? meta.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}
-              </div>
-            </div>
-            
-            {/* Já Realizado */}
-            <div className="text-center">
-              <div className="text-sm text-gray-300 mb-2">Já Realizado</div>
-              <div className={`text-3xl font-extrabold ${progresso >= 100 ? 'text-[#3AC17C]' : 'text-[#3478F6]'}`}>
-                {meta?.alcancado ? meta.alcancado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}
-              </div>
-            </div>
-          </div>
-
-          {/* Barra de progresso */}
-          <div className="mb-4">
-            <div className="w-full h-3 bg-[#23283A] rounded-full overflow-hidden">
-              <div 
-                className={`h-3 rounded-full transition-all duration-700 ${corBarra} shadow-lg`} 
-                style={{ width: `${progressoDisplay}%` }}
-              ></div>
-            </div>
-          </div>
-
-          {/* Percentual */}
-          <div className="text-center">
-            <div className="text-2xl font-bold text-white mb-1">{progresso}%</div>
-            <div className="text-sm text-gray-300">da meta</div>
-          </div>
+        <div className="flex flex-col items-end">
+          <span className="text-xs text-[#A3C8F7]">Já Realizado</span>
+          <span className={`text-xl font-bold ${progresso >= 100 ? 'text-[#3AC17C]' : 'text-[#3478F6]'}`}>{meta?.alcancado ? meta.alcancado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}</span>
         </div>
       </div>
+      {/* Barra de progresso */}
+      <div className="w-full h-2 bg-[#23283A] rounded-full overflow-hidden mb-1">
+        <div className={`h-2 rounded-full transition-all duration-700 ${corBarra}`} style={{ width: `${progressoDisplay}%` }}></div>
+      </div>
+      {/* Percentual */}
+      <div className="text-xs text-[#A3C8F7] text-right font-semibold">{progresso}% da meta</div>
     </div>
   );
 };
