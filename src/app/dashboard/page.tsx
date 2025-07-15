@@ -456,71 +456,23 @@ export default function DashboardPage() {
         // Buscar meta atual com listener em tempo real
         const metasRef = collection(db, 'metas');
         
-        // Primeiro tenta com orderBy, se falhar usa sem orderBy
-        const tryWithOrderBy = async () => {
-          try {
-            const q = query(metasRef, where('imobiliariaId', '==', userData.imobiliariaId), orderBy('createdAt', 'desc'), limit(1));
-            
-            unsubscribe = onSnapshot(q, (snapshot) => {
-              if (!snapshot.empty) {
-                console.log('Meta atualizada no dashboard:', snapshot.docs[0].data());
-                setMeta(snapshot.docs[0].data());
-              } else {
-                console.log('Nenhuma meta encontrada, usando valores padrão');
-                setMeta({
-                  valor: 1000000,
-                  alcancado: 750000,
-                  inicio: new Date().toISOString(),
-                  fim: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString()
-                });
-              }
-            }, (error) => {
-              console.error('Erro com orderBy, tentando sem orderBy:', error);
-              // Se falhar com orderBy, tenta sem orderBy
-              tryWithoutOrderBy();
+        // Buscar todas as metas da imobiliária e pegar a mais recente
+        const q = query(metasRef, where('imobiliariaId', '==', userData.imobiliariaId));
+        
+        unsubscribe = onSnapshot(q, (snapshot) => {
+          if (!snapshot.empty) {
+            // Ordena por createdAt e pega a mais recente
+            const docs = snapshot.docs.sort((a, b) => {
+              const aTime = a.data().createdAt?.toMillis() || 0;
+              const bTime = b.data().createdAt?.toMillis() || 0;
+              return bTime - aTime;
             });
-          } catch (error) {
-            console.error('Erro ao configurar listener com orderBy:', error);
-            tryWithoutOrderBy();
-          }
-        };
-
-        const tryWithoutOrderBy = () => {
-          try {
-            const q = query(metasRef, where('imobiliariaId', '==', userData.imobiliariaId), limit(1));
             
-            unsubscribe = onSnapshot(q, (snapshot) => {
-              if (!snapshot.empty) {
-                // Ordena manualmente por createdAt se existir
-                const docs = snapshot.docs.sort((a, b) => {
-                  const aTime = a.data().createdAt?.toMillis() || 0;
-                  const bTime = b.data().createdAt?.toMillis() || 0;
-                  return bTime - aTime;
-                });
-                console.log('Meta atualizada no dashboard (sem orderBy):', docs[0].data());
-                setMeta(docs[0].data());
-              } else {
-                console.log('Nenhuma meta encontrada, usando valores padrão');
-                setMeta({
-                  valor: 1000000,
-                  alcancado: 750000,
-                  inicio: new Date().toISOString(),
-                  fim: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString()
-                });
-              }
-            }, (error) => {
-              console.error('Erro ao buscar dados da meta:', error);
-              setNomeImobiliaria('Imobiliária');
-              setMeta({
-                valor: 1000000,
-                alcancado: 750000,
-                inicio: new Date().toISOString(),
-                fim: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString()
-              });
-            });
-          } catch (error) {
-            console.error('Erro ao configurar listener sem orderBy:', error);
-            setNomeImobiliaria('Imobiliária');
+            const metaMaisRecente = docs[0].data();
+            console.log('Meta mais recente encontrada:', metaMaisRecente);
+            setMeta(metaMaisRecente);
+          } else {
+            console.log('Nenhuma meta encontrada, usando valores padrão');
             setMeta({
               valor: 1000000,
               alcancado: 750000,
@@ -528,10 +480,16 @@ export default function DashboardPage() {
               fim: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString()
             });
           }
-        };
-
-        // Inicia tentando com orderBy
-        tryWithOrderBy();
+        }, (error) => {
+          console.error('Erro ao buscar dados da meta:', error);
+          setNomeImobiliaria('Imobiliária');
+          setMeta({
+            valor: 1000000,
+            alcancado: 750000,
+            inicio: new Date().toISOString(),
+            fim: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString()
+          });
+        });
       } catch (error) {
         console.error('Erro ao buscar dados da meta:', error);
         // Valores padrão em caso de erro
