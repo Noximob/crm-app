@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, getDoc, Timestamp, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, getDoc, Timestamp, orderBy, limit } from 'firebase/firestore';
 import Link from 'next/link';
 
 // Ícones
@@ -293,6 +293,8 @@ export default function DashboardPage() {
   const [avisosImportantes, setAvisosImportantes] = useState<any[]>([]);
   const [trendingPosts, setTrendingPosts] = useState<any[]>([]);
   const [trendingLoading, setTrendingLoading] = useState(true);
+  const [meta, setMeta] = useState<any>(null);
+  const [nomeImobiliaria, setNomeImobiliaria] = useState<string>('');
 
   useEffect(() => {
     if (currentUser) {
@@ -433,6 +435,51 @@ export default function DashboardPage() {
       }
     };
     fetchTrendingPosts();
+  }, [userData]);
+
+  // Buscar dados da meta e nome da imobiliária
+  useEffect(() => {
+    const fetchMetaData = async () => {
+      if (!userData?.imobiliariaId) return;
+      
+      try {
+        // Buscar nome da imobiliária
+        const imobiliariaRef = firestoreDoc(db, 'imobiliarias', userData.imobiliariaId);
+        const imobiliariaSnap = await getDoc(imobiliariaRef);
+        if (imobiliariaSnap.exists()) {
+          setNomeImobiliaria(imobiliariaSnap.data().nome || 'Imobiliária');
+        }
+
+        // Buscar meta atual
+        const metasRef = collection(db, 'metas');
+        const q = query(metasRef, where('imobiliariaId', '==', userData.imobiliariaId), orderBy('createdAt', 'desc'), limit(1));
+        const metasSnap = await getDocs(q);
+        
+        if (!metasSnap.empty) {
+          setMeta(metasSnap.docs[0].data());
+        } else {
+          // Meta padrão se não existir
+          setMeta({
+            valor: 1000000,
+            alcancado: 750000,
+            inicio: new Date().toISOString(),
+            fim: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString()
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao buscar dados da meta:', error);
+        // Valores padrão em caso de erro
+        setNomeImobiliaria('Imobiliária');
+        setMeta({
+          valor: 1000000,
+          alcancado: 750000,
+          inicio: new Date().toISOString(),
+          fim: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString()
+        });
+      }
+    };
+    
+    fetchMetaData();
   }, [userData]);
 
   function calcularVariacao(atual: string, anterior: string) {
