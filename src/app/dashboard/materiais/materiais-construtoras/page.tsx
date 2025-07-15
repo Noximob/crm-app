@@ -26,6 +26,7 @@ interface Material {
   nome: string;
   tipo: 'pdf' | 'link' | 'foto' | 'video';
   url?: string;
+  descricao?: string;
   tamanho?: number;
   extensao?: string;
   criadoEm: Date;
@@ -362,27 +363,36 @@ export default function MateriaisConstrutorasPage() {
                           key={material.id}
                           className="bg-white dark:bg-[#23283A] rounded-xl p-4 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105"
                         >
-                          <div className="flex items-center gap-3 mb-3">
-                            {getMaterialIcon(material.tipo)}
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-[#2E2F38] dark:text-white text-sm truncate">
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center flex-shrink-0">
+                              <LinkIcon className="h-5 w-5 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-[#2E2F38] dark:text-white text-sm mb-1">
                                 {material.nome}
                               </h4>
-                              {material.tamanho && (
-                                <p className="text-xs text-[#6B6F76] dark:text-gray-300">
-                                  {formatFileSize(material.tamanho)}
+                              {material.descricao && (
+                                <p className="text-xs text-[#6B6F76] dark:text-gray-300 mb-2 line-clamp-2">
+                                  {material.descricao}
+                                </p>
+                              )}
+                              {material.url && (
+                                <p className="text-xs text-[#3478F6] dark:text-[#A3C8F7] truncate">
+                                  {material.url}
                                 </p>
                               )}
                             </div>
                           </div>
                           <div className="flex gap-2">
                             {material.url && (
-                              <button
-                                onClick={() => handleDownload(material)}
-                                className="flex-1 px-3 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded-lg transition-colors font-semibold"
+                              <a
+                                href={material.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-1 px-3 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded-lg transition-colors font-semibold text-center"
                               >
-                                Abrir
-                              </button>
+                                Acessar Link
+                              </a>
                             )}
                           </div>
                         </div>

@@ -98,7 +98,7 @@ export default function MateriaisConstrutoraAdminPage() {
   // Formulários
   const [formConstrutora, setFormConstrutora] = useState({ nome: '', logo: null as File | null });
   const [formProduto, setFormProduto] = useState({ nome: '', descricao: '' });
-  const [formMaterial, setFormMaterial] = useState({ nome: '', tipo: 'pdf' as 'pdf' | 'link' | 'foto' | 'video', url: '' });
+  const [formMaterial, setFormMaterial] = useState({ nome: '', tipo: 'pdf' as 'pdf' | 'link' | 'foto' | 'video', url: '', descricao: '' });
   const [uploading, setUploading] = useState(false);
 
   // Modal de edição de logo
@@ -299,17 +299,18 @@ export default function MateriaisConstrutoraAdminPage() {
     try {
       const material = {
         nome: formMaterial.nome.trim(),
-        tipo: formMaterial.tipo,
+        tipo: 'link' as const, // Forçar tipo link
         url: formMaterial.url.trim(),
+        descricao: formMaterial.descricao.trim(),
         produtoId: selectedProduto.id,
         criadoEm: Timestamp.now(),
       };
       await addDoc(collection(db, 'materiais'), material);
-      setFormMaterial({ nome: '', tipo: 'pdf', url: '' });
+      setFormMaterial({ nome: '', tipo: 'pdf', url: '', descricao: '' });
       fetchMateriais(selectedProduto.id);
-      setMsg('Material criado!');
+      setMsg('Link criado!');
     } catch (err) {
-      setMsg('Erro ao criar material.');
+      setMsg('Erro ao criar link.');
     } finally {
       setLoading(false);
     }
@@ -651,6 +652,13 @@ export default function MateriaisConstrutoraAdminPage() {
                     placeholder="Nome do link"
                     className="w-full rounded-lg border px-3 py-2"
                     required
+                  />
+                  <input
+                    type="text"
+                    value={formMaterial.descricao}
+                    onChange={e => setFormMaterial({ ...formMaterial, descricao: e.target.value })}
+                    placeholder="Descrição do link (opcional)"
+                    className="w-full rounded-lg border px-3 py-2"
                   />
                   <input
                     type="url"
