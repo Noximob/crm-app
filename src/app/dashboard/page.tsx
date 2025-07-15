@@ -712,13 +712,30 @@ export default function DashboardPage() {
           <MetasCard meta={meta} nomeImobiliaria={nomeImobiliaria} />
         </div>
         {/* Avisos Importantes */}
-        <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-8 min-h-[220px] relative overflow-hidden shadow-xl animate-fade-in flex flex-col gap-4">
-          <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
-          <div className="flex items-center gap-3 mb-4">
-            <svg className="h-8 w-8 text-[#3478F6] drop-shadow-lg" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
-            <span className="font-extrabold text-white text-2xl tracking-tight">Avisos Importantes</span>
+        <div className="bg-gradient-to-br from-[#FF6B6B]/20 to-[#FF8E8E]/10 border-2 border-[#FF6B6B]/30 rounded-2xl p-8 min-h-[220px] relative overflow-hidden shadow-xl animate-fade-in flex flex-col gap-4">
+          {/* Borda vermelha à esquerda */}
+          <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#FF6B6B] to-[#FF8E8E]"></div>
+          {/* Efeito de brilho sutil */}
+          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent"></div>
+          
+          <div className="flex items-center gap-3 mb-4 relative z-10">
+            <div className="relative">
+              <svg className="h-8 w-8 text-[#FF6B6B] drop-shadow-lg animate-pulse" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" x2="12" y1="8" y2="12"/>
+                <line x1="12" x2="12.01" y1="16" y2="16"/>
+              </svg>
+              {/* Efeito de brilho no ícone */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
+            </div>
+            <span className="font-extrabold text-white text-2xl tracking-tight drop-shadow-lg">Avisos Importantes</span>
+            {/* Badge de destaque */}
+            <span className="px-2 py-1 bg-[#FF6B6B]/20 text-[#FF6B6B] text-xs font-bold rounded-full border border-[#FF6B6B]/30 animate-pulse">
+              ATENÇÃO
+            </span>
           </div>
-          <div className="space-y-3">
+          
+          <div className="space-y-3 relative z-10">
             {avisosImportantes
               .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
               .length === 0 ? (
@@ -727,20 +744,50 @@ export default function DashboardPage() {
               avisosImportantes
                 .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
                 .map((aviso, idx) => {
-                  // Cores azuis para manter consistência
+                  // Gradientes vermelhos para avisos importantes
                   const cardStyles = [
-                    { bg: 'bg-[#3478F6]/10', border: 'border-[#3478F6]/20', icon: <AlertCircleIcon className="h-5 w-5 text-[#3478F6] mt-0.5" /> },
-                    { bg: 'bg-[#A3C8F7]/10', border: 'border-[#A3C8F7]/20', icon: <CheckCircleIcon className="h-5 w-5 text-[#A3C8F7] mt-0.5" /> },
-                    { bg: 'bg-[#255FD1]/10', border: 'border-[#255FD1]/20', icon: <StarIcon className="h-5 w-5 text-[#255FD1] mt-0.5" /> },
+                    { 
+                      bg: 'bg-gradient-to-r from-[#FF6B6B]/15 to-[#FF8E8E]/10', 
+                      border: 'border-[#FF6B6B]/30', 
+                      icon: <AlertCircleIcon className="h-5 w-5 text-[#FF6B6B] mt-0.5 animate-pulse" />,
+                      shadow: 'shadow-[#FF6B6B]/20'
+                    },
+                    { 
+                      bg: 'bg-gradient-to-r from-[#FF8E8E]/15 to-[#FFB3B3]/10', 
+                      border: 'border-[#FF8E8E]/30', 
+                      icon: <AlertCircleIcon className="h-5 w-5 text-[#FF8E8E] mt-0.5" />,
+                      shadow: 'shadow-[#FF8E8E]/20'
+                    },
+                    { 
+                      bg: 'bg-gradient-to-r from-[#FFB3B3]/15 to-[#FFD6D6]/10', 
+                      border: 'border-[#FFB3B3]/30', 
+                      icon: <AlertCircleIcon className="h-5 w-5 text-[#FFB3B3] mt-0.5" />,
+                      shadow: 'shadow-[#FFB3B3]/20'
+                    },
                   ];
                   const style = cardStyles[idx % cardStyles.length];
                   return (
-                    <div key={aviso.id} className={`flex items-start gap-3 p-3 rounded-xl border ${style.bg} ${style.border} hover:shadow-md transition-all duration-200`}>
-                      {style.icon}
-                      <div className="flex-1">
-                        <div className="text-sm font-semibold text-[#2E2F38] dark:text-white mb-1">{aviso.titulo}</div>
-                        <div className="text-xs text-[#6B6F76] dark:text-gray-100 mb-1">{aviso.mensagem}</div>
-                        <div className="text-[10px] text-[#6B6F76] dark:text-gray-300">{aviso.dataHora?.toDate ? aviso.dataHora.toDate().toLocaleString('pt-BR') : ''}</div>
+                    <div 
+                      key={aviso.id} 
+                      className={`flex items-start gap-3 p-4 rounded-xl border ${style.bg} ${style.border} hover:shadow-lg hover:scale-[1.02] transition-all duration-300 relative overflow-hidden group`}
+                    >
+                      {/* Efeito de brilho no hover */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      
+                      <div className="relative z-10">
+                        {style.icon}
+                      </div>
+                      
+                      <div className="flex-1 relative z-10">
+                        <div className="text-sm font-bold text-[#2E2F38] dark:text-white mb-1 group-hover:text-[#FF6B6B] transition-colors">
+                          {aviso.titulo}
+                        </div>
+                        <div className="text-xs text-[#6B6F76] dark:text-gray-100 mb-2 leading-relaxed">
+                          {aviso.mensagem}
+                        </div>
+                        <div className="text-[10px] text-[#FF6B6B] font-semibold bg-[#FF6B6B]/10 px-2 py-1 rounded-full inline-block">
+                          {aviso.dataHora?.toDate ? aviso.dataHora.toDate().toLocaleString('pt-BR') : ''}
+                        </div>
                       </div>
                     </div>
                   );
