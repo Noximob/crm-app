@@ -101,6 +101,9 @@ export default function MateriaisConstrutoraAdminPage() {
   const [formMaterial, setFormMaterial] = useState({ nome: '', tipo: 'pdf' as 'pdf' | 'link' | 'foto' | 'video', url: '' });
   const [uploading, setUploading] = useState(false);
 
+  // Modal de edição de logo
+  const [editingLogo, setEditingLogo] = useState<{ construtora: Construtora, logo: File | null } | null>(null);
+
   // Buscar dados
   useEffect(() => {
     if (!userData?.imobiliariaId) return;
@@ -222,6 +225,33 @@ export default function MateriaisConstrutoraAdminPage() {
     }
   };
 
+  // Editar logo da construtora
+  const handleEditLogo = async () => {
+    if (!editingLogo?.construtora || !editingLogo.logo) return;
+    
+    setLoading(true);
+    setMsg(null);
+    try {
+      // Upload da nova logo
+      const logoRef = ref(storage, `logos/${Date.now()}_${editingLogo.logo.name}`);
+      const snapshot = await uploadBytes(logoRef, editingLogo.logo);
+      const logoUrl = await getDownloadURL(snapshot.ref);
+
+      // Atualizar no Firestore
+      await updateDoc(doc(db, 'construtoras', editingLogo.construtora.id), {
+        logoUrl
+      });
+
+      setEditingLogo(null);
+      fetchConstrutoras();
+      setMsg('Logo atualizada com sucesso!');
+    } catch (err) {
+      setMsg('Erro ao atualizar logo.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // CRUD Produto
   const handleAddProduto = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -292,7 +322,9 @@ export default function MateriaisConstrutoraAdminPage() {
     setMsg(null);
     try {
       const fileName = `${Date.now()}_${file.name}`;
-      const storageRef = ref(storage, `materiais/${selectedProduto.id}/${tipo}/${fileName}`);
+      // Para fotos, criar pasta "Fotos avulsas"
+      const folderPath = tipo === 'foto' ? 'Fotos avulsas' : tipo;
+      const storageRef = ref(storage, `materiais/${selectedProduto.id}/${folderPath}/${fileName}`);
       const snapshot = await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(snapshot.ref);
 
@@ -471,6 +503,12 @@ export default function MateriaisConstrutoraAdminPage() {
                           className="px-3 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-sm rounded transition-colors"
                         >
                           Produtos
+                        </button>
+                        <button
+                          onClick={() => setEditingLogo({ construtora, logo: null })}
+                          className="px-3 py-1 bg-[#3AC17C] hover:bg-[#2E9D63] text-white text-sm rounded transition-colors"
+                        >
+                          Logo
                         </button>
                         <button
                           onClick={() => handleDeleteConstrutora(construtora.id)}
@@ -724,6 +762,52 @@ export default function MateriaisConstrutoraAdminPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de Edição de Logo */}
+      {editingLogo && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white flex items-center gap-2">
+                <BuildingIcon className="h-6 w-6 text-[#3478F6]" />
+                Editar Logo da Construtora
+              </h2>
+              <button
+                onClick={() => setEditingLogo(null)}
+                className="text-[#6B6F76] hover:text-[#2E2F38] dark:text-gray-300 dark:hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Nova Logo (opcional)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => setEditingLogo({ ...editingLogo, logo: e.target.files?.[0] || null })}
+                  className="w-full rounded-lg border px-3 py-2"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setEditingLogo(null)}
+                  className="flex-1 px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleEditLogo}
+                  disabled={loading}
+                  className="flex-1 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {loading ? 'Atualizando...' : 'Atualizar Logo'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
