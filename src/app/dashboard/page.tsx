@@ -443,6 +443,23 @@ export default function DashboardPage() {
     if (!userData?.imobiliariaId) return;
     let unsubscribe: (() => void) | undefined;
 
+    // Buscar nome da imobiliária
+    const fetchNomeImobiliaria = async () => {
+      try {
+        const imobiliariaRef = firestoreDoc(db, 'imobiliarias', userData.imobiliariaId!);
+        const imobiliariaSnap = await getDoc(imobiliariaRef);
+        if (imobiliariaSnap.exists()) {
+          setNomeImobiliaria(imobiliariaSnap.data().nome || 'Imobiliária');
+        }
+      } catch (error) {
+        console.error('Erro ao buscar nome da imobiliária:', error);
+        setNomeImobiliaria('Imobiliária');
+      }
+    };
+
+    fetchNomeImobiliaria();
+
+    // Buscar meta
     const metaRef = firestoreDoc(db, 'metas', userData.imobiliariaId);
     unsubscribe = onSnapshot(metaRef, (snap) => {
       if (snap.exists()) {

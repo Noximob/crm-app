@@ -103,8 +103,8 @@ export default function AdminMetasPage() {
       return;
     }
     
-    // Converte para número e formata
-    const num = parseInt(numericValue) / 100;
+    // Converte para número (sem dividir por 100)
+    const num = parseInt(numericValue);
     setter(formatCurrency(num));
   };
 
