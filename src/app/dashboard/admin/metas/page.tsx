@@ -13,24 +13,39 @@ export default function AdminMetasPage() {
   const [realizado, setRealizado] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [fetching, setFetching] = useState(true);
 
   // Buscar meta atual
   useEffect(() => {
     async function fetchMeta() {
-      if (!userData?.imobiliariaId) return;
-      setLoading(true);
-      const metasRef = collection(db, 'metas');
-      const q = query(metasRef, where('imobiliariaId', '==', userData.imobiliariaId), orderBy('createdAt', 'desc'), limit(1));
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        const meta = snap.docs[0].data();
-        setInicio(meta.inicio ? meta.inicio.split('T')[0] : '');
-        setFim(meta.fim ? meta.fim.split('T')[0] : '');
-        setVgv(meta.valor ? meta.valor.toString() : '');
-        setRealizado(meta.alcancado ? meta.alcancado.toString() : '');
+      if (!userData?.imobiliariaId) {
+        setFetching(false);
+        return;
       }
-      setLoading(false);
+      
+      try {
+        console.log('Buscando meta para imobiliária:', userData.imobiliariaId);
+        const metasRef = collection(db, 'metas');
+        const q = query(metasRef, where('imobiliariaId', '==', userData.imobiliariaId), orderBy('createdAt', 'desc'), limit(1));
+        const snap = await getDocs(q);
+        
+        if (!snap.empty) {
+          const meta = snap.docs[0].data();
+          console.log('Meta encontrada:', meta);
+          setInicio(meta.inicio ? meta.inicio.split('T')[0] : '');
+          setFim(meta.fim ? meta.fim.split('T')[0] : '');
+          setVgv(meta.valor ? meta.valor.toString() : '');
+          setRealizado(meta.alcancado ? meta.alcancado.toString() : '');
+        } else {
+          console.log('Nenhuma meta encontrada');
+        }
+      } catch (error) {
+        console.error('Erro ao buscar meta:', error);
+      } finally {
+        setFetching(false);
+      }
     }
+    
     fetchMeta();
   }, [userData]);
 
@@ -39,22 +54,44 @@ export default function AdminMetasPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!userData?.imobiliariaId) return;
+    
     setLoading(true);
-    const metasRef = collection(db, 'metas');
-    const novaMeta = {
-      imobiliariaId: userData.imobiliariaId,
-      inicio,
-      fim,
-      valor: parseFloat(vgv),
-      alcancado: parseFloat(realizado),
-      percentual,
-      createdAt: Timestamp.now(),
-    };
-    const docRef = doc(metasRef);
-    await setDoc(docRef, novaMeta);
-    setSuccess(true);
-    setLoading(false);
-    setTimeout(() => setSuccess(false), 2000);
+    try {
+      console.log('Salvando meta...');
+      const metasRef = collection(db, 'metas');
+      const novaMeta = {
+        imobiliariaId: userData.imobiliariaId,
+        inicio,
+        fim,
+        valor: parseFloat(vgv),
+        alcancado: parseFloat(realizado),
+        percentual,
+        createdAt: Timestamp.now(),
+      };
+      
+      console.log('Dados da meta:', novaMeta);
+      const docRef = doc(metasRef);
+      await setDoc(docRef, novaMeta);
+      console.log('Meta salva com sucesso!');
+      
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 2000);
+    } catch (error) {
+      console.error('Erro ao salvar meta:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (fetching) {
+    return (
+      <div className="max-w-xl mx-auto mt-10 bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-8 shadow-xl">
+        <div className="flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3478F6]"></div>
+          <span className="ml-2 text-white">Carregando...</span>
+        </div>
+      </div>
+    );
   }
 
   return (
