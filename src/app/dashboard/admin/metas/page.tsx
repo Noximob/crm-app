@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, query, where, orderBy, limit, getDocs, doc, setDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 
 // Função para formatar números como moeda brasileira
@@ -27,36 +27,22 @@ export default function AdminMetasPage() {
   const [success, setSuccess] = useState(false);
   const [fetching, setFetching] = useState(true);
 
-  // Função para buscar meta atual
+  // Buscar meta única da imobiliária
   const fetchMeta = async () => {
     if (!userData?.imobiliariaId) {
       setFetching(false);
       return;
     }
-    
     setFetching(true);
     try {
-      console.log('Buscando meta para imobiliária:', userData.imobiliariaId);
-      const metasRef = collection(db, 'metas');
-      const q = query(metasRef, where('imobiliariaId', '==', userData.imobiliariaId));
-      const snap = await getDocs(q);
-      
-      if (!snap.empty) {
-        // Ordena por createdAt e pega a mais recente
-        const docs = snap.docs.sort((a, b) => {
-          const aTime = a.data().createdAt?.toMillis() || 0;
-          const bTime = b.data().createdAt?.toMillis() || 0;
-          return bTime - aTime;
-        });
-        
-        const meta = docs[0].data();
-        console.log('Meta mais recente encontrada:', meta);
+      const metaRef = doc(db, 'metas', userData.imobiliariaId);
+      const snap = await getDoc(metaRef);
+      if (snap.exists()) {
+        const meta = snap.data();
         setInicio(meta.inicio ? meta.inicio.split('T')[0] : '');
         setFim(meta.fim ? meta.fim.split('T')[0] : '');
         setVgv(meta.valor ? formatCurrency(meta.valor) : '');
         setRealizado(meta.alcancado ? formatCurrency(meta.alcancado) : '');
-      } else {
-        console.log('Nenhuma meta encontrada');
       }
     } catch (error) {
       console.error('Erro ao buscar meta:', error);
@@ -65,7 +51,6 @@ export default function AdminMetasPage() {
     }
   };
 
-  // Buscar meta atual ao carregar
   useEffect(() => {
     fetchMeta();
   }, [userData]);
@@ -76,12 +61,9 @@ export default function AdminMetasPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!userData?.imobiliariaId) return;
-    
     setLoading(true);
     try {
-      console.log('Salvando meta...');
-      const metasRef = collection(db, 'metas');
-      
+      const metaRef = doc(db, 'metas', userData.imobiliariaId);
       const novaMeta = {
         imobiliariaId: userData.imobiliariaId,
         inicio,
@@ -89,14 +71,9 @@ export default function AdminMetasPage() {
         valor: parseCurrency(vgv),
         alcancado: parseCurrency(realizado),
         percentual: percentualCalculado,
-        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
       };
-      
-      console.log('Dados da meta:', novaMeta);
-      const docRef = doc(metasRef);
-      await setDoc(docRef, novaMeta);
-      console.log('Meta salva com sucesso!');
-      
+      await setDoc(metaRef, novaMeta, { merge: true });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2000);
     } catch (error) {

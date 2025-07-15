@@ -441,75 +441,19 @@ export default function DashboardPage() {
   // Buscar dados da meta e nome da imobiliária
   useEffect(() => {
     if (!userData?.imobiliariaId) return;
-
     let unsubscribe: (() => void) | undefined;
 
-    const setupMetaListener = async () => {
-      try {
-        // Buscar nome da imobiliária
-        const imobiliariaRef = firestoreDoc(db, 'imobiliarias', userData.imobiliariaId!);
-        const imobiliariaSnap = await getDoc(imobiliariaRef);
-        if (imobiliariaSnap.exists()) {
-          setNomeImobiliaria(imobiliariaSnap.data().nome || 'Imobiliária');
-        }
+    const metaRef = firestoreDoc(db, 'metas', userData.imobiliariaId);
+    unsubscribe = onSnapshot(metaRef, (snap) => {
+      if (snap.exists()) {
+        setMeta(snap.data());
+      } else {
+        setMeta(null);
+      }
+    });
 
-        // Buscar meta atual com listener em tempo real
-        const metasRef = collection(db, 'metas');
-        
-        // Buscar todas as metas da imobiliária e pegar a mais recente
-        const q = query(metasRef, where('imobiliariaId', '==', userData.imobiliariaId));
-        
-        unsubscribe = onSnapshot(q, (snapshot) => {
-          if (!snapshot.empty) {
-            // Ordena por createdAt e pega a mais recente
-            const docs = snapshot.docs.sort((a, b) => {
-              const aTime = a.data().createdAt?.toMillis() || 0;
-              const bTime = b.data().createdAt?.toMillis() || 0;
-              return bTime - aTime;
-            });
-            
-            const metaMaisRecente = docs[0].data();
-            console.log('Meta mais recente encontrada:', metaMaisRecente);
-            setMeta(metaMaisRecente);
-          } else {
-            console.log('Nenhuma meta encontrada, usando valores padrão');
-            setMeta({
-              valor: 1000000,
-              alcancado: 750000,
-              inicio: new Date().toISOString(),
-              fim: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString()
-            });
-          }
-        }, (error) => {
-          console.error('Erro ao buscar dados da meta:', error);
-          setNomeImobiliaria('Imobiliária');
-          setMeta({
-            valor: 1000000,
-            alcancado: 750000,
-            inicio: new Date().toISOString(),
-            fim: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString()
-          });
-        });
-      } catch (error) {
-        console.error('Erro ao buscar dados da meta:', error);
-        // Valores padrão em caso de erro
-        setNomeImobiliaria('Imobiliária');
-        setMeta({
-          valor: 1000000,
-          alcancado: 750000,
-          inicio: new Date().toISOString(),
-          fim: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString()
-        });
-      }
-    };
-    
-    setupMetaListener();
-    
-    // Limpeza do listener quando o componente for desmontado
     return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
+      if (unsubscribe) unsubscribe();
     };
   }, [userData]);
 
