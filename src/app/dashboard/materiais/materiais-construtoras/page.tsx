@@ -175,9 +175,10 @@ export default function MateriaisConstrutorasPage() {
 
   const getGroupedMateriais = () => {
     const fotos = materiais.filter(m => m.tipo === 'foto');
-    const outros = materiais.filter(m => m.tipo !== 'foto');
+    const videos = materiais.filter(m => m.tipo === 'video');
+    const outros = materiais.filter(m => m.tipo !== 'foto' && m.tipo !== 'video');
     
-    return { fotos, outros };
+    return { fotos, videos, outros };
   };
 
   const getMaterialIcon = (tipo: string) => {
@@ -415,6 +416,72 @@ export default function MateriaisConstrutorasPage() {
                             ) : null}
                             <div className="hidden items-center justify-center text-gray-400">
                               <ImageIcon className="h-8 w-8" />
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-xs text-[#2E2F38] dark:text-white truncate mb-1">
+                              {material.nome}
+                            </p>
+                            {material.tamanho && (
+                              <p className="text-xs text-[#6B6F76] dark:text-gray-300">
+                                {formatFileSize(material.tamanho)}
+                              </p>
+                            )}
+                            {material.url && (
+                              <button
+                                onClick={() => handleDownload(material)}
+                                className="w-full mt-2 px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors font-semibold"
+                              >
+                                Download
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Vídeos */}
+                {getGroupedMateriais().videos.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
+                      <VideoIcon className="h-5 w-5 text-[#3478F6]" />
+                      Vídeos
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                      {getGroupedMateriais().videos.map(material => (
+                        <div
+                          key={material.id}
+                          className="bg-white dark:bg-[#23283A] rounded-xl p-3 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105"
+                        >
+                          <div className="aspect-square mb-2 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center relative group">
+                            {material.url ? (
+                              <>
+                                <video 
+                                  src={material.url} 
+                                  className="w-full h-full object-cover rounded-lg"
+                                  preload="metadata"
+                                  onLoadedData={(e) => {
+                                    const video = e.currentTarget;
+                                    video.currentTime = 0.1; // Pega o primeiro frame
+                                  }}
+                                  onError={(e) => {
+                                    const target = e.currentTarget as HTMLElement;
+                                    target.style.display = 'none';
+                                    const nextElement = target.nextElementSibling as HTMLElement;
+                                    if (nextElement) nextElement.style.display = 'flex';
+                                  }}
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <div className="w-12 h-12 bg-white bg-opacity-90 rounded-full flex items-center justify-center">
+                                    <VideoIcon className="h-6 w-6 text-[#3478F6]" />
+                                  </div>
+                                </div>
+                              </>
+                            ) : null}
+                            <div className="hidden items-center justify-center text-gray-400">
+                              <VideoIcon className="h-8 w-8" />
                             </div>
                           </div>
                           <div className="text-center">
