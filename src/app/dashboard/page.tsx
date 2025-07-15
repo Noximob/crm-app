@@ -439,33 +439,48 @@ export default function DashboardPage() {
 
   // Buscar dados da meta e nome da imobiliária
   useEffect(() => {
-    const fetchMetaData = async () => {
-      if (!userData?.imobiliariaId) return;
-      
+    if (!userData?.imobiliariaId) return;
+
+    let unsubscribe: (() => void) | undefined;
+
+    const setupMetaListener = async () => {
       try {
         // Buscar nome da imobiliária
-        const imobiliariaRef = firestoreDoc(db, 'imobiliarias', userData.imobiliariaId);
+        const imobiliariaRef = firestoreDoc(db, 'imobiliarias', userData.imobiliariaId!);
         const imobiliariaSnap = await getDoc(imobiliariaRef);
         if (imobiliariaSnap.exists()) {
           setNomeImobiliaria(imobiliariaSnap.data().nome || 'Imobiliária');
         }
 
-        // Buscar meta atual
+        // Buscar meta atual com listener em tempo real
         const metasRef = collection(db, 'metas');
         const q = query(metasRef, where('imobiliariaId', '==', userData.imobiliariaId), orderBy('createdAt', 'desc'), limit(1));
-        const metasSnap = await getDocs(q);
         
-        if (!metasSnap.empty) {
-          setMeta(metasSnap.docs[0].data());
-        } else {
-          // Meta padrão se não existir
+        unsubscribe = onSnapshot(q, (snapshot) => {
+          if (!snapshot.empty) {
+            console.log('Meta atualizada no dashboard:', snapshot.docs[0].data());
+            setMeta(snapshot.docs[0].data());
+          } else {
+            console.log('Nenhuma meta encontrada, usando valores padrão');
+            // Meta padrão se não existir
+            setMeta({
+              valor: 1000000,
+              alcancado: 750000,
+              inicio: new Date().toISOString(),
+              fim: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString()
+            });
+          }
+        }, (error) => {
+          console.error('Erro ao buscar dados da meta:', error);
+          // Valores padrão em caso de erro
+          setNomeImobiliaria('Imobiliária');
           setMeta({
             valor: 1000000,
             alcancado: 750000,
             inicio: new Date().toISOString(),
             fim: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString()
           });
-        }
+        });
       } catch (error) {
         console.error('Erro ao buscar dados da meta:', error);
         // Valores padrão em caso de erro
@@ -479,7 +494,14 @@ export default function DashboardPage() {
       }
     };
     
-    fetchMetaData();
+    setupMetaListener();
+    
+    // Limpeza do listener quando o componente for desmontado
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, [userData]);
 
   function calcularVariacao(atual: string, anterior: string) {
