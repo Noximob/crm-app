@@ -249,7 +249,8 @@ function getTaskStatusInfo(tasks: Task[]): TaskStatus {
 
 // Novo Card de Metas moderno
 const MetasCard = ({ meta, nomeImobiliaria }: { meta: any, nomeImobiliaria: string }) => {
-  const progresso = meta && meta.valor > 0 ? Math.round((meta.alcancado / meta.valor) * 100) : 0;
+  // Usar o percentual salvo no Firestore, ou calcular automaticamente se não existir
+  const progresso = meta?.percentual !== undefined ? meta.percentual : (meta && meta.valor > 0 ? Math.round((meta.alcancado / meta.valor) * 100) : 0);
   const progressoDisplay = progresso > 100 ? 100 : progresso;
   const corBarra = progresso >= 100 ? 'bg-[#3AC17C]' : 'bg-[#3478F6]';
   return (

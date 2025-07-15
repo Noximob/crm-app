@@ -11,6 +11,7 @@ export default function AdminMetasPage() {
   const [fim, setFim] = useState('');
   const [vgv, setVgv] = useState('');
   const [realizado, setRealizado] = useState('');
+  const [percentualManual, setPercentualManual] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -36,6 +37,7 @@ export default function AdminMetasPage() {
           setFim(meta.fim ? meta.fim.split('T')[0] : '');
           setVgv(meta.valor ? meta.valor.toString() : '');
           setRealizado(meta.alcancado ? meta.alcancado.toString() : '');
+          setPercentualManual(meta.percentual ? meta.percentual.toString() : '');
         } else {
           console.log('Nenhuma meta encontrada');
         }
@@ -49,7 +51,8 @@ export default function AdminMetasPage() {
     fetchMeta();
   }, [userData]);
 
-  const percentual = vgv && realizado ? Math.round((parseFloat(realizado) / parseFloat(vgv)) * 100) : 0;
+  // Calcular percentual automático baseado nos valores
+  const percentualCalculado = vgv && realizado ? Math.round((parseFloat(realizado) / parseFloat(vgv)) * 100) : 0;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -59,13 +62,17 @@ export default function AdminMetasPage() {
     try {
       console.log('Salvando meta...');
       const metasRef = collection(db, 'metas');
+      
+      // Usar o percentual manual se foi inserido, senão usar o calculado
+      const percentualFinal = percentualManual ? parseFloat(percentualManual) : percentualCalculado;
+      
       const novaMeta = {
         imobiliariaId: userData.imobiliariaId,
         inicio,
         fim,
         valor: parseFloat(vgv),
         alcancado: parseFloat(realizado),
-        percentual,
+        percentual: percentualFinal,
         createdAt: Timestamp.now(),
       };
       
@@ -122,8 +129,25 @@ export default function AdminMetasPage() {
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1 text-white">% Alcançado</label>
-          <input type="text" className="w-full rounded-lg border px-3 py-2 bg-[#23283A]/70 text-white border-[#3478F6]/30" value={percentual + '%'} readOnly />
+          <label className="block text-sm font-medium mb-1 text-white">% Alcançado (editável)</label>
+          <div className="flex gap-2">
+            <input 
+              type="number" 
+              className="flex-1 rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#3478F6]/30" 
+              value={percentualManual} 
+              onChange={e => setPercentualManual(e.target.value)} 
+              placeholder="Digite o percentual manualmente"
+              min="0" 
+              max="100" 
+              step="0.01" 
+            />
+            <div className="flex items-center px-3 py-2 bg-[#23283A]/70 text-white border border-[#3478F6]/30 rounded-lg text-sm">
+              Calculado: {percentualCalculado}%
+            </div>
+          </div>
+          <p className="text-xs text-gray-300 mt-1">
+            Deixe vazio para usar o cálculo automático baseado nos valores acima
+          </p>
         </div>
         <button type="submit" className="mt-4 bg-[#3478F6] hover:bg-[#255FD1] text-white font-bold py-2 px-6 rounded-lg transition-all disabled:opacity-60" disabled={loading}>
           {loading ? 'Salvando...' : 'Salvar Meta'}
