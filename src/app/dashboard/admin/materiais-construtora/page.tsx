@@ -3,16 +3,17 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db, storage } from '@/lib/firebase';
-import { collection, query, where, getDocs, addDoc, deleteDoc, orderBy, doc, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, deleteDoc, orderBy, doc, Timestamp, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 interface Construtora {
   id: string;
   nome: string;
+  logoUrl?: string;
   criadoEm: Date;
 }
 
-interface Empreendimento {
+interface Produto {
   id: string;
   construtoraId: string;
   nome: string;
@@ -22,41 +23,82 @@ interface Empreendimento {
 
 interface Material {
   id: string;
-  empreendimentoId: string;
+  produtoId: string;
   nome: string;
-  tipo: 'arquivo' | 'pasta';
-  categoria?: 'booking' | 'tabela' | 'video' | 'foto' | 'outro';
+  tipo: 'pdf' | 'link' | 'foto' | 'video';
   url?: string;
   tamanho?: number;
   extensao?: string;
   criadoEm: Date;
 }
 
-const CATEGORIAS = [
-  { value: 'booking', label: 'Booking', icon: '📋' },
-  { value: 'tabela', label: 'Tabela', icon: '📊' },
-  { value: 'video', label: 'Vídeo', icon: '🎥' },
-  { value: 'foto', label: 'Foto', icon: '📸' },
-  { value: 'outro', label: 'Outro', icon: '📁' },
-];
+// Ícones
+const BuildingIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M3 21h18"/>
+    <path d="M5 21V7l8-4v18"/>
+    <path d="M19 21V11l-6-4"/>
+    <path d="M9 9h.01"/>
+    <path d="M9 12h.01"/>
+    <path d="M9 15h.01"/>
+    <path d="M9 18h.01"/>
+  </svg>
+);
+
+const PackageIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M16.466 7.5C15.643 4.237 13.952 2 12 2 9.239 2 7 6.477 7 12s2.239 10 5 10c.342 0 .677-.069 1-.2"/>
+    <path d="m15.194 13.707 3.306 3.307a1 1 0 0 1 0 1.414l-1.586 1.586a1 1 0 0 1-1.414 0l-3.307-3.306"/>
+    <path d="M10 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
+  </svg>
+);
+
+const FileIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+    <polyline points="14 2 14 8 20 8"/>
+  </svg>
+);
+
+const LinkIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+  </svg>
+);
+
+const ImageIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+    <circle cx="9" cy="9" r="2"/>
+    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+  </svg>
+);
+
+const VideoIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="m22 8-6 4 6 4V8Z"/>
+    <rect width="14" height="12" x="2" y="6" rx="2" ry="2"/>
+  </svg>
+);
 
 export default function MateriaisConstrutoraAdminPage() {
   const { userData } = useAuth();
   const [construtoras, setConstrutoras] = useState<Construtora[]>([]);
-  const [empreendimentos, setEmpreendimentos] = useState<Empreendimento[]>([]);
+  const [produtos, setProdutos] = useState<Produto[]>([]);
   const [materiais, setMateriais] = useState<Material[]>([]);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   // Navegação
-  const [view, setView] = useState<'construtoras' | 'empreendimentos' | 'materiais'>('construtoras');
+  const [view, setView] = useState<'construtoras' | 'produtos' | 'materiais'>('construtoras');
   const [selectedConstrutora, setSelectedConstrutora] = useState<Construtora | null>(null);
-  const [selectedEmpreendimento, setSelectedEmpreendimento] = useState<Empreendimento | null>(null);
+  const [selectedProduto, setSelectedProduto] = useState<Produto | null>(null);
 
   // Formulários
-  const [formConstrutora, setFormConstrutora] = useState({ nome: '' });
-  const [formEmpreendimento, setFormEmpreendimento] = useState({ nome: '', descricao: '' });
-  const [formMaterial, setFormMaterial] = useState({ nome: '', categoria: 'outro', tipo: 'arquivo' as 'arquivo' | 'pasta' });
+  const [formConstrutora, setFormConstrutora] = useState({ nome: '', logo: null as File | null });
+  const [formProduto, setFormProduto] = useState({ nome: '', descricao: '' });
+  const [formMaterial, setFormMaterial] = useState({ nome: '', tipo: 'pdf' as 'pdf' | 'link' | 'foto' | 'video', url: '' });
   const [uploading, setUploading] = useState(false);
 
   // Buscar dados
@@ -67,15 +109,15 @@ export default function MateriaisConstrutoraAdminPage() {
 
   useEffect(() => {
     if (selectedConstrutora) {
-      fetchEmpreendimentos(selectedConstrutora.id);
+      fetchProdutos(selectedConstrutora.id);
     }
   }, [selectedConstrutora]);
 
   useEffect(() => {
-    if (selectedEmpreendimento) {
-      fetchMateriais(selectedEmpreendimento.id);
+    if (selectedProduto) {
+      fetchMateriais(selectedProduto.id);
     }
-  }, [selectedEmpreendimento]);
+  }, [selectedProduto]);
 
   const fetchConstrutoras = async () => {
     setLoading(true);
@@ -94,7 +136,6 @@ export default function MateriaisConstrutoraAdminPage() {
           criadoEm: data.criadoEm?.toDate ? data.criadoEm.toDate() : data.criadoEm
         } as Construtora;
       }));
-      if (snap.empty) setMsg('Nenhuma construtora encontrada para esta imobiliária.');
     } catch (err: any) {
       setMsg('Erro ao carregar construtoras: ' + (err?.message || err));
     } finally {
@@ -102,29 +143,29 @@ export default function MateriaisConstrutoraAdminPage() {
     }
   };
 
-  const fetchEmpreendimentos = async (construtoraId: string) => {
+  const fetchProdutos = async (construtoraId: string) => {
     setLoading(true);
     try {
       const q = query(
-        collection(db, 'empreendimentos'),
+        collection(db, 'produtos'),
         where('construtoraId', '==', construtoraId),
         orderBy('nome')
       );
       const snap = await getDocs(q);
-      setEmpreendimentos(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Empreendimento)));
+      setProdutos(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Produto)));
     } catch (err) {
-      setMsg('Erro ao carregar empreendimentos.');
+      setMsg('Erro ao carregar produtos.');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchMateriais = async (empreendimentoId: string) => {
+  const fetchMateriais = async (produtoId: string) => {
     setLoading(true);
     try {
       const q = query(
         collection(db, 'materiais'),
-        where('empreendimentoId', '==', empreendimentoId),
+        where('produtoId', '==', produtoId),
         orderBy('nome')
       );
       const snap = await getDocs(q);
@@ -143,15 +184,23 @@ export default function MateriaisConstrutoraAdminPage() {
     setLoading(true);
     setMsg(null);
     try {
+      let logoUrl = '';
+      if (formConstrutora.logo) {
+        const logoRef = ref(storage, `logos/${Date.now()}_${formConstrutora.logo.name}`);
+        const snapshot = await uploadBytes(logoRef, formConstrutora.logo);
+        logoUrl = await getDownloadURL(snapshot.ref);
+      }
+
       const construtora = {
         nome: formConstrutora.nome.trim(),
+        logoUrl,
         imobiliariaId: userData?.imobiliariaId,
         criadoEm: Timestamp.now(),
       };
       await addDoc(collection(db, 'construtoras'), construtora);
-      setFormConstrutora({ nome: '' });
+      setFormConstrutora({ nome: '', logo: null });
       fetchConstrutoras();
-      setMsg('Construtora criada!');
+      setMsg('Construtora criada com sucesso!');
     } catch (err) {
       setMsg('Erro ao criar construtora.');
     } finally {
@@ -160,7 +209,7 @@ export default function MateriaisConstrutoraAdminPage() {
   };
 
   const handleDeleteConstrutora = async (id: string) => {
-    if (!confirm('Tem certeza? Isso excluirá todos os empreendimentos e materiais.')) return;
+    if (!confirm('Tem certeza? Isso excluirá todos os produtos e materiais.')) return;
     setLoading(true);
     try {
       await deleteDoc(doc(db, 'construtoras', id));
@@ -173,39 +222,39 @@ export default function MateriaisConstrutoraAdminPage() {
     }
   };
 
-  // CRUD Empreendimento
-  const handleAddEmpreendimento = async (e: React.FormEvent) => {
+  // CRUD Produto
+  const handleAddProduto = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formEmpreendimento.nome.trim() || !selectedConstrutora) return;
+    if (!formProduto.nome.trim() || !selectedConstrutora) return;
     setLoading(true);
     setMsg(null);
     try {
-      const empreendimento = {
-        nome: formEmpreendimento.nome.trim(),
-        descricao: formEmpreendimento.descricao.trim(),
+      const produto = {
+        nome: formProduto.nome.trim(),
+        descricao: formProduto.descricao.trim(),
         construtoraId: selectedConstrutora.id,
         criadoEm: Timestamp.now(),
       };
-      await addDoc(collection(db, 'empreendimentos'), empreendimento);
-      setFormEmpreendimento({ nome: '', descricao: '' });
-      fetchEmpreendimentos(selectedConstrutora.id);
-      setMsg('Empreendimento criado!');
+      await addDoc(collection(db, 'produtos'), produto);
+      setFormProduto({ nome: '', descricao: '' });
+      fetchProdutos(selectedConstrutora.id);
+      setMsg('Produto criado!');
     } catch (err) {
-      setMsg('Erro ao criar empreendimento.');
+      setMsg('Erro ao criar produto.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteEmpreendimento = async (id: string) => {
+  const handleDeleteProduto = async (id: string) => {
     if (!confirm('Tem certeza? Isso excluirá todos os materiais.')) return;
     setLoading(true);
     try {
-      await deleteDoc(doc(db, 'empreendimentos', id));
-      fetchEmpreendimentos(selectedConstrutora!.id);
-      setMsg('Empreendimento excluído!');
+      await deleteDoc(doc(db, 'produtos', id));
+      fetchProdutos(selectedConstrutora!.id);
+      setMsg('Produto excluído!');
     } catch (err) {
-      setMsg('Erro ao excluir empreendimento.');
+      setMsg('Erro ao excluir produto.');
     } finally {
       setLoading(false);
     }
@@ -214,20 +263,20 @@ export default function MateriaisConstrutoraAdminPage() {
   // CRUD Material
   const handleAddMaterial = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formMaterial.nome.trim() || !selectedEmpreendimento) return;
+    if (!formMaterial.nome.trim() || !selectedProduto) return;
     setLoading(true);
     setMsg(null);
     try {
       const material = {
         nome: formMaterial.nome.trim(),
         tipo: formMaterial.tipo,
-        categoria: formMaterial.categoria,
-        empreendimentoId: selectedEmpreendimento.id,
+        url: formMaterial.url.trim(),
+        produtoId: selectedProduto.id,
         criadoEm: Timestamp.now(),
       };
       await addDoc(collection(db, 'materiais'), material);
-      setFormMaterial({ nome: '', categoria: 'outro', tipo: 'arquivo' });
-      fetchMateriais(selectedEmpreendimento.id);
+      setFormMaterial({ nome: '', tipo: 'pdf', url: '' });
+      fetchMateriais(selectedProduto.id);
       setMsg('Material criado!');
     } catch (err) {
       setMsg('Erro ao criar material.');
@@ -236,31 +285,29 @@ export default function MateriaisConstrutoraAdminPage() {
     }
   };
 
-  const handleUploadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !selectedEmpreendimento) return;
+  const handleUploadFile = async (file: File, tipo: 'pdf' | 'foto' | 'video') => {
+    if (!selectedProduto) return;
 
     setUploading(true);
     setMsg(null);
     try {
       const fileName = `${Date.now()}_${file.name}`;
-      const storageRef = ref(storage, `materiais/${selectedEmpreendimento.id}/${fileName}`);
+      const storageRef = ref(storage, `materiais/${selectedProduto.id}/${tipo}/${fileName}`);
       const snapshot = await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(snapshot.ref);
 
       const material = {
         nome: file.name,
-        tipo: 'arquivo' as const,
-        categoria: formMaterial.categoria,
+        tipo,
         url: downloadURL,
         tamanho: file.size,
-        extensao: file.name.split('.').pop(),
-        empreendimentoId: selectedEmpreendimento.id,
+        extensao: file.name.split('.').pop()?.toLowerCase(),
+        produtoId: selectedProduto.id,
         criadoEm: Timestamp.now(),
       };
       await addDoc(collection(db, 'materiais'), material);
-      fetchMateriais(selectedEmpreendimento.id);
-      setMsg('Arquivo enviado!');
+      fetchMateriais(selectedProduto.id);
+      setMsg('Arquivo enviado com sucesso!');
     } catch (err) {
       setMsg('Erro ao enviar arquivo.');
     } finally {
@@ -268,7 +315,24 @@ export default function MateriaisConstrutoraAdminPage() {
     }
   };
 
+  const handleUploadMultipleFiles = async (files: FileList, tipo: 'foto' | 'video') => {
+    if (!selectedProduto) return;
+    
+    setUploading(true);
+    setMsg(null);
+    try {
+      const uploadPromises = Array.from(files).map(file => handleUploadFile(file, tipo));
+      await Promise.all(uploadPromises);
+      setMsg(`${files.length} arquivo(s) enviado(s) com sucesso!`);
+    } catch (err) {
+      setMsg('Erro ao enviar arquivos.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleDeleteMaterial = async (id: string, url?: string) => {
+    if (!confirm('Tem certeza?')) return;
     setLoading(true);
     try {
       if (url) {
@@ -276,7 +340,7 @@ export default function MateriaisConstrutoraAdminPage() {
         await deleteObject(storageRef);
       }
       await deleteDoc(doc(db, 'materiais', id));
-      fetchMateriais(selectedEmpreendimento!.id);
+      fetchMateriais(selectedProduto!.id);
       setMsg('Material excluído!');
     } catch (err) {
       setMsg('Erro ao excluir material.');
@@ -288,266 +352,375 @@ export default function MateriaisConstrutoraAdminPage() {
   const getBreadcrumbs = () => {
     const breadcrumbs = ['Materiais Construtoras'];
     if (selectedConstrutora) breadcrumbs.push(selectedConstrutora.nome);
-    if (selectedEmpreendimento) breadcrumbs.push(selectedEmpreendimento.nome);
+    if (selectedProduto) breadcrumbs.push(selectedProduto.nome);
     return breadcrumbs.join(' > ');
+  };
+
+  const getMaterialIcon = (tipo: string) => {
+    switch (tipo) {
+      case 'pdf': return <FileIcon className="h-5 w-5" />;
+      case 'link': return <LinkIcon className="h-5 w-5" />;
+      case 'foto': return <ImageIcon className="h-5 w-5" />;
+      case 'video': return <VideoIcon className="h-5 w-5" />;
+      default: return <FileIcon className="h-5 w-5" />;
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
       <div className="max-w-6xl mx-auto">
+        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2 text-left">Materiais Construtoras</h1>
-            <p className="text-[#6B6F76] dark:text-gray-300 text-left text-base">{getBreadcrumbs()}</p>
+            <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">Gestão de Materiais Construtoras</h1>
+            <p className="text-[#6B6F76] dark:text-gray-300">{getBreadcrumbs()}</p>
           </div>
           {view !== 'construtoras' && (
             <button
               onClick={() => {
                 setView('construtoras');
                 setSelectedConstrutora(null);
-                setSelectedEmpreendimento(null);
+                setSelectedProduto(null);
               }}
-              className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition-colors"
+              className="px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg font-semibold transition-colors"
             >
               ← Voltar
             </button>
           )}
         </div>
 
+        {/* Mensagem */}
         {msg && (
-          <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-            <p className="text-sm text-green-800 dark:text-green-200">{msg}</p>
+          <div className={`p-4 rounded-lg mb-6 ${msg.includes('Erro') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+            {msg}
           </div>
         )}
 
-        {/* Lista de Construtoras */}
+        {/* Construtoras */}
         {view === 'construtoras' && (
-          <div>
-            <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-8">
-              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4">Nova Construtora</h2>
-              <form onSubmit={handleAddConstrutora} className="flex gap-4">
-                <input
-                  type="text"
-                  placeholder="Nome da construtora"
-                  value={formConstrutora.nome}
-                  onChange={e => setFormConstrutora({ nome: e.target.value })}
-                  className="flex-1 rounded-lg border px-3 py-2 text-sm"
-                  required
-                />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Formulário */}
+            <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
+                <BuildingIcon className="h-6 w-6 text-[#3478F6]" />
+                Nova Construtora
+              </h2>
+              <form onSubmit={handleAddConstrutora} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Nome da Construtora</label>
+                  <input
+                    type="text"
+                    value={formConstrutora.nome}
+                    onChange={e => setFormConstrutora({ ...formConstrutora, nome: e.target.value })}
+                    className="w-full rounded-lg border px-3 py-2"
+                    placeholder="Ex: MRV, Cyrela, etc."
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Logo (opcional)</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => setFormConstrutora({ ...formConstrutora, logo: e.target.files?.[0] || null })}
+                    className="w-full rounded-lg border px-3 py-2"
+                  />
+                </div>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-6 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+                  className="w-full bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
                 >
-                  Adicionar
+                  {loading ? 'Criando...' : 'Criar Construtora'}
                 </button>
               </form>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {construtoras.map(construtora => (
-                <div
-                  key={construtora.id}
-                  className="bg-white dark:bg-[#23283A] rounded-xl p-6 border border-[#E8E9F1] dark:border-[#23283A] cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => {
-                    setSelectedConstrutora(construtora);
-                    setView('empreendimentos');
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-bold text-[#2E2F38] dark:text-white text-lg">{construtora.nome}</h3>
-                      <p className="text-sm text-[#6B6F76] dark:text-gray-300">Clique para ver empreendimentos</p>
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteConstrutora(construtora.id);
-                      }}
-                      className="text-red-500 hover:text-red-700 text-sm"
-                    >
-                      Excluir
-                    </button>
-                  </div>
+            {/* Lista */}
+            <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4">Construtoras Cadastradas</h2>
+              {loading ? (
+                <div className="text-center py-8">Carregando...</div>
+              ) : construtoras.length === 0 ? (
+                <div className="text-center py-8 text-[#6B6F76] dark:text-gray-300">
+                  Nenhuma construtora cadastrada
                 </div>
-              ))}
+              ) : (
+                <div className="space-y-3">
+                  {construtoras.map(construtora => (
+                    <div
+                      key={construtora.id}
+                      className="flex items-center justify-between p-3 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        {construtora.logoUrl ? (
+                          <img src={construtora.logoUrl} alt={construtora.nome} className="w-8 h-8 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-8 h-8 bg-[#3478F6] rounded-full flex items-center justify-center">
+                            <BuildingIcon className="h-4 w-4 text-white" />
+                          </div>
+                        )}
+                        <span className="font-semibold text-[#2E2F38] dark:text-white">{construtora.nome}</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setSelectedConstrutora(construtora);
+                            setView('produtos');
+                          }}
+                          className="px-3 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-sm rounded transition-colors"
+                        >
+                          Produtos
+                        </button>
+                        <button
+                          onClick={() => handleDeleteConstrutora(construtora.id)}
+                          className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors"
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* Lista de Empreendimentos */}
-        {view === 'empreendimentos' && selectedConstrutora && (
-          <div>
-            <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-8">
-              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4">Novo Empreendimento</h2>
-              <form onSubmit={handleAddEmpreendimento} className="flex flex-col gap-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Produtos */}
+        {view === 'produtos' && selectedConstrutora && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Formulário */}
+            <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
+                <PackageIcon className="h-6 w-6 text-[#3478F6]" />
+                Novo Produto
+              </h2>
+              <form onSubmit={handleAddProduto} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Nome do Produto</label>
                   <input
                     type="text"
-                    placeholder="Nome do empreendimento"
-                    value={formEmpreendimento.nome}
-                    onChange={e => setFormEmpreendimento({ ...formEmpreendimento, nome: e.target.value })}
-                    className="rounded-lg border px-3 py-2 text-sm"
+                    value={formProduto.nome}
+                    onChange={e => setFormProduto({ ...formProduto, nome: e.target.value })}
+                    className="w-full rounded-lg border px-3 py-2"
+                    placeholder="Ex: Residencial Jardim das Flores"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Descrição (opcional)</label>
+                  <textarea
+                    value={formProduto.descricao}
+                    onChange={e => setFormProduto({ ...formProduto, descricao: e.target.value })}
+                    className="w-full rounded-lg border px-3 py-2"
+                    rows={3}
+                    placeholder="Descrição do produto..."
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {loading ? 'Criando...' : 'Criar Produto'}
+                </button>
+              </form>
+            </div>
+
+            {/* Lista */}
+            <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4">Produtos de {selectedConstrutora.nome}</h2>
+              {loading ? (
+                <div className="text-center py-8">Carregando...</div>
+              ) : produtos.length === 0 ? (
+                <div className="text-center py-8 text-[#6B6F76] dark:text-gray-300">
+                  Nenhum produto cadastrado
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {produtos.map(produto => (
+                    <div
+                      key={produto.id}
+                      className="flex items-center justify-between p-3 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors"
+                    >
+                      <div>
+                        <span className="font-semibold text-[#2E2F38] dark:text-white">{produto.nome}</span>
+                        {produto.descricao && (
+                          <p className="text-sm text-[#6B6F76] dark:text-gray-300">{produto.descricao}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setSelectedProduto(produto);
+                            setView('materiais');
+                          }}
+                          className="px-3 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-sm rounded transition-colors"
+                        >
+                          Materiais
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProduto(produto.id)}
+                          className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors"
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Materiais */}
+        {view === 'materiais' && selectedProduto && (
+          <div className="space-y-6">
+            {/* Formulários de Material */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* PDF */}
+              <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+                <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
+                  <FileIcon className="h-5 w-5 text-[#3478F6]" />
+                  Upload PDF
+                </h3>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) handleUploadFile(file, 'pdf');
+                  }}
+                  disabled={uploading}
+                  className="w-full rounded-lg border px-3 py-2"
+                />
+                {uploading && <p className="text-sm text-[#6B6F76] mt-2">Enviando...</p>}
+              </div>
+
+              {/* Links */}
+              <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+                <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
+                  <LinkIcon className="h-5 w-5 text-[#3478F6]" />
+                  Adicionar Link
+                </h3>
+                <form onSubmit={handleAddMaterial} className="space-y-3">
+                  <input
+                    type="text"
+                    value={formMaterial.nome}
+                    onChange={e => setFormMaterial({ ...formMaterial, nome: e.target.value })}
+                    placeholder="Nome do link"
+                    className="w-full rounded-lg border px-3 py-2"
                     required
                   />
                   <input
-                    type="text"
-                    placeholder="Descrição (opcional)"
-                    value={formEmpreendimento.descricao}
-                    onChange={e => setFormEmpreendimento({ ...formEmpreendimento, descricao: e.target.value })}
-                    className="rounded-lg border px-3 py-2 text-sm"
+                    type="url"
+                    value={formMaterial.url}
+                    onChange={e => setFormMaterial({ ...formMaterial, url: e.target.value })}
+                    placeholder="URL do link"
+                    className="w-full rounded-lg border px-3 py-2"
+                    required
                   />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-6 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg font-semibold transition-colors disabled:opacity-50 self-end"
-                >
-                  Adicionar
-                </button>
-              </form>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {empreendimentos.map(empreendimento => (
-                <div
-                  key={empreendimento.id}
-                  className="bg-white dark:bg-[#23283A] rounded-xl p-6 border border-[#E8E9F1] dark:border-[#23283A] cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => {
-                    setSelectedEmpreendimento(empreendimento);
-                    setView('materiais');
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-bold text-[#2E2F38] dark:text-white text-lg">{empreendimento.nome}</h3>
-                      {empreendimento.descricao && (
-                        <p className="text-sm text-[#6B6F76] dark:text-gray-300">{empreendimento.descricao}</p>
-                      )}
-                      <p className="text-sm text-[#6B6F76] dark:text-gray-300">Clique para ver materiais</p>
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteEmpreendimento(empreendimento.id);
-                      }}
-                      className="text-red-500 hover:text-red-700 text-sm"
-                    >
-                      Excluir
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Lista de Materiais */}
-        {view === 'materiais' && selectedEmpreendimento && (
-          <div>
-            <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-8">
-              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4">Novo Material</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Criar pasta */}
-                <div>
-                  <h3 className="font-semibold text-[#2E2F38] dark:text-white mb-3">Criar Pasta</h3>
-                  <form onSubmit={handleAddMaterial} className="flex flex-col gap-3">
-                    <input
-                      type="text"
-                      placeholder="Nome da pasta"
-                      value={formMaterial.nome}
-                      onChange={e => setFormMaterial({ ...formMaterial, nome: e.target.value })}
-                      className="rounded-lg border px-3 py-2 text-sm"
-                      required
-                    />
-                    <select
-                      value={formMaterial.categoria}
-                      onChange={e => setFormMaterial({ ...formMaterial, categoria: e.target.value as any })}
-                      className="rounded-lg border px-3 py-2 text-sm"
-                    >
-                      {CATEGORIAS.map(cat => (
-                        <option key={cat.value} value={cat.value}>{cat.icon} {cat.label}</option>
-                      ))}
-                    </select>
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
-                    >
-                      Criar Pasta
-                    </button>
-                  </form>
-                </div>
-
-                {/* Upload arquivo */}
-                <div>
-                  <h3 className="font-semibold text-[#2E2F38] dark:text-white mb-3">Upload de Arquivo</h3>
-                  <div className="flex flex-col gap-3">
-                    <select
-                      value={formMaterial.categoria}
-                      onChange={e => setFormMaterial({ ...formMaterial, categoria: e.target.value as any })}
-                      className="rounded-lg border px-3 py-2 text-sm"
-                    >
-                      {CATEGORIAS.map(cat => (
-                        <option key={cat.value} value={cat.value}>{cat.icon} {cat.label}</option>
-                      ))}
-                    </select>
-                    <input
-                      type="file"
-                      onChange={handleUploadFile}
-                      disabled={uploading}
-                      className="rounded-lg border px-3 py-2 text-sm"
-                      accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.mp4,.mov"
-                    />
-                    {uploading && <p className="text-sm text-[#6B6F76] dark:text-gray-300">Enviando...</p>}
-                  </div>
-                </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {loading ? 'Adicionando...' : 'Adicionar Link'}
+                  </button>
+                </form>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {materiais.map(material => (
-                <div
-                  key={material.id}
-                  className="bg-white dark:bg-[#23283A] rounded-xl p-4 border border-[#E8E9F1] dark:border-[#23283A]"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">
-                          {material.tipo === 'pasta' ? '📁' : 
-                           material.extensao === 'pdf' ? '📄' :
-                           material.extensao === 'mp4' ? '🎥' :
-                           material.extensao === 'jpg' || material.extensao === 'png' ? '📸' : '📄'}
-                        </span>
-                        <h3 className="font-semibold text-[#2E2F38] dark:text-white">{material.nome}</h3>
-                      </div>
-                      {material.tamanho && (
-                        <p className="text-xs text-[#6B6F76] dark:text-gray-300">
-                          {(material.tamanho / 1024 / 1024).toFixed(1)} MB
-                        </p>
-                      )}
-                      {material.url && (
-                        <a
-                          href={material.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#3478F6] hover:underline text-sm"
-                        >
-                          Abrir arquivo
-                        </a>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => handleDeleteMaterial(material.id, material.url)}
-                      className="text-red-500 hover:text-red-700 text-sm"
-                    >
-                      Excluir
-                    </button>
-                  </div>
+            {/* Upload de Fotos e Vídeos */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Fotos */}
+              <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+                <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5 text-[#3478F6]" />
+                  Upload Fotos
+                </h3>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={e => {
+                    if (e.target.files) {
+                      handleUploadMultipleFiles(e.target.files, 'foto');
+                    }
+                  }}
+                  disabled={uploading}
+                  className="w-full rounded-lg border px-3 py-2"
+                />
+                {uploading && <p className="text-sm text-[#6B6F76] mt-2">Enviando...</p>}
+              </div>
+
+              {/* Vídeos */}
+              <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+                <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
+                  <VideoIcon className="h-5 w-5 text-[#3478F6]" />
+                  Upload Vídeos
+                </h3>
+                <input
+                  type="file"
+                  accept="video/*"
+                  multiple
+                  onChange={e => {
+                    if (e.target.files) {
+                      handleUploadMultipleFiles(e.target.files, 'video');
+                    }
+                  }}
+                  disabled={uploading}
+                  className="w-full rounded-lg border px-3 py-2"
+                />
+                {uploading && <p className="text-sm text-[#6B6F76] mt-2">Enviando...</p>}
+              </div>
             </div>
-          ))}
-        </div>
+
+            {/* Lista de Materiais */}
+            <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+              <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4">Materiais de {selectedProduto.nome}</h3>
+              {loading ? (
+                <div className="text-center py-8">Carregando...</div>
+              ) : materiais.length === 0 ? (
+                <div className="text-center py-8 text-[#6B6F76] dark:text-gray-300">
+                  Nenhum material cadastrado
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {materiais.map(material => (
+                    <div
+                      key={material.id}
+                      className="p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors"
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        {getMaterialIcon(material.tipo)}
+                        <span className="font-semibold text-[#2E2F38] dark:text-white text-sm">{material.nome}</span>
+                      </div>
+                      <div className="flex gap-2">
+                        {material.url && (
+                          <a
+                            href={material.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors"
+                          >
+                            Ver
+                          </a>
+                        )}
+                        <button
+                          onClick={() => handleDeleteMaterial(material.id, material.url)}
+                          className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors"
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
