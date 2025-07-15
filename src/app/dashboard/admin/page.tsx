@@ -21,6 +21,7 @@ const adminCards = [
   { title: 'Materiais Construtora', icon: '🏗️', description: 'Adicione e gerencie materiais das construtoras.', href: '/dashboard/admin/materiais-construtora' },
   { title: 'Marketing Imobiliário', icon: '📢', description: 'Ferramentas e campanhas de marketing.', href: '/dashboard/admin/marketing-imobiliario' },
   { title: 'Financeiro', icon: '💰', description: 'Controle financeiro da imobiliária.', href: '/dashboard/admin/financeiro' },
+  { title: 'Metas', icon: '🎯', description: 'Configure e acompanhe as metas da imobiliária.', href: '/dashboard/admin/metas' },
   { title: 'Relatórios', icon: '📊', description: 'Acompanhe métricas e resultados detalhados.', href: '/dashboard/admin/relatorios' },
   { title: 'Site', icon: '🌐', description: 'Gerencie o site institucional e vitrines.', href: '/dashboard/admin/site' },
   { title: 'Importar Leads', icon: '⬆️', description: 'Importe vários leads de uma vez, colando nomes e telefones.', href: '/dashboard/admin/importar-leads' },
