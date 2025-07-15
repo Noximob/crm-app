@@ -252,7 +252,37 @@ const MetasCard = ({ meta, nomeImobiliaria }: { meta: any, nomeImobiliaria: stri
   // Usar o percentual salvo no Firestore, ou calcular automaticamente se não existir
   const progresso = meta?.percentual !== undefined ? meta.percentual : (meta && meta.valor > 0 ? Math.round((meta.alcancado / meta.valor) * 100) : 0);
   const progressoDisplay = progresso > 100 ? 100 : progresso;
-  const corBarra = progresso >= 100 ? 'bg-[#3AC17C]' : 'bg-[#3478F6]';
+  
+  // Determinar cores baseado no progresso
+  const getProgressColors = () => {
+    if (progresso >= 100) {
+      return {
+        barra: 'from-[#3AC17C] to-[#2E8B57]',
+        percentual: 'text-[#3AC17C]',
+        percentualBg: 'bg-[#3AC17C]/10'
+      };
+    } else if (progresso >= 75) {
+      return {
+        barra: 'from-[#4CAF50] to-[#45A049]',
+        percentual: 'text-[#4CAF50]',
+        percentualBg: 'bg-[#4CAF50]/10'
+      };
+    } else if (progresso >= 50) {
+      return {
+        barra: 'from-[#FF9800] to-[#F57C00]',
+        percentual: 'text-[#FF9800]',
+        percentualBg: 'bg-[#FF9800]/10'
+      };
+    } else {
+      return {
+        barra: 'from-[#A3C8F7] to-[#3478F6]',
+        percentual: 'text-[#3478F6]',
+        percentualBg: 'bg-[#3478F6]/10'
+      };
+    }
+  };
+
+  const colors = getProgressColors();
 
   return (
     <div className="flex flex-col gap-3 p-6 rounded-2xl shadow-xl bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 min-h-[200px] relative overflow-hidden">
@@ -285,12 +315,22 @@ const MetasCard = ({ meta, nomeImobiliaria }: { meta: any, nomeImobiliaria: stri
           <span className={`text-xl font-bold ${progresso >= 100 ? 'text-[#3AC17C]' : 'text-[#3478F6]'}`}>{meta?.alcancado ? meta.alcancado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}</span>
         </div>
       </div>
-      {/* Barra de progresso */}
-      <div className="w-full h-2 bg-[#23283A] rounded-full overflow-hidden mb-1">
-        <div className={`h-2 rounded-full transition-all duration-700 ${corBarra}`} style={{ width: `${progressoDisplay}%` }}></div>
+      {/* Barra de progresso com gradiente */}
+      <div className="w-full h-3 bg-[#23283A] rounded-full overflow-hidden mb-2 relative">
+        <div 
+          className={`h-3 rounded-full transition-all duration-1000 ease-out bg-gradient-to-r ${colors.barra} shadow-lg`} 
+          style={{ width: `${progressoDisplay}%` }}
+        >
+          {/* Efeito de brilho na barra */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
+        </div>
       </div>
-      {/* Percentual */}
-      <div className="text-xs text-[#A3C8F7] text-right font-semibold">{progresso}% da meta</div>
+      {/* Percentual destacado */}
+      <div className={`text-right`}>
+        <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold ${colors.percentual} ${colors.percentualBg} border border-current/20 shadow-sm`}>
+          {progresso}% da meta
+        </span>
+      </div>
     </div>
   );
 };
