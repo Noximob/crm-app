@@ -712,12 +712,9 @@ export default function DashboardPage() {
           <MetasCard meta={meta} nomeImobiliaria={nomeImobiliaria} />
         </div>
         {/* Avisos Importantes */}
-        <div className="bg-gradient-to-br from-[#FF6B6B]/20 to-[#FF8E8E]/10 border-2 border-[#FF6B6B]/30 rounded-2xl p-8 min-h-[220px] relative overflow-hidden shadow-xl animate-fade-in flex flex-col gap-4">
+        <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-8 min-h-[220px] relative overflow-hidden shadow-xl animate-fade-in flex flex-col gap-4">
           {/* Borda vermelha à esquerda */}
-          <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#FF6B6B] to-[#FF8E8E]"></div>
-          {/* Efeito de brilho sutil */}
-          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent"></div>
-          
+          <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#FF6B6B] to-[#FF8E8E]" />
           <div className="flex items-center gap-3 mb-4 relative z-10">
             <div className="relative">
               <svg className="h-8 w-8 text-[#FF6B6B] drop-shadow-lg animate-pulse" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -725,8 +722,6 @@ export default function DashboardPage() {
                 <line x1="12" x2="12" y1="8" y2="12"/>
                 <line x1="12" x2="12.01" y1="16" y2="16"/>
               </svg>
-              {/* Efeito de brilho no ícone */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
             </div>
             <span className="font-extrabold text-white text-2xl tracking-tight drop-shadow-lg">Avisos Importantes</span>
             {/* Badge de destaque */}
@@ -734,7 +729,6 @@ export default function DashboardPage() {
               ATENÇÃO
             </span>
           </div>
-          
           <div className="space-y-3 relative z-10">
             {avisosImportantes
               .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
@@ -743,55 +737,27 @@ export default function DashboardPage() {
             ) : (
               avisosImportantes
                 .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
-                .map((aviso, idx) => {
-                  // Gradientes vermelhos para avisos importantes
-                  const cardStyles = [
-                    { 
-                      bg: 'bg-gradient-to-r from-[#FF6B6B]/15 to-[#FF8E8E]/10', 
-                      border: 'border-[#FF6B6B]/30', 
-                      icon: <AlertCircleIcon className="h-5 w-5 text-[#FF6B6B] mt-0.5 animate-pulse" />,
-                      shadow: 'shadow-[#FF6B6B]/20'
-                    },
-                    { 
-                      bg: 'bg-gradient-to-r from-[#FF8E8E]/15 to-[#FFB3B3]/10', 
-                      border: 'border-[#FF8E8E]/30', 
-                      icon: <AlertCircleIcon className="h-5 w-5 text-[#FF8E8E] mt-0.5" />,
-                      shadow: 'shadow-[#FF8E8E]/20'
-                    },
-                    { 
-                      bg: 'bg-gradient-to-r from-[#FFB3B3]/15 to-[#FFD6D6]/10', 
-                      border: 'border-[#FFB3B3]/30', 
-                      icon: <AlertCircleIcon className="h-5 w-5 text-[#FFB3B3] mt-0.5" />,
-                      shadow: 'shadow-[#FFB3B3]/20'
-                    },
-                  ];
-                  const style = cardStyles[idx % cardStyles.length];
-                  return (
-                    <div 
-                      key={aviso.id} 
-                      className={`flex items-start gap-3 p-4 rounded-xl border ${style.bg} ${style.border} hover:shadow-lg hover:scale-[1.02] transition-all duration-300 relative overflow-hidden group`}
-                    >
-                      {/* Efeito de brilho no hover */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                      
-                      <div className="relative z-10">
-                        {style.icon}
+                .map((aviso, idx) => (
+                  <div
+                    key={aviso.id}
+                    className="flex items-start gap-3 p-4 rounded-xl border border-[#FF6B6B]/40 bg-gradient-to-r from-[#FF6B6B]/10 to-[#FF8E8E]/0 shadow-lg hover:scale-[1.02] transition-all duration-300 relative overflow-hidden group backdrop-blur-sm"
+                  >
+                    <div className="relative z-10">
+                      <AlertCircleIcon className="h-5 w-5 text-[#FF6B6B] mt-0.5 animate-pulse" />
+                    </div>
+                    <div className="flex-1 relative z-10">
+                      <div className="text-sm font-bold text-[#2E2F38] dark:text-white mb-1 group-hover:text-[#FF6B6B] transition-colors">
+                        {aviso.titulo}
                       </div>
-                      
-                      <div className="flex-1 relative z-10">
-                        <div className="text-sm font-bold text-[#2E2F38] dark:text-white mb-1 group-hover:text-[#FF6B6B] transition-colors">
-                          {aviso.titulo}
-                        </div>
-                        <div className="text-xs text-[#6B6F76] dark:text-gray-100 mb-2 leading-relaxed">
-                          {aviso.mensagem}
-                        </div>
-                        <div className="text-[10px] text-[#FF6B6B] font-semibold bg-[#FF6B6B]/10 px-2 py-1 rounded-full inline-block">
-                          {aviso.dataHora?.toDate ? aviso.dataHora.toDate().toLocaleString('pt-BR') : ''}
-                        </div>
+                      <div className="text-xs text-[#6B6F76] dark:text-gray-100 mb-2 leading-relaxed">
+                        {aviso.mensagem}
+                      </div>
+                      <div className="text-[10px] text-[#FF6B6B] font-semibold bg-[#FF6B6B]/10 px-2 py-1 rounded-full inline-block">
+                        {aviso.dataHora?.toDate ? aviso.dataHora.toDate().toLocaleString('pt-BR') : ''}
                       </div>
                     </div>
-                  );
-                })
+                  </div>
+                ))
             )}
           </div>
         </div>
