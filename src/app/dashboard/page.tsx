@@ -544,16 +544,22 @@ export default function DashboardPage() {
   ];
 
   const EconomicIndicator = ({ title, value, variacao, subtitulo }: { title: string; value: string; variacao: number | null; subtitulo: string }) => (
-    <div className="flex flex-col items-center justify-center p-3 bg-gradient-to-r from-[#3478F6]/5 to-[#A3C8F7]/5 rounded-lg border border-[#A3C8F7]/20 min-w-[120px]">
-      <div className="text-xs text-[#6B6F76] dark:text-gray-300 mb-1">{title}</div>
-      <div className="text-lg font-bold text-[#2E2F38] dark:text-white">{value}</div>
-      <div className="text-[10px] text-[#6B6F76] dark:text-gray-400 mb-1">({subtitulo})</div>
+    <div className="flex flex-col items-center justify-center p-4 bg-gradient-to-r from-[#3478F6]/5 to-[#A3C8F7]/5 rounded-xl border border-[#A3C8F7]/20 min-w-[120px] cursor-pointer group hover:scale-105 hover:shadow-lg hover:border-[#3478F6]/40 transition-all duration-300 relative overflow-hidden">
+      {/* Efeito de brilho no hover */}
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      
+      {/* Borda superior que aparece no hover */}
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+      
+      <div className="text-xs text-[#6B6F76] dark:text-gray-300 mb-1 group-hover:text-[#3478F6] transition-colors duration-300">{title}</div>
+      <div className="text-lg font-bold text-[#2E2F38] dark:text-white group-hover:text-[#3478F6] transition-colors duration-300">{value}</div>
+      <div className="text-[10px] text-[#6B6F76] dark:text-gray-400 mb-1 group-hover:text-[#A3C8F7] transition-colors duration-300">({subtitulo})</div>
       {variacao !== null && (
-        <div className={`flex items-center text-xs font-medium ${variacao >= 0 ? 'text-[#3AC17C]' : 'text-[#F45B69]'}`}> 
+        <div className={`flex items-center text-xs font-medium ${variacao >= 0 ? 'text-[#3AC17C]' : 'text-[#F45B69]'} group-hover:scale-110 transition-transform duration-300`}> 
           {variacao >= 0 ? (
-            <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
+            <svg className="h-3 w-3 mr-1 group-hover:animate-bounce" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
           ) : (
-            <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6" /><polyline points="17 18 23 18 23 12" /></svg>
+            <svg className="h-3 w-3 mr-1 group-hover:animate-bounce" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6" /><polyline points="17 18 23 18 23 12" /></svg>
           )}
           {variacao > 0 ? '+' : ''}{variacao.toFixed(2)}%
         </div>
