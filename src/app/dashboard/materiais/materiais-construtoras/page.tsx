@@ -87,8 +87,6 @@ export default function MateriaisConstrutorasPage() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [materiais, setMateriais] = useState<Material[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTipo, setSelectedTipo] = useState('');
 
   // Navegação
   const [view, setView] = useState<'construtoras' | 'produtos' | 'materiais'>('construtoras');
@@ -172,19 +170,14 @@ export default function MateriaisConstrutorasPage() {
   };
 
   const getFilteredMateriais = () => {
-    let filtered = materiais;
+    return materiais;
+  };
+
+  const getGroupedMateriais = () => {
+    const fotos = materiais.filter(m => m.tipo === 'foto');
+    const outros = materiais.filter(m => m.tipo !== 'foto');
     
-    if (searchTerm) {
-      filtered = filtered.filter(material => 
-        material.nome.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    if (selectedTipo) {
-      filtered = filtered.filter(material => material.tipo === selectedTipo);
-    }
-    
-    return filtered;
+    return { fotos, outros };
   };
 
   const getMaterialIcon = (tipo: string) => {
@@ -229,8 +222,6 @@ export default function MateriaisConstrutorasPage() {
                 setView('construtoras');
                 setSelectedConstrutora(null);
                 setSelectedProduto(null);
-                setSearchTerm('');
-                setSelectedTipo('');
               }}
               className="px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg font-semibold transition-colors"
             >
@@ -239,37 +230,7 @@ export default function MateriaisConstrutorasPage() {
           )}
         </div>
 
-        {/* Filtros para materiais */}
-        {view === 'materiais' && selectedProduto && (
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Buscar material</label>
-                <input
-                  type="text"
-                  placeholder="Digite o nome do material..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Filtrar por tipo</label>
-                <select
-                  value={selectedTipo}
-                  onChange={e => setSelectedTipo(e.target.value)}
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
-                >
-                  <option value="">Todos os tipos</option>
-                  <option value="pdf">📄 PDF</option>
-                  <option value="link">🔗 Link</option>
-                  <option value="foto">📸 Foto</option>
-                  <option value="video">🎥 Vídeo</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
+
 
         {/* Lista de Construtoras */}
         {view === 'construtoras' && (
@@ -376,46 +337,109 @@ export default function MateriaisConstrutorasPage() {
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6]"></div>
               </div>
-            ) : getFilteredMateriais().length === 0 ? (
+            ) : materiais.length === 0 ? (
               <div className="text-center py-12">
                 <div className="text-6xl mb-4">📁</div>
                 <h3 className="text-xl font-semibold text-[#2E2F38] dark:text-white mb-2">Nenhum material encontrado</h3>
                 <p className="text-[#6B6F76] dark:text-gray-300">
-                  {searchTerm || selectedTipo ? 'Tente ajustar os filtros de busca.' : 'Os materiais de ' + selectedProduto.nome + ' aparecerão aqui quando forem cadastrados.'}
+                  {selectedProduto.nome + ' não possui materiais cadastrados.'}
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {getFilteredMateriais().map(material => (
-                  <div
-                    key={material.id}
-                    className="bg-white dark:bg-[#23283A] rounded-xl p-4 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105"
-                  >
-                    <div className="flex items-center gap-3 mb-3">
-                      {getMaterialIcon(material.tipo)}
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-[#2E2F38] dark:text-white text-sm truncate">
-                          {material.nome}
-                        </h4>
-                        {material.tamanho && (
-                          <p className="text-xs text-[#6B6F76] dark:text-gray-300">
-                            {formatFileSize(material.tamanho)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      {material.url && (
-                        <button
-                          onClick={() => handleDownload(material)}
-                          className="flex-1 px-3 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded-lg transition-colors font-semibold"
+              <div className="space-y-8">
+                {/* Outros Materiais */}
+                {getGroupedMateriais().outros.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4">Materiais</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {getGroupedMateriais().outros.map(material => (
+                        <div
+                          key={material.id}
+                          className="bg-white dark:bg-[#23283A] rounded-xl p-4 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105"
                         >
-                          {material.tipo === 'link' ? 'Abrir' : 'Download'}
-                        </button>
-                      )}
+                          <div className="flex items-center gap-3 mb-3">
+                            {getMaterialIcon(material.tipo)}
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-[#2E2F38] dark:text-white text-sm truncate">
+                                {material.nome}
+                              </h4>
+                              {material.tamanho && (
+                                <p className="text-xs text-[#6B6F76] dark:text-gray-300">
+                                  {formatFileSize(material.tamanho)}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            {material.url && (
+                              <button
+                                onClick={() => handleDownload(material)}
+                                className="flex-1 px-3 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded-lg transition-colors font-semibold"
+                              >
+                                {material.tipo === 'link' ? 'Abrir' : 'Download'}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
+                )}
+
+                {/* Fotos Avulsas */}
+                {getGroupedMateriais().fotos.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
+                      <ImageIcon className="h-5 w-5 text-[#3478F6]" />
+                      Fotos Avulsas
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                      {getGroupedMateriais().fotos.map(material => (
+                        <div
+                          key={material.id}
+                          className="bg-white dark:bg-[#23283A] rounded-xl p-3 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105"
+                        >
+                          <div className="aspect-square mb-2 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                            {material.url ? (
+                              <img 
+                                src={material.url} 
+                                alt={material.nome}
+                                className="w-full h-full object-cover rounded-lg"
+                                onError={(e) => {
+                                  const target = e.currentTarget as HTMLElement;
+                                  target.style.display = 'none';
+                                  const nextElement = target.nextElementSibling as HTMLElement;
+                                  if (nextElement) nextElement.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div className="hidden items-center justify-center text-gray-400">
+                              <ImageIcon className="h-8 w-8" />
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-xs text-[#2E2F38] dark:text-white truncate mb-1">
+                              {material.nome}
+                            </p>
+                            {material.tamanho && (
+                              <p className="text-xs text-[#6B6F76] dark:text-gray-300">
+                                {formatFileSize(material.tamanho)}
+                              </p>
+                            )}
+                            {material.url && (
+                              <button
+                                onClick={() => handleDownload(material)}
+                                className="w-full mt-2 px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors font-semibold"
+                              >
+                                Download
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
