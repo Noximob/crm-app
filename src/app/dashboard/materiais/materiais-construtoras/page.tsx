@@ -368,14 +368,12 @@ export default function MateriaisConstrutorasPage() {
                               <LinkIcon className="h-5 w-5 text-white" />
                             </div>
                             <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-[#2E2F38] dark:text-white text-sm mb-1">
+                                {material.nome}
+                              </h4>
                               {material.descricao && (
                                 <p className="text-xs text-[#6B6F76] dark:text-gray-300 mb-2 line-clamp-2">
                                   {material.descricao}
-                                </p>
-                              )}
-                              {material.url && (
-                                <p className="text-xs text-[#3478F6] dark:text-[#A3C8F7] truncate">
-                                  {material.url}
                                 </p>
                               )}
                             </div>
@@ -485,8 +483,11 @@ export default function MateriaisConstrutorasPage() {
                             </div>
                           </div>
                           <div className="text-center">
+                            <p className="text-xs text-[#2E2F38] dark:text-white truncate mb-1">
+                              {material.nome}
+                            </p>
                             {material.tamanho && (
-                              <p className="text-xs text-[#6B6F76] dark:text-gray-300 mb-1">
+                              <p className="text-xs text-[#6B6F76] dark:text-gray-300">
                                 {formatFileSize(material.tamanho)}
                               </p>
                             )}
