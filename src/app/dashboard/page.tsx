@@ -247,6 +247,39 @@ function getTaskStatusInfo(tasks: Task[]): TaskStatus {
   return 'Tarefa Futura';
 }
 
+// Novo Card de Metas moderno
+const MetasCard = ({ meta, nomeImobiliaria }: { meta: any, nomeImobiliaria: string }) => {
+  const progresso = meta && meta.valor > 0 ? Math.round((meta.alcancado / meta.valor) * 100) : 0;
+  const progressoDisplay = progresso > 100 ? 100 : progresso;
+  const corBarra = progresso >= 100 ? 'bg-[#3AC17C]' : 'bg-[#3478F6]';
+  return (
+    <div className="flex flex-col gap-4 p-8 rounded-3xl shadow-xl bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 min-h-[220px] relative overflow-hidden">
+      <div className="flex items-center gap-3 mb-2">
+        <svg className="h-8 w-8 text-[#3478F6] drop-shadow-lg" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <span className="font-extrabold text-[#2E2F38] dark:text-white text-2xl tracking-tight">Metas</span>
+        <span className="ml-2 px-3 py-1 rounded-full bg-[#3478F6]/10 text-[#3478F6] dark:bg-[#23283A] dark:text-[#A3C8F7] text-base font-bold">{nomeImobiliaria}</span>
+      </div>
+      <div className="flex items-center gap-4 text-sm text-[#6B6F76] dark:text-gray-300 mb-2">
+        <span>Início: <span className="font-semibold text-[#3478F6]">{meta?.inicio ? new Date(meta.inicio).toLocaleDateString('pt-BR') : '--'}</span></span>
+        <span>|</span>
+        <span>Fim: <span className="font-semibold text-[#3478F6]">{meta?.fim ? new Date(meta.fim).toLocaleDateString('pt-BR') : '--'}</span></span>
+      </div>
+      <div className="flex items-center justify-between mt-2 mb-1">
+        <div className="text-sm text-[#6B6F76] dark:text-gray-300">VGV da Meta</div>
+        <div className="text-sm text-[#6B6F76] dark:text-gray-300">Já Realizado</div>
+      </div>
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-2xl font-extrabold text-[#3478F6] dark:text-[#A3C8F7]">{meta?.valor ? meta.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}</div>
+        <div className={`text-2xl font-extrabold ${progresso >= 100 ? 'text-[#3AC17C]' : 'text-[#3478F6]'} dark:text-[#3AC17C]`}>{meta?.alcancado ? meta.alcancado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}</div>
+      </div>
+      <div className="w-full h-6 bg-[#E8E9F1] dark:bg-[#23283A] rounded-full overflow-hidden mb-1">
+        <div className={`h-6 rounded-full transition-all duration-700 ${corBarra}`} style={{ width: `${progressoDisplay}%` }}></div>
+      </div>
+      <div className="text-sm text-[#6B6F76] dark:text-gray-300 text-right font-semibold">{progresso}% da meta</div>
+    </div>
+  );
+};
+
 export default function DashboardPage() {
   const { currentUser, userData } = useAuth();
   const [leads, setLeads] = useState<any[]>([]);
@@ -580,18 +613,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         {/* Gráfico de Performance */}
         <Card className="animate-fade-in">
-          <SectionTitle className="mb-6">Performance Semanal</SectionTitle>
-          <div className="h-48 flex items-end justify-between gap-2">
-            {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((day, index) => (
-              <div key={day} className="flex flex-col items-center">
-                <div 
-                  className="w-8 bg-gradient-to-t from-[#3478F6] to-[#A3C8F7] rounded-t-lg transition-all duration-300 hover:opacity-80"
-                  style={{ height: `${performanceData[index] || 50}px` }}
-                ></div>
-                <span className="text-xs text-[#6B6F76] dark:text-gray-300 mt-2">{day}</span>
-              </div>
-            ))}
-          </div>
+          <MetasCard meta={meta} nomeImobiliaria={nomeImobiliaria} />
         </Card>
         {/* Avisos Importantes - restaurado, integrado ao Firestore */}
         <Card className="animate-fade-in">
