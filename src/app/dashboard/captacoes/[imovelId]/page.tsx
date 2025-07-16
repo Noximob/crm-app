@@ -209,7 +209,7 @@ export default function DetalhesImovelPage() {
             </div>
           </div>
           
-          {userData?.tipo === 'admin' && (
+          {userData?.tipoConta === 'imobiliaria' && (
             <button
               onClick={handleDelete}
               disabled={deleting}
