@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { db, storage } from '@/lib/firebase';
+import { collection, query, where, getDocs, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 interface Campanha {
   id: string;
@@ -79,6 +80,11 @@ export default function MarketingImobiliarioMateriaisPage() {
   // Navegação
   const [view, setView] = useState<'campanhas' | 'materiais'>('campanhas');
   const [selectedCampanha, setSelectedCampanha] = useState<Campanha | null>(null);
+
+  // Formulário de Upload de Materiais
+  const [linkNome, setLinkNome] = useState('');
+  const [linkDescricao, setLinkDescricao] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
 
   useEffect(() => {
     if (!userData?.imobiliariaId) return;
@@ -165,6 +171,111 @@ export default function MarketingImobiliarioMateriaisPage() {
     return `${mb.toFixed(1)} MB`;
   };
 
+  // Funções de Upload (implementação completa)
+  const handleUploadPdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && selectedCampanha) {
+      setLoading(true);
+      try {
+        const storageRef = ref(storage, `marketing/${selectedCampanha.id}/pdfs/${file.name}`);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+        await addDoc(collection(db, 'materiais_marketing'), {
+          campanhaId: selectedCampanha.id,
+          nome: file.name,
+          tipo: 'pdf',
+          url,
+          tamanho: file.size,
+          extensao: file.type,
+          criadoEm: serverTimestamp(),
+        });
+        fetchMateriais(selectedCampanha.id);
+      } catch (err) {
+        alert('Erro ao fazer upload do PDF');
+      }
+      setLoading(false);
+    }
+  };
+
+  const handleAddLink = async () => {
+    if (linkNome && linkUrl && selectedCampanha) {
+      setLoading(true);
+      try {
+        await addDoc(collection(db, 'materiais_marketing'), {
+          campanhaId: selectedCampanha.id,
+          nome: linkNome,
+          tipo: 'link',
+          url: linkUrl,
+          descricao: linkDescricao,
+          criadoEm: serverTimestamp(),
+        });
+        setLinkNome('');
+        setLinkDescricao('');
+        setLinkUrl('');
+        fetchMateriais(selectedCampanha.id);
+      } catch (err) {
+        alert('Erro ao adicionar link');
+      }
+      setLoading(false);
+    }
+  };
+
+  const handleUploadFotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && selectedCampanha) {
+      setLoading(true);
+      try {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const storageRef = ref(storage, `marketing/${selectedCampanha.id}/fotos/${file.name}`);
+          await uploadBytes(storageRef, file);
+          const url = await getDownloadURL(storageRef);
+          await addDoc(collection(db, 'materiais_marketing'), {
+            campanhaId: selectedCampanha.id,
+            nome: file.name,
+            tipo: 'foto',
+            url,
+            tamanho: file.size,
+            extensao: file.type,
+            criadoEm: serverTimestamp(),
+          });
+        }
+        fetchMateriais(selectedCampanha.id);
+      } catch (err) {
+        alert('Erro ao fazer upload das fotos');
+      }
+      setLoading(false);
+    }
+  };
+
+  const handleUploadVideos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && selectedCampanha) {
+      setLoading(true);
+      try {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const storageRef = ref(storage, `marketing/${selectedCampanha.id}/videos/${file.name}`);
+          await uploadBytes(storageRef, file);
+          const url = await getDownloadURL(storageRef);
+          await addDoc(collection(db, 'materiais_marketing'), {
+            campanhaId: selectedCampanha.id,
+            nome: file.name,
+            tipo: 'video',
+            url,
+            tamanho: file.size,
+            extensao: file.type,
+            criadoEm: serverTimestamp(),
+          });
+        }
+        fetchMateriais(selectedCampanha.id);
+      } catch (err) {
+        alert('Erro ao fazer upload dos vídeos');
+      }
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
       <div className="max-w-6xl mx-auto">
@@ -237,6 +348,32 @@ export default function MarketingImobiliarioMateriaisPage() {
         {/* Lista de Materiais */}
         {view === 'materiais' && selectedCampanha && (
           <div>
+            {/* Formulário de Upload de Materiais */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {/* Upload PDF */}
+              <div className="bg-white dark:bg-[#23283A] rounded-xl p-6 border border-[#E8E9F1] dark:border-[#23283A]">
+                <h3 className="font-bold mb-2 flex items-center gap-2"><FileIcon className="h-5 w-5 text-[#3478F6]" /> Upload PDF</h3>
+                <input type="file" accept="application/pdf" className="mb-2" onChange={handleUploadPdf} />
+              </div>
+              {/* Adicionar Link */}
+              <div className="bg-white dark:bg-[#23283A] rounded-xl p-6 border border-[#E8E9F1] dark:border-[#23283A]">
+                <h3 className="font-bold mb-2 flex items-center gap-2"><LinkIcon className="h-5 w-5 text-[#3478F6]" /> Adicionar Link</h3>
+                <input type="text" placeholder="Nome do link" className="input mb-2" value={linkNome} onChange={e => setLinkNome(e.target.value)} />
+                <input type="text" placeholder="Descrição do link (opcional)" className="input mb-2" value={linkDescricao} onChange={e => setLinkDescricao(e.target.value)} />
+                <input type="text" placeholder="URL do link" className="input mb-2" value={linkUrl} onChange={e => setLinkUrl(e.target.value)} />
+                <button className="btn bg-[#3478F6] text-white w-full" onClick={handleAddLink}>Adicionar Link</button>
+              </div>
+              {/* Upload Fotos */}
+              <div className="bg-white dark:bg-[#23283A] rounded-xl p-6 border border-[#E8E9F1] dark:border-[#23283A]">
+                <h3 className="font-bold mb-2 flex items-center gap-2"><ImageIcon className="h-5 w-5 text-[#3478F6]" /> Upload Fotos</h3>
+                <input type="file" accept="image/*" multiple className="mb-2" onChange={handleUploadFotos} />
+              </div>
+              {/* Upload Vídeos */}
+              <div className="bg-white dark:bg-[#23283A] rounded-xl p-6 border border-[#E8E9F1] dark:border-[#23283A]">
+                <h3 className="font-bold mb-2 flex items-center gap-2"><VideoIcon className="h-5 w-5 text-[#3478F6]" /> Upload Vídeos</h3>
+                <input type="file" accept="video/*" multiple className="mb-2" onChange={handleUploadVideos} />
+              </div>
+            </div>
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6]"></div>
