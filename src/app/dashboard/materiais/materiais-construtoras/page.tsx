@@ -46,6 +46,7 @@ interface ImovelCaptado {
   tipo: 'casa' | 'apartamento' | 'terreno' | 'comercial';
   valor: number;
   descricao: string;
+  fotoCapa: string;
   fotos: string[];
   criadoEm: Date;
 }
@@ -690,10 +691,36 @@ export default function MateriaisConstrutorasPage() {
                 {imoveisCaptados.map((imovel) => (
                   <div
                     key={imovel.id}
-                    className="bg-white dark:bg-[#23283A] rounded-xl p-6 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105 group"
+                    className="bg-white dark:bg-[#23283A] rounded-xl p-6 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105 group cursor-pointer"
+                    onClick={() => window.open(`/dashboard/captacoes/${imovel.id}`, '_blank')}
                   >
-                    {/* Fotos */}
-                    {imovel.fotos.length > 0 && (
+                    {/* Foto Capa */}
+                    {imovel.fotoCapa ? (
+                      <div className="mb-4">
+                        <img
+                          src={imovel.fotoCapa}
+                          alt="Foto capa"
+                          className="w-full h-32 object-cover rounded-lg mb-2"
+                        />
+                        {imovel.fotos.length > 0 && (
+                          <div className="flex gap-1">
+                            {imovel.fotos.slice(0, 3).map((foto, index) => (
+                              <img
+                                key={index}
+                                src={foto}
+                                alt={`Foto ${index + 1}`}
+                                className="w-8 h-8 object-cover rounded"
+                              />
+                            ))}
+                            {imovel.fotos.length > 3 && (
+                              <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center text-xs text-gray-500">
+                                +{imovel.fotos.length - 3}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : imovel.fotos.length > 0 ? (
                       <div className="mb-4">
                         <img
                           src={imovel.fotos[0]}
@@ -717,6 +744,10 @@ export default function MateriaisConstrutorasPage() {
                             )}
                           </div>
                         )}
+                      </div>
+                    ) : (
+                      <div className="mb-4 h-32 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                        <ImageIcon className="h-12 w-12 text-gray-400" />
                       </div>
                     )}
 
