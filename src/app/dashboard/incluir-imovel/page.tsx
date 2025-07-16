@@ -290,15 +290,36 @@ export default function IncluirImovelPage() {
               accept="image/*,video/*"
               multiple
               onChange={e => {
-                const files = Array.from(e.target.files || []);
-                setFormImovel({ ...formImovel, fotos: files });
+                const newFiles = Array.from(e.target.files || []);
+                setFormImovel({ ...formImovel, fotos: [...formImovel.fotos, ...newFiles] });
               }}
               className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
             />
             {formImovel.fotos.length > 0 && (
-              <p className="text-sm text-[#6B6F76] dark:text-gray-300 mt-2">
-                {formImovel.fotos.length} arquivo(s) adicional(is) selecionado(s)
-              </p>
+              <div className="mt-3">
+                <p className="text-sm text-[#6B6F76] dark:text-gray-300 mb-2">
+                  {formImovel.fotos.length} arquivo(s) selecionado(s):
+                </p>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {formImovel.fotos.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
+                      <span className="text-sm text-[#2E2F38] dark:text-white truncate flex-1">
+                        {file.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newFiles = formImovel.fotos.filter((_, i) => i !== index);
+                          setFormImovel({ ...formImovel, fotos: newFiles });
+                        }}
+                        className="ml-2 text-red-500 hover:text-red-700 text-sm"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
 

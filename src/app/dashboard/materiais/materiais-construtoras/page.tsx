@@ -220,9 +220,31 @@ export default function MateriaisConstrutorasPage() {
         where('imobiliariaId', '==', userData?.imobiliariaId)
       );
       const snap = await getDocs(q);
-      const imoveisData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ImovelCaptado));
+      const imoveisData = snap.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          imobiliariaId: data.imobiliariaId,
+          corretorId: data.corretorId,
+          corretorNome: data.corretorNome,
+          nome: data.nome,
+          endereco: data.endereco,
+          bairro: data.bairro || '',
+          cidade: data.cidade || '',
+          estado: data.estado || '',
+          localizacao: data.localizacao || '',
+          tipo: data.tipo,
+          valor: data.valor,
+          condicoesPagamento: data.condicoesPagamento || '',
+          descricao: data.descricao || '',
+          fotoCapa: data.fotoCapa || '',
+          fotos: data.fotos || [],
+          criadoEm: data.criadoEm?.toDate ? data.criadoEm.toDate() : new Date(data.criadoEm)
+        } as ImovelCaptado;
+      });
       imoveisData.sort((a, b) => b.criadoEm.getTime() - a.criadoEm.getTime());
       setImoveisCaptados(imoveisData);
+      console.log('Imóveis captados carregados:', imoveisData.length);
     } catch (err) {
       console.error('Erro ao carregar imóveis captados:', err);
     } finally {
