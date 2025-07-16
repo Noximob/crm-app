@@ -96,7 +96,7 @@ export default function CaptacoesPage() {
   const [editingImovel, setEditingImovel] = useState<ImovelCaptado | null>(null);
   const [existingFotos, setExistingFotos] = useState<string[]>([]);
   const [existingFotoCapa, setExistingFotoCapa] = useState<string>('');
-  const [videoThumbnails, setVideoThumbnails] = useState<{[key: string]: string}>({});
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const [formImovel, setFormImovel] = useState({
     nome: '',
     endereco: '',
@@ -186,7 +186,7 @@ export default function CaptacoesPage() {
     setEditingImovel(null);
     setExistingFotos([]);
     setExistingFotoCapa('');
-    setVideoThumbnails({});
+    setSelectedVideo(null);
   };
 
   const handleAddImovel = async (e: React.FormEvent) => {
@@ -269,12 +269,6 @@ export default function CaptacoesPage() {
       fotoCapa: null,
       fotos: []
     });
-    
-    // Carregar thumbnails dos vídeos
-    const videos = imovel.fotos.filter(url => isVideo(url));
-    if (videos.length > 0) {
-      loadVideoThumbnails(videos);
-    }
   };
 
   const handleDeleteExistingFoto = (index: number) => {
@@ -408,84 +402,20 @@ export default function CaptacoesPage() {
     return videoExtensions.some(ext => url.toLowerCase().includes(ext));
   };
 
-  const generateVideoThumbnail = (videoUrl: string): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const video = document.createElement('video');
-      video.crossOrigin = 'anonymous';
-      video.muted = true;
-      video.playsInline = true;
-      
-      video.onloadeddata = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const thumbnailUrl = canvas.toDataURL('image/jpeg', 0.8);
-            resolve(thumbnailUrl);
-          } else {
-            reject(new Error('Não foi possível criar contexto do canvas'));
-          }
-        } catch (error) {
-          reject(error);
-        }
-      };
-      
-      video.onerror = () => {
-        reject(new Error('Erro ao carregar vídeo'));
-      };
-      
-      video.src = videoUrl;
-      video.load();
-    });
-  };
-
-  const loadVideoThumbnails = async (videos: string[]) => {
-    const thumbnails: {[key: string]: string} = {};
-    
-    for (const videoUrl of videos) {
-      if (isVideo(videoUrl) && !videoThumbnails[videoUrl]) {
-        try {
-          const thumbnail = await generateVideoThumbnail(videoUrl);
-          thumbnails[videoUrl] = thumbnail;
-        } catch (error) {
-          console.error('Erro ao gerar thumbnail para:', videoUrl, error);
-        }
-      }
-    }
-    
-    if (Object.keys(thumbnails).length > 0) {
-      setVideoThumbnails(prev => ({ ...prev, ...thumbnails }));
-    }
-  };
-
   const renderMediaItem = (url: string, index: number, isExisting: boolean = false) => {
     if (isVideo(url)) {
-      const thumbnail = videoThumbnails[url];
       return (
         <div key={index} className="relative">
-          {thumbnail ? (
-            <div className="relative">
-              <img
-                src={thumbnail}
-                alt={`Thumbnail do vídeo ${index + 1}`}
-                className="w-full h-24 object-cover rounded-lg border border-[#E8E9F1] dark:border-[#23283A]"
-              />
-              <div className="absolute inset-0 bg-black bg-opacity-30 rounded-lg flex items-center justify-center">
-                <VideoIcon className="h-6 w-6 text-white" />
-              </div>
+          <div 
+            className="w-full h-24 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center border border-[#E8E9F1] dark:border-[#23283A] cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            onClick={() => setSelectedVideo(url)}
+            title="Clique para visualizar o vídeo"
+          >
+            <div className="text-center">
+              <VideoIcon className="h-6 w-6 text-gray-500 mx-auto mb-1" />
+              <span className="text-xs text-gray-500">Clique para ver</span>
             </div>
-          ) : (
-            <div className="w-full h-24 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center border border-[#E8E9F1] dark:border-[#23283A]">
-              <div className="text-center">
-                <VideoIcon className="h-6 w-6 text-gray-500 mx-auto mb-1" />
-                <span className="text-xs text-gray-500">Carregando...</span>
-              </div>
-            </div>
-          )}
+          </div>
           {isExisting && (
             <button
               type="button"
@@ -928,6 +858,50 @@ export default function CaptacoesPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Visualização de Vídeo */}
+      {selectedVideo && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-[#23283A] rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-[#2E2F38] dark:text-white">
+                Visualizar Vídeo
+              </h3>
+              <button
+                onClick={() => setSelectedVideo(null)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="relative">
+              <video
+                controls
+                className="w-full max-h-[70vh] rounded-lg"
+                autoPlay
+                muted
+              >
+                <source src={selectedVideo} type="video/mp4" />
+                <source src={selectedVideo} type="video/webm" />
+                <source src={selectedVideo} type="video/ogg" />
+                Seu navegador não suporta a reprodução de vídeos.
+              </video>
+            </div>
+            
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => setSelectedVideo(null)}
+                className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
