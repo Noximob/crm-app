@@ -3,12 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db, storage } from '@/lib/firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, deleteDoc, orderBy, doc, Timestamp, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+
+interface Campanha {
+  id: string;
+  nome: string;
+  descricao?: string;
+  criadoEm: Date;
+}
 
 interface MaterialMarketing {
   id: string;
-  imobiliariaId: string;
+  campanhaId: string;
   nome: string;
   tipo: 'pdf' | 'link' | 'foto' | 'video';
   url?: string;
@@ -19,6 +26,22 @@ interface MaterialMarketing {
 }
 
 // Ícones
+const CampaignIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M12 2L2 7l10 5 10-5-10-5Z"/>
+    <path d="M2 17l10 5 10-5"/>
+    <path d="M2 12l10 5 10-5"/>
+  </svg>
+);
+
+const PackageIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M16.466 7.5C15.643 4.237 13.952 2 12 2 9.239 2 7 6.477 7 12s2.239 10 5 10c.342 0 .677-.069 1-.2"/>
+    <path d="m15.194 13.707 3.306 3.307a1 1 0 0 1 0 1.414l-1.586 1.586a1 1 0 0 1-1.414 0l-3.307-3.306"/>
+    <path d="M10 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
+  </svg>
+);
+
 const FileIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
@@ -58,252 +81,232 @@ const TrashIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export default function MarketingImobiliarioAdminPage() {
   const { userData } = useAuth();
+  const [campanhas, setCampanhas] = useState<Campanha[]>([]);
   const [materiais, setMateriais] = useState<MaterialMarketing[]>([]);
   const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  // Navegação
+  const [view, setView] = useState<'campanhas' | 'materiais'>('campanhas');
+  const [selectedCampanha, setSelectedCampanha] = useState<Campanha | null>(null);
+
+  // Formulários
+  const [formCampanha, setFormCampanha] = useState({ nome: '', descricao: '' });
+  const [formMaterial, setFormMaterial] = useState({ 
+    nome: '', 
+    tipo: 'pdf' as 'pdf' | 'link' | 'foto' | 'video', 
+    url: '', 
+    descricao: '' 
+  });
   const [uploading, setUploading] = useState(false);
 
-  // Formulários separados por tipo
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [pdfNome, setPdfNome] = useState('');
-  const [pdfDescricao, setPdfDescricao] = useState('');
-
-  const [linkNome, setLinkNome] = useState('');
-  const [linkDescricao, setLinkDescricao] = useState('');
-  const [linkUrl, setLinkUrl] = useState('');
-
-  const [fotosFiles, setFotosFiles] = useState<File[]>([]);
-  const [fotosNome, setFotosNome] = useState('');
-  const [fotosDescricao, setFotosDescricao] = useState('');
-
-  const [videosFiles, setVideosFiles] = useState<File[]>([]);
-  const [videosNome, setVideosNome] = useState('');
-  const [videosDescricao, setVideosDescricao] = useState('');
-
-  // Modal de confirmação
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [materialToDelete, setMaterialToDelete] = useState<MaterialMarketing | null>(null);
-
+  // Buscar dados
   useEffect(() => {
-    if (userData?.imobiliariaId) {
-      fetchMateriais();
-    }
+    if (!userData?.imobiliariaId) return;
+    fetchCampanhas();
   }, [userData]);
 
-  const fetchMateriais = async () => {
+  useEffect(() => {
+    if (selectedCampanha) {
+      fetchMateriais(selectedCampanha.id);
+    }
+  }, [selectedCampanha]);
+
+  const fetchCampanhas = async () => {
     setLoading(true);
     try {
       const q = query(
-        collection(db, 'materiais_marketing'),
+        collection(db, 'campanhas_marketing'),
         where('imobiliariaId', '==', userData?.imobiliariaId),
-        orderBy('criadoEm', 'desc')
+        orderBy('nome')
       );
       const snap = await getDocs(q);
-      setMateriais(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as MaterialMarketing)));
-    } catch (err) {
-      console.error('Erro ao carregar materiais:', err);
+      setCampanhas(snap.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          criadoEm: data.criadoEm?.toDate ? data.criadoEm.toDate() : data.criadoEm
+        } as Campanha;
+      }));
+    } catch (err: any) {
+      setMsg('Erro ao carregar campanhas: ' + (err?.message || err));
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePdfUpload = async (e: React.FormEvent) => {
+  const fetchMateriais = async (campanhaId: string) => {
+    setLoading(true);
+    try {
+      const q = query(
+        collection(db, 'materiais_marketing'),
+        where('campanhaId', '==', campanhaId),
+        orderBy('nome')
+      );
+      const snap = await getDocs(q);
+      setMateriais(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as MaterialMarketing)));
+    } catch (err) {
+      setMsg('Erro ao carregar materiais.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // CRUD Campanha
+  const handleAddCampanha = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userData?.imobiliariaId || !pdfFile || !pdfNome.trim()) {
-      alert('Por favor, preencha todos os campos obrigatórios.');
+    if (!formCampanha.nome.trim()) return;
+    setLoading(true);
+    setMsg(null);
+    try {
+      const campanha = {
+        nome: formCampanha.nome.trim(),
+        descricao: formCampanha.descricao.trim() || undefined,
+        imobiliariaId: userData?.imobiliariaId,
+        criadoEm: Timestamp.now()
+      };
+
+      await addDoc(collection(db, 'campanhas_marketing'), campanha);
+      setFormCampanha({ nome: '', descricao: '' });
+      await fetchCampanhas();
+      setMsg('Campanha criada com sucesso!');
+    } catch (err: any) {
+      setMsg('Erro ao criar campanha: ' + (err?.message || err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteCampanha = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir esta campanha?')) return;
+    setLoading(true);
+    try {
+      await deleteDoc(doc(db, 'campanhas_marketing', id));
+      await fetchCampanhas();
+      setMsg('Campanha excluída com sucesso!');
+    } catch (err) {
+      setMsg('Erro ao excluir campanha.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // CRUD Material
+  const handleAddMaterial = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formMaterial.nome.trim()) return;
+    if (formMaterial.tipo === 'link' && !formMaterial.url.trim()) {
+      setMsg('URL é obrigatória para links.');
       return;
     }
+    setLoading(true);
+    setMsg(null);
+    try {
+      let url = '';
+      let tamanho = 0;
+      let extensao = '';
 
+      if (formMaterial.tipo === 'link') {
+        url = formMaterial.url.trim();
+      } else {
+        // Para outros tipos, precisaria de upload de arquivo
+        setMsg('Funcionalidade de upload será implementada.');
+        return;
+      }
+
+      const material = {
+        campanhaId: selectedCampanha?.id,
+        nome: formMaterial.nome.trim(),
+        tipo: formMaterial.tipo,
+        url,
+        descricao: formMaterial.descricao.trim() || undefined,
+        tamanho: tamanho || undefined,
+        extensao: extensao || undefined,
+        criadoEm: Timestamp.now()
+      };
+
+      await addDoc(collection(db, 'materiais_marketing'), material);
+      setFormMaterial({ nome: '', tipo: 'pdf', url: '', descricao: '' });
+      await fetchMateriais(selectedCampanha!.id);
+      setMsg('Material adicionado com sucesso!');
+    } catch (err: any) {
+      setMsg('Erro ao adicionar material: ' + (err?.message || err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUploadFile = async (file: File, tipo: 'pdf' | 'foto' | 'video') => {
+    if (!selectedCampanha) return;
+    
     setUploading(true);
     try {
       const timestamp = Date.now();
-      const fileName = `${timestamp}_${pdfFile.name}`;
-      const storageRef = ref(storage, `marketing/${userData.imobiliariaId}/${fileName}`);
+      const fileName = `${timestamp}_${file.name}`;
+      const storageRef = ref(storage, `marketing/${userData?.imobiliariaId}/${selectedCampanha.id}/${fileName}`);
       
-      const snapshot = await uploadBytes(storageRef, pdfFile);
+      const snapshot = await uploadBytes(storageRef, file);
       const downloadUrl = await getDownloadURL(snapshot.ref);
 
-      const materialData = {
-        imobiliariaId: userData.imobiliariaId,
-        nome: pdfNome.trim(),
-        descricao: pdfDescricao.trim() || undefined,
-        tipo: 'pdf' as const,
+      const material = {
+        campanhaId: selectedCampanha.id,
+        nome: file.name,
+        tipo,
         url: downloadUrl,
-        tamanho: pdfFile.size,
-        extensao: pdfFile.name.split('.').pop() || '',
-        criadoEm: new Date(),
+        tamanho: file.size,
+        extensao: file.name.split('.').pop() || '',
+        criadoEm: Timestamp.now()
       };
 
-      await addDoc(collection(db, 'materiais_marketing'), materialData);
-      
-      // Limpar formulário
-      setPdfFile(null);
-      setPdfNome('');
-      setPdfDescricao('');
-      
-      await fetchMateriais();
-      alert('PDF adicionado com sucesso!');
-    } catch (error) {
-      console.error('Erro ao adicionar PDF:', error);
-      alert('Erro ao adicionar PDF. Tente novamente.');
+      await addDoc(collection(db, 'materiais_marketing'), material);
+      await fetchMateriais(selectedCampanha.id);
+      setMsg('Arquivo enviado com sucesso!');
+    } catch (err: any) {
+      setMsg('Erro ao enviar arquivo: ' + (err?.message || err));
     } finally {
       setUploading(false);
     }
   };
 
-  const handleLinkAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!userData?.imobiliariaId || !linkNome.trim() || !linkUrl.trim()) {
-      alert('Por favor, preencha todos os campos obrigatórios.');
-      return;
-    }
-
+  const handleUploadMultipleFiles = async (files: FileList, tipo: 'foto' | 'video') => {
+    if (!selectedCampanha) return;
+    
     setUploading(true);
     try {
-      const materialData = {
-        imobiliariaId: userData.imobiliariaId,
-        nome: linkNome.trim(),
-        descricao: linkDescricao.trim() || undefined,
-        tipo: 'link' as const,
-        url: linkUrl.trim(),
-        criadoEm: new Date(),
-      };
-
-      await addDoc(collection(db, 'materiais_marketing'), materialData);
-      
-      // Limpar formulário
-      setLinkNome('');
-      setLinkDescricao('');
-      setLinkUrl('');
-      
-      await fetchMateriais();
-      alert('Link adicionado com sucesso!');
-    } catch (error) {
-      console.error('Erro ao adicionar link:', error);
-      alert('Erro ao adicionar link. Tente novamente.');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleFotosUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!userData?.imobiliariaId || fotosFiles.length === 0 || !fotosNome.trim()) {
-      alert('Por favor, preencha todos os campos obrigatórios.');
-      return;
-    }
-
-    setUploading(true);
-    try {
-      for (const file of fotosFiles) {
-        const timestamp = Date.now();
-        const fileName = `${timestamp}_${file.name}`;
-        const storageRef = ref(storage, `marketing/${userData.imobiliariaId}/${fileName}`);
-        
-        const snapshot = await uploadBytes(storageRef, file);
-        const downloadUrl = await getDownloadURL(snapshot.ref);
-
-        const materialData = {
-          imobiliariaId: userData.imobiliariaId,
-          nome: fotosNome.trim(),
-          descricao: fotosDescricao.trim() || undefined,
-          tipo: 'foto' as const,
-          url: downloadUrl,
-          tamanho: file.size,
-          extensao: file.name.split('.').pop() || '',
-          criadoEm: new Date(),
-        };
-
-        await addDoc(collection(db, 'materiais_marketing'), materialData);
+      for (const file of Array.from(files)) {
+        await handleUploadFile(file, tipo);
       }
-      
-      // Limpar formulário
-      setFotosFiles([]);
-      setFotosNome('');
-      setFotosDescricao('');
-      
-      await fetchMateriais();
-      alert('Fotos adicionadas com sucesso!');
-    } catch (error) {
-      console.error('Erro ao adicionar fotos:', error);
-      alert('Erro ao adicionar fotos. Tente novamente.');
+      setMsg(`${files.length} arquivo(s) enviado(s) com sucesso!`);
+    } catch (err: any) {
+      setMsg('Erro ao enviar arquivos: ' + (err?.message || err));
     } finally {
       setUploading(false);
     }
   };
 
-  const handleVideosUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!userData?.imobiliariaId || videosFiles.length === 0 || !videosNome.trim()) {
-      alert('Por favor, preencha todos os campos obrigatórios.');
-      return;
-    }
-
-    setUploading(true);
+  const handleDeleteMaterial = async (id: string, url?: string) => {
+    if (!confirm('Tem certeza que deseja excluir este material?')) return;
+    setLoading(true);
     try {
-      for (const file of videosFiles) {
-        const timestamp = Date.now();
-        const fileName = `${timestamp}_${file.name}`;
-        const storageRef = ref(storage, `marketing/${userData.imobiliariaId}/${fileName}`);
-        
-        const snapshot = await uploadBytes(storageRef, file);
-        const downloadUrl = await getDownloadURL(snapshot.ref);
-
-        const materialData = {
-          imobiliariaId: userData.imobiliariaId,
-          nome: videosNome.trim(),
-          descricao: videosDescricao.trim() || undefined,
-          tipo: 'video' as const,
-          url: downloadUrl,
-          tamanho: file.size,
-          extensao: file.name.split('.').pop() || '',
-          criadoEm: new Date(),
-        };
-
-        await addDoc(collection(db, 'materiais_marketing'), materialData);
-      }
-      
-      // Limpar formulário
-      setVideosFiles([]);
-      setVideosNome('');
-      setVideosDescricao('');
-      
-      await fetchMateriais();
-      alert('Vídeos adicionados com sucesso!');
-    } catch (error) {
-      console.error('Erro ao adicionar vídeos:', error);
-      alert('Erro ao adicionar vídeos. Tente novamente.');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleDelete = async (material: MaterialMarketing) => {
-    setMaterialToDelete(material);
-    setShowDeleteModal(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!materialToDelete) return;
-
-    try {
-      // Deletar arquivo do Storage se não for link
-      if (materialToDelete.tipo !== 'link' && materialToDelete.url) {
-        const storageRef = ref(storage, materialToDelete.url);
+      if (url && !url.startsWith('http')) {
+        const storageRef = ref(storage, url);
         await deleteObject(storageRef);
       }
-
-      // Deletar documento do Firestore
-      await deleteDoc(doc(db, 'materiais_marketing', materialToDelete.id));
-      
-      await fetchMateriais();
-      alert('Material excluído com sucesso!');
-    } catch (error) {
-      console.error('Erro ao excluir material:', error);
-      alert('Erro ao excluir material. Tente novamente.');
+      await deleteDoc(doc(db, 'materiais_marketing', id));
+      await fetchMateriais(selectedCampanha!.id);
+      setMsg('Material excluído com sucesso!');
+    } catch (err) {
+      setMsg('Erro ao excluir material.');
     } finally {
-      setShowDeleteModal(false);
-      setMaterialToDelete(null);
+      setLoading(false);
     }
+  };
+
+  const getBreadcrumbs = () => {
+    const breadcrumbs = ['Marketing Imobiliário'];
+    if (selectedCampanha) breadcrumbs.push(selectedCampanha.nome);
+    return breadcrumbs.join(' > ');
   };
 
   const getMaterialIcon = (tipo: string) => {
@@ -322,373 +325,257 @@ export default function MarketingImobiliarioAdminPage() {
     return `${mb.toFixed(1)} MB`;
   };
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('pt-BR');
-  };
-
   return (
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">Marketing Imobiliário</h1>
-          <p className="text-[#6B6F76] dark:text-gray-300 text-base">
-            Cadastre e gerencie os materiais de marketing da sua imobiliária. 
-            Eles ficarão disponíveis para todos em Materiais &gt; Marketing Imobiliário.
-          </p>
-        </div>
-
-        {/* Grid de Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* Upload PDF */}
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center">
-                <FileIcon className="h-5 w-5 text-white" />
-              </div>
-              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Upload PDF</h2>
-            </div>
-            
-            <form onSubmit={handlePdfUpload} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                  Nome do PDF *
-                </label>
-                <input
-                  type="text"
-                  value={pdfNome}
-                  onChange={(e) => setPdfNome(e.target.value)}
-                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
-                  placeholder="Ex: Folder de lançamento"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                  Descrição (opcional)
-                </label>
-                <textarea
-                  value={pdfDescricao}
-                  onChange={(e) => setPdfDescricao(e.target.value)}
-                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
-                  rows={2}
-                  placeholder="Descrição do PDF..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                  Arquivo PDF *
-                </label>
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  onChange={(e) => setPdfFile(e.target.files?.[0] || null)}
-                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
-                  required
-                />
-                {pdfFile && (
-                  <p className="text-xs text-[#6B6F76] dark:text-gray-300 mt-1">
-                    Arquivo selecionado: {pdfFile.name} ({formatFileSize(pdfFile.size)})
-                  </p>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                disabled={uploading}
-                className="w-full bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] text-white font-bold py-3 rounded-xl shadow transition-all"
-              >
-                {uploading ? 'Adicionando...' : 'Adicionar PDF'}
-              </button>
-            </form>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2 text-left">Marketing Imobiliário</h1>
+            <p className="text-[#6B6F76] dark:text-gray-300 text-left text-base">{getBreadcrumbs()}</p>
           </div>
-
-          {/* Adicionar Link */}
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center">
-                <LinkIcon className="h-5 w-5 text-white" />
-              </div>
-              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Adicionar Link</h2>
-            </div>
-            
-            <form onSubmit={handleLinkAdd} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                  Nome do link *
-                </label>
-                <input
-                  type="text"
-                  value={linkNome}
-                  onChange={(e) => setLinkNome(e.target.value)}
-                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
-                  placeholder="Ex: Campanha Google Ads"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                  Descrição do link (opcional)
-                </label>
-                <textarea
-                  value={linkDescricao}
-                  onChange={(e) => setLinkDescricao(e.target.value)}
-                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
-                  rows={2}
-                  placeholder="Descrição do link..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                  URL do link *
-                </label>
-                <input
-                  type="url"
-                  value={linkUrl}
-                  onChange={(e) => setLinkUrl(e.target.value)}
-                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
-                  placeholder="https://exemplo.com"
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={uploading}
-                className="w-full bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] text-white font-bold py-3 rounded-xl shadow transition-all"
-              >
-                {uploading ? 'Adicionando...' : 'Adicionar Link'}
-              </button>
-            </form>
-          </div>
-
-          {/* Upload Fotos */}
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center">
-                <ImageIcon className="h-5 w-5 text-white" />
-              </div>
-              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Upload Fotos</h2>
-            </div>
-            
-            <form onSubmit={handleFotosUpload} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                  Nome das fotos *
-                </label>
-                <input
-                  type="text"
-                  value={fotosNome}
-                  onChange={(e) => setFotosNome(e.target.value)}
-                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
-                  placeholder="Ex: Fotos do lançamento"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                  Descrição (opcional)
-                </label>
-                <textarea
-                  value={fotosDescricao}
-                  onChange={(e) => setFotosDescricao(e.target.value)}
-                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
-                  rows={2}
-                  placeholder="Descrição das fotos..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                  Arquivos de imagem *
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={(e) => setFotosFiles(Array.from(e.target.files || []))}
-                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
-                  required
-                />
-                {fotosFiles.length > 0 && (
-                  <p className="text-xs text-[#6B6F76] dark:text-gray-300 mt-1">
-                    {fotosFiles.length} arquivo(s) selecionado(s)
-                  </p>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                disabled={uploading}
-                className="w-full bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] text-white font-bold py-3 rounded-xl shadow transition-all"
-              >
-                {uploading ? 'Adicionando...' : 'Adicionar Fotos'}
-              </button>
-            </form>
-          </div>
-
-          {/* Upload Vídeos */}
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center">
-                <VideoIcon className="h-5 w-5 text-white" />
-              </div>
-              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Upload Vídeos</h2>
-            </div>
-            
-            <form onSubmit={handleVideosUpload} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                  Nome dos vídeos *
-                </label>
-                <input
-                  type="text"
-                  value={videosNome}
-                  onChange={(e) => setVideosNome(e.target.value)}
-                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
-                  placeholder="Ex: Vídeos promocionais"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                  Descrição (opcional)
-                </label>
-                <textarea
-                  value={videosDescricao}
-                  onChange={(e) => setVideosDescricao(e.target.value)}
-                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
-                  rows={2}
-                  placeholder="Descrição dos vídeos..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                  Arquivos de vídeo *
-                </label>
-                <input
-                  type="file"
-                  accept="video/*"
-                  multiple
-                  onChange={(e) => setVideosFiles(Array.from(e.target.files || []))}
-                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
-                  required
-                />
-                {videosFiles.length > 0 && (
-                  <p className="text-xs text-[#6B6F76] dark:text-gray-300 mt-1">
-                    {videosFiles.length} arquivo(s) selecionado(s)
-                  </p>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                disabled={uploading}
-                className="w-full bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] text-white font-bold py-3 rounded-xl shadow transition-all"
-              >
-                {uploading ? 'Adicionando...' : 'Adicionar Vídeos'}
-              </button>
-            </form>
-          </div>
-        </div>
-
-        {/* Lista de Materiais */}
-        <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-          <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4">Materiais Cadastrados</h2>
-          
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6]"></div>
-            </div>
-          ) : materiais.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">📁</div>
-              <h3 className="text-xl font-semibold text-[#2E2F38] dark:text-white mb-2">Nenhum material cadastrado</h3>
-              <p className="text-[#6B6F76] dark:text-gray-300">Adicione materiais de marketing usando os formulários acima.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {materiais.map((material) => (
-                <div
-                  key={material.id}
-                  className="flex items-center gap-4 p-4 border border-[#E8E9F1] dark:border-[#23283A] rounded-xl hover:shadow-md transition-all"
-                >
-                  <div className="w-12 h-12 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center flex-shrink-0">
-                    {getMaterialIcon(material.tipo)}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-[#2E2F38] dark:text-white text-sm truncate">
-                      {material.nome}
-                    </h3>
-                    {material.descricao && (
-                      <p className="text-xs text-[#6B6F76] dark:text-gray-300 line-clamp-2">
-                        {material.descricao}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-[#6B6F76] dark:text-gray-400 uppercase">
-                        {material.tipo}
-                      </span>
-                      {material.tamanho && (
-                        <span className="text-xs text-[#6B6F76] dark:text-gray-400">
-                          • {formatFileSize(material.tamanho)}
-                        </span>
-                      )}
-                      <span className="text-xs text-[#6B6F76] dark:text-gray-400">
-                        • {formatDate(material.criadoEm)}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <button
-                    onClick={() => handleDelete(material)}
-                    className="text-red-500 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                    title="Excluir material"
-                  >
-                    <TrashIcon className="h-5 w-5" />
-                  </button>
-                </div>
-              ))}
-            </div>
+          {view !== 'campanhas' && (
+            <button
+              onClick={() => {
+                setView('campanhas');
+                setSelectedCampanha(null);
+              }}
+              className="px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg font-semibold transition-colors"
+            >
+              ← Voltar
+            </button>
           )}
         </div>
-      </div>
 
-      {/* Modal de Confirmação */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 max-w-md mx-4">
-            <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4">
-              Confirmar Exclusão
-            </h3>
-            <p className="text-[#6B6F76] dark:text-gray-300 mb-6">
-              Tem certeza que deseja excluir o material "{materialToDelete?.nome}"? 
-              Esta ação não pode ser desfeita.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 text-[#6B6F76] dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#181C23] rounded-lg transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
-              >
-                Excluir
-              </button>
-            </div>
+        {msg && (
+          <div className={`mb-6 p-4 rounded-lg ${msg.includes('sucesso') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+            {msg}
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Lista de Campanhas */}
+        {view === 'campanhas' && (
+          <div>
+            {/* Formulário para adicionar campanha */}
+            <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-8">
+              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4">Nova Campanha</h2>
+              <form onSubmit={handleAddCampanha} className="flex gap-4">
+                <input
+                  type="text"
+                  placeholder="Nome da campanha"
+                  value={formCampanha.nome}
+                  onChange={(e) => setFormCampanha({ ...formCampanha, nome: e.target.value })}
+                  className="flex-1 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Descrição (opcional)"
+                  value={formCampanha.descricao}
+                  onChange={(e) => setFormCampanha({ ...formCampanha, descricao: e.target.value })}
+                  className="flex-1 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] text-white font-bold px-6 py-2 rounded-lg shadow transition-all"
+                >
+                  {loading ? 'Criando...' : 'Criar Campanha'}
+                </button>
+              </form>
+            </div>
+
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6]"></div>
+              </div>
+            ) : campanhas.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">📢</div>
+                <h3 className="text-xl font-semibold text-[#2E2F38] dark:text-white mb-2">Nenhuma campanha cadastrada</h3>
+                <p className="text-[#6B6F76] dark:text-gray-300">Crie uma campanha para começar a adicionar materiais de marketing.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {campanhas.map(campanha => (
+                  <div
+                    key={campanha.id}
+                    className="bg-white dark:bg-[#23283A] rounded-xl p-6 border border-[#E8E9F1] dark:border-[#23283A] cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-105 group"
+                    onClick={() => {
+                      setSelectedCampanha(campanha);
+                      setView('materiais');
+                    }}
+                  >
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <CampaignIcon className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-[#2E2F38] dark:text-white text-lg group-hover:text-[#3478F6] transition-colors">
+                          {campanha.nome}
+                        </h3>
+                        {campanha.descricao && (
+                          <p className="text-sm text-[#6B6F76] dark:text-gray-300">{campanha.descricao}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-[#6B6F76] dark:text-gray-300">
+                      <span>Materiais disponíveis</span>
+                      <span className="bg-[#3478F6]/10 text-[#3478F6] px-2 py-1 rounded-full">Ver</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Lista de Materiais */}
+        {view === 'materiais' && selectedCampanha && (
+          <div>
+            {/* Formulário para adicionar material */}
+            <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-8">
+              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4">Adicionar Material</h2>
+              
+              <form onSubmit={handleAddMaterial} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    placeholder="Nome do material"
+                    value={formMaterial.nome}
+                    onChange={(e) => setFormMaterial({ ...formMaterial, nome: e.target.value })}
+                    className="rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+                    required
+                  />
+                  <select
+                    value={formMaterial.tipo}
+                    onChange={(e) => setFormMaterial({ ...formMaterial, tipo: e.target.value as 'pdf' | 'link' | 'foto' | 'video' })}
+                    className="rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+                  >
+                    <option value="pdf">PDF</option>
+                    <option value="link">Link</option>
+                    <option value="foto">Foto</option>
+                    <option value="video">Vídeo</option>
+                  </select>
+                </div>
+
+                {formMaterial.tipo === 'link' && (
+                  <input
+                    type="url"
+                    placeholder="URL do link"
+                    value={formMaterial.url}
+                    onChange={(e) => setFormMaterial({ ...formMaterial, url: e.target.value })}
+                    className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+                    required
+                  />
+                )}
+
+                {formMaterial.tipo === 'pdf' && (
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={(e) => e.target.files?.[0] && handleUploadFile(e.target.files[0], 'pdf')}
+                    className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+                  />
+                )}
+
+                {formMaterial.tipo === 'foto' && (
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => e.target.files && handleUploadMultipleFiles(e.target.files, 'foto')}
+                    className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+                  />
+                )}
+
+                {formMaterial.tipo === 'video' && (
+                  <input
+                    type="file"
+                    accept="video/*"
+                    multiple
+                    onChange={(e) => e.target.files && handleUploadMultipleFiles(e.target.files, 'video')}
+                    className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+                  />
+                )}
+
+                <textarea
+                  placeholder="Descrição (opcional)"
+                  value={formMaterial.descricao}
+                  onChange={(e) => setFormMaterial({ ...formMaterial, descricao: e.target.value })}
+                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+                  rows={2}
+                />
+
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={loading || uploading}
+                    className="bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] text-white font-bold px-6 py-2 rounded-lg shadow transition-all"
+                  >
+                    {loading || uploading ? 'Adicionando...' : 'Adicionar Material'}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6]"></div>
+              </div>
+            ) : materiais.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">📁</div>
+                <h3 className="text-xl font-semibold text-[#2E2F38] dark:text-white mb-2">Nenhum material encontrado</h3>
+                <p className="text-[#6B6F76] dark:text-gray-300">
+                  {selectedCampanha.nome + ' não possui materiais cadastrados.'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {materiais.map((material) => (
+                  <div
+                    key={material.id}
+                    className="flex items-center gap-4 p-4 border border-[#E8E9F1] dark:border-[#23283A] rounded-xl hover:shadow-md transition-all"
+                  >
+                    <div className="w-12 h-12 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center flex-shrink-0">
+                      {getMaterialIcon(material.tipo)}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-[#2E2F38] dark:text-white text-sm truncate">
+                        {material.nome}
+                      </h3>
+                      {material.descricao && (
+                        <p className="text-xs text-[#6B6F76] dark:text-gray-300 line-clamp-2">
+                          {material.descricao}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-[#6B6F76] dark:text-gray-400 uppercase">
+                          {material.tipo}
+                        </span>
+                        {material.tamanho && (
+                          <span className="text-xs text-[#6B6F76] dark:text-gray-400">
+                            • {formatFileSize(material.tamanho)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <button
+                      onClick={() => handleDeleteMaterial(material.id, material.url)}
+                      className="text-red-500 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      title="Excluir material"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 } 
