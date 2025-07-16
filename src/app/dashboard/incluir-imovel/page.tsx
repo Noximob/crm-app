@@ -41,6 +41,7 @@ export default function IncluirImovelPage() {
     localizacao: '', // Link do Google Maps
     tipo: 'casa' as 'casa' | 'apartamento' | 'terreno' | 'comercial',
     valor: '',
+    condicoesPagamento: '',
     descricao: '',
     fotoCapa: null as File | null,
     fotos: [] as File[]
@@ -82,6 +83,7 @@ export default function IncluirImovelPage() {
         localizacao: formImovel.localizacao.trim(),
         tipo: formImovel.tipo,
         valor: parseFloat(formImovel.valor.replace(/[^\d,]/g, '').replace(',', '.')),
+        condicoesPagamento: formImovel.condicoesPagamento.trim(),
         descricao: formImovel.descricao.trim(),
         fotoCapa: fotoCapaUrl,
         fotos: fotosUrls,
@@ -101,6 +103,7 @@ export default function IncluirImovelPage() {
         localizacao: '',
         tipo: 'casa',
         valor: '',
+        condicoesPagamento: '',
         descricao: '',
         fotoCapa: null,
         fotos: []
@@ -215,6 +218,18 @@ export default function IncluirImovelPage() {
               className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
               placeholder="R$ 0,00"
               required
+            />
+          </div>
+
+          {/* Condições de Pagamento */}
+          <div>
+            <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Condições de Pagamento</label>
+            <input
+              type="text"
+              value={formImovel.condicoesPagamento}
+              onChange={e => setFormImovel({ ...formImovel, condicoesPagamento: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+              placeholder="Ex: À vista, 10% de entrada, 12x sem juros"
             />
           </div>
 
