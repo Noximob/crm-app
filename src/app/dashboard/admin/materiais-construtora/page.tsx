@@ -32,6 +32,24 @@ interface Material {
   criadoEm: Date;
 }
 
+interface ImovelCaptado {
+  id: string;
+  imobiliariaId: string;
+  corretorId: string;
+  corretorNome: string;
+  nome: string;
+  endereco: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
+  localizacao: string; // Link do Google Maps
+  tipo: 'casa' | 'apartamento' | 'terreno' | 'comercial';
+  valor: number;
+  descricao: string;
+  fotos: string[];
+  criadoEm: Date;
+}
+
 // Ícones
 const BuildingIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -114,11 +132,12 @@ export default function MateriaisConstrutoraAdminPage() {
   const [construtoras, setConstrutoras] = useState<Construtora[]>([]);
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [materiais, setMateriais] = useState<Material[]>([]);
+  const [imoveisCaptados, setImoveisCaptados] = useState<ImovelCaptado[]>([]);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   // Navegação
-  const [view, setView] = useState<'construtoras' | 'produtos' | 'materiais'>('construtoras');
+  const [view, setView] = useState<'construtoras' | 'produtos' | 'materiais' | 'captacoes'>('construtoras');
   const [selectedConstrutora, setSelectedConstrutora] = useState<Construtora | null>(null);
   const [selectedProduto, setSelectedProduto] = useState<Produto | null>(null);
 
@@ -204,6 +223,67 @@ export default function MateriaisConstrutoraAdminPage() {
       setMsg('Erro ao carregar materiais.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchImoveisCaptados = async () => {
+    setLoading(true);
+    try {
+      const q = query(
+        collection(db, 'imoveis_captados'),
+        where('imobiliariaId', '==', userData?.imobiliariaId)
+      );
+      const snap = await getDocs(q);
+      const imoveisData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ImovelCaptado));
+      imoveisData.sort((a, b) => b.criadoEm.getTime() - a.criadoEm.getTime());
+      setImoveisCaptados(imoveisData);
+    } catch (err) {
+      setMsg('Erro ao carregar imóveis captados.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteImovel = async (id: string, fotos: string[]) => {
+    if (!confirm('Tem certeza que deseja excluir este imóvel?')) return;
+    
+    setLoading(true);
+    try {
+      // Deletar fotos do storage
+      for (const fotoUrl of fotos) {
+        const fotoRef = ref(storage, fotoUrl);
+        await deleteObject(fotoRef);
+      }
+      
+      await deleteDoc(doc(db, 'imoveis_captados', id));
+      fetchImoveisCaptados();
+      setMsg('Imóvel excluído com sucesso!');
+    } catch (err) {
+      setMsg('Erro ao excluir imóvel.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  const getTipoIcon = (tipo: string) => {
+    switch (tipo) {
+      case 'casa':
+        return <HouseIcon className="h-5 w-5" />;
+      case 'apartamento':
+        return <BuildingIcon className="h-5 w-5" />;
+      case 'terreno':
+        return <MapIcon className="h-5 w-5" />;
+      case 'comercial':
+        return <StoreIcon className="h-5 w-5" />;
+      default:
+        return <HouseIcon className="h-5 w-5" />;
     }
   };
 
@@ -499,6 +579,31 @@ export default function MateriaisConstrutoraAdminPage() {
             {/* Lista */}
             <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
               <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4">Construtoras Cadastradas</h2>
+              
+              {/* Pasta Captações Fixa */}
+              <div className="mb-6 p-4 rounded-lg border-2 border-[#3AC17C] bg-[#3AC17C]/10 dark:bg-[#3AC17C]/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-[#3AC17C] rounded-full flex items-center justify-center">
+                      <HouseIcon className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <span className="font-semibold text-[#2E2F38] dark:text-white">Captações</span>
+                      <p className="text-sm text-[#6B6F76] dark:text-gray-300">Imóveis captados pelos corretores</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setView('captacoes');
+                      fetchImoveisCaptados();
+                    }}
+                    className="px-4 py-2 bg-[#3AC17C] hover:bg-[#2E9D63] text-white text-sm rounded-lg font-semibold transition-colors"
+                  >
+                    Acessar Captações
+                  </button>
+                </div>
+              </div>
+
               {loading ? (
                 <div className="text-center py-8">Carregando...</div>
               ) : construtoras.length === 0 ? (
@@ -794,6 +899,125 @@ export default function MateriaisConstrutoraAdminPage() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Captações */}
+        {view === 'captacoes' && (
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <HouseIcon className="h-8 w-8 text-[#3AC17C]" />
+                <div>
+                  <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white">Captações</h2>
+                  <p className="text-[#6B6F76] dark:text-gray-300">Imóveis captados pelos corretores</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setView('construtoras')}
+                className="px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg font-semibold transition-colors"
+              >
+                ← Voltar
+              </button>
+            </div>
+            
+            {loading ? (
+              <div className="text-center py-8">Carregando...</div>
+            ) : imoveisCaptados.length === 0 ? (
+              <div className="text-center py-8 text-[#6B6F76] dark:text-gray-300">
+                Nenhum imóvel captado ainda
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {imoveisCaptados.map((imovel) => (
+                  <div
+                    key={imovel.id}
+                    className="p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors"
+                  >
+                    {/* Fotos */}
+                    {imovel.fotos.length > 0 && (
+                      <div className="mb-3">
+                        <img
+                          src={imovel.fotos[0]}
+                          alt="Foto principal"
+                          className="w-full h-32 object-cover rounded-lg"
+                        />
+                        {imovel.fotos.length > 1 && (
+                          <div className="flex gap-1 mt-1">
+                            {imovel.fotos.slice(1, 4).map((foto, index) => (
+                              <img
+                                key={index}
+                                src={foto}
+                                alt={`Foto ${index + 2}`}
+                                className="w-8 h-8 object-cover rounded"
+                              />
+                            ))}
+                            {imovel.fotos.length > 4 && (
+                              <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center text-xs text-gray-500">
+                                +{imovel.fotos.length - 4}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Informações */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        {getTipoIcon(imovel.tipo)}
+                        <h3 className="font-semibold text-[#2E2F38] dark:text-white text-sm">
+                          {imovel.nome}
+                        </h3>
+                      </div>
+                      
+                      <p className="text-sm text-[#6B6F76] dark:text-gray-300">
+                        {imovel.endereco}
+                      </p>
+                      
+                      <p className="text-sm text-[#6B6F76] dark:text-gray-300">
+                        {imovel.bairro}, {imovel.cidade} - {imovel.estado}
+                      </p>
+                      
+                      <p className="text-lg font-bold text-[#3478F6]">
+                        {formatCurrency(imovel.valor)}
+                      </p>
+                      
+                      {imovel.descricao && (
+                        <p className="text-sm text-[#6B6F76] dark:text-gray-300 line-clamp-2">
+                          {imovel.descricao}
+                        </p>
+                      )}
+                      
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-[#6B6F76] dark:text-gray-300">
+                            {imovel.corretorNome}
+                          </p>
+                          {imovel.localizacao && (
+                            <a
+                              href={imovel.localizacao}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-xs text-[#3478F6] hover:underline"
+                            >
+                              <MapPinIcon className="h-3 w-3" />
+                              Maps
+                            </a>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleDeleteImovel(imovel.id, imovel.fotos)}
+                          className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors"
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
