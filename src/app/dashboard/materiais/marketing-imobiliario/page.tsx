@@ -102,7 +102,6 @@ export default function MarketingImobiliarioMateriaisPage() {
     try {
       const q = query(
         collection(db, 'campanhas_marketing'),
-        where('imobiliariaId', '==', userData?.imobiliariaId),
         orderBy('nome')
       );
       const snap = await getDocs(q);
