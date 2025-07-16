@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 const materiais = [
   {
-    title: 'Marketing Imobiliário',
+    title: 'Materiais Imobiliária',
     description: 'Materiais e estratégias para divulgação de imóveis e captação de leads.',
     icon: '📢',
     href: '/dashboard/materiais/marketing-imobiliario',

@@ -72,11 +72,13 @@ export default function MateriaisImobiliariaAdminPage() {
     try {
       const q = query(
         collection(db, "materiais_imobiliaria"),
-        where("imobiliariaId", "==", userData?.imobiliariaId),
-        orderBy("nome")
+        where("imobiliariaId", "==", userData?.imobiliariaId)
       );
       const snap = await getDocs(q);
-      setMateriais(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as MaterialImobiliaria)));
+      const materiaisData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as MaterialImobiliaria));
+      // Ordenar localmente por nome
+      materiaisData.sort((a, b) => a.nome.localeCompare(b.nome));
+      setMateriais(materiaisData);
     } catch (err) {
       setMsg("Erro ao carregar materiais.");
     } finally {
