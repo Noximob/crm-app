@@ -73,6 +73,13 @@ const MapPinIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+const VideoIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <polygon points="23 7 16 12 23 17 23 7"/>
+    <rect width="15" height="10" x="1" y="5" rx="2" ry="2"/>
+  </svg>
+);
+
 const EditIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
@@ -388,6 +395,68 @@ export default function CaptacoesPage() {
     }).format(value);
   };
 
+  const isVideo = (url: string) => {
+    const videoExtensions = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv'];
+    return videoExtensions.some(ext => url.toLowerCase().includes(ext));
+  };
+
+  const renderMediaItem = (url: string, index: number, isExisting: boolean = false) => {
+    if (isVideo(url)) {
+      return (
+        <div key={index} className="relative">
+          <div className="w-full h-24 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center border border-[#E8E9F1] dark:border-[#23283A]">
+            <VideoIcon className="h-8 w-8 text-gray-500" />
+            <span className="text-xs text-gray-500 ml-2">Vídeo</span>
+          </div>
+          {isExisting && (
+            <button
+              type="button"
+              onClick={() => handleDeleteExistingFoto(index)}
+              className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+              title="Excluir vídeo"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      );
+    } else {
+      return (
+        <div key={index} className="relative">
+          <img
+            src={url}
+            alt={`Foto ${index + 1}`}
+            className="w-full h-24 object-cover rounded-lg border border-[#E8E9F1] dark:border-[#23283A]"
+            onError={(e) => {
+              // Se a imagem falhar ao carregar, mostrar placeholder
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              target.parentElement!.innerHTML = `
+                <div class="w-full h-24 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center border border-[#E8E9F1] dark:border-[#23283A]">
+                  <svg class="h-8 w-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                    <circle cx="9" cy="9" r="2"/>
+                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                  </svg>
+                </div>
+              `;
+            }}
+          />
+          {isExisting && (
+            <button
+              type="button"
+              onClick={() => handleDeleteExistingFoto(index)}
+              className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+              title="Excluir foto"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      );
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
       <div className="max-w-6xl mx-auto">
@@ -588,25 +657,9 @@ export default function CaptacoesPage() {
                   {/* Mostrar fotos existentes se estiver editando */}
                   {editingImovel && existingFotos.length > 0 && (
                     <div className="mb-3">
-                      <p className="text-sm text-[#6B6F76] dark:text-gray-300 mb-2">Fotos atuais ({existingFotos.length}):</p>
+                      <p className="text-sm text-[#6B6F76] dark:text-gray-300 mb-2">Fotos/Vídeos atuais ({existingFotos.length}):</p>
                       <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-                        {existingFotos.map((foto, index) => (
-                          <div key={index} className="relative">
-                            <img
-                              src={foto}
-                              alt={`Foto ${index + 1}`}
-                              className="w-full h-24 object-cover rounded-lg border border-[#E8E9F1] dark:border-[#23283A]"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteExistingFoto(index)}
-                              className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
-                              title="Excluir foto"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ))}
+                        {existingFotos.map((media, index) => renderMediaItem(media, index, true))}
                       </div>
                     </div>
                   )}
@@ -693,21 +746,34 @@ export default function CaptacoesPage() {
                         {/* Foto Capa */}
                         {imovel.fotoCapa ? (
                           <div className="flex-shrink-0">
-                            <img
-                              src={imovel.fotoCapa}
-                              alt="Foto capa"
-                              className="w-20 h-20 object-cover rounded-lg"
-                            />
+                            {isVideo(imovel.fotoCapa) ? (
+                              <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                                <VideoIcon className="h-6 w-6 text-gray-500" />
+                              </div>
+                            ) : (
+                              <img
+                                src={imovel.fotoCapa}
+                                alt="Foto capa"
+                                className="w-20 h-20 object-cover rounded-lg"
+                              />
+                            )}
                           </div>
                         ) : imovel.fotos.length > 0 ? (
                           <div className="flex gap-2 flex-shrink-0">
-                            {imovel.fotos.slice(0, 3).map((foto, index) => (
-                              <img
-                                key={index}
-                                src={foto}
-                                alt={`Foto ${index + 1}`}
-                                className="w-16 h-16 object-cover rounded-lg"
-                              />
+                            {imovel.fotos.slice(0, 3).map((media, index) => (
+                              <div key={index} className="w-16 h-16">
+                                {isVideo(media) ? (
+                                  <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                                    <VideoIcon className="h-4 w-4 text-gray-500" />
+                                  </div>
+                                ) : (
+                                  <img
+                                    src={media}
+                                    alt={`Mídia ${index + 1}`}
+                                    className="w-16 h-16 object-cover rounded-lg"
+                                  />
+                                )}
+                              </div>
                             ))}
                             {imovel.fotos.length > 3 && (
                               <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center text-xs text-gray-500">
