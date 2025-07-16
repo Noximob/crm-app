@@ -87,6 +87,8 @@ export default function CaptacoesPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [editingImovel, setEditingImovel] = useState<ImovelCaptado | null>(null);
+  const [existingFotos, setExistingFotos] = useState<string[]>([]);
+  const [existingFotoCapa, setExistingFotoCapa] = useState<string>('');
   const [formImovel, setFormImovel] = useState({
     nome: '',
     endereco: '',
@@ -174,6 +176,8 @@ export default function CaptacoesPage() {
       fotos: []
     });
     setEditingImovel(null);
+    setExistingFotos([]);
+    setExistingFotoCapa('');
   };
 
   const handleAddImovel = async (e: React.FormEvent) => {
@@ -237,6 +241,8 @@ export default function CaptacoesPage() {
 
   const handleEditImovel = (imovel: ImovelCaptado) => {
     setEditingImovel(imovel);
+    setExistingFotos(imovel.fotos);
+    setExistingFotoCapa(imovel.fotoCapa);
     setFormImovel({
       nome: imovel.nome,
       endereco: imovel.endereco,
@@ -254,6 +260,15 @@ export default function CaptacoesPage() {
       fotoCapa: null,
       fotos: []
     });
+  };
+
+  const handleDeleteExistingFoto = (index: number) => {
+    const newFotos = existingFotos.filter((_, i) => i !== index);
+    setExistingFotos(newFotos);
+  };
+
+  const handleDeleteExistingFotoCapa = () => {
+    setExistingFotoCapa('');
   };
 
   const handleUpdateImovel = async (e: React.FormEvent) => {
@@ -286,19 +301,24 @@ export default function CaptacoesPage() {
         const fotoCapaRef = ref(storage, `imoveis_captados/${userData?.imobiliariaId}/capa_${Date.now()}_${formImovel.fotoCapa.name}`);
         const snapshot = await uploadBytes(fotoCapaRef, formImovel.fotoCapa);
         updateData.fotoCapa = await getDownloadURL(snapshot.ref);
+      } else {
+        // Manter foto capa existente se não foi excluída
+        updateData.fotoCapa = existingFotoCapa;
       }
 
       // Upload novas fotos se selecionadas
+      let fotosUrls: string[] = [];
       if (formImovel.fotos.length > 0) {
-        const fotosUrls: string[] = [];
         for (const foto of formImovel.fotos) {
           const fotoRef = ref(storage, `imoveis_captados/${userData?.imobiliariaId}/${Date.now()}_${foto.name}`);
           const snapshot = await uploadBytes(fotoRef, foto);
           const url = await getDownloadURL(snapshot.ref);
           fotosUrls.push(url);
         }
-        updateData.fotos = [...editingImovel.fotos, ...fotosUrls];
       }
+      
+      // Combinar fotos existentes (não excluídas) com novas fotos
+      updateData.fotos = [...existingFotos, ...fotosUrls];
 
       await updateDoc(doc(db, 'imoveis_captados', editingImovel.id), updateData);
       resetForm();
@@ -522,6 +542,29 @@ export default function CaptacoesPage() {
                     <ImageIcon className="h-4 w-4" />
                     Foto Capa {!editingImovel && '*'}
                   </label>
+                  
+                  {/* Mostrar foto capa existente se estiver editando */}
+                  {editingImovel && existingFotoCapa && (
+                    <div className="mb-3">
+                      <p className="text-sm text-[#6B6F76] dark:text-gray-300 mb-2">Foto capa atual:</p>
+                      <div className="relative inline-block">
+                        <img
+                          src={existingFotoCapa}
+                          alt="Foto capa atual"
+                          className="w-32 h-32 object-cover rounded-lg border border-[#E8E9F1] dark:border-[#23283A]"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleDeleteExistingFotoCapa}
+                          className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                          title="Excluir foto capa"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
                   <input
                     type="file"
                     accept="image/*"
@@ -541,6 +584,33 @@ export default function CaptacoesPage() {
 
                 <div>
                   <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Fotos/Vídeos Adicionais</label>
+                  
+                  {/* Mostrar fotos existentes se estiver editando */}
+                  {editingImovel && existingFotos.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-sm text-[#6B6F76] dark:text-gray-300 mb-2">Fotos atuais ({existingFotos.length}):</p>
+                      <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                        {existingFotos.map((foto, index) => (
+                          <div key={index} className="relative">
+                            <img
+                              src={foto}
+                              alt={`Foto ${index + 1}`}
+                              className="w-full h-24 object-cover rounded-lg border border-[#E8E9F1] dark:border-[#23283A]"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteExistingFoto(index)}
+                              className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                              title="Excluir foto"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
                   <input
                     type="file"
                     accept="image/*,video/*"
