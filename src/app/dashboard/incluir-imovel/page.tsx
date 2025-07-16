@@ -47,6 +47,23 @@ export default function IncluirImovelPage() {
     fotos: [] as File[]
   });
 
+  const formatCurrency = (value: string) => {
+    // Remove tudo que não é número
+    const numbers = value.replace(/\D/g, '');
+    
+    // Se não há números, retorna vazio
+    if (numbers === '') return '';
+    
+    // Converte para número e formata
+    const number = parseInt(numbers);
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(number / 100);
+  };
+
   const handleAddImovel = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formImovel.nome.trim() || !formImovel.endereco.trim() || !formImovel.valor) {
@@ -74,6 +91,9 @@ export default function IncluirImovelPage() {
         fotosUrls.push(url);
       }
 
+      // Converte o valor do formato brasileiro para número
+      const valorNumerico = parseFloat(formImovel.valor.replace(/[^\d,]/g, '').replace(',', '.'));
+
       const imovel = {
         nome: formImovel.nome.trim(),
         endereco: formImovel.endereco.trim(),
@@ -82,7 +102,7 @@ export default function IncluirImovelPage() {
         estado: formImovel.estado.trim(),
         localizacao: formImovel.localizacao.trim(),
         tipo: formImovel.tipo,
-        valor: parseFloat(formImovel.valor.replace(/[^\d,]/g, '').replace(',', '.')),
+        valor: valorNumerico,
         condicoesPagamento: formImovel.condicoesPagamento.trim(),
         descricao: formImovel.descricao.trim(),
         fotoCapa: fotoCapaUrl,
@@ -214,7 +234,10 @@ export default function IncluirImovelPage() {
             <input
               type="text"
               value={formImovel.valor}
-              onChange={e => setFormImovel({ ...formImovel, valor: e.target.value })}
+              onChange={e => {
+                const formatted = formatCurrency(e.target.value);
+                setFormImovel({ ...formImovel, valor: formatted });
+              }}
               className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
               placeholder="R$ 0,00"
               required

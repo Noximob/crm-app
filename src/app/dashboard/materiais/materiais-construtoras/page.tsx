@@ -715,7 +715,7 @@ export default function MateriaisConstrutorasPage() {
                 {imoveisCaptados.map((imovel) => (
                   <div
                     key={imovel.id}
-                    className="bg-white dark:bg-[#23283A] rounded-xl p-6 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105 group cursor-pointer"
+                    className="bg-white dark:bg-[#23283A] rounded-xl p-4 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105 group cursor-pointer"
                     onClick={() => {
                       setSelectedImovel(imovel);
                       setView('detalhes-imovel');
@@ -723,11 +723,11 @@ export default function MateriaisConstrutorasPage() {
                   >
                     {/* Foto Capa */}
                     {imovel.fotoCapa ? (
-                      <div className="mb-4">
+                      <div className="mb-3">
                         <img
                           src={imovel.fotoCapa}
                           alt="Foto capa"
-                          className="w-full h-32 object-cover rounded-lg mb-2"
+                          className="w-full h-24 object-cover rounded-lg mb-2"
                         />
                         {imovel.fotos.length > 0 && (
                           <div className="flex gap-1">
@@ -736,11 +736,11 @@ export default function MateriaisConstrutorasPage() {
                                 key={index}
                                 src={foto}
                                 alt={`Foto ${index + 1}`}
-                                className="w-8 h-8 object-cover rounded"
+                                className="w-6 h-6 object-cover rounded"
                               />
                             ))}
                             {imovel.fotos.length > 3 && (
-                              <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center text-xs text-gray-500">
+                              <div className="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center text-xs text-gray-500">
                                 +{imovel.fotos.length - 3}
                               </div>
                             )}
@@ -748,11 +748,11 @@ export default function MateriaisConstrutorasPage() {
                         )}
                       </div>
                     ) : imovel.fotos.length > 0 ? (
-                      <div className="mb-4">
+                      <div className="mb-3">
                         <img
                           src={imovel.fotos[0]}
                           alt="Foto principal"
-                          className="w-full h-32 object-cover rounded-lg mb-2"
+                          className="w-full h-24 object-cover rounded-lg mb-2"
                         />
                         {imovel.fotos.length > 1 && (
                           <div className="flex gap-1">
@@ -761,11 +761,11 @@ export default function MateriaisConstrutorasPage() {
                                 key={index}
                                 src={foto}
                                 alt={`Foto ${index + 2}`}
-                                className="w-8 h-8 object-cover rounded"
+                                className="w-6 h-6 object-cover rounded"
                               />
                             ))}
                             {imovel.fotos.length > 4 && (
-                              <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center text-xs text-gray-500">
+                              <div className="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center text-xs text-gray-500">
                                 +{imovel.fotos.length - 4}
                               </div>
                             )}
@@ -773,61 +773,46 @@ export default function MateriaisConstrutorasPage() {
                         )}
                       </div>
                     ) : (
-                      <div className="mb-4 h-32 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                        <ImageIcon className="h-12 w-12 text-gray-400" />
+                      <div className="mb-3 h-24 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                        <ImageIcon className="h-8 w-8 text-gray-400" />
                       </div>
                     )}
 
-                    {/* Informações */}
-                    <div className="space-y-3">
+                    {/* Informações Essenciais */}
+                    <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         {getTipoIcon(imovel.tipo)}
-                        <h3 className="font-bold text-[#2E2F38] dark:text-white text-lg group-hover:text-[#3AC17C] transition-colors">
+                        <h3 className="font-bold text-[#2E2F38] dark:text-white text-base group-hover:text-[#3AC17C] transition-colors truncate">
                           {imovel.nome}
                         </h3>
                       </div>
-                      
-                      <p className="text-sm text-[#6B6F76] dark:text-gray-300">
-                        {imovel.endereco}
-                      </p>
-                      
-                      <p className="text-sm text-[#6B6F76] dark:text-gray-300">
-                        {imovel.bairro}, {imovel.cidade} - {imovel.estado}
-                      </p>
                       
                       <p className="text-lg font-bold text-[#3AC17C]">
                         {formatCurrency(imovel.valor)}
                       </p>
                       
                       {imovel.condicoesPagamento && (
-                        <p className="text-sm text-[#6B6F76] dark:text-gray-300">
+                        <p className="text-xs text-[#6B6F76] dark:text-gray-300 line-clamp-1">
                           {imovel.condicoesPagamento}
                         </p>
                       )}
                       
-                      {imovel.descricao && (
-                        <p className="text-sm text-[#6B6F76] dark:text-gray-300 line-clamp-2">
-                          {imovel.descricao}
+                      <div className="flex items-center justify-between pt-1">
+                        <p className="text-xs text-[#6B6F76] dark:text-gray-300">
+                          {imovel.corretorNome}
                         </p>
-                      )}
-                      
-                      <div className="flex items-center justify-between pt-2">
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs text-[#6B6F76] dark:text-gray-300">
-                            {imovel.corretorNome}
-                          </p>
-                          {imovel.localizacao && (
-                            <a
-                              href={imovel.localizacao}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-1 text-xs text-[#3478F6] hover:underline"
-                            >
-                              <MapPinIcon className="h-3 w-3" />
-                              Maps
-                            </a>
-                          )}
-                        </div>
+                        {imovel.localizacao && (
+                          <a
+                            href={imovel.localizacao}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-xs text-[#3478F6] hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MapPinIcon className="h-3 w-3" />
+                            Maps
+                          </a>
+                        )}
                       </div>
                     </div>
                   </div>
