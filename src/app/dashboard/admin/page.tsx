@@ -20,6 +20,7 @@ const adminCards = [
   { title: 'Gestão de Corretores', icon: '🧑‍💼', description: 'Administre os leads dos seus corretores', href: '/dashboard/admin/gestao-leads' },
   { title: 'Materiais Construtora', icon: '🏗️', description: 'Adicione e gerencie materiais das construtoras.', href: '/dashboard/admin/materiais-construtora' },
   { title: 'Materiais Imobiliária', icon: '📢', description: 'Ferramentas e campanhas de marketing.', href: '/dashboard/admin/marketing-imobiliario' },
+  { title: 'Captações', icon: '🏠', description: 'Imóveis captados pelos corretores.', href: '/dashboard/admin/captacoes' },
   { title: 'Financeiro', icon: '💰', description: 'Controle financeiro da imobiliária.', href: '/dashboard/admin/financeiro' },
   { title: 'Metas', icon: '🎯', description: 'Configure e acompanhe as metas da imobiliária.', href: '/dashboard/admin/metas' },
   { title: 'Relatórios', icon: '📊', description: 'Acompanhe métricas e resultados detalhados.', href: '/dashboard/admin/relatorios' },

@@ -32,6 +32,22 @@ interface Material {
   criadoEm: Date;
 }
 
+interface ImovelCaptado {
+  id: string;
+  imobiliariaId: string;
+  corretorId: string;
+  corretorNome: string;
+  endereco: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
+  tipo: 'casa' | 'apartamento' | 'terreno' | 'comercial';
+  valor: number;
+  descricao: string;
+  fotos: string[];
+  criadoEm: Date;
+}
+
 // Ícones
 const BuildingIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -87,11 +103,12 @@ export default function MateriaisConstrutoraAdminPage() {
   const [construtoras, setConstrutoras] = useState<Construtora[]>([]);
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [materiais, setMateriais] = useState<Material[]>([]);
+  const [imoveisCaptados, setImoveisCaptados] = useState<ImovelCaptado[]>([]);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   // Navegação
-  const [view, setView] = useState<'construtoras' | 'produtos' | 'materiais'>('construtoras');
+  const [view, setView] = useState<'construtoras' | 'produtos' | 'materiais' | 'captacoes'>('construtoras');
   const [selectedConstrutora, setSelectedConstrutora] = useState<Construtora | null>(null);
   const [selectedProduto, setSelectedProduto] = useState<Produto | null>(null);
 
@@ -99,6 +116,16 @@ export default function MateriaisConstrutoraAdminPage() {
   const [formConstrutora, setFormConstrutora] = useState({ nome: '', logo: null as File | null });
   const [formProduto, setFormProduto] = useState({ nome: '', descricao: '' });
   const [formMaterial, setFormMaterial] = useState({ nome: '', tipo: 'pdf' as 'pdf' | 'link' | 'foto' | 'video', url: '', descricao: '' });
+  const [formImovel, setFormImovel] = useState({ 
+    endereco: '', 
+    bairro: '', 
+    cidade: '', 
+    estado: '', 
+    tipo: 'casa' as 'casa' | 'apartamento' | 'terreno' | 'comercial', 
+    valor: '', 
+    descricao: '', 
+    fotos: [] as File[] 
+  });
   const [uploading, setUploading] = useState(false);
 
   // Modal de edição de logo
@@ -108,6 +135,7 @@ export default function MateriaisConstrutoraAdminPage() {
   useEffect(() => {
     if (!userData?.imobiliariaId) return;
     fetchConstrutoras();
+    fetchImoveisCaptados();
   }, [userData]);
 
   useEffect(() => {
@@ -175,6 +203,24 @@ export default function MateriaisConstrutoraAdminPage() {
       setMateriais(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Material)));
     } catch (err) {
       setMsg('Erro ao carregar materiais.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchImoveisCaptados = async () => {
+    setLoading(true);
+    try {
+      const q = query(
+        collection(db, 'imoveis_captados'),
+        where('imobiliariaId', '==', userData?.imobiliariaId)
+      );
+      const snap = await getDocs(q);
+      const imoveisData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ImovelCaptado));
+      imoveisData.sort((a, b) => b.criadoEm.getTime() - a.criadoEm.getTime());
+      setImoveisCaptados(imoveisData);
+    } catch (err) {
+      setMsg('Erro ao carregar imóveis captados.');
     } finally {
       setLoading(false);
     }
@@ -504,6 +550,12 @@ export default function MateriaisConstrutoraAdminPage() {
                           className="px-3 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-sm rounded transition-colors"
                         >
                           Produtos
+                        </button>
+                        <button
+                          onClick={() => setView('captacoes')}
+                          className="px-3 py-1 bg-[#3AC17C] hover:bg-[#2E9D63] text-white text-sm rounded transition-colors"
+                        >
+                          Captações
                         </button>
                         <button
                           onClick={() => setEditingLogo({ construtora, logo: null })}
