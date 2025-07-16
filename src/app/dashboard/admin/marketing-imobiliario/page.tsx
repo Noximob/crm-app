@@ -62,12 +62,22 @@ export default function MarketingImobiliarioAdminPage() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // Formulário
-  const [nome, setNome] = useState('');
-  const [descricao, setDescricao] = useState('');
-  const [tipo, setTipo] = useState<'pdf' | 'link' | 'foto' | 'video'>('pdf');
-  const [arquivo, setArquivo] = useState<File | null>(null);
-  const [url, setUrl] = useState('');
+  // Formulários separados por tipo
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfNome, setPdfNome] = useState('');
+  const [pdfDescricao, setPdfDescricao] = useState('');
+
+  const [linkNome, setLinkNome] = useState('');
+  const [linkDescricao, setLinkDescricao] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
+
+  const [fotosFiles, setFotosFiles] = useState<File[]>([]);
+  const [fotosNome, setFotosNome] = useState('');
+  const [fotosDescricao, setFotosDescricao] = useState('');
+
+  const [videosFiles, setVideosFiles] = useState<File[]>([]);
+  const [videosNome, setVideosNome] = useState('');
+  const [videosDescricao, setVideosDescricao] = useState('');
 
   // Modal de confirmação
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -96,77 +106,172 @@ export default function MarketingImobiliarioAdminPage() {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setArquivo(e.target.files[0]);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handlePdfUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userData?.imobiliariaId) return;
-
-    if (tipo === 'link' && !url.trim()) {
-      alert('Por favor, insira a URL do link.');
-      return;
-    }
-
-    if (tipo !== 'link' && !arquivo) {
-      alert('Por favor, selecione um arquivo.');
-      return;
-    }
-
-    if (!nome.trim()) {
-      alert('Por favor, insira um nome para o material.');
+    if (!userData?.imobiliariaId || !pdfFile || !pdfNome.trim()) {
+      alert('Por favor, preencha todos os campos obrigatórios.');
       return;
     }
 
     setUploading(true);
     try {
-      let downloadUrl = '';
-      let tamanho = 0;
-      let extensao = '';
-
-      if (tipo === 'link') {
-        downloadUrl = url.trim();
-      } else if (arquivo) {
-        const timestamp = Date.now();
-        const fileName = `${timestamp}_${arquivo.name}`;
-        const storageRef = ref(storage, `marketing/${userData.imobiliariaId}/${fileName}`);
-        
-        const snapshot = await uploadBytes(storageRef, arquivo);
-        downloadUrl = await getDownloadURL(snapshot.ref);
-        tamanho = arquivo.size;
-        extensao = arquivo.name.split('.').pop() || '';
-      }
+      const timestamp = Date.now();
+      const fileName = `${timestamp}_${pdfFile.name}`;
+      const storageRef = ref(storage, `marketing/${userData.imobiliariaId}/${fileName}`);
+      
+      const snapshot = await uploadBytes(storageRef, pdfFile);
+      const downloadUrl = await getDownloadURL(snapshot.ref);
 
       const materialData = {
         imobiliariaId: userData.imobiliariaId,
-        nome: nome.trim(),
-        descricao: descricao.trim() || undefined,
-        tipo,
+        nome: pdfNome.trim(),
+        descricao: pdfDescricao.trim() || undefined,
+        tipo: 'pdf' as const,
         url: downloadUrl,
-        tamanho: tamanho || undefined,
-        extensao: extensao || undefined,
+        tamanho: pdfFile.size,
+        extensao: pdfFile.name.split('.').pop() || '',
         criadoEm: new Date(),
       };
 
       await addDoc(collection(db, 'materiais_marketing'), materialData);
       
       // Limpar formulário
-      setNome('');
-      setDescricao('');
-      setTipo('pdf');
-      setArquivo(null);
-      setUrl('');
+      setPdfFile(null);
+      setPdfNome('');
+      setPdfDescricao('');
       
-      // Recarregar lista
       await fetchMateriais();
-      
-      alert('Material adicionado com sucesso!');
+      alert('PDF adicionado com sucesso!');
     } catch (error) {
-      console.error('Erro ao adicionar material:', error);
-      alert('Erro ao adicionar material. Tente novamente.');
+      console.error('Erro ao adicionar PDF:', error);
+      alert('Erro ao adicionar PDF. Tente novamente.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleLinkAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userData?.imobiliariaId || !linkNome.trim() || !linkUrl.trim()) {
+      alert('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const materialData = {
+        imobiliariaId: userData.imobiliariaId,
+        nome: linkNome.trim(),
+        descricao: linkDescricao.trim() || undefined,
+        tipo: 'link' as const,
+        url: linkUrl.trim(),
+        criadoEm: new Date(),
+      };
+
+      await addDoc(collection(db, 'materiais_marketing'), materialData);
+      
+      // Limpar formulário
+      setLinkNome('');
+      setLinkDescricao('');
+      setLinkUrl('');
+      
+      await fetchMateriais();
+      alert('Link adicionado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao adicionar link:', error);
+      alert('Erro ao adicionar link. Tente novamente.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFotosUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userData?.imobiliariaId || fotosFiles.length === 0 || !fotosNome.trim()) {
+      alert('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      for (const file of fotosFiles) {
+        const timestamp = Date.now();
+        const fileName = `${timestamp}_${file.name}`;
+        const storageRef = ref(storage, `marketing/${userData.imobiliariaId}/${fileName}`);
+        
+        const snapshot = await uploadBytes(storageRef, file);
+        const downloadUrl = await getDownloadURL(snapshot.ref);
+
+        const materialData = {
+          imobiliariaId: userData.imobiliariaId,
+          nome: fotosNome.trim(),
+          descricao: fotosDescricao.trim() || undefined,
+          tipo: 'foto' as const,
+          url: downloadUrl,
+          tamanho: file.size,
+          extensao: file.name.split('.').pop() || '',
+          criadoEm: new Date(),
+        };
+
+        await addDoc(collection(db, 'materiais_marketing'), materialData);
+      }
+      
+      // Limpar formulário
+      setFotosFiles([]);
+      setFotosNome('');
+      setFotosDescricao('');
+      
+      await fetchMateriais();
+      alert('Fotos adicionadas com sucesso!');
+    } catch (error) {
+      console.error('Erro ao adicionar fotos:', error);
+      alert('Erro ao adicionar fotos. Tente novamente.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleVideosUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userData?.imobiliariaId || videosFiles.length === 0 || !videosNome.trim()) {
+      alert('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      for (const file of videosFiles) {
+        const timestamp = Date.now();
+        const fileName = `${timestamp}_${file.name}`;
+        const storageRef = ref(storage, `marketing/${userData.imobiliariaId}/${fileName}`);
+        
+        const snapshot = await uploadBytes(storageRef, file);
+        const downloadUrl = await getDownloadURL(snapshot.ref);
+
+        const materialData = {
+          imobiliariaId: userData.imobiliariaId,
+          nome: videosNome.trim(),
+          descricao: videosDescricao.trim() || undefined,
+          tipo: 'video' as const,
+          url: downloadUrl,
+          tamanho: file.size,
+          extensao: file.name.split('.').pop() || '',
+          criadoEm: new Date(),
+        };
+
+        await addDoc(collection(db, 'materiais_marketing'), materialData);
+      }
+      
+      // Limpar formulário
+      setVideosFiles([]);
+      setVideosNome('');
+      setVideosDescricao('');
+      
+      await fetchMateriais();
+      alert('Vídeos adicionados com sucesso!');
+    } catch (error) {
+      console.error('Erro ao adicionar vídeos:', error);
+      alert('Erro ao adicionar vídeos. Tente novamente.');
     } finally {
       setUploading(false);
     }
@@ -223,113 +328,274 @@ export default function MarketingImobiliarioAdminPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">Marketing Imobiliário</h1>
-                     <p className="text-[#6B6F76] dark:text-gray-300 text-base">
-             Cadastre e gerencie os materiais de marketing da sua imobiliária. 
-             Eles ficarão disponíveis para todos em Materiais &gt; Marketing Imobiliário.
-           </p>
+          <p className="text-[#6B6F76] dark:text-gray-300 text-base">
+            Cadastre e gerencie os materiais de marketing da sua imobiliária. 
+            Eles ficarão disponíveis para todos em Materiais &gt; Marketing Imobiliário.
+          </p>
         </div>
 
-        {/* Formulário */}
-        <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-8">
-          <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4">Adicionar Material</h2>
-          
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Grid de Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Upload PDF */}
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center">
+                <FileIcon className="h-5 w-5 text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Upload PDF</h2>
+            </div>
+            
+            <form onSubmit={handlePdfUpload} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                  Nome do Material *
+                  Nome do PDF *
                 </label>
                 <input
                   type="text"
-                  value={nome}
-                  onChange={(e) => setNome(e.target.value)}
+                  value={pdfNome}
+                  onChange={(e) => setPdfNome(e.target.value)}
                   className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
                   placeholder="Ex: Folder de lançamento"
                   required
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                  Tipo *
+                  Descrição (opcional)
                 </label>
-                <select
-                  value={tipo}
-                  onChange={(e) => setTipo(e.target.value as 'pdf' | 'link' | 'foto' | 'video')}
+                <textarea
+                  value={pdfDescricao}
+                  onChange={(e) => setPdfDescricao(e.target.value)}
                   className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
-                >
-                  <option value="pdf">PDF</option>
-                  <option value="link">Link</option>
-                  <option value="foto">Foto</option>
-                  <option value="video">Vídeo</option>
-                </select>
+                  rows={2}
+                  placeholder="Descrição do PDF..."
+                />
               </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                Descrição
-              </label>
-              <textarea
-                value={descricao}
-                onChange={(e) => setDescricao(e.target.value)}
-                className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
-                rows={3}
-                placeholder="Descrição opcional do material..."
-              />
-            </div>
-
-            {tipo === 'link' ? (
               <div>
                 <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                  URL do Link *
+                  Arquivo PDF *
+                </label>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  onChange={(e) => setPdfFile(e.target.files?.[0] || null)}
+                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+                  required
+                />
+                {pdfFile && (
+                  <p className="text-xs text-[#6B6F76] dark:text-gray-300 mt-1">
+                    Arquivo selecionado: {pdfFile.name} ({formatFileSize(pdfFile.size)})
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={uploading}
+                className="w-full bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] text-white font-bold py-3 rounded-xl shadow transition-all"
+              >
+                {uploading ? 'Adicionando...' : 'Adicionar PDF'}
+              </button>
+            </form>
+          </div>
+
+          {/* Adicionar Link */}
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center">
+                <LinkIcon className="h-5 w-5 text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Adicionar Link</h2>
+            </div>
+            
+            <form onSubmit={handleLinkAdd} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                  Nome do link *
+                </label>
+                <input
+                  type="text"
+                  value={linkNome}
+                  onChange={(e) => setLinkNome(e.target.value)}
+                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+                  placeholder="Ex: Campanha Google Ads"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                  Descrição do link (opcional)
+                </label>
+                <textarea
+                  value={linkDescricao}
+                  onChange={(e) => setLinkDescricao(e.target.value)}
+                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+                  rows={2}
+                  placeholder="Descrição do link..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                  URL do link *
                 </label>
                 <input
                   type="url"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
                   className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
                   placeholder="https://exemplo.com"
                   required
                 />
               </div>
-            ) : (
-              <div>
-                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                  Arquivo *
-                </label>
-                <input
-                  type="file"
-                  onChange={handleFileChange}
-                  accept={
-                    tipo === 'pdf' ? 'application/pdf' :
-                    tipo === 'foto' ? 'image/*' :
-                    tipo === 'video' ? 'video/*' : '*'
-                  }
-                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
-                  required
-                />
-                {arquivo && (
-                  <p className="text-xs text-[#6B6F76] dark:text-gray-300 mt-1">
-                    Arquivo selecionado: {arquivo.name} ({formatFileSize(arquivo.size)})
-                  </p>
-                )}
-              </div>
-            )}
 
-            <div className="flex justify-end">
               <button
                 type="submit"
                 disabled={uploading}
-                className="bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] text-white font-bold px-8 py-3 rounded-xl shadow transition-all"
+                className="w-full bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] text-white font-bold py-3 rounded-xl shadow transition-all"
               >
-                {uploading ? 'Adicionando...' : 'Adicionar Material'}
+                {uploading ? 'Adicionando...' : 'Adicionar Link'}
               </button>
+            </form>
+          </div>
+
+          {/* Upload Fotos */}
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center">
+                <ImageIcon className="h-5 w-5 text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Upload Fotos</h2>
             </div>
-          </form>
+            
+            <form onSubmit={handleFotosUpload} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                  Nome das fotos *
+                </label>
+                <input
+                  type="text"
+                  value={fotosNome}
+                  onChange={(e) => setFotosNome(e.target.value)}
+                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+                  placeholder="Ex: Fotos do lançamento"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                  Descrição (opcional)
+                </label>
+                <textarea
+                  value={fotosDescricao}
+                  onChange={(e) => setFotosDescricao(e.target.value)}
+                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+                  rows={2}
+                  placeholder="Descrição das fotos..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                  Arquivos de imagem *
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => setFotosFiles(Array.from(e.target.files || []))}
+                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+                  required
+                />
+                {fotosFiles.length > 0 && (
+                  <p className="text-xs text-[#6B6F76] dark:text-gray-300 mt-1">
+                    {fotosFiles.length} arquivo(s) selecionado(s)
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={uploading}
+                className="w-full bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] text-white font-bold py-3 rounded-xl shadow transition-all"
+              >
+                {uploading ? 'Adicionando...' : 'Adicionar Fotos'}
+              </button>
+            </form>
+          </div>
+
+          {/* Upload Vídeos */}
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center">
+                <VideoIcon className="h-5 w-5 text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Upload Vídeos</h2>
+            </div>
+            
+            <form onSubmit={handleVideosUpload} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                  Nome dos vídeos *
+                </label>
+                <input
+                  type="text"
+                  value={videosNome}
+                  onChange={(e) => setVideosNome(e.target.value)}
+                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+                  placeholder="Ex: Vídeos promocionais"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                  Descrição (opcional)
+                </label>
+                <textarea
+                  value={videosDescricao}
+                  onChange={(e) => setVideosDescricao(e.target.value)}
+                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+                  rows={2}
+                  placeholder="Descrição dos vídeos..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                  Arquivos de vídeo *
+                </label>
+                <input
+                  type="file"
+                  accept="video/*"
+                  multiple
+                  onChange={(e) => setVideosFiles(Array.from(e.target.files || []))}
+                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+                  required
+                />
+                {videosFiles.length > 0 && (
+                  <p className="text-xs text-[#6B6F76] dark:text-gray-300 mt-1">
+                    {videosFiles.length} arquivo(s) selecionado(s)
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={uploading}
+                className="w-full bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] text-white font-bold py-3 rounded-xl shadow transition-all"
+              >
+                {uploading ? 'Adicionando...' : 'Adicionar Vídeos'}
+              </button>
+            </form>
+          </div>
         </div>
 
         {/* Lista de Materiais */}
@@ -344,7 +610,7 @@ export default function MarketingImobiliarioAdminPage() {
             <div className="text-center py-12">
               <div className="text-6xl mb-4">📁</div>
               <h3 className="text-xl font-semibold text-[#2E2F38] dark:text-white mb-2">Nenhum material cadastrado</h3>
-              <p className="text-[#6B6F76] dark:text-gray-300">Adicione materiais de marketing usando o formulário acima.</p>
+              <p className="text-[#6B6F76] dark:text-gray-300">Adicione materiais de marketing usando os formulários acima.</p>
             </div>
           ) : (
             <div className="space-y-4">
