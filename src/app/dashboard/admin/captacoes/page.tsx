@@ -96,6 +96,7 @@ export default function CaptacoesPage() {
   const [editingImovel, setEditingImovel] = useState<ImovelCaptado | null>(null);
   const [existingFotos, setExistingFotos] = useState<string[]>([]);
   const [existingFotoCapa, setExistingFotoCapa] = useState<string>('');
+  const [videoThumbnails, setVideoThumbnails] = useState<{[key: string]: string}>({});
   const [formImovel, setFormImovel] = useState({
     nome: '',
     endereco: '',
@@ -185,6 +186,7 @@ export default function CaptacoesPage() {
     setEditingImovel(null);
     setExistingFotos([]);
     setExistingFotoCapa('');
+    setVideoThumbnails({});
   };
 
   const handleAddImovel = async (e: React.FormEvent) => {
@@ -267,6 +269,12 @@ export default function CaptacoesPage() {
       fotoCapa: null,
       fotos: []
     });
+    
+    // Carregar thumbnails dos vídeos
+    const videos = imovel.fotos.filter(url => isVideo(url));
+    if (videos.length > 0) {
+      loadVideoThumbnails(videos);
+    }
   };
 
   const handleDeleteExistingFoto = (index: number) => {
@@ -400,14 +408,84 @@ export default function CaptacoesPage() {
     return videoExtensions.some(ext => url.toLowerCase().includes(ext));
   };
 
+  const generateVideoThumbnail = (videoUrl: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      video.crossOrigin = 'anonymous';
+      video.muted = true;
+      video.playsInline = true;
+      
+      video.onloadeddata = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const thumbnailUrl = canvas.toDataURL('image/jpeg', 0.8);
+            resolve(thumbnailUrl);
+          } else {
+            reject(new Error('Não foi possível criar contexto do canvas'));
+          }
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      video.onerror = () => {
+        reject(new Error('Erro ao carregar vídeo'));
+      };
+      
+      video.src = videoUrl;
+      video.load();
+    });
+  };
+
+  const loadVideoThumbnails = async (videos: string[]) => {
+    const thumbnails: {[key: string]: string} = {};
+    
+    for (const videoUrl of videos) {
+      if (isVideo(videoUrl) && !videoThumbnails[videoUrl]) {
+        try {
+          const thumbnail = await generateVideoThumbnail(videoUrl);
+          thumbnails[videoUrl] = thumbnail;
+        } catch (error) {
+          console.error('Erro ao gerar thumbnail para:', videoUrl, error);
+        }
+      }
+    }
+    
+    if (Object.keys(thumbnails).length > 0) {
+      setVideoThumbnails(prev => ({ ...prev, ...thumbnails }));
+    }
+  };
+
   const renderMediaItem = (url: string, index: number, isExisting: boolean = false) => {
     if (isVideo(url)) {
+      const thumbnail = videoThumbnails[url];
       return (
         <div key={index} className="relative">
-          <div className="w-full h-24 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center border border-[#E8E9F1] dark:border-[#23283A]">
-            <VideoIcon className="h-8 w-8 text-gray-500" />
-            <span className="text-xs text-gray-500 ml-2">Vídeo</span>
-          </div>
+          {thumbnail ? (
+            <div className="relative">
+              <img
+                src={thumbnail}
+                alt={`Thumbnail do vídeo ${index + 1}`}
+                className="w-full h-24 object-cover rounded-lg border border-[#E8E9F1] dark:border-[#23283A]"
+              />
+              <div className="absolute inset-0 bg-black bg-opacity-30 rounded-lg flex items-center justify-center">
+                <VideoIcon className="h-6 w-6 text-white" />
+              </div>
+            </div>
+          ) : (
+            <div className="w-full h-24 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center border border-[#E8E9F1] dark:border-[#23283A]">
+              <div className="text-center">
+                <VideoIcon className="h-6 w-6 text-gray-500 mx-auto mb-1" />
+                <span className="text-xs text-gray-500">Carregando...</span>
+              </div>
+            </div>
+          )}
           {isExisting && (
             <button
               type="button"
