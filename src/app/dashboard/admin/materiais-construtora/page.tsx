@@ -579,31 +579,6 @@ export default function MateriaisConstrutoraAdminPage() {
             {/* Lista */}
             <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
               <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4">Construtoras Cadastradas</h2>
-              
-              {/* Pasta Captações Fixa */}
-              <div className="mb-6 p-4 rounded-lg border-2 border-[#3AC17C] bg-[#3AC17C]/10 dark:bg-[#3AC17C]/20">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-[#3AC17C] rounded-full flex items-center justify-center">
-                      <HouseIcon className="h-4 w-4 text-white" />
-                    </div>
-                    <div>
-                      <span className="font-semibold text-[#2E2F38] dark:text-white">Captações</span>
-                      <p className="text-sm text-[#6B6F76] dark:text-gray-300">Imóveis captados pelos corretores</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setView('captacoes');
-                      fetchImoveisCaptados();
-                    }}
-                    className="px-4 py-2 bg-[#3AC17C] hover:bg-[#2E9D63] text-white text-sm rounded-lg font-semibold transition-colors"
-                  >
-                    Acessar Captações
-                  </button>
-                </div>
-              </div>
-
               {loading ? (
                 <div className="text-center py-8">Carregando...</div>
               ) : construtoras.length === 0 ? (

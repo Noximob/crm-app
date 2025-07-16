@@ -32,6 +32,24 @@ interface Material {
   criadoEm: Date;
 }
 
+interface ImovelCaptado {
+  id: string;
+  imobiliariaId: string;
+  corretorId: string;
+  corretorNome: string;
+  nome: string;
+  endereco: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
+  localizacao: string; // Link do Google Maps
+  tipo: 'casa' | 'apartamento' | 'terreno' | 'comercial';
+  valor: number;
+  descricao: string;
+  fotos: string[];
+  criadoEm: Date;
+}
+
 // Ícones
 const BuildingIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -82,15 +100,43 @@ const VideoIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+const HouseIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+    <polyline points="9 22 9 12 15 12 15 22"/>
+  </svg>
+);
+
+const MapIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0 0 21 18.382V7.618a1 1 0 0 0-1.447-.894L15 4m0 13V4m-6 3l6-3"/>
+  </svg>
+);
+
+const StoreIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+  </svg>
+);
+
+const MapPinIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+    <circle cx="12" cy="10" r="3"/>
+  </svg>
+);
+
 export default function MateriaisConstrutorasPage() {
   const { userData } = useAuth();
   const [construtoras, setConstrutoras] = useState<Construtora[]>([]);
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [materiais, setMateriais] = useState<Material[]>([]);
+  const [imoveisCaptados, setImoveisCaptados] = useState<ImovelCaptado[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Navegação
-  const [view, setView] = useState<'construtoras' | 'produtos' | 'materiais'>('construtoras');
+  const [view, setView] = useState<'construtoras' | 'produtos' | 'materiais' | 'captacoes'>('construtoras');
   const [selectedConstrutora, setSelectedConstrutora] = useState<Construtora | null>(null);
   const [selectedProduto, setSelectedProduto] = useState<Produto | null>(null);
 
@@ -160,6 +206,46 @@ export default function MateriaisConstrutorasPage() {
       console.error('Erro ao carregar materiais:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchImoveisCaptados = async () => {
+    setLoading(true);
+    try {
+      const q = query(
+        collection(db, 'imoveis_captados'),
+        where('imobiliariaId', '==', userData?.imobiliariaId)
+      );
+      const snap = await getDocs(q);
+      const imoveisData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ImovelCaptado));
+      imoveisData.sort((a, b) => b.criadoEm.getTime() - a.criadoEm.getTime());
+      setImoveisCaptados(imoveisData);
+    } catch (err) {
+      console.error('Erro ao carregar imóveis captados:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  const getTipoIcon = (tipo: string) => {
+    switch (tipo) {
+      case 'casa':
+        return <HouseIcon className="h-5 w-5" />;
+      case 'apartamento':
+        return <BuildingIcon className="h-5 w-5" />;
+      case 'terreno':
+        return <MapIcon className="h-5 w-5" />;
+      case 'comercial':
+        return <StoreIcon className="h-5 w-5" />;
+      default:
+        return <HouseIcon className="h-5 w-5" />;
     }
   };
 
@@ -238,6 +324,30 @@ export default function MateriaisConstrutorasPage() {
         {/* Lista de Construtoras */}
         {view === 'construtoras' && (
           <div>
+            {/* Pasta Captações Fixa */}
+            <div className="mb-8 p-6 rounded-xl border-2 border-[#3AC17C] bg-gradient-to-r from-[#3AC17C]/10 to-[#3AC17C]/5 dark:from-[#3AC17C]/20 dark:to-[#3AC17C]/10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-[#3AC17C] to-[#4CAF50] rounded-xl flex items-center justify-center">
+                    <HouseIcon className="h-8 w-8 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-[#2E2F38] dark:text-white">Captações</h3>
+                    <p className="text-[#6B6F76] dark:text-gray-300">Imóveis captados pelos corretores</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setView('captacoes');
+                    fetchImoveisCaptados();
+                  }}
+                  className="px-6 py-3 bg-[#3AC17C] hover:bg-[#2E9D63] text-white rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
+                >
+                  Acessar Captações
+                </button>
+              </div>
+            </div>
+
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6]"></div>
@@ -557,6 +667,107 @@ export default function MateriaisConstrutorasPage() {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Lista de Captações */}
+        {view === 'captacoes' && (
+          <div>
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6]"></div>
+              </div>
+            ) : imoveisCaptados.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">🏠</div>
+                <h3 className="text-xl font-semibold text-[#2E2F38] dark:text-white mb-2">Nenhum imóvel captado</h3>
+                <p className="text-[#6B6F76] dark:text-gray-300">Os imóveis captados pelos corretores aparecerão aqui.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {imoveisCaptados.map((imovel) => (
+                  <div
+                    key={imovel.id}
+                    className="bg-white dark:bg-[#23283A] rounded-xl p-6 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105 group"
+                  >
+                    {/* Fotos */}
+                    {imovel.fotos.length > 0 && (
+                      <div className="mb-4">
+                        <img
+                          src={imovel.fotos[0]}
+                          alt="Foto principal"
+                          className="w-full h-32 object-cover rounded-lg mb-2"
+                        />
+                        {imovel.fotos.length > 1 && (
+                          <div className="flex gap-1">
+                            {imovel.fotos.slice(1, 4).map((foto, index) => (
+                              <img
+                                key={index}
+                                src={foto}
+                                alt={`Foto ${index + 2}`}
+                                className="w-8 h-8 object-cover rounded"
+                              />
+                            ))}
+                            {imovel.fotos.length > 4 && (
+                              <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center text-xs text-gray-500">
+                                +{imovel.fotos.length - 4}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Informações */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        {getTipoIcon(imovel.tipo)}
+                        <h3 className="font-bold text-[#2E2F38] dark:text-white text-lg group-hover:text-[#3AC17C] transition-colors">
+                          {imovel.nome}
+                        </h3>
+                      </div>
+                      
+                      <p className="text-sm text-[#6B6F76] dark:text-gray-300">
+                        {imovel.endereco}
+                      </p>
+                      
+                      <p className="text-sm text-[#6B6F76] dark:text-gray-300">
+                        {imovel.bairro}, {imovel.cidade} - {imovel.estado}
+                      </p>
+                      
+                      <p className="text-lg font-bold text-[#3AC17C]">
+                        {formatCurrency(imovel.valor)}
+                      </p>
+                      
+                      {imovel.descricao && (
+                        <p className="text-sm text-[#6B6F76] dark:text-gray-300 line-clamp-2">
+                          {imovel.descricao}
+                        </p>
+                      )}
+                      
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-[#6B6F76] dark:text-gray-300">
+                            {imovel.corretorNome}
+                          </p>
+                          {imovel.localizacao && (
+                            <a
+                              href={imovel.localizacao}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-xs text-[#3478F6] hover:underline"
+                            >
+                              <MapPinIcon className="h-3 w-3" />
+                              Maps
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
