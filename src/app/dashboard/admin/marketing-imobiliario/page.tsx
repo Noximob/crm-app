@@ -124,7 +124,7 @@ export default function MateriaisImobiliariaAdminPage() {
 
       const material = {
         nome: file.name,
-        tipo,
+      tipo,
         url: downloadURL,
         tamanho: file.size,
         extensao: file.name.split(".").pop()?.toLowerCase(),
@@ -236,7 +236,7 @@ export default function MateriaisImobiliariaAdminPage() {
               className="w-full rounded-lg border px-3 py-2"
             />
             {uploading && <p className="text-sm text-[#6B6F76] mt-2">Enviando...</p>}
-          </div>
+            </div>
           {/* Links */}
           <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
             <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
@@ -319,7 +319,7 @@ export default function MateriaisImobiliariaAdminPage() {
             />
             {uploading && <p className="text-sm text-[#6B6F76] mt-2">Enviando...</p>}
           </div>
-        </div>
+              </div>
         {/* Lista de Materiais */}
         <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
           <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4">Materiais Imobiliária</h3>
@@ -525,8 +525,8 @@ export default function MateriaisImobiliariaAdminPage() {
                             Excluir
                           </button>
                         </div>
-                      </div>
-                    ))}
+            </div>
+          ))}
                   </div>
                 </div>
               )}

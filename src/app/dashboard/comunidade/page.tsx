@@ -468,7 +468,7 @@ export default function ComunidadePage() {
               >
                 <img src={post.avatar} alt={post.nome} className="w-12 h-12 rounded-full object-cover mt-1" />
                 <div className="flex-1 flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
                     <span className="font-bold text-[#2E2F38] dark:text-white text-base">{post.nome}</span>
                     <span className="text-xs text-[#6B6F76] dark:text-white">
                       {post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString('pt-BR') : ''}
@@ -534,8 +534,8 @@ export default function ComunidadePage() {
                       ) : (
                         <span>Repost</span>
                       )}
-                    </div>
-                  )}
+                </div>
+                )}
                 </div>
               </div>
             );

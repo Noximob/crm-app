@@ -327,7 +327,7 @@ export default function MateriaisConstrutorasPage() {
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2 text-left">Materiais Construtoras</h1>
+        <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2 text-left">Materiais Construtoras</h1>
             <p className="text-[#6B6F76] dark:text-gray-300 text-left text-base">{getBreadcrumbs()}</p>
           </div>
           {view !== 'construtoras' && (
@@ -548,7 +548,7 @@ export default function MateriaisConstrutorasPage() {
                             <div className="w-10 h-10 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center flex-shrink-0">
                               <FileIcon className="h-5 w-5 text-white" />
                             </div>
-                            <div className="flex-1">
+              <div className="flex-1">
                               <h4 className="font-semibold text-[#2E2F38] dark:text-white text-sm truncate">
                                 {material.nome}
                               </h4>
@@ -891,9 +891,9 @@ export default function MateriaisConstrutorasPage() {
                               <line x1="12" x2="12" y1="15" y2="3"/>
                             </svg>
                           </button>
-                        </div>
-                      ))}
-                    </div>
+            </div>
+          ))}
+        </div>
                   </div>
                 )}
 

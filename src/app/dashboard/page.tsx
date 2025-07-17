@@ -654,7 +654,7 @@ export default function DashboardPage() {
                       <div className={`flex items-center gap-2 text-sm`}>
                         <span className={`h-2.5 w-2.5 ${statusInfo[lead.taskStatus as TaskStatus].color} rounded-full`}></span>
                         <span className="text-gray-300">{statusInfo[lead.taskStatus as TaskStatus].text}</span>
-                      </div>
+          </div>
                     </td>
                     <td className="py-3 px-3">
                       <Link href={`/dashboard/crm/${lead.id}`}>
@@ -664,11 +664,11 @@ export default function DashboardPage() {
                       </Link>
                     </td>
                   </tr>
-                ))}
+            ))}
               </tbody>
             </table>
           )}
-        </div>
+          </div>
         {/* Top Trending */}
         <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 mb-6 flex flex-col justify-between lg:col-span-1 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
@@ -678,12 +678,12 @@ export default function DashboardPage() {
           ) : trendingPosts.length === 0 ? (
             <p className="text-gray-300">Nenhum post encontrado.</p>
           ) : (
-            <div className="flex flex-col gap-4">
-              {trendingPosts.map((post) => (
-                <div key={post.id} className="flex items-start gap-3">
+          <div className="flex flex-col gap-4">
+            {trendingPosts.map((post) => (
+              <div key={post.id} className="flex items-start gap-3">
                   <img src={post.avatar} alt={post.nome} className="w-10 h-10 rounded-full object-cover" />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
                       <span className="font-bold text-[#2E2F38] dark:text-white text-sm">{post.nome}</span>
                       <span className="text-xs text-[#6B6F76] dark:text-gray-300">
                         {post.createdAt?.toDate ? 
@@ -695,17 +695,17 @@ export default function DashboardPage() {
                           }) : ''
                         }
                       </span>
-                    </div>
+                  </div>
                     <div className="text-xs text-[#2E2F38] dark:text-white truncate max-w-[180px]">{post.texto}</div>
-                    <div className="flex gap-3 mt-1 text-xs text-[#6B6F76] dark:text-gray-300">
+                  <div className="flex gap-3 mt-1 text-xs text-[#6B6F76] dark:text-gray-300">
                       <span>🔁 {post.repostsCount || 0}</span>
                       <span>❤️ {post.likes || 0}</span>
                       <span>💬 {post.commentsCount || 0}</span>
-                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
+          </div>
           )}
         </div>
       </div>
@@ -716,7 +716,7 @@ export default function DashboardPage() {
         <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-8 min-h-[220px] relative overflow-hidden shadow-xl animate-fade-in">
           <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
           <MetasCard meta={meta} nomeImobiliaria={nomeImobiliaria} />
-        </div>
+          </div>
         {/* Avisos Importantes */}
         <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-8 min-h-[220px] relative overflow-hidden shadow-xl animate-fade-in flex flex-col gap-4">
           {/* Borda vermelha à esquerda */}
@@ -754,14 +754,14 @@ export default function DashboardPage() {
                     <div className="flex-1 relative z-10">
                       <div className="text-sm font-bold text-[#2E2F38] dark:text-white mb-1 group-hover:text-[#FF6B6B] transition-colors">
                         {aviso.titulo}
-                      </div>
+              </div>
                       <div className="text-xs text-[#6B6F76] dark:text-gray-100 mb-2 leading-relaxed">
                         {aviso.mensagem}
-                      </div>
+            </div>
                       <div className="text-[10px] text-[#FF6B6B] font-semibold bg-[#FF6B6B]/10 px-2 py-1 rounded-full inline-block">
                         {aviso.dataHora?.toDate ? aviso.dataHora.toDate().toLocaleString('pt-BR') : ''}
-                      </div>
-                    </div>
+              </div>
+            </div>
                   </div>
                 ))
             )}

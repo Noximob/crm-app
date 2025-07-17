@@ -191,7 +191,7 @@ export default function MateriaisImobiliariaPage() {
                         <div className="w-10 h-10 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center flex-shrink-0">
                           <FileIcon className="h-5 w-5 text-white" />
                         </div>
-                        <div className="flex-1">
+              <div className="flex-1">
                           <h4 className="font-semibold text-[#2E2F38] dark:text-white text-sm truncate">
                             {material.nome}
                           </h4>
@@ -329,10 +329,10 @@ export default function MateriaisImobiliariaPage() {
                             Download
                           </button>
                         )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              </div>
+            </div>
+          ))}
+        </div>
               </div>
             )}
           </div>
