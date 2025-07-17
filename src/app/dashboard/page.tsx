@@ -221,12 +221,14 @@ interface Task {
 
 // --- Status e cores ---
 type TaskStatus = 'Tarefa em Atraso' | 'Tarefa do Dia' | 'Sem tarefa' | 'Tarefa Futura';
-const TAREFA_STATUS_ORDER: TaskStatus[] = ['Tarefa em Atraso', 'Tarefa do Dia', 'Sem tarefa', 'Tarefa Futura'];
-const statusInfo: Record<TaskStatus, { color: string; text: string }> = {
-  'Tarefa em Atraso': { color: 'bg-red-500', text: 'Atrasada' },
-  'Tarefa do Dia': { color: 'bg-yellow-400', text: 'Para Hoje' },
-  'Tarefa Futura': { color: 'bg-sky-500', text: 'Futura' },
-  'Sem tarefa': { color: 'bg-gray-400', text: 'Sem Tarefa' },
+
+const TAREFA_STATUS_ORDER = ['Tarefa em Atraso', 'Tarefa do Dia', 'Sem tarefa', 'Tarefa Futura'];
+
+const statusInfo = {
+  'Tarefa em Atraso': { color: 'bg-red-500', text: 'Em Atraso' },
+  'Tarefa do Dia': { color: 'bg-yellow-500', text: 'Para Hoje' },
+  'Sem tarefa': { color: 'bg-gray-500', text: 'Sem Tarefa' },
+  'Tarefa Futura': { color: 'bg-blue-500', text: 'Futura' }
 };
 function getTaskStatusInfo(tasks: Task[]): TaskStatus {
   if (tasks.length === 0) return 'Sem tarefa';
@@ -367,11 +369,22 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchIndicadores = async () => {
       try {
-        const response = await fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.189/dados/ultimos/2?formato=json');
-        const data = await response.json();
-        if (data && data.length >= 2) {
-          setIndicadoresExternosAnterior({ selic: data[1].valor });
-          setIndicadoresExternos({ selic: data[0].valor });
+        const now = new Date();
+        const docIdAtual = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+        const docIdAnterior = `${now.getMonth() === 0 ? now.getFullYear()-1 : now.getFullYear()}-${String(now.getMonth() === 0 ? 12 : now.getMonth()).padStart(2,'0')}`;
+        const refAtual = firestoreDoc(db, 'indicadoresExternos', docIdAtual);
+        const refAnterior = firestoreDoc(db, 'indicadoresExternos', docIdAnterior);
+        const snapAtual = await getDoc(refAtual);
+        const snapAnterior = await getDoc(refAnterior);
+        if (snapAtual.exists()) {
+          setIndicadoresExternos(snapAtual.data());
+        } else {
+          setIndicadoresExternos(null);
+        }
+        if (snapAnterior.exists()) {
+          setIndicadoresExternosAnterior(snapAnterior.data());
+        } else {
+          setIndicadoresExternosAnterior(null);
         }
       } catch (error) {
         console.error('Erro ao buscar indicadores:', error);
@@ -383,31 +396,26 @@ export default function DashboardPage() {
   // Buscar agenda do dia
   useEffect(() => {
     const fetchAgenda = async () => {
-      if (!userData?.imobiliariaId) return;
+      if (!currentUser) return;
       setAgendaLoading(true);
       try {
         const leadsRef = collection(db, 'leads');
-        const q = query(
-          leadsRef, 
-          where('userId', '==', currentUser?.uid),
-          where('proximaAcao', '!=', null)
-        );
-        const snapshot = await getDocs(q);
-        const leads = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        // Filtrar leads com tarefas para hoje
-        const hoje = new Date();
-        hoje.setHours(0, 0, 0, 0);
-        const amanha = new Date(hoje);
-        amanha.setDate(amanha.getDate() + 1);
-        
-        const leadsComTarefas = leads.filter((lead: any) => {
-          if (!lead.proximaAcao) return false;
-          const dataTarefa = lead.proximaAcao.toDate();
-          return dataTarefa >= hoje && dataTarefa < amanha;
+        const leadsQuery = query(leadsRef, where('userId', '==', currentUser.uid));
+        const leadsSnapshot = await getDocs(leadsQuery);
+        const allLeads = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const leadsWithTasksPromises = allLeads.map(async (lead) => {
+          const tasksCol = collection(db, 'leads', lead.id, 'tarefas');
+          const q = query(tasksCol, where('status', '==', 'pendente'));
+          const tasksSnapshot = await getDocs(q);
+          const tasks = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+          const taskStatus = getTaskStatusInfo(tasks);
+          return { ...lead, taskStatus, tasks };
         });
-        
-        setAgendaLeads(leadsComTarefas);
+        const settledLeads = await Promise.all(leadsWithTasksPromises);
+        // Filtra para não mostrar tarefas futuras
+        const leadsToShow = settledLeads.filter(lead => lead.taskStatus !== 'Tarefa Futura');
+        leadsToShow.sort((a, b) => TAREFA_STATUS_ORDER.indexOf(a.taskStatus) - TAREFA_STATUS_ORDER.indexOf(b.taskStatus));
+        setAgendaLeads(leadsToShow.slice(0, 3));
       } catch (error) {
         console.error('Erro ao buscar agenda:', error);
         setAgendaLeads([]);
@@ -416,7 +424,7 @@ export default function DashboardPage() {
       }
     };
     fetchAgenda();
-  }, [currentUser, userData]);
+  }, [currentUser]);
 
   // Buscar avisos importantes
   useEffect(() => {
