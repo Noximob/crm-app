@@ -310,14 +310,22 @@ export default function MateriaisConstrutorasPage() {
     return `${mb.toFixed(1)} MB`;
   };
 
-  const handleDownload = (material: Material) => {
+  const handleDownload = async (material: Material) => {
     if (material.url) {
-      const link = document.createElement('a');
-      link.href = material.url;
-      link.download = material.nome;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      try {
+        const response = await fetch(material.url);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = material.nome;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (e) {
+        alert('Erro ao baixar o arquivo.');
+      }
     }
   };
 
@@ -560,13 +568,12 @@ export default function MateriaisConstrutorasPage() {
                           </div>
                           <div className="flex gap-2">
                             {material.url && (
-                              <a
-                                href={material.url}
-                                download={material.nome}
+                              <button
+                                onClick={() => handleDownload(material)}
                                 className="flex-1 px-3 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded-lg transition-colors font-semibold"
                               >
                                 Download
-                              </a>
+                              </button>
                             )}
                           </div>
                         </div>
@@ -627,13 +634,12 @@ export default function MateriaisConstrutorasPage() {
                               </p>
                             )}
                             {material.url && (
-                              <a
-                                href={material.url}
-                                download={material.nome}
+                              <button
+                                onClick={() => handleDownload(material)}
                                 className="w-full mt-2 px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors font-semibold"
                               >
                                 Download
-                              </a>
+                              </button>
                             )}
                           </div>
                         </div>
@@ -680,13 +686,12 @@ export default function MateriaisConstrutorasPage() {
                               </p>
                             )}
                             {material.url && (
-                              <a
-                                href={material.url}
-                                download={material.nome}
+                              <button
+                                onClick={() => handleDownload(material)}
                                 className="w-full mt-2 px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors font-semibold"
                               >
                                 Download
-                              </a>
+                              </button>
                             )}
                           </div>
                         </div>
