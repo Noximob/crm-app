@@ -28,6 +28,13 @@ const ImageIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+const VideoIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M23 7l-7 5 7 5V7z"/>
+    <polygon points="16 17 8 12 16 7.02V17z"/>
+  </svg>
+);
+
 export default function IncluirImovelPage() {
   const { userData, currentUser } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -305,12 +312,15 @@ export default function IncluirImovelPage() {
             )}
           </div>
 
-          {/* Upload de Fotos/Vídeos Adicionais */}
+          {/* Upload de Fotos Adicionais */}
           <div>
-            <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Fotos/Vídeos Adicionais</label>
+            <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2 flex items-center gap-2">
+              <ImageIcon className="h-4 w-4" />
+              Fotos Adicionais
+            </label>
             <input
               type="file"
-              accept="image/*,video/*"
+              accept="image/*"
               multiple
               onChange={e => {
                 const newFiles = Array.from(e.target.files || []);
@@ -318,16 +328,16 @@ export default function IncluirImovelPage() {
               }}
               className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
             />
-            {formImovel.fotos.length > 0 && (
+            {formImovel.fotos.filter(f => f.type.startsWith('image/')).length > 0 && (
               <div className="mt-3">
                 <p className="text-sm text-[#6B6F76] dark:text-gray-300 mb-2">
-                  {formImovel.fotos.length} arquivo(s) selecionado(s):
+                  {formImovel.fotos.filter(f => f.type.startsWith('image/')).length} foto(s) selecionada(s):
                 </p>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
-                  {formImovel.fotos.map((file, index) => (
+                  {formImovel.fotos.filter(f => f.type.startsWith('image/')).map((file, index) => (
                     <div key={index} className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
                       <span className="text-sm text-[#2E2F38] dark:text-white truncate flex-1">
-                        {file.name}
+                        📷 {file.name}
                       </span>
                       <button
                         type="button"
@@ -342,7 +352,51 @@ export default function IncluirImovelPage() {
                     </div>
                   ))}
                 </div>
-            </div>
+              </div>
+            )}
+          </div>
+
+          {/* Upload de Vídeos Adicionais */}
+          <div>
+            <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2 flex items-center gap-2">
+              <VideoIcon className="h-4 w-4" />
+              Vídeos Adicionais
+            </label>
+            <input
+              type="file"
+              accept="video/*"
+              multiple
+              onChange={e => {
+                const newFiles = Array.from(e.target.files || []);
+                setFormImovel({ ...formImovel, fotos: [...formImovel.fotos, ...newFiles] });
+              }}
+              className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+            />
+            {formImovel.fotos.filter(f => f.type.startsWith('video/')).length > 0 && (
+              <div className="mt-3">
+                <p className="text-sm text-[#6B6F76] dark:text-gray-300 mb-2">
+                  {formImovel.fotos.filter(f => f.type.startsWith('video/')).length} vídeo(s) selecionado(s):
+                </p>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {formImovel.fotos.filter(f => f.type.startsWith('video/')).map((file, index) => (
+                    <div key={index} className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
+                      <span className="text-sm text-[#2E2F38] dark:text-white truncate flex-1">
+                        🎥 {file.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newFiles = formImovel.fotos.filter((_, i) => i !== index);
+                          setFormImovel({ ...formImovel, fotos: newFiles });
+                        }}
+                        className="ml-2 text-red-500 hover:text-red-700 text-sm"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
 

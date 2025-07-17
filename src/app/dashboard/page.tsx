@@ -733,7 +733,7 @@ export default function DashboardPage() {
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
           <div className="relative">
             <h1 className="text-2xl font-bold mb-1 bg-gradient-to-r from-[#3478F6] via-[#A3C8F7] to-[#6B6F76] bg-clip-text text-transparent">
-              Olá, {currentUser?.email?.split('@')[0] || 'Corretor'}! 👋
+              Olá, {currentUser?.email?.split('@')[0] || 'Corretor'}! <span className="text-yellow-400">👋</span>
             </h1>
             <p className="text-[#6B6F76] capitalize text-sm">Bem-vindo ao seu dashboard</p>
           </div>

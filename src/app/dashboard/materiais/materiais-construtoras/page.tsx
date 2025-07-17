@@ -893,11 +893,14 @@ export default function MateriaisConstrutorasPage() {
                 )}
 
                 {/* Galeria de Fotos */}
-                {selectedImovel.fotos.length > 0 && (
+                {selectedImovel.fotos.filter(f => f.toLowerCase().includes('.jpg') || f.toLowerCase().includes('.jpeg') || f.toLowerCase().includes('.png') || f.toLowerCase().includes('.gif') || f.toLowerCase().includes('.webp')).length > 0 && (
                   <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 border border-[#E8E9F1] dark:border-[#23283A]">
-                    <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4">Galeria de Fotos</h2>
+                    <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
+                      <ImageIcon className="h-5 w-5 text-[#3478F6]" />
+                      Fotos
+                    </h2>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {selectedImovel.fotos.map((foto, index) => (
+                      {selectedImovel.fotos.filter(f => f.toLowerCase().includes('.jpg') || f.toLowerCase().includes('.jpeg') || f.toLowerCase().includes('.png') || f.toLowerCase().includes('.gif') || f.toLowerCase().includes('.webp')).map((foto, index) => (
                         <div key={index} className="relative group">
                           <img
                             src={foto}
@@ -921,9 +924,47 @@ export default function MateriaisConstrutorasPage() {
                               <line x1="12" x2="12" y1="15" y2="3"/>
                             </svg>
                           </button>
-            </div>
-          ))}
-        </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Galeria de Vídeos */}
+                {selectedImovel.fotos.filter(f => f.toLowerCase().includes('.mp4') || f.toLowerCase().includes('.avi') || f.toLowerCase().includes('.mov') || f.toLowerCase().includes('.wmv') || f.toLowerCase().includes('.flv') || f.toLowerCase().includes('.webm') || f.toLowerCase().includes('.mkv')).length > 0 && (
+                  <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 border border-[#E8E9F1] dark:border-[#23283A]">
+                    <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
+                      <VideoIcon className="h-5 w-5 text-[#3478F6]" />
+                      Vídeos
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {selectedImovel.fotos.filter(f => f.toLowerCase().includes('.mp4') || f.toLowerCase().includes('.avi') || f.toLowerCase().includes('.mov') || f.toLowerCase().includes('.wmv') || f.toLowerCase().includes('.flv') || f.toLowerCase().includes('.webm') || f.toLowerCase().includes('.mkv')).map((video, index) => (
+                        <div key={index} className="relative group">
+                          <video
+                            src={video}
+                            controls
+                            className="w-full h-48 object-cover rounded-lg"
+                          />
+                          <button
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = video;
+                              link.download = `video_${index + 1}.mp4`;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            }}
+                            className="absolute top-2 right-2 p-1 bg-black bg-opacity-50 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <svg className="h-4 w-4" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                              <polyline points="7 10 12 15 17 10"/>
+                              <line x1="12" x2="12" y1="15" y2="3"/>
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
