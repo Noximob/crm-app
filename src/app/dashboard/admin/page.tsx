@@ -16,40 +16,66 @@ interface UsuarioPendente {
   metodoCadastro: 'email' | 'google';
 }
 
-const adminCards = [
-  { title: 'Gestão de Corretores', icon: '🧑‍💼', description: 'Administre os leads dos seus corretores', href: '/dashboard/admin/gestao-leads' },
-  { title: 'Materiais Construtora', icon: '🏗️', description: 'Adicione e gerencie materiais das construtoras.', href: '/dashboard/admin/materiais-construtora' },
-  { title: 'Materiais Imobiliária', icon: '📢', description: 'Ferramentas e campanhas de marketing.', href: '/dashboard/admin/marketing-imobiliario' },
-  { title: 'Captações', icon: '🏠', description: 'Imóveis captados pelos corretores.', href: '/dashboard/admin/captacoes' },
-  { title: 'Treinamentos', icon: '🎓', description: 'Gerencie treinamentos e materiais educacionais.', href: '/dashboard/admin/treinamentos' },
-  { title: 'Financeiro', icon: '💰', description: 'Controle financeiro da imobiliária.', href: '/dashboard/admin/financeiro' },
-  { title: 'Metas', icon: '🎯', description: 'Configure e acompanhe as metas da imobiliária.', href: '/dashboard/admin/metas' },
-  { title: 'Relatórios', icon: '📊', description: 'Acompanhe métricas e resultados detalhados.', href: '/dashboard/admin/relatorios' },
-  { title: 'Site', icon: '🌐', description: 'Gerencie o site institucional e vitrines.', href: '/dashboard/admin/site' },
-  { title: 'Importar Leads', icon: '⬆️', description: 'Importe vários leads de uma vez, colando nomes e telefones.', href: '/dashboard/admin/importar-leads' },
-  { title: 'Avisos Importantes', icon: '📢', description: 'Crie e edite avisos para os corretores.', href: '/dashboard/admin/avisos-importantes' },
-  { title: 'Aprovação de Usuários', icon: '✅', description: 'Aprove ou rejeite novos cadastros.', href: '#', special: true },
-];
+// Componente para título com barra colorida (padrão do sistema)
+const SectionTitle = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
+  <div className={`relative ${className}`}>
+    <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white relative z-10">{children}</h2>
+    <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-[#3478F6] to-[#A3C8F7] rounded-r-full opacity-60"></div>
+  </div>
+);
 
-const financeiroTabs = [
-  { label: 'Visão geral', icon: '📈' },
-  { label: 'Lançamentos', icon: '↕️' },
-  { label: 'Meus bancos', icon: '🏦' },
-  { label: 'Meus cartões', icon: '💳' },
-  { label: 'Histórico', icon: '🕒' },
-  { label: 'Relatórios', icon: '📊', dropdown: ['Categorias', 'Fluxo'] },
-  { label: 'Categorias', icon: '➕', dropdown: ['Receita', 'Despesa'] },
+// Categorias organizadas para melhor UX
+const adminCategories = [
+  {
+    title: 'Gestão de Pessoas',
+    description: 'Administre corretores e usuários',
+    icon: '👥',
+    color: 'from-blue-500 to-blue-600',
+    items: [
+      { title: 'Aprovação de Usuários', icon: '✅', description: 'Aprove novos cadastros', href: '#', special: true },
+      { title: 'Gestão de Corretores', icon: '🧑‍💼', description: 'Administre leads dos corretores', href: '/dashboard/admin/gestao-corretores' },
+    ]
+  },
+  {
+    title: 'Materiais e Conteúdo',
+    description: 'Gerencie materiais e treinamentos',
+    icon: '📚',
+    color: 'from-green-500 to-green-600',
+    items: [
+      { title: 'Materiais Construtora', icon: '🏗️', description: 'Materiais das construtoras', href: '/dashboard/admin/materiais-construtora' },
+      { title: 'Marketing Imobiliário', icon: '📢', description: 'Campanhas e ferramentas', href: '/dashboard/admin/marketing-imobiliario' },
+      { title: 'Treinamentos', icon: '🎓', description: 'Materiais educacionais', href: '/dashboard/admin/treinamentos' },
+    ]
+  },
+  {
+    title: 'Gestão Financeira',
+    description: 'Controle financeiro e metas',
+    icon: '💰',
+    color: 'from-purple-500 to-purple-600',
+    items: [
+      { title: 'Financeiro', icon: '💳', description: 'Controle financeiro', href: '/dashboard/admin/financeiro' },
+      { title: 'Metas', icon: '🎯', description: 'Configure metas', href: '/dashboard/admin/metas' },
+      { title: 'Relatórios', icon: '📊', description: 'Métricas e resultados', href: '/dashboard/admin/relatorios' },
+    ]
+  },
+  {
+    title: 'Sistema e Configurações',
+    description: 'Configurações avançadas',
+    icon: '⚙️',
+    color: 'from-orange-500 to-orange-600',
+    items: [
+      { title: 'Site', icon: '🌐', description: 'Site institucional', href: '/dashboard/admin/site' },
+      { title: 'Importar Leads', icon: '⬆️', description: 'Importe leads em massa', href: '/dashboard/admin/importar-leads' },
+      { title: 'Avisos', icon: '📢', description: 'Avisos para corretores', href: '/dashboard/admin/avisos-importantes' },
+    ]
+  }
 ];
 
 export default function AdminPage() {
-  const [showFinanceiro, setShowFinanceiro] = useState(false);
   const [showAprovacao, setShowAprovacao] = useState(false);
-  const [activeTab, setActiveTab] = useState('Visão geral');
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [usuariosPendentes, setUsuariosPendentes] = useState<UsuarioPendente[]>([]);
   const [loading, setLoading] = useState(false);
   const [imobiliarias, setImobiliarias] = useState<{ id: string, nome: string }[]>([]);
-  const [showGestaoLeads, setShowGestaoLeads] = useState(false);
   const { userData } = useAuth();
 
   // Buscar usuários pendentes
@@ -65,7 +91,6 @@ export default function AdminPage() {
     try {
       let q;
       if (userData?.tipoConta === 'imobiliaria') {
-        // Imobiliária só vê corretores vinculados a ela
         q = query(
           collection(db, 'usuarios'),
           where('imobiliariaId', '==', userData.imobiliariaId),
@@ -73,12 +98,11 @@ export default function AdminPage() {
           where('aprovado', '==', false)
         );
       } else {
-        // Admin vê todos pendentes
         q = query(
-        collection(db, 'usuarios'),
-        where('aprovado', '==', false),
-        orderBy('criadoEm', 'desc')
-      );
+          collection(db, 'usuarios'),
+          where('aprovado', '==', false),
+          orderBy('criadoEm', 'desc')
+        );
       }
       const snapshot = await getDocs(q);
       const usuarios = snapshot.docs.map(doc => ({
@@ -108,7 +132,7 @@ export default function AdminPage() {
         aprovado: true,
         aprovadoEm: new Date()
       });
-      await fetchUsuariosPendentes(); // Recarregar lista
+      await fetchUsuariosPendentes();
     } catch (error) {
       console.error('Erro ao aprovar usuário:', error);
     }
@@ -121,7 +145,7 @@ export default function AdminPage() {
         rejeitadoEm: new Date(),
         rejeitado: true
       });
-      await fetchUsuariosPendentes(); // Recarregar lista
+      await fetchUsuariosPendentes();
     } catch (error) {
       console.error('Erro ao rejeitar usuário:', error);
     }
@@ -143,82 +167,160 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
-      <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2 text-left">Área do Administrador</h1>
-        <p className="text-[#6B6F76] dark:text-gray-300 mb-8 text-left text-base">Gerencie recursos avançados da sua imobiliária.</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {adminCards.map((item) => (
-            <Link
-              key={item.title}
-              href={item.href}
-              className="flex flex-col items-center justify-center bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-8 transition-all duration-200 hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] group cursor-pointer"
-              tabIndex={0}
-              onClick={e => item.special ? (e.preventDefault(), setShowAprovacao(true)) : null}
-            >
-              <span className="text-4xl mb-4 group-hover:scale-110 transition-transform">{item.icon}</span>
-              <span className="text-xl font-bold text-[#3478F6] dark:text-[#A3C8F7] mb-2 text-center">{item.title}</span>
-              <span className="text-sm text-[#6B6F76] dark:text-gray-300 text-center">{item.description}</span>
-            </Link>
+    <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">
+            Área do Administrador
+          </h1>
+          <p className="text-[#6B6F76] dark:text-gray-300 text-lg">
+            Gerencie todos os recursos da sua imobiliária de forma organizada
+          </p>
+        </div>
+
+        {/* Grid de Categorias */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {adminCategories.map((category) => (
+            <div key={category.title} className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] overflow-hidden">
+              {/* Header da Categoria */}
+              <div className={`bg-gradient-to-r ${category.color} p-6 text-white`}>
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">{category.icon}</span>
+                  <div>
+                    <h2 className="text-xl font-bold">{category.title}</h2>
+                    <p className="text-blue-100 text-sm">{category.description}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Itens da Categoria */}
+              <div className="p-6 space-y-4">
+                {category.items.map((item) => (
+                  <Link
+                    key={item.title}
+                    href={item.href}
+                    className="flex items-center gap-4 p-4 rounded-xl bg-[#F8F9FB] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] transition-all duration-200 hover:scale-[1.02] hover:shadow-md group cursor-pointer"
+                    onClick={e => item.special ? (e.preventDefault(), setShowAprovacao(true)) : null}
+                  >
+                    <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-xl flex items-center justify-center text-white text-xl group-hover:scale-110 transition-transform">
+                      {item.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-[#2E2F38] dark:text-white group-hover:text-[#3478F6] transition-colors">
+                        {item.title}
+                      </h3>
+                      <p className="text-sm text-[#6B6F76] dark:text-gray-300 mt-1">
+                        {item.description}
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0 text-[#6B6F76] dark:text-gray-400 group-hover:text-[#3478F6] transition-colors">
+                      →
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
           ))}
+        </div>
+
+        {/* Estatísticas Rápidas */}
+        <div className="mt-8 bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-6">
+          <SectionTitle className="mb-6">Visão Geral</SectionTitle>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl">
+              <div className="text-2xl font-bold text-[#3478F6] mb-1">12</div>
+              <div className="text-sm text-[#6B6F76] dark:text-gray-300">Corretores Ativos</div>
+            </div>
+            <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl">
+              <div className="text-2xl font-bold text-green-600 mb-1">156</div>
+              <div className="text-sm text-[#6B6F76] dark:text-gray-300">Leads Ativos</div>
+            </div>
+            <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl">
+              <div className="text-2xl font-bold text-purple-600 mb-1">8</div>
+              <div className="text-sm text-[#6B6F76] dark:text-gray-300">Vendas Este Mês</div>
+            </div>
+            <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl">
+              <div className="text-2xl font-bold text-orange-600 mb-1">3</div>
+              <div className="text-sm text-[#6B6F76] dark:text-gray-300">Pendentes Aprovação</div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Modal Aprovação de Usuários */}
       {showAprovacao && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-lg w-full max-w-6xl p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto">
-            <button className="absolute top-4 right-4 text-2xl text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6]" onClick={() => setShowAprovacao(false)}>&times;</button>
-            <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white mb-6">Aprovação de Usuários</h2>
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-lg w-full max-w-4xl p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto">
+            <button 
+              className="absolute top-4 right-4 text-2xl text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] transition-colors" 
+              onClick={() => setShowAprovacao(false)}
+            >
+              ×
+            </button>
+            
+            <div className="mb-6">
+              <SectionTitle>Aprovação de Usuários</SectionTitle>
+            </div>
             
             {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3478F6]"></div>
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6]"></div>
               </div>
             ) : usuariosPendentes.length === 0 ? (
-              <div className="text-center py-8 text-[#6B6F76] dark:text-gray-300">
-                <p className="text-lg">Nenhum usuário pendente de aprovação.</p>
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">✅</div>
+                <p className="text-lg text-[#6B6F76] dark:text-gray-300">Nenhum usuário pendente de aprovação</p>
+                <p className="text-sm text-[#6B6F76] dark:text-gray-400 mt-2">Todos os cadastros foram processados</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {usuariosPendentes.map((usuario) => (
-                  <div key={usuario.id} className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg p-4 border border-[#E8E9F1] dark:border-[#23283A]">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h3 className="font-semibold text-[#2E2F38] dark:text-white">{usuario.nome}</h3>
-                        <p className="text-sm text-[#6B6F76] dark:text-gray-300">{usuario.email}</p>
+                  <div key={usuario.id} className="bg-[#F8F9FB] dark:bg-[#181C23] rounded-xl p-6 border border-[#E8E9F1] dark:border-[#23283A]">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-full flex items-center justify-center text-white font-semibold">
+                          {usuario.nome.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-[#2E2F38] dark:text-white text-lg">{usuario.nome}</h3>
+                          <p className="text-[#6B6F76] dark:text-gray-300">{usuario.email}</p>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-3">
                         <button
                           onClick={() => aprovarUsuario(usuario.id)}
-                          className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors"
+                          className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
                         >
+                          <span>✓</span>
                           Aprovar
                         </button>
                         <button
                           onClick={() => rejeitarUsuario(usuario.id)}
-                          className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
+                          className="px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
                         >
+                          <span>✕</span>
                           Rejeitar
                         </button>
                       </div>
                     </div>
+                    
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <span className="text-[#6B6F76] dark:text-gray-300">Tipo:</span>
-                        <p className="font-medium text-[#2E2F38] dark:text-white">{getTipoContaLabel(usuario.tipoConta)}</p>
+                      <div className="bg-white dark:bg-[#23283A] p-3 rounded-lg">
+                        <span className="text-[#6B6F76] dark:text-gray-300 text-xs uppercase tracking-wide">Tipo</span>
+                        <p className="font-medium text-[#2E2F38] dark:text-white mt-1">{getTipoContaLabel(usuario.tipoConta)}</p>
                       </div>
-                      <div>
-                        <span className="text-[#6B6F76] dark:text-gray-300">Imobiliária:</span>
-                        <p className="font-medium text-[#2E2F38] dark:text-white">{getNomeImobiliaria(usuario.imobiliariaId)}</p>
+                      <div className="bg-white dark:bg-[#23283A] p-3 rounded-lg">
+                        <span className="text-[#6B6F76] dark:text-gray-300 text-xs uppercase tracking-wide">Imobiliária</span>
+                        <p className="font-medium text-[#2E2F38] dark:text-white mt-1">{getNomeImobiliaria(usuario.imobiliariaId)}</p>
                       </div>
-                      <div>
-                        <span className="text-[#6B6F76] dark:text-gray-300">Cadastro:</span>
-                        <p className="font-medium text-[#2E2F38] dark:text-white">{usuario.metodoCadastro === 'google' ? 'Google' : 'E-mail'}</p>
+                      <div className="bg-white dark:bg-[#23283A] p-3 rounded-lg">
+                        <span className="text-[#6B6F76] dark:text-gray-300 text-xs uppercase tracking-wide">Cadastro</span>
+                        <p className="font-medium text-[#2E2F38] dark:text-white mt-1">{usuario.metodoCadastro === 'google' ? 'Google' : 'E-mail'}</p>
                       </div>
-                      <div>
-                        <span className="text-[#6B6F76] dark:text-gray-300">Data:</span>
-                        <p className="font-medium text-[#2E2F38] dark:text-white">
+                      <div className="bg-white dark:bg-[#23283A] p-3 rounded-lg">
+                        <span className="text-[#6B6F76] dark:text-gray-300 text-xs uppercase tracking-wide">Data</span>
+                        <p className="font-medium text-[#2E2F38] dark:text-white mt-1">
                           {usuario.criadoEm?.toDate ? usuario.criadoEm.toDate().toLocaleDateString('pt-BR') : 'N/A'}
                         </p>
                       </div>
@@ -227,101 +329,6 @@ export default function AdminPage() {
                 ))}
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* Modal Financeiro */}
-      {showFinanceiro && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-lg w-full max-w-3xl p-6 relative animate-fade-in">
-            <button className="absolute top-4 right-4 text-2xl text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6]" onClick={() => setShowFinanceiro(false)}>&times;</button>
-            <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white mb-6">Financeiro</h2>
-            {/* Abas do Financeiro */}
-            <div className="flex gap-2 border-b border-[#E8E9F1] dark:border-[#23283A] mb-6 overflow-x-auto">
-              {financeiroTabs.map((tab) => (
-                <div key={tab.label} className="relative">
-                  <button
-                    className={`flex items-center gap-2 px-4 py-2 rounded-t-lg font-medium transition-colors duration-150 ${activeTab === tab.label ? 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#3478F6]' : 'text-[#6B6F76] dark:text-gray-300 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23]'}`}
-                    onClick={() => {
-                      setActiveTab(tab.label);
-                      setOpenDropdown(null);
-                    }}
-                    onMouseEnter={() => tab.dropdown && setOpenDropdown(tab.label)}
-                    onMouseLeave={() => tab.dropdown && setOpenDropdown(null)}
-                  >
-                    <span>{tab.icon}</span>
-                    <span>{tab.label}</span>
-                    {tab.dropdown && <span className="ml-1">▼</span>}
-                  </button>
-                  {/* Dropdown */}
-                  {tab.dropdown && openDropdown === tab.label && (
-                    <div className="absolute left-0 top-full mt-1 bg-white dark:bg-[#23283A] shadow-lg rounded-lg py-2 min-w-[120px] z-10">
-                      {tab.dropdown.map((item) => (
-                        <button
-                          key={item}
-                          className="block w-full text-left px-4 py-2 text-[#2E2F38] dark:text-white hover:bg-[#F5F6FA] dark:hover:bg-[#181C23]"
-                          onClick={() => {
-                            setActiveTab(item);
-                            setOpenDropdown(null);
-                          }}
-                        >
-                          {item}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-            {/* Conteúdo da aba selecionada (mock) */}
-            <div className="min-h-[200px] flex items-center justify-center text-[#6B6F76] dark:text-gray-300 text-lg">
-              <span>Conteúdo: <b>{activeTab}</b> (mock)</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Gestão de Leads dos Corretores */}
-      {showGestaoLeads && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-lg w-full max-w-6xl p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto">
-            <button className="absolute top-4 right-4 text-2xl text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6]" onClick={() => setShowGestaoLeads(false)}>&times;</button>
-            <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white mb-6">Gestão de Leads dos Corretores</h2>
-            {/* Filtros por etapa, seleção de leads, botão transferir e apagar - estrutura inicial */}
-            <div className="mb-4 flex flex-col md:flex-row md:items-center gap-4">
-              <label className="font-medium text-[#6B6F76] dark:text-gray-300">Filtrar por etapa:</label>
-              <select className="px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white">
-                <option value="">Todas</option>
-                <option value="Pré-qualificação">Pré-qualificação</option>
-                <option value="Qualificação">Qualificação</option>
-                <option value="Proposta">Proposta</option>
-                <option value="Geladeira">Geladeira</option>
-                {/* Adicione outras etapas conforme necessário */}
-              </select>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Aqui será renderizada a lista de corretores e seus leads, com seleção e botões de ação */}
-              <div className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl p-4 border border-[#E8E9F1] dark:border-[#23283A]">
-                <p className="text-[#6B6F76] dark:text-gray-300">(Exemplo) Corretor: João Silva</p>
-                <ul className="mt-2 space-y-2">
-                  <li className="flex items-center gap-2">
-                    <input type="checkbox" />
-                    <span className="flex-1 text-[#2E2F38] dark:text-white">Lead: Maria Souza (Pré-qualificação)</span>
-                    <button className="text-red-500 hover:text-red-700 text-xs">Apagar</button>
-                  </li>
-                  {/* Repita para outros leads */}
-                </ul>
-              </div>
-              {/* Repita para outros corretores */}
-            </div>
-            <div className="mt-6 flex gap-4 justify-end">
-              <select className="px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white">
-                <option value="">Selecione corretor de destino</option>
-                {/* Listar corretores */}
-              </select>
-              <button className="px-6 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg font-semibold transition-colors">Transferir</button>
-            </div>
           </div>
         </div>
       )}
