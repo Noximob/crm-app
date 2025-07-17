@@ -66,6 +66,7 @@ const adminCategories = [
     color: 'from-orange-500 to-orange-600',
     items: [
       { title: 'Aprovação de Usuários', icon: '✅', description: 'Aprove novos cadastros', href: '#', special: true },
+      { title: 'Indicadores Econômicos', icon: '📊', description: 'Configure IPCA, SELIC e outros indicadores', href: '/dashboard/admin/indicadores-economicos' },
       { title: 'Site', icon: '🌐', description: 'Site institucional', href: '/dashboard/admin/site' },
     ]
   }
