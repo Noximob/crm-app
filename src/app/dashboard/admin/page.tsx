@@ -75,10 +75,10 @@ export default function AdminPage() {
       } else {
         // Admin vê todos pendentes
         q = query(
-          collection(db, 'usuarios'),
-          where('aprovado', '==', false),
-          orderBy('criadoEm', 'desc')
-        );
+        collection(db, 'usuarios'),
+        where('aprovado', '==', false),
+        orderBy('criadoEm', 'desc')
+      );
       }
       const snapshot = await getDocs(q);
       const usuarios = snapshot.docs.map(doc => ({

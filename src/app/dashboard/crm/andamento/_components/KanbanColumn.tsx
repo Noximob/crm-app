@@ -39,19 +39,23 @@ export default function KanbanColumn({ id, title, leads, isOver }: KanbanColumnP
           isOver || isOverColumn ? 'ring-4 ring-[#3478F6] ring-opacity-50' : ''
         }`}
       >
-        {/* Área de drop vazia para quando não há leads */}
-        {leads.length === 0 && (
-          <div className="w-full h-20 border-2 border-dashed border-[#A3C8F7] dark:border-[#3478F6]/40 rounded-lg flex items-center justify-center">
-            <span className="text-xs text-[#6B6F76] dark:text-gray-400">Solte aqui</span>
-          </div>
-        )}
-        
         {/* Lista de leads - SORTABLE */}
         <SortableContext id={`sortable-${id}`} items={leads.map(lead => lead.id)} strategy={verticalListSortingStrategy}>
           {leads.map(lead => (
             <LeadCard key={lead.id} lead={lead} />
           ))}
         </SortableContext>
+        
+        {/* Área de drop vazia para quando não há leads - sempre presente mas só visível quando vazio */}
+        <div className={`w-full transition-all duration-200 ${
+          leads.length === 0 
+            ? 'h-20 border-2 border-dashed border-[#A3C8F7] dark:border-[#3478F6]/40 rounded-lg flex items-center justify-center bg-[#F0F4FF] dark:bg-[#23283A]/50' 
+            : 'h-0 opacity-0'
+        }`}>
+          {leads.length === 0 && (
+            <span className="text-xs text-[#6B6F76] dark:text-gray-400">Solte aqui</span>
+          )}
+        </div>
       </div>
     </div>
   );

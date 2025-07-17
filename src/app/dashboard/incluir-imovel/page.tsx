@@ -342,7 +342,7 @@ export default function IncluirImovelPage() {
                     </div>
                   ))}
                 </div>
-              </div>
+            </div>
             )}
           </div>
 
