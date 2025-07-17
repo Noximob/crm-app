@@ -606,13 +606,13 @@ export default function MateriaisConstrutorasPage() {
                       <VideoIcon className="h-5 w-5 text-[#3478F6]" />
                       Vídeos
                     </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {getGroupedMateriais().videos.map(material => (
                         <div
                           key={material.id}
-                          className="bg-white dark:bg-[#23283A] rounded-xl p-3 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105"
+                          className="bg-white dark:bg-[#23283A] rounded-xl p-4 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105"
                         >
-                          <div className="aspect-square mb-2 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center relative group">
+                          <div className="aspect-video mb-3 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center relative group overflow-hidden">
                             {material.url ? (
                               <>
                                 <video 
@@ -636,15 +636,16 @@ export default function MateriaisConstrutorasPage() {
                                   </div>
                                 </div>
                               </>
-                            ) : null}
-                            <div className="hidden items-center justify-center text-gray-400">
-                              <VideoIcon className="h-8 w-8" />
-                            </div>
+                            ) : (
+                              <div className="flex items-center justify-center text-gray-400">
+                                <VideoIcon className="h-12 w-12" />
+                              </div>
+                            )}
                           </div>
-                          <div className="text-center">
-                            <p className="text-xs text-[#2E2F38] dark:text-white truncate mb-1">
+                          <div className="space-y-2">
+                            <h4 className="font-semibold text-[#2E2F38] dark:text-white text-sm truncate">
                               {material.nome}
-                            </p>
+                            </h4>
                             {material.tamanho && (
                               <p className="text-xs text-[#6B6F76] dark:text-gray-300">
                                 {formatFileSize(material.tamanho)}
@@ -654,10 +655,13 @@ export default function MateriaisConstrutorasPage() {
                               <button
                                 onClick={() => handleDownload(material)}
                                 disabled={downloadingId === material.id}
-                                className="w-full mt-2 px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors font-semibold"
+                                className="w-full px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] disabled:cursor-not-allowed text-white rounded-lg transition-colors font-semibold text-sm"
                               >
                                 {downloadingId === material.id ? (
-                                  <span className="flex items-center gap-2"><SpinnerIcon /> Baixando...</span>
+                                  <span className="flex items-center justify-center gap-2">
+                                    <SpinnerIcon /> 
+                                    Baixando...
+                                  </span>
                                 ) : 'Download'}
                               </button>
                             )}
@@ -675,13 +679,13 @@ export default function MateriaisConstrutorasPage() {
                       <ImageIcon className="h-5 w-5 text-[#3478F6]" />
                       Fotos Avulsas
                     </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {getGroupedMateriais().fotos.map(material => (
                         <div
                           key={material.id}
-                          className="bg-white dark:bg-[#23283A] rounded-xl p-3 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105"
+                          className="bg-white dark:bg-[#23283A] rounded-xl p-4 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105"
                         >
-                          <div className="aspect-square mb-2 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                          <div className="aspect-square mb-3 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden">
                             {material.url ? (
                               <img 
                                 src={material.url} 
@@ -694,14 +698,18 @@ export default function MateriaisConstrutorasPage() {
                                   if (nextElement) nextElement.style.display = 'flex';
                                 }}
                               />
-                            ) : null}
-                            <div className="hidden items-center justify-center text-gray-400">
-                              <ImageIcon className="h-8 w-8" />
-                            </div>
+                            ) : (
+                              <div className="flex items-center justify-center text-gray-400">
+                                <ImageIcon className="h-12 w-12" />
+                              </div>
+                            )}
                           </div>
-                          <div className="text-center">
+                          <div className="space-y-2">
+                            <h4 className="font-semibold text-[#2E2F38] dark:text-white text-sm truncate">
+                              {material.nome}
+                            </h4>
                             {material.tamanho && (
-                              <p className="text-xs text-[#6B6F76] dark:text-gray-300 mb-1">
+                              <p className="text-xs text-[#6B6F76] dark:text-gray-300">
                                 {formatFileSize(material.tamanho)}
                               </p>
                             )}
@@ -709,10 +717,13 @@ export default function MateriaisConstrutorasPage() {
                               <button
                                 onClick={() => handleDownload(material)}
                                 disabled={downloadingId === material.id}
-                                className="w-full mt-2 px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors font-semibold"
+                                className="w-full px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] disabled:cursor-not-allowed text-white rounded-lg transition-colors font-semibold text-sm"
                               >
                                 {downloadingId === material.id ? (
-                                  <span className="flex items-center gap-2"><SpinnerIcon /> Baixando...</span>
+                                  <span className="flex items-center justify-center gap-2">
+                                    <SpinnerIcon /> 
+                                    Baixando...
+                                  </span>
                                 ) : 'Download'}
                               </button>
                             )}
