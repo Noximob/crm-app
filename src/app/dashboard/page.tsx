@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, getDoc, Timestamp, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, getDoc, Timestamp, orderBy, limit, deleteDoc, setDoc, doc } from 'firebase/firestore';
 import Link from 'next/link';
 
 // Ícones
@@ -337,113 +337,88 @@ const MetasCard = ({ meta, nomeImobiliaria }: { meta: any, nomeImobiliaria: stri
 
 export default function DashboardPage() {
   const { currentUser, userData } = useAuth();
-  const [leads, setLeads] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [performanceData, setPerformanceData] = useState<number[]>([]);
   const [indicadoresExternos, setIndicadoresExternos] = useState<any>(null);
   const [indicadoresExternosAnterior, setIndicadoresExternosAnterior] = useState<any>(null);
-  const [agendaLeads, setAgendaLeads] = useState<Array<any>>([]);
+  const [agendaLeads, setAgendaLeads] = useState<any[]>([]);
   const [agendaLoading, setAgendaLoading] = useState(true);
   const [avisosImportantes, setAvisosImportantes] = useState<any[]>([]);
   const [trendingPosts, setTrendingPosts] = useState<any[]>([]);
   const [trendingLoading, setTrendingLoading] = useState(true);
   const [meta, setMeta] = useState<any>(null);
-  const [nomeImobiliaria, setNomeImobiliaria] = useState<string>('');
+  const [nomeImobiliaria, setNomeImobiliaria] = useState('Imobiliária');
+  
+  // Estados para interatividade do Top Trending
+  const [selectedPost, setSelectedPost] = useState<any>(null);
+  const [showPostModal, setShowPostModal] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [isLiking, setIsLiking] = useState<string | null>(null);
+  const [isReposting, setIsReposting] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (currentUser) {
-      const leadsRef = collection(db, 'leads');
-      const q = query(leadsRef, where("userId", "==", currentUser.uid));
-      
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const leadsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setLeads(leadsData);
-        setLoading(false);
-      });
-
-      return () => unsubscribe();
-    }
-  }, [currentUser]);
-
+  // Atualizar hora a cada minuto
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 1000);
-
+    }, 60000);
     return () => clearInterval(timer);
   }, []);
 
-  // Gerar dados dinâmicos para o gráfico de performance
-  useEffect(() => {
-    const generatePerformanceData = () => {
-      const data = [];
-      for (let i = 0; i < 7; i++) {
-        data.push(Math.floor(Math.random() * 80) + 20); // Valores entre 20 e 100
-      }
-      setPerformanceData(data);
-    };
-
-    generatePerformanceData();
-    const interval = setInterval(generatePerformanceData, 30000); // Atualiza a cada 30 segundos
-
-    return () => clearInterval(interval);
-  }, []);
-
+  // Buscar indicadores econômicos
   useEffect(() => {
     const fetchIndicadores = async () => {
-      const now = new Date();
-      const docIdAtual = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-      const docIdAnterior = `${now.getMonth() === 0 ? now.getFullYear()-1 : now.getFullYear()}-${String(now.getMonth() === 0 ? 12 : now.getMonth()).padStart(2,'0')}`;
-      const refAtual = firestoreDoc(db, 'indicadoresExternos', docIdAtual);
-      const refAnterior = firestoreDoc(db, 'indicadoresExternos', docIdAnterior);
-      const snapAtual = await getDoc(refAtual);
-      const snapAnterior = await getDoc(refAnterior);
-      if (snapAtual.exists()) {
-        setIndicadoresExternos(snapAtual.data());
-      } else {
-        setIndicadoresExternos(null);
-      }
-      if (snapAnterior.exists()) {
-        setIndicadoresExternosAnterior(snapAnterior.data());
-      } else {
-        setIndicadoresExternosAnterior(null);
+      try {
+        const response = await fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.189/dados/ultimos/2?formato=json');
+        const data = await response.json();
+        if (data && data.length >= 2) {
+          setIndicadoresExternosAnterior({ selic: data[1].valor });
+          setIndicadoresExternos({ selic: data[0].valor });
+        }
+      } catch (error) {
+        console.error('Erro ao buscar indicadores:', error);
       }
     };
     fetchIndicadores();
   }, []);
 
+  // Buscar agenda do dia
   useEffect(() => {
     const fetchAgenda = async () => {
-      if (!currentUser) return;
+      if (!userData?.imobiliariaId) return;
       setAgendaLoading(true);
       try {
         const leadsRef = collection(db, 'leads');
-        const leadsQuery = query(leadsRef, where('userId', '==', currentUser.uid));
-        const leadsSnapshot = await getDocs(leadsQuery);
-        const allLeads = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const leadsWithTasksPromises = allLeads.map(async (lead) => {
-          const tasksCol = collection(db, 'leads', lead.id, 'tarefas');
-          const q = query(tasksCol, where('status', '==', 'pendente'));
-          const tasksSnapshot = await getDocs(q);
-          const tasks = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
-          const taskStatus = getTaskStatusInfo(tasks);
-          return { ...lead, taskStatus, tasks };
+        const q = query(
+          leadsRef, 
+          where('userId', '==', currentUser?.uid),
+          where('proximaAcao', '!=', null)
+        );
+        const snapshot = await getDocs(q);
+        const leads = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Filtrar leads com tarefas para hoje
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        const amanha = new Date(hoje);
+        amanha.setDate(amanha.getDate() + 1);
+        
+        const leadsComTarefas = leads.filter((lead: any) => {
+          if (!lead.proximaAcao) return false;
+          const dataTarefa = lead.proximaAcao.toDate();
+          return dataTarefa >= hoje && dataTarefa < amanha;
         });
-        const settledLeads = await Promise.all(leadsWithTasksPromises);
-        // Filtra para não mostrar tarefas futuras
-        const leadsToShow = settledLeads.filter(lead => lead.taskStatus !== 'Tarefa Futura');
-        leadsToShow.sort((a, b) => TAREFA_STATUS_ORDER.indexOf(a.taskStatus) - TAREFA_STATUS_ORDER.indexOf(b.taskStatus));
-        setAgendaLeads(leadsToShow.slice(0, 3));
+        
+        setAgendaLeads(leadsComTarefas);
       } catch (error) {
+        console.error('Erro ao buscar agenda:', error);
         setAgendaLeads([]);
       } finally {
         setAgendaLoading(false);
       }
     };
     fetchAgenda();
-  }, [currentUser]);
+  }, [currentUser, userData]);
 
+  // Buscar avisos importantes
   useEffect(() => {
     const fetchAvisos = async () => {
       if (!userData?.imobiliariaId) return;
@@ -470,11 +445,17 @@ export default function DashboardPage() {
             const commentsSnapshot = await getDocs(collection(db, 'comunidadePosts', post.id, 'comments'));
             const repostsSnapshot = await getDocs(collection(db, 'comunidadePosts', post.id, 'reposts'));
             
+            // Verificar se o usuário atual já curtiu o post
+            const userLikeSnapshot = await getDocs(
+              query(collection(db, 'comunidadePosts', post.id, 'likes'), where('userId', '==', currentUser?.uid))
+            );
+            
             return {
               ...post,
               commentsCount: commentsSnapshot.size,
               repostsCount: repostsSnapshot.size,
-              totalEngagement: (post.likes || 0) + commentsSnapshot.size + repostsSnapshot.size
+              totalEngagement: (post.likes || 0) + commentsSnapshot.size + repostsSnapshot.size,
+              userLiked: userLikeSnapshot.size > 0
             };
           })
         );
@@ -490,7 +471,101 @@ export default function DashboardPage() {
       }
     };
     fetchTrendingPosts();
-  }, [userData]);
+  }, [userData, currentUser]);
+
+  // Funções para interatividade
+  const handleLike = async (postId: string) => {
+    if (!currentUser) return;
+    
+    setIsLiking(postId);
+    try {
+      const likeRef = doc(db, 'comunidadePosts', postId, 'likes', currentUser.uid);
+      const likeDoc = await getDoc(likeRef);
+      
+      if (likeDoc.exists()) {
+        // Remover like
+        await deleteDoc(likeRef);
+        setTrendingPosts(prev => prev.map(post => 
+          post.id === postId 
+            ? { ...post, likes: (post.likes || 1) - 1, userLiked: false }
+            : post
+        ));
+      } else {
+        // Adicionar like
+        await setDoc(likeRef, { userId: currentUser.uid, timestamp: new Date() });
+        setTrendingPosts(prev => prev.map(post => 
+          post.id === postId 
+            ? { ...post, likes: (post.likes || 0) + 1, userLiked: true }
+            : post
+        ));
+      }
+    } catch (error) {
+      console.error('Erro ao curtir post:', error);
+    } finally {
+      setIsLiking(null);
+    }
+  };
+
+  const handleRepost = async (postId: string) => {
+    if (!currentUser) return;
+    
+    setIsReposting(postId);
+    try {
+      const repostRef = doc(db, 'comunidadePosts', postId, 'reposts', currentUser.uid);
+      const repostDoc = await getDoc(repostRef);
+      
+      if (repostDoc.exists()) {
+        // Remover repost
+        await deleteDoc(repostRef);
+        setTrendingPosts(prev => prev.map(post => 
+          post.id === postId 
+            ? { ...post, repostsCount: (post.repostsCount || 1) - 1 }
+            : post
+        ));
+      } else {
+        // Adicionar repost
+        await setDoc(repostRef, { userId: currentUser.uid, timestamp: new Date() });
+        setTrendingPosts(prev => prev.map(post => 
+          post.id === postId 
+            ? { ...post, repostsCount: (post.repostsCount || 0) + 1 }
+            : post
+        ));
+      }
+    } catch (error) {
+      console.error('Erro ao repostar:', error);
+    } finally {
+      setIsReposting(null);
+    }
+  };
+
+  const handleComment = async (postId: string) => {
+    if (!currentUser || !commentText.trim()) return;
+    
+    try {
+      const commentRef = doc(collection(db, 'comunidadePosts', postId, 'comments'));
+      await setDoc(commentRef, {
+        userId: currentUser.uid,
+        userName: currentUser.email?.split('@')[0] || 'Usuário',
+        text: commentText.trim(),
+        timestamp: new Date()
+      });
+      
+      setTrendingPosts(prev => prev.map(post => 
+        post.id === postId 
+          ? { ...post, commentsCount: (post.commentsCount || 0) + 1 }
+          : post
+      ));
+      
+      setCommentText('');
+    } catch (error) {
+      console.error('Erro ao comentar:', error);
+    }
+  };
+
+  const openPostModal = (post: any) => {
+    setSelectedPost(post);
+    setShowPostModal(true);
+  };
 
   // Buscar dados da meta e nome da imobiliária
   useEffect(() => {
@@ -680,10 +755,11 @@ export default function DashboardPage() {
           ) : (
           <div className="flex flex-col gap-4">
             {trendingPosts.map((post) => (
-              <div key={post.id} className="flex items-start gap-3">
+              <div key={post.id} className="bg-white/50 dark:bg-[#23283A]/50 rounded-xl p-4 hover:bg-white/70 dark:hover:bg-[#23283A]/70 transition-all duration-200 cursor-pointer" onClick={() => openPostModal(post)}>
+                <div className="flex items-start gap-3 mb-3">
                   <img src={post.avatar} alt={post.nome} className="w-10 h-10 rounded-full object-cover" />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
                       <span className="font-bold text-[#2E2F38] dark:text-white text-sm">{post.nome}</span>
                       <span className="text-xs text-[#6B6F76] dark:text-gray-300">
                         {post.createdAt?.toDate ? 
@@ -695,12 +771,59 @@ export default function DashboardPage() {
                           }) : ''
                         }
                       </span>
-                  </div>
+                    </div>
                     <div className="text-xs text-[#2E2F38] dark:text-white truncate max-w-[180px]">{post.texto}</div>
-                  <div className="flex gap-3 mt-1 text-xs text-[#6B6F76] dark:text-gray-300">
-                      <span>🔁 {post.repostsCount || 0}</span>
-                      <span>❤️ {post.likes || 0}</span>
-                      <span>💬 {post.commentsCount || 0}</span>
+                  </div>
+                </div>
+                
+                {/* Botões interativos */}
+                <div className="flex items-center justify-between pt-2 border-t border-[#E8E9F1] dark:border-[#23283A]">
+                  <div className="flex items-center gap-4">
+                    {/* Botão Curtir */}
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleLike(post.id); }}
+                      disabled={isLiking === post.id}
+                      className={`flex items-center gap-1 text-xs transition-colors ${
+                        post.userLiked 
+                          ? 'text-red-500' 
+                          : 'text-[#6B6F76] dark:text-gray-300 hover:text-red-500'
+                      }`}
+                    >
+                      {isLiking === post.id ? (
+                        <div className="w-3 h-3 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <span>{post.userLiked ? '❤️' : '🤍'}</span>
+                      )}
+                      <span>{post.likes || 0}</span>
+                    </button>
+                    
+                    {/* Botão Comentar */}
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); openPostModal(post); }}
+                      className="flex items-center gap-1 text-xs text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] transition-colors"
+                    >
+                      <span>💬</span>
+                      <span>{post.commentsCount || 0}</span>
+                    </button>
+                    
+                    {/* Botão Repostar */}
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleRepost(post.id); }}
+                      disabled={isReposting === post.id}
+                      className="flex items-center gap-1 text-xs text-[#6B6F76] dark:text-gray-300 hover:text-green-500 transition-colors"
+                    >
+                      {isReposting === post.id ? (
+                        <div className="w-3 h-3 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <span>🔁</span>
+                      )}
+                      <span>{post.repostsCount || 0}</span>
+                    </button>
+                  </div>
+                  
+                  {/* Indicador de engajamento */}
+                  <div className="text-xs text-[#6B6F76] dark:text-gray-400">
+                    {post.totalEngagement} interações
                   </div>
                 </div>
               </div>
@@ -768,6 +891,106 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal do Post */}
+      {showPostModal && selectedPost && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-lg w-full max-w-2xl p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto">
+            <button 
+              className="absolute top-4 right-4 text-2xl text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] transition-colors" 
+              onClick={() => setShowPostModal(false)}
+            >
+              ×
+            </button>
+            
+            {/* Header do Post */}
+            <div className="flex items-start gap-4 mb-6">
+              <img src={selectedPost.avatar} alt={selectedPost.nome} className="w-12 h-12 rounded-full object-cover" />
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-bold text-[#2E2F38] dark:text-white">{selectedPost.nome}</span>
+                  <span className="text-xs text-[#6B6F76] dark:text-gray-300">
+                    {selectedPost.createdAt?.toDate ? 
+                      selectedPost.createdAt.toDate().toLocaleString('pt-BR', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric',
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      }) : ''
+                    }
+                  </span>
+                </div>
+                <div className="text-sm text-[#2E2F38] dark:text-white leading-relaxed">{selectedPost.texto}</div>
+              </div>
+            </div>
+
+            {/* Botões de Interação */}
+            <div className="flex items-center gap-6 mb-6 pb-4 border-b border-[#E8E9F1] dark:border-[#23283A]">
+              <button 
+                onClick={() => handleLike(selectedPost.id)}
+                disabled={isLiking === selectedPost.id}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                  selectedPost.userLiked 
+                    ? 'bg-red-500/10 text-red-500' 
+                    : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-red-500/10 hover:text-red-500'
+                }`}
+              >
+                {isLiking === selectedPost.id ? (
+                  <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <span className="text-lg">{selectedPost.userLiked ? '❤️' : '🤍'}</span>
+                )}
+                <span className="font-medium">{selectedPost.likes || 0}</span>
+              </button>
+              
+              <button 
+                onClick={() => handleRepost(selectedPost.id)}
+                disabled={isReposting === selectedPost.id}
+                className="flex items-center gap-2 px-4 py-2 bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 rounded-lg hover:bg-green-500/10 hover:text-green-500 transition-colors"
+              >
+                {isReposting === selectedPost.id ? (
+                  <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <span className="text-lg">🔁</span>
+                )}
+                <span className="font-medium">{selectedPost.repostsCount || 0}</span>
+              </button>
+            </div>
+
+            {/* Seção de Comentários */}
+            <div>
+              <h3 className="font-semibold text-[#2E2F38] dark:text-white mb-4">Comentários ({selectedPost.commentsCount || 0})</h3>
+              
+              {/* Input para novo comentário */}
+              <div className="flex gap-3 mb-4">
+                <input
+                  type="text"
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Adicione um comentário..."
+                  className="flex-1 px-4 py-2 bg-[#F5F6FA] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
+                  onKeyPress={(e) => e.key === 'Enter' && handleComment(selectedPost.id)}
+                />
+                <button
+                  onClick={() => handleComment(selectedPost.id)}
+                  disabled={!commentText.trim()}
+                  className="px-6 py-2 bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+                >
+                  Comentar
+                </button>
+              </div>
+
+              {/* Lista de comentários (mock - você pode implementar a busca real) */}
+              <div className="space-y-3 max-h-60 overflow-y-auto">
+                <div className="text-center text-[#6B6F76] dark:text-gray-300 text-sm py-4">
+                  Comentários aparecerão aqui quando implementados
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

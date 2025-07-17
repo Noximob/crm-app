@@ -34,6 +34,7 @@ const adminCategories = [
     items: [
       { title: 'Gestão de Corretores', icon: '🧑‍💼', description: 'Administre leads dos corretores', href: '/dashboard/admin/gestao-corretores' },
       { title: 'Importar Leads', icon: '⬆️', description: 'Importe leads em massa', href: '/dashboard/admin/importar-leads' },
+      { title: 'Avisos', icon: '📢', description: 'Avisos para corretores', href: '/dashboard/admin/avisos-importantes' },
     ]
   },
   {
@@ -66,7 +67,6 @@ const adminCategories = [
     items: [
       { title: 'Aprovação de Usuários', icon: '✅', description: 'Aprove novos cadastros', href: '#', special: true },
       { title: 'Site', icon: '🌐', description: 'Site institucional', href: '/dashboard/admin/site' },
-      { title: 'Avisos', icon: '📢', description: 'Avisos para corretores', href: '/dashboard/admin/avisos-importantes' },
     ]
   }
 ];
