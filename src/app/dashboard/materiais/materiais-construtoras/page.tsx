@@ -517,18 +517,18 @@ export default function MateriaisConstrutorasPage() {
                       {getGroupedMateriais().links.map(material => (
                         <div
                           key={material.id}
-                          className="bg-white dark:bg-[#23283A] rounded-xl p-4 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105"
+                          className="bg-white dark:bg-[#23283A] rounded-xl p-3 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105"
                         >
-                          <div className="flex items-start gap-3 mb-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center flex-shrink-0">
-                              <LinkIcon className="h-5 w-5 text-white" />
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-8 h-8 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center flex-shrink-0">
+                              <LinkIcon className="h-4 w-4 text-white" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <h4 className="font-semibold text-[#2E2F38] dark:text-white text-sm mb-1">
                                 {material.nome}
                               </h4>
                               {material.descricao && (
-                                <p className="text-xs text-[#6B6F76] dark:text-gray-300 mb-2 line-clamp-2">
+                                <p className="text-xs text-[#6B6F76] dark:text-gray-300 line-clamp-1">
                                   {material.descricao}
                                 </p>
                               )}
@@ -540,7 +540,7 @@ export default function MateriaisConstrutorasPage() {
                                 href={material.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex-1 px-3 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded-lg transition-colors font-semibold text-center"
+                                className="flex-1 px-3 py-1.5 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded-lg transition-colors font-semibold text-center"
                               >
                                 Acessar Link
                               </a>
@@ -563,13 +563,13 @@ export default function MateriaisConstrutorasPage() {
                       {getGroupedMateriais().materiais_pdf.map(material => (
                         <div
                           key={material.id}
-                          className="bg-white dark:bg-[#23283A] rounded-xl p-4 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105"
+                          className="bg-white dark:bg-[#23283A] rounded-xl p-3 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105"
                         >
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center flex-shrink-0">
-                              <FileIcon className="h-5 w-5 text-white" />
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-8 h-8 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center flex-shrink-0">
+                              <FileIcon className="h-4 w-4 text-white" />
                             </div>
-              <div className="flex-1">
+                            <div className="flex-1 min-w-0">
                               <h4 className="font-semibold text-[#2E2F38] dark:text-white text-sm truncate">
                                 {material.nome}
                               </h4>
@@ -585,7 +585,7 @@ export default function MateriaisConstrutorasPage() {
                               <button
                                 onClick={() => handleDownload(material)}
                                 disabled={downloadingId === material.id}
-                                className="flex-1 px-3 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded-lg transition-colors font-semibold"
+                                className="flex-1 px-3 py-1.5 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded-lg transition-colors font-semibold"
                               >
                                 {downloadingId === material.id ? (
                                   <span className="flex items-center gap-2"><SpinnerIcon /> Baixando...</span>
@@ -606,28 +606,28 @@ export default function MateriaisConstrutorasPage() {
                       <VideoIcon className="h-5 w-5 text-[#3478F6]" />
                       Vídeos
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                       {getGroupedMateriais().videos.map(material => (
                         <div
                           key={material.id}
-                          className="bg-white dark:bg-[#23283A] rounded-xl p-4 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105"
+                          className="bg-white dark:bg-[#23283A] rounded-xl p-3 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105"
                         >
-                          <div className="aspect-video mb-3 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center relative group overflow-hidden">
+                          <div className="aspect-square mb-2 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center relative group">
                             {material.url ? (
                               <>
-                                <video 
-                                  src={material.url} 
+                                <video
+                                  src={material.url}
                                   className="w-full h-full object-cover rounded-lg"
                                   preload="metadata"
-                                  onLoadedData={(e) => {
+                                  onLoadedData={e => {
                                     const video = e.currentTarget;
-                                    video.currentTime = 0.1; // Pega o primeiro frame
+                                    video.currentTime = 0.1;
                                   }}
-                                  onError={(e) => {
+                                  onError={e => {
                                     const target = e.currentTarget as HTMLElement;
-                                    target.style.display = 'none';
+                                    target.style.display = "none";
                                     const nextElement = target.nextElementSibling as HTMLElement;
-                                    if (nextElement) nextElement.style.display = 'flex';
+                                    if (nextElement) nextElement.style.display = "flex";
                                   }}
                                 />
                                 <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -636,16 +636,15 @@ export default function MateriaisConstrutorasPage() {
                                   </div>
                                 </div>
                               </>
-                            ) : (
-                              <div className="flex items-center justify-center text-gray-400">
-                                <VideoIcon className="h-12 w-12" />
-                              </div>
-                            )}
+                            ) : null}
+                            <div className="hidden items-center justify-center text-gray-400">
+                              <VideoIcon className="h-8 w-8" />
+                            </div>
                           </div>
-                          <div className="space-y-2">
-                            <h4 className="font-semibold text-[#2E2F38] dark:text-white text-sm truncate">
+                          <div className="text-center">
+                            <p className="text-xs text-[#2E2F38] dark:text-white truncate mb-1">
                               {material.nome}
-                            </h4>
+                            </p>
                             {material.tamanho && (
                               <p className="text-xs text-[#6B6F76] dark:text-gray-300">
                                 {formatFileSize(material.tamanho)}
@@ -655,13 +654,10 @@ export default function MateriaisConstrutorasPage() {
                               <button
                                 onClick={() => handleDownload(material)}
                                 disabled={downloadingId === material.id}
-                                className="w-full px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] disabled:cursor-not-allowed text-white rounded-lg transition-colors font-semibold text-sm"
+                                className="w-full mt-2 px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors font-semibold"
                               >
                                 {downloadingId === material.id ? (
-                                  <span className="flex items-center justify-center gap-2">
-                                    <SpinnerIcon /> 
-                                    Baixando...
-                                  </span>
+                                  <span className="flex items-center gap-2"><SpinnerIcon /> Baixando...</span>
                                 ) : 'Download'}
                               </button>
                             )}
@@ -679,37 +675,33 @@ export default function MateriaisConstrutorasPage() {
                       <ImageIcon className="h-5 w-5 text-[#3478F6]" />
                       Fotos Avulsas
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                       {getGroupedMateriais().fotos.map(material => (
                         <div
                           key={material.id}
-                          className="bg-white dark:bg-[#23283A] rounded-xl p-4 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105"
+                          className="bg-white dark:bg-[#23283A] rounded-xl p-3 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105"
                         >
-                          <div className="aspect-square mb-3 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden">
+                          <div className="aspect-square mb-2 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
                             {material.url ? (
-                              <img 
-                                src={material.url} 
+                              <img
+                                src={material.url}
                                 alt={material.nome}
                                 className="w-full h-full object-cover rounded-lg"
-                                onError={(e) => {
+                                onError={e => {
                                   const target = e.currentTarget as HTMLElement;
-                                  target.style.display = 'none';
+                                  target.style.display = "none";
                                   const nextElement = target.nextElementSibling as HTMLElement;
-                                  if (nextElement) nextElement.style.display = 'flex';
+                                  if (nextElement) nextElement.style.display = "flex";
                                 }}
                               />
-                            ) : (
-                              <div className="flex items-center justify-center text-gray-400">
-                                <ImageIcon className="h-12 w-12" />
-                              </div>
-                            )}
+                            ) : null}
+                            <div className="hidden items-center justify-center text-gray-400">
+                              <ImageIcon className="h-8 w-8" />
+                            </div>
                           </div>
-                          <div className="space-y-2">
-                            <h4 className="font-semibold text-[#2E2F38] dark:text-white text-sm truncate">
-                              {material.nome}
-                            </h4>
+                          <div className="text-center">
                             {material.tamanho && (
-                              <p className="text-xs text-[#6B6F76] dark:text-gray-300">
+                              <p className="text-xs text-[#6B6F76] dark:text-gray-300 mb-1">
                                 {formatFileSize(material.tamanho)}
                               </p>
                             )}
@@ -717,13 +709,10 @@ export default function MateriaisConstrutorasPage() {
                               <button
                                 onClick={() => handleDownload(material)}
                                 disabled={downloadingId === material.id}
-                                className="w-full px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] disabled:cursor-not-allowed text-white rounded-lg transition-colors font-semibold text-sm"
+                                className="w-full mt-2 px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors font-semibold"
                               >
                                 {downloadingId === material.id ? (
-                                  <span className="flex items-center justify-center gap-2">
-                                    <SpinnerIcon /> 
-                                    Baixando...
-                                  </span>
+                                  <span className="flex items-center gap-2"><SpinnerIcon /> Baixando...</span>
                                 ) : 'Download'}
                               </button>
                             )}
