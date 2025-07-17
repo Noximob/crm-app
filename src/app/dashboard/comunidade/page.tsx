@@ -73,6 +73,8 @@ export default function ComunidadePage() {
   const [fileType, setFileType] = useState<string | null>(null);
   const [gifFile, setGifFile] = useState<File | null>(null);
   const [gifPreview, setGifPreview] = useState<string | null>(null);
+  const [youtubeLink, setYoutubeLink] = useState("");
+  const [youtubePreview, setYoutubePreview] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const gifInputRef = useRef<HTMLInputElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
@@ -94,6 +96,46 @@ export default function ComunidadePage() {
   const [showEmojiRepost, setShowEmojiRepost] = useState(false);
   const emojiRepostRef = useRef<HTMLDivElement>(null);
   const [originalAuthors, setOriginalAuthors] = useState<Record<string, { nome: string, handle: string }>>({});
+
+  // Função para extrair ID do vídeo do YouTube
+  const getYouTubeVideoId = (url: string) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : undefined;
+  };
+
+  // Função para gerar URL de embed do YouTube
+  const getYouTubeEmbedUrl = (url: string) => {
+    const videoId = getYouTubeVideoId(url);
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : undefined;
+  };
+
+  // Função para gerar thumbnail do YouTube
+  const getYouTubeThumbnail = (url: string) => {
+    const videoId = getYouTubeVideoId(url);
+    return videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : undefined;
+  };
+
+  // Função para validar e processar link do YouTube
+  const handleYoutubeLinkChange = (link: string) => {
+    setYoutubeLink(link);
+    
+    if (link.trim()) {
+      const videoId = getYouTubeVideoId(link);
+      if (videoId) {
+        setYoutubePreview({
+          videoId,
+          embedUrl: getYouTubeEmbedUrl(link),
+          thumbnail: getYouTubeThumbnail(link),
+          url: link
+        });
+      } else {
+        setYoutubePreview(null);
+      }
+    } else {
+      setYoutubePreview(null);
+    }
+  };
 
   useEffect(() => {
     const q = query(collection(db, "comunidadePosts"), orderBy("createdAt", "desc"));
@@ -234,7 +276,6 @@ export default function ComunidadePage() {
   };
 
   const handlePostar = async () => {
-    if (!novoPost.trim() && !file) return;
     if (!currentUser) return;
     setLoading(true);
     let fileUrl = null;
@@ -262,11 +303,19 @@ export default function ComunidadePage() {
       comments: [],
       file: fileUrl,
       fileMeta,
+      youtubeLink: youtubePreview ? youtubePreview.url : null,
+      youtubeData: youtubePreview ? {
+        videoId: youtubePreview.videoId,
+        embedUrl: youtubePreview.embedUrl,
+        thumbnail: youtubePreview.thumbnail
+      } : null,
     });
     setNovoPost("");
     setFile(null);
     setFilePreview(null);
     setFileType(null);
+    setYoutubeLink("");
+    setYoutubePreview(null);
     setLoading(false);
     setShowEmoji(false);
   };
@@ -340,6 +389,8 @@ export default function ComunidadePage() {
       comments: [],
       file: repostTarget.file,
       fileMeta: repostTarget.fileMeta,
+      youtubeLink: repostTarget.youtubeLink || null,
+      youtubeData: repostTarget.youtubeData || null,
       repostOf: repostTarget.id,
       repostComment: withComment ? repostComment : null,
     });
@@ -367,6 +418,50 @@ export default function ComunidadePage() {
               onChange={(e) => setNovoPost(e.target.value)}
               disabled={loading}
             />
+            
+            {/* Campo para link do YouTube */}
+            <input
+              type="text"
+              className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm"
+              placeholder="🔗 Cole aqui o link do YouTube (opcional)"
+              value={youtubeLink}
+              onChange={(e) => handleYoutubeLinkChange(e.target.value)}
+              disabled={loading}
+            />
+            
+            {/* Preview do vídeo do YouTube */}
+            {youtubePreview && (
+              <div className="relative mt-2">
+                <div className="bg-white dark:bg-[#23283A] rounded-xl overflow-hidden border border-[#E8E9F1] dark:border-[#23283A]">
+                  <div className="relative">
+                    <img 
+                      src={youtubePreview.thumbnail} 
+                      alt="YouTube thumbnail" 
+                      className="w-full h-32 object-cover"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center">
+                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-3">
+                    <p className="text-sm text-[#2E2F38] dark:text-white font-medium">Vídeo do YouTube</p>
+                    <p className="text-xs text-[#6B6F76] dark:text-gray-300">Clique para assistir</p>
+                  </div>
+                </div>
+                <button
+                  className="absolute top-2 right-2 bg-white/80 dark:bg-[#23283A]/80 rounded-full p-1 text-[#F45B69] hover:bg-[#F45B69]/10"
+                  onClick={() => { setYoutubeLink(""); setYoutubePreview(null); }}
+                  type="button"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            
             {filePreview && (
               <div className="flex gap-2 mt-2">
                 {fileType && fileType.startsWith('image/') && (
@@ -446,7 +541,7 @@ export default function ComunidadePage() {
               <button
                 className="px-5 py-2 rounded-lg bg-[#3478F6] text-white font-bold shadow-soft hover:bg-[#255FD1] transition-colors disabled:opacity-60"
                 onClick={handlePostar}
-                disabled={loading || (!novoPost.trim() && !file)}
+                disabled={loading || (!novoPost.trim() && !file && !youtubePreview)}
               >
                 {loading ? "Postando..." : "Postar"}
               </button>
@@ -483,6 +578,41 @@ export default function ComunidadePage() {
                     )}
                   </div>
                   <div className="text-[#2E2F38] dark:text-white text-base whitespace-pre-line mb-2">{post.texto}</div>
+                  
+                  {/* Vídeo do YouTube */}
+                  {post.youtubeData && (
+                    <div className="mt-2">
+                      <div className="bg-white dark:bg-[#23283A] rounded-xl overflow-hidden border border-[#E8E9F1] dark:border-[#23283A] cursor-pointer hover:shadow-lg transition-shadow"
+                           onClick={() => window.open(post.youtubeLink, '_blank')}>
+                        <div className="relative">
+                          <img 
+                            src={post.youtubeData.thumbnail} 
+                            alt="YouTube thumbnail" 
+                            className="w-full h-48 object-cover"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors">
+                              <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
+                              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                              </svg>
+                            </div>
+                            <p className="text-sm text-[#2E2F38] dark:text-white font-medium">YouTube</p>
+                          </div>
+                          <p className="text-xs text-[#6B6F76] dark:text-gray-300">Clique para assistir no YouTube</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   {(post.file && post.fileMeta) && (
                     <div className="flex gap-2 mt-2">
                       {post.fileMeta.type.startsWith('image/') && (
