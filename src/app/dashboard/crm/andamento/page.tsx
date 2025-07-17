@@ -131,8 +131,8 @@ export default function AndamentoPage() {
     };
 
     const findContainer = (itemId: string | number) => {
-        for (const stage in leads) {
-            if (leads[stage].some(lead => lead.id === itemId)) {
+        for (const stage of PIPELINE_STAGES) {
+            if (leads[stage] && leads[stage].some(lead => lead.id === itemId)) {
                 return stage;
             }
         }

@@ -34,7 +34,13 @@ export default function KanbanColumn({ id, title, leads, isOver }: KanbanColumnP
             {leads.length}
           </span>
         </div>
-        <div className="flex-grow min-h-[100px] p-3 space-y-3 overflow-y-auto flex flex-col items-center bg-[#F8F9FB] dark:bg-[#181C23] rounded-b-2xl">
+        <div className="flex-grow min-h-[100px] p-3 space-y-3 overflow-y-auto flex flex-col items-center bg-[#F8F9FB] dark:bg-[#181C23] rounded-b-2xl relative">
+          {/* Área de drop vazia para quando não há leads */}
+          {leads.length === 0 && (
+            <div className="w-full h-20 border-2 border-dashed border-[#A3C8F7] dark:border-[#3478F6]/40 rounded-lg flex items-center justify-center">
+              <span className="text-xs text-[#6B6F76] dark:text-gray-400">Solte aqui</span>
+            </div>
+          )}
           {leads.map(lead => (
             <LeadCard key={lead.id} lead={lead} />
           ))}
