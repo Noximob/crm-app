@@ -86,6 +86,9 @@ export default function AndamentoPage() {
         if (overIdStr.startsWith('column-')) {
             // Drop direto na coluna
             targetColumn = overIdStr.replace('column-', '');
+        } else if (overIdStr.startsWith('empty-')) {
+            // Drop na área vazia da coluna
+            targetColumn = overIdStr.replace('empty-', '');
         } else {
             // Drop em cima de um card - encontrar a coluna desse card
             targetColumn = findContainer(overIdStr);
