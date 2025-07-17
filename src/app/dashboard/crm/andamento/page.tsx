@@ -36,16 +36,19 @@ export default function AndamentoPage() {
         const q = query(leadsRef, where("userId", "==", currentUser.uid));
         
         const unsubscribe = onSnapshot(q, (snapshot) => {
+            console.log('onSnapshot triggered, docs count:', snapshot.docs.length);
             const leadsByStage = PIPELINE_STAGES.reduce<LeadsByStage>((acc, stage) => ({ ...acc, [stage]: [] }), {});
             snapshot.forEach((doc) => {
                 const lead = { id: doc.id, ...doc.data() } as Lead;
                 const stage = lead.etapa || PIPELINE_STAGES[0]; 
+                console.log('Lead:', lead.id, 'Stage:', stage);
                 if (leadsByStage[stage]) {
                     leadsByStage[stage].push(lead);
                 } else {
                     leadsByStage[PIPELINE_STAGES[0]].push(lead);
                 }
             });
+            console.log('Setting leads:', leadsByStage);
             setLeads(leadsByStage);
             setLoading(false);
         });
@@ -68,38 +71,54 @@ export default function AndamentoPage() {
 
     const handleDragEnd = async (event: DragEndEvent) => {
         setActiveLead(null);
+        setOverId(null);
         const { active, over } = event;
-    
+
+        console.log('DragEnd:', { active: active.id, over: over?.id });
+
         if (over && active.id !== over.id) {
             const activeContainer = findContainer(active.id);
             const overContainer = over.id.toString();
 
+            console.log('Containers:', { activeContainer, overContainer });
+
             if (!activeContainer || !overContainer || activeContainer === overContainer) {
+                console.log('Invalid containers, returning');
                 return;
             }
 
+            // Atualizar Firestore primeiro
+            if (currentUser) {
+                const leadRef = doc(db, 'leads', active.id.toString());
+                try {
+                    await updateDoc(leadRef, { etapa: overContainer });
+                    console.log('Firestore updated successfully');
+                } catch (error) {
+                    console.error("Failed to update lead stage: ", error);
+                    // Não atualizar o estado local se o Firestore falhou
+                    return;
+                }
+            }
+
+            // Atualizar estado local
             setLeads((prev) => {
                 const newLeads = { ...prev };
                 const activeItems = newLeads[activeContainer];
                 if (!newLeads[overContainer]) newLeads[overContainer] = [];
                 const overItems = newLeads[overContainer];
-        
+
                 const activeIndex = activeItems.findIndex(item => item.id === active.id);
+                if (activeIndex === -1) {
+                    console.log('Lead not found in active container');
+                    return prev;
+                }
+
                 const [movedItem] = activeItems.splice(activeIndex, 1);
-                
                 overItems.push({ ...movedItem, etapa: overContainer });
-        
+
+                console.log('State updated:', { activeContainer, overContainer, movedItem: movedItem.id });
                 return newLeads;
             });
-
-            if (currentUser) {
-                const leadRef = doc(db, 'leads', active.id.toString());
-                try {
-                    await updateDoc(leadRef, { etapa: overContainer });
-                } catch (error) {
-                    console.error("Failed to update lead stage: ", error);
-                }
-            }
         }
     };
 
