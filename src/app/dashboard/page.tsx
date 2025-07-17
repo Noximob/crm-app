@@ -500,6 +500,12 @@ export default function DashboardPage() {
             ? { ...post, likes: (post.likes || 1) - 1, userLiked: false }
             : post
         ));
+        // Atualizar post selecionado no modal
+        setSelectedPost((prev: any) => prev && prev.id === postId ? {
+          ...prev,
+          likes: (prev.likes || 1) - 1,
+          userLiked: false
+        } : prev);
       } else {
         // Adicionar like
         await setDoc(likeRef, { userId: currentUser.uid, timestamp: new Date() });
@@ -508,6 +514,12 @@ export default function DashboardPage() {
             ? { ...post, likes: (post.likes || 0) + 1, userLiked: true }
             : post
         ));
+        // Atualizar post selecionado no modal
+        setSelectedPost((prev: any) => prev && prev.id === postId ? {
+          ...prev,
+          likes: (prev.likes || 0) + 1,
+          userLiked: true
+        } : prev);
       }
     } catch (error) {
       console.error('Erro ao curtir post:', error);
@@ -532,6 +544,11 @@ export default function DashboardPage() {
             ? { ...post, repostsCount: (post.repostsCount || 1) - 1 }
             : post
         ));
+        // Atualizar post selecionado no modal
+        setSelectedPost((prev: any) => prev && prev.id === postId ? {
+          ...prev,
+          repostsCount: (prev.repostsCount || 1) - 1
+        } : prev);
       } else {
         // Adicionar repost
         await setDoc(repostRef, { userId: currentUser.uid, timestamp: new Date() });
@@ -540,6 +557,11 @@ export default function DashboardPage() {
             ? { ...post, repostsCount: (post.repostsCount || 0) + 1 }
             : post
         ));
+        // Atualizar post selecionado no modal
+        setSelectedPost((prev: any) => prev && prev.id === postId ? {
+          ...prev,
+          repostsCount: (prev.repostsCount || 0) + 1
+        } : prev);
       }
     } catch (error) {
       console.error('Erro ao repostar:', error);
@@ -904,11 +926,7 @@ export default function DashboardPage() {
           <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#FF6B6B] to-[#FF8E8E]" />
           <div className="flex items-center gap-3 mb-4 relative z-10">
             <div className="relative">
-              <svg className="h-8 w-8 text-[#FF6B6B] drop-shadow-lg animate-pulse" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" x2="12" y1="8" y2="12"/>
-                <line x1="12" x2="12.01" y1="16" y2="16"/>
-              </svg>
+              <AlertCircleIcon className="h-8 w-8 text-[#FF6B6B] drop-shadow-lg animate-pulse" />
             </div>
             <span className="font-extrabold text-white text-2xl tracking-tight drop-shadow-lg">Avisos Importantes</span>
             {/* Badge de destaque */}
@@ -989,24 +1007,21 @@ export default function DashboardPage() {
             </div>
 
             {/* Conteúdo do Post */}
-            <div className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl p-6 mb-6">
-              <div className="text-lg text-[#2E2F38] dark:text-white leading-relaxed whitespace-pre-wrap mb-4">
+            <div className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl p-4 mb-4">
+              <div className="text-base text-[#2E2F38] dark:text-white leading-relaxed whitespace-pre-wrap mb-3">
                 {selectedPost.texto}
               </div>
               
               {/* Mídia do Post */}
               {selectedPost.file && selectedPost.fileMeta && (
-                <div className="mt-4">
+                <div className="mt-3">
                   {selectedPost.fileMeta.type.startsWith('image/') && (
                     <div className="relative">
                       <img 
                         src={selectedPost.file} 
                         alt={selectedPost.fileMeta.name} 
-                        className="w-full max-h-96 object-contain rounded-xl border border-[#E8E9F1] dark:border-[#23283A]" 
+                        className="w-full max-h-64 object-contain rounded-lg border border-[#E8E9F1] dark:border-[#23283A]" 
                       />
-                      <div className="text-sm text-[#6B6F76] dark:text-gray-300 mt-2">
-                        {selectedPost.fileMeta.name}
-                      </div>
                     </div>
                   )}
                   
@@ -1015,30 +1030,24 @@ export default function DashboardPage() {
                       <video 
                         src={selectedPost.file} 
                         controls 
-                        className="w-full max-h-96 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] bg-black" 
+                        className="w-full max-h-64 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-black" 
                       />
-                      <div className="text-sm text-[#6B6F76] dark:text-gray-300 mt-2">
-                        {selectedPost.fileMeta.name}
-                      </div>
                     </div>
                   )}
                   
                   {selectedPost.fileMeta.type === 'application/pdf' && (
-                    <div className="flex items-center gap-3 p-4 bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A]">
-                      <span className="text-3xl text-red-500">📄</span>
+                    <div className="flex items-center gap-3 p-3 bg-white dark:bg-[#23283A] rounded-lg border border-[#E8E9F1] dark:border-[#23283A]">
+                      <span className="text-2xl text-red-500">📄</span>
                       <div className="flex-1">
-                        <div className="font-semibold text-[#2E2F38] dark:text-white">
+                        <div className="font-semibold text-[#2E2F38] dark:text-white text-sm">
                           {selectedPost.fileMeta.name}
-                        </div>
-                        <div className="text-sm text-[#6B6F76] dark:text-gray-300">
-                          Documento PDF
                         </div>
                       </div>
                       <a 
                         href={selectedPost.file} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg font-medium transition-colors"
+                        className="px-3 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white rounded text-sm font-medium transition-colors"
                       >
                         Abrir
                       </a>
@@ -1049,8 +1058,8 @@ export default function DashboardPage() {
               
               {/* Indicação de Repost */}
               {selectedPost.repostOf && (
-                <div className="mt-4 p-3 bg-[#3478F6]/10 border border-[#3478F6]/20 rounded-lg">
-                  <div className="flex items-center gap-2 text-[#3478F6] text-sm">
+                <div className="mt-3 p-2 bg-[#3478F6]/10 border border-[#3478F6]/20 rounded-lg">
+                  <div className="flex items-center gap-2 text-[#3478F6] text-xs">
                     <span>🔁</span>
                     <span>Repost</span>
                     {selectedPost.repostComment && (
@@ -1064,104 +1073,104 @@ export default function DashboardPage() {
             </div>
 
             {/* Estatísticas do Post */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="text-center p-4 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
-                <div className="text-2xl font-bold text-[#3478F6]">{selectedPost.likes || 0}</div>
-                <div className="text-sm text-[#6B6F76] dark:text-gray-300">Curtidas</div>
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="text-center p-3 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
+                <div className="text-lg font-bold text-[#3478F6]">{selectedPost.likes || 0}</div>
+                <div className="text-xs text-[#6B6F76] dark:text-gray-300">Curtidas</div>
               </div>
-              <div className="text-center p-4 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
-                <div className="text-2xl font-bold text-[#3478F6]">{selectedPost.commentsCount || 0}</div>
-                <div className="text-sm text-[#6B6F76] dark:text-gray-300">Comentários</div>
+              <div className="text-center p-3 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
+                <div className="text-lg font-bold text-[#3478F6]">{selectedPost.commentsCount || 0}</div>
+                <div className="text-xs text-[#6B6F76] dark:text-gray-300">Comentários</div>
               </div>
-              <div className="text-center p-4 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
-                <div className="text-2xl font-bold text-[#3478F6]">{selectedPost.repostsCount || 0}</div>
-                <div className="text-sm text-[#6B6F76] dark:text-gray-300">Reposts</div>
+              <div className="text-center p-3 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
+                <div className="text-lg font-bold text-[#3478F6]">{selectedPost.repostsCount || 0}</div>
+                <div className="text-xs text-[#6B6F76] dark:text-gray-300">Reposts</div>
               </div>
             </div>
 
             {/* Botões de Interação */}
-            <div className="flex items-center gap-4 mb-6 pb-4 border-b border-[#E8E9F1] dark:border-[#23283A]">
+            <div className="flex items-center gap-3 mb-4 pb-3 border-b border-[#E8E9F1] dark:border-[#23283A]">
               <button 
                 onClick={() => handleLike(selectedPost.id)}
                 disabled={isLiking === selectedPost.id}
-                className={`flex items-center gap-3 px-6 py-3 rounded-lg transition-colors ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                   selectedPost.userLiked 
                     ? 'bg-red-500/10 text-red-500 border border-red-500/20' 
                     : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-red-500/10 hover:text-red-500 border border-[#E8E9F1] dark:border-[#23283A]'
                 }`}
               >
                 {isLiking === selectedPost.id ? (
-                  <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
                 ) : (
-                  <span className="text-xl">{selectedPost.userLiked ? '❤️' : '🤍'}</span>
+                  <span className="text-lg">{selectedPost.userLiked ? '❤️' : '🤍'}</span>
                 )}
-                <span className="font-medium">Curtir</span>
+                <span className="text-sm font-medium">Curtir</span>
               </button>
               
               <button 
                 onClick={() => handleRepost(selectedPost.id)}
                 disabled={isReposting === selectedPost.id}
-                className="flex items-center gap-3 px-6 py-3 bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 rounded-lg hover:bg-green-500/10 hover:text-green-500 transition-colors border border-[#E8E9F1] dark:border-[#23283A]"
+                className="flex items-center gap-2 px-4 py-2 bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 rounded-lg hover:bg-green-500/10 hover:text-green-500 transition-colors border border-[#E8E9F1] dark:border-[#23283A]"
               >
                 {isReposting === selectedPost.id ? (
-                  <div className="w-5 h-5 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
                 ) : (
-                  <span className="text-xl">🔁</span>
+                  <span className="text-lg">🔁</span>
                 )}
-                <span className="font-medium">Repostar</span>
+                <span className="text-sm font-medium">Repostar</span>
               </button>
             </div>
 
             {/* Seção de Comentários */}
             <div>
-              <h3 className="font-semibold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
+              <h3 className="font-semibold text-[#2E2F38] dark:text-white mb-3 flex items-center gap-2">
                 <span>💬</span>
                 Comentários ({selectedPost.commentsCount || 0})
               </h3>
               
               {/* Input para novo comentário */}
-              <div className="flex gap-3 mb-6">
+              <div className="flex gap-2 mb-4">
                 <input
                   type="text"
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
                   placeholder="Adicione um comentário sobre este post..."
-                  className="flex-1 px-4 py-3 bg-[#F5F6FA] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
+                  className="flex-1 px-3 py-2 bg-[#F5F6FA] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-sm"
                   onKeyPress={(e) => e.key === 'Enter' && handleComment(selectedPost.id)}
                 />
                 <button
                   onClick={() => handleComment(selectedPost.id)}
                   disabled={!commentText.trim()}
-                  className="px-6 py-3 bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+                  className="px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors text-sm"
                 >
                   Comentar
                 </button>
               </div>
 
-              {/* Lista de comentários (mock - você pode implementar a busca real) */}
-              <div className="space-y-4 max-h-60 overflow-y-auto">
+              {/* Lista de comentários */}
+              <div className="space-y-3 max-h-48 overflow-y-auto">
                 {commentsLoading ? (
-                  <div className="text-center text-[#6B6F76] dark:text-gray-300 text-sm py-8 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
-                    <div className="text-2xl mb-2">💭</div>
+                  <div className="text-center text-[#6B6F76] dark:text-gray-300 text-sm py-6 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
+                    <div className="text-xl mb-2">💭</div>
                     <div>Carregando comentários...</div>
                   </div>
                 ) : postComments.length === 0 ? (
-                  <div className="text-center text-[#6B6F76] dark:text-gray-300 text-sm py-8 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
-                    <div className="text-2xl mb-2">💭</div>
+                  <div className="text-center text-[#6B6F76] dark:text-gray-300 text-sm py-6 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
+                    <div className="text-xl mb-2">💭</div>
                     <div>Nenhum comentário encontrado para este post.</div>
                     <div className="text-xs mt-1">Seja o primeiro a comentar!</div>
                   </div>
                 ) : (
                   postComments.map((comment) => (
-                    <div key={comment.id} className="bg-white/50 dark:bg-[#23283A]/50 rounded-xl p-4 shadow-sm">
-                      <div className="flex items-center gap-2 mb-2">
-                        <img src={comment.userId === currentUser?.uid ? currentUser?.photoURL || 'https://via.placeholder.com/30' : 'https://via.placeholder.com/30'} alt={comment.nome} className="w-6 h-6 rounded-full object-cover" />
-                        <span className="font-semibold text-[#2E2F38] dark:text-white">{comment.nome}</span>
+                    <div key={comment.id} className="bg-white/50 dark:bg-[#23283A]/50 rounded-lg p-3 shadow-sm">
+                      <div className="flex items-center gap-2 mb-1">
+                        <img src={comment.userId === currentUser?.uid ? currentUser?.photoURL || 'https://via.placeholder.com/24' : 'https://via.placeholder.com/24'} alt={comment.nome} className="w-5 h-5 rounded-full object-cover" />
+                        <span className="font-semibold text-[#2E2F38] dark:text-white text-sm">{comment.nome}</span>
                         <span className="text-xs text-[#6B6F76] dark:text-gray-300">
                           {comment.createdAt?.toDate ? comment.createdAt.toDate().toLocaleString('pt-BR') : ''}
                         </span>
                       </div>
-                      <p className="text-[#2E2F38] dark:text-white">{comment.texto}</p>
+                      <p className="text-[#2E2F38] dark:text-white text-sm">{comment.texto}</p>
                     </div>
                   ))
                 )}
