@@ -415,7 +415,7 @@ export default function DashboardPage() {
         // Filtra para não mostrar tarefas futuras
         const leadsToShow = settledLeads.filter(lead => lead.taskStatus !== 'Tarefa Futura');
         leadsToShow.sort((a, b) => TAREFA_STATUS_ORDER.indexOf(a.taskStatus) - TAREFA_STATUS_ORDER.indexOf(b.taskStatus));
-        setAgendaLeads(leadsToShow.slice(0, 3));
+        setAgendaLeads(leadsToShow.slice(0, 6));
       } catch (error) {
         console.error('Erro ao buscar agenda:', error);
         setAgendaLeads([]);
@@ -752,15 +752,18 @@ export default function DashboardPage() {
             </table>
           )}
           </div>
+        
         {/* Top Trending */}
-        <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 mb-6 flex flex-col justify-between lg:col-span-1 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
-          <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4">Top Trending</h2>
-          {trendingLoading ? (
-            <p className="text-gray-300">Carregando posts...</p>
-          ) : trendingPosts.length === 0 ? (
-            <p className="text-gray-300">Nenhum post encontrado.</p>
-          ) : (
+        <div className="lg:col-span-1 space-y-6">
+          {/* Top Trending */}
+          <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 mb-6 flex flex-col justify-between lg:col-span-1 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
+            <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4">Top Trending</h2>
+            {trendingLoading ? (
+              <p className="text-gray-300">Carregando posts...</p>
+            ) : trendingPosts.length === 0 ? (
+              <p className="text-gray-300">Nenhum post encontrado.</p>
+            ) : (
           <div className="flex flex-col gap-4">
             {trendingPosts.map((post) => (
               <div key={post.id} className="bg-white/50 dark:bg-[#23283A]/50 rounded-xl p-4 hover:bg-white/70 dark:hover:bg-[#23283A]/70 transition-all duration-200 cursor-pointer" onClick={() => openPostModal(post)}>
@@ -837,7 +840,10 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
-          )}
+            )}
+          </div>
+
+
         </div>
       </div>
 
@@ -903,7 +909,7 @@ export default function DashboardPage() {
       {/* Modal do Post */}
       {showPostModal && selectedPost && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-lg w-full max-w-2xl p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-lg w-full max-w-3xl p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto">
             <button 
               className="absolute top-4 right-4 text-2xl text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] transition-colors" 
               onClick={() => setShowPostModal(false)}
@@ -911,88 +917,121 @@ export default function DashboardPage() {
               ×
             </button>
             
-            {/* Header do Post */}
-            <div className="flex items-start gap-4 mb-6">
-              <img src={selectedPost.avatar} alt={selectedPost.nome} className="w-12 h-12 rounded-full object-cover" />
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-bold text-[#2E2F38] dark:text-white">{selectedPost.nome}</span>
-                  <span className="text-xs text-[#6B6F76] dark:text-gray-300">
+            {/* Header do Post com destaque */}
+            <div className="bg-gradient-to-r from-[#A3C8F7]/10 to-[#3478F6]/10 rounded-xl p-6 mb-6 border border-[#3478F6]/20">
+              <div className="flex items-start gap-4">
+                <img src={selectedPost.avatar} alt={selectedPost.nome} className="w-16 h-16 rounded-full object-cover border-4 border-white dark:border-[#23283A] shadow-lg" />
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="font-bold text-xl text-[#2E2F38] dark:text-white">{selectedPost.nome}</span>
+                    <span className="px-3 py-1 bg-[#3478F6]/20 text-[#3478F6] text-xs font-semibold rounded-full">
+                      Post em Destaque
+                    </span>
+                  </div>
+                  <div className="text-sm text-[#6B6F76] dark:text-gray-300 mb-3">
                     {selectedPost.createdAt?.toDate ? 
                       selectedPost.createdAt.toDate().toLocaleString('pt-BR', { 
+                        weekday: 'long',
                         day: '2-digit', 
-                        month: '2-digit', 
+                        month: 'long',
                         year: 'numeric',
                         hour: '2-digit', 
                         minute: '2-digit' 
                       }) : ''
                     }
-                  </span>
+                  </div>
                 </div>
-                <div className="text-sm text-[#2E2F38] dark:text-white leading-relaxed">{selectedPost.texto}</div>
+              </div>
+            </div>
+
+            {/* Conteúdo do Post */}
+            <div className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl p-6 mb-6">
+              <div className="text-lg text-[#2E2F38] dark:text-white leading-relaxed whitespace-pre-wrap">
+                {selectedPost.texto}
+              </div>
+            </div>
+
+            {/* Estatísticas do Post */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="text-center p-4 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
+                <div className="text-2xl font-bold text-[#3478F6]">{selectedPost.likes || 0}</div>
+                <div className="text-sm text-[#6B6F76] dark:text-gray-300">Curtidas</div>
+              </div>
+              <div className="text-center p-4 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
+                <div className="text-2xl font-bold text-[#3478F6]">{selectedPost.commentsCount || 0}</div>
+                <div className="text-sm text-[#6B6F76] dark:text-gray-300">Comentários</div>
+              </div>
+              <div className="text-center p-4 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
+                <div className="text-2xl font-bold text-[#3478F6]">{selectedPost.repostsCount || 0}</div>
+                <div className="text-sm text-[#6B6F76] dark:text-gray-300">Reposts</div>
               </div>
             </div>
 
             {/* Botões de Interação */}
-            <div className="flex items-center gap-6 mb-6 pb-4 border-b border-[#E8E9F1] dark:border-[#23283A]">
+            <div className="flex items-center gap-4 mb-6 pb-4 border-b border-[#E8E9F1] dark:border-[#23283A]">
               <button 
                 onClick={() => handleLike(selectedPost.id)}
                 disabled={isLiking === selectedPost.id}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                className={`flex items-center gap-3 px-6 py-3 rounded-lg transition-colors ${
                   selectedPost.userLiked 
-                    ? 'bg-red-500/10 text-red-500' 
-                    : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-red-500/10 hover:text-red-500'
+                    ? 'bg-red-500/10 text-red-500 border border-red-500/20' 
+                    : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-red-500/10 hover:text-red-500 border border-[#E8E9F1] dark:border-[#23283A]'
                 }`}
               >
                 {isLiking === selectedPost.id ? (
-                  <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
                 ) : (
-                  <span className="text-lg">{selectedPost.userLiked ? '❤️' : '🤍'}</span>
+                  <span className="text-xl">{selectedPost.userLiked ? '❤️' : '🤍'}</span>
                 )}
-                <span className="font-medium">{selectedPost.likes || 0}</span>
+                <span className="font-medium">Curtir</span>
               </button>
               
               <button 
                 onClick={() => handleRepost(selectedPost.id)}
                 disabled={isReposting === selectedPost.id}
-                className="flex items-center gap-2 px-4 py-2 bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 rounded-lg hover:bg-green-500/10 hover:text-green-500 transition-colors"
+                className="flex items-center gap-3 px-6 py-3 bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 rounded-lg hover:bg-green-500/10 hover:text-green-500 transition-colors border border-[#E8E9F1] dark:border-[#23283A]"
               >
                 {isReposting === selectedPost.id ? (
-                  <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-5 h-5 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
                 ) : (
-                  <span className="text-lg">🔁</span>
+                  <span className="text-xl">🔁</span>
                 )}
-                <span className="font-medium">{selectedPost.repostsCount || 0}</span>
+                <span className="font-medium">Repostar</span>
               </button>
             </div>
 
             {/* Seção de Comentários */}
             <div>
-              <h3 className="font-semibold text-[#2E2F38] dark:text-white mb-4">Comentários ({selectedPost.commentsCount || 0})</h3>
+              <h3 className="font-semibold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
+                <span>💬</span>
+                Comentários ({selectedPost.commentsCount || 0})
+              </h3>
               
               {/* Input para novo comentário */}
-              <div className="flex gap-3 mb-4">
+              <div className="flex gap-3 mb-6">
                 <input
                   type="text"
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Adicione um comentário..."
-                  className="flex-1 px-4 py-2 bg-[#F5F6FA] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
+                  placeholder="Adicione um comentário sobre este post..."
+                  className="flex-1 px-4 py-3 bg-[#F5F6FA] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
                   onKeyPress={(e) => e.key === 'Enter' && handleComment(selectedPost.id)}
                 />
                 <button
                   onClick={() => handleComment(selectedPost.id)}
                   disabled={!commentText.trim()}
-                  className="px-6 py-2 bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+                  className="px-6 py-3 bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
                 >
                   Comentar
                 </button>
               </div>
 
               {/* Lista de comentários (mock - você pode implementar a busca real) */}
-              <div className="space-y-3 max-h-60 overflow-y-auto">
-                <div className="text-center text-[#6B6F76] dark:text-gray-300 text-sm py-4">
-                  Comentários aparecerão aqui quando implementados
+              <div className="space-y-4 max-h-60 overflow-y-auto">
+                <div className="text-center text-[#6B6F76] dark:text-gray-300 text-sm py-8 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
+                  <div className="text-2xl mb-2">💭</div>
+                  <div>Comentários aparecerão aqui quando implementados</div>
+                  <div className="text-xs mt-1">Seja o primeiro a comentar!</div>
                 </div>
               </div>
             </div>
