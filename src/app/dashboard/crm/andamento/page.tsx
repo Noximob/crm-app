@@ -26,7 +26,6 @@ export default function AndamentoPage() {
     const [leads, setLeads] = useState<LeadsByStage>({});
     const [activeLead, setActiveLead] = useState<Lead | null>(null);
     const [loading, setLoading] = useState(true);
-    const [overId, setOverId] = useState<string | null>(null);
 
     useEffect(() => {
         if (!currentUser) return;
@@ -71,7 +70,6 @@ export default function AndamentoPage() {
 
     const handleDragEnd = async (event: DragEndEvent) => {
         setActiveLead(null);
-        setOverId(null);
         const { active, over } = event;
 
         console.log('DragEnd:', { active: active.id, over: over?.id });
@@ -81,35 +79,38 @@ export default function AndamentoPage() {
             return;
         }
 
-        let overContainer: string | null = null;
+        // Extrair o ID da coluna de destino
+        let targetColumn: string | null = null;
         const overIdStr = over.id.toString();
 
         if (overIdStr.startsWith('column-')) {
-            overContainer = overIdStr.replace('column-', '');
+            // Drop direto na coluna
+            targetColumn = overIdStr.replace('column-', '');
         } else {
-            // Se soltou em cima de um card, descobrir a coluna desse card
-            overContainer = findContainer(overIdStr);
+            // Drop em cima de um card - encontrar a coluna desse card
+            targetColumn = findContainer(overIdStr);
         }
 
-        if (!overContainer || !PIPELINE_STAGES.includes(overContainer)) {
-            console.log('Over is not a valid column:', overContainer);
+        console.log('Target column:', targetColumn);
+
+        if (!targetColumn || !PIPELINE_STAGES.includes(targetColumn)) {
+            console.log('Invalid target column:', targetColumn);
             return;
         }
 
-        const activeContainer = findContainer(active.id);
+        const sourceColumn = findContainer(active.id);
+        console.log('Source column:', sourceColumn);
 
-        console.log('Containers:', { activeContainer, overContainer });
-
-        if (!activeContainer || activeContainer === overContainer) {
-            console.log('Invalid containers or same container, returning');
+        if (!sourceColumn || sourceColumn === targetColumn) {
+            console.log('Same column or invalid source, returning');
             return;
         }
 
-        // Atualizar Firestore primeiro
+        // Atualizar Firestore
         if (currentUser) {
             const leadRef = doc(db, 'leads', active.id.toString());
             try {
-                await updateDoc(leadRef, { etapa: overContainer });
+                await updateDoc(leadRef, { etapa: targetColumn });
                 console.log('Firestore updated successfully');
             } catch (error) {
                 console.error("Failed to update lead stage: ", error);
@@ -117,23 +118,25 @@ export default function AndamentoPage() {
             }
         }
 
-        // Atualizar estado local
+        // Atualizar estado local imediatamente
         setLeads((prev) => {
             const newLeads = { ...prev };
-            const activeItems = newLeads[activeContainer];
-            if (!newLeads[overContainer]) newLeads[overContainer] = [];
-            const overItems = newLeads[overContainer];
-
-            const activeIndex = activeItems.findIndex(item => item.id === active.id);
-            if (activeIndex === -1) {
-                console.log('Lead not found in active container');
-                return prev;
+            
+            // Remover da coluna de origem
+            const sourceLeads = newLeads[sourceColumn];
+            const sourceIndex = sourceLeads.findIndex(item => item.id === active.id);
+            if (sourceIndex !== -1) {
+                const [movedItem] = sourceLeads.splice(sourceIndex, 1);
+                
+                // Adicionar à coluna de destino
+                if (!newLeads[targetColumn]) {
+                    newLeads[targetColumn] = [];
+                }
+                newLeads[targetColumn].push({ ...movedItem, etapa: targetColumn });
+                
+                console.log('Lead moved successfully:', movedItem.id);
             }
-
-            const [movedItem] = activeItems.splice(activeIndex, 1);
-            overItems.push({ ...movedItem, etapa: overContainer });
-
-            console.log('State updated:', { activeContainer, overContainer, movedItem: movedItem.id });
+            
             return newLeads;
         });
     };
@@ -164,14 +167,6 @@ export default function AndamentoPage() {
                             collisionDetection={closestCenter} 
                             onDragStart={handleDragStart}
                             onDragEnd={handleDragEnd}
-                            onDragOver={event => {
-                                const overId = event.over?.id?.toString();
-                                if (overId?.startsWith('column-')) {
-                                    setOverId(overId.replace('column-', ''));
-                                } else {
-                                    setOverId(null);
-                                }
-                            }}
                         >
                             <div className="flex gap-6 overflow-x-auto pb-4">
                                 {PIPELINE_STAGES.map(stage => (
@@ -180,7 +175,6 @@ export default function AndamentoPage() {
                                         id={stage} 
                                         title={stage} 
                                         leads={leads[stage] || []} 
-                                        isOver={overId === stage}
                                     />
                                 ))}
                             </div>
