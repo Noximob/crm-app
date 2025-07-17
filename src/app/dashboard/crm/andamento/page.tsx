@@ -81,17 +81,17 @@ export default function AndamentoPage() {
             return;
         }
 
-        // Verificar se o over é uma coluna válida (formato: column-{stageName})
+        let overContainer: string | null = null;
         const overIdStr = over.id.toString();
-        if (!overIdStr.startsWith('column-')) {
-            console.log('Over is not a column drop zone:', overIdStr);
-            return;
+
+        if (overIdStr.startsWith('column-')) {
+            overContainer = overIdStr.replace('column-', '');
+        } else {
+            // Se soltou em cima de um card, descobrir a coluna desse card
+            overContainer = findContainer(overIdStr);
         }
 
-        const overContainer = overIdStr.replace('column-', '');
-        
-        // Verificar se é uma coluna válida
-        if (!PIPELINE_STAGES.includes(overContainer)) {
+        if (!overContainer || !PIPELINE_STAGES.includes(overContainer)) {
             console.log('Over is not a valid column:', overContainer);
             return;
         }
