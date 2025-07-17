@@ -74,13 +74,19 @@ export default function AndamentoPage() {
         setOverId(null);
         const { active, over } = event;
 
-        console.log('DragEnd:', { active: active.id, over: over?.id });
+        console.log('DragEnd:', { active: active.id, over: over?.id, overType: over?.data?.current?.type });
 
         if (over && active.id !== over.id) {
             const activeContainer = findContainer(active.id);
             const overContainer = over.id.toString();
 
             console.log('Containers:', { activeContainer, overContainer });
+
+            // Verificar se o over é uma coluna válida
+            if (!PIPELINE_STAGES.includes(overContainer)) {
+                console.log('Over is not a valid column:', overContainer);
+                return;
+            }
 
             if (!activeContainer || !overContainer || activeContainer === overContainer) {
                 console.log('Invalid containers, returning');
@@ -119,6 +125,8 @@ export default function AndamentoPage() {
                 console.log('State updated:', { activeContainer, overContainer, movedItem: movedItem.id });
                 return newLeads;
             });
+        } else {
+            console.log('No valid drop detected or same item');
         }
     };
 
