@@ -26,6 +26,7 @@ export default function AndamentoPage() {
     const [leads, setLeads] = useState<LeadsByStage>({});
     const [activeLead, setActiveLead] = useState<Lead | null>(null);
     const [loading, setLoading] = useState(true);
+    const [overId, setOverId] = useState<string | null>(null);
 
     useEffect(() => {
         if (!currentUser) return;
@@ -53,11 +54,7 @@ export default function AndamentoPage() {
     }, [currentUser]);
 
     const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: {
-                distance: 8,
-            },
-        })
+        useSensor(PointerSensor)
     );
     
     const handleDragStart = (event: DragStartEvent) => {
@@ -132,10 +129,17 @@ export default function AndamentoPage() {
                             collisionDetection={closestCenter} 
                             onDragStart={handleDragStart}
                             onDragEnd={handleDragEnd}
+                            onDragOver={event => setOverId(event.over?.id?.toString() || null)}
                         >
                             <div className="flex gap-6 overflow-x-auto pb-4">
                                 {PIPELINE_STAGES.map(stage => (
-                                    <KanbanColumn key={stage} id={stage} title={stage} leads={leads[stage] || []} />
+                                    <KanbanColumn 
+                                        key={stage} 
+                                        id={stage} 
+                                        title={stage} 
+                                        leads={leads[stage] || []} 
+                                        isOver={overId === stage}
+                                    />
                                 ))}
                             </div>
                             <DragOverlay>

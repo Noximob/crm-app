@@ -8,16 +8,17 @@ interface KanbanColumnProps {
   id: string;
   title: string;
   leads: Lead[];
+  isOver?: boolean;
 }
 
-export default function KanbanColumn({ id, title, leads }: KanbanColumnProps) {
+export default function KanbanColumn({ id, title, leads, isOver }: KanbanColumnProps) {
   const { setNodeRef } = useDroppable({ id });
 
   return (
     <SortableContext id={id} items={leads} strategy={verticalListSortingStrategy}>
       <div
         ref={setNodeRef}
-        className="flex flex-col flex-shrink-0 w-40 bg-[#F8F9FB] dark:bg-[#181C23] rounded-2xl shadow-soft border border-[#A3C8F7] dark:border-[#3478F6]/40 transition-all duration-200 min-h-[340px] mx-1"
+        className={`flex flex-col flex-shrink-0 w-40 bg-[#F8F9FB] dark:bg-[#181C23] rounded-2xl shadow-soft border border-[#A3C8F7] dark:border-[#3478F6]/40 transition-all duration-200 min-h-[340px] mx-1 ${isOver ? 'ring-4 ring-[#3478F6] ring-opacity-50' : ''}`}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-[#A3C8F7] dark:border-[#3478F6]/40 bg-[#F0F4FF] dark:bg-[#23283A] rounded-t-2xl">
           <h3 className="text-base font-bold text-[#2E2F38] dark:text-white tracking-tight">
