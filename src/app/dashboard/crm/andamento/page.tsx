@@ -76,57 +76,58 @@ export default function AndamentoPage() {
 
         console.log('DragEnd:', { active: active.id, over: over?.id });
 
-        if (over && active.id !== over.id) {
-            const activeContainer = findContainer(active.id);
-            const overContainer = over.id.toString();
-
-            console.log('Containers:', { activeContainer, overContainer });
-
-            // Verificar se o over é uma coluna válida
-            if (!PIPELINE_STAGES.includes(overContainer)) {
-                console.log('Over is not a valid column:', overContainer);
-                return;
-            }
-
-            if (!activeContainer || !overContainer || activeContainer === overContainer) {
-                console.log('Invalid containers, returning');
-                return;
-            }
-
-            // Atualizar Firestore primeiro
-            if (currentUser) {
-                const leadRef = doc(db, 'leads', active.id.toString());
-                try {
-                    await updateDoc(leadRef, { etapa: overContainer });
-                    console.log('Firestore updated successfully');
-                } catch (error) {
-                    console.error("Failed to update lead stage: ", error);
-                    return;
-                }
-            }
-
-            // Atualizar estado local
-            setLeads((prev) => {
-                const newLeads = { ...prev };
-                const activeItems = newLeads[activeContainer];
-                if (!newLeads[overContainer]) newLeads[overContainer] = [];
-                const overItems = newLeads[overContainer];
-
-                const activeIndex = activeItems.findIndex(item => item.id === active.id);
-                if (activeIndex === -1) {
-                    console.log('Lead not found in active container');
-                    return prev;
-                }
-
-                const [movedItem] = activeItems.splice(activeIndex, 1);
-                overItems.push({ ...movedItem, etapa: overContainer });
-
-                console.log('State updated:', { activeContainer, overContainer, movedItem: movedItem.id });
-                return newLeads;
-            });
-        } else {
-            console.log('No valid drop detected or same item');
+        if (!over) {
+            console.log('No drop target detected');
+            return;
         }
+
+        // Verificar se o over é uma coluna válida
+        if (!PIPELINE_STAGES.includes(over.id.toString())) {
+            console.log('Over is not a valid column:', over.id);
+            return;
+        }
+
+        const activeContainer = findContainer(active.id);
+        const overContainer = over.id.toString();
+
+        console.log('Containers:', { activeContainer, overContainer });
+
+        if (!activeContainer || activeContainer === overContainer) {
+            console.log('Invalid containers or same container, returning');
+            return;
+        }
+
+        // Atualizar Firestore primeiro
+        if (currentUser) {
+            const leadRef = doc(db, 'leads', active.id.toString());
+            try {
+                await updateDoc(leadRef, { etapa: overContainer });
+                console.log('Firestore updated successfully');
+            } catch (error) {
+                console.error("Failed to update lead stage: ", error);
+                return;
+            }
+        }
+
+        // Atualizar estado local
+        setLeads((prev) => {
+            const newLeads = { ...prev };
+            const activeItems = newLeads[activeContainer];
+            if (!newLeads[overContainer]) newLeads[overContainer] = [];
+            const overItems = newLeads[overContainer];
+
+            const activeIndex = activeItems.findIndex(item => item.id === active.id);
+            if (activeIndex === -1) {
+                console.log('Lead not found in active container');
+                return prev;
+            }
+
+            const [movedItem] = activeItems.splice(activeIndex, 1);
+            overItems.push({ ...movedItem, etapa: overContainer });
+
+            console.log('State updated:', { activeContainer, overContainer, movedItem: movedItem.id });
+            return newLeads;
+        });
     };
 
     const findContainer = (itemId: string | number) => {
