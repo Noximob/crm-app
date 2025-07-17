@@ -555,9 +555,9 @@ export default function DashboardPage() {
       const commentRef = doc(collection(db, 'comunidadePosts', postId, 'comments'));
       const newComment = {
         userId: currentUser.uid,
-        userName: currentUser.email?.split('@')[0] || 'Usuário',
-        text: commentText.trim(),
-        timestamp: new Date()
+        nome: currentUser.email?.split('@')[0] || 'Usuário',
+        texto: commentText.trim(),
+        createdAt: new Date()
       };
       
       await setDoc(commentRef, newComment);
@@ -605,8 +605,8 @@ export default function DashboardPage() {
       
       // Ordenar comentários por data (mais recentes primeiro)
       const sortedComments = comments.sort((a, b) => {
-        const aTime = a.timestamp?.toDate?.() || new Date(0);
-        const bTime = b.timestamp?.toDate?.() || new Date(0);
+        const aTime = a.createdAt?.toDate?.() || new Date(0);
+        const bTime = b.createdAt?.toDate?.() || new Date(0);
         return bTime.getTime() - aTime.getTime();
       });
       
@@ -990,9 +990,77 @@ export default function DashboardPage() {
 
             {/* Conteúdo do Post */}
             <div className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl p-6 mb-6">
-              <div className="text-lg text-[#2E2F38] dark:text-white leading-relaxed whitespace-pre-wrap">
+              <div className="text-lg text-[#2E2F38] dark:text-white leading-relaxed whitespace-pre-wrap mb-4">
                 {selectedPost.texto}
               </div>
+              
+              {/* Mídia do Post */}
+              {selectedPost.file && selectedPost.fileMeta && (
+                <div className="mt-4">
+                  {selectedPost.fileMeta.type.startsWith('image/') && (
+                    <div className="relative">
+                      <img 
+                        src={selectedPost.file} 
+                        alt={selectedPost.fileMeta.name} 
+                        className="w-full max-h-96 object-contain rounded-xl border border-[#E8E9F1] dark:border-[#23283A]" 
+                      />
+                      <div className="text-sm text-[#6B6F76] dark:text-gray-300 mt-2">
+                        {selectedPost.fileMeta.name}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {selectedPost.fileMeta.type.startsWith('video/') && (
+                    <div className="relative">
+                      <video 
+                        src={selectedPost.file} 
+                        controls 
+                        className="w-full max-h-96 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] bg-black" 
+                      />
+                      <div className="text-sm text-[#6B6F76] dark:text-gray-300 mt-2">
+                        {selectedPost.fileMeta.name}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {selectedPost.fileMeta.type === 'application/pdf' && (
+                    <div className="flex items-center gap-3 p-4 bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A]">
+                      <span className="text-3xl text-red-500">📄</span>
+                      <div className="flex-1">
+                        <div className="font-semibold text-[#2E2F38] dark:text-white">
+                          {selectedPost.fileMeta.name}
+                        </div>
+                        <div className="text-sm text-[#6B6F76] dark:text-gray-300">
+                          Documento PDF
+                        </div>
+                      </div>
+                      <a 
+                        href={selectedPost.file} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg font-medium transition-colors"
+                      >
+                        Abrir
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Indicação de Repost */}
+              {selectedPost.repostOf && (
+                <div className="mt-4 p-3 bg-[#3478F6]/10 border border-[#3478F6]/20 rounded-lg">
+                  <div className="flex items-center gap-2 text-[#3478F6] text-sm">
+                    <span>🔁</span>
+                    <span>Repost</span>
+                    {selectedPost.repostComment && (
+                      <span className="text-[#2E2F38] dark:text-white">
+                        com comentário: "{selectedPost.repostComment}"
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Estatísticas do Post */}
@@ -1087,13 +1155,13 @@ export default function DashboardPage() {
                   postComments.map((comment) => (
                     <div key={comment.id} className="bg-white/50 dark:bg-[#23283A]/50 rounded-xl p-4 shadow-sm">
                       <div className="flex items-center gap-2 mb-2">
-                        <img src={comment.userId === currentUser?.uid ? currentUser?.photoURL || 'https://via.placeholder.com/30' : 'https://via.placeholder.com/30'} alt={comment.userName} className="w-6 h-6 rounded-full object-cover" />
-                        <span className="font-semibold text-[#2E2F38] dark:text-white">{comment.userName}</span>
+                        <img src={comment.userId === currentUser?.uid ? currentUser?.photoURL || 'https://via.placeholder.com/30' : 'https://via.placeholder.com/30'} alt={comment.nome} className="w-6 h-6 rounded-full object-cover" />
+                        <span className="font-semibold text-[#2E2F38] dark:text-white">{comment.nome}</span>
                         <span className="text-xs text-[#6B6F76] dark:text-gray-300">
-                          {comment.timestamp?.toDate ? comment.timestamp.toDate().toLocaleString('pt-BR') : ''}
+                          {comment.createdAt?.toDate ? comment.createdAt.toDate().toLocaleString('pt-BR') : ''}
                         </span>
                       </div>
-                      <p className="text-[#2E2F38] dark:text-white">{comment.text}</p>
+                      <p className="text-[#2E2F38] dark:text-white">{comment.texto}</p>
                     </div>
                   ))
                 )}
