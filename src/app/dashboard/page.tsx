@@ -187,20 +187,6 @@ const RankingItem = ({ position, name, sales, avatar, rating }: {
   );
 };
 
-const WeatherWidget = () => {
-  const [weather, setWeather] = useState({ temp: 24, condition: 'Ensolarado', icon: '☀️' });
-  
-  return (
-    <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-[#A3C8F7]/10 to-[#3478F6]/10 rounded-lg border border-[#A3C8F7]/20">
-      <div className="text-2xl">{weather.icon}</div>
-      <div>
-        <div className="text-sm font-bold text-[#3478F6]">{weather.temp}°C</div>
-        <div className="text-xs text-[#6B6F76]">{weather.condition}</div>
-      </div>
-    </div>
-  );
-};
-
 const SectionTitle = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
   <div className={`relative ${className}`}>
     <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white relative z-10">{children}</h2>
@@ -742,37 +728,33 @@ export default function DashboardPage() {
 
   return (
     <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
-      {/* Header com boas-vindas, indicadores econômicos, clima e hora */}
+      {/* Header com boas-vindas, indicadores econômicos e hora */}
       <div className="mb-4">
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
-            <div>
-              <h1 className="text-2xl font-bold text-[#2E2F38] dark:text-white mb-1">
-                Olá, {currentUser?.email?.split('@')[0] || 'Corretor'}! 👋
-              </h1>
-              <p className="text-[#6B6F76] capitalize text-sm">{currentDate}</p>
-            </div>
-            <div className="flex items-center gap-4">
-              {/* Clima primeiro, depois hora */}
-              <WeatherWidget />
-              <div className="text-right">
-                <div className="text-xl font-bold text-[#3478F6]">{currentTimeString}</div>
-                <div className="text-xs text-[#6B6F76]">Horário atual</div>
-              </div>
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+          <div className="relative">
+            <h1 className="text-2xl font-bold mb-1 bg-gradient-to-r from-[#3478F6] via-[#A3C8F7] to-[#6B6F76] bg-clip-text text-transparent">
+              Olá, {currentUser?.email?.split('@')[0] || 'Corretor'}! 👋
+            </h1>
+            <p className="text-[#6B6F76] capitalize text-sm">Bem-vindo ao seu dashboard</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <div className="text-xl font-bold text-[#3478F6]">{currentTimeString}</div>
+              <div className="text-xs text-[#6B6F76]">Horário atual</div>
             </div>
           </div>
-          {/* Indicadores econômicos logo abaixo do Olá, corretor... */}
-          <div className="flex gap-3 mt-2 flex-wrap">
-            {indicadoresExternos && indicadoresExternosAnterior && indicadoresList.map(ind => (
-              <EconomicIndicator
-                key={ind.key}
-                title={ind.label}
-                value={indicadoresExternos?.[ind.key] || '--'}
-                variacao={calcularVariacao(indicadoresExternos?.[ind.key], indicadoresExternosAnterior?.[ind.key])}
-                subtitulo={ind.tipo}
-              />
-            ))}
-          </div>
+        </div>
+        {/* Indicadores econômicos logo abaixo do Olá, corretor... */}
+        <div className="flex gap-3 mt-2 flex-wrap">
+          {indicadoresExternos && indicadoresExternosAnterior && indicadoresList.map(ind => (
+            <EconomicIndicator
+              key={ind.key}
+              title={ind.label}
+              value={indicadoresExternos?.[ind.key] || '--'}
+              variacao={calcularVariacao(indicadoresExternos?.[ind.key], indicadoresExternosAnterior?.[ind.key])}
+              subtitulo={ind.tipo}
+            />
+          ))}
         </div>
       </div>
 
