@@ -15,13 +15,7 @@ export default function LeadCard({ lead }: { lead: Lead }) {
     setNodeRef,
     transform,
     transition,
-  } = useSortable({ 
-    id: lead.id,
-    data: {
-      type: 'lead',
-      lead
-    }
-  });
+  } = useSortable({ id: lead.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),

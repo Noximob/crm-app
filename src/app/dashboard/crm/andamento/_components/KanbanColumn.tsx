@@ -12,13 +12,7 @@ interface KanbanColumnProps {
 }
 
 export default function KanbanColumn({ id, title, leads, isOver }: KanbanColumnProps) {
-  const { setNodeRef, isOver: isOverColumn } = useDroppable({ 
-    id,
-    data: {
-      type: 'column',
-      accepts: ['lead']
-    }
-  });
+  const { setNodeRef, isOver: isOverColumn } = useDroppable({ id });
 
   return (
     <SortableContext id={id} items={leads} strategy={verticalListSortingStrategy}>

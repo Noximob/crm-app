@@ -74,7 +74,7 @@ export default function AndamentoPage() {
         setOverId(null);
         const { active, over } = event;
 
-        console.log('DragEnd:', { active: active.id, over: over?.id, overType: over?.data?.current?.type });
+        console.log('DragEnd:', { active: active.id, over: over?.id });
 
         if (over && active.id !== over.id) {
             const activeContainer = findContainer(active.id);
@@ -101,7 +101,6 @@ export default function AndamentoPage() {
                     console.log('Firestore updated successfully');
                 } catch (error) {
                     console.error("Failed to update lead stage: ", error);
-                    // Não atualizar o estado local se o Firestore falhou
                     return;
                 }
             }
