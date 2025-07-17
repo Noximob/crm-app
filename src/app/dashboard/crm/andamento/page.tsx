@@ -81,14 +81,22 @@ export default function AndamentoPage() {
             return;
         }
 
-        // Verificar se o over é uma coluna válida
-        if (!PIPELINE_STAGES.includes(over.id.toString())) {
-            console.log('Over is not a valid column:', over.id);
+        // Verificar se o over é uma coluna válida (formato: column-{stageName})
+        const overIdStr = over.id.toString();
+        if (!overIdStr.startsWith('column-')) {
+            console.log('Over is not a column drop zone:', overIdStr);
+            return;
+        }
+
+        const overContainer = overIdStr.replace('column-', '');
+        
+        // Verificar se é uma coluna válida
+        if (!PIPELINE_STAGES.includes(overContainer)) {
+            console.log('Over is not a valid column:', overContainer);
             return;
         }
 
         const activeContainer = findContainer(active.id);
-        const overContainer = over.id.toString();
 
         console.log('Containers:', { activeContainer, overContainer });
 
@@ -156,7 +164,14 @@ export default function AndamentoPage() {
                             collisionDetection={closestCenter} 
                             onDragStart={handleDragStart}
                             onDragEnd={handleDragEnd}
-                            onDragOver={event => setOverId(event.over?.id?.toString() || null)}
+                            onDragOver={event => {
+                                const overId = event.over?.id?.toString();
+                                if (overId?.startsWith('column-')) {
+                                    setOverId(overId.replace('column-', ''));
+                                } else {
+                                    setOverId(null);
+                                }
+                            }}
                         >
                             <div className="flex gap-6 overflow-x-auto pb-4">
                                 {PIPELINE_STAGES.map(stage => (
