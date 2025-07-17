@@ -356,6 +356,8 @@ export default function DashboardPage() {
   const [commentText, setCommentText] = useState('');
   const [isLiking, setIsLiking] = useState<string | null>(null);
   const [isReposting, setIsReposting] = useState<string | null>(null);
+  const [postComments, setPostComments] = useState<any[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
 
   // Atualizar hora a cada minuto
   useEffect(() => {
@@ -551,18 +553,35 @@ export default function DashboardPage() {
     
     try {
       const commentRef = doc(collection(db, 'comunidadePosts', postId, 'comments'));
-      await setDoc(commentRef, {
+      const newComment = {
         userId: currentUser.uid,
         userName: currentUser.email?.split('@')[0] || 'Usuário',
         text: commentText.trim(),
         timestamp: new Date()
-      });
+      };
       
+      await setDoc(commentRef, newComment);
+      
+      // Atualizar a lista de comentários localmente
+      setPostComments(prev => [{
+        id: commentRef.id,
+        ...newComment
+      }, ...prev]);
+      
+      // Atualizar contador de comentários no post
       setTrendingPosts(prev => prev.map(post => 
         post.id === postId 
           ? { ...post, commentsCount: (post.commentsCount || 0) + 1 }
           : post
       ));
+      
+      // Atualizar contador no post selecionado
+      if (selectedPost && selectedPost.id === postId) {
+        setSelectedPost((prev: any) => prev ? {
+          ...prev,
+          commentsCount: (prev.commentsCount || 0) + 1
+        } : null);
+      }
       
       setCommentText('');
     } catch (error) {
@@ -570,9 +589,34 @@ export default function DashboardPage() {
     }
   };
 
-  const openPostModal = (post: any) => {
+  const openPostModal = async (post: any) => {
     setSelectedPost(post);
     setShowPostModal(true);
+    setCommentsLoading(true);
+    
+    try {
+      // Buscar comentários do post
+      const commentsRef = collection(db, 'comunidadePosts', post.id, 'comments');
+      const commentsSnapshot = await getDocs(commentsRef);
+      const comments = commentsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as any));
+      
+      // Ordenar comentários por data (mais recentes primeiro)
+      const sortedComments = comments.sort((a, b) => {
+        const aTime = a.timestamp?.toDate?.() || new Date(0);
+        const bTime = b.timestamp?.toDate?.() || new Date(0);
+        return bTime.getTime() - aTime.getTime();
+      });
+      
+      setPostComments(sortedComments);
+    } catch (error) {
+      console.error('Erro ao buscar comentários:', error);
+      setPostComments([]);
+    } finally {
+      setCommentsLoading(false);
+    }
   };
 
   // Buscar dados da meta e nome da imobiliária
@@ -1028,11 +1072,31 @@ export default function DashboardPage() {
 
               {/* Lista de comentários (mock - você pode implementar a busca real) */}
               <div className="space-y-4 max-h-60 overflow-y-auto">
-                <div className="text-center text-[#6B6F76] dark:text-gray-300 text-sm py-8 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
-                  <div className="text-2xl mb-2">💭</div>
-                  <div>Comentários aparecerão aqui quando implementados</div>
-                  <div className="text-xs mt-1">Seja o primeiro a comentar!</div>
-                </div>
+                {commentsLoading ? (
+                  <div className="text-center text-[#6B6F76] dark:text-gray-300 text-sm py-8 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
+                    <div className="text-2xl mb-2">💭</div>
+                    <div>Carregando comentários...</div>
+                  </div>
+                ) : postComments.length === 0 ? (
+                  <div className="text-center text-[#6B6F76] dark:text-gray-300 text-sm py-8 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
+                    <div className="text-2xl mb-2">💭</div>
+                    <div>Nenhum comentário encontrado para este post.</div>
+                    <div className="text-xs mt-1">Seja o primeiro a comentar!</div>
+                  </div>
+                ) : (
+                  postComments.map((comment) => (
+                    <div key={comment.id} className="bg-white/50 dark:bg-[#23283A]/50 rounded-xl p-4 shadow-sm">
+                      <div className="flex items-center gap-2 mb-2">
+                        <img src={comment.userId === currentUser?.uid ? currentUser?.photoURL || 'https://via.placeholder.com/30' : 'https://via.placeholder.com/30'} alt={comment.userName} className="w-6 h-6 rounded-full object-cover" />
+                        <span className="font-semibold text-[#2E2F38] dark:text-white">{comment.userName}</span>
+                        <span className="text-xs text-[#6B6F76] dark:text-gray-300">
+                          {comment.timestamp?.toDate ? comment.timestamp.toDate().toLocaleString('pt-BR') : ''}
+                        </span>
+                      </div>
+                      <p className="text-[#2E2F38] dark:text-white">{comment.text}</p>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
