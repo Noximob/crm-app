@@ -315,7 +315,6 @@ export default function MateriaisConstrutorasPage() {
       const link = document.createElement('a');
       link.href = material.url;
       link.download = material.nome;
-      link.target = '_blank';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -561,12 +560,13 @@ export default function MateriaisConstrutorasPage() {
                           </div>
                           <div className="flex gap-2">
                             {material.url && (
-                              <button
-                                onClick={() => handleDownload(material)}
+                              <a
+                                href={material.url}
+                                download={material.nome}
                                 className="flex-1 px-3 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded-lg transition-colors font-semibold"
                               >
                                 Download
-                              </button>
+                              </a>
                             )}
                           </div>
                         </div>
@@ -627,12 +627,13 @@ export default function MateriaisConstrutorasPage() {
                               </p>
                             )}
                             {material.url && (
-                              <button
-                                onClick={() => handleDownload(material)}
+                              <a
+                                href={material.url}
+                                download={material.nome}
                                 className="w-full mt-2 px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors font-semibold"
                               >
                                 Download
-                              </button>
+                              </a>
                             )}
                           </div>
                         </div>
@@ -679,12 +680,13 @@ export default function MateriaisConstrutorasPage() {
                               </p>
                             )}
                             {material.url && (
-                              <button
-                                onClick={() => handleDownload(material)}
+                              <a
+                                href={material.url}
+                                download={material.nome}
                                 className="w-full mt-2 px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors font-semibold"
                               >
                                 Download
-                              </button>
+                              </a>
                             )}
                           </div>
                         </div>
