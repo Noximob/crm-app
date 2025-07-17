@@ -5,28 +5,28 @@ import Link from 'next/link';
 
 const treinamentos = [
   {
-    title: 'Treinamento Sistema',
-    description: 'Aprenda a usar todas as funcionalidades do CRM e do sistema.',
-    icon: '💻',
-    href: '/dashboard/treinamentos/sistema',
-  },
-  {
-    title: 'Funil de Vendas',
-    description: 'Entenda o processo de vendas e como conduzir leads até o fechamento.',
-    icon: '🔄',
-    href: '/dashboard/treinamentos/funil-vendas',
+    title: 'Áudio Books',
+    description: 'Acesse nossa biblioteca de áudio books para desenvolvimento pessoal e profissional.',
+    icon: '📚',
+    href: '/dashboard/treinamentos/audiobooks',
   },
   {
     title: 'Vendas',
-    description: 'Dicas, técnicas e estratégias para aumentar sua conversão.',
+    description: 'Técnicas, estratégias e dicas para aumentar sua conversão e fechar mais vendas.',
     icon: '📈',
     href: '/dashboard/treinamentos/vendas',
   },
   {
-    title: 'Materiais Auxiliares',
-    description: 'Acesse roteiros, scripts, apresentações e outros recursos de apoio.',
-    icon: '🗂️',
-    href: '/dashboard/treinamentos/materiais-auxiliares',
+    title: 'Mercado',
+    description: 'Análises de mercado, tendências e insights sobre o setor imobiliário.',
+    icon: '🏢',
+    href: '/dashboard/treinamentos/mercado',
+  },
+  {
+    title: 'Institucional',
+    description: 'Conteúdo sobre a empresa, valores, processos e políticas institucionais.',
+    icon: '🏛️',
+    href: '/dashboard/treinamentos/institucional',
   },
 ];
 

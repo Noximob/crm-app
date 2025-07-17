@@ -37,7 +37,7 @@ const MaximizeIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-export default function VendasPage() {
+export default function InstitucionalPage() {
   const { userData } = useAuth();
   const [treinamentos, setTreinamentos] = useState<Treinamento[]>([]);
   const [loading, setLoading] = useState(false);
@@ -54,7 +54,7 @@ export default function VendasPage() {
       const q = query(
         collection(db, 'treinamentos'),
         where('imobiliariaId', '==', userData?.imobiliariaId),
-        where('categoria', '==', 'vendas')
+        where('categoria', '==', 'institucional')
       );
       const snap = await getDocs(q);
       const treinamentosData = snap.docs.map(doc => {
@@ -96,8 +96,8 @@ export default function VendasPage() {
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">📈 Vendas</h1>
-          <p className="text-[#6B6F76] dark:text-gray-300">Técnicas, estratégias e dicas para aumentar sua conversão e fechar mais vendas</p>
+          <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">🏛️ Institucional</h1>
+          <p className="text-[#6B6F76] dark:text-gray-300">Conteúdo sobre a empresa, valores, processos e políticas institucionais</p>
         </div>
 
         {loading ? (
@@ -107,8 +107,8 @@ export default function VendasPage() {
           </div>
         ) : treinamentos.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">📈</div>
-            <h2 className="text-xl font-semibold text-[#2E2F38] dark:text-white mb-2">Nenhum treinamento de vendas disponível</h2>
+            <div className="text-6xl mb-4">🏛️</div>
+            <h2 className="text-xl font-semibold text-[#2E2F38] dark:text-white mb-2">Nenhum treinamento institucional disponível</h2>
             <p className="text-[#6B6F76] dark:text-gray-300">Os treinamentos serão adicionados em breve pela administração.</p>
           </div>
         ) : (
