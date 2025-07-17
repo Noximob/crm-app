@@ -32,8 +32,8 @@ const adminCategories = [
     icon: '👥',
     color: 'from-blue-500 to-blue-600',
     items: [
-      { title: 'Aprovação de Usuários', icon: '✅', description: 'Aprove novos cadastros', href: '#', special: true },
       { title: 'Gestão de Corretores', icon: '🧑‍💼', description: 'Administre leads dos corretores', href: '/dashboard/admin/gestao-corretores' },
+      { title: 'Importar Leads', icon: '⬆️', description: 'Importe leads em massa', href: '/dashboard/admin/importar-leads' },
     ]
   },
   {
@@ -48,8 +48,8 @@ const adminCategories = [
     ]
   },
   {
-    title: 'Gestão Financeira',
-    description: 'Controle financeiro e metas',
+    title: 'Gestão Financeira e Relatórios',
+    description: 'Controle financeiro e métricas',
     icon: '💰',
     color: 'from-purple-500 to-purple-600',
     items: [
@@ -64,8 +64,8 @@ const adminCategories = [
     icon: '⚙️',
     color: 'from-orange-500 to-orange-600',
     items: [
+      { title: 'Aprovação de Usuários', icon: '✅', description: 'Aprove novos cadastros', href: '#', special: true },
       { title: 'Site', icon: '🌐', description: 'Site institucional', href: '/dashboard/admin/site' },
-      { title: 'Importar Leads', icon: '⬆️', description: 'Importe leads em massa', href: '/dashboard/admin/importar-leads' },
       { title: 'Avisos', icon: '📢', description: 'Avisos para corretores', href: '/dashboard/admin/avisos-importantes' },
     ]
   }
@@ -224,114 +224,91 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {/* Estatísticas Rápidas */}
-        <div className="mt-8 bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-6">
-          <SectionTitle className="mb-6">Visão Geral</SectionTitle>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl">
-              <div className="text-2xl font-bold text-[#3478F6] mb-1">12</div>
-              <div className="text-sm text-[#6B6F76] dark:text-gray-300">Corretores Ativos</div>
-            </div>
-            <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl">
-              <div className="text-2xl font-bold text-green-600 mb-1">156</div>
-              <div className="text-sm text-[#6B6F76] dark:text-gray-300">Leads Ativos</div>
-            </div>
-            <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl">
-              <div className="text-2xl font-bold text-purple-600 mb-1">8</div>
-              <div className="text-sm text-[#6B6F76] dark:text-gray-300">Vendas Este Mês</div>
-            </div>
-            <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl">
-              <div className="text-2xl font-bold text-orange-600 mb-1">3</div>
-              <div className="text-sm text-[#6B6F76] dark:text-gray-300">Pendentes Aprovação</div>
+        {/* Modal Aprovação de Usuários */}
+        {showAprovacao && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-lg w-full max-w-4xl p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto">
+              <button 
+                className="absolute top-4 right-4 text-2xl text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] transition-colors" 
+                onClick={() => setShowAprovacao(false)}
+              >
+                ×
+              </button>
+              
+              <div className="mb-6">
+                <SectionTitle>Aprovação de Usuários</SectionTitle>
+              </div>
+              
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6]"></div>
+                </div>
+              ) : usuariosPendentes.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">✅</div>
+                  <p className="text-lg text-[#6B6F76] dark:text-gray-300">Nenhum usuário pendente de aprovação</p>
+                  <p className="text-sm text-[#6B6F76] dark:text-gray-400 mt-2">Todos os cadastros foram processados</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {usuariosPendentes.map((usuario) => (
+                    <div key={usuario.id} className="bg-[#F8F9FB] dark:bg-[#181C23] rounded-xl p-6 border border-[#E8E9F1] dark:border-[#23283A]">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-full flex items-center justify-center text-white font-semibold">
+                            {usuario.nome.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-[#2E2F38] dark:text-white text-lg">{usuario.nome}</h3>
+                            <p className="text-[#6B6F76] dark:text-gray-300">{usuario.email}</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => aprovarUsuario(usuario.id)}
+                            className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                          >
+                            <span>✓</span>
+                            Aprovar
+                          </button>
+                          <button
+                            onClick={() => rejeitarUsuario(usuario.id)}
+                            className="px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                          >
+                            <span>✕</span>
+                            Rejeitar
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div className="bg-white dark:bg-[#23283A] p-3 rounded-lg">
+                          <span className="text-[#6B6F76] dark:text-gray-300 text-xs uppercase tracking-wide">Tipo</span>
+                          <p className="font-medium text-[#2E2F38] dark:text-white mt-1">{getTipoContaLabel(usuario.tipoConta)}</p>
+                        </div>
+                        <div className="bg-white dark:bg-[#23283A] p-3 rounded-lg">
+                          <span className="text-[#6B6F76] dark:text-gray-300 text-xs uppercase tracking-wide">Imobiliária</span>
+                          <p className="font-medium text-[#2E2F38] dark:text-white mt-1">{getNomeImobiliaria(usuario.imobiliariaId)}</p>
+                        </div>
+                        <div className="bg-white dark:bg-[#23283A] p-3 rounded-lg">
+                          <span className="text-[#6B6F76] dark:text-gray-300 text-xs uppercase tracking-wide">Cadastro</span>
+                          <p className="font-medium text-[#2E2F38] dark:text-white mt-1">{usuario.metodoCadastro === 'google' ? 'Google' : 'E-mail'}</p>
+                        </div>
+                        <div className="bg-white dark:bg-[#23283A] p-3 rounded-lg">
+                          <span className="text-[#6B6F76] dark:text-gray-300 text-xs uppercase tracking-wide">Data</span>
+                          <p className="font-medium text-[#2E2F38] dark:text-white mt-1">
+                            {usuario.criadoEm?.toDate ? usuario.criadoEm.toDate().toLocaleDateString('pt-BR') : 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        )}
       </div>
-
-      {/* Modal Aprovação de Usuários */}
-      {showAprovacao && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-lg w-full max-w-4xl p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto">
-            <button 
-              className="absolute top-4 right-4 text-2xl text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] transition-colors" 
-              onClick={() => setShowAprovacao(false)}
-            >
-              ×
-            </button>
-            
-            <div className="mb-6">
-              <SectionTitle>Aprovação de Usuários</SectionTitle>
-            </div>
-            
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6]"></div>
-              </div>
-            ) : usuariosPendentes.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">✅</div>
-                <p className="text-lg text-[#6B6F76] dark:text-gray-300">Nenhum usuário pendente de aprovação</p>
-                <p className="text-sm text-[#6B6F76] dark:text-gray-400 mt-2">Todos os cadastros foram processados</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {usuariosPendentes.map((usuario) => (
-                  <div key={usuario.id} className="bg-[#F8F9FB] dark:bg-[#181C23] rounded-xl p-6 border border-[#E8E9F1] dark:border-[#23283A]">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-full flex items-center justify-center text-white font-semibold">
-                          {usuario.nome.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-[#2E2F38] dark:text-white text-lg">{usuario.nome}</h3>
-                          <p className="text-[#6B6F76] dark:text-gray-300">{usuario.email}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => aprovarUsuario(usuario.id)}
-                          className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-                        >
-                          <span>✓</span>
-                          Aprovar
-                        </button>
-                        <button
-                          onClick={() => rejeitarUsuario(usuario.id)}
-                          className="px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-                        >
-                          <span>✕</span>
-                          Rejeitar
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div className="bg-white dark:bg-[#23283A] p-3 rounded-lg">
-                        <span className="text-[#6B6F76] dark:text-gray-300 text-xs uppercase tracking-wide">Tipo</span>
-                        <p className="font-medium text-[#2E2F38] dark:text-white mt-1">{getTipoContaLabel(usuario.tipoConta)}</p>
-                      </div>
-                      <div className="bg-white dark:bg-[#23283A] p-3 rounded-lg">
-                        <span className="text-[#6B6F76] dark:text-gray-300 text-xs uppercase tracking-wide">Imobiliária</span>
-                        <p className="font-medium text-[#2E2F38] dark:text-white mt-1">{getNomeImobiliaria(usuario.imobiliariaId)}</p>
-                      </div>
-                      <div className="bg-white dark:bg-[#23283A] p-3 rounded-lg">
-                        <span className="text-[#6B6F76] dark:text-gray-300 text-xs uppercase tracking-wide">Cadastro</span>
-                        <p className="font-medium text-[#2E2F38] dark:text-white mt-1">{usuario.metodoCadastro === 'google' ? 'Google' : 'E-mail'}</p>
-                      </div>
-                      <div className="bg-white dark:bg-[#23283A] p-3 rounded-lg">
-                        <span className="text-[#6B6F76] dark:text-gray-300 text-xs uppercase tracking-wide">Data</span>
-                        <p className="font-medium text-[#2E2F38] dark:text-white mt-1">
-                          {usuario.criadoEm?.toDate ? usuario.criadoEm.toDate().toLocaleDateString('pt-BR') : 'N/A'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 } 
