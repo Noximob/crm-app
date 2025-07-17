@@ -310,8 +310,12 @@ export default function MateriaisConstrutorasPage() {
     return `${mb.toFixed(1)} MB`;
   };
 
+  // Adicionar estado de loading por material
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
   const handleDownload = async (material: Material) => {
     if (material.url) {
+      setDownloadingId(material.id);
       try {
         const response = await fetch(material.url);
         const blob = await response.blob();
@@ -326,6 +330,7 @@ export default function MateriaisConstrutorasPage() {
       } catch (e) {
         alert('Erro ao baixar o arquivo.');
       }
+      setDownloadingId(null);
     }
   };
 
@@ -570,9 +575,12 @@ export default function MateriaisConstrutorasPage() {
                             {material.url && (
                               <button
                                 onClick={() => handleDownload(material)}
+                                disabled={downloadingId === material.id}
                                 className="flex-1 px-3 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded-lg transition-colors font-semibold"
                               >
-                                Download
+                                {downloadingId === material.id ? (
+                                  <span className="flex items-center gap-2"><SpinnerIcon /> Baixando...</span>
+                                ) : 'Download'}
                               </button>
                             )}
                           </div>
@@ -636,9 +644,12 @@ export default function MateriaisConstrutorasPage() {
                             {material.url && (
                               <button
                                 onClick={() => handleDownload(material)}
+                                disabled={downloadingId === material.id}
                                 className="w-full mt-2 px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors font-semibold"
                               >
-                                Download
+                                {downloadingId === material.id ? (
+                                  <span className="flex items-center gap-2"><SpinnerIcon /> Baixando...</span>
+                                ) : 'Download'}
                               </button>
                             )}
                           </div>
@@ -688,9 +699,12 @@ export default function MateriaisConstrutorasPage() {
                             {material.url && (
                               <button
                                 onClick={() => handleDownload(material)}
+                                disabled={downloadingId === material.id}
                                 className="w-full mt-2 px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors font-semibold"
                               >
-                                Download
+                                {downloadingId === material.id ? (
+                                  <span className="flex items-center gap-2"><SpinnerIcon /> Baixando...</span>
+                                ) : 'Download'}
                               </button>
                             )}
                           </div>

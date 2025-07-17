@@ -47,6 +47,8 @@ export default function MateriaisImobiliariaPage() {
   const { userData } = useAuth();
   const [materiais, setMateriais] = useState<MaterialImobiliaria[]>([]);
   const [loading, setLoading] = useState(false);
+  // Adicionar estado de loading por material
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userData?.imobiliariaId) return;
@@ -103,6 +105,7 @@ export default function MateriaisImobiliariaPage() {
 
   const handleDownload = async (material: MaterialImobiliaria) => {
     if (material.url) {
+      setDownloadingId(material.id);
       try {
         const response = await fetch(material.url);
         const blob = await response.blob();
@@ -117,6 +120,7 @@ export default function MateriaisImobiliariaPage() {
       } catch (e) {
         alert('Erro ao baixar o arquivo.');
       }
+      setDownloadingId(null);
     }
   };
 
@@ -213,9 +217,12 @@ export default function MateriaisImobiliariaPage() {
                         {material.url && (
                           <button
                             onClick={() => handleDownload(material)}
+                            disabled={downloadingId === material.id}
                             className="flex-1 px-3 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded-lg transition-colors font-semibold"
                           >
-                            Download
+                            {downloadingId === material.id ? (
+                              <span className="flex items-center gap-2"><SpinnerIcon /> Baixando...</span>
+                            ) : 'Download'}
                           </button>
                         )}
                       </div>
@@ -279,9 +286,12 @@ export default function MateriaisImobiliariaPage() {
                         {material.url && (
                           <button
                             onClick={() => handleDownload(material)}
+                            disabled={downloadingId === material.id}
                             className="w-full mt-2 px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors font-semibold"
                           >
-                            Download
+                            {downloadingId === material.id ? (
+                              <span className="flex items-center gap-2"><SpinnerIcon /> Baixando...</span>
+                            ) : 'Download'}
                           </button>
                         )}
                       </div>
@@ -331,9 +341,12 @@ export default function MateriaisImobiliariaPage() {
                         {material.url && (
                           <button
                             onClick={() => handleDownload(material)}
+                            disabled={downloadingId === material.id}
                             className="w-full mt-2 px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors font-semibold"
                           >
-                            Download
+                            {downloadingId === material.id ? (
+                              <span className="flex items-center gap-2"><SpinnerIcon /> Baixando...</span>
+                            ) : 'Download'}
                           </button>
                         )}
               </div>
@@ -346,5 +359,14 @@ export default function MateriaisImobiliariaPage() {
         )}
       </div>
     </div>
+  );
+} 
+
+function SpinnerIcon() {
+  return (
+    <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+    </svg>
   );
 } 
