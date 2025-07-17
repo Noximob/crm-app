@@ -908,13 +908,21 @@ export default function MateriaisConstrutorasPage() {
                             className="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
                           />
                           <button
-                            onClick={() => {
-                              const link = document.createElement('a');
-                              link.href = foto;
-                              link.download = `foto_${index + 1}.jpg`;
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
+                            onClick={async () => {
+                              try {
+                                const response = await fetch(foto);
+                                const blob = await response.blob();
+                                const url = window.URL.createObjectURL(blob);
+                                const link = document.createElement('a');
+                                link.href = url;
+                                link.download = `foto_${index + 1}.jpg`;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                                window.URL.revokeObjectURL(url);
+                              } catch (error) {
+                                console.error('Erro ao baixar foto:', error);
+                              }
                             }}
                             className="absolute top-2 right-2 p-1 bg-black bg-opacity-50 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
                           >
@@ -946,13 +954,21 @@ export default function MateriaisConstrutorasPage() {
                             className="w-full h-48 object-cover rounded-lg"
                           />
                           <button
-                            onClick={() => {
-                              const link = document.createElement('a');
-                              link.href = video;
-                              link.download = `video_${index + 1}.mp4`;
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
+                            onClick={async () => {
+                              try {
+                                const response = await fetch(video);
+                                const blob = await response.blob();
+                                const url = window.URL.createObjectURL(blob);
+                                const link = document.createElement('a');
+                                link.href = url;
+                                link.download = `video_${index + 1}.mp4`;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                                window.URL.revokeObjectURL(url);
+                              } catch (error) {
+                                console.error('Erro ao baixar vídeo:', error);
+                              }
                             }}
                             className="absolute top-2 right-2 p-1 bg-black bg-opacity-50 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
                           >
