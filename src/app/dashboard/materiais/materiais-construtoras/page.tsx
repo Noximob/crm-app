@@ -910,39 +910,51 @@ export default function MateriaisConstrutorasPage() {
                       <ImageIcon className="h-5 w-5 text-[#3478F6]" />
                       Fotos
                     </h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {selectedImovel.fotos.filter(f => f.toLowerCase().includes('.jpg') || f.toLowerCase().includes('.jpeg') || f.toLowerCase().includes('.png') || f.toLowerCase().includes('.gif') || f.toLowerCase().includes('.webp')).map((foto, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={foto}
-                            alt={`Foto ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                          />
-                          <button
-                            onClick={async () => {
-                              try {
-                                const response = await fetch(foto);
-                                const blob = await response.blob();
-                                const url = window.URL.createObjectURL(blob);
-                                const link = document.createElement('a');
-                                link.href = url;
-                                link.download = `foto_${index + 1}.jpg`;
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                                window.URL.revokeObjectURL(url);
-                              } catch (error) {
-                                console.error('Erro ao baixar foto:', error);
-                              }
-                            }}
-                            className="absolute top-2 right-2 p-1 bg-black bg-opacity-50 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <svg className="h-4 w-4" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                              <polyline points="7 10 12 15 17 10"/>
-                              <line x1="12" x2="12" y1="15" y2="3"/>
-                            </svg>
-                          </button>
+                        <div key={index} className="bg-white dark:bg-[#23283A] rounded-xl p-4 border border-[#E8E9F1] dark:border-[#23283A] flex flex-col items-center">
+                          <div className="aspect-square mb-3 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden w-full">
+                            <img
+                              src={foto}
+                              alt={`Foto ${index + 1}`}
+                              className="w-full h-full object-cover rounded-lg"
+                            />
+                          </div>
+                          <div className="space-y-2 w-full">
+                            <h4 className="font-semibold text-[#2E2F38] dark:text-white text-sm truncate text-center">
+                              Foto {index + 1}
+                            </h4>
+                            {/* Não temos tamanho real, então não mostra */}
+                            <button
+                              onClick={async () => {
+                                setDownloadingId(`foto-${index}`);
+                                try {
+                                  const response = await fetch(foto);
+                                  const blob = await response.blob();
+                                  const url = window.URL.createObjectURL(blob);
+                                  const link = document.createElement('a');
+                                  link.href = url;
+                                  link.download = `foto_${index + 1}.jpg`;
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  document.body.removeChild(link);
+                                  window.URL.revokeObjectURL(url);
+                                } catch (error) {
+                                  alert('Erro ao baixar a foto.');
+                                }
+                                setDownloadingId(null);
+                              }}
+                              disabled={downloadingId === `foto-${index}`}
+                              className="w-full px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] disabled:cursor-not-allowed text-white rounded-lg transition-colors font-semibold text-sm"
+                            >
+                              {downloadingId === `foto-${index}` ? (
+                                <span className="flex items-center justify-center gap-2">
+                                  <SpinnerIcon /> 
+                                  Baixando...
+                                </span>
+                              ) : 'Download'}
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -956,39 +968,50 @@ export default function MateriaisConstrutorasPage() {
                       <VideoIcon className="h-5 w-5 text-[#3478F6]" />
                       Vídeos
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {selectedImovel.fotos.filter(f => f.toLowerCase().includes('.mp4') || f.toLowerCase().includes('.avi') || f.toLowerCase().includes('.mov') || f.toLowerCase().includes('.wmv') || f.toLowerCase().includes('.flv') || f.toLowerCase().includes('.webm') || f.toLowerCase().includes('.mkv')).map((video, index) => (
-                        <div key={index} className="relative group">
-                          <video
-                            src={video}
-                            controls
-                            className="w-full h-48 object-cover rounded-lg"
-                          />
-                          <button
-                            onClick={async () => {
-                              try {
-                                const response = await fetch(video);
-                                const blob = await response.blob();
-                                const url = window.URL.createObjectURL(blob);
-                                const link = document.createElement('a');
-                                link.href = url;
-                                link.download = `video_${index + 1}.mp4`;
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                                window.URL.revokeObjectURL(url);
-                              } catch (error) {
-                                console.error('Erro ao baixar vídeo:', error);
-                              }
-                            }}
-                            className="absolute top-2 right-2 p-1 bg-black bg-opacity-50 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <svg className="h-4 w-4" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                              <polyline points="7 10 12 15 17 10"/>
-                              <line x1="12" x2="12" y1="15" y2="3"/>
-                            </svg>
-                          </button>
+                        <div key={index} className="bg-white dark:bg-[#23283A] rounded-xl p-4 border border-[#E8E9F1] dark:border-[#23283A] flex flex-col items-center">
+                          <div className="aspect-video mb-3 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden w-full">
+                            <video
+                              src={video}
+                              controls
+                              className="w-full h-full object-cover rounded-lg"
+                            />
+                          </div>
+                          <div className="space-y-2 w-full">
+                            <h4 className="font-semibold text-[#2E2F38] dark:text-white text-sm truncate text-center">
+                              Vídeo {index + 1}
+                            </h4>
+                            <button
+                              onClick={async () => {
+                                setDownloadingId(`video-${index}`);
+                                try {
+                                  const response = await fetch(video);
+                                  const blob = await response.blob();
+                                  const url = window.URL.createObjectURL(blob);
+                                  const link = document.createElement('a');
+                                  link.href = url;
+                                  link.download = `video_${index + 1}.mp4`;
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  document.body.removeChild(link);
+                                  window.URL.revokeObjectURL(url);
+                                } catch (error) {
+                                  alert('Erro ao baixar o vídeo.');
+                                }
+                                setDownloadingId(null);
+                              }}
+                              disabled={downloadingId === `video-${index}`}
+                              className="w-full px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] disabled:cursor-not-allowed text-white rounded-lg transition-colors font-semibold text-sm"
+                            >
+                              {downloadingId === `video-${index}` ? (
+                                <span className="flex items-center justify-center gap-2">
+                                  <SpinnerIcon /> 
+                                  Baixando...
+                                </span>
+                              ) : 'Download'}
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
