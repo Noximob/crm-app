@@ -158,10 +158,10 @@ export default function DeveloperPage() {
 
     return (
     <div className="max-w-5xl mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6 text-[#2E2F38]">Área do Desenvolvedor</h1>
+      <h1 className="text-3xl font-bold mb-6 text-white">Área do Desenvolvedor</h1>
       {message && <div className="mb-4 p-3 rounded bg-yellow-100 text-yellow-800">{message}</div>}
       <div className="bg-white rounded-2xl shadow-soft border border-[#E8E9F1] dark:bg-[#23283A] p-6 mb-8">
-        <h2 className="text-xl font-bold mb-4">Imobiliárias</h2>
+        <h2 className="text-xl font-bold mb-4 text-white">Imobiliárias</h2>
         {loading ? <p>Carregando...</p> : (
           <table className="w-full text-left">
             <thead>
@@ -197,7 +197,7 @@ export default function DeveloperPage() {
       {selectedImobiliaria && (
         <div className="bg-white rounded-2xl shadow-soft border border-[#E8E9F1] dark:bg-[#23283A] p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">Corretores de {selectedImobiliaria.nome}</h2>
+            <h2 className="text-xl font-bold text-white">Corretores de {selectedImobiliaria.nome}</h2>
             <button
               className="ml-auto text-[#6B6F76] dark:text-gray-400 text-xs font-medium hover:text-[#3478F6] dark:hover:text-[#A3C8F7] p-1 rounded-full transition-colors"
               onClick={() => { setSelectedImobiliaria(null); setCorretores([]); }}
