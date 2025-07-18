@@ -42,7 +42,7 @@ export const CrmHeader = () => {
         <>
             <header className="bg-[#F5F6FA] dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] p-4 rounded-2xl shadow-soft flex items-center justify-between mb-4">
                 <div className="flex items-center gap-6">
-                    <Link href="/dashboard" className="flex items-center gap-2 text-sm font-semibold text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] transition-colors">
+                    <Link href="/dashboard/crm" className="flex items-center gap-2 text-sm font-semibold text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] transition-colors">
                         <ArrowLeftIcon className="h-5 w-5" />
                         Voltar
                     </Link>
