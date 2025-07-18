@@ -328,6 +328,7 @@ const MetasCard = ({ meta, nomeImobiliaria }: { meta: any, nomeImobiliaria: stri
 
 export default function DashboardPage() {
   const { currentUser, userData } = useAuth();
+  const router = useRouter();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [indicadoresExternos, setIndicadoresExternos] = useState<any>(null);
   const [indicadoresExternosAnterior, setIndicadoresExternosAnterior] = useState<any>(null);
@@ -347,8 +348,6 @@ export default function DashboardPage() {
   const [isReposting, setIsReposting] = useState<string | null>(null);
   const [postComments, setPostComments] = useState<any[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
-  const [showLeadModal, setShowLeadModal] = useState(false);
-  const [selectedLead, setSelectedLead] = useState<any>(null);
   const [isCommenting, setIsCommenting] = useState<string | null>(null);
   const [showEmojiRepost, setShowEmojiRepost] = useState(false);
   const [repostWithComment, setRepostWithComment] = useState(false);
@@ -666,8 +665,8 @@ export default function DashboardPage() {
   };
 
   const openLeadModal = async (lead: any) => {
-    setSelectedLead(lead);
-    setShowLeadModal(true);
+    // Redirecionar para a página de detalhes do lead
+    router.push(`/dashboard/crm/${lead.id}`);
   };
 
   // Buscar dados da meta e nome da imobiliária
@@ -1279,129 +1278,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Modal do Lead */}
-      {showLeadModal && selectedLead && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-lg w-full max-w-2xl p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto">
-            <button 
-              className="absolute top-4 right-4 text-2xl text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] transition-colors" 
-              onClick={() => setShowLeadModal(false)}
-            >
-              ×
-            </button>
-            
-            {/* Header do Lead */}
-            <div className="bg-gradient-to-r from-[#A3C8F7]/10 to-[#3478F6]/10 rounded-xl p-6 mb-6 border border-[#3478F6]/20">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-[#3478F6] rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                  {selectedLead.nome?.charAt(0)?.toUpperCase() || 'L'}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="font-bold text-xl text-[#2E2F38] dark:text-white">{selectedLead.nome}</span>
-                    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                      selectedLead.taskStatus === 'Tarefa em Atraso' ? 'bg-red-500/20 text-red-500' :
-                      selectedLead.taskStatus === 'Tarefa do Dia' ? 'bg-yellow-500/20 text-yellow-500' :
-                      'bg-gray-500/20 text-gray-500'
-                    }`}>
-                      {selectedLead.taskStatus}
-                    </span>
-                  </div>
-                  <div className="text-sm text-[#6B6F76] dark:text-gray-300">
-                    {selectedLead.telefone} • {selectedLead.email || 'Email não informado'}
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Informações do Lead */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              {/* Dados Básicos */}
-              <div className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl p-4">
-                <h3 className="font-bold text-[#2E2F38] dark:text-white mb-3 flex items-center gap-2">
-                  <span>📋</span>
-                  Dados Básicos
-                </h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-[#6B6F76] dark:text-gray-300">Origem:</span>
-                    <span className="text-[#2E2F38] dark:text-white font-medium">{selectedLead.origem || 'Não informado'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#6B6F76] dark:text-gray-300">Interesse:</span>
-                    <span className="text-[#2E2F38] dark:text-white font-medium">{selectedLead.interesse || 'Não informado'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#6B6F76] dark:text-gray-300">Valor:</span>
-                    <span className="text-[#2E2F38] dark:text-white font-medium">{selectedLead.valor || 'Não informado'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#6B6F76] dark:text-gray-300">Último contato:</span>
-                    <span className="text-[#2E2F38] dark:text-white font-medium">{selectedLead.ultimoContato || 'Não informado'}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Próximas Ações */}
-              <div className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl p-4">
-                <h3 className="font-bold text-[#2E2F38] dark:text-white mb-3 flex items-center gap-2">
-                  <span>🎯</span>
-                  Próximas Ações
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-3 bg-white dark:bg-[#23283A] rounded-lg border border-[#E8E9F1] dark:border-[#23283A]">
-                    <div className="w-2 h-2 bg-[#3478F6] rounded-full"></div>
-                    <span className="text-sm text-[#2E2F38] dark:text-white">Ligar para confirmar interesse</span>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-white dark:bg-[#23283A] rounded-lg border border-[#E8E9F1] dark:border-[#23283A]">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                    <span className="text-sm text-[#2E2F38] dark:text-white">Enviar proposta comercial</span>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-white dark:bg-[#2328A] rounded-lg border border-[#E8E9F1] dark:border-[#23283A]">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-sm text-[#2E2F38] dark:text-white">Agendar visita técnica</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Anotações */}
-            <div className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl p-4 mb-6">
-              <h3 className="font-bold text-[#2E2F38] dark:text-white mb-3 flex items-center gap-2">
-                <span>📝</span>
-                Anotações
-              </h3>
-              <div className="bg-white dark:bg-[#23283A] rounded-lg p-4 border border-[#E8E9F1] dark:border-[#23283A]">
-                <textarea 
-                  className="w-full h-32 resize-none bg-transparent text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-300 focus:outline-none"
-                  placeholder="Adicione suas anotações sobre este lead..."
-                  defaultValue={selectedLead.anotacoes || ''}
-                />
-              </div>
-            </div>
-
-            {/* Ações Rápidas */}
-            <div className="flex items-center gap-3 pt-4 border-t border-[#E8E9F1] dark:border-[#23283A]">
-              <button className="flex items-center gap-2 px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg transition-colors">
-                <span>📞</span>
-                <span>Ligar</span>
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">
-                <span>💬</span>
-                <span>WhatsApp</span>
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors">
-                <span>📧</span>
-                <span>Email</span>
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 rounded-lg hover:bg-[#E8E9F1] dark:hover:bg-[#23283A] transition-colors">
-                <span>💾</span>
-                <span>Salvar</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
