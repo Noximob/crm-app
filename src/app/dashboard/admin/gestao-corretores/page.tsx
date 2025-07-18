@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, doc, updateDoc, deleteDoc, query, where, onSnapshot, writeBatch } from 'firebase/firestore';
+import { collection, doc, deleteDoc, query, where, onSnapshot, writeBatch } from 'firebase/firestore';
 import { PIPELINE_STAGES } from '@/lib/constants';
 
 interface User {
@@ -34,23 +34,14 @@ export default function GestaoCorretoresPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOriginUser, setSelectedOriginUser] = useState<string>('');
-  const [selectedStage, setSelectedStage] = useState<string>('Pré Qualificação');
-  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [selectedDestUser, setSelectedDestUser] = useState<string>('');
+  const [selectedStage, setSelectedStage] = useState<string>('');
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
-  const [transferTarget, setTransferTarget] = useState<string>('');
-
-  console.log('userData atual:', userData);
-  console.log('imobiliariaId:', userData?.imobiliariaId);
 
   // Buscar usuários da imobiliária
   useEffect(() => {
-    if (!userData?.imobiliariaId) {
-      console.log('userData ou imobiliariaId não encontrado:', userData);
-      return;
-    }
+    if (!userData?.imobiliariaId) return;
 
-    console.log('Buscando usuários para imobiliária:', userData.imobiliariaId);
-    
     const usersRef = collection(db, 'usuarios');
     const q = query(usersRef, where('imobiliariaId', '==', userData.imobiliariaId));
     
@@ -59,15 +50,7 @@ export default function GestaoCorretoresPage() {
         id: doc.id,
         ...doc.data()
       })) as User[];
-      
-      console.log('Usuários encontrados:', usersData);
-      console.log('Usuários filtrados (corretor-vinculado e aprovado):', 
-        usersData.filter(user => user.tipoConta === 'corretor-vinculado' && user.aprovado)
-      );
-      
       setUsers(usersData);
-    }, (error) => {
-      console.error('Erro ao buscar usuários:', error);
     });
 
     return () => unsubscribe();
@@ -75,13 +58,8 @@ export default function GestaoCorretoresPage() {
 
   // Buscar leads
   useEffect(() => {
-    if (!userData?.imobiliariaId) {
-      console.log('userData ou imobiliariaId não encontrado para leads:', userData);
-      return;
-    }
+    if (!userData?.imobiliariaId) return;
 
-    console.log('Buscando leads para imobiliária:', userData.imobiliariaId);
-    
     const leadsRef = collection(db, 'leads');
     const q = query(leadsRef, where('imobiliariaId', '==', userData.imobiliariaId));
     
@@ -90,17 +68,7 @@ export default function GestaoCorretoresPage() {
         id: doc.id,
         ...doc.data()
       })) as Lead[];
-      
-      console.log('Leads encontrados:', leadsData);
-      console.log('Leads por usuário:', leadsData.reduce((acc, lead) => {
-        acc[lead.userId] = (acc[lead.userId] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>));
-      
       setLeads(leadsData);
-      setLoading(false);
-    }, (error) => {
-      console.error('Erro ao buscar leads:', error);
       setLoading(false);
     });
 
@@ -110,13 +78,16 @@ export default function GestaoCorretoresPage() {
   // Filtrar leads do corretor de origem por etapa
   const filteredLeads = leads.filter(lead => {
     const userMatch = selectedOriginUser ? lead.userId === selectedOriginUser : false;
-    const stageMatch = lead.etapa === selectedStage;
+    const stageMatch = selectedStage ? lead.etapa === selectedStage : true;
     return userMatch && stageMatch;
   });
 
   // Transferir leads
   const handleTransferLeads = async () => {
-    if (!transferTarget || selectedLeads.length === 0) return;
+    if (!selectedDestUser || selectedLeads.length === 0) {
+      alert('Selecione um corretor de destino e pelo menos um lead.');
+      return;
+    }
 
     try {
       const batch = writeBatch(db);
@@ -124,7 +95,7 @@ export default function GestaoCorretoresPage() {
       selectedLeads.forEach(leadId => {
         const leadRef = doc(db, 'leads', leadId);
         batch.update(leadRef, {
-          userId: transferTarget,
+          userId: selectedDestUser,
           etapa: 'Pré Qualificação' // Volta para pré qualificação
         });
       });
@@ -132,9 +103,6 @@ export default function GestaoCorretoresPage() {
       await batch.commit();
       
       setSelectedLeads([]);
-      setShowTransferModal(false);
-      setTransferTarget('');
-      
       alert(`${selectedLeads.length} lead(s) transferido(s) com sucesso!`);
     } catch (error) {
       console.error('Erro ao transferir leads:', error);
@@ -142,16 +110,30 @@ export default function GestaoCorretoresPage() {
     }
   };
 
-  // Excluir lead
-  const handleDeleteLead = async (leadId: string) => {
-    if (!confirm('Tem certeza que deseja excluir este lead?')) return;
+  // Excluir leads
+  const handleDeleteLeads = async () => {
+    if (selectedLeads.length === 0) {
+      alert('Selecione pelo menos um lead para excluir.');
+      return;
+    }
+
+    if (!confirm(`Tem certeza que deseja excluir ${selectedLeads.length} lead(s)?`)) return;
 
     try {
-      await deleteDoc(doc(db, 'leads', leadId));
-      alert('Lead excluído com sucesso!');
+      const batch = writeBatch(db);
+      
+      selectedLeads.forEach(leadId => {
+        const leadRef = doc(db, 'leads', leadId);
+        batch.delete(leadRef);
+      });
+
+      await batch.commit();
+      
+      setSelectedLeads([]);
+      alert(`${selectedLeads.length} lead(s) excluído(s) com sucesso!`);
     } catch (error) {
-      console.error('Erro ao excluir lead:', error);
-      alert('Erro ao excluir lead. Tente novamente.');
+      console.error('Erro ao excluir leads:', error);
+      alert('Erro ao excluir leads. Tente novamente.');
     }
   };
 
@@ -174,6 +156,11 @@ export default function GestaoCorretoresPage() {
     setSelectedLeads([]);
   };
 
+  // Limpar filtro
+  const clearFilter = () => {
+    setSelectedStage('');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] flex items-center justify-center">
@@ -185,22 +172,24 @@ export default function GestaoCorretoresPage() {
     );
   }
 
+  const corretores = users.filter(user => user.tipoConta === 'corretor-vinculado' && user.aprovado);
+
   return (
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">Gestão de Corretores</h1>
-          <p className="text-[#6B6F76] dark:text-gray-300">Selecione um corretor para gerenciar seus leads</p>
+          <p className="text-[#6B6F76] dark:text-gray-300">Transfira leads entre corretores</p>
         </div>
 
-        {/* Filtros */}
+        {/* Seleção de Corretores */}
         <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Corretor de Origem */}
             <div>
               <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                Corretor de Origem
+                Corretor Origem
               </label>
               <select
                 value={selectedOriginUser}
@@ -210,8 +199,8 @@ export default function GestaoCorretoresPage() {
                 }}
                 className="w-full px-4 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
               >
-                <option value="">Selecione um corretor</option>
-                {users.filter(user => user.tipoConta === 'corretor-vinculado' && user.aprovado).map(user => (
+                <option value="">Selecione o corretor de origem</option>
+                {corretores.map(user => (
                   <option key={user.id} value={user.id}>
                     {user.nome} ({user.email})
                   </option>
@@ -219,17 +208,41 @@ export default function GestaoCorretoresPage() {
               </select>
             </div>
 
-            {/* Filtro de Etapa (só aparece se corretor estiver selecionado) */}
-            {selectedOriginUser && (
-              <div>
-                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                  Etapa do Lead
+            {/* Corretor de Destino */}
+            <div>
+              <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                Corretor Destino
+              </label>
+              <select
+                value={selectedDestUser}
+                onChange={(e) => setSelectedDestUser(e.target.value)}
+                className="w-full px-4 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+              >
+                <option value="">Selecione o corretor de destino</option>
+                {corretores.filter(user => user.id !== selectedOriginUser).map(user => (
+                  <option key={user.id} value={user.id}>
+                    {user.nome} ({user.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Filtro por Etapa */}
+        {selectedOriginUser && (
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-4 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <label className="text-sm font-medium text-[#2E2F38] dark:text-white">
+                  Filtrar por Etapa:
                 </label>
                 <select
                   value={selectedStage}
                   onChange={(e) => setSelectedStage(e.target.value)}
-                  className="w-full px-4 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                  className="px-4 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
                 >
+                  <option value="">Todas as etapas</option>
                   {PIPELINE_STAGES.map(stage => {
                     const stageCount = leads.filter(lead => 
                       lead.userId === selectedOriginUser && lead.etapa === stage
@@ -242,11 +255,17 @@ export default function GestaoCorretoresPage() {
                   })}
                 </select>
               </div>
-            )}
+              <button
+                onClick={clearFilter}
+                className="px-4 py-2 text-sm bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Limpar Filtro
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Ações em massa (só aparece se corretor estiver selecionado) */}
+        {/* Ações em massa */}
         {selectedOriginUser && filteredLeads.length > 0 && (
           <div className="bg-white dark:bg-[#23283A] rounded-2xl p-4 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-6">
             <div className="flex items-center justify-between">
@@ -269,14 +288,25 @@ export default function GestaoCorretoresPage() {
                   </button>
                 </div>
               </div>
-              {selectedLeads.length > 0 && (
-                <button
-                  onClick={() => setShowTransferModal(true)}
-                  className="px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#255FD1] transition-colors font-medium"
-                >
-                  Transferir {selectedLeads.length} Lead(s)
-                </button>
-              )}
+              <div className="flex gap-2">
+                {selectedLeads.length > 0 && (
+                  <>
+                    <button
+                      onClick={handleTransferLeads}
+                      disabled={!selectedDestUser}
+                      className="px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#255FD1] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Transferir {selectedLeads.length} Lead(s)
+                    </button>
+                    <button
+                      onClick={handleDeleteLeads}
+                      className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"
+                    >
+                      Apagar {selectedLeads.length} Lead(s)
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -287,7 +317,8 @@ export default function GestaoCorretoresPage() {
             {selectedOriginUser ? (
               <>
                 <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">
-                  Leads de {users.find(u => u.id === selectedOriginUser)?.nome} - {selectedStage}
+                  Leads de {users.find(u => u.id === selectedOriginUser)?.nome}
+                  {selectedStage && ` - ${selectedStage}`}
                 </h2>
                 <p className="text-[#6B6F76] dark:text-gray-300 mt-1">
                   {filteredLeads.length} lead(s) encontrado(s)
@@ -296,10 +327,10 @@ export default function GestaoCorretoresPage() {
             ) : (
               <>
                 <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">
-                  Selecione um corretor para ver seus leads
+                  Selecione um corretor de origem
                 </h2>
                 <p className="text-[#6B6F76] dark:text-gray-300 mt-1">
-                  Escolha um corretor de origem para começar
+                  Escolha um corretor para ver seus leads
                 </p>
               </>
             )}
@@ -312,7 +343,7 @@ export default function GestaoCorretoresPage() {
           ) : filteredLeads.length === 0 ? (
             <div className="p-8 text-center">
               <p className="text-[#6B6F76] dark:text-gray-300">
-                Nenhum lead encontrado em "{selectedStage}" para {users.find(u => u.id === selectedOriginUser)?.nome}.
+                Nenhum lead encontrado{selectedStage && ` em "${selectedStage}"`} para {users.find(u => u.id === selectedOriginUser)?.nome}.
               </p>
             </div>
           ) : (
@@ -330,8 +361,8 @@ export default function GestaoCorretoresPage() {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-[#6B6F76] dark:text-gray-300">Nome</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-[#6B6F76] dark:text-gray-300">Telefone</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[#6B6F76] dark:text-gray-300">Etapa</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-[#6B6F76] dark:text-gray-300">Data</th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-[#6B6F76] dark:text-gray-300">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E8E9F1] dark:divide-[#23283A]">
@@ -351,17 +382,13 @@ export default function GestaoCorretoresPage() {
                       <td className="px-6 py-4 text-sm text-[#6B6F76] dark:text-gray-300">
                         {lead.telefone}
                       </td>
+                      <td className="px-6 py-4 text-sm">
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                          {lead.etapa}
+                        </span>
+                      </td>
                       <td className="px-6 py-4 text-sm text-[#6B6F76] dark:text-gray-300">
                         {lead.createdAt?.toDate ? lead.createdAt.toDate().toLocaleDateString('pt-BR') : 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <button
-                          onClick={() => handleDeleteLead(lead.id)}
-                          className="text-red-500 hover:text-red-700 transition-colors"
-                          title="Excluir lead"
-                        >
-                          🗑️
-                        </button>
                       </td>
                     </tr>
                   ))}
@@ -371,59 +398,6 @@ export default function GestaoCorretoresPage() {
           )}
         </div>
       </div>
-
-      {/* Modal de Transferência */}
-      {showTransferModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-lg w-full max-w-md p-6">
-            <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4">
-              Transferir {selectedLeads.length} Lead(s)
-            </h2>
-            <p className="text-[#6B6F76] dark:text-gray-300 mb-4">
-              Selecione o corretor de destino. Os leads voltarão para "Pré Qualificação".
-            </p>
-            
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                Corretor de Destino
-              </label>
-              <select
-                value={transferTarget}
-                onChange={(e) => setTransferTarget(e.target.value)}
-                className="w-full px-4 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
-              >
-                <option value="">Selecione um corretor</option>
-                {users
-                  .filter(user => user.tipoConta === 'corretor-vinculado' && user.aprovado && user.id !== selectedOriginUser)
-                  .map(user => (
-                    <option key={user.id} value={user.id}>
-                      {user.nome} ({user.email})
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowTransferModal(false);
-                  setTransferTarget('');
-                }}
-                className="flex-1 px-4 py-2 border border-[#E8E9F1] dark:border-[#23283A] text-[#2E2F38] dark:text-white rounded-lg hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleTransferLeads}
-                disabled={!transferTarget}
-                className="flex-1 px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#255FD1] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Transferir
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 } 
