@@ -39,10 +39,18 @@ export default function GestaoCorretoresPage() {
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [transferTarget, setTransferTarget] = useState<string>('');
 
+  console.log('userData atual:', userData);
+  console.log('imobiliariaId:', userData?.imobiliariaId);
+
   // Buscar usuários da imobiliária
   useEffect(() => {
-    if (!userData?.imobiliariaId) return;
+    if (!userData?.imobiliariaId) {
+      console.log('userData ou imobiliariaId não encontrado:', userData);
+      return;
+    }
 
+    console.log('Buscando usuários para imobiliária:', userData.imobiliariaId);
+    
     const usersRef = collection(db, 'usuarios');
     const q = query(usersRef, where('imobiliariaId', '==', userData.imobiliariaId));
     
@@ -51,7 +59,15 @@ export default function GestaoCorretoresPage() {
         id: doc.id,
         ...doc.data()
       })) as User[];
+      
+      console.log('Usuários encontrados:', usersData);
+      console.log('Usuários filtrados (corretor-vinculado e aprovado):', 
+        usersData.filter(user => user.tipoConta === 'corretor-vinculado' && user.aprovado)
+      );
+      
       setUsers(usersData);
+    }, (error) => {
+      console.error('Erro ao buscar usuários:', error);
     });
 
     return () => unsubscribe();
@@ -59,8 +75,13 @@ export default function GestaoCorretoresPage() {
 
   // Buscar leads
   useEffect(() => {
-    if (!userData?.imobiliariaId) return;
+    if (!userData?.imobiliariaId) {
+      console.log('userData ou imobiliariaId não encontrado para leads:', userData);
+      return;
+    }
 
+    console.log('Buscando leads para imobiliária:', userData.imobiliariaId);
+    
     const leadsRef = collection(db, 'leads');
     const q = query(leadsRef, where('imobiliariaId', '==', userData.imobiliariaId));
     
@@ -69,7 +90,17 @@ export default function GestaoCorretoresPage() {
         id: doc.id,
         ...doc.data()
       })) as Lead[];
+      
+      console.log('Leads encontrados:', leadsData);
+      console.log('Leads por usuário:', leadsData.reduce((acc, lead) => {
+        acc[lead.userId] = (acc[lead.userId] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>));
+      
       setLeads(leadsData);
+      setLoading(false);
+    }, (error) => {
+      console.error('Erro ao buscar leads:', error);
       setLoading(false);
     });
 
