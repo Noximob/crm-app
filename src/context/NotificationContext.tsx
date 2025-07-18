@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, collection, query, where, orderBy, getDocs, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, orderBy, getDocs, Timestamp, onSnapshot } from 'firebase/firestore';
 
 interface NotificationContextType {
   notifications: {
@@ -40,9 +40,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         orderBy('createdAt', 'desc')
       );
       const postsSnapshot = await getDocs(postsQuery);
-      newNotifications.comunidade = postsSnapshot.size;
+      
+      // Filtrar posts que NÃO são do próprio usuário
+      const postsFromOthers = postsSnapshot.docs.filter(doc => {
+        const postData = doc.data();
+        return postData.userId !== user.uid;
+      });
+      
+      newNotifications.comunidade = postsFromOthers.length;
 
-      console.log(`Encontradas ${postsSnapshot.size} novidades na comunidade`);
+      console.log(`Encontradas ${postsFromOthers.length} novidades na comunidade (excluindo posts próprios)`);
 
       setNotifications(newNotifications);
     } catch (error) {
@@ -62,7 +69,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         [section]: Timestamp.now()
       }, { merge: true });
 
-      // Resetar notificação local
+      // Resetar notificação local imediatamente
       setNotifications(prev => ({
         ...prev,
         [section]: 0
@@ -79,6 +86,43 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     if (user && userData) {
       checkForNewContent();
     }
+  }, [user, userData]);
+
+  // Monitorar novos posts em tempo real
+  useEffect(() => {
+    if (!user || !userData) return;
+
+    // Buscar última visita do usuário
+    const userVisitsRef = doc(db, 'userVisits', user.uid);
+    
+    const unsubscribe = onSnapshot(userVisitsRef, async (doc) => {
+      if (doc.exists()) {
+        const lastVisits = doc.data();
+        const comunidadeLastVisit = lastVisits.comunidade?.toDate?.() || new Date(0);
+        
+        // Verificar posts mais recentes que a última visita
+        const postsQuery = query(
+          collection(db, 'comunidadePosts'),
+          where('createdAt', '>', Timestamp.fromDate(comunidadeLastVisit)),
+          orderBy('createdAt', 'desc')
+        );
+        
+        const postsSnapshot = await getDocs(postsQuery);
+        
+        // Filtrar posts que NÃO são do próprio usuário
+        const postsFromOthers = postsSnapshot.docs.filter(doc => {
+          const postData = doc.data();
+          return postData.userId !== user.uid;
+        });
+        
+        setNotifications(prev => ({
+          ...prev,
+          comunidade: postsFromOthers.length
+        }));
+      }
+    });
+
+    return () => unsubscribe();
   }, [user, userData]);
 
   return (

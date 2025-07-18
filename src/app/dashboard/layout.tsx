@@ -74,6 +74,7 @@ export default function DashboardLayout({
   // Resetar notificação quando acessa a seção
   useEffect(() => {
     if (pathname === '/dashboard/comunidade') {
+      // Resetar imediatamente ao acessar a página
       resetNotification('comunidade');
     }
   }, [pathname, resetNotification]);
