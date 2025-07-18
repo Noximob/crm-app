@@ -759,299 +759,300 @@ export default function DashboardPage() {
       </div>
 
       {/* Grid de conteúdo principal */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Agenda do Dia */}
-        <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 mb-6 lg:col-span-2 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
-          <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4">Agenda do Dia</h2>
-          {agendaLoading ? (
-            <p className="text-gray-300">Carregando tarefas...</p>
-          ) : agendaLeads.length === 0 ? (
-            <p className="text-gray-300">Nenhuma tarefa prioritária encontrada.</p>
-          ) : (
-            <table className="w-full text-left">
-              <thead className="text-xs text-gray-400 uppercase">
-                <tr>
-                  <th className="py-2 px-3 font-semibold">Lead</th>
-                  <th className="py-2 px-3 font-semibold">Status</th>
-                  <th className="py-2 px-3 font-semibold">Ação</th>
-                </tr>
-              </thead>
-              <tbody>
-                {agendaLeads.map(lead => (
-                  <tr key={lead.id} className="border-b border-gray-700 last:border-0 hover:bg-gray-700/30 transition-colors">
-                    <td className="py-3 px-3 font-semibold text-white whitespace-nowrap">{lead.nome}</td>
-                    <td className="py-3 px-3">
-                      <div className={`flex items-center gap-2 text-sm`}>
-                        <span className={`h-2.5 w-2.5 ${statusInfo[lead.taskStatus as TaskStatus].color} rounded-full`}></span>
-                        <span className="text-gray-300">{statusInfo[lead.taskStatus as TaskStatus].text}</span>
-          </div>
-                    </td>
-                    <td className="py-3 px-3">
-                      <Link href={`/dashboard/crm/${lead.id}`}>
-                        <span className="px-4 py-1 text-sm font-semibold text-white bg-[#3478F6] hover:bg-[#255FD1] rounded-lg transition-colors cursor-pointer">
-                          Abrir
-                        </span>
-                      </Link>
-                    </td>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Coluna Esquerda - Agenda, Avisos e Metas */}
+        <div className="space-y-6">
+          {/* Agenda do Dia */}
+          <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
+            <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4">Agenda do Dia</h2>
+            {agendaLoading ? (
+              <p className="text-gray-300">Carregando tarefas...</p>
+            ) : agendaLeads.length === 0 ? (
+              <p className="text-gray-300">Nenhuma tarefa prioritária encontrada.</p>
+            ) : (
+              <table className="w-full text-left">
+                <thead className="text-xs text-gray-400 uppercase">
+                  <tr>
+                    <th className="py-2 px-3 font-semibold">Lead</th>
+                    <th className="py-2 px-3 font-semibold">Status</th>
+                    <th className="py-2 px-3 font-semibold">Ação</th>
                   </tr>
-            ))}
-              </tbody>
-            </table>
-          )}
+                </thead>
+                <tbody>
+                  {agendaLeads.map(lead => (
+                    <tr key={lead.id} className="border-b border-gray-700 last:border-0 hover:bg-gray-700/30 transition-colors">
+                      <td className="py-3 px-3 font-semibold text-white whitespace-nowrap">{lead.nome}</td>
+                      <td className="py-3 px-3">
+                        <div className={`flex items-center gap-2 text-sm`}>
+                          <span className={`h-2.5 w-2.5 ${statusInfo[lead.taskStatus as TaskStatus].color} rounded-full`}></span>
+                          <span className="text-gray-300">{statusInfo[lead.taskStatus as TaskStatus].text}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3">
+                        <Link href={`/dashboard/crm/${lead.id}`}>
+                          <span className="px-4 py-1 text-sm font-semibold text-white bg-[#3478F6] hover:bg-[#255FD1] rounded-lg transition-colors cursor-pointer">
+                            Abrir
+                          </span>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
-        
-        {/* Top Trending - NOVO DESIGN SUPER CHAMATIVO */}
-        <div className="lg:col-span-1">
-          <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl animate-fade-in">
-            {/* Borda decorativa */}
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#3478F6] to-[#A3C8F7]"></div>
-            
-            {/* Header com ícone de fogo */}
-            <div className="flex items-center gap-3 mb-6">
+
+          {/* Avisos Importantes */}
+          <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl animate-fade-in flex flex-col gap-4">
+            {/* Borda vermelha à esquerda */}
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#FF6B6B] to-[#FF8E8E]" />
+            <div className="flex items-center gap-3 mb-4 relative z-10">
               <div className="relative">
-                <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center animate-pulse">
-                  <span className="text-white text-lg">🔥</span>
-                </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">HOT</span>
-                </div>
+                <AlertCircleIcon className="h-8 w-8 text-[#FF6B6B] drop-shadow-lg animate-pulse" />
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Top Trending</h2>
-                <p className="text-xs text-[#6B6F76] dark:text-gray-300">Posts mais quentes da comunidade</p>
+              <span className="font-extrabold text-white text-2xl tracking-tight drop-shadow-lg">Avisos Importantes</span>
+              {/* Badge de destaque */}
+              <span className="px-2 py-1 bg-[#FF6B6B]/20 text-[#FF6B6B] text-xs font-bold rounded-full border border-[#FF6B6B]/30 animate-pulse">
+                ATENÇÃO
+              </span>
+            </div>
+            <div className="space-y-3 relative z-10">
+              {avisosImportantes
+                .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
+                .length === 0 ? (
+                <p className="text-[#6B6F76] dark:text-gray-300 text-sm">Nenhum aviso importante cadastrado pela imobiliária.</p>
+              ) : (
+                avisosImportantes
+                  .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
+                  .map((aviso, idx) => (
+                    <div
+                      key={aviso.id}
+                      className="flex items-start gap-3 p-4 rounded-xl border border-[#FF6B6B]/40 bg-gradient-to-r from-[#FF6B6B]/10 to-[#FF8E8E]/0 shadow-lg hover:scale-[1.02] transition-all duration-300 relative overflow-hidden group backdrop-blur-sm"
+                    >
+                      <div className="relative z-10">
+                        <AlertCircleIcon className="h-5 w-5 text-[#FF6B6B] mt-0.5 animate-pulse" />
+                      </div>
+                      <div className="flex-1 relative z-10">
+                        <div className="text-sm font-bold text-[#2E2F38] dark:text-white mb-1 group-hover:text-[#FF6B6B] transition-colors">
+                          {aviso.titulo}
+                        </div>
+                        <div className="text-xs text-[#6B6F76] dark:text-gray-100 mb-2 leading-relaxed">
+                          {aviso.mensagem}
+                        </div>
+                        <div className="text-[10px] text-[#FF6B6B] font-semibold bg-[#FF6B6B]/10 px-2 py-1 rounded-full inline-block">
+                          {aviso.dataHora?.toDate ? aviso.dataHora.toDate().toLocaleString('pt-BR') : ''}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+              )}
+            </div>
+          </div>
+
+          {/* Metas */}
+          <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl animate-fade-in">
+            <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
+            <MetasCard meta={meta} nomeImobiliaria={nomeImobiliaria} />
+          </div>
+        </div>
+
+        {/* Coluna Direita - Top Trending */}
+        <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl animate-fade-in">
+          {/* Borda decorativa */}
+          <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#3478F6] to-[#A3C8F7]"></div>
+          
+          {/* Header com ícone de fogo */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="relative">
+              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center animate-pulse">
+                <span className="text-white text-lg">🔥</span>
+              </div>
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">HOT</span>
               </div>
             </div>
+            <div>
+              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Top Trending</h2>
+              <p className="text-xs text-[#6B6F76] dark:text-gray-300">Posts mais quentes da comunidade</p>
+            </div>
+          </div>
 
-            {trendingLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3478F6]"></div>
-              </div>
-            ) : trendingPosts.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="text-4xl mb-2">📱</div>
-                <p className="text-[#6B6F76] dark:text-gray-300 text-sm">Nenhum post ainda. Seja o primeiro!</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {trendingPosts.map((post, index) => (
-                  <div 
-                    key={post.id} 
-                    className="group relative bg-white/60 dark:bg-[#23283A]/60 backdrop-blur-sm rounded-xl p-4 hover:bg-white/80 dark:hover:bg-[#23283A]/80 transition-all duration-300 cursor-pointer border border-white/20 hover:border-[#3478F6]/30 hover:scale-[1.02] shadow-lg hover:shadow-xl"
-                    onClick={() => openPostModal(post)}
-                  >
-                    {/* Badge de ranking */}
-                    <div className="absolute -top-2 -left-2 w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
-                      #{index + 1}
+          {trendingLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3478F6]"></div>
+            </div>
+          ) : trendingPosts.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-4xl mb-2">📱</div>
+              <p className="text-[#6B6F76] dark:text-gray-300 text-sm">Nenhum post ainda. Seja o primeiro!</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {trendingPosts.map((post, index) => (
+                <div 
+                  key={post.id} 
+                  className="group relative bg-white/60 dark:bg-[#23283A]/60 backdrop-blur-sm rounded-xl p-4 hover:bg-white/80 dark:hover:bg-[#23283A]/80 transition-all duration-300 cursor-pointer border border-white/20 hover:border-[#3478F6]/30 hover:scale-[1.02] shadow-lg hover:shadow-xl"
+                  onClick={() => openPostModal(post)}
+                >
+                  {/* Badge de ranking */}
+                  <div className="absolute -top-2 -left-2 w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
+                    #{index + 1}
+                  </div>
+
+                  {/* Header do post */}
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="relative">
+                      <img src={post.avatar} alt={post.nome} className="w-12 h-12 rounded-full object-cover border-2 border-white dark:border-[#23283A] shadow-md" />
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-[#23283A]"></div>
                     </div>
-
-                    {/* Header do post */}
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="relative">
-                        <img src={post.avatar} alt={post.nome} className="w-12 h-12 rounded-full object-cover border-2 border-white dark:border-[#23283A] shadow-md" />
-                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-[#23283A]"></div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-bold text-[#2E2F38] dark:text-white text-sm truncate">{post.nome}</span>
-                          <span className="text-xs text-[#6B6F76] dark:text-gray-300">
-                            {post.createdAt?.toDate ? 
-                              post.createdAt.toDate().toLocaleString('pt-BR', { 
-                                day: '2-digit', 
-                                month: '2-digit', 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              }) : ''
-                            }
-                          </span>
-                        </div>
-                        <div className="text-sm text-[#2E2F38] dark:text-white line-clamp-2 leading-relaxed">
-                          {post.texto}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Preview de mídia */}
-                    {(post.file || post.youtubeData) && (
-                      <div className="mb-3 relative overflow-hidden rounded-lg">
-                        {post.youtubeData && (
-                          <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
-                            <iframe
-                              src={post.youtubeData.embedUrl}
-                              title="YouTube video"
-                              className="w-full h-full"
-                              frameBorder="0"
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                              allowFullScreen
-                            ></iframe>
-                            <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded text-xs font-semibold">
-                              YOUTUBE
-                            </div>
-                          </div>
-                        )}
-                        {post.file && post.fileMeta && post.fileMeta.type.startsWith('image/') && (
-                          <div className="relative aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
-                            <img 
-                              src={post.file} 
-                              alt="Post image" 
-                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                            />
-                            <div className="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold">
-                              FOTO
-                            </div>
-                          </div>
-                        )}
-                        {post.file && post.fileMeta && post.fileMeta.type.startsWith('video/') && (
-                          <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
-                            <video 
-                              src={post.file} 
-                              className="w-full h-full object-cover"
-                              muted
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                  <path d="M8 5v14l11-7z"/>
-                                </svg>
-                              </div>
-                            </div>
-                            <div className="absolute top-2 left-2 bg-purple-600 text-white px-2 py-1 rounded text-xs font-semibold">
-                              VÍDEO
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Estatísticas de engajamento */}
-                    <div className="flex items-center justify-between pt-3 border-t border-white/20 dark:border-[#23283A]/20">
-                      <div className="flex items-center gap-4">
-                        {/* Botão Curtir */}
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleLike(post.id); }}
-                          disabled={isLiking === post.id}
-                          className={`flex items-center gap-1.5 text-sm font-medium transition-all duration-200 ${
-                            post.userLiked 
-                              ? 'text-red-500 scale-110' 
-                              : 'text-[#6B6F76] dark:text-gray-300 hover:text-red-500 hover:scale-105'
-                          }`}
-                        >
-                          {isLiking === post.id ? (
-                            <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-                          ) : (
-                            <span className="text-lg">{post.userLiked ? '❤️' : '🤍'}</span>
-                          )}
-                          <span>{post.likes || 0}</span>
-                        </button>
-                        
-                        {/* Botão Comentar */}
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); openPostModal(post); }}
-                          className="flex items-center gap-1.5 text-sm font-medium text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] hover:scale-105 transition-all duration-200"
-                        >
-                          <span className="text-lg">💬</span>
-                          <span>{post.commentsCount || 0}</span>
-                        </button>
-                        
-                        {/* Botão Repostar */}
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleRepost(post.id); }}
-                          disabled={isReposting === post.id}
-                          className="flex items-center gap-1.5 text-sm font-medium text-[#6B6F76] dark:text-gray-300 hover:text-green-500 hover:scale-105 transition-all duration-200"
-                        >
-                          {isReposting === post.id ? (
-                            <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-                          ) : (
-                            <span className="text-lg">🔁</span>
-                          )}
-                          <span>{post.repostsCount || 0}</span>
-                        </button>
-                      </div>
-                      
-                      {/* Indicador de engajamento com gradiente */}
-                      <div className="px-2 py-1 bg-gradient-to-r from-[#3478F6]/20 to-[#A3C8F7]/20 rounded-full border border-[#3478F6]/30">
-                        <span className="text-xs font-medium text-[#3478F6] dark:text-[#A3C8F7]">
-                          🔥 {post.totalEngagement}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-[#2E2F38] dark:text-white text-sm truncate">{post.nome}</span>
+                        <span className="text-xs text-[#6B6F76] dark:text-gray-300">
+                          {post.createdAt?.toDate ? 
+                            post.createdAt.toDate().toLocaleString('pt-BR', { 
+                              day: '2-digit', 
+                              month: '2-digit', 
+                              hour: '2-digit', 
+                              minute: '2-digit' 
+                            }) : ''
+                          }
                         </span>
                       </div>
+                      <div className="text-sm text-[#2E2F38] dark:text-white line-clamp-2 leading-relaxed">
+                        {post.texto}
+                      </div>
                     </div>
-
-                    {/* Efeito de brilho no hover */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                   </div>
-                ))}
-              </div>
-            )}
 
-            {/* Footer com link para comunidade */}
-            <div className="mt-6 pt-4 border-t border-white/20 dark:border-[#23283A]/20">
-              <Link 
-                href="/dashboard/comunidade" 
-                className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] text-white font-semibold rounded-lg hover:from-[#255FD1] hover:to-[#3478F6] transition-all duration-300 transform hover:scale-105 shadow-lg"
-              >
-                <span>🚀</span>
-                <span>Ver mais na Comunidade</span>
-                <span>→</span>
-              </Link>
+                  {/* Preview de mídia */}
+                  {(post.file || post.youtubeData) && (
+                    <div className="mb-3 relative overflow-hidden rounded-lg">
+                      {post.youtubeData && (
+                        <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+                          <iframe
+                            src={post.youtubeData.embedUrl}
+                            title="YouTube video"
+                            className="w-full h-full"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          ></iframe>
+                          <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded text-xs font-semibold">
+                            YOUTUBE
+                          </div>
+                        </div>
+                      )}
+                      {post.file && post.fileMeta && post.fileMeta.type.startsWith('image/') && (
+                        <div className="relative aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
+                          <img 
+                            src={post.file} 
+                            alt="Post image" 
+                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold">
+                            FOTO
+                          </div>
+                        </div>
+                      )}
+                      {post.file && post.fileMeta && post.fileMeta.type.startsWith('video/') && (
+                        <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+                          <video 
+                            src={post.file} 
+                            className="w-full h-full object-cover"
+                            muted
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                              </svg>
+                            </div>
+                          </div>
+                          <div className="absolute top-2 left-2 bg-purple-600 text-white px-2 py-1 rounded text-xs font-semibold">
+                            VÍDEO
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Estatísticas de engajamento */}
+                  <div className="flex items-center justify-between pt-3 border-t border-white/20 dark:border-[#23283A]/20">
+                    <div className="flex items-center gap-4">
+                      {/* Botão Curtir */}
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleLike(post.id); }}
+                        disabled={isLiking === post.id}
+                        className={`flex items-center gap-1.5 text-sm font-medium transition-all duration-200 ${
+                          post.userLiked 
+                            ? 'text-red-500 scale-110' 
+                            : 'text-[#6B6F76] dark:text-gray-300 hover:text-red-500 hover:scale-105'
+                        }`}
+                      >
+                        {isLiking === post.id ? (
+                          <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <span className="text-lg">{post.userLiked ? '❤️' : '🤍'}</span>
+                        )}
+                        <span>{post.likes || 0}</span>
+                      </button>
+                      
+                      {/* Botão Comentar */}
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); openPostModal(post); }}
+                        className="flex items-center gap-1.5 text-sm font-medium text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] hover:scale-105 transition-all duration-200"
+                      >
+                        <span className="text-lg">💬</span>
+                        <span>{post.commentsCount || 0}</span>
+                      </button>
+                      
+                      {/* Botão Repostar */}
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleRepost(post.id); }}
+                        disabled={isReposting === post.id}
+                        className="flex items-center gap-1.5 text-sm font-medium text-[#6B6F76] dark:text-gray-300 hover:text-green-500 hover:scale-105 transition-all duration-200"
+                      >
+                        {isReposting === post.id ? (
+                          <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <span className="text-lg">🔁</span>
+                        )}
+                        <span>{post.repostsCount || 0}</span>
+                      </button>
+                    </div>
+                    
+                    {/* Indicador de engajamento com gradiente */}
+                    <div className="px-2 py-1 bg-gradient-to-r from-[#3478F6]/20 to-[#A3C8F7]/20 rounded-full border border-[#3478F6]/30">
+                      <span className="text-xs font-medium text-[#3478F6] dark:text-[#A3C8F7]">
+                        🔥 {post.totalEngagement}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Efeito de brilho no hover */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                </div>
+              ))}
             </div>
+          )}
+
+          {/* Footer com link para comunidade */}
+          <div className="mt-6 pt-4 border-t border-white/20 dark:border-[#23283A]/20">
+            <Link 
+              href="/dashboard/comunidade" 
+              className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] text-white font-semibold rounded-lg hover:from-[#255FD1] hover:to-[#3478F6] transition-all duration-300 transform hover:scale-105 shadow-lg"
+            >
+              <span>🚀</span>
+              <span>Ver mais na Comunidade</span>
+              <span>→</span>
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Seção inferior */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        {/* Metas */}
-        <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-8 min-h-[220px] relative overflow-hidden shadow-xl animate-fade-in">
-          <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
-          <MetasCard meta={meta} nomeImobiliaria={nomeImobiliaria} />
-          </div>
-        {/* Avisos Importantes */}
-        <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-8 min-h-[220px] relative overflow-hidden shadow-xl animate-fade-in flex flex-col gap-4">
-          {/* Borda vermelha à esquerda */}
-          <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#FF6B6B] to-[#FF8E8E]" />
-          <div className="flex items-center gap-3 mb-4 relative z-10">
-            <div className="relative">
-              <AlertCircleIcon className="h-8 w-8 text-[#FF6B6B] drop-shadow-lg animate-pulse" />
-            </div>
-            <span className="font-extrabold text-white text-2xl tracking-tight drop-shadow-lg">Avisos Importantes</span>
-            {/* Badge de destaque */}
-            <span className="px-2 py-1 bg-[#FF6B6B]/20 text-[#FF6B6B] text-xs font-bold rounded-full border border-[#FF6B6B]/30 animate-pulse">
-              ATENÇÃO
-            </span>
-          </div>
-          <div className="space-y-3 relative z-10">
-            {avisosImportantes
-              .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
-              .length === 0 ? (
-              <p className="text-[#6B6F76] dark:text-gray-300 text-sm">Nenhum aviso importante cadastrado pela imobiliária.</p>
-            ) : (
-              avisosImportantes
-                .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
-                .map((aviso, idx) => (
-                  <div
-                    key={aviso.id}
-                    className="flex items-start gap-3 p-4 rounded-xl border border-[#FF6B6B]/40 bg-gradient-to-r from-[#FF6B6B]/10 to-[#FF8E8E]/0 shadow-lg hover:scale-[1.02] transition-all duration-300 relative overflow-hidden group backdrop-blur-sm"
-                  >
-                    <div className="relative z-10">
-                      <AlertCircleIcon className="h-5 w-5 text-[#FF6B6B] mt-0.5 animate-pulse" />
-                    </div>
-                    <div className="flex-1 relative z-10">
-                      <div className="text-sm font-bold text-[#2E2F38] dark:text-white mb-1 group-hover:text-[#FF6B6B] transition-colors">
-                        {aviso.titulo}
-              </div>
-                      <div className="text-xs text-[#6B6F76] dark:text-gray-100 mb-2 leading-relaxed">
-                        {aviso.mensagem}
-            </div>
-                      <div className="text-[10px] text-[#FF6B6B] font-semibold bg-[#FF6B6B]/10 px-2 py-1 rounded-full inline-block">
-                        {aviso.dataHora?.toDate ? aviso.dataHora.toDate().toLocaleString('pt-BR') : ''}
-              </div>
-            </div>
-                  </div>
-                ))
-            )}
-          </div>
-        </div>
-      </div>
+
 
       {/* Modal do Post */}
       {showPostModal && selectedPost && (
