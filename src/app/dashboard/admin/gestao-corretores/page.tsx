@@ -63,7 +63,10 @@ export default function GestaoCorretoresPage() {
       return;
     }
 
-    console.log('Buscando leads para imobiliária:', userData.imobiliariaId);
+    console.log('=== DEBUG LEADS ===');
+    console.log('userData completo:', userData);
+    console.log('imobiliariaId sendo usado:', userData.imobiliariaId);
+    console.log('Tipo do imobiliariaId:', typeof userData.imobiliariaId);
     
     const leadsRef = collection(db, 'leads');
     const q = query(leadsRef, where('imobiliariaId', '==', userData.imobiliariaId));
