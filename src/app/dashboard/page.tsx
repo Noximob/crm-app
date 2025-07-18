@@ -992,7 +992,7 @@ export default function DashboardPage() {
                             <span className="font-semibold">{post.nome}:</span> {post.repostComment}
                           </div>
                         )}
-                        {/* Se for repost, mostrar post original aninhado e NÃO repetir conteúdo fora do card */}
+                        {/* Se for repost, mostrar post original aninhado e NÃO renderizar nada fora do card */}
                         {post.repostOf ? (
                           <div className="bg-white dark:bg-[#23283A] border border-[#3478F6]/20 rounded-lg p-3 shadow-inner mt-1">
                             <div className="flex items-center gap-2 mb-1">
@@ -1024,7 +1024,7 @@ export default function DashboardPage() {
                             )}
                           </div>
                         ) : (
-                          <div className="text-sm text-[#2E2F38] dark:text-white line-clamp-2 leading-relaxed">{post.texto}</div>
+                          null
                         )}
                       </div>
                     </div>
