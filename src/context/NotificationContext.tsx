@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, collection, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
@@ -20,8 +20,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [notifications, setNotifications] = useState({
     comunidade: 0
   });
-  const unsubscribeRef = useRef<(() => void) | null>(null);
-  const [lastVisitTime, setLastVisitTime] = useState<Date>(new Date(0));
 
   const checkForNewContent = async () => {
     if (!user || !userData) return;
@@ -31,16 +29,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       const userVisitsRef = doc(db, 'userVisits', user.uid);
       const userVisitsDoc = await getDoc(userVisitsRef);
       const lastVisits = userVisitsDoc.exists() ? userVisitsDoc.data() : {};
+
+      // Verificar novidades na Comunidade (posts mais recentes que a última visita)
       const comunidadeLastVisit = lastVisits.comunidade?.toDate?.() || new Date(0);
-      
-      setLastVisitTime(comunidadeLastVisit);
-
-      // Limpar subscription anterior se existir
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current();
-        unsubscribeRef.current = null;
-      }
-
       const postsQuery = query(
         collection(db, 'comunidadePosts'),
         where('createdAt', '>', Timestamp.fromDate(comunidadeLastVisit)),
@@ -65,7 +56,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         console.error('Erro ao monitorar notificações em tempo real:', error);
       });
 
-      unsubscribeRef.current = unsubscribe;
+      // Retornar função de limpeza
       return unsubscribe;
     } catch (error) {
       console.error('Erro ao verificar novidades:', error);
@@ -78,16 +69,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     console.log('🔄 Resetando notificação da comunidade...');
 
     try {
-      const now = Timestamp.now();
-      
       // Atualizar última visita
       const userVisitsRef = doc(db, 'userVisits', user.uid);
       await setDoc(userVisitsRef, {
-        [section]: now
+        [section]: Timestamp.now()
       }, { merge: true });
-
-      // Atualizar estado local
-      setLastVisitTime(now.toDate());
 
       // Resetar notificação local imediatamente
       setNotifications(prev => {
@@ -98,11 +84,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         };
       });
 
-      // Recriar a query com a nova data de última visita
-      setTimeout(() => {
-        checkForNewContent();
-      }, 100);
-
       console.log('✅ Notificação resetada com sucesso!');
     } catch (error) {
       console.error('❌ Erro ao resetar notificação:', error);
@@ -112,13 +93,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   // Monitorar notificações em tempo real quando o usuário carrega
   useEffect(() => {
     if (user && userData) {
-      checkForNewContent();
+      const unsubscribe = checkForNewContent();
       
       // Limpar subscription quando o componente for desmontado
       return () => {
-        if (unsubscribeRef.current) {
-          unsubscribeRef.current();
-          unsubscribeRef.current = null;
+        if (unsubscribe) {
+          unsubscribe.then(unsub => unsub && unsub());
         }
       };
     }
