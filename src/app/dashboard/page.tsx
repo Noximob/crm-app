@@ -801,97 +801,204 @@ export default function DashboardPage() {
           )}
           </div>
         
-        {/* Top Trending */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Top Trending */}
-          <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 mb-6 flex flex-col justify-between lg:col-span-1 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
-            <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4">Top Trending</h2>
-            {trendingLoading ? (
-              <p className="text-gray-300">Carregando posts...</p>
-            ) : trendingPosts.length === 0 ? (
-              <p className="text-gray-300">Nenhum post encontrado.</p>
-            ) : (
-          <div className="flex flex-col gap-4">
-            {trendingPosts.map((post) => (
-              <div key={post.id} className="bg-white/50 dark:bg-[#23283A]/50 rounded-xl p-4 hover:bg-white/70 dark:hover:bg-[#23283A]/70 transition-all duration-200 cursor-pointer" onClick={() => openPostModal(post)}>
-                <div className="flex items-start gap-3 mb-3">
-                  <img src={post.avatar} alt={post.nome} className="w-10 h-10 rounded-full object-cover" />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-[#2E2F38] dark:text-white text-sm">{post.nome}</span>
-                      <span className="text-xs text-[#6B6F76] dark:text-gray-300">
-                        {post.createdAt?.toDate ? 
-                          post.createdAt.toDate().toLocaleString('pt-BR', { 
-                            day: '2-digit', 
-                            month: '2-digit', 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                          }) : ''
-                        }
-                      </span>
-                    </div>
-                    <div className="text-xs text-[#2E2F38] dark:text-white truncate max-w-[180px]">{post.texto}</div>
-                  </div>
+        {/* Top Trending - NOVO DESIGN SUPER CHAMATIVO */}
+        <div className="lg:col-span-1">
+          <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl animate-fade-in">
+            {/* Borda decorativa */}
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#3478F6] to-[#A3C8F7]"></div>
+            
+            {/* Header com ícone de fogo */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="relative">
+                <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center animate-pulse">
+                  <span className="text-white text-lg">🔥</span>
                 </div>
-                
-                {/* Botões interativos */}
-                <div className="flex items-center justify-between pt-2 border-t border-[#E8E9F1] dark:border-[#23283A]">
-                  <div className="flex items-center gap-4">
-                    {/* Botão Curtir */}
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); handleLike(post.id); }}
-                      disabled={isLiking === post.id}
-                      className={`flex items-center gap-1 text-xs transition-colors ${
-                        post.userLiked 
-                          ? 'text-red-500' 
-                          : 'text-[#6B6F76] dark:text-gray-300 hover:text-red-500'
-                      }`}
-                    >
-                      {isLiking === post.id ? (
-                        <div className="w-3 h-3 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-                      ) : (
-                        <span>{post.userLiked ? '❤️' : '🤍'}</span>
-                      )}
-                      <span>{post.likes || 0}</span>
-                    </button>
-                    
-                    {/* Botão Comentar */}
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); openPostModal(post); }}
-                      className="flex items-center gap-1 text-xs text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] transition-colors"
-                    >
-                      <span>💬</span>
-                      <span>{post.commentsCount || 0}</span>
-                    </button>
-                    
-                    {/* Botão Repostar */}
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); handleRepost(post.id); }}
-                      disabled={isReposting === post.id}
-                      className="flex items-center gap-1 text-xs text-[#6B6F76] dark:text-gray-300 hover:text-green-500 transition-colors"
-                    >
-                      {isReposting === post.id ? (
-                        <div className="w-3 h-3 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-                      ) : (
-                        <span>🔁</span>
-                      )}
-                      <span>{post.repostsCount || 0}</span>
-                    </button>
-                  </div>
-                  
-                  {/* Indicador de engajamento */}
-                  <div className="text-xs text-[#6B6F76] dark:text-gray-400">
-                    {post.totalEngagement} interações
-                  </div>
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">HOT</span>
                 </div>
               </div>
-            ))}
-          </div>
+              <div>
+                <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Top Trending</h2>
+                <p className="text-xs text-[#6B6F76] dark:text-gray-300">Posts mais quentes da comunidade</p>
+              </div>
+            </div>
+
+            {trendingLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3478F6]"></div>
+              </div>
+            ) : trendingPosts.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-4xl mb-2">📱</div>
+                <p className="text-[#6B6F76] dark:text-gray-300 text-sm">Nenhum post ainda. Seja o primeiro!</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {trendingPosts.map((post, index) => (
+                  <div 
+                    key={post.id} 
+                    className="group relative bg-white/60 dark:bg-[#23283A]/60 backdrop-blur-sm rounded-xl p-4 hover:bg-white/80 dark:hover:bg-[#23283A]/80 transition-all duration-300 cursor-pointer border border-white/20 hover:border-[#3478F6]/30 hover:scale-[1.02] shadow-lg hover:shadow-xl"
+                    onClick={() => openPostModal(post)}
+                  >
+                    {/* Badge de ranking */}
+                    <div className="absolute -top-2 -left-2 w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
+                      #{index + 1}
+                    </div>
+
+                    {/* Header do post */}
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="relative">
+                        <img src={post.avatar} alt={post.nome} className="w-12 h-12 rounded-full object-cover border-2 border-white dark:border-[#23283A] shadow-md" />
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-[#23283A]"></div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-bold text-[#2E2F38] dark:text-white text-sm truncate">{post.nome}</span>
+                          <span className="text-xs text-[#6B6F76] dark:text-gray-300">
+                            {post.createdAt?.toDate ? 
+                              post.createdAt.toDate().toLocaleString('pt-BR', { 
+                                day: '2-digit', 
+                                month: '2-digit', 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              }) : ''
+                            }
+                          </span>
+                        </div>
+                        <div className="text-sm text-[#2E2F38] dark:text-white line-clamp-2 leading-relaxed">
+                          {post.texto}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Preview de mídia */}
+                    {(post.file || post.youtubeData) && (
+                      <div className="mb-3 relative overflow-hidden rounded-lg">
+                        {post.youtubeData && (
+                          <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+                            <img 
+                              src={post.youtubeData.thumbnail} 
+                              alt="YouTube preview" 
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors">
+                                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M8 5v14l11-7z"/>
+                                </svg>
+                              </div>
+                            </div>
+                            <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded text-xs font-semibold">
+                              YOUTUBE
+                            </div>
+                          </div>
+                        )}
+                        {post.file && post.fileMeta && post.fileMeta.type.startsWith('image/') && (
+                          <div className="relative aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
+                            <img 
+                              src={post.file} 
+                              alt="Post image" 
+                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                            />
+                            <div className="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold">
+                              FOTO
+                            </div>
+                          </div>
+                        )}
+                        {post.file && post.fileMeta && post.fileMeta.type.startsWith('video/') && (
+                          <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+                            <video 
+                              src={post.file} 
+                              className="w-full h-full object-cover"
+                              muted
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M8 5v14l11-7z"/>
+                                </svg>
+                              </div>
+                            </div>
+                            <div className="absolute top-2 left-2 bg-purple-600 text-white px-2 py-1 rounded text-xs font-semibold">
+                              VÍDEO
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Estatísticas de engajamento */}
+                    <div className="flex items-center justify-between pt-3 border-t border-white/20 dark:border-[#23283A]/20">
+                      <div className="flex items-center gap-4">
+                        {/* Botão Curtir */}
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleLike(post.id); }}
+                          disabled={isLiking === post.id}
+                          className={`flex items-center gap-1.5 text-sm font-medium transition-all duration-200 ${
+                            post.userLiked 
+                              ? 'text-red-500 scale-110' 
+                              : 'text-[#6B6F76] dark:text-gray-300 hover:text-red-500 hover:scale-105'
+                          }`}
+                        >
+                          {isLiking === post.id ? (
+                            <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                          ) : (
+                            <span className="text-lg">{post.userLiked ? '❤️' : '🤍'}</span>
+                          )}
+                          <span>{post.likes || 0}</span>
+                        </button>
+                        
+                        {/* Botão Comentar */}
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); openPostModal(post); }}
+                          className="flex items-center gap-1.5 text-sm font-medium text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] hover:scale-105 transition-all duration-200"
+                        >
+                          <span className="text-lg">💬</span>
+                          <span>{post.commentsCount || 0}</span>
+                        </button>
+                        
+                        {/* Botão Repostar */}
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleRepost(post.id); }}
+                          disabled={isReposting === post.id}
+                          className="flex items-center gap-1.5 text-sm font-medium text-[#6B6F76] dark:text-gray-300 hover:text-green-500 hover:scale-105 transition-all duration-200"
+                        >
+                          {isReposting === post.id ? (
+                            <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                          ) : (
+                            <span className="text-lg">🔁</span>
+                          )}
+                          <span>{post.repostsCount || 0}</span>
+                        </button>
+                      </div>
+                      
+                      {/* Indicador de engajamento com gradiente */}
+                      <div className="px-3 py-1 bg-gradient-to-r from-[#3478F6]/20 to-[#A3C8F7]/20 rounded-full border border-[#3478F6]/30">
+                        <span className="text-xs font-semibold text-[#3478F6] dark:text-[#A3C8F7]">
+                          🔥 {post.totalEngagement} interações
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Efeito de brilho no hover */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                  </div>
+                ))}
+              </div>
             )}
+
+            {/* Footer com link para comunidade */}
+            <div className="mt-6 pt-4 border-t border-white/20 dark:border-[#23283A]/20">
+              <Link 
+                href="/dashboard/comunidade" 
+                className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] text-white font-semibold rounded-lg hover:from-[#255FD1] hover:to-[#3478F6] transition-all duration-300 transform hover:scale-105 shadow-lg"
+              >
+                <span>🚀</span>
+                <span>Ver mais na Comunidade</span>
+                <span>→</span>
+              </Link>
+            </div>
           </div>
-
-
         </div>
       </div>
 
