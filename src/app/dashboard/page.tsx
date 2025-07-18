@@ -730,31 +730,57 @@ export default function DashboardPage() {
     <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
       {/* Header com boas-vindas, indicadores econômicos e hora */}
       <div className="mb-4">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
-          <div className="relative">
-            <h1 className="text-2xl font-bold mb-1 bg-gradient-to-r from-[#3478F6] via-[#A3C8F7] to-[#6B6F76] bg-clip-text text-transparent">
-              Olá, {currentUser?.email?.split('@')[0] || 'Corretor'}! <span className="text-yellow-400">👋</span>
-            </h1>
-            <p className="text-[#6B6F76] capitalize text-sm">Bem-vindo ao seu dashboard</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <h1 className="text-2xl font-bold mb-1 bg-gradient-to-r from-[#3478F6] via-[#A3C8F7] to-[#6B6F76] bg-clip-text text-transparent">
+                Olá, {currentUser?.email?.split('@')[0] || 'Corretor'}! <span className="text-yellow-400">👋</span>
+              </h1>
+              <p className="text-[#6B6F76] capitalize text-sm">Bem-vindo ao seu dashboard</p>
+            </div>
+            
+            {/* Indicadores econômicos compactos */}
+            <div className="flex gap-2 flex-wrap">
+              {indicadoresExternos && indicadoresExternosAnterior && indicadoresList.map(ind => (
+                <div
+                  key={ind.key}
+                  className="flex items-center gap-2 px-3 py-2 bg-white/60 dark:bg-[#23283A]/60 backdrop-blur-sm rounded-lg border border-[#3478F6]/20 hover:border-[#3478F6]/40 transition-all duration-200 cursor-pointer group hover:scale-105"
+                >
+                  <div className="text-center">
+                    <div className="text-sm font-bold text-[#2E2F38] dark:text-white group-hover:text-[#3478F6] transition-colors">
+                      {indicadoresExternos?.[ind.key] || '--'}
+                    </div>
+                    <div className="text-xs text-[#6B6F76] dark:text-gray-300 font-medium">
+                      {ind.label}
+                    </div>
+                  </div>
+                  {calcularVariacao(indicadoresExternos?.[ind.key], indicadoresExternosAnterior?.[ind.key]) !== null && (
+                    <div className={`flex items-center gap-1 text-xs font-semibold ${
+                      (calcularVariacao(indicadoresExternos?.[ind.key], indicadoresExternosAnterior?.[ind.key]) || 0) > 0 
+                        ? 'text-green-500' 
+                        : 'text-red-500'
+                    }`}>
+                      {(calcularVariacao(indicadoresExternos?.[ind.key], indicadoresExternosAnterior?.[ind.key]) || 0) > 0 ? (
+                        <TrendingUpIcon className="w-3 h-3" />
+                      ) : (
+                        <TrendingDownIcon className="w-3 h-3" />
+                      )}
+                      <span>
+                        {Math.abs(calcularVariacao(indicadoresExternos?.[ind.key], indicadoresExternosAnterior?.[ind.key]) || 0).toFixed(2)}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
+          
           <div className="flex items-center gap-4">
             <div className="text-right">
               <div className="text-xl font-bold text-[#3478F6]">{currentTimeString}</div>
               <div className="text-xs text-[#6B6F76]">Horário atual</div>
             </div>
           </div>
-        </div>
-        {/* Indicadores econômicos logo abaixo do Olá, corretor... */}
-        <div className="flex gap-3 mt-2 flex-wrap">
-          {indicadoresExternos && indicadoresExternosAnterior && indicadoresList.map(ind => (
-            <EconomicIndicator
-              key={ind.key}
-              title={ind.label}
-              value={indicadoresExternos?.[ind.key] || '--'}
-              variacao={calcularVariacao(indicadoresExternos?.[ind.key], indicadoresExternosAnterior?.[ind.key])}
-              subtitulo={ind.tipo}
-            />
-          ))}
         </div>
       </div>
 
