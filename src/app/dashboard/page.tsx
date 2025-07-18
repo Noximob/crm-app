@@ -728,15 +728,14 @@ export default function DashboardPage() {
 
   return (
     <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
-      {/* Header com boas-vindas, indicadores econômicos e hora */}
-      <div className="mb-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Header com boas-vindas, indicadores econômicos e hora em uma linha */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <h1 className="text-2xl font-bold mb-1 bg-gradient-to-r from-[#3478F6] via-[#A3C8F7] to-[#6B6F76] bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-[#3478F6] via-[#A3C8F7] to-[#6B6F76] bg-clip-text text-transparent">
                 Olá, {currentUser?.email?.split('@')[0] || 'Corretor'}! <span className="text-yellow-400">👋</span>
               </h1>
-              <p className="text-[#6B6F76] capitalize text-sm">Bem-vindo ao seu dashboard</p>
             </div>
             
             {/* Indicadores econômicos compactos */}
