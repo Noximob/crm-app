@@ -462,9 +462,13 @@ export default function DashboardPage() {
           })
         );
         
-        // Ordena por engajamento total (likes + comentários + reposts)
-        const sortedPosts = postsWithCounts.sort((a, b) => b.totalEngagement - a.totalEngagement);
-        setTrendingPosts(sortedPosts.slice(0, 3));
+        // Ordena por data de criação (mais recentes primeiro) e mostra todos
+        const sortedPosts = postsWithCounts.sort((a, b) => {
+          const aTime = a.createdAt?.toDate?.() || new Date(0);
+          const bTime = b.createdAt?.toDate?.() || new Date(0);
+          return bTime.getTime() - aTime.getTime();
+        });
+        setTrendingPosts(sortedPosts);
       } catch (error) {
         console.error('Erro ao buscar posts trending:', error);
         setTrendingPosts([]);
