@@ -69,6 +69,10 @@ export default function GestaoCorretoresPage() {
         id: doc.id,
         ...doc.data()
       })) as Lead[];
+      
+      console.log('Leads carregados:', leadsData);
+      console.log('Imobiliária ID:', userData.imobiliariaId);
+      
       setLeads(leadsData);
       setLoading(false);
     });
@@ -80,8 +84,17 @@ export default function GestaoCorretoresPage() {
   const filteredLeads = leads.filter(lead => {
     const userMatch = selectedUser ? lead.userId === selectedUser : true;
     const stageMatch = lead.etapa === selectedStage;
+    
+    console.log('Filtro - Lead:', lead.nome, 'userId:', lead.userId, 'selectedUser:', selectedUser, 'etapa:', lead.etapa, 'selectedStage:', selectedStage);
+    console.log('Filtro - userMatch:', userMatch, 'stageMatch:', stageMatch);
+    
     return userMatch && stageMatch;
   });
+
+  console.log('Leads filtrados:', filteredLeads);
+  console.log('Usuários:', users);
+  console.log('Usuário selecionado:', selectedUser);
+  console.log('Etapa selecionada:', selectedStage);
 
   // Transferir leads
   const handleTransferLeads = async () => {
