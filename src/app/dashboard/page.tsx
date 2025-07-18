@@ -992,14 +992,14 @@ export default function DashboardPage() {
                             <span className="font-semibold">{post.nome}:</span> {post.repostComment}
                           </div>
                         )}
-                        {/* Se for repost, mostrar post original aninhado */}
+                        {/* Se for repost, mostrar post original aninhado e NÃO repetir conteúdo fora do card */}
                         {post.repostOf ? (
                           <div className="bg-white dark:bg-[#23283A] border border-[#3478F6]/20 rounded-lg p-3 shadow-inner mt-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="px-2 py-0.5 bg-[#3478F6]/10 text-[#3478F6] text-xs rounded-full font-semibold">🔁 Repost de {post.repostAuthorName || 'Original'}</span>
                             </div>
                             <div className="text-xs text-[#6B6F76] dark:text-gray-300 mb-1">{post.originalCreatedAt}</div>
-                            <div className="text-sm text-[#2E2F38] dark:text-white leading-relaxed mb-2">{post.originalTexto || post.texto}</div>
+                            <div className="text-sm text-[#2E2F38] dark:text-white leading-relaxed mb-2">{post.originalTexto}</div>
                             {/* Mídia do post original */}
                             {post.originalFileMeta && post.originalFileMeta.type.startsWith('image/') && (
                               <img src={post.originalFile} alt="Post image" className="w-full rounded-lg mb-2" />
