@@ -75,12 +75,28 @@ export default function GestaoCorretoresPage() {
     return () => unsubscribe();
   }, [userData]);
 
+  const corretores = users.filter(user => 
+    (user.tipoConta === 'corretor-vinculado' && user.aprovado) || 
+    (user.tipoConta === 'imobiliaria' && user.aprovado)
+  );
+
   // Filtrar leads do corretor de origem por etapa
   const filteredLeads = leads.filter(lead => {
     const userMatch = selectedOriginUser ? lead.userId === selectedOriginUser : false;
     const stageMatch = selectedStage ? lead.etapa === selectedStage : true;
+    
+    console.log('Filtro - Lead:', lead.nome, 'userId:', lead.userId, 'selectedOriginUser:', selectedOriginUser, 'etapa:', lead.etapa, 'selectedStage:', selectedStage);
+    console.log('Filtro - userMatch:', userMatch, 'stageMatch:', stageMatch);
+    
     return userMatch && stageMatch;
   });
+
+  console.log('Leads filtrados:', filteredLeads);
+  console.log('Usuários:', users);
+  console.log('Corretores filtrados:', corretores);
+  console.log('Usuário origem selecionado:', selectedOriginUser);
+  console.log('Etapa selecionada:', selectedStage);
+  console.log('Total de leads:', leads.length);
 
   // Transferir leads
   const handleTransferLeads = async () => {
@@ -171,11 +187,6 @@ export default function GestaoCorretoresPage() {
       </div>
     );
   }
-
-  const corretores = users.filter(user => 
-    (user.tipoConta === 'corretor-vinculado' && user.aprovado) || 
-    (user.tipoConta === 'imobiliaria' && user.aprovado)
-  );
 
   return (
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
