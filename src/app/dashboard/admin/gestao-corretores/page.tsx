@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, updateDoc, deleteDoc, query, where, onSnapshot, writeBatch } from 'firebase/firestore';
+import { collection, doc, updateDoc, deleteDoc, query, where, onSnapshot, writeBatch } from 'firebase/firestore';
 import { PIPELINE_STAGES } from '@/lib/constants';
 
 interface User {
@@ -33,7 +33,7 @@ export default function GestaoCorretoresPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  const [selectedOriginUser, setSelectedOriginUser] = useState<string>('');
   const [selectedStage, setSelectedStage] = useState<string>('Pré Qualificação');
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
@@ -69,10 +69,6 @@ export default function GestaoCorretoresPage() {
         id: doc.id,
         ...doc.data()
       })) as Lead[];
-      
-      console.log('Leads carregados:', leadsData);
-      console.log('Imobiliária ID:', userData.imobiliariaId);
-      
       setLeads(leadsData);
       setLoading(false);
     });
@@ -80,21 +76,12 @@ export default function GestaoCorretoresPage() {
     return () => unsubscribe();
   }, [userData]);
 
-  // Filtrar leads por usuário e etapa
+  // Filtrar leads do corretor de origem por etapa
   const filteredLeads = leads.filter(lead => {
-    const userMatch = selectedUser ? lead.userId === selectedUser : true;
+    const userMatch = selectedOriginUser ? lead.userId === selectedOriginUser : false;
     const stageMatch = lead.etapa === selectedStage;
-    
-    console.log('Filtro - Lead:', lead.nome, 'userId:', lead.userId, 'selectedUser:', selectedUser, 'etapa:', lead.etapa, 'selectedStage:', selectedStage);
-    console.log('Filtro - userMatch:', userMatch, 'stageMatch:', stageMatch);
-    
     return userMatch && stageMatch;
   });
-
-  console.log('Leads filtrados:', filteredLeads);
-  console.log('Usuários:', users);
-  console.log('Usuário selecionado:', selectedUser);
-  console.log('Etapa selecionada:', selectedStage);
 
   // Transferir leads
   const handleTransferLeads = async () => {
@@ -173,24 +160,27 @@ export default function GestaoCorretoresPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">Gestão de Corretores</h1>
-          <p className="text-[#6B6F76] dark:text-gray-300">Gerencie leads e transfira entre corretores</p>
+          <p className="text-[#6B6F76] dark:text-gray-300">Selecione um corretor para gerenciar seus leads</p>
         </div>
 
         {/* Filtros */}
         <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Filtro de Corretor */}
+            {/* Corretor de Origem */}
             <div>
               <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                Corretor
+                Corretor de Origem
               </label>
               <select
-                value={selectedUser || ''}
-                onChange={(e) => setSelectedUser(e.target.value || null)}
+                value={selectedOriginUser}
+                onChange={(e) => {
+                  setSelectedOriginUser(e.target.value);
+                  setSelectedLeads([]); // Limpar seleção ao trocar corretor
+                }}
                 className="w-full px-4 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
               >
-                <option value="">Todos os corretores</option>
-                {users.map(user => (
+                <option value="">Selecione um corretor</option>
+                {users.filter(user => user.tipoConta === 'corretor-vinculado' && user.aprovado).map(user => (
                   <option key={user.id} value={user.id}>
                     {user.nome} ({user.email})
                   </option>
@@ -198,28 +188,35 @@ export default function GestaoCorretoresPage() {
               </select>
             </div>
 
-            {/* Filtro de Etapa */}
-            <div>
-              <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                Etapa do Lead
-              </label>
-              <select
-                value={selectedStage}
-                onChange={(e) => setSelectedStage(e.target.value)}
-                className="w-full px-4 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
-              >
-                {PIPELINE_STAGES.map(stage => (
-                  <option key={stage} value={stage}>
-                    {stage} ({leads.filter(lead => lead.etapa === stage).length})
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Filtro de Etapa (só aparece se corretor estiver selecionado) */}
+            {selectedOriginUser && (
+              <div>
+                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                  Etapa do Lead
+                </label>
+                <select
+                  value={selectedStage}
+                  onChange={(e) => setSelectedStage(e.target.value)}
+                  className="w-full px-4 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                >
+                  {PIPELINE_STAGES.map(stage => {
+                    const stageCount = leads.filter(lead => 
+                      lead.userId === selectedOriginUser && lead.etapa === stage
+                    ).length;
+                    return (
+                      <option key={stage} value={stage}>
+                        {stage} ({stageCount})
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Ações em massa */}
-        {filteredLeads.length > 0 && (
+        {/* Ações em massa (só aparece se corretor estiver selecionado) */}
+        {selectedOriginUser && filteredLeads.length > 0 && (
           <div className="bg-white dark:bg-[#23283A] rounded-2xl p-4 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -256,18 +253,36 @@ export default function GestaoCorretoresPage() {
         {/* Lista de Leads */}
         <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] overflow-hidden">
           <div className="p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
-            <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">
-              Leads em {selectedStage}
-              {selectedUser && ` - ${users.find(u => u.id === selectedUser)?.nome}`}
-            </h2>
-            <p className="text-[#6B6F76] dark:text-gray-300 mt-1">
-              {filteredLeads.length} lead(s) encontrado(s)
-            </p>
+            {selectedOriginUser ? (
+              <>
+                <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">
+                  Leads de {users.find(u => u.id === selectedOriginUser)?.nome} - {selectedStage}
+                </h2>
+                <p className="text-[#6B6F76] dark:text-gray-300 mt-1">
+                  {filteredLeads.length} lead(s) encontrado(s)
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">
+                  Selecione um corretor para ver seus leads
+                </h2>
+                <p className="text-[#6B6F76] dark:text-gray-300 mt-1">
+                  Escolha um corretor de origem para começar
+                </p>
+              </>
+            )}
           </div>
 
-          {filteredLeads.length === 0 ? (
+          {!selectedOriginUser ? (
             <div className="p-8 text-center">
-              <p className="text-[#6B6F76] dark:text-gray-300">Nenhum lead encontrado para os filtros selecionados.</p>
+              <p className="text-[#6B6F76] dark:text-gray-300">Selecione um corretor de origem para gerenciar seus leads.</p>
+            </div>
+          ) : filteredLeads.length === 0 ? (
+            <div className="p-8 text-center">
+              <p className="text-[#6B6F76] dark:text-gray-300">
+                Nenhum lead encontrado em "{selectedStage}" para {users.find(u => u.id === selectedOriginUser)?.nome}.
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -284,7 +299,6 @@ export default function GestaoCorretoresPage() {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-[#6B6F76] dark:text-gray-300">Nome</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-[#6B6F76] dark:text-gray-300">Telefone</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#6B6F76] dark:text-gray-300">Corretor</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-[#6B6F76] dark:text-gray-300">Data</th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-[#6B6F76] dark:text-gray-300">Ações</th>
                   </tr>
@@ -305,9 +319,6 @@ export default function GestaoCorretoresPage() {
                       </td>
                       <td className="px-6 py-4 text-sm text-[#6B6F76] dark:text-gray-300">
                         {lead.telefone}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-[#6B6F76] dark:text-gray-300">
-                        {users.find(u => u.id === lead.userId)?.nome || 'N/A'}
                       </td>
                       <td className="px-6 py-4 text-sm text-[#6B6F76] dark:text-gray-300">
                         {lead.createdAt?.toDate ? lead.createdAt.toDate().toLocaleDateString('pt-BR') : 'N/A'}
@@ -338,13 +349,12 @@ export default function GestaoCorretoresPage() {
               Transferir {selectedLeads.length} Lead(s)
             </h2>
             <p className="text-[#6B6F76] dark:text-gray-300 mb-4">
-              Selecione o corretor para quem deseja transferir os leads. 
-              Os leads voltarão para "Pré Qualificação".
+              Selecione o corretor de destino. Os leads voltarão para "Pré Qualificação".
             </p>
             
             <div className="mb-6">
               <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                Corretor Destino
+                Corretor de Destino
               </label>
               <select
                 value={transferTarget}
@@ -352,11 +362,13 @@ export default function GestaoCorretoresPage() {
                 className="w-full px-4 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
               >
                 <option value="">Selecione um corretor</option>
-                {users.filter(user => user.status === 'ativo').map(user => (
-                  <option key={user.id} value={user.id}>
-                    {user.nome} ({user.email})
-                  </option>
-                ))}
+                {users
+                  .filter(user => user.tipoConta === 'corretor-vinculado' && user.aprovado && user.id !== selectedOriginUser)
+                  .map(user => (
+                    <option key={user.id} value={user.id}>
+                      {user.nome} ({user.email})
+                    </option>
+                  ))}
               </select>
             </div>
 
