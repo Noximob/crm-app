@@ -26,6 +26,28 @@
   background: rgba(52, 120, 246, 0.4);
 }
 
+/* Ocultar barras de rolagem no dashboard */
+.dashboard-scroll-hide {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.dashboard-scroll-hide::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  background: transparent !important;
+}
+
+.dashboard-scroll-hide::-webkit-scrollbar-track {
+  display: none !important;
+  background: transparent !important;
+}
+
+.dashboard-scroll-hide::-webkit-scrollbar-thumb {
+  display: none !important;
+  background: transparent !important;
+}
+
 /* Animações */
 @keyframes fade-in {
   from {
