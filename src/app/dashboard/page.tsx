@@ -540,33 +540,43 @@ export default function DashboardPage() {
     if (!currentUser) return;
     setIsReposting(postId);
     try {
-      const repostRef = doc(db, 'comunidadePosts', postId, 'reposts', currentUser.uid);
-      const repostDoc = await getDoc(repostRef);
-      if (repostDoc.exists()) {
-        // Remover repost
-        await deleteDoc(repostRef);
-        setTrendingPosts(prev => prev.map(post => 
-          post.id === postId 
-            ? { ...post, repostsCount: (post.repostsCount || 1) - 1 }
-            : post
-        ));
-        setSelectedPost((prev: any) => prev && prev.id === postId ? {
-          ...prev,
-          repostsCount: (prev.repostsCount || 1) - 1
-        } : prev);
-      } else {
-        // Adicionar repost com comentário opcional
-        await setDoc(repostRef, { userId: currentUser.uid, timestamp: new Date(), comment: comment || '' });
-        setTrendingPosts(prev => prev.map(post => 
-          post.id === postId 
-            ? { ...post, repostsCount: (post.repostsCount || 0) + 1 }
-            : post
-        ));
-        setSelectedPost((prev: any) => prev && prev.id === postId ? {
-          ...prev,
-          repostsCount: (prev.repostsCount || 0) + 1
-        } : prev);
-      }
+      // Buscar dados do post original
+      const originalDoc = await getDoc(doc(db, 'comunidadePosts', postId));
+      if (!originalDoc.exists()) return;
+      const original = originalDoc.data();
+      // Criar novo post na coleção comunidadePosts
+      await setDoc(doc(collection(db, 'comunidadePosts')), {
+        texto: original.texto,
+        userId: currentUser.uid,
+        nome: currentUser.email?.split('@')[0] || 'Usuário',
+        email: currentUser.email || '',
+        avatar: original.avatar,
+        createdAt: new Date(),
+        likes: 0,
+        likedBy: [],
+        comments: [],
+        file: original.file,
+        fileMeta: original.fileMeta,
+        youtubeLink: original.youtubeLink || null,
+        youtubeData: original.youtubeData || null,
+        repostOf: postId,
+        repostComment: comment || '',
+      });
+      // Marcar repost na subcoleção para controle
+      await setDoc(doc(db, 'comunidadePosts', postId, 'reposts', currentUser.uid), {
+        userId: currentUser.uid,
+        timestamp: new Date(),
+        comment: comment || '',
+      });
+      setTrendingPosts(prev => prev.map(post => 
+        post.id === postId 
+          ? { ...post, repostsCount: (post.repostsCount || 0) + 1 }
+          : post
+      ));
+      setSelectedPost((prev: any) => prev && prev.id === postId ? {
+        ...prev,
+        repostsCount: (prev.repostsCount || 0) + 1
+      } : prev);
     } catch (error) {
       console.error('Erro ao repostar:', error);
     } finally {
