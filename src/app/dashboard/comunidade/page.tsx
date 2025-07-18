@@ -435,19 +435,14 @@ export default function ComunidadePage() {
               <div className="relative mt-2">
                 <div className="bg-white dark:bg-[#23283A] rounded-xl overflow-hidden border border-[#E8E9F1] dark:border-[#23283A]">
                   <div className="relative">
-                    <img 
-                      src={youtubePreview.thumbnail} 
-                      alt="YouTube thumbnail" 
-                      className="w-full h-32 object-cover object-center"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors cursor-pointer"
-                           onClick={() => setSelectedVideo(youtubePreview.url)}>
-                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z"/>
-                        </svg>
-                      </div>
-                    </div>
+                    <iframe
+                      src={youtubePreview.embedUrl}
+                      title="YouTube preview"
+                      className="w-full h-48"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    ></iframe>
                     <button
                       onClick={() => setSelectedVideo(youtubePreview.url)}
                       className="absolute top-2 right-2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-lg transition-colors"
@@ -463,7 +458,7 @@ export default function ComunidadePage() {
                   </div>
                   <div className="p-3">
                     <p className="text-sm text-[#2E2F38] dark:text-white font-medium">Vídeo do YouTube</p>
-                    <p className="text-xs text-[#6B6F76] dark:text-gray-300">Clique para assistir</p>
+                    <p className="text-xs text-[#6B6F76] dark:text-gray-300">Prévia do vídeo</p>
                   </div>
                 </div>
                 <button
@@ -596,23 +591,18 @@ export default function ComunidadePage() {
                   {/* Vídeo do YouTube */}
                   {post.youtubeData && (
                     <div className="mt-2">
-                      <div className="bg-white dark:bg-[#23283A] rounded-xl overflow-hidden border border-[#E8E9F1] dark:border-[#23283A] cursor-pointer hover:shadow-lg transition-shadow">
+                      <div className="bg-white dark:bg-[#23283A] rounded-xl overflow-hidden border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-lg transition-shadow">
                         <div className="relative">
-                          <img 
-                            src={post.youtubeData.thumbnail} 
-                            alt="YouTube thumbnail" 
-                            className="w-full h-48 object-cover object-center"
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors"
-                                 onClick={(e) => { e.stopPropagation(); setSelectedVideo(post.youtubeLink); }}>
-                              <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M8 5v14l11-7z"/>
-                              </svg>
-                            </div>
-                          </div>
+                          <iframe
+                            src={post.youtubeData.embedUrl}
+                            title="YouTube video"
+                            className="w-full h-64"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          ></iframe>
                           <button
-                            onClick={(e) => { e.stopPropagation(); setSelectedVideo(post.youtubeLink); }}
+                            onClick={() => setSelectedVideo(post.youtubeLink)}
                             className="absolute top-2 right-2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-lg transition-colors"
                             title="Maximizar vídeo"
                           >
@@ -624,7 +614,7 @@ export default function ComunidadePage() {
                             </svg>
                           </button>
                         </div>
-                        <div className="p-4" onClick={() => window.open(post.youtubeLink, '_blank')}>
+                        <div className="p-4">
                           <div className="flex items-center gap-2 mb-2">
                             <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
                               <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -633,7 +623,17 @@ export default function ComunidadePage() {
                             </div>
                             <p className="text-sm text-[#2E2F38] dark:text-white font-medium">YouTube</p>
                           </div>
-                          <p className="text-xs text-[#6B6F76] dark:text-gray-300">Clique para assistir no YouTube</p>
+                          <a
+                            href={post.youtubeLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            Assistir no YouTube
+                          </a>
                         </div>
                       </div>
                     </div>
