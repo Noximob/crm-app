@@ -2,9 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, getDoc, Timestamp, orderBy, limit, deleteDoc, setDoc, doc } from 'firebase/firestore';
 import Link from 'next/link';
+import data from '@emoji-mart/data';
+import Picker from '@emoji-mart/react';
 
 // Ícones
 const TrendingUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -351,6 +354,7 @@ export default function DashboardPage() {
   const [repostWithComment, setRepostWithComment] = useState(false);
   const [repostComment, setRepostComment] = useState('');
   const [repostInputId, setRepostInputId] = useState<string | null>(null);
+  const [showEmojiComment, setShowEmojiComment] = useState(false);
 
   // Atualizar hora a cada minuto
   useEffect(() => {
@@ -1205,235 +1209,70 @@ export default function DashboardPage() {
 
       {/* Modal do Post */}
       {showPostModal && selectedPost && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-lg w-full max-w-3xl p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto">
-            <button 
-              className="absolute top-4 right-4 text-2xl text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] transition-colors" 
-              onClick={() => setShowPostModal(false)}
-            >
-              ×
-            </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={() => setShowPostModal(false)}>
+          <div className="relative max-w-2xl w-full mx-2 bg-white dark:bg-[#23283A] rounded-2xl shadow-xl p-0" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowPostModal(false)} className="absolute top-4 right-4 text-white text-2xl z-10 hover:text-[#F45B69]">✕</button>
             
-            {/* Header do Post com destaque */}
-            <div className="bg-gradient-to-r from-[#A3C8F7]/10 to-[#3478F6]/10 rounded-xl p-6 mb-6 border border-[#3478F6]/20">
-              <div className="flex items-start gap-4">
-                <img src={selectedPost.avatar} alt={selectedPost.nome} className="w-16 h-16 rounded-full object-cover border-4 border-white dark:border-[#23283A] shadow-lg" />
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="font-bold text-xl text-[#2E2F38] dark:text-white">{selectedPost.nome}</span>
-                    <span className="px-3 py-1 bg-[#3478F6]/20 text-[#3478F6] text-xs font-semibold rounded-full">
-                      Post em Destaque
-                    </span>
-                  </div>
-                  <div className="text-sm text-[#6B6F76] dark:text-gray-300 mb-3">
-                    {selectedPost.createdAt?.toDate ? 
-                      selectedPost.createdAt.toDate().toLocaleString('pt-BR', { 
-                        weekday: 'long',
-                        day: '2-digit', 
-                        month: 'long',
-                        year: 'numeric',
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      }) : ''
-                    }
-                  </div>
-                </div>
+            {/* Imagem do post se existir */}
+            {selectedPost.file && selectedPost.fileMeta && selectedPost.fileMeta.type.startsWith('image/') && (
+              <div className="flex justify-center items-center p-4">
+                <img src={selectedPost.file} alt="imagem ampliada" className="max-h-[60vh] rounded-xl mx-auto" />
               </div>
-          </div>
-
-            {/* Conteúdo do Post */}
-            <div className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl p-4 mb-4">
-              <div className="text-base text-[#2E2F38] dark:text-white leading-relaxed whitespace-pre-wrap mb-3">
-                {selectedPost.texto}
-      </div>
-
-              {/* Mídia do Post */}
-              {selectedPost.file && selectedPost.fileMeta && (
-                <div className="mt-3">
-                  {selectedPost.fileMeta.type.startsWith('image/') && (
-                    <div className="relative">
-                      <img 
-                        src={selectedPost.file} 
-                        alt={selectedPost.fileMeta.name} 
-                        className="w-full max-h-64 object-contain rounded-lg border border-[#E8E9F1] dark:border-[#23283A]" 
-                      />
-              </div>
-                  )}
-                  
-                  {selectedPost.fileMeta.type.startsWith('video/') && (
-                    <div className="relative">
-                      <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
-                        <video 
-                          src={selectedPost.file} 
-                          controls 
-                          className="w-full h-full object-cover rounded-lg" 
-                          poster={selectedPost.fileMeta.thumbnail || undefined}
-                        />
-                        <div className="absolute top-2 left-2 bg-purple-600 text-white px-2 py-1 rounded text-xs font-semibold">
-                          VÍDEO
-          </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {selectedPost.fileMeta.type === 'application/pdf' && (
-                    <div className="flex items-center gap-3 p-3 bg-white dark:bg-[#23283A] rounded-lg border border-[#E8E9F1] dark:border-[#23283A]">
-                      <span className="text-2xl text-red-500">📄</span>
-                      <div className="flex-1">
-                        <div className="font-semibold text-[#2E2F38] dark:text-white text-sm">
-                          {selectedPost.fileMeta.name}
-              </div>
-            </div>
-                      <a 
-                        href={selectedPost.file} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="px-3 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white rounded text-sm font-medium transition-colors"
-                      >
-                        Abrir
-                      </a>
-              </div>
-                  )}
-            </div>
-              )}
-              
-              {/* Vídeo do YouTube */}
-              {selectedPost.youtubeData && (
-                <div className="mt-3">
-                  <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
-                    <iframe
-                      src={selectedPost.youtubeData.embedUrl}
-                      title="YouTube video"
-                      className="w-full h-full"
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    ></iframe>
-                    <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded text-xs font-semibold">
-                      YOUTUBE
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {/* Indicação de Repost */}
-              {selectedPost.repostOf && (
-                <div className="mt-3 p-2 bg-[#3478F6]/10 border border-[#3478F6]/20 rounded-lg">
-                  <div className="flex items-center gap-2 text-[#3478F6] text-xs">
-                    <span>🔁</span>
-                    <span>Repost</span>
-                    {selectedPost.repostComment && (
-                      <span className="text-[#2E2F38] dark:text-white">
-                        com comentário: "{selectedPost.repostComment}"
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Estatísticas do Post */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="text-center p-3 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
-                <div className="text-lg font-bold text-[#3478F6]">{selectedPost.likes || 0}</div>
-                <div className="text-xs text-[#6B6F76] dark:text-gray-300">Curtidas</div>
-              </div>
-              <div className="text-center p-3 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
-                <div className="text-lg font-bold text-[#3478F6]">{selectedPost.commentsCount || 0}</div>
-                <div className="text-xs text-[#6B6F76] dark:text-gray-300">Comentários</div>
-              </div>
-              <div className="text-center p-3 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
-                <div className="text-lg font-bold text-[#3478F6]">{selectedPost.repostsCount || 0}</div>
-                <div className="text-xs text-[#6B6F76] dark:text-gray-300">Reposts</div>
-              </div>
-            </div>
-
-            {/* Botões de Interação */}
-            <div className="flex items-center gap-3 mb-4 pb-3 border-b border-[#E8E9F1] dark:border-[#23283A]">
-              <button 
-                onClick={() => handleLike(selectedPost.id)}
-                disabled={isLiking === selectedPost.id}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                  selectedPost.userLiked 
-                    ? 'bg-red-500/10 text-red-500 border border-red-500/20' 
-                    : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-red-500/10 hover:text-red-500 border border-[#E8E9F1] dark:border-[#23283A]'
-                }`}
-              >
-                {isLiking === selectedPost.id ? (
-                  <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <span className="text-lg">{selectedPost.userLiked ? '❤️' : '🤍'}</span>
-                )}
-                <span className="text-sm font-medium">Curtir</span>
-              </button>
-              
-              <button 
-                onClick={() => handleRepost(selectedPost.id)}
-                disabled={isReposting === selectedPost.id}
-                className="flex items-center gap-2 px-4 py-2 bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 rounded-lg hover:bg-green-500/10 hover:text-green-500 transition-colors border border-[#E8E9F1] dark:border-[#23283A]"
-              >
-                {isReposting === selectedPost.id ? (
-                  <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <span className="text-lg">🔁</span>
-                )}
-                <span className="text-sm font-medium">Repostar</span>
-              </button>
-            </div>
-
-            {/* Seção de Comentários */}
-              <div>
-              <h3 className="font-semibold text-[#2E2F38] dark:text-white mb-3 flex items-center gap-2">
-                <span>💬</span>
-                Comentários ({selectedPost.commentsCount || 0})
-              </h3>
-              
-              {/* Input para novo comentário */}
-              <div className="flex gap-2 mb-4">
-                <input
-                  type="text"
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Adicione um comentário sobre este post..."
-                  className="flex-1 px-3 py-2 bg-[#F5F6FA] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-sm"
-                  onKeyPress={(e) => e.key === 'Enter' && handleComment(selectedPost.id)}
-                />
-                <button
-                  onClick={() => handleComment(selectedPost.id)}
-                  disabled={!commentText.trim()}
-                  className="px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors text-sm"
-                >
-                  Comentar
-                </button>
-              </div>
-
-              {/* Lista de comentários */}
-              <div className="space-y-3 max-h-48 overflow-y-auto">
+            )}
+            
+            {/* Seção de comentários */}
+            <div className="p-4 border-t border-[#E8E9F1] dark:border-[#23283A]">
+              <h3 className="font-bold text-lg mb-2 text-[#2E2F38] dark:text-white">Comentários ({selectedPost.commentsCount || 0})</h3>
+              <div className="max-h-60 overflow-y-auto space-y-3 mb-3">
                 {commentsLoading ? (
-                  <div className="text-center text-[#6B6F76] dark:text-gray-300 text-sm py-6 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
+                  <div className="text-center text-[#6B6F76] dark:text-gray-300 text-sm py-6">
                     <div className="text-xl mb-2">💭</div>
                     <div>Carregando comentários...</div>
-            </div>
+                  </div>
                 ) : postComments.length === 0 ? (
-                  <div className="text-center text-[#6B6F76] dark:text-gray-300 text-sm py-6 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
-                    <div className="text-xl mb-2">💭</div>
-                    <div>Nenhum comentário encontrado para este post.</div>
-                    <div className="text-xs mt-1">Seja o primeiro a comentar!</div>
-          </div>
+                  <div className="text-gray-400 text-sm">Nenhum comentário ainda.</div>
                 ) : (
-                  postComments.map((comment) => (
-                    <div key={comment.id} className="bg-white/50 dark:bg-[#23283A]/50 rounded-lg p-3 shadow-sm">
-                      <div className="flex items-center gap-2 mb-1">
-                        <img src={comment.userId === currentUser?.uid ? currentUser?.photoURL || 'https://via.placeholder.com/24' : 'https://via.placeholder.com/24'} alt={comment.nome} className="w-5 h-5 rounded-full object-cover" />
-                        <span className="font-semibold text-[#2E2F38] dark:text-white text-sm">{comment.nome}</span>
-                        <span className="text-xs text-[#6B6F76] dark:text-gray-300">
-                          {comment.createdAt?.toDate ? comment.createdAt.toDate().toLocaleString('pt-BR') : ''}
-                        </span>
-      </div>
-                      <p className="text-[#2E2F38] dark:text-white text-sm">{comment.texto}</p>
+                  postComments.map((c) => (
+                    <div key={c.id} className="flex items-start gap-2">
+                      <img src={c.userId === currentUser?.uid ? currentUser?.photoURL || 'https://via.placeholder.com/32' : 'https://via.placeholder.com/32'} alt={c.nome} className="w-8 h-8 rounded-full object-cover" />
+                      <div>
+                        <div className="font-semibold text-[#2E2F38] dark:text-white text-sm">{c.nome}</div>
+                        <div className="text-[#2E2F38] dark:text-gray-200 text-sm">{c.texto}</div>
+                        <div className="text-xs text-gray-400">{c.createdAt?.toDate ? c.createdAt.toDate().toLocaleString('pt-BR') : ''}</div>
+                      </div>
                     </div>
                   ))
                 )}
+              </div>
+              <div className="flex gap-2 mt-2 relative">
+                <input
+                  type="text"
+                  className="flex-1 px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                  placeholder="Adicionar comentário..."
+                  value={commentText}
+                  onChange={e => setCommentText(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleComment(selectedPost.id); }}
+                />
+                <button
+                  className="text-[#3478F6] hover:text-[#255FD1] text-xl"
+                  title="Adicionar emoji"
+                  onClick={() => setShowEmojiComment((v) => !v)}
+                  type="button"
+                >😊</button>
+                {showEmojiComment && (
+                  <div className="absolute z-50 top-12 right-0">
+                    <Picker
+                      data={data}
+                      onEmojiSelect={(emoji: any) => { setCommentText((prev) => prev + emoji.native); setShowEmojiComment(false); }}
+                      theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
+                    />
+                  </div>
+                )}
+                <button
+                  className="px-4 py-2 rounded-lg bg-[#3478F6] text-white font-bold shadow-soft hover:bg-[#255FD1] transition-colors"
+                  onClick={() => handleComment(selectedPost.id)}
+                  disabled={!commentText.trim()}
+                >Comentar</button>
               </div>
             </div>
           </div>
@@ -1565,4 +1404,4 @@ export default function DashboardPage() {
       )}
     </div>
   );
-} 
+}
