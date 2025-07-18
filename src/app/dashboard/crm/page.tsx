@@ -190,6 +190,11 @@ export default function CrmPage() {
                         return true; 
                     }
 
+                    // Tratamento especial para status de tarefa
+                    if (key === 'taskStatus') {
+                        return selectedOptions.includes(lead.taskStatus);
+                    }
+
                     const leadValue = key === 'etapa' ? lead.etapa : lead.qualificacao?.[key];
                     
                     if (leadValue === undefined) {

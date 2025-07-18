@@ -12,6 +12,13 @@ const QUALIFICATION_QUESTIONS = [
     { title: 'Valor do Imóvel', key: 'valor', options: ['< 500k', '500k-800k', '800k-1.2M', '1.2M-2M', '> 2M'] },
 ];
 
+const TASK_STATUS_OPTIONS = [
+    'Tarefa em Atraso',
+    'Tarefa do Dia', 
+    'Tarefa Futura',
+    'Sem tarefa'
+];
+
 export interface Filters {
     [key: string]: string[];
 }
@@ -87,6 +94,21 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters, 
                 
                 {/* Conteúdo com scroll */}
                 <div className="p-5 space-y-5 max-h-[70vh] overflow-y-auto">
+                    {/* Status de Tarefa */}
+                    <div>
+                        <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2.5">Status da Tarefa</h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                            {TASK_STATUS_OPTIONS.map(option => (
+                                <FilterTag 
+                                    key={option}
+                                    label={option}
+                                    isSelected={(selectedFilters['taskStatus'] || []).includes(option)}
+                                    onClick={() => handleTagClick('taskStatus', option)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
                     {[situationQuestion, ...QUALIFICATION_QUESTIONS].map(group => (
                         <div key={group.key}>
                             <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2.5">{group.title}</h4>
