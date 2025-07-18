@@ -455,11 +455,22 @@ export default function DashboardPage() {
             
             // Buscar nome do autor original se for repost
             let repostAuthorName = '';
+            let originalTexto = '';
+            let originalCreatedAt = '';
+            let originalFile = '';
+            let originalFileMeta = null;
+            let originalYoutubeData = null;
             if (post.repostOf) {
               try {
                 const originalDoc = await getDoc(doc(db, 'comunidadePosts', post.repostOf));
                 if (originalDoc.exists()) {
-                  repostAuthorName = originalDoc.data().nome || 'Original';
+                  const data = originalDoc.data();
+                  repostAuthorName = data.nome || 'Original';
+                  originalTexto = data.texto || '';
+                  originalCreatedAt = data.createdAt?.toDate ? data.createdAt.toDate().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+                  originalFile = data.file || '';
+                  originalFileMeta = data.fileMeta || null;
+                  originalYoutubeData = data.youtubeData || null;
                 }
               } catch {}
             }
@@ -470,6 +481,11 @@ export default function DashboardPage() {
               totalEngagement: (post.likes || 0) + commentsSnapshot.size + repostsSnapshot.size,
               userLiked: userLikeSnapshot.size > 0,
               repostAuthorName,
+              originalTexto,
+              originalCreatedAt,
+              originalFile,
+              originalFileMeta,
+              originalYoutubeData,
             };
           })
         );
@@ -969,19 +985,46 @@ export default function DashboardPage() {
                               }) : ''
                             }
                           </span>
-                          {post.repostOf && (
-                            <span className="ml-2 px-2 py-0.5 bg-[#3478F6]/10 text-[#3478F6] text-xs rounded-full font-semibold">
-                              🔁 Repost de {post.repostAuthorName || 'Original'}
-                            </span>
-                          )}
                         </div>
-                        <div className="text-sm text-[#2E2F38] dark:text-white line-clamp-2 leading-relaxed">
-                          {post.texto}
-                        </div>
-                        {post.repostComment && (
-                          <div className="mt-2 px-3 py-2 bg-[#3478F6]/10 text-[#3478F6] rounded-lg text-xs font-medium border border-[#3478F6]/20">
-                            <span className="font-semibold">Comentário do repost:</span> {post.repostComment}
+                        {/* Se for repost, mostrar comentário do repostador no topo */}
+                        {post.repostOf && post.repostComment && (
+                          <div className="mb-2 px-3 py-2 bg-[#F5F6FA] dark:bg-[#23283A] border-l-4 border-[#3478F6] text-[#3478F6] rounded-r-lg text-sm font-medium">
+                            <span className="font-semibold">{post.nome}:</span> {post.repostComment}
                           </div>
+                        )}
+                        {/* Se for repost, mostrar post original aninhado */}
+                        {post.repostOf ? (
+                          <div className="bg-white dark:bg-[#23283A] border border-[#3478F6]/20 rounded-lg p-3 shadow-inner mt-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="px-2 py-0.5 bg-[#3478F6]/10 text-[#3478F6] text-xs rounded-full font-semibold">🔁 Repost de {post.repostAuthorName || 'Original'}</span>
+                            </div>
+                            <div className="text-xs text-[#6B6F76] dark:text-gray-300 mb-1">{post.originalCreatedAt}</div>
+                            <div className="text-sm text-[#2E2F38] dark:text-white leading-relaxed mb-2">{post.originalTexto || post.texto}</div>
+                            {/* Mídia do post original */}
+                            {post.originalFileMeta && post.originalFileMeta.type.startsWith('image/') && (
+                              <img src={post.originalFile} alt="Post image" className="w-full rounded-lg mb-2" />
+                            )}
+                            {post.originalFileMeta && post.originalFileMeta.type.startsWith('video/') && (
+                              <video src={post.originalFile} controls className="w-full rounded-lg mb-2" />
+                            )}
+                            {post.originalYoutubeData && (
+                              <div className="relative aspect-video bg-black rounded-lg overflow-hidden mb-2">
+                                <iframe
+                                  src={post.originalYoutubeData.embedUrl}
+                                  title="YouTube video"
+                                  className="w-full h-full"
+                                  frameBorder="0"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                ></iframe>
+                                <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded text-xs font-semibold">
+                                  YOUTUBE
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-[#2E2F38] dark:text-white line-clamp-2 leading-relaxed">{post.texto}</div>
                         )}
                       </div>
                     </div>
