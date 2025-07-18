@@ -838,9 +838,9 @@ export default function DashboardPage() {
       </div>
 
       {/* Grid de conteúdo principal com scroll independente */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-200px)]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0" style={{height: 'calc(100vh - 120px)'}}>
         {/* Coluna Esquerda - Agenda, Avisos e Metas com scroll único */}
-        <div className="space-y-6 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#3478F6]/20 scrollbar-track-transparent hover:scrollbar-thumb-[#3478F6]/40">
+        <div className="space-y-6 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#3478F6]/20 scrollbar-track-transparent hover:scrollbar-thumb-[#3478F6]/40 h-full min-h-0">
           {/* Agenda do Dia */}
           <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
@@ -938,7 +938,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Coluna Direita - Top Trending com scroll independente */}
-        <div className="overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#3478F6]/20 scrollbar-track-transparent hover:scrollbar-thumb-[#3478F6]/40">
+        <div className="overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#3478F6]/20 scrollbar-track-transparent hover:scrollbar-thumb-[#3478F6]/40 h-full min-h-0">
           <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl animate-fade-in">
             {/* Borda decorativa */}
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#3478F6] to-[#A3C8F7]"></div>
