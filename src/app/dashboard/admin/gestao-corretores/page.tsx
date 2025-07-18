@@ -172,7 +172,10 @@ export default function GestaoCorretoresPage() {
     );
   }
 
-  const corretores = users.filter(user => user.tipoConta === 'corretor-vinculado' && user.aprovado);
+  const corretores = users.filter(user => 
+    (user.tipoConta === 'corretor-vinculado' && user.aprovado) || 
+    (user.tipoConta === 'imobiliaria' && user.aprovado)
+  );
 
   return (
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
