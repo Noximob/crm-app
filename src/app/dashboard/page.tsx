@@ -1009,7 +1009,7 @@ export default function DashboardPage() {
                         )}
                         {/* Se for repost, mostrar SOMENTE o comentário do repostador e o card aninhado do post original */}
                         {post.repostOf ? (
-                          <>
+                          <div>
                             {post.repostComment && (
                               <div className="mb-2 px-3 py-2 bg-[#F5F6FA] dark:bg-[#23283A] border-l-4 border-[#3478F6] text-[#3478F6] rounded-r-lg text-sm font-medium">
                                 <span className="font-semibold">{post.nome}:</span> {post.repostComment}
@@ -1044,7 +1044,7 @@ export default function DashboardPage() {
                                 </div>
                               )}
                             </div>
-                          </>
+                          </div>
                         ) : (
                           post.texto && <div className="text-sm text-[#2E2F38] dark:text-white line-clamp-2 leading-relaxed">{post.texto}</div>
                         )}
