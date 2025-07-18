@@ -70,6 +70,7 @@ export default function ImportarLeadsPage() {
       await Promise.all(leadsPreview.map(async (lead) => {
         await addDoc(collection(db, 'leads'), {
           userId: corretorDestino,
+          imobiliariaId: userData?.imobiliariaId || '', // Adiciona o ID da imobiliária
           nome: lead.nome || 'Lead importado',
           telefone: lead.telefone,
           whatsapp: lead.telefone.replace(/\D/g, ''),

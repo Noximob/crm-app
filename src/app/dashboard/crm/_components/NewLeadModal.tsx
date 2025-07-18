@@ -18,7 +18,7 @@ const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
-    const { currentUser } = useContext(AuthContext);
+    const { currentUser, userData } = useContext(AuthContext);
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
@@ -72,6 +72,7 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
             const leadsCollectionRef = collection(db, 'leads');
             await addDoc(leadsCollectionRef, {
                 userId: currentUser.uid, // Adiciona o ID do usuário ao lead
+                imobiliariaId: userData?.imobiliariaId || '', // Adiciona o ID da imobiliária
                 nome: name,
                 telefone: phone,
                 whatsapp: phone.replace(/\\D/g, ''),
