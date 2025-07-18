@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { db, storage } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
+import { useNotifications } from "@/context/NotificationContext";
 import {
   collection,
   addDoc,
@@ -63,6 +64,7 @@ function Modal({ open, onClose, children }: { open: boolean, onClose: () => void
 
 export default function ComunidadePage() {
   const { currentUser, userData } = useAuth();
+  const { resetNotification } = useNotifications();
   const [posts, setPosts] = useState<any[]>([]);
   const [novoPost, setNovoPost] = useState("");
   const [loading, setLoading] = useState(false);
@@ -161,23 +163,6 @@ export default function ComunidadePage() {
     });
     return () => unsubscribe();
   }, []);
-
-  // Marcar que o usuário visualizou a Comunidade quando acessa a página
-  useEffect(() => {
-    if (currentUser && userData) {
-      const markAsViewed = async () => {
-        try {
-          const userVisitsRef = doc(db, 'userVisits', currentUser.uid);
-          await setDoc(userVisitsRef, {
-            comunidade: serverTimestamp()
-          }, { merge: true });
-        } catch (error) {
-          console.error('Erro ao marcar visualização:', error);
-        }
-      };
-      markAsViewed();
-    }
-  }, [currentUser, userData]);
 
   // Fechar emoji picker quando clicar fora
   useEffect(() => {

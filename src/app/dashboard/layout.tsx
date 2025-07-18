@@ -3,11 +3,11 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { auth, db } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
-import { doc, getDoc, setDoc, collection, query, where, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
+import { useNotifications } from '@/context/NotificationContext';
 
 // Ícones
 const AlertTriangleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>;
@@ -63,11 +63,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
-  
-  // Estados para notificações
-  const [notifications, setNotifications] = useState({
-    comunidade: 0
-  });
+  const { notifications, resetNotification } = useNotifications();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -75,72 +71,12 @@ export default function DashboardLayout({
     }
   }, [user, loading, router]);
 
-  // Verificar novidades quando o usuário carrega o layout
-  useEffect(() => {
-    if (user && userData) {
-      checkForNewContent();
-    }
-  }, [user, userData]);
-
   // Resetar notificação quando acessa a seção
   useEffect(() => {
     if (pathname === '/dashboard/comunidade') {
       resetNotification('comunidade');
     }
-  }, [pathname]);
-
-  const checkForNewContent = async () => {
-    if (!user || !userData) return;
-
-    try {
-      // Buscar última visita do usuário
-      const userVisitsRef = doc(db, 'userVisits', user.uid);
-      const userVisitsDoc = await getDoc(userVisitsRef);
-      const lastVisits = userVisitsDoc.exists() ? userVisitsDoc.data() : {};
-
-      const newNotifications = { ...notifications };
-
-      // Verificar novidades na Comunidade (posts mais recentes que a última visita)
-      const comunidadeLastVisit = lastVisits.comunidade?.toDate?.() || new Date(0);
-      const postsQuery = query(
-        collection(db, 'comunidadePosts'),
-        where('createdAt', '>', Timestamp.fromDate(comunidadeLastVisit)),
-        orderBy('createdAt', 'desc')
-      );
-      const postsSnapshot = await getDocs(postsQuery);
-      newNotifications.comunidade = postsSnapshot.size;
-
-      console.log(`Encontradas ${postsSnapshot.size} novidades na comunidade`); // Debug
-
-      setNotifications(newNotifications);
-    } catch (error) {
-      console.error('Erro ao verificar novidades:', error);
-    }
-  };
-
-  const resetNotification = async (section: 'comunidade') => {
-    if (!user) return;
-
-    console.log('Resetando notificação da comunidade...'); // Debug
-
-    try {
-      // Atualizar última visita
-      const userVisitsRef = doc(db, 'userVisits', user.uid);
-      await setDoc(userVisitsRef, {
-        [section]: Timestamp.now()
-      }, { merge: true });
-
-      // Resetar notificação local
-      setNotifications(prev => ({
-        ...prev,
-        [section]: 0
-      }));
-
-      console.log('Notificação resetada com sucesso!'); // Debug
-    } catch (error) {
-      console.error('Erro ao resetar notificação:', error);
-    }
-  };
+  }, [pathname, resetNotification]);
 
   const handleLogout = async () => {
     try {
