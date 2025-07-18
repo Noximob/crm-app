@@ -116,11 +116,8 @@ export default function LoginPage() {
           {/* Logo e título */}
           <div className="text-center mb-6">
             <div className="mx-auto h-16 w-16 bg-primary-500 rounded-full flex items-center justify-center mb-4">
-              <svg className="h-8 w-8 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                {/* Bola azul de fundo */}
-                <circle cx="12" cy="12" r="10" fill="white" />
-                {/* Letra A em azul */}
-                <path d="M12 4L8 18H10L11 14H13L14 18H16L12 4ZM11.5 12L12 10L12.5 12H11.5Z" fill="#3478F6" />
+              <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
             </div>
             <h1 className="text-2xl font-bold text-softgray-800 mb-2">

@@ -183,8 +183,8 @@ export default function DeveloperPage() {
                   } hover:bg-[#F0F4FF] dark:hover:bg-[#262631]`}
                 >
                   <td className="px-4 py-3 font-medium text-[#2E2F38] dark:text-white">{imob.nome}</td>
-                  <td className="px-4 py-3 text-[#6B6F76] dark:text-gray-300">{imob.status || '-'}</td>
-                  <td className="px-4 py-3 text-[#6B6F76] dark:text-gray-300">{imob.aprovado ? 'Sim' : 'Não'}</td>
+                  <td className="px-4 py-3 text-white dark:text-white">{imob.status || '-'}</td>
+                  <td className="px-4 py-3 text-white dark:text-white">{imob.aprovado ? 'Sim' : 'Não'}</td>
                   <td className="px-4 py-3">
                     <button className="text-blue-600 dark:text-blue-400 hover:underline mr-2" onClick={() => { setSelectedImobiliaria(imob); loadCorretores(imob.id); }}>Ver corretores</button>
                   </td>
@@ -229,8 +229,8 @@ export default function DeveloperPage() {
                     } hover:bg-[#F0F4FF] dark:hover:bg-[#262631]`}
                   >
                     <td className="px-4 py-3 font-medium text-[#2E2F38] dark:text-white">{corretor.nome}</td>
-                    <td className="px-4 py-3 text-[#6B6F76] dark:text-gray-300">{corretor.email}</td>
-                    <td className="px-4 py-3 text-[#6B6F76] dark:text-gray-300">{corretor.tipoConta}</td>
+                    <td className="px-4 py-3 text-white dark:text-white">{corretor.email}</td>
+                    <td className="px-4 py-3 text-white dark:text-white">{corretor.tipoConta}</td>
                     <td className="px-4 py-3 text-center"><input type="checkbox" checked={!!corretor.aprovado} onChange={e => handleAprovarCheckbox(corretor, e.target.checked)} /></td>
                     <td className="px-4 py-3 text-center"><input type="checkbox" checked={!!corretor.permissoes?.admin} onChange={e => handlePermissao(corretor, 'admin', e.target.checked)} /></td>
                     <td className="px-4 py-3 text-center"><input type="checkbox" checked={!!corretor.permissoes?.developer} onChange={e => handlePermissao(corretor, 'developer', e.target.checked)} /></td>
