@@ -1001,12 +1001,6 @@ export default function DashboardPage() {
                             }
                           </span>
                         </div>
-                        {/* Se for repost, mostrar comentário do repostador no topo */}
-                        {post.repostOf && post.repostComment && (
-                          <div className="mb-2 px-3 py-2 bg-[#F5F6FA] dark:bg-[#23283A] border-l-4 border-[#3478F6] text-[#3478F6] rounded-r-lg text-sm font-medium">
-                            <span className="font-semibold">{post.nome}:</span> {post.repostComment}
-                          </div>
-                        )}
                         {/* Se for repost, mostrar SOMENTE o comentário do repostador e o card aninhado do post original */}
                         {post.repostOf ? (
                           <div>
@@ -1051,8 +1045,8 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    {/* Preview de mídia */}
-                    {(post.file || post.youtubeData) && (
+                    {/* Preview de mídia - APENAS para posts originais (não reposts) */}
+                    {!post.repostOf && (post.file || post.youtubeData) && (
                       <div className="mb-3 relative overflow-hidden rounded-lg">
                         {post.youtubeData && (
                           <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
