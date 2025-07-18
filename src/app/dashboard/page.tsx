@@ -453,12 +453,23 @@ export default function DashboardPage() {
               query(collection(db, 'comunidadePosts', post.id, 'likes'), where('userId', '==', currentUser?.uid))
             );
             
+            // Buscar nome do autor original se for repost
+            let repostAuthorName = '';
+            if (post.repostOf) {
+              try {
+                const originalDoc = await getDoc(doc(db, 'comunidadePosts', post.repostOf));
+                if (originalDoc.exists()) {
+                  repostAuthorName = originalDoc.data().nome || 'Original';
+                }
+              } catch {}
+            }
             return {
               ...post,
               commentsCount: commentsSnapshot.size,
               repostsCount: repostsSnapshot.size,
               totalEngagement: (post.likes || 0) + commentsSnapshot.size + repostsSnapshot.size,
-              userLiked: userLikeSnapshot.size > 0
+              userLiked: userLikeSnapshot.size > 0,
+              repostAuthorName,
             };
           })
         );
@@ -948,10 +959,20 @@ export default function DashboardPage() {
                               }) : ''
                             }
                           </span>
+                          {post.repostOf && (
+                            <span className="ml-2 px-2 py-0.5 bg-[#3478F6]/10 text-[#3478F6] text-xs rounded-full font-semibold">
+                              🔁 Repost de {post.repostAuthorName || 'Original'}
+                            </span>
+                          )}
                         </div>
                         <div className="text-sm text-[#2E2F38] dark:text-white line-clamp-2 leading-relaxed">
                           {post.texto}
                         </div>
+                        {post.repostComment && (
+                          <div className="mt-2 px-3 py-2 bg-[#3478F6]/10 text-[#3478F6] rounded-lg text-xs font-medium border border-[#3478F6]/20">
+                            <span className="font-semibold">Comentário do repost:</span> {post.repostComment}
+                          </div>
+                        )}
                       </div>
                     </div>
 
