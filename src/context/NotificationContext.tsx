@@ -59,7 +59,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const resetNotification = async (section: 'comunidade') => {
     if (!user) return;
 
-    console.log('Resetando notificação da comunidade...');
+    console.log('🔄 Resetando notificação da comunidade...');
 
     try {
       // Atualizar última visita
@@ -69,14 +69,17 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       }, { merge: true });
 
       // Resetar notificação local imediatamente
-      setNotifications(prev => ({
-        ...prev,
-        [section]: 0
-      }));
+      setNotifications(prev => {
+        console.log('✅ Notificação resetada localmente:', { ...prev, [section]: 0 });
+        return {
+          ...prev,
+          [section]: 0
+        };
+      });
 
-      console.log('Notificação resetada com sucesso!');
+      console.log('✅ Notificação resetada com sucesso!');
     } catch (error) {
-      console.error('Erro ao resetar notificação:', error);
+      console.error('❌ Erro ao resetar notificação:', error);
     }
   };
 

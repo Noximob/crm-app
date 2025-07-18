@@ -164,6 +164,14 @@ export default function ComunidadePage() {
     return () => unsubscribe();
   }, []);
 
+  // Resetar notificação quando acessa a página da Comunidade
+  useEffect(() => {
+    if (currentUser && userData) {
+      console.log('Página da Comunidade carregada - resetando notificação...');
+      resetNotification('comunidade');
+    }
+  }, [currentUser, userData, resetNotification]);
+
   // Fechar emoji picker quando clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
