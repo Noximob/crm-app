@@ -876,18 +876,14 @@ export default function DashboardPage() {
                       <div className="mb-3 relative overflow-hidden rounded-lg">
                         {post.youtubeData && (
                           <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
-                            <img 
-                              src={post.youtubeData.thumbnail} 
-                              alt="YouTube preview" 
-                              className="w-full h-full object-cover"
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors">
-                                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                  <path d="M8 5v14l11-7z"/>
-                                </svg>
-                              </div>
-                            </div>
+                            <iframe
+                              src={post.youtubeData.embedUrl}
+                              title="YouTube video"
+                              className="w-full h-full"
+                              frameBorder="0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            ></iframe>
                             <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded text-xs font-semibold">
                               YOUTUBE
                             </div>
@@ -973,9 +969,9 @@ export default function DashboardPage() {
                       </div>
                       
                       {/* Indicador de engajamento com gradiente */}
-                      <div className="px-3 py-1 bg-gradient-to-r from-[#3478F6]/20 to-[#A3C8F7]/20 rounded-full border border-[#3478F6]/30">
-                        <span className="text-xs font-semibold text-[#3478F6] dark:text-[#A3C8F7]">
-                          🔥 {post.totalEngagement} interações
+                      <div className="px-2 py-1 bg-gradient-to-r from-[#3478F6]/20 to-[#A3C8F7]/20 rounded-full border border-[#3478F6]/30">
+                        <span className="text-xs font-medium text-[#3478F6] dark:text-[#A3C8F7]">
+                          🔥 {post.totalEngagement}
                         </span>
                       </div>
                     </div>

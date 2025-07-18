@@ -230,6 +230,15 @@ export default function ComunidadePage() {
     return () => { unsubscribes.forEach((unsub) => unsub()); };
   }, [posts]);
 
+  // Calcular engajamento total para cada post
+  const getTotalEngagement = (postId: string) => {
+    const likes = posts.find(p => p.id === postId)?.likes || 0;
+    const comments = commentsMap[postId] || 0;
+    const reposts = repostsMap[postId] || 0;
+    const views = viewsMap[postId] || 0;
+    return likes + comments + reposts + views;
+  };
+
   // Registrar visualização única ao abrir modal
   useEffect(() => {
     if (modalOpen && modalPostId && currentUser) {
@@ -707,6 +716,11 @@ export default function ComunidadePage() {
                       onClick={() => handleLike(post.id)}
                       active={isLiked}
                     />
+                    {/* Indicador de engajamento com foguinho */}
+                    <div className="flex items-center gap-1 text-sm font-medium text-[#6B6F76] dark:text-gray-300 px-2 py-1 rounded">
+                      <span className="text-orange-500">🔥</span>
+                      <span>{getTotalEngagement(post.id)} interações</span>
+                    </div>
                   </div>
                   {/* Indicação de repost na timeline */}
                   {post.repostOf && (
