@@ -3,13 +3,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, collection, query, where, orderBy, getDocs, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
 
 interface NotificationContextType {
   notifications: {
     comunidade: number;
   };
-  checkForNewContent: () => Promise<void>;
+  checkForNewContent: () => Promise<(() => void) | undefined>;
   resetNotification: (section: 'comunidade') => Promise<void>;
 }
 
@@ -37,20 +37,27 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         where('createdAt', '>', Timestamp.fromDate(comunidadeLastVisit)),
         orderBy('createdAt', 'desc')
       );
-      const postsSnapshot = await getDocs(postsQuery);
       
-      // Filtrar posts que NÃO são do próprio usuário
-      const postsFromOthers = postsSnapshot.docs.filter(doc => {
-        const postData = doc.data();
-        return postData.userId !== user.uid;
-      });
-      
-      setNotifications(prev => ({
-        ...prev,
-        comunidade: postsFromOthers.length
-      }));
+      // Usar onSnapshot para monitorar em tempo real
+      const unsubscribe = onSnapshot(postsQuery, (snapshot) => {
+        // Filtrar posts que NÃO são do próprio usuário
+        const postsFromOthers = snapshot.docs.filter(doc => {
+          const postData = doc.data();
+          return postData.userId !== user.uid;
+        });
+        
+        setNotifications(prev => ({
+          ...prev,
+          comunidade: postsFromOthers.length
+        }));
 
-      console.log(`Encontradas ${postsFromOthers.length} novidades na comunidade (excluindo posts próprios)`);
+        console.log(`🔄 Tempo real: ${postsFromOthers.length} novidades na comunidade (excluindo posts próprios)`);
+      }, (error) => {
+        console.error('Erro ao monitorar notificações em tempo real:', error);
+      });
+
+      // Retornar função de limpeza
+      return unsubscribe;
     } catch (error) {
       console.error('Erro ao verificar novidades:', error);
     }
@@ -83,10 +90,17 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  // Verificar novidades quando o usuário carrega
+  // Monitorar notificações em tempo real quando o usuário carrega
   useEffect(() => {
     if (user && userData) {
-      checkForNewContent();
+      const unsubscribe = checkForNewContent();
+      
+      // Limpar subscription quando o componente for desmontado
+      return () => {
+        if (unsubscribe) {
+          unsubscribe.then(unsub => unsub && unsub());
+        }
+      };
     }
   }, [user, userData]);
 
