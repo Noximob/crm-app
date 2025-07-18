@@ -354,6 +354,30 @@ export default function DashboardPage() {
   const [repostComment, setRepostComment] = useState('');
   const [repostInputId, setRepostInputId] = useState<string | null>(null);
   const [showEmojiComment, setShowEmojiComment] = useState(false);
+  const [showScrollToTop, setShowScrollToTop] = useState(false);
+
+  // Função para voltar ao topo da seção de trending
+  const scrollToTrendingTop = () => {
+    const trendingSection = document.getElementById('trending-section');
+    if (trendingSection) {
+      trendingSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // Detectar scroll para mostrar/esconder botão
+  useEffect(() => {
+    const handleScroll = () => {
+      const trendingSection = document.getElementById('trending-section');
+      if (trendingSection) {
+        const rect = trendingSection.getBoundingClientRect();
+        const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+        setShowScrollToTop(isVisible && window.scrollY > 300);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Atualizar hora a cada minuto
   useEffect(() => {
@@ -949,7 +973,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Coluna Direita - Top Trending com scroll independente */}
-        <div className="overflow-y-auto pr-2 dashboard-scroll-hide h-full min-h-0">
+        <div id="trending-section" className="overflow-y-auto pr-2 dashboard-scroll-hide h-full min-h-0">
           <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl animate-fade-in">
             {/* Borda decorativa */}
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#3478F6] to-[#A3C8F7]"></div>
@@ -1276,6 +1300,20 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+      )}
+
+
+      {/* Botão Voltar ao Topo */}
+      {showScrollToTop && (
+        <button
+          onClick={scrollToTrendingTop}
+          className="fixed bottom-6 right-6 bg-[#3478F6] hover:bg-[#255FD1] text-white font-bold py-3 px-4 rounded-full shadow-lg transition-all duration-200 hover:scale-110 z-40"
+          title="Voltar ao topo do Trending"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          </svg>
+        </button>
       )}
 
 

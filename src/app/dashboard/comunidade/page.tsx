@@ -100,6 +100,25 @@ export default function ComunidadePage() {
   const [originalAuthors, setOriginalAuthors] = useState<Record<string, { nome: string, handle: string }>>({});
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const [orderByTrending, setOrderByTrending] = useState<'recent' | 'relevant'>('recent');
+  const [showScrollToTop, setShowScrollToTop] = useState(false);
+
+  // Função para voltar ao topo
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
+
+  // Detectar scroll para mostrar/esconder botão
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollToTop(window.scrollY > 300);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Função para extrair ID do vídeo do YouTube (incluindo Shorts)
   const getYouTubeVideoId = (url: string) => {
@@ -927,6 +946,15 @@ export default function ComunidadePage() {
             </div>
         </div>
       </div>
+      )}
+      {showScrollToTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-20 right-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-colors"
+          title="Voltar ao topo"
+        >
+          ↑
+        </button>
       )}
     </div>
   );
