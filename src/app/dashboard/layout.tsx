@@ -38,9 +38,10 @@ const ChevronLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props
 
 const AlumeLogo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" stroke="currentColor" strokeWidth="0.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M2 17L12 22L22 17" fill="currentColor" stroke="currentColor" strokeWidth="0.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M2 12L12 17L22 12" fill="currentColor" stroke="currentColor" strokeWidth="0.5" strokeLinecap="round" strokeLinejoin="round"/>
+    {/* Bola azul de fundo */}
+    <circle cx="12" cy="12" r="10" fill="#3478F6" />
+    {/* Letra A em branco */}
+    <path d="M12 4L8 18H10L11 14H13L14 18H16L12 4ZM11.5 12L12 10L12.5 12H11.5Z" fill="white" />
   </svg>
 );
 
