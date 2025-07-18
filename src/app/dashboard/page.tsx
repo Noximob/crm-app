@@ -367,12 +367,8 @@ export default function DashboardPage() {
   // Detectar scroll para mostrar/esconder botão
   useEffect(() => {
     const handleScroll = () => {
-      const trendingSection = document.getElementById('trending-section');
-      if (trendingSection) {
-        const rect = trendingSection.getBoundingClientRect();
-        const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
-        setShowScrollToTop(isVisible && window.scrollY > 300);
-      }
+      // Simplificar: mostrar botão após 200px de scroll
+      setShowScrollToTop(window.scrollY > 200);
     };
 
     window.addEventListener('scroll', handleScroll);

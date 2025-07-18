@@ -113,7 +113,8 @@ export default function ComunidadePage() {
   // Detectar scroll para mostrar/esconder botão
   useEffect(() => {
     const handleScroll = () => {
-      setShowScrollToTop(window.scrollY > 300);
+      // Simplificar: mostrar botão após 200px de scroll
+      setShowScrollToTop(window.scrollY > 200);
     };
 
     window.addEventListener('scroll', handleScroll);
