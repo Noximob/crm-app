@@ -884,43 +884,56 @@ export default function DashboardPage() {
       </div>
 
           {/* Avisos Importantes */}
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 border-l-4 border-[#FF6B6B] shadow-sm animate-fade-in">
-            <div className="flex items-center gap-3 mb-4">
-              <AlertCircleIcon className="h-6 w-6 text-[#FF6B6B]" />
-              <h3 className="font-bold text-[#2E2F38] dark:text-white text-lg">Avisos Importantes</h3>
-              <span className="px-2 py-1 bg-[#FF6B6B]/10 text-[#FF6B6B] text-xs font-semibold rounded-full">
-                ATENÇÃO
+          <div className="bg-white dark:bg-[#23283A] rounded-xl p-5 border border-[#FF6B6B]/20 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-2 h-2 bg-[#FF6B6B] rounded-full animate-pulse"></div>
+              <h3 className="font-semibold text-[#2E2F38] dark:text-white text-base">Avisos Importantes</h3>
+              <span className="px-1.5 py-0.5 bg-[#FF6B6B]/10 text-[#FF6B6B] text-xs font-medium rounded">
+                {avisosImportantes.length}
               </span>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {avisosImportantes
                 .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
                 .length === 0 ? (
-                <p className="text-[#6B6F76] dark:text-gray-300 text-sm">Nenhum aviso importante cadastrado pela imobiliária.</p>
+                <p className="text-[#6B6F76] dark:text-gray-300 text-sm italic">Nenhum aviso importante cadastrado pela imobiliária.</p>
               ) : (
                 avisosImportantes
                   .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
+                  .slice(0, 3) // Mostrar apenas os 3 mais recentes
                   .map((aviso, idx) => (
                     <div
                       key={aviso.id}
-                      className="p-4 rounded-lg border border-[#FF6B6B]/20 bg-[#FF6B6B]/5 hover:bg-[#FF6B6B]/10 transition-colors"
+                      className="group p-3 rounded-lg hover:bg-[#FF6B6B]/5 transition-colors border-l-2 border-[#FF6B6B]/30 hover:border-[#FF6B6B]/60"
                     >
-                      <div className="flex items-start gap-3">
-                        <div className="w-2 h-2 bg-[#FF6B6B] rounded-full mt-2 flex-shrink-0"></div>
-                        <div className="flex-1">
-                          <div className="text-sm font-semibold text-[#2E2F38] dark:text-white mb-1">
+                      <div className="flex items-start gap-2">
+                        <div className="w-1.5 h-1.5 bg-[#FF6B6B] rounded-full mt-1.5 flex-shrink-0"></div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-[#2E2F38] dark:text-white mb-1 group-hover:text-[#FF6B6B] transition-colors truncate">
                             {aviso.titulo}
                           </div>
-                          <div className="text-xs text-[#6B6F76] dark:text-gray-300 mb-2 leading-relaxed">
+                          <div className="text-xs text-[#6B6F76] dark:text-gray-300 leading-relaxed line-clamp-2">
                             {aviso.mensagem}
                           </div>
-                          <div className="text-[10px] text-[#FF6B6B] font-medium">
-                            {aviso.dataHora?.toDate ? aviso.dataHora.toDate().toLocaleString('pt-BR') : ''}
+                          <div className="text-[10px] text-[#FF6B6B]/70 font-medium mt-1">
+                            {aviso.dataHora?.toDate ? aviso.dataHora.toDate().toLocaleDateString('pt-BR', { 
+                              day: '2-digit', 
+                              month: '2-digit', 
+                              hour: '2-digit', 
+                              minute: '2-digit' 
+                            }) : ''}
                           </div>
                         </div>
                       </div>
                     </div>
                   ))
+              )}
+              {avisosImportantes.length > 3 && (
+                <div className="text-center pt-2">
+                  <span className="text-xs text-[#6B6F76] dark:text-gray-400">
+                    +{avisosImportantes.length - 3} avisos anteriores
+                  </span>
+                </div>
               )}
             </div>
           </div>

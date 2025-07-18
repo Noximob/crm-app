@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, collection, query, where, orderBy, getDocs, Timestamp, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, orderBy, getDocs, Timestamp } from 'firebase/firestore';
 
 interface NotificationContextType {
   notifications: {
@@ -88,36 +88,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     if (user && userData) {
       checkForNewContent();
     }
-  }, [user, userData]);
-
-  // Monitorar novos posts em tempo real (apenas para detectar novos posts)
-  useEffect(() => {
-    if (!user || !userData) return;
-
-    // Monitorar todos os posts para detectar novos
-    const postsQuery = query(collection(db, 'comunidadePosts'), orderBy('createdAt', 'desc'));
-    
-    const unsubscribe = onSnapshot(postsQuery, async (snapshot) => {
-      // Buscar última visita atualizada
-      const userVisitsRef = doc(db, 'userVisits', user.uid);
-      const userVisitsDoc = await getDoc(userVisitsRef);
-      const lastVisits = userVisitsDoc.exists() ? userVisitsDoc.data() : {};
-      const comunidadeLastVisit = lastVisits.comunidade?.toDate?.() || new Date(0);
-      
-      // Filtrar posts mais recentes que a última visita e que não são do próprio usuário
-      const newPostsFromOthers = snapshot.docs.filter(doc => {
-        const postData = doc.data();
-        const postDate = postData.createdAt?.toDate?.() || new Date(0);
-        return postDate > comunidadeLastVisit && postData.userId !== user.uid;
-      });
-      
-      setNotifications(prev => ({
-        ...prev,
-        comunidade: newPostsFromOthers.length
-      }));
-    });
-
-    return () => unsubscribe();
   }, [user, userData]);
 
   return (
