@@ -350,6 +350,7 @@ export default function DashboardPage() {
   const [showEmojiRepost, setShowEmojiRepost] = useState(false);
   const [repostWithComment, setRepostWithComment] = useState(false);
   const [repostComment, setRepostComment] = useState('');
+  const [repostInputId, setRepostInputId] = useState<string | null>(null);
 
   // Atualizar hora a cada minuto
   useEffect(() => {
@@ -524,14 +525,12 @@ export default function DashboardPage() {
     }
   };
 
-  const handleRepost = async (postId: string) => {
+  const handleRepost = async (postId: string, comment?: string) => {
     if (!currentUser) return;
-    
     setIsReposting(postId);
     try {
       const repostRef = doc(db, 'comunidadePosts', postId, 'reposts', currentUser.uid);
       const repostDoc = await getDoc(repostRef);
-      
       if (repostDoc.exists()) {
         // Remover repost
         await deleteDoc(repostRef);
@@ -540,20 +539,18 @@ export default function DashboardPage() {
             ? { ...post, repostsCount: (post.repostsCount || 1) - 1 }
             : post
         ));
-        // Atualizar post selecionado no modal
         setSelectedPost((prev: any) => prev && prev.id === postId ? {
           ...prev,
           repostsCount: (prev.repostsCount || 1) - 1
         } : prev);
       } else {
-        // Adicionar repost
-        await setDoc(repostRef, { userId: currentUser.uid, timestamp: new Date() });
+        // Adicionar repost com comentário opcional
+        await setDoc(repostRef, { userId: currentUser.uid, timestamp: new Date(), comment: comment || '' });
         setTrendingPosts(prev => prev.map(post => 
           post.id === postId 
             ? { ...post, repostsCount: (post.repostsCount || 0) + 1 }
             : post
         ));
-        // Atualizar post selecionado no modal
         setSelectedPost((prev: any) => prev && prev.id === postId ? {
           ...prev,
           repostsCount: (prev.repostsCount || 0) + 1
@@ -925,7 +922,7 @@ export default function DashboardPage() {
                   <div 
                     key={post.id} 
                     className="group relative bg-white/60 dark:bg-[#23283A]/60 backdrop-blur-sm rounded-xl p-4 hover:bg-white/80 dark:hover:bg-[#23283A]/80 transition-all duration-300 cursor-pointer border border-white/20 hover:border-[#3478F6]/30 hover:scale-[1.02] shadow-lg hover:shadow-xl"
-                    onClick={() => openPostModal(post)}
+                    // onClick={() => openPostModal(post)}
                   >
                     {/* Badge de ranking */}
                     <div className="absolute -top-2 -left-2 w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
@@ -1037,15 +1034,10 @@ export default function DashboardPage() {
                         
                         {/* Botão Repostar */}
                         <button 
-                          onClick={(e) => { e.stopPropagation(); handleRepost(post.id); }}
-                          disabled={isReposting === post.id}
+                          onClick={(e) => { e.stopPropagation(); setRepostInputId(post.id); setRepostComment(''); }}
                           className="flex items-center gap-1.5 text-sm font-medium text-[#6B6F76] dark:text-gray-300 hover:text-green-500 hover:scale-105 transition-all duration-200"
                         >
-                          {isReposting === post.id ? (
-                            <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-                          ) : (
-                            <span className="text-lg">🔁</span>
-                          )}
+                          <span className="text-lg">🔁</span>
                           <span>{post.repostsCount || 0}</span>
                         </button>
                       </div>
@@ -1057,6 +1049,37 @@ export default function DashboardPage() {
                         </span>
                       </div>
                     </div>
+
+                    {/* Campo de repost abaixo do post */}
+                    {repostInputId === post.id && (
+                      <div className="mt-4 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg p-4 border border-[#3478F6]/20 flex flex-col gap-2 animate-fade-in">
+                        <textarea
+                          className="w-full rounded p-2 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400 focus:outline-none"
+                          placeholder="Adicione um comentário (opcional) para o repost..."
+                          value={repostComment}
+                          onChange={e => setRepostComment(e.target.value)}
+                          rows={2}
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <button
+                            className="px-4 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 text-sm"
+                            onClick={() => { setRepostInputId(null); setRepostComment(''); }}
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            className="px-4 py-1 rounded bg-green-500 hover:bg-green-600 text-white text-sm font-semibold"
+                            onClick={async () => {
+                              await handleRepost(post.id, repostComment);
+                              setRepostInputId(null);
+                              setRepostComment('');
+                            }}
+                          >
+                            Repostar
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Efeito de brilho no hover */}
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
