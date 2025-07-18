@@ -7,7 +7,7 @@ import { doc, getDoc, setDoc, collection, query, where, orderBy, onSnapshot, Tim
 
 interface NotificationContextType {
   notifications: {
-    comunidade: number;
+    comunidade: boolean;
   };
   checkForNewContent: () => Promise<(() => void) | undefined>;
   resetNotification: (section: 'comunidade') => Promise<void>;
@@ -18,7 +18,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { currentUser: user, userData } = useAuth();
   const [notifications, setNotifications] = useState({
-    comunidade: 0
+    comunidade: false
   });
 
   const checkForNewContent = async () => {
@@ -48,10 +48,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         
         setNotifications(prev => ({
           ...prev,
-          comunidade: postsFromOthers.length
+          comunidade: postsFromOthers.length > 0
         }));
 
-        console.log(`🔄 Tempo real: ${postsFromOthers.length} novidades na comunidade (excluindo posts próprios)`);
+        console.log(`🔄 Tempo real: ${postsFromOthers.length > 0 ? 'Há' : 'Não há'} novidades na comunidade`);
       }, (error) => {
         console.error('Erro ao monitorar notificações em tempo real:', error);
       });
@@ -77,10 +77,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
       // Resetar notificação local imediatamente
       setNotifications(prev => {
-        console.log('✅ Notificação resetada localmente:', { ...prev, [section]: 0 });
+        console.log('✅ Notificação resetada localmente:', { ...prev, [section]: false });
         return {
           ...prev,
-          [section]: 0
+          [section]: false
         };
       });
 

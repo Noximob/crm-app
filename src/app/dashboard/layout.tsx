@@ -177,9 +177,8 @@ export default function DashboardLayout({
                           <item.icon className="h-5 w-5" />
                         )}
                         {/* Badge de notificação */}
-                        {item.notifications && item.notifications > 0 && (
-                          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold animate-pulse">
-                            {item.notifications > 99 ? '99+' : item.notifications}
+                        {item.notifications && (
+                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-3 w-3 flex items-center justify-center animate-pulse">
                           </span>
                         )}
                       </span>
