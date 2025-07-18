@@ -765,6 +765,21 @@ export default function DashboardPage() {
     minute: '2-digit'
   });
 
+  // Filtrar posts para não mostrar o original se já está aninhado em um repost
+  const trendingPostsFiltered = (() => {
+    const shownOriginals = new Set();
+    return trendingPosts.filter(post => {
+      if (post.repostOf) {
+        shownOriginals.add(post.repostOf);
+        return true;
+      }
+      if (shownOriginals.has(post.id)) {
+        return false;
+      }
+      return true;
+    });
+  })();
+
   return (
     <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
       {/* Header com boas-vindas, indicadores econômicos e hora em uma linha */}
@@ -955,7 +970,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {trendingPosts.map((post, index) => (
+                {trendingPostsFiltered.map((post, index) => (
                   <div 
                     key={post.id} 
                     className="group relative bg-white/60 dark:bg-[#23283A]/60 backdrop-blur-sm rounded-xl p-4 hover:bg-white/80 dark:hover:bg-[#23283A]/80 transition-all duration-300 cursor-pointer border border-white/20 hover:border-[#3478F6]/30 hover:scale-[1.02] shadow-lg hover:shadow-xl"
