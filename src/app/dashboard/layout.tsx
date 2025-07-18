@@ -130,10 +130,14 @@ export default function DashboardLayout({
         <div className="flex-1 flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
-            <div className="flex items-center gap-2">
+            <button 
+              onClick={() => window.location.reload()}
+              className="flex items-center gap-2 hover:scale-105 transition-transform cursor-pointer"
+              title="Recarregar página"
+            >
               <AlumeLogo className="h-8 w-8" />
               {!collapsed && <h1 className="text-xl font-bold text-[#2E2F38] dark:text-white transition-all">Alume</h1>}
-            </div>
+            </button>
             <button
               onClick={() => setCollapsed(!collapsed)}
               className="p-1 rounded-lg hover:bg-[#E8E9F1] transition-colors"
