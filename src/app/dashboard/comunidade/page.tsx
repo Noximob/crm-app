@@ -96,6 +96,7 @@ export default function ComunidadePage() {
   const [showEmojiRepost, setShowEmojiRepost] = useState(false);
   const emojiRepostRef = useRef<HTMLDivElement>(null);
   const [originalAuthors, setOriginalAuthors] = useState<Record<string, { nome: string, handle: string }>>({});
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
 
   // Função para extrair ID do vídeo do YouTube
   const getYouTubeVideoId = (url: string) => {
@@ -437,15 +438,28 @@ export default function ComunidadePage() {
                     <img 
                       src={youtubePreview.thumbnail} 
                       alt="YouTube thumbnail" 
-                      className="w-full h-32 object-cover"
+                      className="w-full h-32 object-cover object-center"
                     />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center">
+                      <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors cursor-pointer"
+                           onClick={() => setSelectedVideo(youtubePreview.url)}>
                         <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M8 5v14l11-7z"/>
                         </svg>
                       </div>
                     </div>
+                    <button
+                      onClick={() => setSelectedVideo(youtubePreview.url)}
+                      className="absolute top-2 right-2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-lg transition-colors"
+                      title="Maximizar vídeo"
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
+                        <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
+                        <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
+                        <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+                      </svg>
+                    </button>
                   </div>
                   <div className="p-3">
                     <p className="text-sm text-[#2E2F38] dark:text-white font-medium">Vídeo do YouTube</p>
@@ -582,23 +596,35 @@ export default function ComunidadePage() {
                   {/* Vídeo do YouTube */}
                   {post.youtubeData && (
                     <div className="mt-2">
-                      <div className="bg-white dark:bg-[#23283A] rounded-xl overflow-hidden border border-[#E8E9F1] dark:border-[#23283A] cursor-pointer hover:shadow-lg transition-shadow"
-                           onClick={() => window.open(post.youtubeLink, '_blank')}>
+                      <div className="bg-white dark:bg-[#23283A] rounded-xl overflow-hidden border border-[#E8E9F1] dark:border-[#23283A] cursor-pointer hover:shadow-lg transition-shadow">
                         <div className="relative">
                           <img 
                             src={post.youtubeData.thumbnail} 
                             alt="YouTube thumbnail" 
-                            className="w-full h-48 object-cover"
+                            className="w-full h-48 object-cover object-center"
                           />
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors">
+                            <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors"
+                                 onClick={(e) => { e.stopPropagation(); setSelectedVideo(post.youtubeLink); }}>
                               <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M8 5v14l11-7z"/>
                               </svg>
                             </div>
                           </div>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setSelectedVideo(post.youtubeLink); }}
+                            className="absolute top-2 right-2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-lg transition-colors"
+                            title="Maximizar vídeo"
+                          >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
+                              <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
+                              <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
+                              <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+                            </svg>
+                          </button>
                         </div>
-                        <div className="p-4">
+                        <div className="p-4" onClick={() => window.open(post.youtubeLink, '_blank')}>
                           <div className="flex items-center gap-2 mb-2">
                             <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
                               <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -784,6 +810,47 @@ export default function ComunidadePage() {
           {repostLoading && <div className="mt-4 text-[#3478F6] font-bold">Repostando...</div>}
         </div>
       </Modal>
+
+      {/* Modal de vídeo maximizado */}
+      {selectedVideo && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-[#23283A] rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-[#2E2F38] dark:text-white">
+                Vídeo em Tela Cheia
+              </h3>
+              <button
+                onClick={() => setSelectedVideo(null)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="relative">
+              <iframe
+                src={getYouTubeEmbedUrl(selectedVideo)}
+                title="Vídeo maximizado"
+                className="w-full h-96"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+            </div>
+            
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => setSelectedVideo(null)}
+                className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
