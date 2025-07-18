@@ -112,6 +112,7 @@ export default function CrmPage() {
     const [leads, setLeads] = useState<Lead[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState<string | null>(null);
+    const [activeTaskFilter, setActiveTaskFilter] = useState<TaskStatus | null>(null);
     const [isFilterModalOpen, setFilterModalOpen] = useState(false);
     const [advancedFilters, setAdvancedFilters] = useState<Filters>({});
 
@@ -166,6 +167,7 @@ export default function CrmPage() {
 
     const handleClearFilters = () => {
         setActiveFilter(null);
+        setActiveTaskFilter(null);
         setAdvancedFilters({});
     };
 
@@ -174,6 +176,10 @@ export default function CrmPage() {
         
         if (activeFilter) {
             leadsToFilter = leadsToFilter.filter(lead => lead.etapa === activeFilter);
+        }
+
+        if (activeTaskFilter) {
+            leadsToFilter = leadsToFilter.filter(lead => lead.taskStatus === activeTaskFilter);
         }
 
         const hasAdvancedFilters = Object.values(advancedFilters).some((options: string[]) => options.length > 0);
@@ -196,9 +202,12 @@ export default function CrmPage() {
         }
 
         return leadsToFilter;
-    }, [leads, activeFilter, advancedFilters]);
+    }, [leads, activeFilter, activeTaskFilter, advancedFilters]);
     
     const activeAdvancedFilterCount = Object.values(advancedFilters).reduce((count, options: string[]) => count + options.length, 0);
+
+    // Status de tarefa para filtros rápidos
+    const taskStatusFilters: TaskStatus[] = ['Tarefa em Atraso', 'Tarefa do Dia', 'Tarefa Futura', 'Sem tarefa'];
 
     return (
         <>
@@ -220,7 +229,7 @@ export default function CrmPage() {
                                     </span>
                                 )}
                             </button>
-                            {(activeFilter || activeAdvancedFilterCount > 0) && (
+                            {(activeFilter || activeTaskFilter || activeAdvancedFilterCount > 0) && (
                                 <button
                                     onClick={handleClearFilters}
                                     className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-[#F45B69] bg-[#F45B69]/10 hover:bg-[#F45B69]/20 rounded-lg transition-colors"
@@ -239,6 +248,18 @@ export default function CrmPage() {
                                 onClick={() => setActiveFilter(activeFilter === stage ? null : stage)}
                             >
                                 {stage}
+                            </FilterChip>
+                        ))}
+                        {/* Separador visual */}
+                        <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+                        {/* Filtros de status de tarefa */}
+                        {taskStatusFilters.map((taskStatus) => (
+                            <FilterChip
+                                key={taskStatus}
+                                selected={activeTaskFilter === taskStatus}
+                                onClick={() => setActiveTaskFilter(activeTaskFilter === taskStatus ? null : taskStatus)}
+                            >
+                                {taskStatus}
                             </FilterChip>
                         ))}
                     </div>
