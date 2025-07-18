@@ -63,10 +63,13 @@ export default function TreinamentosAdminPage() {
   });
 
   const categorias = [
-    { key: 'audiobooks', label: 'Áudio Books', icon: '📚' },
     { key: 'vendas', label: 'Vendas', icon: '📈' },
+    { key: 'técnicas', label: 'Técnicas', icon: '🛠️' },
     { key: 'mercado', label: 'Mercado', icon: '🏢' },
-    { key: 'institucional', label: 'Institucional', icon: '🏛️' }
+    { key: 'motivacional', label: 'Motivacional', icon: '💪' },
+    { key: 'gestão', label: 'Gestão', icon: '👔' },
+    { key: 'institucional', label: 'Institucional', icon: '🏛️' },
+    { key: 'audiobooks', label: 'Áudio Books', icon: '📚' }
   ];
 
   useEffect(() => {
