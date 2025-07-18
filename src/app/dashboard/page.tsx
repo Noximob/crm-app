@@ -884,20 +884,15 @@ export default function DashboardPage() {
       </div>
 
           {/* Avisos Importantes */}
-          <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl animate-fade-in flex flex-col gap-4">
-            {/* Borda vermelha à esquerda */}
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#FF6B6B] to-[#FF8E8E]" />
-            <div className="flex items-center gap-3 mb-4 relative z-10">
-              <div className="relative">
-                <AlertCircleIcon className="h-8 w-8 text-[#FF6B6B] drop-shadow-lg animate-pulse" />
-          </div>
-              <span className="font-extrabold text-white text-2xl tracking-tight drop-shadow-lg">Avisos Importantes</span>
-              {/* Badge de destaque */}
-              <span className="px-2 py-1 bg-[#FF6B6B]/20 text-[#FF6B6B] text-xs font-bold rounded-full border border-[#FF6B6B]/30 animate-pulse">
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 border-l-4 border-[#FF6B6B] shadow-sm animate-fade-in">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertCircleIcon className="h-6 w-6 text-[#FF6B6B]" />
+              <h3 className="font-bold text-[#2E2F38] dark:text-white text-lg">Avisos Importantes</h3>
+              <span className="px-2 py-1 bg-[#FF6B6B]/10 text-[#FF6B6B] text-xs font-semibold rounded-full">
                 ATENÇÃO
               </span>
-          </div>
-            <div className="space-y-3 relative z-10">
+            </div>
+            <div className="space-y-3">
               {avisosImportantes
                 .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
                 .length === 0 ? (
@@ -908,27 +903,27 @@ export default function DashboardPage() {
                   .map((aviso, idx) => (
                     <div
                       key={aviso.id}
-                      className="flex items-start gap-3 p-4 rounded-xl border border-[#FF6B6B]/40 bg-gradient-to-r from-[#FF6B6B]/10 to-[#FF8E8E]/0 shadow-lg hover:scale-[1.02] transition-all duration-300 relative overflow-hidden group backdrop-blur-sm"
+                      className="p-4 rounded-lg border border-[#FF6B6B]/20 bg-[#FF6B6B]/5 hover:bg-[#FF6B6B]/10 transition-colors"
                     >
-                      <div className="relative z-10">
-                        <AlertCircleIcon className="h-5 w-5 text-[#FF6B6B] mt-0.5 animate-pulse" />
-          </div>
-                      <div className="flex-1 relative z-10">
-                        <div className="text-sm font-bold text-[#2E2F38] dark:text-white mb-1 group-hover:text-[#FF6B6B] transition-colors">
-                          {aviso.titulo}
-          </div>
-                        <div className="text-xs text-[#6B6F76] dark:text-gray-100 mb-2 leading-relaxed">
-                          {aviso.mensagem}
-                        </div>
-                        <div className="text-[10px] text-[#FF6B6B] font-semibold bg-[#FF6B6B]/10 px-2 py-1 rounded-full inline-block">
-                          {aviso.dataHora?.toDate ? aviso.dataHora.toDate().toLocaleString('pt-BR') : ''}
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 bg-[#FF6B6B] rounded-full mt-2 flex-shrink-0"></div>
+                        <div className="flex-1">
+                          <div className="text-sm font-semibold text-[#2E2F38] dark:text-white mb-1">
+                            {aviso.titulo}
+                          </div>
+                          <div className="text-xs text-[#6B6F76] dark:text-gray-300 mb-2 leading-relaxed">
+                            {aviso.mensagem}
+                          </div>
+                          <div className="text-[10px] text-[#FF6B6B] font-medium">
+                            {aviso.dataHora?.toDate ? aviso.dataHora.toDate().toLocaleString('pt-BR') : ''}
+                          </div>
                         </div>
                       </div>
                     </div>
                   ))
               )}
             </div>
-      </div>
+          </div>
 
           {/* Metas */}
           <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl animate-fade-in">
