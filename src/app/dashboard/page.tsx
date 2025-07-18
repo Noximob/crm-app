@@ -917,7 +917,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {trendingPosts.slice(0, 8).map((post, index) => (
+                {trendingPosts.map((post, index) => (
                   <div 
                     key={post.id} 
                     className="group relative bg-white/60 dark:bg-[#23283A]/60 backdrop-blur-sm rounded-xl p-4 hover:bg-white/80 dark:hover:bg-[#23283A]/80 transition-all duration-300 cursor-pointer border border-white/20 hover:border-[#3478F6]/30 hover:scale-[1.02] shadow-lg hover:shadow-xl"
@@ -985,27 +985,16 @@ export default function DashboardPage() {
                           </div>
                         )}
                         {post.file && post.fileMeta && post.fileMeta.type.startsWith('video/') && (
-                          <div className="relative aspect-video bg-black rounded-lg overflow-hidden group/video">
+                          <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
                             <video 
                               src={post.file} 
                               className="w-full h-full object-cover"
+                              controls
                               muted
                               loop
-                              onMouseEnter={(e) => e.currentTarget.play()}
-                              onMouseLeave={(e) => e.currentTarget.pause()}
                             />
-                            <div className="absolute inset-0 flex items-center justify-center group-hover/video:opacity-0 transition-opacity duration-300">
-                              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                  <path d="M8 5v14l11-7z"/>
-                                </svg>
-                              </div>
-                            </div>
                             <div className="absolute top-2 left-2 bg-purple-600 text-white px-2 py-1 rounded text-xs font-semibold">
                               VÍDEO
-                            </div>
-                            <div className="absolute bottom-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs">
-                              Hover para play
                             </div>
                           </div>
                         )}
