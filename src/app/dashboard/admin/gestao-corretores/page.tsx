@@ -58,8 +58,13 @@ export default function GestaoCorretoresPage() {
 
   // Buscar leads
   useEffect(() => {
-    if (!userData?.imobiliariaId) return;
+    if (!userData?.imobiliariaId) {
+      console.log('userData ou imobiliariaId não encontrado para leads:', userData);
+      return;
+    }
 
+    console.log('Buscando leads para imobiliária:', userData.imobiliariaId);
+    
     const leadsRef = collection(db, 'leads');
     const q = query(leadsRef, where('imobiliariaId', '==', userData.imobiliariaId));
     
@@ -68,7 +73,19 @@ export default function GestaoCorretoresPage() {
         id: doc.id,
         ...doc.data()
       })) as Lead[];
+      
+      console.log('Query de leads executada');
+      console.log('Snapshot size:', snapshot.size);
+      console.log('Leads encontrados:', leadsData);
+      console.log('Leads por usuário:', leadsData.reduce((acc, lead) => {
+        acc[lead.userId] = (acc[lead.userId] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>));
+      
       setLeads(leadsData);
+      setLoading(false);
+    }, (error) => {
+      console.error('Erro ao buscar leads:', error);
       setLoading(false);
     });
 
