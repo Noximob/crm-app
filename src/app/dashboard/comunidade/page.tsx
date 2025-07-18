@@ -97,6 +97,7 @@ export default function ComunidadePage() {
   const emojiRepostRef = useRef<HTMLDivElement>(null);
   const [originalAuthors, setOriginalAuthors] = useState<Record<string, { nome: string, handle: string }>>({});
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+  const [orderByTrending, setOrderByTrending] = useState<'recent' | 'relevant'>('recent');
 
   // Função para extrair ID do vídeo do YouTube (incluindo Shorts)
   const getYouTubeVideoId = (url: string) => {
@@ -160,6 +161,23 @@ export default function ComunidadePage() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Marcar que o usuário visualizou a Comunidade quando acessa a página
+  useEffect(() => {
+    if (currentUser && userData) {
+      const markAsViewed = async () => {
+        try {
+          const userVisitsRef = doc(db, 'userVisits', currentUser.uid);
+          await setDoc(userVisitsRef, {
+            comunidade: serverTimestamp()
+          }, { merge: true });
+        } catch (error) {
+          console.error('Erro ao marcar visualização:', error);
+        }
+      };
+      markAsViewed();
+    }
+  }, [currentUser, userData]);
 
   // Fechar emoji picker quando clicar fora
   useEffect(() => {
@@ -428,6 +446,14 @@ export default function ComunidadePage() {
     setRepostLoading(false);
   };
 
+  const sortedPosts = [...posts].sort((a, b) => {
+    if (orderByTrending === 'recent') {
+      return b.createdAt?.toDate() - a.createdAt?.toDate();
+    } else {
+      return getTotalEngagement(b.id) - getTotalEngagement(a.id);
+    }
+  });
+
   return (
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
       <div className="max-w-2xl mx-auto">
@@ -588,153 +614,168 @@ export default function ComunidadePage() {
             </div>
           </div>
         </div>
+        {/* Filtro de ordenação */}
+        <div className="flex justify-end mb-4">
+          <div className="flex gap-2 bg-white dark:bg-[#23283A] rounded-lg shadow border border-[#E8E9F1] dark:border-[#23283A] p-1">
+            <button
+              className={`px-4 py-1 rounded-lg font-medium text-sm transition-colors ${orderByTrending === 'recent' ? 'bg-[#3478F6] text-white' : 'text-[#3478F6] hover:bg-[#E8E9F1] dark:hover:bg-[#181C23]'}`}
+              onClick={() => setOrderByTrending('recent')}
+            >Mais recentes</button>
+            <button
+              className={`px-4 py-1 rounded-lg font-medium text-sm transition-colors ${orderByTrending === 'relevant' ? 'bg-[#3478F6] text-white' : 'text-[#3478F6] hover:bg-[#E8E9F1] dark:hover:bg-[#181C23]'}`}
+              onClick={() => setOrderByTrending('relevant')}
+            >Mais relevantes</button>
+          </div>
+        </div>
         {/* Feed de posts */}
         <div className="flex flex-col gap-6">
-          {posts.map((post) => {
+          {sortedPosts.map((post) => {
             const isAuthor = currentUser && post.userId === currentUser.uid;
             const isLiked = currentUser && post.likedBy?.includes(currentUser.uid);
             const likesCount = post.likes || 0;
-            const commentsCount = post.comments?.length || 0;
-            
+            const commentsCount = commentsMap[post.id] || 0;
+            const repostsCount = repostsMap[post.id] || 0;
+            const totalEngagement = getTotalEngagement(post.id);
+            // Se for repost, buscar dados do original
+            const original = post.repostOf && posts.find(p => p.id === post.repostOf);
             return (
               <div
                 key={post.id}
-                className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-6 flex gap-4 group hover:shadow-lg transition-all"
+                className="group relative bg-white/60 dark:bg-[#23283A]/60 backdrop-blur-sm rounded-2xl p-6 hover:bg-white/80 dark:hover:bg-[#23283A]/80 transition-all duration-300 cursor-pointer border border-white/20 hover:border-[#3478F6]/30 hover:scale-[1.02] shadow-lg hover:shadow-xl"
               >
-                <img src={post.avatar} alt={post.nome} className="w-12 h-12 rounded-full object-cover mt-1" />
-                <div className="flex-1 flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                    <span className="font-bold text-[#2E2F38] dark:text-white text-base">{post.nome}</span>
-                    <span className="text-xs text-[#6B6F76] dark:text-white">
-                      {post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString('pt-BR') : ''}
-                    </span>
-                    {isAuthor && (
-                      <ActionIcon
-                        icon={deletando === post.id ? <span className="animate-spin">🗑️</span> : <span>🗑️</span>}
-                        label=""
-                        onClick={() => handleDelete(post.id)}
-                        danger
-                      />
+                {/* Removido badge dourado de ranking/repost */}
+                <div className="flex items-start gap-4 mb-2">
+                  <img src={post.avatar} alt={post.nome} className="w-14 h-14 rounded-full object-cover border-2 border-white dark:border-[#23283A] shadow-md" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-bold text-[#2E2F38] dark:text-white text-lg truncate">{post.nome}</span>
+                      <span className="text-xs text-[#6B6F76] dark:text-gray-300">
+                        {post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}
+                      </span>
+                      {isAuthor && (
+                        <ActionIcon
+                          icon={deletando === post.id ? <span className="animate-spin">🗑️</span> : <span>🗑️</span>}
+                          label=""
+                          onClick={() => handleDelete(post.id)}
+                          danger
+                        />
+                      )}
+                    </div>
+                    {/* Se for repost, mostrar comentário do repostador e card aninhado do original */}
+                    {post.repostOf ? (
+                      <>
+                        {post.repostComment && (
+                          <div className="mb-2 px-3 py-2 bg-[#F5F6FA] dark:bg-[#23283A] border-l-4 border-[#3478F6] text-[#3478F6] rounded-r-lg text-sm font-medium">
+                            <span className="font-semibold">{post.nome}:</span> {post.repostComment}
+                          </div>
+                        )}
+                        {original && (
+                          <div className="bg-white dark:bg-[#23283A] border border-[#3478F6]/20 rounded-lg p-3 shadow-inner mt-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="px-2 py-0.5 bg-[#3478F6]/10 text-[#3478F6] text-xs rounded-full font-semibold">Repost de {original.nome || 'Original'}</span>
+                            </div>
+                            <div className="text-xs text-[#6B6F76] dark:text-gray-300 mb-1">{original.createdAt?.toDate ? original.createdAt.toDate().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}</div>
+                            <div className="text-sm text-[#2E2F38] dark:text-white leading-relaxed mb-2">{original.texto}</div>
+                            {/* Mídia do post original */}
+                            {original.fileMeta && original.fileMeta.type.startsWith('image/') && (
+                              <img src={original.file} alt="Post image" className="w-full rounded-lg mb-2" />
+                            )}
+                            {original.fileMeta && original.fileMeta.type.startsWith('video/') && (
+                              <video src={original.file} controls className="w-full rounded-lg mb-2" />
+                            )}
+                            {original.youtubeData && (
+                              <div className="relative aspect-video bg-black rounded-lg overflow-hidden mb-2">
+                                <iframe
+                                  src={original.youtubeData.embedUrl}
+                                  title="YouTube video"
+                                  className="w-full h-full"
+                                  frameBorder="0"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                ></iframe>
+                                <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded text-xs font-semibold">
+                                  YOUTUBE
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {post.texto && <div className="text-base text-[#2E2F38] dark:text-white leading-relaxed mb-2">{post.texto}</div>}
+                        {/* Preview de mídia - só para posts originais */}
+                        {(post.file && post.fileMeta) && (
+                          <div className="mb-2">
+                            {post.fileMeta.type.startsWith('image/') && (
+                              <div className="relative aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
+                                <img src={post.file} alt="Post image" className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                                <div className="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold">FOTO</div>
+                              </div>
+                            )}
+                            {post.fileMeta.type.startsWith('video/') && (
+                              <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+                                <video src={post.file} className="w-full h-full object-cover" controls muted loop />
+                                <div className="absolute top-2 left-2 bg-purple-600 text-white px-2 py-1 rounded text-xs font-semibold">VÍDEO</div>
+                              </div>
+                            )}
+                            {post.fileMeta.type === 'application/pdf' && (
+                              <div className="flex flex-col items-center justify-center">
+                                <a href={post.file} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center">
+                                  <span className="text-4xl text-red-500">📄</span>
+                                  <span className="block text-sm text-[#2E2F38] dark:text-white font-medium">{post.fileMeta.name}</span>
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {post.youtubeData && (
+                          <div className="relative aspect-video bg-black rounded-lg overflow-hidden mb-2">
+                            <iframe
+                              src={post.youtubeData.embedUrl}
+                              title="YouTube video"
+                              className="w-full h-full"
+                              frameBorder="0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            ></iframe>
+                            <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded text-xs font-semibold">YOUTUBE</div>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
-                  <div className="text-[#2E2F38] dark:text-white text-base whitespace-pre-line mb-2">{post.texto}</div>
-                  
-                  {/* Vídeo do YouTube */}
-                  {post.youtubeData && (
-                    <div className="mt-2">
-                      <div className="bg-white dark:bg-[#23283A] rounded-xl overflow-hidden border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-lg transition-shadow">
-                        <div className="relative">
-                          <iframe
-                            src={post.youtubeData.embedUrl}
-                            title="YouTube video"
-                            className={`w-full ${post.youtubeData.isShort ? 'h-96' : 'h-64'}`}
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                          ></iframe>
-                          <button
-                            onClick={() => setSelectedVideo(post.youtubeLink)}
-                            className="absolute top-2 right-2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-lg transition-colors"
-                            title="Maximizar vídeo"
-                          >
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
-                              <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
-                              <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
-                              <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
-                            </svg>
-                          </button>
-                          {post.youtubeData.isShort && (
-                            <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-lg text-xs font-semibold">
-                              SHORT
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-4">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
-                              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                              </svg>
-                            </div>
-                            <p className="text-sm text-[#2E2F38] dark:text-white font-medium">
-                              {post.youtubeData.isShort ? 'YouTube Short' : 'YouTube'}
-                            </p>
-                          </div>
-                          <a
-                            href={post.youtubeLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
-                          >
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M8 5v14l11-7z"/>
-                            </svg>
-                            {post.youtubeData.isShort ? 'Assistir Short' : 'Assistir no YouTube'}
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {(post.file && post.fileMeta) && (
-                    <div className="flex gap-2 mt-2">
-                      {post.fileMeta.type.startsWith('image/') && (
-                        <div className="relative cursor-pointer" onClick={() => { setModalImage(post.file); setModalPostId(post.id); setModalOpen(true); }}>
-                          <img src={post.file} alt={post.fileMeta.name} className="max-h-60 rounded-xl border border-[#E8E9F1] dark:border-[#23283A]" />
-                        </div>
-                      )}
-                      {post.fileMeta.type.startsWith('video/') && (
-                        <div className="relative">
-                          <video src={post.file} controls className="max-h-60 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] bg-black" />
-                        </div>
-                      )}
-                      {post.fileMeta.type === 'application/pdf' && (
-                        <div className="relative flex flex-col items-center justify-center">
-                          <a href={post.file} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center">
-                            <span className="text-4xl text-red-500">📄</span>
-                            <span className="block text-sm text-white font-medium">{post.fileMeta.name}</span>
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div className="flex gap-4 mt-3">
-                    <ActionIcon 
-                      icon={<span>💬</span>} 
-                      label={(commentsMap[post.id] ?? 0).toString()} 
-                      onClick={() => { setModalImage(post.file && post.fileMeta && post.fileMeta.type.startsWith('image/') ? post.file : null); setModalPostId(post.id); setModalOpen(true); }}
-                    />
-                    <ActionIcon 
-                      icon={<span title="Repostar">🔁</span>}
-                      label={(repostsMap[post.id] ?? 0).toString()}
-                      onClick={() => { setRepostWithComment(false); setShowEmojiRepost(false); handleRepost(post); }}
-                    />
-                    <ActionIcon 
-                      icon={<span>{isLiked ? '❤️' : '🤍'}</span>} 
-                      label={likesCount.toString()} 
-                      onClick={() => handleLike(post.id)}
-                      active={isLiked}
-                    />
-                    {/* Indicador de engajamento com foguinho */}
-                    <div className="flex items-center gap-1 text-sm font-medium text-[#6B6F76] dark:text-gray-300 px-2 py-1 rounded">
-                      <span className="text-orange-500">🔥</span>
-                      <span>{getTotalEngagement(post.id)} interações</span>
-                    </div>
-                  </div>
-                  {/* Indicação de repost na timeline */}
-                  {post.repostOf && (
-                    <div className="flex items-center gap-1 text-xs text-[#3478F6] dark:text-[#A3C8F7] mb-1">
-                      <span>🔁</span>
-                      {post.userId === currentUser?.uid ? (
-                        <span>Você repostou</span>
-                      ) : originalAuthors[post.repostOf] ? (
-                        <span>Repostado de <span className="underline cursor-pointer hover:text-[#255FD1]" title={originalAuthors[post.repostOf].handle}>{originalAuthors[post.repostOf].nome}</span></span>
-                      ) : (
-                        <span>Repost</span>
-                      )}
                 </div>
-                )}
+                {/* Botões de interação e engajamento */}
+                <div className="flex items-center justify-between pt-3 border-t border-white/20 dark:border-[#23283A]/20 mt-2">
+                  <div className="flex items-center gap-4">
+                    <button 
+                      onClick={() => handleLike(post.id)}
+                      className={`flex items-center gap-1.5 text-sm font-medium transition-all duration-200 ${isLiked ? 'text-red-500 scale-110' : 'text-[#6B6F76] dark:text-gray-300 hover:text-red-500 hover:scale-105'}`}
+                    >
+                      <span className="text-lg">{isLiked ? '❤️' : '🤍'}</span>
+                      <span>{likesCount}</span>
+                    </button>
+                    <button 
+                      onClick={() => { setModalImage(post.file && post.fileMeta && post.fileMeta.type.startsWith('image/') ? post.file : null); setModalPostId(post.id); setModalOpen(true); }}
+                      className="flex items-center gap-1.5 text-sm font-medium text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] hover:scale-105 transition-all duration-200"
+                    >
+                      <span className="text-lg">💬</span>
+                      <span>{commentsCount}</span>
+                    </button>
+                    <button 
+                      onClick={() => { setRepostWithComment(false); setShowEmojiRepost(false); handleRepost(post); }}
+                      className="flex items-center gap-1.5 text-sm font-medium text-[#6B6F76] dark:text-gray-300 hover:text-green-500 hover:scale-105 transition-all duration-200"
+                    >
+                      <span className="text-lg">🔁</span>
+                      <span>{repostsCount}</span>
+                    </button>
+                  </div>
+                  <div className="px-2 py-1 bg-gradient-to-r from-[#3478F6]/20 to-[#A3C8F7]/20 rounded-full border border-[#3478F6]/30">
+                    <span className="text-xs font-medium text-[#3478F6] dark:text-[#A3C8F7]">
+                      🔥 {totalEngagement}
+                    </span>
+                  </div>
                 </div>
               </div>
             );
