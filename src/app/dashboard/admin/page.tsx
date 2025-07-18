@@ -100,10 +100,10 @@ export default function AdminPage() {
         );
       } else {
         q = query(
-          collection(db, 'usuarios'),
-          where('aprovado', '==', false),
-          orderBy('criadoEm', 'desc')
-        );
+        collection(db, 'usuarios'),
+        where('aprovado', '==', false),
+        orderBy('criadoEm', 'desc')
+      );
       }
       const snapshot = await getDocs(q);
       const usuarios = snapshot.docs.map(doc => ({
@@ -199,11 +199,11 @@ export default function AdminPage() {
               <div className="p-6 space-y-4">
                 {category.items.map((item) => (
                   <Link
-                    key={item.title}
+              key={item.title}
                     href={item.href}
                     className="flex items-center gap-4 p-4 rounded-xl bg-[#F8F9FB] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] transition-all duration-200 hover:scale-[1.02] hover:shadow-md group cursor-pointer"
                     onClick={e => item.special ? (e.preventDefault(), setShowAprovacao(true)) : null}
-                  >
+            >
                     <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-xl flex items-center justify-center text-white text-xl group-hover:scale-110 transition-transform">
                       {item.icon}
                     </div>
@@ -223,11 +223,11 @@ export default function AdminPage() {
               </div>
             </div>
           ))}
-        </div>
+      </div>
 
-        {/* Modal Aprovação de Usuários */}
-        {showAprovacao && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      {/* Modal Aprovação de Usuários */}
+      {showAprovacao && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
             <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-lg w-full max-w-4xl p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto">
               <button 
                 className="absolute top-4 right-4 text-2xl text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] transition-colors" 
@@ -239,77 +239,77 @@ export default function AdminPage() {
               <div className="mb-6">
                 <SectionTitle>Aprovação de Usuários</SectionTitle>
               </div>
-              
-              {loading ? (
+            
+            {loading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6]"></div>
-                </div>
-              ) : usuariosPendentes.length === 0 ? (
+              </div>
+            ) : usuariosPendentes.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="text-6xl mb-4">✅</div>
                   <p className="text-lg text-[#6B6F76] dark:text-gray-300">Nenhum usuário pendente de aprovação</p>
                   <p className="text-sm text-[#6B6F76] dark:text-gray-400 mt-2">Todos os cadastros foram processados</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {usuariosPendentes.map((usuario) => (
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {usuariosPendentes.map((usuario) => (
                     <div key={usuario.id} className="bg-[#F8F9FB] dark:bg-[#181C23] rounded-xl p-6 border border-[#E8E9F1] dark:border-[#23283A]">
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-full flex items-center justify-center text-white font-semibold">
                             {usuario.nome.charAt(0).toUpperCase()}
                           </div>
-                          <div>
+                      <div>
                             <h3 className="font-semibold text-[#2E2F38] dark:text-white text-lg">{usuario.nome}</h3>
                             <p className="text-[#6B6F76] dark:text-gray-300">{usuario.email}</p>
                           </div>
-                        </div>
-                        <div className="flex gap-3">
-                          <button
-                            onClick={() => aprovarUsuario(usuario.id)}
-                            className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-                          >
-                            <span>✓</span>
-                            Aprovar
-                          </button>
-                          <button
-                            onClick={() => rejeitarUsuario(usuario.id)}
-                            className="px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-                          >
-                            <span>✕</span>
-                            Rejeitar
-                          </button>
-                        </div>
                       </div>
+                        <div className="flex gap-3">
+                        <button
+                          onClick={() => aprovarUsuario(usuario.id)}
+                            className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                        >
+                            <span>✓</span>
+                          Aprovar
+                        </button>
+                        <button
+                          onClick={() => rejeitarUsuario(usuario.id)}
+                            className="px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                        >
+                            <span>✕</span>
+                          Rejeitar
+                        </button>
+                      </div>
+                    </div>
                       
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div className="bg-white dark:bg-[#23283A] p-3 rounded-lg">
                           <span className="text-[#6B6F76] dark:text-gray-300 text-xs uppercase tracking-wide">Tipo</span>
                           <p className="font-medium text-[#2E2F38] dark:text-white mt-1">{getTipoContaLabel(usuario.tipoConta)}</p>
-                        </div>
+                      </div>
                         <div className="bg-white dark:bg-[#23283A] p-3 rounded-lg">
                           <span className="text-[#6B6F76] dark:text-gray-300 text-xs uppercase tracking-wide">Imobiliária</span>
                           <p className="font-medium text-[#2E2F38] dark:text-white mt-1">{getNomeImobiliaria(usuario.imobiliariaId)}</p>
-                        </div>
+                      </div>
                         <div className="bg-white dark:bg-[#23283A] p-3 rounded-lg">
                           <span className="text-[#6B6F76] dark:text-gray-300 text-xs uppercase tracking-wide">Cadastro</span>
                           <p className="font-medium text-[#2E2F38] dark:text-white mt-1">{usuario.metodoCadastro === 'google' ? 'Google' : 'E-mail'}</p>
-                        </div>
+                      </div>
                         <div className="bg-white dark:bg-[#23283A] p-3 rounded-lg">
                           <span className="text-[#6B6F76] dark:text-gray-300 text-xs uppercase tracking-wide">Data</span>
                           <p className="font-medium text-[#2E2F38] dark:text-white mt-1">
-                            {usuario.criadoEm?.toDate ? usuario.criadoEm.toDate().toLocaleDateString('pt-BR') : 'N/A'}
-                          </p>
-                        </div>
+                          {usuario.criadoEm?.toDate ? usuario.criadoEm.toDate().toLocaleDateString('pt-BR') : 'N/A'}
+                        </p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+        </div>
     </div>
   );
 } 

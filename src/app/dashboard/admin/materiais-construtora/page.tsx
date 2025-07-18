@@ -989,9 +989,9 @@ export default function MateriaisConstrutoraAdminPage() {
                         </button>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+            </div>
+          ))}
+        </div>
             )}
           </div>
         )}

@@ -1000,10 +1000,10 @@ export default function MateriaisConstrutorasPage() {
                                 </span>
                               ) : 'Download'}
                             </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+              </div>
+            </div>
+          ))}
+        </div>
                   </div>
                 )}
 

@@ -129,14 +129,14 @@ export default function VendasPage() {
                       <div className="flex items-center gap-3 mb-4">
                         <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
                           <FileIcon className="h-6 w-6 text-red-500" />
-                        </div>
+          </div>
                         <div>
                           <h3 className="font-semibold text-[#2E2F38] dark:text-white">
                             {treinamento.titulo}
                           </h3>
-                        </div>
-                      </div>
-                      
+          </div>
+        </div>
+
                       {treinamento.descricao && (
                         <p className="text-sm text-[#6B6F76] dark:text-gray-300 mb-4">
                           {treinamento.descricao}
@@ -155,7 +155,7 @@ export default function VendasPage() {
                     </div>
                   ))}
                 </div>
-              </div>
+            </div>
             )}
 
             {/* Vídeos */}
@@ -183,14 +183,14 @@ export default function VendasPage() {
                               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                               allowFullScreen
                             ></iframe>
-                            <button
+              <button
                               onClick={() => setSelectedVideo(treinamento.url)}
                               className="absolute top-2 right-2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-lg transition-colors"
                               title="Maximizar vídeo"
                             >
                               <MaximizeIcon className="h-4 w-4" />
-                            </button>
-                          </div>
+              </button>
+            </div>
                         ) : (
                           <div className="w-full h-48 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
                             <PlayIcon className="h-12 w-12 text-gray-400" />
@@ -217,14 +217,14 @@ export default function VendasPage() {
                             <PlayIcon className="h-4 w-4" />
                             Assistir no YouTube
                           </a>
-                        </div>
-                      </div>
+          </div>
+        </div>
                     );
                   })}
                 </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
         )}
 
         {/* Modal de vídeo maximizado */}
@@ -243,8 +243,8 @@ export default function VendasPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
-              </div>
-              
+                </div>
+
               <div className="relative">
                 <iframe
                   src={getYouTubeEmbedUrl(selectedVideo) || ''}
@@ -254,8 +254,8 @@ export default function VendasPage() {
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 ></iframe>
-              </div>
-              
+                </div>
+
               <div className="mt-4 flex justify-end">
                 <button
                   onClick={() => setSelectedVideo(null)}

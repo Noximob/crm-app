@@ -828,14 +828,14 @@ export default function DashboardPage() {
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <div className="text-xl font-bold text-[#3478F6]">{currentTimeString}</div>
-              <div className="text-xs text-[#6B6F76]">Horário atual</div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <div className="text-xl font-bold text-[#3478F6]">{currentTimeString}</div>
+                <div className="text-xs text-[#6B6F76]">Horário atual</div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+          </div>
 
       {/* Grid de conteúdo principal com scroll independente */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0" style={{height: 'calc(100vh - 120px)'}}>
@@ -866,7 +866,7 @@ export default function DashboardPage() {
                         <div className={`flex items-center gap-2 text-sm`}>
                           <span className={`h-2.5 w-2.5 ${statusInfo[lead.taskStatus as TaskStatus].color} rounded-full`}></span>
                           <span className="text-gray-300">{statusInfo[lead.taskStatus as TaskStatus].text}</span>
-                        </div>
+        </div>
                       </td>
                       <td className="py-3 px-3">
                         <button 
@@ -881,7 +881,7 @@ export default function DashboardPage() {
                 </tbody>
               </table>
             )}
-          </div>
+      </div>
 
           {/* Avisos Importantes */}
           <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl animate-fade-in flex flex-col gap-4">
@@ -890,13 +890,13 @@ export default function DashboardPage() {
             <div className="flex items-center gap-3 mb-4 relative z-10">
               <div className="relative">
                 <AlertCircleIcon className="h-8 w-8 text-[#FF6B6B] drop-shadow-lg animate-pulse" />
-              </div>
+          </div>
               <span className="font-extrabold text-white text-2xl tracking-tight drop-shadow-lg">Avisos Importantes</span>
               {/* Badge de destaque */}
               <span className="px-2 py-1 bg-[#FF6B6B]/20 text-[#FF6B6B] text-xs font-bold rounded-full border border-[#FF6B6B]/30 animate-pulse">
                 ATENÇÃO
               </span>
-            </div>
+          </div>
             <div className="space-y-3 relative z-10">
               {avisosImportantes
                 .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
@@ -912,11 +912,11 @@ export default function DashboardPage() {
                     >
                       <div className="relative z-10">
                         <AlertCircleIcon className="h-5 w-5 text-[#FF6B6B] mt-0.5 animate-pulse" />
-                      </div>
+          </div>
                       <div className="flex-1 relative z-10">
                         <div className="text-sm font-bold text-[#2E2F38] dark:text-white mb-1 group-hover:text-[#FF6B6B] transition-colors">
                           {aviso.titulo}
-                        </div>
+          </div>
                         <div className="text-xs text-[#6B6F76] dark:text-gray-100 mb-2 leading-relaxed">
                           {aviso.mensagem}
                         </div>
@@ -928,7 +928,7 @@ export default function DashboardPage() {
                   ))
               )}
             </div>
-          </div>
+      </div>
 
           {/* Metas */}
           <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl animate-fade-in">
@@ -1007,7 +1007,7 @@ export default function DashboardPage() {
                             <span className="font-semibold">{post.nome}:</span> {post.repostComment}
                           </div>
                         )}
-                        {/* Se for repost, mostrar SOMENTE o card aninhado do post original */}
+                        {/* Se for repost, mostrar SOMENTE o comentário do repostador e o card aninhado do post original */}
                         {post.repostOf ? (
                           <>
                             {post.repostComment && (
@@ -1046,7 +1046,7 @@ export default function DashboardPage() {
                             </div>
                           </>
                         ) : (
-                          <div className="text-sm text-[#2E2F38] dark:text-white line-clamp-2 leading-relaxed">{post.texto}</div>
+                          post.texto && <div className="text-sm text-[#2E2F38] dark:text-white line-clamp-2 leading-relaxed">{post.texto}</div>
                         )}
                       </div>
                     </div>
@@ -1180,8 +1180,8 @@ export default function DashboardPage() {
                     {/* Efeito de brilho no hover */}
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                   </div>
-                ))}
-              </div>
+            ))}
+          </div>
             )}
 
             {/* Footer com link para comunidade */}
@@ -1194,7 +1194,7 @@ export default function DashboardPage() {
                 <span>Ver mais na Comunidade</span>
                 <span>→</span>
               </Link>
-            </div>
+          </div>
           </div>
         </div>
       </div>
@@ -1237,14 +1237,14 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
-            </div>
+          </div>
 
             {/* Conteúdo do Post */}
             <div className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl p-4 mb-4">
               <div className="text-base text-[#2E2F38] dark:text-white leading-relaxed whitespace-pre-wrap mb-3">
                 {selectedPost.texto}
-              </div>
-              
+      </div>
+
               {/* Mídia do Post */}
               {selectedPost.file && selectedPost.fileMeta && (
                 <div className="mt-3">
@@ -1255,7 +1255,7 @@ export default function DashboardPage() {
                         alt={selectedPost.fileMeta.name} 
                         className="w-full max-h-64 object-contain rounded-lg border border-[#E8E9F1] dark:border-[#23283A]" 
                       />
-                    </div>
+              </div>
                   )}
                   
                   {selectedPost.fileMeta.type.startsWith('video/') && (
@@ -1269,7 +1269,7 @@ export default function DashboardPage() {
                         />
                         <div className="absolute top-2 left-2 bg-purple-600 text-white px-2 py-1 rounded text-xs font-semibold">
                           VÍDEO
-                        </div>
+          </div>
                       </div>
                     </div>
                   )}
@@ -1280,8 +1280,8 @@ export default function DashboardPage() {
                       <div className="flex-1">
                         <div className="font-semibold text-[#2E2F38] dark:text-white text-sm">
                           {selectedPost.fileMeta.name}
-                        </div>
-                      </div>
+              </div>
+            </div>
                       <a 
                         href={selectedPost.file} 
                         target="_blank" 
@@ -1290,9 +1290,9 @@ export default function DashboardPage() {
                       >
                         Abrir
                       </a>
-                    </div>
+              </div>
                   )}
-                </div>
+            </div>
               )}
               
               {/* Vídeo do YouTube */}
@@ -1380,7 +1380,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Seção de Comentários */}
-            <div>
+              <div>
               <h3 className="font-semibold text-[#2E2F38] dark:text-white mb-3 flex items-center gap-2">
                 <span>💬</span>
                 Comentários ({selectedPost.commentsCount || 0})
@@ -1411,13 +1411,13 @@ export default function DashboardPage() {
                   <div className="text-center text-[#6B6F76] dark:text-gray-300 text-sm py-6 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
                     <div className="text-xl mb-2">💭</div>
                     <div>Carregando comentários...</div>
-                  </div>
+            </div>
                 ) : postComments.length === 0 ? (
                   <div className="text-center text-[#6B6F76] dark:text-gray-300 text-sm py-6 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg">
                     <div className="text-xl mb-2">💭</div>
                     <div>Nenhum comentário encontrado para este post.</div>
                     <div className="text-xs mt-1">Seja o primeiro a comentar!</div>
-                  </div>
+          </div>
                 ) : (
                   postComments.map((comment) => (
                     <div key={comment.id} className="bg-white/50 dark:bg-[#23283A]/50 rounded-lg p-3 shadow-sm">
@@ -1427,7 +1427,7 @@ export default function DashboardPage() {
                         <span className="text-xs text-[#6B6F76] dark:text-gray-300">
                           {comment.createdAt?.toDate ? comment.createdAt.toDate().toLocaleString('pt-BR') : ''}
                         </span>
-                      </div>
+      </div>
                       <p className="text-[#2E2F38] dark:text-white text-sm">{comment.texto}</p>
                     </div>
                   ))
