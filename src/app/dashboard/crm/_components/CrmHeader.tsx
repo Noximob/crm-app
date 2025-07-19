@@ -69,6 +69,13 @@ export const CrmHeader = () => {
                         <CalendarIcon className="h-4 w-4" />
                         Agenda
                     </button>
+                    <Link 
+                        href="/dashboard/agenda"
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[#3AC17C] bg-[#3AC17C]/10 rounded-lg hover:bg-[#3AC17C]/20 transition-colors shadow-sm border border-[#3AC17C]/30 dark:bg-[#3AC17C]/10 dark:text-[#3AC17C] dark:border-[#3AC17C]/30 dark:hover:bg-[#3AC17C]/20"
+                    >
+                        <CalendarIcon className="h-4 w-4" />
+                        Agenda Completa
+                    </Link>
                     <button 
                         onClick={() => setNewLeadModalOpen(true)} 
                         className="flex items-center gap-2.5 px-4 py-2 text-sm font-semibold text-white bg-[#3478F6] rounded-lg shadow-sm hover:bg-[#255FD1] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#A3C8F7]"

@@ -871,7 +871,16 @@ export default function DashboardPage() {
           {/* Agenda do Dia */}
           <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
-            <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4">Agenda do Dia</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white">Agenda do Dia</h2>
+              <Link 
+                href="/dashboard/agenda"
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-[#3AC17C] bg-[#3AC17C]/10 rounded-lg hover:bg-[#3AC17C]/20 transition-colors border border-[#3AC17C]/30 dark:bg-[#3AC17C]/10 dark:text-[#3AC17C] dark:border-[#3AC17C]/30 dark:hover:bg-[#3AC17C]/20"
+              >
+                <CalendarIcon className="h-3 w-3" />
+                Ver Completa
+              </Link>
+            </div>
             {agendaLoading ? (
               <p className="text-gray-300">Carregando tarefas...</p>
             ) : agendaLeads.length === 0 ? (
