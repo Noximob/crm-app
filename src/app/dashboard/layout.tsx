@@ -121,7 +121,6 @@ export default function DashboardLayout({
   const navItems = [
     { href: '/dashboard', icon: LayoutDashboardIcon, label: 'Dashboard' },
     { href: 'https://chat.openai.com', icon: ChatGPTIcon, label: 'ChatGPT', isExternal: true },
-    { href: '/dashboard/agenda', icon: CalendarIcon, label: 'Agenda' },
     { href: '/dashboard/crm', icon: BarChartIcon, label: 'CRM' },
     { href: '/dashboard/materiais', icon: FileTextIcon, label: 'Materiais' },
     { href: '/dashboard/comunidade', icon: CommunityIcon, label: 'Comunidade', notifications: notifications.comunidade },

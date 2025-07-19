@@ -8,6 +8,7 @@ import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, get
 import Link from 'next/link';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
+import NotesWidget from './_components/NotesWidget';
 
 // Ícones
 const TrendingUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -852,6 +853,9 @@ export default function DashboardPage() {
           </div>
           
           <div className="flex items-center gap-4">
+            {/* Bloco de Notas */}
+            <NotesWidget />
+            
             <div className="text-right">
               <div className="text-xl font-bold text-[#3478F6]">{currentTimeString}</div>
               <div className="text-xs text-[#6B6F76]">Horário atual</div>
