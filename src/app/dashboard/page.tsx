@@ -805,8 +805,8 @@ export default function DashboardPage() {
 
   return (
     <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
-      {/* Header com boas-vindas, indicadores econômicos e hora em uma linha */}
-      <div className="mb-6">
+      {/* Header com boas-vindas, indicadores econômicos e hora em uma linha - FIXO */}
+      <div className="sticky top-0 z-10 bg-[#F5F6FA] dark:bg-[#181C23] pt-4 pb-6 mb-6 backdrop-blur-sm">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="relative">
@@ -858,7 +858,8 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
-          </div>
+        </div>
+      </div>
 
       {/* Grid de conteúdo principal com scroll independente */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0" style={{height: 'calc(100vh - 120px)'}}>
