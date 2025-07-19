@@ -199,7 +199,7 @@ export default function NotesWidget({ className = '' }: NotesWidgetProps) {
 
       {/* Modal do bloco de notas */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" style={{ paddingTop: '100px' }}>
           <div className="bg-white dark:bg-[#23283A] rounded-lg shadow-xl w-full max-w-md">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
