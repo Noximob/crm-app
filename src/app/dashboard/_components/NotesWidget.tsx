@@ -200,9 +200,9 @@ export default function NotesWidget({ className = '' }: NotesWidgetProps) {
       {/* Modal do bloco de notas */}
       {isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
+            <div className="flex items-center justify-between p-6 border-b border-[#E8E9F1] dark:border-[#23283A] flex-shrink-0">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg">
                   <StickyNoteIcon className="h-6 w-6 text-white" />
@@ -223,7 +223,7 @@ export default function NotesWidget({ className = '' }: NotesWidgetProps) {
             </div>
 
             {/* Filtros */}
-            <div className="p-4 border-b border-[#E8E9F1] dark:border-[#23283A]">
+            <div className="p-4 border-b border-[#E8E9F1] dark:border-[#23283A] flex-shrink-0">
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-[#2E2F38] dark:text-white">Prioridade:</span>
@@ -282,7 +282,7 @@ export default function NotesWidget({ className = '' }: NotesWidgetProps) {
             </div>
 
             {/* Lista de notas */}
-            <div className="flex-1 p-4 overflow-y-auto">
+            <div className="flex-1 p-4 overflow-y-auto min-h-0">
               {filteredNotes.length === 0 ? (
                 <div className="text-center py-8">
                   <div className="text-4xl mb-3">📝</div>
@@ -326,7 +326,7 @@ export default function NotesWidget({ className = '' }: NotesWidgetProps) {
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-[#E8E9F1] dark:border-[#23283A]">
+            <div className="p-4 border-t border-[#E8E9F1] dark:border-[#23283A] flex-shrink-0">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-[#6B6F76] dark:text-gray-300">
                   {filteredNotes.length} de {notes.length} nota{notes.length !== 1 ? 's' : ''}
