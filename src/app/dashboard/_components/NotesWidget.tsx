@@ -75,6 +75,19 @@ export default function NotesWidget({ className = '' }: NotesWidgetProps) {
     }
   }, [currentUser, isOpen]);
 
+  // Prevenir scroll do body quando modal estiver aberto
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   const loadNotes = async () => {
     if (!currentUser) return;
     
@@ -110,7 +123,8 @@ export default function NotesWidget({ className = '' }: NotesWidgetProps) {
     }
   };
 
-  const addNote = () => {
+  const addNote = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
     if (!newNote.trim()) return;
     
     const note: Note = {
@@ -130,7 +144,8 @@ export default function NotesWidget({ className = '' }: NotesWidgetProps) {
     setTimeout(() => saveNotes(), 100);
   };
 
-  const toggleNote = (id: string) => {
+  const toggleNote = (id: string, e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
     const updatedNotes = notes.map(note => 
       note.id === id ? { ...note, completed: !note.completed } : note
     );
@@ -140,7 +155,8 @@ export default function NotesWidget({ className = '' }: NotesWidgetProps) {
     setTimeout(() => saveNotes(), 100);
   };
 
-  const deleteNote = (id: string) => {
+  const deleteNote = (id: string, e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
     const updatedNotes = notes.filter(note => note.id !== id);
     setNotes(updatedNotes);
     
@@ -186,8 +202,26 @@ export default function NotesWidget({ className = '' }: NotesWidgetProps) {
     return `${days}d atrás`;
   };
 
-  const handleSave = async () => {
+  const handleSave = async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
     await saveNotes();
+  };
+
+  const handleModalClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsOpen(false);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      addNote();
+    }
   };
 
   const filteredNotes = getFilteredNotes();
@@ -196,7 +230,11 @@ export default function NotesWidget({ className = '' }: NotesWidgetProps) {
     <>
       {/* Botão do bloco de notas */}
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsOpen(true);
+        }}
         className={`relative flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group hover:scale-105 ${className}`}
         title="Bloco de Notas"
       >
@@ -211,8 +249,14 @@ export default function NotesWidget({ className = '' }: NotesWidgetProps) {
 
       {/* Modal do bloco de notas */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2">
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4"
+          onClick={handleBackdropClick}
+        >
+          <div 
+            className="bg-white dark:bg-[#23283A] rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col transform transition-all duration-200"
+            onClick={handleModalClick}
+          >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
               <div className="flex items-center gap-3">
@@ -227,7 +271,11 @@ export default function NotesWidget({ className = '' }: NotesWidgetProps) {
                 </div>
               </div>
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsOpen(false);
+                }}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-[#181C23] rounded-lg transition-colors"
               >
                 <CloseIcon className="h-5 w-5 text-[#6B6F76] dark:text-gray-300" />
@@ -242,7 +290,11 @@ export default function NotesWidget({ className = '' }: NotesWidgetProps) {
                 {(['all', 'urgente', 'importante', 'circunstancial'] as const).map(filter => (
                   <button
                     key={filter}
-                    onClick={() => setActiveFilter(filter)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setActiveFilter(filter);
+                    }}
                     className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
                       activeFilter === filter
                         ? 'bg-[#3478F6] text-white'
@@ -255,14 +307,14 @@ export default function NotesWidget({ className = '' }: NotesWidgetProps) {
               </div>
 
               {/* Adicionar nova nota */}
-              <div className="flex items-center gap-2">
+              <form onSubmit={(e) => { e.preventDefault(); addNote(); }} className="flex items-center gap-2">
                 <input
                   type="text"
                   value={newNote}
                   onChange={(e) => setNewNote(e.target.value)}
+                  onKeyPress={handleKeyPress}
                   placeholder="Digite uma nova nota..."
                   className="flex-1 px-3 py-2 bg-[#F5F6FA] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 text-sm"
-                  onKeyPress={(e) => e.key === 'Enter' && addNote()}
                 />
                 <select
                   value={newNotePriority}
@@ -274,14 +326,14 @@ export default function NotesWidget({ className = '' }: NotesWidgetProps) {
                   <option value="circunstancial">Circunstancial</option>
                 </select>
                 <button
-                  onClick={addNote}
+                  type="submit"
                   disabled={!newNote.trim()}
                   className="px-3 py-2 bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-gray-300 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
                   title="Adicionar nota"
                 >
                   <PlusIcon className="h-4 w-4" />
                 </button>
-              </div>
+              </form>
             </div>
 
             {/* Lista de notas */}
@@ -306,7 +358,7 @@ export default function NotesWidget({ className = '' }: NotesWidgetProps) {
                     >
                       <div className="flex items-start gap-2">
                         <button
-                          onClick={() => toggleNote(note.id)}
+                          onClick={(e) => toggleNote(note.id, e)}
                           className={`flex-shrink-0 w-4 h-4 rounded border-2 transition-colors ${
                             note.completed
                               ? 'bg-[#3AC17C] border-[#3AC17C]'
@@ -335,7 +387,7 @@ export default function NotesWidget({ className = '' }: NotesWidgetProps) {
                         </div>
                         
                         <button
-                          onClick={() => deleteNote(note.id)}
+                          onClick={(e) => deleteNote(note.id, e)}
                           className="flex-shrink-0 p-1 text-[#6B6F76] dark:text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                           title="Excluir nota"
                         >
@@ -355,13 +407,17 @@ export default function NotesWidget({ className = '' }: NotesWidgetProps) {
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setIsOpen(false)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsOpen(false);
+                  }}
                   className="px-3 py-2 text-[#6B6F76] dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#181C23] rounded-lg transition-colors text-sm"
                 >
                   Cancelar
                 </button>
                 <button
-                  onClick={handleSave}
+                  onClick={(e) => handleSave(e)}
                   disabled={isSaving}
                   className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white rounded-lg transition-all disabled:opacity-50 text-sm"
                 >
