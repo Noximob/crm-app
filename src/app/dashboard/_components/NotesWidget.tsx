@@ -199,7 +199,7 @@ export default function NotesWidget({ className = '' }: NotesWidgetProps) {
 
       {/* Modal do bloco de notas */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4" onClick={() => setIsOpen(false)}>
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4" onClick={() => setIsOpen(false)} style={{ paddingTop: '80px' }}>
           <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-xl w-full max-w-md relative" onClick={e => e.stopPropagation()}>
             <button onClick={() => setIsOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
               <CloseIcon className="h-5 w-5" />
