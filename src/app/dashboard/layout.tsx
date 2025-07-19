@@ -131,9 +131,9 @@ export default function DashboardLayout({
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
             <button 
-              onClick={() => window.location.reload()}
+              onClick={() => router.push('/dashboard')}
               className="flex items-center gap-2 hover:scale-105 transition-transform cursor-pointer"
-              title="Recarregar página"
+              title="Voltar ao Dashboard"
             >
               <AlumeLogo className="h-8 w-8" />
               {!collapsed && <h1 className="text-xl font-bold text-[#2E2F38] dark:text-white transition-all">Alume</h1>}
