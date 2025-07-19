@@ -3,322 +3,311 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, addDoc, deleteDoc, doc, Timestamp, onSnapshot } from 'firebase/firestore';
 
-// Ícones
-const StickyNoteIcon = (props: React.SVGProps<SVGSVGElement>) => (
+interface Note {
+  id: string;
+  texto: string;
+  prioridade: 'Urgente' | 'Importante' | 'Circunstancial';
+  criadoEm: Timestamp;
+}
+
+const NotesIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
     <polyline points="14 2 14 8 20 8"/>
-    <path d="M8 13h8"/>
-    <path d="M8 17h8"/>
-    <path d="M8 9h4"/>
-  </svg>
-);
-
-const CloseIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M18 6L6 18"/>
-    <path d="M6 6l12 12"/>
+    <line x1="16" y1="13" x2="8" y2="13"/>
+    <line x1="16" y1="17" x2="8" y2="17"/>
+    <polyline points="10 9 9 9 8 9"/>
   </svg>
 );
 
 const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 12h14"/>
-    <path d="M12 5v14"/>
+    <line x1="12" y1="5" x2="12" y2="19"/>
+    <line x1="5" y1="12" x2="19" y2="12"/>
   </svg>
 );
 
-const TrashIcon = (props: React.SVGProps<SVGSVGElement>) => (
+const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <line x1="18" y1="6" x2="6" y2="18"/>
+    <line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>
+);
+
+const FilterIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+  </svg>
+);
+
+const SortIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M3 6h18"/>
-    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
-    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+    <path d="M6 12h12"/>
+    <path d="M9 18h6"/>
   </svg>
 );
 
-interface Note {
-  id: string;
-  content: string;
-  priority: 'urgente' | 'importante' | 'circunstancial';
-  createdAt: Date;
-}
-
-interface NotesWidgetProps {
-  className?: string;
-}
-
-export default function NotesWidget({ className = '' }: NotesWidgetProps) {
+export default function NotesWidget() {
   const { currentUser } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
   const [notes, setNotes] = useState<Note[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [newNote, setNewNote] = useState('');
-  const [newNotePriority, setNewNotePriority] = useState<'urgente' | 'importante' | 'circunstancial'>('importante');
-  const [priorityFilter, setPriorityFilter] = useState<'todos' | 'urgente' | 'importante' | 'circunstancial'>('todos');
-  const [dateFilter, setDateFilter] = useState<'mais_novas' | 'mais_velhas'>('mais_novas');
+  const [selectedPriority, setSelectedPriority] = useState<'Urgente' | 'Importante' | 'Circunstancial'>('Importante');
+  const [filterPriority, setFilterPriority] = useState<'Todas' | 'Urgente' | 'Importante' | 'Circunstancial'>('Todas');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+  const [loading, setLoading] = useState(false);
 
-  // Carregar notas
   useEffect(() => {
-    if (currentUser && isOpen) {
-      loadNotes();
-    }
-  }, [currentUser, isOpen]);
-
-  const loadNotes = async () => {
     if (!currentUser) return;
-    
+
+    const q = query(
+      collection(db, 'notes'),
+      where('userId', '==', currentUser.uid),
+      orderBy('criadoEm', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const notesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Note[];
+      setNotes(notesData);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  const handleAddNote = async () => {
+    if (!newNote.trim() || !currentUser) return;
+
+    setLoading(true);
     try {
-      const notesDoc = await getDoc(doc(db, 'userNotes', currentUser.uid));
-      if (notesDoc.exists()) {
-        const data = notesDoc.data();
-        const notesData = data.notes || [];
-        
-        // Converter timestamps para Date
-        const convertedNotes = notesData.map((note: any) => ({
-          ...note,
-          createdAt: note.createdAt?.toDate ? note.createdAt.toDate() : new Date(note.createdAt)
-        }));
-        
-        setNotes(convertedNotes);
-      }
+      await addDoc(collection(db, 'notes'), {
+        texto: newNote.trim(),
+        prioridade: selectedPriority,
+        criadoEm: Timestamp.now(),
+        userId: currentUser.uid
+      });
+      setNewNote('');
+      setSelectedPriority('Importante');
     } catch (error) {
-      console.error('Erro ao carregar notas:', error);
+      console.error('Erro ao adicionar nota:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const saveNotes = async () => {
-    if (!currentUser) return;
-    
+  const handleDeleteNote = async (noteId: string) => {
     try {
-      const notesData = {
-        notes: notes,
-        userId: currentUser.uid,
-        updatedAt: Timestamp.now()
-      };
-      
-      await setDoc(doc(db, 'userNotes', currentUser.uid), notesData);
+      await deleteDoc(doc(db, 'notes', noteId));
     } catch (error) {
-      console.error('Erro ao salvar notas:', error);
+      console.error('Erro ao deletar nota:', error);
     }
   };
 
-  const addNote = () => {
-    if (!newNote.trim()) return;
-    
-    const note: Note = {
-      id: Date.now().toString(),
-      content: newNote.trim(),
-      priority: newNotePriority,
-      createdAt: new Date()
-    };
-    
-    const updatedNotes = [...notes, note];
-    setNotes(updatedNotes);
-    setNewNote('');
-    setNewNotePriority('importante');
-    
-    // Salvar automaticamente
-    setTimeout(() => saveNotes(), 100);
-  };
-
-  const deleteNote = (id: string) => {
-    const updatedNotes = notes.filter(note => note.id !== id);
-    setNotes(updatedNotes);
-    
-    // Salvar automaticamente
-    setTimeout(() => saveNotes(), 100);
-  };
-
-  const getFilteredNotes = () => {
-    let filtered = notes;
-    
-    // Filtrar por prioridade
-    if (priorityFilter !== 'todos') {
-      filtered = filtered.filter(note => note.priority === priorityFilter);
-    }
-    
-    // Ordenar por data
-    filtered.sort((a, b) => {
-      if (dateFilter === 'mais_novas') {
-        return b.createdAt.getTime() - a.createdAt.getTime();
+  const filteredAndSortedNotes = notes
+    .filter(note => filterPriority === 'Todas' || note.prioridade === filterPriority)
+    .sort((a, b) => {
+      if (sortOrder === 'newest') {
+        return b.criadoEm.toDate().getTime() - a.criadoEm.toDate().getTime();
       } else {
-        return a.createdAt.getTime() - b.createdAt.getTime();
+        return a.criadoEm.toDate().getTime() - b.criadoEm.toDate().getTime();
       }
     });
-    
-    return filtered;
-  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgente': return 'bg-red-500 text-white';
-      case 'importante': return 'bg-yellow-500 text-white';
-      case 'circunstancial': return 'bg-blue-500 text-white';
+      case 'Urgente': return 'bg-red-500 text-white';
+      case 'Importante': return 'bg-orange-500 text-white';
+      case 'Circunstancial': return 'bg-blue-500 text-white';
       default: return 'bg-gray-500 text-white';
     }
   };
 
-  const getPriorityLabel = (priority: string) => {
+  const getPriorityIcon = (priority: string) => {
     switch (priority) {
-      case 'urgente': return 'Urgente';
-      case 'importante': return 'Importante';
-      case 'circunstancial': return 'Circunstancial';
-      default: return 'Normal';
+      case 'Urgente': return '🚨';
+      case 'Importante': return '⚠️';
+      case 'Circunstancial': return 'ℹ️';
+      default: return '📝';
     }
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const filteredNotes = getFilteredNotes();
+  const recentNotes = notes.slice(0, 3);
 
   return (
     <>
-      {/* Botão do bloco de notas */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className={`relative flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group hover:scale-105 ${className}`}
-        title="Bloco de Notas"
-      >
-        <StickyNoteIcon className="h-4 w-4" />
-        <div className="text-center">
-          <div className="text-xs font-bold text-white group-hover:text-white transition-colors">
-            Notas
+      {/* Widget Compacto */}
+      <div className="relative group">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-[#3478F6]/10 to-[#A3C8F7]/10 hover:from-[#3478F6]/20 hover:to-[#A3C8F7]/20 border border-[#3478F6]/30 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg backdrop-blur-sm"
+        >
+          <div className="relative">
+            <NotesIcon className="h-6 w-6 text-[#3478F6]" />
+            {notes.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-[#3AC17C] text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                {notes.length}
+              </span>
+            )}
           </div>
-        </div>
-        <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-      </button>
+          <div className="text-left">
+            <div className="font-semibold text-[#2E2F38] dark:text-white text-sm">Minhas Notas</div>
+            <div className="text-xs text-[#6B6F76] dark:text-gray-300">
+              {notes.length === 0 ? 'Nenhuma nota' : `${notes.length} nota${notes.length > 1 ? 's' : ''}`}
+            </div>
+          </div>
+        </button>
 
-      {/* Modal do bloco de notas */}
-      {isOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 p-4" style={{ paddingTop: '120px' }} onClick={() => setIsOpen(false)}>
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-xl w-full max-w-md mx-auto relative" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setIsOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-              <CloseIcon className="h-5 w-5" />
-            </button>
-            
+        {/* Preview das notas recentes */}
+        {recentNotes.length > 0 && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#23283A] rounded-xl shadow-xl border border-[#E8E9F1] dark:border-[#23283A] p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50 min-w-[280px]">
+            <div className="text-xs font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Notas Recentes:</div>
+            <div className="space-y-2">
+              {recentNotes.map(note => (
+                <div key={note.id} className="flex items-start gap-2 p-2 rounded-lg hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
+                  <span className="text-sm">{getPriorityIcon(note.prioridade)}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-[#2E2F38] dark:text-white line-clamp-2">{note.texto}</div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={`px-2 py-0.5 text-xs rounded-full ${getPriorityColor(note.prioridade)}`}>
+                        {note.prioridade}
+                      </span>
+                      <span className="text-xs text-[#6B6F76] dark:text-gray-300">
+                        {note.criadoEm.toDate().toLocaleDateString('pt-BR')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Modal Completo */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-start pt-20">
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-2xl border border-[#E8E9F1] dark:border-[#23283A] w-full max-w-2xl mx-4 max-h-[80vh] overflow-hidden">
             {/* Header */}
-            <div className="flex items-center gap-2 p-6 border-b border-gray-200 dark:border-gray-700">
-              <StickyNoteIcon className="h-5 w-5 text-yellow-500" />
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Minhas Notas</h2>
+            <div className="flex items-center justify-between p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
+              <div className="flex items-center gap-3">
+                <NotesIcon className="h-6 w-6 text-[#3478F6]" />
+                <div>
+                  <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Minhas Notas</h2>
+                  <p className="text-sm text-[#6B6F76] dark:text-gray-300">Organize suas ideias e lembretes</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-[#6B6F76] hover:text-[#2E2F38] dark:text-gray-300 dark:hover:text-white transition-colors"
+              >
+                <XIcon className="h-6 w-6" />
+              </button>
             </div>
 
-            {/* Filtros */}
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex gap-2 mb-3">
-                <select
-                  value={priorityFilter}
-                  onChange={(e) => setPriorityFilter(e.target.value as any)}
-                  className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                >
-                  <option value="todos">Todas</option>
-                  <option value="urgente">Urgente</option>
-                  <option value="importante">Importante</option>
-                  <option value="circunstancial">Circunstancial</option>
-                </select>
-                <select
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value as any)}
-                  className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                >
-                  <option value="mais_novas">Mais novas</option>
-                  <option value="mais_velhas">Mais velhas</option>
-                </select>
+            {/* Filtros e Ordenação */}
+            <div className="p-4 bg-[#F5F6FA] dark:bg-[#181C23] border-b border-[#E8E9F1] dark:border-[#23283A]">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <FilterIcon className="h-4 w-4 text-[#6B6F76]" />
+                  <select
+                    value={filterPriority}
+                    onChange={(e) => setFilterPriority(e.target.value as any)}
+                    className="px-3 py-1.5 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent"
+                  >
+                    <option value="Todas">Todas</option>
+                    <option value="Urgente">Urgente</option>
+                    <option value="Importante">Importante</option>
+                    <option value="Circunstancial">Circunstancial</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <SortIcon className="h-4 w-4 text-[#6B6F76]" />
+                  <select
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}
+                    className="px-3 py-1.5 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent"
+                  >
+                    <option value="newest">Mais recentes</option>
+                    <option value="oldest">Mais antigas</option>
+                  </select>
+                </div>
               </div>
+            </div>
 
-              {/* Adicionar nova nota */}
-              <div className="flex gap-2">
+            {/* Formulário de Nova Nota */}
+            <div className="p-4 border-b border-[#E8E9F1] dark:border-[#23283A]">
+              <div className="flex gap-3">
+                <select
+                  value={selectedPriority}
+                  onChange={(e) => setSelectedPriority(e.target.value as any)}
+                  className="px-3 py-2 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent"
+                >
+                  <option value="Urgente">🚨 Urgente</option>
+                  <option value="Importante">⚠️ Importante</option>
+                  <option value="Circunstancial">ℹ️ Circunstancial</option>
+                </select>
                 <input
                   type="text"
                   value={newNote}
                   onChange={(e) => setNewNote(e.target.value)}
-                  placeholder="Nova nota..."
-                  className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                  onKeyPress={(e) => e.key === 'Enter' && addNote()}
+                  placeholder="Digite sua nota..."
+                  className="flex-1 px-3 py-2 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent"
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddNote()}
                 />
-                <select
-                  value={newNotePriority}
-                  onChange={(e) => setNewNotePriority(e.target.value as any)}
-                  className="px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                >
-                  <option value="urgente">Urgente</option>
-                  <option value="importante">Importante</option>
-                  <option value="circunstancial">Circunstancial</option>
-                </select>
                 <button
-                  onClick={addNote}
-                  disabled={!newNote.trim()}
-                  className="px-3 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white rounded text-sm disabled:cursor-not-allowed"
+                  onClick={handleAddNote}
+                  disabled={loading || !newNote.trim()}
+                  className="px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   <PlusIcon className="h-4 w-4" />
+                  {loading ? 'Salvando...' : 'Adicionar'}
                 </button>
               </div>
             </div>
 
-            {/* Lista de notas */}
-            <div className="max-h-64 overflow-y-auto p-4">
-              {filteredNotes.length === 0 ? (
-                <div className="text-center py-4 text-gray-500 dark:text-gray-400">
-                  <div className="text-2xl mb-2">📝</div>
-                  <p className="text-sm">
-                    {priorityFilter === 'todos' ? 'Nenhuma nota ainda' : `Nenhuma nota ${getPriorityLabel(priorityFilter).toLowerCase()}`}
-                  </p>
+            {/* Lista de Notas */}
+            <div className="p-4 overflow-y-auto max-h-[400px]">
+              {filteredAndSortedNotes.length === 0 ? (
+                <div className="text-center py-8">
+                  <NotesIcon className="h-12 w-12 text-[#6B6F76] mx-auto mb-3" />
+                  <p className="text-[#6B6F76] dark:text-gray-300">Nenhuma nota encontrada</p>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {filteredNotes.map((note) => (
+                <div className="space-y-3">
+                  {filteredAndSortedNotes.map(note => (
                     <div
                       key={note.id}
-                      className="p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded"
+                      className="group p-4 bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] hover:bg-white dark:hover:bg-[#23283A] transition-colors"
                     >
-                      <div className="flex items-start justify-between">
+                      <div className="flex items-start justify-between gap-3">
                         <div className="flex-1">
-                          <p className="text-sm text-gray-900 dark:text-white mb-1">
-                            {note.content}
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <span className={`px-2 py-0.5 text-xs font-medium rounded ${getPriorityColor(note.priority)}`}>
-                              {getPriorityLabel(note.priority)}
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-lg">{getPriorityIcon(note.prioridade)}</span>
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(note.prioridade)}`}>
+                              {note.prioridade}
                             </span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {formatDate(note.createdAt)}
+                            <span className="text-xs text-[#6B6F76] dark:text-gray-300">
+                              {note.criadoEm.toDate().toLocaleString('pt-BR')}
                             </span>
                           </div>
+                          <p className="text-[#2E2F38] dark:text-white leading-relaxed">{note.texto}</p>
                         </div>
                         <button
-                          onClick={() => deleteNote(note.id)}
-                          className="ml-2 p-1 text-gray-400 hover:text-red-500 rounded"
+                          onClick={() => handleDeleteNote(note.id)}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded transition-all"
                         >
-                          <TrashIcon className="h-3 w-3" />
+                          <XIcon className="h-4 w-4" />
                         </button>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-            </div>
-
-            {/* Footer */}
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {filteredNotes.length} de {notes.length} nota{notes.length !== 1 ? 's' : ''}
-                </span>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded text-sm"
-                >
-                  Fechar
-                </button>
-              </div>
             </div>
           </div>
         </div>

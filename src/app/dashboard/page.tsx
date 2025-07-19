@@ -855,11 +855,6 @@ export default function DashboardPage() {
           <div className="flex items-center gap-4">
             {/* Bloco de Notas */}
             <NotesWidget />
-            
-            <div className="text-right">
-              <div className="text-xl font-bold text-[#3478F6]">{currentTimeString}</div>
-              <div className="text-xs text-[#6B6F76]">Horário atual</div>
-            </div>
           </div>
         </div>
       </div>
