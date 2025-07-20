@@ -72,7 +72,7 @@ interface CrmTask {
 }
 
 const tipoCores = {
-  agenda: 'bg-green-500',
+  agenda: 'bg-emerald-500',
   crm: 'bg-blue-500',
   nota: 'bg-yellow-500'
 };
@@ -101,7 +101,7 @@ export default function AgendaPage() {
     descricao: '',
     dataHora: '',
     tipo: 'agenda' as 'agenda',
-    cor: '#3B82F6'
+    cor: '#10B981' // Cor fixa verde para agenda
   });
 
   useEffect(() => {
@@ -221,24 +221,32 @@ export default function AgendaPage() {
     if (!currentUser) return;
 
     try {
+      console.log('Salvando compromisso:', formData);
+      
       const agendaData = {
         ...formData,
         dataHora: Timestamp.fromDate(new Date(formData.dataHora)),
         status: 'pendente' as const,
         createdAt: Timestamp.now(),
-        userId: currentUser.uid
+        userId: currentUser.uid,
+        source: 'agenda' // Adicionar source para identificar origem
       };
+
+      console.log('Dados para salvar:', agendaData);
 
       if (editingItem) {
         await updateDoc(doc(db, 'agenda', editingItem.id), agendaData);
+        console.log('Compromisso atualizado');
       } else {
-        await addDoc(collection(db, 'agenda'), agendaData);
+        const docRef = await addDoc(collection(db, 'agenda'), agendaData);
+        console.log('Compromisso criado com ID:', docRef.id);
       }
 
       setShowModal(false);
       setEditingItem(null);
       resetForm();
-      fetchAgendaItems();
+      await fetchAllData(); // Recarregar todos os dados
+      console.log('Dados recarregados');
     } catch (error) {
       console.error('Erro ao salvar agenda:', error);
     }
@@ -282,7 +290,7 @@ export default function AgendaPage() {
       descricao: '',
       dataHora: '',
       tipo: 'agenda',
-      cor: '#3B82F6'
+      cor: '#10B981' // Cor fixa verde para agenda
     });
   };
 
@@ -757,17 +765,7 @@ export default function AgendaPage() {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold mb-2 text-[#2E2F38] dark:text-white">
-                  Cor
-                </label>
-                <input
-                  type="color"
-                  value={formData.cor}
-                  onChange={(e) => setFormData({ ...formData, cor: e.target.value })}
-                  className="w-full h-12 border border-[#E8E9F1] dark:border-[#23283A] rounded-xl cursor-pointer"
-                />
-              </div>
+
 
               <div className="flex gap-3 pt-6">
                 <button
