@@ -155,19 +155,25 @@ export default function NotesWidget() {
 
   return (
     <>
-      {/* Widget Compacto - Mesmo tamanho dos índices */}
+      {/* Widget Card Retangular - Estilo dos outros cards */}
       <div className="relative group">
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-1 px-2 py-1 bg-white/60 dark:bg-[#23283A]/60 backdrop-blur-sm rounded-lg border border-[#3478F6]/20 hover:border-[#3478F6]/40 transition-all duration-200 cursor-pointer group hover:scale-105"
+          className="w-32 h-20 bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-4 relative overflow-hidden hover:border-[#3478F6]/40 transition-all duration-300 cursor-pointer group hover:scale-105 shadow-sm hover:shadow-lg"
         >
-          <NotesIcon className="h-4 w-4 text-[#3478F6]" />
-          <div className="text-center">
-            <div className="text-xs font-bold text-[#2E2F38] dark:text-white group-hover:text-[#3478F6] transition-colors">
-              Notas
-            </div>
-            <div className="text-[10px] text-[#6B6F76] dark:text-gray-300 font-medium">
-              {notes.length}
+          {/* Borda decorativa lateral */}
+          <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
+          
+          {/* Conteúdo do card */}
+          <div className="flex flex-col items-center justify-center h-full">
+            <NotesIcon className="h-6 w-6 text-[#3478F6] mb-2" />
+            <div className="text-center">
+              <div className="text-sm font-bold text-[#2E2F38] dark:text-white group-hover:text-[#3478F6] transition-colors">
+                Notas
+              </div>
+              <div className="text-xs text-[#6B6F76] dark:text-gray-300 font-medium">
+                {notes.length}
+              </div>
             </div>
           </div>
         </button>
