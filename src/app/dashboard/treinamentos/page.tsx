@@ -142,7 +142,7 @@ export default function TreinamentosPage() {
           </div>
         </div>
 
-        {/* Grid de Treinamentos */}
+        {/* Grid de Treinamentos - Estilo YouTube */}
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6] mx-auto mb-4"></div>
@@ -160,66 +160,67 @@ export default function TreinamentosPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {filteredTreinamentos.map((treinamento) => (
               <div
                 key={treinamento.id}
-                className="bg-white dark:bg-[#23283A] rounded-xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] overflow-hidden hover:shadow-lg transition-all duration-200"
+                className="bg-white dark:bg-[#23283A] rounded-xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer group"
+                onClick={() => handleVideoClick(treinamento)}
               >
-                {/* Título e Descrição */}
-                <div className="p-4 border-b border-[#E8E9F1] dark:border-[#23283A]">
-                  <h3 className="font-bold text-[#2E2F38] dark:text-white text-lg mb-2">
-                    {treinamento.titulo}
-                  </h3>
-                  {treinamento.descricao && (
-                    <p className="text-sm text-[#6B6F76] dark:text-gray-300 mb-2">
-                      {treinamento.descricao}
-                    </p>
+                {/* Thumbnail - Estilo YouTube */}
+                <div className="relative aspect-video bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                  {treinamento.tipo === 'video' && getYouTubeThumbnail(treinamento.url) ? (
+                    <img
+                      src={getYouTubeThumbnail(treinamento.url)}
+                      alt={treinamento.titulo}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <div className="text-4xl">📄</div>
+                    </div>
                   )}
-                  <div className="flex items-center justify-between text-xs text-[#6B6F76] dark:text-gray-400">
-                    <span>{treinamento.tipo === 'video' ? '🎥 Vídeo' : '📄 PDF'}</span>
-                    <span>{treinamento.criadoEm.toLocaleDateString('pt-BR')}</span>
+                  
+                  {/* Overlay com ícone de play - Estilo YouTube */}
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
+                    <div className="w-12 h-12 bg-black bg-opacity-80 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Duração do vídeo (simulado) */}
+                  <div className="absolute bottom-2 right-2 bg-black bg-opacity-80 text-white text-xs px-2 py-1 rounded">
+                    {treinamento.tipo === 'video' ? '10:30' : 'PDF'}
                   </div>
                 </div>
 
-                {/* Conteúdo do Treinamento */}
-                <div className="p-4">
-                  {treinamento.tipo === 'video' && getYouTubeEmbedUrl(treinamento.url) ? (
-                    <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
-                      <iframe
-                        src={getYouTubeEmbedUrl(treinamento.url) || ''}
-                        title={treinamento.titulo}
-                        className="w-full h-full"
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      ></iframe>
-                      <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded text-xs font-semibold">
-                        YOUTUBE
-                      </div>
-                    </div>
-                  ) : treinamento.tipo === 'pdf' ? (
-                    <div 
-                      className="flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      onClick={() => handleVideoClick(treinamento)}
-                    >
-                      <span className="text-6xl mb-4">📄</span>
-                      <span className="text-lg font-semibold text-[#2E2F38] dark:text-white mb-2">
-                        {treinamento.titulo}
-                      </span>
-                      <span className="text-sm text-[#6B6F76] dark:text-gray-300 mb-4">
-                        Clique para abrir o PDF
-                      </span>
-                      <button className="px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold rounded-lg transition-colors">
-                        Abrir PDF
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center p-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <span className="text-4xl">❓</span>
-                      <span className="ml-3 text-[#6B6F76] dark:text-gray-300">Tipo de arquivo não suportado</span>
-                    </div>
+                {/* Informações do vídeo - Estilo YouTube */}
+                <div className="p-3">
+                  {/* Título - Estilo YouTube */}
+                  <h3 className="font-semibold text-[#2E2F38] dark:text-white text-sm mb-2 line-clamp-2 group-hover:text-[#3478F6] transition-colors leading-tight">
+                    {treinamento.titulo}
+                  </h3>
+                  
+                  {/* Descrição - Estilo YouTube */}
+                  {treinamento.descricao && (
+                    <p className="text-xs text-[#6B6F76] dark:text-gray-300 line-clamp-2 mb-2 leading-tight">
+                      {treinamento.descricao}
+                    </p>
                   )}
+                  
+                  {/* Metadados - Estilo YouTube */}
+                  <div className="flex items-center justify-between text-xs text-[#6B6F76] dark:text-gray-400">
+                    <div className="flex items-center gap-1">
+                      <span>Treinamentos</span>
+                      <span>•</span>
+                      <span>{treinamento.criadoEm.toLocaleDateString('pt-BR')}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span>{treinamento.tipo === 'video' ? '🎥' : '📄'}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
