@@ -30,7 +30,6 @@ export default function TreinamentosPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('todos');
-  const [selectedVideo, setSelectedVideo] = useState<Treinamento | null>(null);
 
   useEffect(() => {
     if (!userData?.imobiliariaId) return;
@@ -72,6 +71,12 @@ export default function TreinamentosPage() {
     return (match && match[2].length === 11) ? match[2] : undefined;
   };
 
+  const getYouTubeEmbedUrl = (url: string) => {
+    const videoId = getYouTubeVideoId(url);
+    if (!videoId) return null;
+    return `https://www.youtube.com/embed/${videoId}`;
+  };
+
   const getYouTubeThumbnail = (url: string) => {
     const videoId = getYouTubeVideoId(url);
     return videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : undefined;
@@ -85,16 +90,11 @@ export default function TreinamentosPage() {
   });
 
   const handleVideoClick = (treinamento: Treinamento) => {
-    if (treinamento.tipo === 'video') {
-      setSelectedVideo(treinamento);
-    } else {
+    if (treinamento.tipo === 'pdf') {
       // Para PDFs, abrir em nova aba
       window.open(treinamento.url, '_blank');
     }
-  };
-
-  const closeVideoModal = () => {
-    setSelectedVideo(null);
+    // Para vídeos, não fazer nada - eles já são reproduzidos inline
   };
 
   return (
@@ -142,7 +142,7 @@ export default function TreinamentosPage() {
           </div>
         </div>
 
-        {/* Grid de Vídeos */}
+        {/* Grid de Treinamentos */}
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6] mx-auto mb-4"></div>
@@ -160,44 +160,19 @@ export default function TreinamentosPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {filteredTreinamentos.map((treinamento) => (
               <div
                 key={treinamento.id}
-                className="bg-white dark:bg-[#23283A] rounded-xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer group"
-                onClick={() => handleVideoClick(treinamento)}
+                className="bg-white dark:bg-[#23283A] rounded-xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] overflow-hidden hover:shadow-lg transition-all duration-200"
               >
-                {/* Thumbnail */}
-                <div className="relative aspect-video bg-gray-200 dark:bg-gray-700 overflow-hidden">
-                  {treinamento.tipo === 'video' && getYouTubeThumbnail(treinamento.url) ? (
-                    <img
-                      src={getYouTubeThumbnail(treinamento.url)}
-                      alt={treinamento.titulo}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <div className="text-4xl">📄</div>
-                    </div>
-                  )}
-                  
-                  {/* Overlay com ícone de play */}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
-                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <svg className="w-6 h-6 text-[#3478F6] ml-1" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Informações do vídeo */}
-                <div className="p-4">
-                  <h3 className="font-bold text-[#2E2F38] dark:text-white text-sm mb-2 line-clamp-2 group-hover:text-[#3478F6] transition-colors">
+                {/* Título e Descrição */}
+                <div className="p-4 border-b border-[#E8E9F1] dark:border-[#23283A]">
+                  <h3 className="font-bold text-[#2E2F38] dark:text-white text-lg mb-2">
                     {treinamento.titulo}
                   </h3>
                   {treinamento.descricao && (
-                    <p className="text-xs text-[#6B6F76] dark:text-gray-300 line-clamp-2 mb-2">
+                    <p className="text-sm text-[#6B6F76] dark:text-gray-300 mb-2">
                       {treinamento.descricao}
                     </p>
                   )}
@@ -206,48 +181,51 @@ export default function TreinamentosPage() {
                     <span>{treinamento.criadoEm.toLocaleDateString('pt-BR')}</span>
                   </div>
                 </div>
+
+                {/* Conteúdo do Treinamento */}
+                <div className="p-4">
+                  {treinamento.tipo === 'video' && getYouTubeEmbedUrl(treinamento.url) ? (
+                    <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+                      <iframe
+                        src={getYouTubeEmbedUrl(treinamento.url) || ''}
+                        title={treinamento.titulo}
+                        className="w-full h-full"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                      <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded text-xs font-semibold">
+                        YOUTUBE
+                      </div>
+                    </div>
+                  ) : treinamento.tipo === 'pdf' ? (
+                    <div 
+                      className="flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      onClick={() => handleVideoClick(treinamento)}
+                    >
+                      <span className="text-6xl mb-4">📄</span>
+                      <span className="text-lg font-semibold text-[#2E2F38] dark:text-white mb-2">
+                        {treinamento.titulo}
+                      </span>
+                      <span className="text-sm text-[#6B6F76] dark:text-gray-300 mb-4">
+                        Clique para abrir o PDF
+                      </span>
+                      <button className="px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold rounded-lg transition-colors">
+                        Abrir PDF
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center p-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <span className="text-4xl">❓</span>
+                      <span className="ml-3 text-[#6B6F76] dark:text-gray-300">Tipo de arquivo não suportado</span>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
-
-      {/* Modal de Vídeo */}
-      {selectedVideo && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] w-full max-w-4xl max-h-[90vh] overflow-hidden">
-            {/* Header do Modal */}
-            <div className="flex items-center justify-between p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
-              <div>
-                <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">{selectedVideo.titulo}</h2>
-                {selectedVideo.descricao && (
-                  <p className="text-sm text-[#6B6F76] dark:text-gray-300 mt-1">{selectedVideo.descricao}</p>
-                )}
-              </div>
-              <button
-                onClick={closeVideoModal}
-                className="text-[#6B6F76] hover:text-[#2E2F38] dark:text-gray-300 dark:hover:text-white text-2xl font-bold"
-              >
-                ✕
-              </button>
-            </div>
-            
-            {/* Player de Vídeo */}
-            <div className="p-6">
-              <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
-                <iframe
-                  src={`https://www.youtube.com/embed/${getYouTubeVideoId(selectedVideo.url)}?autoplay=1`}
-                  title={selectedVideo.titulo}
-                  className="w-full h-full"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                ></iframe>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 } 
