@@ -92,6 +92,8 @@ export default function AgendaPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   const [showModal, setShowModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewingItem, setViewingItem] = useState<AgendaItem | null>(null);
   const [editingItem, setEditingItem] = useState<AgendaItem | null>(null);
   const [filter, setFilter] = useState<'all' | 'crm' | 'nota' | 'agenda'>('all');
 
@@ -256,6 +258,13 @@ export default function AgendaPage() {
   };
 
   const handleEdit = (item: AgendaItem) => {
+    // Para CRM e Notas, abrir modal de visualização
+    if (item.source === 'crm' || item.source === 'notas') {
+      setViewingItem(item);
+      setShowViewModal(true);
+      return;
+    }
+    
     // Só permitir editar itens criados na agenda (source: 'agenda')
     if (item.source !== 'agenda') {
       console.log('Este item não pode ser editado - apenas visualização');
@@ -363,7 +372,8 @@ export default function AgendaPage() {
     
     // Aplicar filtro se necessário
     if (filter !== 'all') {
-      return allItems.filter(item => item.tipo === filter);
+      const filteredItems = allItems.filter(item => item.tipo === filter);
+      return filteredItems.sort((a, b) => a.dataHora.toDate().getTime() - b.dataHora.toDate().getTime());
     }
     
     return allItems.sort((a, b) => a.dataHora.toDate().getTime() - b.dataHora.toDate().getTime());
@@ -406,9 +416,12 @@ export default function AgendaPage() {
                 key={item.id}
                 className={`text-xs p-2 rounded-lg ${tipoCores[item.tipo]} text-white truncate cursor-pointer hover:opacity-80 transition-opacity duration-200 shadow-sm`}
                 onClick={() => handleEdit(item)}
-                title={item.titulo}
+                title={`${item.dataHora.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - ${item.titulo}`}
               >
-                {item.titulo}
+                <div className="font-bold">
+                  {item.dataHora.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                </div>
+                <div className="truncate">{item.titulo}</div>
               </div>
             ))}
             {items.length > 3 && (
@@ -744,6 +757,86 @@ export default function AgendaPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Visualização */}
+      {showViewModal && viewingItem && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => {
+          setShowViewModal(false);
+          setViewingItem(null);
+        }}>
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 w-full max-w-md shadow-xl border border-[#E8E9F1] dark:border-[#23283A]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">
+                  Visualizar {viewingItem.source === 'crm' ? 'Tarefa CRM' : 'Nota'}
+                </h2>
+                <p className="text-[#6B6F76] dark:text-gray-300 text-sm">
+                  {viewingItem.dataHora.toDate().toLocaleString('pt-BR')}
+                </p>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-[#2E2F38] dark:text-white">
+                  Título
+                </label>
+                <div className="w-full px-4 py-3 bg-gray-50 dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl text-[#2E2F38] dark:text-white">
+                  {viewingItem.titulo}
+                </div>
+              </div>
+
+              {viewingItem.descricao && (
+                <div>
+                  <label className="block text-sm font-semibold mb-2 text-[#2E2F38] dark:text-white">
+                    Descrição
+                  </label>
+                  <div className="w-full px-4 py-3 bg-gray-50 dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl text-[#2E2F38] dark:text-white">
+                    {viewingItem.descricao}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-[#2E2F38] dark:text-white">
+                  Data e Hora
+                </label>
+                <div className="w-full px-4 py-3 bg-gray-50 dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl text-[#2E2F38] dark:text-white">
+                  {viewingItem.dataHora.toDate().toLocaleString('pt-BR')}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-[#2E2F38] dark:text-white">
+                  Tipo
+                </label>
+                <div className="w-full px-4 py-3 bg-gray-50 dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl text-[#2E2F38] dark:text-white">
+                  {tipoLabels[viewingItem.tipo]}
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setViewingItem(null);
+                  }}
+                  className="flex-1 px-6 py-3 bg-[#3478F6] text-white rounded-xl hover:bg-[#255FD1] transition-colors font-semibold"
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
