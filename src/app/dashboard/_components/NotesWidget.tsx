@@ -209,33 +209,31 @@ export default function NotesWidget() {
 
       {/* Modal Completo */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-start pt-20">
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-2xl border border-[#E8E9F1] dark:border-[#23283A] w-full max-w-2xl mx-4 max-h-[80vh] overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
-              <div className="flex items-center gap-3">
-                <NotesIcon className="h-6 w-6 text-[#3478F6]" />
-                <div>
-                  <h2 className="text-xl font-bold text-white">Notas</h2>
-                </div>
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-start pt-10">
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-2xl border border-[#E8E9F1] dark:border-[#23283A] w-full max-w-4xl mx-4 max-h-[85vh] overflow-hidden">
+            {/* Header mais compacto */}
+            <div className="flex items-center justify-between p-4 border-b border-[#E8E9F1] dark:border-[#23283A]">
+              <div className="flex items-center gap-2">
+                <NotesIcon className="h-5 w-5 text-[#3478F6]" />
+                <h2 className="text-lg font-bold text-white">Notas</h2>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="text-white hover:text-[#2E2F38] dark:text-white dark:hover:text-white transition-colors"
               >
-                <XIcon className="h-6 w-6" />
+                <XIcon className="h-5 w-5" />
               </button>
             </div>
 
-            {/* Filtros e Ordenação */}
-            <div className="p-4 bg-[#F5F6FA] dark:bg-[#181C23] border-b border-[#E8E9F1] dark:border-[#23283A]">
-              <div className="flex items-center gap-4">
+            {/* Filtros e Ordenação mais compactos */}
+            <div className="p-3 bg-[#F5F6FA] dark:bg-[#181C23] border-b border-[#E8E9F1] dark:border-[#23283A]">
+              <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <FilterIcon className="h-4 w-4 text-white" />
+                  <FilterIcon className="h-3 w-3 text-white" />
                   <select
                     value={filterPriority}
                     onChange={(e) => setFilterPriority(e.target.value as any)}
-                    className="px-3 py-1.5 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white"
+                    className="px-2 py-1 text-xs bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white"
                   >
                     <option value="Todas">Todas</option>
                     <option value="Urgente">Urgente</option>
@@ -244,11 +242,11 @@ export default function NotesWidget() {
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <SortIcon className="h-4 w-4 text-white" />
+                  <SortIcon className="h-3 w-3 text-white" />
                   <select
                     value={sortOrder}
                     onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}
-                    className="px-3 py-1.5 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white"
+                    className="px-2 py-1 text-xs bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white"
                   >
                     <option value="newest">Mais recentes</option>
                     <option value="oldest">Mais antigas</option>
@@ -257,14 +255,14 @@ export default function NotesWidget() {
               </div>
             </div>
 
-            {/* Formulário de Nova Nota */}
-            <div className="p-4 border-b border-[#E8E9F1] dark:border-[#23283A]">
-              <div className="space-y-3">
-                <div className="flex gap-3">
+            {/* Formulário de Nova Nota mais compacto */}
+            <div className="p-3 border-b border-[#E8E9F1] dark:border-[#23283A]">
+              <div className="space-y-2">
+                <div className="flex gap-2">
                   <select
                     value={selectedPriority}
                     onChange={(e) => setSelectedPriority(e.target.value as any)}
-                    className="px-3 py-2 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white"
+                    className="px-2 py-1.5 text-xs bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white"
                   >
                     <option value="Urgente">🚨 Urgente</option>
                     <option value="Importante">⚠️ Importante</option>
@@ -275,65 +273,65 @@ export default function NotesWidget() {
                     value={newNote}
                     onChange={(e) => setNewNote(e.target.value)}
                     placeholder="Digite sua nota..."
-                    className="flex-1 px-3 py-2 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    className="flex-1 px-3 py-1.5 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                     onKeyPress={(e) => e.key === 'Enter' && handleAddNote()}
                   />
                   <button
                     onClick={handleAddNote}
                     disabled={loading || !newNote.trim()}
-                    className="px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-3 py-1.5 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 text-sm"
                   >
-                    <PlusIcon className="h-4 w-4" />
+                    <PlusIcon className="h-3 w-3" />
                     {loading ? 'Salvando...' : 'Adicionar'}
                   </button>
                 </div>
                 
-                {/* Data e Hora opcional */}
+                {/* Data e Hora opcional mais compacto */}
                 <div className="flex items-center gap-2">
-                  <CalendarIcon className="h-4 w-4 text-white" />
+                  <CalendarIcon className="h-3 w-3 text-white" />
                   <input
                     type="datetime-local"
                     value={dataHora}
                     onChange={(e) => setDataHora(e.target.value)}
                     placeholder="Data e hora (opcional)"
-                    className="px-3 py-2 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white"
+                    className="px-2 py-1 text-xs bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white"
                   />
                   <span className="text-xs text-white">Data e hora (opcional)</span>
                 </div>
               </div>
             </div>
 
-            {/* Lista de Notas */}
-            <div className="p-4 overflow-y-auto max-h-[400px]">
+            {/* Lista de Notas com mais espaço */}
+            <div className="p-3 overflow-y-auto" style={{height: 'calc(85vh - 200px)'}}>
               {filteredAndSortedNotes.length === 0 ? (
                 <div className="text-center py-8">
-                  <NotesIcon className="h-12 w-12 text-white mx-auto mb-3" />
-                  <p className="text-white">Nenhuma nota encontrada</p>
+                  <NotesIcon className="h-8 w-8 text-white mx-auto mb-2" />
+                  <p className="text-white text-sm">Nenhuma nota encontrada</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {filteredAndSortedNotes.map(note => (
                     <div
                       key={note.id}
-                      className="group p-4 bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] hover:bg-white dark:hover:bg-[#23283A] transition-colors"
+                      className="group p-3 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-white dark:hover:bg-[#23283A] transition-colors"
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-lg">{getPriorityIcon(note.prioridade)}</span>
-                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(note.prioridade)}`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm">{getPriorityIcon(note.prioridade)}</span>
+                            <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getPriorityColor(note.prioridade)}`}>
                               {note.prioridade}
                             </span>
                             <span className="text-xs text-white">
                               {note.criadoEm.toDate().toLocaleString('pt-BR')}
                             </span>
                           </div>
-                          <p className="text-[#2E2F38] dark:text-white leading-relaxed">{note.texto}</p>
+                          <p className="text-[#2E2F38] dark:text-white text-sm leading-relaxed">{note.texto}</p>
                           {note.dataHora && (
-                            <div className="flex items-center gap-2 mt-2">
+                            <div className="flex items-center gap-1 mt-1">
                               <CalendarIcon className="h-3 w-3 text-white" />
                               <span className="text-xs text-white">
-                                Agendado para: {new Date(note.dataHora).toLocaleString('pt-BR')}
+                                Agendado: {new Date(note.dataHora).toLocaleString('pt-BR')}
                               </span>
                             </div>
                           )}
@@ -342,7 +340,7 @@ export default function NotesWidget() {
                           onClick={() => handleDeleteNote(note.id)}
                           className="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded transition-all"
                         >
-                          <XIcon className="h-4 w-4" />
+                          <XIcon className="h-3 w-3" />
                         </button>
                       </div>
                     </div>
