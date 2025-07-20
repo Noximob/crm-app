@@ -155,11 +155,11 @@ export default function NotesWidget() {
 
   return (
     <>
-      {/* Widget Compacto - Tamanho dos índices */}
+      {/* Widget Compacto - Mesmo tamanho dos índices */}
       <div className="relative group">
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-3 py-2 bg-white/60 dark:bg-[#23283A]/60 backdrop-blur-sm rounded-lg border border-[#3478F6]/20 hover:border-[#3478F6]/40 transition-all duration-200 cursor-pointer group hover:scale-105"
+          className="flex items-center gap-1 px-2 py-1 bg-white/60 dark:bg-[#23283A]/60 backdrop-blur-sm rounded-lg border border-[#3478F6]/20 hover:border-[#3478F6]/40 transition-all duration-200 cursor-pointer group hover:scale-105"
         >
           <NotesIcon className="h-4 w-4 text-[#3478F6]" />
           <div className="text-center">
@@ -167,7 +167,7 @@ export default function NotesWidget() {
               Notas
             </div>
             <div className="text-[10px] text-[#6B6F76] dark:text-gray-300 font-medium">
-              {notes.length === 0 ? 'Nenhuma' : `${notes.length}`}
+              {notes.length}
             </div>
           </div>
         </button>
