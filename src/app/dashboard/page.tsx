@@ -1466,77 +1466,57 @@ export default function DashboardPage() {
       {/* Modal de Notas */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={() => setIsModalOpen(false)}>
-          <div className="relative max-w-4xl w-full mx-4 bg-white dark:bg-[#23283A] rounded-2xl shadow-xl p-0" onClick={e => e.stopPropagation()}>
+          <div className="relative max-w-3xl w-full mx-4 bg-white dark:bg-[#23283A] rounded-2xl shadow-xl p-0" onClick={e => e.stopPropagation()}>
             <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-[#6B6F76] dark:text-gray-300 text-2xl z-10 hover:text-[#F45B69]">✕</button>
             
             <div className="p-6">
               <div className="flex items-center gap-3 mb-6">
                 <NotesIcon className="h-8 w-8 text-[#3478F6]" />
                 <div>
-                  <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white">Minhas Notas</h2>
-                  <p className="text-[#6B6F76] dark:text-gray-300">Gerencie suas notas e lembretes</p>
+                  <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white">Todas as Notas</h2>
+                  <p className="text-[#6B6F76] dark:text-gray-300">Suas notas e lembretes</p>
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-[#2E2F38] dark:text-white">Todas as Notas</h3>
-                  <div className="max-h-96 overflow-y-auto space-y-3">
-                    {notes.length === 0 ? (
-                      <div className="text-center py-8">
-                        <NotesIcon className="h-12 w-12 text-[#3478F6] mx-auto mb-3 opacity-50" />
-                        <p className="text-[#6B6F76] dark:text-gray-300">Nenhuma nota criada ainda</p>
-                      </div>
-                    ) : (
-                      notes.map((note) => (
-                        <div
-                          key={note.id}
-                          className="p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors"
-                        >
-                          <div className="flex items-start gap-3">
-                            <span className="text-lg mt-0.5">{getPriorityIcon(note.prioridade)}</span>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(note.prioridade)}`}>
-                                  {note.prioridade}
-                                </span>
-                                <span className="text-xs text-[#6B6F76] dark:text-gray-300">
-                                  {note.criadoEm.toDate().toLocaleDateString('pt-BR')}
-                                </span>
-                              </div>
-                              <div className="text-sm text-[#2E2F38] dark:text-white leading-relaxed mb-2">
-                                {note.texto}
-                              </div>
-                              {note.dataHora && (
-                                <div className="flex items-center gap-2">
-                                  <CalendarIcon className="h-4 w-4 text-[#3478F6]" />
-                                  <span className="text-xs text-[#6B6F76] dark:text-gray-300">
-                                    Agendado: {new Date(note.dataHora).toLocaleDateString('pt-BR')}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
+              <div className="max-h-96 overflow-y-auto space-y-3">
+                {notes.length === 0 ? (
+                  <div className="text-center py-8">
+                    <NotesIcon className="h-12 w-12 text-[#3478F6] mx-auto mb-3 opacity-50" />
+                    <p className="text-[#6B6F76] dark:text-gray-300">Nenhuma nota criada ainda</p>
                   </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-[#2E2F38] dark:text-white">Criar Nova Nota</h3>
-                  <div className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg p-4">
-                    <p className="text-sm text-[#6B6F76] dark:text-gray-300 mb-4">
-                      Use o widget de notas no cabeçalho para criar novas notas rapidamente.
-                    </p>
-                    <button
-                      onClick={() => setIsModalOpen(false)}
-                      className="w-full bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                ) : (
+                  notes.map((note) => (
+                    <div
+                      key={note.id}
+                      className="p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors"
                     >
-                      Fechar e Criar Nota
-                    </button>
-                  </div>
-                </div>
+                      <div className="flex items-start gap-3">
+                        <span className="text-lg mt-0.5">{getPriorityIcon(note.prioridade)}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(note.prioridade)}`}>
+                              {note.prioridade}
+                            </span>
+                            <span className="text-xs text-[#6B6F76] dark:text-gray-300">
+                              {note.criadoEm.toDate().toLocaleDateString('pt-BR')}
+                            </span>
+                          </div>
+                          <div className="text-sm text-[#2E2F38] dark:text-white leading-relaxed mb-2">
+                            {note.texto}
+                          </div>
+                          {note.dataHora && (
+                            <div className="flex items-center gap-2">
+                              <CalendarIcon className="h-4 w-4 text-[#3478F6]" />
+                              <span className="text-xs text-[#6B6F76] dark:text-gray-300">
+                                Agendado: {new Date(note.dataHora).toLocaleDateString('pt-BR')}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
