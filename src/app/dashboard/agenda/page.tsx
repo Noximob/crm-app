@@ -41,7 +41,7 @@ interface AgendaItem {
   titulo: string;
   descricao?: string;
   dataHora: Timestamp;
-  tipo: 'crm' | 'pessoal' | 'profissional' | 'lembrete' | 'nota' | 'tarefa_crm';
+  tipo: 'agenda' | 'crm' | 'nota';
   status: 'pendente' | 'concluida' | 'cancelada';
   cor: string;
   leadId?: string;
@@ -72,21 +72,15 @@ interface CrmTask {
 }
 
 const tipoCores = {
+  agenda: 'bg-green-500',
   crm: 'bg-blue-500',
-  pessoal: 'bg-green-500',
-  profissional: 'bg-purple-500',
-  lembrete: 'bg-orange-500',
-  nota: 'bg-yellow-500',
-  tarefa_crm: 'bg-indigo-500'
+  nota: 'bg-yellow-500'
 };
 
 const tipoLabels = {
+  agenda: 'Agenda',
   crm: 'CRM',
-  pessoal: 'Pessoal',
-  profissional: 'Profissional',
-  lembrete: 'Lembrete',
-  nota: 'Nota',
-  tarefa_crm: 'Tarefa CRM'
+  nota: 'Nota'
 };
 
 export default function AgendaPage() {
@@ -99,14 +93,14 @@ export default function AgendaPage() {
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<AgendaItem | null>(null);
-  const [filter, setFilter] = useState<'all' | 'crm' | 'pessoal' | 'profissional' | 'lembrete' | 'nota' | 'tarefa_crm'>('all');
+  const [filter, setFilter] = useState<'all' | 'crm' | 'nota' | 'agenda'>('all');
 
   // Form state
   const [formData, setFormData] = useState({
     titulo: '',
     descricao: '',
     dataHora: '',
-    tipo: 'pessoal' as AgendaItem['tipo'],
+    tipo: 'agenda' as 'agenda',
     cor: '#3B82F6'
   });
 
@@ -256,7 +250,7 @@ export default function AgendaPage() {
       titulo: item.titulo,
       descricao: item.descricao || '',
       dataHora: new Date(item.dataHora.toDate()).toISOString().slice(0, 16),
-      tipo: item.tipo,
+      tipo: item.tipo as 'agenda',
       cor: item.cor
     });
     setShowModal(true);
@@ -287,7 +281,7 @@ export default function AgendaPage() {
       titulo: '',
       descricao: '',
       dataHora: '',
-      tipo: 'pessoal',
+      tipo: 'agenda',
       cor: '#3B82F6'
     });
   };
@@ -334,7 +328,7 @@ export default function AgendaPage() {
           titulo: task.description,
           descricao: `${task.type} - ${task.leadNome || 'Lead'}`,
           dataHora: task.dueDate,
-          tipo: 'tarefa_crm',
+          tipo: 'crm',
           status: task.status === 'concluída' ? 'concluida' : 'pendente',
           cor: '#6366F1',
           createdAt: task.dueDate,
@@ -448,16 +442,13 @@ export default function AgendaPage() {
             <div className="flex items-center gap-6">
               <select
                 value={filter}
-                onChange={(e) => setFilter(e.target.value as any)}
+                onChange={(e) => setFilter(e.target.value as 'all' | 'crm' | 'nota' | 'agenda')}
                 className="px-4 py-2 bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white font-medium"
               >
                 <option value="all">Todos os tipos</option>
                 <option value="crm">CRM</option>
-                <option value="pessoal">Pessoal</option>
-                <option value="profissional">Profissional</option>
-                <option value="lembrete">Lembretes</option>
                 <option value="nota">Notas</option>
-                <option value="tarefa_crm">Tarefas CRM</option>
+                <option value="agenda">Agenda</option>
               </select>
 
               <div className="flex items-center gap-2 bg-white dark:bg-[#23283A] rounded-xl p-1 border border-[#E8E9F1] dark:border-[#23283A]">
@@ -599,7 +590,7 @@ export default function AgendaPage() {
                     titulo: task.description,
                     descricao: `${task.type} - ${task.leadNome || 'Lead'}`,
                     dataHora: task.dueDate,
-                    tipo: 'tarefa_crm',
+                    tipo: 'crm',
                     status: task.status === 'concluída' ? 'concluida' : 'pendente',
                     cor: '#6366F1',
                     createdAt: task.dueDate,
@@ -753,13 +744,10 @@ export default function AgendaPage() {
                 </label>
                 <select
                   value={formData.tipo}
-                  onChange={(e) => setFormData({ ...formData, tipo: e.target.value as AgendaItem['tipo'] })}
+                  onChange={(e) => setFormData({ ...formData, tipo: e.target.value as 'agenda' })}
                   className="w-full px-4 py-3 bg-white dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white"
                 >
-                  <option value="pessoal">Pessoal</option>
-                  <option value="profissional">Profissional</option>
-                  <option value="crm">CRM</option>
-                  <option value="lembrete">Lembrete</option>
+                  <option value="agenda">Agenda</option>
                 </select>
               </div>
 
