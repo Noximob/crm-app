@@ -1006,6 +1006,11 @@ export default function DashboardPage() {
 
         {/* Coluna Direita - Top Trending com scroll independente */}
         <div id="trending-section" className="overflow-y-auto pr-2 dashboard-scroll-hide h-full min-h-0">
+          {/* Widget de Notas - Alinhado com Top Trending */}
+          <div className="mb-6">
+            <NotesWidget />
+          </div>
+          
           <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl animate-fade-in">
             {/* Borda decorativa */}
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#3478F6] to-[#A3C8F7]"></div>
