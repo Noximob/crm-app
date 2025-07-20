@@ -41,38 +41,65 @@ interface AgendaItem {
   titulo: string;
   descricao?: string;
   dataHora: Timestamp;
-  tipo: 'crm' | 'pessoal' | 'profissional' | 'lembrete';
+  tipo: 'crm' | 'pessoal' | 'profissional' | 'lembrete' | 'nota' | 'tarefa_crm';
   status: 'pendente' | 'concluida' | 'cancelada';
   cor: string;
   leadId?: string;
   leadNome?: string;
   createdAt: Timestamp;
   userId: string;
+  source?: 'agenda' | 'notas' | 'crm';
+  originalId?: string; // ID original da nota ou tarefa
+}
+
+interface Note {
+  id: string;
+  texto: string;
+  prioridade: string;
+  dataHora?: string;
+  criadoEm: Timestamp;
+  userId: string;
+}
+
+interface CrmTask {
+  id: string;
+  description: string;
+  type: 'Ligação' | 'WhatsApp' | 'Visita';
+  dueDate: Timestamp;
+  status: 'pendente' | 'concluída' | 'cancelada';
+  leadId: string;
+  leadNome?: string;
 }
 
 const tipoCores = {
   crm: 'bg-blue-500',
   pessoal: 'bg-green-500',
   profissional: 'bg-purple-500',
-  lembrete: 'bg-orange-500'
+  lembrete: 'bg-orange-500',
+  nota: 'bg-yellow-500',
+  tarefa_crm: 'bg-indigo-500'
 };
 
 const tipoLabels = {
   crm: 'CRM',
   pessoal: 'Pessoal',
   profissional: 'Profissional',
-  lembrete: 'Lembrete'
+  lembrete: 'Lembrete',
+  nota: 'Nota',
+  tarefa_crm: 'Tarefa CRM'
 };
 
 export default function AgendaPage() {
   const { currentUser } = useAuth();
   const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [crmTasks, setCrmTasks] = useState<CrmTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<AgendaItem | null>(null);
-  const [filter, setFilter] = useState<'all' | 'crm' | 'pessoal' | 'profissional' | 'lembrete'>('all');
+  const [filter, setFilter] = useState<'all' | 'crm' | 'pessoal' | 'profissional' | 'lembrete' | 'nota' | 'tarefa_crm'>('all');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -85,15 +112,31 @@ export default function AgendaPage() {
 
   useEffect(() => {
     if (currentUser) {
-      fetchAgendaItems();
+      fetchAllData();
     }
   }, [currentUser, selectedDate, filter]);
+
+  const fetchAllData = async () => {
+    if (!currentUser) return;
+    setLoading(true);
+    
+    try {
+      await Promise.all([
+        fetchAgendaItems(),
+        fetchNotes(),
+        fetchCrmTasks()
+      ]);
+    } catch (error) {
+      console.error('Erro ao buscar dados:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchAgendaItems = async () => {
     if (!currentUser) return;
 
     try {
-      setLoading(true);
       const agendaRef = collection(db, 'agenda');
       let q = query(
         agendaRef,
@@ -105,19 +148,77 @@ export default function AgendaPage() {
       const items: AgendaItem[] = [];
       
       querySnapshot.forEach((doc) => {
-        items.push({ id: doc.id, ...doc.data() } as AgendaItem);
+        items.push({ 
+          id: doc.id, 
+          ...doc.data(),
+          source: 'agenda'
+        } as AgendaItem);
       });
 
-      // Filtrar por tipo se necessário
-      const filteredItems = filter === 'all' 
-        ? items 
-        : items.filter(item => item.tipo === filter);
-
-      setAgendaItems(filteredItems);
+      setAgendaItems(items);
     } catch (error) {
       console.error('Erro ao buscar agenda:', error);
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const fetchNotes = async () => {
+    if (!currentUser) return;
+
+    try {
+      const notesRef = collection(db, 'notes');
+      const q = query(
+        notesRef,
+        where('userId', '==', currentUser.uid),
+        orderBy('criadoEm', 'desc')
+      );
+
+      const querySnapshot = await getDocs(q);
+      const notesData: Note[] = [];
+      
+      querySnapshot.forEach((doc) => {
+        const noteData = { id: doc.id, ...doc.data() } as Note;
+        if (noteData.dataHora) {
+          notesData.push(noteData);
+        }
+      });
+
+      setNotes(notesData);
+    } catch (error) {
+      console.error('Erro ao buscar notas:', error);
+    }
+  };
+
+  const fetchCrmTasks = async () => {
+    if (!currentUser) return;
+
+    try {
+      // Buscar leads do usuário
+      const leadsRef = collection(db, 'leads');
+      const leadsQuery = query(leadsRef, where('userId', '==', currentUser.uid));
+      const leadsSnapshot = await getDocs(leadsQuery);
+      
+      const allTasks: CrmTask[] = [];
+      
+      // Para cada lead, buscar suas tarefas
+      for (const leadDoc of leadsSnapshot.docs) {
+        const leadData = leadDoc.data();
+        const tasksCol = collection(db, 'leads', leadDoc.id, 'tarefas');
+        const tasksQuery = query(tasksCol, where('status', '==', 'pendente'));
+        const tasksSnapshot = await getDocs(tasksQuery);
+        
+        tasksSnapshot.forEach((taskDoc) => {
+          allTasks.push({
+            id: taskDoc.id,
+            ...taskDoc.data(),
+            leadId: leadDoc.id,
+            leadNome: leadData.nome
+          } as CrmTask);
+        });
+      }
+
+      setCrmTasks(allTasks);
+    } catch (error) {
+      console.error('Erro ao buscar tarefas do CRM:', error);
     }
   };
 
@@ -191,11 +292,67 @@ export default function AgendaPage() {
     });
   };
 
-  const getItemsForDate = (date: Date) => {
-    return agendaItems.filter(item => {
+  const getAllItemsForDate = (date: Date) => {
+    const allItems: AgendaItem[] = [];
+    
+    // Adicionar itens da agenda
+    agendaItems.forEach(item => {
       const itemDate = item.dataHora.toDate();
-      return itemDate.toDateString() === date.toDateString();
+      if (itemDate.toDateString() === date.toDateString()) {
+        allItems.push(item);
+      }
     });
+    
+    // Adicionar notas com data/hora
+    notes.forEach(note => {
+      if (note.dataHora) {
+        const noteDate = new Date(note.dataHora);
+        if (noteDate.toDateString() === date.toDateString()) {
+          allItems.push({
+            id: `note_${note.id}`,
+            titulo: note.texto,
+            descricao: `Prioridade: ${note.prioridade}`,
+            dataHora: Timestamp.fromDate(noteDate),
+            tipo: 'nota',
+            status: 'pendente',
+            cor: '#F59E0B',
+            createdAt: note.criadoEm,
+            userId: note.userId,
+            source: 'notas',
+            originalId: note.id
+          });
+        }
+      }
+    });
+    
+    // Adicionar tarefas do CRM
+    crmTasks.forEach(task => {
+      const taskDate = task.dueDate.toDate();
+      if (taskDate.toDateString() === date.toDateString()) {
+        allItems.push({
+          id: `task_${task.id}`,
+          titulo: task.description,
+          descricao: `${task.type} - ${task.leadNome || 'Lead'}`,
+          dataHora: task.dueDate,
+          tipo: 'tarefa_crm',
+          status: task.status === 'concluída' ? 'concluida' : 'pendente',
+          cor: '#6366F1',
+          createdAt: task.dueDate,
+          userId: currentUser?.uid || '',
+          source: 'crm',
+          originalId: task.id,
+          leadId: task.leadId,
+          leadNome: task.leadNome
+        });
+      }
+    });
+    
+    // Aplicar filtro se necessário
+    if (filter !== 'all') {
+      return allItems.filter(item => item.tipo === filter);
+    }
+    
+    return allItems.sort((a, b) => a.dataHora.toDate().getTime() - b.dataHora.toDate().getTime());
   };
 
   const renderCalendar = () => {
@@ -211,7 +368,7 @@ export default function AgendaPage() {
     for (let i = 0; i < 42; i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
-      const items = getItemsForDate(date);
+      const items = getAllItemsForDate(date);
       
       days.push(
         <div
@@ -230,7 +387,7 @@ export default function AgendaPage() {
             {date.getDate()}
           </div>
           <div className="space-y-1">
-            {items.slice(0, 3).map((item) => (
+            {items.slice(0, 3).map((item: AgendaItem) => (
               <div
                 key={item.id}
                 className={`text-xs p-2 rounded-lg ${tipoCores[item.tipo]} text-white truncate cursor-pointer hover:opacity-80 transition-opacity duration-200 shadow-sm`}
@@ -299,6 +456,8 @@ export default function AgendaPage() {
                 <option value="pessoal">Pessoal</option>
                 <option value="profissional">Profissional</option>
                 <option value="lembrete">Lembretes</option>
+                <option value="nota">Notas</option>
+                <option value="tarefa_crm">Tarefas CRM</option>
               </select>
 
               <div className="flex items-center gap-2 bg-white dark:bg-[#23283A] rounded-xl p-1 border border-[#E8E9F1] dark:border-[#23283A]">
@@ -400,10 +559,70 @@ export default function AgendaPage() {
           </div>
           
           <div className="space-y-4">
-            {agendaItems
-              .filter(item => item.dataHora.toDate() >= new Date())
-              .slice(0, 10)
-              .map((item) => (
+            {(() => {
+              const allItems: AgendaItem[] = [];
+              
+              // Adicionar itens da agenda
+              agendaItems.forEach(item => {
+                if (item.dataHora.toDate() >= new Date()) {
+                  allItems.push(item);
+                }
+              });
+              
+              // Adicionar notas com data/hora
+              notes.forEach(note => {
+                if (note.dataHora) {
+                  const noteDate = new Date(note.dataHora);
+                  if (noteDate >= new Date()) {
+                    allItems.push({
+                      id: `note_${note.id}`,
+                      titulo: note.texto,
+                      descricao: `Prioridade: ${note.prioridade}`,
+                      dataHora: Timestamp.fromDate(noteDate),
+                      tipo: 'nota',
+                      status: 'pendente',
+                      cor: '#F59E0B',
+                      createdAt: note.criadoEm,
+                      userId: note.userId,
+                      source: 'notas',
+                      originalId: note.id
+                    });
+                  }
+                }
+              });
+              
+              // Adicionar tarefas do CRM
+              crmTasks.forEach(task => {
+                if (task.dueDate.toDate() >= new Date()) {
+                  allItems.push({
+                    id: `task_${task.id}`,
+                    titulo: task.description,
+                    descricao: `${task.type} - ${task.leadNome || 'Lead'}`,
+                    dataHora: task.dueDate,
+                    tipo: 'tarefa_crm',
+                    status: task.status === 'concluída' ? 'concluida' : 'pendente',
+                    cor: '#6366F1',
+                    createdAt: task.dueDate,
+                    userId: currentUser?.uid || '',
+                    source: 'crm',
+                    originalId: task.id,
+                    leadId: task.leadId,
+                    leadNome: task.leadNome
+                  });
+                }
+              });
+              
+              // Aplicar filtro e ordenar
+              let filteredItems = allItems;
+              if (filter !== 'all') {
+                filteredItems = allItems.filter(item => item.tipo === filter);
+              }
+              
+              const sortedItems = filteredItems
+                .sort((a, b) => a.dataHora.toDate().getTime() - b.dataHora.toDate().getTime())
+                .slice(0, 10);
+              
+              return sortedItems.map((item) => (
                 <div
                   key={item.id}
                   className={`group p-4 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] hover:bg-white/60 dark:hover:bg-[#23283A]/60 transition-all duration-300 ${
@@ -459,7 +678,8 @@ export default function AgendaPage() {
                     </div>
                   </div>
                 </div>
-              ))}
+              ));
+            })()}
           </div>
         </div>
       </div>
