@@ -247,7 +247,7 @@ export default function TreinamentosPage() {
                     <div className="relative w-full h-full">
                       <img
                         src={getYouTubeThumbnail(treinamento.url)}
-                        alt={treinamento.titulo}
+                        alt=""
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                       />
                       
@@ -280,8 +280,8 @@ export default function TreinamentosPage() {
                     {treinamento.titulo}
                   </h3>
                   
-                  {/* Descrição - Estilo YouTube */}
-                  {treinamento.descricao && (
+                  {/* Descrição - Estilo YouTube (apenas se for diferente do título) */}
+                  {treinamento.descricao && treinamento.descricao !== treinamento.titulo && (
                     <p className="text-xs text-[#6B6F76] dark:text-gray-300 line-clamp-2 mb-2 leading-tight">
                       {treinamento.descricao}
                     </p>
