@@ -628,7 +628,7 @@ export default function AgendaPage() {
               
               const sortedItems = filteredItems
                 .sort((a, b) => a.dataHora.toDate().getTime() - b.dataHora.toDate().getTime())
-                .slice(0, 10);
+                .slice(0, 5); // Sempre mostrar apenas 5 próximos compromissos
               
               return sortedItems.map((item) => (
                 <div
@@ -659,30 +659,9 @@ export default function AgendaPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      {item.status !== 'concluida' && (
-                        <button
-                          onClick={() => handleStatusChange(item.id, 'concluida')}
-                          className="p-2 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                          title="Marcar como concluída"
-                        >
-                          <CheckIcon className="h-4 w-4" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleEdit(item)}
-                        className="p-2 text-[#3478F6] hover:bg-[#3478F6]/10 rounded-lg transition-colors"
-                        title="Editar"
-                      >
-                        <EditIcon className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                        title="Excluir"
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </button>
+                    {/* Próximos compromissos: apenas visualização */}
+                    <div className="text-xs text-[#6B6F76] dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">
+                      Próximos 5 dias
                     </div>
                   </div>
                 </div>
