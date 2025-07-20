@@ -567,6 +567,18 @@ export default function ComunidadePage() {
     if (orderByTrending === 'recent') {
       return b.createdAt?.toDate() - a.createdAt?.toDate();
     } else {
+      // No Top Trending, eventos agendados sempre ficam no topo
+      if (aIsEvent && !bIsEvent) return -1;
+      if (!aIsEvent && bIsEvent) return 1;
+      
+      // Se ambos são eventos, ordenar por data
+      if (aIsEvent && bIsEvent) {
+        const aEventTime = a.eventoData instanceof Date ? a.eventoData : a.eventoData.toDate();
+        const bEventTime = b.eventoData instanceof Date ? b.eventoData : b.eventoData.toDate();
+        return aEventTime.getTime() - bEventTime.getTime();
+      }
+      
+      // Para posts normais, ordenar por engajamento
       return getTotalEngagement(b.id) - getTotalEngagement(a.id);
     }
   });
@@ -764,9 +776,22 @@ export default function ComunidadePage() {
             return (
               <div
                 key={post.id}
-                className="group relative bg-white/60 dark:bg-[#23283A]/60 backdrop-blur-sm rounded-2xl p-6 hover:bg-white/80 dark:hover:bg-[#23283A]/80 transition-all duration-300 cursor-pointer border border-white/20 hover:border-[#3478F6]/30 hover:scale-[1.02] shadow-lg hover:shadow-xl"
+                className={`group relative backdrop-blur-sm rounded-2xl p-6 transition-all duration-300 cursor-pointer border hover:scale-[1.02] shadow-lg hover:shadow-xl ${
+                  post.isEvento && orderByTrending === 'relevant'
+                    ? 'bg-gradient-to-r from-yellow-50/80 to-orange-50/80 dark:from-yellow-900/20 dark:to-orange-900/20 border-yellow-200/50 dark:border-yellow-700/50 hover:bg-gradient-to-r hover:from-yellow-100/90 hover:to-orange-100/90 dark:hover:from-yellow-800/30 dark:hover:to-orange-800/30'
+                    : 'bg-white/60 dark:bg-[#23283A]/60 border-white/20 hover:bg-white/80 dark:hover:bg-[#23283A]/80 hover:border-[#3478F6]/30'
+                }`}
               >
-                {/* Removido badge dourado de ranking/repost */}
+                {/* Badge Especial para eventos no Top Trending */}
+                {post.isEvento && orderByTrending === 'relevant' && (
+                  <div className="absolute top-4 right-4 z-10">
+                    <div className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg">
+                      <span>⭐</span>
+                      <span>ESPECIAL</span>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="flex items-start gap-4 mb-2">
                   <img src={post.avatar} alt={post.nome} className="w-14 h-14 rounded-full object-cover border-2 border-white dark:border-[#23283A] shadow-md" />
                   <div className="flex-1 min-w-0">
@@ -788,13 +813,17 @@ export default function ComunidadePage() {
                     {/* Badge de evento agendado */}
                     {post.isEvento && (
                       <div className="mb-2">
-                        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold ${getEventColor(post.eventoTipo)} text-white`}>
+                        <button
+                          onClick={() => window.open(post.eventoLink, '_blank')}
+                          className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold ${getEventColor(post.eventoTipo)} text-white hover:opacity-80 transition-opacity cursor-pointer`}
+                          title="Clique para participar do evento"
+                        >
                           <span>{getEventIcon(post.eventoTipo)}</span>
                           <span>{post.titulo}</span>
                           <span className="text-xs opacity-90">
                             {post.eventoData?.toDate ? post.eventoData.toDate().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}
                           </span>
-                        </div>
+                        </button>
                         {post.eventoStatus === 'acontecendo' && (
                           <div className="mt-1 inline-flex items-center gap-1 px-2 py-1 bg-green-500 text-white text-xs rounded-full font-semibold animate-pulse">
                             <span>🔴</span>
