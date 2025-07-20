@@ -74,6 +74,7 @@ export default function NotesWidget() {
   useEffect(() => {
     if (!currentUser) return;
 
+    console.log('Carregando notas para usuário:', currentUser.uid);
     const q = query(
       collection(db, 'notes'),
       where('userId', '==', currentUser.uid),
@@ -81,11 +82,15 @@ export default function NotesWidget() {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log('Snapshot recebido, documentos:', snapshot.docs.length);
       const notesData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Note[];
+      console.log('Notas carregadas:', notesData);
       setNotes(notesData);
+    }, (error) => {
+      console.error('Erro ao carregar notas:', error);
     });
 
     return () => unsubscribe();
@@ -94,6 +99,7 @@ export default function NotesWidget() {
   const handleAddNote = async () => {
     if (!newNote.trim() || !currentUser) return;
 
+    console.log('Tentando adicionar nota:', { texto: newNote.trim(), prioridade: selectedPriority, dataHora });
     setLoading(true);
     try {
       const noteData = {
@@ -104,7 +110,10 @@ export default function NotesWidget() {
         userId: currentUser.uid
       };
       
-      await addDoc(collection(db, 'notes'), noteData);
+      console.log('Dados da nota a serem salvos:', noteData);
+      const docRef = await addDoc(collection(db, 'notes'), noteData);
+      console.log('Nota salva com sucesso, ID:', docRef.id);
+      
       setNewNote('');
       setSelectedPriority('Importante');
       setDataHora(''); // Limpar data/hora
