@@ -501,8 +501,7 @@ export default function ComunidadePage() {
         isEvento: true,
       };
       
-      const docRef = await addDoc(collection(db, "comunidadePosts"), eventData);
-      console.log('Evento criado com ID:', docRef.id, eventData);
+      await addDoc(collection(db, "comunidadePosts"), eventData);
       
       setShowEventModal(false);
       setEventForm({
@@ -765,21 +764,7 @@ export default function ComunidadePage() {
         </div>
         {/* Feed de posts */}
         <div className="flex flex-col gap-6">
-          {/* Debug: Mostrar informações sobre eventos */}
-          {orderByTrending === 'relevant' && (
-            <div className="bg-blue-100 dark:bg-blue-900/20 p-4 rounded-lg text-sm">
-              <p className="font-semibold">Debug - Top Trending:</p>
-              <p>Total de posts: {posts.length}</p>
-              <p>Posts de evento: {posts.filter(p => p.isEvento).length}</p>
-              <p>Eventos agendados: {posts.filter(p => p.isEvento && p.eventoStatus === 'agendado').length}</p>
-            </div>
-          )}
-          
           {sortedPosts.map((post) => {
-            // Debug: Log para verificar se o post é um evento
-            if (post.isEvento) {
-              console.log('Post é evento:', post);
-            }
             
             const isAuthor = currentUser && post.userId === currentUser.uid;
             const isLiked = currentUser && post.likedBy?.includes(currentUser.uid);
