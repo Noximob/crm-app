@@ -183,7 +183,7 @@ export default function NotesWidget() {
 
         {/* Preview das notas recentes */}
         {recentNotes.length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#23283A] rounded-xl shadow-xl border border-[#E8E9F1] dark:border-[#23283A] p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50 min-w-[280px]">
+          <div className="absolute top-full right-0 mt-2 bg-white dark:bg-[#23283A] rounded-xl shadow-xl border border-[#E8E9F1] dark:border-[#23283A] p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50 min-w-[280px]">
             <div className="text-xs font-semibold text-white mb-2">Notas Recentes:</div>
             <div className="space-y-2">
               {recentNotes.map(note => (
