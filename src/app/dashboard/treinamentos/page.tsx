@@ -30,7 +30,7 @@ export default function TreinamentosPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('todos');
-  const [selectedVideo, setSelectedVideo] = useState<Treinamento | null>(null);
+  const [playingVideo, setPlayingVideo] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userData?.imobiliariaId) return;
@@ -92,15 +92,16 @@ export default function TreinamentosPage() {
 
   const handleVideoClick = (treinamento: Treinamento) => {
     if (treinamento.tipo === 'video') {
-      setSelectedVideo(treinamento);
+      // Se já está tocando, para. Se não, começa a tocar
+      if (playingVideo === treinamento.id) {
+        setPlayingVideo(null);
+      } else {
+        setPlayingVideo(treinamento.id);
+      }
     } else {
       // Para PDFs, abrir em nova aba
       window.open(treinamento.url, '_blank');
     }
-  };
-
-  const closeVideoModal = () => {
-    setSelectedVideo(null);
   };
 
   const getCategoriaIcon = (categoria: string) => {
@@ -178,33 +179,49 @@ export default function TreinamentosPage() {
                 className="bg-white dark:bg-[#23283A] rounded-xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer group"
                 onClick={() => handleVideoClick(treinamento)}
               >
-                {/* Thumbnail - Estilo YouTube */}
+                {/* Thumbnail/Player - Estilo YouTube */}
                 <div className="relative aspect-video bg-gray-200 dark:bg-gray-700 overflow-hidden">
-                  {treinamento.tipo === 'video' && getYouTubeThumbnail(treinamento.url) ? (
-                    <img
-                      src={getYouTubeThumbnail(treinamento.url)}
-                      alt={treinamento.titulo}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                    />
+                  {treinamento.tipo === 'video' && playingVideo === treinamento.id ? (
+                    // Player ativo
+                    <div className="w-full h-full">
+                      <iframe
+                        src={`${getYouTubeEmbedUrl(treinamento.url)}?autoplay=1`}
+                        title={treinamento.titulo}
+                        className="w-full h-full"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                    </div>
+                  ) : treinamento.tipo === 'video' && getYouTubeThumbnail(treinamento.url) ? (
+                    // Thumbnail com overlay
+                    <div className="relative w-full h-full">
+                      <img
+                        src={getYouTubeThumbnail(treinamento.url)}
+                        alt={treinamento.titulo}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                      />
+                      
+                      {/* Overlay com ícone de play - Estilo YouTube */}
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
+                        <div className="w-12 h-12 bg-black bg-opacity-80 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"/>
+                          </svg>
+                        </div>
+                      </div>
+
+                      {/* Duração do vídeo (simulado) */}
+                      <div className="absolute bottom-2 right-2 bg-black bg-opacity-80 text-white text-xs px-2 py-1 rounded">
+                        10:30
+                      </div>
+                    </div>
                   ) : (
+                    // PDF ou conteúdo não suportado
                     <div className="w-full h-full flex items-center justify-center">
                       <div className="text-4xl">📄</div>
                     </div>
                   )}
-                  
-                  {/* Overlay com ícone de play - Estilo YouTube */}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
-                    <div className="w-12 h-12 bg-black bg-opacity-80 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z"/>
-                      </svg>
-                    </div>
-                  </div>
-
-                  {/* Duração do vídeo (simulado) */}
-                  <div className="absolute bottom-2 right-2 bg-black bg-opacity-80 text-white text-xs px-2 py-1 rounded">
-                    {treinamento.tipo === 'video' ? '10:30' : 'PDF'}
-                  </div>
                 </div>
 
                 {/* Informações do vídeo - Estilo YouTube */}
@@ -238,43 +255,6 @@ export default function TreinamentosPage() {
           </div>
         )}
       </div>
-
-      {/* Modal de Vídeo */}
-      {selectedVideo && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] w-full max-w-4xl max-h-[90vh] overflow-hidden">
-            {/* Header do Modal */}
-            <div className="flex items-center justify-between p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
-              <div>
-                <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">{selectedVideo.titulo}</h2>
-                {selectedVideo.descricao && (
-                  <p className="text-sm text-[#6B6F76] dark:text-gray-300 mt-1">{selectedVideo.descricao}</p>
-                )}
-              </div>
-              <button
-                onClick={closeVideoModal}
-                className="text-[#6B6F76] hover:text-[#2E2F38] dark:text-gray-300 dark:hover:text-white text-2xl font-bold"
-              >
-                ✕
-              </button>
-            </div>
-            
-            {/* Player de Vídeo */}
-            <div className="p-6">
-              <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
-                <iframe
-                  src={`${getYouTubeEmbedUrl(selectedVideo.url)}?autoplay=1`}
-                  title={selectedVideo.titulo}
-                  className="w-full h-full"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                ></iframe>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 } 
