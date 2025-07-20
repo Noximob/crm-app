@@ -90,7 +90,7 @@ export default function AgendaPage() {
   const [crmTasks, setCrmTasks] = useState<CrmTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
+
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<AgendaItem | null>(null);
   const [filter, setFilter] = useState<'all' | 'crm' | 'nota' | 'agenda'>('all');
@@ -256,6 +256,12 @@ export default function AgendaPage() {
   };
 
   const handleEdit = (item: AgendaItem) => {
+    // Só permitir editar itens criados na agenda (source: 'agenda')
+    if (item.source !== 'agenda') {
+      console.log('Este item não pode ser editado - apenas visualização');
+      return;
+    }
+    
     setEditingItem(item);
     setFormData({
       titulo: item.titulo,
@@ -465,38 +471,7 @@ export default function AgendaPage() {
                 <option value="agenda">Agenda</option>
               </select>
 
-              <div className="flex items-center gap-2 bg-white dark:bg-[#23283A] rounded-xl p-1 border border-[#E8E9F1] dark:border-[#23283A]">
-                <button
-                  onClick={() => setViewMode('month')}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                    viewMode === 'month' 
-                      ? 'bg-[#3478F6] text-white shadow-md' 
-                      : 'text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] hover:bg-[#3478F6]/10'
-                  }`}
-                >
-                  Mês
-                </button>
-                <button
-                  onClick={() => setViewMode('week')}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                    viewMode === 'week' 
-                      ? 'bg-[#3478F6] text-white shadow-md' 
-                      : 'text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] hover:bg-[#3478F6]/10'
-                  }`}
-                >
-                  Semana
-                </button>
-                <button
-                  onClick={() => setViewMode('day')}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                    viewMode === 'day' 
-                      ? 'bg-[#3478F6] text-white shadow-md' 
-                      : 'text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] hover:bg-[#3478F6]/10'
-                  }`}
-                >
-                  Dia
-                </button>
-              </div>
+
             </div>
 
             <div className="flex items-center gap-4">
