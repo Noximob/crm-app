@@ -31,11 +31,20 @@ export default function TreinamentosPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('todos');
   const [playingVideo, setPlayingVideo] = useState<string | null>(null);
+  const [suggestedCategory, setSuggestedCategory] = useState<string>('todos');
 
   useEffect(() => {
     if (!userData?.imobiliariaId) return;
     fetchTreinamentos();
+    generateSuggestion();
   }, [userData]);
+
+  // Gerar sugestão aleatória de categoria
+  const generateSuggestion = () => {
+    const categoryKeys = categorias.filter(cat => cat.key !== 'todos').map(cat => cat.key);
+    const randomIndex = Math.floor(Math.random() * categoryKeys.length);
+    setSuggestedCategory(categoryKeys[randomIndex]);
+  };
 
   const fetchTreinamentos = async () => {
     setLoading(true);
@@ -57,8 +66,10 @@ export default function TreinamentosPage() {
           criadoEm: data.criadoEm?.toDate ? data.criadoEm.toDate() : new Date(data.criadoEm)
         } as Treinamento;
       });
-      treinamentosData.sort((a, b) => b.criadoEm.getTime() - a.criadoEm.getTime());
-      setTreinamentos(treinamentosData);
+      
+      // Embaralhar os treinamentos para mostrar sugestões diferentes
+      const shuffledData = treinamentosData.sort(() => Math.random() - 0.5);
+      setTreinamentos(shuffledData);
     } catch (err) {
       console.error('Erro ao carregar treinamentos:', err);
     } finally {
@@ -109,6 +120,16 @@ export default function TreinamentosPage() {
     return cat ? cat.icon : '🎬';
   };
 
+  const getSuggestedCategoryLabel = () => {
+    const cat = categorias.find(c => c.key === suggestedCategory);
+    return cat ? cat.label : 'Vendas';
+  };
+
+  const getSuggestedCategoryIcon = () => {
+    const cat = categorias.find(c => c.key === suggestedCategory);
+    return cat ? cat.icon : '📈';
+  };
+
   return (
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
       <div className="max-w-7xl mx-auto">
@@ -117,6 +138,34 @@ export default function TreinamentosPage() {
           <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">Treinamentos</h1>
           <p className="text-[#6B6F76] dark:text-gray-300">Capacite-se com nossos treinamentos exclusivos</p>
         </div>
+
+        {/* Sugestão Aleatória */}
+        {selectedCategory === 'todos' && !searchTerm && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-[#3478F6]/10 to-[#A3C8F7]/10 rounded-xl border border-[#3478F6]/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{getSuggestedCategoryIcon()}</span>
+                <div>
+                  <h3 className="font-semibold text-[#2E2F38] dark:text-white">
+                    Que tal explorar {getSuggestedCategoryLabel()}?
+                  </h3>
+                  <p className="text-sm text-[#6B6F76] dark:text-gray-300">
+                    Descubra novos conhecimentos nesta categoria
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setSelectedCategory(suggestedCategory);
+                  generateSuggestion();
+                }}
+                className="px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold rounded-lg transition-colors"
+              >
+                Explorar
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Barra de Busca */}
         <div className="mb-6">

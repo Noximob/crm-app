@@ -15,6 +15,10 @@ interface UserData {
   criadoEm: any;
   metodoCadastro: 'email' | 'google';
   photoURL?: string;
+  permissoes?: {
+    admin?: boolean;
+    developer?: boolean;
+  };
 }
 
 interface AuthContextType {

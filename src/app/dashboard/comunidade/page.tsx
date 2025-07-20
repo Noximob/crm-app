@@ -665,7 +665,7 @@ export default function ComunidadePage() {
                       <span className="text-xs text-[#6B6F76] dark:text-gray-300">
                         {post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}
                       </span>
-                      {isAuthor && (
+                      {(isAuthor || userData?.permissoes?.developer) && (
                         <ActionIcon
                           icon={deletando === post.id ? <span className="animate-spin">🗑️</span> : <span>🗑️</span>}
                           label=""
