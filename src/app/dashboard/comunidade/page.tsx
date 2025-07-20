@@ -778,13 +778,13 @@ export default function ComunidadePage() {
               <div
                 key={post.id}
                 className={`group relative backdrop-blur-sm rounded-2xl p-6 transition-all duration-300 cursor-pointer border hover:scale-[1.02] shadow-lg hover:shadow-xl ${
-                  post.isEvento && orderByTrending === 'relevant'
+                  post.isEvento
                     ? 'bg-gradient-to-r from-yellow-50/80 to-orange-50/80 dark:from-yellow-900/20 dark:to-orange-900/20 border-yellow-200/50 dark:border-yellow-700/50 hover:bg-gradient-to-r hover:from-yellow-100/90 hover:to-orange-100/90 dark:hover:from-yellow-800/30 dark:hover:to-orange-800/30'
                     : 'bg-white/60 dark:bg-[#23283A]/60 border-white/20 hover:bg-white/80 dark:hover:bg-[#23283A]/80 hover:border-[#3478F6]/30'
                 }`}
               >
-                {/* Badge Especial para eventos no Top Trending */}
-                {post.isEvento && orderByTrending === 'relevant' && (
+                {/* Badge Especial para eventos */}
+                {post.isEvento && (
                   <div className="absolute top-4 right-4 z-10">
                     <div className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg">
                       <span>⭐</span>

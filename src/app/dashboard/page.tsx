@@ -556,8 +556,23 @@ export default function DashboardPage() {
           })
         );
         
-        // Ordena por data de criação (mais recentes primeiro) e mostra todos
+        // Ordena priorizando eventos agendados, depois por data de criação
         const sortedPosts = postsWithCounts.sort((a, b) => {
+          // Priorizar eventos agendados no topo
+          const aIsEvent = a.isEvento && a.eventoStatus === 'agendado';
+          const bIsEvent = b.isEvento && b.eventoStatus === 'agendado';
+          
+          if (aIsEvent && !bIsEvent) return -1;
+          if (!aIsEvent && bIsEvent) return 1;
+          
+          // Se ambos são eventos, ordenar por data do evento
+          if (aIsEvent && bIsEvent) {
+            const aEventTime = a.eventoData instanceof Date ? a.eventoData : a.eventoData.toDate();
+            const bEventTime = b.eventoData instanceof Date ? b.eventoData : b.eventoData.toDate();
+            return aEventTime.getTime() - bEventTime.getTime();
+          }
+          
+          // Para posts normais, ordenar por data de criação (mais recentes primeiro)
           const aTime = a.createdAt?.toDate?.() || new Date(0);
           const bTime = b.createdAt?.toDate?.() || new Date(0);
           return bTime.getTime() - aTime.getTime();
@@ -818,6 +833,25 @@ export default function DashboardPage() {
     if (isNaN(a) || isNaN(b) || b === 0) return null;
     return ((a - b) / b) * 100;
   }
+
+  // Funções auxiliares para eventos
+  const getEventIcon = (tipo: string) => {
+    switch (tipo) {
+      case 'meet': return '🎥';
+      case 'youtube': return '📺';
+      case 'instagram': return '📱';
+      default: return '📅';
+    }
+  };
+
+  const getEventColor = (tipo: string) => {
+    switch (tipo) {
+      case 'meet': return 'bg-blue-500';
+      case 'youtube': return 'bg-red-500';
+      case 'instagram': return 'bg-pink-500';
+      default: return 'bg-gray-500';
+    }
+  };
 
   const indicadoresList = [
     { key: 'cub', label: 'CUB (SC)', tipo: 'mensal' },
@@ -1168,13 +1202,27 @@ export default function DashboardPage() {
                 {trendingPostsFiltered.map((post, index) => (
                   <div 
                     key={post.id} 
-                    className="group relative bg-white/60 dark:bg-[#23283A]/60 backdrop-blur-sm rounded-xl p-4 hover:bg-white/80 dark:hover:bg-[#23283A]/80 transition-all duration-300 cursor-pointer border border-white/20 hover:border-[#3478F6]/30 hover:scale-[1.02] shadow-lg hover:shadow-xl"
+                    className={`group relative backdrop-blur-sm rounded-xl p-4 transition-all duration-300 cursor-pointer border hover:scale-[1.02] shadow-lg hover:shadow-xl ${
+                      post.isEvento
+                        ? 'bg-gradient-to-r from-yellow-50/80 to-orange-50/80 dark:from-yellow-900/20 dark:to-orange-900/20 border-yellow-200/50 dark:border-yellow-700/50 hover:bg-gradient-to-r hover:from-yellow-100/90 hover:to-orange-100/90 dark:hover:from-yellow-800/30 dark:hover:to-orange-800/30'
+                        : 'bg-white/60 dark:bg-[#23283A]/60 border-white/20 hover:bg-white/80 dark:hover:bg-[#23283A]/80 hover:border-[#3478F6]/30'
+                    }`}
                     // onClick={() => openPostModal(post)}
                   >
                     {/* Badge de ranking */}
                     <div className="absolute -top-2 -left-2 w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
                       #{index + 1}
                     </div>
+
+                    {/* Badge Especial para eventos */}
+                    {post.isEvento && (
+                      <div className="absolute top-2 right-2 z-10">
+                        <div className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg">
+                          <span>⭐</span>
+                          <span>ESPECIAL</span>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Header do post */}
                     <div className="flex items-start gap-3 mb-3">
@@ -1196,6 +1244,29 @@ export default function DashboardPage() {
                             }
                           </span>
                         </div>
+                        
+                        {/* Badge de evento agendado */}
+                        {post.isEvento && (
+                          <div className="mb-2">
+                            <button
+                              onClick={() => window.open(post.eventoLink, '_blank')}
+                              className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold ${getEventColor(post.eventoTipo)} text-white hover:opacity-80 transition-opacity cursor-pointer`}
+                              title="Clique para participar do evento"
+                            >
+                              <span>{getEventIcon(post.eventoTipo)}</span>
+                              <span>{post.titulo}</span>
+                              <span className="text-xs opacity-90">
+                                {post.eventoData?.toDate ? post.eventoData.toDate().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}
+                              </span>
+                            </button>
+                            {post.eventoStatus === 'acontecendo' && (
+                              <div className="mt-1 inline-flex items-center gap-1 px-2 py-1 bg-green-500 text-white text-xs rounded-full font-semibold animate-pulse">
+                                <span>🔴</span>
+                                <span>AO VIVO</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
                         {/* Se for repost, mostrar SOMENTE o comentário do repostador e o card aninhado do post original */}
                         {post.repostOf ? (
                           <div>
