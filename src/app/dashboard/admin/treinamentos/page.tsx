@@ -8,7 +8,7 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 
 interface Treinamento {
   id: string;
-  categoria: 'audiobooks' | 'vendas' | 'mercado' | 'institucional' | 'gestão';
+  categorias: string[]; // Mudança para array de categorias
   titulo: string;
   descricao: string;
   tipo: 'video';
@@ -50,9 +50,9 @@ export default function TreinamentosAdminPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [editingTreinamento, setEditingTreinamento] = useState<Treinamento | null>(null);
-  const [selectedCategoria, setSelectedCategoria] = useState<'audiobooks' | 'vendas' | 'mercado' | 'institucional' | 'gestão'>('vendas');
+  const [selectedCategorias, setSelectedCategorias] = useState<string[]>(['vendas']); // Mudança para array
   const [formTreinamento, setFormTreinamento] = useState({
-    categoria: 'vendas' as 'audiobooks' | 'vendas' | 'mercado' | 'institucional' | 'gestão',
+    categorias: ['vendas'] as string[], // Mudança para array
     titulo: '',
     descricao: '',
     url: '',
@@ -71,22 +71,22 @@ export default function TreinamentosAdminPage() {
   useEffect(() => {
     if (!userData?.imobiliariaId) return;
     fetchTreinamentos();
-  }, [userData, selectedCategoria]);
+  }, [userData, selectedCategorias]);
 
   const fetchTreinamentos = async () => {
     setLoading(true);
     try {
+      // Buscar todos os treinamentos da imobiliária
       const q = query(
         collection(db, 'treinamentos'),
-        where('imobiliariaId', '==', userData?.imobiliariaId),
-        where('categoria', '==', selectedCategoria)
+        where('imobiliariaId', '==', userData?.imobiliariaId)
       );
       const snap = await getDocs(q);
       const treinamentosData = snap.docs.map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
-          categoria: data.categoria,
+          categorias: data.categorias || [data.categoria], // Suporte para dados antigos
           titulo: data.titulo,
           descricao: data.descricao,
           tipo: data.tipo,
@@ -94,8 +94,14 @@ export default function TreinamentosAdminPage() {
           criadoEm: data.criadoEm?.toDate ? data.criadoEm.toDate() : new Date(data.criadoEm)
         } as Treinamento;
       });
-      treinamentosData.sort((a, b) => b.criadoEm.getTime() - a.criadoEm.getTime());
-      setTreinamentos(treinamentosData);
+      
+      // Filtrar por categorias selecionadas
+      const filteredData = treinamentosData.filter(treinamento => 
+        selectedCategorias.some(cat => treinamento.categorias.includes(cat))
+      );
+      
+      filteredData.sort((a, b) => b.criadoEm.getTime() - a.criadoEm.getTime());
+      setTreinamentos(filteredData);
     } catch (err) {
       setMsg('Erro ao carregar treinamentos.');
     } finally {
@@ -157,9 +163,29 @@ export default function TreinamentosAdminPage() {
     }
   };
 
+  const handleCategoriaToggle = (categoriaKey: string) => {
+    setSelectedCategorias(prev => {
+      if (prev.includes(categoriaKey)) {
+        return prev.filter(cat => cat !== categoriaKey);
+      } else {
+        return [...prev, categoriaKey];
+      }
+    });
+  };
+
+  const handleFormCategoriaToggle = (categoriaKey: string) => {
+    setFormTreinamento(prev => {
+      const newCategorias = prev.categorias.includes(categoriaKey)
+        ? prev.categorias.filter(cat => cat !== categoriaKey)
+        : [...prev.categorias, categoriaKey];
+      
+      return { ...prev, categorias: newCategorias };
+    });
+  };
+
   const resetForm = () => {
     setFormTreinamento({
-      categoria: selectedCategoria,
+      categorias: ['vendas'],
       titulo: '',
       descricao: '',
       url: '',
@@ -179,12 +205,17 @@ export default function TreinamentosAdminPage() {
       setMsg('Por favor, insira um link válido do YouTube.');
       return;
     }
+
+    if (formTreinamento.categorias.length === 0) {
+      setMsg('Por favor, selecione pelo menos uma categoria.');
+      return;
+    }
     
     setUploading(true);
     setMsg(null);
     try {
       const treinamento = {
-        categoria: formTreinamento.categoria,
+        categorias: formTreinamento.categorias,
         titulo: formTreinamento.titulo.trim(),
         descricao: formTreinamento.descricao.trim(),
         tipo: 'video' as const,
@@ -207,7 +238,7 @@ export default function TreinamentosAdminPage() {
   const handleEditTreinamento = (treinamento: Treinamento) => {
     setEditingTreinamento(treinamento);
     setFormTreinamento({
-      categoria: treinamento.categoria,
+      categorias: treinamento.categorias,
       titulo: treinamento.titulo,
       descricao: treinamento.descricao,
       url: treinamento.url,
@@ -232,12 +263,17 @@ export default function TreinamentosAdminPage() {
       setMsg('Por favor, insira um link válido do YouTube.');
       return;
     }
+
+    if (formTreinamento.categorias.length === 0) {
+      setMsg('Por favor, selecione pelo menos uma categoria.');
+      return;
+    }
     
     setUploading(true);
     setMsg(null);
     try {
       await updateDoc(doc(db, 'treinamentos', editingTreinamento.id), {
-        categoria: formTreinamento.categoria,
+        categorias: formTreinamento.categorias,
         titulo: formTreinamento.titulo.trim(),
         descricao: formTreinamento.descricao.trim(),
         url: formTreinamento.url.trim(),
@@ -293,21 +329,29 @@ export default function TreinamentosAdminPage() {
             </h2>
             
             <form onSubmit={editingTreinamento ? handleUpdateTreinamento : handleAddTreinamento} className="space-y-4">
-              {/* Categoria */}
+              {/* Categorias */}
               <div>
-                <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Categoria</label>
-                <select
-                  value={formTreinamento.categoria}
-                  onChange={(e) => setFormTreinamento({ ...formTreinamento, categoria: e.target.value as any })}
-                  className="w-full rounded-lg border px-3 py-2 bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
-                  required
-                >
+                <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Categorias</label>
+                <div className="flex flex-wrap gap-2">
                   {categorias.map((cat) => (
-                    <option key={cat.key} value={cat.key}>
-                      {cat.icon} {cat.label}
-                    </option>
+                    <button
+                      key={cat.key}
+                      type="button"
+                      onClick={() => handleFormCategoriaToggle(cat.key)}
+                      className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        formTreinamento.categorias.includes(cat.key)
+                          ? 'bg-[#3478F6] text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-[#6B6F76] dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      <span>{cat.icon}</span>
+                      <span>{cat.label}</span>
+                    </button>
                   ))}
-                </select>
+                </div>
+                {formTreinamento.categorias.length === 0 && (
+                  <p className="text-sm text-red-500 mt-1">Selecione pelo menos uma categoria</p>
+                )}
               </div>
 
               {/* Link do YouTube */}
@@ -396,17 +440,17 @@ export default function TreinamentosAdminPage() {
 
           {/* Lista de Treinamentos */}
           <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Treinamentos</h2>
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4">Treinamentos</h2>
               
               {/* Filtro de Categoria */}
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {categorias.map((categoria) => (
                   <button
                     key={categoria.key}
-                    onClick={() => setSelectedCategoria(categoria.key as any)}
-                    className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 ${
-                      selectedCategoria === categoria.key
+                    onClick={() => handleCategoriaToggle(categoria.key)}
+                    className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      selectedCategorias.includes(categoria.key)
                         ? 'bg-[#3478F6] text-white'
                         : 'bg-gray-100 dark:bg-gray-700 text-[#6B6F76] dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }`}
@@ -451,6 +495,22 @@ export default function TreinamentosAdminPage() {
                             {treinamento.descricao}
                           </p>
                         )}
+                        
+                        {/* Categorias do treinamento */}
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {treinamento.categorias.map((cat) => {
+                            const categoria = categorias.find(c => c.key === cat);
+                            return categoria ? (
+                              <span
+                                key={cat}
+                                className="px-2 py-1 bg-[#3478F6]/10 text-[#3478F6] text-xs rounded-full"
+                              >
+                                {categoria.icon} {categoria.label}
+                              </span>
+                            ) : null;
+                          })}
+                        </div>
+                        
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-[#6B6F76] dark:text-gray-400">
                             {treinamento.criadoEm.toLocaleDateString('pt-BR')}
