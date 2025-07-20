@@ -448,9 +448,15 @@ export default function DashboardPage() {
   // Buscar avisos importantes
   useEffect(() => {
     const fetchAvisos = async () => {
-      if (!userData?.imobiliariaId) return;
+      console.log('fetchAvisos chamado, userData:', userData);
+      if (!userData?.imobiliariaId) {
+        console.log('userData ou imobiliariaId não encontrado');
+        return;
+      }
+      console.log('Buscando avisos para imobiliariaId:', userData.imobiliariaId);
       const q = query(collection(db, 'avisosImportantes'), where('imobiliariaId', '==', userData.imobiliariaId));
       const snapshot = await getDocs(q);
+      console.log('Avisos encontrados:', snapshot.docs.length);
       setAvisosImportantes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     };
     fetchAvisos();
@@ -458,12 +464,17 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchTrendingPosts = async () => {
-      if (!userData?.imobiliariaId) return;
+      console.log('fetchTrendingPosts chamado, userData:', userData);
+      if (!userData?.imobiliariaId) {
+        console.log('userData ou imobiliariaId não encontrado para trending posts');
+        return;
+      }
       setTrendingLoading(true);
       try {
         const postsRef = collection(db, 'comunidadePosts');
         const q = query(postsRef, orderBy('createdAt', 'desc'));
         const snapshot = await getDocs(q);
+        console.log('Posts encontrados:', snapshot.docs.length);
         const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
         // Buscar contadores de comentários e reposts para cada post
@@ -692,16 +703,27 @@ export default function DashboardPage() {
 
   // Buscar dados da meta e nome da imobiliária
   useEffect(() => {
-    if (!userData?.imobiliariaId) return;
+    console.log('useEffect metas chamado, userData:', userData);
+    if (!userData?.imobiliariaId) {
+      console.log('userData ou imobiliariaId não encontrado para metas');
+      return;
+    }
+    console.log('Buscando metas para imobiliariaId:', userData.imobiliariaId);
     let unsubscribe: (() => void) | undefined;
 
     // Buscar nome da imobiliária
     const fetchNomeImobiliaria = async () => {
       try {
+        console.log('Buscando nome da imobiliária...');
         const imobiliariaRef = firestoreDoc(db, 'imobiliarias', userData.imobiliariaId!);
         const imobiliariaSnap = await getDoc(imobiliariaRef);
         if (imobiliariaSnap.exists()) {
-          setNomeImobiliaria(imobiliariaSnap.data().nome || 'Imobiliária');
+          const nome = imobiliariaSnap.data().nome || 'Imobiliária';
+          console.log('Nome da imobiliária encontrado:', nome);
+          setNomeImobiliaria(nome);
+        } else {
+          console.log('Imobiliária não encontrada no Firestore');
+          setNomeImobiliaria('Imobiliária');
         }
       } catch (error) {
         console.error('Erro ao buscar nome da imobiliária:', error);
@@ -712,17 +734,23 @@ export default function DashboardPage() {
     fetchNomeImobiliaria();
 
     // Buscar meta
+    console.log('Configurando listener para metas...');
     const metaRef = firestoreDoc(db, 'metas', userData.imobiliariaId);
     unsubscribe = onSnapshot(metaRef, (snap) => {
       if (snap.exists()) {
+        console.log('Meta encontrada:', snap.data());
         setMeta(snap.data());
       } else {
+        console.log('Meta não encontrada');
         setMeta(null);
       }
     });
 
     return () => {
-      if (unsubscribe) unsubscribe();
+      if (unsubscribe) {
+        console.log('Desconectando listener de metas');
+        unsubscribe();
+      }
     };
   }, [userData]);
 
