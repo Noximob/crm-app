@@ -18,12 +18,10 @@ interface Treinamento {
 const categorias = [
   { key: 'todos', label: 'Todos', icon: '🎬', color: 'bg-gray-500' },
   { key: 'vendas', label: 'Vendas', icon: '📈', color: 'bg-blue-500' },
-  { key: 'técnicas', label: 'Técnicas', icon: '🛠️', color: 'bg-green-500' },
+  { key: 'audiobooks', label: 'Áudio Book', icon: '📚', color: 'bg-teal-500' },
   { key: 'mercado', label: 'Mercado', icon: '🏢', color: 'bg-purple-500' },
-  { key: 'motivacional', label: 'Motivacional', icon: '💪', color: 'bg-orange-500' },
-  { key: 'gestão', label: 'Gestão', icon: '👔', color: 'bg-indigo-500' },
   { key: 'institucional', label: 'Institucional', icon: '🏛️', color: 'bg-red-500' },
-  { key: 'audiobooks', label: 'Áudio Books', icon: '📚', color: 'bg-teal-500' },
+  { key: 'gestão', label: 'Gestão', icon: '👔', color: 'bg-indigo-500' },
 ];
 
 export default function TreinamentosPage() {
@@ -32,6 +30,7 @@ export default function TreinamentosPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('todos');
+  const [selectedVideo, setSelectedVideo] = useState<Treinamento | null>(null);
 
   useEffect(() => {
     if (!userData?.imobiliariaId) return;
@@ -85,8 +84,17 @@ export default function TreinamentosPage() {
     return matchesSearch && matchesCategory;
   });
 
-  const handleVideoClick = (url: string) => {
-    window.open(url, '_blank');
+  const handleVideoClick = (treinamento: Treinamento) => {
+    if (treinamento.tipo === 'video') {
+      setSelectedVideo(treinamento);
+    } else {
+      // Para PDFs, abrir em nova aba
+      window.open(treinamento.url, '_blank');
+    }
+  };
+
+  const closeVideoModal = () => {
+    setSelectedVideo(null);
   };
 
   return (
@@ -157,7 +165,7 @@ export default function TreinamentosPage() {
               <div
                 key={treinamento.id}
                 className="bg-white dark:bg-[#23283A] rounded-xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer group"
-                onClick={() => handleVideoClick(treinamento.url)}
+                onClick={() => handleVideoClick(treinamento)}
               >
                 {/* Thumbnail */}
                 <div className="relative aspect-video bg-gray-200 dark:bg-gray-700 overflow-hidden">
@@ -181,15 +189,6 @@ export default function TreinamentosPage() {
                       </svg>
                     </div>
                   </div>
-
-                  {/* Badge de categoria */}
-                  <div className="absolute top-2 left-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${
-                      categorias.find(c => c.key === treinamento.categoria)?.color || 'bg-gray-500'
-                    }`}>
-                      {categorias.find(c => c.key === treinamento.categoria)?.label}
-                    </span>
-                  </div>
                 </div>
 
                 {/* Informações do vídeo */}
@@ -212,6 +211,43 @@ export default function TreinamentosPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de Vídeo */}
+      {selectedVideo && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            {/* Header do Modal */}
+            <div className="flex items-center justify-between p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
+              <div>
+                <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">{selectedVideo.titulo}</h2>
+                {selectedVideo.descricao && (
+                  <p className="text-sm text-[#6B6F76] dark:text-gray-300 mt-1">{selectedVideo.descricao}</p>
+                )}
+              </div>
+              <button
+                onClick={closeVideoModal}
+                className="text-[#6B6F76] hover:text-[#2E2F38] dark:text-gray-300 dark:hover:text-white text-2xl font-bold"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {/* Player de Vídeo */}
+            <div className="p-6">
+              <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+                <iframe
+                  src={`https://www.youtube.com/embed/${getYouTubeVideoId(selectedVideo.url)}?autoplay=1`}
+                  title={selectedVideo.titulo}
+                  className="w-full h-full"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
