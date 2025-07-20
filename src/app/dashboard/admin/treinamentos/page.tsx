@@ -8,25 +8,23 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 
 interface Treinamento {
   id: string;
-  categoria: 'audiobooks' | 'vendas' | 'mercado' | 'institucional';
+  categoria: 'audiobooks' | 'vendas' | 'mercado' | 'institucional' | 'gestão';
   titulo: string;
   descricao: string;
-  tipo: 'video' | 'pdf';
+  tipo: 'video';
   url: string;
-  arquivo?: File;
   criadoEm: Date;
+}
+
+interface YouTubeVideoInfo {
+  title: string;
+  description: string;
+  thumbnail: string;
 }
 
 const PlayIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <polygon points="5 3 19 12 5 21 5 3"/>
-  </svg>
-);
-
-const FileIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
-    <polyline points="14 2 14 8 20 8"/>
   </svg>
 );
 
@@ -52,24 +50,22 @@ export default function TreinamentosAdminPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [editingTreinamento, setEditingTreinamento] = useState<Treinamento | null>(null);
-  const [selectedCategoria, setSelectedCategoria] = useState<'audiobooks' | 'vendas' | 'mercado' | 'institucional'>('audiobooks');
+  const [selectedCategoria, setSelectedCategoria] = useState<'audiobooks' | 'vendas' | 'mercado' | 'institucional' | 'gestão'>('vendas');
   const [formTreinamento, setFormTreinamento] = useState({
-    categoria: 'audiobooks' as 'audiobooks' | 'vendas' | 'mercado' | 'institucional',
+    categoria: 'vendas' as 'audiobooks' | 'vendas' | 'mercado' | 'institucional' | 'gestão',
     titulo: '',
     descricao: '',
-    tipo: 'video' as 'video' | 'pdf',
     url: '',
-    arquivo: null as File | null
   });
+  const [youtubeInfo, setYoutubeInfo] = useState<YouTubeVideoInfo | null>(null);
+  const [fetchingYoutube, setFetchingYoutube] = useState(false);
 
   const categorias = [
     { key: 'vendas', label: 'Vendas', icon: '📈' },
-    { key: 'técnicas', label: 'Técnicas', icon: '🛠️' },
+    { key: 'audiobooks', label: 'Áudio Book', icon: '📚' },
     { key: 'mercado', label: 'Mercado', icon: '🏢' },
-    { key: 'motivacional', label: 'Motivacional', icon: '💪' },
-    { key: 'gestão', label: 'Gestão', icon: '👔' },
     { key: 'institucional', label: 'Institucional', icon: '🏛️' },
-    { key: 'audiobooks', label: 'Áudio Books', icon: '📚' }
+    { key: 'gestão', label: 'Gestão', icon: '👔' }
   ];
 
   useEffect(() => {
@@ -107,43 +103,92 @@ export default function TreinamentosAdminPage() {
     }
   };
 
+  const getYouTubeVideoId = (url: string) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : undefined;
+  };
+
+  const getYouTubeThumbnail = (url: string) => {
+    const videoId = getYouTubeVideoId(url);
+    return videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : undefined;
+  };
+
+  const fetchYouTubeInfo = async (url: string) => {
+    const videoId = getYouTubeVideoId(url);
+    if (!videoId) return null;
+
+    setFetchingYoutube(true);
+    try {
+      // Usar a API pública do YouTube para buscar informações do vídeo
+      const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          title: data.title,
+          description: data.title, // Usar o título como descrição por padrão
+          thumbnail: getYouTubeThumbnail(url) || ''
+        };
+      }
+    } catch (err) {
+      console.error('Erro ao buscar informações do YouTube:', err);
+    } finally {
+      setFetchingYoutube(false);
+    }
+    return null;
+  };
+
+  const handleUrlChange = async (url: string) => {
+    setFormTreinamento({ ...formTreinamento, url });
+    
+    if (url && getYouTubeVideoId(url)) {
+      const info = await fetchYouTubeInfo(url);
+      if (info) {
+        setYoutubeInfo(info);
+        setFormTreinamento({
+          ...formTreinamento,
+          url,
+          titulo: info.title,
+          descricao: info.description
+        });
+      }
+    } else {
+      setYoutubeInfo(null);
+    }
+  };
+
   const resetForm = () => {
     setFormTreinamento({
       categoria: selectedCategoria,
       titulo: '',
       descricao: '',
-      tipo: 'video',
       url: '',
-      arquivo: null
     });
+    setYoutubeInfo(null);
     setEditingTreinamento(null);
   };
 
   const handleAddTreinamento = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formTreinamento.titulo.trim() || (!formTreinamento.url && !formTreinamento.arquivo)) {
-      setMsg('Por favor, preencha os campos obrigatórios.');
+    if (!formTreinamento.titulo.trim() || !formTreinamento.url.trim()) {
+      setMsg('Por favor, preencha o link do YouTube.');
+      return;
+    }
+    
+    if (!getYouTubeVideoId(formTreinamento.url)) {
+      setMsg('Por favor, insira um link válido do YouTube.');
       return;
     }
     
     setUploading(true);
     setMsg(null);
     try {
-      let finalUrl = formTreinamento.url;
-
-      // Upload do arquivo PDF se selecionado
-      if (formTreinamento.arquivo && formTreinamento.tipo === 'pdf') {
-        const arquivoRef = ref(storage, `treinamentos/${userData?.imobiliariaId}/${Date.now()}_${formTreinamento.arquivo.name}`);
-        const snapshot = await uploadBytes(arquivoRef, formTreinamento.arquivo);
-        finalUrl = await getDownloadURL(snapshot.ref);
-      }
-
       const treinamento = {
         categoria: formTreinamento.categoria,
         titulo: formTreinamento.titulo.trim(),
         descricao: formTreinamento.descricao.trim(),
-        tipo: formTreinamento.tipo,
-        url: finalUrl,
+        tipo: 'video' as const,
+        url: formTreinamento.url.trim(),
         imobiliariaId: userData?.imobiliariaId,
         criadoEm: Timestamp.now(),
       };
@@ -165,40 +210,39 @@ export default function TreinamentosAdminPage() {
       categoria: treinamento.categoria,
       titulo: treinamento.titulo,
       descricao: treinamento.descricao,
-      tipo: treinamento.tipo,
       url: treinamento.url,
-      arquivo: null
     });
+    if (treinamento.url) {
+      setYoutubeInfo({
+        title: treinamento.titulo,
+        description: treinamento.descricao,
+        thumbnail: getYouTubeThumbnail(treinamento.url) || ''
+      });
+    }
   };
 
   const handleUpdateTreinamento = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingTreinamento || !formTreinamento.titulo.trim() || (!formTreinamento.url && !formTreinamento.arquivo)) {
-      setMsg('Por favor, preencha os campos obrigatórios.');
+    if (!editingTreinamento || !formTreinamento.titulo.trim() || !formTreinamento.url.trim()) {
+      setMsg('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+    
+    if (!getYouTubeVideoId(formTreinamento.url)) {
+      setMsg('Por favor, insira um link válido do YouTube.');
       return;
     }
     
     setUploading(true);
     setMsg(null);
     try {
-      let finalUrl = formTreinamento.url;
-
-      // Upload do arquivo PDF se selecionado
-      if (formTreinamento.arquivo && formTreinamento.tipo === 'pdf') {
-        const arquivoRef = ref(storage, `treinamentos/${userData?.imobiliariaId}/${Date.now()}_${formTreinamento.arquivo.name}`);
-        const snapshot = await uploadBytes(arquivoRef, formTreinamento.arquivo);
-        finalUrl = await getDownloadURL(snapshot.ref);
-      }
-
-      const updateData = {
+      await updateDoc(doc(db, 'treinamentos', editingTreinamento.id), {
         categoria: formTreinamento.categoria,
         titulo: formTreinamento.titulo.trim(),
         descricao: formTreinamento.descricao.trim(),
-        tipo: formTreinamento.tipo,
-        url: finalUrl,
-      };
-
-      await updateDoc(doc(db, 'treinamentos', editingTreinamento.id), updateData);
+        url: formTreinamento.url.trim(),
+      });
+      
       resetForm();
       fetchTreinamentos();
       setMsg('Treinamento atualizado com sucesso!');
@@ -224,282 +268,214 @@ export default function TreinamentosAdminPage() {
     }
   };
 
-  const getYouTubeVideoId = (url: string) => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : undefined;
-  };
-
-  const getYouTubeThumbnail = (url: string) => {
-    const videoId = getYouTubeVideoId(url);
-    return videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : undefined;
-  };
-
   return (
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">Gerenciar Treinamentos</h1>
-            <p className="text-[#6B6F76] dark:text-gray-300">Adicione e gerencie treinamentos para sua equipe</p>
-          </div>
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">Gestão de Treinamentos</h1>
+          <p className="text-[#6B6F76] dark:text-gray-300">Adicione e gerencie treinamentos para sua equipe</p>
         </div>
 
+        {/* Mensagem */}
         {msg && (
           <div className={`p-4 rounded-lg mb-6 ${msg.includes('Erro') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
             {msg}
           </div>
         )}
 
-        {/* Seletor de Categoria */}
-        <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-6">
-          <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4">Selecionar Categoria</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {categorias.map((categoria) => (
-              <button
-                key={categoria.key}
-                onClick={() => setSelectedCategoria(categoria.key as any)}
-                className={`p-4 rounded-xl border-2 transition-all ${
-                  selectedCategoria === categoria.key
-                    ? 'border-[#3478F6] bg-[#3478F6]/10'
-                    : 'border-[#E8E9F1] dark:border-[#23283A] hover:border-[#3478F6]/50'
-                }`}
-              >
-                <div className="text-2xl mb-2">{categoria.icon}</div>
-                <div className="font-semibold text-[#2E2F38] dark:text-white">{categoria.label}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Formulário */}
-          <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] sticky top-6">
-              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                {categorias.find(c => c.key === selectedCategoria)?.icon}
-                {editingTreinamento ? 'Editar Treinamento' : 'Adicionar Treinamento'}
-              </h2>
-              
-              <form onSubmit={editingTreinamento ? handleUpdateTreinamento : handleAddTreinamento} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Título *</label>
-                  <input
-                    type="text"
-                    value={formTreinamento.titulo}
-                    onChange={e => setFormTreinamento({ ...formTreinamento, titulo: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
-                    placeholder="Ex: Técnicas de Vendas Avançadas"
-                    required
-                  />
-                </div>
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+            <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-6 flex items-center gap-2">
+              <PlayIcon className="h-6 w-6 text-[#3478F6]" />
+              {editingTreinamento ? 'Editar Treinamento' : 'Novo Treinamento'}
+            </h2>
+            
+            <form onSubmit={editingTreinamento ? handleUpdateTreinamento : handleAddTreinamento} className="space-y-4">
+              {/* Categoria */}
+              <div>
+                <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Categoria</label>
+                <select
+                  value={formTreinamento.categoria}
+                  onChange={(e) => setFormTreinamento({ ...formTreinamento, categoria: e.target.value as any })}
+                  className="w-full rounded-lg border px-3 py-2 bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                  required
+                >
+                  {categorias.map((cat) => (
+                    <option key={cat.key} value={cat.key}>
+                      {cat.icon} {cat.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Descrição</label>
-                  <textarea
-                    value={formTreinamento.descricao}
-                    onChange={e => setFormTreinamento({ ...formTreinamento, descricao: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white min-h-[80px]"
-                    placeholder="Descreva o conteúdo do treinamento"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Tipo *</label>
-                  <select
-                    value={formTreinamento.tipo}
-                    onChange={e => setFormTreinamento({ ...formTreinamento, tipo: e.target.value as 'video' | 'pdf' })}
-                    className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
-                  >
-                    <option value="video">Vídeo (YouTube)</option>
-                    <option value="pdf">PDF</option>
-                  </select>
-                </div>
-
-                {formTreinamento.tipo === 'video' ? (
-                  <div>
-                    <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">URL do YouTube *</label>
-                    <input
-                      type="url"
-                      value={formTreinamento.url}
-                      onChange={e => setFormTreinamento({ ...formTreinamento, url: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
-                      placeholder="https://www.youtube.com/watch?v=..."
-                      required
-                    />
-                  </div>
-                ) : (
-                  <div>
-                    <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Arquivo PDF *</label>
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      onChange={e => {
-                        const file = e.target.files?.[0] || null;
-                        setFormTreinamento({ ...formTreinamento, arquivo: file });
-                      }}
-                      className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
-                      required={!editingTreinamento}
-                    />
-                    {formTreinamento.arquivo && (
-                      <p className="text-sm text-[#6B6F76] dark:text-gray-300 mt-2">
-                        Arquivo selecionado: {formTreinamento.arquivo.name}
-                      </p>
-                    )}
-                  </div>
+              {/* Link do YouTube */}
+              <div>
+                <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Link do YouTube</label>
+                <input
+                  type="url"
+                  value={formTreinamento.url}
+                  onChange={(e) => handleUrlChange(e.target.value)}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className="w-full rounded-lg border px-3 py-2 bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                  required
+                />
+                {fetchingYoutube && (
+                  <p className="text-sm text-[#3478F6] mt-1">Buscando informações do vídeo...</p>
                 )}
+              </div>
 
-                <div className="flex gap-3">
-                  <button
-                    type="submit"
-                    disabled={uploading}
-                    className="flex-1 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    {uploading ? 'Salvando...' : (editingTreinamento ? 'Atualizar' : 'Adicionar')}
-                  </button>
-                  {editingTreinamento && (
-                    <button
-                      type="button"
-                      onClick={resetForm}
-                      className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                  )}
+              {/* Preview do YouTube */}
+              {youtubeInfo && (
+                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="flex items-center gap-3 mb-3">
+                    <img 
+                      src={youtubeInfo.thumbnail} 
+                      alt="Thumbnail" 
+                      className="w-16 h-12 object-cover rounded"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold text-[#2E2F38] dark:text-white">
+                        {youtubeInfo.title}
+                      </p>
+                      <p className="text-xs text-[#6B6F76] dark:text-gray-300">
+                        Título original do YouTube
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </form>
-            </div>
+              )}
+
+              {/* Título */}
+              <div>
+                <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Título</label>
+                <input
+                  type="text"
+                  value={formTreinamento.titulo}
+                  onChange={(e) => setFormTreinamento({ ...formTreinamento, titulo: e.target.value })}
+                  placeholder="Título do treinamento"
+                  className="w-full rounded-lg border px-3 py-2 bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                  required
+                />
+              </div>
+
+              {/* Descrição */}
+              <div>
+                <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Descrição (opcional)</label>
+                <textarea
+                  value={formTreinamento.descricao}
+                  onChange={(e) => setFormTreinamento({ ...formTreinamento, descricao: e.target.value })}
+                  placeholder="Descrição do treinamento..."
+                  rows={3}
+                  className="w-full rounded-lg border px-3 py-2 bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                />
+              </div>
+
+              {/* Botões */}
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={uploading}
+                  className="flex-1 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {uploading ? 'Salvando...' : (editingTreinamento ? 'Atualizar' : 'Adicionar')}
+                </button>
+                {editingTreinamento && (
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
+            </form>
           </div>
 
           {/* Lista de Treinamentos */}
-          <div className="lg:col-span-2">
-            <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4">
-                {categorias.find(c => c.key === selectedCategoria)?.label} - Treinamentos
-              </h2>
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Treinamentos</h2>
               
-              {loading ? (
-                <div className="text-center py-8">Carregando...</div>
-              ) : treinamentos.length === 0 ? (
-                <div className="text-center py-8 text-[#6B6F76] dark:text-gray-300">
-                  Nenhum treinamento cadastrado nesta categoria
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* PDFs primeiro */}
-                  {treinamentos.filter(t => t.tipo === 'pdf').map((treinamento) => (
-                    <div
-                      key={treinamento.id}
-                      className="p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0">
-                          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
-                            <FileIcon className="h-8 w-8 text-red-500" />
-                          </div>
-                        </div>
-
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-[#2E2F38] dark:text-white mb-1">
-                            {treinamento.titulo}
-                          </h3>
-                          {treinamento.descricao && (
-                            <p className="text-sm text-[#6B6F76] dark:text-gray-300 mb-2">
-                              {treinamento.descricao}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-2">
-                            <a
-                              href={treinamento.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="px-3 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors flex items-center gap-1"
-                            >
-                              <FileIcon className="h-3 w-3" />
-                              Download
-                            </a>
-                            <button
-                              onClick={() => handleEditTreinamento(treinamento)}
-                              className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-xs rounded transition-colors flex items-center gap-1"
-                            >
-                              <EditIcon className="h-3 w-3" />
-                              Editar
-                            </button>
-                            <button
-                              onClick={() => handleDeleteTreinamento(treinamento.id)}
-                              className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors flex items-center gap-1"
-                            >
-                              <TrashIcon className="h-3 w-3" />
-                              Excluir
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Vídeos depois */}
-                  {treinamentos.filter(t => t.tipo === 'video').map((treinamento) => (
-                    <div
-                      key={treinamento.id}
-                      className="p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0">
-                          {getYouTubeThumbnail(treinamento.url) ? (
-                            <img
-                              src={getYouTubeThumbnail(treinamento.url)}
-                              alt="Thumbnail do vídeo"
-                              className="w-24 h-16 object-cover rounded-lg"
-                            />
-                          ) : (
-                            <div className="w-24 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                              <PlayIcon className="h-6 w-6 text-gray-500" />
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-[#2E2F38] dark:text-white mb-1">
-                            {treinamento.titulo}
-                          </h3>
-                          {treinamento.descricao && (
-                            <p className="text-sm text-[#6B6F76] dark:text-gray-300 mb-2">
-                              {treinamento.descricao}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-2">
-                            <a
-                              href={treinamento.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors flex items-center gap-1"
-                            >
-                              <PlayIcon className="h-3 w-3" />
-                              Assistir
-                            </a>
-                            <button
-                              onClick={() => handleEditTreinamento(treinamento)}
-                              className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-xs rounded transition-colors flex items-center gap-1"
-                            >
-                              <EditIcon className="h-3 w-3" />
-                              Editar
-                            </button>
-                            <button
-                              onClick={() => handleDeleteTreinamento(treinamento.id)}
-                              className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors flex items-center gap-1"
-                            >
-                              <TrashIcon className="h-3 w-3" />
-                              Excluir
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {/* Filtro de Categoria */}
+              <div className="flex gap-2">
+                {categorias.map((categoria) => (
+                  <button
+                    key={categoria.key}
+                    onClick={() => setSelectedCategoria(categoria.key as any)}
+                    className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 ${
+                      selectedCategoria === categoria.key
+                        ? 'bg-[#3478F6] text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-[#6B6F76] dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    <span>{categoria.icon}</span>
+                    <span>{categoria.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {loading ? (
+              <div className="text-center py-8">Carregando...</div>
+            ) : treinamentos.length === 0 ? (
+              <div className="text-center py-8 text-[#6B6F76] dark:text-gray-300">
+                Nenhum treinamento encontrado
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {treinamentos.map((treinamento) => (
+                  <div
+                    key={treinamento.id}
+                    className="p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors"
+                  >
+                    <div className="flex items-start gap-4">
+                      {/* Thumbnail */}
+                      <div className="flex-shrink-0">
+                        <img
+                          src={getYouTubeThumbnail(treinamento.url)}
+                          alt={treinamento.titulo}
+                          className="w-20 h-15 object-cover rounded"
+                        />
+                      </div>
+                      
+                      {/* Informações */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-[#2E2F38] dark:text-white text-sm mb-1 line-clamp-2">
+                          {treinamento.titulo}
+                        </h3>
+                        {treinamento.descricao && (
+                          <p className="text-xs text-[#6B6F76] dark:text-gray-300 mb-2 line-clamp-2">
+                            {treinamento.descricao}
+                          </p>
+                        )}
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-[#6B6F76] dark:text-gray-400">
+                            {treinamento.criadoEm.toLocaleDateString('pt-BR')}
+                          </span>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEditTreinamento(treinamento)}
+                              className="p-1 text-[#3478F6] hover:bg-[#3478F6]/10 rounded transition-colors"
+                            >
+                              <EditIcon className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTreinamento(treinamento.id)}
+                              className="p-1 text-red-500 hover:bg-red-500/10 rounded transition-colors"
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
