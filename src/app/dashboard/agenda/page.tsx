@@ -216,18 +216,24 @@ export default function AgendaPage() {
       days.push(
         <div
           key={i}
-          className={`p-2 border border-gray-200 min-h-[100px] ${
-            date.getMonth() === currentMonth ? 'bg-white' : 'bg-gray-50'
-          } ${date.toDateString() === today.toDateString() ? 'bg-blue-50 border-blue-300' : ''}`}
+          className={`p-3 border-r border-b border-[#E8E9F1] dark:border-[#23283A] min-h-[120px] transition-all duration-200 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] ${
+            date.getMonth() === currentMonth ? 'bg-white dark:bg-[#23283A]' : 'bg-gray-50 dark:bg-[#181C23]'
+          } ${date.toDateString() === today.toDateString() ? 'bg-gradient-to-br from-[#3478F6]/10 to-[#A3C8F7]/10 border-[#3478F6]/30' : ''}`}
         >
-          <div className="text-sm font-medium mb-1">
+          <div className={`text-sm font-bold mb-2 ${
+            date.toDateString() === today.toDateString() 
+              ? 'text-[#3478F6]' 
+              : date.getMonth() === currentMonth 
+                ? 'text-[#2E2F38] dark:text-white' 
+                : 'text-[#6B6F76] dark:text-gray-400'
+          }`}>
             {date.getDate()}
           </div>
           <div className="space-y-1">
             {items.slice(0, 3).map((item) => (
               <div
                 key={item.id}
-                className={`text-xs p-1 rounded ${tipoCores[item.tipo]} text-white truncate cursor-pointer hover:opacity-80`}
+                className={`text-xs p-2 rounded-lg ${tipoCores[item.tipo]} text-white truncate cursor-pointer hover:opacity-80 transition-opacity duration-200 shadow-sm`}
                 onClick={() => handleEdit(item)}
                 title={item.titulo}
               >
@@ -235,7 +241,7 @@ export default function AgendaPage() {
               </div>
             ))}
             {items.length > 3 && (
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-[#6B6F76] dark:text-gray-400 font-medium">
                 +{items.length - 3} mais
               </div>
             )}
@@ -256,226 +262,279 @@ export default function AgendaPage() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-[#2E2F38] dark:text-white">Agenda Completa</h1>
-          <p className="text-[#6B6F76] dark:text-gray-300">Organize seus compromissos pessoais e profissionais</p>
-        </div>
-        <button
-          onClick={() => {
-            resetForm();
-            setShowModal(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#255FD1] transition-colors"
-        >
-          <PlusIcon className="h-4 w-4" />
-          Novo Compromisso
-        </button>
-      </div>
-
-      {/* Filtros e Controles */}
-      <div className="flex items-center justify-between mb-6 bg-white dark:bg-[#23283A] rounded-lg p-4 shadow-sm">
-        <div className="flex items-center gap-4">
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as any)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent"
+    <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#3478F6] via-[#A3C8F7] to-[#6B6F76] bg-clip-text text-transparent mb-2">
+              Agenda Completa
+            </h1>
+            <p className="text-[#6B6F76] dark:text-gray-300">Organize seus compromissos pessoais e profissionais</p>
+          </div>
+          <button
+            onClick={() => {
+              resetForm();
+              setShowModal(true);
+            }}
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] text-white rounded-xl hover:from-[#255FD1] hover:to-[#3478F6] transition-all duration-300 transform hover:scale-105 shadow-lg font-semibold"
           >
-            <option value="all">Todos os tipos</option>
-            <option value="crm">CRM</option>
-            <option value="pessoal">Pessoal</option>
-            <option value="profissional">Profissional</option>
-            <option value="lembrete">Lembretes</option>
-          </select>
+            <PlusIcon className="h-5 w-5" />
+            Novo Compromisso
+          </button>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setViewMode('month')}
-              className={`px-3 py-1 rounded ${viewMode === 'month' ? 'bg-[#3478F6] text-white' : 'bg-gray-200 text-gray-700'}`}
-            >
-              Mês
-            </button>
-            <button
-              onClick={() => setViewMode('week')}
-              className={`px-3 py-1 rounded ${viewMode === 'week' ? 'bg-[#3478F6] text-white' : 'bg-gray-200 text-gray-700'}`}
-            >
-              Semana
-            </button>
-            <button
-              onClick={() => setViewMode('day')}
-              className={`px-3 py-1 rounded ${viewMode === 'day' ? 'bg-[#3478F6] text-white' : 'bg-gray-200 text-gray-700'}`}
-            >
-              Dia
-            </button>
+        {/* Filtros e Controles */}
+        <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 mb-8 relative overflow-hidden shadow-xl">
+          <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <select
+                value={filter}
+                onChange={(e) => setFilter(e.target.value as any)}
+                className="px-4 py-2 bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white font-medium"
+              >
+                <option value="all">Todos os tipos</option>
+                <option value="crm">CRM</option>
+                <option value="pessoal">Pessoal</option>
+                <option value="profissional">Profissional</option>
+                <option value="lembrete">Lembretes</option>
+              </select>
+
+              <div className="flex items-center gap-2 bg-white dark:bg-[#23283A] rounded-xl p-1 border border-[#E8E9F1] dark:border-[#23283A]">
+                <button
+                  onClick={() => setViewMode('month')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                    viewMode === 'month' 
+                      ? 'bg-[#3478F6] text-white shadow-md' 
+                      : 'text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] hover:bg-[#3478F6]/10'
+                  }`}
+                >
+                  Mês
+                </button>
+                <button
+                  onClick={() => setViewMode('week')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                    viewMode === 'week' 
+                      ? 'bg-[#3478F6] text-white shadow-md' 
+                      : 'text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] hover:bg-[#3478F6]/10'
+                  }`}
+                >
+                  Semana
+                </button>
+                <button
+                  onClick={() => setViewMode('day')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                    viewMode === 'day' 
+                      ? 'bg-[#3478F6] text-white shadow-md' 
+                      : 'text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] hover:bg-[#3478F6]/10'
+                  }`}
+                >
+                  Dia
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => {
+                  const newDate = new Date(selectedDate);
+                  newDate.setMonth(newDate.getMonth() - 1);
+                  setSelectedDate(newDate);
+                }}
+                className="p-3 hover:bg-white/60 dark:hover:bg-[#23283A]/60 rounded-xl transition-colors"
+              >
+                <svg className="w-5 h-5 text-[#3478F6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <span className="font-bold text-lg text-[#2E2F38] dark:text-white min-w-[200px] text-center">
+                {selectedDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+              </span>
+              <button
+                onClick={() => {
+                  const newDate = new Date(selectedDate);
+                  newDate.setMonth(newDate.getMonth() + 1);
+                  setSelectedDate(newDate);
+                }}
+                className="p-3 hover:bg-white/60 dark:hover:bg-[#23283A]/60 rounded-xl transition-colors"
+              >
+                <svg className="w-5 h-5 text-[#3478F6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
-              const newDate = new Date(selectedDate);
-              newDate.setMonth(newDate.getMonth() - 1);
-              setSelectedDate(newDate);
-            }}
-            className="p-2 hover:bg-gray-100 rounded"
-          >
-            ←
-          </button>
-          <span className="font-medium">
-            {selectedDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-          </span>
-          <button
-            onClick={() => {
-              const newDate = new Date(selectedDate);
-              newDate.setMonth(newDate.getMonth() + 1);
-              setSelectedDate(newDate);
-            }}
-            className="p-2 hover:bg-gray-100 rounded"
-          >
-            →
-          </button>
-        </div>
-      </div>
-
-      {/* Calendário */}
-      <div className="bg-white dark:bg-[#23283A] rounded-lg shadow-sm overflow-hidden">
-        {/* Dias da semana */}
-        <div className="grid grid-cols-7 bg-gray-50 dark:bg-[#181C23]">
-          {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day) => (
-            <div key={day} className="p-3 text-center font-medium text-gray-600 dark:text-gray-300">
-              {day}
-            </div>
-          ))}
-        </div>
-
-        {/* Dias do mês */}
-        <div className="grid grid-cols-7">
-          {renderCalendar()}
-        </div>
-      </div>
-
-      {/* Lista de Compromissos */}
-      <div className="mt-6 bg-white dark:bg-[#23283A] rounded-lg shadow-sm p-6">
-        <h2 className="text-lg font-semibold mb-4 text-[#2E2F38] dark:text-white">Próximos Compromissos</h2>
-        <div className="space-y-3">
-          {agendaItems
-            .filter(item => item.dataHora.toDate() >= new Date())
-            .slice(0, 10)
-            .map((item) => (
-              <div
-                key={item.id}
-                className={`flex items-center justify-between p-4 rounded-lg border-l-4 ${
-                  item.status === 'concluida' ? 'bg-gray-50 dark:bg-[#181C23] opacity-60' : 'bg-white dark:bg-[#23283A]'
-                }`}
-                style={{ borderLeftColor: item.cor }}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: item.cor }}
-                  ></div>
-                  <div>
-                    <div className="font-medium text-[#2E2F38] dark:text-white">
-                      {item.titulo}
-                    </div>
-                    <div className="text-sm text-[#6B6F76] dark:text-gray-300">
-                      {item.dataHora.toDate().toLocaleString('pt-BR')} • {tipoLabels[item.tipo]}
-                    </div>
-                    {item.descricao && (
-                      <div className="text-sm text-[#6B6F76] dark:text-gray-400 mt-1">
-                        {item.descricao}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {item.status !== 'concluida' && (
-                    <button
-                      onClick={() => handleStatusChange(item.id, 'concluida')}
-                      className="p-1 text-green-600 hover:bg-green-50 rounded"
-                      title="Marcar como concluída"
-                    >
-                      <CheckIcon className="h-4 w-4" />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleEdit(item)}
-                    className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                    title="Editar"
-                  >
-                    <EditIcon className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="p-1 text-red-600 hover:bg-red-50 rounded"
-                    title="Excluir"
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </button>
-                </div>
+        {/* Calendário */}
+        <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] overflow-hidden mb-8">
+          {/* Dias da semana */}
+          <div className="grid grid-cols-7 bg-gradient-to-r from-[#3478F6]/10 to-[#A3C8F7]/10">
+            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day) => (
+              <div key={day} className="p-4 text-center font-bold text-[#2E2F38] dark:text-white border-b border-[#E8E9F1] dark:border-[#23283A]">
+                {day}
               </div>
             ))}
+          </div>
+
+          {/* Dias do mês */}
+          <div className="grid grid-cols-7">
+            {renderCalendar()}
+          </div>
+        </div>
+
+        {/* Lista de Compromissos */}
+        <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl">
+          <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] rounded-full flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Próximos Compromissos</h2>
+              <p className="text-[#6B6F76] dark:text-gray-300">Seus compromissos futuros</p>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            {agendaItems
+              .filter(item => item.dataHora.toDate() >= new Date())
+              .slice(0, 10)
+              .map((item) => (
+                <div
+                  key={item.id}
+                  className={`group p-4 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] hover:bg-white/60 dark:hover:bg-[#23283A]/60 transition-all duration-300 ${
+                    item.status === 'concluida' ? 'opacity-60' : ''
+                  }`}
+                  style={{ borderLeftColor: item.cor, borderLeftWidth: '4px' }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div
+                        className="w-4 h-4 rounded-full shadow-md"
+                        style={{ backgroundColor: item.cor }}
+                      ></div>
+                      <div>
+                        <div className="font-semibold text-[#2E2F38] dark:text-white group-hover:text-[#3478F6] transition-colors">
+                          {item.titulo}
+                        </div>
+                        <div className="text-sm text-[#6B6F76] dark:text-gray-300">
+                          {item.dataHora.toDate().toLocaleString('pt-BR')} • {tipoLabels[item.tipo]}
+                        </div>
+                        {item.descricao && (
+                          <div className="text-sm text-[#6B6F76] dark:text-gray-400 mt-1 line-clamp-2">
+                            {item.descricao}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      {item.status !== 'concluida' && (
+                        <button
+                          onClick={() => handleStatusChange(item.id, 'concluida')}
+                          className="p-2 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                          title="Marcar como concluída"
+                        >
+                          <CheckIcon className="h-4 w-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleEdit(item)}
+                        className="p-2 text-[#3478F6] hover:bg-[#3478F6]/10 rounded-lg transition-colors"
+                        title="Editar"
+                      >
+                        <EditIcon className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        title="Excluir"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </div>
         </div>
       </div>
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-[#23283A] rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-semibold mb-4 text-[#2E2F38] dark:text-white">
-              {editingItem ? 'Editar Compromisso' : 'Novo Compromisso'}
-            </h2>
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => {
+          setShowModal(false);
+          setEditingItem(null);
+          resetForm();
+        }}>
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 w-full max-w-md shadow-xl border border-[#E8E9F1] dark:border-[#23283A]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">
+                  {editingItem ? 'Editar Compromisso' : 'Novo Compromisso'}
+                </h2>
+                <p className="text-[#6B6F76] dark:text-gray-300 text-sm">Gerencie seus compromissos</p>
+              </div>
+            </div>
             
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1 text-[#2E2F38] dark:text-white">
+                <label className="block text-sm font-semibold mb-2 text-[#2E2F38] dark:text-white">
                   Título
                 </label>
                 <input
                   type="text"
                   value={formData.titulo}
                   onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent"
+                  className="w-full px-4 py-3 bg-white dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400"
+                  placeholder="Digite o título do compromisso"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1 text-[#2E2F38] dark:text-white">
+                <label className="block text-sm font-semibold mb-2 text-[#2E2F38] dark:text-white">
                   Descrição
                 </label>
                 <textarea
                   value={formData.descricao}
                   onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent"
+                  className="w-full px-4 py-3 bg-white dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400"
+                  placeholder="Descrição opcional do compromisso"
                   rows={3}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1 text-[#2E2F38] dark:text-white">
+                <label className="block text-sm font-semibold mb-2 text-[#2E2F38] dark:text-white">
                   Data e Hora
                 </label>
                 <input
                   type="datetime-local"
                   value={formData.dataHora}
                   onChange={(e) => setFormData({ ...formData, dataHora: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent"
+                  className="w-full px-4 py-3 bg-white dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1 text-[#2E2F38] dark:text-white">
+                <label className="block text-sm font-semibold mb-2 text-[#2E2F38] dark:text-white">
                   Tipo
                 </label>
                 <select
                   value={formData.tipo}
                   onChange={(e) => setFormData({ ...formData, tipo: e.target.value as AgendaItem['tipo'] })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent"
+                  className="w-full px-4 py-3 bg-white dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white"
                 >
                   <option value="pessoal">Pessoal</option>
                   <option value="profissional">Profissional</option>
@@ -485,21 +544,21 @@ export default function AgendaPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1 text-[#2E2F38] dark:text-white">
+                <label className="block text-sm font-semibold mb-2 text-[#2E2F38] dark:text-white">
                   Cor
                 </label>
                 <input
                   type="color"
                   value={formData.cor}
                   onChange={(e) => setFormData({ ...formData, cor: e.target.value })}
-                  className="w-full h-10 border border-gray-300 rounded-lg"
+                  className="w-full h-12 border border-[#E8E9F1] dark:border-[#23283A] rounded-xl cursor-pointer"
                 />
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-6">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#255FD1] transition-colors"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] text-white rounded-xl hover:from-[#255FD1] hover:to-[#3478F6] transition-all duration-300 font-semibold shadow-lg"
                 >
                   {editingItem ? 'Atualizar' : 'Criar'}
                 </button>
@@ -510,7 +569,7 @@ export default function AgendaPage() {
                     setEditingItem(null);
                     resetForm();
                   }}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                  className="flex-1 px-6 py-3 bg-gray-200 dark:bg-[#181C23] text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-[#23283A] transition-colors font-semibold"
                 >
                   Cancelar
                 </button>
