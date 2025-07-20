@@ -98,6 +98,18 @@ export default function ComunidadePage() {
   const [showEmojiRepost, setShowEmojiRepost] = useState(false);
   const emojiRepostRef = useRef<HTMLDivElement>(null);
   const [originalAuthors, setOriginalAuthors] = useState<Record<string, { nome: string, handle: string }>>({});
+  
+  // Estados para eventos agendados
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [eventForm, setEventForm] = useState({
+    titulo: '',
+    descricao: '',
+    tipo: 'meet' as 'meet' | 'youtube' | 'instagram',
+    link: '',
+    data: '',
+    hora: ''
+  });
+  const [eventLoading, setEventLoading] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const [orderByTrending, setOrderByTrending] = useState<'recent' | 'relevant'>('recent');
   const [showScrollToTop, setShowScrollToTop] = useState(false);
@@ -459,7 +471,99 @@ export default function ComunidadePage() {
     setRepostLoading(false);
   };
 
+  // Funções para eventos agendados
+  const handleCreateEvent = async () => {
+    if (!currentUser || !userData || !eventForm.titulo || !eventForm.link || !eventForm.data || !eventForm.hora) return;
+    
+    setEventLoading(true);
+    try {
+      const eventDateTime = new Date(`${eventForm.data}T${eventForm.hora}`);
+      
+      const eventData = {
+        texto: eventForm.descricao,
+        titulo: eventForm.titulo,
+        tipo: 'evento',
+        eventoTipo: eventForm.tipo,
+        eventoLink: eventForm.link,
+        eventoData: eventDateTime,
+        eventoStatus: 'agendado', // agendado, acontecendo, finalizado
+        userId: currentUser.uid,
+        nome: userData.nome,
+        handle: gerarHandle(userData.nome, userData.email),
+        avatar: gerarAvatar(userData, currentUser),
+        imobiliariaId: userData.imobiliariaId,
+        createdAt: serverTimestamp(),
+        likes: 0,
+        likedBy: [],
+        comments: [],
+        views: 0,
+        reposts: 0,
+        isEvento: true,
+      };
+      
+      await addDoc(collection(db, "comunidadePosts"), eventData);
+      
+      setShowEventModal(false);
+      setEventForm({
+        titulo: '',
+        descricao: '',
+        tipo: 'meet',
+        link: '',
+        data: '',
+        hora: ''
+      });
+      resetNotification('comunidade');
+    } catch (err) {
+      console.error('Erro ao criar evento:', err);
+    } finally {
+      setEventLoading(false);
+    }
+  };
+
+  const getEventStatus = (eventoData: any) => {
+    const now = new Date();
+    const eventTime = eventoData instanceof Date ? eventoData : eventoData.toDate();
+    const diffHours = (eventTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+    
+    if (diffHours < 0) return 'finalizado';
+    if (diffHours <= 1) return 'acontecendo';
+    return 'agendado';
+  };
+
+  const getEventIcon = (tipo: string) => {
+    switch (tipo) {
+      case 'meet': return '🎥';
+      case 'youtube': return '📺';
+      case 'instagram': return '📱';
+      default: return '📅';
+    }
+  };
+
+  const getEventColor = (tipo: string) => {
+    switch (tipo) {
+      case 'meet': return 'bg-blue-500';
+      case 'youtube': return 'bg-red-500';
+      case 'instagram': return 'bg-pink-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
   const sortedPosts = [...posts].sort((a, b) => {
+    // Priorizar eventos agendados no topo
+    const aIsEvent = a.isEvento && a.eventoStatus === 'agendado';
+    const bIsEvent = b.isEvento && b.eventoStatus === 'agendado';
+    
+    if (aIsEvent && !bIsEvent) return -1;
+    if (!aIsEvent && bIsEvent) return 1;
+    
+    // Se ambos são eventos, ordenar por data do evento
+    if (aIsEvent && bIsEvent) {
+      const aEventTime = a.eventoData instanceof Date ? a.eventoData : a.eventoData.toDate();
+      const bEventTime = b.eventoData instanceof Date ? b.eventoData : b.eventoData.toDate();
+      return aEventTime.getTime() - bEventTime.getTime();
+    }
+    
+    // Para posts normais, usar a lógica existente
     if (orderByTrending === 'recent') {
       return b.createdAt?.toDate() - a.createdAt?.toDate();
     } else {
@@ -616,6 +720,12 @@ export default function ComunidadePage() {
                     />
                   </div>
                 )}
+                <button
+                  className="text-[#3AC17C] hover:text-[#2E9D63] text-xl"
+                  title="Agendar evento"
+                  onClick={() => setShowEventModal(true)}
+                  type="button"
+                >📅</button>
               </div>
               <button
                 className="px-5 py-2 rounded-lg bg-[#3478F6] text-white font-bold shadow-soft hover:bg-[#255FD1] transition-colors disabled:opacity-60"
@@ -674,6 +784,25 @@ export default function ComunidadePage() {
                         />
                       )}
                     </div>
+                    
+                    {/* Badge de evento agendado */}
+                    {post.isEvento && (
+                      <div className="mb-2">
+                        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold ${getEventColor(post.eventoTipo)} text-white`}>
+                          <span>{getEventIcon(post.eventoTipo)}</span>
+                          <span>{post.titulo}</span>
+                          <span className="text-xs opacity-90">
+                            {post.eventoData?.toDate ? post.eventoData.toDate().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}
+                          </span>
+                        </div>
+                        {post.eventoStatus === 'acontecendo' && (
+                          <div className="mt-1 inline-flex items-center gap-1 px-2 py-1 bg-green-500 text-white text-xs rounded-full font-semibold animate-pulse">
+                            <span>🔴</span>
+                            <span>AO VIVO</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     {/* Se for repost, mostrar comentário do repostador e card aninhado do original */}
                     {post.repostOf ? (
                       <>
@@ -948,6 +1077,151 @@ export default function ComunidadePage() {
         </div>
       </div>
       )}
+
+      {/* Modal de Criação de Evento */}
+      <Modal open={showEventModal} onClose={() => setShowEventModal(false)}>
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white flex items-center gap-2">
+              <span>📅</span>
+              Agendar Evento
+            </h2>
+            <button
+              onClick={() => setShowEventModal(false)}
+              className="text-[#6B6F76] hover:text-[#2E2F38] dark:text-gray-300 dark:hover:text-white"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {/* Tipo de Evento */}
+            <div>
+              <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">
+                Tipo de Evento
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { key: 'meet', label: 'Google Meet', icon: '🎥', color: 'bg-blue-500' },
+                  { key: 'youtube', label: 'YouTube Live', icon: '📺', color: 'bg-red-500' },
+                  { key: 'instagram', label: 'Instagram Live', icon: '📱', color: 'bg-pink-500' }
+                ].map((tipo) => (
+                  <button
+                    key={tipo.key}
+                    onClick={() => setEventForm({ ...eventForm, tipo: tipo.key as any })}
+                    className={`p-3 rounded-lg border-2 transition-all ${
+                      eventForm.tipo === tipo.key
+                        ? `${tipo.color} text-white border-transparent`
+                        : 'border-[#E8E9F1] dark:border-[#23283A] text-[#6B6F76] dark:text-gray-300 hover:border-[#3478F6]'
+                    }`}
+                  >
+                    <div className="text-center">
+                      <div className="text-2xl mb-1">{tipo.icon}</div>
+                      <div className="text-xs font-medium">{tipo.label}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Título do Evento */}
+            <div>
+              <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">
+                Título do Evento *
+              </label>
+              <input
+                type="text"
+                value={eventForm.titulo}
+                onChange={(e) => setEventForm({ ...eventForm, titulo: e.target.value })}
+                className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                placeholder="Ex: Reunião de Vendas, Live de Lançamento..."
+                required
+              />
+            </div>
+
+            {/* Descrição */}
+            <div>
+              <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">
+                Descrição (opcional)
+              </label>
+              <textarea
+                value={eventForm.descricao}
+                onChange={(e) => setEventForm({ ...eventForm, descricao: e.target.value })}
+                className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white resize-none"
+                rows={3}
+                placeholder="Descreva o evento..."
+              />
+            </div>
+
+            {/* Link */}
+            <div>
+              <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">
+                Link do Evento *
+              </label>
+              <input
+                type="url"
+                value={eventForm.link}
+                onChange={(e) => setEventForm({ ...eventForm, link: e.target.value })}
+                className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                placeholder={
+                  eventForm.tipo === 'meet' 
+                    ? 'https://meet.google.com/xxx-xxxx-xxx'
+                    : eventForm.tipo === 'youtube'
+                    ? 'https://youtube.com/watch?v=...'
+                    : 'https://instagram.com/live/...'
+                }
+                required
+              />
+            </div>
+
+            {/* Data e Hora */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">
+                  Data *
+                </label>
+                <input
+                  type="date"
+                  value={eventForm.data}
+                  onChange={(e) => setEventForm({ ...eventForm, data: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">
+                  Hora *
+                </label>
+                <input
+                  type="time"
+                  value={eventForm.hora}
+                  onChange={(e) => setEventForm({ ...eventForm, hora: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Botões */}
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={() => setShowEventModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateEvent}
+                disabled={eventLoading || !eventForm.titulo || !eventForm.link || !eventForm.data || !eventForm.hora}
+                className="flex-1 px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
+              >
+                {eventLoading ? 'Criando...' : 'Criar Evento'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
       {showScrollToTop && (
         <button
           onClick={scrollToTop}
