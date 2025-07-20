@@ -30,6 +30,7 @@ export default function TreinamentosPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('todos');
+  const [selectedVideo, setSelectedVideo] = useState<Treinamento | null>(null);
 
   useEffect(() => {
     if (!userData?.imobiliariaId) return;
@@ -90,11 +91,21 @@ export default function TreinamentosPage() {
   });
 
   const handleVideoClick = (treinamento: Treinamento) => {
-    if (treinamento.tipo === 'pdf') {
+    if (treinamento.tipo === 'video') {
+      setSelectedVideo(treinamento);
+    } else {
       // Para PDFs, abrir em nova aba
       window.open(treinamento.url, '_blank');
     }
-    // Para vídeos, não fazer nada - eles já são reproduzidos inline
+  };
+
+  const closeVideoModal = () => {
+    setSelectedVideo(null);
+  };
+
+  const getCategoriaIcon = (categoria: string) => {
+    const cat = categorias.find(c => c.key === categoria);
+    return cat ? cat.icon : '🎬';
   };
 
   return (
@@ -213,7 +224,7 @@ export default function TreinamentosPage() {
                   {/* Metadados - Estilo YouTube */}
                   <div className="flex items-center justify-between text-xs text-[#6B6F76] dark:text-gray-400">
                     <div className="flex items-center gap-1">
-                      <span>Treinamentos</span>
+                      <span>{getCategoriaIcon(treinamento.categoria)}</span>
                       <span>•</span>
                       <span>{treinamento.criadoEm.toLocaleDateString('pt-BR')}</span>
                     </div>
@@ -227,6 +238,43 @@ export default function TreinamentosPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de Vídeo */}
+      {selectedVideo && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            {/* Header do Modal */}
+            <div className="flex items-center justify-between p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
+              <div>
+                <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">{selectedVideo.titulo}</h2>
+                {selectedVideo.descricao && (
+                  <p className="text-sm text-[#6B6F76] dark:text-gray-300 mt-1">{selectedVideo.descricao}</p>
+                )}
+              </div>
+              <button
+                onClick={closeVideoModal}
+                className="text-[#6B6F76] hover:text-[#2E2F38] dark:text-gray-300 dark:hover:text-white text-2xl font-bold"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {/* Player de Vídeo */}
+            <div className="p-6">
+              <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+                <iframe
+                  src={`${getYouTubeEmbedUrl(selectedVideo.url)}?autoplay=1`}
+                  title={selectedVideo.titulo}
+                  className="w-full h-full"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
