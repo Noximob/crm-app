@@ -289,15 +289,18 @@ export default function AgendaPage() {
   const getAllItemsForDate = (date: Date) => {
     const allItems: AgendaItem[] = [];
     
-    // Adicionar itens da agenda
+    // Adicionar itens da agenda (compromissos criados na agenda)
     agendaItems.forEach(item => {
       const itemDate = item.dataHora.toDate();
       if (itemDate.toDateString() === date.toDateString()) {
-        allItems.push(item);
+        allItems.push({
+          ...item,
+          tipo: 'agenda' // Forçar tipo como 'agenda' para itens criados na agenda
+        });
       }
     });
     
-    // Adicionar notas com data/hora
+    // Adicionar notas com data/hora (notas do dashboard)
     notes.forEach(note => {
       if (note.dataHora) {
         const noteDate = new Date(note.dataHora);
@@ -319,7 +322,7 @@ export default function AgendaPage() {
       }
     });
     
-    // Adicionar tarefas do CRM
+    // Adicionar tarefas do CRM (agenda do CRM)
     crmTasks.forEach(task => {
       const taskDate = task.dueDate.toDate();
       if (taskDate.toDateString() === date.toDateString()) {
@@ -553,10 +556,13 @@ export default function AgendaPage() {
             {(() => {
               const allItems: AgendaItem[] = [];
               
-              // Adicionar itens da agenda
+              // Adicionar itens da agenda (compromissos criados na agenda)
               agendaItems.forEach(item => {
                 if (item.dataHora.toDate() >= new Date()) {
-                  allItems.push(item);
+                  allItems.push({
+                    ...item,
+                    tipo: 'agenda' // Forçar tipo como 'agenda' para itens criados na agenda
+                  });
                 }
               });
               
