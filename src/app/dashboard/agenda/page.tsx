@@ -134,8 +134,8 @@ export default function AgendaPage() {
       const agendaRef = collection(db, 'agenda');
       let q = query(
         agendaRef,
-        where('userId', '==', currentUser.uid),
-        orderBy('dataHora', 'asc')
+        where('userId', '==', currentUser.uid)
+        // Removido orderBy temporariamente até o índice estar pronto
       );
 
       const querySnapshot = await getDocs(q);
@@ -148,6 +148,9 @@ export default function AgendaPage() {
           source: 'agenda'
         } as AgendaItem);
       });
+
+      // Ordenar localmente enquanto o índice não está pronto
+      items.sort((a, b) => a.dataHora.toDate().getTime() - b.dataHora.toDate().getTime());
 
       setAgendaItems(items);
     } catch (error) {
