@@ -9,6 +9,7 @@ interface Note {
   id: string;
   texto: string;
   prioridade: 'Urgente' | 'Importante' | 'Circunstancial';
+  dataHora?: string; // Data e hora opcional
   criadoEm: Timestamp;
 }
 
@@ -50,6 +51,15 @@ const SortIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+const CalendarIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+    <line x1="16" y1="2" x2="16" y2="6"/>
+    <line x1="8" y1="2" x2="8" y2="6"/>
+    <line x1="3" y1="10" x2="21" y2="10"/>
+  </svg>
+);
+
 export default function NotesWidget() {
   const { currentUser } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
@@ -59,6 +69,7 @@ export default function NotesWidget() {
   const [filterPriority, setFilterPriority] = useState<'Todas' | 'Urgente' | 'Importante' | 'Circunstancial'>('Todas');
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [loading, setLoading] = useState(false);
+  const [dataHora, setDataHora] = useState(''); // Data e hora opcional
 
   useEffect(() => {
     if (!currentUser) return;
@@ -85,14 +96,18 @@ export default function NotesWidget() {
 
     setLoading(true);
     try {
-      await addDoc(collection(db, 'notes'), {
+      const noteData = {
         texto: newNote.trim(),
         prioridade: selectedPriority,
+        dataHora: dataHora || null, // Salvar data/hora se fornecida
         criadoEm: Timestamp.now(),
         userId: currentUser.uid
-      });
+      };
+      
+      await addDoc(collection(db, 'notes'), noteData);
       setNewNote('');
       setSelectedPriority('Importante');
+      setDataHora(''); // Limpar data/hora
     } catch (error) {
       console.error('Erro ao adicionar nota:', error);
     } finally {
@@ -140,24 +155,19 @@ export default function NotesWidget() {
 
   return (
     <>
-      {/* Widget Compacto */}
+      {/* Widget Compacto - Tamanho dos índices */}
       <div className="relative group">
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-[#3478F6]/10 to-[#A3C8F7]/10 hover:from-[#3478F6]/20 hover:to-[#A3C8F7]/20 border border-[#3478F6]/30 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg backdrop-blur-sm"
+          className="flex items-center gap-2 px-3 py-2 bg-white/60 dark:bg-[#23283A]/60 backdrop-blur-sm rounded-lg border border-[#3478F6]/20 hover:border-[#3478F6]/40 transition-all duration-200 cursor-pointer group hover:scale-105"
         >
-          <div className="relative">
-            <NotesIcon className="h-6 w-6 text-[#3478F6]" />
-            {notes.length > 0 && (
-              <span className="absolute -top-2 -right-2 bg-[#3AC17C] text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                {notes.length}
-              </span>
-            )}
-          </div>
-          <div className="text-left">
-            <div className="font-semibold text-[#2E2F38] dark:text-white text-sm">Minhas Notas</div>
-            <div className="text-xs text-[#6B6F76] dark:text-gray-300">
-              {notes.length === 0 ? 'Nenhuma nota' : `${notes.length} nota${notes.length > 1 ? 's' : ''}`}
+          <NotesIcon className="h-4 w-4 text-[#3478F6]" />
+          <div className="text-center">
+            <div className="text-xs font-bold text-[#2E2F38] dark:text-white group-hover:text-[#3478F6] transition-colors">
+              Notas
+            </div>
+            <div className="text-[10px] text-[#6B6F76] dark:text-gray-300 font-medium">
+              {notes.length === 0 ? 'Nenhuma' : `${notes.length}`}
             </div>
           </div>
         </button>
@@ -165,7 +175,7 @@ export default function NotesWidget() {
         {/* Preview das notas recentes */}
         {recentNotes.length > 0 && (
           <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#23283A] rounded-xl shadow-xl border border-[#E8E9F1] dark:border-[#23283A] p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50 min-w-[280px]">
-            <div className="text-xs font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Notas Recentes:</div>
+            <div className="text-xs font-semibold text-white mb-2">Notas Recentes:</div>
             <div className="space-y-2">
               {recentNotes.map(note => (
                 <div key={note.id} className="flex items-start gap-2 p-2 rounded-lg hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
@@ -176,7 +186,7 @@ export default function NotesWidget() {
                       <span className={`px-2 py-0.5 text-xs rounded-full ${getPriorityColor(note.prioridade)}`}>
                         {note.prioridade}
                       </span>
-                      <span className="text-xs text-[#6B6F76] dark:text-gray-300">
+                      <span className="text-xs text-white">
                         {note.criadoEm.toDate().toLocaleDateString('pt-BR')}
                       </span>
                     </div>
@@ -197,13 +207,12 @@ export default function NotesWidget() {
               <div className="flex items-center gap-3">
                 <NotesIcon className="h-6 w-6 text-[#3478F6]" />
                 <div>
-                  <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Minhas Notas</h2>
-                  <p className="text-sm text-[#6B6F76] dark:text-gray-300">Organize suas ideias e lembretes</p>
+                  <h2 className="text-xl font-bold text-white">Notas</h2>
                 </div>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-[#6B6F76] hover:text-[#2E2F38] dark:text-gray-300 dark:hover:text-white transition-colors"
+                className="text-white hover:text-[#2E2F38] dark:text-white dark:hover:text-white transition-colors"
               >
                 <XIcon className="h-6 w-6" />
               </button>
@@ -213,11 +222,11 @@ export default function NotesWidget() {
             <div className="p-4 bg-[#F5F6FA] dark:bg-[#181C23] border-b border-[#E8E9F1] dark:border-[#23283A]">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <FilterIcon className="h-4 w-4 text-[#6B6F76]" />
+                  <FilterIcon className="h-4 w-4 text-white" />
                   <select
                     value={filterPriority}
                     onChange={(e) => setFilterPriority(e.target.value as any)}
-                    className="px-3 py-1.5 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent"
+                    className="px-3 py-1.5 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white"
                   >
                     <option value="Todas">Todas</option>
                     <option value="Urgente">Urgente</option>
@@ -226,11 +235,11 @@ export default function NotesWidget() {
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <SortIcon className="h-4 w-4 text-[#6B6F76]" />
+                  <SortIcon className="h-4 w-4 text-white" />
                   <select
                     value={sortOrder}
                     onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}
-                    className="px-3 py-1.5 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent"
+                    className="px-3 py-1.5 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white"
                   >
                     <option value="newest">Mais recentes</option>
                     <option value="oldest">Mais antigas</option>
@@ -241,32 +250,47 @@ export default function NotesWidget() {
 
             {/* Formulário de Nova Nota */}
             <div className="p-4 border-b border-[#E8E9F1] dark:border-[#23283A]">
-              <div className="flex gap-3">
-                <select
-                  value={selectedPriority}
-                  onChange={(e) => setSelectedPriority(e.target.value as any)}
-                  className="px-3 py-2 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent"
-                >
-                  <option value="Urgente">🚨 Urgente</option>
-                  <option value="Importante">⚠️ Importante</option>
-                  <option value="Circunstancial">ℹ️ Circunstancial</option>
-                </select>
-                <input
-                  type="text"
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  placeholder="Digite sua nota..."
-                  className="flex-1 px-3 py-2 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent"
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddNote()}
-                />
-                <button
-                  onClick={handleAddNote}
-                  disabled={loading || !newNote.trim()}
-                  className="px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  <PlusIcon className="h-4 w-4" />
-                  {loading ? 'Salvando...' : 'Adicionar'}
-                </button>
+              <div className="space-y-3">
+                <div className="flex gap-3">
+                  <select
+                    value={selectedPriority}
+                    onChange={(e) => setSelectedPriority(e.target.value as any)}
+                    className="px-3 py-2 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white"
+                  >
+                    <option value="Urgente">🚨 Urgente</option>
+                    <option value="Importante">⚠️ Importante</option>
+                    <option value="Circunstancial">ℹ️ Circunstancial</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={newNote}
+                    onChange={(e) => setNewNote(e.target.value)}
+                    placeholder="Digite sua nota..."
+                    className="flex-1 px-3 py-2 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    onKeyPress={(e) => e.key === 'Enter' && handleAddNote()}
+                  />
+                  <button
+                    onClick={handleAddNote}
+                    disabled={loading || !newNote.trim()}
+                    className="px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    {loading ? 'Salvando...' : 'Adicionar'}
+                  </button>
+                </div>
+                
+                {/* Data e Hora opcional */}
+                <div className="flex items-center gap-2">
+                  <CalendarIcon className="h-4 w-4 text-white" />
+                  <input
+                    type="datetime-local"
+                    value={dataHora}
+                    onChange={(e) => setDataHora(e.target.value)}
+                    placeholder="Data e hora (opcional)"
+                    className="px-3 py-2 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white"
+                  />
+                  <span className="text-xs text-white">Data e hora (opcional)</span>
+                </div>
               </div>
             </div>
 
@@ -274,8 +298,8 @@ export default function NotesWidget() {
             <div className="p-4 overflow-y-auto max-h-[400px]">
               {filteredAndSortedNotes.length === 0 ? (
                 <div className="text-center py-8">
-                  <NotesIcon className="h-12 w-12 text-[#6B6F76] mx-auto mb-3" />
-                  <p className="text-[#6B6F76] dark:text-gray-300">Nenhuma nota encontrada</p>
+                  <NotesIcon className="h-12 w-12 text-white mx-auto mb-3" />
+                  <p className="text-white">Nenhuma nota encontrada</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -291,11 +315,19 @@ export default function NotesWidget() {
                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(note.prioridade)}`}>
                               {note.prioridade}
                             </span>
-                            <span className="text-xs text-[#6B6F76] dark:text-gray-300">
+                            <span className="text-xs text-white">
                               {note.criadoEm.toDate().toLocaleString('pt-BR')}
                             </span>
                           </div>
                           <p className="text-[#2E2F38] dark:text-white leading-relaxed">{note.texto}</p>
+                          {note.dataHora && (
+                            <div className="flex items-center gap-2 mt-2">
+                              <CalendarIcon className="h-3 w-3 text-white" />
+                              <span className="text-xs text-white">
+                                Agendado para: {new Date(note.dataHora).toLocaleString('pt-BR')}
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <button
                           onClick={() => handleDeleteNote(note.id)}
