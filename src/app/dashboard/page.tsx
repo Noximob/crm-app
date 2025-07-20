@@ -51,6 +51,16 @@ const CalendarIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
+const NotesIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+        <polyline points="10 9 9 9 8 9"/>
+    </svg>
+);
+
 const DollarSignIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="12" x2="12" y1="1" y2="23"/>
@@ -197,6 +207,25 @@ const SectionTitle = ({ children, className = '' }: { children: React.ReactNode,
     <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-[#3478F6] to-[#A3C8F7] rounded-r-full opacity-60"></div>
   </div>
 );
+
+// Funções para o card de notas
+const getPriorityIcon = (priority: string) => {
+  switch (priority) {
+    case 'Urgente': return '🚨';
+    case 'Importante': return '⚠️';
+    case 'Circunstancial': return 'ℹ️';
+    default: return '📝';
+  }
+};
+
+const getPriorityColor = (priority: string) => {
+  switch (priority) {
+    case 'Urgente': return 'bg-red-500 text-white';
+    case 'Importante': return 'bg-orange-500 text-white';
+    case 'Circunstancial': return 'bg-blue-500 text-white';
+    default: return 'bg-gray-500 text-white';
+  }
+};
 
 
 
@@ -356,6 +385,8 @@ export default function DashboardPage() {
   const [repostInputId, setRepostInputId] = useState<string | null>(null);
   const [showEmojiComment, setShowEmojiComment] = useState(false);
   const [showScrollToTop, setShowScrollToTop] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [notes, setNotes] = useState<any[]>([]);
 
   // Função para voltar ao topo da seção de trending
   const scrollToTrendingTop = () => {
@@ -746,13 +777,40 @@ export default function DashboardPage() {
       }
     });
 
+    // Carregar notas do usuário
+    if (currentUser) {
+      const q = query(
+        collection(db, 'notes'),
+        where('userId', '==', currentUser.uid),
+        orderBy('criadoEm', 'desc')
+      );
+
+      const notesUnsubscribe = onSnapshot(q, (snapshot) => {
+        const notesData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setNotes(notesData);
+      }, (error) => {
+        console.error('Erro ao carregar notas:', error);
+      });
+
+      return () => {
+        if (unsubscribe) {
+          console.log('Desconectando listener de metas');
+          unsubscribe();
+        }
+        notesUnsubscribe();
+      };
+    }
+
     return () => {
       if (unsubscribe) {
         console.log('Desconectando listener de metas');
         unsubscribe();
       }
     };
-  }, [userData]);
+  }, [userData, currentUser]);
 
   function calcularVariacao(atual: string, anterior: string) {
     const a = parseFloat((atual || '').replace(/[^\d,.-]/g, '').replace(',', '.'));
@@ -991,6 +1049,76 @@ export default function DashboardPage() {
                 <div className="text-center pt-2">
                   <span className="text-xs text-[#6B6F76] dark:text-gray-400">
                     +{avisosImportantes.length - 3} avisos anteriores
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Card de Notas */}
+          <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-5 relative overflow-hidden shadow-sm">
+            <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <NotesIcon className="h-5 w-5 text-[#3478F6]" />
+                <h3 className="font-semibold text-[#2E2F38] dark:text-white text-base">Minhas Notas</h3>
+                <span className="px-1.5 py-0.5 bg-[#3478F6]/10 text-[#3478F6] text-xs font-medium rounded">
+                  {notes.length}
+                </span>
+              </div>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="px-3 py-1.5 text-xs font-semibold text-[#3478F6] bg-[#3478F6]/10 rounded-lg hover:bg-[#3478F6]/20 transition-colors border border-[#3478F6]/30"
+              >
+                Ver Todas
+              </button>
+            </div>
+            <div className="space-y-2">
+              {notes.length === 0 ? (
+                <div className="text-center py-6">
+                  <NotesIcon className="h-8 w-8 text-[#3478F6] mx-auto mb-2 opacity-50" />
+                  <p className="text-[#6B6F76] dark:text-gray-300 text-sm">Nenhuma nota criada ainda</p>
+                </div>
+              ) : (
+                notes
+                  .sort((a, b) => b.criadoEm.toDate().getTime() - a.criadoEm.toDate().getTime())
+                  .slice(0, 5) // Mostrar apenas as 5 mais recentes
+                  .map((note, idx) => (
+                    <div
+                      key={note.id}
+                      className="group p-3 rounded-lg hover:bg-white/60 dark:hover:bg-[#23283A]/60 transition-colors border border-[#3478F6]/20 hover:border-[#3478F6]/40"
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="text-sm mt-0.5">{getPriorityIcon(note.prioridade)}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getPriorityColor(note.prioridade)}`}>
+                              {note.prioridade}
+                            </span>
+                            <span className="text-xs text-[#6B6F76] dark:text-gray-300">
+                              {note.criadoEm.toDate().toLocaleDateString('pt-BR')}
+                            </span>
+                          </div>
+                          <div className="text-sm text-[#2E2F38] dark:text-white line-clamp-2 leading-relaxed">
+                            {note.texto}
+                          </div>
+                          {note.dataHora && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <CalendarIcon className="h-3 w-3 text-[#3478F6]" />
+                              <span className="text-xs text-[#6B6F76] dark:text-gray-300">
+                                Agendado: {new Date(note.dataHora).toLocaleDateString('pt-BR')}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+              )}
+              {notes.length > 5 && (
+                <div className="text-center pt-2">
+                  <span className="text-xs text-[#6B6F76] dark:text-gray-400">
+                    +{notes.length - 5} notas anteriores
                   </span>
                 </div>
               )}
@@ -1334,6 +1462,86 @@ export default function DashboardPage() {
         </div>
       )}
 
+
+      {/* Modal de Notas */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={() => setIsModalOpen(false)}>
+          <div className="relative max-w-4xl w-full mx-4 bg-white dark:bg-[#23283A] rounded-2xl shadow-xl p-0" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-[#6B6F76] dark:text-gray-300 text-2xl z-10 hover:text-[#F45B69]">✕</button>
+            
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <NotesIcon className="h-8 w-8 text-[#3478F6]" />
+                <div>
+                  <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white">Minhas Notas</h2>
+                  <p className="text-[#6B6F76] dark:text-gray-300">Gerencie suas notas e lembretes</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-[#2E2F38] dark:text-white">Todas as Notas</h3>
+                  <div className="max-h-96 overflow-y-auto space-y-3">
+                    {notes.length === 0 ? (
+                      <div className="text-center py-8">
+                        <NotesIcon className="h-12 w-12 text-[#3478F6] mx-auto mb-3 opacity-50" />
+                        <p className="text-[#6B6F76] dark:text-gray-300">Nenhuma nota criada ainda</p>
+                      </div>
+                    ) : (
+                      notes.map((note) => (
+                        <div
+                          key={note.id}
+                          className="p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors"
+                        >
+                          <div className="flex items-start gap-3">
+                            <span className="text-lg mt-0.5">{getPriorityIcon(note.prioridade)}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(note.prioridade)}`}>
+                                  {note.prioridade}
+                                </span>
+                                <span className="text-xs text-[#6B6F76] dark:text-gray-300">
+                                  {note.criadoEm.toDate().toLocaleDateString('pt-BR')}
+                                </span>
+                              </div>
+                              <div className="text-sm text-[#2E2F38] dark:text-white leading-relaxed mb-2">
+                                {note.texto}
+                              </div>
+                              {note.dataHora && (
+                                <div className="flex items-center gap-2">
+                                  <CalendarIcon className="h-4 w-4 text-[#3478F6]" />
+                                  <span className="text-xs text-[#6B6F76] dark:text-gray-300">
+                                    Agendado: {new Date(note.dataHora).toLocaleDateString('pt-BR')}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-[#2E2F38] dark:text-white">Criar Nova Nota</h3>
+                  <div className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg p-4">
+                    <p className="text-sm text-[#6B6F76] dark:text-gray-300 mb-4">
+                      Use o widget de notas no cabeçalho para criar novas notas rapidamente.
+                    </p>
+                    <button
+                      onClick={() => setIsModalOpen(false)}
+                      className="w-full bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                    >
+                      Fechar e Criar Nota
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Botão Voltar ao Topo */}
       {showScrollToTop && (
