@@ -12,7 +12,7 @@ import LogInteractionModal from '../_components/LogInteractionModal';
 import CrmHeader from '../_components/CrmHeader';
 import AgendaModal, { TaskPayload } from '../_components/AgendaModal';
 import CancelTaskModal from '../_components/CancelTaskModal';
-import StartAutomationModal from '../_components/StartAutomationModal';
+
 
 // --- Ícones ---
 const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>;
@@ -22,8 +22,7 @@ const BuildingIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} f
 const TaskIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
 const CheckCircleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>;
 const XCircleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>;
-const PlayIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>;
-const StopIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z" /></svg>;
+
 
 // --- Funções de Ajuda ---
 const getTaskStatusColor = (status: string) => {
@@ -85,8 +84,7 @@ export default function LeadDetailPage() {
     const [taskToCancel, setTaskToCancel] = useState<{ interactionId: string; taskId: string } | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
     const [qualifications, setQualifications] = useState<QualificationData>({});
-    const [isAutomationModalOpen, setIsAutomationModalOpen] = useState(false);
-    const [isUpdatingAutomation, setIsUpdatingAutomation] = useState(false);
+
 
     // --- Lógica para buscar os dados do lead ---
     useEffect(() => {
@@ -313,41 +311,7 @@ export default function LeadDetailPage() {
         }
     };
 
-    const handleStartAutomation = async (treatmentName: string) => {
-        if (!currentUser || !lead) return;
-        setIsUpdatingAutomation(true);
 
-        const leadRef = doc(db, 'leads', lead.id);
-        try {
-            await updateDoc(leadRef, {
-                'automacao.status': 'ativa',
-                'automacao.tratamento': treatmentName,
-                'automacao.inicio': serverTimestamp()
-            });
-            setIsAutomationModalOpen(false);
-        } catch (error) {
-            console.error("Erro ao iniciar automação:", error);
-        } finally {
-            setIsUpdatingAutomation(false);
-        }
-    };
-
-    const handleCancelAutomation = async () => {
-        if (!currentUser || !lead) return;
-        setIsUpdatingAutomation(true);
-
-        const leadRef = doc(db, 'leads', lead.id);
-        try {
-            await updateDoc(leadRef, {
-                'automacao.status': 'inativa',
-                'automacao.fim': serverTimestamp()
-            });
-        } catch (error) {
-            console.error("Erro ao cancelar automação:", error);
-        } finally {
-            setIsUpdatingAutomation(false);
-        }
-    };
 
     if (loading) {
         return (
@@ -371,7 +335,6 @@ export default function LeadDetailPage() {
     }
 
     const taskStatus = getTaskStatusInfo();
-    const automationStatus = lead.automacao?.status || 'inativa';
 
     return (
         <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
@@ -428,30 +391,7 @@ export default function LeadDetailPage() {
                         </div>
                     </div>
 
-                    {/* Card de Automação de Mensagens */}
-                    <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-                        <h3 className="text-base font-semibold text-[#2E2F38] dark:text-white mb-4">Automação Mensagens</h3>
-                        <div className="flex flex-col gap-3">
-                            <button
-                                type="button"
-                                onClick={() => setIsAutomationModalOpen(true)}
-                                disabled={automationStatus !== 'inativa' || isUpdatingAutomation}
-                                className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <PlayIcon className="h-4 w-4" />
-                                Iniciar Disparo
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleCancelAutomation}
-                                disabled={automationStatus !== 'ativa' || isUpdatingAutomation}
-                                className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <StopIcon className="h-4 w-4" />
-                                Cancelar Disparo
-                            </button>
-                        </div>
-                    </div>
+
                 </div>
 
                 {/* --- COLUNA DA DIREITA --- */}
@@ -602,13 +542,7 @@ export default function LeadDetailPage() {
                 isLoading={isCancelling}
             />
 
-            <StartAutomationModal
-                isOpen={isAutomationModalOpen}
-                onClose={() => setIsAutomationModalOpen(false)}
-                onConfirm={handleStartAutomation}
-                leadName={lead?.nome || ''}
-                isLoading={isUpdatingAutomation}
-            />
+
         </div>
     );
 }
