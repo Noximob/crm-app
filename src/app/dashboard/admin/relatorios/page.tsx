@@ -72,6 +72,41 @@ interface DashboardStats {
   recentActivity: Array<{type: string, description: string, date: Date}>;
 }
 
+interface UserData {
+  id: string;
+  nome: string;
+  tipoConta: string;
+  imobiliariaId: string;
+  aprovado: boolean;
+}
+
+interface LeadData {
+  id: string;
+  nome: string;
+  etapa: string;
+  createdAt: any;
+  userId: string;
+  imobiliariaId: string;
+}
+
+interface ImovelData {
+  id: string;
+  nome: string;
+  tipo: string;
+  criadoEm: any;
+  corretorId: string;
+  imobiliariaId: string;
+}
+
+interface PostData {
+  id: string;
+  nome: string;
+  file?: string;
+  youtubeLink?: string;
+  createdAt: any;
+  userId: string;
+}
+
 const relatorioTabs = [
   { id: 'overview', label: 'Visão Geral', icon: BarChartIcon },
   { id: 'users', label: 'Usuários', icon: UsersIcon },
@@ -98,6 +133,11 @@ export default function RelatoriosAdminPage() {
     setLoading(true);
     try {
       const imobiliariaId = userData?.imobiliariaId;
+      if (!imobiliariaId) {
+        setLoading(false);
+        return;
+      }
+      
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - parseInt(dateRange));
 
@@ -147,7 +187,7 @@ export default function RelatoriosAdminPage() {
       where('aprovado', '==', true)
     );
     const snapshot = await getDocs(q);
-    const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserData));
 
     // Buscar leads por usuário para ranking
     const topCorretores = await Promise.all(
@@ -186,7 +226,7 @@ export default function RelatoriosAdminPage() {
       where('imobiliariaId', '==', imobiliariaId)
     );
     const snapshot = await getDocs(q);
-    const leads = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const leads = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LeadData));
 
     const thisMonth = leads.filter(lead => {
       const createdAt = lead.createdAt?.toDate?.() || new Date(lead.createdAt);
@@ -220,7 +260,7 @@ export default function RelatoriosAdminPage() {
       where('imobiliariaId', '==', imobiliariaId)
     );
     const snapshot = await getDocs(q);
-    const imoveis = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const imoveis = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ImovelData));
 
     const thisMonth = imoveis.filter(imovel => {
       const createdAt = imovel.criadoEm?.toDate?.() || new Date(imovel.criadoEm);
@@ -254,7 +294,7 @@ export default function RelatoriosAdminPage() {
       orderBy('createdAt', 'desc')
     );
     const snapshot = await getDocs(q);
-    const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PostData));
 
     // Filtrar posts de usuários da imobiliária
     const usersQuery = query(
