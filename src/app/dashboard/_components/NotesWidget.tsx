@@ -91,25 +91,22 @@ export default function NotesWidget() {
     return () => unsubscribe();
   }, [currentUser]);
 
-  // Buscar as demais notas apenas ao abrir o modal
+  // Atualizar o número de notas ao abrir o modal
   useEffect(() => {
-    const fetchOtherNotes = async () => {
-      if (!currentUser || !isModalOpen) return;
-      const q = query(
-        collection(db, 'notes'),
-        where('userId', '==', currentUser.uid),
-        orderBy('criadoEm', 'desc'),
-        limit(100)
-      );
-      const snapshot = await getDocs(q);
-      const notesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Note[];
-      // Remove a nota mais recente (já está em latestNote)
-      setOtherNotes(notesData.filter(n => !latestNote || n.id !== latestNote.id));
-    };
-    if (isModalOpen) fetchOtherNotes();
-    else setOtherNotes([]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isModalOpen, currentUser, latestNote]);
+    if (!isModalOpen && latestNote) {
+      // Quando fechar o modal, buscar o total de notas para atualizar o contador
+      (async () => {
+        if (!currentUser) return;
+        const q = query(
+          collection(db, 'notes'),
+          where('userId', '==', currentUser.uid)
+        );
+        const snapshot = await getDocs(q);
+        const notesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Note[];
+        setOtherNotes(notesData.filter(n => !latestNote || n.id !== latestNote.id));
+      })();
+    }
+  }, [isModalOpen, latestNote, currentUser]);
 
   const handleAddNote = async () => {
     if (!newNote.trim() || !currentUser) return;
@@ -192,7 +189,8 @@ export default function NotesWidget() {
               Notas
             </div>
             <div className="text-[10px] text-[#6B6F76] dark:text-gray-300 font-medium">
-              {latestNote ? 1 + otherNotes.length : 0}
+              {/* Mostrar o total real de notas */}
+              {latestNote ? (1 + otherNotes.length) : otherNotes.length}
             </div>
           </div>
         </button>
