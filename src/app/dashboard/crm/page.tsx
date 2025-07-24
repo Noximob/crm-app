@@ -5,7 +5,7 @@ import { PIPELINE_STAGES } from '@/lib/constants';
 import CrmHeader from './_components/CrmHeader';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, onSnapshot, query, where, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, onSnapshot, query, where, Timestamp, orderBy } from 'firebase/firestore';
 import Link from 'next/link';
 import FilterModal, { Filters } from './_components/FilterModal';
 
@@ -120,7 +120,8 @@ export default function CrmPage() {
         if (currentUser) {
             setLoading(true);
             const leadsRef = collection(db, 'leads');
-            const q = query(leadsRef, where("userId", "==", currentUser.uid));
+            // Adiciona orderBy para createdAt decrescente
+            const q = query(leadsRef, where("userId", "==", currentUser.uid), orderBy("createdAt", "desc"));
             
             const unsubscribe = onSnapshot(q, async (querySnapshot) => {
                 const leadsDataPromises = querySnapshot.docs.map(async (leadDoc) => {
