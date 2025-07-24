@@ -5,7 +5,7 @@ import { PIPELINE_STAGES } from '@/lib/constants';
 import CrmHeader from './_components/CrmHeader';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, onSnapshot, query, where, Timestamp, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, where, Timestamp, orderBy, limit, startAfter } from 'firebase/firestore';
 import Link from 'next/link';
 import FilterModal, { Filters } from './_components/FilterModal';
 
@@ -115,51 +115,64 @@ export default function CrmPage() {
     const [activeTaskFilter, setActiveTaskFilter] = useState<TaskStatus | null>(null);
     const [isFilterModalOpen, setFilterModalOpen] = useState(false);
     const [advancedFilters, setAdvancedFilters] = useState<Filters>({});
+    const [lastVisible, setLastVisible] = useState<any>(null);
+    const [hasMore, setHasMore] = useState(true);
+    const PAGE_SIZE = 15;
 
     useEffect(() => {
         if (currentUser) {
             setLoading(true);
-            const leadsRef = collection(db, 'leads');
-            // Adiciona orderBy para createdAt decrescente
-            const q = query(leadsRef, where("userId", "==", currentUser.uid), orderBy("createdAt", "desc"));
-            
-            const unsubscribe = onSnapshot(q, async (querySnapshot) => {
-                const leadsDataPromises = querySnapshot.docs.map(async (leadDoc) => {
-                    try {
-                        const leadData = { id: leadDoc.id, ...leadDoc.data() } as Lead;
-                        
-                        const tasksCol = collection(db, 'leads', leadDoc.id, 'tarefas');
-                        const tasksQuery = query(tasksCol, where('status', '==', 'pendente'));
-                        const tasksSnapshot = await getDocs(tasksQuery);
-                        const tasks = tasksSnapshot.docs.map(doc => doc.data() as Task);
-
-                        leadData.taskStatus = getTaskStatusInfo(tasks);
-                        
-                        leadData.qualificacao = leadDoc.data().qualificacao || {};
-
-                        return leadData;
-                    } catch (error) {
-                        console.error("Erro ao processar o lead:", leadDoc.id, error);
-                        return null;
-                    }
-                });
-
-                const leadsWithStatus = (await Promise.all(leadsDataPromises))
-                    .filter((lead): lead is Lead => lead !== null);
-                
-                setLeads(leadsWithStatus);
-                setLoading(false);
-            }, (error) => {
-                console.error("Erro ao buscar leads: ", error);
-                setLoading(false);
-            });
-
-            return () => unsubscribe();
+            fetchLeads();
         } else {
             setLeads([]);
             setLoading(false);
         }
     }, [currentUser]);
+
+    const fetchLeads = async (loadMore = false) => {
+        if (!currentUser) return;
+        setLoading(true);
+        try {
+            const leadsRef = collection(db, 'leads');
+            let q = query(
+                leadsRef,
+                where("userId", "==", currentUser.uid),
+                orderBy("createdAt", "desc"),
+                limit(PAGE_SIZE)
+            );
+            if (loadMore && lastVisible) {
+                q = query(
+                    leadsRef,
+                    where("userId", "==", currentUser.uid),
+                    orderBy("createdAt", "desc"),
+                    startAfter(lastVisible),
+                    limit(PAGE_SIZE)
+                );
+            }
+            const snapshot = await getDocs(q);
+            const newLeads = await Promise.all(snapshot.docs.map(async (leadDoc) => {
+                const leadData = { id: leadDoc.id, ...leadDoc.data() } as Lead;
+                const tasksCol = collection(db, 'leads', leadDoc.id, 'tarefas');
+                const tasksQuery = query(tasksCol, where('status', '==', 'pendente'));
+                const tasksSnapshot = await getDocs(tasksQuery);
+                const tasks = tasksSnapshot.docs.map(doc => doc.data() as Task);
+                leadData.taskStatus = getTaskStatusInfo(tasks);
+                leadData.qualificacao = leadDoc.data().qualificacao || {};
+                return leadData;
+            }));
+            if (loadMore) {
+                setLeads(prev => [...prev, ...newLeads]);
+            } else {
+                setLeads(newLeads);
+            }
+            setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
+            setHasMore(snapshot.docs.length === PAGE_SIZE);
+        } catch (error) {
+            console.error("Erro ao buscar leads:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleApplyFilters = (filters: Filters) => {
         setAdvancedFilters(filters);
@@ -283,12 +296,15 @@ export default function CrmPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredLeads.length === 0 && (
+                                {loading && (
+                                    <tr><td colSpan={6} className="text-center py-8">Carregando...</td></tr>
+                                )}
+                                {!loading && leads.length === 0 && (
                                     <tr>
                                         <td colSpan={6} className="text-center text-[#6B6F76] dark:text-gray-300 py-8">Nenhum lead encontrado.</td>
                                     </tr>
                                 )}
-                                {filteredLeads.map((lead) => (
+                                {!loading && filteredLeads.map((lead) => (
                                     <tr key={lead.id} className="border-b last:border-b-0 hover:bg-[#F5F6FA] dark:hover:bg-[#23283A] transition-colors">
                                         <td className="px-4 py-3 text-sm font-medium text-[#2E2F38] dark:text-white w-1/5 truncate max-w-[180px]">{lead.nome}</td>
                                         <td className="px-4 py-3 text-xs text-[#6B6F76] dark:text-gray-100 w-1/6 truncate max-w-[140px]">{lead.telefone}</td>
@@ -325,6 +341,16 @@ export default function CrmPage() {
                                 ))}
                             </tbody>
                         </table>
+                        {hasMore && !loading && (
+                            <div className="flex justify-center mt-4">
+                                <button
+                                    onClick={() => fetchLeads(true)}
+                                    className="px-6 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold rounded-lg shadow-soft transition-colors"
+                                >
+                                    Mostrar mais
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>
