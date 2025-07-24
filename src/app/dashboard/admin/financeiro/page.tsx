@@ -27,28 +27,6 @@ const TrendingDownIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const CalendarIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
-    <line x1="16" x2="16" y1="2" y2="6"/>
-    <line x1="8" x2="8" y1="2" y2="6"/>
-    <line x1="3" x2="21" y1="10" y2="10"/>
-  </svg>
-);
-
-const FilterIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
-  </svg>
-);
-
-const SearchIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <circle cx="11" cy="11" r="8"/>
-    <path d="m21 21-4.35-4.35"/>
-  </svg>
-);
-
 const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M5 12h14"/>
@@ -56,31 +34,43 @@ const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-// Categorias e opções
+const EditIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+    <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+  </svg>
+);
+
+const TrashIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M3 6h18"/>
+    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+  </svg>
+);
+
+const FilterIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+  </svg>
+);
+
+// Categorias simplificadas
 const CATEGORIAS_ENTRADA = [
   'Comissão de Venda',
   'Comissão de Aluguel', 
   'Taxa de Administração',
-  'Taxa de Intermediação',
   'Receita de Serviços',
-  'Rendimentos Financeiros',
-  'Reembolso',
   'Outros'
 ];
 
 const CATEGORIAS_SAIDA = [
-  'Salários e Benefícios',
-  'Aluguel do Escritório',
-  'Contas de Luz/Água/Gás',
-  'Internet e Telefone',
-  'Marketing e Publicidade',
+  'Salários',
+  'Aluguel',
+  'Contas',
+  'Marketing',
   'Material de Escritório',
-  'Impostos e Taxas',
-  'Manutenção e Limpeza',
-  'Seguros',
-  'Despesas com Veículos',
-  'Treinamentos e Cursos',
-  'Software e Sistemas',
+  'Impostos',
   'Outros'
 ];
 
@@ -88,17 +78,9 @@ const FORMAS_PAGAMENTO = [
   'Pix',
   'Cartão de Crédito',
   'Cartão de Débito', 
-  'Boleto Bancário',
-  'Transferência Bancária',
+  'Transferência',
   'Dinheiro',
-  'Cheque',
   'Outro'
-];
-
-const STATUS = [
-  { value: 'pendente', label: 'Pendente', color: 'text-yellow-600 bg-yellow-100' },
-  { value: 'confirmado', label: 'Confirmado', color: 'text-green-600 bg-green-100' },
-  { value: 'cancelado', label: 'Cancelado', color: 'text-red-600 bg-red-100' }
 ];
 
 export default function FinanceiroPage() {
@@ -108,6 +90,7 @@ export default function FinanceiroPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
   const [filtros, setFiltros] = useState({
     tipo: '',
     categoria: '',
@@ -117,7 +100,7 @@ export default function FinanceiroPage() {
     busca: ''
   });
 
-  // Formulário
+  // Formulário simplificado
   const [form, setForm] = useState({
     tipo: 'entrada',
     valor: '',
@@ -126,8 +109,7 @@ export default function FinanceiroPage() {
     data: new Date().toISOString().split('T')[0],
     status: 'confirmado',
     formaPagamento: '',
-    observacao: '',
-    anexo: null as File | null
+    observacao: ''
   });
 
   // Buscar movimentações
@@ -215,8 +197,7 @@ export default function FinanceiroPage() {
       data: mov.data.toISOString().split('T')[0],
       status: mov.status,
       formaPagamento: mov.formaPagamento || '',
-      observacao: mov.observacao || '',
-      anexo: null
+      observacao: mov.observacao || ''
     });
     setEditId(mov.id);
     setShowModal(true);
@@ -248,8 +229,7 @@ export default function FinanceiroPage() {
       data: new Date().toISOString().split('T')[0],
       status: 'confirmado',
       formaPagamento: '',
-      observacao: '',
-      anexo: null
+      observacao: ''
     });
   };
 
@@ -288,9 +268,8 @@ export default function FinanceiroPage() {
     }).format(value);
   };
 
-  const getStatusColor = (status: string) => {
-    const statusObj = STATUS.find(s => s.value === status);
-    return statusObj?.color || 'text-gray-600 bg-gray-100';
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('pt-BR');
   };
 
   return (
@@ -298,8 +277,8 @@ export default function FinanceiroPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">Financeiro</h1>
-          <p className="text-[#6B6F76] dark:text-gray-300">Gerencie o fluxo financeiro da sua imobiliária</p>
+          <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">Controle Financeiro</h1>
+          <p className="text-[#6B6F76] dark:text-gray-300">Gerencie entradas e saídas da sua imobiliária</p>
         </div>
 
         {/* Cards de Resumo */}
@@ -346,7 +325,7 @@ export default function FinanceiroPage() {
           <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
             <div className="flex items-center justify-between mb-4">
               <div className="p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg">
-                <CalendarIcon className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+                <DollarIcon className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
               </div>
               <span className="text-yellow-500 text-sm font-medium">
                 {pendentes >= 0 ? '+' : ''}{formatCurrency(pendentes)}
@@ -368,184 +347,210 @@ export default function FinanceiroPage() {
                   resetForm();
                   setShowModal(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold rounded-lg transition-colors"
+                className="flex items-center gap-2 px-6 py-3 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold rounded-xl transition-colors shadow-sm"
               >
                 <PlusIcon className="h-5 w-5" />
                 Nova Movimentação
               </button>
+              
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium rounded-xl transition-colors"
+              >
+                <FilterIcon className="h-4 w-4" />
+                Filtros
+              </button>
             </div>
 
-            {/* Filtros */}
-            <div className="flex flex-wrap gap-3">
-              <select
-                value={filtros.tipo}
-                onChange={(e) => setFiltros(prev => ({ ...prev, tipo: e.target.value }))}
-                className="px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm"
-              >
-                <option value="">Todos os tipos</option>
-                <option value="entrada">Entrada</option>
-                <option value="saida">Saída</option>
-              </select>
-
-              <select
-                value={filtros.status}
-                onChange={(e) => setFiltros(prev => ({ ...prev, status: e.target.value }))}
-                className="px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm"
-              >
-                <option value="">Todos os status</option>
-                <option value="pendente">Pendente</option>
-                <option value="confirmado">Confirmado</option>
-                <option value="cancelado">Cancelado</option>
-              </select>
-
+            {/* Busca rápida */}
+            <div className="relative">
               <input
-                type="date"
-                value={filtros.dataInicio}
-                onChange={(e) => setFiltros(prev => ({ ...prev, dataInicio: e.target.value }))}
-                className="px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm"
-                placeholder="Data início"
+                type="text"
+                value={filtros.busca}
+                onChange={(e) => setFiltros(prev => ({ ...prev, busca: e.target.value }))}
+                className="pl-10 pr-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-xl bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white w-64 focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
+                placeholder="Buscar movimentações..."
               />
-
-              <input
-                type="date"
-                value={filtros.dataFim}
-                onChange={(e) => setFiltros(prev => ({ ...prev, dataFim: e.target.value }))}
-                className="px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm"
-                placeholder="Data fim"
-              />
-
-              <div className="relative">
-                <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#6B6F76] dark:text-gray-400" />
-                <input
-                  type="text"
-                  value={filtros.busca}
-                  onChange={(e) => setFiltros(prev => ({ ...prev, busca: e.target.value }))}
-                  className="pl-10 pr-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm w-48"
-                  placeholder="Buscar..."
-                />
-              </div>
+              <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#6B6F76] dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+              </svg>
             </div>
           </div>
+
+          {/* Filtros expandidos */}
+          {showFilters && (
+            <div className="mt-6 pt-6 border-t border-[#E8E9F1] dark:border-[#23283A]">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <select
+                  value={filtros.tipo}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, tipo: e.target.value }))}
+                  className="px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm"
+                >
+                  <option value="">Todos os tipos</option>
+                  <option value="entrada">Entrada</option>
+                  <option value="saida">Saída</option>
+                </select>
+
+                <select
+                  value={filtros.status}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, status: e.target.value }))}
+                  className="px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm"
+                >
+                  <option value="">Todos os status</option>
+                  <option value="pendente">Pendente</option>
+                  <option value="confirmado">Confirmado</option>
+                  <option value="cancelado">Cancelado</option>
+                </select>
+
+                <input
+                  type="date"
+                  value={filtros.dataInicio}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, dataInicio: e.target.value }))}
+                  className="px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm"
+                  placeholder="Data início"
+                />
+
+                <input
+                  type="date"
+                  value={filtros.dataFim}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, dataFim: e.target.value }))}
+                  className="px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm"
+                  placeholder="Data fim"
+                />
+
+                <button
+                  onClick={() => setFiltros({
+                    tipo: '',
+                    categoria: '',
+                    status: '',
+                    dataInicio: '',
+                    dataFim: '',
+                    busca: ''
+                  })}
+                  className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors text-sm"
+                >
+                  Limpar Filtros
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Mensagem */}
         {msg && (
-          <div className={`p-4 rounded-lg mb-6 ${msg.includes('Erro') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+          <div className={`p-4 rounded-xl mb-6 ${msg.includes('Erro') ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-green-100 text-green-700 border border-green-200'}`}>
             {msg}
           </div>
         )}
 
         {/* Lista de Movimentações */}
         <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-[#F5F6FA] dark:bg-[#181C23]">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#6B6F76] dark:text-gray-300 uppercase tracking-wider">
-                    Tipo
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#6B6F76] dark:text-gray-300 uppercase tracking-wider">
-                    Valor
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#6B6F76] dark:text-gray-300 uppercase tracking-wider">
-                    Categoria
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#6B6F76] dark:text-gray-300 uppercase tracking-wider">
-                    Descrição
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#6B6F76] dark:text-gray-300 uppercase tracking-wider">
-                    Data
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#6B6F76] dark:text-gray-300 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#6B6F76] dark:text-gray-300 uppercase tracking-wider">
-                    Forma Pgto
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#6B6F76] dark:text-gray-300 uppercase tracking-wider">
-                    Ações
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#E8E9F1] dark:divide-[#23283A]">
-                {loading ? (
-                  <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center text-[#6B6F76] dark:text-gray-300">
-                      Carregando...
-                    </td>
-                  </tr>
-                ) : movimentacoesFiltradas.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center text-[#6B6F76] dark:text-gray-300">
-                      Nenhuma movimentação encontrada
-                    </td>
-                  </tr>
-                ) : (
-                  movimentacoesFiltradas.map((mov) => (
-                    <tr key={mov.id} className="hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          mov.tipo === 'entrada' 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                            : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                        }`}>
-                          {mov.tipo === 'entrada' ? 'Entrada' : 'Saída'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`font-semibold ${
+          {loading ? (
+            <div className="p-8 text-center text-[#6B6F76] dark:text-gray-300">
+              Carregando movimentações...
+            </div>
+          ) : movimentacoesFiltradas.length === 0 ? (
+            <div className="p-8 text-center text-[#6B6F76] dark:text-gray-300">
+              <DollarIcon className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+              <p className="text-lg font-medium mb-2">Nenhuma movimentação encontrada</p>
+              <p className="text-sm">Comece adicionando sua primeira movimentação financeira</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-[#E8E9F1] dark:divide-[#23283A]">
+              {movimentacoesFiltradas.map((mov) => (
+                <div key={mov.id} className="p-6 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4 flex-1">
+                      {/* Ícone e tipo */}
+                      <div className={`p-3 rounded-xl ${
+                        mov.tipo === 'entrada' 
+                          ? 'bg-green-100 dark:bg-green-900/20' 
+                          : 'bg-red-100 dark:bg-red-900/20'
+                      }`}>
+                        {mov.tipo === 'entrada' ? (
+                          <TrendingUpIcon className="h-6 w-6 text-green-600 dark:text-green-400" />
+                        ) : (
+                          <TrendingDownIcon className="h-6 w-6 text-red-600 dark:text-red-400" />
+                        )}
+                      </div>
+
+                      {/* Informações principais */}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="font-semibold text-[#2E2F38] dark:text-white">
+                            {mov.descricao}
+                          </h3>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            mov.status === 'confirmado' 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                              : mov.status === 'pendente'
+                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
+                              : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                          }`}>
+                            {mov.status === 'confirmado' ? 'Confirmado' : mov.status === 'pendente' ? 'Pendente' : 'Cancelado'}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-4 text-sm text-[#6B6F76] dark:text-gray-300">
+                          <span>{mov.categoria}</span>
+                          <span>•</span>
+                          <span>{formatDate(mov.data)}</span>
+                          {mov.formaPagamento && (
+                            <>
+                              <span>•</span>
+                              <span>{mov.formaPagamento}</span>
+                            </>
+                          )}
+                        </div>
+
+                        {mov.observacao && (
+                          <p className="text-sm text-[#6B6F76] dark:text-gray-400 mt-1">
+                            {mov.observacao}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Valor */}
+                      <div className="text-right">
+                        <p className={`text-xl font-bold ${
                           mov.tipo === 'entrada' 
                             ? 'text-green-600 dark:text-green-400'
                             : 'text-red-600 dark:text-red-400'
                         }`}>
                           {mov.tipo === 'entrada' ? '+' : '-'}{formatCurrency(mov.valor)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-[#2E2F38] dark:text-white">
-                        {mov.categoria}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-[#2E2F38] dark:text-white max-w-xs truncate">
-                        {mov.descricao}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-[#6B6F76] dark:text-gray-300">
-                        {mov.data.toLocaleDateString('pt-BR')}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(mov.status)}`}>
-                          {STATUS.find(s => s.value === mov.status)?.label}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-[#6B6F76] dark:text-gray-300">
-                        {mov.formaPagamento || '-'}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleEditar(mov)}
-                            className="text-[#3478F6] hover:text-[#255FD1] text-sm font-medium"
-                          >
-                            Editar
-                          </button>
-                          <button
-                            onClick={() => handleExcluir(mov.id)}
-                            className="text-red-600 hover:text-red-700 text-sm font-medium"
-                          >
-                            Excluir
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Ações */}
+                    <div className="flex items-center gap-2 ml-4">
+                      <button
+                        onClick={() => handleEditar(mov)}
+                        className="p-2 text-[#3478F6] hover:bg-[#3478F6] hover:text-white rounded-lg transition-colors"
+                        title="Editar"
+                      >
+                        <EditIcon />
+                      </button>
+                      <button
+                        onClick={() => handleExcluir(mov.id)}
+                        className="p-2 text-red-600 hover:bg-red-600 hover:text-white rounded-lg transition-colors"
+                        title="Excluir"
+                      >
+                        <TrashIcon />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Modal de Nova/Editar Movimentação */}
         {showModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">
@@ -557,7 +562,7 @@ export default function FinanceiroPage() {
                       setEditId(null);
                       resetForm();
                     }}
-                    className="text-[#6B6F76] hover:text-[#2E2F38] dark:text-gray-300 dark:hover:text-white"
+                    className="text-[#6B6F76] hover:text-[#2E2F38] dark:text-gray-300 dark:hover:text-white text-xl"
                   >
                     ✕
                   </button>
@@ -565,7 +570,7 @@ export default function FinanceiroPage() {
 
                 <form onSubmit={handleSalvar} className="space-y-6">
                   {/* Tipo e Valor */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">
                         Tipo *
@@ -573,7 +578,7 @@ export default function FinanceiroPage() {
                       <select
                         value={form.tipo}
                         onChange={(e) => setForm(prev => ({ ...prev, tipo: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                        className="w-full px-3 py-3 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
                         required
                       >
                         <option value="entrada">Entrada</option>
@@ -588,7 +593,7 @@ export default function FinanceiroPage() {
                         type="number"
                         value={form.valor}
                         onChange={(e) => setForm(prev => ({ ...prev, valor: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                        className="w-full px-3 py-3 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
                         placeholder="0,00"
                         step="0.01"
                         min="0.01"
@@ -598,7 +603,7 @@ export default function FinanceiroPage() {
                   </div>
 
                   {/* Categoria e Data */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">
                         Categoria *
@@ -606,10 +611,10 @@ export default function FinanceiroPage() {
                       <select
                         value={form.categoria}
                         onChange={(e) => setForm(prev => ({ ...prev, categoria: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                        className="w-full px-3 py-3 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
                         required
                       >
-                        <option value="">Selecione uma categoria</option>
+                        <option value="">Selecione</option>
                         {(form.tipo === 'entrada' ? CATEGORIAS_ENTRADA : CATEGORIAS_SAIDA).map(cat => (
                           <option key={cat} value={cat}>{cat}</option>
                         ))}
@@ -623,14 +628,14 @@ export default function FinanceiroPage() {
                         type="date"
                         value={form.data}
                         onChange={(e) => setForm(prev => ({ ...prev, data: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                        className="w-full px-3 py-3 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
                         required
                       />
                     </div>
                   </div>
 
                   {/* Status e Forma de Pagamento */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">
                         Status *
@@ -638,12 +643,12 @@ export default function FinanceiroPage() {
                       <select
                         value={form.status}
                         onChange={(e) => setForm(prev => ({ ...prev, status: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                        className="w-full px-3 py-3 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
                         required
                       >
-                        {STATUS.map(status => (
-                          <option key={status.value} value={status.value}>{status.label}</option>
-                        ))}
+                        <option value="confirmado">Confirmado</option>
+                        <option value="pendente">Pendente</option>
+                        <option value="cancelado">Cancelado</option>
                       </select>
                     </div>
                     <div>
@@ -653,7 +658,7 @@ export default function FinanceiroPage() {
                       <select
                         value={form.formaPagamento}
                         onChange={(e) => setForm(prev => ({ ...prev, formaPagamento: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                        className="w-full px-3 py-3 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
                       >
                         <option value="">Selecione</option>
                         {FORMAS_PAGAMENTO.map(fp => (
@@ -672,7 +677,7 @@ export default function FinanceiroPage() {
                       type="text"
                       value={form.descricao}
                       onChange={(e) => setForm(prev => ({ ...prev, descricao: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                      className="w-full px-3 py-3 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
                       placeholder="Descrição da movimentação"
                       required
                     />
@@ -686,7 +691,7 @@ export default function FinanceiroPage() {
                     <textarea
                       value={form.observacao}
                       onChange={(e) => setForm(prev => ({ ...prev, observacao: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white resize-none"
+                      className="w-full px-3 py-3 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
                       rows={3}
                       placeholder="Observações adicionais..."
                     />
@@ -701,14 +706,14 @@ export default function FinanceiroPage() {
                         setEditId(null);
                         resetForm();
                       }}
-                      className="flex-1 px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
+                      className="flex-1 px-4 py-3 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-xl transition-colors"
                     >
                       Cancelar
                     </button>
                     <button
                       type="submit"
                       disabled={loading}
-                      className="flex-1 px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
+                      className="flex-1 px-4 py-3 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold rounded-xl transition-colors disabled:opacity-50"
                     >
                       {loading ? 'Salvando...' : (editId ? 'Atualizar' : 'Criar')}
                     </button>
