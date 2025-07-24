@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, query, where, orderBy, addDoc, deleteDoc, doc, Timestamp, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, addDoc, deleteDoc, doc, Timestamp, onSnapshot, getDocs, limit } from 'firebase/firestore';
 
 interface Note {
   id: string;
@@ -70,31 +70,46 @@ export default function NotesWidget() {
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [loading, setLoading] = useState(false);
   const [dataHora, setDataHora] = useState(''); // Data e hora opcional
+  const [latestNote, setLatestNote] = useState<Note | null>(null);
+  const [otherNotes, setOtherNotes] = useState<Note[]>([]);
 
+  // Tempo real apenas para a nota mais recente
   useEffect(() => {
     if (!currentUser) return;
-
-    console.log('Carregando notas para usuário:', currentUser.uid);
     const q = query(
       collection(db, 'notes'),
       where('userId', '==', currentUser.uid),
-      orderBy('criadoEm', 'desc')
+      orderBy('criadoEm', 'desc'),
+      limit(1)
     );
-
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log('Snapshot recebido, documentos:', snapshot.docs.length);
-      const notesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Note[];
-      console.log('Notas carregadas:', notesData);
-      setNotes(notesData);
+      const notesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Note[];
+      setLatestNote(notesData[0] || null);
     }, (error) => {
-      console.error('Erro ao carregar notas:', error);
+      console.error('Erro ao carregar nota mais recente:', error);
     });
-
     return () => unsubscribe();
   }, [currentUser]);
+
+  // Buscar as demais notas apenas ao abrir o modal
+  useEffect(() => {
+    const fetchOtherNotes = async () => {
+      if (!currentUser || !isModalOpen) return;
+      const q = query(
+        collection(db, 'notes'),
+        where('userId', '==', currentUser.uid),
+        orderBy('criadoEm', 'desc'),
+        limit(100)
+      );
+      const snapshot = await getDocs(q);
+      const notesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Note[];
+      // Remove a nota mais recente (já está em latestNote)
+      setOtherNotes(notesData.filter(n => !latestNote || n.id !== latestNote.id));
+    };
+    if (isModalOpen) fetchOtherNotes();
+    else setOtherNotes([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isModalOpen, currentUser, latestNote]);
 
   const handleAddNote = async () => {
     if (!newNote.trim() || !currentUser) return;
@@ -162,49 +177,25 @@ export default function NotesWidget() {
 
   const recentNotes = notes.slice(0, 3);
 
+  // Remover preview das notas recentes no hover do botão
   return (
     <>
       {/* Widget Compacto - Mesmo tamanho dos índices */}
-      <div className="relative group">
+      <div className="relative">
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-1 px-2 py-1 bg-white/60 dark:bg-[#23283A]/60 backdrop-blur-sm rounded-lg border border-[#3478F6]/20 hover:border-[#3478F6]/40 transition-all duration-200 cursor-pointer group hover:scale-105"
+          className="flex items-center gap-1 px-2 py-1 bg-white/60 dark:bg-[#23283A]/60 backdrop-blur-sm rounded-lg border border-[#3478F6]/20 hover:border-[#3478F6]/40 transition-all duration-200 cursor-pointer hover:scale-105"
         >
           <NotesIcon className="h-4 w-4 text-[#3478F6]" />
           <div className="text-center">
-            <div className="text-xs font-bold text-[#2E2F38] dark:text-white group-hover:text-[#3478F6] transition-colors">
+            <div className="text-xs font-bold text-[#2E2F38] dark:text-white hover:text-[#3478F6] transition-colors">
               Notas
             </div>
             <div className="text-[10px] text-[#6B6F76] dark:text-gray-300 font-medium">
-              {notes.length}
+              {latestNote ? 1 + otherNotes.length : 0}
             </div>
           </div>
         </button>
-
-        {/* Preview das notas recentes */}
-        {recentNotes.length > 0 && (
-          <div className="absolute top-full right-0 mt-2 bg-white dark:bg-[#23283A] rounded-xl shadow-xl border border-[#E8E9F1] dark:border-[#23283A] p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50 min-w-[280px]">
-            <div className="text-xs font-semibold text-white mb-2">Notas Recentes:</div>
-            <div className="space-y-2">
-              {recentNotes.map(note => (
-                <div key={note.id} className="flex items-start gap-2 p-2 rounded-lg hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
-                  <span className="text-sm">{getPriorityIcon(note.prioridade)}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm text-[#2E2F38] dark:text-white line-clamp-2">{note.texto}</div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className={`px-2 py-0.5 text-xs rounded-full ${getPriorityColor(note.prioridade)}`}>
-                        {note.prioridade}
-                      </span>
-                      <span className="text-xs text-white">
-                        {note.criadoEm.toDate().toLocaleDateString('pt-BR')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Modal Completo */}
@@ -303,14 +294,49 @@ export default function NotesWidget() {
 
             {/* Lista de Notas com mais espaço */}
             <div className="p-3 overflow-y-auto" style={{height: 'calc(85vh - 200px)'}}>
-              {filteredAndSortedNotes.length === 0 ? (
+              {(!latestNote && otherNotes.length === 0) ? (
                 <div className="text-center py-8">
                   <NotesIcon className="h-8 w-8 text-white mx-auto mb-2" />
                   <p className="text-white text-sm">Nenhuma nota encontrada</p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {filteredAndSortedNotes.map(note => (
+                  {latestNote && (
+                    <div
+                      key={latestNote.id}
+                      className="group p-3 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-white dark:hover:bg-[#23283A] transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm">{getPriorityIcon(latestNote.prioridade)}</span>
+                            <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getPriorityColor(latestNote.prioridade)}`}>
+                              {latestNote.prioridade}
+                            </span>
+                            <span className="text-xs text-white">
+                              {latestNote.criadoEm.toDate().toLocaleString('pt-BR')}
+                            </span>
+                          </div>
+                          <p className="text-[#2E2F38] dark:text-white text-sm leading-relaxed">{latestNote.texto}</p>
+                          {latestNote.dataHora && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <CalendarIcon className="h-3 w-3 text-white" />
+                              <span className="text-xs text-white">
+                                Agendado: {new Date(latestNote.dataHora).toLocaleString('pt-BR')}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleDeleteNote(latestNote.id)}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded transition-all"
+                        >
+                          <XIcon className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {otherNotes.map(note => (
                     <div
                       key={note.id}
                       className="group p-3 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-white dark:hover:bg-[#23283A] transition-colors"
