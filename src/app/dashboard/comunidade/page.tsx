@@ -995,6 +995,7 @@ export default function ComunidadePage() {
         </div>
         {/* Paginação */}
         <div className="flex justify-end gap-2 mt-6">
+          <button onClick={() => fetchPosts('first')} disabled={pageStack.length <= 1} className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded disabled:opacity-50">Primeira página</button>
           <button onClick={() => fetchPosts('prev')} disabled={pageStack.length <= 1} className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded disabled:opacity-50">Anterior</button>
           <button onClick={() => fetchPosts('next')} disabled={posts.length < PAGE_SIZE} className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded disabled:opacity-50">Próxima</button>
         </div>
