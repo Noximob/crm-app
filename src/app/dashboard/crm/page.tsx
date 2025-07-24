@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { PIPELINE_STAGES } from '@/lib/constants';
 import CrmHeader from './_components/CrmHeader';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, Timestamp, orderBy, limit, startAfter } from 'firebase/firestore';
+import { collection, getDocs, query, where, Timestamp, orderBy, limit, startAfter, onSnapshot } from 'firebase/firestore';
 import Link from 'next/link';
 import FilterModal, { Filters } from './_components/FilterModal';
 
@@ -118,6 +118,7 @@ export default function CrmPage() {
     const [lastVisible, setLastVisible] = useState<any>(null);
     const [hasMore, setHasMore] = useState(true);
     const PAGE_SIZE = 15;
+    const isFirstLoad = useRef(true);
 
     useEffect(() => {
         if (currentUser) {
@@ -127,6 +128,37 @@ export default function CrmPage() {
             setLeads([]);
             setLoading(false);
         }
+    }, [currentUser]);
+
+    // Tempo real para o lead mais novo
+    useEffect(() => {
+        if (!currentUser) return;
+        const leadsRef = collection(db, 'leads');
+        const q = query(
+            leadsRef,
+            where("userId", "==", currentUser.uid),
+            orderBy("createdAt", "desc"),
+            limit(1)
+        );
+        const unsubscribe = onSnapshot(q, async (snapshot) => {
+            if (snapshot.empty) return;
+            const doc = snapshot.docs[0];
+            const leadData = { id: doc.id, ...doc.data() } as Lead;
+            const tasksCol = collection(db, 'leads', doc.id, 'tarefas');
+            const tasksQuery = query(tasksCol, where('status', '==', 'pendente'));
+            const tasksSnapshot = await getDocs(tasksQuery);
+            const tasks = tasksSnapshot.docs.map(doc => doc.data() as Task);
+            leadData.taskStatus = getTaskStatusInfo(tasks);
+            leadData.qualificacao = doc.data().qualificacao || {};
+            // Só adiciona se não estiver na lista
+            setLeads(prev => {
+                if (prev.length > 0 && prev[0].id === leadData.id) return prev;
+                // Se o lead já está em qualquer posição, move para o topo
+                const filtered = prev.filter(l => l.id !== leadData.id);
+                return [leadData, ...filtered];
+            });
+        });
+        return () => unsubscribe();
     }, [currentUser]);
 
     const fetchLeads = async (loadMore = false) => {
@@ -161,7 +193,12 @@ export default function CrmPage() {
                 return leadData;
             }));
             if (loadMore) {
-                setLeads(prev => [...prev, ...newLeads]);
+                setLeads(prev => {
+                    // Evita duplicatas
+                    const ids = new Set(prev.map(l => l.id));
+                    const filtered = newLeads.filter(l => !ids.has(l.id));
+                    return [...prev, ...filtered];
+                });
             } else {
                 setLeads(newLeads);
             }
