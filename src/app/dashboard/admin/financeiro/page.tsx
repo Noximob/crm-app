@@ -88,6 +88,7 @@ export default function FinanceiroPage() {
   const [movimentacoes, setMovimentacoes] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [firestoreError, setFirestoreError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -133,8 +134,10 @@ export default function FinanceiroPage() {
         data: doc.data().data?.toDate ? doc.data().data.toDate() : new Date(doc.data().data)
       }));
       setMovimentacoes(data);
-    } catch (err) {
+      setFirestoreError(null);
+    } catch (err: any) {
       setMsg('Erro ao carregar movimentações');
+      setFirestoreError(err?.message || String(err));
     } finally {
       setLoading(false);
     }
@@ -150,6 +153,7 @@ export default function FinanceiroPage() {
 
     setLoading(true);
     setMsg(null);
+    setFirestoreError(null);
     
     try {
       const dataObj = new Date(form.data);
@@ -180,8 +184,10 @@ export default function FinanceiroPage() {
       setEditId(null);
       resetForm();
       fetchMovimentacoes();
-    } catch (err) {
+      setFirestoreError(null);
+    } catch (err: any) {
       setMsg('Erro ao salvar movimentação');
+      setFirestoreError(err?.message || String(err));
     } finally {
       setLoading(false);
     }
@@ -339,24 +345,24 @@ export default function FinanceiroPage() {
         </div>
 
         {/* Barra de Ações */}
-        <div className="bg-white dark:bg-[#23283A] rounded-2xl p-4 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-6">
-          <div className="flex flex-col lg:flex-row gap-2 items-start lg:items-center justify-between">
-            <div className="flex items-center gap-2">
+        <div className="bg-white dark:bg-[#23283A] rounded-2xl p-2 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-6">
+          <div className="flex flex-col lg:flex-row gap-1 items-start lg:items-center justify-between">
+            <div className="flex items-center gap-1">
               <button
                 onClick={() => {
                   resetForm();
                   setShowModal(true);
                 }}
-                className="flex items-center gap-2 px-3 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold rounded-lg text-sm transition-colors shadow-sm"
+                className="flex items-center gap-1 px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold rounded text-xs transition-colors shadow-sm"
               >
-                <PlusIcon className="h-4 w-4" />
-                Nova Movimentação
+                <PlusIcon className="h-3 w-3" />
+                Nova
               </button>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 px-2 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium rounded-lg text-sm transition-colors"
+                className="flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium rounded text-xs transition-colors"
               >
-                <FilterIcon className="h-4 w-4" />
+                <FilterIcon className="h-3 w-3" />
                 Filtros
               </button>
             </div>
@@ -365,10 +371,10 @@ export default function FinanceiroPage() {
                 type="text"
                 value={filtros.busca}
                 onChange={(e) => setFiltros(prev => ({ ...prev, busca: e.target.value }))}
-                className="pl-8 pr-2 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white w-48 text-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
+                className="pl-7 pr-2 py-1 border border-[#E8E9F1] dark:border-[#23283A] rounded bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white w-36 text-xs focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
                 placeholder="Buscar..."
               />
-              <svg className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#6B6F76] dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-[#6B6F76] dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <circle cx="11" cy="11" r="8"/>
                 <path d="m21 21-4.35-4.35"/>
               </svg>
@@ -430,8 +436,11 @@ export default function FinanceiroPage() {
 
         {/* Mensagem */}
         {msg && (
-          <div className={`p-4 rounded-xl mb-6 ${msg.includes('Erro') ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-green-100 text-green-700 border border-green-200'}`}>
+          <div className={`p-3 rounded-xl mb-4 ${msg.includes('Erro') ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-green-100 text-green-700 border border-green-200'}`}>
             {msg}
+            {firestoreError && (
+              <div className="mt-2 text-xs text-red-700 break-all">{firestoreError}</div>
+            )}
           </div>
         )}
 
