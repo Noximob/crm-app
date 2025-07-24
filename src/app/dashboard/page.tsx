@@ -1199,7 +1199,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {trendingPostsFiltered.map((post, index) => (
+                {trendingPostsFiltered.slice(0, 8).map((post, index) => (
                   <div 
                     key={post.id} 
                     className={`group relative backdrop-blur-sm rounded-xl p-4 transition-all duration-300 cursor-pointer border hover:scale-[1.02] shadow-lg hover:shadow-xl ${
@@ -1440,8 +1440,8 @@ export default function DashboardPage() {
                     {/* Efeito de brilho no hover */}
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                   </div>
-            ))}
-          </div>
+                ))}
+              </div>
             )}
 
             {/* Footer com link para comunidade */}

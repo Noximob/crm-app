@@ -18,6 +18,9 @@ import {
   arrayRemove,
   getDoc,
   setDoc,
+  getDocs, // ADICIONAR
+  limit, // ADICIONAR
+  startAfter // ADICIONAR
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import data from '@emoji-mart/data';
@@ -66,6 +69,10 @@ export default function ComunidadePage() {
   const { currentUser, userData } = useAuth();
   const { resetNotification } = useNotifications();
   const [posts, setPosts] = useState<any[]>([]);
+  const [lastVisible, setLastVisible] = useState<any>(null);
+  const [firstVisible, setFirstVisible] = useState<any>(null);
+  const [pageStack, setPageStack] = useState<any[]>([]);
+  const PAGE_SIZE = 10;
   const [novoPost, setNovoPost] = useState("");
   const [loading, setLoading] = useState(false);
   const [deletando, setDeletando] = useState<string | null>(null);
@@ -188,12 +195,45 @@ export default function ComunidadePage() {
     }
   };
 
+  // Buscar posts paginados
+  const fetchPosts = async (direction: 'next' | 'prev' | 'first' = 'first') => {
+    let q;
+    if (direction === 'first') {
+      q = query(
+        collection(db, 'comunidadePosts'),
+        orderBy('createdAt', 'desc'),
+        limit(PAGE_SIZE)
+      );
+    } else if (direction === 'next' && lastVisible) {
+      q = query(
+        collection(db, 'comunidadePosts'),
+        orderBy('createdAt', 'desc'),
+        startAfter(lastVisible),
+        limit(PAGE_SIZE)
+      );
+    } else if (direction === 'prev' && pageStack.length > 1) {
+      const prev = pageStack[pageStack.length - 2];
+      q = query(
+        collection(db, 'comunidadePosts'),
+        orderBy('createdAt', 'desc'),
+        startAfter(prev),
+        limit(PAGE_SIZE)
+      );
+    } else {
+      return;
+    }
+    const snapshot = await getDocs(q);
+    const postsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    setPosts(postsData);
+    setFirstVisible(snapshot.docs[0] || null);
+    setLastVisible(snapshot.docs[snapshot.docs.length - 1] || null);
+    if (direction === 'next') setPageStack(prev => [...prev, snapshot.docs[0]]);
+    if (direction === 'first') setPageStack([snapshot.docs[0]]);
+    if (direction === 'prev') setPageStack(prev => prev.slice(0, -1));
+  };
+
   useEffect(() => {
-    const q = query(collection(db, "comunidadePosts"), orderBy("createdAt", "desc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setPosts(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-    });
-    return () => unsubscribe();
+    fetchPosts('first');
   }, []);
 
   // Resetar notificação quando acessa a página da Comunidade
@@ -952,6 +992,11 @@ export default function ComunidadePage() {
               </div>
             );
           })}
+        </div>
+        {/* Paginação */}
+        <div className="flex justify-end gap-2 mt-6">
+          <button onClick={() => fetchPosts('prev')} disabled={pageStack.length <= 1} className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded disabled:opacity-50">Anterior</button>
+          <button onClick={() => fetchPosts('next')} disabled={posts.length < PAGE_SIZE} className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded disabled:opacity-50">Próxima</button>
         </div>
       </div>
       <Modal open={modalOpen} onClose={() => { setModalOpen(false); setModalImage(null); setModalPostId(null); }}>
