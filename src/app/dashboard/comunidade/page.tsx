@@ -65,6 +65,46 @@ function Modal({ open, onClose, children }: { open: boolean, onClose: () => void
   );
 }
 
+// Hook para buscar avatar do usuário pelo userId
+function useUserAvatar(userId: string, fallbackNome: string) {
+  const { currentUser, userData } = useAuth();
+  const [avatar, setAvatar] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchAvatar() {
+      if (currentUser && userId === currentUser.uid) {
+        // Se for o usuário logado, prioriza foto do Google/Auth
+        if (currentUser.photoURL) {
+          isMounted && setAvatar(currentUser.photoURL);
+          return;
+        }
+        if (userData?.photoURL) {
+          isMounted && setAvatar(userData.photoURL);
+          return;
+        }
+      }
+      // Buscar na coleção usuarios
+      try {
+        const userDoc = await getDoc(doc(db, 'usuarios', userId));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          if (data.photoURL) {
+            isMounted && setAvatar(data.photoURL);
+            return;
+          }
+        }
+      } catch {}
+      // Fallback: iniciais
+      const iniciais = fallbackNome?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0,2) || '?';
+      isMounted && setAvatar(`https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackNome)}&background=random`);
+    }
+    fetchAvatar();
+    return () => { isMounted = false; };
+  }, [userId, currentUser, userData, fallbackNome]);
+  return avatar;
+}
+
 export default function ComunidadePage() {
   const { currentUser, userData } = useAuth();
   const { resetNotification } = useNotifications();
@@ -814,6 +854,7 @@ export default function ComunidadePage() {
             const totalEngagement = getTotalEngagement(post.id);
             // Se for repost, buscar dados do original
             const original = post.repostOf && posts.find(p => p.id === post.repostOf);
+            const avatarUrl = useUserAvatar(post.userId, post.nome);
             return (
               <div
                 key={post.id}
@@ -834,7 +875,7 @@ export default function ComunidadePage() {
                 )}
                 
                 <div className="flex items-start gap-4 mb-2">
-                  <img src={post.avatar} alt={post.nome} className="w-14 h-14 rounded-full object-cover border-2 border-white dark:border-[#23283A] shadow-md" />
+                  <img src={avatarUrl || ''} alt={post.nome} className="w-14 h-14 rounded-full object-cover border-2 border-white dark:border-[#23283A] shadow-md" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-bold text-[#2E2F38] dark:text-white text-lg truncate">{post.nome}</span>
