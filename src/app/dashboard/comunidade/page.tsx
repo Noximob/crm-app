@@ -50,7 +50,8 @@ function gerarAvatar(userData: any, currentUser: any) {
   if (userData?.photoURL) {
     return userData.photoURL;
   }
-  return `https://api.dicebear.com/7.x/initials/svg?seed=${userData?.nome || currentUser?.email?.[0] || "U"}`;
+  const seed = userData?.nome || currentUser?.email?.[0] || "U";
+  return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(seed)}`;
 }
 
 function Modal({ open, onClose, children }: { open: boolean, onClose: () => void, children: React.ReactNode }) {
@@ -77,12 +78,25 @@ function gerarAvatarUrl(userId: string, fallbackNome: string, currentUser: any, 
     }
   }
   // Fallback: iniciais
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackNome)}&background=random`;
+  const safeName = fallbackNome || 'Usuario';
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}&background=random`;
 }
 
 export default function ComunidadePage() {
   const { currentUser, userData } = useAuth();
   const { resetNotification } = useNotifications();
+  
+  // Verificação de segurança para evitar renderização prematura
+  if (!currentUser || !userData) {
+    return (
+      <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6] mx-auto mb-4"></div>
+          <p className="text-[#6B6F76] dark:text-gray-300">Carregando comunidade...</p>
+        </div>
+      </div>
+    );
+  }
   const [posts, setPosts] = useState<any[]>([]);
   const [lastVisible, setLastVisible] = useState<any>(null);
   const [firstVisible, setFirstVisible] = useState<any>(null);
@@ -212,50 +226,60 @@ export default function ComunidadePage() {
 
   // Buscar posts paginados
   const fetchPosts = async (direction: 'next' | 'prev' | 'first' = 'first') => {
-    let q;
-    if (direction === 'first') {
-      q = query(
-        collection(db, 'comunidadePosts'),
-        orderBy('createdAt', 'desc'),
-        limit(PAGE_SIZE)
-      );
-    } else if (direction === 'next' && lastVisible) {
-      q = query(
-        collection(db, 'comunidadePosts'),
-        orderBy('createdAt', 'desc'),
-        startAfter(lastVisible),
-        limit(PAGE_SIZE)
-      );
-    } else if (direction === 'prev' && pageStack.length > 1) {
-      const prev = pageStack[pageStack.length - 2];
-      q = query(
-        collection(db, 'comunidadePosts'),
-        orderBy('createdAt', 'desc'),
-        startAfter(prev),
-        limit(PAGE_SIZE)
-      );
-    } else {
-      return;
+    try {
+      let q;
+      if (direction === 'first') {
+        q = query(
+          collection(db, 'comunidadePosts'),
+          orderBy('createdAt', 'desc'),
+          limit(PAGE_SIZE)
+        );
+      } else if (direction === 'next' && lastVisible) {
+        q = query(
+          collection(db, 'comunidadePosts'),
+          orderBy('createdAt', 'desc'),
+          startAfter(lastVisible),
+          limit(PAGE_SIZE)
+        );
+      } else if (direction === 'prev' && pageStack.length > 1) {
+        const prev = pageStack[pageStack.length - 2];
+        q = query(
+          collection(db, 'comunidadePosts'),
+          orderBy('createdAt', 'desc'),
+          startAfter(prev),
+          limit(PAGE_SIZE)
+        );
+      } else {
+        return;
+      }
+      const snapshot = await getDocs(q);
+      const postsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setPosts(postsData);
+      setFirstVisible(snapshot.docs[0] || null);
+      setLastVisible(snapshot.docs[snapshot.docs.length - 1] || null);
+      if (direction === 'next') setPageStack(prev => [...prev, snapshot.docs[0]]);
+      if (direction === 'first') setPageStack([snapshot.docs[0]]);
+      if (direction === 'prev') setPageStack(prev => prev.slice(0, -1));
+    } catch (error) {
+      console.error('Erro ao buscar posts:', error);
+      setPosts([]);
     }
-    const snapshot = await getDocs(q);
-    const postsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    setPosts(postsData);
-    setFirstVisible(snapshot.docs[0] || null);
-    setLastVisible(snapshot.docs[snapshot.docs.length - 1] || null);
-    if (direction === 'next') setPageStack(prev => [...prev, snapshot.docs[0]]);
-    if (direction === 'first') setPageStack([snapshot.docs[0]]);
-    if (direction === 'prev') setPageStack(prev => prev.slice(0, -1));
   };
 
   useEffect(() => {
-    fetchPosts('first');
-  }, []);
+    if (currentUser) {
+      fetchPosts('first');
+    }
+  }, [currentUser]);
 
   // Resetar notificação quando acessa a página da Comunidade
   useEffect(() => {
-    if (currentUser && userData) {
+    if (currentUser && userData && resetNotification) {
       console.log('Página da Comunidade carregada - resetando notificação...');
-      resetNotification('comunidade');
+      // Usar setTimeout para garantir que o contexto esteja pronto
+      setTimeout(() => {
+        resetNotification('comunidade');
+      }, 100);
     }
   }, [currentUser, userData, resetNotification]);
 
@@ -330,11 +354,16 @@ export default function ComunidadePage() {
 
   // Calcular engajamento total para cada post
   const getTotalEngagement = (postId: string) => {
-    const likes = posts.find(p => p.id === postId)?.likes || 0;
-    const comments = commentsMap[postId] || 0;
-    const reposts = repostsMap[postId] || 0;
-    const views = viewsMap[postId] || 0;
-    return likes + comments + reposts + views;
+    try {
+      const likes = posts.find(p => p.id === postId)?.likes || 0;
+      const comments = commentsMap[postId] || 0;
+      const reposts = repostsMap[postId] || 0;
+      const views = viewsMap[postId] || 0;
+      return likes + comments + reposts + views;
+    } catch (error) {
+      console.error('Erro ao calcular engajamento:', error);
+      return 0;
+    }
   };
 
   // Registrar visualização única ao abrir modal
@@ -604,37 +633,44 @@ export default function ComunidadePage() {
   };
 
   const sortedPosts = [...posts].sort((a, b) => {
-    // Priorizar eventos agendados no topo
-    const aIsEvent = a.isEvento && a.eventoStatus === 'agendado';
-    const bIsEvent = b.isEvento && b.eventoStatus === 'agendado';
-    
-    if (aIsEvent && !bIsEvent) return -1;
-    if (!aIsEvent && bIsEvent) return 1;
-    
-    // Se ambos são eventos, ordenar por data do evento
-    if (aIsEvent && bIsEvent) {
-      const aEventTime = a.eventoData instanceof Date ? a.eventoData : a.eventoData.toDate();
-      const bEventTime = b.eventoData instanceof Date ? b.eventoData : b.eventoData.toDate();
-      return aEventTime.getTime() - bEventTime.getTime();
-    }
-    
-    // Para posts normais, usar a lógica existente
-    if (orderByTrending === 'recent') {
-      return b.createdAt?.toDate() - a.createdAt?.toDate();
-    } else {
-      // No Top Trending, eventos agendados sempre ficam no topo
+    try {
+      // Priorizar eventos agendados no topo
+      const aIsEvent = a.isEvento && a.eventoStatus === 'agendado';
+      const bIsEvent = b.isEvento && b.eventoStatus === 'agendado';
+      
       if (aIsEvent && !bIsEvent) return -1;
       if (!aIsEvent && bIsEvent) return 1;
       
-      // Se ambos são eventos, ordenar por data
+      // Se ambos são eventos, ordenar por data do evento
       if (aIsEvent && bIsEvent) {
-        const aEventTime = a.eventoData instanceof Date ? a.eventoData : a.eventoData.toDate();
-        const bEventTime = b.eventoData instanceof Date ? b.eventoData : b.eventoData.toDate();
+        const aEventTime = a.eventoData instanceof Date ? a.eventoData : a.eventoData?.toDate?.() || new Date(0);
+        const bEventTime = b.eventoData instanceof Date ? b.eventoData : b.eventoData?.toDate?.() || new Date(0);
         return aEventTime.getTime() - bEventTime.getTime();
       }
       
-      // Para posts normais, ordenar por engajamento
-      return getTotalEngagement(b.id) - getTotalEngagement(a.id);
+      // Para posts normais, usar a lógica existente
+      if (orderByTrending === 'recent') {
+        const aDate = a.createdAt?.toDate?.() || new Date(0);
+        const bDate = b.createdAt?.toDate?.() || new Date(0);
+        return bDate.getTime() - aDate.getTime();
+      } else {
+        // No Top Trending, eventos agendados sempre ficam no topo
+        if (aIsEvent && !bIsEvent) return -1;
+        if (!aIsEvent && bIsEvent) return 1;
+        
+        // Se ambos são eventos, ordenar por data
+        if (aIsEvent && bIsEvent) {
+          const aEventTime = a.eventoData instanceof Date ? a.eventoData : a.eventoData?.toDate?.() || new Date(0);
+          const bEventTime = b.eventoData instanceof Date ? b.eventoData : b.eventoData?.toDate?.() || new Date(0);
+          return aEventTime.getTime() - bEventTime.getTime();
+        }
+        
+        // Para posts normais, ordenar por engajamento
+        return getTotalEngagement(b.id) - getTotalEngagement(a.id);
+      }
+    } catch (error) {
+      console.error('Erro ao ordenar posts:', error);
+      return 0;
     }
   });
 
@@ -643,8 +679,11 @@ export default function ComunidadePage() {
       <div className="max-w-2xl mx-auto">
         {/* Comunidade Estilo Twitter */}
         {/* Campo de novo post */}
-        <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-6 mb-8 flex gap-4">
-          <img src={gerarAvatar(userData, currentUser)} alt="avatar" className="w-12 h-12 rounded-full object-cover" />
+                  <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-6 mb-8 flex gap-4">
+          <img src={gerarAvatar(userData, currentUser)} alt="avatar" className="w-12 h-12 rounded-full object-cover" onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(userData?.nome || 'U')}&background=random`;
+          }} />
           <div className="flex-1 flex flex-col gap-2">
             <textarea
               className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white resize-none min-h-[60px]"
@@ -783,7 +822,7 @@ export default function ComunidadePage() {
                     <Picker 
                       data={data} 
                       onEmojiSelect={handleEmojiSelect} 
-                      theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'} 
+                      theme={typeof window !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light'} 
                     />
                   </div>
                 )}
@@ -850,7 +889,10 @@ export default function ComunidadePage() {
                 )}
                 
                 <div className="flex items-start gap-4 mb-2">
-                  <img src={avatarUrl || ''} alt={post.nome} className="w-14 h-14 rounded-full object-cover border-2 border-white dark:border-[#23283A] shadow-md" />
+                  <img src={avatarUrl || ''} alt={post.nome} className="w-14 h-14 rounded-full object-cover border-2 border-white dark:border-[#23283A] shadow-md" onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(post.nome || 'U')}&background=random`;
+                  }} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-bold text-[#2E2F38] dark:text-white text-lg truncate">{post.nome}</span>
@@ -1029,7 +1071,10 @@ export default function ComunidadePage() {
               {comments.length === 0 && <div className="text-gray-400 text-sm">Nenhum comentário ainda.</div>}
               {comments.map((c) => (
                 <div key={c.id} className="flex items-start gap-2">
-                  <img src={c.avatar} alt={c.nome} className="w-8 h-8 rounded-full object-cover" />
+                  <img src={c.avatar} alt={c.nome} className="w-8 h-8 rounded-full object-cover" onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(c.nome || 'U')}&background=random`;
+                  }} />
                   <div>
                     <div className="font-semibold text-[#2E2F38] dark:text-white text-sm">{c.nome}</div>
                     <div className="text-[#2E2F38] dark:text-gray-200 text-sm">{c.texto}</div>
@@ -1058,7 +1103,7 @@ export default function ComunidadePage() {
                   <Picker
                     data={data}
                     onEmojiSelect={(emoji: any) => { setNewComment((prev) => prev + emoji.native); setShowEmojiComment(false); }}
-                    theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
+                    theme={typeof window !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
                   />
                 </div>
               )}
@@ -1108,7 +1153,7 @@ export default function ComunidadePage() {
                     <Picker
                       data={data}
                       onEmojiSelect={(emoji: any) => { setRepostComment((prev) => prev + emoji.native); setShowEmojiRepost(false); }}
-                      theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
+                      theme={typeof window !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
                     />
                   </div>
                 )}
