@@ -65,44 +65,19 @@ function Modal({ open, onClose, children }: { open: boolean, onClose: () => void
   );
 }
 
-// Hook para buscar avatar do usuário pelo userId
-function useUserAvatar(userId: string, fallbackNome: string) {
-  const { currentUser, userData } = useAuth();
-  const [avatar, setAvatar] = useState<string | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-    async function fetchAvatar() {
-      if (currentUser && userId === currentUser.uid) {
-        // Se for o usuário logado, prioriza foto do Google/Auth
-        if (currentUser.photoURL) {
-          isMounted && setAvatar(currentUser.photoURL);
-          return;
-        }
-        if (userData?.photoURL) {
-          isMounted && setAvatar(userData.photoURL);
-          return;
-        }
-      }
-      // Buscar na coleção usuarios
-      try {
-        const userDoc = await getDoc(doc(db, 'usuarios', userId));
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          if (data.photoURL) {
-            isMounted && setAvatar(data.photoURL);
-            return;
-          }
-        }
-      } catch {}
-      // Fallback: iniciais
-      const iniciais = fallbackNome?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0,2) || '?';
-      isMounted && setAvatar(`https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackNome)}&background=random`);
+// Função para buscar avatar do usuário pelo userId
+function gerarAvatarUrl(userId: string, fallbackNome: string, currentUser: any, userData: any) {
+  // Se for o usuário logado, prioriza foto do Google/Auth
+  if (currentUser && userId === currentUser.uid) {
+    if (currentUser.photoURL) {
+      return currentUser.photoURL;
     }
-    fetchAvatar();
-    return () => { isMounted = false; };
-  }, [userId, currentUser, userData, fallbackNome]);
-  return avatar;
+    if (userData?.photoURL) {
+      return userData.photoURL;
+    }
+  }
+  // Fallback: iniciais
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackNome)}&background=random`;
 }
 
 export default function ComunidadePage() {
@@ -854,7 +829,7 @@ export default function ComunidadePage() {
             const totalEngagement = getTotalEngagement(post.id);
             // Se for repost, buscar dados do original
             const original = post.repostOf && posts.find(p => p.id === post.repostOf);
-            const avatarUrl = useUserAvatar(post.userId, post.nome);
+            const avatarUrl = gerarAvatarUrl(post.userId, post.nome, currentUser, userData);
             return (
               <div
                 key={post.id}
