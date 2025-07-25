@@ -288,59 +288,30 @@ export default function FinanceiroPage() {
         </div>
 
         {/* Cards de Resumo */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
-                <DollarIcon className="h-6 w-6 text-green-600 dark:text-green-400" />
-              </div>
-              <TrendingUpIcon className="h-5 w-5 text-green-500" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* Saldo Atual */}
+          <div className="bg-gradient-to-br from-green-400/20 to-green-100 dark:from-green-900/30 dark:to-green-900/10 rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] flex flex-col items-center justify-center">
+            <div className="flex items-center justify-center mb-2">
+              <DollarIcon className="h-8 w-8 text-green-600 dark:text-green-400" />
             </div>
-            <h3 className="text-sm font-medium text-[#6B6F76] dark:text-gray-300 mb-1">Saldo Atual</h3>
-            <p className="text-2xl font-bold text-[#2E2F38] dark:text-white">
-              {formatCurrency(saldoAtual)}
-            </p>
+            <h3 className="text-base font-semibold text-[#2E2F38] dark:text-white mb-1">Saldo Atual</h3>
+            <p className="text-3xl font-bold text-green-700 dark:text-green-300">{formatCurrency(saldoAtual)}</p>
           </div>
-
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-                <TrendingUpIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              </div>
-              <span className="text-green-500 text-sm font-medium">+{formatCurrency(entradas)}</span>
+          {/* Entradas */}
+          <div className="bg-gradient-to-br from-blue-400/20 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/10 rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] flex flex-col items-center justify-center">
+            <div className="flex items-center justify-center mb-2">
+              <TrendingUpIcon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
             </div>
-            <h3 className="text-sm font-medium text-[#6B6F76] dark:text-gray-300 mb-1">Entradas</h3>
-            <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-              {formatCurrency(entradas)}
-            </p>
+            <h3 className="text-base font-semibold text-[#2E2F38] dark:text-white mb-1">Entradas</h3>
+            <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">{formatCurrency(entradas)}</p>
           </div>
-
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-lg">
-                <TrendingDownIcon className="h-6 w-6 text-red-600 dark:text-red-400" />
-              </div>
-              <span className="text-red-500 text-sm font-medium">-{formatCurrency(saidas)}</span>
+          {/* Saídas */}
+          <div className="bg-gradient-to-br from-red-400/20 to-red-100 dark:from-red-900/30 dark:to-red-900/10 rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] flex flex-col items-center justify-center">
+            <div className="flex items-center justify-center mb-2">
+              <TrendingDownIcon className="h-8 w-8 text-red-600 dark:text-red-400" />
             </div>
-            <h3 className="text-sm font-medium text-[#6B6F76] dark:text-gray-300 mb-1">Saídas</h3>
-            <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-              {formatCurrency(saidas)}
-            </p>
-          </div>
-
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg">
-                <DollarIcon className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
-              </div>
-              <span className="text-yellow-500 text-sm font-medium">
-                {pendentes >= 0 ? '+' : ''}{formatCurrency(pendentes)}
-              </span>
-            </div>
-            <h3 className="text-sm font-medium text-[#6B6F76] dark:text-gray-300 mb-1">Pendentes</h3>
-            <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-              {formatCurrency(pendentes)}
-            </p>
+            <h3 className="text-base font-semibold text-[#2E2F38] dark:text-white mb-1">Saídas</h3>
+            <p className="text-3xl font-bold text-red-700 dark:text-red-300">{formatCurrency(saidas)}</p>
           </div>
         </div>
 
