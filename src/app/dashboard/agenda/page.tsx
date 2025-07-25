@@ -41,14 +41,14 @@ interface AgendaItem {
   titulo: string;
   descricao?: string;
   dataHora: Timestamp;
-  tipo: 'agenda' | 'crm' | 'nota';
+  tipo: 'agenda' | 'crm' | 'nota' | 'aviso';
   status: 'pendente' | 'concluida' | 'cancelada';
   cor: string;
   leadId?: string;
   leadNome?: string;
   createdAt: Timestamp;
   userId: string;
-  source?: 'agenda' | 'notas' | 'crm';
+  source?: 'agenda' | 'notas' | 'crm' | 'aviso';
   originalId?: string; // ID original da nota ou tarefa
 }
 
@@ -71,25 +71,35 @@ interface CrmTask {
   leadNome?: string;
 }
 
+interface AvisoImportante {
+  id: string;
+  titulo: string;
+  mensagem: string;
+  dataHora: Timestamp;
+}
+
 const tipoCores = {
   agenda: 'bg-emerald-500',
   crm: 'bg-blue-500',
-  nota: 'bg-yellow-500'
+  nota: 'bg-yellow-500',
+  aviso: 'bg-red-600'
 };
 
 const tipoLabels = {
   agenda: 'Agenda',
   crm: 'CRM',
-  nota: 'Nota'
+  nota: 'Nota',
+  aviso: 'Aviso Importante'
 };
 
 export default function AgendaPage() {
-  const { currentUser } = useAuth();
+  const { currentUser, userData } = useAuth();
   const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [crmTasks, setCrmTasks] = useState<CrmTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [avisos, setAvisos] = useState<AvisoImportante[]>([]);
 
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -111,6 +121,31 @@ export default function AgendaPage() {
       fetchAllData();
     }
   }, [currentUser, selectedDate, filter]);
+
+  useEffect(() => {
+    if (userData?.imobiliariaId) {
+      fetchAvisosImportantes();
+    }
+  }, [userData]);
+
+  const fetchAvisosImportantes = async () => {
+    if (!userData?.imobiliariaId) return;
+    try {
+      const q = query(
+        collection(db, 'avisosImportantes'),
+        where('imobiliariaId', '==', userData.imobiliariaId)
+      );
+      const snapshot = await getDocs(q);
+      const now = new Date();
+      const avisosData = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as any))
+        .filter(aviso => aviso.dataHora?.toDate && aviso.dataHora.toDate() >= now)
+        .sort((a, b) => a.dataHora.toDate() - b.dataHora.toDate());
+      setAvisos(avisosData);
+    } catch (err) {
+      setAvisos([]);
+    }
+  };
 
   const fetchAllData = async () => {
     if (!currentUser) return;
@@ -370,6 +405,26 @@ export default function AgendaPage() {
       }
     });
     
+    // Adicionar avisos importantes
+    avisos.forEach(aviso => {
+      const avisoDate = aviso.dataHora.toDate();
+      if (avisoDate.toDateString() === date.toDateString()) {
+        allItems.push({
+          id: `aviso_${aviso.id}`,
+          titulo: aviso.titulo,
+          descricao: aviso.mensagem,
+          dataHora: aviso.dataHora,
+          tipo: 'aviso',
+          status: 'pendente',
+          cor: '#DC2626', // vermelho
+          createdAt: aviso.dataHora,
+          userId: '',
+          source: 'aviso',
+          originalId: aviso.id
+        });
+      }
+    });
+    
     // Aplicar filtro se necessário
     if (filter !== 'all') {
       const filteredItems = allItems.filter(item => item.tipo === filter);
@@ -604,6 +659,25 @@ export default function AgendaPage() {
                     originalId: task.id,
                     leadId: task.leadId,
                     leadNome: task.leadNome
+                  });
+                }
+              });
+              
+              // Adicionar avisos importantes
+              avisos.forEach(aviso => {
+                if (aviso.dataHora.toDate() >= new Date()) {
+                  allItems.push({
+                    id: `aviso_${aviso.id}`,
+                    titulo: aviso.titulo,
+                    descricao: aviso.mensagem,
+                    dataHora: aviso.dataHora,
+                    tipo: 'aviso',
+                    status: 'pendente',
+                    cor: '#DC2626', // vermelho
+                    createdAt: aviso.dataHora,
+                    userId: '',
+                    source: 'aviso',
+                    originalId: aviso.id
                   });
                 }
               });
