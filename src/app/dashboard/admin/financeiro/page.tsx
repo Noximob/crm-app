@@ -288,30 +288,36 @@ export default function FinanceiroPage() {
         </div>
 
         {/* Cards de Resumo */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {/* Saldo Atual */}
-          <div className="bg-gradient-to-br from-green-400/20 to-green-100 dark:from-green-900/30 dark:to-green-900/10 rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] flex flex-col items-center justify-center">
-            <div className="flex items-center justify-center mb-2">
-              <DollarIcon className="h-8 w-8 text-green-600 dark:text-green-400" />
+          <div className="bg-gradient-to-br from-green-400/10 to-green-100/10 dark:from-green-900/20 dark:to-green-900/5 rounded-xl p-3 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] flex flex-row items-center justify-between min-h-[70px]">
+            <div className="flex items-center gap-2">
+              <DollarIcon className="h-6 w-6 text-green-600 dark:text-green-400" />
+              <div>
+                <h3 className="text-xs font-semibold text-[#2E2F38] dark:text-white mb-0.5">Saldo Atual</h3>
+                <p className="text-lg font-bold text-green-700 dark:text-green-300 m-0">{formatCurrency(saldoAtual)}</p>
+              </div>
             </div>
-            <h3 className="text-base font-semibold text-[#2E2F38] dark:text-white mb-1">Saldo Atual</h3>
-            <p className="text-3xl font-bold text-green-700 dark:text-green-300">{formatCurrency(saldoAtual)}</p>
           </div>
           {/* Entradas */}
-          <div className="bg-gradient-to-br from-blue-400/20 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/10 rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] flex flex-col items-center justify-center">
-            <div className="flex items-center justify-center mb-2">
-              <TrendingUpIcon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+          <div className="bg-gradient-to-br from-blue-400/10 to-blue-100/10 dark:from-blue-900/20 dark:to-blue-900/5 rounded-xl p-3 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] flex flex-row items-center justify-between min-h-[70px]">
+            <div className="flex items-center gap-2">
+              <TrendingUpIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <div>
+                <h3 className="text-xs font-semibold text-[#2E2F38] dark:text-white mb-0.5">Entradas</h3>
+                <p className="text-lg font-bold text-blue-700 dark:text-blue-300 m-0">{formatCurrency(entradas)}</p>
+              </div>
             </div>
-            <h3 className="text-base font-semibold text-[#2E2F38] dark:text-white mb-1">Entradas</h3>
-            <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">{formatCurrency(entradas)}</p>
           </div>
           {/* Saídas */}
-          <div className="bg-gradient-to-br from-red-400/20 to-red-100 dark:from-red-900/30 dark:to-red-900/10 rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] flex flex-col items-center justify-center">
-            <div className="flex items-center justify-center mb-2">
-              <TrendingDownIcon className="h-8 w-8 text-red-600 dark:text-red-400" />
+          <div className="bg-gradient-to-br from-red-400/10 to-red-100/10 dark:from-red-900/20 dark:to-red-900/5 rounded-xl p-3 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] flex flex-row items-center justify-between min-h-[70px]">
+            <div className="flex items-center gap-2">
+              <TrendingDownIcon className="h-6 w-6 text-red-600 dark:text-red-400" />
+              <div>
+                <h3 className="text-xs font-semibold text-[#2E2F38] dark:text-white mb-0.5">Saídas</h3>
+                <p className="text-lg font-bold text-red-700 dark:text-red-300 m-0">{formatCurrency(saidas)}</p>
+              </div>
             </div>
-            <h3 className="text-base font-semibold text-[#2E2F38] dark:text-white mb-1">Saídas</h3>
-            <p className="text-3xl font-bold text-red-700 dark:text-red-300">{formatCurrency(saidas)}</p>
           </div>
         </div>
 
