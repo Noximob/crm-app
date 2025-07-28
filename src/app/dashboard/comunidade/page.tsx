@@ -135,6 +135,7 @@ export default function ComunidadePage() {
   const emojiRepostRef = useRef<HTMLDivElement>(null);
   const [originalAuthors, setOriginalAuthors] = useState<Record<string, { nome: string, handle: string }>>({});
   const [userLikes, setUserLikes] = useState<Record<string, boolean>>({});
+  const [isLiking, setIsLiking] = useState<string | null>(null);
   
   // Estados para eventos agendados
   const [showEventModal, setShowEventModal] = useState(false);
@@ -526,6 +527,7 @@ export default function ComunidadePage() {
   const handleLike = async (postId: string) => {
     if (!currentUser) return;
     
+    setIsLiking(postId);
     try {
       const likeRef = doc(db, 'comunidadePosts', postId, 'likes', currentUser.uid);
       const likeDoc = await getDoc(likeRef);
@@ -534,6 +536,10 @@ export default function ComunidadePage() {
         // Remover like
         await deleteDoc(likeRef);
         // Atualizar estado local
+        setUserLikes(prev => ({
+          ...prev,
+          [postId]: false
+        }));
         setPosts(prev => prev.map(post => 
           post.id === postId 
             ? { ...post, likes: (post.likes || 1) - 1 }
@@ -543,6 +549,10 @@ export default function ComunidadePage() {
         // Adicionar like
         await setDoc(likeRef, { userId: currentUser.uid, timestamp: serverTimestamp() });
         // Atualizar estado local
+        setUserLikes(prev => ({
+          ...prev,
+          [postId]: true
+        }));
         setPosts(prev => prev.map(post => 
           post.id === postId 
             ? { ...post, likes: (post.likes || 0) + 1 }
@@ -551,6 +561,8 @@ export default function ComunidadePage() {
       }
     } catch (error) {
       console.error('Erro ao curtir post:', error);
+    } finally {
+      setIsLiking(null);
     }
   };
 
@@ -1071,8 +1083,13 @@ export default function ComunidadePage() {
                     <button 
                       onClick={() => handleLike(post.id)}
                       className={`flex items-center gap-1.5 text-sm font-medium transition-all duration-200 ${isLiked ? 'text-red-500 scale-110' : 'text-[#6B6F76] dark:text-gray-300 hover:text-red-500 hover:scale-105'}`}
+                      disabled={isLiking === post.id}
                     >
-                      <span className="text-lg">{isLiked ? '❤️' : '🤍'}</span>
+                      {isLiking === post.id ? (
+                        <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <span className="text-lg">{isLiked ? '❤️' : '🤍'}</span>
+                      )}
                       <span>{likesCount}</span>
                     </button>
                     <button 
