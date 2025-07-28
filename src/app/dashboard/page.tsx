@@ -515,9 +515,7 @@ export default function DashboardPage() {
             const repostsSnapshot = await getDocs(collection(db, 'comunidadePosts', post.id, 'reposts'));
             
             // Verificar se o usuário atual já curtiu o post
-            const userLikeSnapshot = await getDocs(
-              query(collection(db, 'comunidadePosts', post.id, 'likes'), where('userId', '==', currentUser?.uid))
-            );
+            const userLikeDoc = await getDoc(doc(db, 'comunidadePosts', post.id, 'likes', currentUser?.uid || ''));
             
             // Buscar nome do autor original se for repost
             let repostAuthorName = '';
@@ -545,7 +543,7 @@ export default function DashboardPage() {
               commentsCount: commentsSnapshot.size,
               repostsCount: repostsSnapshot.size,
               totalEngagement: (post.likes || 0) + commentsSnapshot.size + repostsSnapshot.size,
-              userLiked: userLikeSnapshot.size > 0,
+              userLiked: userLikeDoc.exists(),
               repostAuthorName,
               originalTexto,
               originalCreatedAt,

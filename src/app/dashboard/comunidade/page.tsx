@@ -134,6 +134,7 @@ export default function ComunidadePage() {
   const [showEmojiRepost, setShowEmojiRepost] = useState(false);
   const emojiRepostRef = useRef<HTMLDivElement>(null);
   const [originalAuthors, setOriginalAuthors] = useState<Record<string, { nome: string, handle: string }>>({});
+  const [userLikes, setUserLikes] = useState<Record<string, boolean>>({});
   
   // Estados para eventos agendados
   const [showEventModal, setShowEventModal] = useState(false);
@@ -304,7 +305,10 @@ export default function ComunidadePage() {
   useEffect(() => {
     if (modalPostId) {
       const unsub = onSnapshot(
-        collection(db, "comunidadePosts", modalPostId, "comments"),
+        query(
+          collection(db, "comunidadePosts", modalPostId, "comments"),
+          orderBy('createdAt', 'asc')
+        ),
         (snapshot) => {
           setComments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         }
@@ -313,17 +317,31 @@ export default function ComunidadePage() {
     }
   }, [modalPostId]);
 
-  // Atualizar contador de comentários de todos os posts em tempo real
+  // Atualizar contador de comentários e likes de todos os posts em tempo real
   useEffect(() => {
     const unsubscribes: any[] = [];
     posts.forEach((post) => {
-      const unsub = onSnapshot(
+      // Comentários
+      const unsubComments = onSnapshot(
         collection(db, "comunidadePosts", post.id, "comments"),
         (snapshot) => {
           setCommentsMap((prev) => ({ ...prev, [post.id]: snapshot.size }));
         }
       );
-      unsubscribes.push(unsub);
+      unsubscribes.push(unsubComments);
+      
+      // Likes
+      const unsubLikes = onSnapshot(
+        collection(db, "comunidadePosts", post.id, "likes"),
+        (snapshot) => {
+          setPosts(prev => prev.map(p => 
+            p.id === post.id 
+              ? { ...p, likes: snapshot.size }
+              : p
+          ));
+        }
+      );
+      unsubscribes.push(unsubLikes);
     });
     return () => { unsubscribes.forEach((unsub) => unsub()); };
   }, [posts]);
@@ -382,6 +400,27 @@ export default function ComunidadePage() {
         setDoc(viewRef, { viewedAt: serverTimestamp() }, { merge: true });
       });
     }
+  }, [posts, currentUser]);
+
+  // Verificar likes do usuário atual
+  useEffect(() => {
+    if (!currentUser) return;
+    
+    const unsubscribes: any[] = [];
+    posts.forEach((post) => {
+      const unsub = onSnapshot(
+        doc(db, "comunidadePosts", post.id, "likes", currentUser.uid),
+        (snapshot) => {
+          setUserLikes(prev => ({
+            ...prev,
+            [post.id]: snapshot.exists()
+          }));
+        }
+      );
+      unsubscribes.push(unsub);
+    });
+    
+    return () => { unsubscribes.forEach((unsub) => unsub()); };
   }, [posts, currentUser]);
 
   // Buscar nome/handle do autor original dos reposts
@@ -487,38 +526,48 @@ export default function ComunidadePage() {
   const handleLike = async (postId: string) => {
     if (!currentUser) return;
     
-    const postRef = doc(db, "comunidadePosts", postId);
-    const post = posts.find(p => p.id === postId);
-    
-    if (!post) return;
-    
-    const isLiked = post.likedBy?.includes(currentUser.uid);
-    
-    if (isLiked) {
-      // Descurtir
-      await updateDoc(postRef, {
-        likedBy: arrayRemove(currentUser.uid),
-        likes: (post.likes || 0) - 1
-      });
-    } else {
-      // Curtir
-      await updateDoc(postRef, {
-        likedBy: arrayUnion(currentUser.uid),
-        likes: (post.likes || 0) + 1
-      });
+    try {
+      const likeRef = doc(db, 'comunidadePosts', postId, 'likes', currentUser.uid);
+      const likeDoc = await getDoc(likeRef);
+      
+      if (likeDoc.exists()) {
+        // Remover like
+        await deleteDoc(likeRef);
+        // Atualizar estado local
+        setPosts(prev => prev.map(post => 
+          post.id === postId 
+            ? { ...post, likes: (post.likes || 1) - 1 }
+            : post
+        ));
+      } else {
+        // Adicionar like
+        await setDoc(likeRef, { userId: currentUser.uid, timestamp: serverTimestamp() });
+        // Atualizar estado local
+        setPosts(prev => prev.map(post => 
+          post.id === postId 
+            ? { ...post, likes: (post.likes || 0) + 1 }
+            : post
+        ));
+      }
+    } catch (error) {
+      console.error('Erro ao curtir post:', error);
     }
   };
 
   const handleAddComment = async () => {
     if (!modalPostId || !currentUser || !newComment.trim()) return;
-    await addDoc(collection(db, "comunidadePosts", modalPostId, "comments"), {
-      texto: newComment,
-      userId: currentUser.uid,
-      nome: userData?.nome || currentUser.email?.split("@")[0] || "Usuário",
-      avatar: gerarAvatar(userData, currentUser),
-      createdAt: serverTimestamp(),
-    });
-    setNewComment("");
+    try {
+      await addDoc(collection(db, "comunidadePosts", modalPostId, "comments"), {
+        texto: newComment,
+        userId: currentUser.uid,
+        nome: userData?.nome || currentUser.email?.split("@")[0] || "Usuário",
+        avatar: gerarAvatar(userData, currentUser),
+        createdAt: serverTimestamp(),
+      });
+      setNewComment("");
+    } catch (error) {
+      console.error('Erro ao adicionar comentário:', error);
+    }
   };
 
   const handleRepost = (post: any) => {
@@ -861,7 +910,7 @@ export default function ComunidadePage() {
           {sortedPosts.map((post) => {
             
             const isAuthor = currentUser && post.userId === currentUser.uid;
-            const isLiked = currentUser && post.likedBy?.includes(currentUser.uid);
+            const isLiked = currentUser && userLikes[post.id];
             const likesCount = post.likes || 0;
             const commentsCount = commentsMap[post.id] || 0;
             const repostsCount = repostsMap[post.id] || 0;
