@@ -134,7 +134,6 @@ export default function ComunidadePage() {
   const [showEmojiRepost, setShowEmojiRepost] = useState(false);
   const emojiRepostRef = useRef<HTMLDivElement>(null);
   const [originalAuthors, setOriginalAuthors] = useState<Record<string, { nome: string, handle: string }>>({});
-  const [userLikes, setUserLikes] = useState<Record<string, boolean>>({});
   const [isLiking, setIsLiking] = useState<string | null>(null);
   
   // Estados para eventos agendados
@@ -256,7 +255,23 @@ export default function ComunidadePage() {
       }
       const snapshot = await getDocs(q);
       const postsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setPosts(postsData);
+      
+      // Verificar likes do usuário para cada post
+      if (currentUser) {
+        const postsWithLikes = await Promise.all(
+          postsData.map(async (post: any) => {
+            const userLikeDoc = await getDoc(doc(db, 'comunidadePosts', post.id, 'likes', currentUser.uid));
+            return {
+              ...post,
+              userLiked: userLikeDoc.exists()
+            };
+          })
+        );
+        setPosts(postsWithLikes);
+      } else {
+        setPosts(postsData);
+      }
+      
       setFirstVisible(snapshot.docs[0] || null);
       setLastVisible(snapshot.docs[snapshot.docs.length - 1] || null);
       if (direction === 'next') setPageStack(prev => [...prev, snapshot.docs[0]]);
@@ -403,27 +418,6 @@ export default function ComunidadePage() {
     }
   }, [posts, currentUser]);
 
-  // Verificar likes do usuário atual
-  useEffect(() => {
-    if (!currentUser) return;
-    
-    const unsubscribes: any[] = [];
-    posts.forEach((post) => {
-      const unsub = onSnapshot(
-        doc(db, "comunidadePosts", post.id, "likes", currentUser.uid),
-        (snapshot) => {
-          setUserLikes(prev => ({
-            ...prev,
-            [post.id]: snapshot.exists()
-          }));
-        }
-      );
-      unsubscribes.push(unsub);
-    });
-    
-    return () => { unsubscribes.forEach((unsub) => unsub()); };
-  }, [posts, currentUser]);
-
   // Buscar nome/handle do autor original dos reposts
   useEffect(() => {
     const fetchOriginalAuthors = async () => {
@@ -536,26 +530,18 @@ export default function ComunidadePage() {
         // Remover like
         await deleteDoc(likeRef);
         // Atualizar estado local
-        setUserLikes(prev => ({
-          ...prev,
-          [postId]: false
-        }));
         setPosts(prev => prev.map(post => 
           post.id === postId 
-            ? { ...post, likes: (post.likes || 1) - 1 }
+            ? { ...post, likes: (post.likes || 1) - 1, userLiked: false }
             : post
         ));
       } else {
         // Adicionar like
         await setDoc(likeRef, { userId: currentUser.uid, timestamp: serverTimestamp() });
         // Atualizar estado local
-        setUserLikes(prev => ({
-          ...prev,
-          [postId]: true
-        }));
         setPosts(prev => prev.map(post => 
           post.id === postId 
-            ? { ...post, likes: (post.likes || 0) + 1 }
+            ? { ...post, likes: (post.likes || 0) + 1, userLiked: true }
             : post
         ));
       }
@@ -922,7 +908,7 @@ export default function ComunidadePage() {
           {sortedPosts.map((post) => {
             
             const isAuthor = currentUser && post.userId === currentUser.uid;
-            const isLiked = currentUser && userLikes[post.id];
+            const isLiked = currentUser && post.userLiked;
             const likesCount = post.likes || 0;
             const commentsCount = commentsMap[post.id] || 0;
             const repostsCount = repostsMap[post.id] || 0;
