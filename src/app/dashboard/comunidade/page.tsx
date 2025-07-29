@@ -337,6 +337,53 @@ export default function ComunidadePage() {
     }
   }, [modalPostId]);
 
+  // Atualizar contadores de likes e comentários em tempo real
+  useEffect(() => {
+    if (!posts.length) return;
+    
+    const unsubscribes: any[] = [];
+    
+    posts.forEach((post) => {
+      // Listener para likes
+      const unsubLikes = onSnapshot(
+        collection(db, "comunidadePosts", post.id, "likes"),
+        (snapshot) => {
+          setPosts(prev => prev.map(p => 
+            p.id === post.id 
+              ? { ...p, likes: snapshot.size }
+              : p
+          ));
+        },
+        (error) => {
+          console.error('Erro no listener de likes:', error);
+        }
+      );
+      unsubscribes.push(unsubLikes);
+      
+      // Listener para comentários
+      const unsubComments = onSnapshot(
+        collection(db, "comunidadePosts", post.id, "comments"),
+        (snapshot) => {
+          setCommentsMap(prev => ({ ...prev, [post.id]: snapshot.size }));
+        },
+        (error) => {
+          console.error('Erro no listener de comentários:', error);
+        }
+      );
+      unsubscribes.push(unsubComments);
+    });
+    
+    return () => { 
+      unsubscribes.forEach((unsub) => {
+        try {
+          unsub();
+        } catch (error) {
+          console.error('Erro ao desinscrever listener:', error);
+        }
+      }); 
+    };
+  }, [posts]);
+
   // Calcular engajamento total para cada post
   const getTotalEngagement = (postId: string) => {
     try {
@@ -480,19 +527,19 @@ export default function ComunidadePage() {
       if (likeDoc.exists()) {
         // Remover like
         await deleteDoc(likeRef);
-        // Atualizar estado local imediatamente
+        // Atualizar apenas o estado userLiked (o contador será atualizado pelo listener)
         setPosts(prev => prev.map(post => 
           post.id === postId 
-            ? { ...post, likes: Math.max(0, (post.likes || 1) - 1), userLiked: false }
+            ? { ...post, userLiked: false }
             : post
         ));
       } else {
         // Adicionar like
         await setDoc(likeRef, { userId: currentUser.uid, timestamp: serverTimestamp() });
-        // Atualizar estado local imediatamente
+        // Atualizar apenas o estado userLiked (o contador será atualizado pelo listener)
         setPosts(prev => prev.map(post => 
           post.id === postId 
-            ? { ...post, likes: (post.likes || 0) + 1, userLiked: true }
+            ? { ...post, userLiked: true }
             : post
         ));
       }
