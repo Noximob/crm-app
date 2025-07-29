@@ -250,26 +250,60 @@ export default function ComunidadePage() {
       const snapshot = await getDocs(q);
       const postsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       
-      // Verificar likes do usuário para cada post
+      // Verificar likes do usuário e contadores para cada post
       if (currentUser) {
-        const postsWithLikes = await Promise.all(
+        const postsWithData = await Promise.all(
           postsData.map(async (post: any) => {
             try {
+              // Verificar like do usuário
               const userLikeDoc = await getDoc(doc(db, 'comunidadePosts', post.id, 'likes', currentUser.uid));
+              
+              // Contar comentários
+              const commentsSnapshot = await getDocs(collection(db, 'comunidadePosts', post.id, 'comments'));
+              
+              // Contar reposts
+              const repostsSnapshot = await getDocs(collection(db, 'comunidadePosts', post.id, 'reposts'));
+              
+              // Contar visualizações
+              const viewsSnapshot = await getDocs(collection(db, 'comunidadePosts', post.id, 'views'));
+              
               return {
                 ...post,
-                userLiked: userLikeDoc.exists()
+                userLiked: userLikeDoc.exists(),
+                likes: post.likes || 0,
+                commentsCount: commentsSnapshot.size,
+                repostsCount: repostsSnapshot.size,
+                viewsCount: viewsSnapshot.size
               };
             } catch (error) {
-              console.error('Erro ao verificar like:', error);
+              console.error('Erro ao verificar dados do post:', error);
               return {
                 ...post,
-                userLiked: false
+                userLiked: false,
+                likes: post.likes || 0,
+                commentsCount: 0,
+                repostsCount: 0,
+                viewsCount: 0
               };
             }
           })
         );
-        setPosts(postsWithLikes);
+        setPosts(postsWithData);
+        
+        // Atualizar mapas de contadores
+        const newCommentsMap: Record<string, number> = {};
+        const newRepostsMap: Record<string, number> = {};
+        const newViewsMap: Record<string, number> = {};
+        
+        postsWithData.forEach(post => {
+          newCommentsMap[post.id] = post.commentsCount || 0;
+          newRepostsMap[post.id] = post.repostsCount || 0;
+          newViewsMap[post.id] = post.viewsCount || 0;
+        });
+        
+        setCommentsMap(newCommentsMap);
+        setRepostsMap(newRepostsMap);
+        setViewsMap(newViewsMap);
       } else {
         setPosts(postsData);
       }
@@ -336,53 +370,6 @@ export default function ComunidadePage() {
       return () => unsub();
     }
   }, [modalPostId]);
-
-  // Atualizar contadores de likes e comentários em tempo real
-  useEffect(() => {
-    if (!posts.length) return;
-    
-    const unsubscribes: any[] = [];
-    
-    posts.forEach((post) => {
-      // Listener para likes
-      const unsubLikes = onSnapshot(
-        collection(db, "comunidadePosts", post.id, "likes"),
-        (snapshot) => {
-          setPosts(prev => prev.map(p => 
-            p.id === post.id 
-              ? { ...p, likes: snapshot.size }
-              : p
-          ));
-        },
-        (error) => {
-          console.error('Erro no listener de likes:', error);
-        }
-      );
-      unsubscribes.push(unsubLikes);
-      
-      // Listener para comentários
-      const unsubComments = onSnapshot(
-        collection(db, "comunidadePosts", post.id, "comments"),
-        (snapshot) => {
-          setCommentsMap(prev => ({ ...prev, [post.id]: snapshot.size }));
-        },
-        (error) => {
-          console.error('Erro no listener de comentários:', error);
-        }
-      );
-      unsubscribes.push(unsubComments);
-    });
-    
-    return () => { 
-      unsubscribes.forEach((unsub) => {
-        try {
-          unsub();
-        } catch (error) {
-          console.error('Erro ao desinscrever listener:', error);
-        }
-      }); 
-    };
-  }, [posts]);
 
   // Calcular engajamento total para cada post
   const getTotalEngagement = (postId: string) => {
@@ -482,7 +469,17 @@ export default function ComunidadePage() {
         } : null,
       };
       
-      await addDoc(collection(db, "comunidadePosts"), postData);
+      const docRef = await addDoc(collection(db, "comunidadePosts"), postData);
+      
+      // Adicionar o novo post ao início da lista
+      const newPost = {
+        id: docRef.id,
+        ...postData,
+        userLiked: false,
+        likes: 0
+      };
+      
+      setPosts(prev => [newPost, ...prev]);
       
       // Limpar estados
       setNovoPost("");
@@ -492,9 +489,6 @@ export default function ComunidadePage() {
       setYoutubeLink("");
       setYoutubePreview(null);
       setShowEmoji(false);
-      
-      // Recarregar posts
-      fetchPosts('first');
       
     } catch (error) {
       console.error('Erro ao criar post:', error);
@@ -527,19 +521,19 @@ export default function ComunidadePage() {
       if (likeDoc.exists()) {
         // Remover like
         await deleteDoc(likeRef);
-        // Atualizar apenas o estado userLiked (o contador será atualizado pelo listener)
+        // Atualizar estado local imediatamente
         setPosts(prev => prev.map(post => 
           post.id === postId 
-            ? { ...post, userLiked: false }
+            ? { ...post, likes: Math.max(0, (post.likes || 1) - 1), userLiked: false }
             : post
         ));
       } else {
         // Adicionar like
         await setDoc(likeRef, { userId: currentUser.uid, timestamp: serverTimestamp() });
-        // Atualizar apenas o estado userLiked (o contador será atualizado pelo listener)
+        // Atualizar estado local imediatamente
         setPosts(prev => prev.map(post => 
           post.id === postId 
-            ? { ...post, userLiked: true }
+            ? { ...post, likes: (post.likes || 0) + 1, userLiked: true }
             : post
         ));
       }
@@ -567,6 +561,13 @@ export default function ComunidadePage() {
         avatar: gerarAvatar(userData, currentUser),
         createdAt: serverTimestamp(),
       });
+      
+      // Atualizar contador de comentários
+      setCommentsMap(prev => ({
+        ...prev,
+        [modalPostId]: (prev[modalPostId] || 0) + 1
+      }));
+      
       setNewComment("");
     } catch (error) {
       console.error('Erro ao adicionar comentário:', error);
