@@ -598,29 +598,37 @@ export default function DashboardPage() {
       if (likeDoc.exists()) {
         // Remover like
         await deleteDoc(likeRef);
+        // Buscar contador real de likes
+        const likesSnapshot = await getDocs(collection(db, 'comunidadePosts', postId, 'likes'));
+        const realLikesCount = likesSnapshot.size;
+        
         setTrendingPosts(prev => prev.map(post => 
           post.id === postId 
-            ? { ...post, likes: (post.likes || 1) - 1, userLiked: false }
+            ? { ...post, likes: realLikesCount, userLiked: false }
             : post
         ));
         // Atualizar post selecionado no modal
         setSelectedPost((prev: any) => prev && prev.id === postId ? {
           ...prev,
-          likes: (prev.likes || 1) - 1,
+          likes: realLikesCount,
           userLiked: false
         } : prev);
       } else {
         // Adicionar like
         await setDoc(likeRef, { userId: currentUser.uid, timestamp: new Date() });
+        // Buscar contador real de likes
+        const likesSnapshot = await getDocs(collection(db, 'comunidadePosts', postId, 'likes'));
+        const realLikesCount = likesSnapshot.size;
+        
         setTrendingPosts(prev => prev.map(post => 
           post.id === postId 
-            ? { ...post, likes: (post.likes || 0) + 1, userLiked: true }
+            ? { ...post, likes: realLikesCount, userLiked: true }
             : post
         ));
         // Atualizar post selecionado no modal
         setSelectedPost((prev: any) => prev && prev.id === postId ? {
           ...prev,
-          likes: (prev.likes || 0) + 1,
+          likes: realLikesCount,
           userLiked: true
         } : prev);
       }

@@ -521,19 +521,27 @@ export default function ComunidadePage() {
       if (likeDoc.exists()) {
         // Remover like
         await deleteDoc(likeRef);
-        // Atualizar estado local imediatamente
+        // Buscar contador real de likes
+        const likesSnapshot = await getDocs(collection(db, 'comunidadePosts', postId, 'likes'));
+        const realLikesCount = likesSnapshot.size;
+        
+        // Atualizar estado local com contador real
         setPosts(prev => prev.map(post => 
           post.id === postId 
-            ? { ...post, likes: Math.max(0, (post.likes || 1) - 1), userLiked: false }
+            ? { ...post, likes: realLikesCount, userLiked: false }
             : post
         ));
       } else {
         // Adicionar like
         await setDoc(likeRef, { userId: currentUser.uid, timestamp: serverTimestamp() });
-        // Atualizar estado local imediatamente
+        // Buscar contador real de likes
+        const likesSnapshot = await getDocs(collection(db, 'comunidadePosts', postId, 'likes'));
+        const realLikesCount = likesSnapshot.size;
+        
+        // Atualizar estado local com contador real
         setPosts(prev => prev.map(post => 
           post.id === postId 
-            ? { ...post, likes: (post.likes || 0) + 1, userLiked: true }
+            ? { ...post, likes: realLikesCount, userLiked: true }
             : post
         ));
       }
