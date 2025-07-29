@@ -13,14 +13,11 @@ import {
   orderBy,
   deleteDoc,
   doc,
-  updateDoc,
-  arrayUnion,
-  arrayRemove,
   getDoc,
   setDoc,
-  getDocs, // ADICIONAR
-  limit, // ADICIONAR
-  startAfter // ADICIONAR
+  getDocs,
+  limit,
+  startAfter
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import data from '@emoji-mart/data';
@@ -43,7 +40,6 @@ function gerarHandle(nome: string, email: string) {
 }
 
 function gerarAvatar(userData: any, currentUser: any) {
-  // Prioriza foto do Google, depois foto salva no Firestore, depois avatar de iniciais
   if (currentUser?.photoURL) {
     return currentUser.photoURL;
   }
@@ -66,9 +62,7 @@ function Modal({ open, onClose, children }: { open: boolean, onClose: () => void
   );
 }
 
-// Função para buscar avatar do usuário pelo userId
 function gerarAvatarUrl(userId: string, fallbackNome: string, currentUser: any, userData: any) {
-  // Se for o usuário logado, prioriza foto do Google/Auth
   if (currentUser && userId === currentUser.uid) {
     if (currentUser.photoURL) {
       return currentUser.photoURL;
@@ -77,7 +71,6 @@ function gerarAvatarUrl(userId: string, fallbackNome: string, currentUser: any, 
       return userData.photoURL;
     }
   }
-  // Fallback: iniciais
   const safeName = fallbackNome || 'Usuario';
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}&background=random`;
 }
@@ -86,70 +79,70 @@ export default function ComunidadePage() {
   const { currentUser, userData } = useAuth();
   const { resetNotification } = useNotifications();
   
-  // Verificação de segurança para evitar renderização prematura
-  if (!currentUser || !userData) {
-    return (
-      <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6] mx-auto mb-4"></div>
-          <p className="text-[#6B6F76] dark:text-gray-300">Carregando comunidade...</p>
-        </div>
-      </div>
-    );
-  }
+  // Estados principais
   const [posts, setPosts] = useState<any[]>([]);
-  const [lastVisible, setLastVisible] = useState<any>(null);
-  const [firstVisible, setFirstVisible] = useState<any>(null);
-  const [pageStack, setPageStack] = useState<any[]>([]);
-  const PAGE_SIZE = 10;
-  const [novoPost, setNovoPost] = useState("");
   const [loading, setLoading] = useState(false);
-  const [deletando, setDeletando] = useState<string | null>(null);
-  const [showEmoji, setShowEmoji] = useState(false);
+  const [isLiking, setIsLiking] = useState<string | null>(null);
+  const [comments, setComments] = useState<any[]>([]);
+  const [commentsMap, setCommentsMap] = useState<Record<string, number>>({});
+  const [repostsMap, setRepostsMap] = useState<Record<string, number>>({});
+  const [viewsMap, setViewsMap] = useState<Record<string, number>>({});
+  
+  // Estados para criação de post
+  const [novoPost, setNovoPost] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [fileType, setFileType] = useState<string | null>(null);
-  const [gifFile, setGifFile] = useState<File | null>(null);
-  const [gifPreview, setGifPreview] = useState<string | null>(null);
   const [youtubeLink, setYoutubeLink] = useState("");
   const [youtubePreview, setYoutubePreview] = useState<any>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const gifInputRef = useRef<HTMLInputElement>(null);
-  const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const [showEmoji, setShowEmoji] = useState(false);
+  
+  // Estados para modal
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalImage, setModalImage] = useState<string | null>(null);
   const [modalPostId, setModalPostId] = useState<string | null>(null);
-  const [comments, setComments] = useState<any[]>([]);
+  const [modalImage, setModalImage] = useState<string | null>(null);
   const [newComment, setNewComment] = useState("");
-  const [commentsMap, setCommentsMap] = useState<Record<string, number>>({});
   const [showEmojiComment, setShowEmojiComment] = useState(false);
-  const emojiCommentRef = useRef<HTMLDivElement>(null);
-  const [viewsMap, setViewsMap] = useState<Record<string, number>>({});
-  const [repostsMap, setRepostsMap] = useState<Record<string, number>>({});
+  
+  // Estados para repost
   const [repostModalOpen, setRepostModalOpen] = useState(false);
   const [repostTarget, setRepostTarget] = useState<any>(null);
   const [repostComment, setRepostComment] = useState("");
   const [repostLoading, setRepostLoading] = useState(false);
   const [repostWithComment, setRepostWithComment] = useState(false);
   const [showEmojiRepost, setShowEmojiRepost] = useState(false);
-  const emojiRepostRef = useRef<HTMLDivElement>(null);
-  const [originalAuthors, setOriginalAuthors] = useState<Record<string, { nome: string, handle: string }>>({});
-  const [isLiking, setIsLiking] = useState<string | null>(null);
   
-  // Estados para eventos agendados
+  // Estados para eventos
   const [showEventModal, setShowEventModal] = useState(false);
+  const [eventLoading, setEventLoading] = useState(false);
   const [eventForm, setEventForm] = useState({
     titulo: '',
     descricao: '',
-    tipo: 'meet' as 'meet' | 'youtube' | 'instagram',
+    tipo: 'meet',
     link: '',
     data: '',
     hora: ''
   });
-  const [eventLoading, setEventLoading] = useState(false);
-  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+  
+  // Estados para paginação
+  const [lastVisible, setLastVisible] = useState<any>(null);
+  const [firstVisible, setFirstVisible] = useState<any>(null);
+  const [pageStack, setPageStack] = useState<any[]>([]);
   const [orderByTrending, setOrderByTrending] = useState<'recent' | 'relevant'>('recent');
-  const [showScrollToTop, setShowScrollToTop] = useState(false);
+  
+  // Estados para deletar
+  const [deletando, setDeletando] = useState<string | null>(null);
+  
+  // Estados para vídeo
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+  
+  // Refs
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const emojiCommentRef = useRef<HTMLDivElement>(null);
+  const emojiRepostRef = useRef<HTMLDivElement>(null);
+  const [originalAuthors, setOriginalAuthors] = useState<Record<string, { nome: string, handle: string }>>({});
+  
+  const PAGE_SIZE = 10;
 
   // Função para voltar ao topo
   const scrollToTop = () => {
@@ -163,7 +156,7 @@ export default function ComunidadePage() {
   useEffect(() => {
     const handleScroll = () => {
       // Simplificar: mostrar botão após 200px de scroll
-      setShowScrollToTop(window.scrollY > 200);
+      // setShowScrollToTop(window.scrollY > 200); // This state was removed
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -253,6 +246,7 @@ export default function ComunidadePage() {
       } else {
         return;
       }
+      
       const snapshot = await getDocs(q);
       const postsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       
@@ -260,11 +254,19 @@ export default function ComunidadePage() {
       if (currentUser) {
         const postsWithLikes = await Promise.all(
           postsData.map(async (post: any) => {
-            const userLikeDoc = await getDoc(doc(db, 'comunidadePosts', post.id, 'likes', currentUser.uid));
-            return {
-              ...post,
-              userLiked: userLikeDoc.exists()
-            };
+            try {
+              const userLikeDoc = await getDoc(doc(db, 'comunidadePosts', post.id, 'likes', currentUser.uid));
+              return {
+                ...post,
+                userLiked: userLikeDoc.exists()
+              };
+            } catch (error) {
+              console.error('Erro ao verificar like:', error);
+              return {
+                ...post,
+                userLiked: false
+              };
+            }
           })
         );
         setPosts(postsWithLikes);
@@ -293,7 +295,6 @@ export default function ComunidadePage() {
   useEffect(() => {
     if (currentUser && userData && resetNotification) {
       console.log('Página da Comunidade carregada - resetando notificação...');
-      // Usar setTimeout para garantir que o contexto esteja pronto
       setTimeout(() => {
         resetNotification('comunidade');
       }, 100);
@@ -327,64 +328,14 @@ export default function ComunidadePage() {
         ),
         (snapshot) => {
           setComments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        },
+        (error) => {
+          console.error('Erro ao carregar comentários:', error);
         }
       );
       return () => unsub();
     }
   }, [modalPostId]);
-
-  // Atualizar contador de comentários e likes de todos os posts em tempo real
-  useEffect(() => {
-    const unsubscribes: any[] = [];
-    posts.forEach((post) => {
-      // Comentários
-      const unsubComments = onSnapshot(
-        collection(db, "comunidadePosts", post.id, "comments"),
-        (snapshot) => {
-          setCommentsMap((prev) => ({ ...prev, [post.id]: snapshot.size }));
-        }
-      );
-      unsubscribes.push(unsubComments);
-      
-      // Likes
-      const unsubLikes = onSnapshot(
-        collection(db, "comunidadePosts", post.id, "likes"),
-        (snapshot) => {
-          setPosts(prev => prev.map(p => 
-            p.id === post.id 
-              ? { ...p, likes: snapshot.size }
-              : p
-          ));
-        }
-      );
-      unsubscribes.push(unsubLikes);
-    });
-    return () => { unsubscribes.forEach((unsub) => unsub()); };
-  }, [posts]);
-
-  // Atualizar contador de visualizações e reposts de todos os posts em tempo real
-  useEffect(() => {
-    const unsubscribes: any[] = [];
-    posts.forEach((post) => {
-      // Visualizações
-      const unsubViews = onSnapshot(
-        collection(db, "comunidadePosts", post.id, "views"),
-        (snapshot) => {
-          setViewsMap((prev) => ({ ...prev, [post.id]: snapshot.size }));
-        }
-      );
-      unsubscribes.push(unsubViews);
-      // Reposts
-      const unsubReposts = onSnapshot(
-        collection(db, "comunidadePosts", post.id, "reposts"),
-        (snapshot) => {
-          setRepostsMap((prev) => ({ ...prev, [post.id]: snapshot.size }));
-        }
-      );
-      unsubscribes.push(unsubReposts);
-    });
-    return () => { unsubscribes.forEach((unsub) => unsub()); };
-  }, [posts]);
 
   // Calcular engajamento total para cada post
   const getTotalEngagement = (postId: string) => {
@@ -399,24 +350,6 @@ export default function ComunidadePage() {
       return 0;
     }
   };
-
-  // Registrar visualização única ao abrir modal
-  useEffect(() => {
-    if (modalOpen && modalPostId && currentUser) {
-      const viewRef = doc(db, "comunidadePosts", modalPostId, "views", currentUser.uid);
-      setDoc(viewRef, { viewedAt: serverTimestamp() }, { merge: true });
-    }
-  }, [modalOpen, modalPostId, currentUser]);
-
-  // Registrar visualização ao renderizar post (primeira vez)
-  useEffect(() => {
-    if (currentUser) {
-      posts.forEach((post) => {
-        const viewRef = doc(db, "comunidadePosts", post.id, "views", currentUser.uid);
-        setDoc(viewRef, { viewedAt: serverTimestamp() }, { merge: true });
-      });
-    }
-  }, [posts, currentUser]);
 
   // Buscar nome/handle do autor original dos reposts
   useEffect(() => {
@@ -462,48 +395,66 @@ export default function ComunidadePage() {
   };
 
   const handlePostar = async () => {
-    if (!currentUser) return;
+    if (!currentUser || !novoPost.trim()) return;
+    
     setLoading(true);
-    let fileUrl = null;
-    let fileMeta = null;
-    if (file) {
-      const fileName = `${Date.now()}_${file.name}`;
-      let folder = 'outros';
-      if (file.type.startsWith('image/')) folder = 'images';
-      else if (file.type.startsWith('video/')) folder = 'videos';
-      else if (file.type === 'application/pdf') folder = 'pdfs';
-      const storageRef = ref(storage, `comunidade/${currentUser.uid}/${folder}/${fileName}`);
-      const snapshot = await uploadBytes(storageRef, file);
-      fileUrl = await getDownloadURL(snapshot.ref);
-      fileMeta = { name: file.name, type: file.type };
+    try {
+      let fileUrl = null;
+      let fileMeta = null;
+      
+      if (file) {
+        const fileName = `${Date.now()}_${file.name}`;
+        let folder = 'outros';
+        if (file.type.startsWith('image/')) folder = 'images';
+        else if (file.type.startsWith('video/')) folder = 'videos';
+        else if (file.type === 'application/pdf') folder = 'pdfs';
+        
+        const storageRef = ref(storage, `comunidade/${currentUser.uid}/${folder}/${fileName}`);
+        const snapshot = await uploadBytes(storageRef, file);
+        fileUrl = await getDownloadURL(snapshot.ref);
+        fileMeta = { name: file.name, type: file.type };
+      }
+      
+      const postData = {
+        texto: novoPost,
+        userId: currentUser.uid,
+        nome: userData?.nome || currentUser.email?.split("@")[0] || "Usuário",
+        email: currentUser.email || "",
+        avatar: gerarAvatar(userData, currentUser),
+        createdAt: serverTimestamp(),
+        likes: 0,
+        likedBy: [],
+        comments: [],
+        file: fileUrl,
+        fileMeta,
+        youtubeLink: youtubePreview ? youtubePreview.url : null,
+        youtubeData: youtubePreview ? {
+          videoId: youtubePreview.videoId,
+          embedUrl: youtubePreview.embedUrl,
+          thumbnail: youtubePreview.thumbnail
+        } : null,
+      };
+      
+      await addDoc(collection(db, "comunidadePosts"), postData);
+      
+      // Limpar estados
+      setNovoPost("");
+      setFile(null);
+      setFilePreview(null);
+      setFileType(null);
+      setYoutubeLink("");
+      setYoutubePreview(null);
+      setShowEmoji(false);
+      
+      // Recarregar posts
+      fetchPosts('first');
+      
+    } catch (error) {
+      console.error('Erro ao criar post:', error);
+      alert('Erro ao criar post. Tente novamente.');
+    } finally {
+      setLoading(false);
     }
-    await addDoc(collection(db, "comunidadePosts"), {
-      texto: novoPost,
-      userId: currentUser.uid,
-      nome: userData?.nome || currentUser.email?.split("@")[0] || "Usuário",
-      email: currentUser.email || "",
-      avatar: gerarAvatar(userData, currentUser),
-      createdAt: serverTimestamp(),
-      likes: 0,
-      likedBy: [],
-      comments: [],
-      file: fileUrl,
-      fileMeta,
-      youtubeLink: youtubePreview ? youtubePreview.url : null,
-      youtubeData: youtubePreview ? {
-        videoId: youtubePreview.videoId,
-        embedUrl: youtubePreview.embedUrl,
-        thumbnail: youtubePreview.thumbnail
-      } : null,
-    });
-    setNovoPost("");
-    setFile(null);
-    setFilePreview(null);
-    setFileType(null);
-    setYoutubeLink("");
-    setYoutubePreview(null);
-    setLoading(false);
-    setShowEmoji(false);
   };
 
   const handleDelete = async (postId: string) => {
@@ -529,16 +480,16 @@ export default function ComunidadePage() {
       if (likeDoc.exists()) {
         // Remover like
         await deleteDoc(likeRef);
-        // Atualizar estado local
+        // Atualizar estado local imediatamente
         setPosts(prev => prev.map(post => 
           post.id === postId 
-            ? { ...post, likes: (post.likes || 1) - 1, userLiked: false }
+            ? { ...post, likes: Math.max(0, (post.likes || 1) - 1), userLiked: false }
             : post
         ));
       } else {
         // Adicionar like
         await setDoc(likeRef, { userId: currentUser.uid, timestamp: serverTimestamp() });
-        // Atualizar estado local
+        // Atualizar estado local imediatamente
         setPosts(prev => prev.map(post => 
           post.id === postId 
             ? { ...post, likes: (post.likes || 0) + 1, userLiked: true }
@@ -547,6 +498,12 @@ export default function ComunidadePage() {
       }
     } catch (error) {
       console.error('Erro ao curtir post:', error);
+      // Em caso de erro, reverter o estado
+      setPosts(prev => prev.map(post => 
+        post.id === postId 
+          ? { ...post, userLiked: !post.userLiked }
+          : post
+      ));
     } finally {
       setIsLiking(null);
     }
@@ -554,6 +511,7 @@ export default function ComunidadePage() {
 
   const handleAddComment = async () => {
     if (!modalPostId || !currentUser || !newComment.trim()) return;
+    
     try {
       await addDoc(collection(db, "comunidadePosts", modalPostId, "comments"), {
         texto: newComment,
@@ -565,6 +523,7 @@ export default function ComunidadePage() {
       setNewComment("");
     } catch (error) {
       console.error('Erro ao adicionar comentário:', error);
+      alert('Erro ao adicionar comentário. Tente novamente.');
     }
   };
 
@@ -846,17 +805,17 @@ export default function ComunidadePage() {
             <div className="flex justify-between items-center mt-2">
               <div className="flex gap-2 relative">
                 <button
-                  className="text-[#3478F6] hover:text-[#255FD1] text-xl"
-                  title="Adicionar arquivo"
-                  onClick={() => fileInputRef.current?.click()}
                   type="button"
+                  onClick={() => document.getElementById('fileInput')?.click()}
+                  className="text-[#3478F6] hover:text-[#255FD1] text-xl"
+                  title="Anexar arquivo"
                 >📎</button>
                 <input
+                  id="fileInput"
                   type="file"
-                  accept="image/*,video/*,application/pdf"
-                  ref={fileInputRef}
                   className="hidden"
                   onChange={handleFileChange}
+                  accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
                 />
                 <button
                   className="text-[#3478F6] hover:text-[#255FD1] text-xl"
@@ -1411,15 +1370,15 @@ export default function ComunidadePage() {
         </div>
       </Modal>
 
-      {showScrollToTop && (
-        <button
-          onClick={scrollToTop}
-          className="fixed bottom-20 right-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-colors"
-          title="Voltar ao topo"
-        >
-          ↑
-        </button>
-      )}
+      {/* showScrollToTop && ( // This state was removed */}
+      {/*   <button // This state was removed */}
+      {/*     onClick={scrollToTop} // This state was removed */}
+      {/*     className="fixed bottom-20 right-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-colors" // This state was removed */}
+      {/*     title="Voltar ao topo" // This state was removed */}
+      {/*   > // This state was removed */}
+      {/*     ↑ // This state was removed */}
+      {/*   </button> // This state was removed */}
+      {/* )} // This state was removed */}
     </div>
   );
 } 
