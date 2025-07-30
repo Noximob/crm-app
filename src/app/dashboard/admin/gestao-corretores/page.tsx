@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, doc, deleteDoc, query, where, onSnapshot, writeBatch } from 'firebase/firestore';
 import { PIPELINE_STAGES } from '@/lib/constants';
+import { useRouter } from 'next/navigation';
 
 interface User {
   id: string;
@@ -30,6 +31,7 @@ interface Lead {
 
 export default function GestaoCorretoresPage() {
   const { userData } = useAuth();
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -195,6 +197,10 @@ export default function GestaoCorretoresPage() {
   // Limpar filtro
   const clearFilter = () => {
     setSelectedStage('');
+  };
+
+  const handleVerDetalhes = (leadId: string) => {
+    router.push(`/dashboard/crm/${leadId}`);
   };
 
   if (loading) {
@@ -397,6 +403,7 @@ export default function GestaoCorretoresPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-[#6B6F76] dark:text-gray-300">Telefone</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-[#6B6F76] dark:text-gray-300">Etapa</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-[#6B6F76] dark:text-gray-300">Data</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[#6B6F76] dark:text-gray-300">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E8E9F1] dark:divide-[#23283A]">
@@ -423,6 +430,15 @@ export default function GestaoCorretoresPage() {
                       </td>
                       <td className="px-6 py-4 text-sm text-[#6B6F76] dark:text-gray-300">
                         {lead.createdAt?.toDate ? lead.createdAt.toDate().toLocaleDateString('pt-BR') : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <button 
+                          className="text-[#3478F6] hover:text-[#255FD1] text-xs px-2 py-1 rounded hover:bg-[#3478F6]/10 transition-colors" 
+                          onClick={() => handleVerDetalhes(lead.id)}
+                          title="Ver detalhes do lead"
+                        >
+                          Detalhes
+                        </button>
                       </td>
                     </tr>
                   ))}
