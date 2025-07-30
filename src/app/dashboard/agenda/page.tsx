@@ -407,28 +407,45 @@ export default function AgendaPage() {
     
     // Adicionar avisos importantes
     avisos.forEach(aviso => {
-      // Se o aviso tem dataInicio e dataFim, verificar se a data atual está no período
+      // Se o aviso tem dataInicio e dataFim
       if (aviso.dataInicio && aviso.dataFim) {
         const inicioDate = aviso.dataInicio.toDate();
         const fimDate = aviso.dataFim.toDate();
         const currentDate = new Date(date);
         
-        // Verificar se a data atual está dentro do período do aviso
-        if (currentDate >= inicioDate && currentDate <= fimDate) {
-          // Extrair apenas a data (sem hora) para comparação de período
-          const inicioDateOnly = new Date(inicioDate.getFullYear(), inicioDate.getMonth(), inicioDate.getDate());
-          const fimDateOnly = new Date(fimDate.getFullYear(), fimDate.getMonth(), fimDate.getDate());
-          const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-          
-          // Verificar se a data atual está dentro do período do aviso
+        // Verificar se é evento de 1 dia ou múltiplos dias
+        const inicioDateOnly = new Date(inicioDate.getFullYear(), inicioDate.getMonth(), inicioDate.getDate());
+        const fimDateOnly = new Date(fimDate.getFullYear(), fimDate.getMonth(), fimDate.getDate());
+        const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+        
+        // Se início e fim são no mesmo dia = evento de 1 dia
+        if (inicioDateOnly.getTime() === fimDateOnly.getTime()) {
+          // Evento de 1 dia - verificar se é o dia correto
+          if (currentDateOnly.getTime() === inicioDateOnly.getTime()) {
+            allItems.push({
+              id: `aviso_${aviso.id}`,
+              titulo: aviso.titulo,
+              descricao: aviso.mensagem,
+              dataHora: aviso.dataInicio, // Usar horário de início
+              tipo: 'aviso',
+              status: 'pendente',
+              cor: '#DC2626',
+              createdAt: aviso.data,
+              userId: '',
+              source: 'aviso',
+              originalId: aviso.id
+            });
+          }
+        } else {
+          // Evento de múltiplos dias - verificar se está no período
           if (currentDateOnly >= inicioDateOnly && currentDateOnly <= fimDateOnly) {
-            // Criar data/hora para este dia específico usando os horários de início e fim
+            // Extrair horário diário do início
             const horaInicio = inicioDate.getHours();
             const minutoInicio = inicioDate.getMinutes();
             const horaFim = fimDate.getHours();
             const minutoFim = fimDate.getMinutes();
             
-            // Criar data/hora para este dia específico (usando horário de início)
+            // Criar data/hora para este dia específico
             const dataHoraDia = new Date(currentDate);
             dataHoraDia.setHours(horaInicio, minutoInicio, 0, 0);
             
@@ -442,10 +459,10 @@ export default function AgendaPage() {
               id: `aviso_${aviso.id}`,
               titulo: aviso.titulo,
               descricao: descricao,
-              dataHora: Timestamp.fromDate(dataHoraDia), // Usar a data/hora específica do dia
+              dataHora: Timestamp.fromDate(dataHoraDia),
               tipo: 'aviso',
               status: 'pendente',
-              cor: '#DC2626', // vermelho
+              cor: '#DC2626',
               createdAt: aviso.data,
               userId: '',
               source: 'aviso',
@@ -464,7 +481,7 @@ export default function AgendaPage() {
             dataHora: aviso.data,
             tipo: 'aviso',
             status: 'pendente',
-            cor: '#DC2626', // vermelho
+            cor: '#DC2626',
             createdAt: aviso.data,
             userId: '',
             source: 'aviso',
