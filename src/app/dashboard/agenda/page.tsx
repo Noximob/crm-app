@@ -138,11 +138,8 @@ export default function AgendaPage() {
         where('imobiliariaId', '==', userData.imobiliariaId)
       );
       const snapshot = await getDocs(q);
-      const now = new Date();
       const avisosData = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as any))
-        .filter(aviso => aviso.dataHora?.toDate && aviso.dataHora.toDate() >= now)
-        .sort((a, b) => a.dataHora.toDate() - b.dataHora.toDate());
+        .map(doc => ({ id: doc.id, ...doc.data() } as any));
       setAvisos(avisosData);
     } catch (err) {
       setAvisos([]);
@@ -157,7 +154,8 @@ export default function AgendaPage() {
       await Promise.all([
         fetchAgendaItems(),
         fetchNotes(),
-        fetchCrmTasks()
+        fetchCrmTasks(),
+        fetchAvisosImportantes()
       ]);
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
