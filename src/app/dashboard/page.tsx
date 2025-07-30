@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, getDoc, Timestamp, orderBy, limit, deleteDoc, setDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, getDoc, Timestamp, orderBy, limit, deleteDoc, setDoc, doc, serverTimestamp } from 'firebase/firestore';
 import Link from 'next/link';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
@@ -554,26 +554,26 @@ export default function DashboardPage() {
           })
         );
         
-        // Ordena priorizando eventos agendados, depois por data de criação
+        // Ordena priorizando eventos agendados, depois por engajamento
         const sortedPosts = postsWithCounts.sort((a, b) => {
-          // Priorizar eventos agendados no topo
+          // Priorizar eventos agendados no topo (posts especiais)
           const aIsEvent = a.isEvento && a.eventoStatus === 'agendado';
           const bIsEvent = b.isEvento && b.eventoStatus === 'agendado';
           
           if (aIsEvent && !bIsEvent) return -1;
           if (!aIsEvent && bIsEvent) return 1;
           
-          // Se ambos são eventos, ordenar por data do evento
+          // Se ambos são eventos, ordenar por data do evento (mais próximos primeiro)
           if (aIsEvent && bIsEvent) {
             const aEventTime = a.eventoData instanceof Date ? a.eventoData : a.eventoData.toDate();
             const bEventTime = b.eventoData instanceof Date ? b.eventoData : b.eventoData.toDate();
             return aEventTime.getTime() - bEventTime.getTime();
           }
           
-          // Para posts normais, ordenar por data de criação (mais recentes primeiro)
-          const aTime = a.createdAt?.toDate?.() || new Date(0);
-          const bTime = b.createdAt?.toDate?.() || new Date(0);
-          return bTime.getTime() - aTime.getTime();
+          // Para posts normais, ordenar por engajamento total (likes + comentários + reposts + views)
+          const aEngagement = (a.likes || 0) + (a.commentsCount || 0) + (a.repostsCount || 0) + (a.views || 0);
+          const bEngagement = (b.likes || 0) + (b.commentsCount || 0) + (b.repostsCount || 0) + (b.views || 0);
+          return bEngagement - aEngagement;
         });
         setTrendingPosts(sortedPosts);
       } catch (error) {
@@ -593,7 +593,8 @@ export default function DashboardPage() {
     const unsubscribes: any[] = [];
     
     trendingPosts.forEach((post) => {
-      const unsub = onSnapshot(
+      // Listener para likes
+      const unsubLike = onSnapshot(
         doc(db, "comunidadePosts", post.id, "likes", currentUser.uid),
         (snapshot) => {
           setTrendingPosts(prev => prev.map(p => 
@@ -606,7 +607,53 @@ export default function DashboardPage() {
           console.error('Erro no listener de userLiked:', error);
         }
       );
-      unsubscribes.push(unsub);
+      
+      // Listener para contadores de likes
+      const unsubLikesCount = onSnapshot(
+        collection(db, "comunidadePosts", post.id, "likes"),
+        (snapshot) => {
+          setTrendingPosts(prev => prev.map(p => 
+            p.id === post.id 
+              ? { ...p, likes: snapshot.size }
+              : p
+          ));
+        },
+        (error) => {
+          console.error('Erro no listener de likes count:', error);
+        }
+      );
+      
+      // Listener para contadores de comentários
+      const unsubCommentsCount = onSnapshot(
+        collection(db, "comunidadePosts", post.id, "comments"),
+        (snapshot) => {
+          setTrendingPosts(prev => prev.map(p => 
+            p.id === post.id 
+              ? { ...p, commentsCount: snapshot.size }
+              : p
+          ));
+        },
+        (error) => {
+          console.error('Erro no listener de comments count:', error);
+        }
+      );
+      
+      // Listener para contadores de reposts
+      const unsubRepostsCount = onSnapshot(
+        collection(db, "comunidadePosts", post.id, "reposts"),
+        (snapshot) => {
+          setTrendingPosts(prev => prev.map(p => 
+            p.id === post.id 
+              ? { ...p, repostsCount: snapshot.size }
+              : p
+          ));
+        },
+        (error) => {
+          console.error('Erro no listener de reposts count:', error);
+        }
+      );
+      
+      unsubscribes.push(unsubLike, unsubLikesCount, unsubCommentsCount, unsubRepostsCount);
     });
     
     return () => { 
@@ -649,7 +696,11 @@ export default function DashboardPage() {
         } : prev);
       } else {
         // Adicionar like
-        await setDoc(likeRef, { userId: currentUser.uid, timestamp: new Date() });
+        await setDoc(likeRef, { 
+          userId: currentUser.uid, 
+          timestamp: serverTimestamp(),
+          userName: userData?.nome || currentUser.email?.split("@")[0] || "Usuário"
+        });
         // Buscar contador real de likes
         const likesSnapshot = await getDocs(collection(db, 'comunidadePosts', postId, 'likes'));
         const realLikesCount = likesSnapshot.size;
@@ -668,6 +719,12 @@ export default function DashboardPage() {
       }
     } catch (error) {
       console.error('Erro ao curtir post:', error);
+      // Em caso de erro, reverter o estado
+      setTrendingPosts(prev => prev.map(post => 
+        post.id === postId 
+          ? { ...post, userLiked: !post.userLiked }
+          : post
+      ));
     } finally {
       setIsLiking(null);
     }

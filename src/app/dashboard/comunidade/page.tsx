@@ -371,14 +371,15 @@ export default function ComunidadePage() {
     }
   }, [modalPostId]);
 
-  // Verificar likes do usuário em tempo real para sincronizar com top trending
+  // Verificar likes do usuário em tempo real
   useEffect(() => {
     if (!currentUser || !posts.length) return;
     
     const unsubscribes: any[] = [];
     
     posts.forEach((post) => {
-      const unsub = onSnapshot(
+      // Listener para likes do usuário
+      const unsubLike = onSnapshot(
         doc(db, "comunidadePosts", post.id, "likes", currentUser.uid),
         (snapshot) => {
           setPosts(prev => prev.map(p => 
@@ -391,7 +392,51 @@ export default function ComunidadePage() {
           console.error('Erro no listener de userLiked:', error);
         }
       );
-      unsubscribes.push(unsub);
+      
+      // Listener para contadores de likes
+      const unsubLikesCount = onSnapshot(
+        collection(db, "comunidadePosts", post.id, "likes"),
+        (snapshot) => {
+          setPosts(prev => prev.map(p => 
+            p.id === post.id 
+              ? { ...p, likes: snapshot.size }
+              : p
+          ));
+        },
+        (error) => {
+          console.error('Erro no listener de likes count:', error);
+        }
+      );
+      
+      // Listener para contadores de comentários
+      const unsubCommentsCount = onSnapshot(
+        collection(db, "comunidadePosts", post.id, "comments"),
+        (snapshot) => {
+          setCommentsMap(prev => ({
+            ...prev,
+            [post.id]: snapshot.size
+          }));
+        },
+        (error) => {
+          console.error('Erro no listener de comments count:', error);
+        }
+      );
+      
+      // Listener para contadores de reposts
+      const unsubRepostsCount = onSnapshot(
+        collection(db, "comunidadePosts", post.id, "reposts"),
+        (snapshot) => {
+          setRepostsMap(prev => ({
+            ...prev,
+            [post.id]: snapshot.size
+          }));
+        },
+        (error) => {
+          console.error('Erro no listener de reposts count:', error);
+        }
+      );
+      
+      unsubscribes.push(unsubLike, unsubLikesCount, unsubCommentsCount, unsubRepostsCount);
     });
     
     return () => { 
@@ -567,7 +612,11 @@ export default function ComunidadePage() {
         ));
       } else {
         // Adicionar like
-        await setDoc(likeRef, { userId: currentUser.uid, timestamp: serverTimestamp() });
+        await setDoc(likeRef, { 
+          userId: currentUser.uid, 
+          timestamp: serverTimestamp(),
+          userName: userData?.nome || currentUser.email?.split("@")[0] || "Usuário"
+        });
         // Buscar contador real de likes
         const likesSnapshot = await getDocs(collection(db, 'comunidadePosts', postId, 'likes'));
         const realLikesCount = likesSnapshot.size;
@@ -730,14 +779,14 @@ export default function ComunidadePage() {
 
   const sortedPosts = [...posts].sort((a, b) => {
     try {
-      // Priorizar eventos agendados no topo
+      // Priorizar eventos agendados no topo (posts especiais)
       const aIsEvent = a.isEvento && a.eventoStatus === 'agendado';
       const bIsEvent = b.isEvento && b.eventoStatus === 'agendado';
       
       if (aIsEvent && !bIsEvent) return -1;
       if (!aIsEvent && bIsEvent) return 1;
       
-      // Se ambos são eventos, ordenar por data do evento
+      // Se ambos são eventos, ordenar por data do evento (mais próximos primeiro)
       if (aIsEvent && bIsEvent) {
         const aEventTime = a.eventoData instanceof Date ? a.eventoData : a.eventoData?.toDate?.() || new Date(0);
         const bEventTime = b.eventoData instanceof Date ? b.eventoData : b.eventoData?.toDate?.() || new Date(0);
@@ -761,8 +810,10 @@ export default function ComunidadePage() {
           return aEventTime.getTime() - bEventTime.getTime();
         }
         
-        // Para posts normais, ordenar por engajamento
-        return getTotalEngagement(b.id) - getTotalEngagement(a.id);
+        // Para posts normais, ordenar por engajamento total (likes + comentários + reposts + views)
+        const aEngagement = getTotalEngagement(a.id);
+        const bEngagement = getTotalEngagement(b.id);
+        return bEngagement - aEngagement;
       }
     } catch (error) {
       console.error('Erro ao ordenar posts:', error);
