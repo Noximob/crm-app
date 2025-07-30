@@ -556,23 +556,30 @@ export default function DashboardPage() {
           })
         );
         
-        // Ordena priorizando eventos agendados, depois por engajamento
+        // Ordena priorizando eventos ativos, depois por engajamento
         const sortedPosts = postsWithCounts.sort((a, b) => {
-          // Priorizar eventos agendados no topo (posts especiais)
+          const now = new Date();
+          
+          // Verificar se são eventos especiais e se a data ainda não passou
           const aIsEvent = a.isEvento && a.eventoStatus === 'agendado';
           const bIsEvent = b.isEvento && b.eventoStatus === 'agendado';
           
-          if (aIsEvent && !bIsEvent) return -1;
-          if (!aIsEvent && bIsEvent) return 1;
+          const aEventTime = aIsEvent ? (a.eventoData instanceof Date ? a.eventoData : a.eventoData.toDate()) : null;
+          const bEventTime = bIsEvent ? (b.eventoData instanceof Date ? b.eventoData : b.eventoData.toDate()) : null;
           
-          // Se ambos são eventos, ordenar por data do evento (mais próximos primeiro)
-          if (aIsEvent && bIsEvent) {
-            const aEventTime = a.eventoData instanceof Date ? a.eventoData : a.eventoData.toDate();
-            const bEventTime = b.eventoData instanceof Date ? b.eventoData : b.eventoData.toDate();
-            return aEventTime.getTime() - bEventTime.getTime();
+          const aIsActiveEvent = aIsEvent && aEventTime && aEventTime > now;
+          const bIsActiveEvent = bIsEvent && bEventTime && bEventTime > now;
+          
+          // Priorizar eventos ativos (não passaram da data) no topo
+          if (aIsActiveEvent && !bIsActiveEvent) return -1;
+          if (!aIsActiveEvent && bIsActiveEvent) return 1;
+          
+          // Se ambos são eventos ativos, ordenar por data do evento (mais próximos primeiro)
+          if (aIsActiveEvent && bIsActiveEvent) {
+            return aEventTime!.getTime() - bEventTime!.getTime();
           }
           
-          // Para posts normais, ordenar por engajamento total (likes + comentários + reposts + views)
+          // Para posts normais e eventos que já passaram, ordenar por engajamento total
           const aEngagement = a.totalEngagement || 0;
           const bEngagement = b.totalEngagement || 0;
           return bEngagement - aEngagement;
