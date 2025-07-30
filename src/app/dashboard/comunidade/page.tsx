@@ -222,10 +222,8 @@ export default function ComunidadePage() {
   // Buscar posts paginados
   const fetchPosts = async (direction: 'next' | 'prev' | 'first' = 'first') => {
     try {
-      // Mostrar loading apenas no carregamento inicial
-      if (direction === 'first') {
-        setPostsLoading(true);
-      }
+      // Mostrar loading para todas as ações de paginação
+      setPostsLoading(true);
       
       let q;
       if (direction === 'first') {
@@ -250,6 +248,7 @@ export default function ComunidadePage() {
           limit(PAGE_SIZE)
         );
       } else {
+        setPostsLoading(false);
         return;
       }
       
@@ -317,10 +316,8 @@ export default function ComunidadePage() {
       if (direction === 'first') setPageStack([snapshot.docs[0]]);
       if (direction === 'prev') setPageStack(prev => prev.slice(0, -1));
       
-      // Esconder loading após carregamento inicial
-      if (direction === 'first') {
-        setPostsLoading(false);
-      }
+      // Esconder loading após carregamento completo
+      setPostsLoading(false);
     } catch (error) {
       console.error('Erro ao buscar posts:', error);
       setPosts([]);
