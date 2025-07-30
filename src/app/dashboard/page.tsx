@@ -586,6 +586,40 @@ export default function DashboardPage() {
     fetchTrendingPosts();
   }, [userData, currentUser]);
 
+  // Verificar likes do usuário em tempo real para sincronizar com comunidade
+  useEffect(() => {
+    if (!currentUser || !trendingPosts.length) return;
+    
+    const unsubscribes: any[] = [];
+    
+    trendingPosts.forEach((post) => {
+      const unsub = onSnapshot(
+        doc(db, "comunidadePosts", post.id, "likes", currentUser.uid),
+        (snapshot) => {
+          setTrendingPosts(prev => prev.map(p => 
+            p.id === post.id 
+              ? { ...p, userLiked: snapshot.exists() }
+              : p
+          ));
+        },
+        (error) => {
+          console.error('Erro no listener de userLiked:', error);
+        }
+      );
+      unsubscribes.push(unsub);
+    });
+    
+    return () => { 
+      unsubscribes.forEach((unsub) => {
+        try {
+          unsub();
+        } catch (error) {
+          console.error('Erro ao desinscrever listener:', error);
+        }
+      }); 
+    };
+  }, [trendingPosts, currentUser]);
+
   // Funções para interatividade
   const handleLike = async (postId: string) => {
     if (!currentUser) return;
