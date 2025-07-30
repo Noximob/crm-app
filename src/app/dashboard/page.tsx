@@ -513,6 +513,7 @@ export default function DashboardPage() {
           posts.map(async (post: any) => {
             const commentsSnapshot = await getDocs(collection(db, 'comunidadePosts', post.id, 'comments'));
             const repostsSnapshot = await getDocs(collection(db, 'comunidadePosts', post.id, 'reposts'));
+            const likesSnapshot = await getDocs(collection(db, 'comunidadePosts', post.id, 'likes'));
             
             // Verificar se o usuário atual já curtiu o post
             const userLikeDoc = await getDoc(doc(db, 'comunidadePosts', post.id, 'likes', currentUser?.uid || ''));
@@ -540,9 +541,10 @@ export default function DashboardPage() {
             }
             return {
               ...post,
+              likes: likesSnapshot.size, // Usar o contador real do Firestore
               commentsCount: commentsSnapshot.size,
               repostsCount: repostsSnapshot.size,
-              totalEngagement: (post.likes || 0) + commentsSnapshot.size + repostsSnapshot.size,
+              totalEngagement: likesSnapshot.size + commentsSnapshot.size + repostsSnapshot.size + (post.views || 0),
               userLiked: userLikeDoc.exists(),
               repostAuthorName,
               originalTexto,
@@ -571,8 +573,8 @@ export default function DashboardPage() {
           }
           
           // Para posts normais, ordenar por engajamento total (likes + comentários + reposts + views)
-          const aEngagement = (a.likes || 0) + (a.commentsCount || 0) + (a.repostsCount || 0) + (a.views || 0);
-          const bEngagement = (b.likes || 0) + (b.commentsCount || 0) + (b.repostsCount || 0) + (b.views || 0);
+          const aEngagement = a.totalEngagement || 0;
+          const bEngagement = b.totalEngagement || 0;
           return bEngagement - aEngagement;
         });
         setTrendingPosts(sortedPosts);

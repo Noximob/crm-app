@@ -258,6 +258,9 @@ export default function ComunidadePage() {
               // Verificar like do usuário
               const userLikeDoc = await getDoc(doc(db, 'comunidadePosts', post.id, 'likes', currentUser.uid));
               
+              // Contar likes
+              const likesSnapshot = await getDocs(collection(db, 'comunidadePosts', post.id, 'likes'));
+              
               // Contar comentários
               const commentsSnapshot = await getDocs(collection(db, 'comunidadePosts', post.id, 'comments'));
               
@@ -270,7 +273,7 @@ export default function ComunidadePage() {
               return {
                 ...post,
                 userLiked: userLikeDoc.exists(),
-                likes: post.likes || 0,
+                likes: likesSnapshot.size, // Usar o contador real do Firestore
                 commentsCount: commentsSnapshot.size,
                 repostsCount: repostsSnapshot.size,
                 viewsCount: viewsSnapshot.size
