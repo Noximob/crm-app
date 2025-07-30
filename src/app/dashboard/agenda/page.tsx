@@ -293,8 +293,8 @@ export default function AgendaPage() {
   };
 
   const handleEdit = (item: AgendaItem) => {
-    // Para CRM e Notas, abrir modal de visualização
-    if (item.source === 'crm' || item.source === 'notas') {
+    // Para CRM, Notas e Avisos, abrir modal de visualização
+    if (item.source === 'crm' || item.source === 'notas' || item.source === 'aviso') {
       setViewingItem(item);
       setShowViewModal(true);
       return;
@@ -415,25 +415,43 @@ export default function AgendaPage() {
         
         // Verificar se a data atual está dentro do período do aviso
         if (currentDate >= inicioDate && currentDate <= fimDate) {
-          // Criar descrição com informações do período
-          let descricao = aviso.mensagem;
-          descricao += '\n\n';
-          descricao += `Período: ${inicioDate.toLocaleDateString('pt-BR')} a ${fimDate.toLocaleDateString('pt-BR')}\n`;
-          descricao += `Horário diário: ${inicioDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - ${fimDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+          // Extrair apenas a data (sem hora) para comparação de período
+          const inicioDateOnly = new Date(inicioDate.getFullYear(), inicioDate.getMonth(), inicioDate.getDate());
+          const fimDateOnly = new Date(fimDate.getFullYear(), fimDate.getMonth(), fimDate.getDate());
+          const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
           
-          allItems.push({
-            id: `aviso_${aviso.id}`,
-            titulo: aviso.titulo,
-            descricao: descricao,
-            dataHora: Timestamp.fromDate(currentDate), // Usar a data atual do calendário
-            tipo: 'aviso',
-            status: 'pendente',
-            cor: '#DC2626', // vermelho
-            createdAt: aviso.data,
-            userId: '',
-            source: 'aviso',
-            originalId: aviso.id
-          });
+          // Verificar se a data atual está dentro do período do aviso
+          if (currentDateOnly >= inicioDateOnly && currentDateOnly <= fimDateOnly) {
+            // Criar data/hora para este dia específico usando os horários de início e fim
+            const horaInicio = inicioDate.getHours();
+            const minutoInicio = inicioDate.getMinutes();
+            const horaFim = fimDate.getHours();
+            const minutoFim = fimDate.getMinutes();
+            
+            // Criar data/hora para este dia específico (usando horário de início)
+            const dataHoraDia = new Date(currentDate);
+            dataHoraDia.setHours(horaInicio, minutoInicio, 0, 0);
+            
+            // Criar descrição com informações do período
+            let descricao = aviso.mensagem;
+            descricao += '\n\n';
+            descricao += `Período: ${inicioDateOnly.toLocaleDateString('pt-BR')} a ${fimDateOnly.toLocaleDateString('pt-BR')}\n`;
+            descricao += `Horário diário: ${horaInicio.toString().padStart(2, '0')}:${minutoInicio.toString().padStart(2, '0')} - ${horaFim.toString().padStart(2, '0')}:${minutoFim.toString().padStart(2, '0')}`;
+            
+            allItems.push({
+              id: `aviso_${aviso.id}`,
+              titulo: aviso.titulo,
+              descricao: descricao,
+              dataHora: Timestamp.fromDate(dataHoraDia), // Usar a data/hora específica do dia
+              tipo: 'aviso',
+              status: 'pendente',
+              cor: '#DC2626', // vermelho
+              createdAt: aviso.data,
+              userId: '',
+              source: 'aviso',
+              originalId: aviso.id
+            });
+          }
         }
       } else {
         // Fallback para avisos antigos que não têm dataInicio/dataFim
@@ -883,7 +901,7 @@ export default function AgendaPage() {
               </div>
               <div>
                 <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">
-                  Visualizar {viewingItem.source === 'crm' ? 'Tarefa CRM' : 'Nota'}
+                  Visualizar {viewingItem.source === 'crm' ? 'Tarefa CRM' : viewingItem.source === 'aviso' ? 'Aviso Importante' : 'Nota'}
                 </h2>
                 <p className="text-[#6B6F76] dark:text-gray-300 text-sm">
                   {viewingItem.dataHora.toDate().toLocaleString('pt-BR')}
