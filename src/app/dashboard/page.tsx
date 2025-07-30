@@ -677,43 +677,35 @@ export default function DashboardPage() {
       const likeDoc = await getDoc(likeRef);
       
       if (likeDoc.exists()) {
-        // Remover like
+        // Remover like - deixar os listeners em tempo real atualizarem o contador
         await deleteDoc(likeRef);
-        // Buscar contador real de likes
-        const likesSnapshot = await getDocs(collection(db, 'comunidadePosts', postId, 'likes'));
-        const realLikesCount = likesSnapshot.size;
-        
+        // Atualizar apenas o status do usuário imediatamente
         setTrendingPosts(prev => prev.map(post => 
           post.id === postId 
-            ? { ...post, likes: realLikesCount, userLiked: false }
+            ? { ...post, userLiked: false }
             : post
         ));
         // Atualizar post selecionado no modal
         setSelectedPost((prev: any) => prev && prev.id === postId ? {
           ...prev,
-          likes: realLikesCount,
           userLiked: false
         } : prev);
       } else {
-        // Adicionar like
+        // Adicionar like - deixar os listeners em tempo real atualizarem o contador
         await setDoc(likeRef, { 
           userId: currentUser.uid, 
           timestamp: serverTimestamp(),
           userName: userData?.nome || currentUser.email?.split("@")[0] || "Usuário"
         });
-        // Buscar contador real de likes
-        const likesSnapshot = await getDocs(collection(db, 'comunidadePosts', postId, 'likes'));
-        const realLikesCount = likesSnapshot.size;
-        
+        // Atualizar apenas o status do usuário imediatamente
         setTrendingPosts(prev => prev.map(post => 
           post.id === postId 
-            ? { ...post, likes: realLikesCount, userLiked: true }
+            ? { ...post, userLiked: true }
             : post
         ));
         // Atualizar post selecionado no modal
         setSelectedPost((prev: any) => prev && prev.id === postId ? {
           ...prev,
-          likes: realLikesCount,
           userLiked: true
         } : prev);
       }
