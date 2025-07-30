@@ -361,7 +361,7 @@ export default function ComunidadePage() {
       const unsub = onSnapshot(
         query(
           collection(db, "comunidadePosts", modalPostId, "comments"),
-          orderBy('createdAt', 'asc')
+          orderBy('createdAt', 'desc')
         ),
         (snapshot) => {
           setComments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -774,7 +774,7 @@ export default function ComunidadePage() {
 
   const sortedPosts = [...posts].sort((a, b) => {
     try {
-      // Priorizar eventos agendados no topo (posts especiais)
+      // Priorizar eventos agendados no topo (posts especiais) - SEMPRE
       const aIsEvent = a.isEvento && a.eventoStatus === 'agendado';
       const bIsEvent = b.isEvento && b.eventoStatus === 'agendado';
       
@@ -788,23 +788,12 @@ export default function ComunidadePage() {
         return aEventTime.getTime() - bEventTime.getTime();
       }
       
-      // Para posts normais, usar a lógica existente
+      // Para posts normais, usar a lógica baseada no orderByTrending
       if (orderByTrending === 'recent') {
         const aDate = a.createdAt?.toDate?.() || new Date(0);
         const bDate = b.createdAt?.toDate?.() || new Date(0);
         return bDate.getTime() - aDate.getTime();
       } else {
-        // No Top Trending, eventos agendados sempre ficam no topo
-        if (aIsEvent && !bIsEvent) return -1;
-        if (!aIsEvent && bIsEvent) return 1;
-        
-        // Se ambos são eventos, ordenar por data
-        if (aIsEvent && bIsEvent) {
-          const aEventTime = a.eventoData instanceof Date ? a.eventoData : a.eventoData?.toDate?.() || new Date(0);
-          const bEventTime = b.eventoData instanceof Date ? b.eventoData : b.eventoData?.toDate?.() || new Date(0);
-          return aEventTime.getTime() - bEventTime.getTime();
-        }
-        
         // Para posts normais, ordenar por engajamento total (likes + comentários + reposts + views)
         const aEngagement = getTotalEngagement(a.id);
         const bEngagement = getTotalEngagement(b.id);
