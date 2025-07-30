@@ -535,7 +535,7 @@ export default function AgendaPage() {
             {items.slice(0, 3).map((item: AgendaItem) => (
               <div
                 key={item.id}
-                className={`text-xs p-2 rounded-lg ${tipoCores[item.tipo]} text-white truncate cursor-pointer hover:opacity-80 transition-opacity duration-200 shadow-sm`}
+                className={`text-xs p-2 rounded-lg ${tipoCores[item.tipo]} text-white truncate cursor-pointer hover:opacity-80 transition-opacity duration-200 shadow-sm relative group/item`}
                 onClick={() => handleEdit(item)}
                 title={`${item.dataHora.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - ${item.titulo}`}
               >
@@ -543,6 +543,20 @@ export default function AgendaPage() {
                   {item.dataHora.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                 </div>
                 <div className="truncate">{item.titulo}</div>
+                
+                {/* Botão de exclusão para itens da agenda */}
+                {item.source === 'agenda' && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(item.id);
+                    }}
+                    className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-xs"
+                    title="Excluir compromisso"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
             ))}
             {items.length > 3 && (
@@ -788,9 +802,22 @@ export default function AgendaPage() {
                       </div>
                     </div>
 
-                    {/* Próximos compromissos: apenas visualização */}
-                    <div className="text-xs text-[#6B6F76] dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">
-                      Próximos 5 dias
+                    <div className="flex items-center gap-2">
+                      {/* Botão de exclusão para itens da agenda */}
+                      {item.source === 'agenda' && (
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          title="Excluir compromisso"
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </button>
+                      )}
+                      
+                      {/* Próximos compromissos: apenas visualização */}
+                      <div className="text-xs text-[#6B6F76] dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">
+                        Próximos 5 dias
+                      </div>
                     </div>
                   </div>
                 </div>
