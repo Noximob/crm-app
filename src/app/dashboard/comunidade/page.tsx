@@ -638,7 +638,7 @@ export default function ComunidadePage() {
       const postData = {
         texto: novoPost,
         userId: currentUser.uid,
-        nome: userData?.nome || "Usuário",
+        nome: getCurrentUserName(),
         email: currentUser.email || "",
         avatar: gerarAvatar(userData, currentUser),
         createdAt: serverTimestamp(),
@@ -718,7 +718,7 @@ export default function ComunidadePage() {
               await setDoc(likeRef, { 
                 userId: currentUser.uid, 
                 timestamp: serverTimestamp(),
-                userName: userData?.nome || currentUser.email?.split("@")[0] || "Usuário"
+                userName: getCurrentUserName()
               });
               // Atualizar apenas o status do usuário imediatamente
               setPosts(prev => prev.map(post => 
@@ -747,7 +747,7 @@ export default function ComunidadePage() {
       await addDoc(collection(db, "comunidadePosts", modalPostId, "comments"), {
         texto: newComment,
         userId: currentUser.uid,
-        nome: userData?.nome || "Usuário",
+        nome: getCurrentUserName(),
         avatar: gerarAvatar(userData, currentUser),
         createdAt: serverTimestamp(),
       });
@@ -776,7 +776,7 @@ export default function ComunidadePage() {
     await addDoc(collection(db, "comunidadePosts"), {
       texto: withComment ? repostComment : repostTarget.texto,
       userId: currentUser.uid,
-      nome: userData?.nome || "Usuário",
+      nome: getCurrentUserName(),
       email: currentUser.email || "",
       avatar: gerarAvatar(userData, currentUser),
       createdAt: serverTimestamp(),
@@ -816,8 +816,8 @@ export default function ComunidadePage() {
         eventoData: eventDateTime,
         eventoStatus: 'agendado', // agendado, acontecendo, finalizado
         userId: currentUser.uid,
-        nome: userData.nome,
-        handle: gerarHandle(userData.nome, userData.email),
+        nome: getCurrentUserName(),
+        handle: gerarHandle(getCurrentUserName(), userData.email),
         avatar: gerarAvatar(userData, currentUser),
         imobiliariaId: userData.imobiliariaId,
         createdAt: serverTimestamp(),
@@ -915,6 +915,29 @@ export default function ComunidadePage() {
       return 0;
     }
   });
+
+  // Função para obter o nome mais atualizado do usuário
+  const getCurrentUserName = () => {
+    // Priorizar userData.nome se existir e não estiver vazio
+    if (userData?.nome && userData.nome.trim() !== '') {
+      return userData.nome;
+    }
+    
+    // Se não tiver userData.nome, usar displayName do Firebase
+    if (currentUser?.displayName && currentUser.displayName.trim() !== '') {
+      return currentUser.displayName;
+    }
+    
+    // Se não tiver displayName, usar email sem o domínio
+    if (currentUser?.email) {
+      const emailName = currentUser.email.split('@')[0];
+      // Capitalizar o nome do email
+      return emailName.charAt(0).toUpperCase() + emailName.slice(1);
+    }
+    
+    // Fallback
+    return "Usuário";
+  };
 
   return (
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
