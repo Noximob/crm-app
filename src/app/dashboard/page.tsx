@@ -677,36 +677,38 @@ export default function DashboardPage() {
       const likeDoc = await getDoc(likeRef);
       
       if (likeDoc.exists()) {
-        // Remover like - deixar os listeners em tempo real atualizarem o contador
+        // Remover like - atualizar contador imediatamente para melhor UX
         await deleteDoc(likeRef);
-        // Atualizar apenas o status do usuário imediatamente
+        // Atualizar status do usuário e contador imediatamente
         setTrendingPosts(prev => prev.map(post => 
           post.id === postId 
-            ? { ...post, userLiked: false }
+            ? { ...post, userLiked: false, likes: Math.max(0, (post.likes || 0) - 1) }
             : post
         ));
         // Atualizar post selecionado no modal
         setSelectedPost((prev: any) => prev && prev.id === postId ? {
           ...prev,
-          userLiked: false
+          userLiked: false,
+          likes: Math.max(0, (prev.likes || 0) - 1)
         } : prev);
       } else {
-        // Adicionar like - deixar os listeners em tempo real atualizarem o contador
+        // Adicionar like - atualizar contador imediatamente para melhor UX
         await setDoc(likeRef, { 
           userId: currentUser.uid, 
           timestamp: serverTimestamp(),
           userName: userData?.nome || currentUser.email?.split("@")[0] || "Usuário"
         });
-        // Atualizar apenas o status do usuário imediatamente
+        // Atualizar status do usuário e contador imediatamente
         setTrendingPosts(prev => prev.map(post => 
           post.id === postId 
-            ? { ...post, userLiked: true }
+            ? { ...post, userLiked: true, likes: (post.likes || 0) + 1 }
             : post
         ));
         // Atualizar post selecionado no modal
         setSelectedPost((prev: any) => prev && prev.id === postId ? {
           ...prev,
-          userLiked: true
+          userLiked: true,
+          likes: (prev.likes || 0) + 1
         } : prev);
       }
     } catch (error) {

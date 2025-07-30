@@ -598,25 +598,25 @@ export default function ComunidadePage() {
       const likeDoc = await getDoc(likeRef);
       
       if (likeDoc.exists()) {
-        // Remover like - deixar os listeners em tempo real atualizarem o contador
+        // Remover like - atualizar contador imediatamente para melhor UX
         await deleteDoc(likeRef);
-        // Atualizar apenas o status do usuário imediatamente
+        // Atualizar status do usuário e contador imediatamente
         setPosts(prev => prev.map(post => 
           post.id === postId 
-            ? { ...post, userLiked: false }
+            ? { ...post, userLiked: false, likes: Math.max(0, (post.likes || 0) - 1) }
             : post
         ));
       } else {
-        // Adicionar like - deixar os listeners em tempo real atualizarem o contador
+        // Adicionar like - atualizar contador imediatamente para melhor UX
         await setDoc(likeRef, { 
           userId: currentUser.uid, 
           timestamp: serverTimestamp(),
           userName: userData?.nome || currentUser.email?.split("@")[0] || "Usuário"
         });
-        // Atualizar apenas o status do usuário imediatamente
+        // Atualizar status do usuário e contador imediatamente
         setPosts(prev => prev.map(post => 
           post.id === postId 
-            ? { ...post, userLiked: true }
+            ? { ...post, userLiked: true, likes: (post.likes || 0) + 1 }
             : post
         ));
       }
