@@ -46,6 +46,7 @@ const adminCategories = [
     items: [
       { title: 'Materiais Construtora', icon: '🏗️', description: 'Materiais das construtoras', href: '/dashboard/admin/materiais-construtora' },
       { title: 'Marketing Imobiliário', icon: '📢', description: 'Campanhas e ferramentas', href: '/dashboard/admin/marketing-imobiliario' },
+      { title: 'Captações', icon: '🏠', description: 'Imóveis captados pelos usuários', href: '/dashboard/admin/captacoes' },
       { title: 'Treinamentos', icon: '🎓', description: 'Materiais educacionais', href: '/dashboard/admin/treinamentos' },
     ]
   },
