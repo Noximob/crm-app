@@ -303,7 +303,7 @@ export default function CadastroPage() {
       try {
       console.log('Criando documento do usuário no Firestore...');
           await setDoc(doc(db, 'usuarios', user.uid), {
-            nome: user.displayName || '',
+            nome: user.displayName || user.email?.split("@")[0] || 'Usuário',
             email: user.email,
           tipoConta: perfil === 'imobiliaria' ? 'imobiliaria' : perfil,
             imobiliariaId: imobiliariaId || '',

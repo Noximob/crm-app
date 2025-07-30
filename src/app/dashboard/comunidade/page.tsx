@@ -638,7 +638,7 @@ export default function ComunidadePage() {
       const postData = {
         texto: novoPost,
         userId: currentUser.uid,
-        nome: userData?.nome || currentUser.email?.split("@")[0] || "Usuário",
+        nome: userData?.nome || "Usuário",
         email: currentUser.email || "",
         avatar: gerarAvatar(userData, currentUser),
         createdAt: serverTimestamp(),
@@ -747,7 +747,7 @@ export default function ComunidadePage() {
       await addDoc(collection(db, "comunidadePosts", modalPostId, "comments"), {
         texto: newComment,
         userId: currentUser.uid,
-        nome: userData?.nome || currentUser.email?.split("@")[0] || "Usuário",
+        nome: userData?.nome || "Usuário",
         avatar: gerarAvatar(userData, currentUser),
         createdAt: serverTimestamp(),
       });
@@ -776,7 +776,7 @@ export default function ComunidadePage() {
     await addDoc(collection(db, "comunidadePosts"), {
       texto: withComment ? repostComment : repostTarget.texto,
       userId: currentUser.uid,
-      nome: userData?.nome || currentUser.email?.split("@")[0] || "Usuário",
+      nome: userData?.nome || "Usuário",
       email: currentUser.email || "",
       avatar: gerarAvatar(userData, currentUser),
       createdAt: serverTimestamp(),
