@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { PIPELINE_STAGES } from '@/lib/constants';
+import { useRouter } from 'next/navigation';
 
 interface Corretor {
   id: string;
@@ -21,6 +22,7 @@ interface Lead {
 
 export default function GestaoLeadsPage() {
   const { userData } = useAuth();
+  const router = useRouter();
   const [corretores, setCorretores] = useState<Corretor[]>([]);
   const [corretorOrigem, setCorretorOrigem] = useState<string>('');
   const [corretorDestino, setCorretorDestino] = useState<string>('');
@@ -111,6 +113,10 @@ export default function GestaoLeadsPage() {
     }
   };
 
+  const handleVerDetalhes = (leadId: string) => {
+    router.push(`/dashboard/crm/${leadId}`);
+  };
+
   return (
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
       <div className="max-w-6xl mx-auto">
@@ -199,7 +205,22 @@ export default function GestaoLeadsPage() {
                     <div className="text-sm text-[#6B6F76] dark:text-gray-300">{formatPhone(lead.telefone)}</div>
                   </div>
                   <span className="inline-block px-2 py-1 rounded bg-[#E8E9F1] dark:bg-[#181C23] text-[#3478F6] dark:text-primary-200 font-semibold text-xs truncate max-w-[120px]">{lead.etapa}</span>
-                  <button className="text-red-500 hover:text-red-700 text-xs ml-2" onClick={() => handleApagar(lead.id)}>Apagar</button>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      className="text-[#3478F6] hover:text-[#255FD1] text-xs px-2 py-1 rounded hover:bg-[#3478F6]/10 transition-colors" 
+                      onClick={() => handleVerDetalhes(lead.id)}
+                      title="Ver detalhes do lead"
+                    >
+                      Detalhes
+                    </button>
+                    <button 
+                      className="text-red-500 hover:text-red-700 text-xs px-2 py-1 rounded hover:bg-red-500/10 transition-colors" 
+                      onClick={() => handleApagar(lead.id)}
+                      title="Apagar lead"
+                    >
+                      Apagar
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
