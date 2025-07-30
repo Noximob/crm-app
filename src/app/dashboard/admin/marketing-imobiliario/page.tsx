@@ -61,6 +61,7 @@ export default function MateriaisImobiliariaAdminPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [formMaterial, setFormMaterial] = useState({ nome: "", tipo: "pdf" as "pdf" | "link" | "foto" | "video", url: "", descricao: "" });
   const [uploading, setUploading] = useState(false);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!userData?.imobiliariaId) return;
@@ -157,19 +158,33 @@ export default function MateriaisImobiliariaAdminPage() {
 
   const handleDeleteMaterial = async (id: string, url?: string) => {
     if (!confirm("Tem certeza?")) return;
-    setLoading(true);
+    
+    setDeletingIds(prev => new Set(prev).add(id));
     try {
-      if (url) {
-        const storageRef = ref(storage, url);
-        await deleteObject(storageRef);
-      }
+      // Primeiro deletar o documento do Firestore
       await deleteDoc(doc(db, "materiais_imobiliaria", id));
+      
+      // Depois tentar deletar o arquivo do Storage (se existir)
+      if (url && url.includes('firebasestorage.googleapis.com')) {
+        try {
+          const storageRef = ref(storage, url);
+          await deleteObject(storageRef);
+        } catch (storageError) {
+          console.log("Arquivo do Storage não encontrado ou já deletado:", storageError);
+        }
+      }
+      
       fetchMateriais();
       setMsg("Material excluído!");
     } catch (err) {
+      console.error("Erro ao excluir material:", err);
       setMsg("Erro ao excluir material.");
     } finally {
-      setLoading(false);
+      setDeletingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
     }
   };
 
@@ -361,9 +376,10 @@ export default function MateriaisImobiliariaAdminPage() {
                           )}
                           <button
                             onClick={() => handleDeleteMaterial(material.id, material.url)}
-                            className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors"
+                            disabled={deletingIds.has(material.id)}
+                            className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            Excluir
+                            {deletingIds.has(material.id) ? "Excluindo..." : "Excluir"}
                           </button>
                         </div>
                       </div>
@@ -401,9 +417,10 @@ export default function MateriaisImobiliariaAdminPage() {
                           )}
                           <button
                             onClick={() => handleDeleteMaterial(material.id, material.url)}
-                            className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors"
+                            disabled={deletingIds.has(material.id)}
+                            className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            Excluir
+                            {deletingIds.has(material.id) ? "Excluindo..." : "Excluir"}
                           </button>
                         </div>
                       </div>
@@ -463,9 +480,10 @@ export default function MateriaisImobiliariaAdminPage() {
                           )}
                           <button
                             onClick={() => handleDeleteMaterial(material.id, material.url)}
-                            className="w-full mt-2 px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors font-semibold"
+                            disabled={deletingIds.has(material.id)}
+                            className="w-full mt-2 px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            Excluir
+                            {deletingIds.has(material.id) ? "Excluindo..." : "Excluir"}
                           </button>
                         </div>
                       </div>
@@ -520,9 +538,10 @@ export default function MateriaisImobiliariaAdminPage() {
                           )}
                           <button
                             onClick={() => handleDeleteMaterial(material.id, material.url)}
-                            className="w-full mt-2 px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors font-semibold"
+                            disabled={deletingIds.has(material.id)}
+                            className="w-full mt-2 px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            Excluir
+                            {deletingIds.has(material.id) ? "Excluindo..." : "Excluir"}
                           </button>
                         </div>
             </div>
