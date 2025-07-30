@@ -75,10 +75,9 @@ interface AvisoImportante {
   id: string;
   titulo: string;
   mensagem: string;
-  dataHora: Timestamp;
+  data: Timestamp;
   dataInicio?: Timestamp;
   dataFim?: Timestamp;
-  horario?: string;
 }
 
 const tipoCores = {
@@ -410,36 +409,52 @@ export default function AgendaPage() {
     
     // Adicionar avisos importantes
     avisos.forEach(aviso => {
-      const avisoDate = aviso.dataHora.toDate();
-      if (avisoDate.toDateString() === date.toDateString()) {
-        // Criar descrição com informações adicionais
-        let descricao = aviso.mensagem;
-        if (aviso.dataInicio || aviso.dataFim || aviso.horario) {
-          descricao += '\n\n';
-          if (aviso.dataInicio) {
-            descricao += `Início: ${aviso.dataInicio.toDate().toLocaleString('pt-BR')}\n`;
-          }
-          if (aviso.dataFim) {
-            descricao += `Fim: ${aviso.dataFim.toDate().toLocaleString('pt-BR')}\n`;
-          }
-          if (aviso.horario) {
-            descricao += `Horário: ${aviso.horario}`;
-          }
-        }
+      // Se o aviso tem dataInicio e dataFim, verificar se a data atual está no período
+      if (aviso.dataInicio && aviso.dataFim) {
+        const inicioDate = aviso.dataInicio.toDate();
+        const fimDate = aviso.dataFim.toDate();
+        const currentDate = new Date(date);
         
-        allItems.push({
-          id: `aviso_${aviso.id}`,
-          titulo: aviso.titulo,
-          descricao: descricao,
-          dataHora: aviso.dataHora,
-          tipo: 'aviso',
-          status: 'pendente',
-          cor: '#DC2626', // vermelho
-          createdAt: aviso.dataHora,
-          userId: '',
-          source: 'aviso',
-          originalId: aviso.id
-        });
+        // Verificar se a data atual está dentro do período do aviso
+        if (currentDate >= inicioDate && currentDate <= fimDate) {
+          // Criar descrição com informações do período
+          let descricao = aviso.mensagem;
+          descricao += '\n\n';
+          descricao += `Período: ${inicioDate.toLocaleDateString('pt-BR')} a ${fimDate.toLocaleDateString('pt-BR')}\n`;
+          descricao += `Horário diário: ${inicioDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - ${fimDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+          
+          allItems.push({
+            id: `aviso_${aviso.id}`,
+            titulo: aviso.titulo,
+            descricao: descricao,
+            dataHora: Timestamp.fromDate(currentDate), // Usar a data atual do calendário
+            tipo: 'aviso',
+            status: 'pendente',
+            cor: '#DC2626', // vermelho
+            createdAt: aviso.data,
+            userId: '',
+            source: 'aviso',
+            originalId: aviso.id
+          });
+        }
+      } else {
+        // Fallback para avisos antigos que não têm dataInicio/dataFim
+        const avisoDate = aviso.data.toDate();
+        if (avisoDate.toDateString() === date.toDateString()) {
+          allItems.push({
+            id: `aviso_${aviso.id}`,
+            titulo: aviso.titulo,
+            descricao: aviso.mensagem,
+            dataHora: aviso.data,
+            tipo: 'aviso',
+            status: 'pendente',
+            cor: '#DC2626', // vermelho
+            createdAt: aviso.data,
+            userId: '',
+            source: 'aviso',
+            originalId: aviso.id
+          });
+        }
       }
     });
     
@@ -683,16 +698,17 @@ export default function AgendaPage() {
               
               // Adicionar avisos importantes
               avisos.forEach(aviso => {
-                if (aviso.dataHora.toDate() >= new Date()) {
+                // Para próximos compromissos, usar a data de criação do aviso
+                if (aviso.data.toDate() >= new Date()) {
                   allItems.push({
                     id: `aviso_${aviso.id}`,
                     titulo: aviso.titulo,
                     descricao: aviso.mensagem,
-                    dataHora: aviso.dataHora,
+                    dataHora: aviso.data,
                     tipo: 'aviso',
                     status: 'pendente',
                     cor: '#DC2626', // vermelho
-                    createdAt: aviso.dataHora,
+                    createdAt: aviso.data,
                     userId: '',
                     source: 'aviso',
                     originalId: aviso.id

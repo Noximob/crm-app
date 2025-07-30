@@ -1148,7 +1148,7 @@ export default function DashboardPage() {
                 <p className="text-[#6B6F76] dark:text-gray-300 text-sm italic">Nenhum aviso importante cadastrado pela imobiliária.</p>
               ) : (
                 avisosImportantes
-                  .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
+                  .sort((a, b) => b.data?.toDate() - a.data?.toDate())
                   .slice(0, 3) // Mostrar apenas os 3 mais recentes
                   .map((aviso, idx) => (
                     <div
@@ -1165,12 +1165,6 @@ export default function DashboardPage() {
                             {aviso.mensagem}
                           </div>
                           <div className="text-[10px] text-[#FF6B6B]/70 font-medium mt-1">
-                            <div>Exibir: {aviso.dataHora?.toDate ? aviso.dataHora.toDate().toLocaleDateString('pt-BR', { 
-                              day: '2-digit', 
-                              month: '2-digit', 
-                              hour: '2-digit', 
-                              minute: '2-digit' 
-                            }) : ''}</div>
                             {aviso.dataInicio && (
                               <div>Início: {aviso.dataInicio.toDate ? aviso.dataInicio.toDate().toLocaleDateString('pt-BR', { 
                                 day: '2-digit', 
@@ -1186,9 +1180,6 @@ export default function DashboardPage() {
                                 hour: '2-digit', 
                                 minute: '2-digit' 
                               }) : ''}</div>
-                            )}
-                            {aviso.horario && (
-                              <div>Horário: {aviso.horario}</div>
                             )}
                           </div>
                         </div>
