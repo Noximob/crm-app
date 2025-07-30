@@ -82,6 +82,7 @@ export default function ComunidadePage() {
   // Estados principais
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [postsLoading, setPostsLoading] = useState(true); // Novo estado para loading inicial dos posts
   const [isLiking, setIsLiking] = useState<string | null>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [commentsMap, setCommentsMap] = useState<Record<string, number>>({});
@@ -221,6 +222,11 @@ export default function ComunidadePage() {
   // Buscar posts paginados
   const fetchPosts = async (direction: 'next' | 'prev' | 'first' = 'first') => {
     try {
+      // Mostrar loading apenas no carregamento inicial
+      if (direction === 'first') {
+        setPostsLoading(true);
+      }
+      
       let q;
       if (direction === 'first') {
         q = query(
@@ -255,20 +261,14 @@ export default function ComunidadePage() {
         const postsWithData = await Promise.all(
           postsData.map(async (post: any) => {
             try {
-              // Verificar like do usuário
-              const userLikeDoc = await getDoc(doc(db, 'comunidadePosts', post.id, 'likes', currentUser.uid));
-              
-              // Contar likes
-              const likesSnapshot = await getDocs(collection(db, 'comunidadePosts', post.id, 'likes'));
-              
-              // Contar comentários
-              const commentsSnapshot = await getDocs(collection(db, 'comunidadePosts', post.id, 'comments'));
-              
-              // Contar reposts
-              const repostsSnapshot = await getDocs(collection(db, 'comunidadePosts', post.id, 'reposts'));
-              
-              // Contar visualizações
-              const viewsSnapshot = await getDocs(collection(db, 'comunidadePosts', post.id, 'views'));
+              // Otimizar consultas em paralelo para cada post
+              const [userLikeDoc, likesSnapshot, commentsSnapshot, repostsSnapshot, viewsSnapshot] = await Promise.all([
+                getDoc(doc(db, 'comunidadePosts', post.id, 'likes', currentUser.uid)),
+                getDocs(collection(db, 'comunidadePosts', post.id, 'likes')),
+                getDocs(collection(db, 'comunidadePosts', post.id, 'comments')),
+                getDocs(collection(db, 'comunidadePosts', post.id, 'reposts')),
+                getDocs(collection(db, 'comunidadePosts', post.id, 'views'))
+              ]);
               
               return {
                 ...post,
@@ -316,9 +316,15 @@ export default function ComunidadePage() {
       if (direction === 'next') setPageStack(prev => [...prev, snapshot.docs[0]]);
       if (direction === 'first') setPageStack([snapshot.docs[0]]);
       if (direction === 'prev') setPageStack(prev => prev.slice(0, -1));
+      
+      // Esconder loading após carregamento inicial
+      if (direction === 'first') {
+        setPostsLoading(false);
+      }
     } catch (error) {
       console.error('Erro ao buscar posts:', error);
       setPosts([]);
+      setPostsLoading(false);
     }
   };
 
@@ -396,22 +402,15 @@ export default function ComunidadePage() {
           const postData = { id: change.doc.id, ...change.doc.data() };
           
           if (change.type === 'added') {
-            // Novo post adicionado
+            // Novo post adicionado - otimizar consultas em paralelo
             try {
-              // Verificar like do usuário
-              const userLikeDoc = await getDoc(doc(db, 'comunidadePosts', postData.id, 'likes', currentUser.uid));
-              
-              // Contar likes
-              const likesSnapshot = await getDocs(collection(db, 'comunidadePosts', postData.id, 'likes'));
-              
-              // Contar comentários
-              const commentsSnapshot = await getDocs(collection(db, 'comunidadePosts', postData.id, 'comments'));
-              
-              // Contar reposts
-              const repostsSnapshot = await getDocs(collection(db, 'comunidadePosts', postData.id, 'reposts'));
-              
-              // Contar visualizações
-              const viewsSnapshot = await getDocs(collection(db, 'comunidadePosts', postData.id, 'views'));
+              const [userLikeDoc, likesSnapshot, commentsSnapshot, repostsSnapshot, viewsSnapshot] = await Promise.all([
+                getDoc(doc(db, 'comunidadePosts', postData.id, 'likes', currentUser.uid)),
+                getDocs(collection(db, 'comunidadePosts', postData.id, 'likes')),
+                getDocs(collection(db, 'comunidadePosts', postData.id, 'comments')),
+                getDocs(collection(db, 'comunidadePosts', postData.id, 'reposts')),
+                getDocs(collection(db, 'comunidadePosts', postData.id, 'views'))
+              ]);
               
               const postWithData = {
                 ...postData,
@@ -1104,7 +1103,17 @@ export default function ComunidadePage() {
         </div>
         {/* Feed de posts */}
         <div className="flex flex-col gap-6">
-          {sortedPosts.map((post) => {
+          {/* Loading indicator */}
+          {postsLoading && (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-8 h-8 border-4 border-[#3478F6] border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-[#6B6F76] dark:text-gray-300 font-medium">Carregando posts...</p>
+              </div>
+            </div>
+          )}
+          
+          {!postsLoading && sortedPosts.map((post) => {
             
             const isAuthor = currentUser && post.userId === currentUser.uid;
             const isLiked = currentUser && post.userLiked;
