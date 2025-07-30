@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, setDoc, deleteDoc, onSnapshot, orderBy, addDoc, Timestamp } from 'firebase/firestore';
 
 interface Treinamento {
   id: string;
@@ -13,6 +13,17 @@ interface Treinamento {
   tipo: 'video' | 'pdf';
   url: string;
   criadoEm: Date;
+  likesCount?: number;
+  commentsCount?: number;
+}
+
+interface Comment {
+  id: string;
+  treinamentoId: string;
+  userId: string;
+  userName: string;
+  text: string;
+  createdAt: Timestamp;
 }
 
 const categorias = [
@@ -25,19 +36,37 @@ const categorias = [
 ];
 
 export default function TreinamentosPage() {
-  const { userData } = useAuth();
+  const { userData, currentUser } = useAuth();
   const [treinamentos, setTreinamentos] = useState<Treinamento[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('todos');
   const [playingVideo, setPlayingVideo] = useState<string | null>(null);
   const [suggestedCategory, setSuggestedCategory] = useState<string>('todos');
+  const [selectedTreinamento, setSelectedTreinamento] = useState<string | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [showComments, setShowComments] = useState(false);
+  const [userLikes, setUserLikes] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!userData?.imobiliariaId) return;
     fetchTreinamentos();
     generateSuggestion();
   }, [userData]);
+
+  useEffect(() => {
+    if (treinamentos.length > 0) {
+      fetchLikesAndCommentsCount();
+      fetchUserLikes();
+    }
+  }, [treinamentos]);
+
+  useEffect(() => {
+    if (selectedTreinamento) {
+      fetchComments(selectedTreinamento);
+    }
+  }, [selectedTreinamento]);
 
   // Gerar sugestão aleatória de categoria
   const generateSuggestion = () => {
@@ -128,6 +157,109 @@ export default function TreinamentosPage() {
   const getSuggestedCategoryIcon = () => {
     const cat = categorias.find(c => c.key === suggestedCategory);
     return cat ? cat.icon : '📈';
+  };
+
+  // Funções para likes e comentários
+  const handleLike = async (treinamentoId: string) => {
+    if (!currentUser?.uid) return;
+    
+    const likeRef = doc(db, 'treinamentos', treinamentoId, 'likes', currentUser.uid);
+    
+    if (userLikes.has(treinamentoId)) {
+      // Unlike
+      await deleteDoc(likeRef);
+      setUserLikes(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(treinamentoId);
+        return newSet;
+      });
+    } else {
+      // Like
+      await setDoc(likeRef, {
+        userId: currentUser.uid,
+        createdAt: Timestamp.now()
+      });
+      setUserLikes(prev => new Set(prev).add(treinamentoId));
+    }
+  };
+
+  const handleComment = async (treinamentoId: string) => {
+    if (!currentUser?.uid || !newComment.trim()) return;
+    
+    try {
+      await addDoc(collection(db, 'treinamentos', treinamentoId, 'comments'), {
+        userId: currentUser.uid,
+        userName: userData?.nome || 'Usuário',
+        text: newComment.trim(),
+        createdAt: Timestamp.now()
+      });
+      setNewComment('');
+    } catch (error) {
+      console.error('Erro ao adicionar comentário:', error);
+    }
+  };
+
+  const fetchComments = async (treinamentoId: string) => {
+    try {
+      const q = query(
+        collection(db, 'treinamentos', treinamentoId, 'comments'),
+        orderBy('createdAt', 'desc')
+      );
+      const snapshot = await getDocs(q);
+      const commentsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Comment[];
+      setComments(commentsData);
+    } catch (error) {
+      console.error('Erro ao buscar comentários:', error);
+    }
+  };
+
+  const fetchUserLikes = async () => {
+    if (!currentUser?.uid) return;
+    
+    try {
+      const userLikesSet = new Set<string>();
+      
+      for (const treinamento of treinamentos) {
+        const likeDoc = await getDocs(query(
+          collection(db, 'treinamentos', treinamento.id, 'likes'),
+          where('userId', '==', currentUser.uid)
+        ));
+        
+        if (!likeDoc.empty) {
+          userLikesSet.add(treinamento.id);
+        }
+      }
+      
+      setUserLikes(userLikesSet);
+    } catch (error) {
+      console.error('Erro ao buscar likes do usuário:', error);
+    }
+  };
+
+  const fetchLikesAndCommentsCount = async () => {
+    try {
+      const updatedTreinamentos = await Promise.all(
+        treinamentos.map(async (treinamento) => {
+          const [likesSnapshot, commentsSnapshot] = await Promise.all([
+            getDocs(collection(db, 'treinamentos', treinamento.id, 'likes')),
+            getDocs(collection(db, 'treinamentos', treinamento.id, 'comments'))
+          ]);
+          
+          return {
+            ...treinamento,
+            likesCount: likesSnapshot.size,
+            commentsCount: commentsSnapshot.size
+          };
+        })
+      );
+      
+      setTreinamentos(updatedTreinamentos);
+    } catch (error) {
+      console.error('Erro ao buscar contadores:', error);
+    }
   };
 
   return (
@@ -288,7 +420,7 @@ export default function TreinamentosPage() {
                   )}
                   
                   {/* Metadados - Estilo YouTube */}
-                  <div className="flex items-center justify-between text-xs text-[#6B6F76] dark:text-gray-400">
+                  <div className="flex items-center justify-between text-xs text-[#6B6F76] dark:text-gray-400 mb-2">
                     <div className="flex items-center gap-1">
                       <span>{getCategoriaIcon(treinamento.categoria)}</span>
                       <span>•</span>
@@ -298,9 +430,137 @@ export default function TreinamentosPage() {
                       <span>{treinamento.tipo === 'video' ? '🎥' : '📄'}</span>
                     </div>
                   </div>
+
+                  {/* Botões de Interação - Estilo YouTube */}
+                  <div className="flex items-center justify-between pt-2 border-t border-[#E8E9F1] dark:border-[#23283A]">
+                    <div className="flex items-center gap-4">
+                      {/* Botão Like */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLike(treinamento.id);
+                        }}
+                        className="flex items-center gap-1 text-xs text-[#6B6F76] dark:text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        <svg 
+                          className={`w-4 h-4 ${userLikes.has(treinamento.id) ? 'text-red-500 fill-current' : 'text-gray-400'}`} 
+                          fill="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                        </svg>
+                        <span>{treinamento.likesCount || 0}</span>
+                      </button>
+
+                      {/* Botão Comentários */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedTreinamento(treinamento.id);
+                          setShowComments(true);
+                        }}
+                        className="flex items-center gap-1 text-xs text-[#6B6F76] dark:text-gray-400 hover:text-[#3478F6] transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        <span>{treinamento.commentsCount || 0}</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Modal de Comentários */}
+        {showComments && selectedTreinamento && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-[#23283A] rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+              {/* Header do Modal */}
+              <div className="p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold text-[#2E2F38] dark:text-white">
+                    Comentários
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowComments(false);
+                      setSelectedTreinamento(null);
+                      setComments([]);
+                    }}
+                    className="text-[#6B6F76] dark:text-gray-400 hover:text-[#2E2F38] dark:hover:text-white"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Lista de Comentários */}
+              <div className="flex-1 overflow-y-auto p-6 max-h-[60vh]">
+                {comments.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="text-4xl mb-4">💬</div>
+                    <p className="text-[#6B6F76] dark:text-gray-300">
+                      Seja o primeiro a comentar!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {comments.map((comment) => (
+                      <div key={comment.id} className="flex gap-3">
+                        <div className="w-8 h-8 bg-[#3478F6] rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                          {comment.userName.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-[#2E2F38] dark:text-white text-sm">
+                              {comment.userName}
+                            </span>
+                            <span className="text-xs text-[#6B6F76] dark:text-gray-400">
+                              {comment.createdAt.toDate().toLocaleDateString('pt-BR')}
+                            </span>
+                          </div>
+                          <p className="text-[#2E2F38] dark:text-white text-sm">
+                            {comment.text}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Input de Novo Comentário */}
+              <div className="p-6 border-t border-[#E8E9F1] dark:border-[#23283A]">
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 bg-[#3478F6] rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                    {userData?.nome?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <div className="flex-1">
+                    <textarea
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Adicione um comentário..."
+                      className="w-full px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400 resize-none"
+                      rows={3}
+                    />
+                    <div className="flex justify-end mt-2">
+                      <button
+                        onClick={() => handleComment(selectedTreinamento)}
+                        disabled={!newComment.trim()}
+                        className="px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Comentar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
