@@ -374,6 +374,114 @@ export default function ComunidadePage() {
     }
   }, [modalPostId]);
 
+  // Listener em tempo real para posts da comunidade (novos posts e exclusões)
+  useEffect(() => {
+    if (!currentUser) return;
+
+    // Só aplicar o listener se não estivermos usando paginação
+    // O listener só funciona para os primeiros posts (primeira página)
+    const q = query(
+      collection(db, 'comunidadePosts'),
+      orderBy('createdAt', 'desc'),
+      limit(PAGE_SIZE)
+    );
+
+    const unsub = onSnapshot(q, async (snapshot) => {
+      const changes = snapshot.docChanges();
+      
+      // Processar mudanças apenas se estamos na primeira página
+      // (quando não há paginação ativa)
+      if (pageStack.length <= 1) {
+        for (const change of changes) {
+          const postData = { id: change.doc.id, ...change.doc.data() };
+          
+          if (change.type === 'added') {
+            // Novo post adicionado
+            try {
+              // Verificar like do usuário
+              const userLikeDoc = await getDoc(doc(db, 'comunidadePosts', postData.id, 'likes', currentUser.uid));
+              
+              // Contar likes
+              const likesSnapshot = await getDocs(collection(db, 'comunidadePosts', postData.id, 'likes'));
+              
+              // Contar comentários
+              const commentsSnapshot = await getDocs(collection(db, 'comunidadePosts', postData.id, 'comments'));
+              
+              // Contar reposts
+              const repostsSnapshot = await getDocs(collection(db, 'comunidadePosts', postData.id, 'reposts'));
+              
+              // Contar visualizações
+              const viewsSnapshot = await getDocs(collection(db, 'comunidadePosts', postData.id, 'views'));
+              
+              const postWithData = {
+                ...postData,
+                userLiked: userLikeDoc.exists(),
+                likes: likesSnapshot.size,
+                commentsCount: commentsSnapshot.size,
+                repostsCount: repostsSnapshot.size,
+                viewsCount: viewsSnapshot.size
+              };
+
+              setPosts(prev => {
+                // Verificar se o post já existe para evitar duplicatas
+                if (prev.find(p => p.id === postData.id)) {
+                  return prev;
+                }
+                // Adicionar no topo e manter apenas PAGE_SIZE posts
+                return [postWithData, ...prev.slice(0, PAGE_SIZE - 1)];
+              });
+
+              // Atualizar mapas de contadores
+              setCommentsMap(prev => ({
+                ...prev,
+                [postData.id]: commentsSnapshot.size
+              }));
+              setRepostsMap(prev => ({
+                ...prev,
+                [postData.id]: repostsSnapshot.size
+              }));
+              setViewsMap(prev => ({
+                ...prev,
+                [postData.id]: viewsSnapshot.size
+              }));
+            } catch (error) {
+              console.error('Erro ao processar novo post:', error);
+            }
+          } else if (change.type === 'removed') {
+            // Post removido
+            setPosts(prev => prev.filter(p => p.id !== postData.id));
+            
+            // Remover dos mapas de contadores
+            setCommentsMap(prev => {
+              const newMap = { ...prev };
+              delete newMap[postData.id];
+              return newMap;
+            });
+            setRepostsMap(prev => {
+              const newMap = { ...prev };
+              delete newMap[postData.id];
+              return newMap;
+            });
+            setViewsMap(prev => {
+              const newMap = { ...prev };
+              delete newMap[postData.id];
+              return newMap;
+            });
+          } else if (change.type === 'modified') {
+            // Post modificado (atualizar dados do post)
+            setPosts(prev => prev.map(p => 
+              p.id === postData.id ? { ...p, ...postData } : p
+            ));
+          }
+        }
+      }
+    }, (error) => {
+      console.error('Erro no listener de posts:', error);
+    });
+
+    return () => unsub();
+  }, [currentUser, pageStack.length]);
+
   // Verificar likes do usuário em tempo real
   useEffect(() => {
     if (!currentUser || !posts.length) return;
@@ -449,9 +557,9 @@ export default function ComunidadePage() {
         } catch (error) {
           console.error('Erro ao desinscrever listener:', error);
         }
-      }); 
+      });
     };
-  }, [posts, currentUser]);
+  }, [currentUser, posts]);
 
   // Calcular engajamento total para cada post
   const getTotalEngagement = (postId: string) => {
