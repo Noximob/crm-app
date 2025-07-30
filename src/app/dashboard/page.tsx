@@ -1165,12 +1165,31 @@ export default function DashboardPage() {
                             {aviso.mensagem}
                           </div>
                           <div className="text-[10px] text-[#FF6B6B]/70 font-medium mt-1">
-                            {aviso.dataHora?.toDate ? aviso.dataHora.toDate().toLocaleDateString('pt-BR', { 
+                            <div>Exibir: {aviso.dataHora?.toDate ? aviso.dataHora.toDate().toLocaleDateString('pt-BR', { 
                               day: '2-digit', 
                               month: '2-digit', 
                               hour: '2-digit', 
                               minute: '2-digit' 
-                            }) : ''}
+                            }) : ''}</div>
+                            {aviso.dataInicio && (
+                              <div>Início: {aviso.dataInicio.toDate ? aviso.dataInicio.toDate().toLocaleDateString('pt-BR', { 
+                                day: '2-digit', 
+                                month: '2-digit', 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              }) : ''}</div>
+                            )}
+                            {aviso.dataFim && (
+                              <div>Fim: {aviso.dataFim.toDate ? aviso.dataFim.toDate().toLocaleDateString('pt-BR', { 
+                                day: '2-digit', 
+                                month: '2-digit', 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              }) : ''}</div>
+                            )}
+                            {aviso.horario && (
+                              <div>Horário: {aviso.horario}</div>
+                            )}
                           </div>
                         </div>
                       </div>

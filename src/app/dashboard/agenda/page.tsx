@@ -76,6 +76,9 @@ interface AvisoImportante {
   titulo: string;
   mensagem: string;
   dataHora: Timestamp;
+  dataInicio?: Timestamp;
+  dataFim?: Timestamp;
+  horario?: string;
 }
 
 const tipoCores = {
@@ -409,10 +412,25 @@ export default function AgendaPage() {
     avisos.forEach(aviso => {
       const avisoDate = aviso.dataHora.toDate();
       if (avisoDate.toDateString() === date.toDateString()) {
+        // Criar descrição com informações adicionais
+        let descricao = aviso.mensagem;
+        if (aviso.dataInicio || aviso.dataFim || aviso.horario) {
+          descricao += '\n\n';
+          if (aviso.dataInicio) {
+            descricao += `Início: ${aviso.dataInicio.toDate().toLocaleString('pt-BR')}\n`;
+          }
+          if (aviso.dataFim) {
+            descricao += `Fim: ${aviso.dataFim.toDate().toLocaleString('pt-BR')}\n`;
+          }
+          if (aviso.horario) {
+            descricao += `Horário: ${aviso.horario}`;
+          }
+        }
+        
         allItems.push({
           id: `aviso_${aviso.id}`,
           titulo: aviso.titulo,
-          descricao: aviso.mensagem,
+          descricao: descricao,
           dataHora: aviso.dataHora,
           tipo: 'aviso',
           status: 'pendente',
