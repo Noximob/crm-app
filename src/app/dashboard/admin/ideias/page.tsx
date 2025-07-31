@@ -27,6 +27,7 @@ interface Ideia {
   votos: number;
   criadoEm: Timestamp;
   categoria: "interface" | "funcionalidade" | "performance" | "outros";
+  comentarioAdmin?: string; // Comentário do administrador sobre a decisão
 }
 
 interface Comentario {
@@ -102,6 +103,12 @@ export default function IdeiasAdminPage() {
     descricao: "",
   });
 
+  // Estados para comentário administrativo
+  const [showComentarioAdminModal, setShowComentarioAdminModal] = useState(false);
+  const [ideiaParaComentar, setIdeiaParaComentar] = useState<Ideia | null>(null);
+  const [novoStatus, setNovoStatus] = useState<"aprovada" | "rejeitada" | "implementada">("aprovada");
+  const [comentarioAdmin, setComentarioAdmin] = useState("");
+
   useEffect(() => {
     if (userData) {
       fetchIdeias();
@@ -128,14 +135,36 @@ export default function IdeiasAdminPage() {
     }
   };
 
-  const handleUpdateStatus = async (ideiaId: string, novoStatus: "pendente" | "aprovada" | "implementada" | "rejeitada") => {
+  const handleUpdateStatus = async (ideiaId: string, novoStatus: "pendente" | "aprovada" | "implementada" | "rejeitada", comentario?: string) => {
     try {
       const ideiaRef = doc(db, "ideias", ideiaId);
-      await updateDoc(ideiaRef, { status: novoStatus });
+      const updateData: any = { status: novoStatus };
+      
+      if (comentario && comentario.trim()) {
+        updateData.comentarioAdmin = comentario.trim();
+      }
+      
+      await updateDoc(ideiaRef, updateData);
       setMsg(`Status atualizado para ${getStatusLabel(novoStatus)}`);
     } catch (err) {
       setMsg("Erro ao atualizar status.");
     }
+  };
+
+  const handleOpenComentarioAdminModal = (ideia: Ideia, status: "aprovada" | "rejeitada" | "implementada") => {
+    setIdeiaParaComentar(ideia);
+    setNovoStatus(status);
+    setComentarioAdmin("");
+    setShowComentarioAdminModal(true);
+  };
+
+  const handleSubmitComentarioAdmin = async () => {
+    if (!ideiaParaComentar) return;
+    
+    await handleUpdateStatus(ideiaParaComentar.id, novoStatus, comentarioAdmin);
+    setShowComentarioAdminModal(false);
+    setIdeiaParaComentar(null);
+    setComentarioAdmin("");
   };
 
   const handleDeleteIdeia = async (ideiaId: string) => {
@@ -549,13 +578,13 @@ export default function IdeiasAdminPage() {
                     {ideia.status === "pendente" && (
                       <>
                         <button
-                          onClick={() => handleUpdateStatus(ideia.id, "aprovada")}
+                          onClick={() => handleOpenComentarioAdminModal(ideia, "aprovada")}
                           className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded transition-colors"
                         >
                           Aprovar
                         </button>
                         <button
-                          onClick={() => handleUpdateStatus(ideia.id, "rejeitada")}
+                          onClick={() => handleOpenComentarioAdminModal(ideia, "rejeitada")}
                           className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors"
                         >
                           Rejeitar
@@ -565,7 +594,7 @@ export default function IdeiasAdminPage() {
                     
                     {ideia.status === "aprovada" && (
                       <button
-                        onClick={() => handleUpdateStatus(ideia.id, "implementada")}
+                        onClick={() => handleOpenComentarioAdminModal(ideia, "implementada")}
                         className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded transition-colors"
                       >
                         Marcar como Implementada
@@ -616,6 +645,69 @@ export default function IdeiasAdminPage() {
           )}
         </div>
       </div>
+
+      {/* Modal de Comentário Administrativo */}
+      {showComentarioAdminModal && ideiaParaComentar && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-bold text-gray-800 dark:text-white">
+                {novoStatus === "aprovada" ? "Aprovar Ideia" : 
+                 novoStatus === "rejeitada" ? "Rejeitar Ideia" : 
+                 "Marcar como Implementada"}
+              </h3>
+              <button 
+                onClick={() => setShowComentarioAdminModal(false)}
+                className="p-1 rounded-full text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+              >
+                <XIcon className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-5">
+              <div className="mb-4">
+                <h4 className="font-semibold text-gray-800 dark:text-white mb-2">
+                  {ideiaParaComentar.titulo}
+                </h4>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  {ideiaParaComentar.descricao}
+                </p>
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">
+                  Comentário (opcional)
+                </label>
+                <textarea
+                  value={comentarioAdmin}
+                  onChange={(e) => setComentarioAdmin(e.target.value)}
+                  placeholder={
+                    novoStatus === "aprovada" ? "Explique por que esta ideia foi aprovada..." :
+                    novoStatus === "rejeitada" ? "Explique por que esta ideia foi rejeitada..." :
+                    "Explique como esta ideia foi implementada..."
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white min-h-[100px] resize-none"
+                />
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={handleSubmitComentarioAdmin}
+                  className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Confirmar
+                </button>
+                <button
+                  onClick={() => setShowComentarioAdminModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

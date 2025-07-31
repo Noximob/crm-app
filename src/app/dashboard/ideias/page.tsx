@@ -28,6 +28,7 @@ interface Ideia {
   votos: number;
   criadoEm: Timestamp;
   categoria: "interface" | "funcionalidade" | "performance" | "outros";
+  comentarioAdmin?: string; // Comentário do administrador sobre a decisão
 }
 
 interface Comentario {
@@ -83,6 +84,14 @@ const ThumbsUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M14 9V5a3 3 0 0 0-6 0v4"/>
     <rect width="20" height="14" x="2" y="9" rx="2" ry="2"/>
+  </svg>
+);
+
+const AdminIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+    <path d="M2 17l10 5 10-5"/>
+    <path d="M2 12l10 5 10-5"/>
   </svg>
 );
 
@@ -573,6 +582,21 @@ export default function IdeiasPage() {
                       <p className="text-sm text-[#6B6F76] dark:text-gray-300 mb-3">
                         {ideia.descricao}
                       </p>
+                      
+                      {/* Comentário Administrativo */}
+                      {ideia.comentarioAdmin && (
+                        <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <AdminIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                              Comentário da Administração
+                            </span>
+                          </div>
+                          <p className="text-sm text-blue-700 dark:text-blue-300">
+                            {ideia.comentarioAdmin}
+                          </p>
+                        </div>
+                      )}
                       
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4 text-sm text-[#6B6F76] dark:text-gray-300">
