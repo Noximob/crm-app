@@ -19,14 +19,14 @@ interface AgendaItem {
   titulo: string;
   descricao?: string;
   dataHora: Timestamp;
-  tipo: 'agenda' | 'crm' | 'nota' | 'aviso';
+  tipo: 'agenda' | 'crm' | 'nota' | 'aviso' | 'comunidade';
   status: 'pendente' | 'concluida' | 'cancelada';
   cor: string;
   leadId?: string;
   leadNome?: string;
   createdAt: Timestamp;
   userId: string;
-  source?: 'agenda' | 'notas' | 'crm' | 'aviso';
+  source?: 'agenda' | 'notas' | 'crm' | 'aviso' | 'comunidade';
   originalId?: string;
 }
 
@@ -58,18 +58,37 @@ interface AvisoImportante {
   dataFim?: Timestamp;
 }
 
+interface EventoComunidade {
+  id: string;
+  titulo: string;
+  texto: string;
+  eventoTipo: string;
+  eventoLink: string;
+  eventoData: Timestamp;
+  eventoStatus: string;
+  userId: string;
+  nome: string;
+  handle: string;
+  avatar: string;
+  imobiliariaId: string;
+  createdAt: Timestamp;
+  isEvento: boolean;
+}
+
 const tipoCores = {
   agenda: 'bg-emerald-500',
   crm: 'bg-blue-500',
   nota: 'bg-yellow-500',
-  aviso: 'bg-red-600'
+  aviso: 'bg-red-600',
+  comunidade: 'bg-orange-500'
 };
 
 const tipoLabels = {
   agenda: 'Agenda',
   crm: 'CRM',
   nota: 'Nota',
-  aviso: 'Aviso Importante'
+  aviso: 'Aviso Importante',
+  comunidade: 'Evento Comunidade'
 };
 
 export default function AgendaUsuariosPage() {
@@ -80,9 +99,10 @@ export default function AgendaUsuariosPage() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [crmTasks, setCrmTasks] = useState<CrmTask[]>([]);
   const [avisos, setAvisos] = useState<AvisoImportante[]>([]);
+  const [eventosComunidade, setEventosComunidade] = useState<EventoComunidade[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [filter, setFilter] = useState<'all' | 'crm' | 'nota' | 'agenda'>('all');
+  const [filter, setFilter] = useState<'all' | 'crm' | 'nota' | 'agenda' | 'comunidade'>('all');
 
   // Buscar usuários da imobiliária
   useEffect(() => {
@@ -126,7 +146,8 @@ export default function AgendaUsuariosPage() {
         fetchAgendaItems(),
         fetchNotes(),
         fetchCrmTasks(),
-        fetchAvisosImportantes()
+        fetchAvisosImportantes(),
+        fetchEventosComunidade()
       ]);
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
@@ -236,6 +257,28 @@ export default function AgendaUsuariosPage() {
       setAvisos(avisosData);
     } catch (err) {
       setAvisos([]);
+    }
+  };
+
+  const fetchEventosComunidade = async () => {
+    if (!userData?.imobiliariaId) return;
+    try {
+      const eventosRef = collection(db, 'comunidadePosts');
+      const eventosQuery = query(
+        eventosRef,
+        where('imobiliariaId', '==', userData.imobiliariaId),
+        where('isEvento', '==', true),
+        where('eventoStatus', '==', 'agendado')
+      );
+      const eventosSnapshot = await getDocs(eventosQuery);
+      const eventosData: EventoComunidade[] = [];
+      eventosSnapshot.forEach((doc) => {
+        const eventoData = { id: doc.id, ...doc.data() } as EventoComunidade;
+        eventosData.push(eventoData);
+      });
+      setEventosComunidade(eventosData);
+    } catch (error) {
+      console.error('Erro ao buscar eventos da comunidade:', error);
     }
   };
 
@@ -380,6 +423,26 @@ export default function AgendaUsuariosPage() {
       }
     });
     
+    // Adicionar eventos da comunidade
+    eventosComunidade.forEach(evento => {
+      const eventoDate = evento.eventoData.toDate();
+      if (eventoDate.toDateString() === date.toDateString()) {
+        allItems.push({
+          id: `evento_${evento.id}`,
+          titulo: evento.titulo,
+          descricao: `${evento.texto}\n\nTipo: ${evento.eventoTipo}\nLink: ${evento.eventoLink}\nOrganizador: ${evento.nome}`,
+          dataHora: evento.eventoData,
+          tipo: 'comunidade',
+          status: 'pendente',
+          cor: '#F97316', // Cor laranja para eventos da comunidade
+          createdAt: evento.createdAt,
+          userId: evento.userId,
+          source: 'comunidade',
+          originalId: evento.id
+        });
+      }
+    });
+    
     // Aplicar filtro se necessário
     if (filter !== 'all') {
       const filteredItems = allItems.filter(item => item.tipo === filter);
@@ -485,13 +548,14 @@ export default function AgendaUsuariosPage() {
               </label>
               <select
                 value={filter}
-                onChange={(e) => setFilter(e.target.value as 'all' | 'crm' | 'nota' | 'agenda')}
+                onChange={(e) => setFilter(e.target.value as 'all' | 'crm' | 'nota' | 'agenda' | 'comunidade')}
                 className="px-4 py-3 bg-white dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white"
               >
                 <option value="all">Todos os tipos</option>
                 <option value="crm">CRM</option>
                 <option value="nota">Notas</option>
                 <option value="agenda">Agenda</option>
+                <option value="comunidade">Eventos Comunidade</option>
               </select>
             </div>
           </div>
@@ -616,6 +680,102 @@ export default function AgendaUsuariosPage() {
                         originalId: task.id,
                         leadId: task.leadId,
                         leadNome: task.leadNome
+                      });
+                    }
+                  });
+                  
+                                     // Adicionar avisos importantes
+                   avisos.forEach(aviso => {
+                     if (aviso.dataInicio && aviso.dataFim) {
+                       const inicioDate = aviso.dataInicio.toDate();
+                       const fimDate = aviso.dataFim.toDate();
+                       const currentDate = new Date();
+                       
+                       const inicioDateOnly = new Date(inicioDate.getFullYear(), inicioDate.getMonth(), inicioDate.getDate());
+                       const fimDateOnly = new Date(fimDate.getFullYear(), fimDate.getMonth(), fimDate.getDate());
+                       const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+                       
+                       if (inicioDateOnly.getTime() === fimDateOnly.getTime()) {
+                         if (currentDateOnly.getTime() === inicioDateOnly.getTime()) {
+                           allItems.push({
+                             id: `aviso_${aviso.id}`,
+                             titulo: aviso.titulo,
+                             descricao: aviso.mensagem,
+                             dataHora: aviso.dataInicio,
+                             tipo: 'aviso',
+                             status: 'pendente',
+                             cor: '#DC2626',
+                             createdAt: aviso.data,
+                             userId: '',
+                             source: 'aviso',
+                             originalId: aviso.id
+                           });
+                         }
+                       } else {
+                         if (currentDateOnly >= inicioDateOnly && currentDateOnly <= fimDateOnly) {
+                           const horaInicio = inicioDate.getHours();
+                           const minutoInicio = inicioDate.getMinutes();
+                           const horaFim = fimDate.getHours();
+                           const minutoFim = fimDate.getMinutes();
+                           
+                           const dataHoraDia = new Date(currentDate);
+                           dataHoraDia.setHours(horaInicio, minutoInicio, 0, 0);
+                           
+                           let descricao = aviso.mensagem;
+                           descricao += '\n\n';
+                           descricao += `Período: ${inicioDateOnly.toLocaleDateString('pt-BR')} a ${fimDateOnly.toLocaleDateString('pt-BR')}\n`;
+                           descricao += `Horário diário: ${horaInicio.toString().padStart(2, '0')}:${minutoInicio.toString().padStart(2, '0')} - ${horaFim.toString().padStart(2, '0')}:${minutoFim.toString().padStart(2, '0')}`;
+                           
+                           allItems.push({
+                             id: `aviso_${aviso.id}`,
+                             titulo: aviso.titulo,
+                             descricao: descricao,
+                             dataHora: Timestamp.fromDate(dataHoraDia),
+                             tipo: 'aviso',
+                             status: 'pendente',
+                             cor: '#DC2626',
+                             createdAt: aviso.data,
+                             userId: '',
+                             source: 'aviso',
+                             originalId: aviso.id
+                           });
+                         }
+                       }
+                     } else {
+                       const avisoDate = aviso.data.toDate();
+                       if (avisoDate.toDateString() === new Date().toDateString()) {
+                         allItems.push({
+                           id: `aviso_${aviso.id}`,
+                           titulo: aviso.titulo,
+                           descricao: aviso.mensagem,
+                           dataHora: aviso.data,
+                           tipo: 'aviso',
+                           status: 'pendente',
+                           cor: '#DC2626',
+                           createdAt: aviso.data,
+                           userId: '',
+                           source: 'aviso',
+                           originalId: aviso.id
+                         });
+                       }
+                     }
+                   });
+
+                  // Adicionar eventos da comunidade
+                  eventosComunidade.forEach(evento => {
+                    if (evento.eventoData.toDate() >= new Date()) {
+                      allItems.push({
+                        id: `evento_${evento.id}`,
+                        titulo: evento.titulo,
+                        descricao: `${evento.texto}\n\nTipo: ${evento.eventoTipo}\nLink: ${evento.eventoLink}\nOrganizador: ${evento.nome}`,
+                        dataHora: evento.eventoData,
+                        tipo: 'comunidade',
+                        status: 'pendente',
+                        cor: '#F97316',
+                        createdAt: evento.createdAt,
+                        userId: evento.userId,
+                        source: 'comunidade',
+                        originalId: evento.id
                       });
                     }
                   });
