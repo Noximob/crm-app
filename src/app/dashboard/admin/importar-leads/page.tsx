@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import { PIPELINE_STAGES } from '@/lib/constants';
 
 interface Corretor {
   id: string;
@@ -74,7 +75,7 @@ export default function ImportarLeadsPage() {
           nome: lead.nome || 'Lead importado',
           telefone: lead.telefone,
           whatsapp: lead.telefone.replace(/\D/g, ''),
-          etapa: 'Pré Qualificação',
+          etapa: PIPELINE_STAGES[0],
           origem: 'Importação em massa',
           createdAt: new Date(),
         });

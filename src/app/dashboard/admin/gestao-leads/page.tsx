@@ -89,7 +89,7 @@ export default function GestaoLeadsPage() {
       await Promise.all(
         leadsSelecionados.map(async (leadId) => {
           const leadRef = doc(db, 'leads', leadId);
-          await updateDoc(leadRef, { userId: corretorDestino, etapa: 'Pré-qualificação' });
+          await updateDoc(leadRef, { userId: corretorDestino, etapa: PIPELINE_STAGES[0] });
         })
       );
       setMensagem('Leads transferidos com sucesso!');

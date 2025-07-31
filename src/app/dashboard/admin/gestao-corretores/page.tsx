@@ -134,7 +134,7 @@ export default function GestaoCorretoresPage() {
         const leadRef = doc(db, 'leads', leadId);
         batch.update(leadRef, {
           userId: selectedDestUser,
-          etapa: 'Pré Qualificação' // Volta para pré qualificação
+          etapa: PIPELINE_STAGES[0] // Volta para pré qualificação
         });
       });
 
