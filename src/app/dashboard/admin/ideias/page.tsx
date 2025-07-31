@@ -84,7 +84,7 @@ export default function IdeiasAdminPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [selectedIdeia, setSelectedIdeia] = useState<Ideia | null>(null);
   const [showComentarios, setShowComentarios] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"todas" | "pendentes" | "aprovadas" | "implementadas" | "rejeitadas">("todas");
+  const [filter, setFilter] = useState<"todas" | "pendente" | "aprovada" | "implementada" | "rejeitada">("todas");
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -295,10 +295,10 @@ export default function IdeiasAdminPage() {
             <div className="flex gap-2">
               {[
                 { value: "todas", label: "Todas" },
-                { value: "pendentes", label: "Pendentes" },
-                { value: "aprovadas", label: "Aprovadas" },
-                { value: "implementadas", label: "Implementadas" },
-                { value: "rejeitadas", label: "Rejeitadas" },
+                { value: "pendente", label: "Pendentes" },
+                { value: "aprovada", label: "Aprovadas" },
+                { value: "implementada", label: "Implementadas" },
+                { value: "rejeitada", label: "Rejeitadas" },
               ].map((option) => (
                 <button
                   key={option.value}
