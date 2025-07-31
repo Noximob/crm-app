@@ -15,6 +15,7 @@ import {
   orderBy,
   onSnapshot,
   updateDoc,
+  runTransaction,
 } from "firebase/firestore";
 
 interface Ideia {
@@ -99,6 +100,12 @@ export default function IdeiasPage() {
   const [votos, setVotos] = useState<Voto[]>([]);
   const [melhoriasEmAndamento, setMelhoriasEmAndamento] = useState<MelhoriasEmAndamento[]>([]);
 
+  // Função para limpar mensagens após um tempo
+  const setMessageWithTimeout = (message: string, timeout: number = 3000) => {
+    setMsg(message);
+    setTimeout(() => setMsg(null), timeout);
+  };
+
   const [formIdeia, setFormIdeia] = useState({
     titulo: "",
     descricao: "",
@@ -106,12 +113,17 @@ export default function IdeiasPage() {
   });
 
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser?.uid) {
       fetchIdeias();
       fetchVotos();
       fetchMelhoriasEmAndamento();
+    } else {
+      // Limpar estados quando não há usuário logado
+      setVotos([]);
+      setIdeias([]);
+      setMelhoriasEmAndamento([]);
     }
-  }, [currentUser]);
+  }, [currentUser?.uid]);
 
   const fetchIdeias = async () => {
     setLoading(true);
@@ -133,14 +145,18 @@ export default function IdeiasPage() {
   };
 
   const fetchVotos = async () => {
+    if (!currentUser?.uid) return;
+    
     try {
       const q = query(
         collection(db, "votos_ideias"),
-        where("userId", "==", currentUser?.uid)
+        where("userId", "==", currentUser.uid)
       );
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const votosData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Voto));
         setVotos(votosData);
+      }, (error) => {
+        console.error("Erro ao carregar votos:", error);
       });
       return () => unsubscribe();
     } catch (err) {
@@ -184,45 +200,86 @@ export default function IdeiasPage() {
       await addDoc(collection(db, "ideias"), ideia);
       setFormIdeia({ titulo: "", descricao: "", categoria: "funcionalidade" });
       setShowForm(false);
-      setMsg("Ideia enviada com sucesso!");
+      setMessageWithTimeout("Ideia enviada com sucesso!");
     } catch (err) {
-      setMsg("Erro ao enviar ideia.");
+      setMessageWithTimeout("Erro ao enviar ideia.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleVotar = async (ideiaId: string) => {
-    if (!currentUser) return;
+    if (!currentUser?.uid) return;
     
-    // Verificar se o usuário já votou nesta ideia
+    // Verificar se o usuário já votou nesta ideia (verificação local)
     const jaVotou = votos.some(voto => voto.ideiaId === ideiaId);
     if (jaVotou) {
-      setMsg("Você já votou nesta ideia!");
+      setMessageWithTimeout("Você já votou nesta ideia!");
+      return;
+    }
+    
+    // Verificar se o usuário está tentando votar em sua própria ideia
+    const ideia = ideias.find(i => i.id === ideiaId);
+    if (ideia && ideia.userId === currentUser.uid) {
+      setMessageWithTimeout("Você não pode votar em sua própria ideia!");
+      return;
+    }
+    
+    // Verificar se o botão está desabilitado (dupla verificação)
+    if (votandoIds.has(ideiaId)) {
       return;
     }
     
     setVotandoIds(prev => new Set(prev).add(ideiaId));
+    
     try {
-      // Adicionar o voto
-      await addDoc(collection(db, "votos_ideias"), {
-        ideiaId,
-        userId: currentUser.uid,
-        criadoEm: Timestamp.now(),
+      // Usar transação para garantir atomicidade
+      await runTransaction(db, async (transaction) => {
+        // Verificar se o usuário já votou (verificação no servidor)
+        const votosQuery = query(
+          collection(db, "votos_ideias"),
+          where("userId", "==", currentUser.uid),
+          where("ideiaId", "==", ideiaId)
+        );
+        const votosSnapshot = await getDocs(votosQuery);
+        
+        if (!votosSnapshot.empty) {
+          throw new Error("Você já votou nesta ideia!");
+        }
+        
+        // Buscar a ideia para atualizar o contador
+        const ideiaRef = doc(db, "ideias", ideiaId);
+        const ideiaDoc = await transaction.get(ideiaRef);
+        
+        if (!ideiaDoc.exists()) {
+          throw new Error("Ideia não encontrada!");
+        }
+        
+        const ideiaData = ideiaDoc.data();
+        const novoVoto = {
+          ideiaId,
+          userId: currentUser.uid,
+          criadoEm: Timestamp.now(),
+        };
+        
+        // Adicionar o voto
+        const votoRef = doc(collection(db, "votos_ideias"));
+        transaction.set(votoRef, novoVoto);
+        
+        // Atualizar contador de votos na ideia
+        transaction.update(ideiaRef, {
+          votos: (ideiaData.votos || 0) + 1
+        });
       });
       
-      // Atualizar contador de votos na ideia
-      const ideiaRef = doc(db, "ideias", ideiaId);
-      const ideia = ideias.find(i => i.id === ideiaId);
-      if (ideia) {
-        await updateDoc(ideiaRef, {
-          votos: ideia.votos + 1
-        });
-      }
-      
-      setMsg("Voto registrado com sucesso!");
+      setMessageWithTimeout("Voto registrado com sucesso!");
     } catch (err) {
-      setMsg("Erro ao votar.");
+      console.error("Erro ao votar:", err);
+      if (err instanceof Error && err.message === "Você já votou nesta ideia!") {
+        setMessageWithTimeout("Você já votou nesta ideia!");
+      } else {
+        setMessageWithTimeout("Erro ao votar. Tente novamente.");
+      }
     } finally {
       setVotandoIds(prev => {
         const newSet = new Set(prev);
@@ -246,9 +303,9 @@ export default function IdeiasPage() {
       
       await addDoc(collection(db, "comentarios_ideias"), comentario);
       setNovoComentario("");
-      setMsg("Comentário adicionado!");
+      setMessageWithTimeout("Comentário adicionado!");
     } catch (err) {
-      setMsg("Erro ao adicionar comentário.");
+      setMessageWithTimeout("Erro ao adicionar comentário.");
     }
   };
 
@@ -331,7 +388,8 @@ export default function IdeiasPage() {
   };
 
   const jaVotouNaIdeia = (ideiaId: string) => {
-    return votos.some(voto => voto.ideiaId === ideiaId);
+    if (!currentUser?.uid || !ideiaId) return false;
+    return votos.some(voto => voto.ideiaId === ideiaId && voto.userId === currentUser.uid);
   };
 
   const ideiasAprovadas = ideias.filter(i => i.status === "aprovada" || i.status === "implementada");
@@ -533,15 +591,30 @@ export default function IdeiasPage() {
                           
                           <button
                             onClick={() => handleVotar(ideia.id)}
-                            disabled={votandoIds.has(ideia.id) || jaVotouNaIdeia(ideia.id)}
+                            disabled={votandoIds.has(ideia.id) || jaVotouNaIdeia(ideia.id) || ideia.userId === currentUser?.uid}
                             className={`flex items-center gap-1 px-3 py-1 text-xs rounded transition-colors ${
                               jaVotouNaIdeia(ideia.id)
-                                ? "bg-green-500 text-white cursor-not-allowed"
+                                ? "bg-green-500 text-white cursor-not-allowed opacity-75"
+                                : votandoIds.has(ideia.id)
+                                ? "bg-gray-400 text-white cursor-not-allowed opacity-50"
+                                : ideia.userId === currentUser?.uid
+                                ? "bg-gray-300 text-gray-500 cursor-not-allowed opacity-50"
                                 : "bg-[#3478F6] hover:bg-[#255FD1] text-white disabled:opacity-50"
                             }`}
+                            title={
+                              jaVotouNaIdeia(ideia.id) 
+                                ? "Você já votou nesta ideia" 
+                                : ideia.userId === currentUser?.uid
+                                ? "Você não pode votar em sua própria ideia"
+                                : "Votar nesta ideia"
+                            }
                           >
                             <ThumbsUpIcon className="h-3 w-3" />
-                            {ideia.votos} Votos {jaVotouNaIdeia(ideia.id) && "(Votado)"}
+                            {votandoIds.has(ideia.id) ? "Votando..." : `${ideia.votos} Votos`} {
+                              jaVotouNaIdeia(ideia.id) && "(Votado)"
+                            } {
+                              ideia.userId === currentUser?.uid && "(Sua ideia)"
+                            }
                           </button>
                         </div>
                       </div>
