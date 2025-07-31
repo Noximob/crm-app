@@ -13,6 +13,7 @@ import {
   onSnapshot,
   updateDoc,
   where,
+  Timestamp,
 } from "firebase/firestore";
 
 interface Ideia {
@@ -23,7 +24,7 @@ interface Ideia {
   descricao: string;
   status: "pendente" | "aprovada" | "implementada" | "rejeitada";
   votos: number;
-  criadoEm: Date;
+  criadoEm: Timestamp;
   categoria: "interface" | "funcionalidade" | "performance" | "outros";
 }
 
@@ -33,7 +34,7 @@ interface Comentario {
   userId: string;
   userNome: string;
   texto: string;
-  criadoEm: Date;
+  criadoEm: Timestamp;
 }
 
 const LightbulbIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -358,7 +359,7 @@ export default function IdeiasAdminPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4 text-sm text-[#6B6F76] dark:text-gray-300">
                           <span>Por: {ideia.userNome}</span>
-                          <span>{new Date(ideia.criadoEm.toDate()).toLocaleDateString()}</span>
+                          <span>{ideia.criadoEm.toDate().toLocaleDateString()}</span>
                           <span className="flex items-center gap-1">
                             <ThumbsUpIcon className="h-3 w-3" />
                             {ideia.votos} votos
@@ -428,9 +429,9 @@ export default function IdeiasAdminPage() {
                               <span className="text-sm font-semibold text-[#2E2F38] dark:text-white">
                                 {comentario.userNome}
                               </span>
-                              <span className="text-xs text-[#6B6F76] dark:text-gray-300">
-                                {new Date(comentario.criadoEm.toDate()).toLocaleDateString()}
-                              </span>
+                                                             <span className="text-xs text-[#6B6F76] dark:text-gray-300">
+                                 {comentario.criadoEm.toDate().toLocaleDateString()}
+                               </span>
                             </div>
                             <p className="text-sm text-[#6B6F76] dark:text-gray-300">
                               {comentario.texto}
