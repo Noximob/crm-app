@@ -14,6 +14,7 @@ import {
   updateDoc,
   where,
   Timestamp,
+  addDoc,
 } from "firebase/firestore";
 
 interface Ideia {
