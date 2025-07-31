@@ -38,6 +38,20 @@ interface Comentario {
   criadoEm: Timestamp;
 }
 
+interface Voto {
+  id: string;
+  ideiaId: string;
+  userId: string;
+  criadoEm: Timestamp;
+}
+
+interface MelhoriasEmAndamento {
+  id: string;
+  titulo: string;
+  descricao: string;
+  atualizadoEm: Timestamp;
+}
+
 const LightbulbIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M9 21h6"/>
@@ -82,6 +96,8 @@ export default function IdeiasPage() {
   const [showComentarios, setShowComentarios] = useState<string | null>(null);
   const [novoComentario, setNovoComentario] = useState("");
   const [votandoIds, setVotandoIds] = useState<Set<string>>(new Set());
+  const [votos, setVotos] = useState<Voto[]>([]);
+  const [melhoriasEmAndamento, setMelhoriasEmAndamento] = useState<MelhoriasEmAndamento[]>([]);
 
   const [formIdeia, setFormIdeia] = useState({
     titulo: "",
@@ -92,6 +108,8 @@ export default function IdeiasPage() {
   useEffect(() => {
     if (currentUser) {
       fetchIdeias();
+      fetchVotos();
+      fetchMelhoriasEmAndamento();
     }
   }, [currentUser]);
 
@@ -111,6 +129,38 @@ export default function IdeiasPage() {
       setMsg("Erro ao carregar ideias.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchVotos = async () => {
+    try {
+      const q = query(
+        collection(db, "votos_ideias"),
+        where("userId", "==", currentUser?.uid)
+      );
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const votosData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Voto));
+        setVotos(votosData);
+      });
+      return () => unsubscribe();
+    } catch (err) {
+      console.error("Erro ao carregar votos:", err);
+    }
+  };
+
+  const fetchMelhoriasEmAndamento = async () => {
+    try {
+      const q = query(
+        collection(db, "melhorias_em_andamento"),
+        orderBy("atualizadoEm", "desc")
+      );
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const melhoriasData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MelhoriasEmAndamento));
+        setMelhoriasEmAndamento(melhoriasData);
+      });
+      return () => unsubscribe();
+    } catch (err) {
+      console.error("Erro ao carregar melhorias em andamento:", err);
     }
   };
 
@@ -145,8 +195,23 @@ export default function IdeiasPage() {
   const handleVotar = async (ideiaId: string) => {
     if (!currentUser) return;
     
+    // Verificar se o usuário já votou nesta ideia
+    const jaVotou = votos.some(voto => voto.ideiaId === ideiaId);
+    if (jaVotou) {
+      setMsg("Você já votou nesta ideia!");
+      return;
+    }
+    
     setVotandoIds(prev => new Set(prev).add(ideiaId));
     try {
+      // Adicionar o voto
+      await addDoc(collection(db, "votos_ideias"), {
+        ideiaId,
+        userId: currentUser.uid,
+        criadoEm: Timestamp.now(),
+      });
+      
+      // Atualizar contador de votos na ideia
       const ideiaRef = doc(db, "ideias", ideiaId);
       const ideia = ideias.find(i => i.id === ideiaId);
       if (ideia) {
@@ -154,6 +219,8 @@ export default function IdeiasPage() {
           votos: ideia.votos + 1
         });
       }
+      
+      setMsg("Voto registrado com sucesso!");
     } catch (err) {
       setMsg("Erro ao votar.");
     } finally {
@@ -263,6 +330,10 @@ export default function IdeiasPage() {
     }
   };
 
+  const jaVotouNaIdeia = (ideiaId: string) => {
+    return votos.some(voto => voto.ideiaId === ideiaId);
+  };
+
   const ideiasAprovadas = ideias.filter(i => i.status === "aprovada" || i.status === "implementada");
   const ideiasPendentes = ideias.filter(i => i.status === "pendente");
 
@@ -290,6 +361,29 @@ export default function IdeiasPage() {
         {msg && (
           <div className={`p-4 rounded-lg mb-6 ${msg.includes("Erro") ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
             {msg}
+          </div>
+        )}
+
+        {/* Box de Melhorias em Andamento */}
+        {melhoriasEmAndamento.length > 0 && (
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-6 mb-8 text-white">
+            <div className="flex items-center gap-3 mb-4">
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <h2 className="text-xl font-bold">Melhorias em Andamento</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {melhoriasEmAndamento.slice(0, 6).map((melhoria) => (
+                <div key={melhoria.id} className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
+                  <h3 className="font-semibold mb-2">{melhoria.titulo}</h3>
+                  <p className="text-sm opacity-90 line-clamp-3">{melhoria.descricao}</p>
+                  <div className="text-xs opacity-75 mt-2">
+                    Atualizado em: {melhoria.atualizadoEm.toDate().toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -439,11 +533,15 @@ export default function IdeiasPage() {
                           
                           <button
                             onClick={() => handleVotar(ideia.id)}
-                            disabled={votandoIds.has(ideia.id)}
-                            className="flex items-center gap-1 px-3 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors disabled:opacity-50"
+                            disabled={votandoIds.has(ideia.id) || jaVotouNaIdeia(ideia.id)}
+                            className={`flex items-center gap-1 px-3 py-1 text-xs rounded transition-colors ${
+                              jaVotouNaIdeia(ideia.id)
+                                ? "bg-green-500 text-white cursor-not-allowed"
+                                : "bg-[#3478F6] hover:bg-[#255FD1] text-white disabled:opacity-50"
+                            }`}
                           >
                             <ThumbsUpIcon className="h-3 w-3" />
-                            {ideia.votos} Votos
+                            {ideia.votos} Votos {jaVotouNaIdeia(ideia.id) && "(Votado)"}
                           </button>
                         </div>
                       </div>

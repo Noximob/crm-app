@@ -37,6 +37,13 @@ interface Comentario {
   criadoEm: Timestamp;
 }
 
+interface MelhoriasEmAndamento {
+  id: string;
+  titulo: string;
+  descricao: string;
+  atualizadoEm: Timestamp;
+}
+
 const LightbulbIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M9 21h6"/>
@@ -87,10 +94,17 @@ export default function IdeiasAdminPage() {
   const [showComentarios, setShowComentarios] = useState<string | null>(null);
   const [filter, setFilter] = useState<"todas" | "pendente" | "aprovada" | "implementada" | "rejeitada">("todas");
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const [melhoriasEmAndamento, setMelhoriasEmAndamento] = useState<MelhoriasEmAndamento[]>([]);
+  const [showMelhoriasForm, setShowMelhoriasForm] = useState(false);
+  const [formMelhoria, setFormMelhoria] = useState({
+    titulo: "",
+    descricao: "",
+  });
 
   useEffect(() => {
     if (userData) {
       fetchIdeias();
+      fetchMelhoriasEmAndamento();
     }
   }, [userData]);
 
@@ -165,6 +179,53 @@ export default function IdeiasAdminPage() {
       return () => unsubscribe();
     } catch (err) {
       console.error("Erro ao carregar comentários:", err);
+    }
+  };
+
+  const fetchMelhoriasEmAndamento = async () => {
+    try {
+      const q = query(
+        collection(db, "melhorias_em_andamento"),
+        orderBy("atualizadoEm", "desc")
+      );
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const melhoriasData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MelhoriasEmAndamento));
+        setMelhoriasEmAndamento(melhoriasData);
+      });
+      return () => unsubscribe();
+    } catch (err) {
+      console.error("Erro ao carregar melhorias em andamento:", err);
+    }
+  };
+
+  const handleAddMelhoria = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formMelhoria.titulo.trim() || !formMelhoria.descricao.trim()) return;
+    
+    try {
+      const melhoria = {
+        titulo: formMelhoria.titulo.trim(),
+        descricao: formMelhoria.descricao.trim(),
+        atualizadoEm: Timestamp.now(),
+      };
+      
+      await addDoc(collection(db, "melhorias_em_andamento"), melhoria);
+      setFormMelhoria({ titulo: "", descricao: "" });
+      setShowMelhoriasForm(false);
+      setMsg("Melhoria adicionada com sucesso!");
+    } catch (err) {
+      setMsg("Erro ao adicionar melhoria.");
+    }
+  };
+
+  const handleDeleteMelhoria = async (melhoriaId: string) => {
+    if (!confirm("Tem certeza que deseja excluir esta melhoria?")) return;
+    
+    try {
+      await deleteDoc(doc(db, "melhorias_em_andamento", melhoriaId));
+      setMsg("Melhoria excluída com sucesso!");
+    } catch (err) {
+      setMsg("Erro ao excluir melhoria.");
     }
   };
 
@@ -255,6 +316,107 @@ export default function IdeiasAdminPage() {
             {msg}
           </div>
         )}
+
+        {/* Gerenciamento de Melhorias em Andamento */}
+        <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <svg className="h-6 w-6 text-[#3478F6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Melhorias em Andamento</h2>
+            </div>
+            <button
+              onClick={() => setShowMelhoriasForm(!showMelhoriasForm)}
+              className="bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Adicionar Melhoria
+            </button>
+          </div>
+
+          {/* Formulário de Nova Melhoria */}
+          {showMelhoriasForm && (
+            <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4">Nova Melhoria em Andamento</h3>
+              <form onSubmit={handleAddMelhoria} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">
+                    Título da Melhoria *
+                  </label>
+                  <input
+                    type="text"
+                    value={formMelhoria.titulo}
+                    onChange={e => setFormMelhoria({ ...formMelhoria, titulo: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                    placeholder="Ex: Implementação de filtros avançados"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">
+                    Descrição *
+                  </label>
+                  <textarea
+                    value={formMelhoria.descricao}
+                    onChange={e => setFormMelhoria({ ...formMelhoria, descricao: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white min-h-[100px]"
+                    placeholder="Descreva a melhoria em detalhes..."
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    className="bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                  >
+                    Adicionar Melhoria
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowMelhoriasForm(false)}
+                    className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Lista de Melhorias em Andamento */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {melhoriasEmAndamento.map((melhoria) => (
+              <div key={melhoria.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-[#E8E9F1] dark:border-[#23283A]">
+                <div className="flex items-start justify-between mb-2">
+                  <h3 className="font-semibold text-[#2E2F38] dark:text-white">{melhoria.titulo}</h3>
+                  <button
+                    onClick={() => handleDeleteMelhoria(melhoria.id)}
+                    className="text-red-500 hover:text-red-700 text-sm"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+                <p className="text-sm text-[#6B6F76] dark:text-gray-300 mb-2">{melhoria.descricao}</p>
+                <div className="text-xs text-[#6B6F76] dark:text-gray-300">
+                  Atualizado em: {melhoria.atualizadoEm.toDate().toLocaleDateString()}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {melhoriasEmAndamento.length === 0 && (
+            <div className="text-center py-8 text-[#6B6F76] dark:text-gray-300">
+              Nenhuma melhoria em andamento cadastrada
+            </div>
+          )}
+        </div>
 
         {/* Box de Ideias Aprovadas */}
         {ideiasAprovadas.length > 0 && (
