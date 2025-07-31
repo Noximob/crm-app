@@ -25,7 +25,7 @@ interface Ideia {
   descricao: string;
   status: "pendente" | "aprovada" | "implementada" | "rejeitada";
   votos: number;
-  criadoEm: Date;
+  criadoEm: Timestamp;
   categoria: "interface" | "funcionalidade" | "performance" | "outros";
 }
 
@@ -35,7 +35,7 @@ interface Comentario {
   userId: string;
   userNome: string;
   texto: string;
-  criadoEm: Date;
+  criadoEm: Timestamp;
 }
 
 const LightbulbIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -425,7 +425,7 @@ export default function IdeiasPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4 text-sm text-[#6B6F76] dark:text-gray-300">
                           <span>Por: {ideia.userNome}</span>
-                          <span>{new Date(ideia.criadoEm.toDate()).toLocaleDateString()}</span>
+                          <span>{ideia.criadoEm.toDate().toLocaleDateString()}</span>
                         </div>
                         
                         <div className="flex items-center gap-2">
@@ -461,7 +461,7 @@ export default function IdeiasPage() {
                                 {comentario.userNome}
                               </span>
                               <span className="text-xs text-[#6B6F76] dark:text-gray-300">
-                                {new Date(comentario.criadoEm.toDate()).toLocaleDateString()}
+                                {comentario.criadoEm.toDate().toLocaleDateString()}
                               </span>
                             </div>
                             <p className="text-sm text-[#6B6F76] dark:text-gray-300">
