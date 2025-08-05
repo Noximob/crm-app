@@ -1,15 +1,9 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Permitir leitura pública da coleção imobiliarias para cadastro
-    match /imobiliarias/{document} {
-      allow read: if true; // Leitura pública para permitir cadastro de corretores
-      allow write: if request.auth != null; // Escrita apenas para usuários autenticados
-    }
-    
-    // Regras para outras coleções - exigir autenticação
+    // Regras completamente abertas para desenvolvimento e teste
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if true;
     }
   }
 } 
