@@ -241,8 +241,8 @@ export default function DeveloperPage() {
           )}
         </div>
       )}
-      {/* Botão ajustado visualmente */}
-      <div className="mt-6">
+      {/* Botões de administração */}
+      <div className="mt-6 space-y-3">
         <button
           className="flex items-center bg-[#3478F6] hover:bg-[#245bb5] text-white font-semibold py-2 px-5 rounded-lg shadow transition-colors"
           onClick={abrirModalIndicadores}
@@ -250,6 +250,16 @@ export default function DeveloperPage() {
           <ChartBarIcon />
           Cadastrar Indicadores Externos
         </button>
+        
+        <a
+          href="/dashboard/developer/admin-imobiliarias"
+          className="flex items-center bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-5 rounded-lg shadow transition-colors"
+        >
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+          Administrar Imobiliárias
+        </a>
       </div>
       {showIndicadoresModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">

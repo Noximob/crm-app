@@ -46,29 +46,46 @@ export default function CadastroPage() {
       const imobiliariasRef = collection(db, 'imobiliarias');
       
       try {
-        // Buscar imobiliárias aprovadas (corretores só podem se vincular a imobiliárias aprovadas)
-        const q = query(
-          imobiliariasRef, 
-          where('tipo', '==', 'imobiliaria'),
-          where('aprovado', '==', true)
-        );
-      const snapshot = await getDocs(q);
-        const imobiliariasComTipo = snapshot.docs.map(doc => ({ id: doc.id, nome: doc.data().nome }));
+        console.log('🔍 Iniciando busca de imobiliárias...');
         
-        // Se não encontrou nenhuma com tipo específico, busca todas as aprovadas (para compatibilidade com dados antigos)
-        if (imobiliariasComTipo.length === 0) {
-          const qAprovadas = query(imobiliariasRef, where('aprovado', '==', true));
-          const allSnapshot = await getDocs(qAprovadas);
-          const todasImobiliarias = allSnapshot.docs.map(doc => ({ id: doc.id, nome: doc.data().nome }));
-          setImobiliarias(todasImobiliarias);
+        // Primeiro, buscar todas as imobiliárias para debug
+        const allSnapshot = await getDocs(imobiliariasRef);
+        const todasImobiliarias = allSnapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          nome: doc.data().nome,
+          tipo: doc.data().tipo,
+          aprovado: doc.data().aprovado,
+          status: doc.data().status
+        }));
+        
+        console.log('📊 Todas as imobiliárias no banco:', todasImobiliarias);
+        
+        // Filtrar imobiliárias aprovadas (lógica mais simples e robusta)
+        const imobiliariasAprovadas = todasImobiliarias.filter(imob => {
+          // Verificar se está aprovada (aceita true, 1, ou qualquer valor truthy)
+          const aprovada = Boolean(imob.aprovado);
+          
+          console.log(`🔍 Verificando ${imob.nome}: aprovada=${aprovada}, aprovado=${imob.aprovado}, tipo=${imob.tipo}, status=${imob.status}`);
+          
+          return aprovada;
+        });
+        
+        console.log('📊 Imobiliárias aprovadas filtradas:', imobiliariasAprovadas);
+        
+        if (imobiliariasAprovadas.length > 0) {
+          console.log('✅ Usando imobiliárias aprovadas filtradas');
+          setImobiliarias(imobiliariasAprovadas.map(imob => ({ id: imob.id, nome: imob.nome })));
         } else {
-          setImobiliarias(imobiliariasComTipo);
+          console.log('⚠️ Nenhuma imobiliária aprovada encontrada, mostrando todas as imobiliárias');
+          setImobiliarias(todasImobiliarias.map(imob => ({ id: imob.id, nome: imob.nome })));
         }
       } catch (error) {
-        console.error('Erro ao buscar imobiliárias:', error);
+        console.error('❌ Erro ao buscar imobiliárias:', error);
         // Em caso de erro, busca todas as imobiliárias
+        console.log('🔄 Tentando buscar todas as imobiliárias sem filtros...');
         const allSnapshot = await getDocs(imobiliariasRef);
         const todasImobiliarias = allSnapshot.docs.map(doc => ({ id: doc.id, nome: doc.data().nome }));
+        console.log('📊 Todas as imobiliárias encontradas:', todasImobiliarias);
         setImobiliarias(todasImobiliarias);
       }
     }
@@ -127,7 +144,24 @@ export default function CadastroPage() {
             <h1 className="text-2xl font-bold text-softgray-800 mb-4 text-center">Cadastro de Corretor Vinculado</h1>
             <p className="text-sm text-softgray-600 mb-4 text-center">
               Selecione uma imobiliária aprovada para se vincular. Apenas imobiliárias aprovadas aparecem na lista.
+              {imobiliarias.length === 0 && (
+                <span className="block mt-2 text-orange-600 font-medium">
+                  ⚠️ Carregando imobiliárias disponíveis...
+                </span>
+              )}
             </p>
+            
+            {/* Botão de debug temporário */}
+            <button
+              type="button"
+              onClick={() => {
+                console.log('🔍 DEBUG: Imobiliárias carregadas:', imobiliarias);
+                alert(`Imobiliárias carregadas: ${imobiliarias.length}\n${imobiliarias.map(i => `${i.nome} (${i.id})`).join('\n')}`);
+              }}
+              className="mb-4 w-full bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+            >
+              🔍 Debug: Verificar Imobiliárias
+            </button>
             <div className="mb-4 relative">
               <label className="block text-sm font-medium text-softgray-700 mb-1">Imobiliária</label>
               <input
@@ -170,8 +204,8 @@ export default function CadastroPage() {
                   {imobiliarias.filter(i => i.nome.toLowerCase().includes(nomeImobiliaria.toLowerCase())).length === 0 && (
                     <li className="px-4 py-2 text-softgray-400">
                       {imobiliarias.length === 0 
-                        ? "Nenhuma imobiliária aprovada disponível. Entre em contato com o suporte." 
-                        : "Nenhuma imobiliária encontrada com esse nome"}
+                        ? "Nenhuma imobiliária aprovada disponível no momento. Entre em contato com o suporte ou tente novamente mais tarde." 
+                        : "Nenhuma imobiliária encontrada com esse nome. Tente digitar parte do nome."}
                     </li>
                   )}
                 </ul>
