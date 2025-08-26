@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, Timestamp, orderBy } from 'firebase/firestore';
+import DayAgendaModal from './_components/DayAgendaModal';
 
 // Ícones
 const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -128,6 +129,11 @@ export default function AgendaPage() {
   const [viewingItem, setViewingItem] = useState<AgendaItem | null>(null);
   const [editingItem, setEditingItem] = useState<AgendaItem | null>(null);
   const [filter, setFilter] = useState<'all' | 'crm' | 'nota' | 'agenda' | 'comunidade'>('all');
+
+  // Estado para o modal de agenda do dia
+  const [showDayAgendaModal, setShowDayAgendaModal] = useState(false);
+  const [selectedDayDate, setSelectedDayDate] = useState<Date | null>(null);
+  const [selectedDayItems, setSelectedDayItems] = useState<AgendaItem[]>([]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -567,6 +573,14 @@ export default function AgendaPage() {
     return allItems.sort((a, b) => a.dataHora.toDate().getTime() - b.dataHora.toDate().getTime());
   };
 
+  // Função para abrir o modal de agenda do dia
+  const openDayAgendaModal = (date: Date) => {
+    const items = getAllItemsForDate(date);
+    setSelectedDayDate(date);
+    setSelectedDayItems(items);
+    setShowDayAgendaModal(true);
+  };
+
   const renderCalendar = () => {
     const today = new Date();
     const currentMonth = selectedDate.getMonth();
@@ -585,9 +599,10 @@ export default function AgendaPage() {
       days.push(
         <div
           key={i}
-          className={`p-3 border-r border-b border-[#E8E9F1] dark:border-[#23283A] min-h-[120px] transition-all duration-200 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] ${
+          className={`p-3 border-r border-b border-[#E8E9F1] dark:border-[#23283A] min-h-[120px] transition-all duration-200 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] cursor-pointer ${
             date.getMonth() === currentMonth ? 'bg-white dark:bg-[#23283A]' : 'bg-gray-50 dark:bg-[#181C23]'
           } ${date.toDateString() === today.toDateString() ? 'bg-gradient-to-br from-[#3478F6]/10 to-[#A3C8F7]/10 border-[#3478F6]/30' : ''}`}
+          onClick={() => openDayAgendaModal(date)}
         >
           <div className={`text-sm font-bold mb-2 ${
             date.toDateString() === today.toDateString() 
@@ -1095,6 +1110,14 @@ export default function AgendaPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de Agenda do Dia */}
+      <DayAgendaModal
+        isOpen={showDayAgendaModal}
+        onClose={() => setShowDayAgendaModal(false)}
+        date={selectedDayDate}
+        items={selectedDayItems}
+      />
     </div>
   );
 } 
