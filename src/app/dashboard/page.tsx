@@ -9,6 +9,7 @@ import Link from 'next/link';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
 import NotesWidget from './_components/NotesWidget';
+import AvisosImportantesModal from './_components/AvisosImportantesModal';
 
 // Ícones
 const TrendingUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -387,6 +388,9 @@ export default function DashboardPage() {
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notes, setNotes] = useState<any[]>([]);
+  
+  // Estado para o modal de avisos importantes
+  const [showAvisosModal, setShowAvisosModal] = useState(false);
 
   // Função para voltar ao topo da seção de trending
   const scrollToTrendingTop = () => {
@@ -1146,12 +1150,22 @@ export default function DashboardPage() {
 
           {/* Avisos Importantes */}
           <div className="bg-white dark:bg-[#23283A] rounded-xl p-5 border border-[#FF6B6B]/20 shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-2 h-2 bg-[#FF6B6B] rounded-full animate-pulse"></div>
-              <h3 className="font-semibold text-[#2E2F38] dark:text-white text-base">Avisos Importantes</h3>
-              <span className="px-1.5 py-0.5 bg-[#FF6B6B]/10 text-[#FF6B6B] text-xs font-medium rounded">
-                {avisosImportantes.length}
-              </span>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-[#FF6B6B] rounded-full animate-pulse"></div>
+                <h3 className="font-semibold text-[#2E2F38] dark:text-white text-base">Avisos Importantes</h3>
+                <span className="px-1.5 py-0.5 bg-[#FF6B6B]/10 text-[#FF6B6B] text-xs font-medium rounded">
+                  {avisosImportantes.length}
+                </span>
+              </div>
+              {avisosImportantes.length > 0 && (
+                <button
+                  onClick={() => setShowAvisosModal(true)}
+                  className="px-3 py-1.5 text-xs font-semibold text-[#FF6B6B] bg-[#FF6B6B]/10 rounded-lg hover:bg-[#FF6B6B]/20 transition-colors border border-[#FF6B6B]/30"
+                >
+                  Ver Todos
+                </button>
+              )}
             </div>
             <div className="space-y-2">
               {avisosImportantes
@@ -1201,9 +1215,12 @@ export default function DashboardPage() {
               )}
               {avisosImportantes.length > 3 && (
                 <div className="text-center pt-2">
-                  <span className="text-xs text-[#6B6F76] dark:text-gray-400">
+                  <button
+                    onClick={() => setShowAvisosModal(true)}
+                    className="text-xs text-[#FF6B6B] hover:text-[#FF5252] font-medium hover:underline transition-colors cursor-pointer"
+                  >
                     +{avisosImportantes.length - 3} avisos anteriores
-                  </span>
+                  </button>
                 </div>
               )}
             </div>
@@ -1713,6 +1730,13 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de Avisos Importantes */}
+      <AvisosImportantesModal
+        isOpen={showAvisosModal}
+        onClose={() => setShowAvisosModal(false)}
+        avisos={avisosImportantes}
+      />
 
       {/* Botão Voltar ao Topo */}
       {showScrollToTop && (
