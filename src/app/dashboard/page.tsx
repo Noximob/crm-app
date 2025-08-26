@@ -11,6 +11,7 @@ import Picker from '@emoji-mart/react';
 import NotesWidget from './_components/NotesWidget';
 import AvisosImportantesModal from './_components/AvisosImportantesModal';
 import AgendaImobiliariaModal from './_components/AgendaImobiliariaModal';
+import PlantoesModal from './_components/PlantoesModal';
 
 // Ícones
 const TrendingUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -396,6 +397,8 @@ export default function DashboardPage() {
   
   // Estado para o modal de agenda imobiliária
   const [showAgendaModal, setShowAgendaModal] = useState(false);
+  const [plantoes, setPlantoes] = useState<any[]>([]);
+  const [showPlantoesModal, setShowPlantoesModal] = useState(false);
 
   // Função para voltar ao topo da seção de trending
   const scrollToTrendingTop = () => {
@@ -516,6 +519,22 @@ export default function DashboardPage() {
       }
     };
     fetchAgendaImobiliaria();
+  }, [userData]);
+
+  // Buscar plantões
+  useEffect(() => {
+    const fetchPlantoes = async () => {
+      if (!userData?.imobiliariaId) return;
+      try {
+        const q = query(collection(db, 'plantoes'), where('imobiliariaId', '==', userData.imobiliariaId));
+        const snapshot = await getDocs(q);
+        setPlantoes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      } catch (error) {
+        console.error('Erro ao buscar plantões:', error);
+        setPlantoes([]);
+      }
+    };
+    fetchPlantoes();
   }, [userData]);
 
   useEffect(() => {
@@ -1409,6 +1428,75 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* Plantões */}
+          <div className="bg-gradient-to-br from-[#8B5CF6]/30 to-[#A855F7]/10 border-2 border-[#8B5CF6]/20 rounded-2xl p-5 relative overflow-hidden shadow-sm">
+            <div className="absolute top-0 left-0 w-1 h-full bg-[#8B5CF6]"></div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 bg-gradient-to-br from-[#8B5CF6] to-[#A855F7] rounded flex items-center justify-center">
+                  <span className="text-white text-xs">🏢</span>
+                </div>
+                <h3 className="font-semibold text-[#2E2F38] dark:text-white text-base">Plantões</h3>
+                <span className="px-1.5 py-0.5 bg-[#8B5CF6]/10 text-[#8B5CF6] text-xs font-medium rounded">
+                  {plantoes.length}
+                </span>
+              </div>
+              <button
+                onClick={() => setShowPlantoesModal(true)}
+                className="px-3 py-1.5 text-xs font-semibold text-[#8B5CF6] bg-[#8B5CF6]/10 rounded-lg hover:bg-[#8B5CF6]/20 transition-colors border border-[#8B5CF6]/30"
+              >
+                Ver Todos
+              </button>
+            </div>
+            <div className="space-y-2">
+              {plantoes.length === 0 ? (
+                <div className="text-center py-6">
+                  <div className="w-8 h-8 bg-gradient-to-br from-[#8B5CF6]/10 to-[#A855F7]/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <span className="text-lg">🏢</span>
+                  </div>
+                  <p className="text-[#6B6F76] dark:text-gray-300 text-sm">Nenhum plantão agendado</p>
+                </div>
+              ) : (
+                plantoes
+                  .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
+                  .slice(0, 3) // Mostrar apenas os 3 próximos
+                  .map((plantao, idx) => (
+                    <div
+                      key={plantao.id}
+                      className="group p-3 rounded-lg hover:bg-white/60 dark:hover:bg-[#23283A]/60 transition-colors border border-[#8B5CF6]/20 hover:border-[#8B5CF6]/40"
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="text-sm mt-0.5">🏢</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-[#8B5CF6]/10 text-[#8B5CF6]">
+                              {new Date(plantao.data).toLocaleDateString('pt-BR')}
+                            </span>
+                            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-[#A855F7]/10 text-[#A855F7]">
+                              {plantao.horario}
+                            </span>
+                          </div>
+                          <div className="text-sm text-[#2E2F38] dark:text-white line-clamp-2 leading-relaxed">
+                            <span className="font-medium">{plantao.construtora}</span> - {plantao.corretorResponsavel}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+              )}
+              {plantoes.length > 3 && (
+                <div className="text-center pt-2">
+                  <button
+                    onClick={() => setShowPlantoesModal(true)}
+                    className="text-xs text-[#8B5CF6] hover:text-[#A855F7] transition-colors cursor-pointer"
+                  >
+                    +{plantoes.length - 3} plantões anteriores
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Metas */}
           <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl animate-fade-in">
             <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
@@ -1856,6 +1944,13 @@ export default function DashboardPage() {
         isOpen={showAgendaModal}
         onClose={() => setShowAgendaModal(false)}
         agenda={agendaImobiliaria}
+      />
+
+      {/* Modal de Plantões */}
+      <PlantoesModal
+        isOpen={showPlantoesModal}
+        onClose={() => setShowPlantoesModal(false)}
+        plantoes={plantoes}
       />
 
       {/* Botão Voltar ao Topo */}

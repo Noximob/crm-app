@@ -37,6 +37,7 @@ const adminCategories = [
       { title: 'Importar Leads', icon: '⬆️', description: 'Importe leads em massa', href: '/dashboard/admin/importar-leads' },
       { title: 'Avisos', icon: '📢', description: 'Avisos para corretores', href: '/dashboard/admin/avisos-importantes' },
       { title: 'Agenda Imobiliária', icon: '📅', description: 'Gerencie agenda da imobiliária', href: '/dashboard/admin/agenda-imobiliaria' },
+      { title: 'Plantões', icon: '🏢', description: 'Gerencie plantões da imobiliária', href: '/dashboard/admin/plantoes' },
     ]
   },
   {
