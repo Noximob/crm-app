@@ -106,17 +106,32 @@ export default function PlantoesAdminPage() {
 
   const fetchPlantoes = async () => {
     try {
+      console.log('Buscando plantões para imobiliariaId:', userData.imobiliariaId);
       const q = query(
         collection(db, 'plantoes'),
-        where('imobiliariaId', '==', userData.imobiliariaId),
-        orderBy('data', 'asc')
+        where('imobiliariaId', '==', userData.imobiliariaId)
       );
       const snapshot = await getDocs(q);
-      const plantoesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Plantao[];
-      setPlantoes(plantoesData);
+      console.log('Plantões encontrados:', snapshot.docs.length);
+      
+      const plantoesData = snapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log('Plantão encontrado:', { id: doc.id, ...data });
+        return {
+          id: doc.id,
+          ...data
+        };
+      }) as Plantao[];
+      
+      // Ordenar por data após buscar
+      const plantoesOrdenados = plantoesData.sort((a, b) => {
+        const dataA = new Date(a.data);
+        const dataB = new Date(b.data);
+        return dataA.getTime() - dataB.getTime();
+      });
+      
+      console.log('Plantões ordenados:', plantoesOrdenados);
+      setPlantoes(plantoesOrdenados);
     } catch (error) {
       console.error('Erro ao buscar plantões:', error);
     } finally {
