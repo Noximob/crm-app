@@ -10,6 +10,7 @@ import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
 import NotesWidget from './_components/NotesWidget';
 import AvisosImportantesModal from './_components/AvisosImportantesModal';
+import AgendaImobiliariaModal from './_components/AgendaImobiliariaModal';
 
 // Ícones
 const TrendingUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -366,6 +367,7 @@ export default function DashboardPage() {
   const [agendaLeads, setAgendaLeads] = useState<any[]>([]);
   const [agendaLoading, setAgendaLoading] = useState(true);
   const [avisosImportantes, setAvisosImportantes] = useState<any[]>([]);
+  const [agendaImobiliaria, setAgendaImobiliaria] = useState<any[]>([]);
   const [trendingPosts, setTrendingPosts] = useState<any[]>([]);
   const [trendingLoading, setTrendingLoading] = useState(true);
   const [meta, setMeta] = useState<any>(null);
@@ -391,6 +393,9 @@ export default function DashboardPage() {
   
   // Estado para o modal de avisos importantes
   const [showAvisosModal, setShowAvisosModal] = useState(false);
+  
+  // Estado para o modal de agenda imobiliária
+  const [showAgendaModal, setShowAgendaModal] = useState(false);
 
   // Função para voltar ao topo da seção de trending
   const scrollToTrendingTop = () => {
@@ -495,6 +500,22 @@ export default function DashboardPage() {
       setAvisosImportantes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     };
     fetchAvisos();
+  }, [userData]);
+
+  // Buscar agenda imobiliária
+  useEffect(() => {
+    const fetchAgendaImobiliaria = async () => {
+      if (!userData?.imobiliariaId) return;
+      try {
+        const q = query(collection(db, 'agendaImobiliaria'), where('imobiliariaId', '==', userData.imobiliariaId));
+        const snapshot = await getDocs(q);
+        setAgendaImobiliaria(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      } catch (error) {
+        console.error('Erro ao buscar agenda imobiliária:', error);
+        setAgendaImobiliaria([]);
+      }
+    };
+    fetchAgendaImobiliaria();
   }, [userData]);
 
   useEffect(() => {
@@ -1148,83 +1169,175 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Avisos Importantes */}
-          <div className="bg-white dark:bg-[#23283A] rounded-xl p-5 border border-[#FF6B6B]/20 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-[#FF6B6B] rounded-full animate-pulse"></div>
-                <h3 className="font-semibold text-[#2E2F38] dark:text-white text-base">Avisos Importantes</h3>
-                <span className="px-1.5 py-0.5 bg-[#FF6B6B]/10 text-[#FF6B6B] text-xs font-medium rounded">
-                  {avisosImportantes.length}
-                </span>
-              </div>
-              {avisosImportantes.length > 0 && (
-                <button
-                  onClick={() => setShowAvisosModal(true)}
-                  className="px-3 py-1.5 text-xs font-semibold text-[#FF6B6B] bg-[#FF6B6B]/10 rounded-lg hover:bg-[#FF6B6B]/20 transition-colors border border-[#FF6B6B]/30"
-                >
-                  Ver Todos
-                </button>
-              )}
-            </div>
-            <div className="space-y-2">
-              {avisosImportantes
-                .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
-                .length === 0 ? (
-                <p className="text-[#6B6F76] dark:text-gray-300 text-sm italic">Nenhum aviso importante cadastrado pela imobiliária.</p>
-              ) : (
-                avisosImportantes
-                  .sort((a, b) => b.data?.toDate() - a.data?.toDate())
-                  .slice(0, 3) // Mostrar apenas os 3 mais recentes
-                  .map((aviso, idx) => (
-                    <div
-                      key={aviso.id}
-                      className="group p-3 rounded-lg hover:bg-[#FF6B6B]/5 transition-colors border-l-2 border-[#FF6B6B]/30 hover:border-[#FF6B6B]/60"
-                    >
-                      <div className="flex items-start gap-2">
-                        <div className="w-1.5 h-1.5 bg-[#FF6B6B] rounded-full mt-1.5 flex-shrink-0"></div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-[#2E2F38] dark:text-white mb-1 group-hover:text-[#FF6B6B] transition-colors truncate">
-                            {aviso.titulo}
-                          </div>
-                          <div className="text-xs text-[#6B6F76] dark:text-gray-300 leading-relaxed line-clamp-2">
-                            {aviso.mensagem}
-                          </div>
-                          <div className="text-[10px] text-[#FF6B6B]/70 font-medium mt-1">
-                            {aviso.dataInicio && (
-                              <div>Início: {aviso.dataInicio.toDate ? aviso.dataInicio.toDate().toLocaleDateString('pt-BR', { 
-                                day: '2-digit', 
-                                month: '2-digit', 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              }) : ''}</div>
-                            )}
-                            {aviso.dataFim && (
-                              <div>Fim: {aviso.dataFim.toDate ? aviso.dataFim.toDate().toLocaleDateString('pt-BR', { 
-                                day: '2-digit', 
-                                month: '2-digit', 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              }) : ''}</div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-              )}
-              {avisosImportantes.length > 3 && (
-                <div className="text-center pt-2">
-                  <button
-                    onClick={() => setShowAvisosModal(true)}
-                    className="text-xs text-[#FF6B6B] hover:text-[#FF5252] font-medium hover:underline transition-colors cursor-pointer"
-                  >
-                    +{avisosImportantes.length - 3} avisos anteriores
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+                     {/* Avisos Importantes */}
+           <div className="bg-white dark:bg-[#23283A] rounded-xl p-5 border border-[#FF6B6B]/20 shadow-sm">
+             <div className="flex items-center justify-between mb-3">
+               <div className="flex items-center gap-2">
+                 <div className="w-2 h-2 bg-[#FF6B6B] rounded-full animate-pulse"></div>
+                 <h3 className="font-semibold text-[#2E2F38] dark:text-white text-base">Avisos Importantes</h3>
+                 <span className="px-1.5 py-0.5 bg-[#FF6B6B]/10 text-[#FF6B6B] text-xs font-medium rounded">
+                   {avisosImportantes.length}
+                 </span>
+               </div>
+               {avisosImportantes.length > 0 && (
+                 <button
+                   onClick={() => setShowAvisosModal(true)}
+                   className="px-3 py-1.5 text-xs font-semibold text-[#FF6B6B] bg-[#FF6B6B]/10 rounded-lg hover:bg-[#FF6B6B]/20 transition-colors border border-[#FF6B6B]/30"
+                 >
+                   Ver Todos
+                 </button>
+               )}
+             </div>
+             <div className="space-y-2">
+               {avisosImportantes
+                 .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
+                 .length === 0 ? (
+                 <p className="text-[#6B6F76] dark:text-gray-300 text-sm italic">Nenhum aviso importante cadastrado pela imobiliária.</p>
+               ) : (
+                 avisosImportantes
+                   .sort((a, b) => b.data?.toDate() - a.data?.toDate())
+                   .slice(0, 3) // Mostrar apenas os 3 mais recentes
+                   .map((aviso, idx) => (
+                     <div
+                       key={aviso.id}
+                       className="group p-3 rounded-lg hover:bg-[#FF6B6B]/5 transition-colors border-l-2 border-[#FF6B6B]/30 hover:border-[#FF6B6B]/60"
+                     >
+                       <div className="flex items-start gap-2">
+                         <div className="w-1.5 h-1.5 bg-[#FF6B6B] rounded-full mt-1.5 flex-shrink-0"></div>
+                         <div className="flex-1 min-w-0">
+                           <div className="text-sm font-medium text-[#2E2F38] dark:text-white mb-1 group-hover:text-[#FF6B6B] transition-colors truncate">
+                             {aviso.titulo}
+                           </div>
+                           <div className="text-xs text-[#6B6F76] dark:text-gray-300 leading-relaxed line-clamp-2">
+                             {aviso.mensagem}
+                           </div>
+                           <div className="text-[10px] text-[#FF6B6B]/70 font-medium mt-1">
+                             {aviso.dataInicio && (
+                               <div>Início: {aviso.dataInicio.toDate ? aviso.dataInicio.toDate().toLocaleDateString('pt-BR', { 
+                                 day: '2-digit', 
+                                 month: '2-digit', 
+                                 hour: '2-digit', 
+                                 minute: '2-digit' 
+                               }) : ''}</div>
+                             )}
+                             {aviso.dataFim && (
+                               <div>Fim: {aviso.dataFim.toDate ? aviso.dataFim.toDate().toLocaleDateString('pt-BR', { 
+                                 day: '2-digit', 
+                                 month: '2-digit', 
+                                 hour: '2-digit', 
+                                 minute: '2-digit' 
+                               }) : ''}</div>
+                             )}
+                           </div>
+                         </div>
+                       </div>
+                     </div>
+                   ))
+               )}
+               {avisosImportantes.length > 3 && (
+                 <div className="text-center pt-2">
+                   <button
+                     onClick={() => setShowAvisosModal(true)}
+                     className="text-xs text-[#FF6B6B] hover:text-[#FF5252] font-medium hover:underline transition-colors cursor-pointer"
+                   >
+                     +{avisosImportantes.length - 3} avisos anteriores
+                   </button>
+                 </div>
+               )}
+             </div>
+           </div>
+
+           {/* Agenda Imobiliária */}
+           <div className="bg-white dark:bg-[#23283A] rounded-xl p-5 border border-purple-500/20 shadow-sm">
+             <div className="flex items-center justify-between mb-3">
+               <div className="flex items-center gap-2">
+                 <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                 <h3 className="font-semibold text-[#2E2F38] dark:text-white text-base">Agenda Imobiliária</h3>
+                 <span className="px-1.5 py-0.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs font-medium rounded">
+                   {agendaImobiliaria.length}
+                 </span>
+               </div>
+               {agendaImobiliaria.length > 0 && (
+                 <button
+                   onClick={() => setShowAgendaModal(true)}
+                   className="px-3 py-1.5 text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-colors border border-purple-500/30"
+                 >
+                   Ver Todos
+                 </button>
+               )}
+             </div>
+             <div className="space-y-2">
+               {agendaImobiliaria.length === 0 ? (
+                 <p className="text-[#6B6F76] dark:text-gray-300 text-sm italic">Nenhum evento agendado pela imobiliária.</p>
+               ) : (
+                 agendaImobiliaria
+                   .sort((a, b) => {
+                     // Priorizar eventos com dataInicio
+                     if (a.dataInicio && !b.dataInicio) return -1;
+                     if (!a.dataInicio && b.dataInicio) return 1;
+                     if (a.dataInicio && b.dataInicio) {
+                       return a.dataInicio.toDate().getTime() - b.dataInicio.toDate().getTime();
+                     }
+                     return a.data.toDate().getTime() - b.data.toDate().getTime();
+                   })
+                   .slice(0, 3) // Mostrar apenas os 3 mais próximos
+                   .map((evento, idx) => (
+                     <div
+                       key={evento.id}
+                       className="group p-3 rounded-lg hover:bg-purple-500/5 transition-colors border-l-2 border-purple-500/30 hover:border-purple-500/60"
+                     >
+                       <div className="flex items-start gap-2">
+                         <div className="w-1.5 h-1.5 bg-purple-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                         <div className="flex-1 min-w-0">
+                           <div className="flex items-center gap-2 mb-1">
+                             <div className="text-sm font-medium text-[#2E2F38] dark:text-white group-hover:text-purple-600 transition-colors truncate">
+                               {evento.titulo}
+                             </div>
+                             <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                               evento.tipo === 'reuniao' ? 'bg-blue-500' :
+                               evento.tipo === 'evento' ? 'bg-purple-500' :
+                               evento.tipo === 'treinamento' ? 'bg-green-500' : 'bg-gray-500'
+                             } text-white`}>
+                               {evento.tipo === 'reuniao' ? '👥' : 
+                                evento.tipo === 'evento' ? '🎉' : 
+                                evento.tipo === 'treinamento' ? '📚' : '📅'} {evento.tipo}
+                             </span>
+                           </div>
+                           {evento.descricao && (
+                             <div className="text-xs text-[#6B6F76] dark:text-gray-300 leading-relaxed line-clamp-2">
+                               {evento.descricao}
+                             </div>
+                           )}
+                           <div className="text-[10px] text-purple-500/70 font-medium mt-1">
+                             {evento.dataInicio && (
+                               <div>Início: {evento.dataInicio.toDate ? evento.dataInicio.toDate().toLocaleDateString('pt-BR', { 
+                                 day: '2-digit', 
+                                 month: '2-digit', 
+                                 hour: '2-digit', 
+                                 minute: '2-digit' 
+                               }) : ''}</div>
+                             )}
+                             {evento.local && (
+                               <div>Local: {evento.local}</div>
+                             )}
+                           </div>
+                         </div>
+                       </div>
+                     </div>
+                   ))
+               )}
+               {agendaImobiliaria.length > 3 && (
+                 <div className="text-center pt-2">
+                   <button
+                     onClick={() => setShowAgendaModal(true)}
+                     className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium hover:underline transition-colors cursor-pointer"
+                   >
+                     +{agendaImobiliaria.length - 3} eventos anteriores
+                   </button>
+                 </div>
+               )}
+             </div>
+           </div>
 
           {/* Card de Notas */}
           <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-5 relative overflow-hidden shadow-sm">
@@ -1736,6 +1849,13 @@ export default function DashboardPage() {
         isOpen={showAvisosModal}
         onClose={() => setShowAvisosModal(false)}
         avisos={avisosImportantes}
+      />
+
+      {/* Modal de Agenda Imobiliária */}
+      <AgendaImobiliariaModal
+        isOpen={showAgendaModal}
+        onClose={() => setShowAgendaModal(false)}
+        agenda={agendaImobiliaria}
       />
 
       {/* Botão Voltar ao Topo */}
