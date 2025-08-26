@@ -1457,10 +1457,10 @@ export default function DashboardPage() {
                   <p className="text-[#6B6F76] dark:text-gray-300 text-sm">Nenhum plantão agendado</p>
                 </div>
               ) : (
-                plantoes
-                  .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
-                  .slice(0, 3) // Mostrar apenas os 3 próximos
-                  .map((plantao, idx) => (
+                                        plantoes
+                          .sort((a, b) => new Date(a.dataInicio).getTime() - new Date(b.dataInicio).getTime())
+                          .slice(0, 3) // Mostrar apenas os 3 próximos
+                          .map((plantao, idx) => (
                     <div
                       key={plantao.id}
                       className="group p-3 rounded-lg hover:bg-white/60 dark:hover:bg-[#23283A]/60 transition-colors border border-[#8B5CF6]/20 hover:border-[#8B5CF6]/40"
@@ -1469,16 +1469,16 @@ export default function DashboardPage() {
                         <span className="text-sm mt-0.5">🏢</span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-[#8B5CF6]/10 text-[#8B5CF6]">
-                              {new Date(plantao.data).toLocaleDateString('pt-BR')}
-                            </span>
+                                                                <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-[#8B5CF6]/10 text-[#8B5CF6]">
+                                      {new Date(plantao.dataInicio).toLocaleDateString('pt-BR')} - {new Date(plantao.dataFim).toLocaleDateString('pt-BR')}
+                                    </span>
                             <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-[#A855F7]/10 text-[#A855F7]">
                               {plantao.horario}
                             </span>
                           </div>
-                          <div className="text-sm text-[#2E2F38] dark:text-white line-clamp-2 leading-relaxed">
-                            <span className="font-medium">{plantao.construtora}</span> - {plantao.corretorResponsavel}
-                          </div>
+                                                            <div className="text-sm text-[#2E2F38] dark:text-white line-clamp-2 leading-relaxed">
+                                    <span className="font-medium">{plantao.construtora}</span> - Corretor: {plantao.corretorResponsavel}
+                                  </div>
                         </div>
                       </div>
                     </div>

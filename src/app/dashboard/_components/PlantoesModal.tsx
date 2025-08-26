@@ -37,7 +37,8 @@ const UserIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 interface Plantao {
   id: string;
-  data: string;
+  dataInicio: string;
+  dataFim: string;
   construtora: string;
   corretorResponsavel: string;
   horario: string;
@@ -54,10 +55,10 @@ interface PlantoesModalProps {
 export default function PlantoesModal({ isOpen, onClose, plantoes }: PlantoesModalProps) {
   if (!isOpen) return null;
 
-  // Ordenar plantões por data
+  // Ordenar plantões por data de início
   const plantoesOrdenados = [...plantoes].sort((a, b) => {
-    const dataA = new Date(a.data);
-    const dataB = new Date(b.data);
+    const dataA = new Date(a.dataInicio);
+    const dataB = new Date(b.dataInicio);
     return dataA.getTime() - dataB.getTime();
   });
 
@@ -106,11 +107,12 @@ export default function PlantoesModal({ isOpen, onClose, plantoes }: PlantoesMod
                         <div className="flex items-center gap-2 px-3 py-1 bg-[#8B5CF6]/10 text-[#8B5CF6] rounded-full">
                           <CalendarIcon className="h-4 w-4" />
                           <span className="text-sm font-medium">
-                            {new Date(plantao.data).toLocaleDateString('pt-BR', {
-                              weekday: 'long',
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
+                            {new Date(plantao.dataInicio).toLocaleDateString('pt-BR', {
+                              day: '2-digit',
+                              month: '2-digit'
+                            })} - {new Date(plantao.dataFim).toLocaleDateString('pt-BR', {
+                              day: '2-digit',
+                              month: '2-digit'
                             })}
                           </span>
                         </div>
@@ -128,7 +130,7 @@ export default function PlantoesModal({ isOpen, onClose, plantoes }: PlantoesMod
                         
                         <div className="flex items-center gap-2">
                           <UserIcon className="h-4 w-4 text-[#8B5CF6]" />
-                          <span className="text-sm text-[#6B6F76] dark:text-gray-300">Responsável:</span>
+                          <span className="text-sm text-[#6B6F76] dark:text-gray-300">Corretor:</span>
                           <span className="font-medium text-[#2E2F38] dark:text-white">{plantao.corretorResponsavel}</span>
                         </div>
                       </div>

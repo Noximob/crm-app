@@ -61,7 +61,8 @@ const ClockIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 interface Plantao {
   id: string;
-  data: string;
+  dataInicio: string;
+  dataFim: string;
   construtora: string;
   corretorResponsavel: string;
   horario: string;
@@ -76,7 +77,8 @@ export default function PlantoesAdminPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingPlantao, setEditingPlantao] = useState<Plantao | null>(null);
   const [formData, setFormData] = useState({
-    data: '',
+    dataInicio: '',
+    dataFim: '',
     construtora: '',
     corretorResponsavel: '',
     horario: '',
@@ -123,10 +125,10 @@ export default function PlantoesAdminPage() {
         };
       }) as Plantao[];
       
-      // Ordenar por data após buscar
+      // Ordenar por data de início após buscar
       const plantoesOrdenados = plantoesData.sort((a, b) => {
-        const dataA = new Date(a.data);
-        const dataB = new Date(b.data);
+        const dataA = new Date(a.dataInicio);
+        const dataB = new Date(b.dataInicio);
         return dataA.getTime() - dataB.getTime();
       });
       
@@ -156,7 +158,8 @@ export default function PlantoesAdminPage() {
       }
 
       setFormData({
-        data: '',
+        dataInicio: '',
+        dataFim: '',
         construtora: '',
         corretorResponsavel: '',
         horario: '',
@@ -173,7 +176,8 @@ export default function PlantoesAdminPage() {
   const handleEdit = (plantao: Plantao) => {
     setEditingPlantao(plantao);
     setFormData({
-      data: plantao.data,
+      dataInicio: plantao.dataInicio,
+      dataFim: plantao.dataFim,
       construtora: plantao.construtora,
       corretorResponsavel: plantao.corretorResponsavel,
       horario: plantao.horario,
@@ -196,7 +200,8 @@ export default function PlantoesAdminPage() {
   const cancelEdit = () => {
     setEditingPlantao(null);
     setFormData({
-      data: '',
+      dataInicio: '',
+      dataFim: '',
       construtora: '',
       corretorResponsavel: '',
       horario: '',
@@ -243,19 +248,32 @@ export default function PlantoesAdminPage() {
               {editingPlantao ? 'Editar Plantão' : 'Novo Plantão'}
             </h2>
             
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                  Data *
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={formData.data}
-                  onChange={(e) => setFormData({...formData, data: e.target.value})}
-                  className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent"
-                />
-              </div>
+                         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div>
+                 <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                   Data de Início *
+                 </label>
+                 <input
+                   type="date"
+                   required
+                   value={formData.dataInicio}
+                   onChange={(e) => setFormData({...formData, dataInicio: e.target.value})}
+                   className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent"
+                 />
+               </div>
+
+               <div>
+                 <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                   Data de Fim *
+                 </label>
+                 <input
+                   type="date"
+                   required
+                   value={formData.dataFim}
+                   onChange={(e) => setFormData({...formData, dataFim: e.target.value})}
+                   className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent"
+                 />
+               </div>
 
               <div>
                 <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
@@ -350,23 +368,24 @@ export default function PlantoesAdminPage() {
                 <div key={plantao.id} className="p-6 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                                              <div className="flex items-center gap-4 mb-3">
-                          <div className="flex items-center gap-2 px-3 py-1 bg-[#8B5CF6]/10 text-[#8B5CF6] rounded-full">
-                            <CalendarIcon className="h-4 w-4" />
-                            <span className="text-sm font-medium">
-                            {new Date(plantao.data).toLocaleDateString('pt-BR', {
-                              weekday: 'long',
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 px-3 py-1 bg-[#A855F7]/10 text-[#A855F7] rounded-full">
-                          <ClockIcon className="h-4 w-4" />
-                          <span className="text-sm font-medium">{plantao.horario}</span>
-                        </div>
-                      </div>
+                                                                     <div className="flex items-center gap-4 mb-3">
+                         <div className="flex items-center gap-2 px-3 py-1 bg-[#8B5CF6]/10 text-[#8B5CF6] rounded-full">
+                           <CalendarIcon className="h-4 w-4" />
+                           <span className="text-sm font-medium">
+                           {new Date(plantao.dataInicio).toLocaleDateString('pt-BR', {
+                             day: '2-digit',
+                             month: '2-digit'
+                           })} - {new Date(plantao.dataFim).toLocaleDateString('pt-BR', {
+                             day: '2-digit',
+                             month: '2-digit'
+                           })}
+                         </span>
+                       </div>
+                       <div className="flex items-center gap-2 px-3 py-1 bg-[#A855F7]/10 text-[#A855F7] rounded-full">
+                         <ClockIcon className="h-4 w-4" />
+                         <span className="text-sm font-medium">{plantao.horario}</span>
+                       </div>
+                     </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="flex items-center gap-2">
