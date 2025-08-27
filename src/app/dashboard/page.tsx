@@ -1429,56 +1429,55 @@ export default function DashboardPage() {
           </div>
 
           {/* Plantões */}
-          <div className="bg-gradient-to-br from-[#8B5CF6]/30 to-[#A855F7]/10 border-2 border-[#8B5CF6]/20 rounded-2xl p-5 relative overflow-hidden shadow-sm">
-            <div className="absolute top-0 left-0 w-1 h-full bg-[#8B5CF6]"></div>
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-white dark:bg-[#23283A] rounded-xl p-5 border border-orange-500/20 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className="w-5 h-5 bg-gradient-to-br from-[#8B5CF6] to-[#A855F7] rounded flex items-center justify-center">
-                  <span className="text-white text-xs">🏢</span>
-                </div>
+                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
                 <h3 className="font-semibold text-[#2E2F38] dark:text-white text-base">Plantões</h3>
-                <span className="px-1.5 py-0.5 bg-[#8B5CF6]/10 text-[#8B5CF6] text-xs font-medium rounded">
+                <span className="px-1.5 py-0.5 bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-medium rounded">
                   {plantoes.length}
                 </span>
               </div>
-              <button
-                onClick={() => setShowPlantoesModal(true)}
-                className="px-3 py-1.5 text-xs font-semibold text-[#8B5CF6] bg-[#8B5CF6]/10 rounded-lg hover:bg-[#8B5CF6]/20 transition-colors border border-[#8B5CF6]/30"
-              >
-                Ver Todos
-              </button>
+              {plantoes.length > 0 && (
+                <button
+                  onClick={() => setShowPlantoesModal(true)}
+                  className="px-3 py-1.5 text-xs font-semibold text-orange-600 dark:text-orange-400 bg-orange-500/10 rounded-lg hover:bg-orange-500/20 transition-colors border border-orange-500/30"
+                >
+                  Ver Todos
+                </button>
+              )}
             </div>
             <div className="space-y-2">
               {plantoes.length === 0 ? (
-                <div className="text-center py-6">
-                  <div className="w-8 h-8 bg-gradient-to-br from-[#8B5CF6]/10 to-[#A855F7]/10 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <span className="text-lg">🏢</span>
-                  </div>
-                  <p className="text-[#6B6F76] dark:text-gray-300 text-sm">Nenhum plantão agendado</p>
-                </div>
+                <p className="text-[#6B6F76] dark:text-gray-300 text-sm italic">Nenhum plantão agendado pela imobiliária.</p>
               ) : (
-                                        plantoes
-                          .sort((a, b) => new Date(a.dataInicio).getTime() - new Date(b.dataInicio).getTime())
-                          .slice(0, 3) // Mostrar apenas os 3 próximos
-                          .map((plantao, idx) => (
+                plantoes
+                  .sort((a, b) => new Date(a.dataInicio).getTime() - new Date(a.dataInicio).getTime())
+                  .slice(0, 3) // Mostrar apenas os 3 próximos
+                  .map((plantao, idx) => (
                     <div
                       key={plantao.id}
-                      className="group p-3 rounded-lg hover:bg-white/60 dark:hover:bg-[#23283A]/60 transition-colors border border-[#8B5CF6]/20 hover:border-[#8B5CF6]/40"
+                      className="group p-3 rounded-lg hover:bg-orange-500/5 transition-colors border-l-2 border-orange-500/30 hover:border-orange-500/60"
                     >
                       <div className="flex items-start gap-2">
-                        <span className="text-sm mt-0.5">🏢</span>
+                        <div className="w-1.5 h-1.5 bg-orange-500 rounded-full mt-1.5 flex-shrink-0"></div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                                                                <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-[#8B5CF6]/10 text-[#8B5CF6]">
-                                      {new Date(plantao.dataInicio).toLocaleDateString('pt-BR')} - {new Date(plantao.dataFim).toLocaleDateString('pt-BR')}
-                                    </span>
-                            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-[#A855F7]/10 text-[#A855F7]">
-                              {plantao.horario}
-                            </span>
+                          <div className="text-sm font-medium text-[#2E2F38] dark:text-white mb-1 group-hover:text-orange-600 transition-colors truncate">
+                            Plantão {plantao.construtora}
                           </div>
-                                                            <div className="text-sm text-[#2E2F38] dark:text-white line-clamp-2 leading-relaxed">
-                                    <span className="font-medium">{plantao.construtora}</span> - Corretor: {plantao.corretorResponsavel}
-                                  </div>
+                          <div className="text-xs text-[#6B6F76] dark:text-gray-300 leading-relaxed line-clamp-2">
+                            Corretor: {plantao.corretorResponsavel} - Horário: {plantao.horario}
+                          </div>
+                          <div className="text-[10px] text-orange-500/70 font-medium mt-1">
+                            <div>Início: {new Date(plantao.dataInicio).toLocaleDateString('pt-BR', { 
+                              day: '2-digit', 
+                              month: '2-digit'
+                            })}</div>
+                            <div>Fim: {new Date(plantao.dataFim).toLocaleDateString('pt-BR', { 
+                              day: '2-digit', 
+                              month: '2-digit'
+                            })}</div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1488,7 +1487,7 @@ export default function DashboardPage() {
                 <div className="text-center pt-2">
                   <button
                     onClick={() => setShowPlantoesModal(true)}
-                    className="text-xs text-[#8B5CF6] hover:text-[#A855F7] transition-colors cursor-pointer"
+                    className="text-xs text-orange-600 dark:text-orange-400 hover:text-orange-700 font-medium hover:underline transition-colors cursor-pointer"
                   >
                     +{plantoes.length - 3} plantões anteriores
                   </button>
