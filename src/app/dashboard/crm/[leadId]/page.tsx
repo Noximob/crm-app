@@ -313,18 +313,18 @@ export default function LeadDetailPage() {
         setIsCancelModalOpen(true);
     };
 
-    const handleQualificationChange = async (groupKey: string, value: string) => {
-        if (!currentUser || !lead) return;
-
-        const newQualifications = { ...qualifications, [groupKey]: value };
-        setQualifications(newQualifications);
-
-        const leadRef = doc(db, 'leads', lead.id);
-        try {
-            await updateDoc(leadRef, { qualificacao: newQualifications });
-        } catch (error) {
-            console.error("Erro ao atualizar qualificação:", error);
-        }
+    const handleQualificationChange = (key: string, value: string) => {
+        setQualifications(prev => {
+            if (prev[key] === value) {
+                // Remove a seleção se já estiver selecionada
+                const newQuals = { ...prev };
+                delete newQuals[key];
+                return newQuals;
+            } else {
+                // Adiciona ou atualiza a seleção
+                return { ...prev, [key]: value };
+            }
+        });
     };
 
 
