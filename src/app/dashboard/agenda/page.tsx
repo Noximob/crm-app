@@ -720,10 +720,9 @@ export default function AgendaPage() {
     });
     
     // Adicionar plantões
-    const plantoes = agendaItems.filter(item => item.source === 'comunidade' && item.tipo === 'comunidade');
     plantoes.forEach(plantao => {
-      const inicioDate = new Date(plantao.dataHora.toDate());
-      const fimDate = new Date(plantao.dataHora.toDate());
+      const inicioDate = new Date(plantao.dataInicio);
+      const fimDate = new Date(plantao.dataFim);
       const currentDate = new Date(date);
       
       const inicioDateOnly = new Date(inicioDate.getFullYear(), inicioDate.getMonth(), inicioDate.getDate());
@@ -734,13 +733,13 @@ export default function AgendaPage() {
       if (currentDateOnly >= inicioDateOnly && currentDateOnly <= fimDateOnly) {
         allItems.push({
           id: `plantao_${plantao.id}`,
-          titulo: `Plantão ${plantao.titulo.replace('Plantão ', '')}`,
-          descricao: `Horário: ${plantao.descricao || ''}\nConstrutora: ${plantao.titulo.replace('Plantão ', '')}`,
+          titulo: `Plantão ${plantao.construtora}`,
+          descricao: `Horário: ${plantao.horario}\nConstrutora: ${plantao.construtora}\nCorretor: ${plantao.corretorResponsavel}\nObservações: ${plantao.observacoes || 'Nenhuma'}`,
           dataHora: Timestamp.fromDate(inicioDate),
           tipo: 'comunidade', // Usar tipo comunidade que tem cor laranja
           status: 'pendente',
           cor: '#F97316', // Cor laranja para plantão
-          createdAt: Timestamp.fromDate(new Date(plantao.createdAt.toDate())),
+          createdAt: Timestamp.fromDate(new Date(plantao.criadoEm)),
           userId: '',
           source: 'comunidade', // Usar source comunidade
           originalId: plantao.id
