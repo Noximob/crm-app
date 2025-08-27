@@ -205,6 +205,39 @@ export default function AgendaPage() {
     }
   };
 
+  const fetchPlantoes = async () => {
+    if (!userData?.imobiliariaId) return;
+    try {
+      const q = query(
+        collection(db, 'plantoes'),
+        where('imobiliariaId', '==', userData.imobiliariaId)
+      );
+      const snapshot = await getDocs(q);
+      const plantoesData = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as any));
+      // Adicionar plantões à lista de itens da agenda para exibição
+      const allItems: AgendaItem[] = [];
+      plantoesData.forEach(plantao => {
+        allItems.push({
+          id: `plantao_${plantao.id}`,
+          titulo: `Plantão ${plantao.construtora}`,
+          descricao: `Horário: ${plantao.horario}\nConstrutora: ${plantao.construtora}\nCorretor: ${plantao.corretorResponsavel}\nObservações: ${plantao.observacoes || 'Nenhuma'}`,
+          dataHora: Timestamp.fromDate(new Date(plantao.dataInicio)),
+          tipo: 'comunidade', // Usar tipo comunidade que tem cor laranja
+          status: 'pendente',
+          cor: '#F97316', // Cor laranja para plantão
+          createdAt: Timestamp.fromDate(new Date(plantao.criadoEm)),
+          userId: '',
+          source: 'comunidade', // Usar source comunidade
+          originalId: plantao.id
+        });
+      });
+      setAgendaItems(prev => [...prev, ...allItems]);
+    } catch (err) {
+      console.error('Erro ao buscar plantões:', err);
+    }
+  };
+
   const fetchAllData = async () => {
     if (!currentUser) return;
     setLoading(true);
@@ -216,7 +249,8 @@ export default function AgendaPage() {
         fetchCrmTasks(),
         fetchAvisosImportantes(),
         fetchEventosComunidade(),
-        fetchAgendaImobiliaria()
+        fetchAgendaImobiliaria(),
+        fetchPlantoes()
       ]);
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
