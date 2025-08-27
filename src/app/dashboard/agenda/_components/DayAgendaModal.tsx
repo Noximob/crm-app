@@ -31,7 +31,7 @@ const tipoLabels = {
   crm: 'CRM',
   nota: 'Nota',
   aviso: 'Aviso',
-  comunidade: 'Evento',
+  comunidade: 'Plantão',
   imobiliaria: 'Imobiliária'
 };
 
