@@ -84,7 +84,7 @@ export default function DashboardLayout({
   const [collapsed, setCollapsed] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const { notifications, resetNotification } = useNotifications();
 
   useEffect(() => {
