@@ -62,13 +62,13 @@ const getCompactInfo = (item: AgendaItem) => {
     case 'aviso':
       // Para avisos, mostrar apenas período e horário se disponível
       const periodoMatch = item.descricao.match(/Período: (.+)/);
-      const horarioMatch = item.descricao.match(/Horário diário: (.+)/);
-      if (periodoMatch && horarioMatch) {
-        return `${periodoMatch[1]} • ${horarioMatch[1]}`;
+      const horarioDiarioMatch = item.descricao.match(/Horário diário: (.+)/);
+      if (periodoMatch && horarioDiarioMatch) {
+        return `${periodoMatch[1]} • ${horarioDiarioMatch[1]}`;
       } else if (periodoMatch) {
         return periodoMatch[1];
-      } else if (horarioMatch) {
-        return horarioMatch[1];
+      } else if (horarioDiarioMatch) {
+        return horarioDiarioMatch[1];
       }
       return null;
       
@@ -78,12 +78,12 @@ const getCompactInfo = (item: AgendaItem) => {
       const tipoMatch = item.descricao.match(/Tipo: (.+)/);
       const construtoraMatch = item.descricao.match(/Construtora: (.+)/);
       const corretorMatch = item.descricao.match(/Corretor: (.+)/);
-      const horarioMatch = item.descricao.match(/Horário: (.+)/);
+      const horarioEventoMatch = item.descricao.match(/Horário: (.+)/);
       
       if (tipoMatch) info.push(tipoMatch[1]);
       if (construtoraMatch) info.push(construtoraMatch[1]);
       if (corretorMatch) info.push(corretorMatch[1]);
-      if (horarioMatch) info.push(horarioMatch[1]);
+      if (horarioEventoMatch) info.push(horarioEventoMatch[1]);
       
       return info.length > 0 ? info.slice(0, 2).join(' • ') : null;
       
