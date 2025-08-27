@@ -600,33 +600,13 @@ export default function DashboardPage() {
           })
         );
         
-        // Ordena priorizando eventos ativos, depois por engajamento
+        // Ordenar por ordem cronológica de post (mais recentes primeiro)
         const sortedPosts = postsWithCounts.sort((a, b) => {
-          const now = new Date();
+          const aCreatedAt = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+          const bCreatedAt = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
           
-          // Verificar se são eventos especiais e se a data ainda não passou
-          const aIsEvent = a.isEvento && a.eventoStatus === 'agendado';
-          const bIsEvent = b.isEvento && b.eventoStatus === 'agendado';
-          
-          const aEventTime = aIsEvent ? (a.eventoData instanceof Date ? a.eventoData : a.eventoData.toDate()) : null;
-          const bEventTime = bIsEvent ? (b.eventoData instanceof Date ? b.eventoData : b.eventoData.toDate()) : null;
-          
-          const aIsActiveEvent = aIsEvent && aEventTime && aEventTime > now;
-          const bIsActiveEvent = bIsEvent && bEventTime && bEventTime > now;
-          
-          // Priorizar eventos ativos (não passaram da data) no topo
-          if (aIsActiveEvent && !bIsActiveEvent) return -1;
-          if (!aIsActiveEvent && bIsActiveEvent) return 1;
-          
-          // Se ambos são eventos ativos, ordenar por data do evento (mais próximos primeiro)
-          if (aIsActiveEvent && bIsActiveEvent) {
-            return aEventTime!.getTime() - bEventTime!.getTime();
-          }
-          
-          // Para posts normais e eventos que já passaram, ordenar por engajamento total
-          const aEngagement = a.totalEngagement || 0;
-          const bEngagement = b.totalEngagement || 0;
-          return bEngagement - aEngagement;
+          // Ordenar por data de criação (mais recentes primeiro)
+          return bCreatedAt.getTime() - aCreatedAt.getTime();
         });
         setTrendingPosts(sortedPosts);
       } catch (error) {
