@@ -720,44 +720,33 @@ export default function AgendaPage() {
     });
     
     // Adicionar plantões
-    if (userData?.imobiliariaId) {
-      // Buscar plantões da imobiliária
-      const plantoesRef = collection(db, 'plantoes');
-      const plantoesQuery = query(
-        plantoesRef,
-        where('imobiliariaId', '==', userData.imobiliariaId)
-      );
+    const plantoes = agendaItems.filter(item => item.source === 'comunidade' && item.tipo === 'comunidade');
+    plantoes.forEach(plantao => {
+      const inicioDate = new Date(plantao.dataHora.toDate());
+      const fimDate = new Date(plantao.dataHora.toDate());
+      const currentDate = new Date(date);
       
-      getDocs(plantoesQuery).then(plantoesSnapshot => {
-        plantoesSnapshot.forEach(doc => {
-          const plantao = doc.data() as any; // Usar any para evitar problemas de tipo
-          const inicioDate = new Date(plantao.dataInicio);
-          const fimDate = new Date(plantao.dataFim);
-          const currentDate = new Date(date);
-          
-          const inicioDateOnly = new Date(inicioDate.getFullYear(), inicioDate.getMonth(), inicioDate.getDate());
-          const fimDateOnly = new Date(fimDate.getFullYear(), fimDate.getMonth(), fimDate.getDate());
-          const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-          
-          // Verificar se está no período do plantão
-          if (currentDateOnly >= inicioDateOnly && currentDateOnly <= fimDateOnly) {
-            allItems.push({
-              id: `plantao_${doc.id}`,
-              titulo: `Plantão ${plantao.construtora}`,
-              descricao: `Horário: ${plantao.horario}\nConstrutora: ${plantao.construtora}\nCorretor: ${plantao.corretorResponsavel}\nObservações: ${plantao.observacoes || 'Nenhuma'}`,
-              dataHora: Timestamp.fromDate(inicioDate),
-              tipo: 'comunidade', // Usar tipo comunidade que tem cor laranja
-              status: 'pendente',
-              cor: '#F97316', // Cor laranja para plantão
-              createdAt: Timestamp.fromDate(new Date(plantao.criadoEm)),
-              userId: '',
-              source: 'comunidade', // Usar source comunidade
-              originalId: doc.id
-            });
-          }
+      const inicioDateOnly = new Date(inicioDate.getFullYear(), inicioDate.getMonth(), inicioDate.getDate());
+      const fimDateOnly = new Date(fimDate.getFullYear(), fimDate.getMonth(), fimDate.getDate());
+      const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+      
+      // Verificar se está no período do plantão
+      if (currentDateOnly >= inicioDateOnly && currentDateOnly <= fimDateOnly) {
+        allItems.push({
+          id: `plantao_${plantao.id}`,
+          titulo: `Plantão ${plantao.titulo.replace('Plantão ', '')}`,
+          descricao: `Horário: ${plantao.descricao || ''}\nConstrutora: ${plantao.titulo.replace('Plantão ', '')}`,
+          dataHora: Timestamp.fromDate(inicioDate),
+          tipo: 'comunidade', // Usar tipo comunidade que tem cor laranja
+          status: 'pendente',
+          cor: '#F97316', // Cor laranja para plantão
+          createdAt: Timestamp.fromDate(new Date(plantao.createdAt.toDate())),
+          userId: '',
+          source: 'comunidade', // Usar source comunidade
+          originalId: plantao.id
         });
-      });
-    }
+      }
+    });
     
     // Aplicar filtro se necessário
     if (filter !== 'all') {
