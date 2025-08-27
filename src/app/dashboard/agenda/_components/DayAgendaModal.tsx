@@ -8,14 +8,14 @@ interface AgendaItem {
   titulo: string;
   descricao?: string;
   dataHora: Timestamp;
-  tipo: 'agenda' | 'crm' | 'nota' | 'aviso' | 'comunidade';
+  tipo: 'agenda' | 'crm' | 'nota' | 'aviso' | 'comunidade' | 'imobiliaria';
   status: 'pendente' | 'concluida' | 'cancelada';
   cor: string;
   leadId?: string;
   leadNome?: string;
   createdAt: Timestamp;
   userId: string;
-  source?: 'agenda' | 'notas' | 'crm' | 'aviso' | 'comunidade';
+  source?: 'agenda' | 'notas' | 'crm' | 'aviso' | 'comunidade' | 'imobiliaria';
   originalId?: string;
 }
 
@@ -31,7 +31,8 @@ const tipoLabels = {
   crm: 'CRM',
   nota: 'Nota',
   aviso: 'Aviso Importante',
-  comunidade: 'Evento Comunidade'
+  comunidade: 'Evento Comunidade',
+  imobiliaria: 'Agenda Imobiliária'
 };
 
 const tipoCores = {
@@ -39,7 +40,8 @@ const tipoCores = {
   crm: 'bg-blue-500',
   nota: 'bg-yellow-500',
   aviso: 'bg-red-600',
-  comunidade: 'bg-orange-500'
+  comunidade: 'bg-orange-500',
+  imobiliaria: 'bg-purple-500'
 };
 
 export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgendaModalProps) {

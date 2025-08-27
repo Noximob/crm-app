@@ -42,14 +42,14 @@ interface AgendaItem {
   titulo: string;
   descricao?: string;
   dataHora: Timestamp;
-  tipo: 'agenda' | 'crm' | 'nota' | 'aviso' | 'comunidade';
+  tipo: 'agenda' | 'crm' | 'nota' | 'aviso' | 'comunidade' | 'imobiliaria';
   status: 'pendente' | 'concluida' | 'cancelada';
   cor: string;
   leadId?: string;
   leadNome?: string;
   createdAt: Timestamp;
   userId: string;
-  source?: 'agenda' | 'notas' | 'crm' | 'aviso' | 'comunidade';
+  source?: 'agenda' | 'notas' | 'crm' | 'aviso' | 'comunidade' | 'imobiliaria';
   originalId?: string; // ID original da nota ou tarefa
 }
 
@@ -98,12 +98,26 @@ interface EventoComunidade {
   isEvento: boolean;
 }
 
+interface AgendaImobiliaria {
+  id: string;
+  titulo: string;
+  descricao?: string;
+  data: Timestamp;
+  dataInicio?: Timestamp;
+  dataFim?: Timestamp;
+  tipo: 'reuniao' | 'evento' | 'treinamento' | 'outro';
+  local?: string;
+  responsavel?: string;
+  imobiliariaId: string;
+}
+
 const tipoCores = {
   agenda: 'bg-emerald-500',
   crm: 'bg-blue-500',
   nota: 'bg-yellow-500',
   aviso: 'bg-red-600',
-  comunidade: 'bg-orange-500'
+  comunidade: 'bg-orange-500',
+  imobiliaria: 'bg-purple-500'
 };
 
 const tipoLabels = {
@@ -111,7 +125,8 @@ const tipoLabels = {
   crm: 'CRM',
   nota: 'Nota',
   aviso: 'Aviso Importante',
-  comunidade: 'Evento Comunidade'
+  comunidade: 'Evento Comunidade',
+  imobiliaria: 'Agenda Imobiliária'
 };
 
 export default function AgendaPage() {
@@ -123,12 +138,13 @@ export default function AgendaPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [avisos, setAvisos] = useState<AvisoImportante[]>([]);
   const [eventosComunidade, setEventosComunidade] = useState<EventoComunidade[]>([]);
+  const [agendaImobiliaria, setAgendaImobiliaria] = useState<AgendaImobiliaria[]>([]);
 
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingItem, setViewingItem] = useState<AgendaItem | null>(null);
   const [editingItem, setEditingItem] = useState<AgendaItem | null>(null);
-  const [filter, setFilter] = useState<'all' | 'crm' | 'nota' | 'agenda' | 'comunidade'>('all');
+  const [filter, setFilter] = useState<'all' | 'crm' | 'nota' | 'agenda' | 'comunidade' | 'imobiliaria'>('all');
 
   // Estado para o modal de agenda do dia
   const [showDayAgendaModal, setShowDayAgendaModal] = useState(false);
@@ -153,6 +169,7 @@ export default function AgendaPage() {
   useEffect(() => {
     if (userData?.imobiliariaId) {
       fetchAvisosImportantes();
+      fetchAgendaImobiliaria();
     }
   }, [userData]);
 
@@ -172,6 +189,22 @@ export default function AgendaPage() {
     }
   };
 
+  const fetchAgendaImobiliaria = async () => {
+    if (!userData?.imobiliariaId) return;
+    try {
+      const q = query(
+        collection(db, 'agendaImobiliaria'),
+        where('imobiliariaId', '==', userData.imobiliariaId)
+      );
+      const snapshot = await getDocs(q);
+      const agendaData = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as any));
+      setAgendaImobiliaria(agendaData);
+    } catch (err) {
+      setAgendaImobiliaria([]);
+    }
+  };
+
   const fetchAllData = async () => {
     if (!currentUser) return;
     setLoading(true);
@@ -182,7 +215,8 @@ export default function AgendaPage() {
         fetchNotes(),
         fetchCrmTasks(),
         fetchAvisosImportantes(),
-        fetchEventosComunidade()
+        fetchEventosComunidade(),
+        fetchAgendaImobiliaria()
       ]);
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
@@ -561,6 +595,93 @@ export default function AgendaPage() {
           source: 'comunidade',
           originalId: evento.id
         });
+      }
+    });
+
+    // Adicionar agenda imobiliária
+    agendaImobiliaria.forEach(agenda => {
+      // Se a agenda tem dataInicio e dataFim
+      if (agenda.dataInicio && agenda.dataFim) {
+        const inicioDate = agenda.dataInicio.toDate();
+        const fimDate = agenda.dataFim.toDate();
+        const currentDate = new Date(date);
+        
+        // Verificar se é evento de 1 dia ou múltiplos dias
+        const inicioDateOnly = new Date(inicioDate.getFullYear(), inicioDate.getMonth(), inicioDate.getDate());
+        const fimDateOnly = new Date(fimDate.getFullYear(), fimDate.getMonth(), fimDate.getDate());
+        const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+        
+        // Se início e fim são no mesmo dia = evento de 1 dia
+        if (inicioDateOnly.getTime() === fimDateOnly.getTime()) {
+          // Evento de 1 dia - verificar se é o dia correto
+          if (currentDateOnly.getTime() === inicioDateOnly.getTime()) {
+            allItems.push({
+              id: `agenda_${agenda.id}`,
+              titulo: agenda.titulo,
+              descricao: `${agenda.descricao || ''}\n\nTipo: ${agenda.tipo}\nLocal: ${agenda.local || 'Não informado'}\nResponsável: ${agenda.responsavel || 'Não informado'}`,
+              dataHora: agenda.dataInicio,
+              tipo: 'imobiliaria',
+              status: 'pendente',
+              cor: '#8B5CF6', // Cor roxa para agenda imobiliária
+              createdAt: agenda.data,
+              userId: '',
+              source: 'imobiliaria',
+              originalId: agenda.id
+            });
+          }
+        } else {
+          // Evento de múltiplos dias - verificar se está no período
+          if (currentDateOnly >= inicioDateOnly && currentDateOnly <= fimDateOnly) {
+            // Extrair horário diário do início
+            const horaInicio = inicioDate.getHours();
+            const minutoInicio = inicioDate.getMinutes();
+            const horaFim = fimDate.getHours();
+            const minutoFim = fimDate.getMinutes();
+            
+            // Criar data/hora para este dia específico
+            const dataHoraDia = new Date(currentDate);
+            dataHoraDia.setHours(horaInicio, minutoInicio, 0, 0);
+            
+            // Criar descrição com informações do período
+            let descricao = agenda.descricao || '';
+            descricao += '\n\n';
+            descricao += `Período: ${inicioDateOnly.toLocaleDateString('pt-BR')} a ${fimDateOnly.toLocaleDateString('pt-BR')}\n`;
+            descricao += `Horário diário: ${horaInicio.toString().padStart(2, '0')}:${minutoInicio.toString().padStart(2, '0')} - ${horaFim.toString().padStart(2, '0')}:${minutoFim.toString().padStart(2, '0')}\n`;
+            descricao += `Tipo: ${agenda.tipo}\nLocal: ${agenda.local || 'Não informado'}\nResponsável: ${agenda.responsavel || 'Não informado'}`;
+            
+            allItems.push({
+              id: `agenda_${agenda.id}`,
+              titulo: agenda.titulo,
+              descricao: descricao,
+              dataHora: Timestamp.fromDate(dataHoraDia),
+              tipo: 'imobiliaria',
+              status: 'pendente',
+              cor: '#8B5CF6', // Cor roxa para agenda imobiliária
+              createdAt: agenda.data,
+              userId: '',
+              source: 'imobiliaria',
+              originalId: agenda.id
+            });
+          }
+        }
+      } else {
+        // Fallback para agenda antiga que não tem dataInicio/dataFim
+        const agendaDate = agenda.data.toDate();
+        if (agendaDate.toDateString() === date.toDateString()) {
+          allItems.push({
+            id: `agenda_${agenda.id}`,
+            titulo: agenda.titulo,
+            descricao: `${agenda.descricao || ''}\n\nTipo: ${agenda.tipo}\nLocal: ${agenda.local || 'Não informado'}\nResponsável: ${agenda.responsavel || 'Não informado'}`,
+            dataHora: agenda.data,
+            tipo: 'imobiliaria',
+            status: 'pendente',
+            cor: '#8B5CF6', // Cor roxa para agenda imobiliária
+            createdAt: agenda.data,
+            userId: '',
+            source: 'imobiliaria',
+            originalId: agenda.id
+          });
+        }
       }
     });
     
