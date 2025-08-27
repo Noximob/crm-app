@@ -139,6 +139,7 @@ export default function AgendaPage() {
   const [avisos, setAvisos] = useState<AvisoImportante[]>([]);
   const [eventosComunidade, setEventosComunidade] = useState<EventoComunidade[]>([]);
   const [agendaImobiliaria, setAgendaImobiliaria] = useState<AgendaImobiliaria[]>([]);
+  const [plantoes, setPlantoes] = useState<any[]>([]);
 
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -170,6 +171,7 @@ export default function AgendaPage() {
     if (userData?.imobiliariaId) {
       fetchAvisosImportantes();
       fetchAgendaImobiliaria();
+      fetchPlantoes();
     }
   }, [userData]);
 
@@ -215,26 +217,9 @@ export default function AgendaPage() {
       const snapshot = await getDocs(q);
       const plantoesData = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as any));
-      // Adicionar plantões à lista de itens da agenda para exibição
-      const allItems: AgendaItem[] = [];
-      plantoesData.forEach(plantao => {
-        allItems.push({
-          id: `plantao_${plantao.id}`,
-          titulo: `Plantão ${plantao.construtora}`,
-          descricao: `Horário: ${plantao.horario}\nConstrutora: ${plantao.construtora}\nCorretor: ${plantao.corretorResponsavel}\nObservações: ${plantao.observacoes || 'Nenhuma'}`,
-          dataHora: Timestamp.fromDate(new Date(plantao.dataInicio)),
-          tipo: 'comunidade', // Usar tipo comunidade que tem cor laranja
-          status: 'pendente',
-          cor: '#F97316', // Cor laranja para plantão
-          createdAt: Timestamp.fromDate(new Date(plantao.criadoEm)),
-          userId: '',
-          source: 'comunidade', // Usar source comunidade
-          originalId: plantao.id
-        });
-      });
-      setAgendaItems(prev => [...prev, ...allItems]);
+      setPlantoes(plantoesData);
     } catch (err) {
-      console.error('Erro ao buscar plantões:', err);
+      setPlantoes([]);
     }
   };
 
