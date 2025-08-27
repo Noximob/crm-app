@@ -44,6 +44,123 @@ const tipoCores = {
   imobiliaria: 'bg-purple-500'
 };
 
+// Função para formatar a descrição de forma mais limpa
+const formatDescription = (descricao: string, tipo: string) => {
+  if (!descricao) return null;
+  
+  // Dividir por quebras de linha e filtrar linhas vazias
+  const lines = descricao.split('\n').filter(line => line.trim() !== '');
+  
+  // Para cada tipo, formatar de forma específica
+  switch (tipo) {
+    case 'crm':
+      // Para CRM: mostrar apenas tipo e lead em uma linha
+      const crmMatch = descricao.match(/(.+?) - (.+)/);
+      if (crmMatch) {
+        return (
+          <div className="text-sm text-[#6B6F76] dark:text-gray-400">
+            <span className="font-medium">{crmMatch[1]}</span> • {crmMatch[2]}
+          </div>
+        );
+      }
+      break;
+      
+    case 'nota':
+      // Para notas: mostrar apenas prioridade
+      const prioridadeMatch = descricao.match(/Prioridade: (.+)/);
+      if (prioridadeMatch) {
+        return (
+          <div className="text-sm text-[#6B6F76] dark:text-gray-400">
+            <span className="font-medium">Prioridade:</span> {prioridadeMatch[1]}
+          </div>
+        );
+      }
+      break;
+      
+    case 'aviso':
+      // Para avisos: mostrar apenas as primeiras informações importantes
+      const avisoLines = lines.slice(0, 3); // Máximo 3 linhas
+      return (
+        <div className="text-sm text-[#6B6F76] dark:text-gray-400 space-y-1">
+          {avisoLines.map((line, index) => (
+            <div key={index} className="truncate">
+              {line.includes('Período:') ? (
+                <span className="font-medium">📅 {line}</span>
+              ) : line.includes('Horário:') ? (
+                <span className="font-medium">🕐 {line}</span>
+              ) : (
+                line
+              )}
+            </div>
+          ))}
+        </div>
+      );
+      
+    case 'comunidade':
+      // Para eventos da comunidade: mostrar apenas informações essenciais
+      const comunidadeLines = lines.slice(0, 2); // Máximo 2 linhas
+      return (
+        <div className="text-sm text-[#6B6F76] dark:text-gray-400 space-y-1">
+          {comunidadeLines.map((line, index) => (
+            <div key={index} className="truncate">
+              {line.includes('Tipo:') ? (
+                <span className="font-medium">🎯 {line}</span>
+              ) : line.includes('Organizador:') ? (
+                <span className="font-medium">👤 {line}</span>
+              ) : line.includes('Horário:') ? (
+                <span className="font-medium">🕐 {line}</span>
+              ) : line.includes('Construtora:') ? (
+                <span className="font-medium">🏢 {line}</span>
+              ) : line.includes('Corretor:') ? (
+                <span className="font-medium">👨‍💼 {line}</span>
+              ) : (
+                line
+              )}
+            </div>
+          ))}
+        </div>
+      );
+      
+    case 'imobiliaria':
+      // Para agenda imobiliária: mostrar apenas informações essenciais
+      const imobiliariaLines = lines.slice(0, 2); // Máximo 2 linhas
+      return (
+        <div className="text-sm text-[#6B6F76] dark:text-gray-400 space-y-1">
+          {imobiliariaLines.map((line, index) => (
+            <div key={index} className="truncate">
+              {line.includes('Tipo:') ? (
+                <span className="font-medium">🏢 {line}</span>
+              ) : line.includes('Local:') ? (
+                <span className="font-medium">📍 {line}</span>
+              ) : line.includes('Responsável:') ? (
+                <span className="font-medium">👤 {line}</span>
+              ) : line.includes('Período:') ? (
+                <span className="font-medium">📅 {line}</span>
+              ) : line.includes('Horário:') ? (
+                <span className="font-medium">🕐 {line}</span>
+              ) : (
+                line
+              )}
+            </div>
+          ))}
+        </div>
+      );
+      
+    default:
+      // Para outros tipos: mostrar apenas as primeiras linhas
+      const defaultLines = lines.slice(0, 2);
+      return (
+        <div className="text-sm text-[#6B6F76] dark:text-gray-400 space-y-1">
+          {defaultLines.map((line, index) => (
+            <div key={index} className="truncate">{line}</div>
+          ))}
+        </div>
+      );
+  }
+  
+  return null;
+};
+
 export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgendaModalProps) {
   if (!isOpen || !date) return null;
 
@@ -77,9 +194,9 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
             onClick={onClose}
             className="p-2 hover:bg-gray-100 dark:hover:bg-[#181C23] rounded-lg transition-colors"
           >
-                          <svg className="w-6 h-6 text-[#6B6F76] dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+            <svg className="w-6 h-6 text-[#6B6F76] dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
@@ -98,7 +215,7 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
             </p>
           </div>
         ) : (
-          <div className="space-y-4 max-h-96 overflow-y-auto">
+          <div className="space-y-3 max-h-96 overflow-y-auto">
             {sortedItems.map((item) => (
               <div
                 key={item.id}
@@ -107,28 +224,28 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
                 }`}
                 style={{ borderLeftColor: item.cor, borderLeftWidth: '4px' }}
               >
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-3">
                   <div
-                    className="w-4 h-4 rounded-full shadow-md mt-1 flex-shrink-0"
+                    className="w-3 h-3 rounded-full shadow-sm mt-2 flex-shrink-0"
                     style={{ backgroundColor: item.cor }}
                   ></div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-[#2E2F38] dark:text-white group-hover:text-[#3478F6] transition-colors">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-semibold text-[#2E2F38] dark:text-white text-base truncate">
                         {item.titulo}
                       </h3>
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${tipoCores[item.tipo]} text-white`}>
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${tipoCores[item.tipo]} text-white flex-shrink-0`}>
                         {tipoLabels[item.tipo]}
                       </span>
                       {item.status === 'concluida' && (
-                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-500 text-white">
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-500 text-white flex-shrink-0">
                           Concluída
                         </span>
                       )}
                     </div>
                     
-                    <div className="text-sm text-[#6B6F76] dark:text-gray-300 mb-2">
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-4 text-sm text-[#6B6F76] dark:text-gray-300 mb-2">
+                      <div className="flex items-center gap-1">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -137,19 +254,17 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
                           minute: '2-digit' 
                         })}
                       </div>
+                      
+                      {item.leadNome && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-[#3478F6] dark:text-[#A3C8F7]">📞</span>
+                          <span className="truncate">{item.leadNome}</span>
+                        </div>
+                      )}
                     </div>
 
-                    {item.descricao && (
-                      <div className="text-sm text-[#6B6F76] dark:text-gray-400 leading-relaxed mb-2">
-                        {item.descricao}
-                      </div>
-                    )}
-
-                    {item.leadNome && (
-                      <div className="text-xs text-[#3478F76] dark:text-[#A3C8F7] font-medium">
-                        📞 Lead: {item.leadNome}
-                      </div>
-                    )}
+                    {/* Descrição formatada */}
+                    {item.descricao && formatDescription(item.descricao, item.tipo)}
                   </div>
                 </div>
               </div>
