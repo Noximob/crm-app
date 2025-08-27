@@ -25,10 +25,39 @@ const XCircleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fi
 
 
 // --- Funções de Ajuda ---
-const getTaskStatusColor = (status: string) => {
-    // Por enquanto, apenas um status é usado.
-    if (status === 'Sem tarefa') return 'bg-gray-400';
-    return 'bg-gray-400';
+type TaskStatus = 'Tarefa em Atraso' | 'Tarefa do Dia' | 'Tarefa Futura' | 'Sem tarefa';
+
+const getTaskStatusInfo = (tasks: Task[]): TaskStatus => {
+    if (tasks.length === 0) return 'Sem tarefa';
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    const hasOverdue = tasks.some(task => {
+        const dueDate = task.dueDate.toDate();
+        dueDate.setHours(0, 0, 0, 0);
+        return dueDate < now;
+    });
+    if (hasOverdue) return 'Tarefa em Atraso';
+
+    const hasTodayTask = tasks.some(task => {
+        const dueDate = task.dueDate.toDate();
+        dueDate.setHours(0, 0, 0, 0);
+        return dueDate.getTime() === now.getTime();
+    });
+    if (hasTodayTask) return 'Tarefa do Dia';
+
+    return 'Tarefa Futura';
+};
+
+const getTaskStatusColor = (status: TaskStatus) => {
+    switch (status) {
+        case 'Tarefa em Atraso': return 'bg-red-500';
+        case 'Tarefa do Dia': return 'bg-yellow-400';
+        case 'Tarefa Futura': return 'bg-sky-500';
+        case 'Sem tarefa': return 'bg-gray-400';
+        default: return 'bg-gray-400';
+    }
 };
 
 const getIconForInteraction = (type: string) => {
@@ -80,6 +109,7 @@ export default function LeadDetailPage() {
     const [isSavingTask, setIsSavingTask] = useState(false);
     const [isAgendaModalOpen, setIsAgendaModalOpen] = useState(false);
     const [tasks, setTasks] = useState<Task[]>([]);
+    const [taskStatus, setTaskStatus] = useState<TaskStatus>('Sem tarefa');
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const [taskToCancel, setTaskToCancel] = useState<{ interactionId: string; taskId: string } | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
@@ -157,6 +187,9 @@ export default function LeadDetailPage() {
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
             setTasks(fetchedTasks);
+            // Calcular e atualizar o status da tarefa
+            const newTaskStatus = getTaskStatusInfo(fetchedTasks);
+            setTaskStatus(newTaskStatus);
         });
 
         return () => unsubscribe();
@@ -350,7 +383,7 @@ export default function LeadDetailPage() {
         );
     }
 
-    const taskStatus = getTaskStatusInfo();
+    // Usar o status da tarefa calculado no useEffect
 
     return (
         <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
@@ -383,8 +416,8 @@ export default function LeadDetailPage() {
                             </div>
                         </div>
                         <div className="mt-4 flex items-center gap-2">
-                            <span className={`h-2.5 w-2.5 rounded-full ${taskStatus.color}`}></span>
-                            <span className="text-sm text-[#6B6F76] dark:text-gray-300">{taskStatus.text}</span>
+                            <span className={`h-2.5 w-2.5 rounded-full ${getTaskStatusColor(taskStatus)}`}></span>
+                            <span className="text-sm text-[#6B6F76] dark:text-gray-300">{taskStatus}</span>
                         </div>
                     </div>
 
