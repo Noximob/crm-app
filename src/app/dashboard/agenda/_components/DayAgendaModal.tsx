@@ -30,9 +30,9 @@ const tipoLabels = {
   agenda: 'Agenda',
   crm: 'CRM',
   nota: 'Nota',
-  aviso: 'Aviso Importante',
-  comunidade: 'Evento Comunidade',
-  imobiliaria: 'Agenda Imobiliária'
+  aviso: 'Aviso',
+  comunidade: 'Evento',
+  imobiliaria: 'Imobiliária'
 };
 
 const tipoCores = {
@@ -44,121 +44,65 @@ const tipoCores = {
   imobiliaria: 'bg-purple-500'
 };
 
-// Função para formatar a descrição de forma mais limpa
-const formatDescription = (descricao: string, tipo: string) => {
-  if (!descricao) return null;
+// Função para extrair informações essenciais de forma compacta
+const getCompactInfo = (item: AgendaItem) => {
+  if (!item.descricao) return null;
   
-  // Dividir por quebras de linha e filtrar linhas vazias
-  const lines = descricao.split('\n').filter(line => line.trim() !== '');
+  const lines = item.descricao.split('\n').filter(line => line.trim() !== '');
   
-  // Para cada tipo, formatar de forma específica
-  switch (tipo) {
+  switch (item.tipo) {
     case 'crm':
-      // Para CRM: mostrar apenas tipo e lead em uma linha
-      const crmMatch = descricao.match(/(.+?) - (.+)/);
-      if (crmMatch) {
-        return (
-          <div className="text-sm text-[#6B6F76] dark:text-gray-400">
-            <span className="font-medium">{crmMatch[1]}</span> • {crmMatch[2]}
-          </div>
-        );
-      }
-      break;
+      const crmMatch = item.descricao.match(/(.+?) - (.+)/);
+      return crmMatch ? `${crmMatch[1]} • ${crmMatch[2]}` : null;
       
     case 'nota':
-      // Para notas: mostrar apenas prioridade
-      const prioridadeMatch = descricao.match(/Prioridade: (.+)/);
-      if (prioridadeMatch) {
-        return (
-          <div className="text-sm text-[#6B6F76] dark:text-gray-400">
-            <span className="font-medium">Prioridade:</span> {prioridadeMatch[1]}
-          </div>
-        );
-      }
-      break;
+      const prioridadeMatch = item.descricao.match(/Prioridade: (.+)/);
+      return prioridadeMatch ? `Prioridade: ${prioridadeMatch[1]}` : null;
       
     case 'aviso':
-      // Para avisos: mostrar apenas as primeiras informações importantes
-      const avisoLines = lines.slice(0, 3); // Máximo 3 linhas
-      return (
-        <div className="text-sm text-[#6B6F76] dark:text-gray-400 space-y-1">
-          {avisoLines.map((line, index) => (
-            <div key={index} className="truncate">
-              {line.includes('Período:') ? (
-                <span className="font-medium">📅 {line}</span>
-              ) : line.includes('Horário:') ? (
-                <span className="font-medium">🕐 {line}</span>
-              ) : (
-                line
-              )}
-            </div>
-          ))}
-        </div>
-      );
+      // Para avisos, mostrar apenas período e horário se disponível
+      const periodoMatch = item.descricao.match(/Período: (.+)/);
+      const horarioMatch = item.descricao.match(/Horário diário: (.+)/);
+      if (periodoMatch && horarioMatch) {
+        return `${periodoMatch[1]} • ${horarioMatch[1]}`;
+      } else if (periodoMatch) {
+        return periodoMatch[1];
+      } else if (horarioMatch) {
+        return horarioMatch[1];
+      }
+      return null;
       
     case 'comunidade':
-      // Para eventos da comunidade: mostrar apenas informações essenciais
-      const comunidadeLines = lines.slice(0, 2); // Máximo 2 linhas
-      return (
-        <div className="text-sm text-[#6B6F76] dark:text-gray-400 space-y-1">
-          {comunidadeLines.map((line, index) => (
-            <div key={index} className="truncate">
-              {line.includes('Tipo:') ? (
-                <span className="font-medium">🎯 {line}</span>
-              ) : line.includes('Organizador:') ? (
-                <span className="font-medium">👤 {line}</span>
-              ) : line.includes('Horário:') ? (
-                <span className="font-medium">🕐 {line}</span>
-              ) : line.includes('Construtora:') ? (
-                <span className="font-medium">🏢 {line}</span>
-              ) : line.includes('Corretor:') ? (
-                <span className="font-medium">👨‍💼 {line}</span>
-              ) : (
-                line
-              )}
-            </div>
-          ))}
-        </div>
-      );
+      // Para eventos da comunidade, mostrar apenas informações essenciais
+      const info = [];
+      const tipoMatch = item.descricao.match(/Tipo: (.+)/);
+      const construtoraMatch = item.descricao.match(/Construtora: (.+)/);
+      const corretorMatch = item.descricao.match(/Corretor: (.+)/);
+      const horarioMatch = item.descricao.match(/Horário: (.+)/);
+      
+      if (tipoMatch) info.push(tipoMatch[1]);
+      if (construtoraMatch) info.push(construtoraMatch[1]);
+      if (corretorMatch) info.push(corretorMatch[1]);
+      if (horarioMatch) info.push(horarioMatch[1]);
+      
+      return info.length > 0 ? info.slice(0, 2).join(' • ') : null;
       
     case 'imobiliaria':
-      // Para agenda imobiliária: mostrar apenas informações essenciais
-      const imobiliariaLines = lines.slice(0, 2); // Máximo 2 linhas
-      return (
-        <div className="text-sm text-[#6B6F76] dark:text-gray-400 space-y-1">
-          {imobiliariaLines.map((line, index) => (
-            <div key={index} className="truncate">
-              {line.includes('Tipo:') ? (
-                <span className="font-medium">🏢 {line}</span>
-              ) : line.includes('Local:') ? (
-                <span className="font-medium">📍 {line}</span>
-              ) : line.includes('Responsável:') ? (
-                <span className="font-medium">👤 {line}</span>
-              ) : line.includes('Período:') ? (
-                <span className="font-medium">📅 {line}</span>
-              ) : line.includes('Horário:') ? (
-                <span className="font-medium">🕐 {line}</span>
-              ) : (
-                line
-              )}
-            </div>
-          ))}
-        </div>
-      );
+      // Para agenda imobiliária, mostrar apenas informações essenciais
+      const imobInfo = [];
+      const tipoImobMatch = item.descricao.match(/Tipo: (.+)/);
+      const localMatch = item.descricao.match(/Local: (.+)/);
+      const responsavelMatch = item.descricao.match(/Responsável: (.+)/);
+      
+      if (tipoImobMatch) imobInfo.push(tipoImobMatch[1]);
+      if (localMatch) imobInfo.push(localMatch[1]);
+      if (responsavelMatch) imobInfo.push(responsavelMatch[1]);
+      
+      return imobInfo.length > 0 ? imobInfo.slice(0, 2).join(' • ') : null;
       
     default:
-      // Para outros tipos: mostrar apenas as primeiras linhas
-      const defaultLines = lines.slice(0, 2);
-      return (
-        <div className="text-sm text-[#6B6F76] dark:text-gray-400 space-y-1">
-          {defaultLines.map((line, index) => (
-            <div key={index} className="truncate">{line}</div>
-          ))}
-        </div>
-      );
+      return lines[0] || null;
   }
-  
-  return null;
 };
 
 export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgendaModalProps) {
@@ -168,19 +112,20 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 w-full max-w-4xl mx-4 shadow-xl border border-[#E8E9F1] dark:border-[#23283A]" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-6">
+      <div className="bg-white dark:bg-[#23283A] rounded-2xl p-4 w-full max-w-5xl mx-4 shadow-xl border border-[#E8E9F1] dark:border-[#23283A]" onClick={e => e.stopPropagation()}>
+        {/* Header mais compacto */}
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] rounded-full flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-8 h-8 bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] rounded-full flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white">
+              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">
                 Agenda do Dia
               </h2>
-              <p className="text-[#6B6F76] dark:text-gray-300">
+              <p className="text-sm text-[#6B6F76] dark:text-gray-300">
                 {date.toLocaleDateString('pt-BR', { 
                   weekday: 'long', 
                   year: 'numeric', 
@@ -194,92 +139,106 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
             onClick={onClose}
             className="p-2 hover:bg-gray-100 dark:hover:bg-[#181C23] rounded-lg transition-colors"
           >
-            <svg className="w-6 h-6 text-[#6B6F76] dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-[#6B6F76] dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
         {sortedItems.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-gray-100 dark:bg-[#181C23] rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="text-center py-8">
+            <div className="w-12 h-12 bg-gray-100 dark:bg-[#181C23] rounded-full flex items-center justify-center mx-auto mb-3">
+              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-[#2E2F38] dark:text-white mb-2">
+            <h3 className="text-base font-semibold text-[#2E2F38] dark:text-white mb-1">
               Nenhuma atividade agendada
             </h3>
-            <p className="text-[#6B6F76] dark:text-gray-300">
+            <p className="text-sm text-[#6B6F76] dark:text-gray-300">
               Este dia está livre de compromissos
             </p>
           </div>
         ) : (
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {sortedItems.map((item) => (
-              <div
-                key={item.id}
-                className={`p-4 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-all duration-200 ${
-                  item.status === 'concluida' ? 'opacity-60' : ''
-                }`}
-                style={{ borderLeftColor: item.cor, borderLeftWidth: '4px' }}
-              >
-                <div className="flex items-start gap-3">
-                  <div
-                    className="w-3 h-3 rounded-full shadow-sm mt-2 flex-shrink-0"
-                    style={{ backgroundColor: item.cor }}
-                  ></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-semibold text-[#2E2F38] dark:text-white text-base truncate">
-                        {item.titulo}
-                      </h3>
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${tipoCores[item.tipo]} text-white flex-shrink-0`}>
-                        {tipoLabels[item.tipo]}
-                      </span>
-                      {item.status === 'concluida' && (
-                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-500 text-white flex-shrink-0">
-                          Concluída
-                        </span>
-                      )}
-                    </div>
+          /* Grid de itens mais compacto */
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-96 overflow-y-auto pr-2">
+            {sortedItems.map((item) => {
+              const compactInfo = getCompactInfo(item);
+              
+              return (
+                <div
+                  key={item.id}
+                  className={`p-3 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-all duration-200 ${
+                    item.status === 'concluida' ? 'opacity-60' : ''
+                  }`}
+                  style={{ borderLeftColor: item.cor, borderLeftWidth: '3px' }}
+                >
+                  {/* Layout em linha única mais compacto */}
+                  <div className="flex items-start gap-2">
+                    <div
+                      className="w-2 h-2 rounded-full mt-2 flex-shrink-0"
+                      style={{ backgroundColor: item.cor }}
+                    ></div>
                     
-                    <div className="flex items-center gap-4 text-sm text-[#6B6F76] dark:text-gray-300 mb-2">
-                      <div className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        {item.dataHora.toDate().toLocaleTimeString('pt-BR', { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
+                    <div className="flex-1 min-w-0">
+                      {/* Primeira linha: título e tags */}
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-medium text-[#2E2F38] dark:text-white text-sm truncate flex-1">
+                          {item.titulo}
+                        </h3>
+                        <span className={`px-1.5 py-0.5 text-xs font-medium rounded-full ${tipoCores[item.tipo]} text-white flex-shrink-0`}>
+                          {tipoLabels[item.tipo]}
+                        </span>
+                        {item.status === 'concluida' && (
+                          <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-green-500 text-white flex-shrink-0">
+                            ✓
+                          </span>
+                        )}
                       </div>
                       
-                      {item.leadNome && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-[#3478F6] dark:text-[#A3C8F7]">📞</span>
-                          <span className="truncate">{item.leadNome}</span>
+                      {/* Segunda linha: horário e informações compactas */}
+                      <div className="flex items-center gap-3 text-xs text-[#6B6F76] dark:text-gray-400">
+                        <div className="flex items-center gap-1 font-medium">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          {item.dataHora.toDate().toLocaleTimeString('pt-BR', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </div>
+                        
+                        {item.leadNome && (
+                          <div className="flex items-center gap-1 text-[#3478F6] dark:text-[#A3C8F7]">
+                            <span className="text-xs">📞</span>
+                            <span className="truncate max-w-24">{item.leadNome}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Terceira linha: informações compactas */}
+                      {compactInfo && (
+                        <div className="mt-1 text-xs text-[#6B6F76] dark:text-gray-400 truncate">
+                          {compactInfo}
                         </div>
                       )}
                     </div>
-
-                    {/* Descrição formatada */}
-                    {item.descricao && formatDescription(item.descricao, item.tipo)}
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
-        <div className="mt-6 pt-4 border-t border-[#E8E9F1] dark:border-[#23283A]">
+        {/* Footer mais compacto */}
+        <div className="mt-4 pt-3 border-t border-[#E8E9F1] dark:border-[#23283A]">
           <div className="flex items-center justify-between">
             <div className="text-sm text-[#6B6F76] dark:text-gray-300">
               Total: {sortedItems.length} atividade{sortedItems.length !== 1 ? 's' : ''}
             </div>
             <button
               onClick={onClose}
-              className="px-6 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#255FD1] transition-colors font-semibold"
+              className="px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#255FD1] transition-colors font-medium text-sm"
             >
               Fechar
             </button>
