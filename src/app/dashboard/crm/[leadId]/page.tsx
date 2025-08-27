@@ -114,6 +114,7 @@ export default function LeadDetailPage() {
     const [taskToCancel, setTaskToCancel] = useState<{ interactionId: string; taskId: string } | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
     const [qualifications, setQualifications] = useState<QualificationData>({});
+    const [isQualificationModalOpen, setIsQualificationModalOpen] = useState(false);
 
 
     // --- Lógica para buscar os dados do lead ---
@@ -313,22 +314,34 @@ export default function LeadDetailPage() {
         setIsCancelModalOpen(true);
     };
 
-    const handleQualificationChange = (key: string, value: string) => {
-        setQualifications(prev => {
-            if (prev[key] === value) {
-                // Remove a seleção se já estiver selecionada
-                const newQuals = { ...prev };
-                delete newQuals[key];
-                return newQuals;
-            } else {
-                // Adiciona ou atualiza a seleção
-                return { ...prev, [key]: value };
-            }
-        });
+    const handleQualificationChange = async (groupKey: string, value: string) => {
+        if (!currentUser || !lead) return;
+
+        const newQualifications = { ...qualifications, [groupKey]: value };
+        setQualifications(newQualifications);
+
+        const leadRef = doc(db, 'leads', lead.id);
+        try {
+            await updateDoc(leadRef, { qualificacao: newQualifications });
+        } catch (error) {
+            console.error("Erro ao atualizar qualificação:", error);
+        }
     };
 
+    const handleCloseQualificationModal = () => {
+        setIsQualificationModalOpen(false);
+    };
 
-
+    const handleSaveQualifications = async () => {
+        if (!currentUser || !lead) return;
+        const leadRef = doc(db, 'leads', lead.id);
+        try {
+            await updateDoc(leadRef, { qualificacao: qualifications });
+            handleCloseQualificationModal();
+        } catch (error) {
+            console.error("Erro ao salvar qualificações:", error);
+        }
+    };
 
 
     if (loading) {
@@ -416,28 +429,88 @@ export default function LeadDetailPage() {
                 <div className="lg:col-span-2 flex flex-col gap-6">
                     {/* Card de Qualificação do Lead */}
                     <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-                        <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4">Qualificação do Lead</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-                            {QUALIFICATION_QUESTIONS.map((group) => (
-                                <div key={group.key}>
-                                    <h4 className="text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">{group.title}</h4>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {group.options.map((option) => (
-                                            <button
-                                                key={option}
-                                                onClick={() => handleQualificationChange(group.key, option)}
-                                                className={`px-2.5 py-1 text-xs font-medium border rounded-md transition-all duration-150 ${
-                                                    qualifications[group.key] === option
-                                                    ? 'bg-primary-600 border-primary-700 text-white shadow'
-                                                    : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-600 dark:bg-gray-900/50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'
-                                                }`}
-                                            >
-                                                {option}
-                                            </button>
-                                        ))}
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white">Qualificação do Lead</h3>
+                            <button 
+                                onClick={() => setIsQualificationModalOpen(true)}
+                                className="px-3 py-1.5 text-sm font-semibold text-[#3478F6] bg-[#E8E9F1] hover:bg-[#A3C8F7]/40 rounded-lg transition-colors dark:bg-[#23283A] dark:hover:bg-[#3478F6]/20"
+                            >
+                                ✏️ Editar Qualificação
+                            </button>
+                        </div>
+                        
+                        {/* Exibição limpa e categorizada */}
+                        <div className="space-y-4">
+                            {/* Finalidade */}
+                            {qualifications.finalidade && (
+                                <div className="flex items-center gap-3 p-3 bg-[#F0F4FF] dark:bg-[#23283A] rounded-lg border border-[#A3C8F7]/20">
+                                    <div className="w-2 h-2 bg-[#3478F6] rounded-full"></div>
+                                    <div>
+                                        <span className="text-xs font-semibold text-[#6B6F76] dark:text-gray-400 uppercase tracking-wide">Finalidade</span>
+                                        <p className="text-sm font-medium text-[#2E2F38] dark:text-white">{qualifications.finalidade}</p>
                                     </div>
                                 </div>
-                            ))}
+                            )}
+                            
+                            {/* Estágio do Imóvel */}
+                            {qualifications.estagio && (
+                                <div className="flex items-center gap-3 p-3 bg-[#F0F4FF] dark:bg-[#23283A] rounded-lg border border-[#A3C8F7]/20">
+                                    <div className="w-2 h-2 bg-[#3AC17C] rounded-full"></div>
+                                    <div>
+                                        <span className="text-xs font-semibold text-[#6B6F76] dark:text-gray-400 uppercase tracking-wide">Estágio</span>
+                                        <p className="text-sm font-medium text-[#2E2F38] dark:text-white">{qualifications.estagio}</p>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Tipo e Quartos */}
+                            {(qualifications.tipo || qualifications.quartos) && (
+                                <div className="flex items-center gap-3 p-3 bg-[#F0F4FF] dark:bg-[#23283A] rounded-lg border border-[#A3C8F7]/20">
+                                    <div className="w-2 h-2 bg-[#F45B69] rounded-full"></div>
+                                    <div className="flex-1">
+                                        <span className="text-xs font-semibold text-[#6B6F76] dark:text-gray-400 uppercase tracking-wide">Características</span>
+                                        <div className="flex flex-wrap gap-2 mt-1">
+                                            {qualifications.tipo && (
+                                                <span className="px-2 py-1 text-xs font-medium bg-[#3478F6]/10 text-[#3478F6] rounded-md">{qualifications.tipo}</span>
+                                            )}
+                                            {qualifications.quartos && (
+                                                <span className="px-2 py-1 text-xs font-medium bg-[#3AC17C]/10 text-[#3AC17C] rounded-md">{qualifications.quartos}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Vagas e Valor */}
+                            {(qualifications.vagas || qualifications.valor) && (
+                                <div className="flex items-center gap-3 p-3 bg-[#F0F4FF] dark:bg-[#23283A] rounded-lg border border-[#A3C8F7]/20">
+                                    <div className="w-2 h-2 bg-[#FFA726] rounded-full"></div>
+                                    <div className="flex-1">
+                                        <span className="text-xs font-semibold text-[#6B6F76] dark:text-gray-400 uppercase tracking-wide">Detalhes</span>
+                                        <div className="flex flex-wrap gap-2 mt-1">
+                                            {qualifications.vagas && (
+                                                <span className="px-2 py-1 text-xs font-medium bg-[#FFA726]/10 text-[#FFA726] rounded-md">{qualifications.vagas} vaga{qualifications.vagas !== '1' ? 's' : ''}</span>
+                                            )}
+                                            {qualifications.valor && (
+                                                <span className="px-2 py-1 text-xs font-medium bg-[#9C27B0]/10 text-[#9C27B0] rounded-md">{qualifications.valor}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Estado vazio */}
+                            {!qualifications.finalidade && !qualifications.estagio && !qualifications.tipo && !qualifications.quartos && !qualifications.vagas && !qualifications.valor && (
+                                <div className="text-center py-8 text-[#6B6F76] dark:text-gray-400">
+                                    <div className="w-12 h-12 bg-[#E8E9F1] dark:bg-[#23283A] rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <svg className="w-6 h-6 text-[#6B6F76] dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                    </div>
+                                    <p className="text-sm font-medium">Nenhuma qualificação definida</p>
+                                    <p className="text-xs mt-1">Clique em "Editar Qualificação" para começar</p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -559,6 +632,39 @@ export default function LeadDetailPage() {
                 }}
                 isLoading={isCancelling}
             />
+
+            {/* Modal de Qualificação */}
+            <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 ${isQualificationModalOpen ? 'visible' : 'invisible'}`}>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Editar Qualificação</h3>
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                        {QUALIFICATION_QUESTIONS.map((group) => (
+                            <div key={group.key}>
+                                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{group.title}</h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {group.options.map((option) => (
+                                        <button
+                                            key={option}
+                                            onClick={() => handleQualificationChange(group.key, option)}
+                                            className={`px-3 py-2 text-sm font-medium border rounded-md transition-all duration-150 ${
+                                                qualifications[group.key] === option
+                                                ? 'bg-[#3478F6] border-[#3478F6] text-white shadow'
+                                                : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-600 dark:bg-gray-900/50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'
+                                            }`}
+                                        >
+                                            {option}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="flex justify-end gap-2 mt-6">
+                        <button onClick={handleCloseQualificationModal} className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500">Cancelar</button>
+                        <button onClick={handleSaveQualifications} className="px-4 py-2 text-sm font-semibold text-white bg-[#3478F6] hover:bg-[#3478F6]/80 rounded-lg transition-colors">Salvar</button>
+                    </div>
+                </div>
+            </div>
 
 
         </div>
