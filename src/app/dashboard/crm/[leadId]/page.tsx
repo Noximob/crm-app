@@ -327,38 +327,7 @@ export default function LeadDetailPage() {
         }
     };
 
-    const getTaskStatusInfo = () => {
-        const pendingTasks = tasks.filter(task => task.status === 'pendente');
-        
-        if (pendingTasks.length === 0) {
-            return {
-                text: 'Sem tarefa',
-                color: 'bg-gray-400'
-            };
-        }
 
-        const nextTask = pendingTasks.sort((a, b) => a.dueDate.seconds - b.dueDate.seconds)[0];
-        const now = new Date();
-        const taskDate = new Date(nextTask.dueDate.seconds * 1000);
-        const diffHours = (taskDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-        if (diffHours < 0) {
-            return {
-                text: 'Tarefa atrasada',
-                color: 'bg-red-500'
-            };
-        } else if (diffHours < 24) {
-            return {
-                text: 'Tarefa hoje',
-                color: 'bg-yellow-500'
-            };
-        } else {
-            return {
-                text: 'Tarefa agendada',
-                color: 'bg-green-500'
-            };
-        }
-    };
 
 
 
