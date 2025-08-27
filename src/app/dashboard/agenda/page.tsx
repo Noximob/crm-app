@@ -685,6 +685,46 @@ export default function AgendaPage() {
       }
     });
     
+    // Adicionar plantões
+    if (userData?.imobiliariaId) {
+      // Buscar plantões da imobiliária
+      const plantoesRef = collection(db, 'plantoes');
+      const plantoesQuery = query(
+        plantoesRef,
+        where('imobiliariaId', '==', userData.imobiliariaId)
+      );
+      
+      getDocs(plantoesQuery).then(plantoesSnapshot => {
+        plantoesSnapshot.forEach(doc => {
+          const plantao = doc.data() as any; // Usar any para evitar problemas de tipo
+          const inicioDate = new Date(plantao.dataInicio);
+          const fimDate = new Date(plantao.dataFim);
+          const currentDate = new Date(date);
+          
+          const inicioDateOnly = new Date(inicioDate.getFullYear(), inicioDate.getMonth(), inicioDate.getDate());
+          const fimDateOnly = new Date(fimDate.getFullYear(), fimDate.getMonth(), fimDate.getDate());
+          const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+          
+          // Verificar se está no período do plantão
+          if (currentDateOnly >= inicioDateOnly && currentDateOnly <= fimDateOnly) {
+            allItems.push({
+              id: `plantao_${doc.id}`,
+              titulo: `Plantão ${plantao.construtora}`,
+              descricao: `Horário: ${plantao.horario}\nConstrutora: ${plantao.construtora}\nCorretor: ${plantao.corretorResponsavel}\nObservações: ${plantao.observacoes || 'Nenhuma'}`,
+              dataHora: Timestamp.fromDate(inicioDate),
+              tipo: 'imobiliaria', // Usar tipo existente
+              status: 'pendente',
+              cor: '#8B5CF6', // Usar cor existente
+              createdAt: Timestamp.fromDate(new Date(plantao.criadoEm)),
+              userId: '',
+              source: 'imobiliaria', // Usar source existente
+              originalId: doc.id
+            });
+          }
+        });
+      });
+    }
+    
     // Aplicar filtro se necessário
     if (filter !== 'all') {
       const filteredItems = allItems.filter(item => item.tipo === filter);
