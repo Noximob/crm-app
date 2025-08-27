@@ -388,6 +388,10 @@ export default function DashboardPage() {
   const [repostComment, setRepostComment] = useState('');
   const [repostInputId, setRepostInputId] = useState<string | null>(null);
   const [showEmojiComment, setShowEmojiComment] = useState(false);
+  const [showLikesModal, setShowLikesModal] = useState(false);
+  const [selectedPostForLikes, setSelectedPostForLikes] = useState<any>(null);
+  const [postLikes, setPostLikes] = useState<any[]>([]);
+  const [loadingLikes, setLoadingLikes] = useState(false);
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notes, setNotes] = useState<any[]>([]);
@@ -752,6 +756,27 @@ export default function DashboardPage() {
       ));
     } finally {
       setIsLiking(null);
+    }
+  };
+
+  const handleShowLikes = async (post: any) => {
+    setSelectedPostForLikes(post);
+    setShowLikesModal(true);
+    setLoadingLikes(true);
+    
+    try {
+      const likesRef = collection(db, 'comunidadePosts', post.id, 'likes');
+      const likesSnapshot = await getDocs(likesRef);
+      const likesData = likesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setPostLikes(likesData);
+    } catch (error) {
+      console.error('Erro ao buscar likes:', error);
+      setPostLikes([]);
+    } finally {
+      setLoadingLikes(false);
     }
   };
 
@@ -1679,22 +1704,35 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between pt-3 border-t border-white/20 dark:border-[#23283A]/20">
                       <div className="flex items-center gap-4">
                         {/* Botão Curtir */}
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleLike(post.id); }}
-                          disabled={isLiking === post.id}
-                          className={`flex items-center gap-1.5 text-sm font-medium transition-all duration-200 ${
-                            post.userLiked 
-                              ? 'text-red-500 scale-110' 
-                              : 'text-[#6B6F76] dark:text-gray-300 hover:text-red-500 hover:scale-105'
-                          }`}
-                        >
-                          {isLiking === post.id ? (
-                            <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-                          ) : (
-                            <span className="text-lg">{post.userLiked ? '❤️' : '🤍'}</span>
-                          )}
-                          <span>{post.likes || 0}</span>
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleLike(post.id); }}
+                            disabled={isLiking === post.id}
+                            className={`flex items-center gap-1.5 text-sm font-medium transition-all duration-200 ${
+                              post.userLiked 
+                                ? 'text-red-500 scale-110' 
+                                : 'text-[#6B6F76] dark:text-gray-300 hover:text-red-500 hover:scale-105'
+                            }`}
+                          >
+                            {isLiking === post.id ? (
+                              <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              <span className="text-lg">{post.userLiked ? '❤️' : '🤍'}</span>
+                            )}
+                          </button>
+                          {/* Número de likes clicável */}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleShowLikes(post); }}
+                            className={`text-sm font-medium transition-all duration-200 hover:scale-105 ${
+                              post.likes > 0 
+                                ? 'text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] cursor-pointer' 
+                                : 'text-[#6B6F76] dark:text-gray-300 cursor-default'
+                            }`}
+                            disabled={!post.likes || post.likes === 0}
+                          >
+                            {post.likes || 0}
+                          </button>
+                        </div>
                         
                         {/* Botão Comentar */}
                         <button 
@@ -1931,6 +1969,69 @@ export default function DashboardPage() {
         onClose={() => setShowPlantoesModal(false)}
         plantoes={plantoes}
       />
+
+      {/* Modal de Likes */}
+      {showLikesModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={() => setShowLikesModal(false)}>
+          <div className="relative max-w-md w-full mx-4 bg-white dark:bg-[#23283A] rounded-2xl shadow-xl p-0" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowLikesModal(false)} className="absolute top-4 right-4 text-[#6B6F76] dark:text-gray-300 text-2xl z-10 hover:text-[#F45B69]">✕</button>
+            
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <span className="text-2xl">❤️</span>
+                <div>
+                  <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Quem curtiu</h2>
+                  <p className="text-[#6B6F76] dark:text-gray-300">
+                    {selectedPostForLikes?.nome} • {postLikes.length} curtida{postLikes.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="max-h-80 overflow-y-auto">
+                {loadingLikes ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3478F6]"></div>
+                  </div>
+                ) : postLikes.length === 0 ? (
+                  <div className="text-center py-8">
+                    <span className="text-4xl mb-3 block">🤍</span>
+                    <p className="text-[#6B6F76] dark:text-gray-300">Ninguém curtiu ainda</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {postLikes.map((like) => (
+                      <div
+                        key={like.id}
+                        className="flex items-center gap-3 p-3 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors"
+                      >
+                        <div className="w-10 h-10 bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] rounded-full flex items-center justify-center text-white font-bold text-lg">
+                          {like.userName ? like.userName.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-[#2E2F38] dark:text-white text-sm truncate">
+                            {like.userName || 'Usuário'}
+                          </div>
+                          <div className="text-xs text-[#6B6F76] dark:text-gray-300">
+                            {like.timestamp?.toDate ? 
+                              like.timestamp.toDate().toLocaleString('pt-BR', { 
+                                day: '2-digit', 
+                                month: '2-digit', 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              }) : 'Agora'
+                            }
+                          </div>
+                        </div>
+                        <span className="text-red-500 text-lg">❤️</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Botão Voltar ao Topo */}
       {showScrollToTop && (
