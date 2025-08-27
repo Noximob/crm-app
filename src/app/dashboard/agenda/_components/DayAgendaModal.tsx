@@ -160,73 +160,173 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
             </p>
           </div>
         ) : (
-          /* Grid de itens mais compacto */
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-96 overflow-y-auto pr-2">
-            {sortedItems.map((item) => {
-              const compactInfo = getCompactInfo(item);
-              
-              return (
-                <div
-                  key={item.id}
-                  className={`p-3 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-all duration-200 ${
-                    item.status === 'concluida' ? 'opacity-60' : ''
-                  }`}
-                  style={{ borderLeftColor: item.cor, borderLeftWidth: '3px' }}
-                >
-                  {/* Layout em linha única mais compacto */}
-                  <div className="flex items-start gap-2">
+          /* Grid de itens em duas colunas específicas */
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-96 overflow-y-auto pr-2">
+            {/* Coluna Esquerda: Tudo exceto CRM */}
+            <div className="space-y-2">
+              <div className="text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-3 px-2">
+                Outros Compromissos
+              </div>
+              {sortedItems
+                .filter(item => item.tipo !== 'crm')
+                .sort((a, b) => a.dataHora.toDate().getTime() - b.dataHora.toDate().getTime())
+                .map((item) => {
+                  const compactInfo = getCompactInfo(item);
+                  
+                  return (
                     <div
-                      className="w-2 h-2 rounded-full mt-2 flex-shrink-0"
-                      style={{ backgroundColor: item.cor }}
-                    ></div>
-                    
-                    <div className="flex-1 min-w-0">
-                      {/* Primeira linha: título e tags */}
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-medium text-[#2E2F38] dark:text-white text-sm truncate flex-1">
-                          {item.titulo}
-                        </h3>
-                        <span className={`px-1.5 py-0.5 text-xs font-medium rounded-full ${tipoCores[item.tipo]} text-white flex-shrink-0`}>
-                          {tipoLabels[item.tipo]}
-                        </span>
-                        {item.status === 'concluida' && (
-                          <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-green-500 text-white flex-shrink-0">
-                            ✓
-                          </span>
-                        )}
-                      </div>
-                      
-                      {/* Segunda linha: horário e informações compactas */}
-                      <div className="flex items-center gap-3 text-xs text-[#6B6F76] dark:text-gray-400">
-                        <div className="flex items-center gap-1 font-medium">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          {item.dataHora.toDate().toLocaleTimeString('pt-BR', { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                          })}
-                        </div>
+                      key={item.id}
+                      className={`p-3 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-all duration-200 ${
+                        item.status === 'concluida' ? 'opacity-60' : ''
+                      }`}
+                      style={{ borderLeftColor: item.cor, borderLeftWidth: '3px' }}
+                    >
+                      {/* Layout em linha única mais compacto */}
+                      <div className="flex items-start gap-2">
+                        <div
+                          className="w-2 h-2 rounded-full mt-2 flex-shrink-0"
+                          style={{ backgroundColor: item.cor }}
+                        ></div>
                         
-                        {item.leadNome && (
-                          <div className="flex items-center gap-1 text-[#3478F6] dark:text-[#A3C8F7]">
-                            <span className="text-xs">📞</span>
-                            <span className="truncate max-w-24">{item.leadNome}</span>
+                        <div className="flex-1 min-w-0">
+                          {/* Primeira linha: título e tags */}
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-medium text-[#2E2F38] dark:text-white text-sm truncate flex-1">
+                              {item.titulo}
+                            </h3>
+                            <span className={`px-1.5 py-0.5 text-xs font-medium rounded-full ${tipoCores[item.tipo]} text-white flex-shrink-0`}>
+                              {tipoLabels[item.tipo]}
+                            </span>
+                            {item.status === 'concluida' && (
+                              <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-green-500 text-white flex-shrink-0">
+                                ✓
+                              </span>
+                            )}
                           </div>
-                        )}
-                      </div>
-                      
-                      {/* Terceira linha: informações compactas */}
-                      {compactInfo && (
-                        <div className="mt-1 text-xs text-[#6B6F76] dark:text-gray-400 truncate">
-                          {compactInfo}
+                          
+                          {/* Segunda linha: horário e informações compactas */}
+                          <div className="flex items-center gap-3 text-xs text-[#6B6F76] dark:text-gray-400">
+                            <div className="flex items-center gap-1 font-medium">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              {item.dataHora.toDate().toLocaleTimeString('pt-BR', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </div>
+                            
+                            {item.leadNome && (
+                              <div className="flex items-center gap-1 text-[#3478F6] dark:text-[#A3C8F7]">
+                                <span className="text-xs">📞</span>
+                                <span className="truncate max-w-24">{item.leadNome}</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Terceira linha: informações compactas */}
+                          {compactInfo && (
+                            <div className="mt-1 text-xs text-[#6B6F76] dark:text-gray-400 truncate">
+                              {compactInfo}
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </div>
-                  </div>
-                </div>
-              );
-            })}
+                  );
+                })}
+            </div>
+
+            {/* Coluna Direita: Apenas CRM */}
+            <div className="space-y-2">
+              <div className="text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-3 px-2">
+                Tarefas CRM
+              </div>
+              {(() => {
+                const crmItems = sortedItems
+                  .filter(item => item.tipo === 'crm')
+                  .sort((a, b) => a.dataHora.toDate().getTime() - b.dataHora.toDate().getTime());
+                
+                if (crmItems.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-sm text-[#6B6F76] dark:text-gray-400">
+                      <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <p>Nenhuma tarefa CRM</p>
+                    </div>
+                  );
+                }
+
+                return crmItems.map((item) => {
+                  const compactInfo = getCompactInfo(item);
+                  
+                  return (
+                    <div
+                      key={item.id}
+                      className={`p-3 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-all duration-200 ${
+                        item.status === 'concluida' ? 'opacity-60' : ''
+                      }`}
+                      style={{ borderLeftColor: item.cor, borderLeftWidth: '3px' }}
+                    >
+                      {/* Layout em linha única mais compacto */}
+                      <div className="flex items-start gap-2">
+                        <div
+                          className="w-2 h-2 rounded-full mt-2 flex-shrink-0"
+                          style={{ backgroundColor: item.cor }}
+                        ></div>
+                        
+                        <div className="flex-1 min-w-0">
+                          {/* Primeira linha: título e tags */}
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-medium text-[#2E2F38] dark:text-white text-sm truncate flex-1">
+                              {item.titulo}
+                            </h3>
+                            <span className={`px-1.5 py-0.5 text-xs font-medium rounded-full ${tipoCores[item.tipo]} text-white flex-shrink-0`}>
+                              {tipoLabels[item.tipo]}
+                            </span>
+                            {item.status === 'concluida' && (
+                              <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-green-500 text-white flex-shrink-0">
+                                ✓
+                              </span>
+                            )}
+                          </div>
+                          
+                          {/* Segunda linha: horário e lead */}
+                          <div className="flex items-center gap-3 text-xs text-[#6B6F76] dark:text-gray-400">
+                            <div className="flex items-center gap-1 font-medium">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              {item.dataHora.toDate().toLocaleTimeString('pt-BR', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </div>
+                            
+                            {item.leadNome && (
+                              <div className="flex items-center gap-1 text-[#3478F6] dark:text-[#A3C8F7]">
+                                <span className="text-xs">📞</span>
+                                <span className="truncate max-w-24">{item.leadNome}</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Terceira linha: informações compactas */}
+                          {compactInfo && (
+                            <div className="mt-1 text-xs text-[#6B6F76] dark:text-gray-400 truncate">
+                              {compactInfo}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
           </div>
         )}
 
