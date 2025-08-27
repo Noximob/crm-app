@@ -712,12 +712,12 @@ export default function AgendaPage() {
               titulo: `Plantão ${plantao.construtora}`,
               descricao: `Horário: ${plantao.horario}\nConstrutora: ${plantao.construtora}\nCorretor: ${plantao.corretorResponsavel}\nObservações: ${plantao.observacoes || 'Nenhuma'}`,
               dataHora: Timestamp.fromDate(inicioDate),
-              tipo: 'imobiliaria', // Usar tipo existente
+              tipo: 'comunidade', // Usar tipo comunidade que tem cor laranja
               status: 'pendente',
-              cor: '#8B5CF6', // Usar cor existente
+              cor: '#F97316', // Cor laranja para plantão
               createdAt: Timestamp.fromDate(new Date(plantao.criadoEm)),
               userId: '',
-              source: 'imobiliaria', // Usar source existente
+              source: 'comunidade', // Usar source comunidade
               originalId: doc.id
             });
           }
