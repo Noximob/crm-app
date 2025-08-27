@@ -91,16 +91,32 @@ export default function LeadDetailPage() {
         if (!currentUser || !leadId) return;
         // Busca o lead diretamente da coleção principal 'leads'
         const leadRef = doc(db, 'leads', leadId);
-        const unsubscribe = onSnapshot(leadRef, (docSnap) => {
+        const unsubscribe = onSnapshot(leadRef, async (docSnap) => {
             if (docSnap.exists()) {
                 const leadData = { id: docSnap.id, ...docSnap.data() } as Lead;
 
-                // Verificação de segurança para garantir que o usuário só veja seus próprios leads
+                // Verificação de segurança: usuário só pode ver seus próprios leads OU ser administrador da imobiliária
                 if (leadData.userId !== currentUser.uid) {
-                    console.error("Acesso negado: Este lead não pertence a você.");
-                    setLead(null);
-                    setLoading(false);
-                    return;
+                    // Verificar se o usuário atual é administrador da imobiliária
+                    const userRef = doc(db, 'usuarios', currentUser.uid);
+                    const userSnap = await getDoc(userRef);
+                    
+                    if (userSnap.exists()) {
+                        const userData = userSnap.data();
+                        const isAdmin = userData.permissoes?.admin || userData.tipoConta === 'imobiliaria';
+                        
+                        if (!isAdmin) {
+                            console.error("Acesso negado: Este lead não pertence a você e você não é administrador.");
+                            setLead(null);
+                            setLoading(false);
+                            return;
+                        }
+                    } else {
+                        console.error("Acesso negado: Este lead não pertence a você.");
+                        setLead(null);
+                        setLoading(false);
+                        return;
+                    }
                 }
 
                 if (!leadData.automacao) {
