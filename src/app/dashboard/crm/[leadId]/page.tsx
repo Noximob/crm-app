@@ -418,7 +418,7 @@ export default function LeadDetailPage() {
                                 <h2 className="text-base font-semibold text-[#2E2F38] dark:text-white tracking-tight">{lead.nome}</h2>
                                 <span className={`h-2 w-2 rounded-full ${getTaskStatusColor(taskStatus)}`}></span>
                             </div>
-                            <div className="flex items-center">
+                            <div className="flex items-center justify-between">
                                 <select 
                                     id="lead-situation" 
                                     value={lead.etapa} 
@@ -427,27 +427,28 @@ export default function LeadDetailPage() {
                                 >
                                     {PIPELINE_STAGES.map(stage => (<option key={stage} value={stage}>{stage}</option>))}
                                 </select>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <p className="text-xs text-[#6B6F76] dark:text-gray-400">{lead.telefone}</p>
-                                    <a 
-                                        href={`https://wa.me/55${lead.telefone.replace(/\D/g, '')}`} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="text-green-500 hover:text-green-600 transition-colors"
-                                        onClick={(e) => e.stopPropagation()}
+                                <div className="flex flex-col items-center gap-1">
+                                    <button 
+                                        onClick={() => setIsAgendaModalOpen(true)} 
+                                        className="w-10 h-10 bg-[#3478F6] hover:bg-[#3478F6]/80 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 shadow-lg"
+                                        title="Agendar Tarefa"
                                     >
-                                        <WhatsAppIcon className="h-3 w-3 fill-current"/>
-                                    </a>
+                                        <TaskIcon className="h-5 w-5"/>
+                                    </button>
+                                    <span className="text-xs text-[#6B6F76] dark:text-gray-400">Tarefas</span>
                                 </div>
-                                <button 
-                                    onClick={() => setIsAgendaModalOpen(true)} 
-                                    className="w-10 h-10 bg-[#3478F6] hover:bg-[#3478F6]/80 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 shadow-lg"
-                                    title="Agendar Tarefa"
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <p className="text-xs text-[#6B6F76] dark:text-gray-400">{lead.telefone}</p>
+                                <a 
+                                    href={`https://wa.me/55${lead.telefone.replace(/\D/g, '')}`} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-green-500 hover:text-green-600 transition-colors"
+                                    onClick={(e) => e.stopPropagation()}
                                 >
-                                    <TaskIcon className="h-5 w-5"/>
-                                </button>
+                                    <WhatsAppIcon className="h-3 w-3 fill-current"/>
+                                </a>
                             </div>
                         </div>
                     </div>
