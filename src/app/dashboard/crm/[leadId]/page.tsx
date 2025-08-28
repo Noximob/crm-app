@@ -476,19 +476,19 @@ export default function LeadDetailPage() {
                             </button>
                         </div>
                         
-                        {/* Exibição compacta com separadores simples entre categorias */}
+                        {/* Exibição compacta em linha única com separadores simples */}
                         <div className="space-y-3">
                             {Object.keys(qualifications).length > 0 ? (
-                                Object.entries(qualifications).map(([key, values], index) => {
-                                    // Verificação de segurança para garantir que values é um array
-                                    if (!Array.isArray(values)) {
-                                        console.warn(`Qualificação ${key} não é um array:`, values);
-                                        return null;
-                                    }
-                                    
-                                    return (
-                                        <div key={key}>
-                                            <div className="flex flex-wrap gap-1.5">
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                    {Object.entries(qualifications).map(([key, values], index) => {
+                                        // Verificação de segurança para garantir que values é um array
+                                        if (!Array.isArray(values)) {
+                                            console.warn(`Qualificação ${key} não é um array:`, values);
+                                            return null;
+                                        }
+                                        
+                                        return (
+                                            <React.Fragment key={key}>
                                                 {values.map((value, valueIndex) => (
                                                     <span 
                                                         key={`${key}-${valueIndex}`}
@@ -497,14 +497,14 @@ export default function LeadDetailPage() {
                                                         {value}
                                                     </span>
                                                 ))}
-                                            </div>
-                                            {/* Linha simples separando categorias */}
-                                            {index < Object.keys(qualifications).length - 1 && (
-                                                <div className="mt-2 border-t border-[#E8E9F1] dark:border-[#23283A] opacity-30"></div>
-                                            )}
-                                        </div>
-                                    );
-                                }).filter(Boolean)
+                                                {/* Separador simples entre categorias */}
+                                                {index < Object.keys(qualifications).length - 1 && (
+                                                    <span className="text-[#6B6F76] dark:text-gray-400 mx-1">—</span>
+                                                )}
+                                            </React.Fragment>
+                                        );
+                                    }).filter(Boolean)}
+                                </div>
                             ) : (
                                 <div className="text-center py-6 text-[#6B6F76] dark:text-gray-400">
                                     <p className="text-sm">Nenhuma qualificação definida</p>
