@@ -316,24 +316,13 @@ export default function LeadDetailPage() {
 
     const handleQualificationChange = (groupKey: string, value: string) => {
         setQualifications(prev => {
-            const currentValues = prev[groupKey] ? (Array.isArray(prev[groupKey]) ? prev[groupKey] : [prev[groupKey]]) : [];
-            
-            if (currentValues.includes(value)) {
-                // Remove o valor se já estiver selecionado
-                const newValues = currentValues.filter(v => v !== value);
-                if (newValues.length === 0) {
-                    // Se não há mais valores, remove a categoria
-                    const newQuals = { ...prev };
-                    delete newQuals[groupKey];
-                    return newQuals;
-                } else {
-                    // Retorna apenas o primeiro valor se for só um
-                    return { ...prev, [groupKey]: newValues.length === 1 ? newValues[0] : newValues };
-                }
+            // Se já tem o valor, remove; se não tem, adiciona
+            if (prev[groupKey] === value) {
+                const newQuals = { ...prev };
+                delete newQuals[groupKey];
+                return newQuals;
             } else {
-                // Adiciona o valor à lista
-                const newValues = [...currentValues, value];
-                return { ...prev, [groupKey]: newValues.length === 1 ? newValues[0] : newValues };
+                return { ...prev, [groupKey]: value };
             }
         });
     };
@@ -453,17 +442,14 @@ export default function LeadDetailPage() {
                         <div className="space-y-3">
                             {Object.keys(qualifications).length > 0 ? (
                                 <div className="flex flex-wrap gap-2">
-                                    {Object.entries(qualifications).map(([key, value]) => {
-                                        const values = Array.isArray(value) ? value : [value];
-                                        return values.map((val, index) => (
-                                            <span 
-                                                key={`${key}-${index}`}
-                                                className="px-3 py-1.5 text-sm font-medium bg-[#F0F4FF] dark:bg-[#23283A] text-[#3478F6] dark:text-[#A3C8F7] rounded-lg border border-[#A3C8F7]/20"
-                                            >
-                                                {val}
-                                            </span>
-                                        ));
-                                    })}
+                                    {Object.entries(qualifications).map(([key, value]) => (
+                                        <span 
+                                            key={key}
+                                            className="px-3 py-1.5 text-sm font-medium bg-[#F0F4FF] dark:bg-[#23283A] text-[#3478F6] dark:text-[#A3C8F7] rounded-lg border border-[#A3C8F7]/20"
+                                        >
+                                            {value}
+                                        </span>
+                                    ))}
                                 </div>
                             ) : (
                                 <div className="text-center py-6 text-[#6B6F76] dark:text-gray-400">
@@ -607,7 +593,7 @@ export default function LeadDetailPage() {
                                             key={option}
                                             onClick={() => handleQualificationChange(group.key, option)}
                                             className={`px-3 py-2 text-sm font-medium border rounded-md transition-all duration-150 ${
-                                                Array.isArray(qualifications[group.key]) && qualifications[group.key].includes(option)
+                                                qualifications[group.key] === option
                                                 ? 'bg-[#3478F6] border-[#3478F6] text-white shadow'
                                                 : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-600 dark:bg-gray-900/50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'
                                             }`}
