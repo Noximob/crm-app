@@ -515,8 +515,20 @@ export default function LeadDetailPage() {
                                                  {/* Botão para ver descrição completa */}
                                                  <button
                                                      onClick={() => {
-                                                         // Aqui você pode implementar um modal ou expandir a descrição
-                                                         alert(`Descrição completa da ${interaction.type.toLowerCase()}:\n\n${interaction.notes}`);
+                                                         let descricaoCompleta = `Descrição completa da ${interaction.type.toLowerCase()}:\n\n${interaction.notes}`;
+                                                         
+                                                         // Adicionar motivo de cancelamento se existir
+                                                         if (interaction.type === 'Tarefa Cancelada' && interaction.cancellationNotes) {
+                                                             descricaoCompleta += `\n\nMotivo do cancelamento:\n${interaction.cancellationNotes}`;
+                                                         }
+                                                         
+                                                         // Adicionar horário agendado se existir
+                                                         if (relatedTask && relatedTask.dueDate) {
+                                                             const horarioAgendado = new Date(relatedTask.dueDate.seconds * 1000).toLocaleString('pt-BR');
+                                                             descricaoCompleta += `\n\nHorário agendado: ${horarioAgendado}`;
+                                                         }
+                                                         
+                                                         alert(descricaoCompleta);
                                                      }}
                                                      className="text-[#3478F6] dark:text-[#A3C8F7] hover:text-[#255FD1] dark:hover:text-[#7BA3E8] transition-colors p-1"
                                                      title="Ver descrição completa"
