@@ -72,6 +72,18 @@ const getIconForInteraction = (type: string) => {
     }
 };
 
+const getCategoryTitle = (key: string) => {
+    switch (key) {
+        case 'finalidade': return 'Finalidade';
+        case 'estagio': return 'Estágio do Imóvel';
+        case 'quartos': return 'Quartos';
+        case 'tipo': return 'Tipo do Imóvel';
+        case 'vagas': return 'Vagas de Garagem';
+        case 'valor': return 'Valor do Imóvel';
+        default: return key;
+    }
+};
+
 interface Interaction {
     id: string;
     type: string;
@@ -82,7 +94,7 @@ interface Interaction {
 }
 
 interface QualificationData {
-    [key: string]: string | string[];
+    [key: string]: string[];
 }
 
 interface Task {
@@ -316,13 +328,22 @@ export default function LeadDetailPage() {
 
     const handleQualificationChange = (groupKey: string, value: string) => {
         setQualifications(prev => {
-            // Se já tem o valor, remove; se não tem, adiciona
-            if (prev[groupKey] === value) {
-                const newQuals = { ...prev };
-                delete newQuals[groupKey];
-                return newQuals;
+            const currentValues = prev[groupKey] || [];
+            
+            if (currentValues.includes(value)) {
+                // Remove o valor se já estiver selecionado
+                const newValues = currentValues.filter(v => v !== value);
+                if (newValues.length === 0) {
+                    // Se não há mais valores, remove a categoria
+                    const newQuals = { ...prev };
+                    delete newQuals[groupKey];
+                    return newQuals;
+                } else {
+                    return { ...prev, [groupKey]: newValues };
+                }
             } else {
-                return { ...prev, [groupKey]: value };
+                // Adiciona o valor à lista
+                return { ...prev, [groupKey]: [...currentValues, value] };
             }
         });
     };
@@ -438,19 +459,26 @@ export default function LeadDetailPage() {
                             </button>
                         </div>
                         
-                        {/* Exibição super clean e compacta */}
-                        <div className="space-y-3">
+                        {/* Exibição organizada por categoria */}
+                        <div className="space-y-4">
                             {Object.keys(qualifications).length > 0 ? (
-                                <div className="flex flex-wrap gap-2">
-                                    {Object.entries(qualifications).map(([key, value]) => (
-                                        <span 
-                                            key={key}
-                                            className="px-3 py-1.5 text-sm font-medium bg-[#F0F4FF] dark:bg-[#23283A] text-[#3478F6] dark:text-[#A3C8F7] rounded-lg border border-[#A3C8F7]/20"
-                                        >
-                                            {value}
-                                        </span>
-                                    ))}
-                                </div>
+                                Object.entries(qualifications).map(([key, values]) => (
+                                    <div key={key} className="space-y-2">
+                                        <h4 className="text-sm font-semibold text-[#6B6F76] dark:text-gray-400 uppercase tracking-wide">
+                                            {getCategoryTitle(key)}
+                                        </h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {values.map((value, index) => (
+                                                <span 
+                                                    key={`${key}-${index}`}
+                                                    className="px-3 py-1.5 text-sm font-medium bg-[#F0F4FF] dark:bg-[#23283A] text-[#3478F6] dark:text-[#A3C8F7] rounded-lg border border-[#A3C8F7]/20"
+                                                >
+                                                    {value}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))
                             ) : (
                                 <div className="text-center py-6 text-[#6B6F76] dark:text-gray-400">
                                     <p className="text-sm">Nenhuma qualificação definida</p>
@@ -593,7 +621,7 @@ export default function LeadDetailPage() {
                                             key={option}
                                             onClick={() => handleQualificationChange(group.key, option)}
                                             className={`px-3 py-2 text-sm font-medium border rounded-md transition-all duration-150 ${
-                                                qualifications[group.key] === option
+                                                Array.isArray(qualifications[group.key]) && qualifications[group.key].includes(option)
                                                 ? 'bg-[#3478F6] border-[#3478F6] text-white shadow'
                                                 : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-600 dark:bg-gray-900/50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'
                                             }`}
