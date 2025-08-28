@@ -127,6 +127,8 @@ export default function LeadDetailPage() {
     const [isCancelling, setIsCancelling] = useState(false);
     const [qualifications, setQualifications] = useState<QualificationData>({});
     const [isQualificationModalOpen, setIsQualificationModalOpen] = useState(false);
+    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+    const [isTaskDetailModalOpen, setIsTaskDetailModalOpen] = useState(false);
 
 
     // --- Lógica para buscar os dados do lead ---
@@ -463,61 +465,95 @@ export default function LeadDetailPage() {
                                         const isPendingTask = interaction.type === 'Tarefa Agendada' &&
                                             interaction.taskId &&
                                             tasks.some(task => task.id === interaction.taskId);
+                                         
+                                         const task = tasks.find(task => task.id === interaction.taskId);
+                                         const isTaskCompleted = interaction.type === 'Tarefa Concluída';
+                                         const isTaskCancelled = interaction.type === 'Tarefa Cancelada';
 
-                                        return (
-                                            <li key={interaction.id} className="flex items-start gap-3">
-                                                <div className="bg-slate-100 dark:bg-gray-700 p-2 rounded-full">
-                                                    {getIconForInteraction(interaction.type)}
-                                                </div>
-                                                <div>
-                                                    <p className="font-semibold text-gray-700 dark:text-gray-200 text-sm">{interaction.type}</p>
-                                                    <p className="text-xs text-gray-600 dark:text-gray-400">{interaction.notes}</p>
-                                                    
-                                                    {interaction.type === 'Tarefa Cancelada' && interaction.cancellationNotes && (
-                                                        <p className="text-xs text-red-500 mt-1">
-                                                            <span className="font-semibold">Motivo:</span> {interaction.cancellationNotes}
-                                                        </p>
-                                                    )}
+                                         return (
+                                             <li key={interaction.id} className="flex items-start gap-3">
+                                                 <div className="bg-slate-100 dark:bg-gray-700 p-2 rounded-full">
+                                                     {getIconForInteraction(interaction.type)}
+                                                 </div>
+                                                 <div className="flex-1 min-w-0">
+                                                     <div className="flex items-center justify-between mb-1">
+                                                         <p className="font-semibold text-gray-700 dark:text-gray-200 text-sm">{interaction.type}</p>
+                                                         {task && (
+                                                             <span className={`text-xs px-2 py-1 rounded-full ${
+                                                                 isTaskCompleted 
+                                                                     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                                     : isTaskCancelled
+                                                                     ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                                     : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                                             }`}>
+                                                                 {isTaskCompleted ? 'Concluída' : isTaskCancelled ? 'Cancelada' : 'Agendada'}
+                                                             </span>
+                                                         )}
+                                                     </div>
+                                                     <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">{interaction.notes}</p>
+                                                     
+                                                     {interaction.type === 'Tarefa Cancelada' && interaction.cancellationNotes && (
+                                                         <p className="text-xs text-red-500 mb-2">
+                                                             <span className="font-semibold">Motivo:</span> {interaction.cancellationNotes}
+                                                         </p>
+                                                     )}
 
-                                                    {isPendingTask && (
-                                                        <div className="mt-2 flex items-center gap-2">
-                                                            <button
-                                                                onClick={() => handleUpdateTaskStatus(interaction.id, interaction.taskId!, 'concluída')}
-                                                                className="px-2 py-1 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors"
-                                                            >
-                                                                Concluída
-                                                            </button>
-                                                            <button
-                                                                onClick={() => openCancelModal(interaction.id, interaction.taskId!)}
-                                                                className="px-2 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
-                                                            >
-                                                                Cancelar
-                                                            </button>
-                                                        </div>
-                                                    )}
+                                                     <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                                         <span>Criado: {interaction.timestamp ? new Date(interaction.timestamp.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}</span>
+                                                         {task && (
+                                                             <span className="text-[#3478F6] dark:text-[#A3C8F7] font-medium">
+                                                                 Agendado: {task.dueDate ? new Date(task.dueDate.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}
+                                                             </span>
+                                                         )}
+                                                     </div>
 
-                                                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                                        {interaction.timestamp ? new Date(interaction.timestamp.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}
-                                                    </p>
-                                                </div>
-                                            </li>
-                                        );
-                                    })}
-                                    {interactions.length > 3 && (
-                                        <li className="text-center py-2">
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                +{interactions.length - 3} ações anteriores
-                                            </p>
-                                        </li>
-                                    )}
-                                </ul>
-                            ) : (
-                                <div className="h-full flex items-center justify-center">
-                                    <p className="text-center text-gray-500 dark:text-gray-400 text-sm">Nenhuma ação registrada ainda.</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                                                     {isPendingTask && (
+                                                         <div className="mt-2 flex items-center gap-2">
+                                                             <button
+                                                                 onClick={() => handleUpdateTaskStatus(interaction.id, interaction.taskId!, 'concluída')}
+                                                                 className="px-2 py-1 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors"
+                                                             >
+                                                                 Concluída
+                                                             </button>
+                                                             <button
+                                                                 onClick={() => openCancelModal(interaction.id, interaction.taskId!)}
+                                                                 className="px-2 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+                                                             >
+                                                                 Cancelar
+                                                             </button>
+                                                         </div>
+                                                     )}
+
+                                                     {task && (
+                                                         <button
+                                                             onClick={() => {
+                                                                 setSelectedTask(task);
+                                                                 setIsTaskDetailModalOpen(true);
+                                                             }}
+                                                             className="mt-2 text-xs text-[#3478F6] dark:text-[#A3C8F7] hover:underline cursor-pointer"
+                                                         >
+                                                             Ver detalhes da tarefa →
+                                                         </button>
+                                                     )}
+                                                 </div>
+                                             </li>
+                                         );
+                                     })}
+                                     {interactions.length > 3 && (
+                                         <li className="text-center py-2">
+                                             <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                 +{interactions.length - 3} ações anteriores
+                                             </p>
+                                         </li>
+                                     )}
+                                 </ul>
+                             ) : (
+                                 <div className="h-full flex items-center justify-center">
+                                     <p className="text-center text-gray-500 dark:text-gray-400 text-sm">Nenhuma ação registrada ainda.</p>
+                                 </div>
+                             )}
+                         </div>
+                     </div>
 
 
                 </div>
