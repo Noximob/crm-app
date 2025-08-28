@@ -413,13 +413,13 @@ export default function LeadDetailPage() {
                 <div className="lg:col-span-1 flex flex-col gap-6">
                     {/* Card de Informações do Lead */}
                     <div className="bg-white dark:bg-[#23283A] p-5 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-                        <div className="flex items-start gap-3">
-                            <div className="bg-[#E8E9F1] dark:bg-[#23283A] text-[#3478F6] dark:text-[#A3C8F7] font-bold text-base rounded-lg h-10 w-10 flex items-center justify-center flex-shrink-0">
-                                {lead.nome.charAt(0).toUpperCase()}
-                            </div>
+                        <div className="flex items-center justify-between">
                             <div className="flex-1 min-w-0">
-                                <h2 className="text-base font-semibold text-[#2E2F38] dark:text-white tracking-tight mb-2">{lead.nome}</h2>
-                                <div className="flex items-center gap-2 mb-3">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <h2 className="text-base font-semibold text-[#2E2F38] dark:text-white tracking-tight">{lead.nome}</h2>
+                                    <span className={`h-2 w-2 rounded-full ${getTaskStatusColor(taskStatus)}`}></span>
+                                </div>
+                                <div className="flex items-center gap-2">
                                     <p className="text-xs text-[#6B6F76] dark:text-gray-400">{lead.telefone}</p>
                                     <a 
                                         href={`https://wa.me/55${lead.telefone.replace(/\D/g, '')}`} 
@@ -431,20 +431,15 @@ export default function LeadDetailPage() {
                                         <WhatsAppIcon className="h-3 w-3 fill-current"/>
                                     </a>
                                 </div>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <span className={`h-2 w-2 rounded-full ${getTaskStatusColor(taskStatus)}`}></span>
-                                    </div>
-                                    <select 
-                                        id="lead-situation" 
-                                        value={lead.etapa} 
-                                        onChange={handleStageChange} 
-                                        className="px-2 py-1 text-xs border border-[#A3C8F7] dark:border-[#3478F6] rounded-md bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white focus:ring-1 focus:ring-[#3478F6] focus:outline-none"
-                                    >
-                                        {PIPELINE_STAGES.map(stage => (<option key={stage} value={stage}>{stage}</option>))}
-                                    </select>
-                                </div>
                             </div>
+                            <select 
+                                id="lead-situation" 
+                                value={lead.etapa} 
+                                onChange={handleStageChange} 
+                                className="px-2 py-1 text-xs border border-[#A3C8F7] dark:border-[#3478F6] rounded-md bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white focus:ring-1 focus:ring-[#3478F6] focus:outline-none h-fit"
+                            >
+                                {PIPELINE_STAGES.map(stage => (<option key={stage} value={stage}>{stage}</option>))}
+                            </select>
                         </div>
                     </div>
 
