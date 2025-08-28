@@ -1508,27 +1508,13 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Coluna Direita - Top Trending com scroll independente */}
+        {/* Coluna Direita - Comunidade com scroll independente */}
         <div id="trending-section" className="overflow-y-auto pr-2 dashboard-scroll-hide h-full min-h-0">
           <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl animate-fade-in">
             {/* Borda decorativa */}
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#3478F6] to-[#A3C8F7]"></div>
             
-            {/* Header com ícone de fogo */}
-            <div className="flex items-center gap-3 mb-6">
-              <div className="relative">
-                <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center animate-pulse">
-                  <span className="text-white text-lg">🔥</span>
-                </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">HOT</span>
-                </div>
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Top Trending</h2>
-                <p className="text-xs text-[#6B6F76] dark:text-gray-300">Posts mais quentes da comunidade</p>
-              </div>
-            </div>
+
 
             {trendingLoading ? (
               <div className="flex items-center justify-center py-8">
