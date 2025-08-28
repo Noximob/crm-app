@@ -466,9 +466,8 @@ export default function LeadDetailPage() {
                                             interaction.taskId &&
                                             tasks.some(task => task.id === interaction.taskId);
                                          
-                                         const task = tasks.find(task => task.id === interaction.taskId);
-                                         const isTaskCompleted = interaction.type === 'Tarefa Concluída';
-                                         const isTaskCancelled = interaction.type === 'Tarefa Cancelada';
+                                         // Buscar a tarefa correspondente para obter horário agendado
+                                         const relatedTask = tasks.find(task => task.id === interaction.taskId);
 
                                          return (
                                              <li key={interaction.id} className="flex items-start gap-3">
@@ -476,36 +475,14 @@ export default function LeadDetailPage() {
                                                      {getIconForInteraction(interaction.type)}
                                                  </div>
                                                  <div className="flex-1 min-w-0">
-                                                     <div className="flex items-center justify-between mb-1">
-                                                         <p className="font-semibold text-gray-700 dark:text-gray-200 text-sm">{interaction.type}</p>
-                                                         {task && (
-                                                             <span className={`text-xs px-2 py-1 rounded-full ${
-                                                                 isTaskCompleted 
-                                                                     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                                                     : isTaskCancelled
-                                                                     ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                                                     : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                                                             }`}>
-                                                                 {isTaskCompleted ? 'Concluída' : isTaskCancelled ? 'Cancelada' : 'Agendada'}
-                                                             </span>
-                                                         )}
-                                                     </div>
-                                                     <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">{interaction.notes}</p>
+                                                     <p className="font-semibold text-gray-700 dark:text-gray-200 text-sm">{interaction.type}</p>
+                                                     <p className="text-xs text-gray-600 dark:text-gray-400">{interaction.notes}</p>
                                                      
                                                      {interaction.type === 'Tarefa Cancelada' && interaction.cancellationNotes && (
-                                                         <p className="text-xs text-red-500 mb-2">
+                                                         <p className="text-xs text-red-500 mt-1">
                                                              <span className="font-semibold">Motivo:</span> {interaction.cancellationNotes}
                                                          </p>
                                                      )}
-
-                                                     <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
-                                                         <span>Criado: {interaction.timestamp ? new Date(interaction.timestamp.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}</span>
-                                                         {task && (
-                                                             <span className="text-[#3478F6] dark:text-[#A3C8F7] font-medium">
-                                                                 Agendado: {task.dueDate ? new Date(task.dueDate.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}
-                                                             </span>
-                                                         )}
-                                                     </div>
 
                                                      {isPendingTask && (
                                                          <div className="mt-2 flex items-center gap-2">
@@ -524,18 +501,31 @@ export default function LeadDetailPage() {
                                                          </div>
                                                      )}
 
-                                                     {task && (
-                                                         <button
-                                                             onClick={() => {
-                                                                 setSelectedTask(task);
-                                                                 setIsTaskDetailModalOpen(true);
-                                                             }}
-                                                             className="mt-2 text-xs text-[#3478F6] dark:text-[#A3C8F7] hover:underline cursor-pointer"
-                                                         >
-                                                             Ver detalhes da tarefa →
-                                                         </button>
-                                                     )}
+                                                     <div className="mt-2 flex items-center gap-3 text-xs">
+                                                         <span className="text-gray-400 dark:text-gray-500">
+                                                             Criado: {interaction.timestamp ? new Date(interaction.timestamp.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}
+                                                         </span>
+                                                         {relatedTask && (
+                                                             <span className="text-[#3478F6] dark:text-[#A3C8F7] font-medium">
+                                                                 Agendado: {relatedTask.dueDate ? new Date(relatedTask.dueDate.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}
+                                                             </span>
+                                                         )}
+                                                     </div>
                                                  </div>
+                                                 {/* Botão para ver descrição completa */}
+                                                 <button
+                                                     onClick={() => {
+                                                         // Aqui você pode implementar um modal ou expandir a descrição
+                                                         alert(`Descrição completa da ${interaction.type.toLowerCase()}:\n\n${interaction.notes}`);
+                                                     }}
+                                                     className="text-[#3478F6] dark:text-[#A3C8F7] hover:text-[#255FD1] dark:hover:text-[#7BA3E8] transition-colors p-1"
+                                                     title="Ver descrição completa"
+                                                 >
+                                                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                     </svg>
+                                                 </button>
                                              </li>
                                          );
                                      })}
