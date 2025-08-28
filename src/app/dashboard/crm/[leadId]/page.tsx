@@ -408,9 +408,9 @@ export default function LeadDetailPage() {
         <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
             <CrmHeader />
 
-            <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* --- COLUNA DA ESQUERDA --- */}
-                <div className="lg:col-span-1 flex flex-col gap-6">
+            <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* --- COLUNA DA ESQUERDA (20% a mais) --- */}
+                <div className="lg:col-span-5 flex flex-col gap-6">
                     {/* Card de Informações do Lead */}
                     <div className="bg-white dark:bg-[#23283A] p-5 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
                         <div className="flex flex-col gap-3">
@@ -522,8 +522,8 @@ export default function LeadDetailPage() {
 
                 </div>
 
-                {/* --- COLUNA DA DIREITA --- */}
-                <div className="lg:col-span-2 flex flex-col gap-6">
+                {/* --- COLUNA DA DIREITA (20% a menos) --- */}
+                <div className="lg:col-span-7 flex flex-col gap-6">
                     {/* Card de Qualificação do Lead */}
                     <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
                         <div className="flex items-center justify-between mb-4">
