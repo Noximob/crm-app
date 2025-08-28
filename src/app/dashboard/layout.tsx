@@ -119,14 +119,14 @@ export default function DashboardLayout({
   const userDataWithPerms = userData as UserDataWithPerms;
 
   const navItems = [
-    { href: '/dashboard', icon: LayoutDashboardIcon, label: 'Dashboard' },
+    { href: '/dashboard', icon: LayoutDashboardIcon, label: 'Inicio' },
     { href: 'https://chat.openai.com', icon: ChatGPTIcon, label: 'ChatGPT', isExternal: true },
-    { href: '/dashboard/crm', icon: BarChartIcon, label: 'CRM' },
-    { href: '/dashboard/materiais', icon: FileTextIcon, label: 'Materiais' },
+    { href: '/dashboard/crm', icon: BarChartIcon, label: 'Clientes' },
+    { href: '/dashboard/materiais', icon: FileTextIcon, label: 'Materiais de apoio' },
     { href: '/dashboard/comunidade', icon: CommunityIcon, label: 'Comunidade', notifications: notifications.comunidade },
-    { href: '/dashboard/treinamentos', icon: PresentationIcon, label: 'Treinamentos' },
+    { href: '/dashboard/treinamentos', icon: PresentationIcon, label: 'Academia' },
     { href: '/dashboard/incluir-imovel', icon: HouseIcon, label: 'Incluir imóvel' },
-    { href: '/dashboard/pagamentos', icon: CreditCardIcon, label: 'Pagamentos' },
+    { href: '/dashboard/pagamentos', icon: CreditCardIcon, label: 'Alume Pró' },
     { href: '/dashboard/configuracoes', icon: SettingsIcon, label: 'Configurações' },
     // Exibir admin se for imobiliaria OU tiver permissao admin
     ...((userDataWithPerms?.tipoConta === 'imobiliaria' || userDataWithPerms?.permissoes?.admin) ? [
