@@ -82,7 +82,7 @@ interface Interaction {
 }
 
 interface QualificationData {
-    [key: string]: string;
+    [key: string]: string | string[];
 }
 
 interface Task {
@@ -314,18 +314,28 @@ export default function LeadDetailPage() {
         setIsCancelModalOpen(true);
     };
 
-    const handleQualificationChange = async (groupKey: string, value: string) => {
-        if (!currentUser || !lead) return;
-
-        const newQualifications = { ...qualifications, [groupKey]: value };
-        setQualifications(newQualifications);
-
-        const leadRef = doc(db, 'leads', lead.id);
-        try {
-            await updateDoc(leadRef, { qualificacao: newQualifications });
-        } catch (error) {
-            console.error("Erro ao atualizar qualificação:", error);
-        }
+    const handleQualificationChange = (groupKey: string, value: string) => {
+        setQualifications(prev => {
+            const currentValues = prev[groupKey] ? (Array.isArray(prev[groupKey]) ? prev[groupKey] : [prev[groupKey]]) : [];
+            
+            if (currentValues.includes(value)) {
+                // Remove o valor se já estiver selecionado
+                const newValues = currentValues.filter(v => v !== value);
+                if (newValues.length === 0) {
+                    // Se não há mais valores, remove a categoria
+                    const newQuals = { ...prev };
+                    delete newQuals[groupKey];
+                    return newQuals;
+                } else {
+                    // Retorna apenas o primeiro valor se for só um
+                    return { ...prev, [groupKey]: newValues.length === 1 ? newValues[0] : newValues };
+                }
+            } else {
+                // Adiciona o valor à lista
+                const newValues = [...currentValues, value];
+                return { ...prev, [groupKey]: newValues.length === 1 ? newValues[0] : newValues };
+            }
+        });
     };
 
     const handleCloseQualificationModal = () => {
@@ -439,75 +449,25 @@ export default function LeadDetailPage() {
                             </button>
                         </div>
                         
-                        {/* Exibição limpa e categorizada */}
-                        <div className="space-y-4">
-                            {/* Finalidade */}
-                            {qualifications.finalidade && (
-                                <div className="flex items-center gap-3 p-3 bg-[#F0F4FF] dark:bg-[#23283A] rounded-lg border border-[#A3C8F7]/20">
-                                    <div className="w-2 h-2 bg-[#3478F6] rounded-full"></div>
-                                    <div>
-                                        <span className="text-xs font-semibold text-[#6B6F76] dark:text-gray-400 uppercase tracking-wide">Finalidade</span>
-                                        <p className="text-sm font-medium text-[#2E2F38] dark:text-white">{qualifications.finalidade}</p>
-                                    </div>
+                        {/* Exibição super clean e compacta */}
+                        <div className="space-y-3">
+                            {Object.keys(qualifications).length > 0 ? (
+                                <div className="flex flex-wrap gap-2">
+                                    {Object.entries(qualifications).map(([key, value]) => {
+                                        const values = Array.isArray(value) ? value : [value];
+                                        return values.map((val, index) => (
+                                            <span 
+                                                key={`${key}-${index}`}
+                                                className="px-3 py-1.5 text-sm font-medium bg-[#F0F4FF] dark:bg-[#23283A] text-[#3478F6] dark:text-[#A3C8F7] rounded-lg border border-[#A3C8F7]/20"
+                                            >
+                                                {val}
+                                            </span>
+                                        ));
+                                    })}
                                 </div>
-                            )}
-                            
-                            {/* Estágio do Imóvel */}
-                            {qualifications.estagio && (
-                                <div className="flex items-center gap-3 p-3 bg-[#F0F4FF] dark:bg-[#23283A] rounded-lg border border-[#A3C8F7]/20">
-                                    <div className="w-2 h-2 bg-[#3AC17C] rounded-full"></div>
-                                    <div>
-                                        <span className="text-xs font-semibold text-[#6B6F76] dark:text-gray-400 uppercase tracking-wide">Estágio</span>
-                                        <p className="text-sm font-medium text-[#2E2F38] dark:text-white">{qualifications.estagio}</p>
-                                    </div>
-                                </div>
-                            )}
-                            
-                            {/* Tipo e Quartos */}
-                            {(qualifications.tipo || qualifications.quartos) && (
-                                <div className="flex items-center gap-3 p-3 bg-[#F0F4FF] dark:bg-[#23283A] rounded-lg border border-[#A3C8F7]/20">
-                                    <div className="w-2 h-2 bg-[#F45B69] rounded-full"></div>
-                                    <div className="flex-1">
-                                        <span className="text-xs font-semibold text-[#6B6F76] dark:text-gray-400 uppercase tracking-wide">Características</span>
-                                        <div className="flex flex-wrap gap-2 mt-1">
-                                            {qualifications.tipo && (
-                                                <span className="px-2 py-1 text-xs font-medium bg-[#3478F6]/10 text-[#3478F6] rounded-md">{qualifications.tipo}</span>
-                                            )}
-                                            {qualifications.quartos && (
-                                                <span className="px-2 py-1 text-xs font-medium bg-[#3AC17C]/10 text-[#3AC17C] rounded-md">{qualifications.quartos}</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            
-                            {/* Vagas e Valor */}
-                            {(qualifications.vagas || qualifications.valor) && (
-                                <div className="flex items-center gap-3 p-3 bg-[#F0F4FF] dark:bg-[#23283A] rounded-lg border border-[#A3C8F7]/20">
-                                    <div className="w-2 h-2 bg-[#FFA726] rounded-full"></div>
-                                    <div className="flex-1">
-                                        <span className="text-xs font-semibold text-[#6B6F76] dark:text-gray-400 uppercase tracking-wide">Detalhes</span>
-                                        <div className="flex flex-wrap gap-2 mt-1">
-                                            {qualifications.vagas && (
-                                                <span className="px-2 py-1 text-xs font-medium bg-[#FFA726]/10 text-[#FFA726] rounded-md">{qualifications.vagas} vaga{qualifications.vagas !== '1' ? 's' : ''}</span>
-                                            )}
-                                            {qualifications.valor && (
-                                                <span className="px-2 py-1 text-xs font-medium bg-[#9C27B0]/10 text-[#9C27B0] rounded-md">{qualifications.valor}</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            
-                            {/* Estado vazio */}
-                            {!qualifications.finalidade && !qualifications.estagio && !qualifications.tipo && !qualifications.quartos && !qualifications.vagas && !qualifications.valor && (
-                                <div className="text-center py-8 text-[#6B6F76] dark:text-gray-400">
-                                    <div className="w-12 h-12 bg-[#E8E9F1] dark:bg-[#23283A] rounded-full flex items-center justify-center mx-auto mb-3">
-                                        <svg className="w-6 h-6 text-[#6B6F76] dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                        </svg>
-                                    </div>
-                                    <p className="text-sm font-medium">Nenhuma qualificação definida</p>
+                            ) : (
+                                <div className="text-center py-6 text-[#6B6F76] dark:text-gray-400">
+                                    <p className="text-sm">Nenhuma qualificação definida</p>
                                     <p className="text-xs mt-1">Clique em "Editar Qualificação" para começar</p>
                                 </div>
                             )}
@@ -647,7 +607,7 @@ export default function LeadDetailPage() {
                                             key={option}
                                             onClick={() => handleQualificationChange(group.key, option)}
                                             className={`px-3 py-2 text-sm font-medium border rounded-md transition-all duration-150 ${
-                                                qualifications[group.key] === option
+                                                Array.isArray(qualifications[group.key]) && qualifications[group.key].includes(option)
                                                 ? 'bg-[#3478F6] border-[#3478F6] text-white shadow'
                                                 : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-600 dark:bg-gray-900/50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'
                                             }`}
