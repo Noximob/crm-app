@@ -167,7 +167,24 @@ export default function LeadDetailPage() {
                 }
                 setLead(leadData);
                 setTempAnnotations(leadData.anotacoes || '');
-                setQualifications(leadData.qualificacao || {});
+                
+                // Verificação de segurança para qualificações
+                const qualificacao = leadData.qualificacao || {};
+                const safeQualificacao: QualificationData = {};
+                
+                // Garantir que todas as qualificações sejam arrays
+                Object.entries(qualificacao).forEach(([key, value]) => {
+                    if (Array.isArray(value)) {
+                        safeQualificacao[key] = value;
+                    } else if (typeof value === 'string') {
+                        // Se for string, converter para array (compatibilidade com dados antigos)
+                        safeQualificacao[key] = [value];
+                    } else {
+                        console.warn(`Qualificação ${key} com tipo inválido:`, value);
+                    }
+                });
+                
+                setQualifications(safeQualificacao);
             } else {
                 console.log("No such document!");
                 setLead(null);
@@ -462,23 +479,31 @@ export default function LeadDetailPage() {
                         {/* Exibição organizada por categoria */}
                         <div className="space-y-4">
                             {Object.keys(qualifications).length > 0 ? (
-                                Object.entries(qualifications).map(([key, values]) => (
-                                    <div key={key} className="space-y-2">
-                                        <h4 className="text-sm font-semibold text-[#6B6F76] dark:text-gray-400 uppercase tracking-wide">
-                                            {getCategoryTitle(key)}
-                                        </h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            {values.map((value, index) => (
-                                                <span 
-                                                    key={`${key}-${index}`}
-                                                    className="px-3 py-1.5 text-sm font-medium bg-[#F0F4FF] dark:bg-[#23283A] text-[#3478F6] dark:text-[#A3C8F7] rounded-lg border border-[#A3C8F7]/20"
-                                                >
-                                                    {value}
-                                                </span>
-                                            ))}
+                                Object.entries(qualifications).map(([key, values]) => {
+                                    // Verificação de segurança para garantir que values é um array
+                                    if (!Array.isArray(values)) {
+                                        console.warn(`Qualificação ${key} não é um array:`, values);
+                                        return null;
+                                    }
+                                    
+                                    return (
+                                        <div key={key} className="space-y-2">
+                                            <h4 className="text-sm font-semibold text-[#6B6F76] dark:text-gray-400 uppercase tracking-wide">
+                                                {getCategoryTitle(key)}
+                                            </h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {values.map((value, index) => (
+                                                    <span 
+                                                        key={`${key}-${index}`}
+                                                        className="px-3 py-1.5 text-sm font-medium bg-[#F0F4FF] dark:bg-[#23283A] text-[#3478F6] dark:text-[#A3C8F7] rounded-lg border border-[#A3C8F7]/20"
+                                                    >
+                                                        {value}
+                                                    </span>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))
+                                    );
+                                }).filter(Boolean)
                             ) : (
                                 <div className="text-center py-6 text-[#6B6F76] dark:text-gray-400">
                                     <p className="text-sm">Nenhuma qualificação definida</p>
