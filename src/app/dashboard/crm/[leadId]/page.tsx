@@ -434,23 +434,23 @@ export default function LeadDetailPage() {
                                 <p className="text-[#6B6F76] dark:text-gray-400">{lead.email}</p>
                             </div>
                         </div>
-                        <div className="mt-4 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <span className={`h-2.5 w-2.5 rounded-full ${getTaskStatusColor(taskStatus)}`}></span>
-                                <span className="text-sm text-[#6B6F76] dark:text-gray-300">{taskStatus}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <label htmlFor="lead-situation" className="text-sm text-[#6B6F76] dark:text-gray-400">Situação:</label>
-                                <select 
-                                    id="lead-situation" 
-                                    value={lead.etapa} 
-                                    onChange={handleStageChange} 
-                                    className="px-2 py-1 text-sm border border-[#A3C8F7] dark:border-[#3478F6] rounded-md bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white focus:ring-1 focus:ring-[#3478F6]"
-                                >
-                                    {PIPELINE_STAGES.map(stage => (<option key={stage} value={stage}>{stage}</option>))}
-                                </select>
-                            </div>
+                        <div className="mt-4 flex items-center gap-2">
+                            <span className={`h-2.5 w-2.5 rounded-full ${getTaskStatusColor(taskStatus)}`}></span>
+                            <span className="text-sm text-[#6B6F76] dark:text-gray-300">{taskStatus}</span>
                         </div>
+                    </div>
+
+                    {/* Card de Situação do Lead */}
+                    <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+                        <label htmlFor="lead-situation" className="block text-base font-semibold text-[#2E2F38] dark:text-white mb-2">Situação do Lead</label>
+                        <select 
+                            id="lead-situation" 
+                            value={lead.etapa} 
+                            onChange={handleStageChange} 
+                            className="w-full p-2 border border-[#A3C8F7] dark:border-[#3478F6] rounded-lg bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white focus:ring-2 focus:ring-[#3478F6]"
+                        >
+                            {PIPELINE_STAGES.map(stage => (<option key={stage} value={stage}>{stage}</option>))}
+                        </select>
                     </div>
 
                     {/* Card O que deseja fazer? */}
