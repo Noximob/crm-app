@@ -476,10 +476,10 @@ export default function LeadDetailPage() {
                             </button>
                         </div>
                         
-                        {/* Exibição organizada por categoria */}
-                        <div className="space-y-4">
+                        {/* Exibição compacta com separadores visuais */}
+                        <div className="space-y-3">
                             {Object.keys(qualifications).length > 0 ? (
-                                Object.entries(qualifications).map(([key, values]) => {
+                                Object.entries(qualifications).map(([key, values], index) => {
                                     // Verificação de segurança para garantir que values é um array
                                     if (!Array.isArray(values)) {
                                         console.warn(`Qualificação ${key} não é um array:`, values);
@@ -487,20 +487,21 @@ export default function LeadDetailPage() {
                                     }
                                     
                                     return (
-                                        <div key={key} className="space-y-2">
-                                            <h4 className="text-sm font-semibold text-[#6B6F76] dark:text-gray-400 uppercase tracking-wide">
-                                                {getCategoryTitle(key)}
-                                            </h4>
+                                        <div key={key}>
                                             <div className="flex flex-wrap gap-2">
-                                                {values.map((value, index) => (
+                                                {values.map((value, valueIndex) => (
                                                     <span 
-                                                        key={`${key}-${index}`}
+                                                        key={`${key}-${valueIndex}`}
                                                         className="px-3 py-1.5 text-sm font-medium bg-[#F0F4FF] dark:bg-[#23283A] text-[#3478F6] dark:text-[#A3C8F7] rounded-lg border border-[#A3C8F7]/20"
                                                     >
                                                         {value}
                                                     </span>
                                                 ))}
                                             </div>
+                                            {/* Separador visual sutil entre categorias */}
+                                            {index < Object.keys(qualifications).length - 1 && (
+                                                <div className="mt-3 border-t border-[#E8E9F1] dark:border-[#23283A] opacity-40"></div>
+                                            )}
                                         </div>
                                     );
                                 }).filter(Boolean)
