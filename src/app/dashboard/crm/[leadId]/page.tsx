@@ -453,13 +453,13 @@ export default function LeadDetailPage() {
                         </div>
                     </div>
 
-                    {/* Card de Histórico de Ações */}
+                    {/* Card de Próximos Passos */}
                     <div className="bg-white dark:bg-[#23283A] p-5 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-                        <h3 className="text-base font-semibold text-[#2E2F38] dark:text-white mb-4">Histórico de Ações</h3>
-                        <div className="flex-grow overflow-y-auto min-h-0 pr-2">
+                        <h3 className="text-base font-semibold text-[#2E2F38] dark:text-white mb-4">Próximos Passos</h3>
+                        <div className="h-48 overflow-y-auto pr-2">
                             {interactions.length > 0 ? (
-                                <ul className="space-y-4">
-                                    {interactions.map(interaction => {
+                                <ul className="space-y-3">
+                                    {interactions.slice(0, 3).map(interaction => {
                                         const isPendingTask = interaction.type === 'Tarefa Agendada' &&
                                             interaction.taskId &&
                                             tasks.some(task => task.id === interaction.taskId);
@@ -470,28 +470,28 @@ export default function LeadDetailPage() {
                                                     {getIconForInteraction(interaction.type)}
                                                 </div>
                                                 <div>
-                                                    <p className="font-semibold text-gray-700 dark:text-gray-200">{interaction.type}</p>
-                                                    <p className="text-sm text-gray-600 dark:text-gray-400">{interaction.notes}</p>
+                                                    <p className="font-semibold text-gray-700 dark:text-gray-200 text-sm">{interaction.type}</p>
+                                                    <p className="text-xs text-gray-600 dark:text-gray-400">{interaction.notes}</p>
                                                     
                                                     {interaction.type === 'Tarefa Cancelada' && interaction.cancellationNotes && (
-                                                        <p className="text-sm text-red-500 mt-1">
+                                                        <p className="text-xs text-red-500 mt-1">
                                                             <span className="font-semibold">Motivo:</span> {interaction.cancellationNotes}
                                                         </p>
                                                     )}
 
                                                     {isPendingTask && (
-                                                        <div className="mt-2 flex items-center gap-3">
+                                                        <div className="mt-2 flex items-center gap-2">
                                                             <button
                                                                 onClick={() => handleUpdateTaskStatus(interaction.id, interaction.taskId!, 'concluída')}
-                                                                className="px-2.5 py-1 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors"
+                                                                className="px-2 py-1 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors"
                                                             >
-                                                                Tarefa Concluída
+                                                                Concluída
                                                             </button>
                                                             <button
                                                                 onClick={() => openCancelModal(interaction.id, interaction.taskId!)}
-                                                                className="px-2.5 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+                                                                className="px-2 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
                                                             >
-                                                                Cancelar Tarefa
+                                                                Cancelar
                                                             </button>
                                                         </div>
                                                     )}
@@ -503,10 +503,17 @@ export default function LeadDetailPage() {
                                             </li>
                                         );
                                     })}
+                                    {interactions.length > 3 && (
+                                        <li className="text-center py-2">
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                +{interactions.length - 3} ações anteriores
+                                            </p>
+                                        </li>
+                                    )}
                                 </ul>
                             ) : (
                                 <div className="h-full flex items-center justify-center">
-                                    <p className="text-center text-gray-500 dark:text-gray-400">Nenhuma interação registrada ainda.</p>
+                                    <p className="text-center text-gray-500 dark:text-gray-400 text-sm">Nenhuma ação registrada ainda.</p>
                                 </div>
                             )}
                         </div>
