@@ -476,27 +476,35 @@ export default function LeadDetailPage() {
                             </button>
                         </div>
                         
-                        {/* Exibição compacta em linha única */}
+                        {/* Exibição compacta com separadores simples entre categorias */}
                         <div className="space-y-3">
                             {Object.keys(qualifications).length > 0 ? (
-                                <div className="flex flex-wrap gap-1.5">
-                                    {Object.entries(qualifications).map(([key, values]) => {
-                                        // Verificação de segurança para garantir que values é um array
-                                        if (!Array.isArray(values)) {
-                                            console.warn(`Qualificação ${key} não é um array:`, values);
-                                            return null;
-                                        }
-                                        
-                                        return values.map((value, valueIndex) => (
-                                            <span 
-                                                key={`${key}-${valueIndex}`}
-                                                className="px-2 py-1 text-xs font-medium bg-[#F0F4FF] dark:bg-[#23283A] text-[#3478F6] dark:text-[#A3C8F7] rounded-md border border-[#A3C8F7]/20"
-                                            >
-                                                {value}
-                                            </span>
-                                        ));
-                                    }).filter(Boolean)}
-                                </div>
+                                Object.entries(qualifications).map(([key, values], index) => {
+                                    // Verificação de segurança para garantir que values é um array
+                                    if (!Array.isArray(values)) {
+                                        console.warn(`Qualificação ${key} não é um array:`, values);
+                                        return null;
+                                    }
+                                    
+                                    return (
+                                        <div key={key}>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {values.map((value, valueIndex) => (
+                                                    <span 
+                                                        key={`${key}-${valueIndex}`}
+                                                        className="px-2 py-1 text-xs font-medium bg-[#F0F4FF] dark:bg-[#23283A] text-[#3478F6] dark:text-[#A3C8F7] rounded-md border border-[#A3C8F7]/20"
+                                                    >
+                                                        {value}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                            {/* Linha simples separando categorias */}
+                                            {index < Object.keys(qualifications).length - 1 && (
+                                                <div className="mt-2 border-t border-[#E8E9F1] dark:border-[#23283A] opacity-30"></div>
+                                            )}
+                                        </div>
+                                    );
+                                }).filter(Boolean)
                             ) : (
                                 <div className="text-center py-6 text-[#6B6F76] dark:text-gray-400">
                                     <p className="text-sm">Nenhuma qualificação definida</p>
