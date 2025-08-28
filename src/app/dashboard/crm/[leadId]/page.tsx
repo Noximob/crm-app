@@ -428,32 +428,27 @@ export default function LeadDetailPage() {
                                     {PIPELINE_STAGES.map(stage => (<option key={stage} value={stage}>{stage}</option>))}
                                 </select>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <p className="text-xs text-[#6B6F76] dark:text-gray-400">{lead.telefone}</p>
-                                <a 
-                                    href={`https://wa.me/55${lead.telefone.replace(/\D/g, '')}`} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="text-green-500 hover:text-green-600 transition-colors"
-                                    onClick={(e) => e.stopPropagation()}
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <p className="text-xs text-[#6B6F76] dark:text-gray-400">{lead.telefone}</p>
+                                    <a 
+                                        href={`https://wa.me/55${lead.telefone.replace(/\D/g, '')}`} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-green-500 hover:text-green-600 transition-colors"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <WhatsAppIcon className="h-3 w-3 fill-current"/>
+                                    </a>
+                                </div>
+                                <button 
+                                    onClick={() => setIsAgendaModalOpen(true)} 
+                                    className="w-10 h-10 bg-[#3478F6] hover:bg-[#3478F6]/80 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 shadow-lg"
+                                    title="Agendar Tarefa"
                                 >
-                                    <WhatsAppIcon className="h-3 w-3 fill-current"/>
-                                </a>
+                                    <TaskIcon className="h-5 w-5"/>
+                                </button>
                             </div>
-                        </div>
-                    </div>
-
-                    {/* Card de Agendar Tarefa */}
-                    <div className="bg-white dark:bg-[#23283A] p-5 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-base font-semibold text-[#2E2F38] dark:text-white">Agendar Tarefa</h3>
-                            <button 
-                                onClick={() => setIsAgendaModalOpen(true)} 
-                                className="px-3 py-1.5 text-sm font-semibold text-[#3478F6] bg-[#E8E9F1] hover:bg-[#A3C8F7]/40 rounded-lg transition-colors"
-                            >
-                                <TaskIcon className="h-4 w-4 inline mr-2"/>
-                                Agendar
-                            </button>
                         </div>
                     </div>
 
