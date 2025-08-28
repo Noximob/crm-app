@@ -267,7 +267,7 @@ export default function TreinamentosPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">Treinamentos</h1>
+          <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">Academia</h1>
           <p className="text-[#6B6F76] dark:text-gray-300">Capacite-se com nossos treinamentos exclusivos</p>
         </div>
 
@@ -304,7 +304,7 @@ export default function TreinamentosPage() {
           <div className="relative">
             <input
               type="text"
-              placeholder="Buscar treinamentos..."
+              placeholder="Buscar na Academia..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-4 py-3 pl-12 bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
@@ -335,11 +335,11 @@ export default function TreinamentosPage() {
           </div>
         </div>
 
-        {/* Grid de Treinamentos - Estilo YouTube */}
+        {/* Grid da Academia - Estilo YouTube */}
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6] mx-auto mb-4"></div>
-            <p className="text-[#6B6F76] dark:text-gray-300">Carregando treinamentos...</p>
+            <p className="text-[#6B6F76] dark:text-gray-300">Carregando Academia...</p>
           </div>
         ) : filteredTreinamentos.length === 0 ? (
           <div className="text-center py-12">
