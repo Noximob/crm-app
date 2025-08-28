@@ -267,8 +267,8 @@ export default function TreinamentosPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">Treinamentos</h1>
-          <p className="text-[#6B6F76] dark:text-gray-300">Capacite-se com nossos treinamentos exclusivos</p>
+          <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">Academia</h1>
+                      <p className="text-[#6B6F76] dark:text-gray-300">Capacite-se com nossa academia exclusiva</p>
         </div>
 
         {/* Sugestão Aleatória */}
