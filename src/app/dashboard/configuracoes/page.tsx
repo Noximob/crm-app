@@ -28,7 +28,7 @@ export default function ConfiguracoesPage() {
           
           {/* Título */}
           <h1 className="text-4xl font-bold text-[#2E2F38] dark:text-white mb-4">
-            🚧 Configurações - Em Construção 🚧
+            🚧 Em Construção 🚧
           </h1>
           
           {/* Subtítulo */}

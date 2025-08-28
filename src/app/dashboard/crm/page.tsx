@@ -287,7 +287,7 @@ export default function CrmPage() {
                 <div className="bg-white dark:bg-[#23283A] p-4 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
                         <div className="flex flex-col md:flex-row md:items-center gap-4">
-                            <SectionTitle>Gestão de Clientes</SectionTitle>
+                            <SectionTitle>Gestão de Leads</SectionTitle>
                             {/* Campo de busca por nome */}
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

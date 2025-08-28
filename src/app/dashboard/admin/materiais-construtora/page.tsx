@@ -490,7 +490,7 @@ export default function MateriaisConstrutoraAdminPage() {
   };
 
   const getBreadcrumbs = () => {
-            const breadcrumbs = ['Materiais de Construtoras'];
+    const breadcrumbs = ['Materiais Construtoras'];
     if (selectedConstrutora) breadcrumbs.push(selectedConstrutora.nome);
     if (selectedProduto) breadcrumbs.push(selectedProduto.nome);
     return breadcrumbs.join(' > ');
@@ -512,7 +512,7 @@ export default function MateriaisConstrutoraAdminPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">Gestão de Materiais de Construtoras</h1>
+            <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">Gestão de Materiais Construtoras</h1>
             <p className="text-[#6B6F76] dark:text-gray-300">{getBreadcrumbs()}</p>
           </div>
           {view !== 'construtoras' && (

@@ -1081,7 +1081,6 @@ export default function DashboardPage() {
               <h1 className="text-2xl font-bold bg-gradient-to-r from-[#3478F6] via-[#A3C8F7] to-[#6B6F76] bg-clip-text text-transparent">
                 Olá, {currentUser?.email?.split('@')[0] || 'Corretor'}! <span className="text-yellow-400">👋</span>
               </h1>
-              <p className="text-sm text-[#6B6F76] dark:text-gray-400 mt-1">Bem-vindo ao Início</p>
             </div>
             
             {/* Indicadores econômicos compactos na mesma linha */}

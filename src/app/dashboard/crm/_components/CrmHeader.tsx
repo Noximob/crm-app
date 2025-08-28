@@ -29,8 +29,8 @@ export const CrmHeader = () => {
     const router = useRouter();
 
     const links = [
-        { href: '/dashboard/crm', text: 'Gestão de Clientes' },
-        { href: '/dashboard/crm/andamento', text: 'Andamento dos Clientes' }
+        { href: '/dashboard/crm', text: 'Gestão de Leads' },
+        { href: '/dashboard/crm/andamento', text: 'Andamento dos Leads' }
     ];
 
     const handleSignOut = async () => {

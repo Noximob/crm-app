@@ -28,12 +28,12 @@ export default function PagamentosPage() {
           
           {/* Título */}
           <h1 className="text-4xl font-bold text-[#2E2F38] dark:text-white mb-4">
-            🚧 Alume Pró - Em Construção 🚧
+            🚧 Em Construção 🚧
           </h1>
           
           {/* Subtítulo */}
           <p className="text-xl text-[#6B6F76] dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-            A área do Alume Pró está sendo desenvolvida com muito carinho para oferecer a melhor experiência possível.
+            A área de pagamentos está sendo desenvolvida com muito carinho para oferecer a melhor experiência possível.
           </p>
           
           {/* Card informativo */}

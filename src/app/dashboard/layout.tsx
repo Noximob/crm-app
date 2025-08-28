@@ -119,14 +119,14 @@ export default function DashboardLayout({
   const userDataWithPerms = userData as UserDataWithPerms;
 
   const navItems = [
-    { href: '/dashboard', icon: LayoutDashboardIcon, label: 'Início' },
+    { href: '/dashboard', icon: LayoutDashboardIcon, label: 'Dashboard' },
     { href: 'https://chat.openai.com', icon: ChatGPTIcon, label: 'ChatGPT', isExternal: true },
-    { href: '/dashboard/crm', icon: BarChartIcon, label: 'Clientes' },
-    { href: '/dashboard/materiais', icon: FileTextIcon, label: 'Materiais de apoio' },
+    { href: '/dashboard/crm', icon: BarChartIcon, label: 'CRM' },
+    { href: '/dashboard/materiais', icon: FileTextIcon, label: 'Materiais' },
     { href: '/dashboard/comunidade', icon: CommunityIcon, label: 'Comunidade', notifications: notifications.comunidade },
-    { href: '/dashboard/treinamentos', icon: PresentationIcon, label: 'Academia' },
+    { href: '/dashboard/treinamentos', icon: PresentationIcon, label: 'Treinamentos' },
     { href: '/dashboard/incluir-imovel', icon: HouseIcon, label: 'Incluir imóvel' },
-    { href: '/dashboard/pagamentos', icon: CreditCardIcon, label: 'Alume Pró' },
+    { href: '/dashboard/pagamentos', icon: CreditCardIcon, label: 'Pagamentos' },
     { href: '/dashboard/configuracoes', icon: SettingsIcon, label: 'Configurações' },
     // Exibir admin se for imobiliaria OU tiver permissao admin
     ...((userDataWithPerms?.tipoConta === 'imobiliaria' || userDataWithPerms?.permissoes?.admin) ? [
@@ -149,7 +149,7 @@ export default function DashboardLayout({
             <button 
               onClick={() => router.push('/dashboard')}
               className="flex items-center gap-2 hover:scale-105 transition-transform cursor-pointer"
-              title="Voltar ao Início"
+              title="Voltar ao Dashboard"
             >
               <AlumeLogo className="h-8 w-8" />
               {!collapsed && <h1 className="text-xl font-bold text-[#2E2F38] dark:text-white transition-all">Alume</h1>}

@@ -158,10 +158,10 @@ export default function LeadDetailPage() {
                             return;
                         }
                     } else {
-                        console.error("Acesso negado: Este lead não pertence a você.");
-                        setLead(null);
-                        setLoading(false);
-                        return;
+                    console.error("Acesso negado: Este lead não pertence a você.");
+                    setLead(null);
+                    setLoading(false);
+                    return;
                     }
                 }
 
@@ -441,18 +441,18 @@ export default function LeadDetailPage() {
                                     <span className="text-xs text-[#6B6F76] dark:text-gray-400">Tarefas</span>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2">
                                 <p className="text-xs text-[#6B6F76] dark:text-gray-400">{lead.telefone}</p>
-                                <a 
-                                    href={`https://wa.me/55${lead.telefone.replace(/\D/g, '')}`} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="text-green-500 hover:text-green-600 transition-colors"
-                                    onClick={(e) => e.stopPropagation()}
-                                >
+                                    <a 
+                                        href={`https://wa.me/55${lead.telefone.replace(/\D/g, '')}`} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-green-500 hover:text-green-600 transition-colors"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
                                     <WhatsAppIcon className="h-3 w-3 fill-current"/>
-                                </a>
-                            </div>
+                                    </a>
+                                </div>
                         </div>
                     </div>
 
@@ -512,7 +512,7 @@ export default function LeadDetailPage() {
                                                              </span>
                                                          )}
                                                      </div>
-                                                 </div>
+                    </div>
                                                  {/* Botão para ver descrição completa */}
                                                  <button
                                                      onClick={() => {
@@ -555,8 +555,8 @@ export default function LeadDetailPage() {
                                      <p className="text-center text-gray-500 dark:text-gray-400 text-sm">Nenhuma ação registrada ainda.</p>
                                  </div>
                              )}
-                         </div>
-                     </div>
+                        </div>
+                    </div>
 
 
                 </div>
@@ -567,12 +567,12 @@ export default function LeadDetailPage() {
                     <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white">Qualificação do Lead</h3>
-                            <button 
+                                            <button
                                 onClick={() => setIsQualificationModalOpen(true)}
                                 className="px-3 py-1.5 text-sm font-semibold text-[#3478F6] bg-[#E8E9F1] hover:bg-[#A3C8F7]/40 rounded-lg transition-colors dark:bg-[#23283A] dark:hover:bg-[#3478F6]/20"
                             >
                                 ✏️ Editar Qualificação
-                            </button>
+                                            </button>
                         </div>
                         
                         {/* Exibição compacta em linha única com separadores simples */}
@@ -603,7 +603,7 @@ export default function LeadDetailPage() {
                                             </React.Fragment>
                                         );
                                     }).filter(Boolean)}
-                                </div>
+                                    </div>
                             ) : (
                                 <div className="text-center py-6 text-[#6B6F76] dark:text-gray-400">
                                     <p className="text-sm">Nenhuma qualificação definida</p>
