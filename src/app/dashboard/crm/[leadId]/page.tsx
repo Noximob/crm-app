@@ -487,12 +487,12 @@ export default function LeadDetailPage() {
                                     }
                                     
                                     return (
-                                        <div key={key}>
-                                            <div className="flex flex-wrap gap-2">
+                                        <div key={key} className="flex items-center gap-2">
+                                            <div className="flex flex-wrap gap-1.5">
                                                 {values.map((value, valueIndex) => (
                                                     <span 
                                                         key={`${key}-${valueIndex}`}
-                                                        className="px-3 py-1.5 text-sm font-medium bg-[#F0F4FF] dark:bg-[#23283A] text-[#3478F6] dark:text-[#A3C8F7] rounded-lg border border-[#A3C8F7]/20"
+                                                        className="px-2 py-1 text-xs font-medium bg-[#F0F4FF] dark:bg-[#23283A] text-[#3478F6] dark:text-[#A3C8F7] rounded-md border border-[#A3C8F7]/20"
                                                     >
                                                         {value}
                                                     </span>
@@ -500,7 +500,7 @@ export default function LeadDetailPage() {
                                             </div>
                                             {/* Separador visual sutil entre categorias */}
                                             {index < Object.keys(qualifications).length - 1 && (
-                                                <div className="mt-3 border-t border-[#E8E9F1] dark:border-[#23283A] opacity-40"></div>
+                                                <div className="ml-2 w-8 h-px bg-[#E8E9F1] dark:bg-[#23283A] opacity-40"></div>
                                             )}
                                         </div>
                                     );
