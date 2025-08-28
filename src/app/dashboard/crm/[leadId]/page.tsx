@@ -418,8 +418,8 @@ export default function LeadDetailPage() {
                                 {lead.nome.charAt(0).toUpperCase()}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <h2 className="text-lg font-semibold text-[#2E2F38] dark:text-white tracking-tight mb-2">{lead.nome}</h2>
-                                <div className="flex items-center gap-2 mb-2">
+                                <h2 className="text-lg font-semibold text-[#2E2F38] dark:text-white tracking-tight mb-3">{lead.nome}</h2>
+                                <div className="flex items-center gap-2 mb-3">
                                     <p className="text-sm text-[#6B6F76] dark:text-gray-400">{lead.telefone}</p>
                                     <a 
                                         href={`https://wa.me/55${lead.telefone.replace(/\D/g, '')}`} 
@@ -431,17 +431,17 @@ export default function LeadDetailPage() {
                                         <WhatsAppIcon className="h-4 w-4 fill-current"/>
                                     </a>
                                 </div>
-                                <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-3">{lead.email}</p>
+                                <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-4">{lead.email}</p>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <span className={`h-2 w-2 rounded-full ${getTaskStatusColor(taskStatus)}`}></span>
-                                        <span className="text-xs text-[#6B6F76] dark:text-gray-400">{taskStatus}</span>
+                                        <span className={`h-2.5 w-2.5 rounded-full ${getTaskStatusColor(taskStatus)}`}></span>
+                                        <span className="text-sm text-[#6B6F76] dark:text-gray-400">{taskStatus}</span>
                                     </div>
                                     <select 
                                         id="lead-situation" 
                                         value={lead.etapa} 
                                         onChange={handleStageChange} 
-                                        className="px-3 py-1.5 text-xs border border-[#A3C8F7] dark:border-[#3478F6] rounded-md bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white focus:ring-1 focus:ring-[#3478F6] focus:outline-none"
+                                        className="px-3 py-2 text-sm border border-[#A3C8F7] dark:border-[#3478F6] rounded-lg bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white focus:ring-2 focus:ring-[#3478F6] focus:outline-none"
                                     >
                                         {PIPELINE_STAGES.map(stage => (<option key={stage} value={stage}>{stage}</option>))}
                                     </select>
