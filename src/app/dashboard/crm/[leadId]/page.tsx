@@ -453,6 +453,65 @@ export default function LeadDetailPage() {
                         </div>
                     </div>
 
+                    {/* Card de Histórico de Ações */}
+                    <div className="bg-white dark:bg-[#23283A] p-5 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+                        <h3 className="text-base font-semibold text-[#2E2F38] dark:text-white mb-4">Histórico de Ações</h3>
+                        <div className="flex-grow overflow-y-auto min-h-0 pr-2">
+                            {interactions.length > 0 ? (
+                                <ul className="space-y-4">
+                                    {interactions.map(interaction => {
+                                        const isPendingTask = interaction.type === 'Tarefa Agendada' &&
+                                            interaction.taskId &&
+                                            tasks.some(task => task.id === interaction.taskId);
+
+                                        return (
+                                            <li key={interaction.id} className="flex items-start gap-3">
+                                                <div className="bg-slate-100 dark:bg-gray-700 p-2 rounded-full">
+                                                    {getIconForInteraction(interaction.type)}
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-gray-700 dark:text-gray-200">{interaction.type}</p>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400">{interaction.notes}</p>
+                                                    
+                                                    {interaction.type === 'Tarefa Cancelada' && interaction.cancellationNotes && (
+                                                        <p className="text-sm text-red-500 mt-1">
+                                                            <span className="font-semibold">Motivo:</span> {interaction.cancellationNotes}
+                                                        </p>
+                                                    )}
+
+                                                    {isPendingTask && (
+                                                        <div className="mt-2 flex items-center gap-3">
+                                                            <button
+                                                                onClick={() => handleUpdateTaskStatus(interaction.id, interaction.taskId!, 'concluída')}
+                                                                className="px-2.5 py-1 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors"
+                                                            >
+                                                                Tarefa Concluída
+                                                            </button>
+                                                            <button
+                                                                onClick={() => openCancelModal(interaction.id, interaction.taskId!)}
+                                                                className="px-2.5 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+                                                            >
+                                                                Cancelar Tarefa
+                                                            </button>
+                                                        </div>
+                                                    )}
+
+                                                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                                        {interaction.timestamp ? new Date(interaction.timestamp.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}
+                                                    </p>
+                                                </div>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            ) : (
+                                <div className="h-full flex items-center justify-center">
+                                    <p className="text-center text-gray-500 dark:text-gray-400">Nenhuma interação registrada ainda.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
 
                 </div>
 
@@ -540,64 +599,7 @@ export default function LeadDetailPage() {
                         </div>
                     </div>
 
-                    {/* Card de Histórico */}
-                    <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] flex flex-col">
-                        <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex-shrink-0">Histórico de Ações</h3>
-                        <div className="flex-grow overflow-y-auto min-h-0 pr-2">
-                            {interactions.length > 0 ? (
-                                <ul className="space-y-4">
-                                    {interactions.map(interaction => {
-                                        const isPendingTask = interaction.type === 'Tarefa Agendada' &&
-                                            interaction.taskId &&
-                                            tasks.some(task => task.id === interaction.taskId);
-
-                                        return (
-                                            <li key={interaction.id} className="flex items-start gap-3">
-                                                <div className="bg-slate-100 dark:bg-gray-700 p-2 rounded-full">
-                                                    {getIconForInteraction(interaction.type)}
-                                                </div>
-                                                <div>
-                                                    <p className="font-semibold text-gray-700 dark:text-gray-200">{interaction.type}</p>
-                                                    <p className="text-sm text-gray-600 dark:text-gray-400">{interaction.notes}</p>
-                                                    
-                                                    {interaction.type === 'Tarefa Cancelada' && interaction.cancellationNotes && (
-                                                        <p className="text-sm text-red-500 mt-1">
-                                                            <span className="font-semibold">Motivo:</span> {interaction.cancellationNotes}
-                                                        </p>
-                                                    )}
-
-                                                    {isPendingTask && (
-                                                        <div className="mt-2 flex items-center gap-3">
-                                                            <button
-                                                                onClick={() => handleUpdateTaskStatus(interaction.id, interaction.taskId!, 'concluída')}
-                                                                className="px-2.5 py-1 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors"
-                                                            >
-                                                                Tarefa Concluída
-                                                            </button>
-                                                            <button
-                                                                onClick={() => openCancelModal(interaction.id, interaction.taskId!)}
-                                                                className="px-2.5 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
-                                                            >
-                                                                Cancelar Tarefa
-                                                            </button>
-                                                        </div>
-                                                    )}
-
-                                                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                                        {interaction.timestamp ? new Date(interaction.timestamp.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}
-                                                    </p>
-                                                </div>
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
-                            ) : (
-                                <div className="h-full flex items-center justify-center">
-                                    <p className="text-center text-gray-500 dark:text-gray-400">Nenhuma interação registrada ainda.</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    
                 </div>
             </div>
             
