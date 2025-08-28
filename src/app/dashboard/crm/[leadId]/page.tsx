@@ -443,14 +443,17 @@ export default function LeadDetailPage() {
                         </div>
                     </div>
 
-                    {/* Card O que deseja fazer? */}
-                    <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-                        <h3 className="text-base font-semibold text-[#2E2F38] dark:text-white mb-4">O que deseja fazer?</h3>
-                        <div className="grid grid-cols-2 gap-3">
-                            <button onClick={() => openInteractionModal('Ligação')} className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-[#3478F6] bg-[#E8E9F1] rounded-lg hover:bg-[#A3C8F7]/40 transition-colors"><PhoneIcon className="h-4 w-4"/>Ligação</button>
-                            <button onClick={() => openInteractionModal('WhatsApp')} className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-green-700 bg-green-100/80 rounded-lg hover:bg-green-200/70 transition-colors"><WhatsAppIcon className="h-4 w-4 fill-current"/>WhatsApp</button>
-                            <button onClick={() => openInteractionModal('Visita')} className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-indigo-700 bg-indigo-100/80 rounded-lg hover:bg-indigo-200/70 transition-colors"><BuildingIcon className="h-4 w-4"/>Visita</button>
-                            <button onClick={() => setIsAgendaModalOpen(true)} className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-[#3478F6] bg-[#E8E9F1] rounded-lg hover:bg-[#A3C8F7]/40 transition-colors"><TaskIcon className="h-4 w-4"/>Tarefa</button>
+                    {/* Card de Agendar Tarefa */}
+                    <div className="bg-white dark:bg-[#23283A] p-5 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-base font-semibold text-[#2E2F38] dark:text-white">Agendar Tarefa</h3>
+                            <button 
+                                onClick={() => setIsAgendaModalOpen(true)} 
+                                className="px-3 py-1.5 text-sm font-semibold text-[#3478F6] bg-[#E8E9F1] hover:bg-[#A3C8F7]/40 rounded-lg transition-colors"
+                            >
+                                <TaskIcon className="h-4 w-4 inline mr-2"/>
+                                Agendar
+                            </button>
                         </div>
                     </div>
 
