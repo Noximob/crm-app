@@ -78,6 +78,7 @@ export default function AgendaModal({ isOpen, onClose, onSave, isLoading }: Agen
                                 <option>Ligação</option>
                                 <option>WhatsApp</option>
                                 <option>Visita</option>
+                                <option>Outros</option>
                             </select>
                         </div>
                         <div className="sm:col-span-1">
