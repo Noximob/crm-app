@@ -77,6 +77,7 @@ const getCategoryTitle = (key: string) => {
         case 'finalidade': return 'Finalidade';
         case 'estagio': return 'Estágio do Imóvel';
         case 'quartos': return 'Quartos';
+        case 'localizacao': return 'Localização';
         case 'tipo': return 'Tipo do Imóvel';
         case 'vagas': return 'Vagas de Garagem';
         case 'valor': return 'Valor do Imóvel';
@@ -726,7 +727,12 @@ const QUALIFICATION_QUESTIONS = [
     {
         title: 'Quartos',
         key: 'quartos',
-        options: ['2 quartos', '1 Suíte + 1 Quarto', '3 quartos', '4 quartos'],
+        options: ['1 quarto', '2 quartos', '1 Suíte + 1 Quarto', '3 quartos', '4 quartos'],
+    },
+    {
+        title: 'Localização',
+        key: 'localizacao',
+        options: ['Penha', 'Piçarras', 'Barra Velha', 'Outros'],
     },
     {
         title: 'Tipo do Imóvel',

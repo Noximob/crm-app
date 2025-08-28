@@ -24,7 +24,7 @@ interface Lead {
   telefone: string;
   etapa: string;
   taskStatus: TaskStatus;
-  qualificacao?: { [key: string]: string };
+  qualificacao?: { [key: string]: string | string[] };
   [key: string]: any; 
 }
 
@@ -261,7 +261,12 @@ export default function CrmPage() {
                         return false; 
                     }
 
-                    return selectedOptions.includes(leadValue);
+                    // Tratar tanto strings quanto arrays
+                    if (Array.isArray(leadValue)) {
+                        return leadValue.some(value => selectedOptions.includes(value));
+                    } else {
+                        return selectedOptions.includes(leadValue);
+                    }
                 });
             });
         }
