@@ -1,11 +1,11 @@
 {
   "indexes": [
     {
-      "collectionGroup": "leads",
+      "collectionGroup": "brelloBoards",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "userId",
+          "fieldPath": "imobiliariaId",
           "order": "ASCENDING"
         },
         {
@@ -15,85 +15,29 @@
       ]
     },
     {
-      "collectionGroup": "leads",
+      "collectionGroup": "brelloLists",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "userId",
+          "fieldPath": "boardId",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "etapa",
+          "fieldPath": "order",
           "order": "ASCENDING"
         }
       ]
     },
     {
-      "collectionGroup": "construtoras",
+      "collectionGroup": "brelloCards",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "imobiliariaId",
+          "fieldPath": "boardId",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "nome",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "produtos",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "construtoraId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "nome",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "materiais",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "produtoId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "nome",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "notes",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "userId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "criadoEm",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "agenda",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "userId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "dataHora",
+          "fieldPath": "order",
           "order": "ASCENDING"
         }
       ]

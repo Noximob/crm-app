@@ -562,8 +562,8 @@ export default function BrelloPage() {
     try {
       const q = query(
         collection(db, 'brelloBoards'),
-        where('imobiliariaId', '==', userData?.imobiliariaId),
-        orderBy('createdAt', 'desc')
+        where('imobiliariaId', '==', userData?.imobiliariaId)
+        // Removido orderBy para evitar problemas de índice
       );
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -572,9 +572,14 @@ export default function BrelloPage() {
           ...doc.data()
         })) as BrelloBoard[];
         
-        setBoards(boardsData);
-        if (boardsData.length > 0 && !currentBoard) {
-          setCurrentBoard(boardsData[0]);
+        // Ordenar localmente em vez de no Firebase
+        const sortedBoards = boardsData.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        
+        setBoards(sortedBoards);
+        if (sortedBoards.length > 0 && !currentBoard) {
+          setCurrentBoard(sortedBoards[0]);
         }
         setLoading(false);
       });
@@ -592,8 +597,8 @@ export default function BrelloPage() {
     try {
       const q = query(
         collection(db, 'brelloLists'),
-        where('boardId', '==', currentBoard.id),
-        orderBy('order', 'asc')
+        where('boardId', '==', currentBoard.id)
+        // Removido orderBy para evitar problemas de índice
       );
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -602,7 +607,9 @@ export default function BrelloPage() {
           ...doc.data()
         })) as BrelloList[];
         
-        setLists(listsData);
+        // Ordenar localmente em vez de no Firebase
+        const sortedLists = listsData.sort((a, b) => a.order - b.order);
+        setLists(sortedLists);
       });
 
       return unsubscribe;
@@ -617,8 +624,8 @@ export default function BrelloPage() {
     try {
       const q = query(
         collection(db, 'brelloCards'),
-        where('boardId', '==', currentBoard.id),
-        orderBy('order', 'asc')
+        where('boardId', '==', currentBoard.id)
+        // Removido orderBy para evitar problemas de índice
       );
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -627,7 +634,9 @@ export default function BrelloPage() {
           ...doc.data()
         })) as BrelloCard[];
         
-        setCards(cardsData);
+        // Ordenar localmente em vez de no Firebase
+        const sortedCards = cardsData.sort((a, b) => a.order - b.order);
+        setCards(sortedCards);
       });
 
       return unsubscribe;
