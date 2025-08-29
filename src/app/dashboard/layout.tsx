@@ -120,11 +120,11 @@ export default function DashboardLayout({
 
   const navItems = [
     { href: '/dashboard', icon: LayoutDashboardIcon, label: 'Inicio' },
-    { href: 'https://chat.openai.com', icon: ChatGPTIcon, label: 'ChatGPT', isExternal: true },
     { href: '/dashboard/crm', icon: BarChartIcon, label: 'Clientes' },
     { href: '/dashboard/materiais', icon: FileTextIcon, label: 'Materiais de apoio' },
-    { href: '/dashboard/comunidade', icon: CommunityIcon, label: 'Comunidade', notifications: notifications.comunidade },
+    { href: 'https://chat.openai.com', icon: ChatGPTIcon, label: 'ChatGPT', isExternal: true },
     { href: '/dashboard/treinamentos', icon: PresentationIcon, label: 'Academia' },
+    { href: '/dashboard/comunidade', icon: CommunityIcon, label: 'Comunidade', notifications: notifications.comunidade },
     { href: '/dashboard/incluir-imovel', icon: HouseIcon, label: 'Incluir imóvel' },
     { href: '/dashboard/pagamentos', icon: CreditCardIcon, label: 'Alume Pró' },
     { href: '/dashboard/configuracoes', icon: SettingsIcon, label: 'Configurações' },
