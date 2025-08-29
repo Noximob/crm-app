@@ -4,9 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where, orderBy } from 'firebase/firestore';
-import { DndContext, closestCorners, useSensors, PointerSensor, KeyboardSensor, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay } from '@dnd-kit/core';
+import { useDroppable } from '@dnd-kit/core';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { useSensor } from '@dnd-kit/core';
 
 // Tipos para o sistema Brello
 interface BrelloCard {
@@ -39,12 +41,31 @@ interface BrelloBoard {
   updatedAt: Date;
 }
 
-// Componente de Cartão
-const Card = ({ card, onEdit, onDelete }: { 
+// Componente de Cartão Sortable
+const SortableCard = ({ card, onEdit, onDelete }: { 
   card: BrelloCard; 
   onEdit: (card: BrelloCard) => void; 
   onDelete: (id: string) => void; 
 }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ 
+    id: card.id,
+    data: {
+      type: 'card',
+      card: card
+    }
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high': return 'bg-red-500';
@@ -64,7 +85,13 @@ const Card = ({ card, onEdit, onDelete }: {
   };
 
   return (
-    <div className="bg-white dark:bg-[#23283A] rounded-lg shadow-sm border border-[#E8E9F1] dark:border-[#23283A] p-3 mb-3 cursor-pointer hover:shadow-md transition-all duration-200 group">
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="bg-white dark:bg-[#23283A] rounded-lg shadow-sm border border-[#E8E9F1] dark:border-[#23283A] p-3 mb-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-200 group"
+    >
       {/* Labels */}
       {card.labels.length > 0 && (
         <div className="flex gap-1 mb-3">
@@ -224,7 +251,7 @@ const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, on
       {/* Cartões */}
       <div className="space-y-3 mb-4 min-h-[100px]">
         {sortedCards.map((card) => (
-          <Card
+          <SortableCard
             key={card.id}
             card={card}
             onEdit={onEditCard}
@@ -897,7 +924,7 @@ export default function BrelloPage() {
           {currentBoard ? (
             <DndContext
               sensors={sensors}
-              collisionDetection={closestCorners}
+              collisionDetection={closestCenter}
               onDragEnd={handleDragEnd}
             >
               <div className="flex gap-6 overflow-x-auto pb-6">
