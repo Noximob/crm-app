@@ -780,31 +780,31 @@ export default function BrelloPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F5F6FA] to-[#E8E9F1] dark:from-[#181C23] dark:to-[#23283A]">
       {/* Header */}
-      <div className="bg-white/80 dark:bg-[#23283A]/80 backdrop-blur-sm border-b border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-sm">
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-[#3478F6] to-[#10B981] rounded-xl flex items-center justify-center shadow-lg">
-                  <span className="text-2xl">📋</span>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <span className="text-lg text-white">📋</span>
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-[#2E2F38] to-[#3478F6] dark:from-white dark:to-[#A3C8F7] bg-clip-text text-transparent">
+                  <h1 className="text-xl font-bold text-gray-900 dark:text-white">
                     Brello
                   </h1>
-                  <p className="text-sm text-[#6B6F76] dark:text-gray-300">Organize suas tarefas com estilo</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Organize suas tarefas</p>
                 </div>
               </div>
               
               {/* Seletor de Board */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <select
                   value={currentBoard?.id || ''}
                   onChange={(e) => {
                     const board = boards.find(b => b.id === e.target.value);
                     setCurrentBoard(board || null);
                   }}
-                  className="px-4 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#3478F6] shadow-sm"
+                  className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
                 >
                   {boards.map((board) => (
                     <option key={board.id} value={board.id}>
@@ -815,7 +815,7 @@ export default function BrelloPage() {
                 
                 <button
                   onClick={() => setShowNewBoardModal(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-[#3478F6] to-[#255FD1] text-white rounded-lg hover:from-[#255FD1] hover:to-[#1E40AF] transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
                 >
                   + Novo Board
                 </button>
@@ -826,7 +826,7 @@ export default function BrelloPage() {
             {currentBoard && (
               <button
                 onClick={() => setShowNewListModal(true)}
-                className="px-6 py-3 bg-gradient-to-r from-[#10B981] to-[#059669] text-white rounded-lg hover:from-[#059669] hover:to-[#047857] transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                className="px-4 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
               >
                 + Nova Lista
               </button>
@@ -836,10 +836,10 @@ export default function BrelloPage() {
       </div>
 
       {/* Conteúdo Principal */}
-      <div className="p-8">
+      <div className="p-4">
         <div className="max-w-7xl mx-auto">
           {currentBoard ? (
-            <div className="flex gap-8 overflow-x-auto pb-8 scrollbar-thin scrollbar-thumb-[#E8E9F1] dark:scrollbar-thumb-[#23283A] scrollbar-track-transparent">
+            <div className="flex gap-4 overflow-x-auto pb-4">
               {lists.map((list) => (
                 <List
                   key={list.id}
@@ -862,32 +862,32 @@ export default function BrelloPage() {
               {/* Botão para adicionar nova lista */}
               <button
                 onClick={() => setShowNewListModal(true)}
-                className="min-w-[300px] h-fit p-8 border-2 border-dashed border-[#E8E9F1] dark:border-[#23283A] rounded-xl hover:border-[#3478F6] hover:bg-white/50 dark:hover:bg-[#23283A]/50 transition-all duration-200 group"
+                className="min-w-[250px] h-fit p-6 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 group"
               >
                 <div className="text-center">
-                  <div className="w-12 h-12 bg-[#3478F6] rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                    <span className="text-2xl text-white">+</span>
+                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
+                    <span className="text-lg text-white">+</span>
                   </div>
-                  <p className="text-[#6B6F76] dark:text-gray-300 group-hover:text-[#3478F6] transition-colors">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-blue-600 transition-colors">
                     Adicionar Lista
                   </p>
                 </div>
               </button>
             </div>
           ) : (
-            <div className="text-center py-20">
-              <div className="w-24 h-24 bg-gradient-to-br from-[#3478F6] to-[#10B981] rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl">
-                <span className="text-4xl">📋</span>
+            <div className="text-center py-16">
+              <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                <span className="text-3xl text-white">📋</span>
               </div>
-              <h3 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-4">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                 Bem-vindo ao Brello!
               </h3>
-              <p className="text-lg text-[#6B6F76] dark:text-gray-300 mb-8 max-w-md mx-auto">
-                Crie seu primeiro board para começar a organizar suas tarefas de forma visual e intuitiva
+              <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                Crie seu primeiro board para começar a organizar suas tarefas
               </p>
               <button
                 onClick={() => setShowNewBoardModal(true)}
-                className="px-8 py-4 bg-gradient-to-r from-[#3478F6] to-[#255FD1] text-white rounded-xl hover:from-[#255FD1] hover:to-[#1E40AF] transition-all duration-200 text-lg font-semibold shadow-2xl hover:shadow-3xl transform hover:-translate-y-1"
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-lg font-semibold"
               >
                 🚀 Criar Primeiro Board
               </button>
