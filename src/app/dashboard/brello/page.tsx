@@ -1,13 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where, orderBy, serverTimestamp } from 'firebase/firestore';
-import { DndContext, DragEndEvent, closestCorners, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where, orderBy } from 'firebase/firestore';
 
 // Tipos para o sistema Brello
 interface BrelloCard {
@@ -18,12 +14,9 @@ interface BrelloCard {
   order: number;
   labels: string[];
   dueDate?: Date;
-  assignee?: string;
   priority: 'low' | 'medium' | 'high';
   createdAt: Date;
   updatedAt: Date;
-  attachments?: string[];
-  comments?: Comment[];
 }
 
 interface BrelloList {
@@ -43,62 +36,12 @@ interface BrelloBoard {
   updatedAt: Date;
 }
 
-interface Comment {
-  id: string;
-  text: string;
-  userId: string;
-  userName: string;
-  createdAt: Date;
-}
-
-// Componente de Lista Sortable
-const SortableList = ({ list, children, ...props }: any) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: list.id,
-    data: {
-      type: 'list',
-      list,
-    },
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} {...props}>
-      {children}
-    </div>
-  );
-};
-
-// Componente de Cartão Sortable
-const SortableCard = ({ card, children, ...props }: any) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: card.id,
-    data: {
-      type: 'card',
-      card,
-    },
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} {...props}>
-      {children}
-    </div>
-  );
-};
-
 // Componente de Cartão
-const Card = ({ card, onEdit, onDelete }: { card: BrelloCard; onEdit: (card: BrelloCard) => void; onDelete: (id: string) => void }) => {
+const Card = ({ card, onEdit, onDelete }: { 
+  card: BrelloCard; 
+  onEdit: (card: BrelloCard) => void; 
+  onDelete: (id: string) => void; 
+}) => {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high': return 'bg-red-500';
@@ -118,14 +61,14 @@ const Card = ({ card, onEdit, onDelete }: { card: BrelloCard; onEdit: (card: Bre
   };
 
   return (
-    <div className="bg-white dark:bg-[#23283A] rounded-lg shadow-sm border border-[#E8E9F1] dark:border-[#23283A] p-3 mb-2 cursor-pointer hover:shadow-md transition-all duration-200">
+    <div className="bg-white dark:bg-[#23283A] rounded-lg shadow-sm border border-[#E8E9F1] dark:border-[#23283A] p-3 mb-3 cursor-pointer hover:shadow-md transition-all duration-200 group">
       {/* Labels */}
       {card.labels.length > 0 && (
-        <div className="flex gap-1 mb-2">
+        <div className="flex gap-1 mb-3">
           {card.labels.map((label, index) => (
             <span
               key={index}
-              className="w-2 h-2 rounded-full"
+              className="w-3 h-3 rounded-full"
               style={{ backgroundColor: label }}
             />
           ))}
@@ -139,13 +82,13 @@ const Card = ({ card, onEdit, onDelete }: { card: BrelloCard; onEdit: (card: Bre
       
       {/* Descrição */}
       {card.description && (
-        <p className="text-xs text-[#6B6F76] dark:text-gray-300 mb-2 line-clamp-2">
+        <p className="text-xs text-[#6B6F76] dark:text-gray-300 mb-3 line-clamp-2">
           {card.description}
         </p>
       )}
       
       {/* Prioridade */}
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center gap-2 mb-3">
         <span className={`w-2 h-2 rounded-full ${getPriorityColor(card.priority)}`} />
         <span className="text-xs text-[#6B6F76] dark:text-gray-300">
           {getPriorityText(card.priority)}
@@ -154,8 +97,8 @@ const Card = ({ card, onEdit, onDelete }: { card: BrelloCard; onEdit: (card: Bre
       
       {/* Data de vencimento */}
       {card.dueDate && (
-        <div className="flex items-center gap-1 mb-2">
-          <svg className="w-3 h-3 text-[#6B6F76] dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="flex items-center gap-2 mb-3">
+          <svg className="w-4 h-4 text-[#6B6F76] dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
             <line x1="16" x2="16" y1="2" y2="6"/>
             <line x1="8" x2="8" y1="2" y2="6"/>
@@ -168,28 +111,23 @@ const Card = ({ card, onEdit, onDelete }: { card: BrelloCard; onEdit: (card: Bre
       )}
       
       {/* Ações */}
-      <div className="flex items-center justify-between pt-2 border-t border-[#E8E9F1] dark:border-[#23283A]">
+      <div className="flex items-center justify-between pt-3 border-t border-[#E8E9F1] dark:border-[#23283A] opacity-0 group-hover:opacity-100 transition-opacity">
         <div className="flex items-center gap-2">
           <button
             onClick={() => onEdit(card)}
-            className="text-xs text-[#3478F6] hover:text-[#255FD1] transition-colors"
+            className="p-1 text-[#3478F6] hover:bg-[#3478F6] hover:text-white rounded transition-colors"
+            title="Editar"
           >
             ✏️
           </button>
           <button
             onClick={() => onDelete(card.id)}
-            className="text-xs text-[#F45B69] hover:text-[#DC2626] transition-colors"
+            className="p-1 text-[#F45B69] hover:bg-[#F45B69] hover:text-white rounded transition-colors"
+            title="Excluir"
           >
             🗑️
           </button>
         </div>
-        
-        {/* Indicador de comentários */}
-        {card.comments && card.comments.length > 0 && (
-          <div className="flex items-center gap-1 text-xs text-[#6B6F76] dark:text-gray-300">
-            💬 {card.comments.length}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -221,32 +159,34 @@ const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, on
     .sort((a, b) => a.order - b.order);
 
   return (
-    <div className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg p-3 min-w-[280px] max-w-[280px]">
+    <div className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl p-4 min-w-[300px] max-w-[300px] shadow-lg">
       {/* Header da Lista */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
           <div 
-            className="w-3 h-3 rounded-full"
+            className="w-4 h-4 rounded-full shadow-sm"
             style={{ backgroundColor: list.color }}
           />
-          <h3 className="font-semibold text-[#2E2F38] dark:text-white text-sm">
+          <h3 className="font-semibold text-[#2E2F38] dark:text-white text-base">
             {list.title}
           </h3>
-          <span className="text-xs text-[#6B6F76] dark:text-gray-300 bg-white dark:bg-[#23283A] px-2 py-1 rounded-full">
+          <span className="text-xs text-[#6B6F76] dark:text-gray-300 bg-white dark:bg-[#23283A] px-2 py-1 rounded-full shadow-sm">
             {sortedCards.length}
           </span>
         </div>
         
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 opacity-0 hover:opacity-100 transition-opacity">
           <button
             onClick={() => onEditList(list)}
-            className="text-xs text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] transition-colors"
+            className="p-1 text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] hover:bg-[#3478F6] hover:text-white rounded transition-all"
+            title="Editar lista"
           >
             ✏️
           </button>
           <button
             onClick={() => onDeleteList(list.id)}
-            className="text-xs text-[#6B6F76] dark:text-gray-300 hover:text-[#F45B69] transition-colors"
+            className="p-1 text-[#6B6F76] dark:text-gray-300 hover:text-[#F45B69] hover:bg-[#F45B69] hover:text-white rounded transition-all"
+            title="Excluir lista"
           >
             🗑️
           </button>
@@ -254,39 +194,38 @@ const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, on
       </div>
 
       {/* Cartões */}
-      <div className="space-y-2 mb-3">
+      <div className="space-y-3 mb-4 min-h-[100px]">
         {sortedCards.map((card) => (
-          <SortableCard key={card.id} card={card}>
-            <Card
-              card={card}
-              onEdit={onEditCard}
-              onDelete={onDeleteCard}
-            />
-          </SortableCard>
+          <Card
+            key={card.id}
+            card={card}
+            onEdit={onEditCard}
+            onDelete={onDeleteCard}
+          />
         ))}
       </div>
 
       {/* Adicionar Cartão */}
       {isAddingCard ? (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <input
             type="text"
             value={newCardTitle}
             onChange={(e) => setNewCardTitle(e.target.value)}
             placeholder="Título do cartão..."
-            className="w-full px-3 py-2 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38] dark:text-white"
+            className="w-full px-3 py-2 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38] dark:text-white shadow-sm"
             autoFocus
           />
           <div className="flex gap-2">
             <button
               onClick={handleAddCard}
-              className="px-3 py-1 bg-[#3478F6] text-white text-sm rounded-lg hover:bg-[#255FD1] transition-colors"
+              className="px-3 py-1 bg-[#3478F6] text-white text-sm rounded-lg hover:bg-[#255FD1] transition-colors shadow-sm"
             >
               Adicionar
             </button>
             <button
               onClick={() => setIsAddingCard(false)}
-              className="px-3 py-1 bg-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-400 transition-colors"
+              className="px-3 py-1 bg-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-400 transition-colors shadow-sm"
             >
               Cancelar
             </button>
@@ -295,7 +234,7 @@ const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, on
       ) : (
         <button
           onClick={() => setIsAddingCard(true)}
-          className="w-full text-left text-sm text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] dark:hover:text-[#A3C8F7] p-2 rounded-lg hover:bg-white/50 dark:hover:bg-[#23283A]/50 transition-colors"
+          className="w-full text-left text-sm text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] dark:hover:text-[#A3C8F7] p-3 rounded-lg hover:bg-white/50 dark:hover:bg-[#23283A]/50 transition-all duration-200 border-2 border-dashed border-[#E8E9F1] dark:border-[#23283A] hover:border-[#3478F6]"
         >
           + Adicionar cartão
         </button>
@@ -349,11 +288,11 @@ const CardModal = ({ card, isOpen, onClose, onSave, onDelete }: {
   if (!isOpen || !card) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
-      <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+      <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-2xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-[#E8E9F1] dark:border-[#23283A]">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Editar Cartão</h2>
-          <button onClick={onClose} className="text-2xl text-[#6B6F76] dark:text-gray-300 hover:text-[#F45B69]">
+          <button onClick={onClose} className="text-2xl text-[#6B6F76] dark:text-gray-300 hover:text-[#F45B69] transition-colors">
             ✕
           </button>
         </div>
@@ -368,7 +307,7 @@ const CardModal = ({ card, isOpen, onClose, onSave, onDelete }: {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+              className="w-full px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white shadow-sm"
               placeholder="Título do cartão..."
             />
           </div>
@@ -382,7 +321,7 @@ const CardModal = ({ card, isOpen, onClose, onSave, onDelete }: {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+              className="w-full px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white shadow-sm"
               placeholder="Descrição do cartão..."
             />
           </div>
@@ -395,7 +334,7 @@ const CardModal = ({ card, isOpen, onClose, onSave, onDelete }: {
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value as 'low' | 'medium' | 'high')}
-              className="w-full px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+              className="w-full px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white shadow-sm"
             >
               <option value="low">Baixa</option>
               <option value="medium">Média</option>
@@ -412,7 +351,7 @@ const CardModal = ({ card, isOpen, onClose, onSave, onDelete }: {
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="w-full px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+              className="w-full px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white shadow-sm"
             />
           </div>
 
@@ -432,7 +371,7 @@ const CardModal = ({ card, isOpen, onClose, onSave, onDelete }: {
                       setLabels([...labels, color]);
                     }
                   }}
-                  className={`w-6 h-6 rounded-full border-2 transition-all ${
+                  className={`w-8 h-8 rounded-full border-2 transition-all shadow-sm ${
                     labels.includes(color) 
                       ? 'border-[#2E2F38] dark:border-white scale-110' 
                       : 'border-transparent hover:scale-105'
@@ -448,7 +387,7 @@ const CardModal = ({ card, isOpen, onClose, onSave, onDelete }: {
         <div className="flex items-center justify-between pt-6 border-t border-[#E8E9F1] dark:border-[#23283A]">
           <button
             onClick={() => onDelete(card.id)}
-            className="px-4 py-2 bg-[#F45B69] text-white rounded-lg hover:bg-[#DC2626] transition-colors"
+            className="px-4 py-2 bg-[#F45B69] text-white rounded-lg hover:bg-[#DC2626] transition-colors shadow-sm"
           >
             Excluir
           </button>
@@ -456,13 +395,13 @@ const CardModal = ({ card, isOpen, onClose, onSave, onDelete }: {
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors shadow-sm"
             >
               Cancelar
             </button>
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#255FD1] transition-colors"
+              className="px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#255FD1] transition-colors shadow-sm"
             >
               Salvar
             </button>
@@ -508,11 +447,11 @@ const ListModal = ({ list, isOpen, onClose, onSave, onDelete }: {
   if (!isOpen || !list) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
-      <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-xl p-6 max-w-md w-full mx-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+      <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 border border-[#E8E9F1] dark:border-[#23283A]">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Editar Lista</h2>
-          <button onClick={onClose} className="text-2xl text-[#6B6F76] dark:text-gray-300 hover:text-[#F45B69]">
+          <button onClick={onClose} className="text-2xl text-[#6B6F76] dark:text-gray-300 hover:text-[#F45B69] transition-colors">
             ✕
           </button>
         </div>
@@ -527,7 +466,7 @@ const ListModal = ({ list, isOpen, onClose, onSave, onDelete }: {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white"
+              className="w-full px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white shadow-sm"
               placeholder="Título da lista..."
             />
           </div>
@@ -542,7 +481,7 @@ const ListModal = ({ list, isOpen, onClose, onSave, onDelete }: {
                 <button
                   key={colorOption}
                   onClick={() => setColor(colorOption)}
-                  className={`w-8 h-8 rounded-full border-2 transition-all ${
+                  className={`w-10 h-10 rounded-full border-2 transition-all shadow-sm ${
                     color === colorOption 
                       ? 'border-[#2E2F38] dark:border-white scale-110' 
                       : 'border-transparent hover:scale-105'
@@ -558,7 +497,7 @@ const ListModal = ({ list, isOpen, onClose, onSave, onDelete }: {
         <div className="flex items-center justify-between pt-6 border-t border-[#E8E9F1] dark:border-[#23283A]">
           <button
             onClick={() => onDelete(list.id)}
-            className="px-4 py-2 bg-[#F45B69] text-white rounded-lg hover:bg-[#DC2626] transition-colors"
+            className="px-4 py-2 bg-[#F45B69] text-white rounded-lg hover:bg-[#DC2626] transition-colors shadow-sm"
           >
             Excluir
           </button>
@@ -566,13 +505,13 @@ const ListModal = ({ list, isOpen, onClose, onSave, onDelete }: {
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors shadow-sm"
             >
               Cancelar
             </button>
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#255FD1] transition-colors"
+              className="px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#255FD1] transition-colors shadow-sm"
             >
               Salvar
             </button>
@@ -603,14 +542,6 @@ export default function BrelloPage() {
   const [newBoardTitle, setNewBoardTitle] = useState('');
   const [newListTitle, setNewListTitle] = useState('');
   const [newListColor, setNewListColor] = useState('#3B82F6');
-
-  // Sensores para drag & drop
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
 
   // Carregar dados iniciais
   useEffect(() => {
@@ -822,162 +753,173 @@ export default function BrelloPage() {
     }
   };
 
-  // Drag & Drop
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    
-    if (!over || !active) return;
-
-    const activeId = active.id as string;
-    const overId = over.id as string;
-
-    // Verificar se é um cartão sendo movido
-    const activeCard = cards.find(c => c.id === activeId);
-    if (activeCard) {
-      const overList = lists.find(l => l.id === overId);
-      if (overList) {
-        // Mover cartão para nova lista
-        await updateDoc(doc(db, 'brelloCards', activeCard.id), {
-          listId: overList.id,
-          updatedAt: new Date(),
-        });
-      }
-    }
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#F5F6FA] to-[#E8E9F1] dark:from-[#181C23] dark:to-[#23283A] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6] mx-auto mb-4"></div>
-          <p className="text-[#6B6F76] dark:text-gray-300">Carregando Brello...</p>
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-[#E8E9F1] dark:border-[#23283A] border-t-[#3478F6] rounded-full animate-spin mx-auto mb-6"></div>
+            <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-r-[#10B981] rounded-full animate-spin mx-auto" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+          </div>
+          <h3 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-2">Carregando Brello</h3>
+          <p className="text-[#6B6F76] dark:text-gray-300">Preparando seu espaço de trabalho...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23]">
+    <div className="min-h-screen bg-gradient-to-br from-[#F5F6FA] to-[#E8E9F1] dark:from-[#181C23] dark:to-[#23283A]">
       {/* Header */}
-      <div className="bg-white dark:bg-[#23283A] border-b border-[#E8E9F1] dark:border-[#23283A] p-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold text-[#2E2F38] dark:text-white">Brello</h1>
-            
-            {/* Seletor de Board */}
-            <div className="flex items-center gap-2">
-              <select
-                value={currentBoard?.id || ''}
-                onChange={(e) => {
-                  const board = boards.find(b => b.id === e.target.value);
-                  setCurrentBoard(board || null);
-                }}
-                className="px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
-              >
-                {boards.map((board) => (
-                  <option key={board.id} value={board.id}>
-                    {board.title}
-                  </option>
-                ))}
-              </select>
+      <div className="bg-white/80 dark:bg-[#23283A]/80 backdrop-blur-sm border-b border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-sm">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-[#3478F6] to-[#10B981] rounded-xl flex items-center justify-center shadow-lg">
+                  <span className="text-2xl">📋</span>
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-[#2E2F38] to-[#3478F6] dark:from-white dark:to-[#A3C8F7] bg-clip-text text-transparent">
+                    Brello
+                  </h1>
+                  <p className="text-sm text-[#6B6F76] dark:text-gray-300">Organize suas tarefas com estilo</p>
+                </div>
+              </div>
               
-              <button
-                onClick={() => setShowNewBoardModal(true)}
-                className="px-3 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#255FD1] transition-colors"
-              >
-                + Novo Board
-              </button>
+              {/* Seletor de Board */}
+              <div className="flex items-center gap-3">
+                <select
+                  value={currentBoard?.id || ''}
+                  onChange={(e) => {
+                    const board = boards.find(b => b.id === e.target.value);
+                    setCurrentBoard(board || null);
+                  }}
+                  className="px-4 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#3478F6] shadow-sm"
+                >
+                  {boards.map((board) => (
+                    <option key={board.id} value={board.id}>
+                      {board.title}
+                    </option>
+                  ))}
+                </select>
+                
+                <button
+                  onClick={() => setShowNewBoardModal(true)}
+                  className="px-4 py-2 bg-gradient-to-r from-[#3478F6] to-[#255FD1] text-white rounded-lg hover:from-[#255FD1] hover:to-[#1E40AF] transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                >
+                  + Novo Board
+                </button>
+              </div>
             </div>
+            
+            {/* Botão Nova Lista */}
+            {currentBoard && (
+              <button
+                onClick={() => setShowNewListModal(true)}
+                className="px-6 py-3 bg-gradient-to-r from-[#10B981] to-[#059669] text-white rounded-lg hover:from-[#059669] hover:to-[#047857] transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
+                + Nova Lista
+              </button>
+            )}
           </div>
-          
-          {/* Botão Nova Lista */}
-          {currentBoard && (
-            <button
-              onClick={() => setShowNewListModal(true)}
-              className="px-4 py-2 bg-[#10B981] text-white rounded-lg hover:bg-[#059669] transition-colors"
-            >
-              + Nova Lista
-            </button>
-          )}
         </div>
       </div>
 
       {/* Conteúdo Principal */}
-      <div className="p-6">
-        {currentBoard ? (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragEnd={handleDragEnd}
-          >
-            <div className="flex gap-6 overflow-x-auto pb-4">
-              <SortableContext items={lists.map(l => l.id)} strategy={verticalListSortingStrategy}>
-                {lists.map((list) => (
-                  <SortableList key={list.id} list={list}>
-                    <List
-                      list={list}
-                      cards={cards}
-                      onAddCard={addCard}
-                      onEditCard={(card) => {
-                        setEditingCard(card);
-                        setShowCardModal(true);
-                      }}
-                      onDeleteCard={deleteCard}
-                      onEditList={(list) => {
-                        setEditingList(list);
-                        setShowListModal(true);
-                      }}
-                      onDeleteList={deleteList}
-                    />
-                  </SortableList>
-                ))}
-              </SortableContext>
+      <div className="p-8">
+        <div className="max-w-7xl mx-auto">
+          {currentBoard ? (
+            <div className="flex gap-8 overflow-x-auto pb-8 scrollbar-thin scrollbar-thumb-[#E8E9F1] dark:scrollbar-thumb-[#23283A] scrollbar-track-transparent">
+              {lists.map((list) => (
+                <List
+                  key={list.id}
+                  list={list}
+                  cards={cards}
+                  onAddCard={addCard}
+                  onEditCard={(card) => {
+                    setEditingCard(card);
+                    setShowCardModal(true);
+                  }}
+                  onDeleteCard={deleteCard}
+                  onEditList={(list) => {
+                    setEditingList(list);
+                    setShowListModal(true);
+                  }}
+                  onDeleteList={deleteList}
+                />
+              ))}
+              
+              {/* Botão para adicionar nova lista */}
+              <button
+                onClick={() => setShowNewListModal(true)}
+                className="min-w-[300px] h-fit p-8 border-2 border-dashed border-[#E8E9F1] dark:border-[#23283A] rounded-xl hover:border-[#3478F6] hover:bg-white/50 dark:hover:bg-[#23283A]/50 transition-all duration-200 group"
+              >
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-[#3478F6] rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                    <span className="text-2xl text-white">+</span>
+                  </div>
+                  <p className="text-[#6B6F76] dark:text-gray-300 group-hover:text-[#3478F6] transition-colors">
+                    Adicionar Lista
+                  </p>
+                </div>
+              </button>
             </div>
-          </DndContext>
-        ) : (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">📋</div>
-            <h3 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-2">
-              Nenhum board criado ainda
-            </h3>
-            <p className="text-[#6B6F76] dark:text-gray-300 mb-6">
-              Crie seu primeiro board para começar a organizar suas tarefas
-            </p>
-            <button
-              onClick={() => setShowNewBoardModal(true)}
-              className="px-6 py-3 bg-[#3478F6] text-white rounded-lg hover:bg-[#255FD1] transition-colors text-lg font-semibold"
-            >
-              Criar Primeiro Board
-            </button>
-          </div>
-        )}
+          ) : (
+            <div className="text-center py-20">
+              <div className="w-24 h-24 bg-gradient-to-br from-[#3478F6] to-[#10B981] rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl">
+                <span className="text-4xl">📋</span>
+              </div>
+              <h3 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-4">
+                Bem-vindo ao Brello!
+              </h3>
+              <p className="text-lg text-[#6B6F76] dark:text-gray-300 mb-8 max-w-md mx-auto">
+                Crie seu primeiro board para começar a organizar suas tarefas de forma visual e intuitiva
+              </p>
+              <button
+                onClick={() => setShowNewBoardModal(true)}
+                className="px-8 py-4 bg-gradient-to-r from-[#3478F6] to-[#255FD1] text-white rounded-xl hover:from-[#255FD1] hover:to-[#1E40AF] transition-all duration-200 text-lg font-semibold shadow-2xl hover:shadow-3xl transform hover:-translate-y-1"
+              >
+                🚀 Criar Primeiro Board
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Modal Novo Board */}
       {showNewBoardModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-xl p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4">Novo Board</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 border border-[#E8E9F1] dark:border-[#23283A]">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-[#3478F6] to-[#10B981] rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">📋</span>
+              </div>
+              <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white">Novo Board</h2>
+              <p className="text-[#6B6F76] dark:text-gray-300">Dê um nome ao seu novo espaço de trabalho</p>
+            </div>
+            
             <input
               type="text"
               value={newBoardTitle}
               onChange={(e) => setNewBoardTitle(e.target.value)}
               placeholder="Nome do board..."
-              className="w-full px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white mb-4"
+              className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white mb-6 shadow-sm text-lg"
               autoFocus
             />
+            
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowNewBoardModal(false)}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors shadow-sm"
               >
                 Cancelar
               </button>
               <button
                 onClick={createBoard}
-                className="px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#255FD1] transition-colors"
+                className="px-6 py-3 bg-gradient-to-r from-[#3478F6] to-[#255FD1] text-white rounded-lg hover:from-[#255FD1] hover:to-[#1E40AF] transition-all duration-200 shadow-sm"
               >
-                Criar
+                Criar Board
               </button>
             </div>
           </div>
@@ -986,28 +928,35 @@ export default function BrelloPage() {
 
       {/* Modal Nova Lista */}
       {showNewListModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-xl p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4">Nova Lista</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 border border-[#E8E9F1] dark:border-[#23283A]">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-[#10B981] to-[#059669] rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">📝</span>
+              </div>
+              <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white">Nova Lista</h2>
+              <p className="text-[#6B6F76] dark:text-gray-300">Organize suas tarefas em colunas</p>
+            </div>
+            
             <input
               type="text"
               value={newListTitle}
               onChange={(e) => setNewListTitle(e.target.value)}
               placeholder="Nome da lista..."
-              className="w-full px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white mb-4"
+              className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white mb-6 shadow-sm text-lg"
               autoFocus
             />
             
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                Cor
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-3">
+                Escolha uma cor para a lista
               </label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-3 justify-center">
                 {['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'].map((color) => (
                   <button
                     key={color}
                     onClick={() => setNewListColor(color)}
-                    className={`w-8 h-8 rounded-full border-2 transition-all ${
+                    className={`w-12 h-12 rounded-full border-4 transition-all shadow-lg hover:scale-110 ${
                       newListColor === color 
                         ? 'border-[#2E2F38] dark:border-white scale-110' 
                         : 'border-transparent hover:scale-105'
@@ -1021,15 +970,15 @@ export default function BrelloPage() {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowNewListModal(false)}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors shadow-sm"
               >
                 Cancelar
               </button>
               <button
                 onClick={createList}
-                className="px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#255FD1] transition-colors"
+                className="px-6 py-3 bg-gradient-to-r from-[#10B981] to-[#059669] text-white rounded-lg hover:from-[#059669] hover:to-[#047857] transition-all duration-200 shadow-sm"
               >
-                Criar
+                Criar Lista
               </button>
             </div>
           </div>
