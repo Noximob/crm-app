@@ -817,6 +817,25 @@ export default function BrelloPage() {
     }
   };
 
+  // Excluir board
+  const deleteBoard = async (boardId: string) => {
+    try {
+      // Primeiro excluir todas as listas do board
+      const boardLists = lists.filter(l => l.boardId === boardId);
+      for (const list of boardLists) {
+        await deleteList(list.id);
+      }
+      
+      // Depois excluir o board
+      await deleteDoc(doc(db, 'brelloBoards', boardId));
+      setCurrentBoard(null); // Atualizar o board atual para null
+      setLists([]); // Limpar listas
+      setCards([]); // Limpar cartões
+    } catch (error) {
+      console.error('Erro ao excluir board:', error);
+    }
+  };
+
   // Sensores para drag & drop
   const sensors = useSensors(
     useSensor(PointerSensor)
@@ -902,6 +921,16 @@ export default function BrelloPage() {
                 >
                   + Novo Board
                 </button>
+                
+                {currentBoard && (
+                  <button
+                    onClick={() => deleteBoard(currentBoard.id)}
+                    className="px-3 py-2 bg-[#F45B69] text-white rounded-lg hover:bg-[#DC2626] transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                    title="Excluir Board"
+                  >
+                    🗑️
+                  </button>
+                )}
               </div>
             </div>
             
