@@ -121,6 +121,7 @@ export default function DashboardLayout({
   const navItems = [
     { href: '/dashboard', icon: LayoutDashboardIcon, label: 'Inicio' },
     { href: '/dashboard/crm', icon: BarChartIcon, label: 'Clientes' },
+    { href: '/dashboard/brello', icon: FileTextIcon, label: 'Brello' },
     { href: '/dashboard/materiais', icon: FileTextIcon, label: 'Materiais de apoio' },
     { href: 'https://chat.openai.com', icon: ChatGPTIcon, label: 'ChatGPT', isExternal: true },
     { href: '/dashboard/treinamentos', icon: PresentationIcon, label: 'Academia' },
