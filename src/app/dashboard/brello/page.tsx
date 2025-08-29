@@ -137,7 +137,7 @@ const Card = ({ card, onEdit, onDelete }: {
 };
 
 // Componente de Lista
-const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, onDeleteList }: {
+const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, onDeleteList, onMoveCard }: {
   list: BrelloList;
   cards: BrelloCard[];
   onAddCard: (listId: string) => void;
@@ -145,6 +145,7 @@ const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, on
   onDeleteCard: (id: string) => void;
   onEditList: (list: BrelloList) => void;
   onDeleteList: (id: string) => void;
+  onMoveCard: (cardId: string, newListId: string) => void;
 }) => {
   const [isAddingCard, setIsAddingCard] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState('');
@@ -171,9 +172,8 @@ const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, on
     e.currentTarget.classList.remove('bg-white/20', 'dark:bg-[#23283A]/20');
     
     const cardId = e.dataTransfer.getData('text/plain');
-    if (cardId) {
-      // Aqui você pode implementar a lógica para mover o cartão
-      console.log(`Cartão ${cardId} movido para lista ${list.id}`);
+    if (cardId && cardId !== list.id) { // Evita mover para a mesma lista
+      onMoveCard(cardId, list.id);
     }
   };
 
@@ -920,6 +920,17 @@ export default function BrelloPage() {
                       setShowListModal(true);
                     }}
                     onDeleteList={deleteList}
+                    onMoveCard={(cardId, newListId) => {
+                      // Encontrar o cartão a ser movido
+                      const cardToMove = cards.find(c => c.id === cardId);
+                      if (cardToMove) {
+                        // Atualizar o ID da lista no cartão
+                        updateDoc(doc(db, 'brelloCards', cardId), {
+                          listId: newListId,
+                          updatedAt: new Date(),
+                        });
+                      }
+                    }}
                   />
                 ))}
                 
