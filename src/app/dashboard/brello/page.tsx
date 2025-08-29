@@ -792,10 +792,7 @@ export default function BrelloPage() {
 
   // Sensores para drag & drop
   const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(PointerSensor)
   );
 
   // Drag & Drop
