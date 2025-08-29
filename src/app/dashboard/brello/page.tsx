@@ -157,12 +157,37 @@ const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, on
     }
   };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.currentTarget.classList.add('bg-white/20', 'dark:bg-[#23283A]/20');
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.currentTarget.classList.remove('bg-white/20', 'dark:bg-[#23283A]/20');
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.currentTarget.classList.remove('bg-white/20', 'dark:bg-[#23283A]/20');
+    
+    const cardId = e.dataTransfer.getData('text/plain');
+    if (cardId) {
+      // Aqui você pode implementar a lógica para mover o cartão
+      console.log(`Cartão ${cardId} movido para lista ${list.id}`);
+    }
+  };
+
   const sortedCards = cards
     .filter(card => card.listId === list.id)
     .sort((a, b) => a.order - b.order);
 
   return (
-    <div className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl p-4 min-w-[300px] max-w-[300px] shadow-lg">
+    <div 
+      className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl p-4 min-w-[280px] max-w-[280px] shadow-lg transition-colors"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       {/* Header da Lista */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
