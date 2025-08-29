@@ -4,6 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where, orderBy } from 'firebase/firestore';
+import { DndContext, closestCorners, useSensors, PointerSensor, KeyboardSensor, DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { useSensor } from '@dnd-kit/core';
 
 // Tipos para o sistema Brello
 interface BrelloCard {
@@ -762,6 +765,37 @@ export default function BrelloPage() {
     }
   };
 
+  // Sensores para drag & drop
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Drag & Drop
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over || !active) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    // Verificar se é um cartão sendo movido
+    const activeCard = cards.find(c => c.id === activeId);
+    if (activeCard) {
+      const overList = lists.find(l => l.id === overId);
+      if (overList) {
+        // Mover cartão para nova lista
+        await updateDoc(doc(db, 'brelloCards', activeCard.id), {
+          listId: overList.id,
+          updatedAt: new Date(),
+        });
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#F5F6FA] to-[#E8E9F1] dark:from-[#181C23] dark:to-[#23283A] flex items-center justify-center">
@@ -839,25 +873,33 @@ export default function BrelloPage() {
       <div className="p-4">
         <div className="max-w-7xl mx-auto">
           {currentBoard ? (
-            <div className="flex gap-4 overflow-x-auto pb-4">
-              {lists.map((list) => (
-                <List
-                  key={list.id}
-                  list={list}
-                  cards={cards}
-                  onAddCard={addCard}
-                  onEditCard={(card) => {
-                    setEditingCard(card);
-                    setShowCardModal(true);
-                  }}
-                  onDeleteCard={deleteCard}
-                  onEditList={(list) => {
-                    setEditingList(list);
-                    setShowListModal(true);
-                  }}
-                  onDeleteList={deleteList}
-                />
-              ))}
+            <DndContext
+              sensors={sensors}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={lists.map(list => list.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {lists.map((list) => (
+                  <List
+                    key={list.id}
+                    list={list}
+                    cards={cards}
+                    onAddCard={addCard}
+                    onEditCard={(card) => {
+                      setEditingCard(card);
+                      setShowCardModal(true);
+                    }}
+                    onDeleteCard={deleteCard}
+                    onEditList={(list) => {
+                      setEditingList(list);
+                      setShowListModal(true);
+                    }}
+                    onDeleteList={deleteList}
+                  />
+                ))}
+              </SortableContext>
               
               {/* Botão para adicionar nova lista */}
               <button
@@ -873,7 +915,7 @@ export default function BrelloPage() {
                   </p>
                 </div>
               </button>
-            </div>
+            </DndContext>
           ) : (
             <div className="text-center py-16">
               <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
