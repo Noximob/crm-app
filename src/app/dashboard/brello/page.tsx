@@ -862,7 +862,7 @@ export default function BrelloPage() {
               {/* Botão para adicionar nova lista */}
               <button
                 onClick={() => setShowNewListModal(true)}
-                className="min-w-[250px] h-fit p-6 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 group"
+                className="min-w-[260px] h-fit p-6 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 group"
               >
                 <div className="text-center">
                   <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
