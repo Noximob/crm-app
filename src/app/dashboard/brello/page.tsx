@@ -177,6 +177,15 @@ const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, on
   const [isAddingCard, setIsAddingCard] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState('');
 
+  // Implementar useDroppable para a lista
+  const { setNodeRef } = useDroppable({
+    id: `list-${list.id}`,
+    data: {
+      type: 'list',
+      list: list
+    }
+  });
+
   const handleAddCard = async () => {
     if (newCardTitle.trim()) {
       await onAddCard(list.id);
@@ -210,6 +219,7 @@ const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, on
 
   return (
     <div 
+      ref={setNodeRef}
       className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl p-4 min-w-[280px] max-w-[280px] shadow-lg transition-colors"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -249,16 +259,18 @@ const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, on
       </div>
 
       {/* Cartões */}
-      <div className="space-y-3 mb-4 min-h-[100px]">
-        {sortedCards.map((card) => (
-          <SortableCard
-            key={card.id}
-            card={card}
-            onEdit={onEditCard}
-            onDelete={onDeleteCard}
-          />
-        ))}
-      </div>
+      <SortableContext items={sortedCards.map(c => c.id)} strategy={verticalListSortingStrategy}>
+        <div className="space-y-3 mb-4 min-h-[100px]">
+          {sortedCards.map((card) => (
+            <SortableCard
+              key={card.id}
+              card={card}
+              onEdit={onEditCard}
+              onDelete={onDeleteCard}
+            />
+          ))}
+        </div>
+      </SortableContext>
 
       {/* Adicionar Cartão */}
       {isAddingCard ? (
@@ -270,17 +282,28 @@ const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, on
             placeholder="Título do cartão..."
             className="w-full px-3 py-2 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38] dark:text-white shadow-sm"
             autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleAddCard();
+              } else if (e.key === 'Escape') {
+                setIsAddingCard(false);
+                setNewCardTitle('');
+              }
+            }}
           />
           <div className="flex gap-2">
             <button
               onClick={handleAddCard}
-              className="px-3 py-1 bg-[#3478F6] text-white text-sm rounded-lg hover:bg-[#255FD1] transition-colors shadow-sm"
+              className="px-3 py-1 bg-[#10B981] text-white text-sm rounded-lg hover:bg-[#059669] transition-colors"
             >
               Adicionar
             </button>
             <button
-              onClick={() => setIsAddingCard(false)}
-              className="px-3 py-1 bg-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-400 transition-colors shadow-sm"
+              onClick={() => {
+                setIsAddingCard(false);
+                setNewCardTitle('');
+              }}
+              className="px-3 py-1 bg-[#6B6F76] text-white text-sm rounded-lg hover:bg-[#4B5563] transition-colors"
             >
               Cancelar
             </button>
@@ -289,7 +312,7 @@ const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, on
       ) : (
         <button
           onClick={() => setIsAddingCard(true)}
-          className="w-full text-left text-sm text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] dark:hover:text-[#A3C8F7] p-3 rounded-lg hover:bg-white/50 dark:hover:bg-[#23283A]/50 transition-all duration-200 border-2 border-dashed border-[#E8E9F1] dark:border-[#23283A] hover:border-[#3478F6]"
+          className="w-full p-2 text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] hover:bg-white/50 dark:hover:bg-[#23283A]/50 rounded-lg transition-all duration-200 text-sm"
         >
           + Adicionar cartão
         </button>
