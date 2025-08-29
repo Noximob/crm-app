@@ -177,15 +177,6 @@ const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, on
   const [isAddingCard, setIsAddingCard] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState('');
 
-  // Implementar useDroppable para a lista
-  const { setNodeRef } = useDroppable({
-    id: `list-${list.id}`,
-    data: {
-      type: 'list',
-      list: list
-    }
-  });
-
   const handleAddCard = async () => {
     if (newCardTitle.trim()) {
       await onAddCard(list.id);
@@ -208,7 +199,7 @@ const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, on
     e.currentTarget.classList.remove('bg-white/20', 'dark:bg-[#23283A]/20');
     
     const cardId = e.dataTransfer.getData('text/plain');
-    if (cardId && cardId !== list.id) { // Evita mover para a mesma lista
+    if (cardId) {
       onMoveCard(cardId, list.id);
     }
   };
@@ -219,7 +210,6 @@ const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, on
 
   return (
     <div 
-      ref={setNodeRef}
       className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl p-4 min-w-[280px] max-w-[280px] shadow-lg transition-colors"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -259,18 +249,16 @@ const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, on
       </div>
 
       {/* Cartões */}
-      <SortableContext items={sortedCards.map(c => c.id)} strategy={verticalListSortingStrategy}>
-        <div className="space-y-3 mb-4 min-h-[100px]">
-          {sortedCards.map((card) => (
-            <SortableCard
-              key={card.id}
-              card={card}
-              onEdit={onEditCard}
-              onDelete={onDeleteCard}
-            />
-          ))}
-        </div>
-      </SortableContext>
+      <div className="space-y-3 mb-4 min-h-[100px]">
+        {sortedCards.map((card) => (
+          <SortableCard
+            key={card.id}
+            card={card}
+            onEdit={onEditCard}
+            onDelete={onDeleteCard}
+          />
+        ))}
+      </div>
 
       {/* Adicionar Cartão */}
       {isAddingCard ? (
