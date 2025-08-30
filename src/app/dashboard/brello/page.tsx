@@ -4,11 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where, orderBy } from 'firebase/firestore';
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay } from '@dnd-kit/core';
-import { useDroppable } from '@dnd-kit/core';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 
 // Tipos para o sistema Brello
 interface BrelloCard {
@@ -41,31 +36,12 @@ interface BrelloBoard {
   updatedAt: Date;
 }
 
-// Componente de Cartão Sortable
-const SortableCard = ({ card, onEdit, onDelete }: { 
+// Componente de Cartão
+const Card = ({ card, onEdit, onDelete }: { 
   card: BrelloCard; 
   onEdit: (card: BrelloCard) => void; 
   onDelete: (id: string) => void; 
 }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ 
-    id: card.id,
-    data: {
-      type: 'card',
-      card: card
-    }
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high': return 'bg-red-500';
@@ -85,13 +61,7 @@ const SortableCard = ({ card, onEdit, onDelete }: {
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className="bg-white dark:bg-[#23283A] rounded-lg shadow-sm border border-[#E8E9F1] dark:border-[#23283A] p-3 mb-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-200 group"
-    >
+    <div className="bg-white dark:bg-[#23283A] rounded-lg shadow-sm border border-[#E8E9F1] dark:border-[#23283A] p-3 mb-3 hover:shadow-md transition-all duration-200 group">
       {/* Labels */}
       {card.labels.length > 0 && (
         <div className="flex gap-1 mb-3">
@@ -141,30 +111,28 @@ const SortableCard = ({ card, onEdit, onDelete }: {
       )}
       
       {/* Ações */}
-      <div className="flex items-center justify-between pt-3 border-t border-[#E8E9F1] dark:border-[#23283A] opacity-0 group-hover:opacity-100 transition-opacity">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => onEdit(card)}
-            className="p-1 text-[#3478F6] hover:bg-[#3478F6] hover:text-white rounded transition-colors"
-            title="Editar"
-          >
-            ✏️
-          </button>
-          <button
-            onClick={() => onDelete(card.id)}
-            className="p-1 text-[#F45B69] hover:bg-[#F45B69] hover:text-white rounded transition-colors"
-            title="Excluir"
-          >
-            🗑️
-          </button>
-        </div>
+      <div className="flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={() => onEdit(card)}
+          className="text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] transition-colors"
+          title="Editar cartão"
+        >
+          ✏️
+        </button>
+        <button
+          onClick={() => onDelete(card.id)}
+          className="text-[#6B6F76] dark:text-gray-300 hover:text-[#F45B69] transition-colors"
+          title="Excluir cartão"
+        >
+          🗑️
+        </button>
       </div>
     </div>
   );
 };
 
 // Componente de Lista
-const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, onDeleteList, onMoveCard }: {
+const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, onDeleteList }: {
   list: BrelloList;
   cards: BrelloCard[];
   onAddCard: (listId: string) => void;
@@ -172,7 +140,6 @@ const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, on
   onDeleteCard: (id: string) => void;
   onEditList: (list: BrelloList) => void;
   onDeleteList: (id: string) => void;
-  onMoveCard: (cardId: string, newListId: string) => void;
 }) => {
   const [isAddingCard, setIsAddingCard] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState('');
@@ -185,36 +152,12 @@ const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, on
     }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.currentTarget.classList.add('bg-white/20', 'dark:bg-[#23283A]/20');
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.currentTarget.classList.remove('bg-white/20', 'dark:bg-[#23283A]/20');
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.currentTarget.classList.remove('bg-white/20', 'dark:bg-[#23283A]/20');
-    
-    const cardId = e.dataTransfer.getData('text/plain');
-    if (cardId) {
-      onMoveCard(cardId, list.id);
-    }
-  };
-
   const sortedCards = cards
     .filter(card => card.listId === list.id)
     .sort((a, b) => a.order - b.order);
 
   return (
-    <div 
-      className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl p-4 min-w-[280px] max-w-[280px] shadow-lg transition-colors"
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-    >
+    <div className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl p-4 min-w-[280px] max-w-[280px] shadow-lg transition-colors">
       {/* Header da Lista */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -251,7 +194,7 @@ const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, on
       {/* Cartões */}
       <div className="space-y-3 mb-4 min-h-[100px]">
         {sortedCards.map((card) => (
-          <SortableCard
+          <Card
             key={card.id}
             card={card}
             onEdit={onEditCard}
@@ -309,175 +252,6 @@ const List = ({ list, cards, onAddCard, onEditCard, onDeleteCard, onEditList, on
   );
 };
 
-// Componente Modal para Cartão
-const CardModal = ({ card, isOpen, onClose, onSave, onDelete }: {
-  card: BrelloCard | null;
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (card: BrelloCard) => void;
-  onDelete: (id: string) => void;
-}) => {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
-  const [dueDate, setDueDate] = useState('');
-  const [labels, setLabels] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (card) {
-      setTitle(card.title);
-      setDescription(card.description || '');
-      setPriority(card.priority);
-      setDueDate(card.dueDate ? new Date(card.dueDate).toISOString().split('T')[0] : '');
-      setLabels(card.labels);
-    }
-  }, [card]);
-
-  const handleSave = () => {
-    if (card && title.trim()) {
-      const updatedCard = {
-        ...card,
-        title: title.trim(),
-        description: description.trim(),
-        priority,
-        dueDate: dueDate ? new Date(dueDate) : undefined,
-        labels,
-        updatedAt: new Date(),
-      };
-      onSave(updatedCard);
-      onClose();
-    }
-  };
-
-  const labelColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'];
-
-  if (!isOpen || !card) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-2xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-[#E8E9F1] dark:border-[#23283A]">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Editar Cartão</h2>
-          <button onClick={onClose} className="text-2xl text-[#6B6F76] dark:text-gray-300 hover:text-[#F45B69] transition-colors">
-            ✕
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          {/* Título */}
-          <div>
-            <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-              Título
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white shadow-sm"
-              placeholder="Título do cartão..."
-            />
-          </div>
-
-          {/* Descrição */}
-          <div>
-            <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-              Descrição
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              className="w-full px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white shadow-sm"
-              placeholder="Descrição do cartão..."
-            />
-          </div>
-
-          {/* Prioridade */}
-          <div>
-            <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-              Prioridade
-            </label>
-            <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value as 'low' | 'medium' | 'high')}
-              className="w-full px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white shadow-sm"
-            >
-              <option value="low">Baixa</option>
-              <option value="medium">Média</option>
-              <option value="high">Alta</option>
-            </select>
-          </div>
-
-          {/* Data de vencimento */}
-          <div>
-            <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-              Data de vencimento
-            </label>
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="w-full px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white shadow-sm"
-            />
-          </div>
-
-          {/* Labels */}
-          <div>
-            <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-              Labels
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {labelColors.map((color) => (
-                <button
-                  key={color}
-                  onClick={() => {
-                    if (labels.includes(color)) {
-                      setLabels(labels.filter(l => l !== color));
-                    } else {
-                      setLabels([...labels, color]);
-                    }
-                  }}
-                  className={`w-8 h-8 rounded-full border-2 transition-all shadow-sm ${
-                    labels.includes(color) 
-                      ? 'border-[#2E2F38] dark:border-white scale-110' 
-                      : 'border-transparent hover:scale-105'
-                  }`}
-                  style={{ backgroundColor: color }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Ações */}
-        <div className="flex items-center justify-between pt-6 border-t border-[#E8E9F1] dark:border-[#23283A]">
-          <button
-            onClick={() => onDelete(card.id)}
-            className="px-4 py-2 bg-[#F45B69] text-white rounded-lg hover:bg-[#DC2626] transition-colors shadow-sm"
-          >
-            Excluir
-          </button>
-          
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors shadow-sm"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleSave}
-              className="px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#255FD1] transition-colors shadow-sm"
-            >
-              Salvar
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // Componente Modal para Lista
 const ListModal = ({ list, isOpen, onClose, onSave, onDelete }: {
   list: BrelloList | null;
@@ -493,37 +267,152 @@ const ListModal = ({ list, isOpen, onClose, onSave, onDelete }: {
     if (list) {
       setTitle(list.title);
       setColor(list.color);
+    } else {
+      setTitle('');
+      setColor('#3B82F6');
     }
   }, [list]);
 
   const handleSave = () => {
-    if (list && title.trim()) {
-      const updatedList = {
-        ...list,
-        title: title.trim(),
-        color,
-      };
-      onSave(updatedList);
+    if (title.trim() && list) {
+      onSave({ ...list, title: title.trim(), color });
       onClose();
     }
   };
 
-  const colors = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
-
-  if (!isOpen || !list) return null;
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 border border-[#E8E9F1] dark:border-[#23283A]">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Editar Lista</h2>
-          <button onClick={onClose} className="text-2xl text-[#6B6F76] dark:text-gray-300 hover:text-[#F45B69] transition-colors">
-            ✕
+      <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 border border-[#E8E9F1] dark:border-[#23283A]">
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-gradient-to-br from-[#3478F6] to-[#10B981] rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl">📋</span>
+          </div>
+          <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white">
+            {list ? 'Editar Lista' : 'Nova Lista'}
+          </h2>
+          <p className="text-[#6B6F76] dark:text-gray-300">Configure sua lista</p>
+        </div>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+              Nome da Lista
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Nome da lista..."
+              className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white shadow-sm"
+              autoFocus
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+              Cor
+            </label>
+            <div className="flex gap-2">
+              {['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'].map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setColor(c)}
+                  className={`w-8 h-8 rounded-full border-2 transition-all ${
+                    color === c ? 'border-[#2E2F38] dark:border-white scale-110' : 'border-[#E8E9F1] dark:border-[#23283A]'
+                  }`}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex gap-3 justify-end mt-6">
+          {list && (
+            <button
+              onClick={() => onDelete(list.id)}
+              className="px-4 py-2 bg-[#F45B69] text-white rounded-lg hover:bg-[#DC2626] transition-colors"
+            >
+              Excluir
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-[#6B6F76] text-white rounded-lg hover:bg-[#4B5563] transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 bg-[#10B981] text-white rounded-lg hover:bg-[#059669] transition-colors"
+          >
+            Salvar
           </button>
         </div>
+      </div>
+    </div>
+  );
+};
 
+// Componente Modal para Cartão
+const CardModal = ({ card, isOpen, onClose, onSave, onDelete }: {
+  card: BrelloCard | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (card: BrelloCard) => void;
+  onDelete: (id: string) => void;
+}) => {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [dueDate, setDueDate] = useState('');
+
+  useEffect(() => {
+    if (card) {
+      setTitle(card.title);
+      setDescription(card.description || '');
+      setPriority(card.priority);
+      setDueDate(card.dueDate ? new Date(card.dueDate).toISOString().split('T')[0] : '');
+    } else {
+      setTitle('');
+      setDescription('');
+      setPriority('medium');
+      setDueDate('');
+    }
+  }, [card]);
+
+  const handleSave = () => {
+    if (title.trim() && card) {
+      onSave({
+        ...card,
+        title: title.trim(),
+        description: description.trim() || undefined,
+        priority,
+        dueDate: dueDate ? new Date(dueDate) : undefined,
+        updatedAt: new Date(),
+      });
+      onClose();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+      <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 border border-[#E8E9F1] dark:border-[#23283A]">
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-gradient-to-br from-[#3478F6] to-[#10B981] rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl">📝</span>
+          </div>
+          <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white">
+            {card ? 'Editar Cartão' : 'Novo Cartão'}
+          </h2>
+          <p className="text-[#6B6F76] dark:text-gray-300">Configure seu cartão</p>
+        </div>
+        
         <div className="space-y-4">
-          {/* Título */}
           <div>
             <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
               Título
@@ -532,197 +421,193 @@ const ListModal = ({ list, isOpen, onClose, onSave, onDelete }: {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white shadow-sm"
-              placeholder="Título da lista..."
+              placeholder="Título do cartão..."
+              className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white shadow-sm"
+              autoFocus
             />
           </div>
-
-          {/* Cor */}
+          
           <div>
             <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-              Cor
+              Descrição
             </label>
-            <div className="flex flex-wrap gap-2">
-              {colors.map((colorOption) => (
-                <button
-                  key={colorOption}
-                  onClick={() => setColor(colorOption)}
-                  className={`w-10 h-10 rounded-full border-2 transition-all shadow-sm ${
-                    color === colorOption 
-                      ? 'border-[#2E2F38] dark:border-white scale-110' 
-                      : 'border-transparent hover:scale-105'
-                  }`}
-                  style={{ backgroundColor: colorOption }}
-                />
-              ))}
-            </div>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Descrição do cartão..."
+              rows={3}
+              className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white shadow-sm resize-none"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+              Prioridade
+            </label>
+            <select
+              value={priority}
+              onChange={(e) => setPriority(e.target.value as 'low' | 'medium' | 'high')}
+              className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white shadow-sm"
+            >
+              <option value="low">Baixa</option>
+              <option value="medium">Média</option>
+              <option value="high">Alta</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+              Data de Vencimento
+            </label>
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white shadow-sm"
+            />
           </div>
         </div>
-
-        {/* Ações */}
-        <div className="flex items-center justify-between pt-6 border-t border-[#E8E9F1] dark:border-[#23283A]">
+        
+        <div className="flex gap-3 justify-end mt-6">
+          {card && (
+            <button
+              onClick={() => onDelete(card.id)}
+              className="px-4 py-2 bg-[#F45B69] text-white rounded-lg hover:bg-[#DC2626] transition-colors"
+            >
+              Excluir
+            </button>
+          )}
           <button
-            onClick={() => onDelete(list.id)}
-            className="px-4 py-2 bg-[#F45B69] text-white rounded-lg hover:bg-[#DC2626] transition-colors shadow-sm"
+            onClick={onClose}
+            className="px-4 py-2 bg-[#6B6F76] text-white rounded-lg hover:bg-[#4B5563] transition-colors"
           >
-            Excluir
+            Cancelar
           </button>
-          
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors shadow-sm"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleSave}
-              className="px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#255FD1] transition-colors shadow-sm"
-            >
-              Salvar
-            </button>
-          </div>
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 bg-[#10B981] text-white rounded-lg hover:bg-[#059669] transition-colors"
+          >
+            Salvar
+          </button>
         </div>
       </div>
     </div>
   );
 };
 
+// Página Principal do Brello
 export default function BrelloPage() {
   const { userData } = useAuth();
+  const [loading, setLoading] = useState(true);
   const [boards, setBoards] = useState<BrelloBoard[]>([]);
-  const [currentBoard, setCurrentBoard] = useState<BrelloBoard | null>(null);
   const [lists, setLists] = useState<BrelloList[]>([]);
   const [cards, setCards] = useState<BrelloCard[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [currentBoard, setCurrentBoard] = useState<BrelloBoard | null>(null);
   
   // Estados para modais
-  const [showCardModal, setShowCardModal] = useState(false);
-  const [showListModal, setShowListModal] = useState(false);
-  const [editingCard, setEditingCard] = useState<BrelloCard | null>(null);
-  const [editingList, setEditingList] = useState<BrelloList | null>(null);
-  
-  // Estados para criação
   const [showNewBoardModal, setShowNewBoardModal] = useState(false);
   const [showNewListModal, setShowNewListModal] = useState(false);
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [showListModal, setShowListModal] = useState(false);
+  
+  // Estados para edição
+  const [editingCard, setEditingCard] = useState<BrelloCard | null>(null);
+  const [editingList, setEditingList] = useState<BrelloList | null>(null);
   const [newBoardTitle, setNewBoardTitle] = useState('');
   const [newListTitle, setNewListTitle] = useState('');
   const [newListColor, setNewListColor] = useState('#3B82F6');
 
-  // Carregar dados iniciais
+  // Carregar dados do Firebase
   useEffect(() => {
-    if (userData?.imobiliariaId) {
-      loadBoards();
-    }
-  }, [userData]);
+    if (!userData) return;
 
-  // Carregar listas e cartões quando mudar o board
+    setLoading(true);
+
+    // Carregar boards
+          const boardsQuery = query(
+        collection(db, 'brelloBoards'),
+        where('imobiliariaId', '==', userData.imobiliariaId),
+        orderBy('createdAt', 'desc')
+      );
+
+    const unsubscribeBoards = onSnapshot(boardsQuery, (snapshot) => {
+      const boardsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as BrelloBoard[];
+      
+      setBoards(boardsData);
+      
+      // Selecionar o primeiro board se não houver nenhum selecionado
+      if (boardsData.length > 0 && !currentBoard) {
+        setCurrentBoard(boardsData[0]);
+      }
+    });
+
+    return () => {
+      unsubscribeBoards();
+    };
+  }, [userData, currentBoard]);
+
+  // Carregar listas e cartões quando o board mudar
   useEffect(() => {
-    if (currentBoard) {
-      loadLists();
-      loadCards();
+    if (!currentBoard) {
+      setLists([]);
+      setCards([]);
+      return;
     }
+
+    // Carregar listas
+    const listsQuery = query(
+      collection(db, 'brelloLists'),
+      where('boardId', '==', currentBoard.id),
+      orderBy('order', 'asc')
+    );
+
+    const unsubscribeLists = onSnapshot(listsQuery, (snapshot) => {
+      const listsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as BrelloList[];
+      
+      setLists(listsData);
+    });
+
+    // Carregar cartões
+    const cardsQuery = query(
+      collection(db, 'brelloCards'),
+      where('boardId', '==', currentBoard.id),
+      orderBy('order', 'asc')
+    );
+
+    const unsubscribeCards = onSnapshot(cardsQuery, (snapshot) => {
+      const cardsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as BrelloCard[];
+      
+      setCards(cardsData);
+      setLoading(false);
+    });
+
+    return () => {
+      unsubscribeLists();
+      unsubscribeCards();
+    };
   }, [currentBoard]);
 
-  const loadBoards = async () => {
+  // Funções para gerenciar boards
+  const addBoard = async () => {
+    if (!userData || !newBoardTitle.trim()) return;
+
     try {
-      const q = query(
-        collection(db, 'brelloBoards'),
-        where('imobiliariaId', '==', userData?.imobiliariaId)
-        // Removido orderBy para evitar problemas de índice
-      );
-      
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const boardsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as BrelloBoard[];
-        
-        // Ordenar localmente em vez de no Firebase
-        const sortedBoards = boardsData.sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        
-        setBoards(sortedBoards);
-        if (sortedBoards.length > 0 && !currentBoard) {
-          setCurrentBoard(sortedBoards[0]);
-        }
-        setLoading(false);
-      });
+              const boardData = {
+          title: newBoardTitle.trim(),
+          imobiliariaId: userData.imobiliariaId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
 
-      return unsubscribe;
-    } catch (error) {
-      console.error('Erro ao carregar boards:', error);
-      setLoading(false);
-    }
-  };
-
-  const loadLists = async () => {
-    if (!currentBoard) return;
-    
-    try {
-      const q = query(
-        collection(db, 'brelloLists'),
-        where('boardId', '==', currentBoard.id)
-        // Removido orderBy para evitar problemas de índice
-      );
-      
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const listsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as BrelloList[];
-        
-        // Ordenar localmente em vez de no Firebase
-        const sortedLists = listsData.sort((a, b) => a.order - b.order);
-        setLists(sortedLists);
-      });
-
-      return unsubscribe;
-    } catch (error) {
-      console.error('Erro ao carregar listas:', error);
-    }
-  };
-
-  const loadCards = async () => {
-    if (!currentBoard) return;
-    
-    try {
-      const q = query(
-        collection(db, 'brelloCards'),
-        where('boardId', '==', currentBoard.id)
-        // Removido orderBy para evitar problemas de índice
-      );
-      
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const cardsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as BrelloCard[];
-        
-        // Ordenar localmente em vez de no Firebase
-        const sortedCards = cardsData.sort((a, b) => a.order - b.order);
-        setCards(sortedCards);
-      });
-
-      return unsubscribe;
-    } catch (error) {
-      console.error('Erro ao carregar cartões:', error);
-    }
-  };
-
-  // Criar novo board
-  const createBoard = async () => {
-    if (!newBoardTitle.trim() || !userData?.imobiliariaId) return;
-    
-    try {
-      const boardData = {
-        title: newBoardTitle.trim(),
-        imobiliariaId: userData.imobiliariaId,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      
       await addDoc(collection(db, 'brelloBoards'), boardData);
       setNewBoardTitle('');
       setShowNewBoardModal(false);
@@ -731,10 +616,32 @@ export default function BrelloPage() {
     }
   };
 
-  // Criar nova lista
-  const createList = async () => {
-    if (!newListTitle.trim() || !currentBoard) return;
-    
+  const deleteBoard = async (boardId: string) => {
+    try {
+      // Primeiro excluir todas as listas do board
+      const boardLists = lists.filter(l => l.boardId === boardId);
+      for (const list of boardLists) {
+        await deleteList(list.id);
+      }
+      
+      // Depois excluir o board
+      await deleteDoc(doc(db, 'brelloBoards', boardId));
+      
+      // Se era o board atual, limpar a seleção
+      if (currentBoard?.id === boardId) {
+        setCurrentBoard(null);
+        setLists([]);
+        setCards([]);
+      }
+    } catch (error) {
+      console.error('Erro ao excluir board:', error);
+    }
+  };
+
+  // Funções para gerenciar listas
+  const addList = async () => {
+    if (!currentBoard || !newListTitle.trim()) return;
+
     try {
       const listData = {
         title: newListTitle.trim(),
@@ -742,7 +649,7 @@ export default function BrelloPage() {
         order: lists.length,
         boardId: currentBoard.id,
       };
-      
+
       await addDoc(collection(db, 'brelloLists'), listData);
       setNewListTitle('');
       setNewListColor('#3B82F6');
@@ -752,67 +659,19 @@ export default function BrelloPage() {
     }
   };
 
-  // Adicionar cartão
-  const addCard = async (listId: string) => {
-    if (!currentBoard) return;
-    
-    try {
-      const cardData = {
-        title: 'Novo Cartão',
-        description: '',
-        listId,
-        order: cards.filter(c => c.listId === listId).length,
-        labels: [],
-        priority: 'medium' as const,
-        boardId: currentBoard.id,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      
-      await addDoc(collection(db, 'brelloCards'), cardData);
-    } catch (error) {
-      console.error('Erro ao criar cartão:', error);
-    }
-  };
-
-  // Salvar cartão
-  const saveCard = async (card: BrelloCard) => {
-    try {
-      await updateDoc(doc(db, 'brelloCards', card.id), {
-        title: card.title,
-        description: card.description,
-        priority: card.priority,
-        dueDate: card.dueDate,
-        labels: card.labels,
-        updatedAt: new Date(),
-      });
-    } catch (error) {
-      console.error('Erro ao salvar cartão:', error);
-    }
-  };
-
-  // Excluir cartão
-  const deleteCard = async (id: string) => {
-    try {
-      await deleteDoc(doc(db, 'brelloCards', id));
-    } catch (error) {
-      console.error('Erro ao excluir cartão:', error);
-    }
-  };
-
-  // Salvar lista
-  const saveList = async (list: BrelloList) => {
+  const updateList = async (list: BrelloList) => {
     try {
       await updateDoc(doc(db, 'brelloLists', list.id), {
         title: list.title,
         color: list.color,
+        updatedAt: new Date(),
       });
+      setShowListModal(false);
     } catch (error) {
-      console.error('Erro ao salvar lista:', error);
+      console.error('Erro ao atualizar lista:', error);
     }
   };
 
-  // Excluir lista
   const deleteList = async (id: string) => {
     try {
       // Primeiro excluir todos os cartões da lista
@@ -828,50 +687,49 @@ export default function BrelloPage() {
     }
   };
 
-  // Excluir board
-  const deleteBoard = async (boardId: string) => {
+  // Funções para gerenciar cartões
+  const addCard = async (listId: string) => {
+    if (!currentBoard) return;
+
     try {
-      // Primeiro excluir todas as listas do board
-      const boardLists = lists.filter(l => l.boardId === boardId);
-      for (const list of boardLists) {
-        await deleteList(list.id);
-      }
-      
-      // Depois excluir o board
-      await deleteDoc(doc(db, 'brelloBoards', boardId));
-      setCurrentBoard(null); // Atualizar o board atual para null
-      setLists([]); // Limpar listas
-      setCards([]); // Limpar cartões
+      const cardData = {
+        title: 'Novo Cartão',
+        description: '',
+        listId,
+        boardId: currentBoard.id,
+        order: cards.filter(c => c.listId === listId).length,
+        labels: [],
+        priority: 'medium' as const,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      await addDoc(collection(db, 'brelloCards'), cardData);
     } catch (error) {
-      console.error('Erro ao excluir board:', error);
+      console.error('Erro ao criar cartão:', error);
     }
   };
 
-  // Sensores para drag & drop
-  const sensors = useSensors(
-    useSensor(PointerSensor)
-  );
+  const updateCard = async (card: BrelloCard) => {
+    try {
+      await updateDoc(doc(db, 'brelloCards', card.id), {
+        title: card.title,
+        description: card.description,
+        priority: card.priority,
+        dueDate: card.dueDate,
+        updatedAt: new Date(),
+      });
+      setShowCardModal(false);
+    } catch (error) {
+      console.error('Erro ao atualizar cartão:', error);
+    }
+  };
 
-  // Drag & Drop
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    
-    if (!over || !active) return;
-
-    const activeId = active.id as string;
-    const overId = over.id as string;
-
-    // Verificar se é um cartão sendo movido
-    const activeCard = cards.find(c => c.id === activeId);
-    if (activeCard) {
-      const overList = lists.find(l => l.id === overId);
-      if (overList) {
-        // Mover cartão para nova lista
-        await updateDoc(doc(db, 'brelloCards', activeCard.id), {
-          listId: overList.id,
-          updatedAt: new Date(),
-        });
-      }
+  const deleteCard = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'brelloCards', id));
+    } catch (error) {
+      console.error('Erro ao excluir cartão:', error);
     }
   };
 
@@ -962,58 +820,41 @@ export default function BrelloPage() {
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
           {currentBoard ? (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <div className="flex gap-6 overflow-x-auto pb-6">
-                {lists.map((list) => (
-                  <List
-                    key={list.id}
-                    list={list}
-                    cards={cards}
-                    onAddCard={addCard}
-                    onEditCard={(card) => {
-                      setEditingCard(card);
-                      setShowCardModal(true);
-                    }}
-                    onDeleteCard={deleteCard}
-                    onEditList={(list) => {
-                      setEditingList(list);
-                      setShowListModal(true);
-                    }}
-                    onDeleteList={deleteList}
-                    onMoveCard={(cardId, newListId) => {
-                      // Encontrar o cartão a ser movido
-                      const cardToMove = cards.find(c => c.id === cardId);
-                      if (cardToMove) {
-                        // Atualizar o ID da lista no cartão
-                        updateDoc(doc(db, 'brelloCards', cardId), {
-                          listId: newListId,
-                          updatedAt: new Date(),
-                        });
-                      }
-                    }}
-                  />
-                ))}
-                
-                {/* Botão para adicionar nova lista */}
-                <button
-                  onClick={() => setShowNewListModal(true)}
-                  className="min-w-[280px] h-fit p-8 border-2 border-dashed border-[#E8E9F1] dark:border-[#23283A] rounded-xl hover:border-[#3478F6] hover:bg-white/50 dark:hover:bg-[#23283A]/50 transition-all duration-200 group"
-                >
-                  <div className="text-center">
-                    <div className="w-12 h-12 bg-[#3478F6] rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                      <span className="text-2xl text-white">+</span>
-                    </div>
-                    <p className="text-[#6B6F76] dark:text-gray-300 group-hover:text-[#3478F6] transition-colors">
-                      Adicionar Lista
-                    </p>
+            <div className="flex gap-6 overflow-x-auto pb-6">
+              {lists.map((list) => (
+                <List
+                  key={list.id}
+                  list={list}
+                  cards={cards}
+                  onAddCard={addCard}
+                  onEditCard={(card) => {
+                    setEditingCard(card);
+                    setShowCardModal(true);
+                  }}
+                  onDeleteCard={deleteCard}
+                  onEditList={(list) => {
+                    setEditingList(list);
+                    setShowListModal(true);
+                  }}
+                  onDeleteList={deleteList}
+                />
+              ))}
+              
+              {/* Botão para adicionar nova lista */}
+              <button
+                onClick={() => setShowNewListModal(true)}
+                className="min-w-[280px] h-fit p-8 border-2 border-dashed border-[#E8E9F1] dark:border-[#23283A] rounded-xl hover:border-[#3478F6] hover:bg-white/50 dark:hover:bg-[#23283A]/50 transition-all duration-200 group"
+              >
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-[#3478F6] rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                    <span className="text-2xl text-white">+</span>
                   </div>
-                </button>
-              </div>
-            </DndContext>
+                  <p className="text-[#6B6F76] dark:text-gray-300 group-hover:text-[#3478F6] transition-colors">
+                    Adicionar Lista
+                  </p>
+                </div>
+              </button>
+            </div>
           ) : (
             <div className="text-center py-20">
               <div className="w-24 h-24 bg-gradient-to-br from-[#3478F6] to-[#10B981] rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl">
@@ -1060,13 +901,13 @@ export default function BrelloPage() {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowNewBoardModal(false)}
-                className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors shadow-sm"
+                className="px-4 py-2 bg-[#6B6F76] text-white rounded-lg hover:bg-[#4B5563] transition-colors"
               >
                 Cancelar
               </button>
               <button
-                onClick={createBoard}
-                className="px-6 py-3 bg-gradient-to-r from-[#3478F6] to-[#255FD1] text-white rounded-lg hover:from-[#255FD1] hover:to-[#1E40AF] transition-all duration-200 shadow-sm"
+                onClick={addBoard}
+                className="px-4 py-2 bg-[#10B981] text-white rounded-lg hover:bg-[#059669] transition-colors"
               >
                 Criar Board
               </button>
@@ -1080,52 +921,57 @@ export default function BrelloPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
           <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 border border-[#E8E9F1] dark:border-[#23283A]">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-[#10B981] to-[#059669] rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">📝</span>
+              <div className="w-16 h-16 bg-gradient-to-br from-[#3478F6] to-[#10B981] rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">📋</span>
               </div>
               <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white">Nova Lista</h2>
-              <p className="text-[#6B6F76] dark:text-gray-300">Organize suas tarefas em colunas</p>
+              <p className="text-[#6B6F76] dark:text-gray-300">Configure sua nova lista</p>
             </div>
             
-            <input
-              type="text"
-              value={newListTitle}
-              onChange={(e) => setNewListTitle(e.target.value)}
-              placeholder="Nome da lista..."
-              className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white mb-6 shadow-sm text-lg"
-              autoFocus
-            />
-            
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-3">
-                Escolha uma cor para a lista
-              </label>
-              <div className="flex flex-wrap gap-3 justify-center">
-                {['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'].map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => setNewListColor(color)}
-                    className={`w-12 h-12 rounded-full border-4 transition-all shadow-lg hover:scale-110 ${
-                      newListColor === color 
-                        ? 'border-[#2E2F38] dark:border-white scale-110' 
-                        : 'border-transparent hover:scale-105'
-                    }`}
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                  Nome da Lista
+                </label>
+                <input
+                  type="text"
+                  value={newListTitle}
+                  onChange={(e) => setNewListTitle(e.target.value)}
+                  placeholder="Nome da lista..."
+                  className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white shadow-sm"
+                  autoFocus
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                  Cor
+                </label>
+                <div className="flex gap-2">
+                  {['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'].map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setNewListColor(c)}
+                      className={`w-8 h-8 rounded-full border-2 transition-all ${
+                        newListColor === c ? 'border-[#2E2F38] dark:border-white scale-110' : 'border-[#E8E9F1] dark:border-[#23283A]'
+                      }`}
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
             
-            <div className="flex gap-3 justify-end">
+            <div className="flex gap-3 justify-end mt-6">
               <button
                 onClick={() => setShowNewListModal(false)}
-                className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors shadow-sm"
+                className="px-4 py-2 bg-[#6B6F76] text-white rounded-lg hover:bg-[#4B5563] transition-colors"
               >
                 Cancelar
               </button>
               <button
-                onClick={createList}
-                className="px-6 py-3 bg-gradient-to-r from-[#10B981] to-[#059669] text-white rounded-lg hover:from-[#059669] hover:to-[#047857] transition-all duration-200 shadow-sm"
+                onClick={addList}
+                className="px-4 py-2 bg-[#10B981] text-white rounded-lg hover:bg-[#059669] transition-colors"
               >
                 Criar Lista
               </button>
@@ -1134,28 +980,21 @@ export default function BrelloPage() {
         </div>
       )}
 
-      {/* Modal Editar Cartão */}
-      <CardModal
-        card={editingCard}
-        isOpen={showCardModal}
-        onClose={() => {
-          setShowCardModal(false);
-          setEditingCard(null);
-        }}
-        onSave={saveCard}
-        onDelete={deleteCard}
-      />
-
-      {/* Modal Editar Lista */}
+      {/* Modais */}
       <ListModal
         list={editingList}
         isOpen={showListModal}
-        onClose={() => {
-          setShowListModal(false);
-          setEditingList(null);
-        }}
-        onSave={saveList}
+        onClose={() => setShowListModal(false)}
+        onSave={updateList}
         onDelete={deleteList}
+      />
+
+      <CardModal
+        card={editingCard}
+        isOpen={showCardModal}
+        onClose={() => setShowCardModal(false)}
+        onSave={updateCard}
+        onDelete={deleteCard}
       />
     </div>
   );
