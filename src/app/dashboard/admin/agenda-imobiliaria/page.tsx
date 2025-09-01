@@ -44,8 +44,7 @@ export default function AgendaImobiliariaAdminPage() {
       try {
         const q = query(
           collection(db, 'agendaImobiliaria'),
-          where('imobiliariaId', '==', userData.imobiliariaId),
-          orderBy('dataInicio', 'desc')
+          where('imobiliariaId', '==', userData.imobiliariaId)
         );
         const snapshot = await getDocs(q);
         const agendaData = snapshot.docs.map(doc => ({
@@ -53,7 +52,14 @@ export default function AgendaImobiliariaAdminPage() {
           ...doc.data()
         })) as AgendaImobiliaria[];
         
-        setAgenda(agendaData);
+        // Ordenar localmente por data de início (mais recentes primeiro)
+        const sortedAgenda = agendaData.sort((a, b) => {
+          const aDate = a.dataInicio?.toDate ? a.dataInicio.toDate() : new Date(a.dataInicio);
+          const bDate = b.dataInicio?.toDate ? b.dataInicio.toDate() : new Date(b.dataInicio);
+          return bDate.getTime() - aDate.getTime();
+        });
+        
+        setAgenda(sortedAgenda);
       } catch (error) {
         console.error('Erro ao buscar agenda:', error);
       } finally {
