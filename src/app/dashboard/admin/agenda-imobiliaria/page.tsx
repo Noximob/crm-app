@@ -54,8 +54,8 @@ export default function AgendaImobiliariaAdminPage() {
         
         // Ordenar localmente por data de início (mais recentes primeiro)
         const sortedAgenda = agendaData.sort((a, b) => {
-          const aDate = a.dataInicio?.toDate ? a.dataInicio.toDate() : new Date(a.dataInicio);
-          const bDate = b.dataInicio?.toDate ? b.dataInicio.toDate() : new Date(b.dataInicio);
+          const aDate = a.dataInicio?.toDate ? a.dataInicio.toDate() : (a.dataInicio ? new Date(a.dataInicio) : new Date(0));
+          const bDate = b.dataInicio?.toDate ? b.dataInicio.toDate() : (b.dataInicio ? new Date(b.dataInicio) : new Date(0));
           return bDate.getTime() - aDate.getTime();
         });
         
