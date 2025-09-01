@@ -117,7 +117,11 @@ export default function PlantoesModal({ isOpen, onClose, plantoes }: PlantoesMod
                           </span>
                         </div>
                         <div className="flex items-center gap-2 px-3 py-1 bg-[#A855F7]/10 text-[#A855F7] rounded-full">
-                          <span className="text-sm font-medium">{plantao.horario}</span>
+                          <span className="text-sm font-medium">
+                            {plantao.horario && plantao.horario.length >= 5 
+                              ? plantao.horario.substring(0, 5) 
+                              : plantao.horario}
+                          </span>
                         </div>
                       </div>
                       
