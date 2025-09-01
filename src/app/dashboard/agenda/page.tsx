@@ -716,11 +716,23 @@ export default function AgendaPage() {
       
       // Verificar se está no período do plantão
       if (currentDateOnly >= inicioDateOnly && currentDateOnly <= fimDateOnly) {
+        // Criar data/hora correta para o plantão
+        const plantaoDataHora = new Date(currentDate);
+        
+        // Extrair horário do plantão (formato HH:MM)
+        if (plantao.horario && plantao.horario.length >= 5) {
+          const [horas, minutos] = plantao.horario.substring(0, 5).split(':').map(Number);
+          plantaoDataHora.setHours(horas, minutos, 0, 0);
+        } else {
+          // Fallback: usar 09:00 se não houver horário
+          plantaoDataHora.setHours(9, 0, 0, 0);
+        }
+        
         allItems.push({
           id: `plantao_${plantao.id}`,
           titulo: `Plantão ${plantao.construtora}`,
           descricao: `Horário: ${plantao.horario}\nConstrutora: ${plantao.construtora}\nCorretor: ${plantao.corretorResponsavel}\nObservações: ${plantao.observacoes || 'Nenhuma'}`,
-          dataHora: Timestamp.fromDate(inicioDate),
+          dataHora: Timestamp.fromDate(plantaoDataHora),
           tipo: 'comunidade', // Usar tipo comunidade que tem cor laranja
           status: 'pendente',
           cor: '#F97316', // Cor laranja para plantão
