@@ -7,7 +7,8 @@ import { collection, query, where, getDocs, doc, setDoc, deleteDoc, onSnapshot, 
 
 interface Treinamento {
   id: string;
-  categoria: 'audiobooks' | 'vendas' | 'mercado' | 'institucional' | 'técnicas' | 'motivacional' | 'gestão';
+  categoria?: 'audiobooks' | 'vendas' | 'mercado' | 'institucional' | 'técnicas' | 'motivacional' | 'gestão';
+  categorias?: string[]; // Para compatibilidade com dados do admin
   titulo: string;
   descricao: string;
   tipo: 'video' | 'pdf';
@@ -95,7 +96,8 @@ export default function TreinamentosPage() {
         
         return {
           id: doc.id,
-          categoria: data.categoria,
+          categoria: data.categoria || (data.categorias && data.categorias.length > 0 ? data.categorias[0] : 'vendas'),
+          categorias: data.categorias || (data.categoria ? [data.categoria] : ['vendas']),
           titulo: data.titulo,
           descricao: data.descricao,
           tipo: data.tipo,
@@ -195,7 +197,11 @@ export default function TreinamentosPage() {
   const filteredTreinamentos = treinamentos.filter(treinamento => {
     const matchesSearch = treinamento.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          treinamento.descricao.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'todos' || treinamento.categoria === selectedCategory;
+    
+    // Verificar se a categoria selecionada está nas categorias do treinamento
+    const matchesCategory = selectedCategory === 'todos' || 
+                           treinamento.categoria === selectedCategory ||
+                           (treinamento.categorias && treinamento.categorias.includes(selectedCategory));
     
     // Debug logs
     console.log('=== DEBUG FILTROS ===');
@@ -206,6 +212,7 @@ export default function TreinamentosPage() {
       id: treinamento.id,
       titulo: treinamento.titulo,
       categoria: treinamento.categoria,
+      categorias: treinamento.categorias,
       matchesSearch,
       matchesCategory
     });
