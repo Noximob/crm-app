@@ -107,6 +107,18 @@ export default function TreinamentosPage() {
       
       // Embaralhar os treinamentos para mostrar sugestões diferentes
       const shuffledData = treinamentosData.sort(() => Math.random() - 0.5);
+      
+      // Debug logs
+      console.log('=== DADOS CARREGADOS ===');
+      console.log('Total de treinamentos carregados:', shuffledData.length);
+      console.log('Categorias encontradas:', [...new Set(shuffledData.map(t => t.categoria))]);
+      console.log('Treinamentos:', shuffledData.map(t => ({
+        id: t.id,
+        titulo: t.titulo,
+        categoria: t.categoria
+      })));
+      console.log('========================');
+      
       setTreinamentos(shuffledData);
     } catch (err) {
       console.error('Erro ao carregar treinamentos:', err);
@@ -184,6 +196,21 @@ export default function TreinamentosPage() {
     const matchesSearch = treinamento.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          treinamento.descricao.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'todos' || treinamento.categoria === selectedCategory;
+    
+    // Debug logs
+    console.log('=== DEBUG FILTROS ===');
+    console.log('Total treinamentos:', treinamentos.length);
+    console.log('Categoria selecionada:', selectedCategory);
+    console.log('Termo de busca:', searchTerm);
+    console.log('Treinamento atual:', {
+      id: treinamento.id,
+      titulo: treinamento.titulo,
+      categoria: treinamento.categoria,
+      matchesSearch,
+      matchesCategory
+    });
+    console.log('========================');
+    
     return matchesSearch && matchesCategory;
   });
 
