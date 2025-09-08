@@ -33,14 +33,20 @@ export default function LeadCard({ lead }: { lead: Lead }) {
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...listeners}
-      className="bg-[#F5F8FF] dark:bg-[#23283A] rounded-lg p-2 shadow-soft border border-[#A3C8F7] dark:border-[#3478F6]/40 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-[#3478F6] transition-all duration-200 min-h-[60px] flex flex-col gap-1 w-full max-w-[180px] mx-auto"
+      className="bg-[#F5F8FF] dark:bg-[#23283A] rounded-lg p-2 shadow-soft border border-[#A3C8F7] dark:border-[#3478F6]/40 hover:shadow-md hover:border-[#3478F6] transition-all duration-200 min-h-[60px] flex flex-col gap-1 w-full max-w-[180px] mx-auto"
     >
-      <div className="font-semibold text-xs text-[#2E2F38] dark:text-white mb-0.5 truncate">{lead.nome}</div>
+      {/* Área de drag handle */}
+      <div 
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing flex items-center justify-between mb-1"
+      >
+        <div className="font-semibold text-xs text-[#2E2F38] dark:text-white truncate flex-1">{lead.nome}</div>
+        <div className="text-[10px] text-[#6B6F76] dark:text-gray-400 ml-2">⋮⋮</div>
+      </div>
       <div className="text-[11px] text-[#6B6F76] dark:text-gray-400 mb-1 truncate">{lead.telefone}</div>
       <div className="flex flex-col gap-1 mt-1">
         <a 
-          href={`https://wa.me/${lead.telefone.replace(/\\D/g, '')}`} 
+          href={`https://wa.me/${lead.telefone.replace(/\D/g, '')}`} 
           target="_blank" 
           rel="noopener noreferrer"
           onClick={e => e.stopPropagation()}
