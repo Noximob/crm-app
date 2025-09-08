@@ -199,30 +199,30 @@ export default function NotesWidget() {
       {/* Modal Completo */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-start pt-10">
-          <div className="bg-white rounded-2xl shadow-2xl border border-[#E8E9F1] w-full max-w-4xl mx-4 max-h-[85vh] overflow-hidden">
+          <div className="bg-[#23283A] rounded-2xl shadow-2xl border border-[#3478F6]/20 w-full max-w-4xl mx-4 max-h-[85vh] overflow-hidden">
             {/* Header mais compacto */}
-            <div className="flex items-center justify-between p-4 border-b border-[#E8E9F1]">
+            <div className="flex items-center justify-between p-4 border-b border-[#3478F6]/20">
               <div className="flex items-center gap-2">
                 <NotesIcon className="h-5 w-5 text-[#3478F6]" />
-                <h2 className="text-lg font-bold text-[#2E2F38]">Notas</h2>
+                <h2 className="text-lg font-bold text-white">Notas</h2>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-[#6B6F76] hover:text-[#2E2F38] transition-colors"
+                className="text-gray-300 hover:text-white transition-colors"
               >
                 <XIcon className="h-5 w-5" />
               </button>
             </div>
 
             {/* Filtros e Ordenação mais compactos */}
-            <div className="p-3 bg-[#F5F6FA] border-b border-[#E8E9F1]">
+            <div className="p-3 bg-[#181C23] border-b border-[#3478F6]/20">
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <FilterIcon className="h-3 w-3 text-white" />
+                  <FilterIcon className="h-3 w-3 text-gray-300" />
                   <select
                     value={filterPriority}
                     onChange={(e) => setFilterPriority(e.target.value as any)}
-                    className="px-2 py-1 text-xs bg-white border border-[#E8E9F1] rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38]"
+                    className="px-2 py-1 text-xs bg-[#23283A] border border-[#3478F6]/20 rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-white"
                   >
                     <option value="Todas">Todas</option>
                     <option value="Urgente">Urgente</option>
@@ -231,11 +231,11 @@ export default function NotesWidget() {
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <SortIcon className="h-3 w-3 text-white" />
+                  <SortIcon className="h-3 w-3 text-gray-300" />
                   <select
                     value={sortOrder}
                     onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}
-                    className="px-2 py-1 text-xs bg-white border border-[#E8E9F1] rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38]"
+                    className="px-2 py-1 text-xs bg-[#23283A] border border-[#3478F6]/20 rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-white"
                   >
                     <option value="newest">Mais recentes</option>
                     <option value="oldest">Mais antigas</option>
@@ -245,13 +245,13 @@ export default function NotesWidget() {
             </div>
 
             {/* Formulário de Nova Nota mais compacto */}
-            <div className="p-3 border-b border-[#E8E9F1]">
+            <div className="p-3 border-b border-[#3478F6]/20">
               <div className="space-y-2">
                 <div className="flex gap-2">
                   <select
                     value={selectedPriority}
                     onChange={(e) => setSelectedPriority(e.target.value as any)}
-                    className="px-2 py-1.5 text-xs bg-white border border-[#E8E9F1] rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38]"
+                    className="px-2 py-1.5 text-xs bg-[#23283A] border border-[#3478F6]/20 rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-white"
                   >
                     <option value="Urgente">🚨 Urgente</option>
                     <option value="Importante">⚠️ Importante</option>
@@ -262,7 +262,7 @@ export default function NotesWidget() {
                     value={newNote}
                     onChange={(e) => setNewNote(e.target.value)}
                     placeholder="Digite sua nota..."
-                    className="flex-1 px-3 py-1.5 text-sm bg-white border border-[#E8E9F1] rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] placeholder-gray-500"
+                    className="flex-1 px-3 py-1.5 text-sm bg-[#23283A] border border-[#3478F6]/20 rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-white placeholder-gray-400"
                     onKeyPress={(e) => e.key === 'Enter' && handleAddNote()}
                   />
                   <button
@@ -277,15 +277,15 @@ export default function NotesWidget() {
                 
                 {/* Data e Hora opcional mais compacto */}
                 <div className="flex items-center gap-2">
-                  <CalendarIcon className="h-3 w-3 text-white" />
+                  <CalendarIcon className="h-3 w-3 text-gray-300" />
                   <input
                     type="datetime-local"
                     value={dataHora}
                     onChange={(e) => setDataHora(e.target.value)}
                     placeholder="Data e hora (opcional)"
-                    className="px-2 py-1 text-xs bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white"
+                    className="px-2 py-1 text-xs bg-[#23283A] border border-[#3478F6]/20 rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-white"
                   />
-                  <span className="text-xs text-white">Data e hora (opcional)</span>
+                  <span className="text-xs text-gray-300">Data e hora (opcional)</span>
                 </div>
               </div>
             </div>
@@ -294,15 +294,15 @@ export default function NotesWidget() {
             <div className="p-3 overflow-y-auto" style={{height: 'calc(85vh - 200px)'}}>
               {(!latestNote && otherNotes.length === 0) ? (
                 <div className="text-center py-8">
-                  <NotesIcon className="h-8 w-8 text-white mx-auto mb-2" />
-                  <p className="text-white text-sm">Nenhuma nota encontrada</p>
+                  <NotesIcon className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-gray-300 text-sm">Nenhuma nota encontrada</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {latestNote && (
                     <div
                       key={latestNote.id}
-                      className="group p-3 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-white dark:hover:bg-[#23283A] transition-colors"
+                      className="group p-3 bg-[#181C23] rounded-lg border border-[#3478F6]/20 hover:bg-[#23283A] transition-colors"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
@@ -311,15 +311,15 @@ export default function NotesWidget() {
                             <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getPriorityColor(latestNote.prioridade)}`}>
                               {latestNote.prioridade}
                             </span>
-                            <span className="text-xs text-white">
+                            <span className="text-xs text-gray-300">
                               {latestNote.criadoEm.toDate().toLocaleString('pt-BR')}
                             </span>
                           </div>
-                          <p className="text-[#2E2F38] dark:text-white text-sm leading-relaxed">{latestNote.texto}</p>
+                          <p className="text-white text-sm leading-relaxed">{latestNote.texto}</p>
                           {latestNote.dataHora && (
                             <div className="flex items-center gap-1 mt-1">
-                              <CalendarIcon className="h-3 w-3 text-white" />
-                              <span className="text-xs text-white">
+                              <CalendarIcon className="h-3 w-3 text-gray-300" />
+                              <span className="text-xs text-gray-300">
                                 Agendado: {new Date(latestNote.dataHora).toLocaleString('pt-BR')}
                               </span>
                             </div>
@@ -327,7 +327,7 @@ export default function NotesWidget() {
                         </div>
                         <button
                           onClick={() => handleDeleteNote(latestNote.id)}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded transition-all"
+                          className="opacity-0 group-hover:opacity-100 p-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-all"
                         >
                           <XIcon className="h-3 w-3" />
                         </button>
@@ -337,7 +337,7 @@ export default function NotesWidget() {
                   {otherNotes.map(note => (
                     <div
                       key={note.id}
-                      className="group p-3 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-white dark:hover:bg-[#23283A] transition-colors"
+                      className="group p-3 bg-[#181C23] rounded-lg border border-[#3478F6]/20 hover:bg-[#23283A] transition-colors"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
@@ -346,15 +346,15 @@ export default function NotesWidget() {
                             <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getPriorityColor(note.prioridade)}`}>
                               {note.prioridade}
                             </span>
-                            <span className="text-xs text-white">
+                            <span className="text-xs text-gray-300">
                               {note.criadoEm.toDate().toLocaleString('pt-BR')}
                             </span>
                           </div>
-                          <p className="text-[#2E2F38] dark:text-white text-sm leading-relaxed">{note.texto}</p>
+                          <p className="text-white text-sm leading-relaxed">{note.texto}</p>
                           {note.dataHora && (
                             <div className="flex items-center gap-1 mt-1">
-                              <CalendarIcon className="h-3 w-3 text-white" />
-                              <span className="text-xs text-white">
+                              <CalendarIcon className="h-3 w-3 text-gray-300" />
+                              <span className="text-xs text-gray-300">
                                 Agendado: {new Date(note.dataHora).toLocaleString('pt-BR')}
                               </span>
                             </div>
@@ -362,7 +362,7 @@ export default function NotesWidget() {
                         </div>
                         <button
                           onClick={() => handleDeleteNote(note.id)}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded transition-all"
+                          className="opacity-0 group-hover:opacity-100 p-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-all"
                         >
                           <XIcon className="h-3 w-3" />
                         </button>
