@@ -26,13 +26,13 @@ export default function LogInteractionModal({ isOpen, onClose, onSave, interacti
 
     return (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-lg relative">
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+            <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg relative">
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
                     <XIcon className="h-6 w-6" />
                 </button>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">Registrar Interação: {interactionType}</h2>
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">Registrar Interação: {interactionType}</h2>
                 <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <label htmlFor="description" className="block text-sm font-medium text-gray-700">
                         Descrição
                     </label>
                     <textarea
@@ -40,7 +40,7 @@ export default function LogInteractionModal({ isOpen, onClose, onSave, interacti
                         rows={4}
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                        className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-gray-800"
                         placeholder={`Descreva os detalhes da ${interactionType.toLowerCase()}...`}
                     />
                 </div>

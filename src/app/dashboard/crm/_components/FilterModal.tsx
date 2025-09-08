@@ -46,7 +46,7 @@ const FilterTag = ({ label, isSelected, onClick }: { label: string; isSelected: 
             w-full text-left px-2.5 py-1.5 text-sm rounded-md border transition-all duration-200
             ${isSelected
                 ? 'bg-primary-500 border-primary-500 text-white font-semibold shadow-sm'
-                : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300 dark:bg-gray-700/80 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700'
+                : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300'
             }
         `}
     >
@@ -84,11 +84,11 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters, 
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4" onMouseDown={onClose}>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl relative flex flex-col" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl relative flex flex-col" onMouseDown={(e) => e.stopPropagation()}>
                 {/* Cabeçalho */}
-                <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700">
-                    <h2 className="text-lg font-bold text-gray-800 dark:text-white">Filtrar Leads</h2>
-                    <button onClick={onClose} className="p-1 rounded-full text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                <div className="flex items-center justify-between p-5 border-b border-gray-200">
+                    <h2 className="text-lg font-bold text-gray-800">Filtrar Leads</h2>
+                    <button onClick={onClose} className="p-1 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-colors">
                         <XIcon className="h-5 w-5" />
                     </button>
                 </div>
@@ -97,7 +97,7 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters, 
                 <div className="p-5 space-y-5 max-h-[70vh] overflow-y-auto">
                     {/* Status de Tarefa */}
                     <div>
-                        <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2.5">Status da Tarefa</h4>
+                        <h4 className="text-sm font-semibold text-gray-600 mb-2.5">Status da Tarefa</h4>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
                             {TASK_STATUS_OPTIONS.map(option => (
                                 <FilterTag 
@@ -112,7 +112,7 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters, 
 
                     {[situationQuestion, ...QUALIFICATION_QUESTIONS].map(group => (
                         <div key={group.key}>
-                            <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2.5">{group.title}</h4>
+                            <h4 className="text-sm font-semibold text-gray-600 mb-2.5">{group.title}</h4>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
                                 {group.options.map(option => (
                                     <FilterTag 
@@ -128,12 +128,12 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters, 
                 </div>
 
                 {/* Rodapé */}
-                <div className="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl">
+                <div className="flex justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
                     <button 
                         type="button" 
                         onClick={handleClearFilters} 
                         disabled={!hasActiveFilters}
-                        className="px-4 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors dark:text-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Limpar
                     </button>

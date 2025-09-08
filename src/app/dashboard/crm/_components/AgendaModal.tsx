@@ -47,33 +47,33 @@ export default function AgendaModal({ isOpen, onClose, onSave, isLoading }: Agen
     // --- Renderização ---
     return (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center">
-            <div className="bg-[#F5F6FA] dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-6 w-full max-w-lg relative">
-                <button onClick={onClose} className="absolute top-4 right-4 text-[#6B6F76] hover:text-[#3478F6] dark:hover:text-[#A3C8F7] transition-colors">
+            <div className="bg-white rounded-2xl shadow-soft border border-[#E8E9F1] p-6 w-full max-w-lg relative">
+                <button onClick={onClose} className="absolute top-4 right-4 text-[#6B6F76] hover:text-[#3478F6] transition-colors">
                     <XIcon className="h-6 w-6" />
                 </button>
-                <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white mb-6">Agendar Nova Tarefa</h2>
+                <h2 className="text-2xl font-bold text-[#2E2F38] mb-6">Agendar Nova Tarefa</h2>
                 
                 <div className="space-y-4">
                     <div>
-                        <label htmlFor="task-description" className="block text-sm font-semibold text-[#2E2F38] dark:text-white">Descrição da Tarefa</label>
+                        <label htmlFor="task-description" className="block text-sm font-semibold text-[#2E2F38]">Descrição da Tarefa</label>
                         <textarea
                             id="task-description"
                             rows={3}
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-[#181C23] border border-[#A3C8F7] dark:border-[#3478F6] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38] dark:text-white"
+                            className="mt-1 block w-full px-3 py-2 bg-white border border-[#A3C8F7] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38]"
                             placeholder="Ex: Ligar para confirmar proposta..."
                         />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div className="sm:col-span-1">
-                            <label htmlFor="task-type" className="block text-sm font-semibold text-[#2E2F38] dark:text-white">Tipo de Interação</label>
+                            <label htmlFor="task-type" className="block text-sm font-semibold text-[#2E2F38]">Tipo de Interação</label>
                             <select
                                 id="task-type"
                                 value={type}
                                 onChange={(e) => setType(e.target.value as TaskPayload['type'])}
-                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-[#181C23] border border-[#A3C8F7] dark:border-[#3478F6] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38] dark:text-white"
+                                className="mt-1 block w-full px-3 py-2 bg-white border border-[#A3C8F7] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38]"
                             >
                                 <option>Ligação</option>
                                 <option>WhatsApp</option>
@@ -82,30 +82,30 @@ export default function AgendaModal({ isOpen, onClose, onSave, isLoading }: Agen
                             </select>
                         </div>
                         <div className="sm:col-span-1">
-                            <label htmlFor="task-date" className="block text-sm font-semibold text-[#2E2F38] dark:text-white">Data</label>
+                            <label htmlFor="task-date" className="block text-sm font-semibold text-[#2E2F38]">Data</label>
                             <input
                                 type="date"
                                 id="task-date"
                                 value={date}
                                 onChange={(e) => setDate(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-[#181C23] border border-[#A3C8F7] dark:border-[#3478F6] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38] dark:text-white"
+                                className="mt-1 block w-full px-3 py-2 bg-white border border-[#A3C8F7] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38]"
                             />
                         </div>
                         <div className="sm:col-span-1">
-                            <label htmlFor="task-time" className="block text-sm font-semibold text-[#2E2F38] dark:text-white">Hora</label>
+                            <label htmlFor="task-time" className="block text-sm font-semibold text-[#2E2F38]">Hora</label>
                             <input
                                 type="time"
                                 id="task-time"
                                 value={time}
                                 onChange={(e) => setTime(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-[#181C23] border border-[#A3C8F7] dark:border-[#3478F6] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38] dark:text-white"
+                                className="mt-1 block w-full px-3 py-2 bg-white border border-[#A3C8F7] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38]"
                             />
                         </div>
                     </div>
                 </div>
 
                 <div className="flex justify-end gap-4 pt-8">
-                    <button type="button" onClick={onClose} disabled={isLoading} className="px-4 py-2 text-sm font-semibold text-[#6B6F76] bg-[#E8E9F1] hover:bg-[#A3C8F7]/40 rounded-lg transition-colors disabled:opacity-50 dark:bg-[#181C23] dark:text-[#A3C8F7] dark:hover:bg-[#23283A]">
+                    <button type="button" onClick={onClose} disabled={isLoading} className="px-4 py-2 text-sm font-semibold text-[#6B6F76] bg-[#E8E9F1] hover:bg-[#A3C8F7]/40 rounded-lg transition-colors disabled:opacity-50">
                         Cancelar
                     </button>
                     <button

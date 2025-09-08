@@ -106,33 +106,33 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
 
     return (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center">
-            <div className="bg-[#F5F6FA] dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] p-6 w-full max-w-md relative">
-                <button onClick={onClose} className="absolute top-4 right-4 text-[#6B6F76] hover:text-[#3478F6] dark:hover:text-[#A3C8F7] transition-colors">
+            <div className="bg-white rounded-2xl shadow-soft border border-[#E8E9F1] p-6 w-full max-w-md relative">
+                <button onClick={onClose} className="absolute top-4 right-4 text-[#6B6F76] hover:text-[#3478F6] transition-colors">
                     <XIcon className="h-6 w-6" />
                 </button>
-                <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white mb-6">Cadastrar Novo Lead</h2>
+                <h2 className="text-2xl font-bold text-[#2E2F38] mb-6">Cadastrar Novo Lead</h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label htmlFor="name" className="block text-sm font-semibold text-[#2E2F38] dark:text-white">Nome *</label>
-                        <input type="text" id="name" value={name} onChange={(e) => setName(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-[#181C23] border border-[#A3C8F7] dark:border-[#3478F6] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38] dark:text-white" required />
+                        <label htmlFor="name" className="block text-sm font-semibold text-[#2E2F38]">Nome *</label>
+                        <input type="text" id="name" value={name} onChange={(e) => setName(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-[#A3C8F7] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38]" required />
                     </div>
                     <div>
-                        <label htmlFor="phone" className="block text-sm font-semibold text-[#2E2F38] dark:text-white">Telefone *</label>
-                        <input type="tel" id="phone" value={phone} onChange={handlePhoneChange} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-[#181C23] border border-[#A3C8F7] dark:border-[#3478F6] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38] dark:text-white" required maxLength={15} />
+                        <label htmlFor="phone" className="block text-sm font-semibold text-[#2E2F38]">Telefone *</label>
+                        <input type="tel" id="phone" value={phone} onChange={handlePhoneChange} className="mt-1 block w-full px-3 py-2 bg-white border border-[#A3C8F7] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38]" required maxLength={15} />
                     </div>
                     <div>
-                        <label htmlFor="email" className="block text-sm font-semibold text-[#2E2F38] dark:text-white">E-mail</label>
-                        <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-[#181C23] border border-[#A3C8F7] dark:border-[#3478F6] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38] dark:text-white" />
+                        <label htmlFor="email" className="block text-sm font-semibold text-[#2E2F38]">E-mail</label>
+                        <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-[#A3C8F7] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38]" />
                     </div>
                     <div>
-                        <label htmlFor="situation" className="block text-sm font-semibold text-[#2E2F38] dark:text-white">Situação</label>
-                        <select id="situation" value={situation} onChange={(e) => setSituation(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-[#181C23] border border-[#A3C8F7] dark:border-[#3478F6] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38] dark:text-white">
+                        <label htmlFor="situation" className="block text-sm font-semibold text-[#2E2F38]">Situação</label>
+                        <select id="situation" value={situation} onChange={(e) => setSituation(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-[#A3C8F7] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38]">
                             {PIPELINE_STAGES.map(stage => <option key={stage} value={stage}>{stage}</option>)}
                         </select>
                     </div>
                     {error && <p className="text-sm text-red-500">{error}</p>}
                     <div className="flex justify-end gap-4 pt-4">
-                        <button type="button" onClick={onClose} disabled={isLoading} className="px-4 py-2 text-sm font-semibold text-[#6B6F76] bg-[#E8E9F1] hover:bg-[#A3C8F7]/40 rounded-lg transition-colors disabled:opacity-50 dark:bg-[#181C23] dark:text-[#A3C8F7] dark:hover:bg-[#23283A]">
+                        <button type="button" onClick={onClose} disabled={isLoading} className="px-4 py-2 text-sm font-semibold text-[#6B6F76] bg-[#E8E9F1] hover:bg-[#A3C8F7]/40 rounded-lg transition-colors disabled:opacity-50">
                             Cancelar
                         </button>
                         <button type="submit" disabled={isLoading} className="px-4 py-2 text-sm font-semibold text-white bg-[#3478F6] hover:bg-[#255FD1] rounded-lg shadow-sm disabled:opacity-50 disabled:bg-[#A3C8F7]">

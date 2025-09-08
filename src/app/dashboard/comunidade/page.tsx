@@ -54,8 +54,8 @@ function Modal({ open, onClose, children }: { open: boolean, onClose: () => void
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={onClose}>
-      <div className="relative max-w-2xl w-full mx-2 bg-white dark:bg-[#23283A] rounded-2xl shadow-xl p-0" onClick={e => e.stopPropagation()}>
-        <button onClick={onClose} className="absolute top-4 right-4 text-white text-2xl z-10 hover:text-[#F45B69]">✕</button>
+      <div className="relative max-w-2xl w-full mx-2 bg-white rounded-2xl shadow-xl p-0" onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-600 text-2xl z-10 hover:text-[#F45B69]">✕</button>
         {children}
       </div>
     </div>

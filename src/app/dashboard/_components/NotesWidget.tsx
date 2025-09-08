@@ -199,30 +199,30 @@ export default function NotesWidget() {
       {/* Modal Completo */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-start pt-10">
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-2xl border border-[#E8E9F1] dark:border-[#23283A] w-full max-w-4xl mx-4 max-h-[85vh] overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl border border-[#E8E9F1] w-full max-w-4xl mx-4 max-h-[85vh] overflow-hidden">
             {/* Header mais compacto */}
-            <div className="flex items-center justify-between p-4 border-b border-[#E8E9F1] dark:border-[#23283A]">
+            <div className="flex items-center justify-between p-4 border-b border-[#E8E9F1]">
               <div className="flex items-center gap-2">
                 <NotesIcon className="h-5 w-5 text-[#3478F6]" />
-                <h2 className="text-lg font-bold text-white">Notas</h2>
+                <h2 className="text-lg font-bold text-[#2E2F38]">Notas</h2>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-white hover:text-[#2E2F38] dark:text-white dark:hover:text-white transition-colors"
+                className="text-[#6B6F76] hover:text-[#2E2F38] transition-colors"
               >
                 <XIcon className="h-5 w-5" />
               </button>
             </div>
 
             {/* Filtros e Ordenação mais compactos */}
-            <div className="p-3 bg-[#F5F6FA] dark:bg-[#181C23] border-b border-[#E8E9F1] dark:border-[#23283A]">
+            <div className="p-3 bg-[#F5F6FA] border-b border-[#E8E9F1]">
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   <FilterIcon className="h-3 w-3 text-white" />
                   <select
                     value={filterPriority}
                     onChange={(e) => setFilterPriority(e.target.value as any)}
-                    className="px-2 py-1 text-xs bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white"
+                    className="px-2 py-1 text-xs bg-white border border-[#E8E9F1] rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38]"
                   >
                     <option value="Todas">Todas</option>
                     <option value="Urgente">Urgente</option>
@@ -235,7 +235,7 @@ export default function NotesWidget() {
                   <select
                     value={sortOrder}
                     onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}
-                    className="px-2 py-1 text-xs bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white"
+                    className="px-2 py-1 text-xs bg-white border border-[#E8E9F1] rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38]"
                   >
                     <option value="newest">Mais recentes</option>
                     <option value="oldest">Mais antigas</option>
@@ -245,13 +245,13 @@ export default function NotesWidget() {
             </div>
 
             {/* Formulário de Nova Nota mais compacto */}
-            <div className="p-3 border-b border-[#E8E9F1] dark:border-[#23283A]">
+            <div className="p-3 border-b border-[#E8E9F1]">
               <div className="space-y-2">
                 <div className="flex gap-2">
                   <select
                     value={selectedPriority}
                     onChange={(e) => setSelectedPriority(e.target.value as any)}
-                    className="px-2 py-1.5 text-xs bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white"
+                    className="px-2 py-1.5 text-xs bg-white border border-[#E8E9F1] rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38]"
                   >
                     <option value="Urgente">🚨 Urgente</option>
                     <option value="Importante">⚠️ Importante</option>
@@ -262,7 +262,7 @@ export default function NotesWidget() {
                     value={newNote}
                     onChange={(e) => setNewNote(e.target.value)}
                     placeholder="Digite sua nota..."
-                    className="flex-1 px-3 py-1.5 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    className="flex-1 px-3 py-1.5 text-sm bg-white border border-[#E8E9F1] rounded focus:ring-1 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] placeholder-gray-500"
                     onKeyPress={(e) => e.key === 'Enter' && handleAddNote()}
                   />
                   <button

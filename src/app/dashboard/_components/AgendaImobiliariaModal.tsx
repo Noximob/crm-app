@@ -68,7 +68,7 @@ export default function AgendaImobiliariaModal({ isOpen, onClose, agenda }: Agen
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 w-full max-w-4xl mx-4 shadow-xl border border-[#E8E9F1] dark:border-[#23283A] max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl p-6 w-full max-w-4xl mx-4 shadow-xl border border-[#E8E9F1] max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
@@ -77,19 +77,19 @@ export default function AgendaImobiliariaModal({ isOpen, onClose, agenda }: Agen
               </svg>
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white">
+              <h2 className="text-2xl font-bold text-[#2E2F38]">
                 Agenda Imobiliária
               </h2>
-              <p className="text-[#6B6F76] dark:text-gray-300">
+              <p className="text-[#6B6F76]">
                 {agenda.length} evento{agenda.length !== 1 ? 's' : ''} agendado{agenda.length !== 1 ? 's' : ''}
               </p>
             </div>
           </div>
           <button 
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-[#181C23] rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <svg className="w-6 h-6 text-[#6B6F76] dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 text-[#6B6F76]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -97,15 +97,15 @@ export default function AgendaImobiliariaModal({ isOpen, onClose, agenda }: Agen
 
         {sortedAgenda.length === 0 ? (
           <div className="text-center py-12">
-            <div className="w-16 h-16 bg-gray-100 dark:bg-[#181C23] rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-[#2E2F38] dark:text-white mb-2">
+            <h3 className="text-lg font-semibold text-[#2E2F38] mb-2">
               Nenhum evento agendado
             </h3>
-            <p className="text-[#6B6F76] dark:text-gray-300">
+            <p className="text-[#6B6F76]">
               A imobiliária ainda não agendou eventos
             </p>
           </div>
@@ -114,14 +114,14 @@ export default function AgendaImobiliariaModal({ isOpen, onClose, agenda }: Agen
             {sortedAgenda.map((evento) => (
               <div
                 key={evento.id}
-                className="p-4 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-all duration-200"
+                className="p-4 rounded-xl border border-[#E8E9F1] hover:bg-[#F5F6FA] transition-all duration-200"
                 style={{ borderLeftColor: '#8B5CF6', borderLeftWidth: '4px' }}
               >
                 <div className="flex items-start gap-4">
                   <div className="w-4 h-4 bg-purple-500 rounded-full shadow-md mt-1 flex-shrink-0"></div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-[#2E2F38] dark:text-white group-hover:text-purple-600 transition-colors">
+                      <h3 className="font-semibold text-[#2E2F38] group-hover:text-purple-600 transition-colors">
                         {evento.titulo}
                       </h3>
                       <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getTipoColor(evento.tipo)} text-white`}>
@@ -130,12 +130,12 @@ export default function AgendaImobiliariaModal({ isOpen, onClose, agenda }: Agen
                     </div>
                     
                     {evento.descricao && (
-                      <div className="text-sm text-[#6B6F76] dark:text-gray-400 leading-relaxed mb-3">
+                      <div className="text-sm text-[#6B6F76] leading-relaxed mb-3">
                         {evento.descricao}
                       </div>
                     )}
 
-                    <div className="flex flex-wrap gap-4 text-xs text-[#6B6F76] dark:text-gray-300">
+                    <div className="flex flex-wrap gap-4 text-xs text-[#6B6F76]">
                       <div className="flex items-center gap-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -210,9 +210,9 @@ export default function AgendaImobiliariaModal({ isOpen, onClose, agenda }: Agen
           </div>
         )}
 
-        <div className="mt-6 pt-4 border-t border-[#E8E9F1] dark:border-[#23283A]">
+        <div className="mt-6 pt-4 border-t border-[#E8E9F1]">
           <div className="flex items-center justify-between">
-            <div className="text-sm text-[#6B6F76] dark:text-gray-300">
+            <div className="text-sm text-[#6B6F76]">
               Total: {sortedAgenda.length} evento{sortedAgenda.length !== 1 ? 's' : ''}
             </div>
             <button
