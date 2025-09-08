@@ -513,7 +513,7 @@ export default function TreinamentosPage() {
                   {/* Metadados - Estilo YouTube */}
                   <div className="flex items-center justify-between text-xs text-[#6B6F76] dark:text-gray-400 mb-2">
                     <div className="flex items-center gap-1">
-                      <span>{getCategoriaIcon(treinamento.categoria)}</span>
+                      <span>{getCategoriaIcon(treinamento.categoria || 'vendas')}</span>
                       <span>•</span>
                       <span>{treinamento.criadoEm.toLocaleDateString('pt-BR')}</span>
                     </div>
