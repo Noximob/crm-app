@@ -111,7 +111,7 @@ export default function TreinamentosPage() {
       // Debug logs
       console.log('=== DADOS CARREGADOS ===');
       console.log('Total de treinamentos carregados:', shuffledData.length);
-      console.log('Categorias encontradas:', [...new Set(shuffledData.map(t => t.categoria))]);
+      console.log('Categorias encontradas:', Array.from(new Set(shuffledData.map(t => t.categoria))));
       console.log('Treinamentos:', shuffledData.map(t => ({
         id: t.id,
         titulo: t.titulo,
