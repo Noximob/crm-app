@@ -323,8 +323,18 @@ export default function BrelloPage() {
     if (!currentBoard) {
       setColumns([]);
       setCards([]);
+      setLoading(false);
       return;
     }
+
+    let loadedColumns = false;
+    let loadedCards = false;
+
+    const checkLoadingComplete = () => {
+      if (loadedColumns && loadedCards) {
+        setLoading(false);
+      }
+    };
 
     // Carregar colunas
     const columnsQuery = query(
@@ -340,6 +350,8 @@ export default function BrelloPage() {
       })) as BrelloColumn[];
       
       setColumns(columnsData);
+      loadedColumns = true;
+      checkLoadingComplete();
     });
 
     // Carregar cartões
@@ -356,7 +368,8 @@ export default function BrelloPage() {
       })) as BrelloCard[];
       
       setCards(cardsData);
-      setLoading(false);
+      loadedCards = true;
+      checkLoadingComplete();
     });
 
     return () => {
