@@ -286,6 +286,7 @@ export default function BrelloPage() {
   const [newColumnTitle, setNewColumnTitle] = useState('');
   const [newColumnColor, setNewColumnColor] = useState('#3B82F6');
   const [isSaving, setIsSaving] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Carregar boards do Firebase
   useEffect(() => {
@@ -311,22 +312,16 @@ export default function BrelloPage() {
       console.log('Boards carregados:', boardsData.length);
       setBoards(boardsData);
       
-      // Manter o board atual selecionado se ainda existir, senão selecionar o primeiro
-      if (boardsData.length > 0) {
-        const currentBoardExists = currentBoard && boardsData.find(b => b.id === currentBoard.id);
-        if (!currentBoardExists) {
-          console.log('Selecionando primeiro board:', boardsData[0].title);
-          setCurrentBoard(boardsData[0]);
-        } else {
-          // Atualizar o board atual com os dados mais recentes
-          const updatedCurrentBoard = boardsData.find(b => b.id === currentBoard.id);
-          if (updatedCurrentBoard) {
-            setCurrentBoard(updatedCurrentBoard);
-          }
-        }
-      } else {
+      // Selecionar o primeiro board se não houver nenhum selecionado
+      if (boardsData.length > 0 && !currentBoard) {
+        console.log('Selecionando primeiro board:', boardsData[0].title);
+        setCurrentBoard(boardsData[0]);
+      } else if (boardsData.length === 0) {
         console.log('Nenhum board encontrado');
         setCurrentBoard(null);
+        setLoading(false);
+      } else {
+        // Se já há um board selecionado, apenas parar o loading
         setLoading(false);
       }
     }, (error) => {
@@ -337,7 +332,7 @@ export default function BrelloPage() {
     return () => {
       unsubscribeBoards();
     };
-  }, [userData, currentBoard]);
+  }, [userData]);
 
   // Carregar colunas e cartões quando o board mudar
   useEffect(() => {
@@ -362,7 +357,7 @@ export default function BrelloPage() {
     const timeoutId = setTimeout(() => {
       console.warn('Timeout no carregamento do board');
       setLoading(false);
-    }, 10000);
+    }, 5000);
 
     // Carregar colunas
     const columnsQuery = query(
@@ -417,6 +412,11 @@ export default function BrelloPage() {
     };
   }, [currentBoard]);
 
+  // Função para forçar refresh
+  const forceRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
   // Funções para gerenciar boards
   const addBoard = async () => {
     if (!userData || !newBoardTitle.trim()) return;
@@ -430,11 +430,22 @@ export default function BrelloPage() {
         updatedAt: new Date(),
       };
 
-      await addDoc(collection(db, 'brelloBoards'), boardData);
+      const docRef = await addDoc(collection(db, 'brelloBoards'), boardData);
       
-      // O listener do Firebase vai detectar a mudança e atualizar automaticamente
+      // Criar o novo board e selecioná-lo imediatamente
+      const newBoard = {
+        id: docRef.id,
+        ...boardData
+      } as BrelloBoard;
+      
+      setCurrentBoard(newBoard);
       setNewBoardTitle('');
       setShowNewBoardModal(false);
+      
+      // Forçar refresh após um pequeno delay
+      setTimeout(() => {
+        forceRefresh();
+      }, 1000);
     } catch (error) {
       console.error('Erro ao criar board:', error);
     } finally {
@@ -680,6 +691,14 @@ export default function BrelloPage() {
                   className="px-4 py-2 bg-gradient-to-r from-[#3478F6] to-[#255FD1] text-white rounded-lg hover:from-[#255FD1] hover:to-[#1E40AF] transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                 >
                   + Novo Board
+                </button>
+                
+                <button
+                  onClick={forceRefresh}
+                  className="px-3 py-2 bg-[#6B6F76] text-white rounded-lg hover:bg-[#4B5563] transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  title="Atualizar"
+                >
+                  🔄
                 </button>
               </div>
             </div>
