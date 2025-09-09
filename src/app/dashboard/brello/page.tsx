@@ -286,13 +286,15 @@ export default function BrelloPage() {
   const [newColumnTitle, setNewColumnTitle] = useState('');
   const [newColumnColor, setNewColumnColor] = useState('#3B82F6');
 
-  // Carregar dados do Firebase
+  // Carregar boards do Firebase
   useEffect(() => {
-    if (!userData) return;
+    if (!userData) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
 
-    // Carregar boards
     const boardsQuery = query(
       collection(db, 'brelloBoards'),
       where('imobiliariaId', '==', userData.imobiliariaId),
@@ -305,18 +307,30 @@ export default function BrelloPage() {
         ...doc.data()
       })) as BrelloBoard[];
       
+      console.log('Boards carregados:', boardsData.length);
       setBoards(boardsData);
       
       // Selecionar o primeiro board se não houver nenhum selecionado
       if (boardsData.length > 0 && !currentBoard) {
+        console.log('Selecionando primeiro board:', boardsData[0].title);
         setCurrentBoard(boardsData[0]);
+      } else if (boardsData.length === 0) {
+        console.log('Nenhum board encontrado');
+        setCurrentBoard(null);
+        setLoading(false);
+      } else {
+        // Se já há um board selecionado, apenas parar o loading
+        setLoading(false);
       }
+    }, (error) => {
+      console.error('Erro ao carregar boards:', error);
+      setLoading(false);
     });
 
     return () => {
       unsubscribeBoards();
     };
-  }, [userData, currentBoard]);
+  }, [userData]);
 
   // Carregar colunas e cartões quando o board mudar
   useEffect(() => {
@@ -327,6 +341,7 @@ export default function BrelloPage() {
       return;
     }
 
+    setLoading(true);
     let loadedColumns = false;
     let loadedCards = false;
 
@@ -335,6 +350,12 @@ export default function BrelloPage() {
         setLoading(false);
       }
     };
+
+    // Timeout de segurança para evitar loading infinito
+    const timeoutId = setTimeout(() => {
+      console.warn('Timeout no carregamento do board');
+      setLoading(false);
+    }, 10000);
 
     // Carregar colunas
     const columnsQuery = query(
@@ -349,7 +370,12 @@ export default function BrelloPage() {
         ...doc.data()
       })) as BrelloColumn[];
       
+      console.log('Colunas carregadas:', columnsData.length);
       setColumns(columnsData);
+      loadedColumns = true;
+      checkLoadingComplete();
+    }, (error) => {
+      console.error('Erro ao carregar colunas:', error);
       loadedColumns = true;
       checkLoadingComplete();
     });
@@ -367,12 +393,18 @@ export default function BrelloPage() {
         ...doc.data()
       })) as BrelloCard[];
       
+      console.log('Cartões carregados:', cardsData.length);
       setCards(cardsData);
+      loadedCards = true;
+      checkLoadingComplete();
+    }, (error) => {
+      console.error('Erro ao carregar cartões:', error);
       loadedCards = true;
       checkLoadingComplete();
     });
 
     return () => {
+      clearTimeout(timeoutId);
       unsubscribeColumns();
       unsubscribeCards();
     };
@@ -390,7 +422,15 @@ export default function BrelloPage() {
         updatedAt: new Date(),
       };
 
-      await addDoc(collection(db, 'brelloBoards'), boardData);
+      const docRef = await addDoc(collection(db, 'brelloBoards'), boardData);
+      
+      // Criar o novo board e selecioná-lo
+      const newBoard = {
+        id: docRef.id,
+        ...boardData
+      } as BrelloBoard;
+      
+      setCurrentBoard(newBoard);
       setNewBoardTitle('');
       setShowNewBoardModal(false);
     } catch (error) {
