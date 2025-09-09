@@ -285,6 +285,7 @@ export default function BrelloPage() {
   const [newBoardTitle, setNewBoardTitle] = useState('');
   const [newColumnTitle, setNewColumnTitle] = useState('');
   const [newColumnColor, setNewColumnColor] = useState('#3B82F6');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Carregar boards do Firebase
   useEffect(() => {
@@ -310,16 +311,22 @@ export default function BrelloPage() {
       console.log('Boards carregados:', boardsData.length);
       setBoards(boardsData);
       
-      // Selecionar o primeiro board se não houver nenhum selecionado
-      if (boardsData.length > 0 && !currentBoard) {
-        console.log('Selecionando primeiro board:', boardsData[0].title);
-        setCurrentBoard(boardsData[0]);
-      } else if (boardsData.length === 0) {
+      // Manter o board atual selecionado se ainda existir, senão selecionar o primeiro
+      if (boardsData.length > 0) {
+        const currentBoardExists = currentBoard && boardsData.find(b => b.id === currentBoard.id);
+        if (!currentBoardExists) {
+          console.log('Selecionando primeiro board:', boardsData[0].title);
+          setCurrentBoard(boardsData[0]);
+        } else {
+          // Atualizar o board atual com os dados mais recentes
+          const updatedCurrentBoard = boardsData.find(b => b.id === currentBoard.id);
+          if (updatedCurrentBoard) {
+            setCurrentBoard(updatedCurrentBoard);
+          }
+        }
+      } else {
         console.log('Nenhum board encontrado');
         setCurrentBoard(null);
-        setLoading(false);
-      } else {
-        // Se já há um board selecionado, apenas parar o loading
         setLoading(false);
       }
     }, (error) => {
@@ -330,7 +337,7 @@ export default function BrelloPage() {
     return () => {
       unsubscribeBoards();
     };
-  }, [userData]);
+  }, [userData, currentBoard]);
 
   // Carregar colunas e cartões quando o board mudar
   useEffect(() => {
@@ -414,6 +421,7 @@ export default function BrelloPage() {
   const addBoard = async () => {
     if (!userData || !newBoardTitle.trim()) return;
 
+    setIsSaving(true);
     try {
       const boardData = {
         title: newBoardTitle.trim(),
@@ -422,19 +430,15 @@ export default function BrelloPage() {
         updatedAt: new Date(),
       };
 
-      const docRef = await addDoc(collection(db, 'brelloBoards'), boardData);
+      await addDoc(collection(db, 'brelloBoards'), boardData);
       
-      // Criar o novo board e selecioná-lo
-      const newBoard = {
-        id: docRef.id,
-        ...boardData
-      } as BrelloBoard;
-      
-      setCurrentBoard(newBoard);
+      // O listener do Firebase vai detectar a mudança e atualizar automaticamente
       setNewBoardTitle('');
       setShowNewBoardModal(false);
     } catch (error) {
       console.error('Erro ao criar board:', error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -473,6 +477,8 @@ export default function BrelloPage() {
       };
 
       await addDoc(collection(db, 'brelloColumns'), columnData);
+      
+      // O listener do Firebase vai detectar a mudança e atualizar automaticamente
       setNewColumnTitle('');
       setNewColumnColor('#3B82F6');
       setShowNewColumnModal(false);
@@ -527,6 +533,8 @@ export default function BrelloPage() {
       };
 
       await addDoc(collection(db, 'brelloCards'), cardData);
+      
+      // O listener do Firebase vai detectar a mudança e atualizar automaticamente
     } catch (error) {
       console.error('Erro ao criar cartão:', error);
     }
@@ -794,9 +802,17 @@ export default function BrelloPage() {
               </button>
               <button
                 onClick={addBoard}
-                className="px-4 py-2 bg-[#10B981] text-white rounded-lg hover:bg-[#059669] transition-colors"
+                disabled={isSaving}
+                className="px-4 py-2 bg-[#10B981] text-white rounded-lg hover:bg-[#059669] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                Criar Board
+                {isSaving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Salvando...
+                  </>
+                ) : (
+                  'Criar Board'
+                )}
               </button>
             </div>
           </div>
