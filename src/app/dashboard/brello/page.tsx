@@ -370,15 +370,6 @@ const Brello = () => {
             >
               + Novo Board
             </button>
-            
-            {currentBoard && (
-              <button
-                onClick={() => setShowNewColumnModal(true)}
-                className="bg-[#10B981] hover:bg-[#059669] text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                + Nova Coluna
-              </button>
-            )}
           </div>
         </div>
 
@@ -420,12 +411,20 @@ const Brello = () => {
           <div className="bg-[#181C23] rounded-xl p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-white">{currentBoard.title}</h2>
-              <button
-                onClick={() => setShowNewCardModal(true)}
-                className="bg-[#F59E0B] hover:bg-[#D97706] text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                + Novo Card
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowNewColumnModal(true)}
+                  className="bg-[#10B981] hover:bg-[#059669] text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  + Nova Coluna
+                </button>
+                <button
+                  onClick={() => setShowNewCardModal(true)}
+                  className="bg-[#F59E0B] hover:bg-[#D97706] text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  + Novo Card
+                </button>
+              </div>
             </div>
 
             <DragDropContext onDragEnd={handleDragEnd}>
