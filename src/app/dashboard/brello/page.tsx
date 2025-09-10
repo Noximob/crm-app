@@ -64,8 +64,7 @@ const Brello = () => {
 
     const q = query(
       collection(db, 'brelloBoards'),
-      where('userId', '==', currentUser.uid),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', currentUser.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -74,6 +73,13 @@ const Brello = () => {
         id: doc.id,
         ...doc.data()
       })) as BrelloBoard[];
+      
+      // Ordenar localmente por data de criação (mais recente primeiro)
+      boardsData.sort((a, b) => {
+        const aDate = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+        const bDate = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+        return bDate.getTime() - aDate.getTime();
+      });
       
       console.log('Boards carregados:', boardsData);
       setBoards(boardsData);
@@ -103,8 +109,7 @@ const Brello = () => {
 
     const q = query(
       collection(db, 'brelloColumns'),
-      where('boardId', '==', currentBoard.id),
-      orderBy('order', 'asc')
+      where('boardId', '==', currentBoard.id)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -113,6 +118,9 @@ const Brello = () => {
         id: doc.id,
         ...doc.data()
       })) as BrelloColumn[];
+      
+      // Ordenar localmente por ordem
+      columnsData.sort((a, b) => (a.order || 0) - (b.order || 0));
       
       console.log('Colunas carregadas:', columnsData);
       setColumns(columnsData);
@@ -135,8 +143,7 @@ const Brello = () => {
 
     const q = query(
       collection(db, 'brelloCards'),
-      where('columnId', 'in', columnIds),
-      orderBy('order', 'asc')
+      where('columnId', 'in', columnIds)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -145,6 +152,9 @@ const Brello = () => {
         id: doc.id,
         ...doc.data()
       })) as BrelloCard[];
+      
+      // Ordenar localmente por ordem
+      cardsData.sort((a, b) => (a.order || 0) - (b.order || 0));
       
       console.log('Cards carregados:', cardsData);
       setCards(cardsData);
