@@ -31,7 +31,7 @@ interface BrelloBoard {
 }
 
 const Brello = () => {
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const [boards, setBoards] = useState<BrelloBoard[]>([]);
   const [currentBoard, setCurrentBoard] = useState<BrelloBoard | null>(null);
   const [columns, setColumns] = useState<BrelloColumn[]>([]);
@@ -48,11 +48,11 @@ const Brello = () => {
 
   // Carregar boards
   useEffect(() => {
-    if (!user) return;
+    if (!currentUser) return;
 
     const q = query(
       collection(db, 'brelloBoards'),
-      where('userId', '==', user.uid),
+      where('userId', '==', currentUser.uid),
       orderBy('createdAt', 'desc')
     );
 
@@ -73,7 +73,7 @@ const Brello = () => {
     });
 
     return () => unsubscribe();
-  }, [user, currentBoard]);
+  }, [currentUser, currentBoard]);
 
   // Carregar colunas do board atual
   useEffect(() => {
@@ -121,12 +121,12 @@ const Brello = () => {
   }, [columns]);
 
   const createBoard = async () => {
-    if (!user || !newBoardTitle.trim()) return;
+    if (!currentUser || !newBoardTitle.trim()) return;
 
     try {
       const boardData = {
         title: newBoardTitle.trim(),
-        userId: user.uid,
+        userId: currentUser.uid,
         createdAt: new Date()
       };
 
