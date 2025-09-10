@@ -69,15 +69,18 @@ const Brello = () => {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log('onSnapshot boards - dados recebidos:', snapshot.docs.length);
       const boardsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as BrelloBoard[];
       
+      console.log('Boards carregados:', boardsData);
       setBoards(boardsData);
       
       // Selecionar o primeiro board se não houver nenhum selecionado
       if (boardsData.length > 0 && !currentBoard) {
+        console.log('Selecionando primeiro board:', boardsData[0]);
         setCurrentBoard(boardsData[0]);
       }
       
@@ -92,7 +95,11 @@ const Brello = () => {
 
   // Carregar colunas do board atual
   useEffect(() => {
-    if (!currentBoard) return;
+    if (!currentBoard) {
+      setColumns([]);
+      setCards([]);
+      return;
+    }
 
     const q = query(
       collection(db, 'brelloColumns'),
@@ -101,24 +108,31 @@ const Brello = () => {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log('onSnapshot colunas - dados recebidos:', snapshot.docs.length);
       const columnsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as BrelloColumn[];
       
+      console.log('Colunas carregadas:', columnsData);
       setColumns(columnsData);
     }, (error) => {
       console.error('Erro ao carregar colunas:', error);
     });
 
     return () => unsubscribe();
-  }, [currentBoard]);
+  }, [currentBoard?.id]);
 
   // Carregar cards das colunas
   useEffect(() => {
-    if (columns.length === 0) return;
+    if (!currentBoard || columns.length === 0) {
+      setCards([]);
+      return;
+    }
 
     const columnIds = columns.map(col => col.id);
+    if (columnIds.length === 0) return;
+
     const q = query(
       collection(db, 'brelloCards'),
       where('columnId', 'in', columnIds),
@@ -126,23 +140,27 @@ const Brello = () => {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log('onSnapshot cards - dados recebidos:', snapshot.docs.length);
       const cardsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as BrelloCard[];
       
+      console.log('Cards carregados:', cardsData);
       setCards(cardsData);
     }, (error) => {
       console.error('Erro ao carregar cards:', error);
     });
 
     return () => unsubscribe();
-  }, [columns]);
+  }, [currentBoard?.id, columns.length]);
 
   const createBoard = async () => {
     if (!currentUser || !newBoardTitle.trim()) return;
 
     try {
+      console.log('Criando board:', newBoardTitle);
+      
       const boardData = {
         title: newBoardTitle.trim(),
         userId: currentUser.uid,
@@ -150,6 +168,7 @@ const Brello = () => {
       };
 
       const docRef = await addDoc(collection(db, 'brelloBoards'), boardData);
+      console.log('Board criado com ID:', docRef.id);
       
       // Criar coluna padrão "To Do"
       await addDoc(collection(db, 'brelloColumns'), {
@@ -158,6 +177,7 @@ const Brello = () => {
         order: 0,
         createdAt: new Date()
       });
+      console.log('Coluna padrão criada');
 
       setNewBoardTitle('');
       setShowNewBoardModal(false);
@@ -170,6 +190,8 @@ const Brello = () => {
     if (!currentBoard || !newColumnTitle.trim()) return;
 
     try {
+      console.log('Criando coluna:', newColumnTitle, 'para board:', currentBoard.id);
+      
       const columnData = {
         title: newColumnTitle.trim(),
         boardId: currentBoard.id,
@@ -177,7 +199,8 @@ const Brello = () => {
         createdAt: new Date()
       };
 
-      await addDoc(collection(db, 'brelloColumns'), columnData);
+      const docRef = await addDoc(collection(db, 'brelloColumns'), columnData);
+      console.log('Coluna criada com ID:', docRef.id);
       
       setNewColumnTitle('');
       setShowNewColumnModal(false);
@@ -190,6 +213,8 @@ const Brello = () => {
     if (!selectedColumnId || !newCardTitle.trim()) return;
 
     try {
+      console.log('Criando card:', newCardTitle, 'para coluna:', selectedColumnId);
+      
       const cardData = {
         title: newCardTitle.trim(),
         description: newCardDescription.trim(),
@@ -198,7 +223,8 @@ const Brello = () => {
         createdAt: new Date()
       };
 
-      await addDoc(collection(db, 'brelloCards'), cardData);
+      const docRef = await addDoc(collection(db, 'brelloCards'), cardData);
+      console.log('Card criado com ID:', docRef.id);
       
       setNewCardTitle('');
       setNewCardDescription('');
