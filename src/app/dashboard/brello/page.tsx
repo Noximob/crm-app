@@ -389,20 +389,15 @@ const Brello = () => {
     <div className="min-h-screen bg-[#0F0F23] p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Brello</h1>
-            <p className="text-gray-400">Organize suas tarefas com estilo</p>
-          </div>
-          
-          <div className="flex gap-4">
-            <button
-              onClick={() => setShowNewBoardModal(true)}
-              className="bg-[#6366F1] hover:bg-[#5855EB] text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              + Novo Board
-            </button>
-          </div>
+        <div className="flex items-center gap-4 mb-8">
+          <h1 className="text-3xl font-bold text-white">Brello</h1>
+          <button
+            onClick={() => setShowNewBoardModal(true)}
+            className="bg-[#6366F1] hover:bg-[#5855EB] text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            + Novo Board
+          </button>
+          <p className="text-gray-400 ml-auto">Organize suas tarefas com estilo</p>
         </div>
 
         {/* Boards List */}
@@ -441,22 +436,20 @@ const Brello = () => {
         {/* Kanban Board */}
         {currentBoard && (
           <div className="bg-[#181C23] rounded-xl p-6">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-4 mb-6">
               <h2 className="text-2xl font-bold text-white">{currentBoard.title}</h2>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowNewColumnModal(true)}
-                  className="bg-[#10B981] hover:bg-[#059669] text-white px-4 py-2 rounded-lg transition-colors"
-                >
-                  + Nova Coluna
-                </button>
-                <button
-                  onClick={() => setShowNewCardModal(true)}
-                  className="bg-[#F59E0B] hover:bg-[#D97706] text-white px-4 py-2 rounded-lg transition-colors"
-                >
-                  + Novo Card
-                </button>
-              </div>
+              <button
+                onClick={() => setShowNewColumnModal(true)}
+                className="bg-[#10B981] hover:bg-[#059669] text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                + Nova Coluna
+              </button>
+              <button
+                onClick={() => setShowNewCardModal(true)}
+                className="bg-[#F59E0B] hover:bg-[#D97706] text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                + Novo Card
+              </button>
             </div>
 
             <DragDropContext onDragEnd={handleDragEnd}>
