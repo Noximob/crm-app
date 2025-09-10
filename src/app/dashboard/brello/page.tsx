@@ -46,9 +46,21 @@ const Brello = () => {
   const [newCardDescription, setNewCardDescription] = useState('');
   const [selectedColumnId, setSelectedColumnId] = useState('');
 
+  // Timeout de segurança para loading
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setLoading(false);
+    }, 5000);
+
+    return () => clearTimeout(timeout);
+  }, []);
+
   // Carregar boards
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      setLoading(false);
+      return;
+    }
 
     const q = query(
       collection(db, 'brelloBoards'),
@@ -69,6 +81,9 @@ const Brello = () => {
         setCurrentBoard(boardsData[0]);
       }
       
+      setLoading(false);
+    }, (error) => {
+      console.error('Erro ao carregar boards:', error);
       setLoading(false);
     });
 
