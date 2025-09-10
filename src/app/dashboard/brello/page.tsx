@@ -62,77 +62,90 @@ const Brello = () => {
       return;
     }
 
-    const q = query(
-      collection(db, 'brelloBoards'),
-      where('userId', '==', currentUser.uid),
-      orderBy('createdAt', 'desc')
-    );
+    const loadBoards = async () => {
+      try {
+        const q = query(
+          collection(db, 'brelloBoards'),
+          where('userId', '==', currentUser.uid),
+          orderBy('createdAt', 'desc')
+        );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const boardsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as BrelloBoard[];
-      
-      setBoards(boardsData);
-      
-      // Selecionar o primeiro board se não houver nenhum selecionado
-      if (boardsData.length > 0 && !currentBoard) {
-        setCurrentBoard(boardsData[0]);
+        const snapshot = await getDocs(q);
+        const boardsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as BrelloBoard[];
+        
+        setBoards(boardsData);
+        
+        // Selecionar o primeiro board se não houver nenhum selecionado
+        if (boardsData.length > 0 && !currentBoard) {
+          setCurrentBoard(boardsData[0]);
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Erro ao carregar boards:', error);
+        setLoading(false);
       }
-      
-      setLoading(false);
-    }, (error) => {
-      console.error('Erro ao carregar boards:', error);
-      setLoading(false);
-    });
+    };
 
-    return () => unsubscribe();
-  }, [currentUser, currentBoard]);
+    loadBoards();
+  }, [currentUser]);
 
   // Carregar colunas do board atual
   useEffect(() => {
     if (!currentBoard) return;
 
-    const q = query(
-      collection(db, 'brelloColumns'),
-      where('boardId', '==', currentBoard.id),
-      orderBy('order', 'asc')
-    );
+    const loadColumns = async () => {
+      try {
+        const q = query(
+          collection(db, 'brelloColumns'),
+          where('boardId', '==', currentBoard.id),
+          orderBy('order', 'asc')
+        );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const columnsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as BrelloColumn[];
-      
-      setColumns(columnsData);
-    });
+        const snapshot = await getDocs(q);
+        const columnsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as BrelloColumn[];
+        
+        setColumns(columnsData);
+      } catch (error) {
+        console.error('Erro ao carregar colunas:', error);
+      }
+    };
 
-    return () => unsubscribe();
+    loadColumns();
   }, [currentBoard]);
 
   // Carregar cards das colunas
   useEffect(() => {
     if (columns.length === 0) return;
 
-    const columnIds = columns.map(col => col.id);
-    const q = query(
-      collection(db, 'brelloCards'),
-      where('columnId', 'in', columnIds),
-      orderBy('order', 'asc')
-    );
+    const loadCards = async () => {
+      try {
+        const columnIds = columns.map(col => col.id);
+        const q = query(
+          collection(db, 'brelloCards'),
+          where('columnId', 'in', columnIds),
+          orderBy('order', 'asc')
+        );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const cardsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as BrelloCard[];
-      
-      setCards(cardsData);
-    });
+        const snapshot = await getDocs(q);
+        const cardsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as BrelloCard[];
+        
+        setCards(cardsData);
+      } catch (error) {
+        console.error('Erro ao carregar cards:', error);
+      }
+    };
 
-    return () => unsubscribe();
+    loadCards();
   }, [columns]);
 
   const createBoard = async () => {
@@ -157,6 +170,20 @@ const Brello = () => {
 
       setNewBoardTitle('');
       setShowNewBoardModal(false);
+      
+      // Recarregar boards
+      const q = query(
+        collection(db, 'brelloBoards'),
+        where('userId', '==', currentUser.uid),
+        orderBy('createdAt', 'desc')
+      );
+      const snapshot = await getDocs(q);
+      const boardsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as BrelloBoard[];
+      setBoards(boardsData);
+      setCurrentBoard(boardsData[0]);
     } catch (error) {
       console.error('Erro ao criar board:', error);
     }
@@ -177,6 +204,19 @@ const Brello = () => {
       
       setNewColumnTitle('');
       setShowNewColumnModal(false);
+      
+      // Recarregar colunas
+      const q = query(
+        collection(db, 'brelloColumns'),
+        where('boardId', '==', currentBoard.id),
+        orderBy('order', 'asc')
+      );
+      const snapshot = await getDocs(q);
+      const columnsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as BrelloColumn[];
+      setColumns(columnsData);
     } catch (error) {
       console.error('Erro ao criar coluna:', error);
     }
@@ -200,6 +240,20 @@ const Brello = () => {
       setNewCardDescription('');
       setSelectedColumnId('');
       setShowNewCardModal(false);
+      
+      // Recarregar cards
+      const columnIds = columns.map(col => col.id);
+      const q = query(
+        collection(db, 'brelloCards'),
+        where('columnId', 'in', columnIds),
+        orderBy('order', 'asc')
+      );
+      const snapshot = await getDocs(q);
+      const cardsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as BrelloCard[];
+      setCards(cardsData);
     } catch (error) {
       console.error('Erro ao criar card:', error);
     }
