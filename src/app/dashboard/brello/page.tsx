@@ -45,6 +45,10 @@ const Brello = () => {
   const [newCardTitle, setNewCardTitle] = useState('');
   const [newCardDescription, setNewCardDescription] = useState('');
   const [selectedColumnId, setSelectedColumnId] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteType, setDeleteType] = useState<'board' | 'column' | 'card' | null>(null);
+  const [deleteId, setDeleteId] = useState('');
+  const [deleteTitle, setDeleteTitle] = useState('');
 
   // Timeout de segurança para loading
   useEffect(() => {
@@ -301,6 +305,34 @@ const Brello = () => {
     }
   };
 
+  const confirmDelete = (type: 'board' | 'column' | 'card', id: string, title: string) => {
+    setDeleteType(type);
+    setDeleteId(id);
+    setDeleteTitle(title);
+    setShowDeleteModal(true);
+  };
+
+  const executeDelete = async () => {
+    if (!deleteType || !deleteId) return;
+
+    try {
+      if (deleteType === 'board') {
+        await deleteBoard(deleteId);
+      } else if (deleteType === 'column') {
+        await deleteColumn(deleteId);
+      } else if (deleteType === 'card') {
+        await deleteCard(deleteId);
+      }
+      
+      setShowDeleteModal(false);
+      setDeleteType(null);
+      setDeleteId('');
+      setDeleteTitle('');
+    } catch (error) {
+      console.error('Erro ao deletar:', error);
+    }
+  };
+
   const deleteCard = async (cardId: string) => {
     try {
       await deleteDoc(doc(db, 'brelloCards', cardId));
@@ -393,7 +425,7 @@ const Brello = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        deleteBoard(board.id);
+                        confirmDelete('board', board.id, board.title);
                       }}
                       className="text-red-400 hover:text-red-300 ml-2"
                     >
@@ -448,7 +480,7 @@ const Brello = () => {
                             <div className="flex justify-between items-center mb-4">
                               <h3 className="text-lg font-semibold text-white">{column.title}</h3>
                               <button
-                                onClick={() => deleteColumn(column.id)}
+                                onClick={() => confirmDelete('column', column.id, column.title)}
                                 className="text-red-400 hover:text-red-300"
                               >
                                 ×
@@ -470,7 +502,7 @@ const Brello = () => {
                                       <div className="flex justify-between items-start mb-2">
                                         <h4 className="text-white font-medium">{card.title}</h4>
                                         <button
-                                          onClick={() => deleteCard(card.id)}
+                                          onClick={() => confirmDelete('card', card.id, card.title)}
                                           className="text-red-400 hover:text-red-300 text-sm"
                                         >
                                           ×
@@ -593,6 +625,45 @@ const Brello = () => {
                 </button>
                 <button
                   onClick={() => setShowNewCardModal(false)}
+                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Confirmação de Exclusão */}
+        {showDeleteModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-[#23283A] rounded-lg p-6 w-96">
+              <h3 className="text-xl font-semibold text-white mb-4">
+                Confirmar Exclusão
+              </h3>
+              <p className="text-gray-300 mb-6">
+                Tem certeza que deseja excluir{' '}
+                {deleteType === 'board' && 'o board'}
+                {deleteType === 'column' && 'a coluna'}
+                {deleteType === 'card' && 'o card'}{' '}
+                <span className="font-semibold text-white">"{deleteTitle}"</span>?
+                {deleteType === 'board' && ' Todos os dados serão perdidos permanentemente.'}
+                {deleteType === 'column' && ' Todos os cards desta coluna serão excluídos.'}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={executeDelete}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg transition-colors"
+                >
+                  Excluir
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeleteType(null);
+                    setDeleteId('');
+                    setDeleteTitle('');
+                  }}
                   className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
                 >
                   Cancelar
