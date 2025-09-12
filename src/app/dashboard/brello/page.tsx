@@ -29,10 +29,13 @@ interface BrelloBoard {
   title: string;
   userId: string;
   createdAt: any;
+  isShared?: boolean;
+  sharedWith?: string[];
+  imobiliariaId?: string;
 }
 
 const Brello = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, userData } = useAuth();
   const [boards, setBoards] = useState<BrelloBoard[]>([]);
   const [currentBoard, setCurrentBoard] = useState<BrelloBoard | null>(null);
   const [columns, setColumns] = useState<BrelloColumn[]>([]);
@@ -59,6 +62,9 @@ const Brello = () => {
   const [targetBoardId, setTargetBoardId] = useState('');
   const [showBoardMenu, setShowBoardMenu] = useState(false);
   const [selectedBoard, setSelectedBoard] = useState<BrelloBoard | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<Array<{id: string, name: string, email: string}>>([]);
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [editingDescription, setEditingDescription] = useState(false);
   const [newDescription, setNewDescription] = useState('');
   const [editingTitle, setEditingTitle] = useState(false);
@@ -121,6 +127,33 @@ const Brello = () => {
     });
 
     return () => unsubscribe();
+  }, [currentUser]);
+
+  // Carregar membros da equipe
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const loadTeamMembers = async () => {
+      try {
+        // Buscar usuários da mesma imobiliária
+        const usersQuery = query(
+          collection(db, 'users'),
+          where('imobiliariaId', '==', userData?.imobiliariaId || '')
+        );
+        
+        const usersSnapshot = await getDocs(usersQuery);
+        const members = usersSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Array<{id: string, name: string, email: string}>;
+
+        setTeamMembers(members.filter(member => member.id !== currentUser.uid));
+      } catch (error) {
+        console.error('Erro ao carregar membros da equipe:', error);
+      }
+    };
+
+    loadTeamMembers();
   }, [currentUser]);
 
   // Carregar colunas do board atual
@@ -553,6 +586,26 @@ const Brello = () => {
     setShowBoardMenu(true);
   };
 
+  const shareBoard = async () => {
+    if (!selectedBoard || !currentUser || selectedMembers.length === 0) return;
+
+    try {
+      const boardRef = doc(db, 'brelloBoards', selectedBoard.id);
+      await updateDoc(boardRef, {
+        isShared: true,
+        sharedWith: selectedMembers,
+        imobiliariaId: userData?.imobiliariaId
+      });
+
+      setShowShareModal(false);
+      setSelectedMembers([]);
+      alert('Board compartilhado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao compartilhar board:', error);
+      alert('Erro ao compartilhar board');
+    }
+  };
+
   const copyColumnToBoard = async () => {
     if (!selectedColumn || !targetBoardId) return;
 
@@ -712,19 +765,34 @@ const Brello = () => {
                   key={board.id}
                   className={`p-4 rounded-lg cursor-pointer transition-colors relative ${
                     currentBoard?.id === board.id
-                      ? 'bg-[#6366F1] text-white'
-                      : 'bg-[#23283A] text-gray-300 hover:bg-[#2A2F42]'
+                      ? board.isShared 
+                        ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-black'
+                        : 'bg-[#6366F1] text-white'
+                      : board.isShared
+                        ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-black hover:from-yellow-300 hover:to-yellow-400'
+                        : 'bg-[#23283A] text-gray-300 hover:bg-[#2A2F42]'
                   }`}
                   onClick={() => setCurrentBoard(board)}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">{board.title}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{board.title}</span>
+                      {board.isShared && (
+                        <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full">
+                          Compartilhado
+                        </span>
+                      )}
+                    </div>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         openBoardMenu(board);
                       }}
-                      className="text-gray-400 hover:text-white ml-2 p-1"
+                      className={`ml-2 p-1 ${
+                        board.isShared 
+                          ? 'text-yellow-800 hover:text-yellow-900' 
+                          : 'text-gray-400 hover:text-white'
+                      }`}
                     >
                       ⋯
                     </button>
@@ -1028,25 +1096,28 @@ const Brello = () => {
               <p className="text-gray-300 mb-6">"{selectedBoard.title}"</p>
               
               <div className="space-y-3">
-                <button
-                  onClick={() => {
-                    setShowBoardMenu(false);
-                    // TODO: Implementar compartilhar board
-                    alert('Funcionalidade de compartilhar será implementada em breve!');
-                  }}
-                  className="w-full bg-[#6366F1] hover:bg-[#5855EB] text-white py-3 rounded-lg transition-colors text-left px-4"
-                >
-                  👥 Compartilhar Board
-                </button>
-                <button
-                  onClick={() => {
-                    setShowBoardMenu(false);
-                    confirmDelete('board', selectedBoard.id, selectedBoard.title);
-                  }}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg transition-colors text-left px-4"
-                >
-                  🗑️ Excluir Board
-                </button>
+                {selectedBoard.userId === currentUser?.uid && (
+                  <button
+                    onClick={() => {
+                      setShowBoardMenu(false);
+                      setShowShareModal(true);
+                    }}
+                    className="w-full bg-[#6366F1] hover:bg-[#5855EB] text-white py-3 rounded-lg transition-colors text-left px-4"
+                  >
+                    👥 Compartilhar Board
+                  </button>
+                )}
+                {selectedBoard.userId === currentUser?.uid && (
+                  <button
+                    onClick={() => {
+                      setShowBoardMenu(false);
+                      confirmDelete('board', selectedBoard.id, selectedBoard.title);
+                    }}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg transition-colors text-left px-4"
+                  >
+                    🗑️ Excluir Board
+                  </button>
+                )}
               </div>
               
               <div className="flex gap-3 mt-6">
@@ -1094,6 +1165,58 @@ const Brello = () => {
                   onClick={() => {
                     setShowCopyModal(false);
                     setTargetBoardId('');
+                  }}
+                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Compartilhar Board */}
+        {showShareModal && selectedBoard && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-[#23283A] rounded-lg p-6 w-96">
+              <h3 className="text-xl font-semibold text-white mb-4">Compartilhar Board</h3>
+              <p className="text-gray-300 mb-4">Selecione os membros da equipe para compartilhar "{selectedBoard.title}"</p>
+              
+              <div className="space-y-3 mb-6 max-h-60 overflow-y-auto">
+                {teamMembers.map((member) => (
+                  <label key={member.id} className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedMembers.includes(member.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedMembers([...selectedMembers, member.id]);
+                        } else {
+                          setSelectedMembers(selectedMembers.filter(id => id !== member.id));
+                        }
+                      }}
+                      className="w-4 h-4 text-[#6366F1] bg-gray-700 border-gray-600 rounded focus:ring-[#6366F1] focus:ring-2"
+                    />
+                    <div>
+                      <div className="text-white font-medium">{member.name}</div>
+                      <div className="text-gray-400 text-sm">{member.email}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={shareBoard}
+                  disabled={selectedMembers.length === 0}
+                  className="flex-1 bg-[#6366F1] hover:bg-[#5855EB] disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-2 rounded-lg transition-colors"
+                >
+                  Compartilhar ({selectedMembers.length})
+                </button>
+                <button
+                  onClick={() => {
+                    setShowShareModal(false);
+                    setSelectedMembers([]);
                   }}
                   className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
                 >
