@@ -252,14 +252,29 @@ const Brello = () => {
   const handleDragEnd = async (result: any) => {
     if (!result.destination) return;
 
-    const { source, destination, draggableId } = result;
+    const { source, destination, draggableId, type } = result;
 
     // Se moveu para a mesma posição, não faz nada
     if (source.droppableId === destination.droppableId && source.index === destination.index) {
       return;
     }
 
-    // Se moveu entre colunas
+    // Se for uma coluna sendo arrastada
+    if (type === 'COLUMN') {
+      const reorderedColumns = Array.from(columns);
+      const [movedColumn] = reorderedColumns.splice(source.index, 1);
+      reorderedColumns.splice(destination.index, 0, movedColumn);
+
+      // Atualizar ordem de todas as colunas
+      for (let i = 0; i < reorderedColumns.length; i++) {
+        await updateDoc(doc(db, 'brelloColumns', reorderedColumns[i].id), {
+          order: i
+        });
+      }
+      return;
+    }
+
+    // Se moveu entre colunas (card)
     if (source.droppableId !== destination.droppableId) {
       const card = cards.find(c => c.id === draggableId);
       if (!card) return;
@@ -453,70 +468,92 @@ const Brello = () => {
             </div>
 
             <DragDropContext onDragEnd={handleDragEnd}>
-              <div className="flex gap-6 overflow-x-auto pb-4">
-                {columns.map((column) => {
-                  const columnCards = cards
-                    .filter(card => card.columnId === column.id)
-                    .sort((a, b) => a.order - b.order);
+              <Droppable droppableId="columns" direction="horizontal" type="COLUMN">
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className="flex gap-6 overflow-x-auto pb-4"
+                  >
+                    {columns.map((column, columnIndex) => {
+                      const columnCards = cards
+                        .filter(card => card.columnId === column.id)
+                        .sort((a, b) => a.order - b.order);
 
-                  return (
-                    <div key={column.id} className="flex-shrink-0 w-80">
-                      <Droppable droppableId={column.id}>
-                        {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.droppableProps}
-                            className={`bg-[#23283A] rounded-lg p-4 min-h-[500px] ${
-                              snapshot.isDraggingOver ? 'bg-[#2A2F42]' : ''
-                            }`}
-                          >
-                            <div className="flex justify-between items-center mb-4">
-                              <h3 className="text-lg font-semibold text-white">{column.title}</h3>
-                              <button
-                                onClick={() => confirmDelete('column', column.id, column.title)}
-                                className="text-red-400 hover:text-red-300"
+                      return (
+                        <Draggable key={column.id} draggableId={column.id} index={columnIndex} type="COLUMN">
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className="flex-shrink-0 w-80"
+                            >
+                              <div
+                                {...provided.dragHandleProps}
+                                className={`bg-[#23283A] rounded-lg p-4 min-h-[500px] cursor-move transition-all ${
+                                  snapshot.isDragging ? 'shadow-lg transform rotate-1' : 'hover:shadow-md'
+                                }`}
                               >
-                                ×
-                              </button>
-                            </div>
+                                <div className="flex justify-between items-center mb-4">
+                                  <h3 className="text-lg font-semibold text-white">{column.title}</h3>
+                                  <button
+                                    onClick={() => confirmDelete('column', column.id, column.title)}
+                                    className="text-red-400 hover:text-red-300"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
 
-                            <div className="space-y-3">
-                              {columnCards.map((card, index) => (
-                                <Draggable key={card.id} draggableId={card.id} index={index}>
+                                <Droppable droppableId={column.id} type="CARD">
                                   {(provided, snapshot) => (
                                     <div
                                       ref={provided.innerRef}
-                                      {...provided.draggableProps}
-                                      {...provided.dragHandleProps}
-                                      className={`bg-[#181C23] rounded-lg p-4 cursor-move transition-all ${
-                                        snapshot.isDragging ? 'shadow-lg transform rotate-2' : 'hover:shadow-md'
+                                      {...provided.droppableProps}
+                                      className={`space-y-3 min-h-[400px] ${
+                                        snapshot.isDraggingOver ? 'bg-[#2A2F42] rounded-lg' : ''
                                       }`}
                                     >
-                                      <div className="flex justify-between items-start mb-2">
-                                        <h4 className="text-white font-medium whitespace-pre-wrap break-words">{card.title}</h4>
-                                        <button
-                                          onClick={() => confirmDelete('card', card.id, card.title)}
-                                          className="text-red-400 hover:text-red-300 text-sm flex-shrink-0 ml-2"
-                                        >
-                                          ×
-                                        </button>
-                                      </div>
-                                      {card.description && (
-                                        <p className="text-gray-400 text-sm whitespace-pre-wrap break-words">{card.description}</p>
-                                      )}
+                                      {columnCards.map((card, index) => (
+                                        <Draggable key={card.id} draggableId={card.id} index={index} type="CARD">
+                                          {(provided, snapshot) => (
+                                            <div
+                                              ref={provided.innerRef}
+                                              {...provided.draggableProps}
+                                              {...provided.dragHandleProps}
+                                              className={`bg-[#181C23] rounded-lg p-4 cursor-move transition-all ${
+                                                snapshot.isDragging ? 'shadow-lg transform rotate-2' : 'hover:shadow-md'
+                                              }`}
+                                            >
+                                              <div className="flex justify-between items-start mb-2">
+                                                <h4 className="text-white font-medium whitespace-pre-wrap break-words">{card.title}</h4>
+                                                <button
+                                                  onClick={() => confirmDelete('card', card.id, card.title)}
+                                                  className="text-red-400 hover:text-red-300 text-sm flex-shrink-0 ml-2"
+                                                >
+                                                  ×
+                                                </button>
+                                              </div>
+                                              {card.description && (
+                                                <p className="text-gray-400 text-sm whitespace-pre-wrap break-words">{card.description}</p>
+                                              )}
+                                            </div>
+                                          )}
+                                        </Draggable>
+                                      ))}
+                                      {provided.placeholder}
                                     </div>
                                   )}
-                                </Draggable>
-                              ))}
-                              {provided.placeholder}
+                                </Droppable>
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </Droppable>
-                    </div>
-                  );
-                })}
-              </div>
+                          )}
+                        </Draggable>
+                      );
+                    })}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
             </DragDropContext>
           </div>
         )}
