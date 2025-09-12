@@ -655,19 +655,31 @@ const Brello = () => {
   };
 
   const shareBoard = async () => {
-    if (!selectedBoard || !currentUser || selectedMembers.length === 0) return;
+    if (!selectedBoard || !currentUser) return;
 
     try {
       const boardRef = doc(db, 'brelloBoards', selectedBoard.id);
-      await updateDoc(boardRef, {
-        isShared: true,
-        sharedWith: selectedMembers,
-        imobiliariaId: userData?.imobiliariaId
-      });
+      
+      if (selectedMembers.length === 0) {
+        // Se não há membros selecionados, remover compartilhamento
+        await updateDoc(boardRef, {
+          isShared: false,
+          sharedWith: [],
+          imobiliariaId: userData?.imobiliariaId
+        });
+        alert('Compartilhamento removido!');
+      } else {
+        // Se há membros selecionados, atualizar compartilhamento
+        await updateDoc(boardRef, {
+          isShared: true,
+          sharedWith: selectedMembers,
+          imobiliariaId: userData?.imobiliariaId
+        });
+        alert('Board compartilhado com sucesso!');
+      }
 
       setShowShareModal(false);
       setSelectedMembers([]);
-      alert('Board compartilhado com sucesso!');
     } catch (error) {
       console.error('Erro ao compartilhar board:', error);
       alert('Erro ao compartilhar board');
@@ -843,14 +855,7 @@ const Brello = () => {
                   onClick={() => setCurrentBoard(board)}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{board.title}</span>
-                      {board.isShared && (
-                        <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full">
-                          Compartilhado
-                        </span>
-                      )}
-                    </div>
+                    <span className="font-medium">{board.title}</span>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1285,10 +1290,9 @@ const Brello = () => {
               <div className="flex gap-3">
                 <button
                   onClick={shareBoard}
-                  disabled={selectedMembers.length === 0}
-                  className="flex-1 bg-[#6366F1] hover:bg-[#5855EB] disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-2 rounded-lg transition-colors"
+                  className="flex-1 bg-[#6366F1] hover:bg-[#5855EB] text-white py-2 rounded-lg transition-colors"
                 >
-                  Compartilhar ({selectedMembers.length})
+                  {selectedMembers.length === 0 ? 'Remover Compartilhamento' : `Compartilhar (${selectedMembers.length})`}
                 </button>
                 <button
                   onClick={() => {
