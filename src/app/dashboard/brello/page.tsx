@@ -49,6 +49,8 @@ const Brello = () => {
   const [deleteType, setDeleteType] = useState<'board' | 'column' | 'card' | null>(null);
   const [deleteId, setDeleteId] = useState('');
   const [deleteTitle, setDeleteTitle] = useState('');
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<BrelloCard | null>(null);
 
   // Timeout de segurança para loading
   useEffect(() => {
@@ -327,6 +329,11 @@ const Brello = () => {
     setShowDeleteModal(true);
   };
 
+  const openCardModal = (card: BrelloCard) => {
+    setSelectedCard(card);
+    setShowCardModal(true);
+  };
+
   const executeDelete = async () => {
     if (!deleteType || !deleteId) return;
 
@@ -519,23 +526,23 @@ const Brello = () => {
                                             <div
                                               ref={provided.innerRef}
                                               {...provided.draggableProps}
-                                              {...provided.dragHandleProps}
-                                              className={`bg-[#181C23] rounded-lg p-4 cursor-move transition-all ${
+                                              className={`bg-[#181C23] rounded-lg p-4 cursor-pointer transition-all ${
                                                 snapshot.isDragging ? 'shadow-lg transform rotate-2' : 'hover:shadow-md'
                                               }`}
+                                              onClick={() => openCardModal(card)}
                                             >
-                                              <div className="flex justify-between items-start mb-2">
-                                                <h4 className="text-white font-medium whitespace-pre-wrap break-words">{card.title}</h4>
+                                              <div className="flex justify-between items-start">
+                                                <h4 className="text-white font-medium whitespace-pre-wrap break-words flex-1">{card.title}</h4>
                                                 <button
-                                                  onClick={() => confirmDelete('card', card.id, card.title)}
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    confirmDelete('card', card.id, card.title);
+                                                  }}
                                                   className="text-red-400 hover:text-red-300 text-sm flex-shrink-0 ml-2"
                                                 >
                                                   ×
                                                 </button>
                                               </div>
-                                              {card.description && (
-                                                <p className="text-gray-400 text-sm whitespace-pre-wrap break-words">{card.description}</p>
-                                              )}
                                             </div>
                                           )}
                                         </Draggable>
@@ -659,6 +666,77 @@ const Brello = () => {
                 >
                   Cancelar
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal do Card */}
+        {showCardModal && selectedCard && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-[#23283A] rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-start mb-6">
+                <h3 className="text-2xl font-bold text-white">{selectedCard.title}</h3>
+                <button
+                  onClick={() => setShowCardModal(false)}
+                  className="text-gray-400 hover:text-white text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="space-y-6">
+                {/* Descrição */}
+                <div>
+                  <h4 className="text-lg font-semibold text-white mb-3">Descrição</h4>
+                  {selectedCard.description ? (
+                    <p className="text-gray-300 whitespace-pre-wrap break-words bg-[#181C23] p-4 rounded-lg">
+                      {selectedCard.description}
+                    </p>
+                  ) : (
+                    <p className="text-gray-500 italic bg-[#181C23] p-4 rounded-lg">
+                      Nenhuma descrição adicionada
+                    </p>
+                  )}
+                </div>
+
+                {/* Informações do Card */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-[#181C23] p-4 rounded-lg">
+                    <h5 className="text-sm font-semibold text-gray-400 mb-2">Coluna</h5>
+                    <p className="text-white">
+                      {columns.find(col => col.id === selectedCard.columnId)?.title || 'Desconhecida'}
+                    </p>
+                  </div>
+                  <div className="bg-[#181C23] p-4 rounded-lg">
+                    <h5 className="text-sm font-semibold text-gray-400 mb-2">Criado em</h5>
+                    <p className="text-white">
+                      {selectedCard.createdAt?.toDate ? 
+                        selectedCard.createdAt.toDate().toLocaleDateString('pt-BR') : 
+                        'Data não disponível'
+                      }
+                    </p>
+                  </div>
+                </div>
+
+                {/* Ações */}
+                <div className="flex gap-3 pt-4 border-t border-gray-600">
+                  <button
+                    onClick={() => {
+                      confirmDelete('card', selectedCard.id, selectedCard.title);
+                      setShowCardModal(false);
+                    }}
+                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+                  >
+                    Excluir Card
+                  </button>
+                  <button
+                    onClick={() => setShowCardModal(false)}
+                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+                  >
+                    Fechar
+                  </button>
+                </div>
               </div>
             </div>
           </div>
