@@ -962,7 +962,7 @@ const Brello = () => {
               {/* Content */}
               <div className="flex flex-1 overflow-hidden">
                 {/* Left Panel - Card Details */}
-                <div className="flex-1 p-6 overflow-y-auto">
+                <div className="w-1/2 p-6 overflow-y-auto border-r border-gray-600">
                   <div className="space-y-6">
                     {/* Descrição */}
                     <div>
@@ -1022,25 +1022,6 @@ const Brello = () => {
                       )}
                     </div>
 
-                    {/* Informações do Card */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-[#181C23] p-4 rounded-lg">
-                        <h5 className="text-sm font-semibold text-gray-400 mb-2">Coluna</h5>
-                        <p className="text-white">
-                          {columns.find(col => col.id === selectedCard.columnId)?.title || 'Desconhecida'}
-                        </p>
-                      </div>
-                      <div className="bg-[#181C23] p-4 rounded-lg">
-                        <h5 className="text-sm font-semibold text-gray-400 mb-2">Criado em</h5>
-                        <p className="text-white">
-                          {selectedCard.createdAt?.toDate ? 
-                            selectedCard.createdAt.toDate().toLocaleDateString('pt-BR') : 
-                            'Data não disponível'
-                          }
-                        </p>
-                      </div>
-                    </div>
-
                     {/* Ações */}
                     <div className="flex gap-3 pt-4 border-t border-gray-600">
                       <button
@@ -1057,12 +1038,9 @@ const Brello = () => {
                 </div>
 
                 {/* Right Panel - Comments */}
-                <div className="w-80 border-l border-gray-600 p-6 overflow-y-auto">
-                  <div className="flex justify-between items-center mb-4">
+                <div className="w-1/2 p-6 overflow-y-auto">
+                  <div className="mb-4">
                     <h4 className="text-lg font-semibold text-white">Comentários e atividade</h4>
-                    <button className="text-[#6366F1] hover:text-[#5855EB] text-sm font-medium">
-                      Mostrar Detalhes
-                    </button>
                   </div>
 
                   {/* Comment Input */}
