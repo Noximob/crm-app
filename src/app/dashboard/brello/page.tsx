@@ -131,14 +131,16 @@ const Brello = () => {
 
   // Carregar membros da equipe
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser || !userData?.imobiliariaId) return;
 
     const loadTeamMembers = async () => {
       try {
+        console.log('Carregando membros da imobiliária:', userData.imobiliariaId);
+        
         // Buscar usuários da mesma imobiliária
         const usersQuery = query(
           collection(db, 'users'),
-          where('imobiliariaId', '==', userData?.imobiliariaId || '')
+          where('imobiliariaId', '==', userData.imobiliariaId)
         );
         
         const usersSnapshot = await getDocs(usersQuery);
@@ -147,6 +149,7 @@ const Brello = () => {
           ...doc.data()
         })) as Array<{id: string, name: string, email: string}>;
 
+        console.log('Membros encontrados:', members);
         setTeamMembers(members.filter(member => member.id !== currentUser.uid));
       } catch (error) {
         console.error('Erro ao carregar membros da equipe:', error);
@@ -154,7 +157,7 @@ const Brello = () => {
     };
 
     loadTeamMembers();
-  }, [currentUser]);
+  }, [currentUser, userData]);
 
   // Carregar colunas do board atual
   useEffect(() => {
@@ -1183,26 +1186,35 @@ const Brello = () => {
               <p className="text-gray-300 mb-4">Selecione os membros da equipe para compartilhar "{selectedBoard.title}"</p>
               
               <div className="space-y-3 mb-6 max-h-60 overflow-y-auto">
-                {teamMembers.map((member) => (
-                  <label key={member.id} className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedMembers.includes(member.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedMembers([...selectedMembers, member.id]);
-                        } else {
-                          setSelectedMembers(selectedMembers.filter(id => id !== member.id));
-                        }
-                      }}
-                      className="w-4 h-4 text-[#6366F1] bg-gray-700 border-gray-600 rounded focus:ring-[#6366F1] focus:ring-2"
-                    />
-                    <div>
-                      <div className="text-white font-medium">{member.name}</div>
-                      <div className="text-gray-400 text-sm">{member.email}</div>
+                {teamMembers.length > 0 ? (
+                  teamMembers.map((member) => (
+                    <label key={member.id} className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedMembers.includes(member.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedMembers([...selectedMembers, member.id]);
+                          } else {
+                            setSelectedMembers(selectedMembers.filter(id => id !== member.id));
+                          }
+                        }}
+                        className="w-4 h-4 text-[#6366F1] bg-gray-700 border-gray-600 rounded focus:ring-[#6366F1] focus:ring-2"
+                      />
+                      <div>
+                        <div className="text-white font-medium">{member.name}</div>
+                        <div className="text-gray-400 text-sm">{member.email}</div>
+                      </div>
+                    </label>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="text-gray-400 mb-2">Nenhum membro da equipe encontrado</div>
+                    <div className="text-gray-500 text-sm">
+                      Verifique se você está vinculado a uma imobiliária
                     </div>
-                  </label>
-                ))}
+                  </div>
+                )}
               </div>
               
               <div className="flex gap-3">
