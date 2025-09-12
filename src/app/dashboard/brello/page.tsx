@@ -135,8 +135,19 @@ const Brello = () => {
     console.log('useEffect membros - userData:', userData);
     console.log('userData?.imobiliariaId:', userData?.imobiliariaId);
     
-    if (!currentUser || !userData?.imobiliariaId) {
-      console.log('Condições não atendidas para carregar membros - currentUser:', !!currentUser, 'userData:', !!userData, 'imobiliariaId:', userData?.imobiliariaId);
+    // Aguardar o userData ser carregado
+    if (!currentUser) {
+      console.log('currentUser não está disponível');
+      return;
+    }
+    
+    if (!userData) {
+      console.log('userData ainda não foi carregado');
+      return;
+    }
+    
+    if (!userData.imobiliariaId) {
+      console.log('userData não tem imobiliariaId:', userData);
       return;
     }
 
