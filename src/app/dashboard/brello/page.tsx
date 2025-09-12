@@ -1003,14 +1003,24 @@ const Brello = () => {
                         <h4 className="text-lg font-semibold text-white flex items-center gap-2">
                           <span>≡</span> Descrição
                         </h4>
-                        {!editingDescription && (
-                          <button
-                            onClick={() => setEditingDescription(true)}
-                            className="text-[#6366F1] hover:text-[#5855EB] text-sm font-medium"
-                          >
-                            Editar
-                          </button>
-                        )}
+                        <div className="flex items-center gap-3">
+                          {!editingDescription && (
+                            <>
+                              <button className="text-gray-400 hover:text-white text-lg">
+                                📎
+                              </button>
+                              <button className="text-gray-400 hover:text-white text-sm">
+                                Anexar
+                              </button>
+                              <button
+                                onClick={() => setEditingDescription(true)}
+                                className="text-[#6366F1] hover:text-[#5855EB] text-sm font-medium"
+                              >
+                                Editar
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
                       
                       {editingDescription ? (
