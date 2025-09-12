@@ -58,8 +58,10 @@ const Brello = () => {
   const [targetBoardId, setTargetBoardId] = useState('');
   const [editingDescription, setEditingDescription] = useState(false);
   const [newDescription, setNewDescription] = useState('');
-  const [comments, setComments] = useState<Array<{id: string, text: string, author: string, createdAt: any}>>([]);
+  const [comments, setComments] = useState<Array<{id: string, text: string, author: string, createdAt: any, replies?: Array<{id: string, text: string, author: string, createdAt: any}>}>>([]);
   const [newComment, setNewComment] = useState('');
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
 
   // Timeout de segurança para loading
   useEffect(() => {
@@ -348,14 +350,7 @@ const Brello = () => {
   const loadComments = async (cardId: string) => {
     // Por enquanto, vamos simular comentários
     // Depois pode ser implementado com Firebase
-    setComments([
-      {
-        id: '1',
-        text: 'Este é um comentário de exemplo',
-        author: 'Usuário',
-        createdAt: new Date()
-      }
-    ]);
+    setComments([]);
   };
 
   const saveDescription = async () => {
@@ -390,12 +385,50 @@ const Brello = () => {
         id: Date.now().toString(),
         text: newComment.trim(),
         author: currentUser.email?.split('@')[0] || 'Usuário',
-        createdAt: new Date()
+        createdAt: new Date(),
+        replies: []
       }]);
       
       setNewComment('');
     } catch (error) {
       console.error('Erro ao adicionar comentário:', error);
+    }
+  };
+
+  const addReply = async (commentId: string) => {
+    if (!replyText.trim() || !currentUser) return;
+
+    try {
+      const replyData = {
+        text: replyText.trim(),
+        author: currentUser.email?.split('@')[0] || 'Usuário',
+        createdAt: new Date(),
+        commentId: commentId
+      };
+
+      await addDoc(collection(db, 'brelloReplies'), replyData);
+      
+      setComments(comments.map(comment => 
+        comment.id === commentId 
+          ? {
+              ...comment,
+              replies: [
+                ...(comment.replies || []),
+                {
+                  id: Date.now().toString(),
+                  text: replyText.trim(),
+                  author: currentUser.email?.split('@')[0] || 'Usuário',
+                  createdAt: new Date()
+                }
+              ]
+            }
+          : comment
+      ));
+      
+      setReplyText('');
+      setReplyingTo(null);
+    } catch (error) {
+      console.error('Erro ao adicionar resposta:', error);
     }
   };
 
@@ -1076,9 +1109,66 @@ const Brello = () => {
                               </span>
                             </div>
                             <p className="text-gray-300 text-sm">{comment.text}</p>
-                            <button className="text-[#6366F1] hover:text-[#5855EB] text-xs mt-2">
+                            <button 
+                              onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                              className="text-[#6366F1] hover:text-[#5855EB] text-xs mt-2"
+                            >
                               Responder
                             </button>
+                            
+                            {/* Reply Input */}
+                            {replyingTo === comment.id && (
+                              <div className="mt-3 space-y-2">
+                                <textarea
+                                  value={replyText}
+                                  onChange={(e) => setReplyText(e.target.value)}
+                                  placeholder="Escrever uma resposta..."
+                                  className="w-full p-2 bg-[#0F0F23] text-white rounded text-sm resize-none min-h-[60px] focus:outline-none focus:ring-2 focus:ring-[#6366F1]"
+                                />
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => addReply(comment.id)}
+                                    disabled={!replyText.trim()}
+                                    className="bg-[#6366F1] hover:bg-[#5855EB] disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-3 py-1 rounded text-xs transition-colors"
+                                  >
+                                    Responder
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setReplyingTo(null);
+                                      setReplyText('');
+                                    }}
+                                    className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-xs transition-colors"
+                                  >
+                                    Cancelar
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Replies */}
+                            {comment.replies && comment.replies.length > 0 && (
+                              <div className="mt-3 space-y-2">
+                                {comment.replies.map((reply) => (
+                                  <div key={reply.id} className="bg-[#0F0F23] p-3 rounded-lg ml-4">
+                                    <div className="flex items-start gap-2">
+                                      <div className="w-6 h-6 bg-[#10B981] rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                        {reply.author.charAt(0).toUpperCase()}
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <span className="text-white font-medium text-xs">{reply.author}</span>
+                                          <span className="text-gray-400 text-xs">
+                                            {reply.createdAt.toLocaleDateString('pt-BR')} {reply.createdAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                          </span>
+                                        </div>
+                                        <p className="text-gray-300 text-xs">{reply.text}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
