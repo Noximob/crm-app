@@ -61,6 +61,8 @@ const Brello = () => {
   const [selectedBoard, setSelectedBoard] = useState<BrelloBoard | null>(null);
   const [editingDescription, setEditingDescription] = useState(false);
   const [newDescription, setNewDescription] = useState('');
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
   const [comments, setComments] = useState<Array<{id: string, text: string, author: string, createdAt: any, replies?: Array<{id: string, text: string, author: string, createdAt: any}>}>>([]);
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
@@ -348,6 +350,9 @@ const Brello = () => {
   const openCardModal = (card: BrelloCard) => {
     setSelectedCard(card);
     setNewDescription(card.description || '');
+    setNewTitle(card.title);
+    setEditingDescription(false);
+    setEditingTitle(false);
     setShowCardModal(true);
     loadComments(card.id);
     loadAttachments(card.id);
@@ -456,6 +461,21 @@ const Brello = () => {
       setEditingDescription(false);
     } catch (error) {
       console.error('Erro ao salvar descrição:', error);
+    }
+  };
+
+  const saveTitle = async () => {
+    if (!selectedCard) return;
+
+    try {
+      await updateDoc(doc(db, 'brelloCards', selectedCard.id), {
+        title: newTitle
+      });
+      
+      setSelectedCard({...selectedCard, title: newTitle});
+      setEditingTitle(false);
+    } catch (error) {
+      console.error('Erro ao salvar título:', error);
     }
   };
 
@@ -816,6 +836,18 @@ const Brello = () => {
                                     </div>
                                   )}
                                 </Droppable>
+                                
+                                {/* Botão + para adicionar card */}
+                                <button
+                                  onClick={() => {
+                                    setSelectedColumnId(column.id);
+                                    setShowNewCardModal(true);
+                                  }}
+                                  className="w-full mt-4 p-3 bg-[#181C23] hover:bg-[#2A2F42] text-gray-400 hover:text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                                >
+                                  <span className="text-xl">+</span>
+                                  <span>Adicionar card</span>
+                                </button>
                               </div>
                             </div>
                           )}
@@ -1122,7 +1154,45 @@ const Brello = () => {
                   <div className="w-8 h-8 bg-[#6366F1] rounded-full flex items-center justify-center">
                     <span className="text-white font-bold text-sm">📋</span>
                   </div>
-                  <h3 className="text-2xl font-bold text-white">{selectedCard.title}</h3>
+                  {editingTitle ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={newTitle}
+                        onChange={(e) => setNewTitle(e.target.value)}
+                        className="text-2xl font-bold bg-transparent text-white border-b-2 border-[#6366F1] focus:outline-none"
+                        autoFocus
+                      />
+                      <button
+                        onClick={saveTitle}
+                        className="text-green-400 hover:text-green-300 text-lg"
+                        title="Salvar"
+                      >
+                        ✓
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingTitle(false);
+                          setNewTitle(selectedCard.title);
+                        }}
+                        className="text-red-400 hover:text-red-300 text-lg"
+                        title="Cancelar"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-2xl font-bold text-white">{selectedCard.title}</h3>
+                      <button
+                        onClick={() => setEditingTitle(true)}
+                        className="text-gray-400 hover:text-white text-lg"
+                        title="Editar título"
+                      >
+                        ✏️
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={() => setShowCardModal(false)}
