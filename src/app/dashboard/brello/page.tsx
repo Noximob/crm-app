@@ -453,7 +453,7 @@ const Brello = () => {
             </div>
 
             <DragDropContext onDragEnd={handleDragEnd}>
-              <div className="flex gap-6 overflow-x-auto pb-4" style={{ width: 'max-content' }}>
+              <div className="flex gap-6 overflow-x-auto pb-4">
                 {columns.map((column) => {
                   const columnCards = cards
                     .filter(card => card.columnId === column.id)
