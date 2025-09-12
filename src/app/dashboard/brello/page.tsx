@@ -526,12 +526,15 @@ const Brello = () => {
                                             <div
                                               ref={provided.innerRef}
                                               {...provided.draggableProps}
-                                              className={`bg-[#181C23] rounded-lg p-4 cursor-pointer transition-all ${
+                                              {...provided.dragHandleProps}
+                                              className={`bg-[#181C23] rounded-lg p-4 cursor-move transition-all ${
                                                 snapshot.isDragging ? 'shadow-lg transform rotate-2' : 'hover:shadow-md'
                                               }`}
-                                              onClick={() => openCardModal(card)}
                                             >
-                                              <div className="flex justify-between items-start">
+                                              <div 
+                                                className="flex justify-between items-start cursor-pointer"
+                                                onClick={() => openCardModal(card)}
+                                              >
                                                 <h4 className="text-white font-medium whitespace-pre-wrap break-words flex-1">{card.title}</h4>
                                                 <button
                                                   onClick={(e) => {
