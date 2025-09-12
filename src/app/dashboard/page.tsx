@@ -8,7 +8,6 @@ import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, get
 import Link from 'next/link';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
-import NotesWidget from './_components/NotesWidget';
 import AvisosImportantesModal from './_components/AvisosImportantesModal';
 import AgendaImobiliariaModal from './_components/AgendaImobiliariaModal';
 import PlantoesModal from './_components/PlantoesModal';
@@ -1123,17 +1122,14 @@ export default function DashboardPage() {
             {/* Botão de Ideias */}
             <Link
               href="/dashboard/ideias"
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+              className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+              title="Ideias"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M9 21h6"/>
                 <path d="M10 21c5-3 7-7 7-12a6 6 0 0 0-12 0c0 5 2 9 5 12z"/>
               </svg>
-              Ideias
             </Link>
-            
-            {/* Bloco de Notas */}
-            <NotesWidget />
           </div>
         </div>
       </div>
