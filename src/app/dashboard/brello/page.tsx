@@ -832,22 +832,22 @@ const Brello = () => {
                                           )}
                                         </Draggable>
                                       ))}
+                                      {/* Botão + para adicionar card */}
+                                      <button
+                                        onClick={() => {
+                                          setSelectedColumnId(column.id);
+                                          setShowNewCardModal(true);
+                                        }}
+                                        className="w-full mt-3 p-3 bg-[#181C23] hover:bg-[#2A2F42] text-gray-400 hover:text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                                      >
+                                        <span className="text-xl">+</span>
+                                        <span>Adicionar card</span>
+                                      </button>
+                                      
                                       {provided.placeholder}
                                     </div>
                                   )}
                                 </Droppable>
-                                
-                                {/* Botão + para adicionar card */}
-                                <button
-                                  onClick={() => {
-                                    setSelectedColumnId(column.id);
-                                    setShowNewCardModal(true);
-                                  }}
-                                  className="w-full mt-4 p-3 bg-[#181C23] hover:bg-[#2A2F42] text-gray-400 hover:text-white rounded-lg transition-colors flex items-center justify-center gap-2"
-                                >
-                                  <span className="text-xl">+</span>
-                                  <span>Adicionar card</span>
-                                </button>
                               </div>
                             </div>
                           )}
