@@ -56,6 +56,10 @@ const Brello = () => {
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [targetBoardId, setTargetBoardId] = useState('');
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [newDescription, setNewDescription] = useState('');
+  const [comments, setComments] = useState<Array<{id: string, text: string, author: string, createdAt: any}>>([]);
+  const [newComment, setNewComment] = useState('');
 
   // Timeout de segurança para loading
   useEffect(() => {
@@ -336,7 +340,63 @@ const Brello = () => {
 
   const openCardModal = (card: BrelloCard) => {
     setSelectedCard(card);
+    setNewDescription(card.description || '');
     setShowCardModal(true);
+    loadComments(card.id);
+  };
+
+  const loadComments = async (cardId: string) => {
+    // Por enquanto, vamos simular comentários
+    // Depois pode ser implementado com Firebase
+    setComments([
+      {
+        id: '1',
+        text: 'Este é um comentário de exemplo',
+        author: 'Usuário',
+        createdAt: new Date()
+      }
+    ]);
+  };
+
+  const saveDescription = async () => {
+    if (!selectedCard) return;
+
+    try {
+      await updateDoc(doc(db, 'brelloCards', selectedCard.id), {
+        description: newDescription
+      });
+      
+      setSelectedCard({...selectedCard, description: newDescription});
+      setEditingDescription(false);
+    } catch (error) {
+      console.error('Erro ao salvar descrição:', error);
+    }
+  };
+
+  const addComment = async () => {
+    if (!selectedCard || !newComment.trim() || !currentUser) return;
+
+    try {
+      const commentData = {
+        text: newComment.trim(),
+        author: currentUser.email?.split('@')[0] || 'Usuário',
+        createdAt: new Date(),
+        cardId: selectedCard.id
+      };
+
+      await addDoc(collection(db, 'brelloComments'), commentData);
+      
+      setComments([...comments, {
+        id: Date.now().toString(),
+        text: newComment.trim(),
+        author: currentUser.email?.split('@')[0] || 'Usuário',
+        createdAt: new Date()
+      }]);
+      
+      setNewComment('');
+    } catch (error) {
+      console.error('Erro ao adicionar comentário:', error);
+    }
   };
 
   const openColumnMenu = (column: BrelloColumn) => {
@@ -879,12 +939,18 @@ const Brello = () => {
           </div>
         )}
 
-        {/* Modal do Card */}
+        {/* Modal do Card - Layout Trello */}
         {showCardModal && selectedCard && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-[#23283A] rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-start mb-6">
-                <h3 className="text-2xl font-bold text-white">{selectedCard.title}</h3>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-[#23283A] rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+              {/* Header */}
+              <div className="flex justify-between items-center p-6 border-b border-gray-600">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-[#6366F1] rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">📋</span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-white">{selectedCard.title}</h3>
+                </div>
                 <button
                   onClick={() => setShowCardModal(false)}
                   className="text-gray-400 hover:text-white text-2xl"
@@ -892,58 +958,154 @@ const Brello = () => {
                   ×
                 </button>
               </div>
-              
-              <div className="space-y-6">
-                {/* Descrição */}
-                <div>
-                  <h4 className="text-lg font-semibold text-white mb-3">Descrição</h4>
-                  {selectedCard.description ? (
-                    <p className="text-gray-300 whitespace-pre-wrap break-words bg-[#181C23] p-4 rounded-lg">
-                      {selectedCard.description}
-                    </p>
-                  ) : (
-                    <p className="text-gray-500 italic bg-[#181C23] p-4 rounded-lg">
-                      Nenhuma descrição adicionada
-                    </p>
-                  )}
+
+              {/* Content */}
+              <div className="flex flex-1 overflow-hidden">
+                {/* Left Panel - Card Details */}
+                <div className="flex-1 p-6 overflow-y-auto">
+                  <div className="space-y-6">
+                    {/* Descrição */}
+                    <div>
+                      <div className="flex justify-between items-center mb-3">
+                        <h4 className="text-lg font-semibold text-white flex items-center gap-2">
+                          <span>≡</span> Descrição
+                        </h4>
+                        {!editingDescription && (
+                          <button
+                            onClick={() => setEditingDescription(true)}
+                            className="text-[#6366F1] hover:text-[#5855EB] text-sm font-medium"
+                          >
+                            Editar
+                          </button>
+                        )}
+                      </div>
+                      
+                      {editingDescription ? (
+                        <div className="space-y-3">
+                          <textarea
+                            value={newDescription}
+                            onChange={(e) => setNewDescription(e.target.value)}
+                            className="w-full p-3 bg-[#181C23] text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366F1] min-h-[100px] resize-none"
+                            placeholder="Adicione uma descrição mais detalhada..."
+                            autoFocus
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={saveDescription}
+                              className="bg-[#6366F1] hover:bg-[#5855EB] text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                            >
+                              Salvar
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingDescription(false);
+                                setNewDescription(selectedCard.description || '');
+                              }}
+                              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-[#181C23] p-4 rounded-lg">
+                          {selectedCard.description ? (
+                            <p className="text-gray-300 whitespace-pre-wrap break-words">
+                              {selectedCard.description}
+                            </p>
+                          ) : (
+                            <p className="text-gray-500 italic">
+                              Nenhuma descrição adicionada
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Informações do Card */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-[#181C23] p-4 rounded-lg">
+                        <h5 className="text-sm font-semibold text-gray-400 mb-2">Coluna</h5>
+                        <p className="text-white">
+                          {columns.find(col => col.id === selectedCard.columnId)?.title || 'Desconhecida'}
+                        </p>
+                      </div>
+                      <div className="bg-[#181C23] p-4 rounded-lg">
+                        <h5 className="text-sm font-semibold text-gray-400 mb-2">Criado em</h5>
+                        <p className="text-white">
+                          {selectedCard.createdAt?.toDate ? 
+                            selectedCard.createdAt.toDate().toLocaleDateString('pt-BR') : 
+                            'Data não disponível'
+                          }
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Ações */}
+                    <div className="flex gap-3 pt-4 border-t border-gray-600">
+                      <button
+                        onClick={() => {
+                          confirmDelete('card', selectedCard.id, selectedCard.title);
+                          setShowCardModal(false);
+                        }}
+                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+                      >
+                        Excluir Card
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Informações do Card */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-[#181C23] p-4 rounded-lg">
-                    <h5 className="text-sm font-semibold text-gray-400 mb-2">Coluna</h5>
-                    <p className="text-white">
-                      {columns.find(col => col.id === selectedCard.columnId)?.title || 'Desconhecida'}
-                    </p>
+                {/* Right Panel - Comments */}
+                <div className="w-80 border-l border-gray-600 p-6 overflow-y-auto">
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="text-lg font-semibold text-white">Comentários e atividade</h4>
+                    <button className="text-[#6366F1] hover:text-[#5855EB] text-sm font-medium">
+                      Mostrar Detalhes
+                    </button>
                   </div>
-                  <div className="bg-[#181C23] p-4 rounded-lg">
-                    <h5 className="text-sm font-semibold text-gray-400 mb-2">Criado em</h5>
-                    <p className="text-white">
-                      {selectedCard.createdAt?.toDate ? 
-                        selectedCard.createdAt.toDate().toLocaleDateString('pt-BR') : 
-                        'Data não disponível'
-                      }
-                    </p>
-                  </div>
-                </div>
 
-                {/* Ações */}
-                <div className="flex gap-3 pt-4 border-t border-gray-600">
-                  <button
-                    onClick={() => {
-                      confirmDelete('card', selectedCard.id, selectedCard.title);
-                      setShowCardModal(false);
-                    }}
-                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
-                  >
-                    Excluir Card
-                  </button>
-                  <button
-                    onClick={() => setShowCardModal(false)}
-                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
-                  >
-                    Fechar
-                  </button>
+                  {/* Comment Input */}
+                  <div className="mb-6">
+                    <textarea
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Escrever um comentário..."
+                      className="w-full p-3 bg-[#181C23] text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366F1] resize-none min-h-[80px]"
+                    />
+                    <button
+                      onClick={addComment}
+                      disabled={!newComment.trim()}
+                      className="mt-2 bg-[#6366F1] hover:bg-[#5855EB] disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                    >
+                      Comentar
+                    </button>
+                  </div>
+
+                  {/* Comments List */}
+                  <div className="space-y-4">
+                    {comments.map((comment) => (
+                      <div key={comment.id} className="bg-[#181C23] p-4 rounded-lg">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-[#6366F1] rounded-full flex items-center justify-center text-white text-sm font-bold">
+                            {comment.author.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-white font-medium text-sm">{comment.author}</span>
+                              <span className="text-gray-400 text-xs">
+                                {comment.createdAt.toLocaleDateString('pt-BR')} {comment.createdAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                            <p className="text-gray-300 text-sm">{comment.text}</p>
+                            <button className="text-[#6366F1] hover:text-[#5855EB] text-xs mt-2">
+                              Responder
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
