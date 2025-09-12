@@ -156,7 +156,7 @@ const Brello = () => {
         console.log('Carregando membros da imobiliária:', userData.imobiliariaId);
         
         // Primeiro, vamos ver todos os usuários para debug
-        const allUsersQuery = query(collection(db, 'users'));
+        const allUsersQuery = query(collection(db, 'usuarios'));
         const allUsersSnapshot = await getDocs(allUsersQuery);
         console.log('Total de usuários na coleção:', allUsersSnapshot.docs.length);
         
@@ -167,7 +167,7 @@ const Brello = () => {
         
         // Buscar usuários da mesma imobiliária
         const usersQuery = query(
-          collection(db, 'users'),
+          collection(db, 'usuarios'),
           where('imobiliariaId', '==', userData.imobiliariaId)
         );
         
