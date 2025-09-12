@@ -131,7 +131,13 @@ const Brello = () => {
 
   // Carregar membros da equipe
   useEffect(() => {
-    if (!currentUser || !userData?.imobiliariaId) return;
+    console.log('useEffect membros - currentUser:', currentUser);
+    console.log('useEffect membros - userData:', userData);
+    
+    if (!currentUser || !userData?.imobiliariaId) {
+      console.log('Condições não atendidas para carregar membros');
+      return;
+    }
 
     const loadTeamMembers = async () => {
       try {
@@ -144,13 +150,23 @@ const Brello = () => {
         );
         
         const usersSnapshot = await getDocs(usersQuery);
-        const members = usersSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Array<{id: string, name: string, email: string}>;
+        console.log('Snapshot de usuários:', usersSnapshot.docs.length);
+        
+        const members = usersSnapshot.docs.map(doc => {
+          const data = doc.data();
+          console.log('Dados do usuário:', data);
+          return {
+            id: doc.id,
+            name: data.nome || data.name || 'Sem nome',
+            email: data.email || 'Sem email',
+            ...data
+          };
+        });
 
         console.log('Membros encontrados:', members);
-        setTeamMembers(members.filter(member => member.id !== currentUser.uid));
+        const filteredMembers = members.filter(member => member.id !== currentUser.uid);
+        console.log('Membros filtrados:', filteredMembers);
+        setTeamMembers(filteredMembers);
       } catch (error) {
         console.error('Erro ao carregar membros da equipe:', error);
       }
