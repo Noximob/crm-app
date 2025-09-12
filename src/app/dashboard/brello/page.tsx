@@ -493,16 +493,16 @@ const Brello = () => {
                                       }`}
                                     >
                                       <div className="flex justify-between items-start mb-2">
-                                        <h4 className="text-white font-medium">{card.title}</h4>
+                                        <h4 className="text-white font-medium whitespace-pre-wrap break-words">{card.title}</h4>
                                         <button
                                           onClick={() => confirmDelete('card', card.id, card.title)}
-                                          className="text-red-400 hover:text-red-300 text-sm"
+                                          className="text-red-400 hover:text-red-300 text-sm flex-shrink-0 ml-2"
                                         >
                                           ×
                                         </button>
                                       </div>
                                       {card.description && (
-                                        <p className="text-gray-400 text-sm">{card.description}</p>
+                                        <p className="text-gray-400 text-sm whitespace-pre-wrap break-words">{card.description}</p>
                                       )}
                                     </div>
                                   )}
