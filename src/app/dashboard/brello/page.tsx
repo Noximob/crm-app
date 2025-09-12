@@ -92,41 +92,62 @@ const Brello = () => {
       return;
     }
 
-    const q = query(
+    // Buscar boards próprios e compartilhados
+    const ownBoardsQuery = query(
       collection(db, 'brelloBoards'),
       where('userId', '==', currentUser.uid)
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log('onSnapshot boards - dados recebidos:', snapshot.docs.length);
-      const boardsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as BrelloBoard[];
-      
-      // Ordenar localmente por data de criação (mais recente primeiro)
-      boardsData.sort((a, b) => {
-        const aDate = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
-        const bDate = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
-        return bDate.getTime() - aDate.getTime();
-      });
-      
-      console.log('Boards carregados:', boardsData);
-      setBoards(boardsData);
-      
-      // Selecionar o primeiro board se não houver nenhum selecionado
-      if (boardsData.length > 0 && !currentBoard) {
-        console.log('Selecionando primeiro board:', boardsData[0]);
-        setCurrentBoard(boardsData[0]);
-      }
-      
-      setLoading(false);
-    }, (error) => {
-      console.error('Erro ao carregar boards:', error);
-      setLoading(false);
-    });
+    const sharedBoardsQuery = query(
+      collection(db, 'brelloBoards'),
+      where('sharedWith', 'array-contains', currentUser.uid)
+    );
 
-    return () => unsubscribe();
+    const loadBoards = async () => {
+      try {
+        // Buscar boards próprios
+        const ownBoardsSnapshot = await getDocs(ownBoardsQuery);
+        const ownBoards = ownBoardsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as BrelloBoard[];
+
+        // Buscar boards compartilhados
+        const sharedBoardsSnapshot = await getDocs(sharedBoardsQuery);
+        const sharedBoards = sharedBoardsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as BrelloBoard[];
+
+        // Combinar e remover duplicatas
+        const allBoards = [...ownBoards, ...sharedBoards];
+        const uniqueBoards = allBoards.filter((board, index, self) => 
+          index === self.findIndex(b => b.id === board.id)
+        );
+        
+        // Ordenar localmente por data de criação (mais recente primeiro)
+        uniqueBoards.sort((a, b) => {
+          const aDate = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+          const bDate = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+          return bDate.getTime() - aDate.getTime();
+        });
+        
+        console.log('Boards carregados:', uniqueBoards);
+        setBoards(uniqueBoards);
+        
+        // Selecionar o primeiro board se não houver nenhum selecionado
+        if (uniqueBoards.length > 0 && !currentBoard) {
+          console.log('Selecionando primeiro board:', uniqueBoards[0]);
+          setCurrentBoard(uniqueBoards[0]);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar boards:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBoards();
   }, [currentUser]);
 
   // Carregar membros da equipe
