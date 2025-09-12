@@ -252,15 +252,15 @@ const Brello = () => {
   const handleDragEnd = async (result: any) => {
     if (!result.destination) return;
 
-    const { source, destination, draggableId, type } = result;
+    const { source, destination, draggableId } = result;
 
     // Se moveu para a mesma posição, não faz nada
     if (source.droppableId === destination.droppableId && source.index === destination.index) {
       return;
     }
 
-    // Se for uma coluna sendo arrastada
-    if (type === 'COLUMN') {
+    // Se for uma coluna sendo arrastada (source.droppableId é "columns")
+    if (source.droppableId === 'columns') {
       const reorderedColumns = Array.from(columns);
       const [movedColumn] = reorderedColumns.splice(source.index, 1);
       reorderedColumns.splice(destination.index, 0, movedColumn);
@@ -481,7 +481,7 @@ const Brello = () => {
                         .sort((a, b) => a.order - b.order);
 
                       return (
-                        <Draggable key={column.id} draggableId={column.id} index={columnIndex} type="COLUMN">
+                        <Draggable key={column.id} draggableId={column.id} index={columnIndex}>
                           {(provided, snapshot) => (
                             <div
                               ref={provided.innerRef}
@@ -514,7 +514,7 @@ const Brello = () => {
                                       }`}
                                     >
                                       {columnCards.map((card, index) => (
-                                        <Draggable key={card.id} draggableId={card.id} index={index} type="CARD">
+                                        <Draggable key={card.id} draggableId={card.id} index={index}>
                                           {(provided, snapshot) => (
                                             <div
                                               ref={provided.innerRef}
