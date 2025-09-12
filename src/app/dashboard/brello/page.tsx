@@ -435,7 +435,7 @@ const Brello = () => {
 
         {/* Kanban Board */}
         {currentBoard && (
-          <div className="bg-[#181C23] rounded-xl p-6">
+          <div className="bg-[#181C23] rounded-xl p-6 overflow-x-auto">
             <div className="flex items-center gap-4 mb-6">
               <h2 className="text-2xl font-bold text-white">{currentBoard.title}</h2>
               <button
@@ -453,7 +453,7 @@ const Brello = () => {
             </div>
 
             <DragDropContext onDragEnd={handleDragEnd}>
-              <div className="flex gap-6 overflow-x-auto pb-4">
+              <div className="flex gap-6 overflow-x-auto pb-4 min-w-max">
                 {columns.map((column) => {
                   const columnCards = cards
                     .filter(card => card.columnId === column.id)
