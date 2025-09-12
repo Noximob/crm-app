@@ -51,6 +51,11 @@ const Brello = () => {
   const [deleteTitle, setDeleteTitle] = useState('');
   const [showCardModal, setShowCardModal] = useState(false);
   const [selectedCard, setSelectedCard] = useState<BrelloCard | null>(null);
+  const [showColumnMenu, setShowColumnMenu] = useState(false);
+  const [selectedColumn, setSelectedColumn] = useState<BrelloColumn | null>(null);
+  const [showCopyModal, setShowCopyModal] = useState(false);
+  const [showMoveModal, setShowMoveModal] = useState(false);
+  const [targetBoardId, setTargetBoardId] = useState('');
 
   // Timeout de segurança para loading
   useEffect(() => {
@@ -334,6 +339,72 @@ const Brello = () => {
     setShowCardModal(true);
   };
 
+  const openColumnMenu = (column: BrelloColumn) => {
+    setSelectedColumn(column);
+    setShowColumnMenu(true);
+  };
+
+  const copyColumnToBoard = async () => {
+    if (!selectedColumn || !targetBoardId) return;
+
+    try {
+      // Criar nova coluna no board de destino
+      const newColumnData = {
+        title: selectedColumn.title,
+        boardId: targetBoardId,
+        order: 0,
+        createdAt: new Date()
+      };
+
+      const newColumnRef = await addDoc(collection(db, 'brelloColumns'), newColumnData);
+
+      // Copiar todos os cards da coluna
+      const columnCards = cards.filter(card => card.columnId === selectedColumn.id);
+      for (const card of columnCards) {
+        await addDoc(collection(db, 'brelloCards'), {
+          title: card.title,
+          description: card.description,
+          columnId: newColumnRef.id,
+          order: card.order,
+          createdAt: new Date()
+        });
+      }
+
+      setShowCopyModal(false);
+      setShowColumnMenu(false);
+      setSelectedColumn(null);
+      setTargetBoardId('');
+    } catch (error) {
+      console.error('Erro ao copiar coluna:', error);
+    }
+  };
+
+  const moveColumnToBoard = async () => {
+    if (!selectedColumn || !targetBoardId) return;
+
+    try {
+      // Atualizar coluna para o novo board
+      await updateDoc(doc(db, 'brelloColumns', selectedColumn.id), {
+        boardId: targetBoardId
+      });
+
+      // Atualizar todos os cards da coluna
+      const columnCards = cards.filter(card => card.columnId === selectedColumn.id);
+      for (const card of columnCards) {
+        await updateDoc(doc(db, 'brelloCards', card.id), {
+          columnId: selectedColumn.id
+        });
+      }
+
+      setShowMoveModal(false);
+      setShowColumnMenu(false);
+      setSelectedColumn(null);
+      setTargetBoardId('');
+    } catch (error) {
+      console.error('Erro ao mover coluna:', error);
+    }
+  };
+
   const executeDelete = async () => {
     if (!deleteType || !deleteId) return;
 
@@ -503,12 +574,14 @@ const Brello = () => {
                               >
                                 <div className="flex justify-between items-center mb-4">
                                   <h3 className="text-lg font-semibold text-white">{column.title}</h3>
-                                  <button
-                                    onClick={() => confirmDelete('column', column.id, column.title)}
-                                    className="text-red-400 hover:text-red-300"
-                                  >
-                                    ×
-                                  </button>
+                                  <div className="relative">
+                                    <button
+                                      onClick={() => openColumnMenu(column)}
+                                      className="text-gray-400 hover:text-white text-xl font-bold"
+                                    >
+                                      ⋯
+                                    </button>
+                                  </div>
                                 </div>
 
                                 <Droppable droppableId={column.id} type="CARD">
@@ -665,6 +738,138 @@ const Brello = () => {
                 </button>
                 <button
                   onClick={() => setShowNewCardModal(false)}
+                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Menu da Coluna */}
+        {showColumnMenu && selectedColumn && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-[#23283A] rounded-lg p-6 w-80">
+              <h3 className="text-xl font-semibold text-white mb-4">Opções da Coluna</h3>
+              <p className="text-gray-300 mb-6">"{selectedColumn.title}"</p>
+              
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    setShowColumnMenu(false);
+                    setShowCopyModal(true);
+                  }}
+                  className="w-full bg-[#6366F1] hover:bg-[#5855EB] text-white py-3 rounded-lg transition-colors text-left px-4"
+                >
+                  📋 Copiar para outro Board
+                </button>
+                <button
+                  onClick={() => {
+                    setShowColumnMenu(false);
+                    setShowMoveModal(true);
+                  }}
+                  className="w-full bg-[#10B981] hover:bg-[#059669] text-white py-3 rounded-lg transition-colors text-left px-4"
+                >
+                  📦 Mover para outro Board
+                </button>
+                <button
+                  onClick={() => {
+                    setShowColumnMenu(false);
+                    confirmDelete('column', selectedColumn.id, selectedColumn.title);
+                  }}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg transition-colors text-left px-4"
+                >
+                  🗑️ Excluir Coluna
+                </button>
+              </div>
+              
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowColumnMenu(false);
+                    setSelectedColumn(null);
+                  }}
+                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Copiar Coluna */}
+        {showCopyModal && selectedColumn && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-[#23283A] rounded-lg p-6 w-96">
+              <h3 className="text-xl font-semibold text-white mb-4">Copiar Coluna</h3>
+              <p className="text-gray-300 mb-4">Copiar "{selectedColumn.title}" para qual board?</p>
+              
+              <select
+                value={targetBoardId}
+                onChange={(e) => setTargetBoardId(e.target.value)}
+                className="w-full p-3 bg-[#181C23] text-white rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-[#6366F1]"
+              >
+                <option value="">Selecione um board</option>
+                {boards.filter(board => board.id !== currentBoard?.id).map(board => (
+                  <option key={board.id} value={board.id}>{board.title}</option>
+                ))}
+              </select>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={copyColumnToBoard}
+                  disabled={!targetBoardId}
+                  className="flex-1 bg-[#6366F1] hover:bg-[#5855EB] disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-2 rounded-lg transition-colors"
+                >
+                  Copiar
+                </button>
+                <button
+                  onClick={() => {
+                    setShowCopyModal(false);
+                    setTargetBoardId('');
+                  }}
+                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Mover Coluna */}
+        {showMoveModal && selectedColumn && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-[#23283A] rounded-lg p-6 w-96">
+              <h3 className="text-xl font-semibold text-white mb-4">Mover Coluna</h3>
+              <p className="text-gray-300 mb-4">Mover "{selectedColumn.title}" para qual board?</p>
+              
+              <select
+                value={targetBoardId}
+                onChange={(e) => setTargetBoardId(e.target.value)}
+                className="w-full p-3 bg-[#181C23] text-white rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+              >
+                <option value="">Selecione um board</option>
+                {boards.filter(board => board.id !== currentBoard?.id).map(board => (
+                  <option key={board.id} value={board.id}>{board.title}</option>
+                ))}
+              </select>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={moveColumnToBoard}
+                  disabled={!targetBoardId}
+                  className="flex-1 bg-[#10B981] hover:bg-[#059669] disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-2 rounded-lg transition-colors"
+                >
+                  Mover
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMoveModal(false);
+                    setTargetBoardId('');
+                  }}
                   className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
                 >
                   Cancelar
