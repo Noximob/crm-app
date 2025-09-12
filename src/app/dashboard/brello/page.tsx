@@ -133,15 +133,26 @@ const Brello = () => {
   useEffect(() => {
     console.log('useEffect membros - currentUser:', currentUser);
     console.log('useEffect membros - userData:', userData);
+    console.log('userData?.imobiliariaId:', userData?.imobiliariaId);
     
     if (!currentUser || !userData?.imobiliariaId) {
-      console.log('Condições não atendidas para carregar membros');
+      console.log('Condições não atendidas para carregar membros - currentUser:', !!currentUser, 'userData:', !!userData, 'imobiliariaId:', userData?.imobiliariaId);
       return;
     }
 
     const loadTeamMembers = async () => {
       try {
         console.log('Carregando membros da imobiliária:', userData.imobiliariaId);
+        
+        // Primeiro, vamos ver todos os usuários para debug
+        const allUsersQuery = query(collection(db, 'users'));
+        const allUsersSnapshot = await getDocs(allUsersQuery);
+        console.log('Total de usuários na coleção:', allUsersSnapshot.docs.length);
+        
+        allUsersSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          console.log(`Usuário ${doc.id}:`, data);
+        });
         
         // Buscar usuários da mesma imobiliária
         const usersQuery = query(
@@ -150,7 +161,7 @@ const Brello = () => {
         );
         
         const usersSnapshot = await getDocs(usersQuery);
-        console.log('Snapshot de usuários:', usersSnapshot.docs.length);
+        console.log('Snapshot de usuários com imobiliariaId:', usersSnapshot.docs.length);
         
         const members = usersSnapshot.docs.map(doc => {
           const data = doc.data();
