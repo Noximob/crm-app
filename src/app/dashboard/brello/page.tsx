@@ -667,6 +667,21 @@ const Brello = () => {
           sharedWith: [],
           imobiliariaId: userData?.imobiliariaId
         });
+        
+        // Atualizar estado local
+        setBoards(prevBoards => 
+          prevBoards.map(board => 
+            board.id === selectedBoard.id 
+              ? { ...board, isShared: false, sharedWith: [] }
+              : board
+          )
+        );
+        
+        // Atualizar board atual se for o mesmo
+        if (currentBoard?.id === selectedBoard.id) {
+          setCurrentBoard(prev => prev ? { ...prev, isShared: false, sharedWith: [] } : null);
+        }
+        
         alert('Compartilhamento removido!');
       } else {
         // Se há membros selecionados, atualizar compartilhamento
@@ -675,6 +690,21 @@ const Brello = () => {
           sharedWith: selectedMembers,
           imobiliariaId: userData?.imobiliariaId
         });
+        
+        // Atualizar estado local
+        setBoards(prevBoards => 
+          prevBoards.map(board => 
+            board.id === selectedBoard.id 
+              ? { ...board, isShared: true, sharedWith: selectedMembers }
+              : board
+          )
+        );
+        
+        // Atualizar board atual se for o mesmo
+        if (currentBoard?.id === selectedBoard.id) {
+          setCurrentBoard(prev => prev ? { ...prev, isShared: true, sharedWith: selectedMembers } : null);
+        }
+        
         alert('Board compartilhado com sucesso!');
       }
 
