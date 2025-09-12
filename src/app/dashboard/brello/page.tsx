@@ -648,6 +648,12 @@ const Brello = () => {
     setShowBoardMenu(true);
   };
 
+  const openShareModal = (board: BrelloBoard) => {
+    setSelectedBoard(board);
+    setSelectedMembers(board.sharedWith || []);
+    setShowShareModal(true);
+  };
+
   const shareBoard = async () => {
     if (!selectedBoard || !currentUser || selectedMembers.length === 0) return;
 
@@ -1162,7 +1168,7 @@ const Brello = () => {
                   <button
                     onClick={() => {
                       setShowBoardMenu(false);
-                      setShowShareModal(true);
+                      openShareModal(selectedBoard);
                     }}
                     className="w-full bg-[#6366F1] hover:bg-[#5855EB] text-white py-3 rounded-lg transition-colors text-left px-4"
                   >
