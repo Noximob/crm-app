@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { db, storage } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 
 interface BrelloCard {
@@ -62,6 +63,8 @@ const Brello = () => {
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
+  const [attachments, setAttachments] = useState<Array<{id: string, name: string, url: string, type: string, size: number}>>([]);
+  const [uploading, setUploading] = useState(false);
 
   // Timeout de segurança para loading
   useEffect(() => {
@@ -345,12 +348,98 @@ const Brello = () => {
     setNewDescription(card.description || '');
     setShowCardModal(true);
     loadComments(card.id);
+    loadAttachments(card.id);
   };
 
   const loadComments = async (cardId: string) => {
     // Por enquanto, vamos simular comentários
     // Depois pode ser implementado com Firebase
     setComments([]);
+  };
+
+  const loadAttachments = async (cardId: string) => {
+    // Por enquanto, vamos simular anexos
+    // Depois pode ser implementado com Firebase
+    setAttachments([]);
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedCard || !currentUser) return;
+
+    setUploading(true);
+    try {
+      // Criar referência no Firebase Storage
+      const fileRef = ref(storage, `brello-attachments/${selectedCard.id}/${Date.now()}-${file.name}`);
+      
+      // Upload do arquivo
+      await uploadBytes(fileRef, file);
+      
+      // Obter URL de download
+      const downloadURL = await getDownloadURL(fileRef);
+      
+      // Salvar informações do anexo no Firestore
+      const attachmentData = {
+        name: file.name,
+        url: downloadURL,
+        type: file.type,
+        size: file.size,
+        cardId: selectedCard.id,
+        uploadedBy: currentUser.uid,
+        uploadedAt: new Date()
+      };
+
+      await addDoc(collection(db, 'brelloAttachments'), attachmentData);
+      
+      // Atualizar estado local
+      setAttachments([...attachments, {
+        id: Date.now().toString(),
+        name: file.name,
+        url: downloadURL,
+        type: file.type,
+        size: file.size
+      }]);
+      
+    } catch (error) {
+      console.error('Erro ao fazer upload do arquivo:', error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const deleteAttachment = async (attachmentId: string, fileName: string) => {
+    try {
+      // Deletar do Firestore
+      await deleteDoc(doc(db, 'brelloAttachments', attachmentId));
+      
+      // Deletar do Storage
+      const fileRef = ref(storage, `brello-attachments/${selectedCard?.id}/${fileName}`);
+      await deleteObject(fileRef);
+      
+      // Atualizar estado local
+      setAttachments(attachments.filter(att => att.id !== attachmentId));
+    } catch (error) {
+      console.error('Erro ao deletar anexo:', error);
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const getFileIcon = (type: string) => {
+    if (type.startsWith('image/')) return '🖼️';
+    if (type.startsWith('video/')) return '🎥';
+    if (type.startsWith('audio/')) return '🎵';
+    if (type.includes('pdf')) return '📄';
+    if (type.includes('word') || type.includes('document')) return '📝';
+    if (type.includes('excel') || type.includes('spreadsheet')) return '📊';
+    if (type.includes('powerpoint') || type.includes('presentation')) return '📈';
+    return '📎';
   };
 
   const saveDescription = async () => {
@@ -1006,12 +1095,22 @@ const Brello = () => {
                         <div className="flex items-center gap-3">
                           {!editingDescription && (
                             <>
-                              <button className="text-gray-400 hover:text-white text-lg">
-                                📎
-                              </button>
-                              <button className="text-gray-400 hover:text-white text-sm">
-                                Anexar
-                              </button>
+                              <input
+                                type="file"
+                                id="file-upload"
+                                onChange={handleFileUpload}
+                                className="hidden"
+                                accept="*/*"
+                                disabled={uploading}
+                              />
+                              <label htmlFor="file-upload" className="cursor-pointer">
+                                <span className="text-gray-400 hover:text-white text-lg">📎</span>
+                              </label>
+                              <label htmlFor="file-upload" className="cursor-pointer">
+                                <span className="text-gray-400 hover:text-white text-sm">
+                                  {uploading ? 'Enviando...' : 'Anexar'}
+                                </span>
+                              </label>
                               <button
                                 onClick={() => setEditingDescription(true)}
                                 className="text-[#6366F1] hover:text-[#5855EB] text-sm font-medium"
@@ -1064,6 +1163,44 @@ const Brello = () => {
                         </div>
                       )}
                     </div>
+
+                    {/* Anexos */}
+                    {attachments.length > 0 && (
+                      <div>
+                        <h4 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                          <span>📎</span> Anexos
+                        </h4>
+                        <div className="space-y-2">
+                          {attachments.map((attachment) => (
+                            <div key={attachment.id} className="bg-[#181C23] p-3 rounded-lg flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <span className="text-2xl">{getFileIcon(attachment.type)}</span>
+                                <div>
+                                  <p className="text-white text-sm font-medium">{attachment.name}</p>
+                                  <p className="text-gray-400 text-xs">{formatFileSize(attachment.size)}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <a
+                                  href={attachment.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[#6366F1] hover:text-[#5855EB] text-sm"
+                                >
+                                  Abrir
+                                </a>
+                                <button
+                                  onClick={() => deleteAttachment(attachment.id, attachment.name)}
+                                  className="text-red-400 hover:text-red-300 text-sm"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Ações */}
                     <div className="flex gap-3 pt-4 border-t border-gray-600">
