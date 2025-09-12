@@ -57,6 +57,8 @@ const Brello = () => {
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [targetBoardId, setTargetBoardId] = useState('');
+  const [showBoardMenu, setShowBoardMenu] = useState(false);
+  const [selectedBoard, setSelectedBoard] = useState<BrelloBoard | null>(null);
   const [editingDescription, setEditingDescription] = useState(false);
   const [newDescription, setNewDescription] = useState('');
   const [comments, setComments] = useState<Array<{id: string, text: string, author: string, createdAt: any, replies?: Array<{id: string, text: string, author: string, createdAt: any}>}>>([]);
@@ -526,6 +528,11 @@ const Brello = () => {
     setShowColumnMenu(true);
   };
 
+  const openBoardMenu = (board: BrelloBoard) => {
+    setSelectedBoard(board);
+    setShowBoardMenu(true);
+  };
+
   const copyColumnToBoard = async () => {
     if (!selectedColumn || !targetBoardId) return;
 
@@ -683,7 +690,7 @@ const Brello = () => {
               {boards.map((board) => (
                 <div
                   key={board.id}
-                  className={`p-4 rounded-lg cursor-pointer transition-colors ${
+                  className={`p-4 rounded-lg cursor-pointer transition-colors relative ${
                     currentBoard?.id === board.id
                       ? 'bg-[#6366F1] text-white'
                       : 'bg-[#23283A] text-gray-300 hover:bg-[#2A2F42]'
@@ -695,11 +702,11 @@ const Brello = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        confirmDelete('board', board.id, board.title);
+                        openBoardMenu(board);
                       }}
-                      className="text-red-400 hover:text-red-300 ml-2"
+                      className="text-gray-400 hover:text-white ml-2 p-1"
                     >
-                      ×
+                      ⋯
                     </button>
                   </div>
                 </div>
@@ -971,6 +978,50 @@ const Brello = () => {
                   onClick={() => {
                     setShowColumnMenu(false);
                     setSelectedColumn(null);
+                  }}
+                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Menu do Board */}
+        {showBoardMenu && selectedBoard && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-[#23283A] rounded-lg p-6 w-80">
+              <h3 className="text-xl font-semibold text-white mb-4">Opções do Board</h3>
+              <p className="text-gray-300 mb-6">"{selectedBoard.title}"</p>
+              
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    setShowBoardMenu(false);
+                    // TODO: Implementar compartilhar board
+                    alert('Funcionalidade de compartilhar será implementada em breve!');
+                  }}
+                  className="w-full bg-[#6366F1] hover:bg-[#5855EB] text-white py-3 rounded-lg transition-colors text-left px-4"
+                >
+                  👥 Compartilhar Board
+                </button>
+                <button
+                  onClick={() => {
+                    setShowBoardMenu(false);
+                    confirmDelete('board', selectedBoard.id, selectedBoard.title);
+                  }}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg transition-colors text-left px-4"
+                >
+                  🗑️ Excluir Board
+                </button>
+              </div>
+              
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowBoardMenu(false);
+                    setSelectedBoard(null);
                   }}
                   className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
                 >
