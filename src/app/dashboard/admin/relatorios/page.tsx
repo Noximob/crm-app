@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, doc, getDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, where, doc, onSnapshot } from 'firebase/firestore';
 import { PIPELINE_STAGES } from '@/lib/constants';
 
 type PeriodKey = 'hoje' | 'semana' | 'mes' | 'custom';
@@ -33,6 +33,14 @@ interface MetaDoc {
   valor?: number;
   alcancado?: number;
   percentual?: number;
+}
+
+interface AvisoDestaque {
+  id: string;
+  titulo: string;
+  mensagem: string;
+  dataInicio?: any;
+  dataFim?: any;
 }
 
 // --- Helpers de data ---
@@ -70,6 +78,15 @@ function getPeriodBounds(period: PeriodKey, customStart?: string, customEnd?: st
   return { start, end };
 }
 
+function getPreviousPeriodBounds(period: PeriodKey, currentStart: Date, currentEnd: Date): { start: Date; end: Date } {
+  const msPeriod = currentEnd.getTime() - currentStart.getTime();
+  const end = new Date(currentStart.getTime() - 1);
+  end.setHours(23, 59, 59, 999);
+  const start = new Date(end.getTime() - msPeriod);
+  start.setHours(0, 0, 0, 0);
+  return { start, end };
+}
+
 function leadCreatedAt(lead: LeadRaw): Date | null {
   const t = lead.createdAt;
   if (t == null) return null;
@@ -98,6 +115,15 @@ const TrophyIcon = (p: React.SVGProps<SVGSVGElement>) => (
 const TargetIcon = (p: React.SVGProps<SVGSVGElement>) => (
   <svg {...p} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
 );
+const TrendUpIcon = (p: React.SVGProps<SVGSVGElement>) => (
+  <svg {...p} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+);
+const TrendDownIcon = (p: React.SVGProps<SVGSVGElement>) => (
+  <svg {...p} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"/></svg>
+);
+const MegaphoneIcon = (p: React.SVGProps<SVGSVGElement>) => (
+  <svg {...p} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
+);
 
 const ETAPAS_QUENTES = ['Negociação e Proposta', 'Contrato e fechamento', 'Pós Venda e Fidelização'];
 
@@ -106,6 +132,7 @@ export default function RelatoriosAdminPage() {
   const [leads, setLeads] = useState<LeadRaw[]>([]);
   const [corretores, setCorretores] = useState<Corretor[]>([]);
   const [meta, setMeta] = useState<MetaDoc | null>(null);
+  const [avisos, setAvisos] = useState<AvisoDestaque[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<PeriodKey>('mes');
   const [customStart, setCustomStart] = useState('');
@@ -114,35 +141,76 @@ export default function RelatoriosAdminPage() {
 
   const imobiliariaId = userData?.imobiliariaId;
 
+  // Tempo real: leads, corretores e metas atualizam sozinhos
   useEffect(() => {
     if (!imobiliariaId) {
       setLoading(false);
       return;
     }
 
-    const load = async () => {
-      setLoading(true);
-      try {
-        const [leadsSnap, usersSnap, metaSnap] = await Promise.all([
-          getDocs(query(collection(db, 'leads'), where('imobiliariaId', '==', imobiliariaId))),
-          getDocs(query(collection(db, 'usuarios'), where('imobiliariaId', '==', imobiliariaId), where('aprovado', '==', true))),
-          getDoc(doc(db, 'metas', imobiliariaId)),
-        ]);
+    let resolved = 0;
+    const maybeDone = () => {
+      resolved++;
+      if (resolved >= 4) setLoading(false);
+    };
 
-        setLeads(leadsSnap.docs.map(d => ({ id: d.id, ...d.data() } as LeadRaw)));
-        setCorretores(usersSnap.docs.map(d => {
+    const unsubLeads = onSnapshot(
+      query(collection(db, 'leads'), where('imobiliariaId', '==', imobiliariaId)),
+      (snap) => {
+        setLeads(snap.docs.map(d => ({ id: d.id, ...d.data() } as LeadRaw)));
+        maybeDone();
+      },
+      (e) => {
+        console.error(e);
+        maybeDone();
+      }
+    );
+
+    const unsubUsers = onSnapshot(
+      query(collection(db, 'usuarios'), where('imobiliariaId', '==', imobiliariaId), where('aprovado', '==', true)),
+      (snap) => {
+        setCorretores(snap.docs.map(d => {
           const data = d.data() as any;
           return { id: d.id, nome: data.nome || 'Sem nome', email: data.email, tipoConta: data.tipoConta };
         }));
-        setMeta(metaSnap.exists() ? (metaSnap.data() as MetaDoc) : null);
-      } catch (e) {
+        maybeDone();
+      },
+      (e) => {
         console.error(e);
-      } finally {
-        setLoading(false);
+        maybeDone();
       }
-    };
+    );
 
-    load();
+    const unsubMeta = onSnapshot(
+      doc(db, 'metas', imobiliariaId),
+      (snap) => {
+        setMeta(snap.exists() ? (snap.data() as MetaDoc) : null);
+        maybeDone();
+      },
+      (e) => {
+        console.error(e);
+        maybeDone();
+      }
+    );
+
+    const unsubAvisos = onSnapshot(
+      query(collection(db, 'avisosImportantes'), where('imobiliariaId', '==', imobiliariaId)),
+      (snap) => {
+        setAvisos(snap.docs.map(d => ({ id: d.id, ...d.data() } as AvisoDestaque)));
+        maybeDone();
+      },
+      (e) => {
+        console.error(e);
+        maybeDone();
+      }
+    );
+
+    return () => {
+      unsubLeads();
+      unsubUsers();
+      unsubMeta();
+      unsubAvisos();
+    };
   }, [imobiliariaId]);
 
   const { start, end } = useMemo(() => getPeriodBounds(period, customStart, customEnd), [period, customStart, customEnd]);
@@ -251,6 +319,53 @@ export default function RelatoriosAdminPage() {
     return rows.sort((a, b) => b.totalLeads - a.totalLeads);
   }, [corretores, leads, start, end]);
 
+  const { start: startAnt, end: endAnt } = useMemo(() => getPreviousPeriodBounds(period, start, end), [period, start, end]);
+
+  const novosNoPeriodoAnterior = useMemo(() => leads.filter(l => isInPeriod(leadCreatedAt(l), startAnt, endAnt)).length, [leads, startAnt, endAnt]);
+
+  const comparativoNovos = useMemo(() => {
+    const atual = leadsNoPeriodoCorporativo.length;
+    if (novosNoPeriodoAnterior === 0) return atual > 0 ? { diff: 100, label: '+' } : { diff: 0, label: null };
+    const diff = Math.round(((atual - novosNoPeriodoAnterior) / novosNoPeriodoAnterior) * 100);
+    return { diff, label: diff >= 0 ? '+' : '' };
+  }, [leadsNoPeriodoCorporativo.length, novosNoPeriodoAnterior]);
+
+  const destaquePeriodo = useMemo(() => {
+    const first = ranking[0];
+    if (!first || first.userId === '_sem_corretor_') return null;
+    return { nome: first.nome, count: first.count };
+  }, [ranking]);
+
+  const fraseResumo = useMemo(() => {
+    const total = filteredLeads.length;
+    const novos = leadsNoPeriodo.length;
+    const quentes = filteredLeads.filter(l => ETAPAS_QUENTES.includes(l.etapa || '')).length;
+    const ativos = new Set(filteredLeads.map(l => l.userId).filter(Boolean)).size;
+    return `Neste período: ${total} leads no funil, ${novos} novos, ${quentes} em negociação e ${ativos} corretores ativos.`;
+  }, [filteredLeads, leadsNoPeriodo, start, end]);
+
+  const origemQueConverte = useMemo(() => {
+    const quentes = filteredLeads.filter(l => ETAPAS_QUENTES.includes(l.etapa || ''));
+    const porOrigem: Record<string, number> = {};
+    quentes.forEach(l => {
+      const o = l.origem || l.origemTipo || 'Não informado';
+      porOrigem[o] = (porOrigem[o] || 0) + 1;
+    });
+    const ent = Object.entries(porOrigem).sort((a, b) => b[1] - a[1])[0];
+    return ent ? { origem: ent[0], count: ent[1] } : null;
+  }, [filteredLeads]);
+
+  const avisoEmDestaque = useMemo(() => {
+    const tNow = Date.now();
+    const vigentes = avisos.filter(a => {
+      const ini = a.dataInicio?.toDate?.() ?? a.dataInicio;
+      const fim = a.dataFim?.toDate?.() ?? a.dataFim;
+      if (ini && fim) return new Date(ini).getTime() <= tNow && tNow <= new Date(fim).getTime();
+      return true;
+    });
+    return vigentes.length > 0 ? vigentes[vigentes.length - 1] : null;
+  }, [avisos]);
+
   if (!imobiliariaId) {
     return (
       <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4 flex items-center justify-center">
@@ -267,7 +382,7 @@ export default function RelatoriosAdminPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-[#2E2F38] dark:text-white">Relatórios</h1>
-            <p className="text-[#6B6F76] dark:text-gray-300 mt-1">Visão macro para dashboards e TV</p>
+            <p className="text-[#6B6F76] dark:text-gray-300 mt-1">Storytelling por corretor · Atualização em tempo real</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <select
@@ -312,6 +427,41 @@ export default function RelatoriosAdminPage() {
               </span>
             </div>
 
+            {/* Frase de resumo + Destaque + Origem que converte */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+              <div className="lg:col-span-2 p-4 rounded-xl bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A]">
+                <p className="text-sm text-[#2E2F38] dark:text-gray-200 leading-relaxed">{fraseResumo}</p>
+              </div>
+              <div className="flex flex-col gap-3">
+                {destaquePeriodo && (
+                  <div className="p-4 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/30">
+                    <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide">Destaque do período</p>
+                    <p className="text-base font-bold text-[#2E2F38] dark:text-white mt-0.5">{destaquePeriodo.nome}</p>
+                    <p className="text-sm text-[#6B6F76] dark:text-gray-400">{destaquePeriodo.count} novos leads</p>
+                  </div>
+                )}
+                {origemQueConverte && (
+                  <div className="p-4 rounded-xl bg-[#3AC17C]/10 dark:bg-[#3AC17C]/20 border border-[#3AC17C]/30">
+                    <p className="text-xs font-semibold text-[#3AC17C] uppercase tracking-wide">Origem que mais converte</p>
+                    <p className="text-base font-bold text-[#2E2F38] dark:text-white mt-0.5">{origemQueConverte.origem}</p>
+                    <p className="text-sm text-[#6B6F76] dark:text-gray-400">{origemQueConverte.count} em negociação</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Aviso em destaque */}
+            {avisoEmDestaque && (
+              <div className="mb-6 p-4 rounded-xl bg-[#3478F6]/10 dark:bg-[#3478F6]/20 border border-[#3478F6]/30 flex items-start gap-3">
+                <MegaphoneIcon className="w-5 h-5 text-[#3478F6] shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-semibold text-[#3478F6] uppercase tracking-wide">Aviso em destaque</p>
+                  <p className="font-semibold text-[#2E2F38] dark:text-white mt-0.5">{avisoEmDestaque.titulo}</p>
+                  <p className="text-sm text-[#6B6F76] dark:text-gray-300 mt-1 line-clamp-2">{avisoEmDestaque.mensagem}</p>
+                </div>
+              </div>
+            )}
+
             {/* Cards macro */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               <div className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-5 shadow-sm">
@@ -326,9 +476,17 @@ export default function RelatoriosAdminPage() {
               <div className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-5 shadow-sm">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-[#3AC17C]/10 text-[#3AC17C]"><ChartIcon className="w-5 h-5" /></div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm text-[#6B6F76] dark:text-gray-400">Novos no período</p>
-                    <p className="text-2xl font-bold text-[#2E2F38] dark:text-white">{totaisCards.novosNoPeriodo}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-2xl font-bold text-[#2E2F38] dark:text-white">{totaisCards.novosNoPeriodo}</p>
+                      {period !== 'custom' && !corretorFilter && comparativoNovos.label != null && (
+                        <span className={`inline-flex items-center gap-0.5 text-xs font-semibold ${comparativoNovos.diff >= 0 ? 'text-[#3AC17C]' : 'text-red-500'}`}>
+                          {comparativoNovos.diff >= 0 ? <TrendUpIcon className="w-3.5 h-3.5" /> : <TrendDownIcon className="w-3.5 h-3.5" />}
+                          {comparativoNovos.label}{comparativoNovos.diff}% vs período anterior
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -352,60 +510,7 @@ export default function RelatoriosAdminPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-              {/* Funil por etapa */}
-              <div className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-sm">
-                <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                  <ChartIcon className="w-5 h-5 text-[#3478F6]" />
-                  Funil de vendas {corretorFilter && <span className="text-sm font-normal text-[#6B6F76] dark:text-gray-400">(individual)</span>}
-                </h2>
-                <div className="space-y-3">
-                  {PIPELINE_STAGES.map((etapa, i) => {
-                    const qtd = porEtapa[etapa] ?? 0;
-                    const max = Math.max(...Object.values(porEtapa), 1);
-                    const pct = max ? Math.round((qtd / max) * 100) : 0;
-                    return (
-                      <div key={etapa}>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-[#2E2F38] dark:text-gray-200 truncate pr-2">{etapa}</span>
-                          <span className="font-semibold text-[#3478F6] whitespace-nowrap">{qtd}</span>
-                        </div>
-                        <div className="h-2 bg-[#E8E9F1] dark:bg-[#181C23] rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] rounded-full transition-all" style={{ width: `${pct}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Por origem */}
-              <div className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-sm">
-                <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                  <ChartIcon className="w-5 h-5 text-[#3478F6]" />
-                  Por origem do lead {corretorFilter && <span className="text-sm font-normal text-[#6B6F76] dark:text-gray-400">(individual)</span>}
-                </h2>
-                <div className="space-y-2">
-                  {Object.entries(porOrigem)
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([origem, qtd]) => {
-                      const total = filteredLeads.length || 1;
-                      const pct = Math.round((qtd / total) * 100);
-                      return (
-                        <div key={origem} className="flex justify-between items-center py-1.5 border-b border-[#E8E9F1] dark:border-[#23283A] last:border-0">
-                          <span className="text-[#2E2F38] dark:text-gray-200">{origem}</span>
-                          <span className="font-semibold text-[#3478F6]">{qtd} ({pct}%)</span>
-                        </div>
-                      );
-                    })}
-                  {Object.keys(porOrigem).length === 0 && (
-                    <p className="text-[#6B6F76] dark:text-gray-400 text-sm">Nenhum lead no filtro ou origem não preenchida.</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Ranking + Metas na mesma linha */}
+            {/* Ranking + Funil: quem traz e onde estão (storytelling) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
               <div className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-sm">
                 <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
@@ -429,51 +534,38 @@ export default function RelatoriosAdminPage() {
 
               <div className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-sm">
                 <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                  <TargetIcon className="w-5 h-5 text-[#3478F6]" />
-                  Metas (corporativo)
+                  <ChartIcon className="w-5 h-5 text-[#3478F6]" />
+                  Funil de vendas {corretorFilter && <span className="text-sm font-normal text-[#6B6F76] dark:text-gray-400">(individual)</span>}
                 </h2>
-                {meta ? (
-                  <div className="space-y-4">
-                    {(meta.inicio || meta.fim) && (
-                      <p className="text-sm text-[#6B6F76] dark:text-gray-400">
-                        Período: {meta.inicio ? formatDate(new Date(meta.inicio)) : '–'} a {meta.fim ? formatDate(new Date(meta.fim)) : '–'}
-                      </p>
-                    )}
-                    <div className="flex justify-between text-sm">
-                      <span>VGV meta</span>
-                      <span className="font-semibold">R$ {meta.valor != null ? meta.valor.toLocaleString('pt-BR') : '–'}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>VGV realizado</span>
-                      <span className="font-semibold text-[#3AC17C]">R$ {meta.alcancado != null ? meta.alcancado.toLocaleString('pt-BR') : '–'}</span>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>% alcançado</span>
-                        <span className="font-bold text-[#3478F6]">{meta.percentual ?? 0}%</span>
+                <div className="space-y-3">
+                  {PIPELINE_STAGES.map((etapa) => {
+                    const qtd = porEtapa[etapa] ?? 0;
+                    const max = Math.max(...Object.values(porEtapa), 1);
+                    const pct = max ? Math.round((qtd / max) * 100) : 0;
+                    return (
+                      <div key={etapa}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-[#2E2F38] dark:text-gray-200 truncate pr-2">{etapa}</span>
+                          <span className="font-semibold text-[#3478F6] whitespace-nowrap">{qtd}</span>
+                        </div>
+                        <div className="h-2 bg-[#E8E9F1] dark:bg-[#181C23] rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] rounded-full transition-all" style={{ width: `${pct}%` }} />
+                        </div>
                       </div>
-                      <div className="h-3 bg-[#E8E9F1] dark:bg-[#181C23] rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all ${(meta.percentual ?? 0) >= 100 ? 'bg-[#3AC17C]' : 'bg-[#3478F6]'}`}
-                          style={{ width: `${Math.min(meta.percentual ?? 0, 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-[#6B6F76] dark:text-gray-400 text-sm">Configure a meta em Admin → Metas.</p>
-                )}
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
-            {/* Tabela por corretor — sempre corporativa, dados reais */}
+            {/* Tabela por corretor — centro do storytelling */}
             <div className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-sm mb-8 overflow-x-auto">
               <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
                 <UsersIcon className="w-5 h-5 text-[#3478F6]" />
                 Por corretor (visão corporativa)
               </h2>
               <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-4">
-                Todos os corretores aprovados da imobiliária com métricas reais. A soma da coluna &quot;Total leads&quot; confere com o card corporativo.
+                Entenda cada corretor: totais, novos no período, quentes e principal origem. A soma confere com o card corporativo.
               </p>
               <table className="w-full text-sm">
                 <thead>
@@ -512,6 +604,69 @@ export default function RelatoriosAdminPage() {
               {tabelaPorCorretor.length === 0 && (
                 <p className="text-[#6B6F76] dark:text-gray-400 text-sm py-4">Nenhum corretor aprovado na imobiliária.</p>
               )}
+            </div>
+
+            {/* Metas (corporativo) + Por origem (secundário) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+              <div className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-sm">
+                <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
+                  <TargetIcon className="w-5 h-5 text-[#3478F6]" />
+                  Metas (corporativo)
+                </h2>
+                {meta ? (
+                  <div className="space-y-4">
+                    {(meta.inicio || meta.fim) && (
+                      <p className="text-sm text-[#6B6F76] dark:text-gray-400">
+                        Período: {meta.inicio ? formatDate(new Date(meta.inicio)) : '–'} a {meta.fim ? formatDate(new Date(meta.fim)) : '–'}
+                      </p>
+                    )}
+                    <div className="flex justify-between text-sm">
+                      <span>VGV meta</span>
+                      <span className="font-semibold">R$ {meta.valor != null ? meta.valor.toLocaleString('pt-BR') : '–'}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>VGV realizado</span>
+                      <span className="font-semibold text-[#3AC17C]">R$ {meta.alcancado != null ? meta.alcancado.toLocaleString('pt-BR') : '–'}</span>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>% alcançado</span>
+                        <span className="font-bold text-[#3478F6]">{meta.percentual ?? 0}%</span>
+                      </div>
+                      <div className="h-3 bg-[#E8E9F1] dark:bg-[#181C23] rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${(meta.percentual ?? 0) >= 100 ? 'bg-[#3AC17C]' : 'bg-[#3478F6]'}`}
+                          style={{ width: `${Math.min(meta.percentual ?? 0, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[#6B6F76] dark:text-gray-400 text-sm">Configure a meta em Admin → Metas.</p>
+                )}
+              </div>
+
+              {/* Por origem — secundário, detalhe */}
+              <div className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-4 shadow-sm">
+                <h3 className="text-sm font-semibold text-[#6B6F76] dark:text-gray-400 mb-3">Por origem do lead {corretorFilter && <span className="font-normal">(individual)</span>}</h3>
+                <div className="space-y-1.5 text-sm">
+                  {Object.entries(porOrigem)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([origem, qtd]) => {
+                      const total = filteredLeads.length || 1;
+                      const pct = Math.round((qtd / total) * 100);
+                      return (
+                        <div key={origem} className="flex justify-between items-center py-1">
+                          <span className="text-[#2E2F38] dark:text-gray-200 truncate pr-2">{origem}</span>
+                          <span className="font-medium text-[#3478F6] text-xs shrink-0">{qtd} ({pct}%)</span>
+                        </div>
+                      );
+                    })}
+                  {Object.keys(porOrigem).length === 0 && (
+                    <p className="text-[#6B6F76] dark:text-gray-400 text-xs">Nenhum lead no filtro.</p>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="bg-[#3478F6]/10 dark:bg-[#3478F6]/20 border border-[#3478F6]/30 rounded-xl p-4 text-center">
