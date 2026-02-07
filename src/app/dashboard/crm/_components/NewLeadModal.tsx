@@ -6,6 +6,9 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { PIPELINE_STAGES } from '@/lib/constants';
 
+const ORIGEM_OPCOES = ['Networking', 'Ligação', 'Ação de rua', 'Disparo de msg', 'Outros'] as const;
+type OrigemLead = typeof ORIGEM_OPCOES[number];
+
 interface NewLeadModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -23,6 +26,8 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
     const [situation, setSituation] = useState(PIPELINE_STAGES[0]);
+    const [origem, setOrigem] = useState<OrigemLead>('Networking');
+    const [origemOutros, setOrigemOutros] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -59,6 +64,10 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
             setError('Nome e Telefone são obrigatórios.');
             return;
         }
+        if (origem === 'Outros' && !origemOutros.trim()) {
+            setError('Informe a origem em "Outros".');
+            return;
+        }
         if (!currentUser) {
             setError('Você precisa estar logado para criar um lead.');
             return;
@@ -66,6 +75,8 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
 
         setIsLoading(true);
         setError('');
+
+        const origemFinal = origem === 'Outros' ? origemOutros.trim() : origem;
 
         try {
             // Salva na coleção principal 'leads'
@@ -75,10 +86,12 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
                 imobiliariaId: userData?.imobiliariaId || '', // Adiciona o ID da imobiliária
                 nome: name,
                 telefone: phone,
-                whatsapp: phone.replace(/\\D/g, ''),
+                whatsapp: phone.replace(/\D/g, ''),
                 email,
                 etapa: situation,
-                origem: 'Cadastro Manual via CRM',
+                origem: origemFinal,
+                origemTipo: origem, // guarda a opção escolhida (ex: 'Outros') para relatórios
+                ...(origem === 'Outros' && { origemOutros: origemOutros.trim() }),
                 createdAt: serverTimestamp(),
                 // Adiciona o novo campo de automação com valores padrão
                 automacao: {
@@ -129,6 +142,39 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
                         <select id="situation" value={situation} onChange={(e) => setSituation(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-[#A3C8F7] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38]">
                             {PIPELINE_STAGES.map(stage => <option key={stage} value={stage}>{stage}</option>)}
                         </select>
+                    </div>
+                    <div>
+                        <span className="block text-sm font-semibold text-[#2E2F38] mb-2">Origem do lead</span>
+                        <div className="flex flex-wrap gap-2">
+                            {ORIGEM_OPCOES.map((op) => (
+                                <label key={op} className="inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="origem"
+                                        value={op}
+                                        checked={origem === op}
+                                        onChange={() => setOrigem(op)}
+                                        className="sr-only peer"
+                                    />
+                                    <span className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors peer-checked:border-[#3478F6] peer-checked:bg-[#3478F6] peer-checked:text-white border-[#A3C8F7] bg-white text-[#2E2F38] hover:border-[#3478F6] hover:bg-[#3478F6]/10 ${origem === op ? '!bg-[#3478F6] !text-white border-[#3478F6]' : ''}`}>
+                                        {op}
+                                    </span>
+                                </label>
+                            ))}
+                        </div>
+                        {origem === 'Outros' && (
+                            <div className="mt-3 p-3 rounded-lg border border-[#A3C8F7] bg-[#F5F6FA] dark:bg-[#23283A] dark:border-[#23283A]">
+                                <label htmlFor="origem-outros" className="block text-sm font-medium text-[#6B6F76] dark:text-gray-300 mb-1">Especifique a origem</label>
+                                <input
+                                    id="origem-outros"
+                                    type="text"
+                                    value={origemOutros}
+                                    onChange={(e) => setOrigemOutros(e.target.value)}
+                                    placeholder="Ex: Indicação do parceiro, Site..."
+                                    className="w-full px-3 py-2 bg-white dark:bg-[#181C23] border border-[#A3C8F7] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3478F6] text-[#2E2F38] dark:text-white"
+                                />
+                            </div>
+                        )}
                     </div>
                     {error && <p className="text-sm text-red-500">{error}</p>}
                     <div className="flex justify-end gap-4 pt-4">
