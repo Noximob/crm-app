@@ -377,12 +377,12 @@ export default function RelatoriosAdminPage() {
   const formatDate = (d: Date) => d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-6 px-4 md:px-8">
+      <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-[#2E2F38] dark:text-white">Relatórios</h1>
-            <p className="text-[#6B6F76] dark:text-gray-300 mt-1">Storytelling por corretor · Atualização em tempo real</p>
+            <h1 className="text-3xl md:text-4xl font-bold text-[#2E2F38] dark:text-white">Relatórios</h1>
+            <p className="text-base text-[#6B6F76] dark:text-gray-300 mt-1">Storytelling por corretor · Atualização em tempo real · Pronto para TV</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <select
@@ -413,142 +413,142 @@ export default function RelatoriosAdminPage() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-16">
-            <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#3478F6] border-t-transparent" />
+          <div className="flex justify-center py-24">
+            <div className="animate-spin rounded-full h-14 w-14 border-4 border-[#3478F6] border-t-transparent" />
           </div>
         ) : (
           <>
-            <div className="flex flex-wrap items-center gap-3 mb-6">
-              <p className="text-sm text-[#6B6F76] dark:text-gray-400">
+            <div className="flex flex-wrap items-center gap-4 mb-6">
+              <p className="text-base text-[#6B6F76] dark:text-gray-400">
                 Período: {formatDate(start)} até {formatDate(end)}
               </p>
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${corretorFilter ? 'bg-[#A3C8F7]/30 text-[#3478F6]' : 'bg-[#3478F6]/20 text-[#3478F6]'}`}>
+              <span className={`inline-flex items-center px-4 py-2 rounded-full text-base font-medium ${corretorFilter ? 'bg-[#A3C8F7]/30 text-[#3478F6]' : 'bg-[#3478F6]/20 text-[#3478F6]'}`}>
                 {corretorFilter ? `Visão individual: ${corretores.find(c => c.id === corretorFilter)?.nome || 'Corretor'}` : 'Visão corporativa'}
               </span>
             </div>
 
-            {/* Frase de resumo + Destaque + Origem que converte */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-              <div className="lg:col-span-2 p-4 rounded-xl bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A]">
-                <p className="text-sm text-[#2E2F38] dark:text-gray-200 leading-relaxed">{fraseResumo}</p>
-              </div>
-              <div className="flex flex-col gap-3">
-                {destaquePeriodo && (
-                  <div className="p-4 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/30">
-                    <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide">Destaque do período</p>
-                    <p className="text-base font-bold text-[#2E2F38] dark:text-white mt-0.5">{destaquePeriodo.nome}</p>
-                    <p className="text-sm text-[#6B6F76] dark:text-gray-400">{destaquePeriodo.count} novos leads</p>
-                  </div>
-                )}
-                {origemQueConverte && (
-                  <div className="p-4 rounded-xl bg-[#3AC17C]/10 dark:bg-[#3AC17C]/20 border border-[#3AC17C]/30">
-                    <p className="text-xs font-semibold text-[#3AC17C] uppercase tracking-wide">Origem que mais converte</p>
-                    <p className="text-base font-bold text-[#2E2F38] dark:text-white mt-0.5">{origemQueConverte.origem}</p>
-                    <p className="text-sm text-[#6B6F76] dark:text-gray-400">{origemQueConverte.count} em negociação</p>
-                  </div>
-                )}
-              </div>
+            {/* Hero: frase de resumo — grande, legível na TV */}
+            <div className="mb-8 p-6 md:p-8 rounded-2xl bg-gradient-to-r from-[#3478F6]/15 to-[#A3C8F7]/10 dark:from-[#3478F6]/25 dark:to-[#A3C8F7]/15 border-2 border-[#3478F6]/30">
+              <p className="text-lg md:text-xl lg:text-2xl text-[#2E2F38] dark:text-white leading-relaxed font-medium">{fraseResumo}</p>
             </div>
 
-            {/* Aviso em destaque */}
+            {/* Destaque + Origem que converte — cards grandes */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {destaquePeriodo && (
+                <div className="p-6 md:p-8 rounded-2xl bg-amber-500/15 dark:bg-amber-500/25 border-2 border-amber-500/40">
+                  <p className="text-sm font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Destaque do período</p>
+                  <p className="text-2xl md:text-3xl font-bold text-[#2E2F38] dark:text-white mt-2">{destaquePeriodo.nome}</p>
+                  <p className="text-xl font-semibold text-amber-600 dark:text-amber-400 mt-1">{destaquePeriodo.count} novos leads</p>
+                </div>
+              )}
+              {origemQueConverte && (
+                <div className="p-6 md:p-8 rounded-2xl bg-[#3AC17C]/15 dark:bg-[#3AC17C]/25 border-2 border-[#3AC17C]/40">
+                  <p className="text-sm font-bold text-[#3AC17C] uppercase tracking-wider">Origem que mais converte</p>
+                  <p className="text-2xl md:text-3xl font-bold text-[#2E2F38] dark:text-white mt-2">{origemQueConverte.origem}</p>
+                  <p className="text-xl font-semibold text-[#3AC17C] mt-1">{origemQueConverte.count} em negociação</p>
+                </div>
+              )}
+            </div>
+
+            {/* Aviso em destaque — maior */}
             {avisoEmDestaque && (
-              <div className="mb-6 p-4 rounded-xl bg-[#3478F6]/10 dark:bg-[#3478F6]/20 border border-[#3478F6]/30 flex items-start gap-3">
-                <MegaphoneIcon className="w-5 h-5 text-[#3478F6] shrink-0 mt-0.5" />
+              <div className="mb-8 p-6 rounded-2xl bg-[#3478F6]/15 dark:bg-[#3478F6]/25 border-2 border-[#3478F6]/40 flex items-start gap-4">
+                <MegaphoneIcon className="w-8 h-8 text-[#3478F6] shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs font-semibold text-[#3478F6] uppercase tracking-wide">Aviso em destaque</p>
-                  <p className="font-semibold text-[#2E2F38] dark:text-white mt-0.5">{avisoEmDestaque.titulo}</p>
-                  <p className="text-sm text-[#6B6F76] dark:text-gray-300 mt-1 line-clamp-2">{avisoEmDestaque.mensagem}</p>
+                  <p className="text-sm font-bold text-[#3478F6] uppercase tracking-wider">Aviso em destaque</p>
+                  <p className="text-xl font-bold text-[#2E2F38] dark:text-white mt-1">{avisoEmDestaque.titulo}</p>
+                  <p className="text-base text-[#6B6F76] dark:text-gray-300 mt-2 line-clamp-2">{avisoEmDestaque.mensagem}</p>
                 </div>
               </div>
             )}
 
-            {/* Cards macro */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <div className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-5 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-[#3478F6]/10 text-[#3478F6]"><ChartIcon className="w-5 h-5" /></div>
+            {/* Cards macro — números grandes para TV */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+              <div className="bg-white dark:bg-[#23283A] rounded-2xl border-2 border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-md">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-xl bg-[#3478F6]/10 text-[#3478F6]"><ChartIcon className="w-7 h-7" /></div>
                   <div>
-                    <p className="text-sm text-[#6B6F76] dark:text-gray-400">Total de leads</p>
-                    <p className="text-2xl font-bold text-[#2E2F38] dark:text-white">{totaisCards.totalLeads}</p>
+                    <p className="text-base text-[#6B6F76] dark:text-gray-400 font-medium">Total de leads</p>
+                    <p className="text-4xl md:text-5xl font-bold text-[#2E2F38] dark:text-white tabular-nums">{totaisCards.totalLeads}</p>
                   </div>
                 </div>
               </div>
-              <div className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-5 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-[#3AC17C]/10 text-[#3AC17C]"><ChartIcon className="w-5 h-5" /></div>
+              <div className="bg-white dark:bg-[#23283A] rounded-2xl border-2 border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-md">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-xl bg-[#3AC17C]/10 text-[#3AC17C]"><ChartIcon className="w-7 h-7" /></div>
                   <div className="min-w-0">
-                    <p className="text-sm text-[#6B6F76] dark:text-gray-400">Novos no período</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-2xl font-bold text-[#2E2F38] dark:text-white">{totaisCards.novosNoPeriodo}</p>
+                    <p className="text-base text-[#6B6F76] dark:text-gray-400 font-medium">Novos no período</p>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <p className="text-4xl md:text-5xl font-bold text-[#2E2F38] dark:text-white tabular-nums">{totaisCards.novosNoPeriodo}</p>
                       {period !== 'custom' && !corretorFilter && comparativoNovos.label != null && (
-                        <span className={`inline-flex items-center gap-0.5 text-xs font-semibold ${comparativoNovos.diff >= 0 ? 'text-[#3AC17C]' : 'text-red-500'}`}>
-                          {comparativoNovos.diff >= 0 ? <TrendUpIcon className="w-3.5 h-3.5" /> : <TrendDownIcon className="w-3.5 h-3.5" />}
-                          {comparativoNovos.label}{comparativoNovos.diff}% vs período anterior
+                        <span className={`inline-flex items-center gap-1 text-sm font-bold ${comparativoNovos.diff >= 0 ? 'text-[#3AC17C]' : 'text-red-500'}`}>
+                          {comparativoNovos.diff >= 0 ? <TrendUpIcon className="w-5 h-5" /> : <TrendDownIcon className="w-5 h-5" />}
+                          {comparativoNovos.label}{comparativoNovos.diff}%
                         </span>
                       )}
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-5 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500"><TargetIcon className="w-5 h-5" /></div>
+              <div className="bg-white dark:bg-[#23283A] rounded-2xl border-2 border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-md">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-xl bg-amber-500/10 text-amber-500"><TargetIcon className="w-7 h-7" /></div>
                   <div>
-                    <p className="text-sm text-[#6B6F76] dark:text-gray-400">Leads quentes</p>
-                    <p className="text-2xl font-bold text-[#2E2F38] dark:text-white">{totaisCards.leadsQuentes}</p>
+                    <p className="text-base text-[#6B6F76] dark:text-gray-400 font-medium">Leads quentes</p>
+                    <p className="text-4xl md:text-5xl font-bold text-[#2E2F38] dark:text-white tabular-nums">{totaisCards.leadsQuentes}</p>
                   </div>
                 </div>
               </div>
-              <div className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-5 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-violet-500/10 text-violet-400"><UsersIcon className="w-5 h-5" /></div>
+              <div className="bg-white dark:bg-[#23283A] rounded-2xl border-2 border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-md">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-xl bg-violet-500/10 text-violet-400"><UsersIcon className="w-7 h-7" /></div>
                   <div>
-                    <p className="text-sm text-[#6B6F76] dark:text-gray-400">Corretores ativos</p>
-                    <p className="text-2xl font-bold text-[#2E2F38] dark:text-white">{totaisCards.corretoresAtivos}</p>
+                    <p className="text-base text-[#6B6F76] dark:text-gray-400 font-medium">Corretores ativos</p>
+                    <p className="text-4xl md:text-5xl font-bold text-[#2E2F38] dark:text-white tabular-nums">{totaisCards.corretoresAtivos}</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Ranking + Funil: quem traz e onde estão (storytelling) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-              <div className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-sm">
-                <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                  <TrophyIcon className="w-5 h-5 text-amber-500" />
+            {/* Ranking + Funil — tamanho TV */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+              <div className="bg-white dark:bg-[#23283A] rounded-2xl border-2 border-[#E8E9F1] dark:border-[#23283A] p-6 md:p-8 shadow-md">
+                <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-2 flex items-center gap-3">
+                  <TrophyIcon className="w-7 h-7 text-amber-500" />
                   Ranking (novos leads no período)
                 </h2>
-                <p className="text-xs text-[#6B6F76] dark:text-gray-400 mb-3">Sempre visão corporativa: conta todos os leads criados no período, por corretor.</p>
-                <div className="space-y-2">
+                <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-5">Sempre visão corporativa.</p>
+                <div className="space-y-3">
                   {ranking.slice(0, 10).map((r, i) => (
-                    <div key={r.userId} className="flex items-center justify-between py-2 px-3 rounded-lg bg-[#F5F6FA] dark:bg-[#181C23]">
-                      <span className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-full bg-[#3478F6] text-white text-xs font-bold flex items-center justify-center">{i + 1}</span>
-                        {r.nome}
+                    <div key={r.userId} className={`flex items-center justify-between py-3 px-4 rounded-xl ${i < 3 ? 'bg-[#3478F6]/10 dark:bg-[#3478F6]/20' : 'bg-[#F5F6FA] dark:bg-[#181C23]'}`}>
+                      <span className="flex items-center gap-3">
+                        <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${i === 0 ? 'bg-amber-500 text-white' : i === 1 ? 'bg-gray-400 text-white' : i === 2 ? 'bg-amber-700 text-white' : 'bg-[#3478F6] text-white'}`}>{i + 1}</span>
+                        <span className="text-base md:text-lg font-medium text-[#2E2F38] dark:text-white">{r.nome}</span>
                       </span>
-                      <span className="font-bold text-[#3478F6]">{r.count}</span>
+                      <span className="text-xl font-bold text-[#3478F6] tabular-nums">{r.count}</span>
                     </div>
                   ))}
-                  {ranking.length === 0 && <p className="text-[#6B6F76] dark:text-gray-400 text-sm">Nenhum lead novo no período.</p>}
+                  {ranking.length === 0 && <p className="text-[#6B6F76] dark:text-gray-400 text-base py-4">Nenhum lead novo no período.</p>}
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-sm">
-                <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                  <ChartIcon className="w-5 h-5 text-[#3478F6]" />
-                  Funil de vendas {corretorFilter && <span className="text-sm font-normal text-[#6B6F76] dark:text-gray-400">(individual)</span>}
+              <div className="bg-white dark:bg-[#23283A] rounded-2xl border-2 border-[#E8E9F1] dark:border-[#23283A] p-6 md:p-8 shadow-md">
+                <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-5 flex items-center gap-3">
+                  <ChartIcon className="w-7 h-7 text-[#3478F6]" />
+                  Funil de vendas {corretorFilter && <span className="text-base font-normal text-[#6B6F76] dark:text-gray-400">(individual)</span>}
                 </h2>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {PIPELINE_STAGES.map((etapa) => {
                     const qtd = porEtapa[etapa] ?? 0;
                     const max = Math.max(...Object.values(porEtapa), 1);
                     const pct = max ? Math.round((qtd / max) * 100) : 0;
                     return (
                       <div key={etapa}>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-[#2E2F38] dark:text-gray-200 truncate pr-2">{etapa}</span>
-                          <span className="font-semibold text-[#3478F6] whitespace-nowrap">{qtd}</span>
+                        <div className="flex justify-between text-base mb-1.5">
+                          <span className="text-[#2E2F38] dark:text-gray-200 truncate pr-3">{etapa}</span>
+                          <span className="font-bold text-[#3478F6] text-lg tabular-nums shrink-0">{qtd}</span>
                         </div>
-                        <div className="h-2 bg-[#E8E9F1] dark:bg-[#181C23] rounded-full overflow-hidden">
+                        <div className="h-3 bg-[#E8E9F1] dark:bg-[#181C23] rounded-full overflow-hidden">
                           <div className="h-full bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] rounded-full transition-all" style={{ width: `${pct}%` }} />
                         </div>
                       </div>
@@ -558,25 +558,25 @@ export default function RelatoriosAdminPage() {
               </div>
             </div>
 
-            {/* Tabela por corretor — centro do storytelling */}
-            <div className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-sm mb-8 overflow-x-auto">
-              <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                <UsersIcon className="w-5 h-5 text-[#3478F6]" />
+            {/* Tabela por corretor — centro do storytelling, legível na TV */}
+            <div className="bg-white dark:bg-[#23283A] rounded-2xl border-2 border-[#E8E9F1] dark:border-[#23283A] p-6 md:p-8 shadow-md mb-10 overflow-x-auto">
+              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-2 flex items-center gap-3">
+                <UsersIcon className="w-7 h-7 text-[#3478F6]" />
                 Por corretor (visão corporativa)
               </h2>
-              <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-4">
-                Entenda cada corretor: totais, novos no período, quentes e principal origem. A soma confere com o card corporativo.
+              <p className="text-base text-[#6B6F76] dark:text-gray-400 mb-6">
+                Entenda cada corretor: totais, novos no período, quentes e principal origem.
               </p>
-              <table className="w-full text-sm">
+              <table className="w-full text-base">
                 <thead>
-                  <tr className="border-b border-[#E8E9F1] dark:border-[#23283A] text-left text-[#6B6F76] dark:text-gray-400">
-                    <th className="py-3 px-2 font-semibold">#</th>
-                    <th className="py-3 px-2 font-semibold">Corretor</th>
-                    <th className="py-3 px-2 font-semibold">Tipo</th>
-                    <th className="py-3 px-2 font-semibold text-center">Total leads</th>
-                    <th className="py-3 px-2 font-semibold text-center">Novos no período</th>
-                    <th className="py-3 px-2 font-semibold text-center">Leads quentes</th>
-                    <th className="py-3 px-2 font-semibold">Principal origem</th>
+                  <tr className="border-b-2 border-[#E8E9F1] dark:border-[#23283A] text-left text-[#6B6F76] dark:text-gray-400">
+                    <th className="py-4 px-3 font-bold">#</th>
+                    <th className="py-4 px-3 font-bold">Corretor</th>
+                    <th className="py-4 px-3 font-bold">Tipo</th>
+                    <th className="py-4 px-3 font-bold text-center">Total</th>
+                    <th className="py-4 px-3 font-bold text-center">Novos</th>
+                    <th className="py-4 px-3 font-bold text-center">Quentes</th>
+                    <th className="py-4 px-3 font-bold">Principal origem</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -585,55 +585,53 @@ export default function RelatoriosAdminPage() {
                       key={row.id}
                       className={`border-b border-[#E8E9F1] dark:border-[#23283A] ${corretorFilter === row.id ? 'bg-[#3478F6]/10 dark:bg-[#3478F6]/20' : ''}`}
                     >
-                      <td className="py-3 px-2 text-[#6B6F76] dark:text-gray-400">{i + 1}</td>
-                      <td className="py-3 px-2 font-medium text-[#2E2F38] dark:text-white">
+                      <td className="py-4 px-3 text-[#6B6F76] dark:text-gray-400 font-medium">{i + 1}</td>
+                      <td className="py-4 px-3 font-semibold text-[#2E2F38] dark:text-white">
                         {row.nome}
-                        {row.email && <span className="block text-xs text-[#6B6F76] dark:text-gray-400 font-normal">{row.email}</span>}
+                        {row.email && <span className="block text-sm text-[#6B6F76] dark:text-gray-400 font-normal">{row.email}</span>}
                       </td>
-                      <td className="py-3 px-2 text-[#6B6F76] dark:text-gray-400">
-                        {row.tipoConta === 'imobiliaria' ? 'Imobiliária' : row.tipoConta === 'corretor-vinculado' ? 'Vinculado' : row.tipoConta === 'corretor-autonomo' ? 'Autônomo' : row.tipoConta || '–'}
-                      </td>
-                      <td className="py-3 px-2 text-center font-semibold text-[#3478F6]">{row.totalLeads}</td>
-                      <td className="py-3 px-2 text-center font-semibold text-[#3AC17C]">{row.novosNoPeriodo}</td>
-                      <td className="py-3 px-2 text-center font-semibold text-amber-500">{row.leadsQuentes}</td>
-                      <td className="py-3 px-2 text-[#2E2F38] dark:text-gray-200">{row.principalOrigem}</td>
+                      <td className="py-4 px-3 text-[#6B6F76] dark:text-gray-400">{row.tipoConta === 'imobiliaria' ? 'Imobiliária' : row.tipoConta === 'corretor-vinculado' ? 'Vinculado' : row.tipoConta === 'corretor-autonomo' ? 'Autônomo' : row.tipoConta || '–'}</td>
+                      <td className="py-4 px-3 text-center font-bold text-[#3478F6] text-lg tabular-nums">{row.totalLeads}</td>
+                      <td className="py-4 px-3 text-center font-bold text-[#3AC17C] text-lg tabular-nums">{row.novosNoPeriodo}</td>
+                      <td className="py-4 px-3 text-center font-bold text-amber-500 text-lg tabular-nums">{row.leadsQuentes}</td>
+                      <td className="py-4 px-3 text-[#2E2F38] dark:text-gray-200">{row.principalOrigem}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               {tabelaPorCorretor.length === 0 && (
-                <p className="text-[#6B6F76] dark:text-gray-400 text-sm py-4">Nenhum corretor aprovado na imobiliária.</p>
+                <p className="text-[#6B6F76] dark:text-gray-400 text-base py-6">Nenhum corretor aprovado na imobiliária.</p>
               )}
             </div>
 
-            {/* Metas (corporativo) + Por origem (secundário) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-              <div className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-sm">
-                <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                  <TargetIcon className="w-5 h-5 text-[#3478F6]" />
+            {/* Metas (corporativo) + Por origem (secundário) — tamanho TV */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+              <div className="bg-white dark:bg-[#23283A] rounded-2xl border-2 border-[#E8E9F1] dark:border-[#23283A] p-6 md:p-8 shadow-md">
+                <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-5 flex items-center gap-3">
+                  <TargetIcon className="w-7 h-7 text-[#3478F6]" />
                   Metas (corporativo)
                 </h2>
                 {meta ? (
-                  <div className="space-y-4">
+                  <div className="space-y-5">
                     {(meta.inicio || meta.fim) && (
-                      <p className="text-sm text-[#6B6F76] dark:text-gray-400">
+                      <p className="text-base text-[#6B6F76] dark:text-gray-400">
                         Período: {meta.inicio ? formatDate(new Date(meta.inicio)) : '–'} a {meta.fim ? formatDate(new Date(meta.fim)) : '–'}
                       </p>
                     )}
-                    <div className="flex justify-between text-sm">
-                      <span>VGV meta</span>
-                      <span className="font-semibold">R$ {meta.valor != null ? meta.valor.toLocaleString('pt-BR') : '–'}</span>
+                    <div className="flex justify-between text-base">
+                      <span className="font-medium">VGV meta</span>
+                      <span className="font-bold text-lg">R$ {meta.valor != null ? meta.valor.toLocaleString('pt-BR') : '–'}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span>VGV realizado</span>
-                      <span className="font-semibold text-[#3AC17C]">R$ {meta.alcancado != null ? meta.alcancado.toLocaleString('pt-BR') : '–'}</span>
+                    <div className="flex justify-between text-base">
+                      <span className="font-medium">VGV realizado</span>
+                      <span className="font-bold text-lg text-[#3AC17C]">R$ {meta.alcancado != null ? meta.alcancado.toLocaleString('pt-BR') : '–'}</span>
                     </div>
                     <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>% alcançado</span>
-                        <span className="font-bold text-[#3478F6]">{meta.percentual ?? 0}%</span>
+                      <div className="flex justify-between text-base mb-2">
+                        <span className="font-medium">% alcançado</span>
+                        <span className="text-2xl font-bold text-[#3478F6] tabular-nums">{meta.percentual ?? 0}%</span>
                       </div>
-                      <div className="h-3 bg-[#E8E9F1] dark:bg-[#181C23] rounded-full overflow-hidden">
+                      <div className="h-4 bg-[#E8E9F1] dark:bg-[#181C23] rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all ${(meta.percentual ?? 0) >= 100 ? 'bg-[#3AC17C]' : 'bg-[#3478F6]'}`}
                           style={{ width: `${Math.min(meta.percentual ?? 0, 100)}%` }}
@@ -642,36 +640,35 @@ export default function RelatoriosAdminPage() {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-[#6B6F76] dark:text-gray-400 text-sm">Configure a meta em Admin → Metas.</p>
+                  <p className="text-[#6B6F76] dark:text-gray-400 text-base">Configure a meta em Admin → Metas.</p>
                 )}
               </div>
 
-              {/* Por origem — secundário, detalhe */}
-              <div className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-4 shadow-sm">
-                <h3 className="text-sm font-semibold text-[#6B6F76] dark:text-gray-400 mb-3">Por origem do lead {corretorFilter && <span className="font-normal">(individual)</span>}</h3>
-                <div className="space-y-1.5 text-sm">
+              <div className="bg-[#F5F6FA] dark:bg-[#181C23] rounded-2xl border-2 border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-md">
+                <h3 className="text-base font-bold text-[#6B6F76] dark:text-gray-400 mb-4">Por origem do lead {corretorFilter && <span className="font-normal">(individual)</span>}</h3>
+                <div className="space-y-2 text-base">
                   {Object.entries(porOrigem)
                     .sort((a, b) => b[1] - a[1])
                     .map(([origem, qtd]) => {
                       const total = filteredLeads.length || 1;
                       const pct = Math.round((qtd / total) * 100);
                       return (
-                        <div key={origem} className="flex justify-between items-center py-1">
-                          <span className="text-[#2E2F38] dark:text-gray-200 truncate pr-2">{origem}</span>
-                          <span className="font-medium text-[#3478F6] text-xs shrink-0">{qtd} ({pct}%)</span>
+                        <div key={origem} className="flex justify-between items-center py-2">
+                          <span className="text-[#2E2F38] dark:text-gray-200 truncate pr-3">{origem}</span>
+                          <span className="font-semibold text-[#3478F6] tabular-nums shrink-0">{qtd} ({pct}%)</span>
                         </div>
                       );
                     })}
                   {Object.keys(porOrigem).length === 0 && (
-                    <p className="text-[#6B6F76] dark:text-gray-400 text-xs">Nenhum lead no filtro.</p>
+                    <p className="text-[#6B6F76] dark:text-gray-400">Nenhum lead no filtro.</p>
                   )}
                 </div>
               </div>
             </div>
 
-            <div className="bg-[#3478F6]/10 dark:bg-[#3478F6]/20 border border-[#3478F6]/30 rounded-xl p-4 text-center">
-              <p className="text-[#2E2F38] dark:text-white text-sm">
-                <strong>Próximo passo:</strong> use a área <strong>Dashboards TV</strong> (Admin) para montar as telas que rodam na TV e definir o tempo de cada uma.
+            <div className="bg-[#3478F6]/15 dark:bg-[#3478F6]/25 border-2 border-[#3478F6]/40 rounded-2xl p-6 text-center">
+              <p className="text-[#2E2F38] dark:text-white text-base md:text-lg">
+                <strong>Próximo passo:</strong> use <strong>Dashboards TV</strong> (Admin) para montar as telas que rodam na TV e definir o tempo de cada uma.
               </p>
             </div>
           </>
