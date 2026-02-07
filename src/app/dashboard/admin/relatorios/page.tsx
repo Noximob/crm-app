@@ -37,21 +37,26 @@ interface MetaDoc {
 
 // --- Helpers de data ---
 function getPeriodBounds(period: PeriodKey, customStart?: string, customEnd?: string): { start: Date; end: Date } {
-  const end = new Date();
+  const now = new Date();
+  const end = new Date(now);
   end.setHours(23, 59, 59, 999);
-  const start = new Date();
+  const start = new Date(now);
 
   if (period === 'hoje') {
     start.setHours(0, 0, 0, 0);
     return { start, end };
   }
   if (period === 'semana') {
-    start.setDate(start.getDate() - 7);
+    // Esta semana = segunda-feira 00:00 até hoje (dia da semana: 0=dom, 1=seg, ...)
+    const diaSemana = start.getDay();
+    const diasParaSegunda = diaSemana === 0 ? 6 : diaSemana - 1;
+    start.setDate(start.getDate() - diasParaSegunda);
     start.setHours(0, 0, 0, 0);
     return { start, end };
   }
   if (period === 'mes') {
-    start.setMonth(start.getMonth() - 1);
+    // Este mês = dia 1 do mês atual 00:00 até hoje
+    start.setDate(1);
     start.setHours(0, 0, 0, 0);
     return { start, end };
   }
@@ -67,10 +72,11 @@ function getPeriodBounds(period: PeriodKey, customStart?: string, customEnd?: st
 
 function leadCreatedAt(lead: LeadRaw): Date | null {
   const t = lead.createdAt;
-  if (!t) return null;
-  if (t?.toDate) return t.toDate();
-  if (t?.seconds) return new Date(t.seconds * 1000);
+  if (t == null) return null;
+  if (typeof t?.toDate === 'function') return t.toDate();
+  if (typeof t?.seconds === 'number') return new Date(t.seconds * 1000);
   if (typeof t === 'string') return new Date(t);
+  if (typeof t === 'number') return new Date(t);
   return null;
 }
 
@@ -151,6 +157,11 @@ export default function RelatoriosAdminPage() {
     return filteredLeads.filter(l => isInPeriod(leadCreatedAt(l), start, end));
   }, [filteredLeads, start, end]);
 
+  // Novos no período em nível corporativo (sempre todos os leads) — para ranking verdadeiro
+  const leadsNoPeriodoCorporativo = useMemo(() => {
+    return leads.filter(l => isInPeriod(leadCreatedAt(l), start, end));
+  }, [leads, start, end]);
+
   const porEtapa = useMemo(() => {
     const map: Record<string, number> = {};
     PIPELINE_STAGES.forEach(e => { map[e] = 0; });
@@ -170,16 +181,21 @@ export default function RelatoriosAdminPage() {
     return map;
   }, [filteredLeads]);
 
+  // Ranking sempre corporativo: quem mais trouxe novos leads no período (não muda com filtro de corretor)
   const ranking = useMemo(() => {
     const byUser: Record<string, number> = {};
-    leadsNoPeriodo.forEach(l => {
-      const uid = l.userId || '';
+    leadsNoPeriodoCorporativo.forEach(l => {
+      const uid = l.userId || '_sem_corretor_';
       byUser[uid] = (byUser[uid] || 0) + 1;
     });
     return Object.entries(byUser)
-      .map(([userId, count]) => ({ userId, count, nome: corretores.find(c => c.id === userId)?.nome || 'Corretor' }))
+      .map(([userId, count]) => ({
+        userId,
+        count,
+        nome: userId === '_sem_corretor_' ? 'Sem corretor' : (corretores.find(c => c.id === userId)?.nome || 'Não identificado'),
+      }))
       .sort((a, b) => b.count - a.count);
-  }, [leadsNoPeriodo, corretores]);
+  }, [leadsNoPeriodoCorporativo, corretores]);
 
   const totaisCards = useMemo(() => {
     const quentes = filteredLeads.filter(l => ETAPAS_QUENTES.includes(l.etapa || ''));
@@ -192,9 +208,10 @@ export default function RelatoriosAdminPage() {
     };
   }, [filteredLeads, leadsNoPeriodo]);
 
-  // Tabela por corretor (sempre visão corporativa: todos os corretores com métricas reais)
+  // Tabela por corretor (sempre visão corporativa): corretores + linha "Sem corretor" para soma bater
   const tabelaPorCorretor = useMemo(() => {
-    return corretores.map(c => {
+    const corretorIds = new Set(corretores.map(c => c.id));
+    const rows = corretores.map(c => {
       const leadsDoCorretor = leads.filter(l => l.userId === c.id);
       const novos = leadsDoCorretor.filter(l => isInPeriod(leadCreatedAt(l), start, end));
       const quentes = leadsDoCorretor.filter(l => ETAPAS_QUENTES.includes(l.etapa || ''));
@@ -211,7 +228,27 @@ export default function RelatoriosAdminPage() {
         leadsQuentes: quentes.length,
         principalOrigem,
       };
-    }).sort((a, b) => b.totalLeads - a.totalLeads);
+    });
+    const leadsSemCorretor = leads.filter(l => !l.userId || !corretorIds.has(l.userId));
+    if (leadsSemCorretor.length > 0) {
+      const novos = leadsSemCorretor.filter(l => isInPeriod(leadCreatedAt(l), start, end));
+      const quentes = leadsSemCorretor.filter(l => ETAPAS_QUENTES.includes(l.etapa || ''));
+      const porOrigemLocal: Record<string, number> = {};
+      leadsSemCorretor.forEach(l => {
+        const o = l.origem || l.origemTipo || 'Não informado';
+        porOrigemLocal[o] = (porOrigemLocal[o] || 0) + 1;
+      });
+      const principalOrigem = Object.entries(porOrigemLocal).sort((a, b) => b[1] - a[1])[0]?.[0] || '–';
+      rows.push({
+        id: '_sem_corretor_',
+        nome: 'Sem corretor / Não identificado',
+        totalLeads: leadsSemCorretor.length,
+        novosNoPeriodo: novos.length,
+        leadsQuentes: quentes.length,
+        principalOrigem,
+      });
+    }
+    return rows.sort((a, b) => b.totalLeads - a.totalLeads);
   }, [corretores, leads, start, end]);
 
   if (!imobiliariaId) {
@@ -375,6 +412,7 @@ export default function RelatoriosAdminPage() {
                   <TrophyIcon className="w-5 h-5 text-amber-500" />
                   Ranking (novos leads no período)
                 </h2>
+                <p className="text-xs text-[#6B6F76] dark:text-gray-400 mb-3">Sempre visão corporativa: conta todos os leads criados no período, por corretor.</p>
                 <div className="space-y-2">
                   {ranking.slice(0, 10).map((r, i) => (
                     <div key={r.userId} className="flex items-center justify-between py-2 px-3 rounded-lg bg-[#F5F6FA] dark:bg-[#181C23]">
@@ -435,7 +473,7 @@ export default function RelatoriosAdminPage() {
                 Por corretor (visão corporativa)
               </h2>
               <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-4">
-                Todos os corretores aprovados da imobiliária com métricas reais do período selecionado.
+                Todos os corretores aprovados da imobiliária com métricas reais. A soma da coluna &quot;Total leads&quot; confere com o card corporativo.
               </p>
               <table className="w-full text-sm">
                 <thead>
