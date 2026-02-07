@@ -23,6 +23,8 @@ interface LeadRaw {
 interface Corretor {
   id: string;
   nome: string;
+  email?: string;
+  tipoConta?: string;
 }
 
 interface MetaDoc {
@@ -122,7 +124,10 @@ export default function RelatoriosAdminPage() {
         ]);
 
         setLeads(leadsSnap.docs.map(d => ({ id: d.id, ...d.data() } as LeadRaw)));
-        setCorretores(usersSnap.docs.map(d => ({ id: d.id, nome: (d.data() as any).nome || 'Sem nome' })));
+        setCorretores(usersSnap.docs.map(d => {
+          const data = d.data() as any;
+          return { id: d.id, nome: data.nome || 'Sem nome', email: data.email, tipoConta: data.tipoConta };
+        }));
         setMeta(metaSnap.exists() ? (metaSnap.data() as MetaDoc) : null);
       } catch (e) {
         console.error(e);
@@ -187,6 +192,28 @@ export default function RelatoriosAdminPage() {
     };
   }, [filteredLeads, leadsNoPeriodo]);
 
+  // Tabela por corretor (sempre visão corporativa: todos os corretores com métricas reais)
+  const tabelaPorCorretor = useMemo(() => {
+    return corretores.map(c => {
+      const leadsDoCorretor = leads.filter(l => l.userId === c.id);
+      const novos = leadsDoCorretor.filter(l => isInPeriod(leadCreatedAt(l), start, end));
+      const quentes = leadsDoCorretor.filter(l => ETAPAS_QUENTES.includes(l.etapa || ''));
+      const porOrigemLocal: Record<string, number> = {};
+      leadsDoCorretor.forEach(l => {
+        const o = l.origem || l.origemTipo || 'Não informado';
+        porOrigemLocal[o] = (porOrigemLocal[o] || 0) + 1;
+      });
+      const principalOrigem = Object.entries(porOrigemLocal).sort((a, b) => b[1] - a[1])[0]?.[0] || '–';
+      return {
+        ...c,
+        totalLeads: leadsDoCorretor.length,
+        novosNoPeriodo: novos.length,
+        leadsQuentes: quentes.length,
+        principalOrigem,
+      };
+    }).sort((a, b) => b.totalLeads - a.totalLeads);
+  }, [corretores, leads, start, end]);
+
   if (!imobiliariaId) {
     return (
       <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4 flex items-center justify-center">
@@ -239,10 +266,14 @@ export default function RelatoriosAdminPage() {
           </div>
         ) : (
           <>
-            <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-6">
-              Período: {formatDate(start)} até {formatDate(end)}
-              {corretorFilter ? ` • Corretor: ${corretores.find(c => c.id === corretorFilter)?.nome || corretorFilter}` : ''}
-            </p>
+            <div className="flex flex-wrap items-center gap-3 mb-6">
+              <p className="text-sm text-[#6B6F76] dark:text-gray-400">
+                Período: {formatDate(start)} até {formatDate(end)}
+              </p>
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${corretorFilter ? 'bg-[#A3C8F7]/30 text-[#3478F6]' : 'bg-[#3478F6]/20 text-[#3478F6]'}`}>
+                {corretorFilter ? `Visão individual: ${corretores.find(c => c.id === corretorFilter)?.nome || 'Corretor'}` : 'Visão corporativa'}
+              </span>
+            </div>
 
             {/* Cards macro */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -289,7 +320,7 @@ export default function RelatoriosAdminPage() {
               <div className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-sm">
                 <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
                   <ChartIcon className="w-5 h-5 text-[#3478F6]" />
-                  Funil de vendas
+                  Funil de vendas {corretorFilter && <span className="text-sm font-normal text-[#6B6F76] dark:text-gray-400">(individual)</span>}
                 </h2>
                 <div className="space-y-3">
                   {PIPELINE_STAGES.map((etapa, i) => {
@@ -315,7 +346,7 @@ export default function RelatoriosAdminPage() {
               <div className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-sm">
                 <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
                   <ChartIcon className="w-5 h-5 text-[#3478F6]" />
-                  Por origem do lead
+                  Por origem do lead {corretorFilter && <span className="text-sm font-normal text-[#6B6F76] dark:text-gray-400">(individual)</span>}
                 </h2>
                 <div className="space-y-2">
                   {Object.entries(porOrigem)
@@ -395,6 +426,54 @@ export default function RelatoriosAdminPage() {
                   <p className="text-[#6B6F76] dark:text-gray-400 text-sm">Configure a meta em Admin → Metas.</p>
                 )}
               </div>
+            </div>
+
+            {/* Tabela por corretor — sempre corporativa, dados reais */}
+            <div className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-sm mb-8 overflow-x-auto">
+              <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
+                <UsersIcon className="w-5 h-5 text-[#3478F6]" />
+                Por corretor (visão corporativa)
+              </h2>
+              <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-4">
+                Todos os corretores aprovados da imobiliária com métricas reais do período selecionado.
+              </p>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[#E8E9F1] dark:border-[#23283A] text-left text-[#6B6F76] dark:text-gray-400">
+                    <th className="py-3 px-2 font-semibold">#</th>
+                    <th className="py-3 px-2 font-semibold">Corretor</th>
+                    <th className="py-3 px-2 font-semibold">Tipo</th>
+                    <th className="py-3 px-2 font-semibold text-center">Total leads</th>
+                    <th className="py-3 px-2 font-semibold text-center">Novos no período</th>
+                    <th className="py-3 px-2 font-semibold text-center">Leads quentes</th>
+                    <th className="py-3 px-2 font-semibold">Principal origem</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tabelaPorCorretor.map((row, i) => (
+                    <tr
+                      key={row.id}
+                      className={`border-b border-[#E8E9F1] dark:border-[#23283A] ${corretorFilter === row.id ? 'bg-[#3478F6]/10 dark:bg-[#3478F6]/20' : ''}`}
+                    >
+                      <td className="py-3 px-2 text-[#6B6F76] dark:text-gray-400">{i + 1}</td>
+                      <td className="py-3 px-2 font-medium text-[#2E2F38] dark:text-white">
+                        {row.nome}
+                        {row.email && <span className="block text-xs text-[#6B6F76] dark:text-gray-400 font-normal">{row.email}</span>}
+                      </td>
+                      <td className="py-3 px-2 text-[#6B6F76] dark:text-gray-400">
+                        {row.tipoConta === 'imobiliaria' ? 'Imobiliária' : row.tipoConta === 'corretor-vinculado' ? 'Vinculado' : row.tipoConta === 'corretor-autonomo' ? 'Autônomo' : row.tipoConta || '–'}
+                      </td>
+                      <td className="py-3 px-2 text-center font-semibold text-[#3478F6]">{row.totalLeads}</td>
+                      <td className="py-3 px-2 text-center font-semibold text-[#3AC17C]">{row.novosNoPeriodo}</td>
+                      <td className="py-3 px-2 text-center font-semibold text-amber-500">{row.leadsQuentes}</td>
+                      <td className="py-3 px-2 text-[#2E2F38] dark:text-gray-200">{row.principalOrigem}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {tabelaPorCorretor.length === 0 && (
+                <p className="text-[#6B6F76] dark:text-gray-400 text-sm py-4">Nenhum corretor aprovado na imobiliária.</p>
+              )}
             </div>
 
             <div className="bg-[#3478F6]/10 dark:bg-[#3478F6]/20 border border-[#3478F6]/30 rounded-xl p-4 text-center">
