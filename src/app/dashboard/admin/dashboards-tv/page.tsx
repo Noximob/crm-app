@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db, storage } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -47,6 +47,11 @@ const ExternalIcon = (p: React.SVGProps<SVGSVGElement>) => (
     <line x1="10" y1="14" x2="21" y2="3" />
   </svg>
 );
+const PencilIcon = (p: React.SVGProps<SVGSVGElement>) => (
+  <svg {...p} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+  </svg>
+);
 
 const IMOVEL_VAZIO: ImovelSelecaoNox = { imageUrl: '', titulo: '', local: '', preco: '' };
 
@@ -61,7 +66,9 @@ export default function DashboardsTvPage() {
   const [saving, setSaving] = useState(false);
   const [savingSelecao, setSavingSelecao] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState<number | null>(null);
+  const [editingSlideId, setEditingSlideId] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const imobiliariaId = userData?.imobiliariaId;
 
@@ -237,7 +244,7 @@ export default function DashboardsTvPage() {
                   />
                   <span className="font-medium text-[#2E2F38] dark:text-white">{slide.name}</span>
                 </label>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <span className="text-sm text-[#6B6F76] dark:text-gray-400">Tempo:</span>
                   <select
                     value={slide.durationSeconds}
@@ -248,14 +255,37 @@ export default function DashboardsTvPage() {
                       <option key={p.value} value={p.value}>{p.label}</option>
                     ))}
                   </select>
+                  <button
+                    type="button"
+                    onClick={() => setEditingSlideId(slide.id === editingSlideId ? null : slide.id)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      slide.id === 'top3-selecao-nox'
+                        ? 'bg-[#3478F6]/10 text-[#3478F6] hover:bg-[#3478F6]/20'
+                        : 'bg-[#E8E9F1] dark:bg-[#23283A] text-[#6B6F76] dark:text-gray-400 cursor-not-allowed'
+                    }`}
+                    title={slide.id === 'top3-selecao-nox' ? 'Editar conteúdo desta tela' : 'Em breve'}
+                    disabled={slide.id !== 'top3-selecao-nox'}
+                  >
+                    <PencilIcon className="w-4 h-4" />
+                    Editar
+                  </button>
                 </div>
               </div>
             ))}
 
-            {/* Configurar Seleção Nox — 3 imóveis + frase rolante */}
-            {slides.some(s => s.id === 'top3-selecao-nox') && (
-              <div className="mt-8 p-6 rounded-2xl bg-white dark:bg-[#23283A] border-2 border-[#3478F6]/20 shadow-lg">
-                <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-2">Configurar Top 3 Seleção Nox</h2>
+            {/* Configurar Seleção Nox — só quando clicar em Editar */}
+            {editingSlideId === 'top3-selecao-nox' && (
+              <div className="mt-4 p-6 rounded-2xl bg-white dark:bg-[#23283A] border-2 border-[#3478F6]/20 shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Configurar Top 3 Seleção Nox</h2>
+                  <button
+                    type="button"
+                    onClick={() => setEditingSlideId(null)}
+                    className="text-sm text-[#6B6F76] dark:text-gray-400 hover:text-[#2E2F38] dark:hover:text-white"
+                  >
+                    Fechar
+                  </button>
+                </div>
                 <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-6">Três espaços para foto e texto (como na TV). Embaixo, a frase que passa na faixa rolante.</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                   {[0, 1, 2].map((idx) => (
@@ -264,48 +294,39 @@ export default function DashboardsTvPage() {
                       <div className="space-y-3">
                         <div>
                           <label className="block text-xs font-medium text-[#6B6F76] dark:text-gray-400 mb-1">Foto do imóvel</label>
-                          {selecaoNox.imoveis[idx]?.imageUrl ? (
-                            <div className="relative rounded-lg overflow-hidden bg-[#23283A] aspect-[4/3] mb-2">
+                          <div className="h-28 rounded-lg overflow-hidden bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] relative">
+                            {selecaoNox.imoveis[idx]?.imageUrl ? (
                               <img
                                 src={selecaoNox.imoveis[idx].imageUrl}
                                 alt={`Imóvel ${idx + 1}`}
                                 className="w-full h-full object-cover"
                               />
-                              <label className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
-                                <span className="text-white text-sm font-medium px-3 py-1.5 bg-[#3478F6] rounded-lg">
-                                  {uploadingPhoto === idx ? 'Enviando...' : 'Trocar foto'}
-                                </span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="sr-only"
-                                  disabled={uploadingPhoto !== null}
-                                  onChange={e => {
-                                    const f = e.target.files?.[0];
-                                    if (f) handleUploadFoto(idx, f);
-                                    e.target.value = '';
-                                  }}
-                                />
-                              </label>
-                            </div>
-                          ) : (
-                            <label className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-[#E8E9F1] dark:border-[#23283A] aspect-[4/3] cursor-pointer hover:border-[#3478F6]/50 hover:bg-[#3478F6]/5 transition-colors">
-                              <span className="text-[#6B6F76] dark:text-gray-400 text-sm mt-2">
-                                {uploadingPhoto === idx ? 'Enviando...' : 'Clique para enviar foto'}
-                              </span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                className="sr-only"
-                                disabled={uploadingPhoto !== null}
-                                onChange={e => {
-                                  const f = e.target.files?.[0];
-                                  if (f) handleUploadFoto(idx, f);
-                                  e.target.value = '';
-                                }}
-                              />
-                            </label>
-                          )}
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-[#6B6F76] dark:text-gray-500 text-xs">
+                                Nenhuma foto
+                              </div>
+                            )}
+                            <input
+                              ref={el => { fileInputRefs.current[idx] = el; }}
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              disabled={uploadingPhoto !== null}
+                              onChange={e => {
+                                const f = e.target.files?.[0];
+                                if (f) handleUploadFoto(idx, f);
+                                e.target.value = '';
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => fileInputRefs.current[idx]?.click()}
+                              disabled={uploadingPhoto !== null}
+                              className="absolute bottom-1 right-1 px-2 py-1 rounded text-xs font-medium bg-[#3478F6] text-white hover:bg-[#255FD1] disabled:opacity-50"
+                            >
+                              {uploadingPhoto === idx ? 'Enviando...' : selecaoNox.imoveis[idx]?.imageUrl ? 'Trocar' : 'Enviar foto'}
+                            </button>
+                          </div>
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-[#6B6F76] dark:text-gray-400 mb-1">Título</label>
