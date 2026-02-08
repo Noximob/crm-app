@@ -42,6 +42,13 @@ export default function AdminMetasPage() {
   const totalRealizado = contribuicoes.reduce((s, c) => s + c.valor, 0);
   const percentualCalculado = vgv && totalRealizado >= 0 ? Math.round((totalRealizado / parseFloat(vgv)) * 100) : 0;
 
+  // Converte valor em formato BR (3.000.000,00) ou número simples para número
+  function parseValorBR(str: string): number {
+    if (!str || !String(str).trim()) return NaN;
+    const cleaned = String(str).trim().replace(/\./g, '').replace(',', '.');
+    return parseFloat(cleaned);
+  }
+
   // Buscar corretores aprovados da imobiliária
   useEffect(() => {
     if (!userData?.imobiliariaId) return;
@@ -120,10 +127,10 @@ export default function AdminMetasPage() {
     }, { merge: true });
   }
 
-  async function handleAddContribuicao(e: React.FormEvent) {
-    e.preventDefault();
-    if (!userData?.imobiliariaId || !corretorSelecionado || !valorContribuicao) return;
-    const valor = parseFloat(valorContribuicao.replace(',', '.'));
+  async function handleAddContribuicao(e?: React.FormEvent) {
+    e?.preventDefault();
+    if (!userData?.imobiliariaId || !corretorSelecionado || !valorContribuicao?.trim()) return;
+    const valor = parseValorBR(valorContribuicao);
     if (isNaN(valor) || valor <= 0) return;
     const corretor = corretores.find(c => c.id === corretorSelecionado);
     setAdding(true);
@@ -243,17 +250,16 @@ export default function AdminMetasPage() {
           />
         </div>
 
-        {/* Contribuições por corretor — soma vira o VGV realizado */}
+        {/* Contribuições por corretor — soma vira o VGV realizado (bloco fora do form principal para o botão Adicionar funcionar) */}
         <div className="rounded-xl border border-[#3478F6]/30 bg-[#23283A]/40 p-4 space-y-4">
           <h3 className="text-base font-semibold text-white">Contribuições por corretor</h3>
-          <form onSubmit={handleAddContribuicao} className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-wrap items-end gap-3">
             <div className="flex-1 min-w-[140px]">
               <label className="block text-xs font-medium mb-1 text-white/80">Corretor</label>
               <select
                 value={corretorSelecionado}
                 onChange={e => setCorretorSelecionado(e.target.value)}
                 className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#3478F6]/30"
-                required
               >
                 <option value="">Selecione</option>
                 {corretores.map(c => (
@@ -270,25 +276,27 @@ export default function AdminMetasPage() {
                 className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#3478F6]/30"
               />
             </div>
-            <div className="flex-1 min-w-[120px]">
+            <div className="flex-1 min-w-[140px]">
               <label className="block text-xs font-medium mb-1 text-white/80">Valor (R$)</label>
               <input
                 type="text"
                 inputMode="decimal"
-                placeholder="0,00"
+                placeholder="Ex: 3.000.000,00"
                 value={valorContribuicao}
                 onChange={e => setValorContribuicao(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddContribuicao(); } }}
                 className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#3478F6]/30"
               />
             </div>
             <button
-              type="submit"
-              disabled={adding || !corretorSelecionado || !valorContribuicao}
+              type="button"
+              onClick={() => handleAddContribuicao()}
+              disabled={adding || !corretorSelecionado || !valorContribuicao?.trim()}
               className="bg-[#3AC17C] hover:bg-[#2fa86a] text-white font-semibold py-2 px-4 rounded-lg disabled:opacity-50"
             >
               {adding ? '...' : 'Adicionar'}
             </button>
-          </form>
+          </div>
           {contribuicoes.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs font-medium text-white/80">Lançamentos:</p>
