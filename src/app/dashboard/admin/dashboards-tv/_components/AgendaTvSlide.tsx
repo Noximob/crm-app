@@ -286,9 +286,9 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode }: Agen
         </div>
       </header>
 
-      <div className="relative flex-1 min-h-0 p-4 md:p-6 overflow-auto">
+      <div className="relative flex-1 min-h-0 p-4 md:p-6 flex flex-col overflow-hidden">
         {mode === 'day' && (
-          <div className="h-full flex flex-col gap-6 max-w-5xl mx-auto">
+          <div className="h-full flex flex-col gap-4 max-w-5xl mx-auto min-h-0">
             {/* Progresso do dia — gamificado */}
             {(() => {
               const totalRestantes = plantoesRestantesHoje.length + slotsRestantesHoje.length;
@@ -341,33 +341,39 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode }: Agen
                   </div>
                 );
               }
+              const muitosItens = todosItens.length > 6;
               return (
-                <section>
-                  <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">
+                <section className="flex flex-col flex-1 min-h-0 flex-shrink-0">
+                  <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 shrink-0">
                     {todosItens.length} compromisso{todosItens.length !== 1 ? 's' : ''} restante{todosItens.length !== 1 ? 's' : ''}
                   </h2>
-                  <div className="space-y-4">
+                  <div
+                    className={`flex flex-col gap-2 min-h-0 ${muitosItens ? 'flex-1 min-h-0 overflow-auto' : 'flex-1'}`}
+                  >
                     {todosItens.map((item, idx) => {
                       const isProximo = idx === 0;
+                      const cardBase = muitosItens
+                        ? 'min-h-[72px]'
+                        : 'flex-1 min-h-[64px]';
                       if (item.tipo === 'plantao') {
                         const s = item.slot as SlotPlantao;
                         return (
                           <div
                             key={s.id}
-                            className={`flex items-center gap-5 p-5 rounded-2xl border-2 transition-all ${isProximo ? 'border-orange-400/60 bg-gradient-to-r from-orange-500/25 to-amber-500/15 shadow-lg shadow-orange-500/10' : 'border-orange-400/20 bg-orange-500/10'}`}
+                            className={`flex items-center gap-3 sm:gap-5 p-3 sm:p-5 rounded-xl sm:rounded-2xl border-2 transition-all ${cardBase} ${isProximo ? 'border-orange-400/60 bg-gradient-to-r from-orange-500/25 to-amber-500/15 shadow-lg shadow-orange-500/10' : 'border-orange-400/20 bg-orange-500/10'}`}
                           >
-                            <div className="relative">
-                              <div className="w-14 h-14 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-600 flex items-center justify-center text-2xl shrink-0 shadow-lg">🏢</div>
-                              <span className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold text-white">{idx + 1}</span>
+                            <div className="relative shrink-0">
+                              <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-r from-orange-500 to-amber-600 flex items-center justify-center text-xl sm:text-2xl shadow-lg">🏢</div>
+                              <span className="absolute -top-0.5 -right-0.5 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/20 flex items-center justify-center text-[10px] sm:text-xs font-bold text-white">{idx + 1}</span>
                             </div>
                             <div className="flex-1 min-w-0">
-                              {isProximo && <span className="text-xs font-bold text-orange-400 uppercase tracking-wider">Próximo</span>}
-                              <p className="font-bold text-white text-lg truncate">Plantão {s.construtora}</p>
-                              <p className="text-sm text-orange-300">Responsável: {s.corretorResponsavel}</p>
+                              {isProximo && <span className="text-[10px] sm:text-xs font-bold text-orange-400 uppercase tracking-wider">Próximo</span>}
+                              <p className="font-bold text-white text-base sm:text-lg truncate">Plantão {s.construtora}</p>
+                              <p className="text-xs sm:text-sm text-orange-300 truncate">Responsável: {s.corretorResponsavel}</p>
                             </div>
                             <div className="text-right shrink-0">
-                              <p className="text-xl font-mono font-bold text-cyan-400">{s.horario?.slice(0, 5) || fmtHora(s.inicio)}</p>
-                              <p className="text-xs text-slate-500">até {fmtHora(s.fim)}</p>
+                              <p className="text-base sm:text-xl font-mono font-bold text-cyan-400">{s.horario?.slice(0, 5) || fmtHora(s.inicio)}</p>
+                              <p className="text-[10px] sm:text-xs text-slate-500">até {fmtHora(s.fim)}</p>
                             </div>
                           </div>
                         );
@@ -377,23 +383,23 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode }: Agen
                       return (
                         <div
                           key={s.id}
-                          className={`flex items-center gap-5 p-5 rounded-2xl border-2 transition-all ${isProximo ? 'border-cyan-400/50 bg-gradient-to-r from-cyan-500/20 to-violet-500/10 shadow-lg shadow-cyan-500/10' : 'border-white/10 bg-white/5'}`}
+                          className={`flex items-center gap-3 sm:gap-5 p-3 sm:p-5 rounded-xl sm:rounded-2xl border-2 transition-all ${cardBase} ${isProximo ? 'border-cyan-400/50 bg-gradient-to-r from-cyan-500/20 to-violet-500/10 shadow-lg shadow-cyan-500/10' : 'border-white/10 bg-white/5'}`}
                         >
-                          <div className="relative">
-                            <div className={`w-14 h-14 rounded-2xl bg-gradient-to-r ${TIPO_COR[s.tipo] ?? TIPO_COR.outro} flex items-center justify-center text-2xl shrink-0 shadow-lg`}>
+                          <div className="relative shrink-0">
+                            <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-r ${TIPO_COR[s.tipo] ?? TIPO_COR.outro} flex items-center justify-center text-xl sm:text-2xl shadow-lg`}>
                               {TIPO_ICON[s.tipo] ?? TIPO_ICON.outro}
                             </div>
-                            <span className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold text-white">{idx + 1}</span>
+                            <span className="absolute -top-0.5 -right-0.5 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/20 flex items-center justify-center text-[10px] sm:text-xs font-bold text-white">{idx + 1}</span>
                           </div>
                           <div className="flex-1 min-w-0">
-                            {isProximo && <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">Próximo</span>}
-                            <p className="font-bold text-white text-lg truncate">{s.titulo}</p>
-                            <p className="text-sm text-slate-400">{isAcao ? (TIPO_LABEL[s.tipo] ?? s.tipo) : (s.local || TIPO_LABEL[s.tipo])}</p>
-                            {s.responsavel && <p className="text-xs text-slate-300 mt-0.5">Com: {s.responsavel}</p>}
+                            {isProximo && <span className="text-[10px] sm:text-xs font-bold text-cyan-400 uppercase tracking-wider">Próximo</span>}
+                            <p className="font-bold text-white text-base sm:text-lg truncate">{s.titulo}</p>
+                            <p className="text-xs sm:text-sm text-slate-400 truncate">{isAcao ? (TIPO_LABEL[s.tipo] ?? s.tipo) : (s.local || TIPO_LABEL[s.tipo])}</p>
+                            {s.responsavel && <p className="text-[10px] sm:text-xs text-slate-300 truncate">Com: {s.responsavel}</p>}
                           </div>
                           <div className="text-right shrink-0">
-                            <p className="text-xl font-mono font-bold text-cyan-400">{fmtHora(s.inicio)}</p>
-                            <p className="text-xs text-slate-500">até {fmtHora(s.fim)}</p>
+                            <p className="text-base sm:text-xl font-mono font-bold text-cyan-400">{fmtHora(s.inicio)}</p>
+                            <p className="text-[10px] sm:text-xs text-slate-500">até {fmtHora(s.fim)}</p>
                           </div>
                         </div>
                       );
