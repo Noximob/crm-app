@@ -12,7 +12,7 @@ interface AgendaImobiliaria {
   data: Timestamp;
   dataInicio?: Timestamp;
   dataFim?: Timestamp;
-  tipo: 'reuniao' | 'evento' | 'treinamento' | 'outro';
+  tipo: 'reuniao' | 'evento' | 'treinamento' | 'outro' | 'revisar-crm' | 'ligacao-ativa' | 'acao-de-rua' | 'disparo-de-msg';
   local?: string;
   responsavel?: string;
   imobiliariaId: string;
@@ -30,7 +30,7 @@ export default function AgendaImobiliariaAdminPage() {
     descricao: '',
     dataInicio: '',
     dataFim: '',
-    tipo: 'reuniao' as 'reuniao' | 'evento' | 'treinamento' | 'outro',
+    tipo: 'reuniao' as 'reuniao' | 'evento' | 'treinamento' | 'outro' | 'revisar-crm' | 'ligacao-ativa' | 'acao-de-rua' | 'disparo-de-msg',
     local: '',
     responsavel: ''
   });
@@ -149,6 +149,10 @@ export default function AgendaImobiliariaAdminPage() {
       case 'reuniao': return '👥';
       case 'evento': return '🎉';
       case 'treinamento': return '📚';
+      case 'revisar-crm': return '📋';
+      case 'ligacao-ativa': return '📞';
+      case 'acao-de-rua': return '📍';
+      case 'disparo-de-msg': return '💬';
       default: return '📅';
     }
   };
@@ -158,6 +162,10 @@ export default function AgendaImobiliariaAdminPage() {
       case 'reuniao': return 'bg-blue-500';
       case 'evento': return 'bg-purple-500';
       case 'treinamento': return 'bg-green-500';
+      case 'revisar-crm': return 'bg-cyan-500';
+      case 'ligacao-ativa': return 'bg-emerald-500';
+      case 'acao-de-rua': return 'bg-amber-500';
+      case 'disparo-de-msg': return 'bg-indigo-500';
       default: return 'bg-gray-500';
     }
   };
@@ -167,6 +175,10 @@ export default function AgendaImobiliariaAdminPage() {
       case 'reuniao': return 'Reunião';
       case 'evento': return 'Evento';
       case 'treinamento': return 'Treinamento';
+      case 'revisar-crm': return 'Revisar CRM';
+      case 'ligacao-ativa': return 'Ligação Ativa';
+      case 'acao-de-rua': return 'Ação de rua';
+      case 'disparo-de-msg': return 'Disparo de Msg';
       default: return 'Outro';
     }
   };
@@ -266,6 +278,10 @@ export default function AgendaImobiliariaAdminPage() {
                     <option value="reuniao">👥 Reunião</option>
                     <option value="evento">🎉 Evento</option>
                     <option value="treinamento">📚 Treinamento</option>
+                    <option value="revisar-crm">📋 Revisar CRM</option>
+                    <option value="ligacao-ativa">📞 Ligação Ativa</option>
+                    <option value="acao-de-rua">📍 Ação de rua</option>
+                    <option value="disparo-de-msg">💬 Disparo de Msg</option>
                     <option value="outro">📅 Outro</option>
                   </select>
                 </div>

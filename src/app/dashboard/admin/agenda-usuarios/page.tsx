@@ -82,7 +82,7 @@ interface AgendaImobiliaria {
   data: Timestamp;
   dataInicio?: Timestamp;
   dataFim?: Timestamp;
-  tipo: 'reuniao' | 'evento' | 'treinamento' | 'outro';
+  tipo: 'reuniao' | 'evento' | 'treinamento' | 'outro' | 'revisar-crm' | 'ligacao-ativa' | 'acao-de-rua' | 'disparo-de-msg';
   local?: string;
   responsavel?: string;
   imobiliariaId: string;
@@ -105,6 +105,20 @@ const tipoLabels = {
   comunidade: 'Evento Comunidade',
   imobiliaria: 'Agenda Imobiliária'
 };
+
+function getAgendaImobiliariaTipoLabel(tipo: string): string {
+  const labels: Record<string, string> = {
+    reuniao: 'Reunião',
+    evento: 'Evento',
+    treinamento: 'Treinamento',
+    'revisar-crm': 'Revisar CRM',
+    'ligacao-ativa': 'Ligação Ativa',
+    'acao-de-rua': 'Ação de rua',
+    'disparo-de-msg': 'Disparo de Msg',
+    outro: 'Outro'
+  };
+  return labels[tipo] ?? tipo;
+}
 
 export default function AgendaUsuariosPage() {
   const { userData } = useAuth();
@@ -496,7 +510,7 @@ export default function AgendaUsuariosPage() {
             allItems.push({
               id: `agenda_${agenda.id}`,
               titulo: agenda.titulo,
-              descricao: `${agenda.descricao || ''}\n\nTipo: ${agenda.tipo}\nLocal: ${agenda.local || 'Não informado'}\nResponsável: ${agenda.responsavel || 'Não informado'}`,
+              descricao: `${agenda.descricao || ''}\n\nTipo: ${getAgendaImobiliariaTipoLabel(agenda.tipo)}\nLocal: ${agenda.local || 'Não informado'}\nResponsável: ${agenda.responsavel || 'Não informado'}`,
               dataHora: agenda.dataInicio,
               tipo: 'imobiliaria',
               status: 'pendente',
@@ -525,7 +539,7 @@ export default function AgendaUsuariosPage() {
             descricao += '\n\n';
             descricao += `Período: ${inicioDateOnly.toLocaleDateString('pt-BR')} a ${fimDateOnly.toLocaleDateString('pt-BR')}\n`;
             descricao += `Horário diário: ${horaInicio.toString().padStart(2, '0')}:${minutoInicio.toString().padStart(2, '0')} - ${horaFim.toString().padStart(2, '0')}:${minutoFim.toString().padStart(2, '0')}\n`;
-            descricao += `Tipo: ${agenda.tipo}\nLocal: ${agenda.local || 'Não informado'}\nResponsável: ${agenda.responsavel || 'Não informado'}`;
+            descricao += `Tipo: ${getAgendaImobiliariaTipoLabel(agenda.tipo)}\nLocal: ${agenda.local || 'Não informado'}\nResponsável: ${agenda.responsavel || 'Não informado'}`;
             
             allItems.push({
               id: `agenda_${agenda.id}`,
@@ -549,7 +563,7 @@ export default function AgendaUsuariosPage() {
           allItems.push({
             id: `agenda_${agenda.id}`,
             titulo: agenda.titulo,
-            descricao: `${agenda.descricao || ''}\n\nTipo: ${agenda.tipo}\nLocal: ${agenda.local || 'Não informado'}\nResponsável: ${agenda.responsavel || 'Não informado'}`,
+            descricao: `${agenda.descricao || ''}\n\nTipo: ${getAgendaImobiliariaTipoLabel(agenda.tipo)}\nLocal: ${agenda.local || 'Não informado'}\nResponsável: ${agenda.responsavel || 'Não informado'}`,
             dataHora: agenda.data,
             tipo: 'imobiliaria',
             status: 'pendente',
