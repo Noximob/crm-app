@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db, storage } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import type { ImovelSelecaoNox } from './_components/SelecaoNoxSlide';
+import type { ImovelSelecaoNox } from './types';
 
 export interface SlideConfig {
   id: string;
