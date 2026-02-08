@@ -2,11 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, setDoc, addDoc, Timestamp } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 
 export default function AdminMetasPage() {
-  const { userData } = useAuth();
+  const { userData, currentUser } = useAuth();
   const [inicio, setInicio] = useState('');
   const [fim, setFim] = useState('');
   const [vgv, setVgv] = useState('');
@@ -14,6 +14,7 @@ export default function AdminMetasPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [ultimaAtualizacaoPor, setUltimaAtualizacaoPor] = useState<string | null>(null);
 
   // Buscar meta única da imobiliária
   const fetchMeta = async () => {
@@ -31,6 +32,7 @@ export default function AdminMetasPage() {
         setFim(meta.fim ? meta.fim.split('T')[0] : '');
         setVgv(meta.valor ? meta.valor.toString() : '');
         setRealizado(meta.alcancado ? meta.alcancado.toString() : '');
+        setUltimaAtualizacaoPor(meta.updatedByNome ?? null);
       }
     } catch (error) {
       console.error('Erro ao buscar meta:', error);
@@ -62,13 +64,28 @@ export default function AdminMetasPage() {
         alcancado: parseFloat(realizado),
         percentual: percentualCalculado,
         updatedAt: Timestamp.now(),
+        updatedBy: currentUser?.uid ?? null,
+        updatedByNome: userData?.nome ?? null,
       };
       
       console.log('Salvando meta:', novaMeta);
       await setDoc(metaRef, novaMeta, { merge: true });
+      // Histórico: cada alteração fica registrada por corretor para dashboards
+      const historicoRef = collection(db, 'metas', userData.imobiliariaId, 'historico');
+      await addDoc(historicoRef, {
+        updatedBy: currentUser?.uid ?? null,
+        updatedByNome: userData?.nome ?? null,
+        valor: parseFloat(vgv),
+        alcancado: parseFloat(realizado),
+        percentual: percentualCalculado,
+        inicio,
+        fim,
+        createdAt: Timestamp.now(),
+      });
       console.log('Meta salva com sucesso!');
       
       setSuccess(true);
+      setUltimaAtualizacaoPor(userData?.nome ?? null);
       setTimeout(() => setSuccess(false), 2000);
     } catch (error) {
       console.error('Erro ao salvar meta:', error);
@@ -133,6 +150,9 @@ export default function AdminMetasPage() {
             />
           </div>
         </div>
+        {ultimaAtualizacaoPor && (
+          <p className="text-sm text-white/70">Última atualização: <span className="font-medium text-white">{ultimaAtualizacaoPor}</span></p>
+        )}
         <div className="bg-[#23283A]/30 border border-[#3478F6]/20 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-white">% Alcançado (calculado automaticamente)</span>

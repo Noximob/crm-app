@@ -33,6 +33,8 @@ interface MetaDoc {
   valor?: number;
   alcancado?: number;
   percentual?: number;
+  updatedBy?: string;
+  updatedByNome?: string;
 }
 
 interface AvisoDestaque {
@@ -669,6 +671,11 @@ export default function RelatoriosAdminPage() {
                     {(meta.inicio || meta.fim) && (
                       <p className="text-base text-[#6B6F76] dark:text-gray-400">
                         Período: {meta.inicio ? formatDate(new Date(meta.inicio)) : '–'} a {meta.fim ? formatDate(new Date(meta.fim)) : '–'}
+                      </p>
+                    )}
+                    {meta.updatedByNome && (
+                      <p className="text-sm text-[#6B6F76] dark:text-gray-400">
+                        Última atualização por: <span className="font-medium text-[#2E2F38] dark:text-gray-200">{meta.updatedByNome}</span>
                       </p>
                     )}
                     <div className="flex justify-between text-base">
