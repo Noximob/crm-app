@@ -72,13 +72,23 @@ export default function AdminMetasPage() {
       }
       const contribRef = collection(db, 'metas', userData.imobiliariaId, 'contribuicoes');
       const contribSnap = await getDocs(query(contribRef, orderBy('createdAt', 'desc')));
-      setContribuicoes(contribSnap.docs.map(d => ({
+      const lista = contribSnap.docs.map(d => ({
         id: d.id,
         corretorId: d.data().corretorId ?? '',
         corretorNome: d.data().corretorNome ?? '',
         valor: Number(d.data().valor) ?? 0,
         createdAt: d.data().createdAt,
-      })));
+      }));
+      setContribuicoes(lista);
+      // Sincronizar documento da meta com a soma das contribuições (primeira página do dashboard lê esse doc)
+      const totalContribuicoes = lista.reduce((s, c) => s + c.valor, 0);
+      const valorMeta = snap.exists() ? Number(snap.data()?.valor) : 0;
+      const percentual = valorMeta > 0 ? Math.round((totalContribuicoes / valorMeta) * 100) : 0;
+      await setDoc(metaRef, {
+        alcancado: totalContribuicoes,
+        percentual,
+        updatedAt: Timestamp.now(),
+      }, { merge: true });
     } catch (error) {
       console.error('Erro ao buscar meta:', error);
     } finally {
