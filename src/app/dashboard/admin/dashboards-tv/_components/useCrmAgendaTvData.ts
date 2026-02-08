@@ -29,12 +29,21 @@ function parseDueDate(v: unknown): Date {
   return new Date(0);
 }
 
+function normalizarTipo(type: string): string {
+  return (type || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '');
+}
+
 function isLigacao(type: string): boolean {
-  const t = (type || '').trim().toLowerCase();
-  return t === 'ligação' || t === 'ligacao' || t === 'ligacão';
+  const t = normalizarTipo(type);
+  return t === 'ligacao' || t.startsWith('ligac');
 }
 function isVisita(type: string): boolean {
-  return (type || '').trim().toLowerCase() === 'visita';
+  const t = normalizarTipo(type);
+  return t === 'visita';
 }
 
 function isHoje(dueDate: Date, hojeStr: string, hojeStrUTC: string): boolean {
@@ -91,7 +100,7 @@ export function useCrmAgendaTvData(imobiliariaId: string | undefined) {
         const leadDocs: { id: string; data: Record<string, unknown> }[] = [];
 
         const snapImob = await getDocs(
-          query(leadsRef, where('imobiliariaId', '==', imobiliariaId), limit(500))
+          query(leadsRef, where('imobiliariaId', '==', imobiliariaId), limit(1000))
         );
         if (cancelled) return;
         snapImob.docs.forEach((docSnap) => {
@@ -104,7 +113,7 @@ export function useCrmAgendaTvData(imobiliariaId: string | undefined) {
         for (let i = 0; i < userIdsList.length; i += 10) {
           const chunk = userIdsList.slice(i, i + 10);
           const snapUser = await getDocs(
-            query(leadsRef, where('userId', 'in', chunk), limit(500))
+            query(leadsRef, where('userId', 'in', chunk), limit(1000))
           );
           if (cancelled) return;
           snapUser.docs.forEach((docSnap) => {

@@ -36,6 +36,8 @@ const SLIDES_DISPONIVEIS: Omit<SlideConfig, 'enabled' | 'durationSeconds'>[] = [
 ];
 
 const DURACAO_PRESETS = [
+  { label: '5 seg', value: 5 },
+  { label: '15 seg', value: 15 },
   { label: '30 seg', value: 30 },
   { label: '1 min', value: 60 },
   { label: '2 min', value: 120 },
@@ -180,6 +182,16 @@ export default function DashboardsTvPage() {
     setSlides(prev =>
       prev.map(s => (s.id === id ? { ...s, ...patch } : s))
     );
+  };
+
+  const moveSlide = (fromIndex: number, direction: 'up' | 'down') => {
+    const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1;
+    if (toIndex < 0 || toIndex >= slides.length) return;
+    setSlides(prev => {
+      const next = [...prev];
+      [next[fromIndex], next[toIndex]] = [next[toIndex], next[fromIndex]];
+      return next;
+    });
   };
 
   const handleSave = async () => {
@@ -375,11 +387,34 @@ export default function DashboardsTvPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {slides.map((slide) => (
+            <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-2">Use as setas para definir a ordem em que os slides aparecem na TV. Depois clique em Salvar.</p>
+            {slides.map((slide, index) => (
               <div
                 key={slide.id}
                 className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-4 shadow-sm flex flex-col sm:flex-row sm:items-center gap-4"
               >
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => moveSlide(index, 'up')}
+                    disabled={index === 0}
+                    className="p-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-400 hover:bg-[#E8E9F1] dark:hover:bg-[#23283A] disabled:opacity-40 disabled:cursor-not-allowed"
+                    title="Subir na ordem"
+                    aria-label="Subir"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveSlide(index, 'down')}
+                    disabled={index === slides.length - 1}
+                    className="p-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-400 hover:bg-[#E8E9F1] dark:hover:bg-[#23283A] disabled:opacity-40 disabled:cursor-not-allowed"
+                    title="Descer na ordem"
+                    aria-label="Descer"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                  </button>
+                </div>
                 <label className="flex items-center gap-3 cursor-pointer flex-1">
                   <input
                     type="checkbox"

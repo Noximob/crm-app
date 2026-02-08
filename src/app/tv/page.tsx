@@ -65,6 +65,7 @@ export default function TvPage() {
         if (Array.isArray(data.slides)) {
           const slides = (data.slides as SlideConfig[]).filter(s => s.enabled);
           setConfig(slides);
+          setCurrentIndex(prev => Math.min(prev, Math.max(0, slides.length - 1)));
         }
       }
       const refSelecao = doc(db, 'dashboardsTvSelecaoNox', imobiliariaId);
@@ -93,6 +94,8 @@ export default function TvPage() {
       setLoading(false);
     };
     load();
+    const interval = setInterval(load, 45000);
+    return () => clearInterval(interval);
   }, [imobiliariaId]);
 
   const currentSlide = config[currentIndex];
@@ -149,19 +152,6 @@ export default function TvPage() {
         ) : (
           <AgendaTvSlide events={agendaTvData.events} plantoes={agendaTvData.plantoes} mode="day" />
         )}
-        {config.length > 1 && (
-          <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
-            {config.map((s, i) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => setCurrentIndex(i)}
-                className={`w-2 h-2 rounded-full transition-colors ${i === currentIndex ? 'bg-[#3478F6] scale-125' : 'bg-white/30'}`}
-                aria-label={`Ir para ${s.name}`}
-              />
-            ))}
-          </div>
-        )}
       </div>
     );
   }
@@ -177,19 +167,6 @@ export default function TvPage() {
         ) : (
           <AgendaTvSlide events={agendaTvData.events} plantoes={agendaTvData.plantoes} fraseSemana={agendaFraseSemana} mode="week" />
         )}
-        {config.length > 1 && (
-          <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
-            {config.map((s, i) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => setCurrentIndex(i)}
-                className={`w-2 h-2 rounded-full transition-colors ${i === currentIndex ? 'bg-[#3478F6] scale-125' : 'bg-white/30'}`}
-                aria-label={`Ir para ${s.name}`}
-              />
-            ))}
-          </div>
-        )}
       </div>
     );
   }
@@ -202,19 +179,6 @@ export default function TvPage() {
           imoveis={selecaoNox.imoveis}
           fraseRolante={selecaoNox.fraseRolante}
         />
-        {config.length > 1 && (
-          <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
-            {config.map((s, i) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => setCurrentIndex(i)}
-                className={`w-2 h-2 rounded-full transition-colors ${i === currentIndex ? 'bg-[#3478F6] scale-125' : 'bg-white/30'}`}
-                aria-label={`Ir para ${s.name}`}
-              />
-            ))}
-          </div>
-        )}
       </div>
     );
   }
@@ -227,19 +191,6 @@ export default function TvPage() {
     return (
       <div className="min-h-screen flex flex-col">
         <UnidadesSelecaoSlide tituloSelecao={titulo} unidades={unidades} />
-        {config.length > 1 && (
-          <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
-            {config.map((s, i) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => setCurrentIndex(i)}
-                className={`w-2 h-2 rounded-full transition-colors ${i === currentIndex ? 'bg-[#3478F6] scale-125' : 'bg-white/30'}`}
-                aria-label={`Ir para ${s.name}`}
-              />
-            ))}
-          </div>
-        )}
       </div>
     );
   }
@@ -272,19 +223,6 @@ export default function TvPage() {
         {!temConteudo && (
           <p className="text-center text-[#6B6F76] text-sm py-4">Configure em Admin → Dashboards TV → Editar Notícia da Semana</p>
         )}
-        {config.length > 1 && (
-          <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
-            {config.map((s, i) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => setCurrentIndex(i)}
-                className={`w-2 h-2 rounded-full transition-colors ${i === currentIndex ? 'bg-[#3478F6] scale-125' : 'bg-white/30'}`}
-                aria-label={`Ir para ${s.name}`}
-              />
-            ))}
-          </div>
-        )}
       </div>
     );
   }
@@ -305,19 +243,6 @@ export default function TvPage() {
             somenteCorporativo
           />
         )}
-        {config.length > 1 && (
-          <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
-            {config.map((s, i) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => setCurrentIndex(i)}
-                className={`w-2 h-2 rounded-full transition-colors ${i === currentIndex ? 'bg-[#3478F6] scale-125' : 'bg-white/30'}`}
-                aria-label={`Ir para ${s.name}`}
-              />
-            ))}
-          </div>
-        )}
       </div>
     );
   }
@@ -332,19 +257,6 @@ export default function TvPage() {
           </div>
         ) : (
           <FunilVendasIndividualSlide funilPorCorretor={funilData.funilPorCorretor} />
-        )}
-        {config.length > 1 && (
-          <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
-            {config.map((s, i) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => setCurrentIndex(i)}
-                className={`w-2 h-2 rounded-full transition-colors ${i === currentIndex ? 'bg-[#3478F6] scale-125' : 'bg-white/30'}`}
-                aria-label={`Ir para ${s.name}`}
-              />
-            ))}
-          </div>
         )}
       </div>
     );
@@ -365,19 +277,6 @@ export default function TvPage() {
             contribuicoesPorCorretor={metasData.contribuicoesPorCorretor}
           />
         )}
-        {config.length > 1 && (
-          <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
-            {config.map((s, i) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => setCurrentIndex(i)}
-                className={`w-2 h-2 rounded-full transition-colors ${i === currentIndex ? 'bg-[#3478F6] scale-125' : 'bg-white/30'}`}
-                aria-label={`Ir para ${s.name}`}
-              />
-            ))}
-          </div>
-        )}
       </div>
     );
   }
@@ -396,17 +295,6 @@ export default function TvPage() {
             <p className="text-sm text-gray-500 mt-4">Próxima tela em {duration}s</p>
           )}
         </div>
-      </div>
-      <div className="flex justify-center gap-2 pb-6">
-        {config.map((s, i) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => setCurrentIndex(i)}
-            className={`w-2 h-2 rounded-full transition-colors ${i === currentIndex ? 'bg-[#3478F6] scale-125' : 'bg-gray-600'}`}
-            aria-label={`Ir para ${s.name}`}
-          />
-        ))}
       </div>
     </div>
   );
