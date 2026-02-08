@@ -131,6 +131,7 @@ function expandirEventosParaSlots(
       return;
     }
 
+    if (!fimEv) return;
     const oneDay = 24 * 60 * 60 * 1000;
     for (let t = Math.max(start, inicioOnly.getTime()); t <= end && t <= fimOnly.getTime(); t += oneDay) {
       const dayCur = new Date(t);
