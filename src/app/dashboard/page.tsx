@@ -270,10 +270,19 @@ function getTaskStatusInfo(tasks: Task[]): TaskStatus {
   return 'Tarefa Futura';
 }
 
+// Formata data salva como YYYY-MM-DD para exibição em pt-BR (evita mudar de dia por UTC)
+const formatMetaDate = (value: string | undefined) => {
+  if (!value) return '--';
+  const s = typeof value === 'string' ? value.split('T')[0] : '';
+  const [y, m, d] = s.split('-').map(Number);
+  if (!y || !m || !d) return '--';
+  return new Date(y, m - 1, d).toLocaleDateString('pt-BR');
+};
+
 // Novo Card de Metas moderno
 const MetasCard = ({ meta, nomeImobiliaria }: { meta: any, nomeImobiliaria: string }) => {
   // Usar o percentual salvo no Firestore, ou calcular automaticamente se não existir
-  const progresso = meta?.percentual !== undefined ? meta.percentual : (meta && meta.valor > 0 ? Math.round((meta.alcancado / meta.valor) * 100) : 0);
+  const progresso = meta?.percentual !== undefined ? meta.percentual : (meta && meta.valor > 0 ? Math.round(((meta.alcancado ?? 0) / meta.valor) * 100) : 0);
   const progressoDisplay = progresso > 100 ? 100 : progresso;
   
   // Determinar cores baseado no progresso
@@ -319,13 +328,13 @@ const MetasCard = ({ meta, nomeImobiliaria }: { meta: any, nomeImobiliaria: stri
           <span className="ml-2 px-2 py-0.5 rounded bg-[#3478F6]/10 text-[#3478F6] text-xs font-semibold">{nomeImobiliaria}</span>
         )}
       </div>
-      {/* Datas */}
+      {/* Datas (mesmo formato do admin, sem deslocamento por fuso) */}
       <div className="flex items-center gap-2 text-xs text-[#A3C8F7] mb-2">
         <span className="font-semibold">Início:</span>
-        <span className="text-white">{meta?.inicio ? new Date(meta.inicio).toLocaleDateString('pt-BR') : '--'}</span>
+        <span className="text-white">{formatMetaDate(meta?.inicio)}</span>
         <span>|</span>
         <span className="font-semibold">Fim:</span>
-        <span className="text-white">{meta?.fim ? new Date(meta.fim).toLocaleDateString('pt-BR') : '--'}</span>
+        <span className="text-white">{formatMetaDate(meta?.fim)}</span>
       </div>
       {/* Valores principais */}
       <div className="flex items-center justify-between mb-1">
@@ -335,7 +344,7 @@ const MetasCard = ({ meta, nomeImobiliaria }: { meta: any, nomeImobiliaria: stri
         </div>
         <div className="flex flex-col items-end">
           <span className="text-xs text-[#A3C8F7]">Já Realizado</span>
-          <span className={`text-xl font-bold ${progresso >= 100 ? 'text-[#3AC17C]' : 'text-[#3478F6]'}`}>{meta?.alcancado ? meta.alcancado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}</span>
+          <span className={`text-xl font-bold ${progresso >= 100 ? 'text-[#3AC17C]' : 'text-[#3478F6]'}`}>{typeof meta?.alcancado === 'number' ? meta.alcancado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}</span>
         </div>
       </div>
       {/* Barra de progresso com gradiente */}
