@@ -124,8 +124,13 @@ const TrendDownIcon = (p: React.SVGProps<SVGSVGElement>) => (
 const MegaphoneIcon = (p: React.SVGProps<SVGSVGElement>) => (
   <svg {...p} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
 );
+const AlertTriangleIcon = (p: React.SVGProps<SVGSVGElement>) => (
+  <svg {...p} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+);
 
 const ETAPAS_QUENTES = ['Negociação e Proposta', 'Contrato e fechamento', 'Pós Venda e Fidelização'];
+const ETAPAS_QUALIFICACAO_SEM_REUNIAO = ['Pré Qualificação', 'Qualificação', 'Apresentação do imóvel'];
+const ETAPAS_LIGACAO_OU_VISITA = ['Ligação agendada', 'Visita agendada'];
 
 export default function RelatoriosAdminPage() {
   const { userData } = useAuth();
@@ -366,6 +371,23 @@ export default function RelatoriosAdminPage() {
     return vigentes.length > 0 ? vigentes[vigentes.length - 1] : null;
   }, [avisos]);
 
+  // Alerta de atenção: avanço do funil, follow-up, qualificados sem ligação/reunião
+  const alertaAtencao = useMemo(() => {
+    const emQualificacaoSemReuniao = filteredLeads.filter(l => ETAPAS_QUALIFICACAO_SEM_REUNIAO.includes(l.etapa || ''));
+    const novosAindaEmQualificacao = leadsNoPeriodo.filter(l => ETAPAS_QUALIFICACAO_SEM_REUNIAO.includes(l.etapa || ''));
+    const comLigacaoOuVisita = filteredLeads.filter(l => ETAPAS_LIGACAO_OU_VISITA.includes(l.etapa || ''));
+    const total = filteredLeads.length || 1;
+    const quentes = filteredLeads.filter(l => ETAPAS_QUENTES.includes(l.etapa || '')).length;
+    const pctQuentes = Math.round((quentes / total) * 100);
+    return {
+      totalEmQualificacaoSemReuniao: emQualificacaoSemReuniao.length,
+      novosAindaEmQualificacao: novosAindaEmQualificacao.length,
+      comLigacaoOuVisita: comLigacaoOuVisita.length,
+      pctEmEtapasQuentes: pctQuentes,
+      totalLeads: filteredLeads.length,
+    };
+  }, [filteredLeads, leadsNoPeriodo]);
+
   if (!imobiliariaId) {
     return (
       <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4 flex items-center justify-center">
@@ -427,9 +449,40 @@ export default function RelatoriosAdminPage() {
               </span>
             </div>
 
-            {/* Hero: frase de resumo — grande, legível na TV */}
-            <div className="mb-8 p-6 md:p-8 rounded-2xl bg-gradient-to-r from-[#3478F6]/15 to-[#A3C8F7]/10 dark:from-[#3478F6]/25 dark:to-[#A3C8F7]/15 border-2 border-[#3478F6]/30">
-              <p className="text-lg md:text-xl lg:text-2xl text-[#2E2F38] dark:text-white leading-relaxed font-medium">{fraseResumo}</p>
+            {/* Alerta de atenção: avanço do funil, follow-up, qualificados sem ligação/reunião */}
+            <div className="mb-8 p-6 md:p-8 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border-2 border-amber-500/40">
+              <h2 className="text-xl font-bold text-amber-700 dark:text-amber-400 mb-4 flex items-center gap-3">
+                <AlertTriangleIcon className="w-7 h-7 shrink-0" />
+                Alerta de atenção
+              </h2>
+              <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-5">Acompanhamento do avanço do funil e leads que precisam de follow-up.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white/80 dark:bg-[#23283A]/80 rounded-xl p-4 border border-amber-500/20">
+                  <p className="text-sm font-semibold text-amber-700 dark:text-amber-400 mb-1">Novos no período sem avanço</p>
+                  <p className="text-2xl md:text-3xl font-bold text-[#2E2F38] dark:text-white tabular-nums">{alertaAtencao.novosAindaEmQualificacao}</p>
+                  <p className="text-xs text-[#6B6F76] dark:text-gray-400 mt-1">leads criados no período que ainda não foram para ligação ou reunião</p>
+                </div>
+                <div className="bg-white/80 dark:bg-[#23283A]/80 rounded-xl p-4 border border-amber-500/20">
+                  <p className="text-sm font-semibold text-amber-700 dark:text-amber-400 mb-1">Em qualificação (sem reunião agendada)</p>
+                  <p className="text-2xl md:text-3xl font-bold text-[#2E2F38] dark:text-white tabular-nums">{alertaAtencao.totalEmQualificacaoSemReuniao}</p>
+                  <p className="text-xs text-[#6B6F76] dark:text-gray-400 mt-1">pré-qualificação, qualificação ou apresentação — podem precisar de follow-up</p>
+                </div>
+                <div className="bg-white/80 dark:bg-[#23283A]/80 rounded-xl p-4 border border-[#3AC17C]/30">
+                  <p className="text-sm font-semibold text-[#3AC17C] mb-1">Com ligação ou visita agendada</p>
+                  <p className="text-2xl md:text-3xl font-bold text-[#2E2F38] dark:text-white tabular-nums">{alertaAtencao.comLigacaoOuVisita}</p>
+                  <p className="text-xs text-[#6B6F76] dark:text-gray-400 mt-1">leads em ação agendada</p>
+                </div>
+                <div className="bg-white/80 dark:bg-[#23283A]/80 rounded-xl p-4 border border-[#3478F6]/30">
+                  <p className="text-sm font-semibold text-[#3478F6] mb-1">Concentração em negociação/contrato</p>
+                  <p className="text-2xl md:text-3xl font-bold text-[#2E2F38] dark:text-white tabular-nums">{alertaAtencao.pctEmEtapasQuentes}%</p>
+                  <p className="text-xs text-[#6B6F76] dark:text-gray-400 mt-1">do funil em etapas quentes — acompanhe o avanço</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Resumo em uma linha (dados detalhados nos cards abaixo) */}
+            <div className="mb-8 p-4 rounded-xl bg-[#F5F6FA] dark:bg-[#23283A]/50 border border-[#E8E9F1] dark:border-[#23283A]">
+              <p className="text-base text-[#2E2F38] dark:text-gray-200">{fraseResumo}</p>
             </div>
 
             {/* Destaque + Origem que converte — cards grandes */}
