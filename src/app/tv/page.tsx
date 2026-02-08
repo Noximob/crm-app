@@ -5,7 +5,16 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { SelecaoNoxSlide } from '@/app/dashboard/admin/dashboards-tv/_components/SelecaoNoxSlide';
+import { UnidadesSelecaoSlide } from '@/app/dashboard/admin/dashboards-tv/_components/UnidadesSelecaoSlide';
 import type { ImovelSelecaoNox } from '@/app/dashboard/admin/dashboards-tv/types';
+import type { UnidadesSelecaoData } from '@/app/dashboard/admin/dashboards-tv/types';
+
+function getUnidadesSelecaoIndex(slideId: string): number | null {
+  if (slideId === 'unidades-selecao-0') return 0;
+  if (slideId === 'unidades-selecao-1') return 1;
+  if (slideId === 'unidades-selecao-2') return 2;
+  return null;
+}
 
 export interface SlideConfig {
   id: string;
@@ -25,6 +34,7 @@ export default function TvPage() {
   const { userData } = useAuth();
   const [config, setConfig] = useState<SlideConfig[]>([]);
   const [selecaoNox, setSelecaoNox] = useState<{ imoveis: ImovelSelecaoNox[]; fraseRolante: string }>({ imoveis: [], fraseRolante: '' });
+  const [unidadesData, setUnidadesData] = useState<UnidadesSelecaoData>({ selecoes: [] });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -49,6 +59,14 @@ export default function TvPage() {
         setSelecaoNox({
           imoveis: Array.isArray(d.imoveis) ? d.imoveis : [],
           fraseRolante: d.fraseRolante ?? '',
+        });
+      }
+      const refUnidades = doc(db, 'dashboardsTvUnidadesSelecao', imobiliariaId);
+      const snapUnidades = await getDoc(refUnidades);
+      if (snapUnidades.exists()) {
+        const d = snapUnidades.data()!;
+        setUnidadesData({
+          selecoes: Array.isArray(d.selecoes) ? d.selecoes : [],
         });
       }
       setLoading(false);
@@ -107,6 +125,31 @@ export default function TvPage() {
           imoveis={selecaoNox.imoveis}
           fraseRolante={selecaoNox.fraseRolante}
         />
+        {config.length > 1 && (
+          <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
+            {config.map((s, i) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setCurrentIndex(i)}
+                className={`w-2 h-2 rounded-full transition-colors ${i === currentIndex ? 'bg-[#3478F6] scale-125' : 'bg-white/30'}`}
+                aria-label={`Ir para ${s.name}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Conteúdo das telas "Unidades da Seleção 1/2/3" (1 slide por seleção Nox, mesmo estilo: 3 cards com foto + texto embaixo)
+  const unidadesIdx = currentSlide?.id ? getUnidadesSelecaoIndex(currentSlide.id) : null;
+  if (unidadesIdx !== null) {
+    const titulo = selecaoNox.imoveis[unidadesIdx]?.titulo || `Seleção ${unidadesIdx + 1}`;
+    const unidades = unidadesData.selecoes[unidadesIdx]?.unidades ?? [];
+    return (
+      <div className="min-h-screen flex flex-col">
+        <UnidadesSelecaoSlide tituloSelecao={titulo} unidades={unidades} />
         {config.length > 1 && (
           <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
             {config.map((s, i) => (

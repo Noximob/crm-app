@@ -1,115 +1,17 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import type { SlideConfig } from '../page';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-const TvIcon = (p: React.SVGProps<SVGSVGElement>) => (
-  <svg {...p} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-    <rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
-    <polyline points="17,2 12,7 7,2" />
-  </svg>
-);
-
+// Redireciona para a página TV sem sidebar (/tv)
 export default function DashboardsTvViewPage() {
-  const { userData } = useAuth();
-  const [config, setConfig] = useState<SlideConfig[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
-
-  const imobiliariaId = userData?.imobiliariaId;
-
+  const router = useRouter();
   useEffect(() => {
-    if (!imobiliariaId) {
-      setLoading(false);
-      return;
-    }
-    const load = async () => {
-      const ref = doc(db, 'dashboardsTvConfig', imobiliariaId);
-      const snap = await getDoc(ref);
-      if (snap.exists() && Array.isArray(snap.data()?.slides)) {
-        const slides = (snap.data()!.slides as SlideConfig[]).filter(s => s.enabled);
-        setConfig(slides);
-      }
-      setLoading(false);
-    };
-    load();
-  }, [imobiliariaId]);
-
-  const currentSlide = config[currentIndex];
-  const duration = currentSlide?.durationSeconds ?? 60;
-
-  const goNext = useCallback(() => {
-    if (config.length <= 1) return;
-    setCurrentIndex(i => (i + 1) % config.length);
-  }, [config.length]);
-
-  useEffect(() => {
-    if (!currentSlide || config.length === 0) return;
-    if (duration === 0) return; // fixo: não avança sozinho
-    const t = setTimeout(goNext, duration * 1000);
-    return () => clearTimeout(t);
-  }, [currentIndex, currentSlide, duration, config.length, goNext]);
-
-  if (!imobiliariaId) {
-    return (
-      <div className="min-h-screen bg-[#181C23] flex items-center justify-center text-white">
-        <p>Faça login para exibir os dashboards na TV.</p>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#181C23] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#3478F6] border-t-transparent" />
-      </div>
-    );
-  }
-
-  if (config.length === 0) {
-    return (
-      <div className="min-h-screen bg-[#181C23] flex flex-col items-center justify-center text-white p-8">
-        <TvIcon className="w-16 h-16 text-[#3478F6] mb-4" />
-        <p className="text-xl font-semibold mb-2">Nenhuma tela ativa</p>
-        <p className="text-gray-400 text-center max-w-md">
-          Configure as telas em Admin → Dashboards TV e ative pelo menos uma.
-        </p>
-      </div>
-    );
-  }
-
+    router.replace('/tv');
+  }, [router]);
   return (
-    <div className="min-h-screen bg-[#181C23] text-white overflow-hidden flex flex-col">
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#3478F6]/20 text-[#3478F6] mb-6">
-            <TvIcon className="w-8 h-8" />
-          </div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">{currentSlide?.name}</h1>
-          <p className="text-gray-400">
-            Conteúdo desta tela em breve. Os dados virão dos Relatórios.
-          </p>
-          {duration > 0 && (
-            <p className="text-sm text-gray-500 mt-4">
-              Próxima tela em {duration}s
-            </p>
-          )}
-        </div>
-      </div>
-      <div className="flex justify-center gap-2 pb-6">
-        {config.map((s, i) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => setCurrentIndex(i)}
-            className={`w-2 h-2 rounded-full transition-colors ${i === currentIndex ? 'bg-[#3478F6] scale-125' : 'bg-gray-600'}`}
-            aria-label={`Ir para ${s.name}`}
-          />
-        ))}
-      </div>
+    <div className="min-h-screen bg-[#181C23] flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#3478F6] border-t-transparent" />
     </div>
   );
 }

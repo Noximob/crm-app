@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db, storage } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import type { ImovelSelecaoNox } from './types';
+import type { ImovelSelecaoNox, UnidadeSelecao, UnidadesSelecaoData } from './types';
 
 export interface SlideConfig {
   id: string;
@@ -19,7 +19,9 @@ const SLIDES_DISPONIVEIS: Omit<SlideConfig, 'enabled' | 'durationSeconds'>[] = [
   { id: 'agenda-dia', name: 'Agenda do Dia' },
   { id: 'ranking', name: 'Ranking (mensal/semanal/diário)' },
   { id: 'top3-selecao-nox', name: 'Top 3 Seleção Nox' },
-  { id: 'unidades-selecao', name: 'Unidades da Seleção' },
+  { id: 'unidades-selecao-0', name: 'Unidades da Seleção 1' },
+  { id: 'unidades-selecao-1', name: 'Unidades da Seleção 2' },
+  { id: 'unidades-selecao-2', name: 'Unidades da Seleção 3' },
   { id: 'noticia-semana', name: 'Notícia da Semana' },
   { id: 'metas-resultados', name: 'Metas & Resultados (trimestral e mensal)' },
   { id: 'funil-vendas', name: 'Funil de Vendas (corporativo e individuais)' },
@@ -54,6 +56,17 @@ const PencilIcon = (p: React.SVGProps<SVGSVGElement>) => (
 );
 
 const IMOVEL_VAZIO: ImovelSelecaoNox = { imageUrl: '', titulo: '', local: '', preco: '' };
+const UNIDADE_VAZIA: UnidadeSelecao = { imageUrl: '', titulo: '', valor: '', descritivo: '' };
+
+function defaultUnidadesSelecao(): UnidadesSelecaoData {
+  return {
+    selecoes: [
+      { unidades: [UNIDADE_VAZIA, UNIDADE_VAZIA, UNIDADE_VAZIA] },
+      { unidades: [UNIDADE_VAZIA, UNIDADE_VAZIA, UNIDADE_VAZIA] },
+      { unidades: [UNIDADE_VAZIA, UNIDADE_VAZIA, UNIDADE_VAZIA] },
+    ],
+  };
+}
 
 export default function DashboardsTvPage() {
   const { userData } = useAuth();
@@ -67,8 +80,12 @@ export default function DashboardsTvPage() {
   const [savingSelecao, setSavingSelecao] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState<number | null>(null);
   const [editingSlideId, setEditingSlideId] = useState<string | null>(null);
+  const [unidadesSelecao, setUnidadesSelecao] = useState<UnidadesSelecaoData>(defaultUnidadesSelecao);
+  const [savingUnidades, setSavingUnidades] = useState(false);
+  const [uploadingPhotoUnidad, setUploadingPhotoUnidad] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const fileInputRefsUnidades = useRef<(HTMLInputElement | null)[]>([]);
 
   const imobiliariaId = userData?.imobiliariaId;
 
@@ -81,7 +98,9 @@ export default function DashboardsTvPage() {
       const ref = doc(db, 'dashboardsTvConfig', imobiliariaId);
       const snap = await getDoc(ref);
       if (snap.exists() && Array.isArray(snap.data()?.slides)) {
-        setSlides(snap.data()!.slides as SlideConfig[]);
+        const raw = snap.data()!.slides as SlideConfig[];
+        const migrated = raw.map(s => s.id === 'unidades-selecao' ? { ...s, id: 'unidades-selecao-0' as const, name: 'Unidades da Seleção 1' } : s);
+        setSlides(migrated);
       } else {
         setSlides(
           SLIDES_DISPONIVEIS.map(s => ({
@@ -103,6 +122,19 @@ export default function DashboardsTvPage() {
             imoveis[2] ?? IMOVEL_VAZIO,
           ],
           fraseRolante: d.fraseRolante ?? '',
+        });
+      }
+      const refUnidades = doc(db, 'dashboardsTvUnidadesSelecao', imobiliariaId);
+      const snapUnidades = await getDoc(refUnidades);
+      if (snapUnidades.exists()) {
+        const d = snapUnidades.data()!;
+        const sel = Array.isArray(d.selecoes) ? d.selecoes : [];
+        setUnidadesSelecao({
+          selecoes: [
+            sel[0] ?? { unidades: [UNIDADE_VAZIA, UNIDADE_VAZIA, UNIDADE_VAZIA] },
+            sel[1] ?? { unidades: [UNIDADE_VAZIA, UNIDADE_VAZIA, UNIDADE_VAZIA] },
+            sel[2] ?? { unidades: [UNIDADE_VAZIA, UNIDADE_VAZIA, UNIDADE_VAZIA] },
+          ],
         });
       }
       setLoading(false);
@@ -168,6 +200,52 @@ export default function DashboardsTvPage() {
       setTimeout(() => setMsg(null), 3000);
     } finally {
       setUploadingPhoto(null);
+    }
+  };
+
+  const updateUnidad = (selecaoIdx: number, unidadIdx: number, patch: Partial<UnidadeSelecao>) => {
+    setUnidadesSelecao(prev => ({
+      ...prev,
+      selecoes: prev.selecoes.map((s, si) =>
+        si !== selecaoIdx ? s : {
+          ...s,
+          unidades: s.unidades.map((u, ui) => (ui !== unidadIdx ? u : { ...u, ...patch })),
+        }
+      ),
+    }));
+  };
+
+  const handleUploadFotoUnidad = async (selecaoIdx: number, unidadIdx: number, file: File | null) => {
+    if (!imobiliariaId || !file || !file.type.startsWith('image/')) return;
+    const key = `${selecaoIdx}-${unidadIdx}`;
+    setUploadingPhotoUnidad(key);
+    try {
+      const ext = file.name.split('.').pop() || 'jpg';
+      const path = `dashboardsTvUnidadesSelecao/${imobiliariaId}/s${selecaoIdx}_u${unidadIdx}_${Date.now()}.${ext}`;
+      const storageRef = ref(storage, path);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      updateUnidad(selecaoIdx, unidadIdx, { imageUrl: url });
+    } catch (e) {
+      setMsg('Erro ao enviar foto.');
+      setTimeout(() => setMsg(null), 3000);
+    } finally {
+      setUploadingPhotoUnidad(null);
+    }
+  };
+
+  const handleSaveUnidadesSelecao = async () => {
+    if (!imobiliariaId) return;
+    setSavingUnidades(true);
+    setMsg(null);
+    try {
+      await setDoc(doc(db, 'dashboardsTvUnidadesSelecao', imobiliariaId), unidadesSelecao, { merge: true });
+      setMsg('Unidades da Seleção salvas!');
+      setTimeout(() => setMsg(null), 3000);
+    } catch (e) {
+      setMsg('Erro ao salvar.');
+    } finally {
+      setSavingUnidades(false);
     }
   };
 
@@ -259,12 +337,12 @@ export default function DashboardsTvPage() {
                     type="button"
                     onClick={() => setEditingSlideId(slide.id === editingSlideId ? null : slide.id)}
                     className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      slide.id === 'top3-selecao-nox'
+                      slide.id === 'top3-selecao-nox' || slide.id.startsWith('unidades-selecao-')
                         ? 'bg-[#3478F6]/10 text-[#3478F6] hover:bg-[#3478F6]/20'
                         : 'bg-[#E8E9F1] dark:bg-[#23283A] text-[#6B6F76] dark:text-gray-400 cursor-not-allowed'
                     }`}
-                    title={slide.id === 'top3-selecao-nox' ? 'Editar conteúdo desta tela' : 'Em breve'}
-                    disabled={slide.id !== 'top3-selecao-nox'}
+                    title={slide.id === 'top3-selecao-nox' || slide.id.startsWith('unidades-selecao-') ? 'Editar conteúdo desta tela' : 'Em breve'}
+                    disabled={slide.id !== 'top3-selecao-nox' && !slide.id.startsWith('unidades-selecao-')}
                   >
                     <PencilIcon className="w-4 h-4" />
                     Editar
@@ -379,6 +457,105 @@ export default function DashboardsTvPage() {
                   className="px-4 py-2 rounded-lg bg-[#3AC17C] text-white font-semibold hover:bg-[#2ea86a] disabled:opacity-50"
                 >
                   {savingSelecao ? 'Salvando...' : 'Salvar Seleção Nox'}
+                </button>
+              </div>
+            )}
+
+            {/* Configurar Unidades da Seleção — 3 seleções (uma por imóvel Nox), cada uma com 3 unidades; 1 slide na TV para cada seleção */}
+            {(editingSlideId === 'unidades-selecao-0' || editingSlideId === 'unidades-selecao-1' || editingSlideId === 'unidades-selecao-2') && (
+              <div className="mt-4 p-6 rounded-2xl bg-white dark:bg-[#23283A] border-2 border-[#3478F6]/20 shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Configurar Unidades da Seleção</h2>
+                  <button
+                    type="button"
+                    onClick={() => setEditingSlideId(null)}
+                    className="text-sm text-[#6B6F76] dark:text-gray-400 hover:text-[#2E2F38] dark:hover:text-white"
+                  >
+                    Fechar
+                  </button>
+                </div>
+                <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-6">
+                  Cada um dos 3 imóveis do Seleção Nox vira uma &quot;seleção&quot;. Em cada seleção você escolhe 3 unidades (foto, título, valor e descritivo explicando por que a unidade é boa).
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                  {[0, 1, 2].map((selecaoIdx) => (
+                    <div key={selecaoIdx} className="rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-4 bg-[#F5F6FA] dark:bg-[#181C23]">
+                      <h3 className="font-semibold text-[#3478F6] mb-4 border-b border-[#3478F6]/20 pb-2">
+                        {selecaoNox.imoveis[selecaoIdx]?.titulo || `Seleção ${selecaoIdx + 1}`}
+                      </h3>
+                      <div className="space-y-5">
+                        {[0, 1, 2].map((unidadIdx) => {
+                          const key = `${selecaoIdx}-${unidadIdx}`;
+                          const flatIdx = selecaoIdx * 3 + unidadIdx;
+                          const u = unidadesSelecao.selecoes[selecaoIdx]?.unidades[unidadIdx] ?? UNIDADE_VAZIA;
+                          return (
+                            <div key={unidadIdx} className="rounded-lg border border-[#E8E9F1] dark:border-[#23283A] p-3 bg-white dark:bg-[#23283A]">
+                              <p className="text-xs font-medium text-[#6B6F76] dark:text-gray-400 mb-2">Unidade {unidadIdx + 1}</p>
+                              <div className="space-y-2">
+                                <div>
+                                  <div className="h-20 rounded overflow-hidden bg-[#181C23] border border-[#23283A] relative mb-1">
+                                    {u.imageUrl ? (
+                                      <img src={u.imageUrl} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-[#6B6F76] text-xs">Sem foto</div>
+                                    )}
+                                    <input
+                                      ref={el => { fileInputRefsUnidades.current[flatIdx] = el; }}
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={e => {
+                                        const f = e.target.files?.[0];
+                                        if (f) handleUploadFotoUnidad(selecaoIdx, unidadIdx, f);
+                                        e.target.value = '';
+                                      }}
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => fileInputRefsUnidades.current[flatIdx]?.click()}
+                                      disabled={uploadingPhotoUnidad !== null}
+                                      className="absolute bottom-0.5 right-0.5 px-1.5 py-0.5 rounded text-xs font-medium bg-[#3478F6] text-white disabled:opacity-50"
+                                    >
+                                      {uploadingPhotoUnidad === key ? 'Enviando...' : u.imageUrl ? 'Trocar' : 'Foto'}
+                                    </button>
+                                  </div>
+                                </div>
+                                <input
+                                  type="text"
+                                  value={u.titulo}
+                                  onChange={e => updateUnidad(selecaoIdx, unidadIdx, { titulo: e.target.value })}
+                                  placeholder="Título da unidade"
+                                  className="w-full rounded border border-[#E8E9F1] dark:border-[#23283A] px-2 py-1.5 text-sm text-[#2E2F38] dark:text-white bg-white dark:bg-[#181C23]"
+                                />
+                                <input
+                                  type="text"
+                                  value={u.valor}
+                                  onChange={e => updateUnidad(selecaoIdx, unidadIdx, { valor: e.target.value })}
+                                  placeholder="Valor (R$)"
+                                  className="w-full rounded border border-[#E8E9F1] dark:border-[#23283A] px-2 py-1.5 text-sm text-[#2E2F38] dark:text-white bg-white dark:bg-[#181C23]"
+                                />
+                                <textarea
+                                  value={u.descritivo}
+                                  onChange={e => updateUnidad(selecaoIdx, unidadIdx, { descritivo: e.target.value })}
+                                  placeholder="Por que essa unidade é boa (descritivo)"
+                                  rows={2}
+                                  className="w-full rounded border border-[#E8E9F1] dark:border-[#23283A] px-2 py-1.5 text-sm text-[#2E2F38] dark:text-white bg-white dark:bg-[#181C23] resize-none"
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSaveUnidadesSelecao}
+                  disabled={savingUnidades}
+                  className="px-4 py-2 rounded-lg bg-[#3AC17C] text-white font-semibold hover:bg-[#2ea86a] disabled:opacity-50"
+                >
+                  {savingUnidades ? 'Salvando...' : 'Salvar Unidades da Seleção'}
                 </button>
               </div>
             )}

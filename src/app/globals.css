@@ -153,6 +153,15 @@ input:focus {
   }
 }
 
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
 /* Classes utilitárias */
 .animate-fade-in {
   animation: fadeIn 0.5s ease-out;
@@ -164,6 +173,10 @@ input:focus {
 
 .animate-pulse-slow {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-marquee {
+  animation: marquee 25s linear infinite;
 }
 
 /* Gradientes personalizados */
