@@ -79,7 +79,7 @@ export function MetasResultadosSlide({
   const faltaMensal = metaMensal ? Math.max(0, metaMensal.valor - metaMensal.alcancado) : 0;
   const temMeta = metaTrimestral.valor > 0 || (metaMensal?.valor ?? 0) > 0;
 
-  // Dias restantes e "quanto por dia" para bater a meta (parse seguro evita ano errado ex: 20206)
+  // Dias restantes e "quanto por semana" para bater a meta (parse seguro evita ano errado ex: 20206)
   const hoje = now;
   const fimTrim = parseDateSafe(metaTrimestral.fim);
   const fimMensal = metaMensal?.fim ? parseDateSafe(metaMensal.fim) : null;
@@ -87,8 +87,10 @@ export function MetasResultadosSlide({
   let diasRestantesMensal = fimMensal && fimMensal > hoje ? Math.ceil((fimMensal.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)) : 0;
   if (diasRestantesTrim > 366) diasRestantesTrim = 0;
   if (diasRestantesMensal > 31) diasRestantesMensal = 0;
-  const porDiaTrim = diasRestantesTrim > 0 && faltaTrim > 0 ? Math.round(faltaTrim / diasRestantesTrim) : 0;
-  const porDiaMensal = diasRestantesMensal > 0 && faltaMensal > 0 ? Math.round(faltaMensal / diasRestantesMensal) : 0;
+  const semanasRestantesTrim = diasRestantesTrim > 0 ? diasRestantesTrim / 7 : 0;
+  const semanasRestantesMensal = diasRestantesMensal > 0 ? diasRestantesMensal / 7 : 0;
+  const porSemanaTrim = semanasRestantesTrim > 0 && faltaTrim > 0 ? Math.round(faltaTrim / semanasRestantesTrim) : 0;
+  const porSemanaMensal = semanasRestantesMensal > 0 && faltaMensal > 0 ? Math.round(faltaMensal / semanasRestantesMensal) : 0;
 
   const numCorretores = contribuicoesPorCorretor.length;
   const pctTrim = Math.min(metaTrimestral.percentual, 100);
@@ -202,8 +204,8 @@ export function MetasResultadosSlide({
                   <div className="rounded-xl bg-amber-500/25 border border-amber-400/50 px-4 py-3">
                     <p className="text-xs text-amber-200/90 uppercase tracking-wide">Faltam</p>
                     <p className="text-2xl md:text-3xl font-black text-amber-300">{fmt(faltaTrim)}</p>
-                    {diasRestantesTrim > 0 && porDiaTrim > 0 && (
-                      <p className="text-xs text-amber-200/80 mt-1">~{fmt(porDiaTrim)}/dia para bater</p>
+                    {diasRestantesTrim > 0 && porSemanaTrim > 0 && (
+                      <p className="text-xs text-amber-200/80 mt-1">~{fmt(porSemanaTrim)}/semana para bater</p>
                     )}
                   </div>
                 ) : (
@@ -241,7 +243,7 @@ export function MetasResultadosSlide({
                 <p className="text-xs text-slate-500 mb-1">{fmtDateSafe(metaTrimestral.inicio)} a {fmtDateSafe(metaTrimestral.fim)}</p>
               )}
               {diasRestantesTrim > 0 && (
-                <p className="text-xs text-cyan-400/90 mb-3">{diasRestantesTrim} dias restantes · {porDiaTrim > 0 ? `${fmt(porDiaTrim)}/dia para bater` : '—'}</p>
+                <p className="text-xs text-cyan-400/90 mb-3">{diasRestantesTrim} dias restantes · {porSemanaTrim > 0 ? `${fmt(porSemanaTrim)}/semana para bater` : '—'}</p>
               )}
               <div className="flex justify-between items-baseline mb-2">
                 <span className="text-sm text-slate-400">Meta</span>
@@ -289,7 +291,7 @@ export function MetasResultadosSlide({
                 </div>
                 <p className="text-xs text-slate-500 mb-1">{fmtDateSafe(metaMensal.inicio)} a {fmtDateSafe(metaMensal.fim)}</p>
                 {diasRestantesMensal > 0 && (
-                  <p className="text-xs text-amber-400/90 mb-3">{diasRestantesMensal} dias no mês · {porDiaMensal > 0 ? `${fmt(porDiaMensal)}/dia para bater` : '—'}</p>
+                  <p className="text-xs text-amber-400/90 mb-3">{diasRestantesMensal} dias no mês · {porSemanaMensal > 0 ? `${fmt(porSemanaMensal)}/semana para bater` : '—'}</p>
                 )}
                 <div className="flex justify-between items-baseline mb-2">
                   <span className="text-sm text-slate-400">Meta</span>
