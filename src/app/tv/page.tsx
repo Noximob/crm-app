@@ -6,9 +6,11 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { FunilVendasIndividualSlide } from '@/app/dashboard/admin/dashboards-tv/_components/FunilVendasIndividualSlide';
 import { FunilVendasSlide } from '@/app/dashboard/admin/dashboards-tv/_components/FunilVendasSlide';
+import { MetasResultadosSlide } from '@/app/dashboard/admin/dashboards-tv/_components/MetasResultadosSlide';
 import { SelecaoNoxSlide } from '@/app/dashboard/admin/dashboards-tv/_components/SelecaoNoxSlide';
 import { UnidadesSelecaoSlide } from '@/app/dashboard/admin/dashboards-tv/_components/UnidadesSelecaoSlide';
 import { useFunilVendasData } from '@/app/dashboard/admin/dashboards-tv/_components/useFunilVendasData';
+import { useMetasResultadosData } from '@/app/dashboard/admin/dashboards-tv/_components/useMetasResultadosData';
 import type { ImovelSelecaoNox, NoticiaSemanaData } from '@/app/dashboard/admin/dashboards-tv/types';
 import type { UnidadesSelecaoData } from '@/app/dashboard/admin/dashboards-tv/types';
 
@@ -42,6 +44,7 @@ export default function TvPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const funilData = useFunilVendasData(userData?.imobiliariaId ?? undefined);
+  const metasData = useMetasResultadosData(userData?.imobiliariaId ?? undefined);
 
   const imobiliariaId = userData?.imobiliariaId;
 
@@ -266,6 +269,38 @@ export default function TvPage() {
           </div>
         ) : (
           <FunilVendasIndividualSlide funilPorCorretor={funilData.funilPorCorretor} />
+        )}
+        {config.length > 1 && (
+          <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
+            {config.map((s, i) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setCurrentIndex(i)}
+                className={`w-2 h-2 rounded-full transition-colors ${i === currentIndex ? 'bg-[#3478F6] scale-125' : 'bg-white/30'}`}
+                aria-label={`Ir para ${s.name}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Metas & Resultados — trimestral, mensal, quanto falta, quem vendeu
+  if (currentSlide?.id === 'metas-resultados') {
+    return (
+      <div className="min-h-screen flex flex-col">
+        {metasData.loading ? (
+          <div className="min-h-screen flex items-center justify-center bg-[#0f1220]">
+            <div className="animate-spin rounded-full h-14 w-14 border-2 border-[#3478F6] border-t-transparent" />
+          </div>
+        ) : (
+          <MetasResultadosSlide
+            metaTrimestral={metasData.metaTrimestral}
+            metaMensal={metasData.metaMensal}
+            contribuicoesPorCorretor={metasData.contribuicoesPorCorretor}
+          />
         )}
         {config.length > 1 && (
           <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-2 z-10">

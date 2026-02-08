@@ -24,6 +24,9 @@ export default function AdminMetasPage() {
   const [inicio, setInicio] = useState('');
   const [fim, setFim] = useState('');
   const [vgv, setVgv] = useState('');
+  const [inicioMensal, setInicioMensal] = useState('');
+  const [fimMensal, setFimMensal] = useState('');
+  const [vgvMensal, setVgvMensal] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -80,6 +83,9 @@ export default function AdminMetasPage() {
         setInicio(meta.inicio ? meta.inicio.split('T')[0] : '');
         setFim(meta.fim ? meta.fim.split('T')[0] : '');
         setVgv(meta.valor != null ? meta.valor.toString() : '');
+        setInicioMensal(meta.inicioMensal ? meta.inicioMensal.split('T')[0] : '');
+        setFimMensal(meta.fimMensal ? meta.fimMensal.split('T')[0] : '');
+        setVgvMensal(meta.valorMensal != null ? meta.valorMensal.toString() : '');
         setUltimaAtualizacaoPor(meta.updatedByNome ?? null);
       }
       const contribRef = collection(db, 'metas', userData.imobiliariaId, 'contribuicoes');
@@ -175,11 +181,15 @@ export default function AdminMetasPage() {
     try {
       const metaRef = doc(db, 'metas', userData.imobiliariaId);
       const valorNum = parseFloat(vgv) || 0;
+      const valorMensalNum = parseFloat(vgvMensal) || 0;
       const novaMeta = {
         imobiliariaId: userData.imobiliariaId,
         inicio,
         fim,
         valor: valorNum,
+        inicioMensal: inicioMensal || null,
+        fimMensal: fimMensal || null,
+        valorMensal: valorMensalNum || null,
         alcancado: totalRealizado,
         percentual: percentualCalculado,
         updatedAt: Timestamp.now(),
@@ -237,7 +247,7 @@ export default function AdminMetasPage() {
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1 text-white">VGV Estimado (R$)</label>
+          <label className="block text-sm font-medium mb-1 text-white">VGV Meta Trimestral (R$)</label>
           <input 
             type="number" 
             className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#3478F6]/30" 
@@ -248,6 +258,24 @@ export default function AdminMetasPage() {
             step="0.01"
             required 
           />
+        </div>
+
+        <div className="border-t border-[#3478F6]/20 pt-4 mt-4">
+          <h3 className="text-base font-semibold text-white mb-3">Meta mensal</h3>
+          <div className="flex gap-4 mb-3">
+            <div className="flex-1">
+              <label className="block text-sm font-medium mb-1 text-white/80">Início do mês</label>
+              <input type="date" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#3478F6]/30" value={inicioMensal} onChange={e => setInicioMensal(e.target.value)} />
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-medium mb-1 text-white/80">Fim do mês</label>
+              <input type="date" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#3478F6]/30" value={fimMensal} onChange={e => setFimMensal(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1 text-white/80">VGV Meta Mensal (R$)</label>
+            <input type="number" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#3478F6]/30" value={vgvMensal} onChange={e => setVgvMensal(e.target.value)} placeholder="0" min="0" step="0.01" />
+          </div>
         </div>
 
         {/* Contribuições por corretor — soma vira o VGV realizado (bloco fora do form principal para o botão Adicionar funcionar) */}

@@ -7,7 +7,9 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { FunilVendasIndividualSlide } from './_components/FunilVendasIndividualSlide';
 import { FunilVendasSlide } from './_components/FunilVendasSlide';
+import { MetasResultadosSlide } from './_components/MetasResultadosSlide';
 import { useFunilVendasData } from './_components/useFunilVendasData';
+import { useMetasResultadosData } from './_components/useMetasResultadosData';
 import type { ImovelSelecaoNox, NoticiaSemanaData, UnidadeSelecao, UnidadesSelecaoData } from './types';
 
 export interface SlideConfig {
@@ -95,8 +97,10 @@ export default function DashboardsTvPage() {
   const fileInputRefsUnidades = useRef<(HTMLInputElement | null)[]>([]);
   const fileInputRefNoticia = useRef<HTMLInputElement | null>(null);
   const [previewFunil, setPreviewFunil] = useState<'corporativo' | 'individual' | null>(null);
+  const [previewMetas, setPreviewMetas] = useState(false);
   const imobiliariaId = userData?.imobiliariaId;
   const funilData = useFunilVendasData(imobiliariaId ?? undefined);
+  const metasData = useMetasResultadosData(imobiliariaId ?? undefined);
 
   useEffect(() => {
     if (!imobiliariaId) {
@@ -391,6 +395,17 @@ export default function DashboardsTvPage() {
                     <button
                       type="button"
                       onClick={() => setPreviewFunil(slide.id === 'funil-vendas' ? 'corporativo' : 'individual')}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#3478F6]/10 text-[#3478F6] hover:bg-[#3478F6]/20"
+                      title="Ver como ficará na TV"
+                    >
+                      <TvIcon className="w-4 h-4" />
+                      Visualizar
+                    </button>
+                  )}
+                  {slide.id === 'metas-resultados' && (
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMetas(true)}
                       className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#3478F6]/10 text-[#3478F6] hover:bg-[#3478F6]/20"
                       title="Ver como ficará na TV"
                     >
@@ -739,6 +754,35 @@ export default function DashboardsTvPage() {
                 />
               ) : (
                 <FunilVendasIndividualSlide funilPorCorretor={funilData.funilPorCorretor} compact />
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Modal Visualizar Metas & Resultados */}
+        {previewMetas && (
+          <div className="fixed inset-0 z-50 flex flex-col bg-[#0f1220]">
+            <div className="shrink-0 flex items-center justify-between px-4 py-3 bg-[#151b2d] border-b border-white/10">
+              <span className="text-white font-semibold">Prévia — Metas & Resultados (como ficará na TV)</span>
+              <button
+                type="button"
+                onClick={() => setPreviewMetas(false)}
+                className="px-4 py-2 rounded-lg bg-[#3478F6] text-white font-medium hover:bg-[#255FD1]"
+              >
+                Fechar
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-auto">
+              {metasData.loading ? (
+                <div className="flex items-center justify-center min-h-[50vh]">
+                  <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#3478F6] border-t-transparent" />
+                </div>
+              ) : (
+                <MetasResultadosSlide
+                  metaTrimestral={metasData.metaTrimestral}
+                  metaMensal={metasData.metaMensal}
+                  contribuicoesPorCorretor={metasData.contribuicoesPorCorretor}
+                />
               )}
             </div>
           </div>
