@@ -417,6 +417,7 @@ export function AgendaTvSlide({ events, plantoes = [], ligacoes = [], visitas = 
                           <div className="flex-1 min-w-0">
                             <p className="font-bold text-white truncate">{s.titulo}</p>
                             <p className="text-sm text-slate-400">{TIPO_LABEL[s.tipo] ?? s.tipo}</p>
+                            {s.responsavel ? <p className="text-xs text-amber-300/90 mt-0.5">Com: {s.responsavel}</p> : null}
                           </div>
                           <div className="text-right shrink-0">
                             <p className="text-lg font-mono font-bold text-cyan-400">{fmtHora(s.inicio)}</p>
@@ -445,6 +446,7 @@ export function AgendaTvSlide({ events, plantoes = [], ligacoes = [], visitas = 
                           <div className="flex-1 min-w-0">
                             <p className="font-bold text-white truncate">{s.titulo}</p>
                             <p className="text-sm text-slate-400">{s.local || TIPO_LABEL[s.tipo]}</p>
+                            {s.responsavel ? <p className="text-xs text-slate-300 mt-0.5">Com: {s.responsavel}</p> : null}
                           </div>
                           <div className="text-right shrink-0">
                             <p className="text-lg font-mono font-bold text-white">{fmtHora(s.inicio)}</p>
