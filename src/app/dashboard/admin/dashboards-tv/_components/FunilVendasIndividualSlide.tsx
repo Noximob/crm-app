@@ -77,7 +77,7 @@ export function FunilVendasIndividualSlide({
             return (
               <div
                 key={corretor.id}
-                className={`relative flex flex-col rounded-2xl overflow-hidden border-2 transition-all duration-300 ${
+                className={`relative flex flex-col rounded-2xl border-2 transition-all duration-300 overflow-auto ${
                   isFirst
                     ? 'border-amber-400/50 bg-gradient-to-br from-amber-500/10 to-transparent shadow-[0_0_40px_-8px_rgba(251,191,36,0.25)] scale-[1.02]'
                     : isTop3
@@ -92,82 +92,72 @@ export function FunilVendasIndividualSlide({
                   </>
                 )}
 
-                <div className="relative flex flex-col flex-1 min-h-0 p-3 md:p-4 overflow-visible">
-                  {/* Topo: 2 linhas bem separadas para não sobrepor as etapas */}
-                  <div className="shrink-0 mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="flex-shrink-0">
-                        {idx === 0 ? (
-                          <span className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white shadow-lg ring-2 ring-amber-300/50">
-                            <TrophyIcon className="w-5 h-5" />
-                          </span>
-                        ) : idx === 1 ? (
-                          <span className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center text-white shadow-md ring-2 ring-slate-400/40">
-                            <MedalIcon className="w-4 h-4" />
-                          </span>
-                        ) : idx === 2 ? (
-                          <span className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center text-amber-100 shadow-md ring-2 ring-amber-600/40">
-                            <MedalIcon className="w-4 h-4" />
-                          </span>
-                        ) : (
-                          <span className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-[#3478F6]/25 flex items-center justify-center text-[#93c5fd] font-bold text-sm border-2 border-[#3478F6]/40">
-                            {idx + 1}
-                          </span>
-                        )}
-                      </span>
-                      <span className="flex-1 min-w-0 font-bold text-white text-sm md:text-base truncate" title={corretor.nome}>
+                <div className="relative flex flex-col p-3 md:p-4 flex-1 min-h-0">
+                  {/* Topo: posição + nome + badge + total */}
+                  <div className="flex items-center gap-2 flex-shrink-0 mb-2">
+                    <span className="flex-shrink-0">
+                      {idx === 0 ? (
+                        <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white shadow-lg ring-2 ring-amber-300/50">
+                          <TrophyIcon className="w-5 h-5" />
+                        </span>
+                      ) : idx === 1 ? (
+                        <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center text-white shadow-md ring-2 ring-slate-400/40">
+                          <MedalIcon className="w-4 h-4" />
+                        </span>
+                      ) : idx === 2 ? (
+                        <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center text-amber-100 shadow-md ring-2 ring-amber-600/40">
+                          <MedalIcon className="w-4 h-4" />
+                        </span>
+                      ) : (
+                        <span className="w-8 h-8 rounded-xl bg-[#3478F6]/25 flex items-center justify-center text-[#93c5fd] font-bold text-sm border-2 border-[#3478F6]/40">
+                          {idx + 1}
+                        </span>
+                      )}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <span className="block font-bold text-white text-sm truncate" title={corretor.nome}>
                         {corretor.nome}
                       </span>
-                      <span className="flex-shrink-0 text-right">
-                        <span className="block text-xl md:text-2xl font-black tabular-nums bg-gradient-to-br from-[#60a5fa] to-[#3478F6] bg-clip-text text-transparent leading-none">
-                          {corretor.total}
-                        </span>
-                        <span className="text-[10px] text-[#64748b]">leads</span>
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-end gap-2 mt-1.5">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] md:text-xs font-semibold border ${nivel.bg} ${nivel.text}`}>
+                      <span className={`inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold border ${nivel.bg} ${nivel.text}`}>
                         {nivel.emoji} {nivel.label}
                       </span>
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                      <span className="block text-lg font-black tabular-nums text-[#60a5fa] leading-none">{corretor.total}</span>
+                      <span className="text-[10px] text-[#64748b]">leads</span>
                     </div>
                   </div>
 
                   {/* Barra vs 1º */}
-                  {top9.length > 0 && idx > 0 && (
-                    <div className="mb-2 shrink-0">
+                  {idx > 0 && (
+                    <div className="flex-shrink-0 mb-2">
                       <div className="h-1 bg-white/10 rounded-full overflow-hidden flex">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-[#3478F6] to-[#60a5fa] flex-shrink-0 transition-all duration-700"
+                          className="h-full rounded-full bg-gradient-to-r from-[#3478F6] to-[#60a5fa] flex-shrink-0"
                           style={{ width: `${Math.max(pctDoMax, 6)}%`, minWidth: 6 }}
                         />
                       </div>
                     </div>
                   )}
 
-                  {/* 4 etapas — altura mínima para as 4 sempre visíveis, sem overlap */}
-                  <div className="flex-1 min-h-[7.5rem] flex flex-col justify-start gap-2">
+                  {/* 4 etapas: Qualif., Lig. e visita, Negoc. e prop., Int. futuro — sempre visíveis */}
+                  <div className="flex-shrink-0 space-y-2">
                     {ETAPAS_EXIBIR.map((etapa) => {
                       const qtd = etapa.getVal(porEtapa);
                       const pct = maxLocal > 0 ? Math.round((qtd / maxLocal) * 100) : 0;
                       const widthPct = qtd > 0 ? Math.max(pct, 20) : 0;
                       return (
-                        <div key={etapa.key} className="flex items-center gap-2 flex-nowrap min-h-[1.5rem]">
-                          <span className="text-xs text-[#94a3b8] font-medium shrink-0 min-w-[4.5rem]">
-                            {etapa.label}
-                          </span>
-                          <div className="flex-1 min-w-0 h-2.5 bg-white/10 rounded-full overflow-hidden flex">
+                        <div key={etapa.key} className="flex items-center gap-2">
+                          <span className="text-xs text-[#94a3b8] font-medium w-20 flex-shrink-0">{etapa.label}</span>
+                          <div className="flex-1 min-w-0 h-2 bg-white/10 rounded-full overflow-hidden">
                             <div
-                              className={`h-full rounded-full flex-shrink-0 transition-all duration-700 ${
-                                etapa.quente
-                                  ? 'bg-gradient-to-r from-amber-500 to-amber-400'
-                                  : 'bg-gradient-to-r from-[#3478F6] to-[#60a5fa]'
+                              className={`h-full rounded-full transition-all duration-500 ${
+                                etapa.quente ? 'bg-gradient-to-r from-amber-500 to-amber-400' : 'bg-gradient-to-r from-[#3478F6] to-[#60a5fa]'
                               }`}
                               style={{ width: `${widthPct}%`, minWidth: qtd > 0 ? 8 : 0 }}
                             />
                           </div>
-                          <span className="text-xs font-bold text-white tabular-nums shrink-0 w-6 text-right">
-                            {qtd}
-                          </span>
+                          <span className="text-xs font-bold text-white tabular-nums w-5 text-right flex-shrink-0">{qtd}</span>
                         </div>
                       );
                     })}
