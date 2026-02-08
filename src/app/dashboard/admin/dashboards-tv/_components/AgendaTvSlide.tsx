@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import type { AgendaEventoTv, PlantaoTv } from './useAgendaTvData';
-import type { CrmTarefaTv } from './useCrmAgendaTvData';
 import { startOfDay, endOfDay } from './useAgendaTvData';
 
 const TIPOS_ACOES_VENDA = ['revisar-crm', 'ligacao-ativa', 'acao-de-rua', 'disparo-de-msg'];
@@ -180,15 +179,12 @@ const FRASE_POR_DIA: Record<number, string> = {
 interface AgendaTvSlideProps {
   events: AgendaEventoTv[];
   plantoes?: PlantaoTv[];
-  ligacoes?: CrmTarefaTv[];
-  visitas?: CrmTarefaTv[];
   fraseSemana?: string;
   mode: 'day' | 'week';
 }
 
-export function AgendaTvSlide({ events, plantoes = [], ligacoes = [], visitas = [], fraseSemana, mode }: AgendaTvSlideProps) {
+export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode }: AgendaTvSlideProps) {
   const [now, setNow] = useState(() => new Date());
-  const [abaCrm, setAbaCrm] = useState<'ligacoes' | 'visitas'>('ligacoes');
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30000);
@@ -293,170 +289,119 @@ export function AgendaTvSlide({ events, plantoes = [], ligacoes = [], visitas = 
       <div className="relative flex-1 min-h-0 p-4 md:p-6 overflow-auto">
         {mode === 'day' && (
           <div className="h-full flex flex-col gap-6 max-w-5xl mx-auto">
-            {concluidosHoje > 0 && (
-              <div className="shrink-0 flex items-center gap-3 px-4 py-2 rounded-xl bg-emerald-500/20 border border-emerald-400/40">
-                <span className="text-2xl">✅</span>
-                <span className="text-emerald-300 font-semibold">{concluidosHoje} realizados hoje</span>
-              </div>
-            )}
-
-            <section className="rounded-2xl border-2 border-emerald-400/40 bg-gradient-to-br from-emerald-500/20 to-cyan-500/10 p-4 shadow-lg">
-              <h2 className="text-sm font-bold text-emerald-300 uppercase tracking-wider mb-3 flex items-center gap-2">
-                <span>📞</span> Funil / CRM — Hoje
-              </h2>
-                <div className="flex gap-2 mb-4">
-                  <button
-                    type="button"
-                    onClick={() => setAbaCrm('ligacoes')}
-                    className={`flex-1 py-2.5 px-4 rounded-xl font-bold text-sm transition-all ${abaCrm === 'ligacoes' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' : 'bg-white/10 text-slate-400 hover:bg-white/15'}`}
-                  >
-                    📞 Ligações ({ligacoes.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAbaCrm('visitas')}
-                    className={`flex-1 py-2.5 px-4 rounded-xl font-bold text-sm transition-all ${abaCrm === 'visitas' ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30' : 'bg-white/10 text-slate-400 hover:bg-white/15'}`}
-                  >
-                    🏠 Visitas ({visitas.length})
-                  </button>
+            {/* Progresso do dia — gamificado */}
+            {(() => {
+              const totalRestantes = plantoesRestantesHoje.length + slotsRestantesHoje.length;
+              const totalHoje = concluidosHoje + totalRestantes;
+              const percent = totalHoje > 0 ? Math.round((concluidosHoje / totalHoje) * 100) : 0;
+              return (
+                <div className="shrink-0 flex items-center gap-6 p-5 rounded-2xl bg-gradient-to-r from-cyan-500/15 via-violet-500/10 to-amber-500/15 border border-white/10">
+                  <div className="relative w-20 h-20 shrink-0">
+                    <svg className="w-20 h-20 -rotate-90" viewBox="0 0 36 36">
+                      <path className="text-white/10" stroke="currentColor" strokeWidth="2.5" fill="none" d="M18 2.5 a 15.5 15.5 0 0 1 0 31 a 15.5 15.5 0 0 1 0 -31" />
+                      <path className="text-cyan-400 transition-all duration-500" stroke="currentColor" strokeWidth="2.5" strokeDasharray={`${percent}, 100`} strokeLinecap="round" fill="none" d="M18 2.5 a 15.5 15.5 0 0 1 0 31 a 15.5 15.5 0 0 1 0 -31" />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center text-lg font-black text-cyan-400">{percent}%</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xl font-bold text-white">
+                      {concluidosHoje > 0 && <span className="text-emerald-400">{concluidosHoje} concluído{concluidosHoje !== 1 ? 's' : ''}</span>}
+                      {concluidosHoje > 0 && totalRestantes > 0 && <span className="text-slate-400"> · </span>}
+                      {totalRestantes > 0 && <span>{totalRestantes} pela frente</span>}
+                      {totalRestantes === 0 && concluidosHoje === 0 && <span className="text-slate-400">Nada agendado</span>}
+                      {totalRestantes === 0 && concluidosHoje > 0 && <span className="text-emerald-400"> — dia fechado!</span>}
+                    </p>
+                    <p className="text-sm text-slate-400 mt-0.5">
+                      {totalRestantes > 0 && totalRestantes <= 4 && 'Foco no que importa. Você dá conta!'}
+                      {totalRestantes > 4 && 'Bora executar.'}
+                      {totalRestantes === 0 && concluidosHoje === 0 && 'Agenda livre.'}
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-3 min-h-[80px]">
-                  {abaCrm === 'ligacoes' && (
-                    ligacoes.length === 0 ? (
-                      <p className="text-slate-400 text-sm py-4 text-center">Nenhuma ligação agendada para hoje.</p>
-                    ) : (
-                      ligacoes.map((t) => (
-                        <div key={t.id} className="flex items-center gap-4 p-3 rounded-xl bg-black/20 border border-emerald-400/20">
-                          <div className="w-10 h-10 rounded-lg bg-emerald-500/30 flex items-center justify-center text-xl shrink-0">📞</div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold text-white truncate">{t.leadNome}</p>
-                            <p className="text-xs text-slate-400 truncate">{t.description || 'Ligação agendada'}</p>
-                            {t.responsavelNome ? <p className="text-xs text-emerald-300/90 mt-0.5">Com: {t.responsavelNome}</p> : null}
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p className="text-base font-mono font-bold text-emerald-300">{t.dueDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
-                          </div>
-                        </div>
-                      ))
-                    )
-                  )}
-                  {abaCrm === 'visitas' && (
-                    visitas.length === 0 ? (
-                      <p className="text-slate-400 text-sm py-4 text-center">Nenhuma visita agendada para hoje.</p>
-                    ) : (
-                      visitas.map((t) => (
-                        <div key={t.id} className="flex items-center gap-4 p-3 rounded-xl bg-black/20 border border-cyan-400/20">
-                          <div className="w-10 h-10 rounded-lg bg-cyan-500/30 flex items-center justify-center text-xl shrink-0">🏠</div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold text-white truncate">{t.leadNome}</p>
-                            <p className="text-xs text-slate-400 truncate">{t.description || 'Visita agendada'}</p>
-                            {t.responsavelNome ? <p className="text-xs text-cyan-300/90 mt-0.5">Com: {t.responsavelNome}</p> : null}
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p className="text-base font-mono font-bold text-cyan-300">{t.dueDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
-                          </div>
-                        </div>
-                      ))
-                    )
-                  )}
-                </div>
-            </section>
+              );
+            })()}
 
-            {plantoesRestantesHoje.length > 0 && (
-              <section>
-                <h2 className="text-sm font-bold text-orange-400/90 uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <span>🏢</span> Plantões
-                </h2>
-                <div className="space-y-3">
-                  {plantoesRestantesHoje.map((s) => (
-                    <div
-                      key={s.id}
-                      className="flex items-center gap-4 p-4 rounded-xl border border-orange-400/30 bg-gradient-to-r from-orange-500/15 to-transparent backdrop-blur-sm"
-                    >
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 flex items-center justify-center text-2xl shrink-0">
-                        🏢
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-white truncate">Plantão {s.construtora}</p>
-                        <p className="text-sm font-semibold text-orange-300">Responsável: {s.corretorResponsavel}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-lg font-mono font-bold text-cyan-400">{s.horario?.slice(0, 5) || fmtHora(s.inicio)}</p>
-                        <p className="text-xs text-slate-500">até {fmtHora(s.fim)}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {slotsRestantesHoje.length === 0 && plantoesRestantesHoje.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-center py-12">
-                <div className="text-6xl mb-4">🎯</div>
-                <p className="text-xl font-semibold text-slate-300">Nada mais por hoje</p>
-                <p className="text-slate-500 mt-1">Tudo no horário ou agenda livre.</p>
-              </div>
-            ) : (
-              <>
-                {acoesRestantes.length > 0 && (
-                  <section>
-                    <h2 className="text-sm font-bold text-amber-400/90 uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <span>🔥</span> Ações de venda
-                    </h2>
-                    <div className="space-y-3">
-                      {acoesRestantes.map((s) => (
+            {/* Lista unificada do dia — poucos itens, destaque visual */}
+            {(() => {
+              const itensPlantao = plantoesRestantesHoje.map((s) => ({ tipo: 'plantao' as const, id: s.id, slot: s }));
+              const itensAcoes = acoesRestantes.map((s) => ({ tipo: 'acao' as const, id: s.id, slot: s }));
+              const itensReunioes = reunioesRestantes.map((s) => ({ tipo: 'reuniao' as const, id: s.id, slot: s }));
+              const todosItens = [...itensPlantao, ...itensAcoes, ...itensReunioes]
+                .sort((a, b) => {
+                  const tA = 'inicio' in a.slot ? (a.slot as SlotDia).inicio.getTime() : (a.slot as SlotPlantao).inicio.getTime();
+                  const tB = 'inicio' in b.slot ? (b.slot as SlotDia).inicio.getTime() : (b.slot as SlotPlantao).inicio.getTime();
+                  return tA - tB;
+                });
+              if (todosItens.length === 0) {
+                return (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center py-16 px-6">
+                    <div className="text-7xl mb-6 animate-pulse">🎯</div>
+                    <p className="text-2xl font-bold text-white">Tudo em dia!</p>
+                    <p className="text-slate-400 mt-2 max-w-sm">Nada mais por agora. Aproveite o fôlego.</p>
+                  </div>
+                );
+              }
+              return (
+                <section>
+                  <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">
+                    {todosItens.length} compromisso{todosItens.length !== 1 ? 's' : ''} restante{todosItens.length !== 1 ? 's' : ''}
+                  </h2>
+                  <div className="space-y-4">
+                    {todosItens.map((item, idx) => {
+                      const isProximo = idx === 0;
+                      if (item.tipo === 'plantao') {
+                        const s = item.slot as SlotPlantao;
+                        return (
+                          <div
+                            key={s.id}
+                            className={`flex items-center gap-5 p-5 rounded-2xl border-2 transition-all ${isProximo ? 'border-orange-400/60 bg-gradient-to-r from-orange-500/25 to-amber-500/15 shadow-lg shadow-orange-500/10' : 'border-orange-400/20 bg-orange-500/10'}`}
+                          >
+                            <div className="relative">
+                              <div className="w-14 h-14 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-600 flex items-center justify-center text-2xl shrink-0 shadow-lg">🏢</div>
+                              <span className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold text-white">{idx + 1}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              {isProximo && <span className="text-xs font-bold text-orange-400 uppercase tracking-wider">Próximo</span>}
+                              <p className="font-bold text-white text-lg truncate">Plantão {s.construtora}</p>
+                              <p className="text-sm text-orange-300">Responsável: {s.corretorResponsavel}</p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="text-xl font-mono font-bold text-cyan-400">{s.horario?.slice(0, 5) || fmtHora(s.inicio)}</p>
+                              <p className="text-xs text-slate-500">até {fmtHora(s.fim)}</p>
+                            </div>
+                          </div>
+                        );
+                      }
+                      const s = item.slot as SlotDia;
+                      const isAcao = s.isAcaoVenda;
+                      return (
                         <div
                           key={s.id}
-                          className="flex items-center gap-4 p-4 rounded-xl border border-white/10 bg-gradient-to-r from-amber-500/10 to-transparent backdrop-blur-sm"
+                          className={`flex items-center gap-5 p-5 rounded-2xl border-2 transition-all ${isProximo ? 'border-cyan-400/50 bg-gradient-to-r from-cyan-500/20 to-violet-500/10 shadow-lg shadow-cyan-500/10' : 'border-white/10 bg-white/5'}`}
                         >
-                          <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${TIPO_COR[s.tipo] ?? TIPO_COR.outro} flex items-center justify-center text-2xl shrink-0`}>
-                            {TIPO_ICON[s.tipo] ?? TIPO_ICON.outro}
+                          <div className="relative">
+                            <div className={`w-14 h-14 rounded-2xl bg-gradient-to-r ${TIPO_COR[s.tipo] ?? TIPO_COR.outro} flex items-center justify-center text-2xl shrink-0 shadow-lg`}>
+                              {TIPO_ICON[s.tipo] ?? TIPO_ICON.outro}
+                            </div>
+                            <span className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold text-white">{idx + 1}</span>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-bold text-white truncate">{s.titulo}</p>
-                            <p className="text-sm text-slate-400">{TIPO_LABEL[s.tipo] ?? s.tipo}</p>
-                            {s.responsavel ? <p className="text-xs text-amber-300/90 mt-0.5">Com: {s.responsavel}</p> : null}
+                            {isProximo && <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">Próximo</span>}
+                            <p className="font-bold text-white text-lg truncate">{s.titulo}</p>
+                            <p className="text-sm text-slate-400">{isAcao ? (TIPO_LABEL[s.tipo] ?? s.tipo) : (s.local || TIPO_LABEL[s.tipo])}</p>
+                            {s.responsavel && <p className="text-xs text-slate-300 mt-0.5">Com: {s.responsavel}</p>}
                           </div>
                           <div className="text-right shrink-0">
-                            <p className="text-lg font-mono font-bold text-cyan-400">{fmtHora(s.inicio)}</p>
+                            <p className="text-xl font-mono font-bold text-cyan-400">{fmtHora(s.inicio)}</p>
                             <p className="text-xs text-slate-500">até {fmtHora(s.fim)}</p>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </section>
-                )}
-
-                {reunioesRestantes.length > 0 && (
-                  <section>
-                    <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <span>📅</span> Reuniões e eventos
-                    </h2>
-                    <div className="space-y-3">
-                      {reunioesRestantes.map((s) => (
-                        <div
-                          key={s.id}
-                          className="flex items-center gap-4 p-4 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm"
-                        >
-                          <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${TIPO_COR[s.tipo] ?? TIPO_COR.outro} flex items-center justify-center text-2xl shrink-0`}>
-                            {TIPO_ICON[s.tipo] ?? TIPO_ICON.outro}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold text-white truncate">{s.titulo}</p>
-                            <p className="text-sm text-slate-400">{s.local || TIPO_LABEL[s.tipo]}</p>
-                            {s.responsavel ? <p className="text-xs text-slate-300 mt-0.5">Com: {s.responsavel}</p> : null}
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p className="text-lg font-mono font-bold text-white">{fmtHora(s.inicio)}</p>
-                            <p className="text-xs text-slate-500">até {fmtHora(s.fim)}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                )}
-              </>
-            )}
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })()}
           </div>
         )}
 

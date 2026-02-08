@@ -10,7 +10,6 @@ import { FunilVendasIndividualSlide } from './_components/FunilVendasIndividualS
 import { FunilVendasSlide } from './_components/FunilVendasSlide';
 import { MetasResultadosSlide } from './_components/MetasResultadosSlide';
 import { useAgendaTvData } from './_components/useAgendaTvData';
-import { useCrmAgendaTvData } from './_components/useCrmAgendaTvData';
 import { useFunilVendasData } from './_components/useFunilVendasData';
 import { useMetasResultadosData } from './_components/useMetasResultadosData';
 import type { ImovelSelecaoNox, NoticiaSemanaData, UnidadeSelecao, UnidadesSelecaoData } from './types';
@@ -107,8 +106,6 @@ export default function DashboardsTvPage() {
   const funilData = useFunilVendasData(imobiliariaId ?? undefined);
   const metasData = useMetasResultadosData(imobiliariaId ?? undefined);
   const agendaTvData = useAgendaTvData(imobiliariaId ?? undefined);
-  const crmAgendaTv = useCrmAgendaTvData(imobiliariaId ?? undefined);
-
   useEffect(() => {
     if (!imobiliariaId) {
       setLoading(false);
@@ -846,7 +843,7 @@ export default function DashboardsTvPage() {
                   <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#3478F6] border-t-transparent" />
                 </div>
               ) : (
-                <AgendaTvSlide events={agendaTvData.events} plantoes={agendaTvData.plantoes} ligacoes={crmAgendaTv.ligacoes} visitas={crmAgendaTv.visitas} fraseSemana={agendaFraseSemana} mode={previewAgenda} />
+                <AgendaTvSlide events={agendaTvData.events} plantoes={agendaTvData.plantoes} fraseSemana={agendaFraseSemana} mode={previewAgenda} />
               )}
             </div>
           </div>
