@@ -467,16 +467,17 @@ export default function LeadDetailPage() {
                                             interaction.taskId &&
                                             tasks.some(task => task.id === interaction.taskId);
                                          
-                                         // Buscar a tarefa correspondente para obter horário agendado
+                                         // Buscar a tarefa correspondente para obter horário e tag (Ligação/Visita/WhatsApp)
                                          const relatedTask = tasks.find(task => task.id === interaction.taskId);
+                                         const taskTag = relatedTask?.type ?? interaction.type;
 
                                          return (
                                              <li key={interaction.id} className="flex items-start gap-3">
                                                  <div className="bg-slate-100 dark:bg-gray-700 p-2 rounded-full">
-                                                     {getIconForInteraction(interaction.type)}
+                                                     {getIconForInteraction(taskTag)}
                                                  </div>
                                                  <div className="flex-1 min-w-0">
-                                                     <p className="font-semibold text-gray-700 dark:text-gray-200 text-sm">{interaction.type}</p>
+                                                     <p className="font-semibold text-gray-700 dark:text-gray-200 text-sm">{taskTag}</p>
                                                      <p className="text-xs text-gray-600 dark:text-gray-400">{interaction.notes}</p>
                                                      
                                                      {interaction.type === 'Tarefa Cancelada' && interaction.cancellationNotes && (
@@ -514,9 +515,9 @@ export default function LeadDetailPage() {
                                                      </div>
                     </div>
                                                  {/* Botão para ver descrição completa */}
-                                                 <button
-                                                     onClick={() => {
-                                                         let descricaoCompleta = `Descrição completa da ${interaction.type.toLowerCase()}:\n\n${interaction.notes}`;
+                                                <button
+                                                    onClick={() => {
+                                                        let descricaoCompleta = `Descrição completa da ${(taskTag || interaction.type).toString().toLowerCase()}:\n\n${interaction.notes}`;
                                                          
                                                          // Adicionar motivo de cancelamento se existir
                                                          if (interaction.type === 'Tarefa Cancelada' && interaction.cancellationNotes) {

@@ -4,12 +4,10 @@ import { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
 import {
   collection,
-  collectionGroup,
   getDocs,
-  getDoc,
-  doc,
   query,
   where,
+  limit,
   Timestamp,
 } from 'firebase/firestore';
 
@@ -24,15 +22,25 @@ function parseDueDate(v: unknown): Date {
     const sec = o.seconds ?? o._seconds;
     if (typeof sec === 'number') return new Date(sec * 1000);
   }
+  if (typeof v === 'string') {
+    const d = new Date(v);
+    if (!isNaN(d.getTime())) return d;
+  }
   return new Date(0);
 }
 
 function isLigacao(type: string): boolean {
   const t = (type || '').trim().toLowerCase();
-  return t === 'ligação' || t === 'ligacao';
+  return t === 'ligação' || t === 'ligacao' || t === 'ligacão';
 }
 function isVisita(type: string): boolean {
   return (type || '').trim().toLowerCase() === 'visita';
+}
+
+function isHoje(dueDate: Date, hojeStr: string, hojeStrUTC: string): boolean {
+  const dueStr = dueDate.getFullYear() + '-' + String(dueDate.getMonth() + 1).padStart(2, '0') + '-' + String(dueDate.getDate()).padStart(2, '0');
+  const dueStrUTC = dueDate.getUTCFullYear() + '-' + String(dueDate.getUTCMonth() + 1).padStart(2, '0') + '-' + String(dueDate.getUTCDate()).padStart(2, '0');
+  return dueStr === hojeStr || dueStrUTC === hojeStrUTC;
 }
 
 export interface CrmTarefaTv {
@@ -71,77 +79,74 @@ export function useCrmAgendaTvData(imobiliariaId: string | undefined) {
         );
         if (cancelled) return;
         const usuariosMap = new Map<string, string>();
-        const userIdsSet = new Set<string>();
+        const userIdsList = new Array<string>();
         usuariosSnapshot.docs.forEach((docSnap) => {
           const nome = (docSnap.data().nome as string) ?? '';
           if (nome) usuariosMap.set(docSnap.id, nome);
-          userIdsSet.add(docSnap.id);
+          userIdsList.push(docSnap.id);
         });
 
-        const tarefasRef = collectionGroup(db, 'tarefas');
-        const tarefasSnapshot = await getDocs(
-          query(tarefasRef, where('status', '==', 'pendente'))
+        const leadsRef = collection(db, 'leads');
+        const leadIdsSeen = new Set<string>();
+        const leadDocs: { id: string; data: Record<string, unknown> }[] = [];
+
+        const snapImob = await getDocs(
+          query(leadsRef, where('imobiliariaId', '==', imobiliariaId), limit(500))
         );
         if (cancelled) return;
-
-        const leadIds = new Set<string>();
-        tarefasSnapshot.docs.forEach((taskDoc) => {
-          const path = taskDoc.ref.path;
-          const parts = path.split('/');
-          if (parts.length >= 2) leadIds.add(parts[1]);
+        snapImob.docs.forEach((docSnap) => {
+          if (!leadIdsSeen.has(docSnap.id)) {
+            leadIdsSeen.add(docSnap.id);
+            leadDocs.push({ id: docSnap.id, data: docSnap.data() });
+          }
         });
 
-        const leadMap = new Map<string, { nome: string; userId: string; imobiliariaId: string }>();
-        await Promise.all(
-          Array.from(leadIds).map(async (leadId) => {
-            const leadRef = doc(db, 'leads', leadId);
-            const leadSnap = await getDoc(leadRef);
-            if (cancelled) return;
-            if (!leadSnap.exists()) return;
-            const d = leadSnap.data();
-            leadMap.set(leadId, {
-              nome: (d.nome as string) ?? 'Lead',
-              userId: (d.userId as string) ?? '',
-              imobiliariaId: (d.imobiliariaId as string) ?? '',
-            });
-          })
-        );
-        if (cancelled) return;
+        for (let i = 0; i < userIdsList.length; i += 10) {
+          const chunk = userIdsList.slice(i, i + 10);
+          const snapUser = await getDocs(
+            query(leadsRef, where('userId', 'in', chunk), limit(500))
+          );
+          if (cancelled) return;
+          snapUser.docs.forEach((docSnap) => {
+            if (!leadIdsSeen.has(docSnap.id)) {
+              leadIdsSeen.add(docSnap.id);
+              leadDocs.push({ id: docSnap.id, data: docSnap.data() });
+            }
+          });
+        }
 
         const ligacoesList: CrmTarefaTv[] = [];
         const visitasList: CrmTarefaTv[] = [];
 
-        tarefasSnapshot.docs.forEach((taskDoc) => {
-          const path = taskDoc.ref.path;
-          const parts = path.split('/');
-          const leadId = parts.length >= 2 ? parts[1] : '';
-          const leadInfo = leadMap.get(leadId);
-          if (!leadInfo) return;
-          const pertenceImobiliaria = leadInfo.imobiliariaId === imobiliariaId || userIdsSet.has(leadInfo.userId);
-          if (!pertenceImobiliaria) return;
+        for (const { id: leadId, data: leadData } of leadDocs) {
+          const leadNome = (leadData.nome as string) ?? 'Lead';
+          const userId = (leadData.userId as string) ?? '';
+          const responsavelNome = usuariosMap.get(userId) ?? '';
+          const tasksRef = collection(db, 'leads', leadId, 'tarefas');
+          const tasksSnapshot = await getDocs(
+            query(tasksRef, where('status', '==', 'pendente'))
+          );
+          if (cancelled) return;
 
-          const d = taskDoc.data();
-          const typeRaw = (d.type as string) ?? '';
-          if (!isLigacao(typeRaw) && !isVisita(typeRaw)) return;
-
-          const dueDate = parseDueDate(d.dueDate);
-          const dueStr = dueDate.getFullYear() + '-' + String(dueDate.getMonth() + 1).padStart(2, '0') + '-' + String(dueDate.getDate()).padStart(2, '0');
-          const dueStrUTC = dueDate.getUTCFullYear() + '-' + String(dueDate.getUTCMonth() + 1).padStart(2, '0') + '-' + String(dueDate.getUTCDate()).padStart(2, '0');
-          if (dueStr !== hojeStr && dueStrUTC !== hojeStrUTC) return;
-
-          const responsavelNome = usuariosMap.get(leadInfo.userId) ?? '';
-          const item: CrmTarefaTv = {
-            id: taskDoc.id,
-            leadId,
-            leadNome: leadInfo.nome,
-            responsavelNome,
-            type: isLigacao(typeRaw) ? 'Ligação' : 'Visita',
-            description: d.description,
-            dueDate,
-          };
-          if (isLigacao(typeRaw)) ligacoesList.push(item);
-          else visitasList.push(item);
-        });
+          tasksSnapshot.docs.forEach((taskDoc) => {
+            const d = taskDoc.data() as Record<string, unknown>;
+            const typeRaw = String(d.type ?? d.tipo ?? '').trim();
+            if (!isLigacao(typeRaw) && !isVisita(typeRaw)) return;
+            const dueDate = parseDueDate(d.dueDate);
+            if (!isHoje(dueDate, hojeStr, hojeStrUTC)) return;
+            const item: CrmTarefaTv = {
+              id: taskDoc.id,
+              leadId,
+              leadNome,
+              responsavelNome,
+              type: isLigacao(typeRaw) ? 'Ligação' : 'Visita',
+              description: d.description as string | undefined,
+              dueDate,
+            };
+            if (isLigacao(typeRaw)) ligacoesList.push(item);
+            else visitasList.push(item);
+          });
+        }
 
         ligacoesList.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
         visitasList.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
@@ -150,7 +155,7 @@ export function useCrmAgendaTvData(imobiliariaId: string | undefined) {
           setLigacoes(ligacoesList);
           setVisitas(visitasList);
         }
-      } catch (e) {
+      } catch {
         if (!cancelled) {
           setLigacoes([]);
           setVisitas([]);
