@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import type { ImovelSelecaoNox } from './_components/SelecaoNoxSlide';
 
 export interface SlideConfig {
   id: string;
@@ -47,11 +48,19 @@ const ExternalIcon = (p: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+const IMOVEL_VAZIO: ImovelSelecaoNox = { imageUrl: '', titulo: '', local: '', preco: '' };
+
 export default function DashboardsTvPage() {
   const { userData } = useAuth();
   const [slides, setSlides] = useState<SlideConfig[]>([]);
+  const [selecaoNox, setSelecaoNox] = useState<{ imoveis: ImovelSelecaoNox[]; fraseRolante: string }>({
+    imoveis: [IMOVEL_VAZIO, IMOVEL_VAZIO, IMOVEL_VAZIO],
+    fraseRolante: '',
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingSelecao, setSavingSelecao] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState<number | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
   const imobiliariaId = userData?.imobiliariaId;
@@ -74,6 +83,20 @@ export default function DashboardsTvPage() {
             durationSeconds: 60,
           }))
         );
+      }
+      const refSelecao = doc(db, 'dashboardsTvSelecaoNox', imobiliariaId);
+      const snapSelecao = await getDoc(refSelecao);
+      if (snapSelecao.exists()) {
+        const d = snapSelecao.data()!;
+        const imoveis = Array.isArray(d.imoveis) ? d.imoveis : [];
+        setSelecaoNox({
+          imoveis: [
+            imoveis[0] ?? IMOVEL_VAZIO,
+            imoveis[1] ?? IMOVEL_VAZIO,
+            imoveis[2] ?? IMOVEL_VAZIO,
+          ],
+          fraseRolante: d.fraseRolante ?? '',
+        });
       }
       setLoading(false);
     };
@@ -101,8 +124,48 @@ export default function DashboardsTvPage() {
     }
   };
 
+  const updateSelecaoImovel = (index: number, patch: Partial<ImovelSelecaoNox>) => {
+    setSelecaoNox(prev => ({
+      ...prev,
+      imoveis: prev.imoveis.map((im, i) => (i === index ? { ...im, ...patch } : im)),
+    }));
+  };
+
+  const handleSaveSelecaoNox = async () => {
+    if (!imobiliariaId) return;
+    setSavingSelecao(true);
+    setMsg(null);
+    try {
+      await setDoc(doc(db, 'dashboardsTvSelecaoNox', imobiliariaId), selecaoNox, { merge: true });
+      setMsg('Seleção Nox salva!');
+      setTimeout(() => setMsg(null), 3000);
+    } catch (e) {
+      setMsg('Erro ao salvar Seleção Nox.');
+    } finally {
+      setSavingSelecao(false);
+    }
+  };
+
+  const handleUploadFoto = async (idx: number, file: File | null) => {
+    if (!imobiliariaId || !file || !file.type.startsWith('image/')) return;
+    setUploadingPhoto(idx);
+    try {
+      const ext = file.name.split('.').pop() || 'jpg';
+      const path = `dashboardsTvSelecaoNox/${imobiliariaId}/imovel_${idx}_${Date.now()}.${ext}`;
+      const storageRef = ref(storage, path);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      updateSelecaoImovel(idx, { imageUrl: url });
+    } catch (e) {
+      setMsg('Erro ao enviar foto.');
+      setTimeout(() => setMsg(null), 3000);
+    } finally {
+      setUploadingPhoto(null);
+    }
+  };
+
   const enabledOrdered = slides.filter(s => s.enabled);
-  const viewUrl = typeof window !== 'undefined' ? `${window.location.origin}/dashboard/admin/dashboards-tv/view` : '';
+  const viewUrl = typeof window !== 'undefined' ? `${window.location.origin}/tv` : '';
 
   if (!imobiliariaId) {
     return (
@@ -189,10 +252,120 @@ export default function DashboardsTvPage() {
               </div>
             ))}
 
+            {/* Configurar Seleção Nox — 3 imóveis + frase rolante */}
+            {slides.some(s => s.id === 'top3-selecao-nox') && (
+              <div className="mt-8 p-6 rounded-2xl bg-white dark:bg-[#23283A] border-2 border-[#3478F6]/20 shadow-lg">
+                <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-2">Configurar Top 3 Seleção Nox</h2>
+                <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-6">Três espaços para foto e texto (como na TV). Embaixo, a frase que passa na faixa rolante.</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                  {[0, 1, 2].map((idx) => (
+                    <div key={idx} className="rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-4 bg-[#F5F6FA] dark:bg-[#181C23]">
+                      <h3 className="font-semibold text-[#3478F6] mb-3">Imóvel {idx + 1}</h3>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs font-medium text-[#6B6F76] dark:text-gray-400 mb-1">Foto do imóvel</label>
+                          {selecaoNox.imoveis[idx]?.imageUrl ? (
+                            <div className="relative rounded-lg overflow-hidden bg-[#23283A] aspect-[4/3] mb-2">
+                              <img
+                                src={selecaoNox.imoveis[idx].imageUrl}
+                                alt={`Imóvel ${idx + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                              <label className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
+                                <span className="text-white text-sm font-medium px-3 py-1.5 bg-[#3478F6] rounded-lg">
+                                  {uploadingPhoto === idx ? 'Enviando...' : 'Trocar foto'}
+                                </span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="sr-only"
+                                  disabled={uploadingPhoto !== null}
+                                  onChange={e => {
+                                    const f = e.target.files?.[0];
+                                    if (f) handleUploadFoto(idx, f);
+                                    e.target.value = '';
+                                  }}
+                                />
+                              </label>
+                            </div>
+                          ) : (
+                            <label className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-[#E8E9F1] dark:border-[#23283A] aspect-[4/3] cursor-pointer hover:border-[#3478F6]/50 hover:bg-[#3478F6]/5 transition-colors">
+                              <span className="text-[#6B6F76] dark:text-gray-400 text-sm mt-2">
+                                {uploadingPhoto === idx ? 'Enviando...' : 'Clique para enviar foto'}
+                              </span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="sr-only"
+                                disabled={uploadingPhoto !== null}
+                                onChange={e => {
+                                  const f = e.target.files?.[0];
+                                  if (f) handleUploadFoto(idx, f);
+                                  e.target.value = '';
+                                }}
+                              />
+                            </label>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-[#6B6F76] dark:text-gray-400 mb-1">Título</label>
+                          <input
+                            type="text"
+                            value={selecaoNox.imoveis[idx]?.titulo ?? ''}
+                            onChange={e => updateSelecaoImovel(idx, { titulo: e.target.value })}
+                            placeholder="Ex: Apartamento frente mar na planta..."
+                            className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm text-[#2E2F38] dark:text-white bg-white dark:bg-[#23283A]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-[#6B6F76] dark:text-gray-400 mb-1">Local</label>
+                          <input
+                            type="text"
+                            value={selecaoNox.imoveis[idx]?.local ?? ''}
+                            onChange={e => updateSelecaoImovel(idx, { local: e.target.value })}
+                            placeholder="Ex: Tabuleiro, Barra Velha"
+                            className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm text-[#2E2F38] dark:text-white bg-white dark:bg-[#23283A]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-[#6B6F76] dark:text-gray-400 mb-1">Preço (R$)</label>
+                          <input
+                            type="text"
+                            value={selecaoNox.imoveis[idx]?.preco ?? ''}
+                            onChange={e => updateSelecaoImovel(idx, { preco: e.target.value })}
+                            placeholder="Ex: 936.408,50"
+                            className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm text-[#2E2F38] dark:text-white bg-white dark:bg-[#23283A]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">Frase da faixa rolante (passa embaixo dos 3 imóveis)</label>
+                  <input
+                    type="text"
+                    value={selecaoNox.fraseRolante}
+                    onChange={e => setSelecaoNox(prev => ({ ...prev, fraseRolante: e.target.value }))}
+                    placeholder="Ex: Seleção Nox — os melhores imóveis para você. Consulte-nos!"
+                    className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-4 py-3 text-[#2E2F38] dark:text-white bg-white dark:bg-[#23283A]"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSaveSelecaoNox}
+                  disabled={savingSelecao}
+                  className="px-4 py-2 rounded-lg bg-[#3AC17C] text-white font-semibold hover:bg-[#2ea86a] disabled:opacity-50"
+                >
+                  {savingSelecao ? 'Salvando...' : 'Salvar Seleção Nox'}
+                </button>
+              </div>
+            )}
+
             <div className="mt-6 p-4 rounded-xl bg-[#3478F6]/10 border border-[#3478F6]/20">
               <p className="text-sm text-[#2E2F38] dark:text-gray-200">
                 <strong>Como usar:</strong> marque as telas que deseja exibir, defina o tempo de cada uma (ou &quot;Fixo&quot; para deixar até trocar). 
-                Clique em <strong>Abrir na TV</strong> e coloque o navegador em tela cheia na TV. As telas habilitadas rodarão em loop na ordem acima.
+                Clique em <strong>Abrir na TV</strong> para abrir em nova aba <strong>sem menu lateral</strong> — coloque em tela cheia na TV. As telas habilitadas rodarão em loop.
               </p>
             </div>
           </div>
