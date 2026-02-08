@@ -56,6 +56,32 @@ export function MetasResultadosSlide({
   const faltaMensal = metaMensal ? Math.max(0, metaMensal.valor - metaMensal.alcancado) : 0;
   const temMeta = metaTrimestral.valor > 0 || (metaMensal?.valor ?? 0) > 0;
 
+  // Dias restantes e "quanto por dia" para bater a meta
+  const hoje = now;
+  const fimTrim = metaTrimestral.fim ? new Date(metaTrimestral.fim) : null;
+  const fimMensal = metaMensal?.fim ? new Date(metaMensal.fim) : null;
+  const diasRestantesTrim = fimTrim && fimTrim > hoje ? Math.ceil((fimTrim.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+  const diasRestantesMensal = fimMensal && fimMensal > hoje ? Math.ceil((fimMensal.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+  const porDiaTrim = diasRestantesTrim > 0 && faltaTrim > 0 ? Math.round(faltaTrim / diasRestantesTrim) : 0;
+  const porDiaMensal = diasRestantesMensal > 0 && faltaMensal > 0 ? Math.round(faltaMensal / diasRestantesMensal) : 0;
+
+  const numCorretores = contribuicoesPorCorretor.length;
+  const pctTrim = Math.min(metaTrimestral.percentual, 100);
+
+  const frasesMotivacionais: Record<string, string> = {
+    '0': 'Bora aquecer! Cada venda conta.',
+    '20': 'No ritmo! Meta no horizonte.',
+    '50': 'Quase lá! Última reta.',
+    '80': 'Tão perto! Fecha com tudo.',
+    '100': 'Meta batida! Time de outro nível.',
+  };
+  const frase =
+    pctTrim >= 100 ? frasesMotivacionais['100']
+    : pctTrim >= 80 ? frasesMotivacionais['80']
+    : pctTrim >= 50 ? frasesMotivacionais['50']
+    : pctTrim >= 20 ? frasesMotivacionais['20']
+    : frasesMotivacionais['0'];
+
   // Relógio ao vivo
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
@@ -128,13 +154,52 @@ export function MetasResultadosSlide({
         </div>
       </header>
 
-      <div className="relative flex-1 min-h-0 p-4 md:p-6 overflow-hidden">
+      <div className="relative flex-1 min-h-0 p-4 md:p-6 overflow-hidden flex flex-col">
         {!temMeta ? (
           <div className="h-full flex items-center justify-center text-slate-500">
             <p className="text-center">Configure as metas em Admin → Metas.</p>
           </div>
         ) : (
-          <div className="h-full grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
+          <>
+            {/* Destaque central — hero */}
+            <div className="shrink-0 mb-4 md:mb-6 rounded-2xl border border-white/15 bg-gradient-to-r from-[#3478F6]/20 via-cyan-500/10 to-amber-500/10 backdrop-blur-sm p-4 md:p-6 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-4 md:gap-8">
+                <div className={`text-5xl md:text-7xl font-black tabular-nums ${pctTrim >= 100 ? 'text-emerald-400' : 'text-cyan-400'}`}>
+                  {pctTrim}%
+                </div>
+                <div>
+                  <p className="text-lg md:text-xl font-semibold text-white">Meta trimestral</p>
+                  <p className="text-sm md:text-base text-slate-300 mt-0.5">{frase}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 md:gap-6 flex-wrap">
+                {faltaTrim > 0 ? (
+                  <div className="rounded-xl bg-amber-500/25 border border-amber-400/50 px-4 py-3">
+                    <p className="text-xs text-amber-200/90 uppercase tracking-wide">Faltam</p>
+                    <p className="text-2xl md:text-3xl font-black text-amber-300">{fmt(faltaTrim)}</p>
+                    {diasRestantesTrim > 0 && porDiaTrim > 0 && (
+                      <p className="text-xs text-amber-200/80 mt-1">~{fmt(porDiaTrim)}/dia para bater</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="rounded-xl bg-emerald-500/25 border border-emerald-400/50 px-4 py-3">
+                    <p className="text-xl md:text-2xl font-black text-emerald-300">🎉 Meta batida!</p>
+                  </div>
+                )}
+                <div className="rounded-xl bg-white/10 border border-white/20 px-4 py-3">
+                  <p className="text-xs text-slate-400 uppercase tracking-wide">Corretores no jogo</p>
+                  <p className="text-2xl md:text-3xl font-bold text-white">{numCorretores}</p>
+                </div>
+                {diasRestantesTrim > 0 && (
+                  <div className="rounded-xl bg-white/10 border border-white/20 px-4 py-3">
+                    <p className="text-xs text-slate-400 uppercase tracking-wide">Dias no trimestre</p>
+                    <p className="text-2xl md:text-3xl font-bold text-white">{diasRestantesTrim}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+          <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
             {/* Card Meta trimestral */}
             <div className="lg:col-span-4 flex flex-col rounded-2xl border border-[#3478F6]/30 bg-gradient-to-b from-[#3478F6]/10 to-transparent backdrop-blur-sm p-5 overflow-hidden shadow-xl shadow-[#3478F6]/5">
               <div className="flex items-center gap-2 mb-2">
@@ -142,7 +207,10 @@ export function MetasResultadosSlide({
                 <h2 className="text-lg font-bold text-slate-300">Meta trimestral</h2>
               </div>
               {(metaTrimestral.inicio || metaTrimestral.fim) && (
-                <p className="text-xs text-slate-500 mb-3">{fmtDate(metaTrimestral.inicio)} a {fmtDate(metaTrimestral.fim)}</p>
+                <p className="text-xs text-slate-500 mb-1">{fmtDate(metaTrimestral.inicio)} a {fmtDate(metaTrimestral.fim)}</p>
+              )}
+              {diasRestantesTrim > 0 && (
+                <p className="text-xs text-cyan-400/90 mb-3">{diasRestantesTrim} dias restantes · {porDiaTrim > 0 ? `${fmt(porDiaTrim)}/dia para bater` : '—'}</p>
               )}
               <div className="flex justify-between items-baseline mb-2">
                 <span className="text-sm text-slate-400">Meta</span>
@@ -188,7 +256,10 @@ export function MetasResultadosSlide({
                   <span className="text-2xl">📆</span>
                   <h2 className="text-lg font-bold text-slate-300">Meta mensal</h2>
                 </div>
-                <p className="text-xs text-slate-500 mb-3">{fmtDate(metaMensal.inicio)} a {fmtDate(metaMensal.fim)}</p>
+                <p className="text-xs text-slate-500 mb-1">{fmtDate(metaMensal.inicio)} a {fmtDate(metaMensal.fim)}</p>
+                {diasRestantesMensal > 0 && (
+                  <p className="text-xs text-amber-400/90 mb-3">{diasRestantesMensal} dias no mês · {porDiaMensal > 0 ? `${fmt(porDiaMensal)}/dia para bater` : '—'}</p>
+                )}
                 <div className="flex justify-between items-baseline mb-2">
                   <span className="text-sm text-slate-400">Meta</span>
                   <span className="text-xl font-black text-white">{fmt(metaMensal.valor)}</span>
@@ -231,7 +302,10 @@ export function MetasResultadosSlide({
             <div className={`flex flex-col rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-sm p-5 overflow-hidden ${metaMensal ? 'lg:col-span-4' : 'lg:col-span-8'}`}>
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-2xl">🏆</span>
-                <h2 className="text-lg font-bold text-slate-300">Quem vendeu</h2>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-300">Quem vendeu</h2>
+                  <p className="text-xs text-slate-500">{numCorretores} corretores contribuíram</p>
+                </div>
               </div>
               <div className="flex-1 min-h-0 overflow-auto space-y-2">
                 {contribuicoesPorCorretor.length === 0 ? (
@@ -264,6 +338,7 @@ export function MetasResultadosSlide({
               </div>
             </div>
           </div>
+          </>
         )}
       </div>
     </div>
