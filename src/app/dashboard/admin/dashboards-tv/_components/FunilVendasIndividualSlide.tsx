@@ -5,12 +5,12 @@ import type { FunilCorretor } from './useFunilVendasData';
 
 const TOP_N = 9;
 
-// Só 4 etapas: Qualificação, Ligação+Visita juntos, Negociação e Proposta, Interesse Futuro
+// Só 4 etapas — labels curtos para não truncar na TV
 const ETAPAS_EXIBIR: { key: string; label: string; quente?: boolean; getVal: (p: Record<string, number>) => number }[] = [
-  { key: 'qualif', label: 'Qualificação', getVal: (p) => p['Qualificação'] ?? 0 },
-  { key: 'visita-lig', label: 'Lig. e visita agend.', getVal: (p) => (p['Ligação agendada'] ?? 0) + (p['Visita agendada'] ?? 0) },
-  { key: 'negoc', label: 'Negociação e proposta', quente: true, getVal: (p) => p['Negociação e Proposta'] ?? 0 },
-  { key: 'int-futuro', label: 'Interesse futuro', getVal: (p) => p['Interesse Futuro'] ?? 0 },
+  { key: 'qualif', label: 'Qualif.', getVal: (p) => p['Qualificação'] ?? 0 },
+  { key: 'visita-lig', label: 'Lig. e visita', getVal: (p) => (p['Ligação agendada'] ?? 0) + (p['Visita agendada'] ?? 0) },
+  { key: 'negoc', label: 'Negoc. e prop.', quente: true, getVal: (p) => p['Negociação e Proposta'] ?? 0 },
+  { key: 'int-futuro', label: 'Int. futuro', getVal: (p) => p['Interesse Futuro'] ?? 0 },
 ];
 
 function getNivel(total: number): { label: string; emoji: string; bg: string; text: string } {
@@ -92,49 +92,50 @@ export function FunilVendasIndividualSlide({
                   </>
                 )}
 
-                <div className="relative flex flex-col flex-1 min-h-0 p-4 md:p-5">
-                  {/* Topo: posição + nome + nível + score */}
-                  <div className="flex items-start gap-3 mb-4 shrink-0">
-                    <span className="flex-shrink-0 flex items-center justify-center mt-0.5">
-                      {idx === 0 ? (
-                        <span className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white shadow-lg shadow-amber-500/30 ring-2 ring-amber-300/50">
-                          <TrophyIcon className="w-6 h-6" />
-                        </span>
-                      ) : idx === 1 ? (
-                        <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center text-white shadow-md ring-2 ring-slate-400/40">
-                          <MedalIcon className="w-5 h-5" />
-                        </span>
-                      ) : idx === 2 ? (
-                        <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center text-amber-100 shadow-md ring-2 ring-amber-600/40">
-                          <MedalIcon className="w-5 h-5" />
-                        </span>
-                      ) : (
-                        <span className="w-10 h-10 rounded-xl bg-[#3478F6]/25 flex items-center justify-center text-[#93c5fd] font-bold text-lg border-2 border-[#3478F6]/40">
-                          {idx + 1}
-                        </span>
-                      )}
-                    </span>
-                    <div className="flex-1 min-w-0 overflow-hidden">
-                      <span className="block font-bold text-white text-base md:text-lg truncate leading-tight" title={corretor.nome}>
+                <div className="relative flex flex-col flex-1 min-h-0 p-3 md:p-4 overflow-visible">
+                  {/* Topo: 2 linhas bem separadas para não sobrepor as etapas */}
+                  <div className="shrink-0 mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="flex-shrink-0">
+                        {idx === 0 ? (
+                          <span className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white shadow-lg ring-2 ring-amber-300/50">
+                            <TrophyIcon className="w-5 h-5" />
+                          </span>
+                        ) : idx === 1 ? (
+                          <span className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center text-white shadow-md ring-2 ring-slate-400/40">
+                            <MedalIcon className="w-4 h-4" />
+                          </span>
+                        ) : idx === 2 ? (
+                          <span className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center text-amber-100 shadow-md ring-2 ring-amber-600/40">
+                            <MedalIcon className="w-4 h-4" />
+                          </span>
+                        ) : (
+                          <span className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-[#3478F6]/25 flex items-center justify-center text-[#93c5fd] font-bold text-sm border-2 border-[#3478F6]/40">
+                            {idx + 1}
+                          </span>
+                        )}
+                      </span>
+                      <span className="flex-1 min-w-0 font-bold text-white text-sm md:text-base truncate" title={corretor.nome}>
                         {corretor.nome}
                       </span>
-                      <span className={`inline-flex items-center gap-1.5 mt-1.5 px-2 py-0.5 rounded-full text-xs font-semibold border ${nivel.bg} ${nivel.text}`}>
-                        <span>{nivel.emoji}</span>
-                        <span>{nivel.label}</span>
+                      <span className="flex-shrink-0 text-right">
+                        <span className="block text-xl md:text-2xl font-black tabular-nums bg-gradient-to-br from-[#60a5fa] to-[#3478F6] bg-clip-text text-transparent leading-none">
+                          {corretor.total}
+                        </span>
+                        <span className="text-[10px] text-[#64748b]">leads</span>
                       </span>
                     </div>
-                    <div className="flex-shrink-0 text-right">
-                      <span className="block text-2xl md:text-3xl font-black tabular-nums bg-gradient-to-br from-[#60a5fa] to-[#3478F6] bg-clip-text text-transparent drop-shadow-sm leading-none">
-                        {corretor.total}
+                    <div className="flex items-center justify-end gap-2 mt-1.5">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] md:text-xs font-semibold border ${nivel.bg} ${nivel.text}`}>
+                        {nivel.emoji} {nivel.label}
                       </span>
-                      <span className="text-xs text-[#64748b] font-medium">leads</span>
                     </div>
                   </div>
 
                   {/* Barra vs 1º */}
                   {top9.length > 0 && idx > 0 && (
-                    <div className="mb-4 shrink-0">
-                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden flex">
+                    <div className="mb-2 shrink-0">
+                      <div className="h-1 bg-white/10 rounded-full overflow-hidden flex">
                         <div
                           className="h-full rounded-full bg-gradient-to-r from-[#3478F6] to-[#60a5fa] flex-shrink-0 transition-all duration-700"
                           style={{ width: `${Math.max(pctDoMax, 6)}%`, minWidth: 6 }}
@@ -143,28 +144,28 @@ export function FunilVendasIndividualSlide({
                     </div>
                   )}
 
-                  {/* 4 etapas — mais espaço, barras mais grossas */}
-                  <div className="flex-1 min-h-0 flex flex-col justify-center gap-3 md:gap-4">
+                  {/* 4 etapas — altura mínima para as 4 sempre visíveis, sem overlap */}
+                  <div className="flex-1 min-h-[7.5rem] flex flex-col justify-start gap-2">
                     {ETAPAS_EXIBIR.map((etapa) => {
                       const qtd = etapa.getVal(porEtapa);
                       const pct = maxLocal > 0 ? Math.round((qtd / maxLocal) * 100) : 0;
                       const widthPct = qtd > 0 ? Math.max(pct, 20) : 0;
                       return (
-                        <div key={etapa.key} className="flex items-center gap-3 flex-nowrap">
-                          <span className="text-xs md:text-sm text-[#94a3b8] font-medium w-28 md:w-32 shrink-0 truncate">
+                        <div key={etapa.key} className="flex items-center gap-2 flex-nowrap min-h-[1.5rem]">
+                          <span className="text-xs text-[#94a3b8] font-medium shrink-0 min-w-[4.5rem]">
                             {etapa.label}
                           </span>
-                          <div className="flex-1 min-w-0 h-3 md:h-3.5 bg-white/10 rounded-full overflow-hidden flex">
+                          <div className="flex-1 min-w-0 h-2.5 bg-white/10 rounded-full overflow-hidden flex">
                             <div
                               className={`h-full rounded-full flex-shrink-0 transition-all duration-700 ${
                                 etapa.quente
-                                  ? 'bg-gradient-to-r from-amber-500 to-amber-400 shadow-sm shadow-amber-400/20'
+                                  ? 'bg-gradient-to-r from-amber-500 to-amber-400'
                                   : 'bg-gradient-to-r from-[#3478F6] to-[#60a5fa]'
                               }`}
                               style={{ width: `${widthPct}%`, minWidth: qtd > 0 ? 8 : 0 }}
                             />
                           </div>
-                          <span className="text-sm md:text-base font-bold text-white tabular-nums shrink-0 w-9 md:w-10 text-right">
+                          <span className="text-xs font-bold text-white tabular-nums shrink-0 w-6 text-right">
                             {qtd}
                           </span>
                         </div>
