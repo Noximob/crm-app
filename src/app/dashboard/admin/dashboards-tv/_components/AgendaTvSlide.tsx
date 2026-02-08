@@ -300,10 +300,11 @@ export function AgendaTvSlide({ events, plantoes = [], ligacoes = [], visitas = 
               </div>
             )}
 
-            <section className="rounded-2xl border-2 border-emerald-400/40 bg-gradient-to-br from-emerald-500/20 to-cyan-500/10 p-4 shadow-lg">
-              <h2 className="text-sm font-bold text-emerald-300 uppercase tracking-wider mb-3 flex items-center gap-2">
-                <span>📞</span> Funil / CRM — Hoje
-              </h2>
+            {(ligacoes.length > 0 || visitas.length > 0) && (
+              <section className="rounded-2xl border-2 border-emerald-400/40 bg-gradient-to-br from-emerald-500/20 to-cyan-500/10 p-4 shadow-lg">
+                <h2 className="text-sm font-bold text-emerald-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <span>📞</span> Funil / CRM — Hoje
+                </h2>
                 <div className="flex gap-2 mb-4">
                   <button
                     type="button"
@@ -360,7 +361,8 @@ export function AgendaTvSlide({ events, plantoes = [], ligacoes = [], visitas = 
                     )
                   )}
                 </div>
-            </section>
+              </section>
+            )}
 
             {plantoesRestantesHoje.length > 0 && (
               <section>

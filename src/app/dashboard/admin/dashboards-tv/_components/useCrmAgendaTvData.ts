@@ -11,6 +11,27 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 
+function parseDueDate(v: unknown): Date {
+  if (!v) return new Date(0);
+  if (v instanceof Timestamp) return v.toDate();
+  if (typeof v === 'object' && v !== null && 'toDate' in v && typeof (v as { toDate: () => Date }).toDate === 'function') {
+    return (v as { toDate: () => Date }).toDate();
+  }
+  if (typeof v === 'object' && v !== null && 'seconds' in v) {
+    const s = (v as { seconds: number }).seconds;
+    return new Date(typeof s === 'number' ? s * 1000 : 0);
+  }
+  return new Date(0);
+}
+
+function isLigacao(type: string): boolean {
+  const t = (type || '').trim().toLowerCase();
+  return t === 'ligação' || t === 'ligacao';
+}
+function isVisita(type: string): boolean {
+  return (type || '').trim().toLowerCase() === 'visita';
+}
+
 export interface CrmTarefaTv {
   id: string;
   leadId: string;
@@ -57,7 +78,7 @@ export function useCrmAgendaTvData(imobiliariaId: string | undefined) {
         const leadDocs: { id: string; data: Record<string, unknown> }[] = [];
 
         const snapImob = await getDocs(
-          query(leadsRef, where('imobiliariaId', '==', imobiliariaId), limit(100))
+          query(leadsRef, where('imobiliariaId', '==', imobiliariaId), limit(200))
         );
         if (cancelled) return;
         snapImob.docs.forEach((docSnap) => {
@@ -71,7 +92,7 @@ export function useCrmAgendaTvData(imobiliariaId: string | undefined) {
         for (let i = 0; i < userIds.length; i += 10) {
           const chunk = userIds.slice(i, i + 10);
           const snapUser = await getDocs(
-            query(leadsRef, where('userId', 'in', chunk), limit(100))
+            query(leadsRef, where('userId', 'in', chunk), limit(200))
           );
           if (cancelled) return;
           snapUser.docs.forEach((docSnap) => {
@@ -83,6 +104,7 @@ export function useCrmAgendaTvData(imobiliariaId: string | undefined) {
         }
 
         const hojeStr = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0') + '-' + String(hoje.getDate()).padStart(2, '0');
+        const hojeStrUTC = hoje.getUTCFullYear() + '-' + String(hoje.getUTCMonth() + 1).padStart(2, '0') + '-' + String(hoje.getUTCDate()).padStart(2, '0');
         const ligacoesList: CrmTarefaTv[] = [];
         const visitasList: CrmTarefaTv[] = [];
 
@@ -100,23 +122,22 @@ export function useCrmAgendaTvData(imobiliariaId: string | undefined) {
 
           tasksSnapshot.docs.forEach((taskDoc) => {
             const d = taskDoc.data();
-            const type = d.type as string;
-            if (type !== 'Ligação' && type !== 'Visita') return;
-            const dueDate = d.dueDate instanceof Timestamp
-              ? d.dueDate.toDate()
-              : (d.dueDate as { toDate?: () => Date })?.toDate?.() ?? new Date(0);
+            const typeRaw = (d.type as string) ?? '';
+            if (!isLigacao(typeRaw) && !isVisita(typeRaw)) return;
+            const dueDate = parseDueDate(d.dueDate);
             const dueStr = dueDate.getFullYear() + '-' + String(dueDate.getMonth() + 1).padStart(2, '0') + '-' + String(dueDate.getDate()).padStart(2, '0');
-            if (dueStr !== hojeStr) return;
+            const dueStrUTC = dueDate.getUTCFullYear() + '-' + String(dueDate.getUTCMonth() + 1).padStart(2, '0') + '-' + String(dueDate.getUTCDate()).padStart(2, '0');
+            if (dueStr !== hojeStr && dueStrUTC !== hojeStrUTC) return;
             const item: CrmTarefaTv = {
               id: taskDoc.id,
               leadId,
               leadNome,
               responsavelNome,
-              type: type as 'Ligação' | 'Visita',
+              type: isLigacao(typeRaw) ? 'Ligação' : 'Visita',
               description: d.description,
               dueDate,
             };
-            if (type === 'Ligação') ligacoesList.push(item);
+            if (isLigacao(typeRaw)) ligacoesList.push(item);
             else visitasList.push(item);
           });
         }
