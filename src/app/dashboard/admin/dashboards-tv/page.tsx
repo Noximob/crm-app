@@ -5,6 +5,8 @@ import { useAuth } from '@/context/AuthContext';
 import { db, storage } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { FunilVendasSlide } from './_components/FunilVendasSlide';
+import { useFunilVendasData } from './_components/useFunilVendasData';
 import type { ImovelSelecaoNox, NoticiaSemanaData, UnidadeSelecao, UnidadesSelecaoData } from './types';
 
 export interface SlideConfig {
@@ -90,8 +92,9 @@ export default function DashboardsTvPage() {
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const fileInputRefsUnidades = useRef<(HTMLInputElement | null)[]>([]);
   const fileInputRefNoticia = useRef<HTMLInputElement | null>(null);
-
+  const [previewFunilOpen, setPreviewFunilOpen] = useState(false);
   const imobiliariaId = userData?.imobiliariaId;
+  const funilData = useFunilVendasData(imobiliariaId ?? undefined);
 
   useEffect(() => {
     if (!imobiliariaId) {
@@ -382,6 +385,17 @@ export default function DashboardsTvPage() {
                       <option key={p.value} value={p.value}>{p.label}</option>
                     ))}
                   </select>
+                  {slide.id === 'funil-vendas' && (
+                    <button
+                      type="button"
+                      onClick={() => setPreviewFunilOpen(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#3478F6]/10 text-[#3478F6] hover:bg-[#3478F6]/20"
+                      title="Ver como ficará na TV"
+                    >
+                      <TvIcon className="w-4 h-4" />
+                      Visualizar
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setEditingSlideId(slide.id === editingSlideId ? null : slide.id)}
@@ -689,6 +703,36 @@ export default function DashboardsTvPage() {
                 <strong>Como usar:</strong> marque as telas que deseja exibir, defina o tempo de cada uma (ou &quot;Fixo&quot; para deixar até trocar). 
                 Clique em <strong>Abrir na TV</strong> para abrir em nova aba <strong>sem menu lateral</strong> — coloque em tela cheia na TV. As telas habilitadas rodarão em loop.
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Visualizar Funil de Vendas */}
+        {previewFunilOpen && (
+          <div className="fixed inset-0 z-50 flex flex-col bg-[#0f1220]">
+            <div className="shrink-0 flex items-center justify-between px-4 py-3 bg-[#151b2d] border-b border-white/10">
+              <span className="text-white font-semibold">Prévia — Como ficará na TV (Funil de Vendas)</span>
+              <button
+                type="button"
+                onClick={() => setPreviewFunilOpen(false)}
+                className="px-4 py-2 rounded-lg bg-[#3478F6] text-white font-medium hover:bg-[#255FD1]"
+              >
+                Fechar
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-auto">
+              {funilData.loading ? (
+                <div className="flex items-center justify-center min-h-[50vh]">
+                  <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#3478F6] border-t-transparent" />
+                </div>
+              ) : (
+                <FunilVendasSlide
+                  funilCorporativo={funilData.funilCorporativo}
+                  funilPorCorretor={funilData.funilPorCorretor}
+                  totalCorporativo={funilData.totalCorporativo}
+                  compact
+                />
+              )}
             </div>
           </div>
         )}
