@@ -166,13 +166,24 @@ function fmtDiaCurto(d: Date): string {
   return d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' });
 }
 
+const FRASE_POR_DIA: Record<number, string> = {
+  0: 'Começamos a semana!',
+  1: 'Começamos a semana!',
+  2: 'Semana em andamento',
+  3: 'Meio da semana',
+  4: 'Quase lá!',
+  5: 'Quase acabando!',
+  6: 'Estamos acabando!',
+};
+
 interface AgendaTvSlideProps {
   events: AgendaEventoTv[];
   plantoes?: PlantaoTv[];
+  fraseSemana?: string;
   mode: 'day' | 'week';
 }
 
-export function AgendaTvSlide({ events, plantoes = [], mode }: AgendaTvSlideProps) {
+export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode }: AgendaTvSlideProps) {
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -432,20 +443,20 @@ export function AgendaTvSlide({ events, plantoes = [], mode }: AgendaTvSlideProp
                   </div>
                 );
               })}
-              {/* Card “Reta final” no quadrado vazio — completa o grid e reforça a mensagem */}
-              {diasRestantesNaSemana > 0 && diasRestantesNaSemana < 7 && (
-                <div
-                  key="reta-final"
-                  className="rounded-2xl border border-amber-400/40 bg-gradient-to-br from-amber-500/20 to-orange-600/10 p-4 min-h-[180px] flex flex-col items-center justify-center text-center"
-                >
-                  <div className="text-4xl mb-2">🔥</div>
-                  <p className="font-bold text-amber-300 text-lg">Reta final</p>
-                  <p className="text-slate-300 text-sm mt-1">
-                    {diasRestantesNaSemana} {diasRestantesNaSemana === 1 ? 'dia' : 'dias'} restante{diasRestantesNaSemana === 1 ? '' : 's'} na semana
-                  </p>
-                  <p className="text-slate-500 text-xs mt-2">Último gás!</p>
-                </div>
-              )}
+              {/* Slots vazios para completar 7 quadrados de dias */}
+              {Array.from({ length: Math.max(0, 7 - diasSemana.length) }, (_, i) => (
+                <div key={`vazio-${i}`} className="rounded-2xl border border-white/5 bg-white/[0.02] min-h-[180px]" aria-hidden />
+              ))}
+              {/* 8º quadrado: frase da semana (editável no admin) ou frase do dia */}
+              <div
+                key="frase-semana"
+                className="rounded-2xl border border-amber-400/40 bg-gradient-to-br from-amber-500/20 to-orange-600/10 p-4 min-h-[180px] flex flex-col items-center justify-center text-center"
+              >
+                <div className="text-4xl mb-2">💬</div>
+                <p className="font-bold text-amber-300 text-lg leading-tight">
+                  {fraseSemana?.trim() || FRASE_POR_DIA[now.getDay()] || 'Boa semana!'}
+                </p>
+              </div>
             </div>
           </div>
         )}

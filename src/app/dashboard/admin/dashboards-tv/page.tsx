@@ -101,6 +101,7 @@ export default function DashboardsTvPage() {
   const [previewFunil, setPreviewFunil] = useState<'corporativo' | 'individual' | null>(null);
   const [previewMetas, setPreviewMetas] = useState(false);
   const [previewAgenda, setPreviewAgenda] = useState<'day' | 'week' | null>(null);
+  const [agendaFraseSemana, setAgendaFraseSemana] = useState('');
   const imobiliariaId = userData?.imobiliariaId;
   const funilData = useFunilVendasData(imobiliariaId ?? undefined);
   const metasData = useMetasResultadosData(imobiliariaId ?? undefined);
@@ -114,8 +115,11 @@ export default function DashboardsTvPage() {
     const load = async () => {
       const ref = doc(db, 'dashboardsTvConfig', imobiliariaId);
       const snap = await getDoc(ref);
-      if (snap.exists() && Array.isArray(snap.data()?.slides)) {
-        const raw = snap.data()!.slides as SlideConfig[];
+      if (snap.exists()) {
+        const data = snap.data()!;
+        setAgendaFraseSemana(data.agendaFraseSemana ?? '');
+        if (Array.isArray(data.slides)) {
+        const raw = data.slides as SlideConfig[];
         const migrated = raw.map(s => s.id === 'unidades-selecao' ? { ...s, id: 'unidades-selecao-0' as const, name: 'Seleção Nox 1 - Unidades' } : s);
         // Sempre exibir os 3 slides de Unidades separados: merge com a lista padrão para não faltar nenhum
         const defaultSlides = SLIDES_DISPONIVEIS.map(s => ({ ...s, enabled: false, durationSeconds: 60 }));
@@ -124,7 +128,9 @@ export default function DashboardsTvPage() {
           return found ? { ...def, ...found } : def;
         });
         setSlides(merged);
-      } else {
+        }
+      }
+      if (!snap.exists() || !Array.isArray(snap.data()?.slides)) {
         setSlides(
           SLIDES_DISPONIVEIS.map(s => ({
             ...s,
@@ -182,7 +188,7 @@ export default function DashboardsTvPage() {
     setSaving(true);
     setMsg(null);
     try {
-      await setDoc(doc(db, 'dashboardsTvConfig', imobiliariaId), { slides }, { merge: true });
+      await setDoc(doc(db, 'dashboardsTvConfig', imobiliariaId), { slides, agendaFraseSemana: agendaFraseSemana || null }, { merge: true });
       setMsg('Configuração salva!');
       setTimeout(() => setMsg(null), 3000);
     } catch (e) {
@@ -445,6 +451,22 @@ export default function DashboardsTvPage() {
                 </div>
               </div>
             ))}
+
+            {/* Frase da semana — 8º quadrado da Agenda da Semana na TV */}
+            <div className="p-4 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#23283A]">
+              <h3 className="font-semibold text-[#2E2F38] dark:text-white mb-2">Frase da semana (Agenda da Semana na TV)</h3>
+              <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-3">
+                Aparece no 8º quadrado. Se vazio, usa a frase do dia: domingo &quot;Começamos a semana&quot;, sexta &quot;Quase acabando&quot;, sábado &quot;Estamos acabando&quot;, etc.
+              </p>
+              <input
+                type="text"
+                value={agendaFraseSemana}
+                onChange={e => setAgendaFraseSemana(e.target.value)}
+                placeholder="Ex: Foco total essa semana!"
+                className="w-full px-4 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+              />
+              <p className="text-xs text-slate-500 mt-1">Salve a configuração (botão Salvar no topo) para gravar a frase.</p>
+            </div>
 
             {/* Configurar Seleção Nox — só quando clicar em Editar */}
             {editingSlideId === 'top3-selecao-nox' && (
@@ -822,7 +844,7 @@ export default function DashboardsTvPage() {
                   <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#3478F6] border-t-transparent" />
                 </div>
               ) : (
-                <AgendaTvSlide events={agendaTvData.events} plantoes={agendaTvData.plantoes} mode={previewAgenda} />
+                <AgendaTvSlide events={agendaTvData.events} plantoes={agendaTvData.plantoes} fraseSemana={agendaFraseSemana} mode={previewAgenda} />
               )}
             </div>
           </div>

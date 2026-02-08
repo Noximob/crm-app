@@ -40,6 +40,7 @@ const TvIcon = (p: React.SVGProps<SVGSVGElement>) => (
 export default function TvPage() {
   const { userData } = useAuth();
   const [config, setConfig] = useState<SlideConfig[]>([]);
+  const [agendaFraseSemana, setAgendaFraseSemana] = useState('');
   const [selecaoNox, setSelecaoNox] = useState<{ imoveis: ImovelSelecaoNox[]; fraseRolante: string }>({ imoveis: [], fraseRolante: '' });
   const [unidadesData, setUnidadesData] = useState<UnidadesSelecaoData>({ selecoes: [] });
   const [noticiaSemana, setNoticiaSemana] = useState<NoticiaSemanaData>({ titulo: '', imageUrl: '' });
@@ -59,9 +60,13 @@ export default function TvPage() {
     const load = async () => {
       const ref = doc(db, 'dashboardsTvConfig', imobiliariaId);
       const snap = await getDoc(ref);
-      if (snap.exists() && Array.isArray(snap.data()?.slides)) {
-        const slides = (snap.data()!.slides as SlideConfig[]).filter(s => s.enabled);
-        setConfig(slides);
+      if (snap.exists()) {
+        const data = snap.data()!;
+        setAgendaFraseSemana(data.agendaFraseSemana ?? '');
+        if (Array.isArray(data.slides)) {
+          const slides = (data.slides as SlideConfig[]).filter(s => s.enabled);
+          setConfig(slides);
+        }
       }
       const refSelecao = doc(db, 'dashboardsTvSelecaoNox', imobiliariaId);
       const snapSelecao = await getDoc(refSelecao);
@@ -171,7 +176,7 @@ export default function TvPage() {
             <div className="animate-spin rounded-full h-14 w-14 border-2 border-[#3478F6] border-t-transparent" />
           </div>
         ) : (
-          <AgendaTvSlide events={agendaTvData.events} plantoes={agendaTvData.plantoes} mode="week" />
+          <AgendaTvSlide events={agendaTvData.events} plantoes={agendaTvData.plantoes} fraseSemana={agendaFraseSemana} mode="week" />
         )}
         {config.length > 1 && (
           <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
