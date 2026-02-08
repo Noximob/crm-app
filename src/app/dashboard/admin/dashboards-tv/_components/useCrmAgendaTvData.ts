@@ -10,7 +10,6 @@ import {
   limit,
   Timestamp,
 } from 'firebase/firestore';
-import { startOfDay, endOfDay } from './useAgendaTvData';
 
 export interface CrmTarefaTv {
   id: string;
@@ -54,30 +53,44 @@ export function useCrmAgendaTvData(imobiliariaId: string | undefined) {
         });
 
         const leadsRef = collection(db, 'leads');
-        let leadsSnapshot = await getDocs(
-          query(leadsRef, where('imobiliariaId', '==', imobiliariaId), limit(80))
+        const leadIdsSeen = new Set<string>();
+        const leadDocs: { id: string; data: Record<string, unknown> }[] = [];
+
+        const snapImob = await getDocs(
+          query(leadsRef, where('imobiliariaId', '==', imobiliariaId), limit(100))
         );
         if (cancelled) return;
-        if (leadsSnapshot.empty && usuariosMap.size > 0) {
-          const userIds = Array.from(usuariosMap.keys()).slice(0, 10);
-          leadsSnapshot = await getDocs(
-            query(leadsRef, where('userId', 'in', userIds), limit(80))
-          );
-        }
-        if (cancelled) return;
+        snapImob.docs.forEach((docSnap) => {
+          if (!leadIdsSeen.has(docSnap.id)) {
+            leadIdsSeen.add(docSnap.id);
+            leadDocs.push({ id: docSnap.id, data: docSnap.data() });
+          }
+        });
 
+        const userIds = Array.from(usuariosMap.keys());
+        for (let i = 0; i < userIds.length; i += 10) {
+          const chunk = userIds.slice(i, i + 10);
+          const snapUser = await getDocs(
+            query(leadsRef, where('userId', 'in', chunk), limit(100))
+          );
+          if (cancelled) return;
+          snapUser.docs.forEach((docSnap) => {
+            if (!leadIdsSeen.has(docSnap.id)) {
+              leadIdsSeen.add(docSnap.id);
+              leadDocs.push({ id: docSnap.id, data: docSnap.data() });
+            }
+          });
+        }
+
+        const hojeStr = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0') + '-' + String(hoje.getDate()).padStart(2, '0');
         const ligacoesList: CrmTarefaTv[] = [];
         const visitasList: CrmTarefaTv[] = [];
 
-        const startMs = startOfDay(hoje).getTime();
-        const endMs = endOfDay(hoje).getTime();
-
-        for (const leadDoc of leadsSnapshot.docs) {
-          const leadData = leadDoc.data();
+        for (const { id: leadId, data: leadData } of leadDocs) {
           const leadNome = (leadData.nome as string) ?? 'Lead';
           const userId = (leadData.userId as string) ?? '';
           const responsavelNome = usuariosMap.get(userId) ?? '';
-          const tasksRef = collection(db, 'leads', leadDoc.id, 'tarefas');
+          const tasksRef = collection(db, 'leads', leadId, 'tarefas');
           const tasksQuery = query(
             tasksRef,
             where('status', '==', 'pendente')
@@ -91,12 +104,12 @@ export function useCrmAgendaTvData(imobiliariaId: string | undefined) {
             if (type !== 'Ligação' && type !== 'Visita') return;
             const dueDate = d.dueDate instanceof Timestamp
               ? d.dueDate.toDate()
-              : d.dueDate?.toDate?.() ?? new Date(0);
-            const dueMs = dueDate.getTime();
-            if (dueMs < startMs || dueMs > endMs) return;
+              : (d.dueDate as { toDate?: () => Date })?.toDate?.() ?? new Date(0);
+            const dueStr = dueDate.getFullYear() + '-' + String(dueDate.getMonth() + 1).padStart(2, '0') + '-' + String(dueDate.getDate()).padStart(2, '0');
+            if (dueStr !== hojeStr) return;
             const item: CrmTarefaTv = {
               id: taskDoc.id,
-              leadId: leadDoc.id,
+              leadId,
               leadNome,
               responsavelNome,
               type: type as 'Ligação' | 'Visita',
