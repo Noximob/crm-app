@@ -467,104 +467,111 @@ export default function DashboardsTvPage() {
               </div>
             )}
 
-            {/* Configurar Unidades da Seleção — 3 seleções (uma por imóvel Nox), cada uma com 3 unidades; 1 slide na TV para cada seleção */}
-            {(editingSlideId === 'unidades-selecao-0' || editingSlideId === 'unidades-selecao-1' || editingSlideId === 'unidades-selecao-2') && (
-              <div className="mt-4 p-6 rounded-2xl bg-white dark:bg-[#23283A] border-2 border-[#3478F6]/20 shadow-lg">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Configurar Unidades da Seleção</h2>
-                  <button
-                    type="button"
-                    onClick={() => setEditingSlideId(null)}
-                    className="text-sm text-[#6B6F76] dark:text-gray-400 hover:text-[#2E2F38] dark:hover:text-white"
-                  >
-                    Fechar
-                  </button>
-                </div>
-                <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-6">
-                  Cada um dos 3 imóveis do Seleção Nox vira uma &quot;seleção&quot;. Em cada seleção você escolhe 3 unidades (foto, título, valor e descritivo explicando por que a unidade é boa).
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                  {[0, 1, 2].map((selecaoIdx) => (
-                    <div key={selecaoIdx} className="rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-4 bg-[#F5F6FA] dark:bg-[#181C23]">
-                      <h3 className="font-semibold text-[#3478F6] mb-4 border-b border-[#3478F6]/20 pb-2">
-                        {selecaoNox.imoveis[selecaoIdx]?.titulo || `Seleção ${selecaoIdx + 1}`}
-                      </h3>
-                      <div className="space-y-5">
-                        {[0, 1, 2].map((unidadIdx) => {
-                          const key = `${selecaoIdx}-${unidadIdx}`;
-                          const flatIdx = selecaoIdx * 3 + unidadIdx;
-                          const u = unidadesSelecao.selecoes[selecaoIdx]?.unidades[unidadIdx] ?? UNIDADE_VAZIA;
-                          return (
-                            <div key={unidadIdx} className="rounded-lg border border-[#E8E9F1] dark:border-[#23283A] p-3 bg-white dark:bg-[#23283A]">
-                              <p className="text-xs font-medium text-[#6B6F76] dark:text-gray-400 mb-2">Unidade {unidadIdx + 1}</p>
-                              <div className="space-y-2">
-                                <div>
-                                  <div className="h-20 rounded overflow-hidden bg-[#181C23] border border-[#23283A] relative mb-1">
-                                    {u.imageUrl ? (
-                                      <img src={u.imageUrl} alt="" className="w-full h-full object-cover" />
-                                    ) : (
-                                      <div className="w-full h-full flex items-center justify-center text-[#6B6F76] text-xs">Sem foto</div>
-                                    )}
-                                    <input
-                                      ref={el => { fileInputRefsUnidades.current[flatIdx] = el; }}
-                                      type="file"
-                                      accept="image/*"
-                                      className="hidden"
-                                      onChange={e => {
-                                        const f = e.target.files?.[0];
-                                        if (f) handleUploadFotoUnidad(selecaoIdx, unidadIdx, f);
-                                        e.target.value = '';
-                                      }}
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() => fileInputRefsUnidades.current[flatIdx]?.click()}
-                                      disabled={uploadingPhotoUnidad !== null}
-                                      className="absolute bottom-0.5 right-0.5 px-1.5 py-0.5 rounded text-xs font-medium bg-[#3478F6] text-white disabled:opacity-50"
-                                    >
-                                      {uploadingPhotoUnidad === key ? 'Enviando...' : u.imageUrl ? 'Trocar' : 'Foto'}
-                                    </button>
-                                  </div>
-                                </div>
+            {/* Configurar Unidades — 1 painel por slide: ao editar "Seleção Nox 1 - Unidades" só mostra as 3 unidades dessa seleção */}
+            {(editingSlideId === 'unidades-selecao-0' || editingSlideId === 'unidades-selecao-1' || editingSlideId === 'unidades-selecao-2') && (() => {
+              const selecaoIdx = editingSlideId === 'unidades-selecao-0' ? 0 : editingSlideId === 'unidades-selecao-1' ? 1 : 2;
+              const tituloSelecao = selecaoNox.imoveis[selecaoIdx]?.titulo || `Seleção Nox ${selecaoIdx + 1}`;
+              return (
+                <div className="mt-4 p-6 rounded-2xl bg-white dark:bg-[#23283A] border-2 border-[#3478F6]/20 shadow-lg">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Unidades — {tituloSelecao}</h2>
+                    <button
+                      type="button"
+                      onClick={() => setEditingSlideId(null)}
+                      className="text-sm text-[#6B6F76] dark:text-gray-400 hover:text-[#2E2F38] dark:hover:text-white"
+                    >
+                      Fechar
+                    </button>
+                  </div>
+                  <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-6">
+                    As 3 unidades que aparecem no slide &quot;Seleção Nox {selecaoIdx + 1} - Unidades&quot; na TV. Cada uma: foto, título, valor e descritivo (por que a unidade é boa).
+                  </p>
+                  <div className="space-y-5 mb-6">
+                    {[0, 1, 2].map((unidadIdx) => {
+                      const key = `${selecaoIdx}-${unidadIdx}`;
+                      const flatIdx = selecaoIdx * 3 + unidadIdx;
+                      const u = unidadesSelecao.selecoes[selecaoIdx]?.unidades[unidadIdx] ?? UNIDADE_VAZIA;
+                      return (
+                        <div key={unidadIdx} className="rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-4 bg-[#F5F6FA] dark:bg-[#181C23]">
+                          <p className="text-sm font-semibold text-[#3478F6] mb-3">Unidade {unidadIdx + 1}</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs font-medium text-[#6B6F76] dark:text-gray-400 mb-1">Foto</label>
+                              <div className="h-28 rounded-lg overflow-hidden bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] relative">
+                                {u.imageUrl ? (
+                                  <img src={u.imageUrl} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-[#6B6F76] text-xs">Sem foto</div>
+                                )}
+                                <input
+                                  ref={el => { fileInputRefsUnidades.current[flatIdx] = el; }}
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={e => {
+                                    const f = e.target.files?.[0];
+                                    if (f) handleUploadFotoUnidad(selecaoIdx, unidadIdx, f);
+                                    e.target.value = '';
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => fileInputRefsUnidades.current[flatIdx]?.click()}
+                                  disabled={uploadingPhotoUnidad !== null}
+                                  className="absolute bottom-1 right-1 px-2 py-1 rounded text-xs font-medium bg-[#3478F6] text-white disabled:opacity-50"
+                                >
+                                  {uploadingPhotoUnidad === key ? 'Enviando...' : u.imageUrl ? 'Trocar' : 'Enviar foto'}
+                                </button>
+                              </div>
+                            </div>
+                            <div className="space-y-3">
+                              <div>
+                                <label className="block text-xs font-medium text-[#6B6F76] dark:text-gray-400 mb-1">Título</label>
                                 <input
                                   type="text"
                                   value={u.titulo}
                                   onChange={e => updateUnidad(selecaoIdx, unidadIdx, { titulo: e.target.value })}
                                   placeholder="Título da unidade"
-                                  className="w-full rounded border border-[#E8E9F1] dark:border-[#23283A] px-2 py-1.5 text-sm text-[#2E2F38] dark:text-white bg-white dark:bg-[#181C23]"
+                                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm text-[#2E2F38] dark:text-white bg-white dark:bg-[#23283A]"
                                 />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-[#6B6F76] dark:text-gray-400 mb-1">Valor (R$)</label>
                                 <input
                                   type="text"
                                   value={u.valor}
                                   onChange={e => updateUnidad(selecaoIdx, unidadIdx, { valor: e.target.value })}
-                                  placeholder="Valor (R$)"
-                                  className="w-full rounded border border-[#E8E9F1] dark:border-[#23283A] px-2 py-1.5 text-sm text-[#2E2F38] dark:text-white bg-white dark:bg-[#181C23]"
+                                  placeholder="Ex: 936.408,50"
+                                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm text-[#2E2F38] dark:text-white bg-white dark:bg-[#23283A]"
                                 />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-[#6B6F76] dark:text-gray-400 mb-1">Descritivo (por que essa unidade é boa)</label>
                                 <textarea
                                   value={u.descritivo}
                                   onChange={e => updateUnidad(selecaoIdx, unidadIdx, { descritivo: e.target.value })}
-                                  placeholder="Por que essa unidade é boa (descritivo)"
-                                  rows={2}
-                                  className="w-full rounded border border-[#E8E9F1] dark:border-[#23283A] px-2 py-1.5 text-sm text-[#2E2F38] dark:text-white bg-white dark:bg-[#181C23] resize-none"
+                                  placeholder="Explicação..."
+                                  rows={3}
+                                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm text-[#2E2F38] dark:text-white bg-white dark:bg-[#23283A] resize-none"
                                 />
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSaveUnidadesSelecao}
+                    disabled={savingUnidades}
+                    className="px-4 py-2 rounded-lg bg-[#3AC17C] text-white font-semibold hover:bg-[#2ea86a] disabled:opacity-50"
+                  >
+                    {savingUnidades ? 'Salvando...' : 'Salvar'}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleSaveUnidadesSelecao}
-                  disabled={savingUnidades}
-                  className="px-4 py-2 rounded-lg bg-[#3AC17C] text-white font-semibold hover:bg-[#2ea86a] disabled:opacity-50"
-                >
-                  {savingUnidades ? 'Salvando...' : 'Salvar Unidades da Seleção'}
-                </button>
-              </div>
-            )}
+              );
+            })()}
 
             <div className="mt-6 p-4 rounded-xl bg-[#3478F6]/10 border border-[#3478F6]/20">
               <p className="text-sm text-[#2E2F38] dark:text-gray-200">
