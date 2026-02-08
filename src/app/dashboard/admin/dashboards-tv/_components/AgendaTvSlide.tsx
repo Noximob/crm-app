@@ -288,7 +288,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode }: Agen
 
       <div className="relative flex-1 min-h-0 p-4 md:p-6 flex flex-col overflow-hidden">
         {mode === 'day' && (
-          <div className="h-full flex flex-col gap-4 max-w-5xl mx-auto min-h-0">
+          <div className="h-full w-full flex flex-col gap-4 min-h-0">
             {/* Progresso do dia — gamificado */}
             {(() => {
               const totalRestantes = plantoesRestantesHoje.length + slotsRestantesHoje.length;
@@ -341,20 +341,15 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode }: Agen
                   </div>
                 );
               }
-              const muitosItens = todosItens.length > 6;
               return (
                 <section className="flex flex-col flex-1 min-h-0 flex-shrink-0">
                   <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 shrink-0">
                     {todosItens.length} compromisso{todosItens.length !== 1 ? 's' : ''} restante{todosItens.length !== 1 ? 's' : ''}
                   </h2>
-                  <div
-                    className={`flex flex-col gap-2 min-h-0 ${muitosItens ? 'flex-1 min-h-0 overflow-auto' : 'flex-1'}`}
-                  >
+                  <div className="flex flex-col flex-1 min-h-0 gap-2">
                     {todosItens.map((item, idx) => {
                       const isProximo = idx === 0;
-                      const cardBase = muitosItens
-                        ? 'min-h-[72px]'
-                        : 'flex-1 min-h-[64px]';
+                      const cardBase = 'flex-1 min-h-0';
                       if (item.tipo === 'plantao') {
                         const s = item.slot as SlotPlantao;
                         return (
