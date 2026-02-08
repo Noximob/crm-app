@@ -46,25 +46,18 @@ export function FunilVendasIndividualSlide({
 
   return (
     <div className="h-screen w-full flex flex-col bg-[#080b12] text-white overflow-hidden">
-      {/* Header elegante */}
-      <header className="shrink-0 py-4 px-6 text-center relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#3478F6]/10 via-transparent to-transparent pointer-events-none" />
-        <div className="relative inline-flex items-center justify-center gap-3">
-          <span className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-400/30">
-            <TrophyIcon className="w-5 h-5 text-amber-400" />
-          </span>
-          <h1 className="text-2xl md:text-4xl font-bold tracking-tight bg-gradient-to-r from-white via-[#e2e8f0] to-white bg-clip-text text-transparent drop-shadow-lg">
-            Ranking do Funil
-          </h1>
-          <span className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-400/30">
-            <TrophyIcon className="w-5 h-5 text-amber-400" />
-          </span>
+      {/* Header compacto — TV: tudo em 1 página */}
+      <header className="shrink-0 py-2 px-4 text-center">
+        <div className="inline-flex items-center gap-2">
+          <TrophyIcon className="w-5 h-5 text-amber-400" />
+          <h1 className="text-lg md:text-xl font-bold text-white">Ranking do Funil</h1>
+          <TrophyIcon className="w-5 h-5 text-amber-400" />
         </div>
-        <p className="relative text-[#64748b] text-sm mt-1.5 font-medium">Top {TOP_N} · ao vivo</p>
+        <p className="text-[#64748b] text-xs mt-0.5">Top {TOP_N} · ao vivo</p>
       </header>
 
-      <div className="flex-1 min-h-0 p-4 md:p-6">
-        <div className="h-full grid grid-cols-3 grid-rows-3 gap-4 md:gap-5">
+      <div className="flex-1 min-h-0 p-2 overflow-hidden">
+        <div className="h-full grid grid-cols-3 grid-rows-3 gap-2">
           {top9.map((corretor, idx) => {
             const porEtapa = corretor.porEtapa;
             const valores = ETAPAS_EXIBIR.map((e) => e.getVal(porEtapa));
@@ -77,87 +70,76 @@ export function FunilVendasIndividualSlide({
             return (
               <div
                 key={corretor.id}
-                className={`relative flex flex-col rounded-2xl border-2 transition-all duration-300 overflow-auto ${
+                className={`relative flex flex-col rounded-xl border transition-all duration-300 overflow-hidden ${
                   isFirst
-                    ? 'border-amber-400/50 bg-gradient-to-br from-amber-500/10 to-transparent shadow-[0_0_40px_-8px_rgba(251,191,36,0.25)] scale-[1.02]'
+                    ? 'border-amber-400/50 bg-amber-500/5'
                     : isTop3
-                      ? 'border-white/15 bg-white/[0.07] hover:border-white/25 hover:shadow-lg'
-                      : 'border-white/10 bg-white/[0.04] hover:border-[#3478F6]/30 hover:bg-white/[0.06]'
+                      ? 'border-white/15 bg-white/[0.06]'
+                      : 'border-white/10 bg-white/[0.04]'
                 }`}
               >
                 {isFirst && (
-                  <>
-                    <div className="absolute inset-0 bg-gradient-to-br from-amber-400/5 via-transparent to-transparent pointer-events-none" />
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-amber-400/15 rounded-full blur-2xl pointer-events-none" />
-                  </>
+                  <div className="absolute inset-0 rounded-xl bg-amber-400/5 pointer-events-none" />
                 )}
 
-                <div className="relative flex flex-col p-3 md:p-4 flex-1 min-h-0">
-                  {/* Topo: posição + nome + badge + total */}
-                  <div className="flex items-center gap-2 flex-shrink-0 mb-2">
+                <div className="relative flex flex-col p-2 flex-1 min-h-0 min-w-0">
+                  {/* Topo compacto */}
+                  <div className="flex items-center gap-1.5 flex-shrink-0 mb-1">
                     <span className="flex-shrink-0">
                       {idx === 0 ? (
-                        <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white shadow-lg ring-2 ring-amber-300/50">
-                          <TrophyIcon className="w-5 h-5" />
+                        <span className="w-6 h-6 rounded-lg bg-amber-500 flex items-center justify-center text-white">
+                          <TrophyIcon className="w-3 h-3" />
                         </span>
                       ) : idx === 1 ? (
-                        <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center text-white shadow-md ring-2 ring-slate-400/40">
-                          <MedalIcon className="w-4 h-4" />
+                        <span className="w-6 h-6 rounded-lg bg-slate-500 flex items-center justify-center text-white">
+                          <MedalIcon className="w-3 h-3" />
                         </span>
                       ) : idx === 2 ? (
-                        <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center text-amber-100 shadow-md ring-2 ring-amber-600/40">
-                          <MedalIcon className="w-4 h-4" />
+                        <span className="w-6 h-6 rounded-lg bg-amber-700 flex items-center justify-center text-amber-100">
+                          <MedalIcon className="w-3 h-3" />
                         </span>
                       ) : (
-                        <span className="w-8 h-8 rounded-xl bg-[#3478F6]/25 flex items-center justify-center text-[#93c5fd] font-bold text-sm border-2 border-[#3478F6]/40">
+                        <span className="w-6 h-6 rounded-lg bg-[#3478F6]/30 flex items-center justify-center text-[#93c5fd] font-bold text-[10px] border border-[#3478F6]/50">
                           {idx + 1}
                         </span>
                       )}
                     </span>
-                    <div className="flex-1 min-w-0">
-                      <span className="block font-bold text-white text-sm truncate" title={corretor.nome}>
-                        {corretor.nome}
-                      </span>
-                      <span className={`inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold border ${nivel.bg} ${nivel.text}`}>
-                        {nivel.emoji} {nivel.label}
-                      </span>
-                    </div>
-                    <div className="flex-shrink-0 text-right">
-                      <span className="block text-lg font-black tabular-nums text-[#60a5fa] leading-none">{corretor.total}</span>
-                      <span className="text-[10px] text-[#64748b]">leads</span>
-                    </div>
+                    <span className="flex-1 min-w-0 font-semibold text-white text-[11px] truncate" title={corretor.nome}>
+                      {corretor.nome}
+                    </span>
+                    <span className={`shrink-0 px-1 py-0.5 rounded text-[9px] font-semibold border ${nivel.bg} ${nivel.text}`}>
+                      {nivel.emoji} {nivel.label}
+                    </span>
+                    <span className="shrink-0 text-[13px] font-black tabular-nums text-[#60a5fa]">{corretor.total}</span>
                   </div>
 
-                  {/* Barra vs 1º */}
                   {idx > 0 && (
-                    <div className="flex-shrink-0 mb-2">
-                      <div className="h-1 bg-white/10 rounded-full overflow-hidden flex">
+                    <div className="flex-shrink-0 mb-1">
+                      <div className="h-0.5 bg-white/10 rounded-full overflow-hidden flex">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-[#3478F6] to-[#60a5fa] flex-shrink-0"
-                          style={{ width: `${Math.max(pctDoMax, 6)}%`, minWidth: 6 }}
+                          className="h-full rounded-full bg-[#3478F6] flex-shrink-0"
+                          style={{ width: `${Math.max(pctDoMax, 6)}%`, minWidth: 4 }}
                         />
                       </div>
                     </div>
                   )}
 
-                  {/* 4 etapas: Qualif., Lig. e visita, Negoc. e prop., Int. futuro — sempre visíveis */}
-                  <div className="flex-shrink-0 space-y-2">
+                  {/* 4 etapas — compactas */}
+                  <div className="flex-shrink-0 space-y-1">
                     {ETAPAS_EXIBIR.map((etapa) => {
                       const qtd = etapa.getVal(porEtapa);
                       const pct = maxLocal > 0 ? Math.round((qtd / maxLocal) * 100) : 0;
                       const widthPct = qtd > 0 ? Math.max(pct, 20) : 0;
                       return (
-                        <div key={etapa.key} className="flex items-center gap-2">
-                          <span className="text-xs text-[#94a3b8] font-medium w-20 flex-shrink-0">{etapa.label}</span>
-                          <div className="flex-1 min-w-0 h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div key={etapa.key} className="flex items-center gap-1.5">
+                          <span className="text-[10px] text-[#94a3b8] w-16 shrink-0">{etapa.label}</span>
+                          <div className="flex-1 min-w-0 h-1.5 bg-white/10 rounded-full overflow-hidden">
                             <div
-                              className={`h-full rounded-full transition-all duration-500 ${
-                                etapa.quente ? 'bg-gradient-to-r from-amber-500 to-amber-400' : 'bg-gradient-to-r from-[#3478F6] to-[#60a5fa]'
-                              }`}
-                              style={{ width: `${widthPct}%`, minWidth: qtd > 0 ? 8 : 0 }}
+                              className={`h-full rounded-full ${etapa.quente ? 'bg-amber-400' : 'bg-[#3478F6]'}`}
+                              style={{ width: `${widthPct}%`, minWidth: qtd > 0 ? 6 : 0 }}
                             />
                           </div>
-                          <span className="text-xs font-bold text-white tabular-nums w-5 text-right flex-shrink-0">{qtd}</span>
+                          <span className="text-[10px] font-bold text-white tabular-nums w-4 text-right shrink-0">{qtd}</span>
                         </div>
                       );
                     })}
