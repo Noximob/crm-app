@@ -5,9 +5,11 @@ import { useAuth } from '@/context/AuthContext';
 import { db, storage } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { AgendaTvSlide } from './_components/AgendaTvSlide';
 import { FunilVendasIndividualSlide } from './_components/FunilVendasIndividualSlide';
 import { FunilVendasSlide } from './_components/FunilVendasSlide';
 import { MetasResultadosSlide } from './_components/MetasResultadosSlide';
+import { useAgendaTvData } from './_components/useAgendaTvData';
 import { useFunilVendasData } from './_components/useFunilVendasData';
 import { useMetasResultadosData } from './_components/useMetasResultadosData';
 import type { ImovelSelecaoNox, NoticiaSemanaData, UnidadeSelecao, UnidadesSelecaoData } from './types';
@@ -98,9 +100,11 @@ export default function DashboardsTvPage() {
   const fileInputRefNoticia = useRef<HTMLInputElement | null>(null);
   const [previewFunil, setPreviewFunil] = useState<'corporativo' | 'individual' | null>(null);
   const [previewMetas, setPreviewMetas] = useState(false);
+  const [previewAgenda, setPreviewAgenda] = useState<'day' | 'week' | null>(null);
   const imobiliariaId = userData?.imobiliariaId;
   const funilData = useFunilVendasData(imobiliariaId ?? undefined);
   const metasData = useMetasResultadosData(imobiliariaId ?? undefined);
+  const agendaTvData = useAgendaTvData(imobiliariaId ?? undefined);
 
   useEffect(() => {
     if (!imobiliariaId) {
@@ -406,6 +410,17 @@ export default function DashboardsTvPage() {
                     <button
                       type="button"
                       onClick={() => setPreviewMetas(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#3478F6]/10 text-[#3478F6] hover:bg-[#3478F6]/20"
+                      title="Ver como ficará na TV"
+                    >
+                      <TvIcon className="w-4 h-4" />
+                      Visualizar
+                    </button>
+                  )}
+                  {(slide.id === 'agenda-dia' || slide.id === 'agenda-semana') && (
+                    <button
+                      type="button"
+                      onClick={() => setPreviewAgenda(slide.id === 'agenda-dia' ? 'day' : 'week')}
                       className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#3478F6]/10 text-[#3478F6] hover:bg-[#3478F6]/20"
                       title="Ver como ficará na TV"
                     >
@@ -783,6 +798,31 @@ export default function DashboardsTvPage() {
                   metaMensal={metasData.metaMensal}
                   contribuicoesPorCorretor={metasData.contribuicoesPorCorretor}
                 />
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Modal Visualizar Agenda (Dia ou Semana) */}
+        {previewAgenda && (
+          <div className="fixed inset-0 z-50 flex flex-col bg-[#0f1220]">
+            <div className="shrink-0 flex items-center justify-between px-4 py-3 bg-[#151b2d] border-b border-white/10">
+              <span className="text-white font-semibold">Prévia — {previewAgenda === 'day' ? 'Agenda do Dia' : 'Agenda da Semana'}</span>
+              <button
+                type="button"
+                onClick={() => setPreviewAgenda(null)}
+                className="px-4 py-2 rounded-lg bg-[#3478F6] text-white font-medium hover:bg-[#255FD1]"
+              >
+                Fechar
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-auto">
+              {agendaTvData.loading ? (
+                <div className="flex items-center justify-center min-h-[50vh]">
+                  <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#3478F6] border-t-transparent" />
+                </div>
+              ) : (
+                <AgendaTvSlide events={agendaTvData.events} plantoes={agendaTvData.plantoes} mode={previewAgenda} />
               )}
             </div>
           </div>
