@@ -15,6 +15,7 @@ interface Contribuicao {
   corretorId: string;
   corretorNome: string;
   valor: number;
+  dataVenda?: string; // YYYY-MM-DD para relatórios mês a mês
   createdAt: any;
 }
 
@@ -32,6 +33,10 @@ export default function AdminMetasPage() {
   const [contribuicoes, setContribuicoes] = useState<Contribuicao[]>([]);
   const [corretorSelecionado, setCorretorSelecionado] = useState('');
   const [valorContribuicao, setValorContribuicao] = useState('');
+  const [dataVendaContribuicao, setDataVendaContribuicao] = useState(() => {
+    const d = new Date();
+    return d.toISOString().slice(0, 10);
+  });
   const [adding, setAdding] = useState(false);
 
   const totalRealizado = contribuicoes.reduce((s, c) => s + c.valor, 0);
@@ -77,6 +82,7 @@ export default function AdminMetasPage() {
         corretorId: d.data().corretorId ?? '',
         corretorNome: d.data().corretorNome ?? '',
         valor: Number(d.data().valor) ?? 0,
+        dataVenda: d.data().dataVenda ?? undefined,
         createdAt: d.data().createdAt,
       }));
       setContribuicoes(lista);
@@ -127,6 +133,7 @@ export default function AdminMetasPage() {
         corretorId: corretorSelecionado,
         corretorNome: corretor?.nome ?? '',
         valor,
+        dataVenda: dataVendaContribuicao || new Date().toISOString().slice(0, 10),
         createdAt: Timestamp.now(),
       });
       setValorContribuicao('');
@@ -255,6 +262,15 @@ export default function AdminMetasPage() {
               </select>
             </div>
             <div className="flex-1 min-w-[120px]">
+              <label className="block text-xs font-medium mb-1 text-white/80">Data da venda</label>
+              <input
+                type="date"
+                value={dataVendaContribuicao}
+                onChange={e => setDataVendaContribuicao(e.target.value)}
+                className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#3478F6]/30"
+              />
+            </div>
+            <div className="flex-1 min-w-[120px]">
               <label className="block text-xs font-medium mb-1 text-white/80">Valor (R$)</label>
               <input
                 type="text"
@@ -277,9 +293,17 @@ export default function AdminMetasPage() {
             <div className="space-y-2">
               <p className="text-xs font-medium text-white/80">Lançamentos:</p>
               <ul className="space-y-1 max-h-40 overflow-y-auto">
-                {contribuicoes.map(c => (
+                {contribuicoes.map(c => {
+                const dataExib = c.dataVenda ? (() => {
+                  const [y, m, d] = c.dataVenda!.split('-').map(Number);
+                  return new Date(y, m - 1, d).toLocaleDateString('pt-BR');
+                })() : '–';
+                return (
                   <li key={c.id} className="flex items-center justify-between text-sm text-white bg-[#23283A]/50 rounded-lg px-3 py-2">
-                    <span>{c.corretorNome}</span>
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-0">
+                      <span>{c.corretorNome}</span>
+                      <span className="text-white/70 text-xs">{dataExib}</span>
+                    </span>
                     <span className="flex items-center gap-2">
                       <span>R$ {c.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                       <button
@@ -292,7 +316,8 @@ export default function AdminMetasPage() {
                       </button>
                     </span>
                   </li>
-                ))}
+                );
+              })}
               </ul>
               <p className="text-base font-bold text-[#3478F6] pt-2 border-t border-[#3478F6]/20">
                 Total realizado: R$ {totalRealizado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
