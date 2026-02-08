@@ -100,7 +100,13 @@ export default function DashboardsTvPage() {
       if (snap.exists() && Array.isArray(snap.data()?.slides)) {
         const raw = snap.data()!.slides as SlideConfig[];
         const migrated = raw.map(s => s.id === 'unidades-selecao' ? { ...s, id: 'unidades-selecao-0' as const, name: 'Seleção Nox 1 - Unidades' } : s);
-        setSlides(migrated);
+        // Sempre exibir os 3 slides de Unidades separados: merge com a lista padrão para não faltar nenhum
+        const defaultSlides = SLIDES_DISPONIVEIS.map(s => ({ ...s, enabled: false, durationSeconds: 60 }));
+        const merged = defaultSlides.map(def => {
+          const found = migrated.find(m => m.id === def.id);
+          return found ? { ...def, ...found } : def;
+        });
+        setSlides(merged);
       } else {
         setSlides(
           SLIDES_DISPONIVEIS.map(s => ({
