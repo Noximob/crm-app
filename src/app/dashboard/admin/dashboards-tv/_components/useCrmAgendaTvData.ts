@@ -7,7 +7,6 @@ import {
   getDocs,
   query,
   where,
-  orderBy,
   limit,
   Timestamp,
 } from 'firebase/firestore';
@@ -38,8 +37,6 @@ export function useCrmAgendaTvData(imobiliariaId: string | undefined) {
     let cancelled = false;
     setLoading(true);
     const hoje = new Date();
-    const start = Timestamp.fromDate(startOfDay(hoje));
-    const end = Timestamp.fromDate(endOfDay(hoje));
 
     (async () => {
       try {
@@ -57,16 +54,23 @@ export function useCrmAgendaTvData(imobiliariaId: string | undefined) {
         });
 
         const leadsRef = collection(db, 'leads');
-        const leadsQuery = query(
-          leadsRef,
-          where('imobiliariaId', '==', imobiliariaId),
-          limit(80)
+        let leadsSnapshot = await getDocs(
+          query(leadsRef, where('imobiliariaId', '==', imobiliariaId), limit(80))
         );
-        const leadsSnapshot = await getDocs(leadsQuery);
+        if (cancelled) return;
+        if (leadsSnapshot.empty && usuariosMap.size > 0) {
+          const userIds = Array.from(usuariosMap.keys()).slice(0, 10);
+          leadsSnapshot = await getDocs(
+            query(leadsRef, where('userId', 'in', userIds), limit(80))
+          );
+        }
         if (cancelled) return;
 
         const ligacoesList: CrmTarefaTv[] = [];
         const visitasList: CrmTarefaTv[] = [];
+
+        const startMs = startOfDay(hoje).getTime();
+        const endMs = endOfDay(hoje).getTime();
 
         for (const leadDoc of leadsSnapshot.docs) {
           const leadData = leadDoc.data();
@@ -76,10 +80,7 @@ export function useCrmAgendaTvData(imobiliariaId: string | undefined) {
           const tasksRef = collection(db, 'leads', leadDoc.id, 'tarefas');
           const tasksQuery = query(
             tasksRef,
-            where('status', '==', 'pendente'),
-            where('dueDate', '>=', start),
-            where('dueDate', '<=', end),
-            orderBy('dueDate', 'asc')
+            where('status', '==', 'pendente')
           );
           const tasksSnapshot = await getDocs(tasksQuery);
           if (cancelled) return;
@@ -90,7 +91,9 @@ export function useCrmAgendaTvData(imobiliariaId: string | undefined) {
             if (type !== 'Ligação' && type !== 'Visita') return;
             const dueDate = d.dueDate instanceof Timestamp
               ? d.dueDate.toDate()
-              : d.dueDate?.toDate?.() ?? new Date();
+              : d.dueDate?.toDate?.() ?? new Date(0);
+            const dueMs = dueDate.getTime();
+            if (dueMs < startMs || dueMs > endMs) return;
             const item: CrmTarefaTv = {
               id: taskDoc.id,
               leadId: leadDoc.id,
