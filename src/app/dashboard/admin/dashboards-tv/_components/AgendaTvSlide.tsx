@@ -187,6 +187,7 @@ export function AgendaTvSlide({ events, plantoes = [], mode }: AgendaTvSlideProp
     concluidosHoje,
     diasSemana,
     diasSemanaPlantoes,
+    diasRestantesNaSemana,
     titulo,
     subtitulo,
   } = useMemo(() => {
@@ -201,8 +202,11 @@ export function AgendaTvSlide({ events, plantoes = [], mode }: AgendaTvSlideProp
 
     const diasSemana: { data: Date; slots: SlotDia[] }[] = [];
     const diasSemanaPlantoes: { data: Date; slots: SlotPlantao[] }[] = [];
+    let diasRestantesNaSemana = 0;
     if (mode === 'week') {
-      for (let i = 0; i < 7; i++) {
+      // Só de hoje até sábado — dias vão “sumindo” conforme a semana avança
+      diasRestantesNaSemana = 7 - now.getDay();
+      for (let i = 0; i < diasRestantesNaSemana; i++) {
         const d = new Date(hoje);
         d.setDate(d.getDate() + i);
         const di = startOfDay(d);
@@ -235,6 +239,7 @@ export function AgendaTvSlide({ events, plantoes = [], mode }: AgendaTvSlideProp
       concluidosHoje,
       diasSemana,
       diasSemanaPlantoes,
+      diasRestantesNaSemana,
       titulo,
       subtitulo,
     };
@@ -427,6 +432,20 @@ export function AgendaTvSlide({ events, plantoes = [], mode }: AgendaTvSlideProp
                   </div>
                 );
               })}
+              {/* Card “Reta final” no quadrado vazio — completa o grid e reforça a mensagem */}
+              {diasRestantesNaSemana > 0 && diasRestantesNaSemana < 7 && (
+                <div
+                  key="reta-final"
+                  className="rounded-2xl border border-amber-400/40 bg-gradient-to-br from-amber-500/20 to-orange-600/10 p-4 min-h-[180px] flex flex-col items-center justify-center text-center"
+                >
+                  <div className="text-4xl mb-2">🔥</div>
+                  <p className="font-bold text-amber-300 text-lg">Reta final</p>
+                  <p className="text-slate-300 text-sm mt-1">
+                    {diasRestantesNaSemana} {diasRestantesNaSemana === 1 ? 'dia' : 'dias'} restante{diasRestantesNaSemana === 1 ? '' : 's'} na semana
+                  </p>
+                  <p className="text-slate-500 text-xs mt-2">Último gás!</p>
+                </div>
+              )}
             </div>
           </div>
         )}
