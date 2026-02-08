@@ -2,21 +2,58 @@
 
 import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, doc, getDoc, setDoc, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, addDoc, deleteDoc, Timestamp, query, orderBy } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
+
+interface Corretor {
+  id: string;
+  nome: string;
+}
+
+interface Contribuicao {
+  id: string;
+  corretorId: string;
+  corretorNome: string;
+  valor: number;
+  createdAt: any;
+}
 
 export default function AdminMetasPage() {
   const { userData, currentUser } = useAuth();
   const [inicio, setInicio] = useState('');
   const [fim, setFim] = useState('');
   const [vgv, setVgv] = useState('');
-  const [realizado, setRealizado] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [ultimaAtualizacaoPor, setUltimaAtualizacaoPor] = useState<string | null>(null);
 
-  // Buscar meta única da imobiliária
+  const [corretores, setCorretores] = useState<Corretor[]>([]);
+  const [contribuicoes, setContribuicoes] = useState<Contribuicao[]>([]);
+  const [corretorSelecionado, setCorretorSelecionado] = useState('');
+  const [valorContribuicao, setValorContribuicao] = useState('');
+  const [adding, setAdding] = useState(false);
+
+  const totalRealizado = contribuicoes.reduce((s, c) => s + c.valor, 0);
+  const percentualCalculado = vgv && totalRealizado >= 0 ? Math.round((totalRealizado / parseFloat(vgv)) * 100) : 0;
+
+  // Buscar corretores aprovados da imobiliária
+  useEffect(() => {
+    if (!userData?.imobiliariaId) return;
+    const fetchCorretores = async () => {
+      const q = query(
+        collection(db, 'usuarios'),
+        where('imobiliariaId', '==', userData.imobiliariaId),
+        where('tipoConta', 'in', ['corretor-vinculado', 'corretor-autonomo', 'imobiliaria']),
+        where('aprovado', '==', true)
+      );
+      const snapshot = await getDocs(q);
+      setCorretores(snapshot.docs.map(d => ({ id: d.id, nome: d.data().nome })));
+    };
+    fetchCorretores();
+  }, [userData?.imobiliariaId]);
+
+  // Buscar meta e contribuições
   const fetchMeta = async () => {
     if (!userData?.imobiliariaId) {
       setFetching(false);
@@ -30,10 +67,18 @@ export default function AdminMetasPage() {
         const meta = snap.data();
         setInicio(meta.inicio ? meta.inicio.split('T')[0] : '');
         setFim(meta.fim ? meta.fim.split('T')[0] : '');
-        setVgv(meta.valor ? meta.valor.toString() : '');
-        setRealizado(meta.alcancado ? meta.alcancado.toString() : '');
+        setVgv(meta.valor != null ? meta.valor.toString() : '');
         setUltimaAtualizacaoPor(meta.updatedByNome ?? null);
       }
+      const contribRef = collection(db, 'metas', userData.imobiliariaId, 'contribuicoes');
+      const contribSnap = await getDocs(query(contribRef, orderBy('createdAt', 'desc')));
+      setContribuicoes(contribSnap.docs.map(d => ({
+        id: d.id,
+        corretorId: d.data().corretorId ?? '',
+        corretorNome: d.data().corretorNome ?? '',
+        valor: Number(d.data().valor) ?? 0,
+        createdAt: d.data().createdAt,
+      })));
     } catch (error) {
       console.error('Erro ao buscar meta:', error);
     } finally {
@@ -43,47 +88,92 @@ export default function AdminMetasPage() {
 
   useEffect(() => {
     fetchMeta();
-  }, [userData]);
+  }, [userData?.imobiliariaId]);
 
-  // Calcular percentual automático baseado nos valores
-  const percentualCalculado = vgv && realizado ? Math.round((parseFloat(realizado) / parseFloat(vgv)) * 100) : 0;
+  async function updateMetaAlcancado(alcancado: number) {
+    if (!userData?.imobiliariaId) return;
+    const metaRef = doc(db, 'metas', userData.imobiliariaId);
+    const valorNum = parseFloat(vgv) || 0;
+    const percentual = valorNum > 0 ? Math.round((alcancado / valorNum) * 100) : 0;
+    await setDoc(metaRef, {
+      alcancado,
+      percentual,
+      updatedAt: Timestamp.now(),
+      updatedBy: currentUser?.uid ?? null,
+      updatedByNome: userData?.nome ?? null,
+    }, { merge: true });
+  }
+
+  async function handleAddContribuicao(e: React.FormEvent) {
+    e.preventDefault();
+    if (!userData?.imobiliariaId || !corretorSelecionado || !valorContribuicao) return;
+    const valor = parseFloat(valorContribuicao.replace(',', '.'));
+    if (isNaN(valor) || valor <= 0) return;
+    const corretor = corretores.find(c => c.id === corretorSelecionado);
+    setAdding(true);
+    try {
+      const contribRef = collection(db, 'metas', userData.imobiliariaId, 'contribuicoes');
+      await addDoc(contribRef, {
+        corretorId: corretorSelecionado,
+        corretorNome: corretor?.nome ?? '',
+        valor,
+        createdAt: Timestamp.now(),
+      });
+      setValorContribuicao('');
+      await fetchMeta();
+      await updateMetaAlcancado(totalRealizado + valor);
+      setUltimaAtualizacaoPor(userData?.nome ?? null);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 2000);
+    } catch (err) {
+      console.error('Erro ao adicionar contribuição:', err);
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function handleRemoveContribuicao(id: string) {
+    if (!userData?.imobiliariaId) return;
+    try {
+      await deleteDoc(doc(db, 'metas', userData.imobiliariaId, 'contribuicoes', id));
+      const novaLista = contribuicoes.filter(c => c.id !== id);
+      setContribuicoes(novaLista);
+      await updateMetaAlcancado(novaLista.reduce((s, c) => s + c.valor, 0));
+    } catch (err) {
+      console.error('Erro ao remover contribuição:', err);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!userData?.imobiliariaId) return;
-    
     setLoading(true);
     try {
       const metaRef = doc(db, 'metas', userData.imobiliariaId);
-      
+      const valorNum = parseFloat(vgv) || 0;
       const novaMeta = {
         imobiliariaId: userData.imobiliariaId,
         inicio,
         fim,
-        valor: parseFloat(vgv),
-        alcancado: parseFloat(realizado),
+        valor: valorNum,
+        alcancado: totalRealizado,
         percentual: percentualCalculado,
         updatedAt: Timestamp.now(),
         updatedBy: currentUser?.uid ?? null,
         updatedByNome: userData?.nome ?? null,
       };
-      
-      console.log('Salvando meta:', novaMeta);
       await setDoc(metaRef, novaMeta, { merge: true });
-      // Histórico: cada alteração fica registrada por corretor para dashboards
       const historicoRef = collection(db, 'metas', userData.imobiliariaId, 'historico');
       await addDoc(historicoRef, {
         updatedBy: currentUser?.uid ?? null,
         updatedByNome: userData?.nome ?? null,
-        valor: parseFloat(vgv),
-        alcancado: parseFloat(realizado),
+        valor: valorNum,
+        alcancado: totalRealizado,
         percentual: percentualCalculado,
         inicio,
         fim,
         createdAt: Timestamp.now(),
       });
-      console.log('Meta salva com sucesso!');
-      
       setSuccess(true);
       setUltimaAtualizacaoPor(userData?.nome ?? null);
       setTimeout(() => setSuccess(false), 2000);
@@ -122,34 +212,88 @@ export default function AdminMetasPage() {
             <input type="date" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#3478F6]/30" value={fim} onChange={e => setFim(e.target.value)} required />
           </div>
         </div>
-        <div className="flex gap-4">
-          <div className="flex-1">
-            <label className="block text-sm font-medium mb-1 text-white">VGV Estimado (R$)</label>
-            <input 
-              type="number" 
-              className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#3478F6]/30" 
-              value={vgv} 
-              onChange={e => setVgv(e.target.value)}
-              placeholder="0"
-              min="0"
-              step="0.01"
-              required 
-            />
-          </div>
-          <div className="flex-1">
-            <label className="block text-sm font-medium mb-1 text-white">VGV Realizado (R$)</label>
-            <input 
-              type="number" 
-              className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#3478F6]/30" 
-              value={realizado} 
-              onChange={e => setRealizado(e.target.value)}
-              placeholder="0"
-              min="0"
-              step="0.01"
-              required 
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-medium mb-1 text-white">VGV Estimado (R$)</label>
+          <input 
+            type="number" 
+            className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#3478F6]/30" 
+            value={vgv} 
+            onChange={e => setVgv(e.target.value)}
+            placeholder="0"
+            min="0"
+            step="0.01"
+            required 
+          />
         </div>
+
+        {/* Contribuições por corretor — soma vira o VGV realizado */}
+        <div className="rounded-xl border border-[#3478F6]/30 bg-[#23283A]/40 p-4 space-y-4">
+          <h3 className="text-base font-semibold text-white">Contribuições por corretor</h3>
+          <form onSubmit={handleAddContribuicao} className="flex flex-wrap items-end gap-3">
+            <div className="flex-1 min-w-[140px]">
+              <label className="block text-xs font-medium mb-1 text-white/80">Corretor</label>
+              <select
+                value={corretorSelecionado}
+                onChange={e => setCorretorSelecionado(e.target.value)}
+                className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#3478F6]/30"
+                required
+              >
+                <option value="">Selecione</option>
+                {corretores.map(c => (
+                  <option key={c.id} value={c.id}>{c.nome}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex-1 min-w-[120px]">
+              <label className="block text-xs font-medium mb-1 text-white/80">Valor (R$)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder="0,00"
+                value={valorContribuicao}
+                onChange={e => setValorContribuicao(e.target.value)}
+                className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#3478F6]/30"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={adding || !corretorSelecionado || !valorContribuicao}
+              className="bg-[#3AC17C] hover:bg-[#2fa86a] text-white font-semibold py-2 px-4 rounded-lg disabled:opacity-50"
+            >
+              {adding ? '...' : 'Adicionar'}
+            </button>
+          </form>
+          {contribuicoes.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-white/80">Lançamentos:</p>
+              <ul className="space-y-1 max-h-40 overflow-y-auto">
+                {contribuicoes.map(c => (
+                  <li key={c.id} className="flex items-center justify-between text-sm text-white bg-[#23283A]/50 rounded-lg px-3 py-2">
+                    <span>{c.corretorNome}</span>
+                    <span className="flex items-center gap-2">
+                      <span>R$ {c.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveContribuicao(c.id)}
+                        className="text-red-400 hover:text-red-300 text-xs"
+                        title="Remover"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-base font-bold text-[#3478F6] pt-2 border-t border-[#3478F6]/20">
+                Total realizado: R$ {totalRealizado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+          )}
+          {contribuicoes.length === 0 && (
+            <p className="text-sm text-white/70">Adicione valores por corretor; o total será o VGV realizado.</p>
+          )}
+        </div>
+
         {ultimaAtualizacaoPor && (
           <p className="text-sm text-white/70">Última atualização: <span className="font-medium text-white">{ultimaAtualizacaoPor}</span></p>
         )}
