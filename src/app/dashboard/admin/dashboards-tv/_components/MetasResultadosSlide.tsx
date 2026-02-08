@@ -62,11 +62,11 @@ export function MetasResultadosSlide({
     return () => clearInterval(t);
   }, []);
 
-  // Clima (Open-Meteo – São Paulo padrão)
+  // Clima (Open-Meteo – Gravatá - Penha, SC)
   useEffect(() => {
     let cancelled = false;
-    const lat = -23.55;
-    const lon = -46.63;
+    const lat = -26.776;
+    const lon = -48.647;
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=America%2FSao_Paulo`;
     fetch(url)
       .then((res) => res.json())
@@ -75,7 +75,7 @@ export function MetasResultadosSlide({
         setWeather({
           temp: Math.round(data.current.temperature_2m),
           code: data.current.weather_code ?? 0,
-          city: 'São Paulo',
+          city: 'Gravatá - Penha, SC',
         });
       })
       .catch(() => {});
