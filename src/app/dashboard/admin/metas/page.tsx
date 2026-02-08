@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, doc, getDoc, getDocs, setDoc, addDoc, deleteDoc, Timestamp, query, orderBy } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, addDoc, deleteDoc, Timestamp, query, where, orderBy } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 
 interface Corretor {
