@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import type { AgendaEventoTv, PlantaoTv } from './useAgendaTvData';
+import type { CrmTarefaTv } from './useCrmAgendaTvData';
 import { startOfDay, endOfDay } from './useAgendaTvData';
 
 const TIPOS_ACOES_VENDA = ['revisar-crm', 'ligacao-ativa', 'acao-de-rua', 'disparo-de-msg'];
@@ -179,12 +180,15 @@ const FRASE_POR_DIA: Record<number, string> = {
 interface AgendaTvSlideProps {
   events: AgendaEventoTv[];
   plantoes?: PlantaoTv[];
+  ligacoes?: CrmTarefaTv[];
+  visitas?: CrmTarefaTv[];
   fraseSemana?: string;
   mode: 'day' | 'week';
 }
 
-export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode }: AgendaTvSlideProps) {
+export function AgendaTvSlide({ events, plantoes = [], ligacoes = [], visitas = [], fraseSemana, mode }: AgendaTvSlideProps) {
   const [now, setNow] = useState(() => new Date());
+  const [abaCrm, setAbaCrm] = useState<'ligacoes' | 'visitas'>('ligacoes');
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30000);
@@ -294,6 +298,70 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode }: Agen
                 <span className="text-2xl">✅</span>
                 <span className="text-emerald-300 font-semibold">{concluidosHoje} realizados hoje</span>
               </div>
+            )}
+
+            {(ligacoes.length > 0 || visitas.length > 0) && (
+              <section className="rounded-2xl border-2 border-emerald-400/40 bg-gradient-to-br from-emerald-500/20 to-cyan-500/10 p-4 shadow-lg">
+                <h2 className="text-sm font-bold text-emerald-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <span>📞</span> Funil / CRM — Hoje
+                </h2>
+                <div className="flex gap-2 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setAbaCrm('ligacoes')}
+                    className={`flex-1 py-2.5 px-4 rounded-xl font-bold text-sm transition-all ${abaCrm === 'ligacoes' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' : 'bg-white/10 text-slate-400 hover:bg-white/15'}`}
+                  >
+                    📞 Ligações ({ligacoes.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAbaCrm('visitas')}
+                    className={`flex-1 py-2.5 px-4 rounded-xl font-bold text-sm transition-all ${abaCrm === 'visitas' ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30' : 'bg-white/10 text-slate-400 hover:bg-white/15'}`}
+                  >
+                    🏠 Visitas ({visitas.length})
+                  </button>
+                </div>
+                <div className="space-y-3 min-h-[80px]">
+                  {abaCrm === 'ligacoes' && (
+                    ligacoes.length === 0 ? (
+                      <p className="text-slate-400 text-sm py-4 text-center">Nenhuma ligação agendada para hoje.</p>
+                    ) : (
+                      ligacoes.map((t) => (
+                        <div key={t.id} className="flex items-center gap-4 p-3 rounded-xl bg-black/20 border border-emerald-400/20">
+                          <div className="w-10 h-10 rounded-lg bg-emerald-500/30 flex items-center justify-center text-xl shrink-0">📞</div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-white truncate">{t.leadNome}</p>
+                            <p className="text-xs text-slate-400 truncate">{t.description || 'Ligação agendada'}</p>
+                            {t.responsavelNome ? <p className="text-xs text-emerald-300/90 mt-0.5">Com: {t.responsavelNome}</p> : null}
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-base font-mono font-bold text-emerald-300">{t.dueDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+                          </div>
+                        </div>
+                      ))
+                    )
+                  )}
+                  {abaCrm === 'visitas' && (
+                    visitas.length === 0 ? (
+                      <p className="text-slate-400 text-sm py-4 text-center">Nenhuma visita agendada para hoje.</p>
+                    ) : (
+                      visitas.map((t) => (
+                        <div key={t.id} className="flex items-center gap-4 p-3 rounded-xl bg-black/20 border border-cyan-400/20">
+                          <div className="w-10 h-10 rounded-lg bg-cyan-500/30 flex items-center justify-center text-xl shrink-0">🏠</div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-white truncate">{t.leadNome}</p>
+                            <p className="text-xs text-slate-400 truncate">{t.description || 'Visita agendada'}</p>
+                            {t.responsavelNome ? <p className="text-xs text-cyan-300/90 mt-0.5">Com: {t.responsavelNome}</p> : null}
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-base font-mono font-bold text-cyan-300">{t.dueDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+                          </div>
+                        </div>
+                      ))
+                    )
+                  )}
+                </div>
+              </section>
             )}
 
             {plantoesRestantesHoje.length > 0 && (

@@ -11,6 +11,7 @@ import { MetasResultadosSlide } from '@/app/dashboard/admin/dashboards-tv/_compo
 import { SelecaoNoxSlide } from '@/app/dashboard/admin/dashboards-tv/_components/SelecaoNoxSlide';
 import { UnidadesSelecaoSlide } from '@/app/dashboard/admin/dashboards-tv/_components/UnidadesSelecaoSlide';
 import { useAgendaTvData } from '@/app/dashboard/admin/dashboards-tv/_components/useAgendaTvData';
+import { useCrmAgendaTvData } from '@/app/dashboard/admin/dashboards-tv/_components/useCrmAgendaTvData';
 import { useFunilVendasData } from '@/app/dashboard/admin/dashboards-tv/_components/useFunilVendasData';
 import { useMetasResultadosData } from '@/app/dashboard/admin/dashboards-tv/_components/useMetasResultadosData';
 import type { ImovelSelecaoNox, NoticiaSemanaData } from '@/app/dashboard/admin/dashboards-tv/types';
@@ -49,6 +50,7 @@ export default function TvPage() {
   const funilData = useFunilVendasData(userData?.imobiliariaId ?? undefined);
   const metasData = useMetasResultadosData(userData?.imobiliariaId ?? undefined);
   const agendaTvData = useAgendaTvData(userData?.imobiliariaId ?? undefined);
+  const crmAgendaTv = useCrmAgendaTvData(userData?.imobiliariaId ?? undefined);
 
   const imobiliariaId = userData?.imobiliariaId;
 
@@ -148,7 +150,7 @@ export default function TvPage() {
             <div className="animate-spin rounded-full h-14 w-14 border-2 border-[#3478F6] border-t-transparent" />
           </div>
         ) : (
-          <AgendaTvSlide events={agendaTvData.events} plantoes={agendaTvData.plantoes} mode="day" />
+          <AgendaTvSlide events={agendaTvData.events} plantoes={agendaTvData.plantoes} ligacoes={crmAgendaTv.ligacoes} visitas={crmAgendaTv.visitas} mode="day" />
         )}
         {config.length > 1 && (
           <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
@@ -176,7 +178,7 @@ export default function TvPage() {
             <div className="animate-spin rounded-full h-14 w-14 border-2 border-[#3478F6] border-t-transparent" />
           </div>
         ) : (
-          <AgendaTvSlide events={agendaTvData.events} plantoes={agendaTvData.plantoes} fraseSemana={agendaFraseSemana} mode="week" />
+          <AgendaTvSlide events={agendaTvData.events} plantoes={agendaTvData.plantoes} ligacoes={crmAgendaTv.ligacoes} visitas={crmAgendaTv.visitas} fraseSemana={agendaFraseSemana} mode="week" />
         )}
         {config.length > 1 && (
           <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-2 z-10">

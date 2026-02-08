@@ -4,44 +4,34 @@
       "collectionGroup": "brelloBoards",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "imobiliariaId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        }
+        { "fieldPath": "imobiliariaId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     },
     {
       "collectionGroup": "brelloLists",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "boardId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "order",
-          "order": "ASCENDING"
-        }
+        { "fieldPath": "boardId", "order": "ASCENDING" },
+        { "fieldPath": "order", "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "brelloCards",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "boardId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "order",
-          "order": "ASCENDING"
-        }
+        { "fieldPath": "boardId", "order": "ASCENDING" },
+        { "fieldPath": "order", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "tarefas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "dueDate", "order": "ASCENDING" }
       ]
     }
   ],
   "fieldOverrides": []
-} 
+}
