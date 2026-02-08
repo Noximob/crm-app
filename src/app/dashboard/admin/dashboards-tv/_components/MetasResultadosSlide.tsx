@@ -196,6 +196,12 @@ export function MetasResultadosSlide({
                     <p className="text-2xl md:text-3xl font-bold text-white">{diasRestantesTrim}</p>
                   </div>
                 )}
+                {metaMensal && (
+                  <div className="rounded-xl bg-white/10 border border-white/20 px-4 py-3">
+                    <p className="text-xs text-slate-400 uppercase tracking-wide">Dias no mês</p>
+                    <p className="text-2xl md:text-3xl font-bold text-white">{diasRestantesMensal}</p>
+                  </div>
+                )}
               </div>
             </div>
 
