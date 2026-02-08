@@ -19,3 +19,9 @@ export interface UnidadesSelecaoData {
     unidades: UnidadeSelecao[];
   }[];
 }
+
+/** Notícia da Semana (1 título + 1 foto para exibir na TV) */
+export interface NoticiaSemanaData {
+  titulo: string;
+  imageUrl: string;
+}

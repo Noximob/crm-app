@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { SelecaoNoxSlide } from '@/app/dashboard/admin/dashboards-tv/_components/SelecaoNoxSlide';
 import { UnidadesSelecaoSlide } from '@/app/dashboard/admin/dashboards-tv/_components/UnidadesSelecaoSlide';
-import type { ImovelSelecaoNox } from '@/app/dashboard/admin/dashboards-tv/types';
+import type { ImovelSelecaoNox, NoticiaSemanaData } from '@/app/dashboard/admin/dashboards-tv/types';
 import type { UnidadesSelecaoData } from '@/app/dashboard/admin/dashboards-tv/types';
 
 function getUnidadesSelecaoIndex(slideId: string): number | null {
@@ -35,6 +35,7 @@ export default function TvPage() {
   const [config, setConfig] = useState<SlideConfig[]>([]);
   const [selecaoNox, setSelecaoNox] = useState<{ imoveis: ImovelSelecaoNox[]; fraseRolante: string }>({ imoveis: [], fraseRolante: '' });
   const [unidadesData, setUnidadesData] = useState<UnidadesSelecaoData>({ selecoes: [] });
+  const [noticiaSemana, setNoticiaSemana] = useState<NoticiaSemanaData>({ titulo: '', imageUrl: '' });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -68,6 +69,12 @@ export default function TvPage() {
         setUnidadesData({
           selecoes: Array.isArray(d.selecoes) ? d.selecoes : [],
         });
+      }
+      const refNoticia = doc(db, 'dashboardsTvNoticiaSemana', imobiliariaId);
+      const snapNoticia = await getDoc(refNoticia);
+      if (snapNoticia.exists()) {
+        const d = snapNoticia.data()!;
+        setNoticiaSemana({ titulo: d.titulo ?? '', imageUrl: d.imageUrl ?? '' });
       }
       setLoading(false);
     };
@@ -150,6 +157,51 @@ export default function TvPage() {
     return (
       <div className="min-h-screen flex flex-col">
         <UnidadesSelecaoSlide tituloSelecao={titulo} unidades={unidades} />
+        {config.length > 1 && (
+          <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
+            {config.map((s, i) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setCurrentIndex(i)}
+                className={`w-2 h-2 rounded-full transition-colors ${i === currentIndex ? 'bg-[#3478F6] scale-125' : 'bg-white/30'}`}
+                aria-label={`Ir para ${s.name}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Notícia da Semana — 1 página: foto + título (sem rolagem)
+  if (currentSlide?.id === 'noticia-semana') {
+    const temConteudo = noticiaSemana.titulo?.trim() || noticiaSemana.imageUrl;
+    return (
+      <div className="min-h-screen flex flex-col bg-[#181C23] text-white overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-0">
+          {noticiaSemana.imageUrl ? (
+            <div className="flex-1 min-h-0 relative">
+              <img
+                src={noticiaSemana.imageUrl}
+                alt=""
+                className="w-full h-full object-cover object-center"
+              />
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center bg-gradient-to-b from-[#23283A] to-[#181C23]">
+              <div className="text-center text-[#6B6F76] px-4">Sem imagem</div>
+            </div>
+          )}
+          <div className="shrink-0 px-6 py-5 bg-[#181C23]/95 border-t border-white/10">
+            <h2 className="text-xl md:text-3xl font-bold text-white text-center md:text-left">
+              {noticiaSemana.titulo?.trim() || 'Notícia da Semana'}
+            </h2>
+          </div>
+        </div>
+        {!temConteudo && (
+          <p className="text-center text-[#6B6F76] text-sm py-4">Configure em Admin → Dashboards TV → Editar Notícia da Semana</p>
+        )}
         {config.length > 1 && (
           <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
             {config.map((s, i) => (

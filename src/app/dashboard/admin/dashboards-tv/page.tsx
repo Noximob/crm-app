@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db, storage } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import type { ImovelSelecaoNox, UnidadeSelecao, UnidadesSelecaoData } from './types';
+import type { ImovelSelecaoNox, NoticiaSemanaData, UnidadeSelecao, UnidadesSelecaoData } from './types';
 
 export interface SlideConfig {
   id: string;
@@ -83,9 +83,13 @@ export default function DashboardsTvPage() {
   const [unidadesSelecao, setUnidadesSelecao] = useState<UnidadesSelecaoData>(defaultUnidadesSelecao);
   const [savingUnidades, setSavingUnidades] = useState(false);
   const [uploadingPhotoUnidad, setUploadingPhotoUnidad] = useState<string | null>(null);
+  const [noticiaSemana, setNoticiaSemana] = useState<NoticiaSemanaData>({ titulo: '', imageUrl: '' });
+  const [savingNoticia, setSavingNoticia] = useState(false);
+  const [uploadingPhotoNoticia, setUploadingPhotoNoticia] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const fileInputRefsUnidades = useRef<(HTMLInputElement | null)[]>([]);
+  const fileInputRefNoticia = useRef<HTMLInputElement | null>(null);
 
   const imobiliariaId = userData?.imobiliariaId;
 
@@ -142,6 +146,12 @@ export default function DashboardsTvPage() {
             sel[2] ?? { unidades: [UNIDADE_VAZIA, UNIDADE_VAZIA, UNIDADE_VAZIA] },
           ],
         });
+      }
+      const refNoticia = doc(db, 'dashboardsTvNoticiaSemana', imobiliariaId);
+      const snapNoticia = await getDoc(refNoticia);
+      if (snapNoticia.exists()) {
+        const d = snapNoticia.data()!;
+        setNoticiaSemana({ titulo: d.titulo ?? '', imageUrl: d.imageUrl ?? '' });
       }
       setLoading(false);
     };
@@ -255,6 +265,39 @@ export default function DashboardsTvPage() {
     }
   };
 
+  const handleSaveNoticiaSemana = async () => {
+    if (!imobiliariaId) return;
+    setSavingNoticia(true);
+    setMsg(null);
+    try {
+      await setDoc(doc(db, 'dashboardsTvNoticiaSemana', imobiliariaId), noticiaSemana, { merge: true });
+      setMsg('Notícia da Semana salva!');
+      setTimeout(() => setMsg(null), 3000);
+    } catch (e) {
+      setMsg('Erro ao salvar Notícia da Semana.');
+    } finally {
+      setSavingNoticia(false);
+    }
+  };
+
+  const handleUploadFotoNoticia = async (file: File | null) => {
+    if (!imobiliariaId || !file || !file.type.startsWith('image/')) return;
+    setUploadingPhotoNoticia(true);
+    try {
+      const ext = file.name.split('.').pop() || 'jpg';
+      const path = `dashboardsTvNoticiaSemana/${imobiliariaId}/foto_${Date.now()}.${ext}`;
+      const storageRef = ref(storage, path);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      setNoticiaSemana(prev => ({ ...prev, imageUrl: url }));
+    } catch (e) {
+      setMsg('Erro ao enviar foto.');
+      setTimeout(() => setMsg(null), 3000);
+    } finally {
+      setUploadingPhotoNoticia(false);
+    }
+  };
+
   const enabledOrdered = slides.filter(s => s.enabled);
   const viewUrl = typeof window !== 'undefined' ? `${window.location.origin}/tv` : '';
 
@@ -343,12 +386,12 @@ export default function DashboardsTvPage() {
                     type="button"
                     onClick={() => setEditingSlideId(slide.id === editingSlideId ? null : slide.id)}
                     className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      slide.id === 'top3-selecao-nox' || slide.id.startsWith('unidades-selecao-')
+                      slide.id === 'top3-selecao-nox' || slide.id.startsWith('unidades-selecao-') || slide.id === 'noticia-semana'
                         ? 'bg-[#3478F6]/10 text-[#3478F6] hover:bg-[#3478F6]/20'
                         : 'bg-[#E8E9F1] dark:bg-[#23283A] text-[#6B6F76] dark:text-gray-400 cursor-not-allowed'
                     }`}
-                    title={slide.id === 'top3-selecao-nox' || slide.id.startsWith('unidades-selecao-') ? 'Editar conteúdo desta tela' : 'Em breve'}
-                    disabled={slide.id !== 'top3-selecao-nox' && !slide.id.startsWith('unidades-selecao-')}
+                    title={slide.id === 'top3-selecao-nox' || slide.id.startsWith('unidades-selecao-') || slide.id === 'noticia-semana' ? 'Editar conteúdo desta tela' : 'Em breve'}
+                    disabled={slide.id !== 'top3-selecao-nox' && !slide.id.startsWith('unidades-selecao-') && slide.id !== 'noticia-semana'}
                   >
                     <PencilIcon className="w-4 h-4" />
                     Editar
@@ -572,6 +615,74 @@ export default function DashboardsTvPage() {
                 </div>
               );
             })()}
+
+            {/* Configurar Notícia da Semana — 1 título + 1 foto para a TV */}
+            {editingSlideId === 'noticia-semana' && (
+              <div className="mt-4 p-6 rounded-2xl bg-white dark:bg-[#23283A] border-2 border-[#3478F6]/20 shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Notícia da Semana</h2>
+                  <button
+                    type="button"
+                    onClick={() => setEditingSlideId(null)}
+                    className="text-sm text-[#6B6F76] dark:text-gray-400 hover:text-[#2E2F38] dark:hover:text-white"
+                  >
+                    Fechar
+                  </button>
+                </div>
+                <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-6">
+                  Um título e uma foto que aparecem em uma tela na TV (ex.: destaque do blog, atualização de mercado). Você escreve o texto para chamar atenção da equipe.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">Título (chamada da notícia)</label>
+                    <input
+                      type="text"
+                      value={noticiaSemana.titulo}
+                      onChange={e => setNoticiaSemana(prev => ({ ...prev, titulo: e.target.value }))}
+                      placeholder="Ex: Balneário Piçarras entre as 10 mais desejadas do Brasil"
+                      className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-4 py-3 text-[#2E2F38] dark:text-white bg-white dark:bg-[#23283A]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">Foto</label>
+                    <div className="h-40 rounded-xl overflow-hidden bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] relative">
+                      {noticiaSemana.imageUrl ? (
+                        <img src={noticiaSemana.imageUrl} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[#6B6F76] text-sm">Nenhuma foto</div>
+                      )}
+                      <input
+                        ref={fileInputRefNoticia}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={e => {
+                          const f = e.target.files?.[0];
+                          if (f) handleUploadFotoNoticia(f);
+                          e.target.value = '';
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRefNoticia.current?.click()}
+                        disabled={uploadingPhotoNoticia}
+                        className="absolute bottom-2 right-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-[#3478F6] text-white hover:bg-[#255FD1] disabled:opacity-50"
+                      >
+                        {uploadingPhotoNoticia ? 'Enviando...' : noticiaSemana.imageUrl ? 'Trocar' : 'Enviar foto'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSaveNoticiaSemana}
+                  disabled={savingNoticia}
+                  className="px-4 py-2 rounded-lg bg-[#3AC17C] text-white font-semibold hover:bg-[#2ea86a] disabled:opacity-50"
+                >
+                  {savingNoticia ? 'Salvando...' : 'Salvar'}
+                </button>
+              </div>
+            )}
 
             <div className="mt-6 p-4 rounded-xl bg-[#3478F6]/10 border border-[#3478F6]/20">
               <p className="text-sm text-[#2E2F38] dark:text-gray-200">
