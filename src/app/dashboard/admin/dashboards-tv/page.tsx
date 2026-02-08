@@ -19,9 +19,9 @@ const SLIDES_DISPONIVEIS: Omit<SlideConfig, 'enabled' | 'durationSeconds'>[] = [
   { id: 'agenda-dia', name: 'Agenda do Dia' },
   { id: 'ranking', name: 'Ranking (mensal/semanal/diário)' },
   { id: 'top3-selecao-nox', name: 'Top 3 Seleção Nox' },
-  { id: 'unidades-selecao-0', name: 'Unidades da Seleção 1' },
-  { id: 'unidades-selecao-1', name: 'Unidades da Seleção 2' },
-  { id: 'unidades-selecao-2', name: 'Unidades da Seleção 3' },
+  { id: 'unidades-selecao-0', name: 'Seleção Nox 1 - Unidades' },
+  { id: 'unidades-selecao-1', name: 'Seleção Nox 2 - Unidades' },
+  { id: 'unidades-selecao-2', name: 'Seleção Nox 3 - Unidades' },
   { id: 'noticia-semana', name: 'Notícia da Semana' },
   { id: 'metas-resultados', name: 'Metas & Resultados (trimestral e mensal)' },
   { id: 'funil-vendas', name: 'Funil de Vendas (corporativo e individuais)' },
@@ -99,7 +99,7 @@ export default function DashboardsTvPage() {
       const snap = await getDoc(ref);
       if (snap.exists() && Array.isArray(snap.data()?.slides)) {
         const raw = snap.data()!.slides as SlideConfig[];
-        const migrated = raw.map(s => s.id === 'unidades-selecao' ? { ...s, id: 'unidades-selecao-0' as const, name: 'Unidades da Seleção 1' } : s);
+        const migrated = raw.map(s => s.id === 'unidades-selecao' ? { ...s, id: 'unidades-selecao-0' as const, name: 'Seleção Nox 1 - Unidades' } : s);
         setSlides(migrated);
       } else {
         setSlides(
