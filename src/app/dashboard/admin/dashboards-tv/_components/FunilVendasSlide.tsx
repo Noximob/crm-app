@@ -24,6 +24,8 @@ interface FunilVendasSlideProps {
   funilPorCorretor: FunilCorretor[];
   totalCorporativo: number;
   compact?: boolean;
+  /** Se true, mostra só o funil corporativo (sem seção "Por corretor") */
+  somenteCorporativo?: boolean;
 }
 
 export function FunilVendasSlide({
@@ -31,6 +33,7 @@ export function FunilVendasSlide({
   funilPorCorretor,
   totalCorporativo,
   compact = false,
+  somenteCorporativo = true,
 }: FunilVendasSlideProps) {
   const maxCorporativo = useMemo(
     () => Math.max(...Object.values(funilCorporativo), 1),
@@ -96,8 +99,7 @@ export function FunilVendasSlide({
         </div>
       </div>
 
-      {/* Por corretor (só quem tem lead) */}
-      {funilPorCorretor.length > 0 && (
+      {!somenteCorporativo && funilPorCorretor.length > 0 && (
         <div className="flex-1 min-h-0 overflow-auto px-4 md:px-8 pb-8">
           <h2 className="text-sm md:text-lg font-semibold text-[#94a3b8] mb-3 px-2 sticky top-0 bg-gradient-to-b from-[#151b2d] to-transparent pt-2 pb-2">
             Por corretor
@@ -157,7 +159,7 @@ export function FunilVendasSlide({
         </div>
       )}
 
-      {funilPorCorretor.length === 0 && totalCorporativo === 0 && (
+      {totalCorporativo === 0 && (somenteCorporativo || funilPorCorretor.length === 0) && (
         <div className="flex-1 flex items-center justify-center text-[#64748b] px-4">
           <p className="text-center">Nenhum lead no funil no momento.</p>
         </div>

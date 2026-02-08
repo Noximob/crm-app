@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db, storage } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { FunilVendasIndividualSlide } from './_components/FunilVendasIndividualSlide';
 import { FunilVendasSlide } from './_components/FunilVendasSlide';
 import { useFunilVendasData } from './_components/useFunilVendasData';
 import type { ImovelSelecaoNox, NoticiaSemanaData, UnidadeSelecao, UnidadesSelecaoData } from './types';
@@ -26,7 +27,8 @@ const SLIDES_DISPONIVEIS: Omit<SlideConfig, 'enabled' | 'durationSeconds'>[] = [
   { id: 'unidades-selecao-2', name: 'Seleção Nox 3 - Unidades' },
   { id: 'noticia-semana', name: 'Notícia da Semana' },
   { id: 'metas-resultados', name: 'Metas & Resultados (trimestral e mensal)' },
-  { id: 'funil-vendas', name: 'Funil de Vendas (corporativo e individuais)' },
+  { id: 'funil-vendas', name: 'Funil de Vendas Corporativo' },
+  { id: 'funil-vendas-individual', name: 'Funil de Vendas Individual' },
 ];
 
 const DURACAO_PRESETS = [
@@ -92,7 +94,7 @@ export default function DashboardsTvPage() {
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const fileInputRefsUnidades = useRef<(HTMLInputElement | null)[]>([]);
   const fileInputRefNoticia = useRef<HTMLInputElement | null>(null);
-  const [previewFunilOpen, setPreviewFunilOpen] = useState(false);
+  const [previewFunil, setPreviewFunil] = useState<'corporativo' | 'individual' | null>(null);
   const imobiliariaId = userData?.imobiliariaId;
   const funilData = useFunilVendasData(imobiliariaId ?? undefined);
 
@@ -385,10 +387,10 @@ export default function DashboardsTvPage() {
                       <option key={p.value} value={p.value}>{p.label}</option>
                     ))}
                   </select>
-                  {slide.id === 'funil-vendas' && (
+                  {(slide.id === 'funil-vendas' || slide.id === 'funil-vendas-individual') && (
                     <button
                       type="button"
-                      onClick={() => setPreviewFunilOpen(true)}
+                      onClick={() => setPreviewFunil(slide.id === 'funil-vendas' ? 'corporativo' : 'individual')}
                       className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#3478F6]/10 text-[#3478F6] hover:bg-[#3478F6]/20"
                       title="Ver como ficará na TV"
                     >
@@ -707,14 +709,16 @@ export default function DashboardsTvPage() {
           </div>
         )}
 
-        {/* Modal Visualizar Funil de Vendas */}
-        {previewFunilOpen && (
+        {/* Modal Visualizar Funil de Vendas (Corporativo ou Individual) */}
+        {previewFunil && (
           <div className="fixed inset-0 z-50 flex flex-col bg-[#0f1220]">
             <div className="shrink-0 flex items-center justify-between px-4 py-3 bg-[#151b2d] border-b border-white/10">
-              <span className="text-white font-semibold">Prévia — Como ficará na TV (Funil de Vendas)</span>
+              <span className="text-white font-semibold">
+                Prévia — Como ficará na TV ({previewFunil === 'corporativo' ? 'Funil Corporativo' : 'Funil Individual'})
+              </span>
               <button
                 type="button"
-                onClick={() => setPreviewFunilOpen(false)}
+                onClick={() => setPreviewFunil(null)}
                 className="px-4 py-2 rounded-lg bg-[#3478F6] text-white font-medium hover:bg-[#255FD1]"
               >
                 Fechar
@@ -725,13 +729,16 @@ export default function DashboardsTvPage() {
                 <div className="flex items-center justify-center min-h-[50vh]">
                   <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#3478F6] border-t-transparent" />
                 </div>
-              ) : (
+              ) : previewFunil === 'corporativo' ? (
                 <FunilVendasSlide
                   funilCorporativo={funilData.funilCorporativo}
                   funilPorCorretor={funilData.funilPorCorretor}
                   totalCorporativo={funilData.totalCorporativo}
                   compact
+                  somenteCorporativo
                 />
+              ) : (
+                <FunilVendasIndividualSlide funilPorCorretor={funilData.funilPorCorretor} compact />
               )}
             </div>
           </div>

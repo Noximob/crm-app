@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { FunilVendasIndividualSlide } from '@/app/dashboard/admin/dashboards-tv/_components/FunilVendasIndividualSlide';
 import { FunilVendasSlide } from '@/app/dashboard/admin/dashboards-tv/_components/FunilVendasSlide';
 import { SelecaoNoxSlide } from '@/app/dashboard/admin/dashboards-tv/_components/SelecaoNoxSlide';
 import { UnidadesSelecaoSlide } from '@/app/dashboard/admin/dashboards-tv/_components/UnidadesSelecaoSlide';
@@ -222,7 +223,7 @@ export default function TvPage() {
     );
   }
 
-  // Funil de Vendas — dados do CRM em tempo real (corporativo + por corretor)
+  // Funil de Vendas Corporativo — total + etapas (uma página)
   if (currentSlide?.id === 'funil-vendas') {
     return (
       <div className="min-h-screen flex flex-col">
@@ -235,7 +236,36 @@ export default function TvPage() {
             funilCorporativo={funilData.funilCorporativo}
             funilPorCorretor={funilData.funilPorCorretor}
             totalCorporativo={funilData.totalCorporativo}
+            somenteCorporativo
           />
+        )}
+        {config.length > 1 && (
+          <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
+            {config.map((s, i) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setCurrentIndex(i)}
+                className={`w-2 h-2 rounded-full transition-colors ${i === currentIndex ? 'bg-[#3478F6] scale-125' : 'bg-white/30'}`}
+                aria-label={`Ir para ${s.name}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Funil de Vendas Individual — top 9 corretores em cards (outra página)
+  if (currentSlide?.id === 'funil-vendas-individual') {
+    return (
+      <div className="min-h-screen flex flex-col">
+        {funilData.loading ? (
+          <div className="min-h-screen flex items-center justify-center bg-[#0f1220]">
+            <div className="animate-spin rounded-full h-14 w-14 border-2 border-[#3478F6] border-t-transparent" />
+          </div>
+        ) : (
+          <FunilVendasIndividualSlide funilPorCorretor={funilData.funilPorCorretor} />
         )}
         {config.length > 1 && (
           <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
