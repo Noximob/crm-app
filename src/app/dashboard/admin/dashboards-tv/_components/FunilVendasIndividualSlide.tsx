@@ -104,18 +104,18 @@ export function FunilVendasIndividualSlide({
                         </span>
                       )}
                     </span>
-                    <span className="flex-1 min-w-0 font-semibold text-white text-[11px] truncate" title={corretor.nome}>
+                    <span className="flex-1 min-w-0 font-semibold text-white text-xs truncate" title={corretor.nome}>
                       {corretor.nome}
                     </span>
-                    <span className={`shrink-0 px-1 py-0.5 rounded text-[9px] font-semibold border ${nivel.bg} ${nivel.text}`}>
+                    <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold border ${nivel.bg} ${nivel.text}`}>
                       {nivel.emoji} {nivel.label}
                     </span>
-                    <span className="shrink-0 text-[13px] font-black tabular-nums text-[#60a5fa]">{corretor.total}</span>
+                    <span className="shrink-0 text-sm font-black tabular-nums text-[#60a5fa]">{corretor.total}</span>
                   </div>
 
                   {idx > 0 && (
-                    <div className="flex-shrink-0 mb-1">
-                      <div className="h-0.5 bg-white/10 rounded-full overflow-hidden flex">
+                    <div className="flex-shrink-0 mb-1.5">
+                      <div className="h-1 bg-white/10 rounded-full overflow-hidden flex">
                         <div
                           className="h-full rounded-full bg-[#3478F6] flex-shrink-0"
                           style={{ width: `${Math.max(pctDoMax, 6)}%`, minWidth: 4 }}
@@ -124,22 +124,22 @@ export function FunilVendasIndividualSlide({
                     </div>
                   )}
 
-                  {/* 4 etapas — compactas */}
-                  <div className="flex-shrink-0 space-y-1">
+                  {/* 4 etapas — preenche o espaço do card, letras um pouco maiores */}
+                  <div className="flex-1 min-h-0 flex flex-col justify-center space-y-2">
                     {ETAPAS_EXIBIR.map((etapa) => {
                       const qtd = etapa.getVal(porEtapa);
                       const pct = maxLocal > 0 ? Math.round((qtd / maxLocal) * 100) : 0;
                       const widthPct = qtd > 0 ? Math.max(pct, 20) : 0;
                       return (
-                        <div key={etapa.key} className="flex items-center gap-1.5">
-                          <span className="text-[10px] text-[#94a3b8] w-16 shrink-0">{etapa.label}</span>
-                          <div className="flex-1 min-w-0 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div key={etapa.key} className="flex items-center gap-2">
+                          <span className="text-xs text-[#94a3b8] font-medium w-20 shrink-0">{etapa.label}</span>
+                          <div className="flex-1 min-w-0 h-2 bg-white/10 rounded-full overflow-hidden">
                             <div
                               className={`h-full rounded-full ${etapa.quente ? 'bg-amber-400' : 'bg-[#3478F6]'}`}
                               style={{ width: `${widthPct}%`, minWidth: qtd > 0 ? 6 : 0 }}
                             />
                           </div>
-                          <span className="text-[10px] font-bold text-white tabular-nums w-4 text-right shrink-0">{qtd}</span>
+                          <span className="text-xs font-bold text-white tabular-nums w-5 text-right shrink-0">{qtd}</span>
                         </div>
                       );
                     })}
