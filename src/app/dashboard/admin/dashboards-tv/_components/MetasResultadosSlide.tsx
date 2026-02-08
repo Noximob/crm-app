@@ -16,6 +16,29 @@ function fmtDate(s: string | undefined) {
   }
 }
 
+/** Parse seguro: corrige ano digitado errado (ex: 20206 → 2026) e trata Timestamp do Firestore */
+function parseDateSafe(value: string | undefined | { toDate?: () => Date }): Date | null {
+  if (value == null) return null;
+  if (typeof value === 'object' && typeof (value as { toDate?: () => Date }).toDate === 'function') {
+    return (value as { toDate: () => Date }).toDate();
+  }
+  const s = typeof value === 'string' ? value.trim() : '';
+  if (!s) return null;
+  const match = s.match(/^(\d{4,})-(\d{2})-(\d{2})/);
+  if (!match) return null;
+  let [, y, m, d] = match.map(Number);
+  const now = new Date();
+  if (y > 2100 || y < 2000) y = now.getFullYear();
+  const date = new Date(y, m - 1, d);
+  return isNaN(date.getTime()) ? null : date;
+}
+
+function fmtDateSafe(value: string | undefined | { toDate?: () => Date }): string {
+  const d = parseDateSafe(value);
+  if (!d) return '–';
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
 // Clima: Open-Meteo (grátis, sem API key). Códigos WMO -> descrição + emoji
 const WEATHER_LABELS: Record<number, { label: string; emoji: string; bg: string }> = {
   0: { label: 'Céu limpo', emoji: '☀️', bg: 'from-amber-400/20 to-orange-500/20' },
@@ -56,12 +79,14 @@ export function MetasResultadosSlide({
   const faltaMensal = metaMensal ? Math.max(0, metaMensal.valor - metaMensal.alcancado) : 0;
   const temMeta = metaTrimestral.valor > 0 || (metaMensal?.valor ?? 0) > 0;
 
-  // Dias restantes e "quanto por dia" para bater a meta
+  // Dias restantes e "quanto por dia" para bater a meta (parse seguro evita ano errado ex: 20206)
   const hoje = now;
-  const fimTrim = metaTrimestral.fim ? new Date(metaTrimestral.fim) : null;
-  const fimMensal = metaMensal?.fim ? new Date(metaMensal.fim) : null;
-  const diasRestantesTrim = fimTrim && fimTrim > hoje ? Math.ceil((fimTrim.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)) : 0;
-  const diasRestantesMensal = fimMensal && fimMensal > hoje ? Math.ceil((fimMensal.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+  const fimTrim = parseDateSafe(metaTrimestral.fim);
+  const fimMensal = metaMensal?.fim ? parseDateSafe(metaMensal.fim) : null;
+  let diasRestantesTrim = fimTrim && fimTrim > hoje ? Math.ceil((fimTrim.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+  let diasRestantesMensal = fimMensal && fimMensal > hoje ? Math.ceil((fimMensal.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+  if (diasRestantesTrim > 366) diasRestantesTrim = 0;
+  if (diasRestantesMensal > 31) diasRestantesMensal = 0;
   const porDiaTrim = diasRestantesTrim > 0 && faltaTrim > 0 ? Math.round(faltaTrim / diasRestantesTrim) : 0;
   const porDiaMensal = diasRestantesMensal > 0 && faltaMensal > 0 ? Math.round(faltaMensal / diasRestantesMensal) : 0;
 
@@ -213,7 +238,7 @@ export function MetasResultadosSlide({
                 <h2 className="text-lg font-bold text-slate-300">Meta trimestral</h2>
               </div>
               {(metaTrimestral.inicio || metaTrimestral.fim) && (
-                <p className="text-xs text-slate-500 mb-1">{fmtDate(metaTrimestral.inicio)} a {fmtDate(metaTrimestral.fim)}</p>
+                <p className="text-xs text-slate-500 mb-1">{fmtDateSafe(metaTrimestral.inicio)} a {fmtDateSafe(metaTrimestral.fim)}</p>
               )}
               {diasRestantesTrim > 0 && (
                 <p className="text-xs text-cyan-400/90 mb-3">{diasRestantesTrim} dias restantes · {porDiaTrim > 0 ? `${fmt(porDiaTrim)}/dia para bater` : '—'}</p>
@@ -262,7 +287,7 @@ export function MetasResultadosSlide({
                   <span className="text-2xl">📆</span>
                   <h2 className="text-lg font-bold text-slate-300">Meta mensal</h2>
                 </div>
-                <p className="text-xs text-slate-500 mb-1">{fmtDate(metaMensal.inicio)} a {fmtDate(metaMensal.fim)}</p>
+                <p className="text-xs text-slate-500 mb-1">{fmtDateSafe(metaMensal.inicio)} a {fmtDateSafe(metaMensal.fim)}</p>
                 {diasRestantesMensal > 0 && (
                   <p className="text-xs text-amber-400/90 mb-3">{diasRestantesMensal} dias no mês · {porDiaMensal > 0 ? `${fmt(porDiaMensal)}/dia para bater` : '—'}</p>
                 )}
