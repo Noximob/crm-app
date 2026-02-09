@@ -59,6 +59,12 @@ const ClockIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+interface Corretor {
+  id: string;
+  nome: string;
+  email: string;
+}
+
 interface Plantao {
   id: string;
   dataInicio: string;
@@ -68,11 +74,13 @@ interface Plantao {
   horario: string;
   observacoes?: string;
   criadoEm: Timestamp;
+  presentesIds?: string[];
 }
 
 export default function PlantoesAdminPage() {
   const { userData } = useAuth();
   const [plantoes, setPlantoes] = useState<Plantao[]>([]);
+  const [corretores, setCorretores] = useState<Corretor[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingPlantao, setEditingPlantao] = useState<Plantao | null>(null);
@@ -105,6 +113,18 @@ export default function PlantoesAdminPage() {
   useEffect(() => {
     fetchPlantoes();
   }, []);
+
+  useEffect(() => {
+    if (!userData?.imobiliariaId) return;
+    const q = query(
+      collection(db, 'usuarios'),
+      where('imobiliariaId', '==', userData.imobiliariaId),
+      where('tipoConta', 'in', ['corretor-vinculado', 'corretor-autonomo'])
+    );
+    getDocs(q).then(snap => {
+      setCorretores(snap.docs.map(d => ({ id: d.id, nome: (d.data().nome as string) || '', email: (d.data().email as string) || '' })));
+    });
+  }, [userData?.imobiliariaId]);
 
   const fetchPlantoes = async () => {
     try {
@@ -208,6 +228,19 @@ export default function PlantoesAdminPage() {
       observacoes: ''
     });
     setShowForm(false);
+  };
+
+  const togglePresentePlantao = async (plantao: Plantao, corretorId: string) => {
+    const atuais = plantao.presentesIds || [];
+    const novos = atuais.includes(corretorId)
+      ? atuais.filter(id => id !== corretorId)
+      : [...atuais, corretorId];
+    try {
+      await updateDoc(doc(db, 'plantoes', plantao.id), { presentesIds: novos });
+      setPlantoes(prev => prev.map(p => p.id === plantao.id ? { ...p, presentesIds: novos } : p));
+    } catch (e) {
+      console.error('Erro ao atualizar presentes:', e);
+    }
   };
 
   if (loading) {
@@ -412,6 +445,26 @@ export default function PlantoesAdminPage() {
                           </p>
                         </div>
                       )}
+                      <div className="mt-4 pt-4 border-t border-[#E8E9F1] dark:border-[#23283A]">
+                        <p className="text-sm font-medium text-[#2E2F38] dark:text-white mb-2">Corretores presentes (quem participou)</p>
+                        {corretores.length === 0 ? (
+                          <p className="text-xs text-[#6B6F76] dark:text-gray-400">Nenhum corretor cadastrado na imobiliária.</p>
+                        ) : (
+                          <div className="flex flex-wrap gap-3">
+                            {corretores.map(c => (
+                              <label key={c.id} className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={plantao.presentesIds?.includes(c.id) ?? false}
+                                  onChange={() => togglePresentePlantao(plantao, c.id)}
+                                  className="w-4 h-4 rounded border-[#8B5CF6] text-[#8B5CF6] focus:ring-[#8B5CF6]"
+                                />
+                                <span className="text-sm text-[#2E2F38] dark:text-white">{c.nome || c.email}</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     
                     <div className="flex items-center gap-2 ml-6">

@@ -5,6 +5,12 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where, orderBy, Timestamp } from 'firebase/firestore';
 
+interface Corretor {
+  id: string;
+  nome: string;
+  email: string;
+}
+
 interface AgendaImobiliaria {
   id: string;
   titulo: string;
@@ -16,11 +22,13 @@ interface AgendaImobiliaria {
   local?: string;
   responsavel?: string;
   imobiliariaId: string;
+  presentesIds?: string[];
 }
 
 export default function AgendaImobiliariaAdminPage() {
   const { currentUser, userData } = useAuth();
   const [agenda, setAgenda] = useState<AgendaImobiliaria[]>([]);
+  const [corretores, setCorretores] = useState<Corretor[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<AgendaImobiliaria | null>(null);
@@ -72,6 +80,18 @@ export default function AgendaImobiliariaAdminPage() {
 
     fetchAgenda();
   }, [userData]);
+
+  useEffect(() => {
+    if (!userData?.imobiliariaId) return;
+    const q = query(
+      collection(db, 'usuarios'),
+      where('imobiliariaId', '==', userData.imobiliariaId),
+      where('tipoConta', 'in', ['corretor-vinculado', 'corretor-autonomo'])
+    );
+    getDocs(q).then(snap => {
+      setCorretores(snap.docs.map(d => ({ id: d.id, nome: (d.data().nome as string) || '', email: (d.data().email as string) || '' })));
+    });
+  }, [userData?.imobiliariaId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,6 +148,19 @@ export default function AgendaImobiliariaAdminPage() {
       setAgenda(prev => prev.filter(event => event.id !== eventId));
     } catch (error) {
       console.error('Erro ao excluir evento:', error);
+    }
+  };
+
+  const togglePresenteEvento = async (event: AgendaImobiliaria, corretorId: string) => {
+    const atuais = event.presentesIds || [];
+    const novos = atuais.includes(corretorId)
+      ? atuais.filter(id => id !== corretorId)
+      : [...atuais, corretorId];
+    try {
+      await updateDoc(doc(db, 'agendaImobiliaria', event.id), { presentesIds: novos });
+      setAgenda(prev => prev.map(ev => ev.id === event.id ? { ...ev, presentesIds: novos } : ev));
+    } catch (e) {
+      console.error('Erro ao atualizar presentes:', e);
     }
   };
 
@@ -463,6 +496,26 @@ export default function AgendaImobiliariaAdminPage() {
                             <span className="text-[#6B6F76] dark:text-gray-300">
                               <strong>Responsável:</strong> {event.responsavel}
                             </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-4 pt-4 border-t border-[#E8E9F1] dark:border-[#23283A]">
+                        <p className="text-sm font-medium text-[#2E2F38] dark:text-white mb-2">Corretores presentes (quem participou)</p>
+                        {corretores.length === 0 ? (
+                          <p className="text-xs text-[#6B6F76] dark:text-gray-400">Nenhum corretor cadastrado na imobiliária.</p>
+                        ) : (
+                          <div className="flex flex-wrap gap-3">
+                            {corretores.map(c => (
+                              <label key={c.id} className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={event.presentesIds?.includes(c.id) ?? false}
+                                  onChange={() => togglePresenteEvento(event, c.id)}
+                                  className="w-4 h-4 rounded border-purple-500 text-purple-600 focus:ring-purple-500"
+                                />
+                                <span className="text-sm text-[#2E2F38] dark:text-white">{c.nome || c.email}</span>
+                              </label>
+                            ))}
                           </div>
                         )}
                       </div>
