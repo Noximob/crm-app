@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import type { AgendaEventoTv, PlantaoTv } from './useAgendaTvData';
+import type { AgendaEventoTv, PlantaoTv, AgendaCorporativaItemTv, CorretorStatusTv } from './useAgendaTvData';
 import { startOfDay, endOfDay } from './useAgendaTvData';
 
 const TIPOS_ACOES_VENDA = ['revisar-crm', 'ligacao-ativa', 'acao-de-rua', 'disparo-de-msg'];
@@ -181,9 +181,20 @@ interface AgendaTvSlideProps {
   plantoes?: PlantaoTv[];
   fraseSemana?: string;
   mode: 'day' | 'week';
+  agendaCorporativaItems?: AgendaCorporativaItemTv[];
+  corretoresStatus?: CorretorStatusTv[];
+  corretoresStatusLoading?: boolean;
 }
 
-export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode }: AgendaTvSlideProps) {
+export function AgendaTvSlide({
+  events,
+  plantoes = [],
+  fraseSemana,
+  mode,
+  agendaCorporativaItems = [],
+  corretoresStatus = [],
+  corretoresStatusLoading = false,
+}: AgendaTvSlideProps) {
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -240,7 +251,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode }: Agen
       ? slotsRestantesHoje.length + plantoesRestantesHoje.length
       : diasSemana.reduce((s, dd) => s + dd.slots.length, 0) + diasSemanaPlantoes.reduce((s, dd) => s + dd.slots.length, 0);
     const subtitulo = mode === 'day'
-      ? `${concluidosHoje} concluídos · ${totalRestantes} restantes`
+      ? 'Agenda corporativa e status dos corretores'
       : `${totalRestantes} compromissos pela frente`;
 
     return {
@@ -288,121 +299,136 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode }: Agen
 
       <div className="relative flex-1 min-h-0 p-4 md:p-6 flex flex-col overflow-hidden">
         {mode === 'day' && (
-          <div className="h-full w-full flex flex-col gap-4 min-h-0">
-            {/* Progresso do dia — gamificado */}
-            {(() => {
-              const totalRestantes = plantoesRestantesHoje.length + slotsRestantesHoje.length;
-              const totalHoje = concluidosHoje + totalRestantes;
-              const percent = totalHoje > 0 ? Math.round((concluidosHoje / totalHoje) * 100) : 0;
-              return (
-                <div className="shrink-0 flex items-center gap-6 p-5 rounded-2xl bg-gradient-to-r from-cyan-500/15 via-violet-500/10 to-amber-500/15 border border-white/10">
-                  <div className="relative w-20 h-20 shrink-0">
-                    <svg className="w-20 h-20 -rotate-90" viewBox="0 0 36 36">
-                      <path className="text-white/10" stroke="currentColor" strokeWidth="2.5" fill="none" d="M18 2.5 a 15.5 15.5 0 0 1 0 31 a 15.5 15.5 0 0 1 0 -31" />
-                      <path className="text-cyan-400 transition-all duration-500" stroke="currentColor" strokeWidth="2.5" strokeDasharray={`${percent}, 100`} strokeLinecap="round" fill="none" d="M18 2.5 a 15.5 15.5 0 0 1 0 31 a 15.5 15.5 0 0 1 0 -31" />
-                    </svg>
-                    <span className="absolute inset-0 flex items-center justify-center text-lg font-black text-cyan-400">{percent}%</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xl font-bold text-white">
-                      {concluidosHoje > 0 && <span className="text-emerald-400">{concluidosHoje} concluído{concluidosHoje !== 1 ? 's' : ''}</span>}
-                      {concluidosHoje > 0 && totalRestantes > 0 && <span className="text-slate-400"> · </span>}
-                      {totalRestantes > 0 && <span>{totalRestantes} pela frente</span>}
-                      {totalRestantes === 0 && concluidosHoje === 0 && <span className="text-slate-400">Nada agendado</span>}
-                      {totalRestantes === 0 && concluidosHoje > 0 && <span className="text-emerald-400"> — dia fechado!</span>}
-                    </p>
-                    <p className="text-sm text-slate-400 mt-0.5">
-                      {totalRestantes > 0 && totalRestantes <= 4 && 'Foco no que importa. Você dá conta!'}
-                      {totalRestantes > 4 && 'Bora executar.'}
-                      {totalRestantes === 0 && concluidosHoje === 0 && 'Agenda livre.'}
-                    </p>
-                  </div>
+          <div className="h-full w-full flex flex-col gap-5 md:gap-6 min-h-0 overflow-auto">
+            {/* Card 1: Agenda Corporativa — o que é + quem confirmou */}
+            <div className="shrink-0 rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-cyan-500/10 via-[#0c0f1a] to-violet-500/5 p-4 md:p-5 shadow-lg shadow-cyan-500/5">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center text-lg shadow-md">
+                  📅
                 </div>
-              );
-            })()}
-
-            {/* Lista unificada do dia — poucos itens, destaque visual */}
-            {(() => {
-              const itensPlantao = plantoesRestantesHoje.map((s) => ({ tipo: 'plantao' as const, id: s.id, slot: s }));
-              const itensAcoes = acoesRestantes.map((s) => ({ tipo: 'acao' as const, id: s.id, slot: s }));
-              const itensReunioes = reunioesRestantes.map((s) => ({ tipo: 'reuniao' as const, id: s.id, slot: s }));
-              const todosItens = [...itensPlantao, ...itensAcoes, ...itensReunioes]
-                .sort((a, b) => {
-                  const tA = 'inicio' in a.slot ? (a.slot as SlotDia).inicio.getTime() : (a.slot as SlotPlantao).inicio.getTime();
-                  const tB = 'inicio' in b.slot ? (b.slot as SlotDia).inicio.getTime() : (b.slot as SlotPlantao).inicio.getTime();
-                  return tA - tB;
-                });
-              if (todosItens.length === 0) {
-                return (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center py-16 px-6">
-                    <div className="text-7xl mb-6 animate-pulse">🎯</div>
-                    <p className="text-2xl font-bold text-white">Tudo em dia!</p>
-                    <p className="text-slate-400 mt-2 max-w-sm">Nada mais por agora. Aproveite o fôlego.</p>
-                  </div>
-                );
-              }
-              return (
-                <section className="flex flex-col flex-1 min-h-0 flex-shrink-0">
-                  <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 shrink-0">
-                    {todosItens.length} compromisso{todosItens.length !== 1 ? 's' : ''} restante{todosItens.length !== 1 ? 's' : ''}
-                  </h2>
-                  <div className="flex flex-col flex-1 min-h-0 gap-2">
-                    {todosItens.map((item, idx) => {
-                      const isProximo = idx === 0;
-                      const cardBase = 'flex-1 min-h-0';
-                      if (item.tipo === 'plantao') {
-                        const s = item.slot as SlotPlantao;
-                        return (
-                          <div
-                            key={s.id}
-                            className={`flex items-center gap-3 sm:gap-5 p-3 sm:p-5 rounded-xl sm:rounded-2xl border-2 transition-all ${cardBase} ${isProximo ? 'border-orange-400/60 bg-gradient-to-r from-orange-500/25 to-amber-500/15 shadow-lg shadow-orange-500/10' : 'border-orange-400/20 bg-orange-500/10'}`}
-                          >
-                            <div className="relative shrink-0">
-                              <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-r from-orange-500 to-amber-600 flex items-center justify-center text-xl sm:text-2xl shadow-lg">🏢</div>
-                              <span className="absolute -top-0.5 -right-0.5 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/20 flex items-center justify-center text-[10px] sm:text-xs font-bold text-white">{idx + 1}</span>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              {isProximo && <span className="text-[10px] sm:text-xs font-bold text-orange-400 uppercase tracking-wider">Próximo</span>}
-                              <p className="font-bold text-white text-base sm:text-lg truncate">Plantão {s.construtora}</p>
-                              <p className="text-xs sm:text-sm text-orange-300 truncate">Responsável: {s.corretorResponsavel}</p>
-                            </div>
-                            <div className="text-right shrink-0">
-                              <p className="text-base sm:text-xl font-mono font-bold text-cyan-400">{s.horario?.slice(0, 5) || fmtHora(s.inicio)}</p>
-                              <p className="text-[10px] sm:text-xs text-slate-500">até {fmtHora(s.fim)}</p>
-                            </div>
-                          </div>
-                        );
-                      }
-                      const s = item.slot as SlotDia;
-                      const isAcao = s.isAcaoVenda;
-                      return (
-                        <div
-                          key={s.id}
-                          className={`flex items-center gap-3 sm:gap-5 p-3 sm:p-5 rounded-xl sm:rounded-2xl border-2 transition-all ${cardBase} ${isProximo ? 'border-cyan-400/50 bg-gradient-to-r from-cyan-500/20 to-violet-500/10 shadow-lg shadow-cyan-500/10' : 'border-white/10 bg-white/5'}`}
-                        >
-                          <div className="relative shrink-0">
-                            <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-r ${TIPO_COR[s.tipo] ?? TIPO_COR.outro} flex items-center justify-center text-xl sm:text-2xl shadow-lg`}>
-                              {TIPO_ICON[s.tipo] ?? TIPO_ICON.outro}
-                            </div>
-                            <span className="absolute -top-0.5 -right-0.5 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/20 flex items-center justify-center text-[10px] sm:text-xs font-bold text-white">{idx + 1}</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            {isProximo && <span className="text-[10px] sm:text-xs font-bold text-cyan-400 uppercase tracking-wider">Próximo</span>}
-                            <p className="font-bold text-white text-base sm:text-lg truncate">{s.titulo}</p>
-                            <p className="text-xs sm:text-sm text-slate-400 truncate">{isAcao ? (TIPO_LABEL[s.tipo] ?? s.tipo) : (s.local || TIPO_LABEL[s.tipo])}</p>
-                            {s.responsavel && <p className="text-[10px] sm:text-xs text-slate-300 truncate">Com: {s.responsavel}</p>}
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p className="text-base sm:text-xl font-mono font-bold text-cyan-400">{fmtHora(s.inicio)}</p>
-                            <p className="text-[10px] sm:text-xs text-slate-500">até {fmtHora(s.fim)}</p>
-                          </div>
+                <h2 className="text-lg md:text-xl font-bold text-white">Agenda Corporativa</h2>
+              </div>
+              <p className="text-xs md:text-sm text-slate-400 mb-4">Eventos e plantões do dia — quem confirmou presença.</p>
+              {agendaCorporativaItems.length === 0 ? (
+                <p className="text-slate-500 text-sm py-4">Nenhum evento ou plantão para hoje.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {agendaCorporativaItems.map((item) => (
+                    <li
+                      key={`${item.tipo}-${item.id}`}
+                      className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white/5 border border-white/10 hover:border-cyan-400/30 transition-colors"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-semibold text-cyan-400 bg-cyan-500/20 px-2 py-0.5 rounded">
+                            {item.tipoLabel}
+                          </span>
+                          <span className="font-semibold text-white truncate">{item.titulo}</span>
                         </div>
-                      );
-                    })}
-                  </div>
-                </section>
-              );
-            })()}
+                        <div className="text-xs text-slate-400 mt-0.5">
+                          {item.dataStr} · {item.horarioStr}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {item.confirmados.length === 0 ? (
+                          <span className="text-xs text-slate-500">Ninguém confirmado</span>
+                        ) : (
+                          <>
+                            <div className="flex -space-x-1">
+                              {item.confirmados.slice(0, 1).map((c, i) => (
+                                <div key={i} className="relative" title={c.nome}>
+                                  {c.photoURL ? (
+                                    <img
+                                      src={c.photoURL}
+                                      alt=""
+                                      className="w-8 h-8 rounded-full border-2 border-[#0c0f1a] object-cover ring-1 ring-white/20"
+                                    />
+                                  ) : (
+                                    <div className="w-8 h-8 rounded-full border-2 border-[#0c0f1a] bg-cyan-500/30 flex items-center justify-center text-xs font-bold text-cyan-300">
+                                      {(c.nome || '?').charAt(0).toUpperCase()}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                            <span className="text-sm text-white whitespace-nowrap">
+                              {item.confirmados[0]?.nome}
+                              {item.confirmados.length > 1 && (
+                                <span className="text-slate-400"> +{item.confirmados.length - 1}</span>
+                              )}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Card 2: Corretores — tarefa do dia / atrasada / sem uso */}
+            <div className="shrink-0 rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 via-[#0c0f1a] to-amber-500/5 p-4 md:p-5 shadow-lg shadow-emerald-500/5">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center text-lg shadow-md">
+                  👥
+                </div>
+                <h2 className="text-lg md:text-xl font-bold text-white">Corretores</h2>
+              </div>
+              <p className="text-xs md:text-sm text-slate-400 mb-4">Tarefa do dia, atrasada ou sem atividade recente no CRM.</p>
+              {corretoresStatusLoading ? (
+                <div className="flex items-center gap-2 py-4 text-slate-400">
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-emerald-400 border-t-transparent" />
+                  <span className="text-sm">Carregando...</span>
+                </div>
+              ) : corretoresStatus.length === 0 ? (
+                <p className="text-slate-500 text-sm py-4">Nenhum corretor vinculado.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {corretoresStatus.map((c) => {
+                    const isAtrasada = c.status === 'tarefa_atrasada';
+                    const isTarefaDia = c.status === 'tarefa_dia';
+                    const isDestaque = isAtrasada || isTarefaDia;
+                    const label = isAtrasada ? 'Tarefa atrasada' : isTarefaDia ? 'Tarefa do dia' : 'Sem tarefa / sem uso 24h';
+                    const cardBg = isAtrasada
+                      ? 'bg-red-500/10 border-red-400/40'
+                      : isTarefaDia
+                        ? 'bg-emerald-500/10 border-emerald-400/40'
+                        : 'bg-white/[0.03] border-white/5';
+                    const dotColor = isAtrasada ? 'bg-red-400' : isTarefaDia ? 'bg-emerald-400' : '';
+                    const textLabel = isAtrasada ? 'text-red-400' : isTarefaDia ? 'text-emerald-400' : 'text-slate-500';
+                    return (
+                      <li
+                        key={c.id}
+                        className={`flex items-center gap-3 p-3 rounded-xl border ${cardBg} transition-colors`}
+                      >
+                        <div className="flex-shrink-0">
+                          {c.photoURL ? (
+                            <img
+                              src={c.photoURL}
+                              alt=""
+                              className={`w-10 h-10 rounded-full border-2 border-[#0c0f1a] object-cover ${!isDestaque ? 'opacity-70' : ''}`}
+                            />
+                          ) : (
+                            <div
+                              className={`w-10 h-10 rounded-full border-2 border-[#0c0f1a] flex items-center justify-center text-sm font-semibold ${
+                                isDestaque ? 'bg-cyan-500/20 text-cyan-300' : 'bg-slate-600/30 text-slate-400'
+                              }`}
+                            >
+                              {(c.nome || '?').charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className={`font-semibold ${isDestaque ? 'text-white' : 'text-slate-400'}`}>{c.nome}</div>
+                          <div className={`text-xs ${textLabel}`}>{label}</div>
+                        </div>
+                        {isDestaque && <span className={`h-2.5 w-2.5 rounded-full ${dotColor} flex-shrink-0`} title={label} />}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
           </div>
         )}
 
