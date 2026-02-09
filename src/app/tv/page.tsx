@@ -161,14 +161,7 @@ export default function TvPage() {
             <div className="animate-spin rounded-full h-14 w-14 border-2 border-[#3478F6] border-t-transparent" />
           </div>
         ) : (
-          <AgendaTvSlide
-            events={agendaTvData.events}
-            plantoes={agendaTvData.plantoes}
-            mode="day"
-            agendaCorporativaItems={agendaTvData.agendaCorporativaItems}
-            corretoresStatus={agendaTvData.corretoresStatus}
-            corretoresStatusLoading={agendaTvData.corretoresStatusLoading}
-          />
+          <AgendaTvSlide events={agendaTvData.events} plantoes={agendaTvData.plantoes} mode="day" />
         )}
       </div>
     );

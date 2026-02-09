@@ -411,9 +411,6 @@ export default function DashboardPage() {
   const [showAgendaModal, setShowAgendaModal] = useState(false);
   const [plantoes, setPlantoes] = useState<any[]>([]);
   const [showPlantoesModal, setShowPlantoesModal] = useState(false);
-  const [corretoresList, setCorretoresList] = useState<{ id: string; nome: string; photoURL?: string }[]>([]);
-  const [corretoresStatus, setCorretoresStatus] = useState<{ id: string; nome: string; photoURL?: string; status: 'tarefa_atrasada' | 'tarefa_dia' | 'sem_tarefa' }[]>([]);
-  const [corretoresStatusLoading, setCorretoresStatusLoading] = useState(false);
 
   // Função para voltar ao topo da seção de trending
   const scrollToTrendingTop = () => {
@@ -552,51 +549,6 @@ export default function DashboardPage() {
     fetchPlantoes();
   }, [userData]);
 
-  // Buscar corretores da imobiliária (nome + foto para exibir confirmados e status)
-  useEffect(() => {
-    if (!userData?.imobiliariaId) return;
-    const q = query(
-      collection(db, 'usuarios'),
-      where('imobiliariaId', '==', userData.imobiliariaId),
-      where('tipoConta', 'in', ['corretor-vinculado', 'corretor-autonomo'])
-    );
-    getDocs(q).then(snap => {
-      setCorretoresList(snap.docs.map(d => ({
-        id: d.id,
-        nome: (d.data().nome as string) || (d.data().email as string) || '',
-        photoURL: d.data().photoURL as string | undefined
-      })));
-    });
-  }, [userData?.imobiliariaId]);
-
-  // Status dos corretores: tarefa atrasada, tarefa do dia ou sem tarefa (para card de CRM)
-  useEffect(() => {
-    if (!userData?.imobiliariaId || corretoresList.length === 0) return;
-    setCorretoresStatusLoading(true);
-    const run = async () => {
-      const list: { id: string; nome: string; photoURL?: string; status: 'tarefa_atrasada' | 'tarefa_dia' | 'sem_tarefa' }[] = [];
-      for (const c of corretoresList) {
-        const leadsRef = collection(db, 'leads');
-        const qLeads = query(leadsRef, where('userId', '==', c.id));
-        const snapLeads = await getDocs(qLeads);
-        let status: 'tarefa_atrasada' | 'tarefa_dia' | 'sem_tarefa' = 'sem_tarefa';
-        for (const leadDoc of snapLeads.docs) {
-          const tasksCol = collection(db, 'leads', leadDoc.id, 'tarefas');
-          const qTasks = query(tasksCol, where('status', '==', 'pendente'));
-          const snapTasks = await getDocs(qTasks);
-          const tasks = snapTasks.docs.map(d => ({ id: d.id, ...d.data(), dueDate: d.data().dueDate } as Task));
-          const taskStatus = getTaskStatusInfo(tasks);
-          if (taskStatus === 'Tarefa em Atraso') { status = 'tarefa_atrasada'; break; }
-          if (taskStatus === 'Tarefa do Dia') { status = 'tarefa_dia'; break; }
-        }
-        list.push({ id: c.id, nome: c.nome, photoURL: c.photoURL, status });
-      }
-      setCorretoresStatus(list);
-      setCorretoresStatusLoading(false);
-    };
-    run();
-  }, [userData?.imobiliariaId, corretoresList]);
-
   // Labels do tipo da agenda (igual ao admin)
   const getTipoAgendaLabel = (tipo: string) => {
     const map: Record<string, string> = {
@@ -611,61 +563,6 @@ export default function DashboardPage() {
     };
     return map[tipo] || tipo;
   };
-
-  // Agenda corporativa do dia: eventos e plantões de hoje (e amanhã) com quem confirmou presença
-  const agendaCorporativaItems = useMemo(() => {
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-    const amanha = new Date(hoje);
-    amanha.setDate(amanha.getDate() + 1);
-    const hojeStr = hoje.toISOString().slice(0, 10);
-    const amanhaStr = amanha.toISOString().slice(0, 10);
-    const mapCorretor = (uid: string) => corretoresList.find(c => c.id === uid);
-    const items: { tipo: 'plantao' | 'agenda'; id: string; titulo: string; tipoLabel: string; dataStr: string; horarioStr: string; confirmados: { nome: string; photoURL?: string }[] }[] = [];
-    plantoes.forEach((p: any) => {
-      const d = p.dataInicio || '';
-      if (d !== hojeStr && d !== amanhaStr) return;
-      const horario = (p.horario || '00:00').toString().substring(0, 5);
-      const confirmados = (p.respostasPresenca && typeof p.respostasPresenca === 'object'
-        ? Object.entries(p.respostasPresenca).filter(([, v]) => v === 'confirmado').map(([uid]) => mapCorretor(uid)).filter(Boolean) as { nome: string; photoURL?: string }[]
-        : []).map(c => ({ nome: c!.nome, photoURL: c!.photoURL }));
-      items.push({
-        tipo: 'plantao',
-        id: p.id,
-        titulo: p.construtora ? `Plantão — ${p.construtora}` : 'Plantão',
-        tipoLabel: 'Plantão',
-        dataStr: d ? new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '',
-        horarioStr: horario,
-        confirmados
-      });
-    });
-    agendaImobiliaria.forEach((a: any) => {
-      const dt = a.dataInicio?.toDate ? a.dataInicio.toDate() : (a.dataInicio ? new Date(a.dataInicio) : null);
-      if (!dt) return;
-      const dStr = dt.toISOString().slice(0, 10);
-      if (dStr !== hojeStr && dStr !== amanhaStr) return;
-      const confirmados = (a.respostasPresenca && typeof a.respostasPresenca === 'object'
-        ? Object.entries(a.respostasPresenca).filter(([, v]) => v === 'confirmado').map(([uid]) => mapCorretor(uid)).filter(Boolean) as { nome: string; photoURL?: string }[]
-        : []).map(c => ({ nome: c!.nome, photoURL: c!.photoURL }));
-      items.push({
-        tipo: 'agenda',
-        id: a.id,
-        titulo: a.titulo || 'Evento',
-        tipoLabel: getTipoAgendaLabel(a.tipo || 'outro'),
-        dataStr: dt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-        horarioStr: dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        confirmados
-      });
-    });
-    items.sort((a, b) => {
-      const [ad, ah] = [a.dataStr, a.horarioStr].join(' ').split(/[\s,]+/);
-      const [bd, bh] = [b.dataStr, b.horarioStr].join(' ').split(/[\s,]+/);
-      const ta = ad && ah ? new Date(`${ad.split('/').reverse().join('-')}T${ah}`).getTime() : 0;
-      const tb = bd && bh ? new Date(`${bd.split('/').reverse().join('-')}T${bh}`).getTime() : 0;
-      return ta - tb;
-    });
-    return items;
-  }, [plantoes, agendaImobiliaria, corretoresList]);
 
   // Eventos/plantões em que o usuário foi marcado e ainda NÃO respondeu — ordenado do mais próximo no tempo
   const eventosEmQueFuiMarcado = useMemo(() => {
@@ -1394,118 +1291,55 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Agenda do Dia — em 2 cards */}
-          <div className="space-y-4">
-            {/* Card 1: Agenda corporativa */}
-            <Card className="border-l-4 border-l-[#3478F6]">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white">Agenda Corporativa</h2>
-                <Link 
-                  href="/dashboard/agenda"
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-[#3478F6] bg-[#3478F6]/10 rounded-lg hover:bg-[#3478F6]/20 transition-colors border border-[#3478F6]/30"
-                >
-                  <CalendarIcon className="h-3 w-3" />
-                  Ver Completa
-                </Link>
-              </div>
-              <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-4">Eventos e plantões do dia — quem confirmou presença.</p>
-              {agendaCorporativaItems.length === 0 ? (
-                <p className="text-[#6B6F76] dark:text-gray-400 text-sm">Nenhum evento ou plantão para hoje/amanhã.</p>
-              ) : (
-                <ul className="space-y-3">
-                  {agendaCorporativaItems.map(item => (
-                    <li key={`${item.tipo}-${item.id}`} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#F5F6FA] dark:bg-white/5 border border-[#E8E9F1] dark:border-white/10">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs font-medium text-[#3478F6] dark:text-[#7BA3F7] bg-[#3478F6]/10 dark:bg-[#3478F6]/20 px-2 py-0.5 rounded">{item.tipoLabel}</span>
-                          <span className="font-semibold text-[#2E2F38] dark:text-white truncate">{item.titulo}</span>
+          {/* Agenda do Dia */}
+          <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white">Agenda do Dia</h2>
+              <Link 
+                href="/dashboard/agenda"
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-[#3AC17C] bg-[#3AC17C]/10 rounded-lg hover:bg-[#3AC17C]/20 transition-colors border border-[#3AC17C]/30 dark:bg-[#3AC17C]/10 dark:text-[#3AC17C] dark:border-[#3AC17C]/30 dark:hover:bg-[#3AC17C]/20"
+              >
+                <CalendarIcon className="h-3 w-3" />
+                Ver Completa
+              </Link>
+            </div>
+            {agendaLoading ? (
+              <p className="text-gray-300">Carregando tarefas...</p>
+            ) : agendaLeads.length === 0 ? (
+              <p className="text-gray-300">Nenhuma tarefa prioritária encontrada.</p>
+            ) : (
+              <table className="w-full text-left">
+                <thead className="text-xs text-gray-400 uppercase">
+                  <tr>
+                    <th className="py-2 px-3 font-semibold">Lead</th>
+                    <th className="py-2 px-3 font-semibold">Status</th>
+                    <th className="py-2 px-3 font-semibold">Ação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {agendaLeads.map(lead => (
+                    <tr key={lead.id} className="border-b border-gray-700 last:border-0 hover:bg-gray-700/30 transition-colors">
+                      <td className="py-3 px-3 font-semibold text-white whitespace-nowrap">{lead.nome}</td>
+                      <td className="py-3 px-3">
+                        <div className={`flex items-center gap-2 text-sm`}>
+                          <span className={`h-2.5 w-2.5 ${statusInfo[lead.taskStatus as TaskStatus].color} rounded-full`}></span>
+                          <span className="text-gray-300">{statusInfo[lead.taskStatus as TaskStatus].text}</span>
                         </div>
-                        <div className="text-xs text-[#6B6F76] dark:text-gray-400 mt-1">{item.dataStr} · {item.horarioStr}</div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {item.confirmados.length === 0 ? (
-                          <span className="text-xs text-[#6B6F76] dark:text-gray-500">Ninguém confirmado</span>
-                        ) : (
-                          <>
-                            <div className="flex -space-x-2">
-                              {item.confirmados.slice(0, 1).map((c, i) => (
-                                <div key={i} className="relative" title={c.nome}>
-                                  {c.photoURL ? (
-                                    <img src={c.photoURL} alt="" className="w-8 h-8 rounded-full border-2 border-white dark:border-[#23283A] object-cover" />
-                                  ) : (
-                                    <div className="w-8 h-8 rounded-full border-2 border-white dark:border-[#23283A] bg-[#3478F6]/20 flex items-center justify-center text-xs font-semibold text-[#3478F6]">
-                                      {(c.nome || '?').charAt(0).toUpperCase()}
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                            <span className="text-sm text-[#2E2F38] dark:text-gray-300 whitespace-nowrap">
-                              {item.confirmados[0]?.nome}
-                              {item.confirmados.length > 1 && <span className="text-[#6B6F76] dark:text-gray-500"> +{item.confirmados.length - 1}</span>}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </li>
+                      </td>
+                      <td className="py-3 px-3">
+                        <button 
+                          onClick={() => openLeadModal(lead)}
+                          className="px-4 py-1 text-sm font-semibold text-white bg-[#3478F6] hover:bg-[#255FD1] rounded-lg transition-colors cursor-pointer"
+                        >
+                          Abrir
+                        </button>
+                      </td>
+                    </tr>
                   ))}
-                </ul>
-              )}
-            </Card>
-
-            {/* Card 2: Corretores — tarefa do dia / atrasada / sem uso */}
-            <Card className="border-l-4 border-l-[#3AC17C]">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white">Corretores</h2>
-                <Link 
-                  href="/dashboard/agenda"
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-[#3AC17C] bg-[#3AC17C]/10 rounded-lg hover:bg-[#3AC17C]/20 transition-colors border border-[#3AC17C]/30"
-                >
-                  Ver Agenda
-                </Link>
-              </div>
-              <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-4">Tarefa do dia, atrasada ou sem atividade recente no CRM.</p>
-              {corretoresStatusLoading ? (
-                <p className="text-[#6B6F76] dark:text-gray-400 text-sm">Carregando...</p>
-              ) : corretoresStatus.length === 0 ? (
-                <p className="text-[#6B6F76] dark:text-gray-400 text-sm">Nenhum corretor vinculado.</p>
-              ) : (
-                <ul className="space-y-2">
-                  {corretoresStatus.map(c => {
-                    const isAtrasada = c.status === 'tarefa_atrasada';
-                    const isTarefaDia = c.status === 'tarefa_dia';
-                    const isDestaque = isAtrasada || isTarefaDia;
-                    const label = isAtrasada ? 'Tarefa atrasada' : isTarefaDia ? 'Tarefa do dia' : 'Sem tarefa / sem uso 24h';
-                    const destaqueBg = isAtrasada ? 'bg-[#F45B69]/5 dark:bg-[#F45B69]/10 border-[#F45B69]/30' : 'bg-[#3AC17C]/5 dark:bg-[#3AC17C]/10 border-[#3AC17C]/30';
-                    const destaqueDot = isAtrasada ? 'bg-[#F45B69]' : 'bg-[#3AC17C]';
-                    const destaqueText = isAtrasada ? 'text-[#F45B69]' : 'text-[#3AC17C]';
-                    return (
-                      <li
-                        key={c.id}
-                        className={`flex items-center gap-3 p-3 rounded-xl border ${isDestaque ? destaqueBg : 'bg-[#F5F6FA]/50 dark:bg-white/[0.03] border-[#E8E9F1] dark:border-white/5'}`}
-                      >
-                        <div className="flex-shrink-0">
-                          {c.photoURL ? (
-                            <img src={c.photoURL} alt="" className={`w-9 h-9 rounded-full border-2 border-white dark:border-[#23283A] object-cover ${!isDestaque ? 'opacity-80' : ''}`} />
-                          ) : (
-                            <div className={`w-9 h-9 rounded-full border-2 border-white dark:border-[#23283A] flex items-center justify-center text-sm font-semibold ${isDestaque ? 'bg-[#3478F6]/20 text-[#3478F6]' : 'bg-[#6B6F76]/20 text-[#6B6F76] dark:text-gray-400'}`}>
-                              {(c.nome || '?').charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className={`font-medium ${isDestaque ? 'text-[#2E2F38] dark:text-white' : 'text-[#6B6F76] dark:text-gray-400'}`}>{c.nome}</div>
-                          <div className={`text-xs ${isDestaque ? destaqueText : 'text-[#6B6F76] dark:text-gray-500'}`}>{label}</div>
-                        </div>
-                        {isDestaque && (
-                          <span className={`h-2.5 w-2.5 rounded-full ${destaqueDot} flex-shrink-0`} title={label} />
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </Card>
+                </tbody>
+              </table>
+            )}
           </div>
 
                      {/* Avisos Importantes */}

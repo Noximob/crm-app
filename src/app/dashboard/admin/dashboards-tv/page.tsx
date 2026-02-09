@@ -878,15 +878,7 @@ export default function DashboardsTvPage() {
                   <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#3478F6] border-t-transparent" />
                 </div>
               ) : (
-                <AgendaTvSlide
-                  events={agendaTvData.events}
-                  plantoes={agendaTvData.plantoes}
-                  fraseSemana={agendaFraseSemana}
-                  mode={previewAgenda}
-                  agendaCorporativaItems={agendaTvData.agendaCorporativaItems}
-                  corretoresStatus={agendaTvData.corretoresStatus}
-                  corretoresStatusLoading={agendaTvData.corretoresStatusLoading}
-                />
+                <AgendaTvSlide events={agendaTvData.events} plantoes={agendaTvData.plantoes} fraseSemana={agendaFraseSemana} mode={previewAgenda} />
               )}
             </div>
           </div>
