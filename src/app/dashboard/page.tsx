@@ -549,38 +549,72 @@ export default function DashboardPage() {
     fetchPlantoes();
   }, [userData]);
 
-  // Eventos/plantões em que o usuário foi marcado (presentesIds) — para confirmar/cancelar presença
+  // Labels do tipo da agenda (igual ao admin)
+  const getTipoAgendaLabel = (tipo: string) => {
+    const map: Record<string, string> = {
+      reuniao: 'Reunião',
+      evento: 'Evento',
+      treinamento: 'Treinamento',
+      'revisar-crm': 'Revisar CRM',
+      'ligacao-ativa': 'Ligação Ativa',
+      'acao-de-rua': 'Ação de rua',
+      'disparo-de-msg': 'Disparo de Msg',
+      outro: 'Outro'
+    };
+    return map[tipo] || tipo;
+  };
+
+  // Eventos/plantões em que o usuário foi marcado e ainda NÃO respondeu — ordenado do mais próximo no tempo
   const eventosEmQueFuiMarcado = useMemo(() => {
     const uid = currentUser?.uid;
     if (!uid) return [];
-    const lista: { tipo: 'plantao' | 'agenda'; id: string; titulo: string; data: string | any; respostasPresenca?: Record<string, string> }[] = [];
+    const lista: {
+      tipo: 'plantao' | 'agenda';
+      id: string;
+      titulo: string;
+      tipoLabel: string;
+      dataStr: string;
+      horarioStr: string;
+      sortTime: number;
+      respostasPresenca?: Record<string, string>;
+    }[] = [];
     plantoes.forEach((p: any) => {
-      if (Array.isArray(p.presentesIds) && p.presentesIds.includes(uid)) {
-        lista.push({
-          tipo: 'plantao',
-          id: p.id,
-          titulo: `Plantão — ${p.construtora || 'Construtora'}`,
-          data: p.dataInicio,
-          respostasPresenca: p.respostasPresenca
-        });
-      }
+      if (!Array.isArray(p.presentesIds) || !p.presentesIds.includes(uid)) return;
+      if (p.respostasPresenca?.[uid]) return; // já respondeu → não aparece
+      const dataInicio = p.dataInicio || '';
+      const horario = p.horario || '00:00';
+      const sortTime = dataInicio && horario ? new Date(`${dataInicio}T${horario.substring(0, 5)}`).getTime() : 0;
+      const dataStr = dataInicio ? new Date(dataInicio).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+      lista.push({
+        tipo: 'plantao',
+        id: p.id,
+        titulo: p.construtora ? `Plantão — ${p.construtora}` : 'Plantão',
+        tipoLabel: 'Plantão',
+        dataStr,
+        horarioStr: horario.substring(0, 5),
+        sortTime,
+        respostasPresenca: p.respostasPresenca
+      });
     });
     agendaImobiliaria.forEach((a: any) => {
-      if (Array.isArray(a.presentesIds) && a.presentesIds.includes(uid)) {
-        lista.push({
-          tipo: 'agenda',
-          id: a.id,
-          titulo: a.titulo || 'Evento',
-          data: a.dataInicio?.toDate ? a.dataInicio.toDate().toISOString() : a.dataInicio,
-          respostasPresenca: a.respostasPresenca
-        });
-      }
+      if (!Array.isArray(a.presentesIds) || !a.presentesIds.includes(uid)) return;
+      if (a.respostasPresenca?.[uid]) return; // já respondeu → não aparece
+      const dt = a.dataInicio?.toDate ? a.dataInicio.toDate() : (a.dataInicio ? new Date(a.dataInicio) : null);
+      const sortTime = dt ? dt.getTime() : 0;
+      const dataStr = dt ? dt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+      const horarioStr = dt ? dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+      lista.push({
+        tipo: 'agenda',
+        id: a.id,
+        titulo: a.titulo || 'Evento',
+        tipoLabel: getTipoAgendaLabel(a.tipo || 'outro'),
+        dataStr,
+        horarioStr,
+        sortTime,
+        respostasPresenca: a.respostasPresenca
+      });
     });
-    lista.sort((a, b) => {
-      const da = typeof a.data === 'string' ? new Date(a.data).getTime() : (a.data?.toDate ? a.data.toDate().getTime() : 0);
-      const db = typeof b.data === 'string' ? new Date(b.data).getTime() : (b.data?.toDate ? b.data.toDate().getTime() : 0);
-      return da - db;
-    });
+    lista.sort((a, b) => a.sortTime - b.sortTime); // mais próximo primeiro
     return lista;
   }, [currentUser?.uid, plantoes, agendaImobiliaria]);
 
@@ -1216,45 +1250,39 @@ export default function DashboardPage() {
               <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-4">Confirme ou cancele sua presença. Essas informações serão usadas para acompanhamento.</p>
               <ul className="space-y-3">
                 {eventosEmQueFuiMarcado.map((ev) => {
-                  const minhaResposta = currentUser?.uid ? (ev.respostasPresenca || {})[currentUser.uid] : null;
                   const key = `${ev.tipo}-${ev.id}`;
                   const loading = respondendoPresenca === key;
-                  const dataStr = typeof ev.data === 'string'
-                    ? new Date(ev.data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-                    : ev.data?.toDate?.()
-                      ? ev.data.toDate().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                      : '';
                   return (
-                    <li key={key} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-[#F5F6FA] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A]">
+                    <li key={key} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-[#F5F6FA] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A]">
                       <div className="min-w-0 flex-1">
-                        <span className="font-semibold text-[#2E2F38] dark:text-white block truncate">{ev.titulo}</span>
-                        {dataStr && <span className="text-xs text-[#6B6F76] dark:text-gray-400">{ev.tipo === 'plantao' ? 'Data: ' : ''}{dataStr}</span>}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-[#3478F6]/20 text-[#3478F6] dark:bg-[#3478F6]/30 dark:text-[#A3C8F7]">
+                            {ev.tipoLabel}
+                          </span>
+                          <span className="font-semibold text-[#2E2F38] dark:text-white truncate">{ev.titulo}</span>
+                        </div>
+                        <div className="flex items-center gap-3 mt-1 text-xs text-[#6B6F76] dark:text-gray-400">
+                          {ev.dataStr && <span>{ev.dataStr}</span>}
+                          {ev.horarioStr && <span className="flex items-center gap-1"><ClockIcon className="h-3 w-3" /> {ev.horarioStr}</span>}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        {minhaResposta ? (
-                          <span className={`text-sm font-medium px-3 py-1.5 rounded-lg ${minhaResposta === 'confirmado' ? 'bg-[#3AC17C]/20 text-[#3AC17C]' : 'bg-[#F45B69]/20 text-[#F45B69]'}`}>
-                            {minhaResposta === 'confirmado' ? 'Confirmado' : 'Cancelado'}
-                          </span>
-                        ) : (
-                          <>
-                            <button
-                              type="button"
-                              disabled={loading}
-                              onClick={() => responderPresenca(ev.tipo, ev.id, 'confirmado')}
-                              className="px-3 py-1.5 text-xs font-semibold text-white bg-[#3AC17C] hover:bg-[#2fa866] rounded-lg transition-colors disabled:opacity-50"
-                            >
-                              {loading ? '...' : 'Confirmar Presença'}
-                            </button>
-                            <button
-                              type="button"
-                              disabled={loading}
-                              onClick={() => responderPresenca(ev.tipo, ev.id, 'cancelado')}
-                              className="px-3 py-1.5 text-xs font-semibold text-[#F45B69] bg-[#F45B69]/10 hover:bg-[#F45B69]/20 rounded-lg transition-colors disabled:opacity-50"
-                            >
-                              Cancelar
-                            </button>
-                          </>
-                        )}
+                        <button
+                          type="button"
+                          disabled={loading}
+                          onClick={() => responderPresenca(ev.tipo, ev.id, 'confirmado')}
+                          className="px-3 py-1.5 text-xs font-semibold text-white bg-[#3AC17C] hover:bg-[#2fa866] rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          {loading ? '...' : 'Confirmar Presença'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={loading}
+                          onClick={() => responderPresenca(ev.tipo, ev.id, 'cancelado')}
+                          className="px-3 py-1.5 text-xs font-semibold text-[#F45B69] bg-[#F45B69]/10 hover:bg-[#F45B69]/20 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          Cancelar
+                        </button>
                       </div>
                     </li>
                   );
