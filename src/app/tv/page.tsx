@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -100,18 +100,25 @@ export default function TvPage() {
 
   const currentSlide = config[currentIndex];
   const duration = currentSlide?.durationSeconds ?? 60;
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const goNext = useCallback(() => {
-    if (config.length <= 1) return;
-    setCurrentIndex(i => (i + 1) % config.length);
+    setCurrentIndex(i => (config.length <= 1 ? i : (i + 1) % config.length));
   }, [config.length]);
 
+  // Carrossel automático: avança após duration segundos (2+ telas, duração > 0)
   useEffect(() => {
-    if (!currentSlide || config.length === 0) return;
-    if (duration === 0) return;
-    const t = setTimeout(goNext, duration * 1000);
-    return () => clearTimeout(t);
-  }, [currentIndex, currentSlide, duration, config.length, goNext]);
+    if (config.length === 0 || config.length <= 1 || duration <= 0) return;
+    timerRef.current = setTimeout(() => {
+      goNext();
+    }, duration * 1000);
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [currentIndex, config.length, duration, goNext]);
 
   if (!imobiliariaId) {
     return (
@@ -199,29 +206,29 @@ export default function TvPage() {
   if (currentSlide?.id === 'noticia-semana') {
     const temConteudo = noticiaSemana.titulo?.trim() || noticiaSemana.imageUrl;
     return (
-      <div className="min-h-screen flex flex-col bg-[#181C23] text-white overflow-hidden">
-        <div className="flex-1 flex flex-col min-h-0">
+      <div className="h-screen max-h-screen flex flex-col bg-[#181C23] text-white overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {noticiaSemana.imageUrl ? (
-            <div className="flex-1 min-h-0 relative">
+            <div className="flex-1 min-h-0 overflow-hidden relative">
               <img
                 src={noticiaSemana.imageUrl}
                 alt=""
-                className="w-full h-full object-cover object-center"
+                className="absolute inset-0 w-full h-full object-cover object-center"
               />
             </div>
           ) : (
-            <div className="flex-1 flex items-center justify-center bg-gradient-to-b from-[#23283A] to-[#181C23]">
+            <div className="flex-1 min-h-0 flex items-center justify-center bg-gradient-to-b from-[#23283A] to-[#181C23] overflow-hidden">
               <div className="text-center text-[#6B6F76] px-4">Sem imagem</div>
             </div>
           )}
-          <div className="shrink-0 px-6 py-5 bg-[#181C23]/95 border-t border-white/10">
-            <h2 className="text-xl md:text-3xl font-bold text-white text-center md:text-left">
+          <div className="shrink-0 px-6 py-4 bg-[#181C23]/95 border-t border-white/10 overflow-hidden">
+            <h2 className="text-xl md:text-3xl font-bold text-white text-center md:text-left truncate">
               {noticiaSemana.titulo?.trim() || 'Notícia da Semana'}
             </h2>
           </div>
         </div>
         {!temConteudo && (
-          <p className="text-center text-[#6B6F76] text-sm py-4">Configure em Admin → Dashboards TV → Editar Notícia da Semana</p>
+          <p className="shrink-0 text-center text-[#6B6F76] text-sm py-2">Configure em Admin → Dashboards TV → Editar Notícia da Semana</p>
         )}
       </div>
     );

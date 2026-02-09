@@ -37,6 +37,7 @@ const SLIDES_DISPONIVEIS: Omit<SlideConfig, 'enabled' | 'durationSeconds'>[] = [
 
 const DURACAO_PRESETS = [
   { label: '5 seg', value: 5 },
+  { label: '10 seg', value: 10 },
   { label: '15 seg', value: 15 },
   { label: '30 seg', value: 30 },
   { label: '1 min', value: 60 },

@@ -34,7 +34,7 @@ function normalizarTipo(type: string): string {
     .trim()
     .toLowerCase()
     .normalize('NFD')
-    .replace(/\p{M}/gu, '');
+    .replace(/[\u0300-\u036f]/g, '');
 }
 
 function isLigacao(type: string): boolean {
