@@ -287,6 +287,16 @@ export function AgendaTvSlide({
             <p className="text-slate-400 text-sm md:text-base mt-0.5">{subtitulo}</p>
           </div>
         </div>
+        {mode === 'day' && (() => {
+          const totalHoje = concluidosHoje + slotsRestantesHoje.length + plantoesRestantesHoje.length;
+          const percent = totalHoje > 0 ? Math.round((concluidosHoje / totalHoje) * 100) : 0;
+          return (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-500/15 border border-cyan-400/30">
+              <span className="text-2xl md:text-3xl font-black text-cyan-400 tabular-nums">{percent}%</span>
+              <span className="text-sm text-slate-300 hidden sm:inline">do dia cumprido</span>
+            </div>
+          );
+        })()}
         <div className="text-right">
           <div className="text-3xl md:text-4xl font-mono font-black tabular-nums text-cyan-400">
             {now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
@@ -297,136 +307,130 @@ export function AgendaTvSlide({
         </div>
       </header>
 
-      <div className="relative flex-1 min-h-0 p-4 md:p-6 flex flex-col overflow-hidden">
+      <div className="relative flex-1 min-h-0 p-3 md:p-4 flex flex-col overflow-hidden">
         {mode === 'day' && (
-          <div className="h-full w-full flex flex-col gap-5 md:gap-6 min-h-0 overflow-auto">
-            {/* Card 1: Agenda Corporativa — o que é + quem confirmou */}
-            <div className="shrink-0 rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-cyan-500/10 via-[#0c0f1a] to-violet-500/5 p-4 md:p-5 shadow-lg shadow-cyan-500/5">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center text-lg shadow-md">
+          <div className="h-full w-full flex flex-col gap-3 min-h-0 overflow-hidden">
+            {/* Card 1: Agenda Corporativa — um card por evento, some após o horário */}
+            <div className="flex-1 min-h-0 rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-cyan-500/10 via-[#0c0f1a] to-violet-500/5 p-3 md:p-4 shadow-lg shadow-cyan-500/5 flex flex-col overflow-hidden">
+              <div className="flex items-center gap-2 mb-2 shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center text-base shadow-md">
                   📅
                 </div>
-                <h2 className="text-lg md:text-xl font-bold text-white">Agenda Corporativa</h2>
+                <h2 className="text-base md:text-lg font-bold text-white">Agenda Corporativa</h2>
               </div>
-              <p className="text-xs md:text-sm text-slate-400 mb-4">Eventos e plantões do dia — quem confirmou presença.</p>
-              {agendaCorporativaItems.length === 0 ? (
-                <p className="text-slate-500 text-sm py-4">Nenhum evento ou plantão para hoje.</p>
-              ) : (
-                <ul className="space-y-3">
-                  {agendaCorporativaItems.map((item) => (
-                    <li
-                      key={`${item.tipo}-${item.id}`}
-                      className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white/5 border border-white/10 hover:border-cyan-400/30 transition-colors"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs font-semibold text-cyan-400 bg-cyan-500/20 px-2 py-0.5 rounded">
-                            {item.tipoLabel}
-                          </span>
-                          <span className="font-semibold text-white truncate">{item.titulo}</span>
+              <p className="text-xs text-slate-400 mb-2 shrink-0">Eventos e plantões do dia — quem confirmou.</p>
+              {(() => {
+                const itensRestantes = agendaCorporativaItems.filter((item) => item.fimTime > now.getTime()).slice(0, 6);
+                if (itensRestantes.length === 0) {
+                  return <p className="text-slate-500 text-sm py-2">Nenhum evento pela frente ou dia encerrado.</p>;
+                }
+                return (
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 flex-1 min-h-0 content-start overflow-auto">
+                    {itensRestantes.map((item) => (
+                      <div
+                        key={`${item.tipo}-${item.id}`}
+                        className="rounded-xl border border-cyan-400/20 bg-white/5 p-2.5 flex flex-col gap-1.5 hover:border-cyan-400/40 transition-colors shrink-0"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center text-sm shrink-0">
+                            {item.tipo === 'plantao' ? '🏢' : (TIPO_ICON[item.tipoEvento ?? 'outro'] ?? '📅')}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-[10px] font-semibold text-cyan-400">{item.tipoLabel}</span>
+                            <p className="text-sm font-semibold text-white truncate">{item.titulo}</p>
+                          </div>
                         </div>
-                        <div className="text-xs text-slate-400 mt-0.5">
-                          {item.dataStr} · {item.horarioStr}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {item.confirmados.length === 0 ? (
-                          <span className="text-xs text-slate-500">Ninguém confirmado</span>
-                        ) : (
-                          <>
-                            <div className="flex -space-x-1">
+                        <p className="text-xs font-mono text-cyan-400/90">{item.horarioStr}</p>
+                        <div className="flex items-center gap-1.5 mt-auto">
+                          {item.confirmados.length === 0 ? (
+                            <span className="text-[10px] text-slate-500">Ninguém confirmado</span>
+                          ) : (
+                            <>
                               {item.confirmados.slice(0, 1).map((c, i) => (
-                                <div key={i} className="relative" title={c.nome}>
+                                <div key={i} className="flex items-center gap-1">
                                   {c.photoURL ? (
-                                    <img
-                                      src={c.photoURL}
-                                      alt=""
-                                      className="w-8 h-8 rounded-full border-2 border-[#0c0f1a] object-cover ring-1 ring-white/20"
-                                    />
+                                    <img src={c.photoURL} alt="" className="w-5 h-5 rounded-full border border-[#0c0f1a] object-cover ring-1 ring-white/20" />
                                   ) : (
-                                    <div className="w-8 h-8 rounded-full border-2 border-[#0c0f1a] bg-cyan-500/30 flex items-center justify-center text-xs font-bold text-cyan-300">
+                                    <div className="w-5 h-5 rounded-full bg-cyan-500/30 flex items-center justify-center text-[9px] font-bold text-cyan-300">
                                       {(c.nome || '?').charAt(0).toUpperCase()}
                                     </div>
                                   )}
+                                  <span className="text-[10px] text-white truncate">{c.nome}</span>
+                                  {item.confirmados.length > 1 && <span className="text-[10px] text-slate-400">+{item.confirmados.length - 1}</span>}
                                 </div>
-                              ))}
-                            </div>
-                            <span className="text-sm text-white whitespace-nowrap">
-                              {item.confirmados[0]?.nome}
-                              {item.confirmados.length > 1 && (
-                                <span className="text-slate-400"> +{item.confirmados.length - 1}</span>
                               )}
-                            </span>
-                          </>
-                        )}
+                            </>
+                          )}
+                        </div>
                       </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
 
-            {/* Card 2: Corretores — tarefa do dia / atrasada / sem uso */}
-            <div className="shrink-0 rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 via-[#0c0f1a] to-amber-500/5 p-4 md:p-5 shadow-lg shadow-emerald-500/5">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center text-lg shadow-md">
+            {/* Card 2: Corretores — fotinho bonita, quadrados, 1 página TV */}
+            <div className="shrink-0 rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 via-[#0c0f1a] to-amber-500/5 p-3 md:p-4 shadow-lg shadow-emerald-500/5">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center text-base shadow-md">
                   👥
                 </div>
-                <h2 className="text-lg md:text-xl font-bold text-white">Corretores</h2>
+                <h2 className="text-base md:text-lg font-bold text-white">Corretores</h2>
               </div>
-              <p className="text-xs md:text-sm text-slate-400 mb-4">Tarefa do dia, atrasada ou sem atividade recente no CRM.</p>
+              <p className="text-xs text-slate-400 mb-2">Sem uso, tarefa atrasada ou tarefa do dia.</p>
               {corretoresStatusLoading ? (
-                <div className="flex items-center gap-2 py-4 text-slate-400">
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-emerald-400 border-t-transparent" />
-                  <span className="text-sm">Carregando...</span>
+                <div className="flex items-center gap-2 py-2 text-slate-400">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-emerald-400 border-t-transparent" />
+                  <span className="text-xs">Carregando...</span>
                 </div>
               ) : corretoresStatus.length === 0 ? (
-                <p className="text-slate-500 text-sm py-4">Nenhum corretor vinculado.</p>
+                <p className="text-slate-500 text-xs py-2">Nenhum corretor vinculado.</p>
               ) : (
-                <ul className="space-y-2">
+                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
                   {corretoresStatus.map((c) => {
                     const isAtrasada = c.status === 'tarefa_atrasada';
                     const isTarefaDia = c.status === 'tarefa_dia';
                     const isDestaque = isAtrasada || isTarefaDia;
-                    const label = isAtrasada ? 'Tarefa atrasada' : isTarefaDia ? 'Tarefa do dia' : 'Sem tarefa / sem uso 24h';
+                    const label = isAtrasada ? 'Atrasada' : isTarefaDia ? 'Tarefa hoje' : 'Sem uso';
                     const cardBg = isAtrasada
-                      ? 'bg-red-500/10 border-red-400/40'
+                      ? 'bg-red-500/15 border-red-400/50'
                       : isTarefaDia
-                        ? 'bg-emerald-500/10 border-emerald-400/40'
-                        : 'bg-white/[0.03] border-white/5';
-                    const dotColor = isAtrasada ? 'bg-red-400' : isTarefaDia ? 'bg-emerald-400' : '';
+                        ? 'bg-emerald-500/15 border-emerald-400/50'
+                        : 'bg-white/[0.04] border-white/10';
+                    const dotColor = isAtrasada ? 'bg-red-400' : isTarefaDia ? 'bg-emerald-400' : 'bg-slate-500';
                     const textLabel = isAtrasada ? 'text-red-400' : isTarefaDia ? 'text-emerald-400' : 'text-slate-500';
                     return (
-                      <li
+                      <div
                         key={c.id}
-                        className={`flex items-center gap-3 p-3 rounded-xl border ${cardBg} transition-colors`}
+                        className={`flex flex-col items-center justify-center p-2 rounded-xl border ${cardBg} transition-colors`}
+                        title={c.nome + ' — ' + label}
                       >
-                        <div className="flex-shrink-0">
+                        <div className="relative mb-1">
                           {c.photoURL ? (
                             <img
                               src={c.photoURL}
-                              alt=""
-                              className={`w-10 h-10 rounded-full border-2 border-[#0c0f1a] object-cover ${!isDestaque ? 'opacity-70' : ''}`}
+                              alt={c.nome}
+                              className="w-10 h-10 rounded-full object-cover border-2 border-[#0c0f1a] ring-2 ring-white/20 shadow-md"
                             />
                           ) : (
                             <div
-                              className={`w-10 h-10 rounded-full border-2 border-[#0c0f1a] flex items-center justify-center text-sm font-semibold ${
-                                isDestaque ? 'bg-cyan-500/20 text-cyan-300' : 'bg-slate-600/30 text-slate-400'
+                              className={`w-10 h-10 rounded-full border-2 border-[#0c0f1a] flex items-center justify-center text-sm font-semibold shadow-inner ${
+                                isDestaque ? 'bg-gradient-to-br from-cyan-500/30 to-blue-500/20 text-cyan-300' : 'bg-slate-600/40 text-slate-400'
                               }`}
                             >
                               {(c.nome || '?').charAt(0).toUpperCase()}
                             </div>
                           )}
+                          <span className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ${dotColor} ring-2 ring-[#0c0f1a]`} />
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className={`font-semibold ${isDestaque ? 'text-white' : 'text-slate-400'}`}>{c.nome}</div>
-                          <div className={`text-xs ${textLabel}`}>{label}</div>
-                        </div>
-                        {isDestaque && <span className={`h-2.5 w-2.5 rounded-full ${dotColor} flex-shrink-0`} title={label} />}
-                      </li>
+                        <span className={`text-[10px] font-medium truncate w-full text-center ${isDestaque ? 'text-white' : 'text-slate-400'}`}>
+                          {c.nome.split(' ')[0] || c.nome}
+                        </span>
+                        <span className={`text-[9px] ${textLabel}`}>{label}</span>
+                      </div>
                     );
                   })}
-                </ul>
+                </div>
               )}
             </div>
           </div>

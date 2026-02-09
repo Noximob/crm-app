@@ -31,8 +31,12 @@ export interface AgendaCorporativaItemTv {
   id: string;
   titulo: string;
   tipoLabel: string;
+  /** Para agenda: tipo do evento (reuniao, evento, etc.) para ícone */
+  tipoEvento?: string;
   dataStr: string;
   horarioStr: string;
+  /** Timestamp de fim do evento (para esconder quando passar do horário) */
+  fimTime: number;
   confirmados: { nome: string; photoURL?: string }[];
 }
 
@@ -252,6 +256,9 @@ export function useAgendaTvData(imobiliariaId: string | undefined) {
     plantoes.forEach((p) => {
       const d = p.dataInicio.toISOString().slice(0, 10);
       if (d !== hojeStr && d !== amanhaStr) return;
+      const [hh = 9, mm = 0] = (p.horario || '09:00').toString().trim().split(':').map(Number);
+      const inicioDate = new Date(p.dataInicio.getFullYear(), p.dataInicio.getMonth(), p.dataInicio.getDate(), hh, mm, 0, 0);
+      const fimDate = new Date(inicioDate.getTime() + 2 * 60 * 60 * 1000);
       const horario = (p.horario || '00:00').toString().substring(0, 5);
       const confirmados = (
         p.respostasPresenca && typeof p.respostasPresenca === 'object'
@@ -268,6 +275,7 @@ export function useAgendaTvData(imobiliariaId: string | undefined) {
         tipoLabel: 'Plantão',
         dataStr: d ? new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '',
         horarioStr: horario,
+        fimTime: fimDate.getTime(),
         confirmados,
       });
     });
@@ -276,6 +284,8 @@ export function useAgendaTvData(imobiliariaId: string | undefined) {
       const dt = ev.dataInicio.toDate();
       const dStr = dt.toISOString().slice(0, 10);
       if (dStr !== hojeStr && dStr !== amanhaStr) return;
+      const fimEv = ev.dataFim?.toDate();
+      const fimTime = fimEv ? fimEv.getTime() : dt.getTime() + 60 * 60 * 1000;
       const confirmados = (
         ev.respostasPresenca && typeof ev.respostasPresenca === 'object'
           ? Object.entries(ev.respostasPresenca)
@@ -289,8 +299,10 @@ export function useAgendaTvData(imobiliariaId: string | undefined) {
         id: ev.id,
         titulo: ev.titulo || 'Evento',
         tipoLabel: TIPO_AGENDA_LABEL[ev.tipo] || ev.tipo,
+        tipoEvento: ev.tipo,
         dataStr: dt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
         horarioStr: dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        fimTime,
         confirmados,
       });
     });
