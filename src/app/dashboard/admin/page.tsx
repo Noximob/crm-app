@@ -33,6 +33,7 @@ const adminCategories = [
     color: 'from-blue-500 to-blue-600',
     items: [
       { title: 'Gestão de Corretores', icon: '🧑‍💼', description: 'Administre leads dos corretores', href: '/dashboard/admin/gestao-corretores' },
+      { title: 'Visualizar CRM do Corretor', icon: '👁️', description: 'Veja o CRM exatamente como o corretor vê (somente leitura)', href: '/dashboard/admin/visualizar-crm-corretor' },
       { title: 'Agenda dos Usuários', icon: '📅', description: 'Visualize agenda de todos os usuários', href: '/dashboard/admin/agenda-usuarios' },
       { title: 'Importar Leads', icon: '⬆️', description: 'Importe leads em massa', href: '/dashboard/admin/importar-leads' },
       { title: 'Avisos', icon: '📢', description: 'Avisos para corretores', href: '/dashboard/admin/avisos-importantes' },

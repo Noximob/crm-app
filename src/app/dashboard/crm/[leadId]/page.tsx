@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, onSnapshot, updateDoc, collection, query, orderBy, addDoc, serverTimestamp, where, writeBatch } from 'firebase/firestore';
@@ -107,9 +107,13 @@ interface Task {
 }
 
 export default function LeadDetailPage() {
-    const { currentUser } = useAuth();
+    const { currentUser, userData } = useAuth();
     const params = useParams();
+    const searchParams = useSearchParams();
     const leadId = params.leadId as string;
+    const viewAs = searchParams.get('viewAs') === '1';
+    const isAdmin = userData?.permissoes?.admin || userData?.tipoConta === 'imobiliaria';
+    const readOnly = viewAs && isAdmin;
 
     const [lead, setLead] = useState<Lead | null>(null);
     const [loading, setLoading] = useState(true);
@@ -410,6 +414,11 @@ export default function LeadDetailPage() {
     return (
         <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
             <CrmHeader />
+            {readOnly && (
+              <div className="mb-4 px-4 py-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-800 dark:text-amber-200 text-sm font-medium flex items-center gap-2">
+                <span>👁️</span> Visualizando CRM do corretor — somente leitura. Você não pode editar etapas, tarefas, anotações ou qualificação.
+              </div>
+            )}
 
             <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* --- COLUNA DA ESQUERDA (20% a mais) --- */}
@@ -422,15 +431,20 @@ export default function LeadDetailPage() {
                                 <span className={`h-2 w-2 rounded-full ${getTaskStatusColor(taskStatus)}`}></span>
                             </div>
                             <div className="flex items-center justify-between">
-                                <select 
+                                {readOnly ? (
+                                  <span className="px-2 py-1 text-xs font-medium text-[#2E2F38] dark:text-white bg-[#E8E9F1] dark:bg-[#181C23] rounded-md">{lead.etapa}</span>
+                                ) : (
+                                  <select 
                                     id="lead-situation" 
                                     value={lead.etapa} 
                                     onChange={handleStageChange} 
                                     className="px-2 py-1 text-xs border border-[#A3C8F7] dark:border-[#3478F6] rounded-md bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white focus:ring-1 focus:ring-[#3478F6] focus:outline-none"
-                                >
+                                  >
                                     {PIPELINE_STAGES.map(stage => (<option key={stage} value={stage}>{stage}</option>))}
-                                </select>
-                                <div className="flex flex-col items-center gap-1">
+                                  </select>
+                                )}
+                                {!readOnly && (
+                                  <div className="flex flex-col items-center gap-1">
                                     <button 
                                         onClick={() => setIsAgendaModalOpen(true)} 
                                         className="w-10 h-10 bg-[#3478F6] hover:bg-[#3478F6]/80 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 shadow-lg"
@@ -439,7 +453,8 @@ export default function LeadDetailPage() {
                                         <TaskIcon className="h-5 w-5"/>
                                     </button>
                                     <span className="text-xs text-[#6B6F76] dark:text-gray-400">Tarefas</span>
-                                </div>
+                                  </div>
+                                )}
                             </div>
                                 <div className="flex items-center gap-2">
                                 <p className="text-xs text-[#6B6F76] dark:text-gray-400">{lead.telefone}</p>
@@ -486,9 +501,9 @@ export default function LeadDetailPage() {
                                                          </p>
                                                      )}
 
-                                                     {isPendingTask && (
-                                                         <div className="mt-2 flex items-center gap-2">
-                                                             <button
+{isPendingTask && !readOnly && (
+                                                        <div className="mt-2 flex items-center gap-2">
+                                                            <button
                                                                  onClick={() => handleUpdateTaskStatus(interaction.id, interaction.taskId!, 'concluída')}
                                                                  className="px-2 py-1 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors"
                                                              >
@@ -568,12 +583,14 @@ export default function LeadDetailPage() {
                     <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white">Qualificação do Lead</h3>
-                                            <button
-                                onClick={() => setIsQualificationModalOpen(true)}
-                                className="px-3 py-1.5 text-sm font-semibold text-[#3478F6] bg-[#E8E9F1] hover:bg-[#A3C8F7]/40 rounded-lg transition-colors dark:bg-[#23283A] dark:hover:bg-[#3478F6]/20"
-                            >
-                                ✏️ Editar Qualificação
-                                            </button>
+                                            {!readOnly && (
+                                <button
+                                  onClick={() => setIsQualificationModalOpen(true)}
+                                  className="px-3 py-1.5 text-sm font-semibold text-[#3478F6] bg-[#E8E9F1] hover:bg-[#A3C8F7]/40 rounded-lg transition-colors dark:bg-[#23283A] dark:hover:bg-[#3478F6]/20"
+                                >
+                                  ✏️ Editar Qualificação
+                                </button>
+                                            )}
                         </div>
                         
                         {/* Exibição compacta em linha única com separadores simples */}
@@ -618,7 +635,7 @@ export default function LeadDetailPage() {
                     <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] flex flex-col h-56">
                         <div className="flex justify-between items-center mb-4 flex-shrink-0">
                             <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white">Anotações</h3>
-                            {!isEditingAnnotations && (
+                            {!readOnly && !isEditingAnnotations && (
                                 <button onClick={() => setIsEditingAnnotations(true)} className="text-sm font-semibold text-primary-600 hover:text-primary-800 transition-colors">Editar</button>
                             )}
                         </div>
