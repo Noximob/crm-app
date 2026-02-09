@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import type { AgendaEventoTv, PlantaoTv } from './useAgendaTvData';
+import type { AgendaEventoTv, PlantaoTv, AgendaCorporativaItemTv, CorretorStatusTv } from './useAgendaTvData';
 import { startOfDay, endOfDay } from './useAgendaTvData';
 
 const TIPOS_ACOES_VENDA = ['revisar-crm', 'ligacao-ativa', 'acao-de-rua', 'disparo-de-msg'];
@@ -181,9 +181,12 @@ interface AgendaTvSlideProps {
   plantoes?: PlantaoTv[];
   fraseSemana?: string;
   mode: 'day' | 'week';
+  agendaCorporativaItems?: AgendaCorporativaItemTv[];
+  corretoresStatus?: CorretorStatusTv[];
+  corretoresStatusLoading?: boolean;
 }
 
-export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode }: AgendaTvSlideProps) {
+export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agendaCorporativaItems = [], corretoresStatus = [], corretoresStatusLoading }: AgendaTvSlideProps) {
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -289,120 +292,88 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode }: Agen
       <div className="relative flex-1 min-h-0 p-4 md:p-6 flex flex-col overflow-hidden">
         {mode === 'day' && (
           <div className="h-full w-full flex flex-col gap-4 min-h-0">
-            {/* Progresso do dia — gamificado */}
-            {(() => {
-              const totalRestantes = plantoesRestantesHoje.length + slotsRestantesHoje.length;
-              const totalHoje = concluidosHoje + totalRestantes;
-              const percent = totalHoje > 0 ? Math.round((concluidosHoje / totalHoje) * 100) : 0;
-              return (
-                <div className="shrink-0 flex items-center gap-6 p-5 rounded-2xl bg-gradient-to-r from-cyan-500/15 via-violet-500/10 to-amber-500/15 border border-white/10">
-                  <div className="relative w-20 h-20 shrink-0">
-                    <svg className="w-20 h-20 -rotate-90" viewBox="0 0 36 36">
-                      <path className="text-white/10" stroke="currentColor" strokeWidth="2.5" fill="none" d="M18 2.5 a 15.5 15.5 0 0 1 0 31 a 15.5 15.5 0 0 1 0 -31" />
-                      <path className="text-cyan-400 transition-all duration-500" stroke="currentColor" strokeWidth="2.5" strokeDasharray={`${percent}, 100`} strokeLinecap="round" fill="none" d="M18 2.5 a 15.5 15.5 0 0 1 0 31 a 15.5 15.5 0 0 1 0 -31" />
-                    </svg>
-                    <span className="absolute inset-0 flex items-center justify-center text-lg font-black text-cyan-400">{percent}%</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xl font-bold text-white">
-                      {concluidosHoje > 0 && <span className="text-emerald-400">{concluidosHoje} concluído{concluidosHoje !== 1 ? 's' : ''}</span>}
-                      {concluidosHoje > 0 && totalRestantes > 0 && <span className="text-slate-400"> · </span>}
-                      {totalRestantes > 0 && <span>{totalRestantes} pela frente</span>}
-                      {totalRestantes === 0 && concluidosHoje === 0 && <span className="text-slate-400">Nada agendado</span>}
-                      {totalRestantes === 0 && concluidosHoje > 0 && <span className="text-emerald-400"> — dia fechado!</span>}
-                    </p>
-                    <p className="text-sm text-slate-400 mt-0.5">
-                      {totalRestantes > 0 && totalRestantes <= 4 && 'Foco no que importa. Você dá conta!'}
-                      {totalRestantes > 4 && 'Bora executar.'}
-                      {totalRestantes === 0 && concluidosHoje === 0 && 'Agenda livre.'}
-                    </p>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Lista unificada do dia — poucos itens, destaque visual */}
-            {(() => {
-              const itensPlantao = plantoesRestantesHoje.map((s) => ({ tipo: 'plantao' as const, id: s.id, slot: s }));
-              const itensAcoes = acoesRestantes.map((s) => ({ tipo: 'acao' as const, id: s.id, slot: s }));
-              const itensReunioes = reunioesRestantes.map((s) => ({ tipo: 'reuniao' as const, id: s.id, slot: s }));
-              const todosItens = [...itensPlantao, ...itensAcoes, ...itensReunioes]
-                .sort((a, b) => {
-                  const tA = 'inicio' in a.slot ? (a.slot as SlotDia).inicio.getTime() : (a.slot as SlotPlantao).inicio.getTime();
-                  const tB = 'inicio' in b.slot ? (b.slot as SlotDia).inicio.getTime() : (b.slot as SlotPlantao).inicio.getTime();
-                  return tA - tB;
-                });
-              if (todosItens.length === 0) {
+            {/* Parte 1: Eventos do dia em quadrados — do que se trata + confirmados */}
+            <section className="shrink-0">
+              <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Eventos do dia</h2>
+              {(() => {
+                const nowTime = now.getTime();
+                const itensFuturos = agendaCorporativaItems.filter((i) => i.fimTime > nowTime);
+                if (itensFuturos.length === 0) {
+                  return (
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-slate-400">
+                      Nenhum evento restante hoje.
+                    </div>
+                  );
+                }
                 return (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center py-16 px-6">
-                    <div className="text-7xl mb-6 animate-pulse">🎯</div>
-                    <p className="text-2xl font-bold text-white">Tudo em dia!</p>
-                    <p className="text-slate-400 mt-2 max-w-sm">Nada mais por agora. Aproveite o fôlego.</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {itensFuturos.map((item) => (
+                      <div
+                        key={`${item.tipo}-${item.id}`}
+                        className="rounded-xl border-2 border-cyan-500/30 bg-gradient-to-br from-cyan-500/15 to-violet-500/10 p-4 flex flex-col gap-2 min-h-[100px]"
+                      >
+                        <p className="font-bold text-white text-sm truncate" title={item.titulo}>{item.titulo}</p>
+                        <p className="text-xs text-cyan-300/90">{item.tipoLabel} · {item.horarioStr}</p>
+                        {item.confirmados && item.confirmados.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-1">
+                            {item.confirmados.slice(0, 5).map((c, i) => (
+                              <div key={i} className="flex items-center gap-1">
+                                {c.photoURL ? (
+                                  <img src={c.photoURL} alt="" className="w-6 h-6 rounded-full object-cover border border-white/20" />
+                                ) : (
+                                  <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-bold">{c.nome?.charAt(0) ?? '?'}</span>
+                                )}
+                                <span className="text-[10px] text-slate-300 truncate max-w-[60px]">{c.nome}</span>
+                              </div>
+                            ))}
+                            {item.confirmados.length > 5 && <span className="text-[10px] text-slate-500">+{item.confirmados.length - 5}</span>}
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 );
-              }
-              return (
-                <section className="flex flex-col flex-1 min-h-0 flex-shrink-0">
-                  <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 shrink-0">
-                    {todosItens.length} compromisso{todosItens.length !== 1 ? 's' : ''} restante{todosItens.length !== 1 ? 's' : ''}
-                  </h2>
-                  <div className="flex flex-col flex-1 min-h-0 gap-2">
-                    {todosItens.map((item, idx) => {
-                      const isProximo = idx === 0;
-                      const cardBase = 'flex-1 min-h-0';
-                      if (item.tipo === 'plantao') {
-                        const s = item.slot as SlotPlantao;
-                        return (
-                          <div
-                            key={s.id}
-                            className={`flex items-center gap-3 sm:gap-5 p-3 sm:p-5 rounded-xl sm:rounded-2xl border-2 transition-all ${cardBase} ${isProximo ? 'border-orange-400/60 bg-gradient-to-r from-orange-500/25 to-amber-500/15 shadow-lg shadow-orange-500/10' : 'border-orange-400/20 bg-orange-500/10'}`}
-                          >
-                            <div className="relative shrink-0">
-                              <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-r from-orange-500 to-amber-600 flex items-center justify-center text-xl sm:text-2xl shadow-lg">🏢</div>
-                              <span className="absolute -top-0.5 -right-0.5 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/20 flex items-center justify-center text-[10px] sm:text-xs font-bold text-white">{idx + 1}</span>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              {isProximo && <span className="text-[10px] sm:text-xs font-bold text-orange-400 uppercase tracking-wider">Próximo</span>}
-                              <p className="font-bold text-white text-base sm:text-lg truncate">Plantão {s.construtora}</p>
-                              <p className="text-xs sm:text-sm text-orange-300 truncate">Responsável: {s.corretorResponsavel}</p>
-                            </div>
-                            <div className="text-right shrink-0">
-                              <p className="text-base sm:text-xl font-mono font-bold text-cyan-400">{s.horario?.slice(0, 5) || fmtHora(s.inicio)}</p>
-                              <p className="text-[10px] sm:text-xs text-slate-500">até {fmtHora(s.fim)}</p>
-                            </div>
-                          </div>
-                        );
-                      }
-                      const s = item.slot as SlotDia;
-                      const isAcao = s.isAcaoVenda;
-                      return (
-                        <div
-                          key={s.id}
-                          className={`flex items-center gap-3 sm:gap-5 p-3 sm:p-5 rounded-xl sm:rounded-2xl border-2 transition-all ${cardBase} ${isProximo ? 'border-cyan-400/50 bg-gradient-to-r from-cyan-500/20 to-violet-500/10 shadow-lg shadow-cyan-500/10' : 'border-white/10 bg-white/5'}`}
-                        >
-                          <div className="relative shrink-0">
-                            <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-r ${TIPO_COR[s.tipo] ?? TIPO_COR.outro} flex items-center justify-center text-xl sm:text-2xl shadow-lg`}>
-                              {TIPO_ICON[s.tipo] ?? TIPO_ICON.outro}
-                            </div>
-                            <span className="absolute -top-0.5 -right-0.5 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/20 flex items-center justify-center text-[10px] sm:text-xs font-bold text-white">{idx + 1}</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            {isProximo && <span className="text-[10px] sm:text-xs font-bold text-cyan-400 uppercase tracking-wider">Próximo</span>}
-                            <p className="font-bold text-white text-base sm:text-lg truncate">{s.titulo}</p>
-                            <p className="text-xs sm:text-sm text-slate-400 truncate">{isAcao ? (TIPO_LABEL[s.tipo] ?? s.tipo) : (s.local || TIPO_LABEL[s.tipo])}</p>
-                            {s.responsavel && <p className="text-[10px] sm:text-xs text-slate-300 truncate">Com: {s.responsavel}</p>}
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p className="text-base sm:text-xl font-mono font-bold text-cyan-400">{fmtHora(s.inicio)}</p>
-                            <p className="text-[10px] sm:text-xs text-slate-500">até {fmtHora(s.fim)}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </section>
-              );
-            })()}
+              })()}
+            </section>
+
+            {/* Parte 2: Cards dos corretores — vermelho atrasado, amarelo tarefa hoje, cinza sem tarefa */}
+            <section className="flex-1 min-h-0 flex flex-col">
+              <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 shrink-0">Corretores</h2>
+              {corretoresStatusLoading ? (
+                <div className="flex-1 flex items-center justify-center text-slate-400">Carregando...</div>
+              ) : corretoresStatus.length === 0 ? (
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-slate-400 text-sm">Nenhum corretor.</div>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3 flex-1 content-start overflow-auto min-h-0">
+                  {corretoresStatus.map((c) => {
+                    const isAtrasado = c.status === 'tarefa_atrasada';
+                    const isTarefaDia = c.status === 'tarefa_dia';
+                    const isSemTarefa = c.status === 'sem_tarefa';
+                    const borderClass = isAtrasado
+                      ? 'border-2 border-red-500/80 bg-red-500/10'
+                      : isTarefaDia
+                        ? 'border-2 border-amber-400/80 bg-amber-500/10'
+                        : 'border-2 border-slate-500/60 bg-slate-600/30 text-slate-300';
+                    return (
+                      <div
+                        key={c.id}
+                        className={`rounded-xl p-3 flex flex-col items-center gap-1.5 text-center min-w-0 ${borderClass}`}
+                      >
+                        {c.photoURL ? (
+                          <img src={c.photoURL} alt="" className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-white/20 shrink-0" />
+                        ) : (
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold shrink-0">{c.nome?.charAt(0) ?? '?'}</div>
+                        )}
+                        <p className="text-xs font-medium truncate w-full" title={c.nome}>{c.nome}</p>
+                        {isAtrasado && <span className="text-[10px] text-red-300 font-medium">Lead atrasado</span>}
+                        {isTarefaDia && <span className="text-[10px] text-amber-300 font-medium">Tarefa hoje</span>}
+                        {isSemTarefa && <span className="text-[10px] text-slate-400">Sem tarefa</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
           </div>
         )}
 
