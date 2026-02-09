@@ -63,7 +63,10 @@ export default function TvPage() {
         const data = snap.data()!;
         setAgendaFraseSemana(data.agendaFraseSemana ?? '');
         if (Array.isArray(data.slides)) {
-          const slides = (data.slides as SlideConfig[]).filter(s => s.enabled);
+          const raw = data.slides as SlideConfig[];
+          const slides = raw
+            .filter(s => s.enabled)
+            .map(s => ({ ...s, durationSeconds: typeof s.durationSeconds === 'number' ? s.durationSeconds : 60 }));
           setConfig(slides);
           setCurrentIndex(prev => Math.min(prev, Math.max(0, slides.length - 1)));
         }
@@ -101,24 +104,25 @@ export default function TvPage() {
   const currentSlide = config[currentIndex];
   const duration = currentSlide?.durationSeconds ?? 60;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const configLengthRef = useRef(config.length);
+  configLengthRef.current = config.length;
 
-  const goNext = useCallback(() => {
-    setCurrentIndex(i => (config.length <= 1 ? i : (i + 1) % config.length));
-  }, [config.length]);
-
-  // Carrossel automático: avança após duration segundos (2+ telas, duração > 0)
+  // Carrossel automático: avança após X segundos (2+ telas)
   useEffect(() => {
-    if (config.length === 0 || config.length <= 1 || duration <= 0) return;
+    const len = configLengthRef.current;
+    if (len <= 1) return;
+    // Se duração for 0 (Fixo) mas há várias telas, usa 60s para não travar
+    const segundos = duration > 0 ? duration : 60;
     timerRef.current = setTimeout(() => {
-      goNext();
-    }, duration * 1000);
+      setCurrentIndex(i => (i + 1) % configLengthRef.current);
+    }, segundos * 1000);
     return () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
     };
-  }, [currentIndex, config.length, duration, goNext]);
+  }, [currentIndex, config.length, duration]);
 
   if (!imobiliariaId) {
     return (

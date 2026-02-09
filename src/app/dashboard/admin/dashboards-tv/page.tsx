@@ -44,7 +44,6 @@ const DURACAO_PRESETS = [
   { label: '2 min', value: 120 },
   { label: '3 min', value: 180 },
   { label: '5 min', value: 300 },
-  { label: 'Fixo', value: 0 },
 ];
 
 const TvIcon = (p: React.SVGProps<SVGSVGElement>) => (
@@ -789,7 +788,7 @@ export default function DashboardsTvPage() {
 
             <div className="mt-6 p-4 rounded-xl bg-[#3478F6]/10 border border-[#3478F6]/20">
               <p className="text-sm text-[#2E2F38] dark:text-gray-200">
-                <strong>Como usar:</strong> marque as telas que deseja exibir, defina o tempo de cada uma (ou &quot;Fixo&quot; para deixar até trocar). 
+                <strong>Como usar:</strong> marque as telas que deseja exibir e defina o tempo de cada uma. 
                 Clique em <strong>Abrir na TV</strong> para abrir em nova aba <strong>sem menu lateral</strong> — coloque em tela cheia na TV. As telas habilitadas rodarão em loop.
               </p>
             </div>
