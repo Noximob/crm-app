@@ -33,6 +33,7 @@ export interface AgendaCorporativaItemTv {
   tipoLabel: string;
   dataStr: string;
   horarioStr: string;
+  startTime: number;
   fimTime: number;
   confirmados: { nome: string; photoURL?: string }[];
 }
@@ -41,7 +42,7 @@ export interface CorretorStatusTv {
   id: string;
   nome: string;
   photoURL?: string;
-  status: 'tarefa_atrasada' | 'tarefa_dia' | 'sem_tarefa';
+  status: 'tarefa_atrasada' | 'tarefa_dia' | 'sem_uso_24h' | 'sem_tarefa';
 }
 
 const TIPO_AGENDA_LABEL: Record<string, string> = {
@@ -188,27 +189,42 @@ export function useAgendaTvData(imobiliariaId: string | undefined) {
         if (cancelled) return;
         const corretores = snapUsuarios.docs.map((docSnap) => {
           const data = docSnap.data();
-          return { id: docSnap.id, nome: (data.nome as string) || (data.email as string) || '', photoURL: data.photoURL as string | undefined };
+          const lastActiveAt = data.lastActiveAt ?? data.ultimoAcesso ?? null;
+          return {
+            id: docSnap.id,
+            nome: (data.nome as string) || (data.email as string) || '',
+            photoURL: data.photoURL as string | undefined,
+            lastActiveAt: lastActiveAt && typeof lastActiveAt.toDate === 'function' ? lastActiveAt : lastActiveAt,
+          };
         });
-        setCorretoresList(corretores);
+        setCorretoresList(corretores.map(({ id, nome, photoURL }) => ({ id, nome, photoURL })));
         setLoading(false);
 
         setCorretoresLoading(true);
-        const statusList: CorretorStatusTv[] = [];
-        for (const c of corretores) {
-          if (cancelled) break;
-          const snapLeads = await getDocs(query(collection(db, 'leads'), where('userId', '==', c.id)));
-          const allTasks: { dueDate: Timestamp }[] = [];
-          for (const leadDoc of snapLeads.docs) {
-            const snapTasks = await getDocs(query(collection(db, 'leads', leadDoc.id, 'tarefas'), where('status', '==', 'pendente')));
-            snapTasks.docs.forEach((t) => {
-              const due = t.data().dueDate;
-              if (due) allTasks.push({ dueDate: due as Timestamp });
-            });
-          }
-          const status = getTaskStatus(allTasks);
-          statusList.push({ id: c.id, nome: c.nome, photoURL: c.photoURL, status });
-        }
+        const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+        const statusResults = await Promise.all(
+          corretores.map(async (c) => {
+            if (cancelled) return null;
+            const snapLeads = await getDocs(query(collection(db, 'leads'), where('userId', '==', c.id)));
+            const allTasks: { dueDate: Timestamp }[] = [];
+            for (const leadDoc of snapLeads.docs) {
+              const snapTasks = await getDocs(query(collection(db, 'leads', leadDoc.id, 'tarefas'), where('status', '==', 'pendente')));
+              snapTasks.docs.forEach((t) => {
+                const due = t.data().dueDate;
+                if (due) allTasks.push({ dueDate: due as Timestamp });
+              });
+            }
+            let status = getTaskStatus(allTasks);
+            if (status === 'sem_tarefa' && c.lastActiveAt) {
+              const ms = typeof c.lastActiveAt.toDate === 'function'
+                ? (c.lastActiveAt as { toDate: () => Date }).toDate().getTime()
+                : new Date(c.lastActiveAt as Date).getTime();
+              if (Date.now() - ms > ONE_DAY_MS) status = 'sem_uso_24h';
+            }
+            return { id: c.id, nome: c.nome, photoURL: c.photoURL, status } as CorretorStatusTv;
+          })
+        );
+        const statusList = statusResults.filter((r): r is CorretorStatusTv => r != null);
         if (!cancelled) setCorretoresStatus(statusList);
       } catch (e) {
         if (!cancelled) {
@@ -238,7 +254,8 @@ export function useAgendaTvData(imobiliariaId: string | undefined) {
       if (d !== hojeStr && d !== amanhaStr) return;
       const [hh = 9, mm = 0] = (p.horario || '09:00').toString().trim().split(':').map(Number);
       const inicio = new Date(p.dataInicio.getFullYear(), p.dataInicio.getMonth(), p.dataInicio.getDate(), hh, mm, 0, 0);
-      const fimTime = inicio.getTime() + 2 * 60 * 60 * 1000;
+      const startTime = inicio.getTime();
+      const fimTime = startTime + 2 * 60 * 60 * 1000;
       const horario = (p.horario || '09:00').toString().substring(0, 5);
       const confirmados = (p.respostasPresenca && typeof p.respostasPresenca === 'object'
         ? Object.entries(p.respostasPresenca).filter(([, v]) => v === 'confirmado').map(([uid]) => mapCorretor(uid)).filter(Boolean) as { nome: string; photoURL?: string }[]
@@ -250,6 +267,7 @@ export function useAgendaTvData(imobiliariaId: string | undefined) {
         tipoLabel: 'Plantão',
         dataStr: new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }),
         horarioStr: horario,
+        startTime,
         fimTime,
         confirmados,
       });
@@ -259,8 +277,9 @@ export function useAgendaTvData(imobiliariaId: string | undefined) {
       const dt = ev.dataInicio.toDate();
       const dStr = dt.toISOString().slice(0, 10);
       if (dStr !== hojeStr && dStr !== amanhaStr) return;
+      const startTime = dt.getTime();
       const fimEv = ev.dataFim?.toDate();
-      const fimTime = fimEv ? fimEv.getTime() : dt.getTime() + 60 * 60 * 1000;
+      const fimTime = fimEv ? fimEv.getTime() : startTime + 60 * 60 * 1000;
       const confirmados = (ev.respostasPresenca && typeof ev.respostasPresenca === 'object'
         ? Object.entries(ev.respostasPresenca).filter(([, v]) => v === 'confirmado').map(([uid]) => mapCorretor(uid)).filter(Boolean) as { nome: string; photoURL?: string }[]
         : []).map((x) => ({ nome: x!.nome, photoURL: x!.photoURL }));
@@ -271,6 +290,7 @@ export function useAgendaTvData(imobiliariaId: string | undefined) {
         tipoLabel: TIPO_AGENDA_LABEL[ev.tipo] || ev.tipo,
         dataStr: dt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
         horarioStr: dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        startTime,
         fimTime,
         confirmados,
       });

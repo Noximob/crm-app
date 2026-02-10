@@ -302,13 +302,13 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                 {plantoesHoje.map((s) => (
                   <div
                     key={s.id}
-                    className="inline-flex items-center gap-2 rounded-xl border border-orange-400/40 bg-orange-500/15 px-3 py-2"
+                    className="inline-flex items-center gap-2 rounded-xl border-2 border-orange-500 bg-orange-600/40 text-white px-4 py-2 shadow-lg shadow-orange-500/20"
                   >
-                    <span className="text-orange-300 text-lg">🏢</span>
-                    <span className="text-white font-medium text-sm">{s.construtora}</span>
-                    <span className="text-slate-400 text-sm">—</span>
-                    <span className="text-amber-200 text-sm">{s.corretorResponsavel}</span>
-                    <span className="text-cyan-400/90 text-xs font-mono">{s.horario?.slice(0, 5) ?? ''}</span>
+                    <span className="text-xl">🏢</span>
+                    <span className="font-semibold text-sm">{s.construtora}</span>
+                    <span className="text-orange-200 text-sm">—</span>
+                    <span className="text-amber-100 text-sm font-medium">{s.corretorResponsavel}</span>
+                    <span className="text-orange-200 text-xs font-mono">{s.horario?.slice(0, 5) ?? ''}</span>
                   </div>
                 ))}
               </section>
@@ -319,7 +319,11 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
               <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Eventos do dia</h2>
               {(() => {
                 const nowTime = now.getTime();
-                const itensFuturos = agendaCorporativaItems.filter((i) => i.tipo !== 'plantao' && i.fimTime > nowTime);
+                const hojeInicio = startOfDay(now).getTime();
+                const hojeFim = endOfDay(now).getTime();
+                const itensFuturos = agendaCorporativaItems.filter(
+                  (i) => i.tipo !== 'plantao' && i.startTime >= hojeInicio && i.startTime <= hojeFim && i.fimTime > nowTime
+                );
                 if (itensFuturos.length === 0) {
                   return (
                     <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-slate-400">
@@ -370,12 +374,15 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                   {corretoresStatus.map((c) => {
                     const isAtrasado = c.status === 'tarefa_atrasada';
                     const isTarefaDia = c.status === 'tarefa_dia';
+                    const isSemUso24h = c.status === 'sem_uso_24h';
                     const isSemTarefa = c.status === 'sem_tarefa';
                     const borderClass = isAtrasado
                       ? 'border-2 border-red-500/80 bg-red-500/10'
                       : isTarefaDia
                         ? 'border-2 border-amber-400/80 bg-amber-500/10'
-                        : 'border-2 border-slate-500/60 bg-slate-600/30 text-slate-300';
+                        : isSemUso24h
+                          ? 'border-2 border-slate-500/70 bg-slate-600/40 text-slate-300'
+                          : 'border-2 border-slate-500/60 bg-slate-600/30 text-slate-300';
                     return (
                       <div
                         key={c.id}
@@ -389,7 +396,8 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                         <p className="text-xs font-medium truncate w-full" title={c.nome}>{c.nome}</p>
                         {isAtrasado && <span className="text-[10px] text-red-300 font-medium">Lead atrasado</span>}
                         {isTarefaDia && <span className="text-[10px] text-amber-300 font-medium">Tarefa hoje</span>}
-                        {isSemTarefa && <span className="text-[10px] text-slate-400">Sem tarefa</span>}
+                        {isSemUso24h && <span className="text-[10px] text-slate-400 font-medium">+1 dia sem usar CRM</span>}
+                        {isSemTarefa && !isSemUso24h && <span className="text-[10px] text-slate-400">Sem tarefa</span>}
                       </div>
                     );
                   })}
