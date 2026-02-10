@@ -63,6 +63,7 @@ const adminCategories = [
       { title: 'Financeiro', icon: '💳', description: 'Controle financeiro', href: '/dashboard/admin/financeiro' },
       { title: 'Metas', icon: '🎯', description: 'Configure metas', href: '/dashboard/admin/metas' },
       { title: 'Relatórios', icon: '📊', description: 'Métricas e resultados', href: '/dashboard/admin/relatorios' },
+      { title: 'Relatório Individual', icon: '📋', description: 'Relatório completo por corretor (dia/semana/mês) para download e envio', href: '/dashboard/admin/relatorio-individual' },
       { title: 'Dashboards TV', icon: '📺', description: 'Telas para TV da imobiliária', href: '/dashboard/admin/dashboards-tv' },
     ]
   },
