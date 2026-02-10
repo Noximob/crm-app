@@ -282,38 +282,33 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
             <p className="text-slate-400 text-xs md:text-sm mt-0.5">{subtitulo}</p>
           </div>
         </div>
-        <div className="text-right">
+        <div className="text-right flex flex-col items-end gap-0.5">
           <div className="text-2xl md:text-3xl font-mono font-black tabular-nums text-cyan-400">
             {now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </div>
           <div className="text-xs md:text-sm text-slate-400">
             {now.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
           </div>
+          {mode === 'day' && plantoesHoje.length > 0 && (
+            <div className="mt-0.5 flex flex-wrap justify-end gap-1 text-[10px] md:text-xs text-amber-200">
+              <span className="font-semibold uppercase tracking-widest">Plantão:</span>
+              {plantoesHoje.slice(0, 2).map((s) => (
+                <span key={s.id} className="inline-flex items-center gap-1">
+                  <span className="text-amber-300">{s.corretorResponsavel}</span>
+                  <span className="text-amber-200/70">{s.horario?.slice(0, 5) ?? ''}</span>
+                </span>
+              ))}
+              {plantoesHoje.length > 2 && (
+                <span className="text-amber-300/80 font-medium">+{plantoesHoje.length - 2}</span>
+              )}
+            </div>
+          )}
         </div>
       </header>
 
       <div className="relative flex-1 min-h-0 p-4 md:p-6 flex flex-col overflow-hidden">
         {mode === 'day' && (
-          <div className="h-full w-full flex flex-col gap-4 min-h-0">
-            {/* De plantão hoje — fixo na tela, não some com o tempo */}
-            {plantoesHoje.length > 0 && (
-              <section className="shrink-0 flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold text-orange-400 uppercase tracking-widest mr-2">De plantão hoje</span>
-                {plantoesHoje.map((s) => (
-                  <div
-                    key={s.id}
-                    className="inline-flex items-center gap-2 rounded-xl border-2 border-orange-500 bg-orange-600/40 text-white px-4 py-2 shadow-lg shadow-orange-500/20"
-                  >
-                    <span className="text-xl">🏢</span>
-                    <span className="font-semibold text-sm">{s.construtora}</span>
-                    <span className="text-orange-200 text-sm">—</span>
-                    <span className="text-amber-100 text-sm font-medium">{s.corretorResponsavel}</span>
-                    <span className="text-orange-200 text-xs font-mono">{s.horario?.slice(0, 5) ?? ''}</span>
-                  </div>
-                ))}
-              </section>
-            )}
-
+          <div className="h-full w-full flex flex-col gap-3 min-h-0">
             {/* Parte 1: Eventos do dia em quadrados — só agenda (sem plantão) */}
             <section className="shrink-0">
               <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Eventos do dia</h2>
@@ -333,9 +328,10 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                 }
                 // Janela de atenção: eventos que começam em até 45 minutos
                 const ATENCAO_MS = 45 * 60 * 1000;
+                const itensMostrados = itensFuturos.slice(0, 8);
                 return (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {itensFuturos.map((item, idx) => {
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {itensMostrados.map((item, idx) => {
                       const isAgora = item.startTime <= nowTime && item.fimTime >= nowTime;
                       const emBreve = item.startTime > nowTime && item.startTime - nowTime <= ATENCAO_MS;
                       const destaque = isAgora || emBreve;
@@ -347,7 +343,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                       return (
                         <div
                           key={`${item.tipo}-${item.id}`}
-                          className={`${cardClass} ${destaque ? 'animate-pulse' : ''} p-4 flex flex-col gap-2 min-h-[130px] md:min-h-[150px] relative`}
+                          className={`${cardClass} ${destaque ? 'animate-pulse' : ''} p-4 flex flex-col gap-2 min-h-[110px] md:min-h-[130px] relative`}
                           style={destaque ? { animationDelay: `${idx * 0.3}s` } : undefined}
                         >
                           {isAgora && (
@@ -406,9 +402,10 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                 if (ordenados.length === 0) {
                   return <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-slate-400 text-sm">Nenhum corretor com pendência.</div>;
                 }
+                const visiveis = ordenados.slice(0, 10);
                 return (
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3 flex-1 content-start overflow-auto min-h-0">
-                    {ordenados.map((c) => {
+                  <div className="grid grid-cols-5 lg:grid-cols-10 gap-2 flex-1 content-start overflow-hidden min-h-0">
+                    {visiveis.map((c) => {
                       const isAtrasado = c.status === 'tarefa_atrasada';
                       const isTarefaDia = c.status === 'tarefa_dia';
                       const isSemTarefa = c.status === 'sem_tarefa';
