@@ -197,6 +197,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
   const {
     slotsHoje,
     slotsRestantesHoje,
+    plantoesHoje,
     plantoesRestantesHoje,
     concluidosHoje,
     diasSemana,
@@ -213,6 +214,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
     const plantoesHoje = expandirPlantoesParaSlots(plantoes, hoje, fimHoje, now);
     const plantoesRestantesHoje = plantoesHoje.filter((s) => s.fim.getTime() > now.getTime());
     const concluidosHoje = slotsHoje.length - slotsRestantesHoje.length;
+    const totalRestantesComPlantoes = slotsRestantesHoje.length + plantoesRestantesHoje.length;
 
     const diasSemana: { data: Date; slots: SlotDia[] }[] = [];
     const diasSemanaPlantoes: { data: Date; slots: SlotPlantao[] }[] = [];
@@ -240,7 +242,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
 
     const titulo = mode === 'day' ? 'Agenda do Dia' : 'Agenda da Semana';
     const totalRestantes = mode === 'day'
-      ? slotsRestantesHoje.length + plantoesRestantesHoje.length
+      ? totalRestantesComPlantoes
       : diasSemana.reduce((s, dd) => s + dd.slots.length, 0) + diasSemanaPlantoes.reduce((s, dd) => s + dd.slots.length, 0);
     const subtitulo = mode === 'day'
       ? `${concluidosHoje} concluídos · ${totalRestantes} restantes`
@@ -249,6 +251,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
     return {
       slotsHoje,
       slotsRestantesHoje,
+      plantoesHoje,
       plantoesRestantesHoje,
       concluidosHoje,
       diasSemana,
@@ -292,12 +295,31 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
       <div className="relative flex-1 min-h-0 p-4 md:p-6 flex flex-col overflow-hidden">
         {mode === 'day' && (
           <div className="h-full w-full flex flex-col gap-4 min-h-0">
-            {/* Parte 1: Eventos do dia em quadrados — do que se trata + confirmados */}
+            {/* De plantão hoje — fixo na tela, não some com o tempo */}
+            {plantoesHoje.length > 0 && (
+              <section className="shrink-0 flex flex-wrap items-center gap-2">
+                <span className="text-xs font-bold text-orange-400 uppercase tracking-widest mr-2">De plantão hoje</span>
+                {plantoesHoje.map((s) => (
+                  <div
+                    key={s.id}
+                    className="inline-flex items-center gap-2 rounded-xl border border-orange-400/40 bg-orange-500/15 px-3 py-2"
+                  >
+                    <span className="text-orange-300 text-lg">🏢</span>
+                    <span className="text-white font-medium text-sm">{s.construtora}</span>
+                    <span className="text-slate-400 text-sm">—</span>
+                    <span className="text-amber-200 text-sm">{s.corretorResponsavel}</span>
+                    <span className="text-cyan-400/90 text-xs font-mono">{s.horario?.slice(0, 5) ?? ''}</span>
+                  </div>
+                ))}
+              </section>
+            )}
+
+            {/* Parte 1: Eventos do dia em quadrados — só agenda (sem plantão) */}
             <section className="shrink-0">
               <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Eventos do dia</h2>
               {(() => {
                 const nowTime = now.getTime();
-                const itensFuturos = agendaCorporativaItems.filter((i) => i.fimTime > nowTime);
+                const itensFuturos = agendaCorporativaItems.filter((i) => i.tipo !== 'plantao' && i.fimTime > nowTime);
                 if (itensFuturos.length === 0) {
                   return (
                     <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-slate-400">

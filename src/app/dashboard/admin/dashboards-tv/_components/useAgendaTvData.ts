@@ -191,6 +191,7 @@ export function useAgendaTvData(imobiliariaId: string | undefined) {
           return { id: docSnap.id, nome: (data.nome as string) || (data.email as string) || '', photoURL: data.photoURL as string | undefined };
         });
         setCorretoresList(corretores);
+        setLoading(false);
 
         setCorretoresLoading(true);
         const statusList: CorretorStatusTv[] = [];
@@ -211,16 +212,14 @@ export function useAgendaTvData(imobiliariaId: string | undefined) {
         if (!cancelled) setCorretoresStatus(statusList);
       } catch (e) {
         if (!cancelled) {
+          setLoading(false);
           setEvents([]);
           setPlantoes([]);
           setCorretoresList([]);
           setCorretoresStatus([]);
         }
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-          setCorretoresLoading(false);
-        }
+        if (!cancelled) setCorretoresLoading(false);
       }
     })();
     return () => { cancelled = true; };
