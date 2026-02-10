@@ -329,9 +329,19 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                 // Janela de atenção: eventos que começam em até 45 minutos
                 const ATENCAO_MS = 45 * 60 * 1000;
                 const itensMostrados = itensFuturos.slice(0, 8);
+                const ordenados = [...itensMostrados].sort((a, b) => {
+                  const peso = (x: AgendaCorporativaItemTv) => {
+                    const isAgoraX = x.startTime <= nowTime && x.fimTime >= nowTime;
+                    const emBreveX = x.startTime > nowTime && x.startTime - nowTime <= ATENCAO_MS;
+                    if (isAgoraX) return 0; // vermelho
+                    if (emBreveX) return 1; // amarelo
+                    return 2; // verde
+                  };
+                  return peso(a) - peso(b);
+                });
                 return (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {itensMostrados.map((item, idx) => {
+                    {ordenados.map((item, idx) => {
                       const isAgora = item.startTime <= nowTime && item.fimTime >= nowTime;
                       const emBreve = item.startTime > nowTime && item.startTime - nowTime <= ATENCAO_MS;
                       const destaque = isAgora || emBreve;
@@ -448,7 +458,6 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
               {diasSemana.map(({ data, slots }, idx) => {
                 const isHoje = data.toDateString() === now.toDateString();
                 const totalDia = slots.length;
-                const plantoesDia = diasSemanaPlantoes[idx]?.slots ?? [];
                 return (
                   <div
                     key={data.getTime()}
@@ -462,19 +471,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                       </span>
                       {isHoje && <span className="text-xs bg-cyan-500/30 text-cyan-300 px-2 py-0.5 rounded-full">Hoje</span>}
                     </div>
-                    {plantoesDia.length > 0 && (
-                      <div className="mb-2 pb-2 border-b border-white/10">
-                        <p className="text-xs font-semibold text-orange-400/90 uppercase tracking-wider mb-1">Plantões</p>
-                        {plantoesDia.slice(0, 3).map((s) => (
-                          <div key={s.id} className="text-sm text-slate-200">
-                            <span className="font-mono text-cyan-400/90">{s.horario?.slice(0, 5)}</span>
-                            {' '}{s.construtora} — <span className="text-orange-300 font-medium">{s.corretorResponsavel}</span>
-                          </div>
-                        ))}
-                        {plantoesDia.length > 3 && <p className="text-xs text-slate-500">+{plantoesDia.length - 3} mais</p>}
-                      </div>
-                    )}
-                    {totalDia === 0 && plantoesDia.length === 0 ? (
+                    {totalDia === 0 ? (
                       <p className="text-sm text-slate-500 flex-1">Sem compromissos</p>
                     ) : totalDia > 0 ? (
                       <ul className="space-y-2 flex-1">
