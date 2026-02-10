@@ -363,7 +363,25 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                             <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-amber-400 text-black text-[10px] font-bold uppercase">Em breve</span>
                           )}
                           <p className="font-bold text-white text-sm truncate pr-16" title={item.titulo}>{item.titulo}</p>
-                          <p className={`text-xs ${destaque ? 'text-white/90' : 'text-emerald-200/90'}`}>{item.tipoLabel} · {item.horarioStr}</p>
+                          <div className="flex items-center justify-between mt-0.5 text-[11px]">
+                            <div className="flex items-center gap-1">
+                              <span className="text-sm">
+                                {(() => {
+                                  const key = (item as any).tipoChave as string | undefined;
+                                  return key ? (TIPO_ICON[key] ?? TIPO_ICON.outro) : TIPO_ICON.outro;
+                                })()}
+                              </span>
+                              <span className={`${destaque ? 'text-white/90' : 'text-emerald-200/90'}`}>{item.tipoLabel}</span>
+                            </div>
+                            <span className="text-emerald-100/90 font-mono">
+                              {item.horarioStr}–{new Date(item.fimTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          {item.local && (
+                            <p className="text-[10px] text-slate-300 truncate mt-0.5">
+                              {item.local}
+                            </p>
+                          )}
                           {item.confirmados && item.confirmados.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 mt-1">
                               {item.confirmados.slice(0, 5).map((c, i) => (

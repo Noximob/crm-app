@@ -31,10 +31,12 @@ export interface AgendaCorporativaItemTv {
   id: string;
   titulo: string;
   tipoLabel: string;
+  tipoChave?: string;
   dataStr: string;
   horarioStr: string;
   startTime: number;
   fimTime: number;
+  local?: string;
   confirmados: { nome: string; photoURL?: string }[];
 }
 
@@ -256,6 +258,7 @@ export function useAgendaTvData(
         horarioStr: horario,
         startTime,
         fimTime,
+        local: p.construtora,
         confirmados,
       });
     });
@@ -279,6 +282,8 @@ export function useAgendaTvData(
         horarioStr: dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
         startTime,
         fimTime,
+        tipoChave: ev.tipo,
+        local: ev.local,
         confirmados,
       });
     });
