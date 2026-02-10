@@ -381,7 +381,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
               })()}
             </section>
 
-            {/* Parte 2: Cards dos corretores — ordem: atraso, tarefa dia, +24h sem CRM; sem_tarefa não aparece */}
+            {/* Parte 2: Cards dos corretores — ordem: atraso, tarefa dia, sem tarefa, +24h sem CRM */}
             <section className="flex-1 min-h-0 flex flex-col">
               <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 shrink-0">Corretores</h2>
               {corretoresStatusLoading ? (
@@ -393,14 +393,15 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                       return 0;
                     case 'tarefa_dia':
                       return 1;
-                    case 'sem_uso_24h':
+                    case 'sem_tarefa':
                       return 2;
-                    default:
+                    case 'sem_uso_24h':
                       return 3;
+                    default:
+                      return 4;
                   }
                 };
                 const ordenados = [...corretoresStatus]
-                  .filter((c) => c.status !== 'sem_tarefa')
                   .sort((a, b) => pesoStatus(a.status) - pesoStatus(b.status));
                 if (ordenados.length === 0) {
                   return <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-slate-400 text-sm">Nenhum corretor com pendência.</div>;
@@ -410,12 +411,15 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                     {ordenados.map((c) => {
                       const isAtrasado = c.status === 'tarefa_atrasada';
                       const isTarefaDia = c.status === 'tarefa_dia';
+                      const isSemTarefa = c.status === 'sem_tarefa';
                       const isSemUso24h = c.status === 'sem_uso_24h';
                       const borderClass = isAtrasado
                         ? 'border-2 border-red-500/80 bg-red-500/10'
                         : isTarefaDia
                           ? 'border-2 border-amber-400/80 bg-amber-500/10'
-                          : 'border-2 border-slate-500/70 bg-slate-600/40 text-slate-300';
+                          : isSemTarefa
+                            ? 'border-2 border-emerald-400/80 bg-emerald-500/10'
+                            : 'border-2 border-slate-500/70 bg-slate-600/40 text-slate-300';
                       return (
                         <div
                           key={c.id}
@@ -427,9 +431,10 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold shrink-0">{c.nome?.charAt(0) ?? '?'}</div>
                           )}
                           <p className="text-xs font-medium truncate w-full" title={c.nome}>{c.nome}</p>
-                          {isAtrasado && <span className="text-[10px] text-red-300 font-medium">Lead atrasado</span>}
-                          {isTarefaDia && <span className="text-[10px] text-amber-300 font-medium">Tarefa hoje</span>}
-                          {isSemUso24h && <span className="text-[10px] text-slate-400 font-medium">+1 dia sem usar CRM</span>}
+                          {isAtrasado && <span className="text-[10px] text-red-300 font-medium">Tarefa atrasada</span>}
+                          {isTarefaDia && <span className="text-[10px] text-amber-300 font-medium">Tarefa do dia</span>}
+                          {isSemTarefa && <span className="text-[10px] text-emerald-200 font-medium">Sem tarefa</span>}
+                          {isSemUso24h && <span className="text-[10px] text-slate-400 font-medium">+24h sem usar CRM</span>}
                         </div>
                       );
                     })}

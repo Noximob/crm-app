@@ -42,6 +42,7 @@ export default function TvPage() {
   const [config, setConfig] = useState<SlideConfig[]>([]);
   const [agendaFraseSemana, setAgendaFraseSemana] = useState('');
   const [corretoresVisiveisIds, setCorretoresVisiveisIds] = useState<string[]>([]);
+  const [corretoresStatusTv, setCorretoresStatusTv] = useState<Record<string, 'tarefa_atrasada' | 'tarefa_dia' | 'sem_tarefa'>>({});
   const [selecaoNox, setSelecaoNox] = useState<{ imoveis: ImovelSelecaoNox[]; fraseRolante: string }>({ imoveis: [], fraseRolante: '' });
   const [unidadesData, setUnidadesData] = useState<UnidadesSelecaoData>({ selecoes: [] });
   const [noticiaSemana, setNoticiaSemana] = useState<NoticiaSemanaData>({ titulo: '', imageUrl: '' });
@@ -50,7 +51,7 @@ export default function TvPage() {
   const imobiliariaId = userData?.imobiliariaId;
   const funilData = useFunilVendasData(imobiliariaId ?? undefined, corretoresVisiveisIds);
   const metasData = useMetasResultadosData(imobiliariaId ?? undefined);
-  const agendaTvData = useAgendaTvData(imobiliariaId ?? undefined, corretoresVisiveisIds);
+  const agendaTvData = useAgendaTvData(imobiliariaId ?? undefined, corretoresVisiveisIds, corretoresStatusTv);
 
   useEffect(() => {
     if (!imobiliariaId) {
@@ -65,6 +66,9 @@ export default function TvPage() {
         setAgendaFraseSemana(data.agendaFraseSemana ?? '');
         if (Array.isArray(data.corretoresVisiveisIds)) {
           setCorretoresVisiveisIds(data.corretoresVisiveisIds as string[]);
+        }
+        if (data.corretoresStatusTv && typeof data.corretoresStatusTv === 'object') {
+          setCorretoresStatusTv(data.corretoresStatusTv as Record<string, 'tarefa_atrasada' | 'tarefa_dia' | 'sem_tarefa'>);
         }
         if (Array.isArray(data.slides)) {
           const raw = data.slides as SlideConfig[];

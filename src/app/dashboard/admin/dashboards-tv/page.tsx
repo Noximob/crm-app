@@ -105,11 +105,12 @@ export default function DashboardsTvPage() {
   const [previewAgenda, setPreviewAgenda] = useState<'day' | 'week' | null>(null);
   const [agendaFraseSemana, setAgendaFraseSemana] = useState('');
   const [corretoresVisiveisIds, setCorretoresVisiveisIds] = useState<string[]>([]);
+  const [corretoresStatusTv, setCorretoresStatusTv] = useState<Record<string, 'tarefa_atrasada' | 'tarefa_dia' | 'sem_tarefa'>>({});
   const [listaCorretores, setListaCorretores] = useState<{ id: string; nome: string }[]>([]);
   const imobiliariaId = userData?.imobiliariaId;
   const funilData = useFunilVendasData(imobiliariaId ?? undefined, corretoresVisiveisIds);
   const metasData = useMetasResultadosData(imobiliariaId ?? undefined);
-  const agendaTvData = useAgendaTvData(imobiliariaId ?? undefined, corretoresVisiveisIds);
+  const agendaTvData = useAgendaTvData(imobiliariaId ?? undefined, corretoresVisiveisIds, corretoresStatusTv);
   useEffect(() => {
     if (!imobiliariaId) {
       setLoading(false);
@@ -123,6 +124,9 @@ export default function DashboardsTvPage() {
         setAgendaFraseSemana(data.agendaFraseSemana ?? '');
         if (Array.isArray(data.corretoresVisiveisIds)) {
           setCorretoresVisiveisIds(data.corretoresVisiveisIds as string[]);
+        }
+        if (data.corretoresStatusTv && typeof data.corretoresStatusTv === 'object') {
+          setCorretoresStatusTv(data.corretoresStatusTv as Record<string, 'tarefa_atrasada' | 'tarefa_dia' | 'sem_tarefa'>);
         }
         if (Array.isArray(data.slides)) {
         const raw = data.slides as SlideConfig[];
@@ -211,7 +215,16 @@ export default function DashboardsTvPage() {
     setSaving(true);
     setMsg(null);
     try {
-      await setDoc(doc(db, 'dashboardsTvConfig', imobiliariaId), { slides, agendaFraseSemana: agendaFraseSemana || null, corretoresVisiveisIds: corretoresVisiveisIds.length ? corretoresVisiveisIds : null }, { merge: true });
+      await setDoc(
+        doc(db, 'dashboardsTvConfig', imobiliariaId),
+        {
+          slides,
+          agendaFraseSemana: agendaFraseSemana || null,
+          corretoresVisiveisIds: corretoresVisiveisIds.length ? corretoresVisiveisIds : null,
+          corretoresStatusTv: Object.keys(corretoresStatusTv).length ? corretoresStatusTv : null,
+        },
+        { merge: true }
+      );
       setMsg('Configuração salva!');
       setTimeout(() => setMsg(null), 3000);
     } catch (e) {
@@ -525,6 +538,37 @@ export default function DashboardsTvPage() {
                 })}
               </div>
               {listaCorretores.length === 0 && <p className="text-sm text-[#6B6F76] dark:text-gray-400">Nenhum usuário encontrado.</p>}
+            </div>
+
+            {/* Status manual dos corretores na TV */}
+            <div className="p-4 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#23283A]">
+              <h3 className="font-semibold text-[#2E2F38] dark:text-white mb-1">Status dos corretores na TV</h3>
+              <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-3">
+                Defina manualmente se cada corretor está com tarefa atrasada, tarefa do dia ou sem tarefa. O status de <strong>+24h sem usar CRM</strong> é calculado automaticamente.
+              </p>
+              <div className="space-y-2 max-h-80 overflow-auto pr-1">
+                {(corretoresVisiveisIds.length ? listaCorretores.filter((c) => corretoresVisiveisIds.includes(c.id)) : listaCorretores).map(
+                  (c) => (
+                    <div key={c.id} className="flex items-center justify-between gap-3">
+                      <span className="text-sm text-[#2E2F38] dark:text-white truncate">{c.nome}</span>
+                      <select
+                        value={corretoresStatusTv[c.id] ?? 'sem_tarefa'}
+                        onChange={(e) =>
+                          setCorretoresStatusTv((prev) => ({
+                            ...prev,
+                            [c.id]: e.target.value as 'tarefa_atrasada' | 'tarefa_dia' | 'sem_tarefa',
+                          }))
+                        }
+                        className="text-xs px-2 py-1 rounded-md border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                      >
+                        <option value="tarefa_atrasada">Tarefa atrasada</option>
+                        <option value="tarefa_dia">Tarefa do dia</option>
+                        <option value="sem_tarefa">Sem tarefa</option>
+                      </select>
+                    </div>
+                  )
+                )}
+              </div>
             </div>
 
             {/* Frase da semana — 8º quadrado da Agenda da Semana na TV */}
