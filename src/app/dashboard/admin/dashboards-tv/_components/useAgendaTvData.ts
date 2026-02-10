@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, query, where, limit, Timestamp } from 'firebase/firestore';
 
 export interface AgendaEventoTv {
   id: string;
@@ -89,25 +89,39 @@ function parseDate(v: unknown): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
-function getTaskStatus(tasks: { dueDate: Timestamp | Date }[]): CorretorStatusTv['status'] {
-  if (tasks.length === 0) return 'sem_tarefa';
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const hasOverdue = tasks.some((t) => {
-    const d = t.dueDate instanceof Timestamp ? t.dueDate.toDate() : new Date(t.dueDate);
-    d.setHours(0, 0, 0, 0);
-    return d < now;
-  });
-  if (hasOverdue) return 'tarefa_atrasada';
-  const hasToday = tasks.some((t) => {
-    const d = t.dueDate instanceof Timestamp ? t.dueDate.toDate() : new Date(t.dueDate);
-    d.setHours(0, 0, 0, 0);
-    return d.getTime() === now.getTime();
-  });
-  return hasToday ? 'tarefa_dia' : 'sem_tarefa';
+const todayStartForStatus = () => startOfDay(new Date());
+const todayEndForStatus = () => endOfDay(new Date());
+
+/** Retorna status com o mínimo de leituras: para ao achar 1 atrasada ou 1 tarefa do dia. */
+async function getCorretorStatusMinimal(
+  corretorId: string,
+  lastActiveAt: unknown,
+  ONE_DAY_MS: number,
+  isCancelled: () => boolean
+): Promise<CorretorStatusTv['status']> {
+  const todayStart = todayStartForStatus();
+  const todayEnd = todayEndForStatus();
+  const todayStartTs = Timestamp.fromDate(todayStart);
+  const todayEndTs = Timestamp.fromDate(todayEnd);
+  const snapLeads = await getDocs(query(collection(db, 'leads'), where('userId', '==', corretorId)));
+  for (const leadDoc of snapLeads.docs) {
+    if (isCancelled()) return 'sem_tarefa';
+    const tarefasRef = collection(db, 'leads', leadDoc.id, 'tarefas');
+    const atrasada = await getDocs(query(tarefasRef, where('status', '==', 'pendente'), where('dueDate', '<', todayStartTs), limit(1)));
+    if (atrasada.size > 0) return 'tarefa_atrasada';
+    const hoje = await getDocs(query(tarefasRef, where('status', '==', 'pendente'), where('dueDate', '>=', todayStartTs), where('dueDate', '<=', todayEndTs), limit(1)));
+    if (hoje.size > 0) return 'tarefa_dia';
+  }
+  if (lastActiveAt) {
+    const ms = typeof (lastActiveAt as { toDate?: () => Date }).toDate === 'function'
+      ? (lastActiveAt as { toDate: () => Date }).toDate().getTime()
+      : new Date(lastActiveAt as Date).getTime();
+    if (Date.now() - ms > ONE_DAY_MS) return 'sem_uso_24h';
+  }
+  return 'sem_tarefa';
 }
 
-export function useAgendaTvData(imobiliariaId: string | undefined) {
+export function useAgendaTvData(imobiliariaId: string | undefined, corretoresVisiveisIds?: string[]) {
   const [events, setEvents] = useState<AgendaEventoTv[]>([]);
   const [plantoes, setPlantoes] = useState<PlantaoTv[]>([]);
   const [corretoresList, setCorretoresList] = useState<{ id: string; nome: string; photoURL?: string }[]>([]);
@@ -123,6 +137,8 @@ export function useAgendaTvData(imobiliariaId: string | undefined) {
       return;
     }
     let cancelled = false;
+    const isCancelled = () => cancelled;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
     setLoading(true);
     const start = startOfDay(new Date());
     const end = endOfWeek(new Date());
@@ -187,7 +203,7 @@ export function useAgendaTvData(imobiliariaId: string | undefined) {
         );
         const snapUsuarios = await getDocs(qUsuarios);
         if (cancelled) return;
-        const corretores = snapUsuarios.docs.map((docSnap) => {
+        let corretores = snapUsuarios.docs.map((docSnap) => {
           const data = docSnap.data();
           const lastActiveAt = data.lastActiveAt ?? data.ultimoAcesso ?? null;
           return {
@@ -197,6 +213,10 @@ export function useAgendaTvData(imobiliariaId: string | undefined) {
             lastActiveAt: lastActiveAt && typeof lastActiveAt.toDate === 'function' ? lastActiveAt : lastActiveAt,
           };
         });
+        if (corretoresVisiveisIds?.length) {
+          const set = new Set(corretoresVisiveisIds);
+          corretores = corretores.filter((c) => set.has(c.id));
+        }
         setCorretoresList(corretores.map(({ id, nome, photoURL }) => ({ id, nome, photoURL })));
         setLoading(false);
 
@@ -205,27 +225,50 @@ export function useAgendaTvData(imobiliariaId: string | undefined) {
         const statusResults = await Promise.all(
           corretores.map(async (c) => {
             if (cancelled) return null;
-            const snapLeads = await getDocs(query(collection(db, 'leads'), where('userId', '==', c.id)));
-            const allTasks: { dueDate: Timestamp }[] = [];
-            for (const leadDoc of snapLeads.docs) {
-              const snapTasks = await getDocs(query(collection(db, 'leads', leadDoc.id, 'tarefas'), where('status', '==', 'pendente')));
-              snapTasks.docs.forEach((t) => {
-                const due = t.data().dueDate;
-                if (due) allTasks.push({ dueDate: due as Timestamp });
-              });
-            }
-            let status = getTaskStatus(allTasks);
-            if (status === 'sem_tarefa' && c.lastActiveAt) {
-              const ms = typeof c.lastActiveAt.toDate === 'function'
-                ? (c.lastActiveAt as { toDate: () => Date }).toDate().getTime()
-                : new Date(c.lastActiveAt as Date).getTime();
-              if (Date.now() - ms > ONE_DAY_MS) status = 'sem_uso_24h';
-            }
+            const status = await getCorretorStatusMinimal(c.id, c.lastActiveAt, ONE_DAY_MS, isCancelled);
             return { id: c.id, nome: c.nome, photoURL: c.photoURL, status } as CorretorStatusTv;
           })
         );
         const statusList = statusResults.filter((r): r is CorretorStatusTv => r != null);
         if (!cancelled) setCorretoresStatus(statusList);
+
+        const refetchStatus = async () => {
+          if (cancelled) return;
+          try {
+            const snapUsuarios2 = await getDocs(qUsuarios);
+            if (cancelled) return;
+            let corretores2 = snapUsuarios2.docs.map((docSnap) => {
+              const data = docSnap.data();
+              const lastActiveAt = data.lastActiveAt ?? data.ultimoAcesso ?? null;
+              return {
+                id: docSnap.id,
+                nome: (data.nome as string) || (data.email as string) || '',
+                photoURL: data.photoURL as string | undefined,
+                lastActiveAt: lastActiveAt && typeof lastActiveAt.toDate === 'function' ? lastActiveAt : lastActiveAt,
+              };
+            });
+            if (corretoresVisiveisIds?.length) {
+              const set = new Set(corretoresVisiveisIds);
+              corretores2 = corretores2.filter((c) => set.has(c.id));
+            }
+            if (cancelled) return;
+            setCorretoresList(corretores2.map(({ id, nome, photoURL }) => ({ id, nome, photoURL })));
+            const results = await Promise.all(
+              corretores2.map(async (c) => {
+                if (cancelled) return null;
+                const status = await getCorretorStatusMinimal(c.id, c.lastActiveAt, ONE_DAY_MS, isCancelled);
+                return { id: c.id, nome: c.nome, photoURL: c.photoURL, status } as CorretorStatusTv;
+              })
+            );
+            const list = results.filter((r): r is CorretorStatusTv => r != null);
+            if (!cancelled) setCorretoresStatus(list);
+          } catch {
+            // silencioso no refetch
+          }
+        };
+
+        const intervalMs = 30 * 60 * 1000;
+        intervalId = setInterval(refetchStatus, intervalMs);
       } catch (e) {
         if (!cancelled) {
           setLoading(false);
@@ -238,8 +281,11 @@ export function useAgendaTvData(imobiliariaId: string | undefined) {
         if (!cancelled) setCorretoresLoading(false);
       }
     })();
-    return () => { cancelled = true; };
-  }, [imobiliariaId]);
+    return () => {
+      cancelled = true;
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [imobiliariaId, corretoresVisiveisIds?.join(',')]);
 
   const agendaCorporativaItems = useMemo(() => {
     const hojeStr = new Date().toISOString().slice(0, 10);

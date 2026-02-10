@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db, storage } from '@/lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { AgendaTvSlide } from './_components/AgendaTvSlide';
 import { FunilVendasIndividualSlide } from './_components/FunilVendasIndividualSlide';
@@ -104,10 +104,12 @@ export default function DashboardsTvPage() {
   const [previewMetas, setPreviewMetas] = useState(false);
   const [previewAgenda, setPreviewAgenda] = useState<'day' | 'week' | null>(null);
   const [agendaFraseSemana, setAgendaFraseSemana] = useState('');
+  const [corretoresVisiveisIds, setCorretoresVisiveisIds] = useState<string[]>([]);
+  const [listaCorretores, setListaCorretores] = useState<{ id: string; nome: string }[]>([]);
   const imobiliariaId = userData?.imobiliariaId;
-  const funilData = useFunilVendasData(imobiliariaId ?? undefined);
+  const funilData = useFunilVendasData(imobiliariaId ?? undefined, corretoresVisiveisIds);
   const metasData = useMetasResultadosData(imobiliariaId ?? undefined);
-  const agendaTvData = useAgendaTvData(imobiliariaId ?? undefined);
+  const agendaTvData = useAgendaTvData(imobiliariaId ?? undefined, corretoresVisiveisIds);
   useEffect(() => {
     if (!imobiliariaId) {
       setLoading(false);
@@ -119,6 +121,9 @@ export default function DashboardsTvPage() {
       if (snap.exists()) {
         const data = snap.data()!;
         setAgendaFraseSemana(data.agendaFraseSemana ?? '');
+        if (Array.isArray(data.corretoresVisiveisIds)) {
+          setCorretoresVisiveisIds(data.corretoresVisiveisIds as string[]);
+        }
         if (Array.isArray(data.slides)) {
         const raw = data.slides as SlideConfig[];
         const migrated = raw.map(s => s.id === 'unidades-selecao' ? { ...s, id: 'unidades-selecao-0' as const, name: 'Seleção Nox 1 - Unidades' } : s);
@@ -173,6 +178,13 @@ export default function DashboardsTvPage() {
         const d = snapNoticia.data()!;
         setNoticiaSemana({ titulo: d.titulo ?? '', imageUrl: d.imageUrl ?? '' });
       }
+      const qUsuarios = query(
+        collection(db, 'usuarios'),
+        where('imobiliariaId', '==', imobiliariaId),
+        where('tipoConta', 'in', ['corretor-vinculado', 'corretor-autonomo', 'imobiliaria'])
+      );
+      const snapUsuarios = await getDocs(qUsuarios);
+      setListaCorretores(snapUsuarios.docs.map((d) => ({ id: d.id, nome: (d.data().nome as string) || d.data().email || 'Sem nome' })));
       setLoading(false);
     };
     load();
@@ -199,7 +211,7 @@ export default function DashboardsTvPage() {
     setSaving(true);
     setMsg(null);
     try {
-      await setDoc(doc(db, 'dashboardsTvConfig', imobiliariaId), { slides, agendaFraseSemana: agendaFraseSemana || null }, { merge: true });
+      await setDoc(doc(db, 'dashboardsTvConfig', imobiliariaId), { slides, agendaFraseSemana: agendaFraseSemana || null, corretoresVisiveisIds: corretoresVisiveisIds.length ? corretoresVisiveisIds : null }, { merge: true });
       setMsg('Configuração salva!');
       setTimeout(() => setMsg(null), 3000);
     } catch (e) {
@@ -485,6 +497,35 @@ export default function DashboardsTvPage() {
                 </div>
               </div>
             ))}
+
+            {/* Corretores visíveis na TV — Agenda do Dia (cards) e Funil de Vendas */}
+            <div className="p-4 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#23283A]">
+              <h3 className="font-semibold text-[#2E2F38] dark:text-white mb-1">Corretores visíveis na TV</h3>
+              <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-3">
+                Quem aparece nos cards da Agenda do Dia e no Funil de Vendas. Deixe todos desmarcados para mostrar todos; marque só quem usa CRM/leads.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {listaCorretores.map((c) => {
+                  const checked = corretoresVisiveisIds.includes(c.id);
+                  return (
+                    <label key={c.id} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          setCorretoresVisiveisIds((prev) =>
+                            prev.includes(c.id) ? prev.filter((id) => id !== c.id) : [...prev, c.id]
+                          );
+                        }}
+                        className="w-4 h-4 rounded border-[#3478F6] text-[#3478F6] focus:ring-[#3478F6]"
+                      />
+                      <span className="text-sm text-[#2E2F38] dark:text-white">{c.nome}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              {listaCorretores.length === 0 && <p className="text-sm text-[#6B6F76] dark:text-gray-400">Nenhum usuário encontrado.</p>}
+            </div>
 
             {/* Frase da semana — 8º quadrado da Agenda da Semana na TV */}
             <div className="p-4 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#23283A]">

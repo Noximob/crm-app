@@ -41,15 +41,16 @@ export default function TvPage() {
   const { userData } = useAuth();
   const [config, setConfig] = useState<SlideConfig[]>([]);
   const [agendaFraseSemana, setAgendaFraseSemana] = useState('');
+  const [corretoresVisiveisIds, setCorretoresVisiveisIds] = useState<string[]>([]);
   const [selecaoNox, setSelecaoNox] = useState<{ imoveis: ImovelSelecaoNox[]; fraseRolante: string }>({ imoveis: [], fraseRolante: '' });
   const [unidadesData, setUnidadesData] = useState<UnidadesSelecaoData>({ selecoes: [] });
   const [noticiaSemana, setNoticiaSemana] = useState<NoticiaSemanaData>({ titulo: '', imageUrl: '' });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  const funilData = useFunilVendasData(userData?.imobiliariaId ?? undefined);
-  const metasData = useMetasResultadosData(userData?.imobiliariaId ?? undefined);
-  const agendaTvData = useAgendaTvData(userData?.imobiliariaId ?? undefined);
   const imobiliariaId = userData?.imobiliariaId;
+  const funilData = useFunilVendasData(imobiliariaId ?? undefined, corretoresVisiveisIds);
+  const metasData = useMetasResultadosData(imobiliariaId ?? undefined);
+  const agendaTvData = useAgendaTvData(imobiliariaId ?? undefined, corretoresVisiveisIds);
 
   useEffect(() => {
     if (!imobiliariaId) {
@@ -62,6 +63,9 @@ export default function TvPage() {
       if (snap.exists()) {
         const data = snap.data()!;
         setAgendaFraseSemana(data.agendaFraseSemana ?? '');
+        if (Array.isArray(data.corretoresVisiveisIds)) {
+          setCorretoresVisiveisIds(data.corretoresVisiveisIds as string[]);
+        }
         if (Array.isArray(data.slides)) {
           const raw = data.slides as SlideConfig[];
           const slides = raw

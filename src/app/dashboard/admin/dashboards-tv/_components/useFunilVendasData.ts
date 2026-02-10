@@ -41,7 +41,7 @@ function normalizeEtapa(etapa: string | undefined): string {
   return PIPELINE_STAGES[0];
 }
 
-export function useFunilVendasData(imobiliariaId: string | undefined): FunilVendasData {
+export function useFunilVendasData(imobiliariaId: string | undefined, corretoresVisiveisIds?: string[]): FunilVendasData {
   const [leads, setLeads] = useState<LeadFunil[]>([]);
   const [corretores, setCorretores] = useState<CorretorFunil[]>([]);
   const [loading, setLoading] = useState(!!imobiliariaId);
@@ -88,22 +88,26 @@ export function useFunilVendasData(imobiliariaId: string | undefined): FunilVend
   }, [imobiliariaId]);
 
   return useMemo(() => {
+    const setVisiveis = corretoresVisiveisIds?.length ? new Set(corretoresVisiveisIds) : null;
+    const leadsFiltrados = setVisiveis ? leads.filter((l) => l.userId && setVisiveis.has(l.userId)) : leads;
+    const corretoresFiltrados = setVisiveis ? corretores.filter((c) => setVisiveis.has(c.id)) : corretores;
+
     const funilCorporativo: FunilPorEtapa = {};
     PIPELINE_STAGES.forEach((e) => { funilCorporativo[e] = 0; });
-    leads.forEach((l) => {
+    leadsFiltrados.forEach((l) => {
       const etapa = normalizeEtapa(l.etapa);
       funilCorporativo[etapa] = (funilCorporativo[etapa] || 0) + 1;
     });
 
-    const totalCorporativo = leads.length;
+    const totalCorporativo = leadsFiltrados.length;
 
     const porCorretorMap = new Map<string, FunilPorEtapa>();
-    corretores.forEach((c) => {
+    corretoresFiltrados.forEach((c) => {
       const porEtapa: FunilPorEtapa = {};
       PIPELINE_STAGES.forEach((e) => { porEtapa[e] = 0; });
       porCorretorMap.set(c.id, porEtapa);
     });
-    leads.forEach((l) => {
+    leadsFiltrados.forEach((l) => {
       const uid = l.userId;
       if (!uid) return;
       let porEtapa = porCorretorMap.get(uid);
@@ -118,7 +122,7 @@ export function useFunilVendasData(imobiliariaId: string | undefined): FunilVend
       }
     });
 
-    const funilPorCorretor: FunilCorretor[] = corretores
+    const funilPorCorretor: FunilCorretor[] = corretoresFiltrados
       .map((c) => {
         const porEtapa = porCorretorMap.get(c.id) || {};
         const total = Object.values(porEtapa).reduce((a, b) => a + b, 0);
@@ -134,5 +138,5 @@ export function useFunilVendasData(imobiliariaId: string | undefined): FunilVend
       loading,
       error,
     };
-  }, [leads, corretores, loading, error]);
+  }, [leads, corretores, loading, error, corretoresVisiveisIds?.join(',')]);
 }

@@ -331,78 +331,98 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                     </div>
                   );
                 }
+                const THIRTY_MIN_MS = 30 * 60 * 1000;
                 return (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {itensFuturos.map((item) => (
-                      <div
-                        key={`${item.tipo}-${item.id}`}
-                        className="rounded-xl border-2 border-cyan-500/30 bg-gradient-to-br from-cyan-500/15 to-violet-500/10 p-4 flex flex-col gap-2 min-h-[100px]"
-                      >
-                        <p className="font-bold text-white text-sm truncate" title={item.titulo}>{item.titulo}</p>
-                        <p className="text-xs text-cyan-300/90">{item.tipoLabel} · {item.horarioStr}</p>
-                        {item.confirmados && item.confirmados.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-1">
-                            {item.confirmados.slice(0, 5).map((c, i) => (
-                              <div key={i} className="flex items-center gap-1">
-                                {c.photoURL ? (
-                                  <img src={c.photoURL} alt="" className="w-6 h-6 rounded-full object-cover border border-white/20" />
-                                ) : (
-                                  <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-bold">{c.nome?.charAt(0) ?? '?'}</span>
-                                )}
-                                <span className="text-[10px] text-slate-300 truncate max-w-[60px]">{c.nome}</span>
-                              </div>
-                            ))}
-                            {item.confirmados.length > 5 && <span className="text-[10px] text-slate-500">+{item.confirmados.length - 5}</span>}
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                    {itensFuturos.map((item) => {
+                      const isAgora = item.startTime <= nowTime && item.fimTime >= nowTime;
+                      const em30min = item.startTime > nowTime && item.startTime - nowTime <= THIRTY_MIN_MS;
+                      const destaque = isAgora || em30min;
+                      const cardClass = destaque
+                        ? isAgora
+                          ? 'rounded-xl border-2 border-emerald-400 bg-emerald-500/25 shadow-lg shadow-emerald-500/30 ring-2 ring-emerald-400/50'
+                          : 'rounded-xl border-2 border-amber-400 bg-amber-500/20 shadow-lg shadow-amber-500/25 ring-2 ring-amber-400/50'
+                        : 'rounded-xl border-2 border-cyan-500/30 bg-gradient-to-br from-cyan-500/15 to-violet-500/10';
+                      return (
+                        <div
+                          key={`${item.tipo}-${item.id}`}
+                          className={`${cardClass} p-4 flex flex-col gap-2 min-h-[100px] relative`}
+                        >
+                          {isAgora && (
+                            <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-emerald-500 text-white text-[10px] font-bold uppercase animate-pulse">Agora</span>
+                          )}
+                          {em30min && !isAgora && (
+                            <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-amber-500 text-black text-[10px] font-bold uppercase">Em 30 min</span>
+                          )}
+                          <p className="font-bold text-white text-sm truncate pr-16" title={item.titulo}>{item.titulo}</p>
+                          <p className={`text-xs ${destaque ? 'text-white/90' : 'text-cyan-300/90'}`}>{item.tipoLabel} · {item.horarioStr}</p>
+                          {item.confirmados && item.confirmados.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mt-1">
+                              {item.confirmados.slice(0, 5).map((c, i) => (
+                                <div key={i} className="flex items-center gap-1">
+                                  {c.photoURL ? (
+                                    <img src={c.photoURL} alt="" className="w-6 h-6 rounded-full object-cover border border-white/20" />
+                                  ) : (
+                                    <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-bold">{c.nome?.charAt(0) ?? '?'}</span>
+                                  )}
+                                  <span className="text-[10px] text-slate-300 truncate max-w-[60px]">{c.nome}</span>
+                                </div>
+                              ))}
+                              {item.confirmados.length > 5 && <span className="text-[10px] text-slate-500">+{item.confirmados.length - 5}</span>}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })()}
             </section>
 
-            {/* Parte 2: Cards dos corretores — vermelho atrasado, amarelo tarefa hoje, cinza sem tarefa */}
+            {/* Parte 2: Cards dos corretores — ordem: atraso, tarefa dia, +24h sem CRM; sem_tarefa não aparece */}
             <section className="flex-1 min-h-0 flex flex-col">
               <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 shrink-0">Corretores</h2>
               {corretoresStatusLoading ? (
                 <div className="flex-1 flex items-center justify-center text-slate-400">Carregando...</div>
-              ) : corretoresStatus.length === 0 ? (
-                <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-slate-400 text-sm">Nenhum corretor.</div>
-              ) : (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3 flex-1 content-start overflow-auto min-h-0">
-                  {corretoresStatus.map((c) => {
-                    const isAtrasado = c.status === 'tarefa_atrasada';
-                    const isTarefaDia = c.status === 'tarefa_dia';
-                    const isSemUso24h = c.status === 'sem_uso_24h';
-                    const isSemTarefa = c.status === 'sem_tarefa';
-                    const borderClass = isAtrasado
-                      ? 'border-2 border-red-500/80 bg-red-500/10'
-                      : isTarefaDia
-                        ? 'border-2 border-amber-400/80 bg-amber-500/10'
-                        : isSemUso24h
-                          ? 'border-2 border-slate-500/70 bg-slate-600/40 text-slate-300'
-                          : 'border-2 border-slate-500/60 bg-slate-600/30 text-slate-300';
-                    return (
-                      <div
-                        key={c.id}
-                        className={`rounded-xl p-3 flex flex-col items-center gap-1.5 text-center min-w-0 ${borderClass}`}
-                      >
-                        {c.photoURL ? (
-                          <img src={c.photoURL} alt="" className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-white/20 shrink-0" />
-                        ) : (
-                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold shrink-0">{c.nome?.charAt(0) ?? '?'}</div>
-                        )}
-                        <p className="text-xs font-medium truncate w-full" title={c.nome}>{c.nome}</p>
-                        {isAtrasado && <span className="text-[10px] text-red-300 font-medium">Lead atrasado</span>}
-                        {isTarefaDia && <span className="text-[10px] text-amber-300 font-medium">Tarefa hoje</span>}
-                        {isSemUso24h && <span className="text-[10px] text-slate-400 font-medium">+1 dia sem usar CRM</span>}
-                        {isSemTarefa && !isSemUso24h && <span className="text-[10px] text-slate-400">Sem tarefa</span>}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              ) : (() => {
+                const ordem = ['tarefa_atrasada', 'tarefa_dia', 'sem_uso_24h'] as const;
+                const ordenados = [...corretoresStatus]
+                  .filter((c) => c.status !== 'sem_tarefa')
+                  .sort((a, b) => ordem.indexOf(a.status) - ordem.indexOf(b.status));
+                if (ordenados.length === 0) {
+                  return <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-slate-400 text-sm">Nenhum corretor com pendência.</div>;
+                }
+                return (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3 flex-1 content-start overflow-auto min-h-0">
+                    {ordenados.map((c) => {
+                      const isAtrasado = c.status === 'tarefa_atrasada';
+                      const isTarefaDia = c.status === 'tarefa_dia';
+                      const isSemUso24h = c.status === 'sem_uso_24h';
+                      const borderClass = isAtrasado
+                        ? 'border-2 border-red-500/80 bg-red-500/10'
+                        : isTarefaDia
+                          ? 'border-2 border-amber-400/80 bg-amber-500/10'
+                          : 'border-2 border-slate-500/70 bg-slate-600/40 text-slate-300';
+                      return (
+                        <div
+                          key={c.id}
+                          className={`rounded-xl p-3 flex flex-col items-center gap-1.5 text-center min-w-0 ${borderClass}`}
+                        >
+                          {c.photoURL ? (
+                            <img src={c.photoURL} alt="" className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-white/20 shrink-0" />
+                          ) : (
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold shrink-0">{c.nome?.charAt(0) ?? '?'}</div>
+                          )}
+                          <p className="text-xs font-medium truncate w-full" title={c.nome}>{c.nome}</p>
+                          {isAtrasado && <span className="text-[10px] text-red-300 font-medium">Lead atrasado</span>}
+                          {isTarefaDia && <span className="text-[10px] text-amber-300 font-medium">Tarefa hoje</span>}
+                          {isSemUso24h && <span className="text-[10px] text-slate-400 font-medium">+1 dia sem usar CRM</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </section>
           </div>
         )}
