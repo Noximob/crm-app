@@ -215,7 +215,8 @@ export function useAgendaTvData(imobiliariaId: string | undefined, corretoresVis
         });
         if (corretoresVisiveisIds?.length) {
           const set = new Set(corretoresVisiveisIds);
-          corretores = corretores.filter((c) => set.has(c.id));
+          const filtrados = corretores.filter((c) => set.has(c.id));
+          corretores = filtrados.length > 0 ? filtrados : corretores;
         }
         setCorretoresList(corretores.map(({ id, nome, photoURL }) => ({ id, nome, photoURL })));
         setLoading(false);
@@ -249,7 +250,8 @@ export function useAgendaTvData(imobiliariaId: string | undefined, corretoresVis
             });
             if (corretoresVisiveisIds?.length) {
               const set = new Set(corretoresVisiveisIds);
-              corretores2 = corretores2.filter((c) => set.has(c.id));
+              const filtrados2 = corretores2.filter((c) => set.has(c.id));
+              corretores2 = filtrados2.length > 0 ? filtrados2 : corretores2;
             }
             if (cancelled) return;
             setCorretoresList(corretores2.map(({ id, nome, photoURL }) => ({ id, nome, photoURL })));

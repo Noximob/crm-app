@@ -181,7 +181,7 @@ export default function DashboardsTvPage() {
       const qUsuarios = query(
         collection(db, 'usuarios'),
         where('imobiliariaId', '==', imobiliariaId),
-        where('tipoConta', 'in', ['corretor-vinculado', 'corretor-autonomo', 'imobiliaria'])
+        where('tipoConta', 'in', ['corretor-vinculado', 'corretor-autonomo'])
       );
       const snapUsuarios = await getDocs(qUsuarios);
       setListaCorretores(snapUsuarios.docs.map((d) => ({ id: d.id, nome: (d.data().nome as string) || d.data().email || 'Sem nome' })));
