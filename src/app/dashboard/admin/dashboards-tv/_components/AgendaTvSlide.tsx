@@ -341,9 +341,9 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                       const destaque = isAgora || emBreve;
                       const cardClass = destaque
                         ? isAgora
-                          ? 'rounded-xl border-2 border-emerald-400 bg-emerald-500/30 shadow-xl shadow-emerald-500/40 ring-2 ring-emerald-400/70'
+                          ? 'rounded-xl border-2 border-red-500 bg-red-600/30 shadow-xl shadow-red-500/40 ring-2 ring-red-500/70'
                           : 'rounded-xl border-2 border-amber-400 bg-amber-500/25 shadow-xl shadow-amber-500/40 ring-2 ring-amber-400/70'
-                        : 'rounded-xl border-2 border-cyan-500/30 bg-gradient-to-br from-cyan-500/15 to-violet-500/10';
+                        : 'rounded-xl border-2 border-emerald-400 bg-emerald-500/20';
                       return (
                         <div
                           key={`${item.tipo}-${item.id}`}
@@ -351,13 +351,13 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                           style={destaque ? { animationDelay: `${idx * 0.3}s` } : undefined}
                         >
                           {isAgora && (
-                            <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-emerald-500 text-white text-[10px] font-bold uppercase animate-pulse">Agora</span>
+                            <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-red-500 text-white text-[10px] font-bold uppercase animate-pulse">Agora</span>
                           )}
                           {emBreve && !isAgora && (
-                            <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-amber-500 text-black text-[10px] font-bold uppercase">Em 30 min</span>
+                            <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-amber-400 text-black text-[10px] font-bold uppercase">Em 30 min</span>
                           )}
                           <p className="font-bold text-white text-sm truncate pr-16" title={item.titulo}>{item.titulo}</p>
-                          <p className={`text-xs ${destaque ? 'text-white/90' : 'text-cyan-300/90'}`}>{item.tipoLabel} · {item.horarioStr}</p>
+                          <p className={`text-xs ${destaque ? 'text-white/90' : 'text-emerald-200/90'}`}>{item.tipoLabel} · {item.horarioStr}</p>
                           {item.confirmados && item.confirmados.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 mt-1">
                               {item.confirmados.slice(0, 5).map((c, i) => (
