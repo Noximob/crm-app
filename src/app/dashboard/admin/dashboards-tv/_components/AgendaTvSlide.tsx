@@ -290,16 +290,30 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
             {now.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
           </div>
           {mode === 'day' && plantoesHoje.length > 0 && (
-            <div className="mt-0.5 flex flex-wrap justify-end gap-1 text-[10px] md:text-xs text-amber-200">
-              <span className="font-semibold uppercase tracking-widest">Plantão:</span>
-              {plantoesHoje.slice(0, 2).map((s) => (
-                <span key={s.id} className="inline-flex items-center gap-1">
-                  <span className="text-amber-300">{s.corretorResponsavel}</span>
-                  <span className="text-amber-200/70">{s.horario?.slice(0, 5) ?? ''}</span>
-                </span>
+            <div className="mt-1 flex flex-wrap justify-end gap-1.5">
+              {plantoesHoje.slice(0, 3).map((s) => (
+                <div
+                  key={s.id}
+                  className="px-2 py-1 rounded-lg border border-orange-400/70 bg-orange-500/25 text-[10px] md:text-xs text-amber-100 flex flex-col items-end shadow-sm shadow-orange-500/30"
+                >
+                  <span className="uppercase tracking-widest text-[9px] md:text-[10px] text-orange-200 font-semibold">
+                    Plantão
+                  </span>
+                  <span className="font-semibold">{s.corretorResponsavel || 'Sem responsável'}</span>
+                  <span className="text-amber-100/90 font-mono">
+                    {s.horario?.slice(0, 5) ?? ''}
+                  </span>
+                  {s.construtora && (
+                    <span className="text-amber-100/80 truncate max-w-[140px]">
+                      {s.construtora}
+                    </span>
+                  )}
+                </div>
               ))}
-              {plantoesHoje.length > 2 && (
-                <span className="text-amber-300/80 font-medium">+{plantoesHoje.length - 2}</span>
+              {plantoesHoje.length > 3 && (
+                <span className="text-amber-200 text-[10px] md:text-xs font-medium self-end">
+                  +{plantoesHoje.length - 3}
+                </span>
               )}
             </div>
           )}
@@ -379,7 +393,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                           </div>
                           {item.local && (
                             <p className="text-[10px] text-slate-300 truncate mt-0.5">
-                              {item.local}
+                              Local: {item.local}
                             </p>
                           )}
                           {item.confirmados && item.confirmados.length > 0 && (
