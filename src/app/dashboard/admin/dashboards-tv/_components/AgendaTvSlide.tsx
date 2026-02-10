@@ -354,7 +354,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                             <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-red-500 text-white text-[10px] font-bold uppercase animate-pulse">Agora</span>
                           )}
                           {emBreve && !isAgora && (
-                            <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-amber-400 text-black text-[10px] font-bold uppercase">Em 30 min</span>
+                            <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-amber-400 text-black text-[10px] font-bold uppercase">Em breve</span>
                           )}
                           <p className="font-bold text-white text-sm truncate pr-16" title={item.titulo}>{item.titulo}</p>
                           <p className={`text-xs ${destaque ? 'text-white/90' : 'text-emerald-200/90'}`}>{item.tipoLabel} · {item.horarioStr}</p>
