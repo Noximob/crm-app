@@ -385,10 +385,21 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
               {corretoresStatusLoading ? (
                 <div className="flex-1 flex items-center justify-center text-slate-400">Carregando...</div>
               ) : (() => {
-                const ordem = ['tarefa_atrasada', 'tarefa_dia', 'sem_uso_24h'] as const;
+                const pesoStatus = (s: CorretorStatusTv['status']) => {
+                  switch (s) {
+                    case 'tarefa_atrasada':
+                      return 0;
+                    case 'tarefa_dia':
+                      return 1;
+                    case 'sem_uso_24h':
+                      return 2;
+                    default:
+                      return 3;
+                  }
+                };
                 const ordenados = [...corretoresStatus]
                   .filter((c) => c.status !== 'sem_tarefa')
-                  .sort((a, b) => ordem.indexOf(a.status) - ordem.indexOf(b.status));
+                  .sort((a, b) => pesoStatus(a.status) - pesoStatus(b.status));
                 if (ordenados.length === 0) {
                   return <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-slate-400 text-sm">Nenhum corretor com pendência.</div>;
                 }
