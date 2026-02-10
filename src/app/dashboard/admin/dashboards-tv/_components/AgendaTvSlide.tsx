@@ -331,27 +331,29 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                     </div>
                   );
                 }
-                const THIRTY_MIN_MS = 30 * 60 * 1000;
+                // Janela de atenção: eventos que começam em até 45 minutos
+                const ATENCAO_MS = 45 * 60 * 1000;
                 return (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {itensFuturos.map((item) => {
+                    {itensFuturos.map((item, idx) => {
                       const isAgora = item.startTime <= nowTime && item.fimTime >= nowTime;
-                      const em30min = item.startTime > nowTime && item.startTime - nowTime <= THIRTY_MIN_MS;
-                      const destaque = isAgora || em30min;
+                      const emBreve = item.startTime > nowTime && item.startTime - nowTime <= ATENCAO_MS;
+                      const destaque = isAgora || emBreve;
                       const cardClass = destaque
                         ? isAgora
-                          ? 'rounded-xl border-2 border-emerald-400 bg-emerald-500/25 shadow-lg shadow-emerald-500/30 ring-2 ring-emerald-400/50'
-                          : 'rounded-xl border-2 border-amber-400 bg-amber-500/20 shadow-lg shadow-amber-500/25 ring-2 ring-amber-400/50'
+                          ? 'rounded-xl border-2 border-emerald-400 bg-emerald-500/30 shadow-xl shadow-emerald-500/40 ring-2 ring-emerald-400/70'
+                          : 'rounded-xl border-2 border-amber-400 bg-amber-500/25 shadow-xl shadow-amber-500/40 ring-2 ring-amber-400/70'
                         : 'rounded-xl border-2 border-cyan-500/30 bg-gradient-to-br from-cyan-500/15 to-violet-500/10';
                       return (
                         <div
                           key={`${item.tipo}-${item.id}`}
-                          className={`${cardClass} p-4 flex flex-col gap-2 min-h-[100px] relative`}
+                          className={`${cardClass} ${destaque ? 'animate-pulse' : ''} p-4 flex flex-col gap-2 min-h-[100px] relative`}
+                          style={destaque ? { animationDelay: `${idx * 0.3}s` } : undefined}
                         >
                           {isAgora && (
                             <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-emerald-500 text-white text-[10px] font-bold uppercase animate-pulse">Agora</span>
                           )}
-                          {em30min && !isAgora && (
+                          {emBreve && !isAgora && (
                             <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-amber-500 text-black text-[10px] font-bold uppercase">Em 30 min</span>
                           )}
                           <p className="font-bold text-white text-sm truncate pr-16" title={item.titulo}>{item.titulo}</p>
