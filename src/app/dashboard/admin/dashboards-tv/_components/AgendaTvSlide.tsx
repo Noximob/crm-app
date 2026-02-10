@@ -270,23 +270,23 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
       <div className="absolute inset-0 bg-gradient-to-br from-violet-950/20 via-[#0c0f1a] to-cyan-950/10 pointer-events-none" />
       <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '28px 28px' }} />
 
-      <header className="relative shrink-0 flex items-center justify-between gap-4 py-5 px-6 border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-2xl shadow-lg shadow-amber-500/25">
+      <header className="relative shrink-0 flex items-center justify-between gap-3 py-3 px-4 border-b border-white/10">
+        <div className="flex items-center gap-2">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-xl shadow-lg shadow-amber-500/25">
             📋
           </div>
           <div>
-            <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-white to-slate-200 bg-clip-text text-transparent">
+            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-white to-slate-200 bg-clip-text text-transparent">
               {titulo}
             </h1>
-            <p className="text-slate-400 text-sm md:text-base mt-0.5">{subtitulo}</p>
+            <p className="text-slate-400 text-xs md:text-sm mt-0.5">{subtitulo}</p>
           </div>
         </div>
         <div className="text-right">
-          <div className="text-3xl md:text-4xl font-mono font-black tabular-nums text-cyan-400">
+          <div className="text-2xl md:text-3xl font-mono font-black tabular-nums text-cyan-400">
             {now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </div>
-          <div className="text-sm text-slate-400">
+          <div className="text-xs md:text-sm text-slate-400">
             {now.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
           </div>
         </div>
@@ -347,7 +347,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                       return (
                         <div
                           key={`${item.tipo}-${item.id}`}
-                          className={`${cardClass} ${destaque ? 'animate-pulse' : ''} p-4 flex flex-col gap-2 min-h-[100px] relative`}
+                          className={`${cardClass} ${destaque ? 'animate-pulse' : ''} p-4 flex flex-col gap-2 min-h-[130px] md:min-h-[150px] relative`}
                           style={destaque ? { animationDelay: `${idx * 0.3}s` } : undefined}
                         >
                           {isAgora && (
@@ -367,7 +367,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                                   ) : (
                                     <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-bold">{c.nome?.charAt(0) ?? '?'}</span>
                                   )}
-                                  <span className="text-[10px] text-slate-300 truncate max-w-[60px]">{c.nome}</span>
+                                  <span className="text-[10px] text-slate-300 truncate max-w-[70px]">{(c.nome || '').split(' ')[0]}</span>
                                 </div>
                               ))}
                               {item.confirmados.length > 5 && <span className="text-[10px] text-slate-500">+{item.confirmados.length - 5}</span>}
