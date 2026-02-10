@@ -89,35 +89,54 @@ function parseDate(v: unknown): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
-const todayStartForStatus = () => startOfDay(new Date());
-const todayEndForStatus = () => endOfDay(new Date());
-
-/** Retorna status com o mínimo de leituras: para ao achar 1 atrasada ou 1 tarefa do dia. */
+/** Calcula status do corretor lendo tarefas pendentes e avaliando datas em memória. */
 async function getCorretorStatusMinimal(
   corretorId: string,
   lastActiveAt: unknown,
   ONE_DAY_MS: number,
   isCancelled: () => boolean
 ): Promise<CorretorStatusTv['status']> {
-  const todayStart = todayStartForStatus();
-  const todayEnd = todayEndForStatus();
-  const todayStartTs = Timestamp.fromDate(todayStart);
-  const todayEndTs = Timestamp.fromDate(todayEnd);
-  const snapLeads = await getDocs(query(collection(db, 'leads'), where('userId', '==', corretorId)));
+  const snapLeads = await getDocs(
+    query(collection(db, 'leads'), where('userId', '==', corretorId))
+  );
+  const tasks: { dueDate: Timestamp | Date }[] = [];
   for (const leadDoc of snapLeads.docs) {
     if (isCancelled()) return 'sem_tarefa';
-    const tarefasRef = collection(db, 'leads', leadDoc.id, 'tarefas');
-    const atrasada = await getDocs(query(tarefasRef, where('status', '==', 'pendente'), where('dueDate', '<', todayStartTs), limit(1)));
-    if (atrasada.size > 0) return 'tarefa_atrasada';
-    const hoje = await getDocs(query(tarefasRef, where('status', '==', 'pendente'), where('dueDate', '>=', todayStartTs), where('dueDate', '<=', todayEndTs), limit(1)));
-    if (hoje.size > 0) return 'tarefa_dia';
+    const snapTasks = await getDocs(
+      query(collection(db, 'leads', leadDoc.id, 'tarefas'), where('status', '==', 'pendente'))
+    );
+    snapTasks.docs.forEach((t) => {
+      const due = t.data().dueDate;
+      if (due) tasks.push({ dueDate: due as Timestamp });
+    });
   }
+
+  // Mesma lógica antiga: se tiver atrasada ganha do resto; depois tarefa do dia.
+  if (tasks.length > 0) {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const hasOverdue = tasks.some((t) => {
+      const d = t.dueDate instanceof Timestamp ? t.dueDate.toDate() : new Date(t.dueDate);
+      d.setHours(0, 0, 0, 0);
+      return d < hoje;
+    });
+    if (hasOverdue) return 'tarefa_atrasada';
+
+    const hasToday = tasks.some((t) => {
+      const d = t.dueDate instanceof Timestamp ? t.dueDate.toDate() : new Date(t.dueDate);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime() === hoje.getTime();
+    });
+    if (hasToday) return 'tarefa_dia';
+  }
+
   if (lastActiveAt) {
     const ms = typeof (lastActiveAt as { toDate?: () => Date }).toDate === 'function'
       ? (lastActiveAt as { toDate: () => Date }).toDate().getTime()
       : new Date(lastActiveAt as Date).getTime();
     if (Date.now() - ms > ONE_DAY_MS) return 'sem_uso_24h';
   }
+
   return 'sem_tarefa';
 }
 
