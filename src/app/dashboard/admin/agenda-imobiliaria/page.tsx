@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where, orderBy, Timestamp } from 'firebase/firestore';
@@ -32,6 +32,7 @@ export default function AgendaImobiliariaAdminPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<AgendaImobiliaria | null>(null);
+  const [filtroData, setFiltroData] = useState<string>(''); // YYYY-MM-DD para filtrar por dia
   
   const [formData, setFormData] = useState({
     titulo: '',
@@ -176,6 +177,20 @@ export default function AgendaImobiliariaAdminPage() {
     });
     setEditingEvent(null);
   };
+
+  const agendaFiltrada = useMemo(() => {
+    if (!filtroData) return agenda;
+    const inicio = new Date(filtroData);
+    inicio.setHours(0, 0, 0, 0);
+    const fim = new Date(filtroData);
+    fim.setHours(23, 59, 59, 999);
+    return agenda.filter((event) => {
+      const di = event.dataInicio?.toDate ? event.dataInicio.toDate() : event.data?.toDate ? event.data.toDate() : null;
+      if (!di) return false;
+      const t = di.getTime();
+      return t >= inicio.getTime() && t <= fim.getTime();
+    });
+  }, [agenda, filtroData]);
 
   const getTipoIcon = (tipo: string) => {
     switch (tipo) {
@@ -408,9 +423,39 @@ export default function AgendaImobiliariaAdminPage() {
         {/* Lista de Eventos */}
         <div className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] shadow-sm">
           <div className="p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
-            <h2 className="text-xl font-semibold text-[#2E2F38] dark:text-white">
-              Eventos Agendados ({agenda.length})
-            </h2>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <h2 className="text-xl font-semibold text-[#2E2F38] dark:text-white">
+                Eventos Agendados ({agendaFiltrada.length})
+              </h2>
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <label className="flex items-center gap-2 text-[#6B6F76] dark:text-gray-300">
+                  <span>Filtrar por dia:</span>
+                  <input
+                    type="date"
+                    value={filtroData}
+                    onChange={(e) => setFiltroData(e.target.value)}
+                    className="px-2 py-1 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-xs md:text-sm text-[#2E2F38] dark:text-white"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const hojeIso = new Date().toISOString().slice(0, 10);
+                    setFiltroData(hojeIso);
+                  }}
+                  className="px-2 py-1 rounded-lg border border-purple-500 text-purple-600 text-xs md:text-sm hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                >
+                  Hoje
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFiltroData('')}
+                  className="px-2 py-1 rounded-lg border border-gray-400 text-gray-600 dark:text-gray-300 text-xs md:text-sm hover:bg-gray-50 dark:hover:bg-gray-800/40"
+                >
+                  Limpar filtro
+                </button>
+              </div>
+            </div>
           </div>
 
           {loading ? (
@@ -418,7 +463,7 @@ export default function AgendaImobiliariaAdminPage() {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
               <p className="text-[#6B6F76] dark:text-gray-300">Carregando eventos...</p>
             </div>
-          ) : agenda.length === 0 ? (
+          ) : agendaFiltrada.length === 0 ? (
             <div className="p-12 text-center">
               <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -434,7 +479,7 @@ export default function AgendaImobiliariaAdminPage() {
             </div>
           ) : (
             <div className="divide-y divide-[#E8E9F1] dark:divide-[#23283A]">
-              {agenda.map((event) => (
+              {agendaFiltrada.map((event) => (
                 <div key={event.id} className="p-6 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
