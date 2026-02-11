@@ -154,11 +154,11 @@ export default function AndamentoPage() {
     };
 
     return (
-        <div className="min-h-full min-w-0 p-4 sm:p-6 lg:p-8">
+        <div className="flex flex-col min-h-0 flex-1 min-w-0">
             <CrmHeader />
-            <main className="flex flex-col gap-4 mt-4 min-w-0">
-                <div className="bg-white dark:bg-[#23283A] p-4 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] min-w-0 overflow-hidden">
-                    <div className="mb-4">
+            <main className="flex flex-col flex-1 min-h-0 gap-4 mt-4 min-w-0">
+                <div className="flex flex-col flex-1 min-h-0 bg-white dark:bg-[#23283A] p-4 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] min-w-0 overflow-hidden">
+                    <div className="shrink-0 mb-4">
                         <SectionTitle>Andamento dos Leads</SectionTitle>
                     </div>
                     
@@ -171,7 +171,7 @@ export default function AndamentoPage() {
                             onDragStart={handleDragStart}
                             onDragEnd={handleDragEnd}
                         >
-                            <div className="flex gap-6 overflow-x-auto overflow-y-visible pb-4 min-h-0 w-full max-w-full">
+                            <div className="flex gap-6 flex-1 min-h-0 overflow-x-auto overflow-y-auto w-full max-w-full pb-4">
                                 {PIPELINE_STAGES.map(stage => (
                                     <KanbanColumn 
                                         key={stage} 
