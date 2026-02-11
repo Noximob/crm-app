@@ -8,10 +8,10 @@ import { NotificationProvider } from "@/context/NotificationContext";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "CRM Imobiliário - Você já vendeu hoje?",
-  description: "Sistema de CRM completo para corretores imobiliários. Gerencie seus leads, imóveis e automações em um só lugar.",
-  keywords: "CRM, imobiliária, corretores, leads, automação, vendas",
-  authors: [{ name: "CRM Imobiliário" }],
+  title: "Alumma — Soluções para imobiliárias de alta performance",
+  description: "CRM que une corretores, metas, dashboards para TV e relatórios. Para imobiliárias que não param.",
+  keywords: "CRM, imobiliária, corretores, leads, metas, dashboards TV, Alumma",
+  authors: [{ name: "Alumma" }],
   robots: "index, follow",
 };
 
