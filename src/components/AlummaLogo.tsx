@@ -11,6 +11,7 @@ import React from 'react';
  * - alumma + dark  → Só nome "ALUMMA" em fundo escuro
  * - alumma + light → Só nome "ALUMMA" em fundo claro
  */
+// Legado (PNGs antigos) — mantido só como fallback.
 const LOGOS = {
   a:      { dark: '/logo/logo-a-dark.png', light: '/logo/logo-a-white.png' },
   alumma: { dark: '/logo/logo-alumma-dark.png', light: '/logo/logo-alumma-white.png' },
@@ -29,7 +30,36 @@ interface AlummaLogoProps {
 }
 
 export function AlummaLogo({ variant = 'full', theme = 'dark', className = '', width, height }: AlummaLogoProps) {
-  const src = LOGOS[variant][theme];
+  // Altura base aproximada para manter proporção parecida com os PNGs antigos
+  const effectiveHeight =
+    height ?? (width ? Math.round(width * 0.3) : 32);
+
+  // Novo padrão: usar sempre o SVG inline que é o mesmo do frame do dashboard
+  if (variant === 'full') {
+    return (
+      <AlummaLogoFullInline
+        theme={theme}
+        height={effectiveHeight}
+        className={className}
+      />
+    );
+  }
+
+  // Variante só com o ícone "A"
+  if (variant === 'a') {
+    return (
+      <AlummaLogoFullInline
+        theme={theme}
+        height={effectiveHeight}
+        className={className}
+        iconOnly
+      />
+    );
+  }
+
+  // Fallback para variantes antigas (ex.: "alumma") — usa PNG legado
+  const table = LOGOS[variant] ?? LOGOS.full;
+  const src = table[theme];
   return (
     <img
       src={src}
