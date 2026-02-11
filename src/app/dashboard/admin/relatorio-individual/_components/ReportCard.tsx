@@ -2,7 +2,7 @@
 
 import React from 'react';
 import type { RelatorioIndividualData, ReportMetric } from '../_lib/reportData';
-import { PIPELINE_STAGES } from '@/lib/constants';
+import { REPORT_FUNIL_ETAPAS } from '../_lib/reportData';
 
 const AlumeLogo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -95,58 +95,69 @@ export default function ReportCard({ data }: { data: RelatorioIndividualData }) 
             </div>
           </div>
           <div className="rounded-xl border border-gray-200 overflow-hidden">
-            <p className="text-xs font-semibold text-gray-500 bg-gray-50 px-4 py-2 border-b">Leads por etapa</p>
+            <p className="text-xs font-semibold text-gray-500 bg-gray-50 px-4 py-2 border-b">Leads por etapa (Topo de Funil → Troca de Leads)</p>
             <div className="divide-y divide-gray-100">
-              {PIPELINE_STAGES.filter((e) => (data.leadsPorEtapa[e] ?? 0) > 0).map((etapa) => (
+              {REPORT_FUNIL_ETAPAS.filter((e) => (data.leadsPorEtapa[e] ?? 0) > 0).map((etapa) => (
                 <div key={etapa} className="flex items-center justify-between px-4 py-2">
                   <span className="text-sm text-gray-700 truncate max-w-[320px]">{etapa}</span>
                   <span className="text-sm font-bold text-[#3478F6]">{data.leadsPorEtapa[etapa] ?? 0}</span>
                 </div>
               ))}
-              {Object.keys(data.leadsPorEtapa).every((e) => (data.leadsPorEtapa[e] ?? 0) === 0) && (
+              {REPORT_FUNIL_ETAPAS.every((e) => (data.leadsPorEtapa[e] ?? 0) === 0) && (
                 <p className="px-4 py-3 text-sm text-gray-400">Nenhum lead nas etapas do funil.</p>
               )}
             </div>
           </div>
         </section>
 
-        {/* 2. Tarefas e produtividade */}
+        {/* 2. Tarefas: do dia, atrasado, futuro, sem tarefa */}
         <section>
           <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="w-1 h-4 rounded bg-[#3478F6]" />
-            Tarefas e produtividade
+            Tarefas do dia · Atrasado · Futuro · Sem tarefa
           </h2>
-          <div className="grid grid-cols-4 gap-4">
-            <div className="bg-gray-50 rounded-xl p-4">
-              <p className="text-xs text-gray-500 font-medium">Pendentes</p>
-              <p className="text-2xl font-bold text-gray-900">{data.tarefasPendentes}</p>
+          <div className="grid grid-cols-4 gap-4 mb-4">
+            <div className="bg-blue-50 rounded-xl p-4">
+              <p className="text-xs text-blue-700 font-medium">Do dia</p>
+              <p className="text-2xl font-bold text-blue-900">{data.tarefasDoDia}</p>
             </div>
             <div className="bg-amber-50 rounded-xl p-4">
-              <p className="text-xs text-amber-700 font-medium">Atrasadas</p>
+              <p className="text-xs text-amber-700 font-medium">Atrasado</p>
               <p className="text-2xl font-bold text-amber-800">{data.tarefasAtrasadas}</p>
             </div>
             <div className="bg-gray-50 rounded-xl p-4">
+              <p className="text-xs text-gray-500 font-medium">Futuro</p>
+              <p className="text-2xl font-bold text-gray-900">{data.tarefasFuturas}</p>
+            </div>
+            <div className="bg-slate-100 rounded-xl p-4">
+              <p className="text-xs text-slate-600 font-medium">Sem tarefa</p>
+              <p className="text-2xl font-bold text-slate-800">{data.semTarefa}</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">leads sem tarefa pendente</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-gray-50 rounded-xl p-4">
               <p className="text-xs text-gray-500 font-medium">Concluídas no período</p>
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-gray-900">{data.tarefasConcluidasPeriodo.valor}</span>
+                <span className="text-xl font-bold text-gray-900">{data.tarefasConcluidasPeriodo.valor}</span>
                 <VariacaoBadge m={data.tarefasConcluidasPeriodo} />
               </div>
             </div>
             <div className="bg-gray-50 rounded-xl p-4">
               <p className="text-xs text-gray-500 font-medium">Interações no período</p>
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-gray-900">{data.interacoesPeriodo.valor}</span>
+                <span className="text-xl font-bold text-gray-900">{data.interacoesPeriodo.valor}</span>
                 <VariacaoBadge m={data.interacoesPeriodo} />
               </div>
             </div>
           </div>
         </section>
 
-        {/* 3. Uso do tempo (eventos) */}
+        {/* 3. Uso do tempo: Reunião, Evento, Treinamento, Revisar CRM, Ligação Ativa, Ação de Rua, Disparo de mensagem, Plantão */}
         <section>
           <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="w-1 h-4 rounded bg-[#3478F6]" />
-            Uso do tempo · Eventos e plantões
+            Uso do tempo · Reunião · Evento · Treinamento · Revisar CRM · Ligação Ativa · Ação de Rua · Disparo de mensagem · Plantão
           </h2>
           <div className="flex items-center gap-4 mb-4">
             <div className="bg-indigo-50 rounded-xl px-5 py-3">
@@ -162,10 +173,11 @@ export default function ReportCard({ data }: { data: RelatorioIndividualData }) 
               <p className="text-xs font-semibold text-gray-500 bg-gray-50 px-4 py-2 border-b">Eventos em que participou</p>
               <div className="divide-y divide-gray-100 max-h-40 overflow-y-auto">
                 {data.eventosParticipados.map((ev, i) => (
-                  <div key={i} className="flex items-center justify-between px-4 py-2 text-sm">
-                    <span className="text-gray-700">{ev.titulo}</span>
-                    <span className="text-gray-500">{ev.data}</span>
-                    <span className="font-semibold text-indigo-600">{ev.horas}h</span>
+                  <div key={i} className="flex items-center justify-between gap-2 px-4 py-2 text-sm">
+                    <span className="text-gray-700 truncate flex-1">{ev.titulo}</span>
+                    <span className="text-[10px] font-medium text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded shrink-0">{ev.tipo}</span>
+                    <span className="text-gray-500 shrink-0">{ev.data}</span>
+                    <span className="font-semibold text-indigo-600 shrink-0">{ev.horas}h</span>
                   </div>
                 ))}
               </div>
@@ -175,7 +187,45 @@ export default function ReportCard({ data }: { data: RelatorioIndividualData }) 
           )}
         </section>
 
-        {/* 4. Metas e resultado */}
+        {/* 4. Desempenho semana a semana (só no período mês) */}
+        {data.periodo === 'mes' && data.desempenhoPorSemana?.length > 0 && (
+          <section>
+            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <span className="w-1 h-4 rounded bg-[#3478F6]" />
+              Ações no mês · Desempenho semana a semana
+            </h2>
+            <div className="rounded-xl border border-gray-200 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    <th className="text-left px-4 py-2 font-semibold text-gray-600">Semana</th>
+                    <th className="text-right px-2 py-2 font-semibold text-gray-600">Período</th>
+                    <th className="text-right px-2 py-2 font-semibold text-gray-600">Novos leads</th>
+                    <th className="text-right px-2 py-2 font-semibold text-gray-600">Tarefas concl.</th>
+                    <th className="text-right px-2 py-2 font-semibold text-gray-600">Interações</th>
+                    <th className="text-right px-2 py-2 font-semibold text-gray-600">Contrib. (R$)</th>
+                    <th className="text-right px-4 py-2 font-semibold text-gray-600">Horas eventos</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.desempenhoPorSemana.map((s) => (
+                    <tr key={s.semana} className="border-b border-gray-100 hover:bg-gray-50/50">
+                      <td className="px-4 py-2 font-medium text-gray-900">Semana {s.semana}</td>
+                      <td className="text-right px-2 py-2 text-gray-600">{s.dataInicio} a {s.dataFim}</td>
+                      <td className="text-right px-2 py-2">{s.novosLeads}</td>
+                      <td className="text-right px-2 py-2">{s.tarefasConcluidas}</td>
+                      <td className="text-right px-2 py-2">{s.interacoes}</td>
+                      <td className="text-right px-2 py-2">{formatCurrency(s.valorContribuicoes)}</td>
+                      <td className="text-right px-4 py-2">{s.horasEventos}h</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {/* Metas e resultado */}
         <section>
           <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="w-1 h-4 rounded bg-[#3478F6]" />
