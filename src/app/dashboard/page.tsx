@@ -130,7 +130,7 @@ const MetricCard = ({ title, value, change, icon: Icon, trend = 'up' }: {
 
 // Substituir EconomicIndicator por um componente mais simples, sem variação
 const SimpleIndicator = ({ title, value }: { title: string; value: string }) => (
-  <div className="flex flex-col items-center justify-center p-3 bg-gradient-to-r from-[#3478F6]/5 to-[#A3C8F7]/5 rounded-lg border border-[#A3C8F7]/20 min-w-[120px] animate-slide-in">
+  <div className="flex flex-col items-center justify-center p-3 bg-gradient-to-r from-[#F59E0B]/5 to-[#FCD34D]/5 rounded-lg border border-[#FCD34D]/20 min-w-[120px] animate-slide-in">
     <div className="text-xs text-[#6B6F76] dark:text-gray-300 mb-1">{title}</div>
     <div className="text-lg font-bold text-[#2E2F38] dark:text-white">{value}</div>
   </div>
@@ -206,7 +206,7 @@ const RankingItem = ({ position, name, sales, avatar, rating }: {
 const SectionTitle = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
   <div className={`relative ${className}`}>
     <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white relative z-10">{children}</h2>
-    <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-[#3478F6] to-[#A3C8F7] rounded-r-full opacity-60"></div>
+    <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-[#F59E0B] to-[#FCD34D] rounded-r-full opacity-60"></div>
   </div>
 );
 
@@ -224,7 +224,7 @@ const getPriorityColor = (priority: string) => {
   switch (priority) {
     case 'Urgente': return 'bg-red-500 text-white';
     case 'Importante': return 'bg-orange-500 text-white';
-    case 'Circunstancial': return 'bg-blue-500 text-white';
+    case 'Circunstancial': return 'bg-amber-500 text-white';
     default: return 'bg-gray-500 text-white';
   }
 };
@@ -249,7 +249,7 @@ const statusInfo = {
   'Tarefa em Atraso': { color: 'bg-red-500', text: 'Em Atraso' },
   'Tarefa do Dia': { color: 'bg-yellow-500', text: 'Para Hoje' },
   'Sem tarefa': { color: 'bg-gray-500', text: 'Sem Tarefa' },
-  'Tarefa Futura': { color: 'bg-blue-500', text: 'Futura' }
+  'Tarefa Futura': { color: 'bg-amber-500', text: 'Futura' }
 };
 function getTaskStatusInfo(tasks: Task[]): TaskStatus {
   if (tasks.length === 0) return 'Sem tarefa';
@@ -307,9 +307,9 @@ const MetasCard = ({ meta, nomeImobiliaria }: { meta: any, nomeImobiliaria: stri
       };
     } else {
       return {
-        barra: 'from-[#A3C8F7] to-[#3478F6]',
-        percentual: 'text-[#3478F6]',
-        percentualBg: 'bg-[#3478F6]/10'
+        barra: 'from-[#FCD34D] to-[#F59E0B]',
+        percentual: 'text-[#F59E0B]',
+        percentualBg: 'bg-[#F59E0B]/10'
       };
     }
   };
@@ -317,19 +317,19 @@ const MetasCard = ({ meta, nomeImobiliaria }: { meta: any, nomeImobiliaria: stri
   const colors = getProgressColors();
 
   return (
-    <div className="flex flex-col gap-3 p-6 rounded-2xl shadow-xl bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 min-h-[200px] relative overflow-hidden">
+    <div className="flex flex-col gap-3 p-6 rounded-2xl shadow-xl bg-gradient-to-br from-[#FCD34D]/30 to-[#F59E0B]/10 border-2 border-[#F59E0B]/20 min-h-[200px] relative overflow-hidden">
       {/* Borda azul à esquerda */}
-      <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]" />
+      <div className="absolute top-0 left-0 w-1 h-full bg-[#F59E0B]" />
       {/* Header */}
       <div className="flex items-center gap-2 mb-1">
-        <svg className="h-6 w-6 text-[#3478F6]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <svg className="h-6 w-6 text-[#F59E0B]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
         <span className="font-bold text-white text-lg tracking-tight">Metas</span>
         {nomeImobiliaria && (
-          <span className="ml-2 px-2 py-0.5 rounded bg-[#3478F6]/10 text-[#3478F6] text-xs font-semibold">{nomeImobiliaria}</span>
+          <span className="ml-2 px-2 py-0.5 rounded bg-[#F59E0B]/10 text-[#F59E0B] text-xs font-semibold">{nomeImobiliaria}</span>
         )}
       </div>
       {/* Datas (mesmo formato do admin, sem deslocamento por fuso) */}
-      <div className="flex items-center gap-2 text-xs text-[#A3C8F7] mb-2">
+      <div className="flex items-center gap-2 text-xs text-[#FCD34D] mb-2">
         <span className="font-semibold">Início:</span>
         <span className="text-white">{formatMetaDate(meta?.inicio)}</span>
         <span>|</span>
@@ -339,12 +339,12 @@ const MetasCard = ({ meta, nomeImobiliaria }: { meta: any, nomeImobiliaria: stri
       {/* Valores principais */}
       <div className="flex items-center justify-between mb-1">
         <div className="flex flex-col">
-          <span className="text-xs text-[#A3C8F7]">VGV da Meta</span>
-          <span className="text-xl font-bold text-[#3478F6]">{meta?.valor ? meta.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}</span>
+          <span className="text-xs text-[#FCD34D]">VGV da Meta</span>
+          <span className="text-xl font-bold text-[#F59E0B]">{meta?.valor ? meta.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}</span>
         </div>
         <div className="flex flex-col items-end">
-          <span className="text-xs text-[#A3C8F7]">Já Realizado</span>
-          <span className={`text-xl font-bold ${progresso >= 100 ? 'text-[#3AC17C]' : 'text-[#3478F6]'}`}>{typeof meta?.alcancado === 'number' ? meta.alcancado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}</span>
+          <span className="text-xs text-[#FCD34D]">Já Realizado</span>
+          <span className={`text-xl font-bold ${progresso >= 100 ? 'text-[#3AC17C]' : 'text-[#F59E0B]'}`}>{typeof meta?.alcancado === 'number' ? meta.alcancado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}</span>
         </div>
       </div>
       {/* Barra de progresso com gradiente */}
@@ -1094,7 +1094,7 @@ export default function DashboardPage() {
 
   const getEventColor = (tipo: string) => {
     switch (tipo) {
-      case 'meet': return 'bg-blue-500';
+      case 'meet': return 'bg-amber-500';
       case 'youtube': return 'bg-red-500';
       case 'instagram': return 'bg-pink-500';
       default: return 'bg-gray-500';
@@ -1110,16 +1110,16 @@ export default function DashboardPage() {
   ];
 
   const EconomicIndicator = ({ title, value, variacao, subtitulo }: { title: string; value: string; variacao: number | null; subtitulo: string }) => (
-    <div className="flex flex-col items-center justify-center p-4 bg-gradient-to-r from-[#3478F6]/5 to-[#A3C8F7]/5 rounded-xl border border-[#A3C8F7]/20 min-w-[120px] cursor-pointer group hover:scale-105 hover:shadow-lg hover:border-[#3478F6]/40 transition-all duration-300 relative overflow-hidden">
+    <div className="flex flex-col items-center justify-center p-4 bg-gradient-to-r from-[#F59E0B]/5 to-[#FCD34D]/5 rounded-xl border border-[#FCD34D]/20 min-w-[120px] cursor-pointer group hover:scale-105 hover:shadow-lg hover:border-[#F59E0B]/40 transition-all duration-300 relative overflow-hidden">
       {/* Efeito de brilho no hover */}
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
       
       {/* Borda superior que aparece no hover */}
-      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#F59E0B] to-[#FCD34D] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
       
-      <div className="text-xs text-[#6B6F76] dark:text-gray-300 mb-1 group-hover:text-[#3478F6] transition-colors duration-300">{title}</div>
-      <div className="text-lg font-bold text-[#2E2F38] dark:text-white group-hover:text-[#3478F6] transition-colors duration-300">{value}</div>
-      <div className="text-[10px] text-[#6B6F76] dark:text-gray-400 mb-1 group-hover:text-[#A3C8F7] transition-colors duration-300">({subtitulo})</div>
+      <div className="text-xs text-[#6B6F76] dark:text-gray-300 mb-1 group-hover:text-[#F59E0B] transition-colors duration-300">{title}</div>
+      <div className="text-lg font-bold text-[#2E2F38] dark:text-white group-hover:text-[#F59E0B] transition-colors duration-300">{value}</div>
+      <div className="text-[10px] text-[#6B6F76] dark:text-gray-400 mb-1 group-hover:text-[#FCD34D] transition-colors duration-300">({subtitulo})</div>
       {variacao !== null && (
         <div className={`flex items-center text-xs font-medium ${variacao >= 0 ? 'text-[#3AC17C]' : 'text-[#F45B69]'} group-hover:scale-110 transition-transform duration-300`}> 
           {variacao >= 0 ? (
@@ -1179,7 +1179,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-[#3478F6] via-[#A3C8F7] to-[#6B6F76] bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-[#F59E0B] via-[#FCD34D] to-[#6B6F76] bg-clip-text text-transparent">
                 Olá, {currentUser?.email?.split('@')[0] || 'Corretor'}! <span className="text-yellow-400">👋</span>
               </h1>
             </div>
@@ -1189,10 +1189,10 @@ export default function DashboardPage() {
               {indicadoresExternos && indicadoresExternosAnterior && indicadoresList.map(ind => (
                 <div
                   key={ind.key}
-                  className="flex items-center gap-1 px-2 py-1 bg-white/60 dark:bg-[#23283A]/60 backdrop-blur-sm rounded-lg border border-[#3478F6]/20 hover:border-[#3478F6]/40 transition-all duration-200 cursor-pointer group hover:scale-105"
+                  className="flex items-center gap-1 px-2 py-1 bg-white/60 dark:bg-[#23283A]/60 backdrop-blur-sm rounded-lg border border-[#F59E0B]/20 hover:border-[#F59E0B]/40 transition-all duration-200 cursor-pointer group hover:scale-105"
                 >
                   <div className="text-center">
-                    <div className="text-xs font-bold text-[#2E2F38] dark:text-white group-hover:text-[#3478F6] transition-colors">
+                    <div className="text-xs font-bold text-[#2E2F38] dark:text-white group-hover:text-[#F59E0B] transition-colors">
                       {indicadoresExternos?.[ind.key] || '--'}
                     </div>
                     <div className="text-[10px] text-[#6B6F76] dark:text-gray-300 font-medium">
@@ -1244,7 +1244,7 @@ export default function DashboardPage() {
           {eventosEmQueFuiMarcado.length > 0 && (
             <div className="bg-white dark:bg-[#23283A] rounded-2xl border border-[#E8E9F1] dark:border-[#23283A] p-5 shadow-sm">
               <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-3 flex items-center gap-2">
-                <UsersIcon className="h-5 w-5 text-[#3478F6]" />
+                <UsersIcon className="h-5 w-5 text-[#F59E0B]" />
                 Você foi marcado(a) nestas ações
               </h2>
               <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-4">Confirme ou cancele sua presença. Essas informações serão usadas para acompanhamento.</p>
@@ -1256,7 +1256,7 @@ export default function DashboardPage() {
                     <li key={key} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-[#F5F6FA] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A]">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-[#3478F6]/20 text-[#3478F6] dark:bg-[#3478F6]/30 dark:text-[#A3C8F7]">
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-[#F59E0B]/20 text-[#F59E0B] dark:bg-[#F59E0B]/30 dark:text-[#FCD34D]">
                             {ev.tipoLabel}
                           </span>
                           <span className="font-semibold text-[#2E2F38] dark:text-white truncate">{ev.titulo}</span>
@@ -1292,8 +1292,8 @@ export default function DashboardPage() {
           )}
 
           {/* Agenda do Dia */}
-          <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
+          <div className="bg-gradient-to-br from-[#FCD34D]/30 to-[#F59E0B]/10 border-2 border-[#F59E0B]/20 rounded-2xl p-6 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-[#F59E0B]"></div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white">Agenda do Dia</h2>
               <Link 
@@ -1330,7 +1330,7 @@ export default function DashboardPage() {
                       <td className="py-3 px-3">
                         <button 
                           onClick={() => openLeadModal(lead)}
-                          className="px-4 py-1 text-sm font-semibold text-white bg-[#3478F6] hover:bg-[#255FD1] rounded-lg transition-colors cursor-pointer"
+                          className="px-4 py-1 text-sm font-semibold text-white bg-[#F59E0B] hover:bg-[#D97706] rounded-lg transition-colors cursor-pointer"
                         >
                           Abrir
                         </button>
@@ -1467,7 +1467,7 @@ export default function DashboardPage() {
                                {evento.titulo}
                              </div>
                              <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
-                               evento.tipo === 'reuniao' ? 'bg-blue-500' :
+                               evento.tipo === 'reuniao' ? 'bg-amber-500' :
                                evento.tipo === 'evento' ? 'bg-purple-500' :
                                evento.tipo === 'treinamento' ? 'bg-green-500' : 'bg-gray-500'
                              } text-white`}>
@@ -1582,23 +1582,23 @@ export default function DashboardPage() {
           </div>
 
           {/* Metas */}
-          <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl animate-fade-in">
-            <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
+          <div className="bg-gradient-to-br from-[#FCD34D]/30 to-[#F59E0B]/10 border-2 border-[#F59E0B]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl animate-fade-in">
+            <div className="absolute top-0 left-0 w-1 h-full bg-[#F59E0B]"></div>
             <MetasCard meta={meta} nomeImobiliaria={nomeImobiliaria} />
           </div>
         </div>
 
         {/* Coluna Direita - Comunidade com scroll independente */}
         <div id="trending-section" className="overflow-y-auto pr-2 dashboard-scroll-hide h-full min-h-0">
-          <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl animate-fade-in">
+          <div className="bg-gradient-to-br from-[#FCD34D]/30 to-[#F59E0B]/10 border-2 border-[#F59E0B]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl animate-fade-in">
             {/* Borda decorativa */}
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#3478F6] to-[#A3C8F7]"></div>
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#F59E0B] to-[#FCD34D]"></div>
             
 
 
             {trendingLoading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3478F6]"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#F59E0B]"></div>
               </div>
             ) : trendingPosts.length === 0 ? (
               <div className="text-center py-8">
@@ -1613,7 +1613,7 @@ export default function DashboardPage() {
                     className={`group relative backdrop-blur-sm rounded-xl p-4 transition-all duration-300 cursor-pointer border hover:scale-[1.02] shadow-lg hover:shadow-xl ${
                       post.isEvento
                         ? 'bg-gradient-to-r from-yellow-50/80 to-orange-50/80 dark:from-yellow-900/20 dark:to-orange-900/20 border-yellow-200/50 dark:border-yellow-700/50 hover:bg-gradient-to-r hover:from-yellow-100/90 hover:to-orange-100/90 dark:hover:from-yellow-800/30 dark:hover:to-orange-800/30'
-                        : 'bg-white/60 dark:bg-[#23283A]/60 border-white/20 hover:bg-white/80 dark:hover:bg-[#23283A]/80 hover:border-[#3478F6]/30'
+                        : 'bg-white/60 dark:bg-[#23283A]/60 border-white/20 hover:bg-white/80 dark:hover:bg-[#23283A]/80 hover:border-[#F59E0B]/30'
                     }`}
                     // onClick={() => openPostModal(post)}
                   >
@@ -1679,13 +1679,13 @@ export default function DashboardPage() {
                         {post.repostOf ? (
                           <div>
                             {post.repostComment && (
-                              <div className="mb-2 px-3 py-2 bg-[#F5F6FA] dark:bg-[#23283A] border-l-4 border-[#3478F6] text-[#3478F6] rounded-r-lg text-sm font-medium">
+                              <div className="mb-2 px-3 py-2 bg-[#F5F6FA] dark:bg-[#23283A] border-l-4 border-[#F59E0B] text-[#F59E0B] rounded-r-lg text-sm font-medium">
                                 <span className="font-semibold">{post.nome}:</span> {post.repostComment}
                               </div>
                             )}
-                            <div className="bg-white dark:bg-[#23283A] border border-[#3478F6]/20 rounded-lg p-3 shadow-inner mt-1">
+                            <div className="bg-white dark:bg-[#23283A] border border-[#F59E0B]/20 rounded-lg p-3 shadow-inner mt-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="px-2 py-0.5 bg-[#3478F6]/10 text-[#3478F6] text-xs rounded-full font-semibold">🔁 Repost de {post.repostAuthorName || 'Original'}</span>
+                                <span className="px-2 py-0.5 bg-[#F59E0B]/10 text-[#F59E0B] text-xs rounded-full font-semibold">🔁 Repost de {post.repostAuthorName || 'Original'}</span>
                               </div>
                               <div className="text-xs text-[#6B6F76] dark:text-gray-300 mb-1">{post.originalCreatedAt}</div>
                               <div className="text-sm text-[#2E2F38] dark:text-white leading-relaxed mb-2">{post.originalTexto}</div>
@@ -1744,7 +1744,7 @@ export default function DashboardPage() {
                               alt="Post image" 
                               className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                             />
-                            <div className="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold">
+                            <div className="absolute top-2 left-2 bg-amber-600 text-white px-2 py-1 rounded text-xs font-semibold">
                               FOTO
                             </div>
                           </div>
@@ -1791,7 +1791,7 @@ export default function DashboardPage() {
                             onClick={(e) => { e.stopPropagation(); handleShowLikes(post); }}
                             className={`text-sm font-medium transition-all duration-200 hover:scale-105 ${
                               post.likes > 0 
-                                ? 'text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] cursor-pointer' 
+                                ? 'text-[#6B6F76] dark:text-gray-300 hover:text-[#F59E0B] cursor-pointer' 
                                 : 'text-[#6B6F76] dark:text-gray-300 cursor-default'
                             }`}
                             disabled={!post.likes || post.likes === 0}
@@ -1803,7 +1803,7 @@ export default function DashboardPage() {
                         {/* Botão Comentar */}
                         <button 
                           onClick={(e) => { e.stopPropagation(); openPostModal(post); }}
-                          className="flex items-center gap-1.5 text-sm font-medium text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] hover:scale-105 transition-all duration-200"
+                          className="flex items-center gap-1.5 text-sm font-medium text-[#6B6F76] dark:text-gray-300 hover:text-[#F59E0B] hover:scale-105 transition-all duration-200"
                         >
                           <span className="text-lg">💬</span>
                           <span>{post.commentsCount || 0}</span>
@@ -1820,8 +1820,8 @@ export default function DashboardPage() {
                       </div>
                       
                       {/* Indicador de engajamento com gradiente */}
-                      <div className="px-2 py-1 bg-gradient-to-r from-[#3478F6]/20 to-[#A3C8F7]/20 rounded-full border border-[#3478F6]/30">
-                        <span className="text-xs font-medium text-[#3478F6] dark:text-[#A3C8F7]">
+                      <div className="px-2 py-1 bg-gradient-to-r from-[#F59E0B]/20 to-[#FCD34D]/20 rounded-full border border-[#F59E0B]/30">
+                        <span className="text-xs font-medium text-[#F59E0B] dark:text-[#FCD34D]">
                           🔥 {post.totalEngagement}
                         </span>
                       </div>
@@ -1829,7 +1829,7 @@ export default function DashboardPage() {
 
                     {/* Campo de repost abaixo do post */}
                     {repostInputId === post.id && (
-                      <div className="mt-4 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg p-4 border border-[#3478F6]/20 flex flex-col gap-2 animate-fade-in">
+                      <div className="mt-4 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg p-4 border border-[#F59E0B]/20 flex flex-col gap-2 animate-fade-in">
                         <textarea
                           className="w-full rounded p-2 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400 focus:outline-none"
                           placeholder="Adicione um comentário (opcional) para o repost..."
@@ -1869,7 +1869,7 @@ export default function DashboardPage() {
             <div className="mt-6 pt-4 border-t border-white/20 dark:border-[#23283A]/20">
               <Link 
                 href="/dashboard/comunidade" 
-                className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] text-white font-semibold rounded-lg hover:from-[#255FD1] hover:to-[#3478F6] transition-all duration-300 transform hover:scale-105 shadow-lg"
+                className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-gradient-to-r from-[#F59E0B] to-[#FCD34D] text-white font-semibold rounded-lg hover:from-[#D97706] hover:to-[#F59E0B] transition-all duration-300 transform hover:scale-105 shadow-lg"
               >
                 <span>🚀</span>
                 <span>Ver mais na Comunidade</span>
@@ -1929,7 +1929,7 @@ export default function DashboardPage() {
                   onKeyDown={e => { if (e.key === 'Enter') handleComment(selectedPost.id); }}
                 />
                 <button
-                  className="text-[#3478F6] hover:text-[#255FD1] text-xl"
+                  className="text-[#F59E0B] hover:text-[#D97706] text-xl"
                   title="Adicionar emoji"
                   onClick={() => setShowEmojiComment((v) => !v)}
                   type="button"
@@ -1944,7 +1944,7 @@ export default function DashboardPage() {
                   </div>
                 )}
                 <button
-                  className="px-4 py-2 rounded-lg bg-[#3478F6] text-white font-bold shadow-soft hover:bg-[#255FD1] transition-colors"
+                  className="px-4 py-2 rounded-lg bg-[#F59E0B] text-white font-bold shadow-soft hover:bg-[#D97706] transition-colors"
                   onClick={() => handleComment(selectedPost.id)}
                   disabled={!commentText.trim()}
                 >Comentar</button>
@@ -1963,7 +1963,7 @@ export default function DashboardPage() {
             
             <div className="p-6">
               <div className="flex items-center gap-3 mb-6">
-                <NotesIcon className="h-8 w-8 text-[#3478F6]" />
+                <NotesIcon className="h-8 w-8 text-[#F59E0B]" />
                 <div>
                   <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white">Todas as Notas</h2>
                   <p className="text-[#6B6F76] dark:text-gray-300">Suas notas e lembretes</p>
@@ -1973,7 +1973,7 @@ export default function DashboardPage() {
               <div className="max-h-96 overflow-y-auto space-y-3">
                 {notes.length === 0 ? (
                   <div className="text-center py-8">
-                    <NotesIcon className="h-12 w-12 text-[#3478F6] mx-auto mb-3 opacity-50" />
+                    <NotesIcon className="h-12 w-12 text-[#F59E0B] mx-auto mb-3 opacity-50" />
                     <p className="text-[#6B6F76] dark:text-gray-300">Nenhuma nota criada ainda</p>
                   </div>
                 ) : (
@@ -1998,7 +1998,7 @@ export default function DashboardPage() {
                           </div>
                           {note.dataHora && (
                             <div className="flex items-center gap-2">
-                              <CalendarIcon className="h-4 w-4 text-[#3478F6]" />
+                              <CalendarIcon className="h-4 w-4 text-[#F59E0B]" />
                               <span className="text-xs text-[#6B6F76] dark:text-gray-300">
                                 Agendado: {new Date(note.dataHora).toLocaleDateString('pt-BR')}
                               </span>
@@ -2056,7 +2056,7 @@ export default function DashboardPage() {
               <div className="max-h-80 overflow-y-auto">
                 {loadingLikes ? (
                   <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3478F6]"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#F59E0B]"></div>
                   </div>
                 ) : postLikes.length === 0 ? (
                   <div className="text-center py-8">
@@ -2070,7 +2070,7 @@ export default function DashboardPage() {
                         key={like.id}
                         className="flex items-center gap-3 p-3 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors"
                       >
-                        <div className="w-10 h-10 bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] rounded-full flex items-center justify-center text-white font-bold text-lg">
+                        <div className="w-10 h-10 bg-gradient-to-r from-[#F59E0B] to-[#FCD34D] rounded-full flex items-center justify-center text-white font-bold text-lg">
                           {like.userName ? like.userName.charAt(0).toUpperCase() : 'U'}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -2103,7 +2103,7 @@ export default function DashboardPage() {
       {showScrollToTop && (
         <button
           onClick={scrollToTrendingTop}
-          className="fixed bottom-6 right-6 bg-[#3478F6] hover:bg-[#255FD1] text-white font-bold py-3 px-4 rounded-full shadow-lg transition-all duration-200 hover:scale-110 z-40"
+          className="fixed bottom-6 right-6 bg-[#F59E0B] hover:bg-[#D97706] text-white font-bold py-3 px-4 rounded-full shadow-lg transition-all duration-200 hover:scale-110 z-40"
           title="Voltar ao topo do Trending"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

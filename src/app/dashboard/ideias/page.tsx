@@ -349,7 +349,7 @@ export default function IdeiasPage() {
       case "aprovada":
         return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
       case "implementada":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+        return "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200";
       case "rejeitada":
         return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
       default:
@@ -410,14 +410,14 @@ export default function IdeiasPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2 flex items-center gap-3">
-              <LightbulbIcon className="h-8 w-8 text-[#3478F6]" />
+              <LightbulbIcon className="h-8 w-8 text-[#F59E0B]" />
               Ideias para Melhorias
             </h1>
             <p className="text-[#6B6F76] dark:text-gray-300">Compartilhe suas ideias para melhorar nossa plataforma</p>
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
+            className="bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
           >
             <LightbulbIcon className="h-5 w-5" />
             Nova Ideia
@@ -433,7 +433,7 @@ export default function IdeiasPage() {
 
         {/* Box de Melhorias em Andamento */}
         {melhoriasEmAndamento.length > 0 && (
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-6 mb-8 text-white">
+          <div className="bg-gradient-to-r from-amber-500 to-amber-600 rounded-2xl p-6 mb-8 text-white">
             <div className="flex items-center gap-3 mb-4">
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -530,7 +530,7 @@ export default function IdeiasPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                  className="bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
                 >
                   {loading ? "Enviando..." : "Enviar Ideia"}
                 </button>
@@ -585,14 +585,14 @@ export default function IdeiasPage() {
                       
                       {/* Comentário Administrativo */}
                       {ideia.comentarioAdmin && (
-                        <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <div className="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
                           <div className="flex items-center gap-2 mb-2">
-                            <AdminIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                            <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                            <AdminIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                            <span className="text-sm font-semibold text-amber-800 dark:text-amber-200">
                               Comentário da Administração
                             </span>
                           </div>
-                          <p className="text-sm text-blue-700 dark:text-blue-300">
+                          <p className="text-sm text-amber-700 dark:text-amber-300">
                             {ideia.comentarioAdmin}
                           </p>
                         </div>
@@ -623,7 +623,7 @@ export default function IdeiasPage() {
                                 ? "bg-gray-400 text-white cursor-not-allowed opacity-50"
                                 : ideia.userId === currentUser?.uid
                                 ? "bg-gray-300 text-gray-500 cursor-not-allowed opacity-50"
-                                : "bg-[#3478F6] hover:bg-[#255FD1] text-white disabled:opacity-50"
+                                : "bg-[#F59E0B] hover:bg-[#D97706] text-white disabled:opacity-50"
                             }`}
                             title={
                               jaVotouNaIdeia(ideia.id) 
@@ -676,7 +676,7 @@ export default function IdeiasPage() {
                           <button
                             onClick={() => handleAddComentario(ideia.id)}
                             disabled={!novoComentario.trim()}
-                            className="px-3 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white text-sm rounded transition-colors disabled:opacity-50"
+                            className="px-3 py-2 bg-[#F59E0B] hover:bg-[#D97706] text-white text-sm rounded transition-colors disabled:opacity-50"
                           >
                             Comentar
                           </button>

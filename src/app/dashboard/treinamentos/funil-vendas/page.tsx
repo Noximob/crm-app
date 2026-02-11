@@ -153,7 +153,7 @@ export default function FunilVendasPage() {
           <div className="flex items-center gap-4 mb-4 sm:mb-0">
             <Link 
               href="/dashboard/treinamentos"
-              className="text-[#3478F6] hover:text-[#2E6FD9] transition-colors"
+              className="text-[#F59E0B] hover:text-[#2E6FD9] transition-colors"
             >
               ← Voltar aos Treinamentos
             </Link>
@@ -204,7 +204,7 @@ export default function FunilVendasPage() {
                 placeholder="Buscar materiais..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-3 bg-[#F5F6FA] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3478F6] transition-all"
+                className="w-full px-4 py-3 bg-[#F5F6FA] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] transition-all"
               />
             </div>
             <div className="flex gap-2">
@@ -212,7 +212,7 @@ export default function FunilVendasPage() {
                 onClick={() => setFilterTipo('todos')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterTipo === 'todos' 
-                    ? 'bg-[#3478F6] text-white' 
+                    ? 'bg-[#F59E0B] text-white' 
                     : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
                 }`}
               >
@@ -222,7 +222,7 @@ export default function FunilVendasPage() {
                 onClick={() => setFilterTipo('video')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterTipo === 'video' 
-                    ? 'bg-[#3478F6] text-white' 
+                    ? 'bg-[#F59E0B] text-white' 
                     : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
                 }`}
               >
@@ -232,7 +232,7 @@ export default function FunilVendasPage() {
                 onClick={() => setFilterTipo('pdf')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterTipo === 'pdf' 
-                    ? 'bg-[#3478F6] text-white' 
+                    ? 'bg-[#F59E0B] text-white' 
                     : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
                 }`}
               >
@@ -242,7 +242,7 @@ export default function FunilVendasPage() {
                 onClick={() => setFilterTipo('link')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterTipo === 'link' 
-                    ? 'bg-[#3478F6] text-white' 
+                    ? 'bg-[#F59E0B] text-white' 
                     : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
                 }`}
               >
@@ -298,7 +298,7 @@ export default function FunilVendasPage() {
                           : tag === 'Avançado'
                           ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
                           : tag === 'Prático'
-                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
                           : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
                       }`}
                     >

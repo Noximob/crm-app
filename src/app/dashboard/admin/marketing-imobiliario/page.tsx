@@ -237,7 +237,7 @@ export default function MateriaisImobiliariaAdminPage() {
           {/* PDF */}
           <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
             <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-              <FileIcon className="h-5 w-5 text-[#3478F6]" />
+              <FileIcon className="h-5 w-5 text-[#F59E0B]" />
               Upload PDF
             </h3>
             <input
@@ -255,7 +255,7 @@ export default function MateriaisImobiliariaAdminPage() {
           {/* Links */}
           <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
             <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-              <LinkIcon className="h-5 w-5 text-[#3478F6]" />
+              <LinkIcon className="h-5 w-5 text-[#F59E0B]" />
               Adicionar Link
             </h3>
             <form onSubmit={handleAddMaterial} className="space-y-3">
@@ -285,7 +285,7 @@ export default function MateriaisImobiliariaAdminPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
               >
                 {loading ? "Adicionando..." : "Adicionar Link"}
               </button>
@@ -297,7 +297,7 @@ export default function MateriaisImobiliariaAdminPage() {
           {/* Fotos */}
           <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
             <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-              <ImageIcon className="h-5 w-5 text-[#3478F6]" />
+              <ImageIcon className="h-5 w-5 text-[#F59E0B]" />
               Upload Fotos
             </h3>
             <input
@@ -317,7 +317,7 @@ export default function MateriaisImobiliariaAdminPage() {
           {/* Vídeos */}
           <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
             <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-              <VideoIcon className="h-5 w-5 text-[#3478F6]" />
+              <VideoIcon className="h-5 w-5 text-[#F59E0B]" />
               Upload Vídeos
             </h3>
             <input
@@ -350,7 +350,7 @@ export default function MateriaisImobiliariaAdminPage() {
               {getGroupedMateriais().links.length > 0 && (
                 <div>
                   <h4 className="text-md font-bold text-[#2E2F38] dark:text-white mb-2 flex items-center gap-2">
-                    <LinkIcon className="h-5 w-5 text-[#3478F6]" />
+                    <LinkIcon className="h-5 w-5 text-[#F59E0B]" />
                     Links
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -369,7 +369,7 @@ export default function MateriaisImobiliariaAdminPage() {
                               href={material.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors"
+                              className="px-2 py-1 bg-[#F59E0B] hover:bg-[#D97706] text-white text-xs rounded transition-colors"
                             >
                               Ver
                             </a>
@@ -391,7 +391,7 @@ export default function MateriaisImobiliariaAdminPage() {
               {getGroupedMateriais().materiais_pdf.length > 0 && (
                 <div>
                   <h4 className="text-md font-bold text-[#2E2F38] dark:text-white mb-2 flex items-center gap-2">
-                    <FileIcon className="h-5 w-5 text-[#3478F6]" />
+                    <FileIcon className="h-5 w-5 text-[#F59E0B]" />
                     PDFs
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -410,7 +410,7 @@ export default function MateriaisImobiliariaAdminPage() {
                               href={material.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors"
+                              className="px-2 py-1 bg-[#F59E0B] hover:bg-[#D97706] text-white text-xs rounded transition-colors"
                             >
                               Ver
                             </a>
@@ -432,7 +432,7 @@ export default function MateriaisImobiliariaAdminPage() {
               {getGroupedMateriais().videos.length > 0 && (
                 <div>
                   <h4 className="text-md font-bold text-[#2E2F38] dark:text-white mb-2 flex items-center gap-2">
-                    <VideoIcon className="h-5 w-5 text-[#3478F6]" />
+                    <VideoIcon className="h-5 w-5 text-[#F59E0B]" />
                     Vídeos
                   </h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -473,7 +473,7 @@ export default function MateriaisImobiliariaAdminPage() {
                               href={material.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="w-full mt-2 px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors font-semibold block"
+                              className="w-full mt-2 px-2 py-1 bg-[#F59E0B] hover:bg-[#D97706] text-white text-xs rounded transition-colors font-semibold block"
                             >
                               Ver
                             </a>
@@ -495,7 +495,7 @@ export default function MateriaisImobiliariaAdminPage() {
               {getGroupedMateriais().fotos.length > 0 && (
                 <div>
                   <h4 className="text-md font-bold text-[#2E2F38] dark:text-white mb-2 flex items-center gap-2">
-                    <ImageIcon className="h-5 w-5 text-[#3478F6]" />
+                    <ImageIcon className="h-5 w-5 text-[#F59E0B]" />
                     Fotos
                   </h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -531,7 +531,7 @@ export default function MateriaisImobiliariaAdminPage() {
                               href={material.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="w-full mt-2 px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors font-semibold block"
+                              className="w-full mt-2 px-2 py-1 bg-[#F59E0B] hover:bg-[#D97706] text-white text-xs rounded transition-colors font-semibold block"
                             >
                               Ver
                             </a>

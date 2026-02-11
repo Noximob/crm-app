@@ -113,7 +113,7 @@ interface AgendaImobiliaria {
 
 const tipoCores = {
   agenda: 'bg-emerald-500',
-  crm: 'bg-blue-500',
+  crm: 'bg-amber-500',
   nota: 'bg-yellow-500',
   aviso: 'bg-red-600',
   comunidade: 'bg-orange-500',
@@ -795,12 +795,12 @@ export default function AgendaPage() {
           key={i}
           className={`p-3 border-r border-b border-[#E8E9F1] dark:border-[#23283A] min-h-[120px] transition-all duration-200 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] cursor-pointer ${
             date.getMonth() === currentMonth ? 'bg-white dark:bg-[#23283A]' : 'bg-gray-50 dark:bg-[#181C23]'
-          } ${date.toDateString() === today.toDateString() ? 'bg-gradient-to-br from-[#3478F6]/10 to-[#A3C8F7]/10 border-[#3478F6]/30' : ''}`}
+          } ${date.toDateString() === today.toDateString() ? 'bg-gradient-to-br from-[#F59E0B]/10 to-[#FCD34D]/10 border-[#F59E0B]/30' : ''}`}
           onClick={() => openDayAgendaModal(date)}
         >
           <div className={`text-sm font-bold mb-2 ${
             date.toDateString() === today.toDateString() 
-              ? 'text-[#3478F6]' 
+              ? 'text-[#F59E0B]' 
               : date.getMonth() === currentMonth 
                 ? 'text-[#2E2F38] dark:text-white' 
                 : 'text-[#6B6F76] dark:text-gray-400'
@@ -851,7 +851,7 @@ export default function AgendaPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3478F6]"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#F59E0B]"></div>
       </div>
     );
   }
@@ -862,7 +862,7 @@ export default function AgendaPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#3478F6] via-[#A3C8F7] to-[#6B6F76] bg-clip-text text-transparent mb-2">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#F59E0B] via-[#FCD34D] to-[#6B6F76] bg-clip-text text-transparent mb-2">
               Agenda Completa
             </h1>
             <p className="text-[#6B6F76] dark:text-gray-300">Organize seus compromissos pessoais e profissionais</p>
@@ -872,7 +872,7 @@ export default function AgendaPage() {
               resetForm();
               setShowModal(true);
             }}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] text-white rounded-xl hover:from-[#255FD1] hover:to-[#3478F6] transition-all duration-300 transform hover:scale-105 shadow-lg font-semibold"
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#F59E0B] to-[#FCD34D] text-white rounded-xl hover:from-[#D97706] hover:to-[#F59E0B] transition-all duration-300 transform hover:scale-105 shadow-lg font-semibold"
           >
             <PlusIcon className="h-5 w-5" />
             Novo Compromisso
@@ -880,14 +880,14 @@ export default function AgendaPage() {
         </div>
 
         {/* Filtros e Controles */}
-        <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 mb-8 relative overflow-hidden shadow-xl">
-          <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
+        <div className="bg-gradient-to-br from-[#FCD34D]/30 to-[#F59E0B]/10 border-2 border-[#F59E0B]/20 rounded-2xl p-6 mb-8 relative overflow-hidden shadow-xl">
+          <div className="absolute top-0 left-0 w-1 h-full bg-[#F59E0B]"></div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
               <select
                 value={filter}
                 onChange={(e) => setFilter(e.target.value as 'all' | 'crm' | 'nota' | 'agenda' | 'comunidade')}
-                className="px-4 py-2 bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white font-medium"
+                className="px-4 py-2 bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent text-[#2E2F38] dark:text-white font-medium"
               >
                 <option value="all">Todos os tipos</option>
                 <option value="crm">CRM</option>
@@ -908,7 +908,7 @@ export default function AgendaPage() {
                 }}
                 className="p-3 hover:bg-white/60 dark:hover:bg-[#23283A]/60 rounded-xl transition-colors"
               >
-                <svg className="w-5 h-5 text-[#3478F6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
@@ -923,7 +923,7 @@ export default function AgendaPage() {
                 }}
                 className="p-3 hover:bg-white/60 dark:hover:bg-[#23283A]/60 rounded-xl transition-colors"
               >
-                <svg className="w-5 h-5 text-[#3478F6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
@@ -934,7 +934,7 @@ export default function AgendaPage() {
         {/* Calendário */}
         <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] overflow-hidden mb-8">
           {/* Dias da semana */}
-          <div className="grid grid-cols-7 bg-gradient-to-r from-[#3478F6]/10 to-[#A3C8F7]/10">
+          <div className="grid grid-cols-7 bg-gradient-to-r from-[#F59E0B]/10 to-[#FCD34D]/10">
             {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day) => (
               <div key={day} className="p-4 text-center font-bold text-[#2E2F38] dark:text-white border-b border-[#E8E9F1] dark:border-[#23283A]">
                 {day}
@@ -949,10 +949,10 @@ export default function AgendaPage() {
         </div>
 
         {/* Lista de Compromissos */}
-        <div className="bg-gradient-to-br from-[#A3C8F7]/30 to-[#3478F6]/10 border-2 border-[#3478F6]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl">
-          <div className="absolute top-0 left-0 w-1 h-full bg-[#3478F6]"></div>
+        <div className="bg-gradient-to-br from-[#FCD34D]/30 to-[#F59E0B]/10 border-2 border-[#F59E0B]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl">
+          <div className="absolute top-0 left-0 w-1 h-full bg-[#F59E0B]"></div>
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-r from-[#F59E0B] to-[#FCD34D] rounded-full flex items-center justify-center">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
@@ -1084,7 +1084,7 @@ export default function AgendaPage() {
                         style={{ backgroundColor: item.cor }}
                       ></div>
                       <div>
-                        <div className="font-semibold text-[#2E2F38] dark:text-white group-hover:text-[#3478F6] transition-colors">
+                        <div className="font-semibold text-[#2E2F38] dark:text-white group-hover:text-[#F59E0B] transition-colors">
                           {item.titulo}
                         </div>
                         <div className="text-sm text-[#6B6F76] dark:text-gray-300">
@@ -1132,7 +1132,7 @@ export default function AgendaPage() {
         }}>
           <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 w-full max-w-md shadow-xl border border-[#E8E9F1] dark:border-[#23283A]" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-r from-[#F59E0B] to-[#FCD34D] rounded-full flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
@@ -1154,7 +1154,7 @@ export default function AgendaPage() {
                   type="text"
                   value={formData.titulo}
                   onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
-                  className="w-full px-4 py-3 bg-white dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400"
+                  className="w-full px-4 py-3 bg-white dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400"
                   placeholder="Digite o título do compromisso"
                   required
                 />
@@ -1167,7 +1167,7 @@ export default function AgendaPage() {
                 <textarea
                   value={formData.descricao}
                   onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                  className="w-full px-4 py-3 bg-white dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400"
+                  className="w-full px-4 py-3 bg-white dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400"
                   placeholder="Descrição opcional do compromisso"
                   rows={3}
                 />
@@ -1181,7 +1181,7 @@ export default function AgendaPage() {
                   type="datetime-local"
                   value={formData.dataHora}
                   onChange={(e) => setFormData({ ...formData, dataHora: e.target.value })}
-                  className="w-full px-4 py-3 bg-white dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white"
+                  className="w-full px-4 py-3 bg-white dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent text-[#2E2F38] dark:text-white"
                   required
                 />
               </div>
@@ -1193,7 +1193,7 @@ export default function AgendaPage() {
                 <select
                   value={formData.tipo}
                   onChange={(e) => setFormData({ ...formData, tipo: e.target.value as 'agenda' })}
-                  className="w-full px-4 py-3 bg-white dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#3478F6] focus:border-transparent text-[#2E2F38] dark:text-white"
+                  className="w-full px-4 py-3 bg-white dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent text-[#2E2F38] dark:text-white"
                 >
                   <option value="agenda">Agenda</option>
                 </select>
@@ -1204,7 +1204,7 @@ export default function AgendaPage() {
               <div className="flex gap-3 pt-6">
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] text-white rounded-xl hover:from-[#255FD1] hover:to-[#3478F6] transition-all duration-300 font-semibold shadow-lg"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-[#F59E0B] to-[#FCD34D] text-white rounded-xl hover:from-[#D97706] hover:to-[#F59E0B] transition-all duration-300 font-semibold shadow-lg"
                 >
                   {editingItem ? 'Atualizar' : 'Criar'}
                 </button>
@@ -1233,7 +1233,7 @@ export default function AgendaPage() {
         }}>
           <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 w-full max-w-md shadow-xl border border-[#E8E9F1] dark:border-[#23283A]" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-r from-[#F59E0B] to-[#FCD34D] rounded-full flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -1295,7 +1295,7 @@ export default function AgendaPage() {
                     setShowViewModal(false);
                     setViewingItem(null);
                   }}
-                  className="flex-1 px-6 py-3 bg-[#3478F6] text-white rounded-xl hover:bg-[#255FD1] transition-colors font-semibold"
+                  className="flex-1 px-6 py-3 bg-[#F59E0B] text-white rounded-xl hover:bg-[#D97706] transition-colors font-semibold"
                 >
                   Fechar
                 </button>

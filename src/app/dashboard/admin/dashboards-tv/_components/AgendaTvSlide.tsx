@@ -29,7 +29,7 @@ const TIPO_LABEL: Record<string, string> = {
 };
 
 const TIPO_COR: Record<string, string> = {
-  reuniao: 'from-blue-500 to-blue-600',
+  reuniao: 'from-amber-500 to-amber-600',
   evento: 'from-purple-500 to-purple-600',
   treinamento: 'from-green-500 to-green-600',
   'revisar-crm': 'from-cyan-500 to-cyan-600',

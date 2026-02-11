@@ -29,13 +29,13 @@ export default function KanbanColumn({ id, title, leads }: KanbanColumnProps) {
   });
 
   return (
-    <div className="flex flex-col flex-shrink-0 w-40 bg-[#F8F9FB] dark:bg-[#181C23] rounded-2xl shadow-soft border border-[#A3C8F7] dark:border-[#3478F6]/40 transition-all duration-200 min-h-[340px] mx-1">
+    <div className="flex flex-col flex-shrink-0 w-40 bg-[#F8F9FB] dark:bg-[#181C23] rounded-2xl shadow-soft border border-[#FCD34D] dark:border-[#F59E0B]/40 transition-all duration-200 min-h-[340px] mx-1">
       {/* Header da coluna */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#A3C8F7] dark:border-[#3478F6]/40 bg-[#F0F4FF] dark:bg-[#23283A] rounded-t-2xl">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[#FCD34D] dark:border-[#F59E0B]/40 bg-[#F0F4FF] dark:bg-[#23283A] rounded-t-2xl">
         <h3 className="text-base font-bold text-[#2E2F38] dark:text-white tracking-tight">
           {title}
         </h3>
-        <span className="text-xs font-bold text-[#3478F6] bg-[#E8E9F1] dark:bg-[#23283A] px-3 py-1 rounded-full">
+        <span className="text-xs font-bold text-[#F59E0B] bg-[#E8E9F1] dark:bg-[#23283A] px-3 py-1 rounded-full">
           {leads.length}
         </span>
       </div>
@@ -47,7 +47,7 @@ export default function KanbanColumn({ id, title, leads }: KanbanColumnProps) {
           <div 
             ref={setNodeRef}
             className={`w-full space-y-3 ${
-              isOver ? 'ring-4 ring-[#3478F6] ring-opacity-50 rounded-lg' : ''
+              isOver ? 'ring-4 ring-[#F59E0B] ring-opacity-50 rounded-lg' : ''
             }`}
           >
             <SortableContext id={`sortable-${id}`} items={leads.map(lead => lead.id)} strategy={verticalListSortingStrategy}>
@@ -60,8 +60,8 @@ export default function KanbanColumn({ id, title, leads }: KanbanColumnProps) {
           // Se não há leads, usar área de drop vazia específica
           <div 
             ref={setEmptyRef}
-            className={`w-full h-20 border-2 border-dashed border-[#A3C8F7] dark:border-[#3478F6]/40 rounded-lg flex items-center justify-center bg-[#F0F4FF] dark:bg-[#23283A]/50 transition-all duration-200 ${
-              isOverEmpty ? 'ring-4 ring-[#3478F6] ring-opacity-50 border-[#3478F6]' : ''
+            className={`w-full h-20 border-2 border-dashed border-[#FCD34D] dark:border-[#F59E0B]/40 rounded-lg flex items-center justify-center bg-[#F0F4FF] dark:bg-[#23283A]/50 transition-all duration-200 ${
+              isOverEmpty ? 'ring-4 ring-[#F59E0B] ring-opacity-50 border-[#F59E0B]' : ''
             }`}
           >
             <span className="text-xs text-[#6B6F76] dark:text-gray-400">Solte aqui</span>

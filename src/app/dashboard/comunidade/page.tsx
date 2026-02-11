@@ -896,7 +896,7 @@ export default function ComunidadePage() {
 
   const getEventColor = (tipo: string) => {
     switch (tipo) {
-      case 'meet': return 'bg-blue-500';
+      case 'meet': return 'bg-amber-500';
       case 'youtube': return 'bg-red-500';
       case 'instagram': return 'bg-pink-500';
       default: return 'bg-gray-500';
@@ -1093,7 +1093,7 @@ export default function ComunidadePage() {
                 <button
                   type="button"
                   onClick={() => document.getElementById('fileInput')?.click()}
-                  className="text-[#3478F6] hover:text-[#255FD1] text-xl"
+                  className="text-[#F59E0B] hover:text-[#D97706] text-xl"
                   title="Anexar arquivo"
                 >📎</button>
                 <input
@@ -1104,7 +1104,7 @@ export default function ComunidadePage() {
                   accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
                 />
                 <button
-                  className="text-[#3478F6] hover:text-[#255FD1] text-xl"
+                  className="text-[#F59E0B] hover:text-[#D97706] text-xl"
                   title="Adicionar emoji"
                   onClick={() => setShowEmoji((v) => !v)}
                   type="button"
@@ -1126,7 +1126,7 @@ export default function ComunidadePage() {
                 >📅</button>
               </div>
               <button
-                className="px-5 py-2 rounded-lg bg-[#3478F6] text-white font-bold shadow-soft hover:bg-[#255FD1] transition-colors disabled:opacity-60"
+                className="px-5 py-2 rounded-lg bg-[#F59E0B] text-white font-bold shadow-soft hover:bg-[#D97706] transition-colors disabled:opacity-60"
                 onClick={handlePostar}
                 disabled={loading || (!novoPost.trim() && !file && !youtubePreview)}
               >
@@ -1139,11 +1139,11 @@ export default function ComunidadePage() {
         <div className="flex justify-end mb-4">
           <div className="flex gap-2 bg-white dark:bg-[#23283A] rounded-lg shadow border border-[#E8E9F1] dark:border-[#23283A] p-1">
             <button
-              className={`px-4 py-1 rounded-lg font-medium text-sm transition-colors ${orderByTrending === 'recent' ? 'bg-[#3478F6] text-white' : 'text-[#3478F6] hover:bg-[#E8E9F1] dark:hover:bg-[#181C23]'}`}
+              className={`px-4 py-1 rounded-lg font-medium text-sm transition-colors ${orderByTrending === 'recent' ? 'bg-[#F59E0B] text-white' : 'text-[#F59E0B] hover:bg-[#E8E9F1] dark:hover:bg-[#181C23]'}`}
               onClick={() => setOrderByTrending('recent')}
             >Mais recentes</button>
             <button
-              className={`px-4 py-1 rounded-lg font-medium text-sm transition-colors ${orderByTrending === 'relevant' ? 'bg-[#3478F6] text-white' : 'text-[#3478F6] hover:bg-[#E8E9F1] dark:hover:bg-[#181C23]'}`}
+              className={`px-4 py-1 rounded-lg font-medium text-sm transition-colors ${orderByTrending === 'relevant' ? 'bg-[#F59E0B] text-white' : 'text-[#F59E0B] hover:bg-[#E8E9F1] dark:hover:bg-[#181C23]'}`}
               onClick={() => setOrderByTrending('relevant')}
             >Mais relevantes</button>
           </div>
@@ -1154,7 +1154,7 @@ export default function ComunidadePage() {
           {postsLoading && (
             <div className="flex items-center justify-center py-12">
               <div className="flex flex-col items-center gap-4">
-                <div className="w-8 h-8 border-4 border-[#3478F6] border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-8 h-8 border-4 border-[#F59E0B] border-t-transparent rounded-full animate-spin"></div>
                 <p className="text-[#6B6F76] dark:text-gray-300 font-medium">Carregando posts...</p>
               </div>
             </div>
@@ -1177,7 +1177,7 @@ export default function ComunidadePage() {
                 className={`group relative backdrop-blur-sm rounded-2xl p-6 transition-all duration-300 cursor-pointer border hover:scale-[1.02] shadow-lg hover:shadow-xl ${
                   post.isEvento
                     ? 'bg-gradient-to-r from-yellow-50/80 to-orange-50/80 dark:from-yellow-900/20 dark:to-orange-900/20 border-yellow-200/50 dark:border-yellow-700/50 hover:bg-gradient-to-r hover:from-yellow-100/90 hover:to-orange-100/90 dark:hover:from-yellow-800/30 dark:hover:to-orange-800/30'
-                    : 'bg-white/60 dark:bg-[#23283A]/60 border-white/20 hover:bg-white/80 dark:hover:bg-[#23283A]/80 hover:border-[#3478F6]/30'
+                    : 'bg-white/60 dark:bg-[#23283A]/60 border-white/20 hover:bg-white/80 dark:hover:bg-[#23283A]/80 hover:border-[#F59E0B]/30'
                 }`}
               >
                 {/* Badge Especial para eventos */}
@@ -1237,14 +1237,14 @@ export default function ComunidadePage() {
                     {post.repostOf ? (
                       <>
                         {post.repostComment && (
-                          <div className="mb-2 px-3 py-2 bg-[#F5F6FA] dark:bg-[#23283A] border-l-4 border-[#3478F6] text-[#3478F6] rounded-r-lg text-sm font-medium">
+                          <div className="mb-2 px-3 py-2 bg-[#F5F6FA] dark:bg-[#23283A] border-l-4 border-[#F59E0B] text-[#F59E0B] rounded-r-lg text-sm font-medium">
                             <span className="font-semibold">{post.nome}:</span> {post.repostComment}
                           </div>
                         )}
                         {original && (
-                          <div className="bg-white dark:bg-[#23283A] border border-[#3478F6]/20 rounded-lg p-3 shadow-inner mt-1">
+                          <div className="bg-white dark:bg-[#23283A] border border-[#F59E0B]/20 rounded-lg p-3 shadow-inner mt-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="px-2 py-0.5 bg-[#3478F6]/10 text-[#3478F6] text-xs rounded-full font-semibold">Repost de {original.nome || 'Original'}</span>
+                              <span className="px-2 py-0.5 bg-[#F59E0B]/10 text-[#F59E0B] text-xs rounded-full font-semibold">Repost de {original.nome || 'Original'}</span>
                             </div>
                             <div className="text-xs text-[#6B6F76] dark:text-gray-300 mb-1">{original.createdAt?.toDate ? original.createdAt.toDate().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}</div>
                             <div className="text-sm text-[#2E2F38] dark:text-white leading-relaxed mb-2">{original.texto}</div>
@@ -1282,7 +1282,7 @@ export default function ComunidadePage() {
                             {post.fileMeta.type.startsWith('image/') && (
                               <div className="relative aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
                                 <img src={post.file} alt="Post image" className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
-                                <div className="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold">FOTO</div>
+                                <div className="absolute top-2 left-2 bg-amber-600 text-white px-2 py-1 rounded text-xs font-semibold">FOTO</div>
                               </div>
                             )}
                             {post.fileMeta.type.startsWith('video/') && (
@@ -1338,7 +1338,7 @@ export default function ComunidadePage() {
                         onClick={() => handleShowLikes(post)}
                         className={`text-sm font-medium transition-all duration-200 hover:scale-105 ${
                           likesCount > 0 
-                            ? 'text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] cursor-pointer' 
+                            ? 'text-[#6B6F76] dark:text-gray-300 hover:text-[#F59E0B] cursor-pointer' 
                             : 'text-[#6B6F76] dark:text-gray-300 cursor-default'
                         }`}
                         disabled={!likesCount || likesCount === 0}
@@ -1348,7 +1348,7 @@ export default function ComunidadePage() {
                     </div>
                     <button 
                       onClick={() => { setModalImage(post.file && post.fileMeta && post.fileMeta.type.startsWith('image/') ? post.file : null); setModalPostId(post.id); setModalOpen(true); }}
-                      className="flex items-center gap-1.5 text-sm font-medium text-[#6B6F76] dark:text-gray-300 hover:text-[#3478F6] hover:scale-105 transition-all duration-200"
+                      className="flex items-center gap-1.5 text-sm font-medium text-[#6B6F76] dark:text-gray-300 hover:text-[#F59E0B] hover:scale-105 transition-all duration-200"
                     >
                       <span className="text-lg">💬</span>
                       <span>{commentsCount}</span>
@@ -1361,8 +1361,8 @@ export default function ComunidadePage() {
                       <span>{repostsCount}</span>
                     </button>
                   </div>
-                  <div className="px-2 py-1 bg-gradient-to-r from-[#3478F6]/20 to-[#A3C8F7]/20 rounded-full border border-[#3478F6]/30">
-                    <span className="text-xs font-medium text-[#3478F6] dark:text-[#A3C8F7]">
+                  <div className="px-2 py-1 bg-gradient-to-r from-[#F59E0B]/20 to-[#FCD34D]/20 rounded-full border border-[#F59E0B]/30">
+                    <span className="text-xs font-medium text-[#F59E0B] dark:text-[#FCD34D]">
                       🔥 {totalEngagement}
                     </span>
                   </div>
@@ -1413,7 +1413,7 @@ export default function ComunidadePage() {
                 onKeyDown={e => { if (e.key === 'Enter') handleAddComment(); }}
               />
               <button
-                className="text-[#3478F6] hover:text-[#255FD1] text-xl"
+                className="text-[#F59E0B] hover:text-[#D97706] text-xl"
                 title="Adicionar emoji"
                 onClick={() => setShowEmojiComment((v) => !v)}
                 type="button"
@@ -1428,7 +1428,7 @@ export default function ComunidadePage() {
                 </div>
               )}
               <button
-                className="px-4 py-2 rounded-lg bg-[#3478F6] text-white font-bold shadow-soft hover:bg-[#255FD1] transition-colors"
+                className="px-4 py-2 rounded-lg bg-[#F59E0B] text-white font-bold shadow-soft hover:bg-[#D97706] transition-colors"
                 onClick={handleAddComment}
               >Comentar</button>
             </div>
@@ -1442,12 +1442,12 @@ export default function ComunidadePage() {
           {!repostWithComment ? (
             <div className="flex flex-col gap-4">
               <button
-                className="px-4 py-2 rounded-lg bg-[#3478F6] text-white font-bold shadow-soft hover:bg-[#255FD1] transition-colors"
+                className="px-4 py-2 rounded-lg bg-[#F59E0B] text-white font-bold shadow-soft hover:bg-[#D97706] transition-colors"
                 onClick={() => { confirmRepost(false); }}
                 disabled={repostLoading}
               >Repostar direto</button>
               <button
-                className="px-4 py-2 rounded-lg bg-[#E8E9F1] text-[#2E2F38] dark:bg-[#23283A] dark:text-white font-bold shadow-soft hover:bg-[#A3C8F7] transition-colors"
+                className="px-4 py-2 rounded-lg bg-[#E8E9F1] text-[#2E2F38] dark:bg-[#23283A] dark:text-white font-bold shadow-soft hover:bg-[#FCD34D] transition-colors"
                 onClick={() => setRepostWithComment(true)}
                 disabled={repostLoading}
               >Repostar com comentário</button>
@@ -1463,7 +1463,7 @@ export default function ComunidadePage() {
               />
               <div className="flex items-center gap-2 mt-2 relative">
                 <button
-                  className="text-[#3478F6] hover:text-[#255FD1] text-xl"
+                  className="text-[#F59E0B] hover:text-[#D97706] text-xl"
                   title="Adicionar emoji"
                   onClick={() => setShowEmojiRepost((v) => !v)}
                   type="button"
@@ -1478,7 +1478,7 @@ export default function ComunidadePage() {
                   </div>
                 )}
                 <button
-                  className="px-4 py-2 rounded-lg bg-[#3478F6] text-white font-bold shadow-soft hover:bg-[#255FD1] transition-colors"
+                  className="px-4 py-2 rounded-lg bg-[#F59E0B] text-white font-bold shadow-soft hover:bg-[#D97706] transition-colors"
                   onClick={() => confirmRepost(true)}
                   disabled={repostLoading || !repostComment.trim()}
                 >Ok</button>
@@ -1490,7 +1490,7 @@ export default function ComunidadePage() {
               </div>
             </>
           )}
-          {repostLoading && <div className="mt-4 text-[#3478F6] font-bold">Repostando...</div>}
+          {repostLoading && <div className="mt-4 text-[#F59E0B] font-bold">Repostando...</div>}
         </div>
       </Modal>
 
@@ -1559,7 +1559,7 @@ export default function ComunidadePage() {
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { key: 'meet', label: 'Google Meet', icon: '🎥', color: 'bg-blue-500' },
+                  { key: 'meet', label: 'Google Meet', icon: '🎥', color: 'bg-amber-500' },
                   { key: 'youtube', label: 'YouTube Live', icon: '📺', color: 'bg-red-500' },
                   { key: 'instagram', label: 'Instagram Live', icon: '📱', color: 'bg-pink-500' }
                 ].map((tipo) => (
@@ -1569,7 +1569,7 @@ export default function ComunidadePage() {
                     className={`p-3 rounded-lg border-2 transition-all ${
                       eventForm.tipo === tipo.key
                         ? `${tipo.color} text-white border-transparent`
-                        : 'border-[#E8E9F1] dark:border-[#23283A] text-[#6B6F76] dark:text-gray-300 hover:border-[#3478F6]'
+                        : 'border-[#E8E9F1] dark:border-[#23283A] text-[#6B6F76] dark:text-gray-300 hover:border-[#F59E0B]'
                     }`}
                   >
                     <div className="text-center">
@@ -1670,7 +1670,7 @@ export default function ComunidadePage() {
               <button
                 onClick={handleCreateEvent}
                 disabled={eventLoading || !eventForm.titulo || !eventForm.link || !eventForm.data || !eventForm.hora}
-                className="flex-1 px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2 bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
               >
                 {eventLoading ? 'Criando...' : 'Criar Evento'}
               </button>
@@ -1699,7 +1699,7 @@ export default function ComunidadePage() {
               <div className="max-h-80 overflow-y-auto">
                 {loadingLikes ? (
                   <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3478F6]"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#F59E0B]"></div>
                   </div>
                 ) : postLikes.length === 0 ? (
                   <div className="text-center py-8">
@@ -1713,7 +1713,7 @@ export default function ComunidadePage() {
                         key={like.id}
                         className="flex items-center gap-3 p-3 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors"
                       >
-                        <div className="w-10 h-10 bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] rounded-full flex items-center justify-center text-white font-bold text-lg">
+                        <div className="w-10 h-10 bg-gradient-to-r from-[#F59E0B] to-[#FCD34D] rounded-full flex items-center justify-center text-white font-bold text-lg">
                           {like.userName ? like.userName.charAt(0).toUpperCase() : 'U'}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -1745,7 +1745,7 @@ export default function ComunidadePage() {
       {/* showScrollToTop && ( // This state was removed */}
       {/*   <button // This state was removed */}
       {/*     onClick={scrollToTop} // This state was removed */}
-      {/*     className="fixed bottom-20 right-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-colors" // This state was removed */}
+      {/*     className="fixed bottom-20 right-4 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-colors" // This state was removed */}
       {/*     title="Voltar ao topo" // This state was removed */}
       {/*   > // This state was removed */}
       {/*     ↑ // This state was removed */}

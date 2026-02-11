@@ -186,7 +186,7 @@ export default function DeveloperPage() {
                   <td className="px-4 py-3 text-white dark:text-white">{imob.status || '-'}</td>
                   <td className="px-4 py-3 text-white dark:text-white">{imob.aprovado ? 'Sim' : 'Não'}</td>
                   <td className="px-4 py-3">
-                    <button className="text-blue-600 dark:text-blue-400 hover:underline mr-2" onClick={() => { setSelectedImobiliaria(imob); loadCorretores(imob.id); }}>Ver corretores</button>
+                    <button className="text-amber-600 dark:text-amber-400 hover:underline mr-2" onClick={() => { setSelectedImobiliaria(imob); loadCorretores(imob.id); }}>Ver corretores</button>
                   </td>
                 </tr>
               ))}
@@ -199,7 +199,7 @@ export default function DeveloperPage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-white">Corretores de {selectedImobiliaria.nome}</h2>
             <button
-              className="ml-auto text-[#6B6F76] dark:text-gray-400 text-xs font-medium hover:text-[#3478F6] dark:hover:text-[#A3C8F7] p-1 rounded-full transition-colors"
+              className="ml-auto text-[#6B6F76] dark:text-gray-400 text-xs font-medium hover:text-[#F59E0B] dark:hover:text-[#FCD34D] p-1 rounded-full transition-colors"
               onClick={() => { setSelectedImobiliaria(null); setCorretores([]); }}
               title="Fechar"
             >
@@ -244,7 +244,7 @@ export default function DeveloperPage() {
       {/* Botões de administração */}
       <div className="mt-6 space-y-3">
         <button
-          className="flex items-center bg-[#3478F6] hover:bg-[#245bb5] text-white font-semibold py-2 px-5 rounded-lg shadow transition-colors"
+          className="flex items-center bg-[#F59E0B] hover:bg-[#245bb5] text-white font-semibold py-2 px-5 rounded-lg shadow transition-colors"
           onClick={abrirModalIndicadores}
         >
           <ChartBarIcon />
@@ -328,7 +328,7 @@ export default function DeveloperPage() {
               {indicadoresMsg && <div className="mt-3 text-sm text-green-600 dark:text-green-400">{indicadoresMsg}</div>}
               <button
                 type="submit"
-                className="mt-6 w-full bg-[#3478F6] hover:bg-[#245bb5] text-white font-semibold py-2 px-6 rounded-lg shadow transition-colors disabled:opacity-60"
+                className="mt-6 w-full bg-[#F59E0B] hover:bg-[#245bb5] text-white font-semibold py-2 px-6 rounded-lg shadow transition-colors disabled:opacity-60"
                 disabled={salvandoIndicadores}
               >
                 {salvandoIndicadores ? 'Salvando...' : 'Salvar'}

@@ -273,7 +273,7 @@ export default function IdeiasAdminPage() {
       case "aprovada":
         return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
       case "implementada":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+        return "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200";
       case "rejeitada":
         return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
       default:
@@ -333,7 +333,7 @@ export default function IdeiasAdminPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2 flex items-center gap-3">
-              <LightbulbIcon className="h-8 w-8 text-[#3478F6]" />
+              <LightbulbIcon className="h-8 w-8 text-[#F59E0B]" />
               Gestão de Ideias
             </h1>
             <p className="text-[#6B6F76] dark:text-gray-300">Gerencie as ideias dos usuários</p>
@@ -351,14 +351,14 @@ export default function IdeiasAdminPage() {
         <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-8">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <svg className="h-6 w-6 text-[#3478F6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-6 w-6 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
               <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Melhorias em Andamento</h2>
             </div>
             <button
               onClick={() => setShowMelhoriasForm(!showMelhoriasForm)}
-              className="bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
+              className="bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
             >
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -402,7 +402,7 @@ export default function IdeiasAdminPage() {
                 <div className="flex gap-3">
                   <button
                     type="submit"
-                    className="bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                    className="bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold py-2 px-4 rounded-lg transition-colors"
                   >
                     Adicionar Melhoria
                   </button>
@@ -498,7 +498,7 @@ export default function IdeiasAdminPage() {
                   onClick={() => setFilter(option.value as any)}
                   className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                     filter === option.value
-                      ? "bg-[#3478F6] text-white"
+                      ? "bg-[#F59E0B] text-white"
                       : "bg-gray-100 dark:bg-gray-700 text-[#6B6F76] dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                   }`}
                 >
@@ -595,7 +595,7 @@ export default function IdeiasAdminPage() {
                     {ideia.status === "aprovada" && (
                       <button
                         onClick={() => handleOpenComentarioAdminModal(ideia, "implementada")}
-                        className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded transition-colors"
+                        className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs rounded transition-colors"
                       >
                         Marcar como Implementada
                       </button>
@@ -693,7 +693,7 @@ export default function IdeiasAdminPage() {
               <div className="flex gap-3">
                 <button
                   onClick={handleSubmitComentarioAdmin}
-                  className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors"
+                  className="flex-1 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg transition-colors"
                 >
                   Confirmar
                 </button>

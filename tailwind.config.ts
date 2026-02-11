@@ -21,18 +21,18 @@ const config: Config = {
           secondary: '#6B6F76',   // Texto secundário
         },
         
-        // Cor Primária (Ação e Identidade)
+        // Cor Primária (Ação e Identidade) — TESTE AMARELO (estilo caixa de ideias)
         primary: {
-          50: '#f0f8ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#3478F6',         // Azul petróleo - Cor principal
-          600: '#255FD1',         // Azul um tom mais escuro - Hover
-          700: '#1e4bb8',
-          800: '#1e3a8a',
-          900: '#1e293b',
+          50: '#fffbeb',
+          100: '#fef3c7',
+          200: '#fde68a',
+          300: '#fcd34d',
+          400: '#fbbf24',
+          500: '#F59E0B',         // Amber - Cor principal (teste)
+          600: '#D97706',         // Amber escuro - Hover
+          700: '#b45309',
+          800: '#92400e',
+          900: '#78350f',
         },
         
         // Cores de Estado / Feedback Visual
@@ -76,16 +76,16 @@ const config: Config = {
         },
         
         info: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#A3C8F7',         // Azul claro - Info leve
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+          50: '#fffbeb',
+          100: '#fef3c7',
+          200: '#fde68a',
+          300: '#fcd34d',
+          400: '#fbbf24',
+          500: '#FCD34D',         // Amber claro - Info leve (teste)
+          600: '#D97706',
+          700: '#b45309',
+          800: '#92400e',
+          900: '#78350f',
         },
         
         // Cores legadas para compatibilidade

@@ -44,7 +44,7 @@ export function FunilVendasSlide({
     <div className="min-h-screen w-full flex flex-col bg-gradient-to-b from-[#0f1220] via-[#151b2d] to-[#0f1220] text-white overflow-hidden">
       {/* Header */}
       <div className="shrink-0 pt-6 pb-4 px-6 text-center border-b border-white/10">
-        <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-[#3478F6] via-[#60a5fa] to-[#3478F6] bg-clip-text text-transparent drop-shadow-lg">
+        <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-[#F59E0B] via-[#60a5fa] to-[#F59E0B] bg-clip-text text-transparent drop-shadow-lg">
           Funil de Vendas
         </h1>
         <p className="text-[#94a3b8] text-sm md:text-base mt-1">Dados em tempo real do CRM</p>
@@ -52,7 +52,7 @@ export function FunilVendasSlide({
 
       {/* Total corporativo em destaque */}
       <div className="shrink-0 px-6 py-4 flex justify-center">
-        <div className="inline-flex items-baseline gap-3 px-6 py-3 rounded-2xl bg-[#3478F6]/20 border border-[#3478F6]/40 shadow-[0_0_30px_-5px_rgba(52,120,246,0.3)]">
+        <div className="inline-flex items-baseline gap-3 px-6 py-3 rounded-2xl bg-[#F59E0B]/20 border border-[#F59E0B]/40 shadow-[0_0_30px_-5px_rgba(52,120,246,0.3)]">
           <span className="text-[#94a3b8] text-lg md:text-xl font-medium">Total no funil</span>
           <span className="text-4xl md:text-6xl font-black tabular-nums text-white drop-shadow-md">
             {totalCorporativo}
@@ -73,7 +73,7 @@ export function FunilVendasSlide({
             return (
               <div
                 key={etapa}
-                className="group flex flex-col rounded-xl bg-white/5 border border-white/10 p-3 hover:border-[#3478F6]/40 hover:bg-white/10 transition-all duration-300"
+                className="group flex flex-col rounded-xl bg-white/5 border border-white/10 p-3 hover:border-[#F59E0B]/40 hover:bg-white/10 transition-all duration-300"
               >
                 <div className="flex justify-between items-center mb-1.5">
                   <span className="text-xs md:text-sm font-medium text-[#cbd5e1] truncate pr-2" title={etapa}>
@@ -81,7 +81,7 @@ export function FunilVendasSlide({
                   </span>
                   <span
                     className={`text-lg md:text-xl font-bold tabular-nums shrink-0 ${
-                      isQuente ? 'text-amber-400' : 'text-[#3478F6]'
+                      isQuente ? 'text-amber-400' : 'text-[#F59E0B]'
                     }`}
                   >
                     {qtd}
@@ -89,7 +89,7 @@ export function FunilVendasSlide({
                 </div>
                 <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-[#3478F6] to-[#60a5fa] transition-all duration-500"
+                    className="h-full rounded-full bg-gradient-to-r from-[#F59E0B] to-[#60a5fa] transition-all duration-500"
                     style={{ width: `${Math.max(pct, 4)}%` }}
                   />
                 </div>
@@ -110,18 +110,18 @@ export function FunilVendasSlide({
               return (
                 <div
                   key={corretor.id}
-                  className="rounded-xl bg-white/5 border border-white/10 p-4 hover:border-[#3478F6]/30 hover:shadow-lg hover:shadow-[#3478F6]/10 transition-all duration-300"
+                  className="rounded-xl bg-white/5 border border-white/10 p-4 hover:border-[#F59E0B]/30 hover:shadow-lg hover:shadow-[#F59E0B]/10 transition-all duration-300"
                 >
                   <div className="flex items-center justify-between mb-3">
                     <span className="flex items-center gap-2">
-                      <span className="w-7 h-7 rounded-full bg-[#3478F6]/30 flex items-center justify-center text-sm font-bold text-[#60a5fa]">
+                      <span className="w-7 h-7 rounded-full bg-[#F59E0B]/30 flex items-center justify-center text-sm font-bold text-[#60a5fa]">
                         {idx + 1}
                       </span>
                       <span className="font-semibold text-white truncate" title={corretor.nome}>
                         {corretor.nome}
                       </span>
                     </span>
-                    <span className="text-xl font-bold text-[#3478F6] tabular-nums">{corretor.total}</span>
+                    <span className="text-xl font-bold text-[#F59E0B] tabular-nums">{corretor.total}</span>
                   </div>
                   <div className="space-y-1.5">
                     {PIPELINE_STAGES.slice(0, 6).map((etapa) => {
@@ -135,7 +135,7 @@ export function FunilVendasSlide({
                           </span>
                           <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                             <div
-                              className="h-full rounded-full bg-[#3478F6]/80"
+                              className="h-full rounded-full bg-[#F59E0B]/80"
                               style={{ width: `${Math.max(pct, 8)}%` }}
                             />
                           </div>

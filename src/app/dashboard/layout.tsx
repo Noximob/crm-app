@@ -56,8 +56,8 @@ const AlumeLogo = (props: React.SVGProps<SVGSVGElement>) => (
     {/* Bola azul com gradiente */}
     <defs>
       <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style={{stopColor: '#3478F6', stopOpacity: 1}} />
-        <stop offset="100%" style={{stopColor: '#255FD1', stopOpacity: 1}} />
+        <stop offset="0%" style={{stopColor: '#F59E0B', stopOpacity: 1}} />
+        <stop offset="100%" style={{stopColor: '#D97706', stopOpacity: 1}} />
       </linearGradient>
     </defs>
     <circle cx="12" cy="12" r="10" fill="url(#logoGradient)" />
@@ -68,9 +68,9 @@ const AlumeLogo = (props: React.SVGProps<SVGSVGElement>) => (
 
 const NavLink = ({ href, icon: Icon, children, collapsed, isActive }: any) => (
     <Link href={href} className={`flex items-center px-3 py-2.5 text-[#2E2F38] hover:bg-[#E8E9F1] rounded-lg transition-all duration-200 text-sm font-medium ${
-        isActive ? 'bg-[#3478F6] text-white shadow-md' : 'hover:text-[#3478F6]'
+        isActive ? 'bg-[#F59E0B] text-white shadow-md' : 'hover:text-[#F59E0B]'
     }`}>
-        <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-[#3478F6]'}`} />
+        <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-[#F59E0B]'}`} />
         {!collapsed && <span className="ml-3">{children}</span>}
     </Link>
 );
@@ -197,7 +197,7 @@ export default function DashboardLayout({
                       href={item.href}
                       className={`flex items-center ${collapsed ? 'justify-center' : ''} px-4 py-2.5 rounded-lg transition-colors relative ${
                         pathname === item.href
-                          ? 'bg-[#3478F6] text-white'
+                          ? 'bg-[#F59E0B] text-white'
                           : 'text-[#6B6F76] dark:text-gray-300 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] hover:text-[#2E2F38] dark:hover:text-white'
                       }`}
                       onClick={() => setCollapsed(false)}

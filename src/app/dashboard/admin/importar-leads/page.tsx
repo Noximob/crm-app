@@ -128,7 +128,7 @@ export default function ImportarLeadsPage() {
           </div>
         )}
         <button
-          className="w-full px-6 py-3 bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+          className="w-full px-6 py-3 bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
           onClick={handleImportar}
           disabled={leadsPreview.length === 0 || !corretorDestino || loading}
         >

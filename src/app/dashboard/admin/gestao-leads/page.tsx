@@ -151,7 +151,7 @@ export default function GestaoLeadsPage() {
                 </select>
               </div>
               <button
-                className="h-11 px-6 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg font-semibold transition-colors disabled:opacity-50 mt-6"
+                className="h-11 px-6 py-2 bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-lg font-semibold transition-colors disabled:opacity-50 mt-6"
                 onClick={handleTransferir}
                 disabled={!corretorDestino || leadsSelecionados.length === 0}
               >
@@ -185,7 +185,7 @@ export default function GestaoLeadsPage() {
                     type="checkbox"
                     checked={leadsSelecionados.length === leads.length}
                     onChange={e => setLeadsSelecionados(e.target.checked ? leads.map(l => l.id) : [])}
-                    className="mr-2 accent-[#3478F6]"
+                    className="mr-2 accent-[#F59E0B]"
                   />
                   <span className="text-sm text-[#2E2F38] dark:text-white cursor-pointer select-none" onClick={() => setLeadsSelecionados(leadsSelecionados.length === leads.length ? [] : leads.map(l => l.id))}>
                     Selecionar Tudo
@@ -198,16 +198,16 @@ export default function GestaoLeadsPage() {
                     type="checkbox"
                     checked={leadsSelecionados.includes(lead.id)}
                     onChange={() => handleSelectLead(lead.id)}
-                    className="accent-[#3478F6] h-5 w-5"
+                    className="accent-[#F59E0B] h-5 w-5"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-[#2E2F38] dark:text-white truncate">{lead.nome}</div>
                     <div className="text-sm text-[#6B6F76] dark:text-gray-300">{formatPhone(lead.telefone)}</div>
                   </div>
-                  <span className="inline-block px-2 py-1 rounded bg-[#E8E9F1] dark:bg-[#181C23] text-[#3478F6] dark:text-primary-200 font-semibold text-xs truncate max-w-[120px]">{lead.etapa}</span>
+                  <span className="inline-block px-2 py-1 rounded bg-[#E8E9F1] dark:bg-[#181C23] text-[#F59E0B] dark:text-primary-200 font-semibold text-xs truncate max-w-[120px]">{lead.etapa}</span>
                   <div className="flex items-center gap-2">
                     <button 
-                      className="text-[#3478F6] hover:text-[#255FD1] text-xs px-2 py-1 rounded hover:bg-[#3478F6]/10 transition-colors" 
+                      className="text-[#F59E0B] hover:text-[#D97706] text-xs px-2 py-1 rounded hover:bg-[#F59E0B]/10 transition-colors" 
                       onClick={() => handleVerDetalhes(lead.id)}
                       title="Ver detalhes do lead"
                     >

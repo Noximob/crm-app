@@ -30,7 +30,7 @@ export function UnidadesSelecaoSlide({ tituloSelecao, unidades }: UnidadesSeleca
 
   return (
     <div className="min-h-screen w-full flex flex-col bg-gradient-to-b from-[#181C23] via-[#1a1f2e] to-[#181C23] text-white overflow-hidden">
-      <p className="text-center text-[#A3C8F7]/90 text-lg md:text-xl pt-8 pb-4 px-4">
+      <p className="text-center text-[#FCD34D]/90 text-lg md:text-xl pt-8 pb-4 px-4">
         Unidades em destaque
       </p>
       <p className="text-center text-white font-semibold text-xl md:text-2xl pb-6 px-4">
@@ -42,7 +42,7 @@ export function UnidadesSelecaoSlide({ tituloSelecao, unidades }: UnidadesSeleca
           {fill.map((unidad, idx) => (
             <div
               key={idx}
-              className="group bg-white/5 rounded-2xl border border-white/10 overflow-hidden shadow-2xl hover:border-[#3478F6]/40 hover:shadow-[0_0_40px_-10px_rgba(52,120,246,0.4)] transition-all duration-500"
+              className="group bg-white/5 rounded-2xl border border-white/10 overflow-hidden shadow-2xl hover:border-[#F59E0B]/40 hover:shadow-[0_0_40px_-10px_rgba(52,120,246,0.4)] transition-all duration-500"
             >
               <div className="aspect-[4/3] relative overflow-hidden bg-[#23283A]">
                 {unidad?.imageUrl ? (
@@ -62,10 +62,10 @@ export function UnidadesSelecaoSlide({ tituloSelecao, unidades }: UnidadesSeleca
                 <h3 className="font-bold text-base md:text-lg text-white leading-tight line-clamp-2 mb-1">
                   {unidad?.titulo || 'Unidade em destaque'}
                 </h3>
-                <p className="text-lg font-bold text-[#3478F6] mb-2">
+                <p className="text-lg font-bold text-[#F59E0B] mb-2">
                   {unidad != null && unidad.valor !== undefined && unidad.valor !== '' ? formatValor(unidad.valor) : '—'}
                 </p>
-                <p className="text-sm text-[#A3C8F7]/80 line-clamp-3">
+                <p className="text-sm text-[#FCD34D]/80 line-clamp-3">
                   {unidad?.descritivo || '—'}
                 </p>
               </div>

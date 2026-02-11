@@ -115,7 +115,7 @@ export default function LoginPage() {
         <div className="bg-offwhite-50 rounded-2xl shadow-xl p-6 md:p-8 border border-primary-100">
           {/* Logo e título */}
           <div className="text-center mb-6">
-            <div className="mx-auto h-16 w-16 bg-gradient-to-br from-[#3478F6] to-[#255FD1] rounded-full flex items-center justify-center mb-4">
+            <div className="mx-auto h-16 w-16 bg-gradient-to-br from-[#F59E0B] to-[#D97706] rounded-full flex items-center justify-center mb-4">
               <svg className="h-8 w-8 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 {/* Letra A elegante em branco */}
                 <path d="M12 4L8 18H10L11 14H13L14 18H16L12 4ZM11.5 12L12 10L12.5 12H11.5Z" fill="white" stroke="white" strokeWidth="0.5" />

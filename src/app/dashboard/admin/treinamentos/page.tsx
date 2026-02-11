@@ -324,7 +324,7 @@ export default function TreinamentosAdminPage() {
           {/* Formulário */}
           <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
             <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-6 flex items-center gap-2">
-              <PlayIcon className="h-6 w-6 text-[#3478F6]" />
+              <PlayIcon className="h-6 w-6 text-[#F59E0B]" />
               {editingTreinamento ? 'Editar Treinamento' : 'Novo Treinamento'}
             </h2>
             
@@ -340,7 +340,7 @@ export default function TreinamentosAdminPage() {
                       onClick={() => handleFormCategoriaToggle(cat.key)}
                       className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         formTreinamento.categorias.includes(cat.key)
-                          ? 'bg-[#3478F6] text-white'
+                          ? 'bg-[#F59E0B] text-white'
                           : 'bg-gray-100 dark:bg-gray-700 text-[#6B6F76] dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
@@ -366,7 +366,7 @@ export default function TreinamentosAdminPage() {
                   required
                 />
                 {fetchingYoutube && (
-                  <p className="text-sm text-[#3478F6] mt-1">Buscando informações do vídeo...</p>
+                  <p className="text-sm text-[#F59E0B] mt-1">Buscando informações do vídeo...</p>
                 )}
               </div>
 
@@ -421,7 +421,7 @@ export default function TreinamentosAdminPage() {
                 <button
                   type="submit"
                   disabled={uploading}
-                  className="flex-1 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                  className="flex-1 bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
                 >
                   {uploading ? 'Salvando...' : (editingTreinamento ? 'Atualizar' : 'Adicionar')}
                 </button>
@@ -451,7 +451,7 @@ export default function TreinamentosAdminPage() {
                     onClick={() => handleCategoriaToggle(categoria.key)}
                     className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                       selectedCategorias.includes(categoria.key)
-                        ? 'bg-[#3478F6] text-white'
+                        ? 'bg-[#F59E0B] text-white'
                         : 'bg-gray-100 dark:bg-gray-700 text-[#6B6F76] dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }`}
                   >
@@ -503,7 +503,7 @@ export default function TreinamentosAdminPage() {
                             return categoria ? (
                               <span
                                 key={cat}
-                                className="px-2 py-1 bg-[#3478F6]/10 text-[#3478F6] text-xs rounded-full"
+                                className="px-2 py-1 bg-[#F59E0B]/10 text-[#F59E0B] text-xs rounded-full"
                               >
                                 {categoria.icon} {categoria.label}
                               </span>
@@ -518,7 +518,7 @@ export default function TreinamentosAdminPage() {
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleEditTreinamento(treinamento)}
-                              className="p-1 text-[#3478F6] hover:bg-[#3478F6]/10 rounded transition-colors"
+                              className="p-1 text-[#F59E0B] hover:bg-[#F59E0B]/10 rounded transition-colors"
                             >
                               <EditIcon className="h-4 w-4" />
                             </button>

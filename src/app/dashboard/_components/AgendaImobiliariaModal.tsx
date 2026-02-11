@@ -54,7 +54,7 @@ export default function AgendaImobiliariaModal({ isOpen, onClose, agenda }: Agen
 
   const getTipoColor = (tipo: string) => {
     switch (tipo) {
-      case 'reuniao': return 'bg-blue-500';
+      case 'reuniao': return 'bg-amber-500';
       case 'evento': return 'bg-purple-500';
       case 'treinamento': return 'bg-green-500';
       case 'revisar-crm': return 'bg-cyan-500';

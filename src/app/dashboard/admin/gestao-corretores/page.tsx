@@ -207,7 +207,7 @@ export default function GestaoCorretoresPage() {
     return (
       <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6] mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F59E0B] mx-auto mb-4"></div>
           <p className="text-[#6B6F76] dark:text-gray-300">Carregando...</p>
         </div>
       </div>
@@ -316,7 +316,7 @@ export default function GestaoCorretoresPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={selectAllLeads}
-                    className="px-3 py-1 text-xs bg-[#3478F6] text-white rounded-lg hover:bg-[#255FD1] transition-colors"
+                    className="px-3 py-1 text-xs bg-[#F59E0B] text-white rounded-lg hover:bg-[#D97706] transition-colors"
                   >
                     Selecionar Todos
                   </button>
@@ -334,7 +334,7 @@ export default function GestaoCorretoresPage() {
                     <button
                       onClick={handleTransferLeads}
                       disabled={!selectedDestUser}
-                      className="px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#255FD1] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 bg-[#F59E0B] text-white rounded-lg hover:bg-[#D97706] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Transferir {selectedLeads.length} Lead(s)
                     </button>
@@ -424,7 +424,7 @@ export default function GestaoCorretoresPage() {
                         {lead.telefone}
                       </td>
                       <td className="px-6 py-4 text-sm">
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
                           {lead.etapa}
                         </span>
                       </td>
@@ -433,7 +433,7 @@ export default function GestaoCorretoresPage() {
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <button 
-                          className="text-[#3478F6] hover:text-[#255FD1] text-xs px-2 py-1 rounded hover:bg-[#3478F6]/10 transition-colors" 
+                          className="text-[#F59E0B] hover:text-[#D97706] text-xs px-2 py-1 rounded hover:bg-[#F59E0B]/10 transition-colors" 
                           onClick={() => handleVerDetalhes(lead.id)}
                           title="Ver detalhes do lead"
                         >

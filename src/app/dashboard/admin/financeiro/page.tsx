@@ -300,12 +300,12 @@ export default function FinanceiroPage() {
             </div>
           </div>
           {/* Entradas */}
-          <div className="bg-gradient-to-br from-blue-400/10 to-blue-100/10 dark:from-blue-900/20 dark:to-blue-900/5 rounded-xl p-3 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] flex flex-row items-center justify-between min-h-[70px]">
+          <div className="bg-gradient-to-br from-amber-400/10 to-amber-100/10 dark:from-amber-900/20 dark:to-amber-900/5 rounded-xl p-3 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] flex flex-row items-center justify-between min-h-[70px]">
             <div className="flex items-center gap-2">
-              <TrendingUpIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <TrendingUpIcon className="h-6 w-6 text-amber-600 dark:text-amber-400" />
               <div>
                 <h3 className="text-xs font-semibold text-[#2E2F38] dark:text-white mb-0.5">Entradas</h3>
-                <p className="text-lg font-bold text-blue-700 dark:text-blue-300 m-0">{formatCurrency(entradas)}</p>
+                <p className="text-lg font-bold text-amber-700 dark:text-amber-300 m-0">{formatCurrency(entradas)}</p>
               </div>
             </div>
           </div>
@@ -330,7 +330,7 @@ export default function FinanceiroPage() {
                   resetForm();
                   setShowModal(true);
                 }}
-                className="flex items-center gap-1 px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold rounded text-xs transition-colors shadow-sm"
+                className="flex items-center gap-1 px-2 py-1 bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold rounded text-xs transition-colors shadow-sm"
               >
                 <PlusIcon className="h-3 w-3" />
                 Nova
@@ -348,7 +348,7 @@ export default function FinanceiroPage() {
                 type="text"
                 value={filtros.busca}
                 onChange={(e) => setFiltros(prev => ({ ...prev, busca: e.target.value }))}
-                className="pl-7 pr-2 py-1 border border-[#E8E9F1] dark:border-[#23283A] rounded bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white w-36 text-xs focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
+                className="pl-7 pr-2 py-1 border border-[#E8E9F1] dark:border-[#23283A] rounded bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white w-36 text-xs focus:outline-none focus:ring-2 focus:ring-[#F59E0B]"
                 placeholder="Buscar..."
               />
               <svg className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-[#6B6F76] dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -480,7 +480,7 @@ export default function FinanceiroPage() {
                     <div className="flex items-center gap-2 ml-2">
                       <button
                         onClick={() => handleEditar(mov)}
-                        className="p-1 text-[#3478F6] hover:bg-[#3478F6] hover:text-white rounded-md transition-colors"
+                        className="p-1 text-[#F59E0B] hover:bg-[#F59E0B] hover:text-white rounded-md transition-colors"
                         title="Editar"
                       >
                         <EditIcon />
@@ -530,7 +530,7 @@ export default function FinanceiroPage() {
                       <select
                         value={form.tipo}
                         onChange={(e) => setForm(prev => ({ ...prev, tipo: e.target.value, categoria: '', formaPagamento: '' }))}
-                        className="w-full px-2 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
+                        className="w-full px-2 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#F59E0B]"
                         required
                       >
                         <option value="entrada">Entrada</option>
@@ -545,7 +545,7 @@ export default function FinanceiroPage() {
                         type="number"
                         value={form.valor}
                         onChange={(e) => setForm(prev => ({ ...prev, valor: e.target.value }))}
-                        className="w-full px-2 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
+                        className="w-full px-2 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#F59E0B]"
                         placeholder="0,00"
                         step="0.01"
                         min="0.01"
@@ -562,7 +562,7 @@ export default function FinanceiroPage() {
                         <select
                           value={form.categoria}
                           onChange={(e) => setForm(prev => ({ ...prev, categoria: e.target.value }))}
-                          className="w-full px-2 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
+                          className="w-full px-2 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#F59E0B]"
                           required
                         >
                           <option value="">Selecione</option>
@@ -579,7 +579,7 @@ export default function FinanceiroPage() {
                         <select
                           value={form.formaPagamento}
                           onChange={(e) => setForm(prev => ({ ...prev, formaPagamento: e.target.value }))}
-                          className="w-full px-2 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
+                          className="w-full px-2 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#F59E0B]"
                           required
                         >
                           <option value="">Selecione</option>
@@ -597,7 +597,7 @@ export default function FinanceiroPage() {
                         type="date"
                         value={form.data}
                         onChange={(e) => setForm(prev => ({ ...prev, data: e.target.value }))}
-                        className="w-full px-2 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
+                        className="w-full px-2 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#F59E0B]"
                         required
                       />
                     </div>
@@ -610,7 +610,7 @@ export default function FinanceiroPage() {
                       type="text"
                       value={form.descricao}
                       onChange={(e) => setForm(prev => ({ ...prev, descricao: e.target.value }))}
-                      className="w-full px-2 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
+                      className="w-full px-2 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#F59E0B]"
                       placeholder="Descrição da movimentação"
                       required
                     />
@@ -622,7 +622,7 @@ export default function FinanceiroPage() {
                     <textarea
                       value={form.observacao}
                       onChange={(e) => setForm(prev => ({ ...prev, observacao: e.target.value }))}
-                      className="w-full px-2 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#3478F6]"
+                      className="w-full px-2 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#F59E0B]"
                       rows={2}
                       placeholder="Observações adicionais..."
                     />
@@ -642,7 +642,7 @@ export default function FinanceiroPage() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="flex-1 px-2 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold rounded-lg text-sm transition-colors disabled:opacity-50"
+                      className="flex-1 px-2 py-2 bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold rounded-lg text-sm transition-colors disabled:opacity-50"
                     >
                       {loading ? 'Salvando...' : (editId ? 'Atualizar' : 'Criar')}
                     </button>

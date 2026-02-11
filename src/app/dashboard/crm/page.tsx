@@ -103,7 +103,7 @@ const getTaskStatusInfo = (tasks: Task[]): TaskStatus => {
 const SectionTitle = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
   <div className={`relative ${className}`}>
     <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white relative z-10">{children}</h2>
-    <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-[#3478F6] to-[#A3C8F7] rounded-r-full opacity-60"></div>
+    <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-[#F59E0B] to-[#FCD34D] rounded-r-full opacity-60"></div>
   </div>
 );
 
@@ -298,7 +298,7 @@ export default function CrmPage() {
                                     placeholder="Buscar lead por nome..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="block w-64 pl-10 pr-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3478F6] focus:border-transparent"
+                                    className="block w-64 pl-10 pr-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent"
                                 />
                                 {searchTerm && (
                                     <button
@@ -313,7 +313,7 @@ export default function CrmPage() {
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => setFilterModalOpen(true)}
-                                className="relative flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-[#3478F6] hover:bg-[#255FD1] rounded-lg transition-colors shadow-soft"
+                                className="relative flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-[#F59E0B] hover:bg-[#D97706] rounded-lg transition-colors shadow-soft"
                             >
                                 <span>Filtrar</span>
                                 {activeAdvancedFilterCount > 0 && (
@@ -394,7 +394,7 @@ export default function CrmPage() {
                                             </a>
                                         </td>
                                         <td className="px-4 py-3 text-xs w-1/5">
-                                            <span className="inline-block px-2 py-1 rounded bg-[#E8E9F1] dark:bg-[#181C23] text-[#3478F6] dark:text-primary-200 font-semibold text-[11px] truncate max-w-[120px]">{lead.etapa}</span>
+                                            <span className="inline-block px-2 py-1 rounded bg-[#E8E9F1] dark:bg-[#181C23] text-[#F59E0B] dark:text-primary-200 font-semibold text-[11px] truncate max-w-[120px]">{lead.etapa}</span>
                                         </td>
                                         <td className="px-4 py-3 text-xs w-1/5">
                                             <span className="dark:text-white">
@@ -405,7 +405,7 @@ export default function CrmPage() {
                                             <div className="flex justify-center">
                                                 <Link
                                                     href={`/dashboard/crm/${lead.id}`}
-                                                    className="px-3 py-1.5 text-xs font-semibold bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg shadow-soft transition-colors"
+                                                    className="px-3 py-1.5 text-xs font-semibold bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-lg shadow-soft transition-colors"
                                                 >
                                                     Ver
                                                 </Link>
@@ -419,7 +419,7 @@ export default function CrmPage() {
                             <div className="flex justify-center mt-4">
                                 <button
                                     onClick={() => fetchLeads(true)}
-                                    className="px-6 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold rounded-lg shadow-soft transition-colors"
+                                    className="px-6 py-2 bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold rounded-lg shadow-soft transition-colors"
                                 >
                                     Mostrar mais
                                 </button>

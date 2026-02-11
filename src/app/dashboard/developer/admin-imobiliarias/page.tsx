@@ -142,7 +142,7 @@ export default function AdminImobiliariasPage() {
           <div className="flex items-center gap-4 mb-4 sm:mb-0">
             <Link 
               href="/dashboard/developer"
-              className="text-[#3478F6] hover:text-[#2E6FD9] transition-colors"
+              className="text-[#F59E0B] hover:text-[#2E6FD9] transition-colors"
             >
               ← Voltar à Área do Desenvolvedor
             </Link>
@@ -198,7 +198,7 @@ export default function AdminImobiliariasPage() {
                 placeholder="Buscar por nome, email ou CNPJ..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-3 bg-[#F5F6FA] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3478F6] transition-all"
+                className="w-full px-4 py-3 bg-[#F5F6FA] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] transition-all"
               />
             </div>
             <div className="flex gap-2">
@@ -206,7 +206,7 @@ export default function AdminImobiliariasPage() {
                 onClick={() => setFilterStatus('todos')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterStatus === 'todos' 
-                    ? 'bg-[#3478F6] text-white' 
+                    ? 'bg-[#F59E0B] text-white' 
                     : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
                 }`}
               >
@@ -216,7 +216,7 @@ export default function AdminImobiliariasPage() {
                 onClick={() => setFilterStatus('ativo')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterStatus === 'ativo' 
-                    ? 'bg-[#3478F6] text-white' 
+                    ? 'bg-[#F59E0B] text-white' 
                     : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
                 }`}
               >
@@ -226,7 +226,7 @@ export default function AdminImobiliariasPage() {
                 onClick={() => setFilterStatus('pendente')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterStatus === 'pendente' 
-                    ? 'bg-[#3478F6] text-white' 
+                    ? 'bg-[#F59E0B] text-white' 
                     : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
                 }`}
               >
@@ -236,7 +236,7 @@ export default function AdminImobiliariasPage() {
                 onClick={() => setFilterStatus('inativo')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterStatus === 'inativo' 
-                    ? 'bg-[#3478F6] text-white' 
+                    ? 'bg-[#F59E0B] text-white' 
                     : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
                 }`}
               >
@@ -306,7 +306,7 @@ export default function AdminImobiliariasPage() {
                         )}
                         <button
                           onClick={() => handleAction('edit', imobiliaria)}
-                          className="px-3 py-1 bg-blue-500 text-white rounded-lg text-xs hover:bg-blue-600 transition-colors"
+                          className="px-3 py-1 bg-amber-500 text-white rounded-lg text-xs hover:bg-amber-600 transition-colors"
                         >
                           Editar
                         </button>
@@ -354,7 +354,7 @@ export default function AdminImobiliariasPage() {
                     modalAction === 'approve' ? 'bg-green-500 hover:bg-green-600' :
                     modalAction === 'disable' ? 'bg-yellow-500 hover:bg-yellow-600' :
                     modalAction === 'delete' ? 'bg-red-500 hover:bg-red-600' :
-                    'bg-blue-500 hover:bg-blue-600'
+                    'bg-amber-500 hover:bg-amber-600'
                   }`}
                 >
                   Confirmar

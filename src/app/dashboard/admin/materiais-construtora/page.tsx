@@ -522,7 +522,7 @@ export default function MateriaisConstrutoraAdminPage() {
                 setSelectedConstrutora(null);
                 setSelectedProduto(null);
               }}
-              className="px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg font-semibold transition-colors"
+              className="px-4 py-2 bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-lg font-semibold transition-colors"
             >
               ← Voltar
             </button>
@@ -542,7 +542,7 @@ export default function MateriaisConstrutoraAdminPage() {
             {/* Formulário */}
             <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
               <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                <BuildingIcon className="h-6 w-6 text-[#3478F6]" />
+                <BuildingIcon className="h-6 w-6 text-[#F59E0B]" />
                 Nova Construtora
               </h2>
               <form onSubmit={handleAddConstrutora} className="space-y-4">
@@ -569,7 +569,7 @@ export default function MateriaisConstrutoraAdminPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                  className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
                 >
                   {loading ? 'Criando...' : 'Criar Construtora'}
                 </button>
@@ -596,7 +596,7 @@ export default function MateriaisConstrutoraAdminPage() {
                         {construtora.logoUrl ? (
                           <img src={construtora.logoUrl} alt={construtora.nome} className="w-8 h-8 rounded-full object-cover" />
                         ) : (
-                          <div className="w-8 h-8 bg-[#3478F6] rounded-full flex items-center justify-center">
+                          <div className="w-8 h-8 bg-[#F59E0B] rounded-full flex items-center justify-center">
                             <BuildingIcon className="h-4 w-4 text-white" />
                           </div>
                         )}
@@ -608,7 +608,7 @@ export default function MateriaisConstrutoraAdminPage() {
                             setSelectedConstrutora(construtora);
                             setView('produtos');
                           }}
-                          className="px-3 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-sm rounded transition-colors"
+                          className="px-3 py-1 bg-[#F59E0B] hover:bg-[#D97706] text-white text-sm rounded transition-colors"
                         >
                           Produtos
                         </button>
@@ -639,7 +639,7 @@ export default function MateriaisConstrutoraAdminPage() {
             {/* Formulário */}
             <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
               <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                <PackageIcon className="h-6 w-6 text-[#3478F6]" />
+                <PackageIcon className="h-6 w-6 text-[#F59E0B]" />
                 Novo Produto
               </h2>
               <form onSubmit={handleAddProduto} className="space-y-4">
@@ -667,7 +667,7 @@ export default function MateriaisConstrutoraAdminPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                  className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
                 >
                   {loading ? 'Criando...' : 'Criar Produto'}
                 </button>
@@ -702,7 +702,7 @@ export default function MateriaisConstrutoraAdminPage() {
                             setSelectedProduto(produto);
                             setView('materiais');
                           }}
-                          className="px-3 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-sm rounded transition-colors"
+                          className="px-3 py-1 bg-[#F59E0B] hover:bg-[#D97706] text-white text-sm rounded transition-colors"
                         >
                           Materiais
                         </button>
@@ -729,7 +729,7 @@ export default function MateriaisConstrutoraAdminPage() {
               {/* PDF */}
               <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
                 <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                  <FileIcon className="h-5 w-5 text-[#3478F6]" />
+                  <FileIcon className="h-5 w-5 text-[#F59E0B]" />
                   Upload PDF
                 </h3>
                 <input
@@ -748,7 +748,7 @@ export default function MateriaisConstrutoraAdminPage() {
               {/* Links */}
               <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
                 <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                  <LinkIcon className="h-5 w-5 text-[#3478F6]" />
+                  <LinkIcon className="h-5 w-5 text-[#F59E0B]" />
                   Adicionar Link
                 </h3>
                 <form onSubmit={handleAddMaterial} className="space-y-3">
@@ -778,7 +778,7 @@ export default function MateriaisConstrutoraAdminPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                    className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
                   >
                     {loading ? 'Adicionando...' : 'Adicionar Link'}
                   </button>
@@ -791,7 +791,7 @@ export default function MateriaisConstrutoraAdminPage() {
               {/* Fotos */}
               <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
                 <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                  <ImageIcon className="h-5 w-5 text-[#3478F6]" />
+                  <ImageIcon className="h-5 w-5 text-[#F59E0B]" />
                   Upload Fotos
                 </h3>
                 <input
@@ -812,7 +812,7 @@ export default function MateriaisConstrutoraAdminPage() {
               {/* Vídeos */}
               <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
                 <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                  <VideoIcon className="h-5 w-5 text-[#3478F6]" />
+                  <VideoIcon className="h-5 w-5 text-[#F59E0B]" />
                   Upload Vídeos
                 </h3>
                 <input
@@ -857,7 +857,7 @@ export default function MateriaisConstrutoraAdminPage() {
                             href={material.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors"
+                            className="px-2 py-1 bg-[#F59E0B] hover:bg-[#D97706] text-white text-xs rounded transition-colors"
                           >
                             Ver
                           </a>
@@ -890,7 +890,7 @@ export default function MateriaisConstrutoraAdminPage() {
               </div>
               <button
                 onClick={() => setView('construtoras')}
-                className="px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg font-semibold transition-colors"
+                className="px-4 py-2 bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-lg font-semibold transition-colors"
               >
                 ← Voltar
               </button>
@@ -954,7 +954,7 @@ export default function MateriaisConstrutoraAdminPage() {
                         {imovel.bairro}, {imovel.cidade} - {imovel.estado}
                       </p>
                       
-                      <p className="text-lg font-bold text-[#3478F6]">
+                      <p className="text-lg font-bold text-[#F59E0B]">
                         {formatCurrency(imovel.valor)}
                       </p>
                       
@@ -974,7 +974,7 @@ export default function MateriaisConstrutoraAdminPage() {
                               href={imovel.localizacao}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center gap-1 text-xs text-[#3478F6] hover:underline"
+                              className="flex items-center gap-1 text-xs text-[#F59E0B] hover:underline"
                             >
                               <MapPinIcon className="h-3 w-3" />
                               Maps
@@ -1003,7 +1003,7 @@ export default function MateriaisConstrutoraAdminPage() {
           <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white flex items-center gap-2">
-                <BuildingIcon className="h-6 w-6 text-[#3478F6]" />
+                <BuildingIcon className="h-6 w-6 text-[#F59E0B]" />
                 Editar Logo da Construtora
               </h2>
               <button
@@ -1033,7 +1033,7 @@ export default function MateriaisConstrutoraAdminPage() {
                 <button
                   onClick={handleEditLogo}
                   disabled={loading}
-                  className="flex-1 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                  className="flex-1 bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
                 >
                   {loading ? 'Atualizando...' : 'Atualizar Logo'}
                 </button>

@@ -143,7 +143,7 @@ export default function MateriaisImobiliariaPage() {
             {getGroupedMateriais().links.length > 0 && (
               <div>
                 <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                  <LinkIcon className="h-5 w-5 text-[#3478F6]" />
+                  <LinkIcon className="h-5 w-5 text-[#F59E0B]" />
                   Links
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -153,7 +153,7 @@ export default function MateriaisImobiliariaPage() {
                       className="bg-white dark:bg-[#23283A] rounded-xl p-3 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105"
                     >
                       <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center flex-shrink-0">
+                        <div className="w-8 h-8 bg-gradient-to-br from-[#F59E0B] to-[#FCD34D] rounded-lg flex items-center justify-center flex-shrink-0">
                           <LinkIcon className="h-4 w-4 text-white" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -173,7 +173,7 @@ export default function MateriaisImobiliariaPage() {
                             href={material.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex-1 px-3 py-1.5 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded-lg transition-colors font-semibold text-center"
+                            className="flex-1 px-3 py-1.5 bg-[#F59E0B] hover:bg-[#D97706] text-white text-xs rounded-lg transition-colors font-semibold text-center"
                           >
                             Acessar Link
                           </a>
@@ -189,7 +189,7 @@ export default function MateriaisImobiliariaPage() {
             {getGroupedMateriais().materiais_pdf.length > 0 && (
               <div>
                 <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                  <FileIcon className="h-5 w-5 text-[#3478F6]" />
+                  <FileIcon className="h-5 w-5 text-[#F59E0B]" />
                   PDFs
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -199,7 +199,7 @@ export default function MateriaisImobiliariaPage() {
                       className="bg-white dark:bg-[#23283A] rounded-xl p-3 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105"
                     >
                       <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center flex-shrink-0">
+                        <div className="w-8 h-8 bg-gradient-to-br from-[#F59E0B] to-[#FCD34D] rounded-lg flex items-center justify-center flex-shrink-0">
                           <FileIcon className="h-4 w-4 text-white" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -218,7 +218,7 @@ export default function MateriaisImobiliariaPage() {
                           <button
                             onClick={() => handleDownload(material)}
                             disabled={downloadingId === material.id}
-                            className="flex-1 px-3 py-1.5 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded-lg transition-colors font-semibold"
+                            className="flex-1 px-3 py-1.5 bg-[#F59E0B] hover:bg-[#D97706] text-white text-xs rounded-lg transition-colors font-semibold"
                           >
                             {downloadingId === material.id ? (
                               <span className="flex items-center gap-2"><SpinnerIcon /> Baixando...</span>
@@ -236,7 +236,7 @@ export default function MateriaisImobiliariaPage() {
             {getGroupedMateriais().videos.length > 0 && (
               <div>
                 <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                  <VideoIcon className="h-5 w-5 text-[#3478F6]" />
+                  <VideoIcon className="h-5 w-5 text-[#F59E0B]" />
                   Vídeos
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -265,7 +265,7 @@ export default function MateriaisImobiliariaPage() {
                             />
                             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 opacity-0 group-hover:opacity-100 transition-opacity">
                               <div className="w-12 h-12 bg-white bg-opacity-90 rounded-full flex items-center justify-center">
-                                <VideoIcon className="h-6 w-6 text-[#3478F6]" />
+                                <VideoIcon className="h-6 w-6 text-[#F59E0B]" />
                               </div>
                             </div>
                           </>
@@ -287,7 +287,7 @@ export default function MateriaisImobiliariaPage() {
                           <button
                             onClick={() => handleDownload(material)}
                             disabled={downloadingId === material.id}
-                            className="w-full mt-2 px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors font-semibold"
+                            className="w-full mt-2 px-2 py-1 bg-[#F59E0B] hover:bg-[#D97706] text-white text-xs rounded transition-colors font-semibold"
                           >
                             {downloadingId === material.id ? (
                               <span className="flex items-center gap-2"><SpinnerIcon /> Baixando...</span>
@@ -305,7 +305,7 @@ export default function MateriaisImobiliariaPage() {
             {getGroupedMateriais().fotos.length > 0 && (
               <div>
                 <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                  <ImageIcon className="h-5 w-5 text-[#3478F6]" />
+                  <ImageIcon className="h-5 w-5 text-[#F59E0B]" />
                   Fotos Avulsas
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -342,7 +342,7 @@ export default function MateriaisImobiliariaPage() {
                           <button
                             onClick={() => handleDownload(material)}
                             disabled={downloadingId === material.id}
-                            className="w-full mt-2 px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors font-semibold"
+                            className="w-full mt-2 px-2 py-1 bg-[#F59E0B] hover:bg-[#D97706] text-white text-xs rounded transition-colors font-semibold"
                           >
                             {downloadingId === material.id ? (
                               <span className="flex items-center gap-2"><SpinnerIcon /> Baixando...</span>

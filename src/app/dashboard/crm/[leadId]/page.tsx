@@ -392,7 +392,7 @@ export default function LeadDetailPage() {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6] mx-auto mb-4"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F59E0B] mx-auto mb-4"></div>
                     <p className="text-[#6B6F76] dark:text-gray-300">Carregando dados do lead...</p>
                 </div>
             </div>
@@ -438,7 +438,7 @@ export default function LeadDetailPage() {
                                     id="lead-situation" 
                                     value={lead.etapa} 
                                     onChange={handleStageChange} 
-                                    className="px-2 py-1 text-xs border border-[#A3C8F7] dark:border-[#3478F6] rounded-md bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white focus:ring-1 focus:ring-[#3478F6] focus:outline-none"
+                                    className="px-2 py-1 text-xs border border-[#FCD34D] dark:border-[#F59E0B] rounded-md bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white focus:ring-1 focus:ring-[#F59E0B] focus:outline-none"
                                   >
                                     {PIPELINE_STAGES.map(stage => (<option key={stage} value={stage}>{stage}</option>))}
                                   </select>
@@ -447,7 +447,7 @@ export default function LeadDetailPage() {
                                   <div className="flex flex-col items-center gap-1">
                                     <button 
                                         onClick={() => setIsAgendaModalOpen(true)} 
-                                        className="w-10 h-10 bg-[#3478F6] hover:bg-[#3478F6]/80 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 shadow-lg"
+                                        className="w-10 h-10 bg-[#F59E0B] hover:bg-[#F59E0B]/80 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 shadow-lg"
                                         title="Agendar Tarefa"
                                     >
                                         <TaskIcon className="h-5 w-5"/>
@@ -523,7 +523,7 @@ export default function LeadDetailPage() {
                                                              Criado: {interaction.timestamp ? new Date(interaction.timestamp.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}
                                                          </span>
                                                          {relatedTask && (
-                                                             <span className="text-[#3478F6] dark:text-[#A3C8F7] font-medium">
+                                                             <span className="text-[#F59E0B] dark:text-[#FCD34D] font-medium">
                                                                  Agendado: {relatedTask.dueDate ? new Date(relatedTask.dueDate.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}
                                                              </span>
                                                          )}
@@ -547,7 +547,7 @@ export default function LeadDetailPage() {
                                                          
                                                          alert(descricaoCompleta);
                                                      }}
-                                                     className="text-[#3478F6] dark:text-[#A3C8F7] hover:text-[#255FD1] dark:hover:text-[#7BA3E8] transition-colors p-1"
+                                                     className="text-[#F59E0B] dark:text-[#FCD34D] hover:text-[#D97706] dark:hover:text-[#FCD34D] transition-colors p-1"
                                                      title="Ver descrição completa"
                                                  >
                                                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -586,7 +586,7 @@ export default function LeadDetailPage() {
                                             {!readOnly && (
                                 <button
                                   onClick={() => setIsQualificationModalOpen(true)}
-                                  className="px-3 py-1.5 text-sm font-semibold text-[#3478F6] bg-[#E8E9F1] hover:bg-[#A3C8F7]/40 rounded-lg transition-colors dark:bg-[#23283A] dark:hover:bg-[#3478F6]/20"
+                                  className="px-3 py-1.5 text-sm font-semibold text-[#F59E0B] bg-[#E8E9F1] hover:bg-[#FCD34D]/40 rounded-lg transition-colors dark:bg-[#23283A] dark:hover:bg-[#F59E0B]/20"
                                 >
                                   ✏️ Editar Qualificação
                                 </button>
@@ -609,7 +609,7 @@ export default function LeadDetailPage() {
                                                 {values.map((value, valueIndex) => (
                                                     <span 
                                                         key={`${key}-${valueIndex}`}
-                                                        className="px-2 py-1 text-xs font-medium bg-[#F0F4FF] dark:bg-[#23283A] text-[#3478F6] dark:text-[#A3C8F7] rounded-md border border-[#A3C8F7]/20"
+                                                        className="px-2 py-1 text-xs font-medium bg-[#F0F4FF] dark:bg-[#23283A] text-[#F59E0B] dark:text-[#FCD34D] rounded-md border border-[#FCD34D]/20"
                                                     >
                                                         {value}
                                                     </span>
@@ -708,7 +708,7 @@ export default function LeadDetailPage() {
                                             onClick={() => handleQualificationChange(group.key, option)}
                                             className={`px-3 py-2 text-sm font-medium border rounded-md transition-all duration-150 ${
                                                 Array.isArray(qualifications[group.key]) && qualifications[group.key].includes(option)
-                                                ? 'bg-[#3478F6] border-[#3478F6] text-white shadow'
+                                                ? 'bg-[#F59E0B] border-[#F59E0B] text-white shadow'
                                                 : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-600 dark:bg-gray-900/50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'
                                             }`}
                                         >
@@ -721,7 +721,7 @@ export default function LeadDetailPage() {
                     </div>
                     <div className="flex justify-end gap-2 mt-6">
                         <button onClick={handleCloseQualificationModal} className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500">Cancelar</button>
-                        <button onClick={handleSaveQualifications} className="px-4 py-2 text-sm font-semibold text-white bg-[#3478F6] hover:bg-[#3478F6]/80 rounded-lg transition-colors">Salvar</button>
+                        <button onClick={handleSaveQualifications} className="px-4 py-2 text-sm font-semibold text-white bg-[#F59E0B] hover:bg-[#F59E0B]/80 rounded-lg transition-colors">Salvar</button>
                     </div>
                 </div>
             </div>

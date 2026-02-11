@@ -438,7 +438,7 @@ export default function RelatoriosAdminPage() {
 
         {loading ? (
           <div className="flex justify-center py-24">
-            <div className="animate-spin rounded-full h-14 w-14 border-4 border-[#3478F6] border-t-transparent" />
+            <div className="animate-spin rounded-full h-14 w-14 border-4 border-[#F59E0B] border-t-transparent" />
           </div>
         ) : (
           <>
@@ -446,7 +446,7 @@ export default function RelatoriosAdminPage() {
               <p className="text-base text-[#6B6F76] dark:text-gray-400">
                 Período: {formatDate(start)} até {formatDate(end)}
               </p>
-              <span className={`inline-flex items-center px-4 py-2 rounded-full text-base font-medium ${corretorFilter ? 'bg-[#A3C8F7]/30 text-[#3478F6]' : 'bg-[#3478F6]/20 text-[#3478F6]'}`}>
+              <span className={`inline-flex items-center px-4 py-2 rounded-full text-base font-medium ${corretorFilter ? 'bg-[#FCD34D]/30 text-[#F59E0B]' : 'bg-[#F59E0B]/20 text-[#F59E0B]'}`}>
                 {corretorFilter ? `Visão individual: ${corretores.find(c => c.id === corretorFilter)?.nome || 'Corretor'}` : 'Visão corporativa'}
               </span>
             </div>
@@ -474,8 +474,8 @@ export default function RelatoriosAdminPage() {
                   <p className="text-2xl md:text-3xl font-bold text-[#2E2F38] dark:text-white tabular-nums">{alertaAtencao.comLigacaoOuVisita}</p>
                   <p className="text-xs text-[#6B6F76] dark:text-gray-400 mt-1">leads em ação agendada</p>
                 </div>
-                <div className="bg-white/80 dark:bg-[#23283A]/80 rounded-xl p-4 border border-[#3478F6]/30">
-                  <p className="text-sm font-semibold text-[#3478F6] mb-1">Concentração em negociação/contrato</p>
+                <div className="bg-white/80 dark:bg-[#23283A]/80 rounded-xl p-4 border border-[#F59E0B]/30">
+                  <p className="text-sm font-semibold text-[#F59E0B] mb-1">Concentração em negociação/contrato</p>
                   <p className="text-2xl md:text-3xl font-bold text-[#2E2F38] dark:text-white tabular-nums">{alertaAtencao.pctEmEtapasQuentes}%</p>
                   <p className="text-xs text-[#6B6F76] dark:text-gray-400 mt-1">do funil em etapas quentes — acompanhe o avanço</p>
                 </div>
@@ -507,10 +507,10 @@ export default function RelatoriosAdminPage() {
 
             {/* Aviso em destaque — maior */}
             {avisoEmDestaque && (
-              <div className="mb-8 p-6 rounded-2xl bg-[#3478F6]/15 dark:bg-[#3478F6]/25 border-2 border-[#3478F6]/40 flex items-start gap-4">
-                <MegaphoneIcon className="w-8 h-8 text-[#3478F6] shrink-0 mt-0.5" />
+              <div className="mb-8 p-6 rounded-2xl bg-[#F59E0B]/15 dark:bg-[#F59E0B]/25 border-2 border-[#F59E0B]/40 flex items-start gap-4">
+                <MegaphoneIcon className="w-8 h-8 text-[#F59E0B] shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-bold text-[#3478F6] uppercase tracking-wider">Aviso em destaque</p>
+                  <p className="text-sm font-bold text-[#F59E0B] uppercase tracking-wider">Aviso em destaque</p>
                   <p className="text-xl font-bold text-[#2E2F38] dark:text-white mt-1">{avisoEmDestaque.titulo}</p>
                   <p className="text-base text-[#6B6F76] dark:text-gray-300 mt-2 line-clamp-2">{avisoEmDestaque.mensagem}</p>
                 </div>
@@ -521,7 +521,7 @@ export default function RelatoriosAdminPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
               <div className="bg-white dark:bg-[#23283A] rounded-2xl border-2 border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-md">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-xl bg-[#3478F6]/10 text-[#3478F6]"><ChartIcon className="w-7 h-7" /></div>
+                  <div className="p-3 rounded-xl bg-[#F59E0B]/10 text-[#F59E0B]"><ChartIcon className="w-7 h-7" /></div>
                   <div>
                     <p className="text-base text-[#6B6F76] dark:text-gray-400 font-medium">Total de leads</p>
                     <p className="text-4xl md:text-5xl font-bold text-[#2E2F38] dark:text-white tabular-nums">{totaisCards.totalLeads}</p>
@@ -575,12 +575,12 @@ export default function RelatoriosAdminPage() {
                 <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-5">Sempre visão corporativa.</p>
                 <div className="space-y-3">
                   {ranking.slice(0, 10).map((r, i) => (
-                    <div key={r.userId} className={`flex items-center justify-between py-3 px-4 rounded-xl ${i < 3 ? 'bg-[#3478F6]/10 dark:bg-[#3478F6]/20' : 'bg-[#F5F6FA] dark:bg-[#181C23]'}`}>
+                    <div key={r.userId} className={`flex items-center justify-between py-3 px-4 rounded-xl ${i < 3 ? 'bg-[#F59E0B]/10 dark:bg-[#F59E0B]/20' : 'bg-[#F5F6FA] dark:bg-[#181C23]'}`}>
                       <span className="flex items-center gap-3">
-                        <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${i === 0 ? 'bg-amber-500 text-white' : i === 1 ? 'bg-gray-400 text-white' : i === 2 ? 'bg-amber-700 text-white' : 'bg-[#3478F6] text-white'}`}>{i + 1}</span>
+                        <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${i === 0 ? 'bg-amber-500 text-white' : i === 1 ? 'bg-gray-400 text-white' : i === 2 ? 'bg-amber-700 text-white' : 'bg-[#F59E0B] text-white'}`}>{i + 1}</span>
                         <span className="text-base md:text-lg font-medium text-[#2E2F38] dark:text-white">{r.nome}</span>
                       </span>
-                      <span className="text-xl font-bold text-[#3478F6] tabular-nums">{r.count}</span>
+                      <span className="text-xl font-bold text-[#F59E0B] tabular-nums">{r.count}</span>
                     </div>
                   ))}
                   {ranking.length === 0 && <p className="text-[#6B6F76] dark:text-gray-400 text-base py-4">Nenhum lead novo no período.</p>}
@@ -589,7 +589,7 @@ export default function RelatoriosAdminPage() {
 
               <div className="bg-white dark:bg-[#23283A] rounded-2xl border-2 border-[#E8E9F1] dark:border-[#23283A] p-6 md:p-8 shadow-md">
                 <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-5 flex items-center gap-3">
-                  <ChartIcon className="w-7 h-7 text-[#3478F6]" />
+                  <ChartIcon className="w-7 h-7 text-[#F59E0B]" />
                   Funil de vendas {corretorFilter && <span className="text-base font-normal text-[#6B6F76] dark:text-gray-400">(individual)</span>}
                 </h2>
                 <div className="space-y-4">
@@ -601,10 +601,10 @@ export default function RelatoriosAdminPage() {
                       <div key={etapa}>
                         <div className="flex justify-between text-base mb-1.5">
                           <span className="text-[#2E2F38] dark:text-gray-200 truncate pr-3">{etapa}</span>
-                          <span className="font-bold text-[#3478F6] text-lg tabular-nums shrink-0">{qtd}</span>
+                          <span className="font-bold text-[#F59E0B] text-lg tabular-nums shrink-0">{qtd}</span>
                         </div>
                         <div className="h-3 bg-[#E8E9F1] dark:bg-[#181C23] rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-[#3478F6] to-[#A3C8F7] rounded-full transition-all" style={{ width: `${pct}%` }} />
+                          <div className="h-full bg-gradient-to-r from-[#F59E0B] to-[#FCD34D] rounded-full transition-all" style={{ width: `${pct}%` }} />
                         </div>
                       </div>
                     );
@@ -616,7 +616,7 @@ export default function RelatoriosAdminPage() {
             {/* Tabela por corretor — centro do storytelling, legível na TV */}
             <div className="bg-white dark:bg-[#23283A] rounded-2xl border-2 border-[#E8E9F1] dark:border-[#23283A] p-6 md:p-8 shadow-md mb-10 overflow-x-auto">
               <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-2 flex items-center gap-3">
-                <UsersIcon className="w-7 h-7 text-[#3478F6]" />
+                <UsersIcon className="w-7 h-7 text-[#F59E0B]" />
                 Por corretor (visão corporativa)
               </h2>
               <p className="text-base text-[#6B6F76] dark:text-gray-400 mb-6">
@@ -638,7 +638,7 @@ export default function RelatoriosAdminPage() {
                   {tabelaPorCorretor.map((row, i) => (
                     <tr
                       key={row.id}
-                      className={`border-b border-[#E8E9F1] dark:border-[#23283A] ${corretorFilter === row.id ? 'bg-[#3478F6]/10 dark:bg-[#3478F6]/20' : ''}`}
+                      className={`border-b border-[#E8E9F1] dark:border-[#23283A] ${corretorFilter === row.id ? 'bg-[#F59E0B]/10 dark:bg-[#F59E0B]/20' : ''}`}
                     >
                       <td className="py-4 px-3 text-[#6B6F76] dark:text-gray-400 font-medium">{i + 1}</td>
                       <td className="py-4 px-3 font-semibold text-[#2E2F38] dark:text-white">
@@ -646,7 +646,7 @@ export default function RelatoriosAdminPage() {
                         {row.email && <span className="block text-sm text-[#6B6F76] dark:text-gray-400 font-normal">{row.email}</span>}
                       </td>
                       <td className="py-4 px-3 text-[#6B6F76] dark:text-gray-400">{row.tipoConta === 'imobiliaria' ? 'Imobiliária' : row.tipoConta === 'corretor-vinculado' ? 'Vinculado' : row.tipoConta === 'corretor-autonomo' ? 'Autônomo' : row.tipoConta || '–'}</td>
-                      <td className="py-4 px-3 text-center font-bold text-[#3478F6] text-lg tabular-nums">{row.totalLeads}</td>
+                      <td className="py-4 px-3 text-center font-bold text-[#F59E0B] text-lg tabular-nums">{row.totalLeads}</td>
                       <td className="py-4 px-3 text-center font-bold text-[#3AC17C] text-lg tabular-nums">{row.novosNoPeriodo}</td>
                       <td className="py-4 px-3 text-center font-bold text-amber-500 text-lg tabular-nums">{row.leadsQuentes}</td>
                       <td className="py-4 px-3 text-[#2E2F38] dark:text-gray-200">{row.principalOrigem}</td>
@@ -663,7 +663,7 @@ export default function RelatoriosAdminPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
               <div className="bg-white dark:bg-[#23283A] rounded-2xl border-2 border-[#E8E9F1] dark:border-[#23283A] p-6 md:p-8 shadow-md">
                 <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-5 flex items-center gap-3">
-                  <TargetIcon className="w-7 h-7 text-[#3478F6]" />
+                  <TargetIcon className="w-7 h-7 text-[#F59E0B]" />
                   Metas (corporativo)
                 </h2>
                 {meta ? (
@@ -689,11 +689,11 @@ export default function RelatoriosAdminPage() {
                     <div>
                       <div className="flex justify-between text-base mb-2">
                         <span className="font-medium">% alcançado</span>
-                        <span className="text-2xl font-bold text-[#3478F6] tabular-nums">{meta.percentual ?? 0}%</span>
+                        <span className="text-2xl font-bold text-[#F59E0B] tabular-nums">{meta.percentual ?? 0}%</span>
                       </div>
                       <div className="h-4 bg-[#E8E9F1] dark:bg-[#181C23] rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-all ${(meta.percentual ?? 0) >= 100 ? 'bg-[#3AC17C]' : 'bg-[#3478F6]'}`}
+                          className={`h-full rounded-full transition-all ${(meta.percentual ?? 0) >= 100 ? 'bg-[#3AC17C]' : 'bg-[#F59E0B]'}`}
                           style={{ width: `${Math.min(meta.percentual ?? 0, 100)}%` }}
                         />
                       </div>
@@ -715,7 +715,7 @@ export default function RelatoriosAdminPage() {
                       return (
                         <div key={origem} className="flex justify-between items-center py-2">
                           <span className="text-[#2E2F38] dark:text-gray-200 truncate pr-3">{origem}</span>
-                          <span className="font-semibold text-[#3478F6] tabular-nums shrink-0">{qtd} ({pct}%)</span>
+                          <span className="font-semibold text-[#F59E0B] tabular-nums shrink-0">{qtd} ({pct}%)</span>
                         </div>
                       );
                     })}
@@ -726,7 +726,7 @@ export default function RelatoriosAdminPage() {
               </div>
             </div>
 
-            <div className="bg-[#3478F6]/15 dark:bg-[#3478F6]/25 border-2 border-[#3478F6]/40 rounded-2xl p-6 text-center">
+            <div className="bg-[#F59E0B]/15 dark:bg-[#F59E0B]/25 border-2 border-[#F59E0B]/40 rounded-2xl p-6 text-center">
               <p className="text-[#2E2F38] dark:text-white text-base md:text-lg">
                 <strong>Próximo passo:</strong> use <strong>Dashboards TV</strong> (Admin) para montar as telas que rodam na TV e definir o tempo de cada uma.
               </p>

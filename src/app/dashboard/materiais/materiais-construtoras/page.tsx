@@ -358,7 +358,7 @@ export default function MateriaisConstrutorasPage() {
                 setSelectedConstrutora(null);
                 setSelectedProduto(null);
               }}
-              className="px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] text-white rounded-lg font-semibold transition-colors"
+              className="px-4 py-2 bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-lg font-semibold transition-colors"
             >
               ← Voltar
             </button>
@@ -396,7 +396,7 @@ export default function MateriaisConstrutorasPage() {
 
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6]"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F59E0B]"></div>
               </div>
             ) : construtoras.length === 0 ? (
               <div className="text-center py-12">
@@ -419,12 +419,12 @@ export default function MateriaisConstrutorasPage() {
                       {construtora.logoUrl ? (
                         <img src={construtora.logoUrl} alt={construtora.nome} className="w-12 h-12 rounded-lg object-cover" />
                       ) : (
-                        <div className="w-12 h-12 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <div className="w-12 h-12 bg-gradient-to-br from-[#F59E0B] to-[#FCD34D] rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                           <BuildingIcon className="h-6 w-6 text-white" />
                         </div>
                       )}
                       <div>
-                        <h3 className="font-bold text-[#2E2F38] dark:text-white text-lg group-hover:text-[#3478F6] transition-colors">
+                        <h3 className="font-bold text-[#2E2F38] dark:text-white text-lg group-hover:text-[#F59E0B] transition-colors">
                           {construtora.nome}
                         </h3>
                         <p className="text-sm text-[#6B6F76] dark:text-gray-300">Clique para ver produtos</p>
@@ -432,7 +432,7 @@ export default function MateriaisConstrutorasPage() {
                     </div>
                     <div className="flex items-center justify-between text-xs text-[#6B6F76] dark:text-gray-300">
                       <span>Produtos disponíveis</span>
-                      <span className="bg-[#3478F6]/10 text-[#3478F6] px-2 py-1 rounded-full">Ver</span>
+                      <span className="bg-[#F59E0B]/10 text-[#F59E0B] px-2 py-1 rounded-full">Ver</span>
                     </div>
                   </div>
                 ))}
@@ -446,7 +446,7 @@ export default function MateriaisConstrutorasPage() {
           <div>
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6]"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F59E0B]"></div>
               </div>
             ) : produtos.length === 0 ? (
               <div className="text-center py-12">
@@ -494,7 +494,7 @@ export default function MateriaisConstrutorasPage() {
           <div>
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6]"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F59E0B]"></div>
               </div>
             ) : materiais.length === 0 ? (
               <div className="text-center py-12">
@@ -510,7 +510,7 @@ export default function MateriaisConstrutorasPage() {
                 {getGroupedMateriais().links.length > 0 && (
                   <div>
                     <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                      <LinkIcon className="h-5 w-5 text-[#3478F6]" />
+                      <LinkIcon className="h-5 w-5 text-[#F59E0B]" />
                       Links
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -520,7 +520,7 @@ export default function MateriaisConstrutorasPage() {
                           className="bg-white dark:bg-[#23283A] rounded-xl p-3 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105"
                         >
                           <div className="flex items-center gap-3 mb-2">
-                            <div className="w-8 h-8 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center flex-shrink-0">
+                            <div className="w-8 h-8 bg-gradient-to-br from-[#F59E0B] to-[#FCD34D] rounded-lg flex items-center justify-center flex-shrink-0">
                               <LinkIcon className="h-4 w-4 text-white" />
                             </div>
                             <div className="flex-1 min-w-0">
@@ -540,7 +540,7 @@ export default function MateriaisConstrutorasPage() {
                                 href={material.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex-1 px-3 py-1.5 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded-lg transition-colors font-semibold text-center"
+                                className="flex-1 px-3 py-1.5 bg-[#F59E0B] hover:bg-[#D97706] text-white text-xs rounded-lg transition-colors font-semibold text-center"
                               >
                                 Acessar Link
                               </a>
@@ -556,7 +556,7 @@ export default function MateriaisConstrutorasPage() {
                 {getGroupedMateriais().materiais_pdf.length > 0 && (
                   <div>
                     <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                      <FileIcon className="h-5 w-5 text-[#3478F6]" />
+                      <FileIcon className="h-5 w-5 text-[#F59E0B]" />
                       PDFs
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -566,7 +566,7 @@ export default function MateriaisConstrutorasPage() {
                           className="bg-white dark:bg-[#23283A] rounded-xl p-3 border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-md transition-all duration-200 hover:scale-105"
                         >
                           <div className="flex items-center gap-3 mb-2">
-                            <div className="w-8 h-8 bg-gradient-to-br from-[#3478F6] to-[#A3C8F7] rounded-lg flex items-center justify-center flex-shrink-0">
+                            <div className="w-8 h-8 bg-gradient-to-br from-[#F59E0B] to-[#FCD34D] rounded-lg flex items-center justify-center flex-shrink-0">
                               <FileIcon className="h-4 w-4 text-white" />
                             </div>
                             <div className="flex-1 min-w-0">
@@ -585,7 +585,7 @@ export default function MateriaisConstrutorasPage() {
                               <button
                                 onClick={() => handleDownload(material)}
                                 disabled={downloadingId === material.id}
-                                className="flex-1 px-3 py-1.5 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded-lg transition-colors font-semibold"
+                                className="flex-1 px-3 py-1.5 bg-[#F59E0B] hover:bg-[#D97706] text-white text-xs rounded-lg transition-colors font-semibold"
                               >
                                 {downloadingId === material.id ? (
                                   <span className="flex items-center gap-2"><SpinnerIcon /> Baixando...</span>
@@ -603,7 +603,7 @@ export default function MateriaisConstrutorasPage() {
                 {getGroupedMateriais().videos.length > 0 && (
                   <div>
                     <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                      <VideoIcon className="h-5 w-5 text-[#3478F6]" />
+                      <VideoIcon className="h-5 w-5 text-[#F59E0B]" />
                       Vídeos
                     </h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -632,7 +632,7 @@ export default function MateriaisConstrutorasPage() {
                                 />
                                 <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 opacity-0 group-hover:opacity-100 transition-opacity">
                                   <div className="w-12 h-12 bg-white bg-opacity-90 rounded-full flex items-center justify-center">
-                                    <VideoIcon className="h-6 w-6 text-[#3478F6]" />
+                                    <VideoIcon className="h-6 w-6 text-[#F59E0B]" />
                                   </div>
                                 </div>
                               </>
@@ -654,7 +654,7 @@ export default function MateriaisConstrutorasPage() {
                               <button
                                 onClick={() => handleDownload(material)}
                                 disabled={downloadingId === material.id}
-                                className="w-full mt-2 px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors font-semibold"
+                                className="w-full mt-2 px-2 py-1 bg-[#F59E0B] hover:bg-[#D97706] text-white text-xs rounded transition-colors font-semibold"
                               >
                                 {downloadingId === material.id ? (
                                   <span className="flex items-center gap-2"><SpinnerIcon /> Baixando...</span>
@@ -672,7 +672,7 @@ export default function MateriaisConstrutorasPage() {
                 {getGroupedMateriais().fotos.length > 0 && (
                   <div>
                     <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                      <ImageIcon className="h-5 w-5 text-[#3478F6]" />
+                      <ImageIcon className="h-5 w-5 text-[#F59E0B]" />
                       Fotos Avulsas
                     </h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -709,7 +709,7 @@ export default function MateriaisConstrutorasPage() {
                               <button
                                 onClick={() => handleDownload(material)}
                                 disabled={downloadingId === material.id}
-                                className="w-full mt-2 px-2 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors font-semibold"
+                                className="w-full mt-2 px-2 py-1 bg-[#F59E0B] hover:bg-[#D97706] text-white text-xs rounded transition-colors font-semibold"
                               >
                                 {downloadingId === material.id ? (
                                   <span className="flex items-center gap-2"><SpinnerIcon /> Baixando...</span>
@@ -732,7 +732,7 @@ export default function MateriaisConstrutorasPage() {
           <div>
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6]"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F59E0B]"></div>
               </div>
             ) : imoveisCaptados.length === 0 ? (
               <div className="text-center py-12">
@@ -836,7 +836,7 @@ export default function MateriaisConstrutorasPage() {
                             href={imovel.localizacao}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-xs text-[#3478F6] hover:underline"
+                            className="flex items-center gap-1 text-xs text-[#F59E0B] hover:underline"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <MapPinIcon className="h-3 w-3" />
@@ -896,7 +896,7 @@ export default function MateriaisConstrutorasPage() {
                 {selectedImovel.fotos.filter(f => f.toLowerCase().includes('.jpg') || f.toLowerCase().includes('.jpeg') || f.toLowerCase().includes('.png') || f.toLowerCase().includes('.gif') || f.toLowerCase().includes('.webp')).length > 0 && (
                   <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 border border-[#E8E9F1] dark:border-[#23283A]">
                     <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                      <ImageIcon className="h-5 w-5 text-[#3478F6]" />
+                      <ImageIcon className="h-5 w-5 text-[#F59E0B]" />
                       Fotos
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -934,7 +934,7 @@ export default function MateriaisConstrutorasPage() {
                                 setDownloadingId(null);
                               }}
                               disabled={downloadingId === `foto-${index}`}
-                              className="w-full px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] disabled:cursor-not-allowed text-white rounded-lg transition-colors font-semibold text-sm"
+                              className="w-full px-4 py-2 bg-[#F59E0B] hover:bg-[#D97706] disabled:bg-[#6B6F76] disabled:cursor-not-allowed text-white rounded-lg transition-colors font-semibold text-sm"
                             >
                               {downloadingId === `foto-${index}` ? (
                                 <span className="flex items-center justify-center gap-2">
@@ -954,7 +954,7 @@ export default function MateriaisConstrutorasPage() {
                 {selectedImovel.fotos.filter(f => f.toLowerCase().includes('.mp4') || f.toLowerCase().includes('.avi') || f.toLowerCase().includes('.mov') || f.toLowerCase().includes('.wmv') || f.toLowerCase().includes('.flv') || f.toLowerCase().includes('.webm') || f.toLowerCase().includes('.mkv')).length > 0 && (
                   <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 border border-[#E8E9F1] dark:border-[#23283A]">
                     <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                      <VideoIcon className="h-5 w-5 text-[#3478F6]" />
+                      <VideoIcon className="h-5 w-5 text-[#F59E0B]" />
                       Vídeos
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -991,7 +991,7 @@ export default function MateriaisConstrutorasPage() {
                                 setDownloadingId(null);
                               }}
                               disabled={downloadingId === `video-${index}`}
-                              className="w-full px-4 py-2 bg-[#3478F6] hover:bg-[#255FD1] disabled:bg-[#6B6F76] disabled:cursor-not-allowed text-white rounded-lg transition-colors font-semibold text-sm"
+                              className="w-full px-4 py-2 bg-[#F59E0B] hover:bg-[#D97706] disabled:bg-[#6B6F76] disabled:cursor-not-allowed text-white rounded-lg transition-colors font-semibold text-sm"
                             >
                               {downloadingId === `video-${index}` ? (
                                 <span className="flex items-center justify-center gap-2">
@@ -1026,7 +1026,7 @@ export default function MateriaisConstrutorasPage() {
                   
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <HouseIcon className="h-5 w-5 text-[#3478F6]" />
+                      <HouseIcon className="h-5 w-5 text-[#F59E0B]" />
                       <div>
                         <p className="text-sm text-[#6B6F76] dark:text-gray-300">Tipo</p>
                         <p className="font-semibold text-[#2E2F38] dark:text-white">
@@ -1038,7 +1038,7 @@ export default function MateriaisConstrutorasPage() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <MapPinIcon className="h-5 w-5 text-[#3478F6]" />
+                      <MapPinIcon className="h-5 w-5 text-[#F59E0B]" />
                       <div>
                         <p className="text-sm text-[#6B6F76] dark:text-gray-300">Endereço</p>
                         <p className="font-semibold text-[#2E2F38] dark:text-white">{selectedImovel.endereco}</p>
@@ -1049,7 +1049,7 @@ export default function MateriaisConstrutorasPage() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <svg className="h-5 w-5 text-[#3478F6]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg className="h-5 w-5 text-[#F59E0B]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
                         <circle cx="12" cy="7" r="4"/>
                       </svg>
@@ -1060,7 +1060,7 @@ export default function MateriaisConstrutorasPage() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <svg className="h-5 w-5 text-[#3478F6]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg className="h-5 w-5 text-[#F59E0B]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
                         <line x1="16" x2="16" y1="2" y2="6"/>
                         <line x1="8" x2="8" y1="2" y2="6"/>
@@ -1101,7 +1101,7 @@ export default function MateriaisConstrutorasPage() {
                       href={selectedImovel.localizacao}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-[#3478F6] text-white rounded-lg hover:bg-[#255FD1] transition-colors"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-[#F59E0B] text-white rounded-lg hover:bg-[#D97706] transition-colors"
                     >
                       <MapPinIcon className="h-4 w-4" />
                       Ver no Google Maps

@@ -16,7 +16,7 @@ interface Corretor {
 const SectionTitle = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
   <div className={`relative ${className}`}>
     <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white relative z-10">{children}</h2>
-    <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-[#3478F6] to-[#A3C8F7] rounded-r-full opacity-60" />
+    <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-[#F59E0B] to-[#FCD34D] rounded-r-full opacity-60" />
   </div>
 );
 
@@ -148,7 +148,7 @@ export default function RelatorioIndividualPage() {
               type="button"
               onClick={handleGerar}
               disabled={loading || !selectedCorretor}
-              className="w-full md:w-auto px-6 py-2.5 rounded-lg bg-[#3478F6] text-white font-semibold text-sm hover:bg-[#2860d4] disabled:opacity-50 disabled:cursor-not-allowed transition"
+              className="w-full md:w-auto px-6 py-2.5 rounded-lg bg-[#F59E0B] text-white font-semibold text-sm hover:bg-[#D97706] disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
               {loading ? 'Gerando...' : 'Gerar relatório'}
             </button>

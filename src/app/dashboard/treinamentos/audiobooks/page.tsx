@@ -102,7 +102,7 @@ export default function AudioBooksPage() {
 
         {loading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3478F6] mx-auto"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F59E0B] mx-auto"></div>
             <p className="mt-4 text-[#6B6F76] dark:text-gray-300">Carregando treinamentos...</p>
           </div>
         ) : treinamentos.length === 0 ? (

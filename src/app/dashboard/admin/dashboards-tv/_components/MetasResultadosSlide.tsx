@@ -145,7 +145,7 @@ export function MetasResultadosSlide({
 
       <header className="relative shrink-0 flex flex-wrap items-center justify-between gap-4 py-4 px-6 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#3478F6] to-cyan-500 flex items-center justify-center text-xl shadow-lg shadow-[#3478F6]/25">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#F59E0B] to-cyan-500 flex items-center justify-center text-xl shadow-lg shadow-[#F59E0B]/25">
             🎯
           </div>
           <div>
@@ -189,7 +189,7 @@ export function MetasResultadosSlide({
         ) : (
           <>
             {/* Destaque central — hero */}
-            <div className="shrink-0 mb-4 md:mb-6 rounded-2xl border border-white/15 bg-gradient-to-r from-[#3478F6]/20 via-cyan-500/10 to-amber-500/10 backdrop-blur-sm p-4 md:p-6 flex flex-wrap items-center justify-between gap-4">
+            <div className="shrink-0 mb-4 md:mb-6 rounded-2xl border border-white/15 bg-gradient-to-r from-[#F59E0B]/20 via-cyan-500/10 to-amber-500/10 backdrop-blur-sm p-4 md:p-6 flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-4 md:gap-8">
                 <div className={`text-5xl md:text-7xl font-black tabular-nums ${pctTrim >= 100 ? 'text-emerald-400' : 'text-cyan-400'}`}>
                   {pctTrim}%
@@ -234,7 +234,7 @@ export function MetasResultadosSlide({
 
           <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
             {/* Card Meta trimestral */}
-            <div className="lg:col-span-4 flex flex-col rounded-2xl border border-[#3478F6]/30 bg-gradient-to-b from-[#3478F6]/10 to-transparent backdrop-blur-sm p-5 overflow-hidden shadow-xl shadow-[#3478F6]/5">
+            <div className="lg:col-span-4 flex flex-col rounded-2xl border border-[#F59E0B]/30 bg-gradient-to-b from-[#F59E0B]/10 to-transparent backdrop-blur-sm p-5 overflow-hidden shadow-xl shadow-[#F59E0B]/5">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-2xl">📅</span>
                 <h2 className="text-lg font-bold text-slate-300">Meta trimestral</h2>
@@ -264,7 +264,7 @@ export function MetasResultadosSlide({
                 </div>
                 <div className="h-3 bg-white/10 rounded-full overflow-hidden mb-4">
                   <div
-                    className={`h-full rounded-full transition-all duration-700 ${metaTrimestral.percentual >= 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-[#3478F6] to-cyan-400'}`}
+                    className={`h-full rounded-full transition-all duration-700 ${metaTrimestral.percentual >= 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-[#F59E0B] to-cyan-400'}`}
                     style={{ width: `${Math.min(metaTrimestral.percentual, 100)}%` }}
                   />
                 </div>

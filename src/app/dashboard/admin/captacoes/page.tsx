@@ -486,7 +486,7 @@ export default function CaptacoesPage() {
           <div className="lg:col-span-1">
             <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] sticky top-6">
               <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                <HouseIcon className="h-6 w-6 text-[#3478F6]" />
+                <HouseIcon className="h-6 w-6 text-[#F59E0B]" />
                 {editingImovel ? 'Editar Imóvel' : 'Incluir Imóvel'}
               </h2>
               
@@ -714,7 +714,7 @@ export default function CaptacoesPage() {
                   <button
                     type="submit"
                     disabled={uploading}
-                    className="flex-1 bg-[#3478F6] hover:bg-[#255FD1] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                    className="flex-1 bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
                   >
                     {uploading ? 'Salvando...' : (editingImovel ? 'Atualizar' : 'Adicionar')}
                   </button>
@@ -812,7 +812,7 @@ export default function CaptacoesPage() {
                             {imovel.bairro}, {imovel.cidade} - {imovel.estado}
                           </p>
                           
-                          <p className="text-lg font-bold text-[#3478F6] mb-2">
+                          <p className="text-lg font-bold text-[#F59E0B] mb-2">
                             {formatCurrencyDisplay(imovel.valor)}
                           </p>
 
@@ -835,7 +835,7 @@ export default function CaptacoesPage() {
                             <div className="flex gap-2">
                               <button
                                 onClick={() => handleEditImovel(imovel)}
-                                className="px-3 py-1 bg-[#3478F6] hover:bg-[#255FD1] text-white text-xs rounded transition-colors flex items-center gap-1"
+                                className="px-3 py-1 bg-[#F59E0B] hover:bg-[#D97706] text-white text-xs rounded transition-colors flex items-center gap-1"
                               >
                                 <EditIcon className="h-3 w-3" />
                                 Editar

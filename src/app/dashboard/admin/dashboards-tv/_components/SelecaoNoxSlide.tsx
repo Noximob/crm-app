@@ -29,7 +29,7 @@ export function SelecaoNoxSlide({ imoveis, fraseRolante }: SelecaoNoxSlideProps)
   return (
     <div className="min-h-screen w-full flex flex-col bg-gradient-to-b from-[#181C23] via-[#1a1f2e] to-[#181C23] text-white overflow-hidden">
       {/* Subtítulo no topo */}
-      <p className="text-center text-[#A3C8F7]/90 text-lg md:text-xl pt-8 pb-4 px-4">
+      <p className="text-center text-[#FCD34D]/90 text-lg md:text-xl pt-8 pb-4 px-4">
         com foco em valorização, localização estratégica e qualidade construtiva.
       </p>
 
@@ -39,7 +39,7 @@ export function SelecaoNoxSlide({ imoveis, fraseRolante }: SelecaoNoxSlideProps)
           {list.map((imovel, idx) => (
             <div
               key={idx}
-              className="group bg-white/5 rounded-2xl border border-white/10 overflow-hidden shadow-2xl hover:border-[#3478F6]/40 hover:shadow-[0_0_40px_-10px_rgba(52,120,246,0.4)] transition-all duration-500"
+              className="group bg-white/5 rounded-2xl border border-white/10 overflow-hidden shadow-2xl hover:border-[#F59E0B]/40 hover:shadow-[0_0_40px_-10px_rgba(52,120,246,0.4)] transition-all duration-500"
             >
               <div className="aspect-[4/3] relative overflow-hidden bg-[#23283A]">
                 {imovel.imageUrl ? (
@@ -59,8 +59,8 @@ export function SelecaoNoxSlide({ imoveis, fraseRolante }: SelecaoNoxSlideProps)
                 <h3 className="font-bold text-base md:text-lg text-white leading-tight line-clamp-2 mb-1">
                   {imovel.titulo || 'Imóvel em destaque'}
                 </h3>
-                <p className="text-sm text-[#A3C8F7]/80 mb-2">{imovel.local || '—'}</p>
-                <p className="text-lg font-bold text-[#3478F6]">{formatPreco(imovel.preco)}</p>
+                <p className="text-sm text-[#FCD34D]/80 mb-2">{imovel.local || '—'}</p>
+                <p className="text-lg font-bold text-[#F59E0B]">{formatPreco(imovel.preco)}</p>
               </div>
             </div>
           ))}
@@ -70,10 +70,10 @@ export function SelecaoNoxSlide({ imoveis, fraseRolante }: SelecaoNoxSlideProps)
       {/* Faixa de frase rolante (rolagem contínua) */}
       <div className="border-t border-white/10 bg-[#23283A]/80 py-3 overflow-hidden">
         <div className="flex w-[200%] animate-marquee">
-          <span className="inline-block w-1/2 shrink-0 text-center text-[#A3C8F7] text-lg md:text-xl font-medium whitespace-nowrap">
+          <span className="inline-block w-1/2 shrink-0 text-center text-[#FCD34D] text-lg md:text-xl font-medium whitespace-nowrap">
             {fraseRolante || 'Seleção Nox — os melhores imóveis para você.'}
           </span>
-          <span className="inline-block w-1/2 shrink-0 text-center text-[#A3C8F7] text-lg md:text-xl font-medium whitespace-nowrap">
+          <span className="inline-block w-1/2 shrink-0 text-center text-[#FCD34D] text-lg md:text-xl font-medium whitespace-nowrap">
             {fraseRolante || 'Seleção Nox — os melhores imóveis para você.'}
           </span>
         </div>

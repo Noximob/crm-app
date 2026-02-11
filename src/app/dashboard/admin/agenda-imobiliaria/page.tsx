@@ -207,7 +207,7 @@ export default function AgendaImobiliariaAdminPage() {
 
   const getTipoColor = (tipo: string) => {
     switch (tipo) {
-      case 'reuniao': return 'bg-blue-500';
+      case 'reuniao': return 'bg-amber-500';
       case 'evento': return 'bg-purple-500';
       case 'treinamento': return 'bg-green-500';
       case 'revisar-crm': return 'bg-cyan-500';
@@ -569,7 +569,7 @@ export default function AgendaImobiliariaAdminPage() {
                     <div className="flex gap-2 ml-4">
                       <button
                         onClick={() => handleEdit(event)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                        className="p-2 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
                         title="Editar evento"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
