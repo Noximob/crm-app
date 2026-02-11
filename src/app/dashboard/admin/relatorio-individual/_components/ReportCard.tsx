@@ -3,7 +3,7 @@
 import React from 'react';
 import type { RelatorioIndividualData, ReportMetric } from '../_lib/reportData';
 import { REPORT_FUNIL_ETAPAS } from '../_lib/reportData';
-import { AlummaLogoImg } from '@/components/AlummaLogo';
+import { AlummaLogoFullInline, AlummaLogoImg } from '@/components/AlummaLogo';
 
 function VariacaoBadge({ m }: { m: ReportMetric<number> }) {
   if (m.variacao == null) return null;
@@ -39,7 +39,7 @@ export default function ReportCard({ data }: { data: RelatorioIndividualData }) 
       <div className="bg-gradient-to-br from-[#D4A017] to-[#B8860B] px-8 py-6 text-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <AlummaLogoImg variant="full" theme="light" width={140} height={44} className="shrink-0" />
+            <AlummaLogoFullInline theme="dark" height={44} className="shrink-0" />
             <div>
               <h1 className="text-xl font-bold tracking-tight">Relatório Individual</h1>
               <p className="text-white/90 text-sm">Alumma · Para o corretor e para análise</p>

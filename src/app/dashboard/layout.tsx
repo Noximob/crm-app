@@ -8,7 +8,7 @@ import { signOut } from 'firebase/auth';
 import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
 import { useNotifications } from '@/context/NotificationContext';
-import { AlummaLogo } from '@/components/AlummaLogo';
+import { AlummaLogoFullInline } from '@/components/AlummaLogo';
 
 // Ícones
 const AlertTriangleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>;
@@ -140,7 +140,7 @@ export default function DashboardLayout({
               className="flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer [filter:drop-shadow(0_0_8px_rgba(255,140,0,0.4))]"
               title="Voltar ao Dashboard"
             >
-              <AlummaLogo variant={collapsed ? 'a' : 'full'} theme="dark" className="h-8 shrink-0 w-auto" width={collapsed ? 32 : 120} height={32} />
+              <AlummaLogoFullInline theme="dark" height={32} iconOnly={collapsed} className="shrink-0" />
               {!collapsed && <span className="sr-only">Alumma</span>}
             </button>
             <button
