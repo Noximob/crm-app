@@ -2,7 +2,15 @@
 
 import React from 'react';
 
-/** Onde usar: dark = fundo escuro (sidebar, TV, login escuro). light = fundo claro (esqueci-senha, header relatório). */
+/**
+ * Onde usar cada formato:
+ * - full + dark  → Sidebar (expandida), TV canto, Login (fundo escuro)
+ * - full + light → Esqueci-senha, cabeçalho do Relatório individual
+ * - a + dark     → Sidebar recolhida, ícone em áreas escuras
+ * - a + light    → Rodapé do relatório, ícone em fundo claro
+ * - alumma + dark  → Só nome "ALUMMA" em fundo escuro
+ * - alumma + light → Só nome "ALUMMA" em fundo claro
+ */
 const LOGOS = {
   a:      { dark: '/logo/logo-a-dark.png', light: '/logo/logo-a-white.png' },
   alumma: { dark: '/logo/logo-alumma-dark.png', light: '/logo/logo-alumma-white.png' },
