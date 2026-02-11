@@ -56,6 +56,10 @@ const TIPO_AGENDA_LABEL: Record<string, string> = {
   'acao-de-rua': 'Ação de rua',
   'disparo-de-msg': 'Disparo de Msg',
   outro: 'Outro',
+  meet: 'Google Meet',
+  youtube: 'YouTube Live',
+  instagram: 'Instagram Live',
+  discord: 'Discord',
 };
 
 /** Início do dia em UTC (meia-noite local seria timezone-dependent; usamos date como YYYY-MM-DD para comparação) */
@@ -142,6 +146,34 @@ export function useAgendaTvData(
             respostasPresenca: (d.respostasPresenca as Record<string, string>) || undefined,
           });
         });
+
+        // Eventos da comunidade (Comunidade → agenda TV)
+        const refComunidade = collection(db, 'comunidadePosts');
+        const qComunidade = query(
+          refComunidade,
+          where('imobiliariaId', '==', imobiliariaId),
+          where('isEvento', '==', true),
+          where('eventoStatus', '==', 'agendado')
+        );
+        const snapComunidade = await getDocs(qComunidade);
+        if (cancelled) return;
+        snapComunidade.docs.forEach((docSnap) => {
+            const d = docSnap.data();
+            const eventoData = d.eventoData as Timestamp | undefined;
+            if (!eventoData) return;
+            const inicioDate = eventoData.toDate();
+            if (inicioDate > end || inicioDate < start) return;
+            const dataFimComunidade = Timestamp.fromMillis(eventoData.toMillis() + 60 * 60 * 1000);
+            list.push({
+              id: `comunidade_${docSnap.id}`,
+              titulo: d.titulo ?? 'Evento Comunidade',
+              tipo: (d.eventoTipo as string) || 'outro',
+              local: d.eventoLink ? 'Link no post' : undefined,
+              dataInicio: eventoData,
+              dataFim: dataFimComunidade,
+            });
+          });
+
         list.sort((a, b) => a.dataInicio.toMillis() - b.dataInicio.toMillis());
         setEvents(list);
 

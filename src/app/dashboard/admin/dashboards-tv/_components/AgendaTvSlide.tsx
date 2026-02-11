@@ -15,6 +15,10 @@ const TIPO_ICON: Record<string, string> = {
   'acao-de-rua': '📍',
   'disparo-de-msg': '💬',
   outro: '📅',
+  meet: '🎥',
+  youtube: '📺',
+  instagram: '📱',
+  discord: '💬',
 };
 
 const TIPO_LABEL: Record<string, string> = {
@@ -26,6 +30,10 @@ const TIPO_LABEL: Record<string, string> = {
   'acao-de-rua': 'Ação de rua',
   'disparo-de-msg': 'Disparo de Msg',
   outro: 'Outro',
+  meet: 'Google Meet',
+  youtube: 'YouTube Live',
+  instagram: 'Instagram Live',
+  discord: 'Discord',
 };
 
 const TIPO_COR: Record<string, string> = {
@@ -37,6 +45,10 @@ const TIPO_COR: Record<string, string> = {
   'acao-de-rua': 'from-primary-500 to-primary-600',
   'disparo-de-msg': 'from-indigo-500 to-indigo-600',
   outro: 'from-slate-500 to-slate-600',
+  meet: 'from-amber-500 to-amber-600',
+  youtube: 'from-red-500 to-red-600',
+  instagram: 'from-pink-500 to-pink-600',
+  discord: 'from-indigo-500 to-indigo-600',
 };
 
 interface SlotDia {

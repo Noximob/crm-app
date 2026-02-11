@@ -31,7 +31,7 @@ const tipoLabels = {
   crm: 'CRM',
   nota: 'Nota',
   aviso: 'Aviso',
-  comunidade: 'Plantão',
+  comunidade: 'Evento Comunidade',
   imobiliaria: 'Imobiliária'
 };
 
@@ -73,18 +73,12 @@ const getCompactInfo = (item: AgendaItem) => {
       return null;
       
     case 'comunidade':
-      // Para eventos da comunidade, mostrar apenas informações essenciais
+      // Para eventos da comunidade (Meet, YouTube, Instagram, Discord): Tipo e Organizador
       const info = [];
       const tipoMatch = item.descricao.match(/Tipo: (.+)/);
-      const construtoraMatch = item.descricao.match(/Construtora: (.+)/);
-      const corretorMatch = item.descricao.match(/Corretor: (.+)/);
-      const horarioEventoMatch = item.descricao.match(/Horário: (.+)/);
-      
+      const organizadorMatch = item.descricao.match(/Organizador: (.+)/);
       if (tipoMatch) info.push(tipoMatch[1]);
-      if (construtoraMatch) info.push(construtoraMatch[1]);
-      if (corretorMatch) info.push(corretorMatch[1]);
-      if (horarioEventoMatch) info.push(horarioEventoMatch[1]);
-      
+      if (organizadorMatch) info.push(organizadorMatch[1]);
       return info.length > 0 ? info.slice(0, 2).join(' • ') : null;
       
     case 'imobiliaria':
