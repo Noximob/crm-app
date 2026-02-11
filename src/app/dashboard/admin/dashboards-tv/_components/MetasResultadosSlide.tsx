@@ -53,7 +53,7 @@ const WEATHER_LABELS: Record<number, { label: string; emoji: string; bg: string 
   61: { label: 'Chuva leve', emoji: '🌦️', bg: 'from-blue-500/20 to-indigo-500/20' },
   63: { label: 'Chuva', emoji: '🌧️', bg: 'from-indigo-500/20 to-blue-600/20' },
   65: { label: 'Chuva forte', emoji: '⛈️', bg: 'from-indigo-600/20 to-purple-600/20' },
-  80: { label: 'Pancadas', emoji: '🌦️', bg: 'from-amber-500/20 to-orange-500/20' },
+  80: { label: 'Pancadas', emoji: '🌦️', bg: 'from-primary-500/20 to-primary-400/20' },
   95: { label: 'Trovoada', emoji: '⛈️', bg: 'from-purple-600/20 to-indigo-700/20' },
 };
 
@@ -145,7 +145,7 @@ export function MetasResultadosSlide({
 
       <header className="relative shrink-0 flex flex-wrap items-center justify-between gap-4 py-4 px-6 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#F59E0B] to-cyan-500 flex items-center justify-center text-xl shadow-lg shadow-[#F59E0B]/25">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4A017] to-cyan-500 flex items-center justify-center text-xl shadow-lg shadow-[#D4A017]/25">
             🎯
           </div>
           <div>
@@ -189,7 +189,7 @@ export function MetasResultadosSlide({
         ) : (
           <>
             {/* Destaque central — hero */}
-            <div className="shrink-0 mb-4 md:mb-6 rounded-2xl border border-white/15 bg-gradient-to-r from-[#F59E0B]/20 via-cyan-500/10 to-amber-500/10 backdrop-blur-sm p-4 md:p-6 flex flex-wrap items-center justify-between gap-4">
+            <div className="shrink-0 mb-4 md:mb-6 rounded-2xl border border-white/15 bg-gradient-to-r from-primary-500/15 via-cyan-500/10 to-primary-400/10 backdrop-blur-sm p-4 md:p-6 flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-4 md:gap-8">
                 <div className={`text-5xl md:text-7xl font-black tabular-nums ${pctTrim >= 100 ? 'text-emerald-400' : 'text-cyan-400'}`}>
                   {pctTrim}%
@@ -201,11 +201,11 @@ export function MetasResultadosSlide({
               </div>
               <div className="flex items-center gap-4 md:gap-6 flex-wrap">
                 {faltaTrim > 0 ? (
-                  <div className="rounded-xl bg-amber-500/25 border border-amber-400/50 px-4 py-3">
-                    <p className="text-xs text-amber-200/90 uppercase tracking-wide">Faltam</p>
-                    <p className="text-2xl md:text-3xl font-black text-amber-300">{fmt(faltaTrim)}</p>
+                  <div className="rounded-xl bg-primary-500/25 border border-primary-400/40 px-4 py-3">
+                    <p className="text-xs text-primary-200/90 uppercase tracking-wide">Faltam</p>
+                    <p className="text-2xl md:text-3xl font-black text-primary-300">{fmt(faltaTrim)}</p>
                     {diasRestantesTrim > 0 && porSemanaTrim > 0 && (
-                      <p className="text-xs text-amber-200/80 mt-1">~{fmt(porSemanaTrim)}/semana para bater</p>
+                      <p className="text-xs text-primary-200/80 mt-1">~{fmt(porSemanaTrim)}/semana para bater</p>
                     )}
                   </div>
                 ) : (
@@ -234,7 +234,7 @@ export function MetasResultadosSlide({
 
           <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
             {/* Card Meta trimestral */}
-            <div className="lg:col-span-4 flex flex-col rounded-2xl border border-[#F59E0B]/30 bg-gradient-to-b from-[#F59E0B]/10 to-transparent backdrop-blur-sm p-5 overflow-hidden shadow-xl shadow-[#F59E0B]/5">
+            <div className="lg:col-span-4 flex flex-col rounded-2xl border border-[#D4A017]/30 bg-gradient-to-b from-[#D4A017]/10 to-transparent backdrop-blur-sm p-5 overflow-hidden shadow-xl shadow-[#D4A017]/5">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-2xl">📅</span>
                 <h2 className="text-lg font-bold text-slate-300">Meta trimestral</h2>
@@ -264,14 +264,14 @@ export function MetasResultadosSlide({
                 </div>
                 <div className="h-3 bg-white/10 rounded-full overflow-hidden mb-4">
                   <div
-                    className={`h-full rounded-full transition-all duration-700 ${metaTrimestral.percentual >= 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-[#F59E0B] to-cyan-400'}`}
+                    className={`h-full rounded-full transition-all duration-700 ${metaTrimestral.percentual >= 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-[#D4A017] to-cyan-400'}`}
                     style={{ width: `${Math.min(metaTrimestral.percentual, 100)}%` }}
                   />
                 </div>
                 {metaTrimestral.valor > 0 && faltaTrim > 0 && (
-                  <div className="rounded-xl bg-amber-500/20 border border-amber-400/40 px-3 py-2.5">
-                    <p className="text-xs text-amber-200/90">Faltam</p>
-                    <p className="text-lg font-bold text-amber-300">{fmt(faltaTrim)}</p>
+                  <div className="rounded-xl bg-primary-500/20 border border-primary-400/30 px-3 py-2.5">
+                    <p className="text-xs text-primary-200/90">Faltam</p>
+                    <p className="text-lg font-bold text-primary-300">{fmt(faltaTrim)}</p>
                   </div>
                 )}
                 {metaTrimestral.percentual >= 100 && (
@@ -284,14 +284,14 @@ export function MetasResultadosSlide({
 
             {/* Card Meta mensal */}
             {metaMensal && (
-              <div className="lg:col-span-4 flex flex-col rounded-2xl border border-amber-400/30 bg-gradient-to-b from-amber-500/10 to-transparent backdrop-blur-sm p-5 overflow-hidden shadow-xl shadow-amber-500/5">
+              <div className="lg:col-span-4 flex flex-col rounded-2xl border border-primary-400/25 bg-gradient-to-b from-primary-500/8 to-transparent backdrop-blur-sm p-5 overflow-hidden shadow-xl shadow-primary-500/5">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-2xl">📆</span>
                   <h2 className="text-lg font-bold text-slate-300">Meta mensal</h2>
                 </div>
                 <p className="text-xs text-slate-500 mb-1">{fmtDateSafe(metaMensal.inicio)} a {fmtDateSafe(metaMensal.fim)}</p>
                 {diasRestantesMensal > 0 && (
-                  <p className="text-xs text-amber-400/90 mb-3">{diasRestantesMensal} dias no mês · {porSemanaMensal > 0 ? `${fmt(porSemanaMensal)}/semana para bater` : '—'}</p>
+                  <p className="text-xs text-primary-400/90 mb-3">{diasRestantesMensal} dias no mês · {porSemanaMensal > 0 ? `${fmt(porSemanaMensal)}/semana para bater` : '—'}</p>
                 )}
                 <div className="flex justify-between items-baseline mb-2">
                   <span className="text-sm text-slate-400">Meta</span>
@@ -299,27 +299,27 @@ export function MetasResultadosSlide({
                 </div>
                 <div className="flex justify-between items-baseline mb-2">
                   <span className="text-sm text-slate-400">Realizado</span>
-                  <span className={`text-xl font-bold ${metaMensal.percentual >= 100 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  <span className={`text-xl font-bold ${metaMensal.percentual >= 100 ? 'text-emerald-400' : 'text-primary-400'}`}>
                     {fmt(metaMensal.alcancado)}
                   </span>
                 </div>
                 <div className="flex-1 min-h-0 flex flex-col justify-end">
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-slate-400">Progresso</span>
-                    <span className={`font-bold tabular-nums ${metaMensal.percentual >= 100 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    <span className={`font-bold tabular-nums ${metaMensal.percentual >= 100 ? 'text-emerald-400' : 'text-primary-400'}`}>
                       {Math.min(metaMensal.percentual, 100)}%
                     </span>
                   </div>
                   <div className="h-3 bg-white/10 rounded-full overflow-hidden mb-4">
                     <div
-                      className={`h-full rounded-full transition-all duration-700 ${metaMensal.percentual >= 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-amber-500 to-amber-400'}`}
+                      className={`h-full rounded-full transition-all duration-700 ${metaMensal.percentual >= 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-primary-500 to-primary-400'}`}
                       style={{ width: `${Math.min(metaMensal.percentual, 100)}%` }}
                     />
                   </div>
                   {faltaMensal > 0 && (
-                    <div className="rounded-xl bg-amber-500/20 border border-amber-400/40 px-3 py-2.5">
-                      <p className="text-xs text-amber-200/90">Faltam</p>
-                      <p className="text-lg font-bold text-amber-300">{fmt(faltaMensal)}</p>
+                    <div className="rounded-xl bg-primary-500/20 border border-primary-400/30 px-3 py-2.5">
+                      <p className="text-xs text-primary-200/90">Faltam</p>
+                      <p className="text-lg font-bold text-primary-300">{fmt(faltaMensal)}</p>
                     </div>
                   )}
                   {metaMensal.percentual >= 100 && (
@@ -353,7 +353,7 @@ export function MetasResultadosSlide({
                         key={c.corretorId || i}
                         className={`flex items-center justify-between py-2.5 px-3 rounded-xl border transition-colors ${
                           isTop3
-                            ? 'bg-gradient-to-r from-amber-500/10 to-transparent border-amber-400/20'
+                            ? 'bg-gradient-to-r from-primary-500/10 to-transparent border-primary-400/20'
                             : 'bg-white/5 border-white/10'
                         }`}
                       >
@@ -361,7 +361,7 @@ export function MetasResultadosSlide({
                           <span className="text-slate-500 font-mono text-sm w-6 shrink-0">{medal ?? `${pos}º`}</span>
                           <span className="font-medium text-white truncate">{c.corretorNome}</span>
                         </div>
-                        <span className={`font-bold tabular-nums shrink-0 ${isTop3 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                        <span className={`font-bold tabular-nums shrink-0 ${isTop3 ? 'text-primary-400' : 'text-emerald-400'}`}>
                           {fmt(c.total)}
                         </span>
                       </div>

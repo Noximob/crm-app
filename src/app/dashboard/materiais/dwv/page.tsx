@@ -22,7 +22,7 @@ export default function DWVPage() {
             </p>
             <button
               onClick={openDWV}
-              className="px-8 py-4 bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-xl font-semibold transition-colors flex items-center gap-3 text-lg mx-auto"
+              className="px-8 py-4 bg-[#D4A017] hover:bg-[#B8860B] text-white rounded-xl font-semibold transition-colors flex items-center gap-3 text-lg mx-auto"
             >
               <span>🔗</span>
               Abrir DWV

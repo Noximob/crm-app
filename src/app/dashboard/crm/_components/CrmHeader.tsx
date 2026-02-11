@@ -42,7 +42,7 @@ export const CrmHeader = () => {
         <>
             <header className="bg-[#F5F6FA] dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] p-4 rounded-2xl shadow-soft flex items-center justify-between mb-4">
                 <div className="flex items-center gap-6">
-                    <Link href="/dashboard/crm" className="flex items-center gap-2 text-sm font-semibold text-[#6B6F76] dark:text-gray-300 hover:text-[#F59E0B] transition-colors">
+                    <Link href="/dashboard/crm" className="flex items-center gap-2 text-sm font-semibold text-[#6B6F76] dark:text-gray-300 hover:text-[#D4A017] transition-colors">
                         <ArrowLeftIcon className="h-5 w-5" />
                         Voltar
                     </Link>
@@ -51,8 +51,8 @@ export const CrmHeader = () => {
                         {links.map(link => (
                             <Link key={link.href} href={link.href}>
                                 <span className={`block px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-colors border border-transparent ${pathname === link.href 
-                                    ? 'bg-[#F59E0B] text-white' 
-                                    : 'bg-white text-[#F59E0B] border border-[#FCD34D] hover:bg-[#E8E9F1] dark:bg-[#181C23] dark:text-[#FCD34D] dark:border-[#23283A] dark:hover:bg-[#23283A]'}
+                                    ? 'bg-[#D4A017] text-white' 
+                                    : 'bg-white text-[#D4A017] border border-[#E8C547] hover:bg-[#E8E9F1] dark:bg-[#181C23] dark:text-[#E8C547] dark:border-[#23283A] dark:hover:bg-[#23283A]'}
                                 `}>
                                     {link.text}
                                 </span>
@@ -64,7 +64,7 @@ export const CrmHeader = () => {
                 <div className="flex items-center gap-3">
                     <button 
                         onClick={() => setAgendaModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[#F59E0B] bg-[#E8E9F1] rounded-lg hover:bg-[#FCD34D]/40 transition-colors shadow-sm border border-[#FCD34D] dark:bg-[#181C23] dark:text-[#FCD34D] dark:border-[#23283A] dark:hover:bg-[#23283A]"
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[#D4A017] bg-[#E8E9F1] rounded-lg hover:bg-[#E8C547]/40 transition-colors shadow-sm border border-[#E8C547] dark:bg-[#181C23] dark:text-[#E8C547] dark:border-[#23283A] dark:hover:bg-[#23283A]"
                     >
                         <CalendarIcon className="h-4 w-4" />
                         Agenda
@@ -78,7 +78,7 @@ export const CrmHeader = () => {
                     </Link>
                     <button 
                         onClick={() => setNewLeadModalOpen(true)} 
-                        className="flex items-center gap-2.5 px-4 py-2 text-sm font-semibold text-white bg-[#F59E0B] rounded-lg shadow-sm hover:bg-[#D97706] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FCD34D]"
+                        className="flex items-center gap-2.5 px-4 py-2 text-sm font-semibold text-white bg-[#D4A017] rounded-lg shadow-sm hover:bg-[#B8860B] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E8C547]"
                     >
                         <PlusIcon className="h-4 w-4" />
                         Novo Lead

@@ -138,7 +138,7 @@ export default function TreinamentoSistemaPage() {
           <div className="flex items-center gap-4 mb-4 sm:mb-0">
             <Link 
               href="/dashboard/treinamentos"
-              className="text-[#F59E0B] hover:text-[#2E6FD9] transition-colors"
+              className="text-[#D4A017] hover:text-[#B8860B] transition-colors"
             >
               ← Voltar aos Treinamentos
             </Link>
@@ -189,7 +189,7 @@ export default function TreinamentoSistemaPage() {
                 placeholder="Buscar materiais..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-3 bg-[#F5F6FA] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] transition-all"
+                className="w-full px-4 py-3 bg-[#F5F6FA] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#D4A017] transition-all"
               />
             </div>
             <div className="flex gap-2">
@@ -197,7 +197,7 @@ export default function TreinamentoSistemaPage() {
                 onClick={() => setFilterTipo('todos')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterTipo === 'todos' 
-                    ? 'bg-[#F59E0B] text-white' 
+                    ? 'bg-[#D4A017] text-white' 
                     : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
                 }`}
               >
@@ -207,7 +207,7 @@ export default function TreinamentoSistemaPage() {
                 onClick={() => setFilterTipo('video')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterTipo === 'video' 
-                    ? 'bg-[#F59E0B] text-white' 
+                    ? 'bg-[#D4A017] text-white' 
                     : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
                 }`}
               >
@@ -217,7 +217,7 @@ export default function TreinamentoSistemaPage() {
                 onClick={() => setFilterTipo('pdf')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterTipo === 'pdf' 
-                    ? 'bg-[#F59E0B] text-white' 
+                    ? 'bg-[#D4A017] text-white' 
                     : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
                 }`}
               >
@@ -227,7 +227,7 @@ export default function TreinamentoSistemaPage() {
                 onClick={() => setFilterTipo('link')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterTipo === 'link' 
-                    ? 'bg-[#F59E0B] text-white' 
+                    ? 'bg-[#D4A017] text-white' 
                     : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
                 }`}
               >
@@ -242,7 +242,7 @@ export default function TreinamentoSistemaPage() {
           {materiaisFiltrados.map((material) => (
             <div key={material.id} className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] overflow-hidden hover:shadow-lg transition-all duration-200 group">
               {/* Thumbnail */}
-              <div className="relative h-48 bg-gradient-to-br from-[#F59E0B] to-[#2E6FD9] flex items-center justify-center">
+              <div className="relative h-48 bg-gradient-to-br from-[#D4A017] to-[#B8860B] flex items-center justify-center">
                 <span className="text-6xl">{material.thumbnail}</span>
                 <div className="absolute top-4 right-4 bg-black/20 backdrop-blur-sm rounded-lg px-3 py-1">
                   <span className="text-white text-sm font-medium">{getTipoLabel(material.tipo)}</span>
@@ -261,7 +261,7 @@ export default function TreinamentoSistemaPage() {
 
               {/* Conteúdo */}
               <div className="p-6">
-                <h3 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-2 group-hover:text-[#F59E0B] transition-colors">
+                <h3 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-2 group-hover:text-[#D4A017] transition-colors">
                   {material.titulo}
                 </h3>
                 <p className="text-[#6B6F76] dark:text-gray-300 text-sm mb-4 line-clamp-2">
@@ -310,7 +310,7 @@ export default function TreinamentoSistemaPage() {
                 </div>
 
                 {/* Botão de Ação */}
-                <button className="w-full bg-[#F59E0B] hover:bg-[#2E6FD9] text-white py-3 px-4 rounded-xl font-medium transition-colors duration-200 flex items-center justify-center gap-2">
+                <button className="w-full bg-[#D4A017] hover:bg-[#B8860B] text-white py-3 px-4 rounded-xl font-medium transition-colors duration-200 flex items-center justify-center gap-2">
                   {material.tipo === 'video' && '▶️ Assistir'}
                   {material.tipo === 'pdf' && '📄 Baixar'}
                   {material.tipo === 'link' && '🔗 Acessar'}

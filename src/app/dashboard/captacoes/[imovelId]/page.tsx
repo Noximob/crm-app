@@ -170,7 +170,7 @@ export default function DetalhesImovelPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F59E0B]"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4A017]"></div>
       </div>
     );
   }
@@ -182,7 +182,7 @@ export default function DetalhesImovelPage() {
           <h2 className="text-xl font-semibold text-[#2E2F38] dark:text-white mb-2">Imóvel não encontrado</h2>
           <button
             onClick={() => router.push('/dashboard/materiais/materiais-construtoras')}
-            className="px-4 py-2 bg-[#F59E0B] text-white rounded-lg hover:bg-[#D97706] transition-colors"
+            className="px-4 py-2 bg-[#D4A017] text-white rounded-lg hover:bg-[#B8860B] transition-colors"
           >
             Voltar
           </button>
@@ -281,7 +281,7 @@ export default function DetalhesImovelPage() {
               
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <HouseIcon className="h-5 w-5 text-[#F59E0B]" />
+                  <HouseIcon className="h-5 w-5 text-[#D4A017]" />
                   <div>
                     <p className="text-sm text-[#6B6F76] dark:text-gray-300">Tipo</p>
                     <p className="font-semibold text-[#2E2F38] dark:text-white">{getTipoLabel(imovel.tipo)}</p>
@@ -289,7 +289,7 @@ export default function DetalhesImovelPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <MapPinIcon className="h-5 w-5 text-[#F59E0B]" />
+                  <MapPinIcon className="h-5 w-5 text-[#D4A017]" />
                   <div>
                     <p className="text-sm text-[#6B6F76] dark:text-gray-300">Endereço</p>
                     <p className="font-semibold text-[#2E2F38] dark:text-white">{imovel.endereco}</p>
@@ -300,7 +300,7 @@ export default function DetalhesImovelPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <UserIcon className="h-5 w-5 text-[#F59E0B]" />
+                  <UserIcon className="h-5 w-5 text-[#D4A017]" />
                   <div>
                     <p className="text-sm text-[#6B6F76] dark:text-gray-300">Corretor</p>
                     <p className="font-semibold text-[#2E2F38] dark:text-white">{imovel.corretorNome}</p>
@@ -308,7 +308,7 @@ export default function DetalhesImovelPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <CalendarIcon className="h-5 w-5 text-[#F59E0B]" />
+                  <CalendarIcon className="h-5 w-5 text-[#D4A017]" />
                   <div>
                     <p className="text-sm text-[#6B6F76] dark:text-gray-300">Captado em</p>
                     <p className="font-semibold text-[#2E2F38] dark:text-white">
@@ -333,7 +333,7 @@ export default function DetalhesImovelPage() {
                   href={imovel.localizacao}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#F59E0B] text-white rounded-lg hover:bg-[#D97706] transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#D4A017] text-white rounded-lg hover:bg-[#B8860B] transition-colors"
                 >
                   <MapPinIcon className="h-4 w-4" />
                   Ver no Google Maps

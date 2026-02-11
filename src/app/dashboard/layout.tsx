@@ -53,11 +53,10 @@ const ChevronLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props
 
 const AlumeLogo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    {/* Bola azul com gradiente */}
     <defs>
       <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style={{stopColor: '#F59E0B', stopOpacity: 1}} />
-        <stop offset="100%" style={{stopColor: '#D97706', stopOpacity: 1}} />
+        <stop offset="0%" style={{stopColor: '#D4A017', stopOpacity: 1}} />
+        <stop offset="100%" style={{stopColor: '#B8860B', stopOpacity: 1}} />
       </linearGradient>
     </defs>
     <circle cx="12" cy="12" r="10" fill="url(#logoGradient)" />
@@ -68,9 +67,9 @@ const AlumeLogo = (props: React.SVGProps<SVGSVGElement>) => (
 
 const NavLink = ({ href, icon: Icon, children, collapsed, isActive }: any) => (
     <Link href={href} className={`flex items-center px-3 py-2.5 text-[#2E2F38] hover:bg-[#E8E9F1] rounded-lg transition-all duration-200 text-sm font-medium ${
-        isActive ? 'bg-[#F59E0B] text-white shadow-md' : 'hover:text-[#F59E0B]'
+        isActive ? 'bg-primary-500 text-white shadow-md' : 'hover:text-primary-600'
     }`}>
-        <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-[#F59E0B]'}`} />
+        <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-primary-500'}`} />
         {!collapsed && <span className="ml-3">{children}</span>}
     </Link>
 );
@@ -197,7 +196,7 @@ export default function DashboardLayout({
                       href={item.href}
                       className={`flex items-center ${collapsed ? 'justify-center' : ''} px-4 py-2.5 rounded-lg transition-colors relative ${
                         pathname === item.href
-                          ? 'bg-[#F59E0B] text-white'
+                          ? 'bg-primary-500 text-white'
                           : 'text-[#6B6F76] dark:text-gray-300 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] hover:text-[#2E2F38] dark:hover:text-white'
                       }`}
                       onClick={() => setCollapsed(false)}

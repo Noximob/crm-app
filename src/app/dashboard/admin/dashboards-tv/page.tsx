@@ -370,7 +370,7 @@ export default function DashboardsTvPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-[#2E2F38] dark:text-white flex items-center gap-2">
-              <TvIcon className="w-8 h-8 text-[#F59E0B]" />
+              <TvIcon className="w-8 h-8 text-[#D4A017]" />
               Dashboards TV
             </h1>
             <p className="text-[#6B6F76] dark:text-gray-300 mt-1">
@@ -382,7 +382,7 @@ export default function DashboardsTvPage() {
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="px-4 py-2 rounded-lg bg-[#F59E0B] text-white font-semibold hover:bg-[#D97706] disabled:opacity-50"
+              className="px-4 py-2 rounded-lg bg-[#D4A017] text-white font-semibold hover:bg-[#B8860B] disabled:opacity-50"
             >
               {saving ? 'Salvando...' : 'Salvar'}
             </button>
@@ -408,7 +408,7 @@ export default function DashboardsTvPage() {
 
         {loading ? (
           <div className="flex justify-center py-16">
-            <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#F59E0B] border-t-transparent" />
+            <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#D4A017] border-t-transparent" />
           </div>
         ) : (
           <div className="space-y-4">
@@ -445,7 +445,7 @@ export default function DashboardsTvPage() {
                     type="checkbox"
                     checked={slide.enabled}
                     onChange={e => updateSlide(slide.id, { enabled: e.target.checked })}
-                    className="w-5 h-5 rounded border-[#F59E0B] text-[#F59E0B] focus:ring-[#F59E0B]"
+                    className="w-5 h-5 rounded border-[#D4A017] text-[#D4A017] focus:ring-[#D4A017]"
                   />
                   <span className="font-medium text-[#2E2F38] dark:text-white">{slide.name}</span>
                 </label>
@@ -464,7 +464,7 @@ export default function DashboardsTvPage() {
                     <button
                       type="button"
                       onClick={() => setPreviewFunil(slide.id === 'funil-vendas' ? 'corporativo' : 'individual')}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#F59E0B]/10 text-[#F59E0B] hover:bg-[#F59E0B]/20"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#D4A017]/10 text-[#D4A017] hover:bg-[#D4A017]/20"
                       title="Ver como ficará na TV"
                     >
                       <TvIcon className="w-4 h-4" />
@@ -475,7 +475,7 @@ export default function DashboardsTvPage() {
                     <button
                       type="button"
                       onClick={() => setPreviewMetas(true)}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#F59E0B]/10 text-[#F59E0B] hover:bg-[#F59E0B]/20"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#D4A017]/10 text-[#D4A017] hover:bg-[#D4A017]/20"
                       title="Ver como ficará na TV"
                     >
                       <TvIcon className="w-4 h-4" />
@@ -486,7 +486,7 @@ export default function DashboardsTvPage() {
                     <button
                       type="button"
                       onClick={() => setPreviewAgenda(slide.id === 'agenda-dia' ? 'day' : 'week')}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#F59E0B]/10 text-[#F59E0B] hover:bg-[#F59E0B]/20"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#D4A017]/10 text-[#D4A017] hover:bg-[#D4A017]/20"
                       title="Ver como ficará na TV"
                     >
                       <TvIcon className="w-4 h-4" />
@@ -498,7 +498,7 @@ export default function DashboardsTvPage() {
                     onClick={() => setEditingSlideId(slide.id === editingSlideId ? null : slide.id)}
                     className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       slide.id === 'top3-selecao-nox' || slide.id.startsWith('unidades-selecao-') || slide.id === 'noticia-semana'
-                        ? 'bg-[#F59E0B]/10 text-[#F59E0B] hover:bg-[#F59E0B]/20'
+                        ? 'bg-[#D4A017]/10 text-[#D4A017] hover:bg-[#D4A017]/20'
                         : 'bg-[#E8E9F1] dark:bg-[#23283A] text-[#6B6F76] dark:text-gray-400 cursor-not-allowed'
                     }`}
                     title={slide.id === 'top3-selecao-nox' || slide.id.startsWith('unidades-selecao-') || slide.id === 'noticia-semana' ? 'Editar conteúdo desta tela' : 'Em breve'}
@@ -530,7 +530,7 @@ export default function DashboardsTvPage() {
                             prev.includes(c.id) ? prev.filter((id) => id !== c.id) : [...prev, c.id]
                           );
                         }}
-                        className="w-4 h-4 rounded border-[#F59E0B] text-[#F59E0B] focus:ring-[#F59E0B]"
+                        className="w-4 h-4 rounded border-[#D4A017] text-[#D4A017] focus:ring-[#D4A017]"
                       />
                       <span className="text-sm text-[#2E2F38] dark:text-white">{c.nome}</span>
                     </label>
@@ -589,7 +589,7 @@ export default function DashboardsTvPage() {
 
             {/* Configurar Seleção Nox — só quando clicar em Editar */}
             {editingSlideId === 'top3-selecao-nox' && (
-              <div className="mt-4 p-6 rounded-2xl bg-white dark:bg-[#23283A] border-2 border-[#F59E0B]/20 shadow-lg">
+              <div className="mt-4 p-6 rounded-2xl bg-white dark:bg-[#23283A] border-2 border-[#D4A017]/20 shadow-lg">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Configurar Top 3 Seleção Nox</h2>
                   <button
@@ -604,7 +604,7 @@ export default function DashboardsTvPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                   {[0, 1, 2].map((idx) => (
                     <div key={idx} className="rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-4 bg-[#F5F6FA] dark:bg-[#181C23]">
-                      <h3 className="font-semibold text-[#F59E0B] mb-3">Imóvel {idx + 1}</h3>
+                      <h3 className="font-semibold text-[#D4A017] mb-3">Imóvel {idx + 1}</h3>
                       <div className="space-y-3">
                         <div>
                           <label className="block text-xs font-medium text-[#6B6F76] dark:text-gray-400 mb-1">Foto do imóvel</label>
@@ -636,7 +636,7 @@ export default function DashboardsTvPage() {
                               type="button"
                               onClick={() => fileInputRefs.current[idx]?.click()}
                               disabled={uploadingPhoto !== null}
-                              className="absolute bottom-1 right-1 px-2 py-1 rounded text-xs font-medium bg-[#F59E0B] text-white hover:bg-[#D97706] disabled:opacity-50"
+                              className="absolute bottom-1 right-1 px-2 py-1 rounded text-xs font-medium bg-[#D4A017] text-white hover:bg-[#B8860B] disabled:opacity-50"
                             >
                               {uploadingPhoto === idx ? 'Enviando...' : selecaoNox.imoveis[idx]?.imageUrl ? 'Trocar' : 'Enviar foto'}
                             </button>
@@ -702,7 +702,7 @@ export default function DashboardsTvPage() {
               const selecaoIdx = editingSlideId === 'unidades-selecao-0' ? 0 : editingSlideId === 'unidades-selecao-1' ? 1 : 2;
               const tituloSelecao = selecaoNox.imoveis[selecaoIdx]?.titulo || `Seleção Nox ${selecaoIdx + 1}`;
               return (
-                <div className="mt-4 p-6 rounded-2xl bg-white dark:bg-[#23283A] border-2 border-[#F59E0B]/20 shadow-lg">
+                <div className="mt-4 p-6 rounded-2xl bg-white dark:bg-[#23283A] border-2 border-[#D4A017]/20 shadow-lg">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Unidades — {tituloSelecao}</h2>
                     <button
@@ -723,7 +723,7 @@ export default function DashboardsTvPage() {
                       const u = unidadesSelecao.selecoes[selecaoIdx]?.unidades[unidadIdx] ?? UNIDADE_VAZIA;
                       return (
                         <div key={unidadIdx} className="rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-4 bg-[#F5F6FA] dark:bg-[#181C23]">
-                          <p className="text-sm font-semibold text-[#F59E0B] mb-3">Unidade {unidadIdx + 1}</p>
+                          <p className="text-sm font-semibold text-[#D4A017] mb-3">Unidade {unidadIdx + 1}</p>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                               <label className="block text-xs font-medium text-[#6B6F76] dark:text-gray-400 mb-1">Foto</label>
@@ -748,7 +748,7 @@ export default function DashboardsTvPage() {
                                   type="button"
                                   onClick={() => fileInputRefsUnidades.current[flatIdx]?.click()}
                                   disabled={uploadingPhotoUnidad !== null}
-                                  className="absolute bottom-1 right-1 px-2 py-1 rounded text-xs font-medium bg-[#F59E0B] text-white disabled:opacity-50"
+                                  className="absolute bottom-1 right-1 px-2 py-1 rounded text-xs font-medium bg-[#D4A017] text-white disabled:opacity-50"
                                 >
                                   {uploadingPhotoUnidad === key ? 'Enviando...' : u.imageUrl ? 'Trocar' : 'Enviar foto'}
                                 </button>
@@ -805,7 +805,7 @@ export default function DashboardsTvPage() {
 
             {/* Configurar Notícia da Semana — 1 título + 1 foto para a TV */}
             {editingSlideId === 'noticia-semana' && (
-              <div className="mt-4 p-6 rounded-2xl bg-white dark:bg-[#23283A] border-2 border-[#F59E0B]/20 shadow-lg">
+              <div className="mt-4 p-6 rounded-2xl bg-white dark:bg-[#23283A] border-2 border-[#D4A017]/20 shadow-lg">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Notícia da Semana</h2>
                   <button
@@ -853,7 +853,7 @@ export default function DashboardsTvPage() {
                         type="button"
                         onClick={() => fileInputRefNoticia.current?.click()}
                         disabled={uploadingPhotoNoticia}
-                        className="absolute bottom-2 right-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-[#F59E0B] text-white hover:bg-[#D97706] disabled:opacity-50"
+                        className="absolute bottom-2 right-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-[#D4A017] text-white hover:bg-[#B8860B] disabled:opacity-50"
                       >
                         {uploadingPhotoNoticia ? 'Enviando...' : noticiaSemana.imageUrl ? 'Trocar' : 'Enviar foto'}
                       </button>
@@ -871,7 +871,7 @@ export default function DashboardsTvPage() {
               </div>
             )}
 
-            <div className="mt-6 p-4 rounded-xl bg-[#F59E0B]/10 border border-[#F59E0B]/20">
+            <div className="mt-6 p-4 rounded-xl bg-[#D4A017]/10 border border-[#D4A017]/20">
               <p className="text-sm text-[#2E2F38] dark:text-gray-200">
                 <strong>Como usar:</strong> marque as telas que deseja exibir e defina o tempo de cada uma. 
                 Clique em <strong>Abrir na TV</strong> para abrir em nova aba <strong>sem menu lateral</strong> — coloque em tela cheia na TV. As telas habilitadas rodarão em loop.
@@ -890,7 +890,7 @@ export default function DashboardsTvPage() {
               <button
                 type="button"
                 onClick={() => setPreviewFunil(null)}
-                className="px-4 py-2 rounded-lg bg-[#F59E0B] text-white font-medium hover:bg-[#D97706]"
+                className="px-4 py-2 rounded-lg bg-[#D4A017] text-white font-medium hover:bg-[#B8860B]"
               >
                 Fechar
               </button>
@@ -898,7 +898,7 @@ export default function DashboardsTvPage() {
             <div className="flex-1 min-h-0 overflow-auto">
               {funilData.loading ? (
                 <div className="flex items-center justify-center min-h-[50vh]">
-                  <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#F59E0B] border-t-transparent" />
+                  <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#D4A017] border-t-transparent" />
                 </div>
               ) : previewFunil === 'corporativo' ? (
                 <FunilVendasSlide
@@ -923,7 +923,7 @@ export default function DashboardsTvPage() {
               <button
                 type="button"
                 onClick={() => setPreviewMetas(false)}
-                className="px-4 py-2 rounded-lg bg-[#F59E0B] text-white font-medium hover:bg-[#D97706]"
+                className="px-4 py-2 rounded-lg bg-[#D4A017] text-white font-medium hover:bg-[#B8860B]"
               >
                 Fechar
               </button>
@@ -931,7 +931,7 @@ export default function DashboardsTvPage() {
             <div className="flex-1 min-h-0 overflow-auto">
               {metasData.loading ? (
                 <div className="flex items-center justify-center min-h-[50vh]">
-                  <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#F59E0B] border-t-transparent" />
+                  <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#D4A017] border-t-transparent" />
                 </div>
               ) : (
                 <MetasResultadosSlide
@@ -952,7 +952,7 @@ export default function DashboardsTvPage() {
               <button
                 type="button"
                 onClick={() => setPreviewAgenda(null)}
-                className="px-4 py-2 rounded-lg bg-[#F59E0B] text-white font-medium hover:bg-[#D97706]"
+                className="px-4 py-2 rounded-lg bg-[#D4A017] text-white font-medium hover:bg-[#B8860B]"
               >
                 Fechar
               </button>
@@ -960,7 +960,7 @@ export default function DashboardsTvPage() {
             <div className="flex-1 min-h-0 overflow-auto">
               {agendaTvData.loading ? (
                 <div className="flex items-center justify-center min-h-[50vh]">
-                  <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#F59E0B] border-t-transparent" />
+                  <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#D4A017] border-t-transparent" />
                 </div>
               ) : (
                 <AgendaTvSlide

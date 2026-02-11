@@ -181,11 +181,11 @@ export default function NotesWidget() {
       <div className="relative">
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-1 px-2 py-1 bg-white/60 dark:bg-[#23283A]/60 backdrop-blur-sm rounded-lg border border-[#F59E0B]/20 hover:border-[#F59E0B]/40 transition-all duration-200 cursor-pointer hover:scale-105"
+          className="flex items-center gap-1 px-2 py-1 bg-white/60 dark:bg-[#23283A]/60 backdrop-blur-sm rounded-lg border border-[#D4A017]/20 hover:border-[#D4A017]/40 transition-all duration-200 cursor-pointer hover:scale-105"
         >
-          <NotesIcon className="h-4 w-4 text-[#F59E0B]" />
+          <NotesIcon className="h-4 w-4 text-[#D4A017]" />
           <div className="text-center">
-            <div className="text-xs font-bold text-[#2E2F38] dark:text-white hover:text-[#F59E0B] transition-colors">
+            <div className="text-xs font-bold text-[#2E2F38] dark:text-white hover:text-[#D4A017] transition-colors">
               Notas
             </div>
             <div className="text-[10px] text-[#6B6F76] dark:text-gray-300 font-medium">
@@ -199,11 +199,11 @@ export default function NotesWidget() {
       {/* Modal Completo */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-start pt-10">
-          <div className="bg-[#23283A] rounded-2xl shadow-2xl border border-[#F59E0B]/20 w-full max-w-4xl mx-4 max-h-[85vh] overflow-hidden">
+          <div className="bg-[#23283A] rounded-2xl shadow-2xl border border-[#D4A017]/20 w-full max-w-4xl mx-4 max-h-[85vh] overflow-hidden">
             {/* Header mais compacto */}
-            <div className="flex items-center justify-between p-4 border-b border-[#F59E0B]/20">
+            <div className="flex items-center justify-between p-4 border-b border-[#D4A017]/20">
               <div className="flex items-center gap-2">
-                <NotesIcon className="h-5 w-5 text-[#F59E0B]" />
+                <NotesIcon className="h-5 w-5 text-[#D4A017]" />
                 <h2 className="text-lg font-bold text-white">Notas</h2>
               </div>
               <button
@@ -215,14 +215,14 @@ export default function NotesWidget() {
             </div>
 
             {/* Filtros e Ordenação mais compactos */}
-            <div className="p-3 bg-[#181C23] border-b border-[#F59E0B]/20">
+            <div className="p-3 bg-[#181C23] border-b border-[#D4A017]/20">
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   <FilterIcon className="h-3 w-3 text-gray-300" />
                   <select
                     value={filterPriority}
                     onChange={(e) => setFilterPriority(e.target.value as any)}
-                    className="px-2 py-1 text-xs bg-[#23283A] border border-[#F59E0B]/20 rounded focus:ring-1 focus:ring-[#F59E0B] focus:border-transparent text-white"
+                    className="px-2 py-1 text-xs bg-[#23283A] border border-[#D4A017]/20 rounded focus:ring-1 focus:ring-[#D4A017] focus:border-transparent text-white"
                   >
                     <option value="Todas">Todas</option>
                     <option value="Urgente">Urgente</option>
@@ -235,7 +235,7 @@ export default function NotesWidget() {
                   <select
                     value={sortOrder}
                     onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}
-                    className="px-2 py-1 text-xs bg-[#23283A] border border-[#F59E0B]/20 rounded focus:ring-1 focus:ring-[#F59E0B] focus:border-transparent text-white"
+                    className="px-2 py-1 text-xs bg-[#23283A] border border-[#D4A017]/20 rounded focus:ring-1 focus:ring-[#D4A017] focus:border-transparent text-white"
                   >
                     <option value="newest">Mais recentes</option>
                     <option value="oldest">Mais antigas</option>
@@ -245,13 +245,13 @@ export default function NotesWidget() {
             </div>
 
             {/* Formulário de Nova Nota mais compacto */}
-            <div className="p-3 border-b border-[#F59E0B]/20">
+            <div className="p-3 border-b border-[#D4A017]/20">
               <div className="space-y-2">
                 <div className="flex gap-2">
                   <select
                     value={selectedPriority}
                     onChange={(e) => setSelectedPriority(e.target.value as any)}
-                    className="px-2 py-1.5 text-xs bg-[#23283A] border border-[#F59E0B]/20 rounded focus:ring-1 focus:ring-[#F59E0B] focus:border-transparent text-white"
+                    className="px-2 py-1.5 text-xs bg-[#23283A] border border-[#D4A017]/20 rounded focus:ring-1 focus:ring-[#D4A017] focus:border-transparent text-white"
                   >
                     <option value="Urgente">🚨 Urgente</option>
                     <option value="Importante">⚠️ Importante</option>
@@ -262,13 +262,13 @@ export default function NotesWidget() {
                     value={newNote}
                     onChange={(e) => setNewNote(e.target.value)}
                     placeholder="Digite sua nota..."
-                    className="flex-1 px-3 py-1.5 text-sm bg-[#23283A] border border-[#F59E0B]/20 rounded focus:ring-1 focus:ring-[#F59E0B] focus:border-transparent text-white placeholder-gray-400"
+                    className="flex-1 px-3 py-1.5 text-sm bg-[#23283A] border border-[#D4A017]/20 rounded focus:ring-1 focus:ring-[#D4A017] focus:border-transparent text-white placeholder-gray-400"
                     onKeyPress={(e) => e.key === 'Enter' && handleAddNote()}
                   />
                   <button
                     onClick={handleAddNote}
                     disabled={loading || !newNote.trim()}
-                    className="px-3 py-1.5 bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 text-sm"
+                    className="px-3 py-1.5 bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 text-sm"
                   >
                     <PlusIcon className="h-3 w-3" />
                     {loading ? 'Salvando...' : 'Adicionar'}
@@ -283,7 +283,7 @@ export default function NotesWidget() {
                     value={dataHora}
                     onChange={(e) => setDataHora(e.target.value)}
                     placeholder="Data e hora (opcional)"
-                    className="px-2 py-1 text-xs bg-[#23283A] border border-[#F59E0B]/20 rounded focus:ring-1 focus:ring-[#F59E0B] focus:border-transparent text-white"
+                    className="px-2 py-1 text-xs bg-[#23283A] border border-[#D4A017]/20 rounded focus:ring-1 focus:ring-[#D4A017] focus:border-transparent text-white"
                   />
                   <span className="text-xs text-gray-300">Data e hora (opcional)</span>
                 </div>
@@ -302,7 +302,7 @@ export default function NotesWidget() {
                   {latestNote && (
                     <div
                       key={latestNote.id}
-                      className="group p-3 bg-[#181C23] rounded-lg border border-[#F59E0B]/20 hover:bg-[#23283A] transition-colors"
+                      className="group p-3 bg-[#181C23] rounded-lg border border-[#D4A017]/20 hover:bg-[#23283A] transition-colors"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
@@ -337,7 +337,7 @@ export default function NotesWidget() {
                   {otherNotes.map(note => (
                     <div
                       key={note.id}
-                      className="group p-3 bg-[#181C23] rounded-lg border border-[#F59E0B]/20 hover:bg-[#23283A] transition-colors"
+                      className="group p-3 bg-[#181C23] rounded-lg border border-[#D4A017]/20 hover:bg-[#23283A] transition-colors"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">

@@ -333,7 +333,7 @@ export default function IdeiasAdminPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2 flex items-center gap-3">
-              <LightbulbIcon className="h-8 w-8 text-[#F59E0B]" />
+              <LightbulbIcon className="h-8 w-8 text-[#D4A017]" />
               Gestão de Ideias
             </h1>
             <p className="text-[#6B6F76] dark:text-gray-300">Gerencie as ideias dos usuários</p>
@@ -351,14 +351,14 @@ export default function IdeiasAdminPage() {
         <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-8">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <svg className="h-6 w-6 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-6 w-6 text-[#D4A017]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
               <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Melhorias em Andamento</h2>
             </div>
             <button
               onClick={() => setShowMelhoriasForm(!showMelhoriasForm)}
-              className="bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
+              className="bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
             >
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -402,7 +402,7 @@ export default function IdeiasAdminPage() {
                 <div className="flex gap-3">
                   <button
                     type="submit"
-                    className="bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                    className="bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold py-2 px-4 rounded-lg transition-colors"
                   >
                     Adicionar Melhoria
                   </button>
@@ -498,7 +498,7 @@ export default function IdeiasAdminPage() {
                   onClick={() => setFilter(option.value as any)}
                   className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                     filter === option.value
-                      ? "bg-[#F59E0B] text-white"
+                      ? "bg-[#D4A017] text-white"
                       : "bg-gray-100 dark:bg-gray-700 text-[#6B6F76] dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                   }`}
                 >

@@ -11,7 +11,7 @@ export default function DashboardsTvViewPage() {
   }, [router]);
   return (
     <div className="min-h-screen bg-[#181C23] flex items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#F59E0B] border-t-transparent" />
+      <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#D4A017] border-t-transparent" />
     </div>
   );
 }

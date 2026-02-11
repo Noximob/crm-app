@@ -20,7 +20,7 @@ interface UsuarioPendente {
 const SectionTitle = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
   <div className={`relative ${className}`}>
     <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white relative z-10">{children}</h2>
-    <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-[#F59E0B] to-[#FCD34D] rounded-r-full opacity-60"></div>
+    <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-[#D4A017] to-[#E8C547] rounded-r-full opacity-60"></div>
   </div>
 );
 
@@ -30,7 +30,7 @@ const adminCategories = [
     title: 'Gestão de Pessoas',
     description: 'Administre corretores e usuários',
     icon: '👥',
-    color: 'from-amber-500 to-amber-600',
+    color: 'from-primary-400 to-primary-600',
     items: [
       { title: 'Gestão de Corretores', icon: '🧑‍💼', description: 'Administre leads dos corretores', href: '/dashboard/admin/gestao-corretores' },
       { title: 'Visualizar CRM do Corretor', icon: '👁️', description: 'Veja o CRM exatamente como o corretor vê (somente leitura)', href: '/dashboard/admin/visualizar-crm-corretor' },
@@ -211,18 +211,18 @@ export default function AdminPage() {
                     className="flex items-center gap-4 p-4 rounded-xl bg-[#F8F9FB] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] transition-all duration-200 hover:scale-[1.02] hover:shadow-md group cursor-pointer"
                     onClick={e => item.special ? (e.preventDefault(), setShowAprovacao(true)) : null}
             >
-                    <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#F59E0B] to-[#FCD34D] rounded-xl flex items-center justify-center text-white text-xl group-hover:scale-110 transition-transform">
+                    <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#D4A017] to-[#E8C547] rounded-xl flex items-center justify-center text-white text-xl group-hover:scale-110 transition-transform">
                       {item.icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-[#2E2F38] dark:text-white group-hover:text-[#F59E0B] transition-colors">
+                      <h3 className="font-semibold text-[#2E2F38] dark:text-white group-hover:text-[#D4A017] transition-colors">
                         {item.title}
                       </h3>
                       <p className="text-sm text-[#6B6F76] dark:text-gray-300 mt-1">
                         {item.description}
                       </p>
                     </div>
-                    <div className="flex-shrink-0 text-[#6B6F76] dark:text-gray-400 group-hover:text-[#F59E0B] transition-colors">
+                    <div className="flex-shrink-0 text-[#6B6F76] dark:text-gray-400 group-hover:text-[#D4A017] transition-colors">
                       →
                     </div>
                   </Link>
@@ -237,7 +237,7 @@ export default function AdminPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
             <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-lg w-full max-w-4xl p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto">
               <button 
-                className="absolute top-4 right-4 text-2xl text-[#6B6F76] dark:text-gray-300 hover:text-[#F59E0B] transition-colors" 
+                className="absolute top-4 right-4 text-2xl text-[#6B6F76] dark:text-gray-300 hover:text-[#D4A017] transition-colors" 
                 onClick={() => setShowAprovacao(false)}
               >
                 ×
@@ -249,7 +249,7 @@ export default function AdminPage() {
             
             {loading ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F59E0B]"></div>
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4A017]"></div>
               </div>
             ) : usuariosPendentes.length === 0 ? (
                 <div className="text-center py-12">
@@ -263,7 +263,7 @@ export default function AdminPage() {
                     <div key={usuario.id} className="bg-[#F8F9FB] dark:bg-[#181C23] rounded-xl p-6 border border-[#E8E9F1] dark:border-[#23283A]">
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-gradient-to-br from-[#F59E0B] to-[#FCD34D] rounded-full flex items-center justify-center text-white font-semibold">
+                          <div className="w-12 h-12 bg-gradient-to-br from-[#D4A017] to-[#E8C547] rounded-full flex items-center justify-center text-white font-semibold">
                             {usuario.nome.charAt(0).toUpperCase()}
                           </div>
                       <div>

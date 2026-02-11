@@ -18,7 +18,7 @@ function getNivel(total: number): { label: string; emoji: string; bg: string; te
   if (total >= 25) return { label: 'Elite', emoji: '⭐', bg: 'bg-amber-500/15 border-amber-400/30', text: 'text-amber-200' };
   if (total >= 10) return { label: 'Em alta', emoji: '🔥', bg: 'bg-orange-500/15 border-orange-400/30', text: 'text-orange-300' };
   if (total >= 5) return { label: 'Subindo', emoji: '📈', bg: 'bg-emerald-500/15 border-emerald-400/30', text: 'text-emerald-300' };
-  return { label: 'Em jogo', emoji: '🎯', bg: 'bg-[#F59E0B]/15 border-[#F59E0B]/30', text: 'text-[#93c5fd]' };
+  return { label: 'Em jogo', emoji: '🎯', bg: 'bg-[#D4A017]/15 border-[#D4A017]/30', text: 'text-[#93c5fd]' };
 }
 
 const TrophyIcon = ({ className }: { className?: string }) => (
@@ -99,7 +99,7 @@ export function FunilVendasIndividualSlide({
                           <MedalIcon className="w-3 h-3" />
                         </span>
                       ) : (
-                        <span className="w-6 h-6 rounded-lg bg-[#F59E0B]/30 flex items-center justify-center text-[#93c5fd] font-bold text-[10px] border border-[#F59E0B]/50">
+                        <span className="w-6 h-6 rounded-lg bg-[#D4A017]/30 flex items-center justify-center text-[#93c5fd] font-bold text-[10px] border border-[#D4A017]/50">
                           {idx + 1}
                         </span>
                       )}
@@ -117,7 +117,7 @@ export function FunilVendasIndividualSlide({
                     <div className="flex-shrink-0 mb-1.5">
                       <div className="h-1 bg-white/10 rounded-full overflow-hidden flex">
                         <div
-                          className="h-full rounded-full bg-[#F59E0B] flex-shrink-0"
+                          className="h-full rounded-full bg-[#D4A017] flex-shrink-0"
                           style={{ width: `${Math.max(pctDoMax, 6)}%`, minWidth: 4 }}
                         />
                       </div>
@@ -135,7 +135,7 @@ export function FunilVendasIndividualSlide({
                           <span className="text-xs text-[#94a3b8] font-medium w-20 shrink-0">{etapa.label}</span>
                           <div className="flex-1 min-w-0 h-2 bg-white/10 rounded-full overflow-hidden">
                             <div
-                              className={`h-full rounded-full ${etapa.quente ? 'bg-amber-400' : 'bg-[#F59E0B]'}`}
+                              className={`h-full rounded-full ${etapa.quente ? 'bg-amber-400' : 'bg-[#D4A017]'}`}
                               style={{ width: `${widthPct}%`, minWidth: qtd > 0 ? 6 : 0 }}
                             />
                           </div>

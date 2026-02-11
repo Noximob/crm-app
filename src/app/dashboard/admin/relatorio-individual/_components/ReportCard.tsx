@@ -8,8 +8,8 @@ const AlumeLogo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="reportLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style={{ stopColor: '#F59E0B', stopOpacity: 1 }} />
-        <stop offset="100%" style={{ stopColor: '#D97706', stopOpacity: 1 }} />
+        <stop offset="0%" style={{ stopColor: '#D4A017', stopOpacity: 1 }} />
+        <stop offset="100%" style={{ stopColor: '#B8860B', stopOpacity: 1 }} />
       </linearGradient>
     </defs>
     <circle cx="12" cy="12" r="10" fill="url(#reportLogoGrad)" />
@@ -48,7 +48,7 @@ export default function ReportCard({ data }: { data: RelatorioIndividualData }) 
       id="relatorio-individual-card"
     >
       {/* Header com marca */}
-      <div className="bg-gradient-to-br from-[#F59E0B] to-[#D97706] px-8 py-6 text-white">
+      <div className="bg-gradient-to-br from-[#D4A017] to-[#B8860B] px-8 py-6 text-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <AlumeLogo className="w-12 h-12" />
@@ -74,7 +74,7 @@ export default function ReportCard({ data }: { data: RelatorioIndividualData }) 
         {/* 1. Funil e leads */}
         <section>
           <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-            <span className="w-1 h-4 rounded bg-[#F59E0B]" />
+            <span className="w-1 h-4 rounded bg-primary-500" />
             Funil e leads
           </h2>
           <div className="grid grid-cols-3 gap-4 mb-4">
@@ -100,7 +100,7 @@ export default function ReportCard({ data }: { data: RelatorioIndividualData }) 
               {REPORT_FUNIL_ETAPAS.filter((e) => (data.leadsPorEtapa[e] ?? 0) > 0).map((etapa) => (
                 <div key={etapa} className="flex items-center justify-between px-4 py-2">
                   <span className="text-sm text-gray-700 truncate max-w-[320px]">{etapa}</span>
-                  <span className="text-sm font-bold text-[#F59E0B]">{data.leadsPorEtapa[etapa] ?? 0}</span>
+                  <span className="text-sm font-bold text-primary-600">{data.leadsPorEtapa[etapa] ?? 0}</span>
                 </div>
               ))}
               {REPORT_FUNIL_ETAPAS.every((e) => (data.leadsPorEtapa[e] ?? 0) === 0) && (
@@ -113,7 +113,7 @@ export default function ReportCard({ data }: { data: RelatorioIndividualData }) 
         {/* 2. Tarefas: do dia, atrasado, futuro, sem tarefa */}
         <section>
           <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-            <span className="w-1 h-4 rounded bg-[#F59E0B]" />
+            <span className="w-1 h-4 rounded bg-primary-500" />
             Tarefas do dia · Atrasado · Futuro · Sem tarefa
           </h2>
           <div className="grid grid-cols-4 gap-4 mb-4">
@@ -156,7 +156,7 @@ export default function ReportCard({ data }: { data: RelatorioIndividualData }) 
         {/* 3. Uso do tempo: Reunião, Evento, Treinamento, Revisar CRM, Ligação Ativa, Ação de Rua, Disparo de mensagem, Plantão */}
         <section>
           <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-            <span className="w-1 h-4 rounded bg-[#F59E0B]" />
+            <span className="w-1 h-4 rounded bg-primary-500" />
             Uso do tempo · Reunião · Evento · Treinamento · Revisar CRM · Ligação Ativa · Ação de Rua · Disparo de mensagem · Plantão
           </h2>
           <div className="flex items-center gap-4 mb-4">
@@ -191,7 +191,7 @@ export default function ReportCard({ data }: { data: RelatorioIndividualData }) 
         {data.periodo === 'mes' && data.desempenhoPorSemana?.length > 0 && (
           <section>
             <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <span className="w-1 h-4 rounded bg-[#F59E0B]" />
+              <span className="w-1 h-4 rounded bg-primary-500" />
               Ações no mês · Desempenho semana a semana
             </h2>
             <div className="rounded-xl border border-gray-200 overflow-hidden">
@@ -228,7 +228,7 @@ export default function ReportCard({ data }: { data: RelatorioIndividualData }) 
         {/* Metas e resultado */}
         <section>
           <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-            <span className="w-1 h-4 rounded bg-[#F59E0B]" />
+            <span className="w-1 h-4 rounded bg-primary-500" />
             Metas e resultado
           </h2>
           <div className="grid grid-cols-2 gap-4 mb-4">
@@ -239,7 +239,7 @@ export default function ReportCard({ data }: { data: RelatorioIndividualData }) 
             <div className="bg-gray-50 rounded-xl p-4">
               <p className="text-xs text-gray-500 font-medium">Realizado (acumulado)</p>
               <p className="text-xl font-bold text-gray-900">{formatCurrency(data.metaMensalAlcancado)}</p>
-              <p className="text-sm font-semibold text-[#F59E0B] mt-1">{data.metaMensalPercentual}% da meta</p>
+              <p className="text-sm font-semibold text-primary-600 mt-1">{data.metaMensalPercentual}% da meta</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">

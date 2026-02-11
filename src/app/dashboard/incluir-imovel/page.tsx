@@ -147,7 +147,7 @@ export default function IncluirImovelPage() {
     <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
-          <HouseIcon className="h-8 w-8 text-[#F59E0B]" />
+          <HouseIcon className="h-8 w-8 text-[#D4A017]" />
           <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white">Incluir Imóvel</h1>
         </div>
 
@@ -405,7 +405,7 @@ export default function IncluirImovelPage() {
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2 rounded-lg bg-[#F59E0B] text-white font-bold shadow-soft hover:bg-[#D97706] transition-colors disabled:opacity-50"
+              className="px-6 py-2 rounded-lg bg-[#D4A017] text-white font-bold shadow-soft hover:bg-[#B8860B] transition-colors disabled:opacity-50"
             >
               {loading ? 'Adicionando...' : 'Adicionar Imóvel'}
             </button>

@@ -54,7 +54,7 @@ const getTaskStatusInfo = (tasks: Task[]): TaskStatus => {
 const SectionTitle = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
   <div className={`relative ${className}`}>
     <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white relative z-10">{children}</h2>
-    <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-[#F59E0B] to-[#FCD34D] rounded-r-full opacity-60" />
+    <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-[#D4A017] to-[#E8C547] rounded-r-full opacity-60" />
   </div>
 );
 
@@ -216,7 +216,7 @@ export default function VisualizarCrmCorretorPage() {
         <div className="flex items-center gap-4">
           <Link
             href="/dashboard/admin"
-            className="flex items-center gap-2 text-sm font-semibold text-[#6B6F76] dark:text-gray-300 hover:text-[#F59E0B] transition-colors"
+            className="flex items-center gap-2 text-sm font-semibold text-[#6B6F76] dark:text-gray-300 hover:text-[#D4A017] transition-colors"
           >
             <ArrowLeftIcon className="h-5 w-5" />
             Voltar ao administrador
@@ -251,7 +251,7 @@ export default function VisualizarCrmCorretorPage() {
           </p>
         ) : (
           <>
-            <div className="mb-4 px-3 py-2 rounded-lg bg-[#F59E0B]/10 border border-[#F59E0B]/20 text-sm text-[#F59E0B] dark:text-[#FCD34D]">
+            <div className="mb-4 px-3 py-2 rounded-lg bg-[#D4A017]/10 border border-[#D4A017]/20 text-sm text-[#D4A017] dark:text-[#E8C547]">
               Visualizando CRM de: <strong>{selectedCorretor?.nome || selectedCorretor?.email}</strong>. Você não pode editar; apenas visualizar.
             </div>
 
@@ -335,7 +335,7 @@ export default function VisualizarCrmCorretorPage() {
                         </a>
                       </td>
                       <td className="px-4 py-3 text-xs w-1/5">
-                        <span className="inline-block px-2 py-1 rounded bg-[#E8E9F1] dark:bg-[#181C23] text-[#F59E0B] dark:text-primary-200 font-semibold text-[11px] truncate max-w-[120px]">{lead.etapa}</span>
+                        <span className="inline-block px-2 py-1 rounded bg-[#E8E9F1] dark:bg-[#181C23] text-[#D4A017] dark:text-primary-200 font-semibold text-[11px] truncate max-w-[120px]">{lead.etapa}</span>
                       </td>
                       <td className="px-4 py-3 text-xs w-1/5">
                         <StatusIndicator status={lead.taskStatus} />
@@ -343,7 +343,7 @@ export default function VisualizarCrmCorretorPage() {
                       <td className="px-4 py-3 w-1/5 text-center">
                         <Link
                           href={`/dashboard/crm/${lead.id}?viewAs=1`}
-                          className="inline-block px-3 py-1.5 text-xs font-semibold bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-lg transition-colors"
+                          className="inline-block px-3 py-1.5 text-xs font-semibold bg-[#D4A017] hover:bg-[#B8860B] text-white rounded-lg transition-colors"
                         >
                           Ver (somente leitura)
                         </Link>
@@ -356,7 +356,7 @@ export default function VisualizarCrmCorretorPage() {
                 <div className="flex justify-center mt-4">
                   <button
                     onClick={() => fetchLeads(true)}
-                    className="px-6 py-2 bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold rounded-lg transition-colors"
+                    className="px-6 py-2 bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold rounded-lg transition-colors"
                   >
                     Mostrar mais
                   </button>

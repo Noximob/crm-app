@@ -207,7 +207,7 @@ export default function GestaoCorretoresPage() {
     return (
       <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F59E0B] mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4A017] mx-auto mb-4"></div>
           <p className="text-[#6B6F76] dark:text-gray-300">Carregando...</p>
         </div>
       </div>
@@ -316,7 +316,7 @@ export default function GestaoCorretoresPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={selectAllLeads}
-                    className="px-3 py-1 text-xs bg-[#F59E0B] text-white rounded-lg hover:bg-[#D97706] transition-colors"
+                    className="px-3 py-1 text-xs bg-[#D4A017] text-white rounded-lg hover:bg-[#B8860B] transition-colors"
                   >
                     Selecionar Todos
                   </button>
@@ -334,7 +334,7 @@ export default function GestaoCorretoresPage() {
                     <button
                       onClick={handleTransferLeads}
                       disabled={!selectedDestUser}
-                      className="px-4 py-2 bg-[#F59E0B] text-white rounded-lg hover:bg-[#D97706] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 bg-[#D4A017] text-white rounded-lg hover:bg-[#B8860B] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Transferir {selectedLeads.length} Lead(s)
                     </button>
@@ -433,7 +433,7 @@ export default function GestaoCorretoresPage() {
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <button 
-                          className="text-[#F59E0B] hover:text-[#D97706] text-xs px-2 py-1 rounded hover:bg-[#F59E0B]/10 transition-colors" 
+                          className="text-[#D4A017] hover:text-[#B8860B] text-xs px-2 py-1 rounded hover:bg-[#D4A017]/10 transition-colors" 
                           onClick={() => handleVerDetalhes(lead.id)}
                           title="Ver detalhes do lead"
                         >

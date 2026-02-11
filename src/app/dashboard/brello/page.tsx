@@ -919,7 +919,7 @@ const Brello = () => {
               </button>
               <button
                 onClick={() => setShowNewCardModal(true)}
-                className="bg-[#F59E0B] hover:bg-[#D97706] text-white px-4 py-2 rounded-lg transition-colors"
+                className="bg-[#D4A017] hover:bg-[#B8860B] text-white px-4 py-2 rounded-lg transition-colors"
               >
                 + Novo Card
               </button>
@@ -1101,7 +1101,7 @@ const Brello = () => {
               <select
                 value={selectedColumnId}
                 onChange={(e) => setSelectedColumnId(e.target.value)}
-                className="w-full p-3 bg-[#181C23] text-white rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-[#F59E0B]"
+                className="w-full p-3 bg-[#181C23] text-white rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-[#D4A017]"
               >
                 <option value="">Selecione uma coluna</option>
                 {columns.map(column => (
@@ -1113,18 +1113,18 @@ const Brello = () => {
                 placeholder="Título do card"
                 value={newCardTitle}
                 onChange={(e) => setNewCardTitle(e.target.value)}
-                className="w-full p-3 bg-[#181C23] text-white rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-[#F59E0B]"
+                className="w-full p-3 bg-[#181C23] text-white rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-[#D4A017]"
               />
               <textarea
                 placeholder="Descrição (opcional)"
                 value={newCardDescription}
                 onChange={(e) => setNewCardDescription(e.target.value)}
-                className="w-full p-3 bg-[#181C23] text-white rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] h-20 resize-none"
+                className="w-full p-3 bg-[#181C23] text-white rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-[#D4A017] h-20 resize-none"
               />
               <div className="flex gap-3">
                 <button
                   onClick={createCard}
-                  className="flex-1 bg-[#F59E0B] hover:bg-[#D97706] text-white py-2 rounded-lg transition-colors"
+                  className="flex-1 bg-[#D4A017] hover:bg-[#B8860B] text-white py-2 rounded-lg transition-colors"
                 >
                   Criar
                 </button>

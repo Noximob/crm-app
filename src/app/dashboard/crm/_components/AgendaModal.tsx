@@ -48,7 +48,7 @@ export default function AgendaModal({ isOpen, onClose, onSave, isLoading }: Agen
     return (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center">
             <div className="bg-white rounded-2xl shadow-soft border border-[#E8E9F1] p-6 w-full max-w-lg relative">
-                <button onClick={onClose} className="absolute top-4 right-4 text-[#6B6F76] hover:text-[#F59E0B] transition-colors">
+                <button onClick={onClose} className="absolute top-4 right-4 text-[#6B6F76] hover:text-[#D4A017] transition-colors">
                     <XIcon className="h-6 w-6" />
                 </button>
                 <h2 className="text-2xl font-bold text-[#2E2F38] mb-6">Agendar Nova Tarefa</h2>
@@ -61,7 +61,7 @@ export default function AgendaModal({ isOpen, onClose, onSave, isLoading }: Agen
                             rows={3}
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 bg-white border border-[#FCD34D] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#F59E0B] text-[#2E2F38]"
+                            className="mt-1 block w-full px-3 py-2 bg-white border border-[#E8C547] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#D4A017] text-[#2E2F38]"
                             placeholder="Ex: Ligar para confirmar proposta..."
                         />
                     </div>
@@ -73,7 +73,7 @@ export default function AgendaModal({ isOpen, onClose, onSave, isLoading }: Agen
                                 id="task-type"
                                 value={type}
                                 onChange={(e) => setType(e.target.value as TaskPayload['type'])}
-                                className="mt-1 block w-full px-3 py-2 bg-white border border-[#FCD34D] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#F59E0B] text-[#2E2F38]"
+                                className="mt-1 block w-full px-3 py-2 bg-white border border-[#E8C547] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#D4A017] text-[#2E2F38]"
                             >
                                 <option>Ligação</option>
                                 <option>WhatsApp</option>
@@ -88,7 +88,7 @@ export default function AgendaModal({ isOpen, onClose, onSave, isLoading }: Agen
                                 id="task-date"
                                 value={date}
                                 onChange={(e) => setDate(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 bg-white border border-[#FCD34D] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#F59E0B] text-[#2E2F38]"
+                                className="mt-1 block w-full px-3 py-2 bg-white border border-[#E8C547] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#D4A017] text-[#2E2F38]"
                             />
                         </div>
                         <div className="sm:col-span-1">
@@ -98,21 +98,21 @@ export default function AgendaModal({ isOpen, onClose, onSave, isLoading }: Agen
                                 id="task-time"
                                 value={time}
                                 onChange={(e) => setTime(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 bg-white border border-[#FCD34D] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#F59E0B] text-[#2E2F38]"
+                                className="mt-1 block w-full px-3 py-2 bg-white border border-[#E8C547] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#D4A017] text-[#2E2F38]"
                             />
                         </div>
                     </div>
                 </div>
 
                 <div className="flex justify-end gap-4 pt-8">
-                    <button type="button" onClick={onClose} disabled={isLoading} className="px-4 py-2 text-sm font-semibold text-[#6B6F76] bg-[#E8E9F1] hover:bg-[#FCD34D]/40 rounded-lg transition-colors disabled:opacity-50">
+                    <button type="button" onClick={onClose} disabled={isLoading} className="px-4 py-2 text-sm font-semibold text-[#6B6F76] bg-[#E8E9F1] hover:bg-[#E8C547]/40 rounded-lg transition-colors disabled:opacity-50">
                         Cancelar
                     </button>
                     <button
                         type="button"
                         onClick={handleSave}
                         disabled={isLoading || !isFormValid}
-                        className="px-4 py-2 text-sm font-semibold text-white bg-[#F59E0B] hover:bg-[#D97706] rounded-lg shadow-sm disabled:opacity-50 disabled:bg-[#FCD34D]"
+                        className="px-4 py-2 text-sm font-semibold text-white bg-[#D4A017] hover:bg-[#B8860B] rounded-lg shadow-sm disabled:opacity-50 disabled:bg-[#E8C547]"
                     >
                         {isLoading ? 'Salvando...' : 'Salvar Tarefa'}
                     </button>

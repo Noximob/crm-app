@@ -116,7 +116,7 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
         {/* Header mais compacto */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-[#F59E0B] to-[#FCD34D] rounded-full flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-r from-[#D4A017] to-[#E8C547] rounded-full flex items-center justify-center">
               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
@@ -217,7 +217,7 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
                             </div>
                             
                             {item.leadNome && (
-                              <div className="flex items-center gap-1 text-[#F59E0B] dark:text-[#FCD34D]">
+                              <div className="flex items-center gap-1 text-[#D4A017] dark:text-[#E8C547]">
                                 <span className="text-xs">📞</span>
                                 <span className="truncate max-w-24">{item.leadNome}</span>
                               </div>
@@ -307,7 +307,7 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
                             </div>
                             
                             {item.leadNome && (
-                              <div className="flex items-center gap-1 text-[#F59E0B] dark:text-[#FCD34D]">
+                              <div className="flex items-center gap-1 text-[#D4A017] dark:text-[#E8C547]">
                                 <span className="text-xs">📞</span>
                                 <span className="truncate max-w-24">{item.leadNome}</span>
                               </div>
@@ -338,7 +338,7 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
             </div>
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-[#F59E0B] text-white rounded-lg hover:bg-[#D97706] transition-colors font-medium text-sm"
+              className="px-4 py-2 bg-[#D4A017] text-white rounded-lg hover:bg-[#B8860B] transition-colors font-medium text-sm"
             >
               Fechar
             </button>

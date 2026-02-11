@@ -364,7 +364,7 @@ export default function TreinamentosPage() {
 
         {/* Sugestão Aleatória */}
         {selectedCategory === 'todos' && !searchTerm && (
-          <div className="mb-6 p-4 bg-gradient-to-r from-[#F59E0B]/10 to-[#FCD34D]/10 rounded-xl border border-[#F59E0B]/20">
+          <div className="mb-6 p-4 bg-gradient-to-r from-[#D4A017]/10 to-[#E8C547]/10 rounded-xl border border-[#D4A017]/20">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="text-2xl">{getSuggestedCategoryIcon()}</span>
@@ -382,7 +382,7 @@ export default function TreinamentosPage() {
                   setSelectedCategory(suggestedCategory);
                   generateSuggestion();
                 }}
-                className="px-4 py-2 bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold rounded-lg transition-colors"
+                className="px-4 py-2 bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold rounded-lg transition-colors"
               >
                 Explorar
               </button>
@@ -398,7 +398,7 @@ export default function TreinamentosPage() {
               placeholder="Buscar na Academia..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-3 pl-12 bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F59E0B]"
+              className="w-full px-4 py-3 pl-12 bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#D4A017]"
             />
             <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#6B6F76] dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -429,7 +429,7 @@ export default function TreinamentosPage() {
         {/* Grid da Academia - Estilo YouTube */}
         {loading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F59E0B] mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4A017] mx-auto mb-4"></div>
             <p className="text-[#6B6F76] dark:text-gray-300">Carregando Academia...</p>
           </div>
         ) : filteredTreinamentos.length === 0 ? (
@@ -499,7 +499,7 @@ export default function TreinamentosPage() {
                 {/* Informações do vídeo - Estilo YouTube */}
                 <div className="p-3">
                   {/* Título - Estilo YouTube */}
-                  <h3 className="font-semibold text-[#2E2F38] dark:text-white text-sm mb-2 line-clamp-2 group-hover:text-[#F59E0B] transition-colors leading-tight">
+                  <h3 className="font-semibold text-[#2E2F38] dark:text-white text-sm mb-2 line-clamp-2 group-hover:text-[#D4A017] transition-colors leading-tight">
                     {treinamento.titulo}
                   </h3>
                   
@@ -550,7 +550,7 @@ export default function TreinamentosPage() {
                           setSelectedTreinamento(treinamento.id);
                           setShowComments(true);
                         }}
-                        className="flex items-center gap-1 text-xs text-[#6B6F76] dark:text-gray-400 hover:text-[#F59E0B] transition-colors"
+                        className="flex items-center gap-1 text-xs text-[#6B6F76] dark:text-gray-400 hover:text-[#D4A017] transition-colors"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -603,7 +603,7 @@ export default function TreinamentosPage() {
                   <div className="space-y-4">
                     {comments.map((comment) => (
                       <div key={comment.id} className="flex gap-3">
-                        <div className="w-8 h-8 bg-[#F59E0B] rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                        <div className="w-8 h-8 bg-[#D4A017] rounded-full flex items-center justify-center text-white text-sm font-semibold">
                           {comment.userName.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1">
@@ -628,7 +628,7 @@ export default function TreinamentosPage() {
               {/* Input de Novo Comentário */}
               <div className="p-6 border-t border-[#E8E9F1] dark:border-[#23283A]">
                 <div className="flex gap-3">
-                  <div className="w-8 h-8 bg-[#F59E0B] rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                  <div className="w-8 h-8 bg-[#D4A017] rounded-full flex items-center justify-center text-white text-sm font-semibold">
                     {userData?.nome?.charAt(0).toUpperCase() || 'U'}
                   </div>
                   <div className="flex-1">
@@ -643,7 +643,7 @@ export default function TreinamentosPage() {
                       <button
                         onClick={() => handleComment(selectedTreinamento)}
                         disabled={!newComment.trim()}
-                        className="px-4 py-2 bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 bg-[#D4A017] hover:bg-[#B8860B] text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Comentar
                       </button>

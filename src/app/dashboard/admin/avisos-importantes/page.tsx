@@ -172,7 +172,7 @@ export default function AvisosImportantesPage() {
             {avisos.map(aviso => (
               <li key={aviso.id} className="border-b border-[#E8E9F1] dark:border-[#23283A] pb-3 flex justify-between items-start">
                 <div className="flex-1">
-                  <div className="font-semibold text-[#F59E0B] dark:text-[#FCD34D]">{aviso.titulo}</div>
+                  <div className="font-semibold text-[#D4A017] dark:text-[#E8C547]">{aviso.titulo}</div>
                   <div className="text-[#2E2F38] dark:text-white text-sm mb-1">{aviso.mensagem}</div>
                   <div className="text-sm text-gray-600 dark:text-gray-300">
                     <div className="mb-1">
@@ -187,7 +187,7 @@ export default function AvisosImportantesPage() {
                   </div>
                 </div>
                 <div className="flex gap-2 ml-4">
-                  <button className="text-[#F59E0B] hover:underline text-sm" onClick={() => handleEditar(aviso)}>Editar</button>
+                  <button className="text-[#D4A017] hover:underline text-sm" onClick={() => handleEditar(aviso)}>Editar</button>
                   <button className="text-[#F45B69] hover:underline text-sm" onClick={() => aviso.id && handleExcluir(aviso.id)}>Excluir</button>
                 </div>
               </li>

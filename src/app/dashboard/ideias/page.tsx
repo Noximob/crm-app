@@ -410,14 +410,14 @@ export default function IdeiasPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2 flex items-center gap-3">
-              <LightbulbIcon className="h-8 w-8 text-[#F59E0B]" />
+              <LightbulbIcon className="h-8 w-8 text-[#D4A017]" />
               Ideias para Melhorias
             </h1>
             <p className="text-[#6B6F76] dark:text-gray-300">Compartilhe suas ideias para melhorar nossa plataforma</p>
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
+            className="bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
           >
             <LightbulbIcon className="h-5 w-5" />
             Nova Ideia
@@ -433,7 +433,7 @@ export default function IdeiasPage() {
 
         {/* Box de Melhorias em Andamento */}
         {melhoriasEmAndamento.length > 0 && (
-          <div className="bg-gradient-to-r from-amber-500 to-amber-600 rounded-2xl p-6 mb-8 text-white">
+          <div className="bg-gradient-to-r from-primary-400 to-primary-600 rounded-2xl p-6 mb-8 text-white">
             <div className="flex items-center gap-3 mb-4">
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -530,7 +530,7 @@ export default function IdeiasPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                  className="bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
                 >
                   {loading ? "Enviando..." : "Enviar Ideia"}
                 </button>
@@ -623,7 +623,7 @@ export default function IdeiasPage() {
                                 ? "bg-gray-400 text-white cursor-not-allowed opacity-50"
                                 : ideia.userId === currentUser?.uid
                                 ? "bg-gray-300 text-gray-500 cursor-not-allowed opacity-50"
-                                : "bg-[#F59E0B] hover:bg-[#D97706] text-white disabled:opacity-50"
+                                : "bg-[#D4A017] hover:bg-[#B8860B] text-white disabled:opacity-50"
                             }`}
                             title={
                               jaVotouNaIdeia(ideia.id) 
@@ -676,7 +676,7 @@ export default function IdeiasPage() {
                           <button
                             onClick={() => handleAddComentario(ideia.id)}
                             disabled={!novoComentario.trim()}
-                            className="px-3 py-2 bg-[#F59E0B] hover:bg-[#D97706] text-white text-sm rounded transition-colors disabled:opacity-50"
+                            className="px-3 py-2 bg-[#D4A017] hover:bg-[#B8860B] text-white text-sm rounded transition-colors disabled:opacity-50"
                           >
                             Comentar
                           </button>

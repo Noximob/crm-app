@@ -39,7 +39,7 @@ export default function PagamentosPage() {
           {/* Card informativo */}
           <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-lg border border-[#E8E9F1] dark:border-[#23283A] p-8 max-w-2xl mx-auto">
             <div className="space-y-4">
-              <div className="flex items-center gap-3 text-[#F59E0B]">
+              <div className="flex items-center gap-3 text-[#D4A017]">
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
@@ -72,9 +72,9 @@ export default function PagamentosPage() {
           </div>
           
           {/* Mensagem de agradecimento */}
-          <div className="mt-8 p-4 bg-gradient-to-r from-[#F59E0B]/10 to-[#FCD34D]/10 rounded-xl border border-[#F59E0B]/20">
+          <div className="mt-8 p-4 bg-gradient-to-r from-[#D4A017]/10 to-[#E8C547]/10 rounded-xl border border-[#D4A017]/20">
             <p className="text-[#6B6F76] dark:text-gray-300">
-              <strong className="text-[#F59E0B]">Obrigado pela paciência!</strong> Estamos trabalhando para trazer funcionalidades incríveis em breve.
+              <strong className="text-[#D4A017]">Obrigado pela paciência!</strong> Estamos trabalhando para trazer funcionalidades incríveis em breve.
             </p>
           </div>
         </div>

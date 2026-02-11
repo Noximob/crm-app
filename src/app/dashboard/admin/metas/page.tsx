@@ -220,9 +220,9 @@ export default function AdminMetasPage() {
 
   if (fetching) {
     return (
-      <div className="max-w-xl mx-auto mt-10 bg-gradient-to-br from-[#FCD34D]/30 to-[#F59E0B]/10 border-2 border-[#F59E0B]/20 rounded-2xl p-8 shadow-xl">
+      <div className="max-w-xl mx-auto mt-10 bg-gradient-to-br from-[#E8C547]/30 to-[#D4A017]/10 border-2 border-[#D4A017]/20 rounded-2xl p-8 shadow-xl">
         <div className="flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#F59E0B]"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#D4A017]"></div>
           <span className="ml-2 text-white">Carregando...</span>
         </div>
       </div>
@@ -230,27 +230,27 @@ export default function AdminMetasPage() {
   }
 
   return (
-    <div className="max-w-xl mx-auto mt-10 bg-gradient-to-br from-[#FCD34D]/30 to-[#F59E0B]/10 border-2 border-[#F59E0B]/20 rounded-2xl p-8 shadow-xl">
+    <div className="max-w-xl mx-auto mt-10 bg-gradient-to-br from-[#E8C547]/30 to-[#D4A017]/10 border-2 border-[#D4A017]/20 rounded-2xl p-8 shadow-xl">
       <h1 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-        <svg className="h-7 w-7 text-[#F59E0B]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <svg className="h-7 w-7 text-[#D4A017]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
         Gerenciar Meta da Imobiliária
       </h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex gap-4">
           <div className="flex-1">
             <label className="block text-sm font-medium mb-1 text-white">Início</label>
-            <input type="date" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#F59E0B]/30" value={inicio} onChange={e => setInicio(e.target.value)} required />
+            <input type="date" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30" value={inicio} onChange={e => setInicio(e.target.value)} required />
           </div>
           <div className="flex-1">
             <label className="block text-sm font-medium mb-1 text-white">Fim</label>
-            <input type="date" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#F59E0B]/30" value={fim} onChange={e => setFim(e.target.value)} required />
+            <input type="date" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30" value={fim} onChange={e => setFim(e.target.value)} required />
           </div>
         </div>
         <div>
           <label className="block text-sm font-medium mb-1 text-white">VGV Meta Trimestral (R$)</label>
           <input 
             type="number" 
-            className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#F59E0B]/30" 
+            className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30" 
             value={vgv} 
             onChange={e => setVgv(e.target.value)}
             placeholder="0"
@@ -260,26 +260,26 @@ export default function AdminMetasPage() {
           />
         </div>
 
-        <div className="border-t border-[#F59E0B]/20 pt-4 mt-4">
+        <div className="border-t border-[#D4A017]/20 pt-4 mt-4">
           <h3 className="text-base font-semibold text-white mb-3">Meta mensal</h3>
           <div className="flex gap-4 mb-3">
             <div className="flex-1">
               <label className="block text-sm font-medium mb-1 text-white/80">Início do mês</label>
-              <input type="date" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#F59E0B]/30" value={inicioMensal} onChange={e => setInicioMensal(e.target.value)} />
+              <input type="date" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30" value={inicioMensal} onChange={e => setInicioMensal(e.target.value)} />
             </div>
             <div className="flex-1">
               <label className="block text-sm font-medium mb-1 text-white/80">Fim do mês</label>
-              <input type="date" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#F59E0B]/30" value={fimMensal} onChange={e => setFimMensal(e.target.value)} />
+              <input type="date" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30" value={fimMensal} onChange={e => setFimMensal(e.target.value)} />
             </div>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1 text-white/80">VGV Meta Mensal (R$)</label>
-            <input type="number" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#F59E0B]/30" value={vgvMensal} onChange={e => setVgvMensal(e.target.value)} placeholder="0" min="0" step="0.01" />
+            <input type="number" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30" value={vgvMensal} onChange={e => setVgvMensal(e.target.value)} placeholder="0" min="0" step="0.01" />
           </div>
         </div>
 
         {/* Contribuições por corretor — soma vira o VGV realizado (bloco fora do form principal para o botão Adicionar funcionar) */}
-        <div className="rounded-xl border border-[#F59E0B]/30 bg-[#23283A]/40 p-4 space-y-4">
+        <div className="rounded-xl border border-[#D4A017]/30 bg-[#23283A]/40 p-4 space-y-4">
           <h3 className="text-base font-semibold text-white">Contribuições por corretor</h3>
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex-1 min-w-[140px]">
@@ -287,7 +287,7 @@ export default function AdminMetasPage() {
               <select
                 value={corretorSelecionado}
                 onChange={e => setCorretorSelecionado(e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#F59E0B]/30"
+                className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30"
               >
                 <option value="">Selecione</option>
                 {corretores.map(c => (
@@ -301,7 +301,7 @@ export default function AdminMetasPage() {
                 type="date"
                 value={dataVendaContribuicao}
                 onChange={e => setDataVendaContribuicao(e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#F59E0B]/30"
+                className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30"
               />
             </div>
             <div className="flex-1 min-w-[140px]">
@@ -313,7 +313,7 @@ export default function AdminMetasPage() {
                 value={valorContribuicao}
                 onChange={e => setValorContribuicao(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddContribuicao(); } }}
-                className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#F59E0B]/30"
+                className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30"
               />
             </div>
             <button
@@ -355,7 +355,7 @@ export default function AdminMetasPage() {
                 );
               })}
               </ul>
-              <p className="text-base font-bold text-[#F59E0B] pt-2 border-t border-[#F59E0B]/20">
+              <p className="text-base font-bold text-[#D4A017] pt-2 border-t border-[#D4A017]/20">
                 Total realizado: R$ {totalRealizado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
             </div>
@@ -368,19 +368,19 @@ export default function AdminMetasPage() {
         {ultimaAtualizacaoPor && (
           <p className="text-sm text-white/70">Última atualização: <span className="font-medium text-white">{ultimaAtualizacaoPor}</span></p>
         )}
-        <div className="bg-[#23283A]/30 border border-[#F59E0B]/20 rounded-lg p-4">
+        <div className="bg-[#23283A]/30 border border-[#D4A017]/20 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-white">% Alcançado (calculado automaticamente)</span>
-            <span className="text-lg font-bold text-[#F59E0B]">{percentualCalculado}%</span>
+            <span className="text-lg font-bold text-[#D4A017]">{percentualCalculado}%</span>
           </div>
           <div className="w-full h-2 bg-[#23283A] rounded-full mt-2">
             <div 
-              className={`h-2 rounded-full transition-all duration-300 ${percentualCalculado >= 100 ? 'bg-[#3AC17C]' : 'bg-[#F59E0B]'}`} 
+              className={`h-2 rounded-full transition-all duration-300 ${percentualCalculado >= 100 ? 'bg-[#3AC17C]' : 'bg-[#D4A017]'}`} 
               style={{ width: `${Math.min(percentualCalculado, 100)}%` }}
             ></div>
           </div>
         </div>
-        <button type="submit" className="mt-4 bg-[#F59E0B] hover:bg-[#D97706] text-white font-bold py-2 px-6 rounded-lg transition-all disabled:opacity-60" disabled={loading}>
+        <button type="submit" className="mt-4 bg-[#D4A017] hover:bg-[#B8860B] text-white font-bold py-2 px-6 rounded-lg transition-all disabled:opacity-60" disabled={loading}>
           {loading ? 'Salvando...' : 'Salvar Meta'}
         </button>
         {success && <div className="text-green-400 font-semibold mt-2">Meta salva com sucesso!</div>}

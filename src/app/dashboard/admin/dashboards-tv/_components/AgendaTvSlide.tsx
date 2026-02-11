@@ -29,12 +29,12 @@ const TIPO_LABEL: Record<string, string> = {
 };
 
 const TIPO_COR: Record<string, string> = {
-  reuniao: 'from-amber-500 to-amber-600',
+  reuniao: 'from-primary-500 to-primary-600',
   evento: 'from-purple-500 to-purple-600',
   treinamento: 'from-green-500 to-green-600',
   'revisar-crm': 'from-cyan-500 to-cyan-600',
   'ligacao-ativa': 'from-emerald-500 to-emerald-600',
-  'acao-de-rua': 'from-amber-500 to-amber-600',
+  'acao-de-rua': 'from-primary-500 to-primary-600',
   'disparo-de-msg': 'from-indigo-500 to-indigo-600',
   outro: 'from-slate-500 to-slate-600',
 };
@@ -272,7 +272,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
 
       <header className="relative shrink-0 flex items-center justify-between gap-3 py-3 px-4 border-b border-white/10">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-xl shadow-lg shadow-amber-500/25">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-xl shadow-lg shadow-primary-500/20">
             📋
           </div>
           <div>
@@ -529,7 +529,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
               {/* 8º quadrado: frase da semana (editável no admin) ou frase do dia */}
               <div
                 key="frase-semana"
-                className="rounded-2xl border border-amber-400/40 bg-gradient-to-br from-amber-500/20 to-orange-600/10 p-4 min-h-[180px] flex flex-col items-center justify-center text-center"
+                className="rounded-2xl border border-primary-400/30 bg-gradient-to-br from-primary-500/15 to-primary-600/5 p-4 min-h-[180px] flex flex-col items-center justify-center text-center"
               >
                 <div className="text-4xl mb-2">💬</div>
                 <p className="font-bold text-amber-300 text-lg leading-tight">

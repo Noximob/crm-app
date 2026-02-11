@@ -6,7 +6,7 @@ const metas = [
     value: 'R$ 180.000',
     progress: 75,
     description: 'Valor total de vendas para o mês',
-    color: 'bg-[#F59E0B]',
+    color: 'bg-[#D4A017]',
   },
   {
     title: 'Vendas Realizadas',
@@ -20,7 +20,7 @@ const metas = [
     value: '12',
     progress: 60,
     description: 'Propostas enviadas para clientes',
-    color: 'bg-[#F59E42]',
+    color: 'bg-primary-500',
   },
 ];
 
@@ -60,7 +60,7 @@ export default function MetasPage() {
                   <span className="font-bold text-[#2E2F38] dark:text-white">{corretor.nome}</span>
                   <div className="text-xs text-[#6B6F76] dark:text-gray-300">{corretor.vendas} vendas</div>
                 </div>
-                <span className="ml-auto text-xs text-[#F59E0B] font-bold">#{idx + 1}</span>
+                <span className="ml-auto text-xs text-[#D4A017] font-bold">#{idx + 1}</span>
               </div>
             ))}
           </div>

@@ -135,7 +135,7 @@ export default function AdminEntidadesPage() {
           <div className="flex items-center gap-4 mb-4 sm:mb-0">
             <Link 
               href="/dashboard/developer"
-              className="text-[#F59E0B] hover:text-[#2E6FD9] transition-colors"
+              className="text-[#D4A017] hover:text-[#B8860B] transition-colors"
             >
               ← Voltar à Área do Desenvolvedor
             </Link>
@@ -175,7 +175,7 @@ export default function AdminEntidadesPage() {
             <button
               onClick={updateImobiliarias}
               disabled={updating}
-              className="bg-[#F59E0B] hover:bg-[#2E6FD9] disabled:bg-[#6B6F76] text-white font-medium px-6 py-3 rounded-lg transition-colors"
+              className="bg-[#D4A017] hover:bg-[#B8860B] disabled:bg-[#6B6F76] text-white font-medium px-6 py-3 rounded-lg transition-colors"
             >
               {updating ? 'Atualizando...' : 'Atualizar Todas'}
         </button>

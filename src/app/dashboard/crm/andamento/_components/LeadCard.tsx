@@ -33,7 +33,7 @@ export default function LeadCard({ lead }: { lead: Lead }) {
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className="bg-[#F5F8FF] dark:bg-[#23283A] rounded-lg p-2 shadow-soft border border-[#FCD34D] dark:border-[#F59E0B]/40 hover:shadow-md hover:border-[#F59E0B] transition-all duration-200 min-h-[60px] flex flex-col gap-1 w-full max-w-[180px] mx-auto"
+      className="bg-[#F5F8FF] dark:bg-[#23283A] rounded-lg p-2 shadow-soft border border-[#E8C547] dark:border-[#D4A017]/40 hover:shadow-md hover:border-[#D4A017] transition-all duration-200 min-h-[60px] flex flex-col gap-1 w-full max-w-[180px] mx-auto"
     >
       {/* Área de drag handle */}
       <div 
@@ -56,7 +56,7 @@ export default function LeadCard({ lead }: { lead: Lead }) {
           WhatsApp
         </a>
                             <Link href={`/dashboard/crm/${lead.id}`} onClick={e => e.stopPropagation()} className="w-full">
-          <span className="block px-2 py-0.5 text-[11px] font-semibold text-white bg-[#F59E0B] rounded-md hover:bg-[#D97706] transition-colors text-center">
+          <span className="block px-2 py-0.5 text-[11px] font-semibold text-white bg-[#D4A017] rounded-md hover:bg-[#B8860B] transition-colors text-center">
             + Info
           </span>
         </Link>
