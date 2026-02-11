@@ -19,17 +19,15 @@ export default function LandingPage() {
           <nav className="flex items-center gap-6">
             <Link href="#solucoes" className="text-sm font-medium text-text-secondary hover:text-orange-400 transition-colors">Soluções</Link>
             <Link href="#diferencial" className="text-sm font-medium text-text-secondary hover:text-orange-400 transition-colors">Diferencial</Link>
+            <Link href="/entrar" className="text-sm font-medium text-text-secondary hover:text-orange-400 transition-colors">Entrar</Link>
             {isLoggedIn ? (
               <Link href="/dashboard" className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold text-sm hover:from-amber-600 hover:to-orange-700 transition-all shadow-[0_0_14px_rgba(255,140,0,0.25)]">
                 Acessar plataforma
               </Link>
             ) : (
-              <>
-                <Link href="/entrar" className="text-sm font-medium text-text-secondary hover:text-orange-400 transition-colors">Entrar</Link>
-                <Link href="/cadastro" className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold text-sm hover:from-amber-600 hover:to-orange-700 transition-all shadow-[0_0_14px_rgba(255,140,0,0.25)]">
-                  Começar agora
-                </Link>
-              </>
+              <Link href="/cadastro" className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold text-sm hover:from-amber-600 hover:to-orange-700 transition-all shadow-[0_0_14px_rgba(255,140,0,0.25)]">
+                Começar agora
+              </Link>
             )}
           </nav>
         </div>
