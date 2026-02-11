@@ -144,10 +144,10 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen min-h-screen bg-particles">
-      {/* Sidebar — logo com glow, item ativo com borda laranja à esquerda */}
-      <div className={`flex flex-col h-screen fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-background-card border-r border-[var(--border-subtle)] transition-all duration-300 text-xs pb-8 shadow-[4px_0_24px_rgba(0,0,0,0.2)]`}>
+      {/* Sidebar — mesmo background (partículas), borda sutil */}
+      <div className={`flex flex-col h-screen fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-transparent border-r border-white/[0.06] transition-all duration-300 text-xs pb-8`}>
         <div className="flex-1 flex flex-col">
-          <div className="flex items-center justify-between p-5 border-b border-[var(--border-subtle)]">
+          <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
             <button
               onClick={() => router.push('/dashboard')}
               className="flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer [filter:drop-shadow(0_0_8px_rgba(255,140,0,0.4))]"
@@ -217,22 +217,24 @@ export default function DashboardLayout({
 
       <div className={`flex-1 flex flex-col transition-all duration-300 ${collapsed ? 'ml-16' : 'ml-64'}`}>
         {/* Header gamificado: saudação laranja, notificação, moedas, avatar */}
-        <header className="bg-background-card/80 backdrop-blur-sm border-b border-[var(--border-subtle)] px-4 py-3 shrink-0 flex items-center justify-between">
+        <header className="border-b border-white/[0.06] px-4 py-3 shrink-0 flex items-center justify-between">
           <h2 className="text-lg font-bold text-orange-400 truncate">
             Olá, {displayName}! 👋
           </h2>
           <div className="flex items-center gap-3">
-            <button type="button" className="relative p-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors text-text-secondary hover:text-white" title="Notificações">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-              {notifications.comunidade && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-orange-500 rounded-full ring-2 ring-[var(--bg-card)]" />
-              )}
-            </button>
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[var(--surface-hover)] border border-orange-500/20">
+            <Link
+              href="/dashboard/ideias"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-semibold text-sm transition-all shadow-[0_0_14px_rgba(255,140,0,0.25)] hover:shadow-[0_0_20px_rgba(255,140,0,0.35)]"
+              title="Ideias"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21h6"/><path d="M10 21c5-3 7-7 7-12a6 6 0 0 0-12 0c0 5 2 9 5 12z"/></svg>
+              Ideias
+            </Link>
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/[0.06] border border-orange-500/20">
               <svg className="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v3.35c-1.84.42-2.59 1.33-2.59 2.77 0 1.52 1.21 2.69 3 3.21 1.78.52 2.34 1.15 2.34 1.87 0 .71-.64 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-3.54c1.92-.3 2.86-1.27 2.86-2.77 0-1.47-.99-2.45-2.7-2.95z"/></svg>
               <span className="text-sm font-bold text-white tabular-nums">{pontosExemplo.toLocaleString('pt-BR')}</span>
             </div>
-            <div className="relative flex items-center gap-2 pl-2 border-l border-[var(--border-subtle)]">
+            <div className="relative flex items-center gap-2 pl-3 border-l border-white/[0.06]">
               <div className="relative">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white font-semibold text-sm">
                   {(displayName || 'U').charAt(0).toUpperCase()}

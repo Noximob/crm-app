@@ -1173,65 +1173,46 @@ export default function DashboardPage() {
   })();
 
   return (
-    <div className="min-h-full p-4 sm:p-6 lg:p-8">
-      {/* Indicadores econômicos — header removido (saudação/moedas no layout) */}
-      <div className="sticky top-0 z-10 pt-2 pb-4 mb-4 backdrop-blur-sm">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            {/* Indicadores econômicos compactos */}
-            <div className="flex gap-2">
-              {indicadoresExternos && indicadoresExternosAnterior && indicadoresList.map(ind => (
-                <div
-                  key={ind.key}
-                  className="flex items-center gap-1 px-2 py-1 bg-background-card/80 backdrop-blur-sm rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-all duration-200 cursor-pointer group hover:scale-105"
-                >
-                  <div className="text-center">
-                    <div className="text-xs font-bold text-text-primary group-hover:text-orange-400 transition-colors">
-                      {indicadoresExternos?.[ind.key] || '--'}
-                    </div>
-                    <div className="text-[10px] text-text-secondary font-medium">
-                      {ind.label}
-                    </div>
-                  </div>
-                  {calcularVariacao(indicadoresExternos?.[ind.key], indicadoresExternosAnterior?.[ind.key]) !== null && (
-                    <div className={`flex items-center gap-0.5 text-[10px] font-semibold ${
-                      (calcularVariacao(indicadoresExternos?.[ind.key], indicadoresExternosAnterior?.[ind.key]) || 0) > 0 
-                        ? 'text-green-500' 
-                        : 'text-red-500'
-                    }`}>
-                      {(calcularVariacao(indicadoresExternos?.[ind.key], indicadoresExternosAnterior?.[ind.key]) || 0) > 0 ? (
-                        <TrendingUpIcon className="w-2.5 h-2.5" />
-                      ) : (
-                        <TrendingDownIcon className="w-2.5 h-2.5" />
-                      )}
-                      <span>
-                        {Math.abs(calcularVariacao(indicadoresExternos?.[ind.key], indicadoresExternosAnterior?.[ind.key]) || 0).toFixed(2)}%
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            {/* Botão de Ideias */}
-            <Link
-              href="/dashboard/ideias"
-              className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-              title="Ideias"
+    <div className="min-h-full flex flex-col">
+      {/* Linha dos indicadores — logo abaixo do header, harmoniosa, sem sticky/nuvem */}
+      {indicadoresExternos && indicadoresExternosAnterior && indicadoresList.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 px-0 py-3 mb-2 border-b border-white/[0.06]">
+          {indicadoresList.map(ind => (
+            <div
+              key={ind.key}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] hover:border-orange-500/25 transition-all duration-200 cursor-pointer group"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 21h6"/>
-                <path d="M10 21c5-3 7-7 7-12a6 6 0 0 0-12 0c0 5 2 9 5 12z"/>
-              </svg>
-            </Link>
-          </div>
+              <div className="text-center min-w-[2.5rem]">
+                <div className="text-sm font-bold text-white group-hover:text-orange-400/90 transition-colors">
+                  {indicadoresExternos?.[ind.key] || '--'}
+                </div>
+                <div className="text-[10px] text-text-secondary font-medium">
+                  {ind.label}
+                </div>
+              </div>
+              {calcularVariacao(indicadoresExternos?.[ind.key], indicadoresExternosAnterior?.[ind.key]) !== null && (
+                <div className={`flex items-center gap-0.5 text-[10px] font-semibold ${
+                  (calcularVariacao(indicadoresExternos?.[ind.key], indicadoresExternosAnterior?.[ind.key]) || 0) > 0
+                    ? 'text-emerald-400'
+                    : 'text-red-400'
+                }`}>
+                  {(calcularVariacao(indicadoresExternos?.[ind.key], indicadoresExternosAnterior?.[ind.key]) || 0) > 0 ? (
+                    <TrendingUpIcon className="w-2.5 h-2.5" />
+                  ) : (
+                    <TrendingDownIcon className="w-2.5 h-2.5" />
+                  )}
+                  <span>
+                    {Math.abs(calcularVariacao(indicadoresExternos?.[ind.key], indicadoresExternosAnterior?.[ind.key]) || 0).toFixed(2)}%
+                  </span>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
-      </div>
+      )}
 
-      {/* Grid de conteúdo principal com scroll independente */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0" style={{height: 'calc(100vh - 120px)'}}>
+      {/* Grid de conteúdo principal */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0 pt-2">
         {/* Coluna Esquerda - Agenda, Avisos e Metas com scroll único */}
         <div className="space-y-6 overflow-y-auto pr-2 dashboard-scroll-hide h-full min-h-0">
           {/* Quadro: eventos em que fui marcado — Confirmar Presença / Cancelar */}
