@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { PIPELINE_STAGES } from '@/lib/constants';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, orderBy, limit, startAfter, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, limit, startAfter, Timestamp, updateDoc } from 'firebase/firestore';
 
 interface Task {
   id: string;
@@ -116,6 +116,7 @@ export default function VisualizarCrmCorretorPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [lastVisible, setLastVisible] = useState<unknown>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [fixingNames, setFixingNames] = useState(false);
 
   useEffect(() => {
     if (!userData?.imobiliariaId) return;
@@ -210,6 +211,50 @@ export default function VisualizarCrmCorretorPage() {
   const selectedCorretor = corretores.find(c => c.id === selectedCorretorId);
   const taskStatusFilters: TaskStatus[] = ['Tarefa em Atraso', 'Tarefa do Dia', 'Tarefa Futura', 'Sem tarefa'];
 
+  const looksLikePhone = (value: unknown) => {
+    if (!value) return false;
+    const digits = String(value).replace(/\D/g, '');
+    return digits.length >= 8;
+  };
+
+  const handleFixInvertedLeads = async () => {
+    if (!selectedCorretorId || fixingNames) return;
+    setFixingNames(true);
+    try {
+      const leadsRef = collection(db, 'leads');
+      const q = query(leadsRef, where('userId', '==', selectedCorretorId));
+      const snap = await getDocs(q);
+
+      const updates: Promise<void>[] = [];
+
+      snap.forEach(docSnap => {
+        const data = docSnap.data() as any;
+        const currentNome = data.nome ?? '';
+        const currentTelefone = data.telefone ?? '';
+
+        // Se o nome parece telefone e o telefone não, inverter
+        if (looksLikePhone(currentNome) && !looksLikePhone(currentTelefone)) {
+          updates.push(
+            updateDoc(docSnap.ref, {
+              nome: currentTelefone || 'Lead importado',
+              telefone: currentNome,
+              whatsapp: String(currentNome).replace(/\D/g, ''),
+            })
+          );
+        }
+      });
+
+      if (updates.length) {
+        await Promise.all(updates);
+        await fetchLeads();
+      }
+    } catch (e) {
+      console.error('Erro ao corrigir leads invertidos:', e);
+    } finally {
+      setFixingNames(false);
+    }
+  };
+
   return (
     <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
       <header className="bg-[#F5F6FA] dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] p-4 rounded-2xl shadow-soft flex flex-wrap items-center justify-between gap-4 mb-4">
@@ -276,6 +321,14 @@ export default function VisualizarCrmCorretorPage() {
                   )}
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={handleFixInvertedLeads}
+                disabled={fixingNames || !selectedCorretorId}
+                className="mt-2 md:mt-0 inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#D4A017] hover:bg-[#B8860B] text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {fixingNames ? 'Corrigindo nomes...' : 'Corrigir nomes/telefones invertidos'}
+              </button>
             </div>
 
             <div className="flex flex-wrap gap-2 mb-4">
