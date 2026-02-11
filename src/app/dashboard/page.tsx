@@ -100,8 +100,8 @@ const StarIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
-const Card = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
-  <div className={`bg-white dark:bg-[#23283A] rounded-2xl shadow-sm border border-[#E8E9F1] dark:border-[#23283A] p-6 hover-lift ${className}`}>{children}</div>
+const Card = ({ children, className = '', glow }: { children: React.ReactNode, className?: string; glow?: boolean }) => (
+  <div className={`rounded-2xl p-6 hover-lift ${glow ? 'card-glow' : 'bg-background-card border border-[var(--border-subtle)]'} ${className}`}>{children}</div>
 );
 
 const MetricCard = ({ title, value, change, icon: Icon, trend = 'up' }: {
@@ -123,8 +123,8 @@ const MetricCard = ({ title, value, change, icon: Icon, trend = 'up' }: {
         </div>
       )}
     </div>
-    <div className="text-xl font-bold text-[#2E2F38] dark:text-white mb-1">{value}</div>
-    <div className="text-xs text-[#6B6F76] dark:text-gray-300">{title}</div>
+    <div className="text-xl font-bold text-text-primary mb-1">{value}</div>
+    <div className="text-xs text-text-secondary">{title}</div>
   </Card>
 );
 
@@ -1173,29 +1173,23 @@ export default function DashboardPage() {
   })();
 
   return (
-    <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
-      {/* Header com boas-vindas, indicadores econômicos e hora em uma linha - FIXO */}
-      <div className="sticky top-0 z-10 bg-[#F5F6FA] dark:bg-[#181C23] pt-4 pb-6 mb-6 backdrop-blur-sm">
+    <div className="min-h-full p-4 sm:p-6 lg:p-8">
+      {/* Indicadores econômicos — header removido (saudação/moedas no layout) */}
+      <div className="sticky top-0 z-10 pt-2 pb-4 mb-4 backdrop-blur-sm">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="relative">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-[#D4A017] via-[#E8C547] to-[#6B6F76] bg-clip-text text-transparent">
-                Olá, {currentUser?.email?.split('@')[0] || 'Corretor'}! <span className="text-yellow-400">👋</span>
-              </h1>
-            </div>
-            
-            {/* Indicadores econômicos compactos na mesma linha */}
+            {/* Indicadores econômicos compactos */}
             <div className="flex gap-2">
               {indicadoresExternos && indicadoresExternosAnterior && indicadoresList.map(ind => (
                 <div
                   key={ind.key}
-                  className="flex items-center gap-1 px-2 py-1 bg-white/60 dark:bg-[#23283A]/60 backdrop-blur-sm rounded-lg border border-[#D4A017]/20 hover:border-[#D4A017]/40 transition-all duration-200 cursor-pointer group hover:scale-105"
+                  className="flex items-center gap-1 px-2 py-1 bg-background-card/80 backdrop-blur-sm rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-all duration-200 cursor-pointer group hover:scale-105"
                 >
                   <div className="text-center">
-                    <div className="text-xs font-bold text-[#2E2F38] dark:text-white group-hover:text-[#D4A017] transition-colors">
+                    <div className="text-xs font-bold text-text-primary group-hover:text-orange-400 transition-colors">
                       {indicadoresExternos?.[ind.key] || '--'}
                     </div>
-                    <div className="text-[10px] text-[#6B6F76] dark:text-gray-300 font-medium">
+                    <div className="text-[10px] text-text-secondary font-medium">
                       {ind.label}
                     </div>
                   </div>
@@ -1242,9 +1236,9 @@ export default function DashboardPage() {
         <div className="space-y-6 overflow-y-auto pr-2 dashboard-scroll-hide h-full min-h-0">
           {/* Quadro: eventos em que fui marcado — Confirmar Presença / Cancelar */}
           {eventosEmQueFuiMarcado.length > 0 && (
-            <div className="bg-white dark:bg-[#23283A] rounded-2xl border border-[#E8E9F1] dark:border-[#23283A] p-5 shadow-sm">
-              <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-3 flex items-center gap-2">
-                <UsersIcon className="h-5 w-5 text-[#D4A017]" />
+            <div className="bg-background-card rounded-2xl border border-[var(--border-subtle)] p-5 shadow-sm">
+              <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                <UsersIcon className="h-5 w-5 text-orange-400" />
                 Você foi marcado(a) nestas ações
               </h2>
               <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-4">Confirme ou cancele sua presença. Essas informações serão usadas para acompanhamento.</p>
@@ -1291,14 +1285,14 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Agenda do Dia */}
-          <div className="bg-gradient-to-br from-[#E8C547]/30 to-[#D4A017]/10 border-2 border-[#D4A017]/20 rounded-2xl p-6 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-[#D4A017]"></div>
+          {/* Agenda do Dia — card com borda luminosa laranja */}
+          <div className="card-glow rounded-2xl p-6 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-orange-500 rounded-r" />
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white">Agenda do Dia</h2>
-              <Link 
+              <h2 className="text-lg font-bold text-white">Agenda do Dia</h2>
+              <Link
                 href="/dashboard/agenda"
-                className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-[#3AC17C] bg-[#3AC17C]/10 rounded-lg hover:bg-[#3AC17C]/20 transition-colors border border-[#3AC17C]/30 dark:bg-[#3AC17C]/10 dark:text-[#3AC17C] dark:border-[#3AC17C]/30 dark:hover:bg-[#3AC17C]/20"
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg transition-colors border border-emerald-400/30"
               >
                 <CalendarIcon className="h-3 w-3" />
                 Ver Completa
@@ -1328,9 +1322,9 @@ export default function DashboardPage() {
                         </div>
                       </td>
                       <td className="py-3 px-3">
-                        <button 
+                        <button
                           onClick={() => openLeadModal(lead)}
-                          className="px-4 py-1 text-sm font-semibold text-white bg-[#D4A017] hover:bg-[#B8860B] rounded-lg transition-colors cursor-pointer"
+                          className="px-4 py-1.5 text-sm font-semibold text-white bg-orange-500 hover:bg-orange-600 rounded-lg transition-all cursor-pointer shadow-[0_0_12px_rgba(255,140,0,0.25)]"
                         >
                           Abrir
                         </button>
@@ -1343,11 +1337,11 @@ export default function DashboardPage() {
           </div>
 
                      {/* Avisos Importantes */}
-           <div className="bg-white dark:bg-[#23283A] rounded-xl p-5 border border-[#FF6B6B]/20 shadow-sm">
+           <div className="bg-background-card rounded-xl p-5 border border-red-500/20 shadow-sm">
              <div className="flex items-center justify-between mb-3">
                <div className="flex items-center gap-2">
-                 <div className="w-2 h-2 bg-[#FF6B6B] rounded-full animate-pulse"></div>
-                 <h3 className="font-semibold text-[#2E2F38] dark:text-white text-base">Avisos Importantes</h3>
+                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                 <h3 className="font-semibold text-white text-base">Avisos Importantes</h3>
                  <span className="px-1.5 py-0.5 bg-[#FF6B6B]/10 text-[#FF6B6B] text-xs font-medium rounded">
                    {avisosImportantes.length}
                  </span>
@@ -1588,13 +1582,26 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Coluna Direita - Comunidade com scroll independente */}
-        <div id="trending-section" className="overflow-y-auto pr-2 dashboard-scroll-hide h-full min-h-0">
-          <div className="bg-gradient-to-br from-[#E8C547]/30 to-[#D4A017]/10 border-2 border-[#D4A017]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl animate-fade-in">
-            {/* Borda decorativa */}
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#D4A017] to-[#E8C547]"></div>
-            
+        {/* Coluna Direita - Minhas Moedas + Feed gamificado */}
+        <div id="trending-section" className="overflow-y-auto pr-2 dashboard-scroll-hide h-full min-h-0 space-y-4">
+          {/* Minhas Moedas — card gamificado */}
+          <div className="card-glow rounded-2xl p-5 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-amber-400 rounded-r" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center shadow-[0_0_20px_rgba(255,180,0,0.4)]">
+                  <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v3.35c-1.84.42-2.59 1.33-2.59 2.77 0 1.52 1.21 2.69 3 3.21 1.78.52 2.34 1.15 2.34 1.87 0 .71-.64 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-3.54c1.92-.3 2.86-1.27 2.86-2.77 0-1.47-.99-2.45-2.7-2.95z"/></svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-amber-400/90">Minhas Moedas</p>
+                  <p className="text-2xl font-black text-white tabular-nums">2.150 <span className="text-sm font-semibold text-text-secondary">pontos</span></p>
+                </div>
+              </div>
+            </div>
+          </div>
 
+          <div className="card-glow rounded-2xl p-6 relative overflow-hidden animate-fade-in">
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-orange-500 rounded-r" />
 
             {trendingLoading ? (
               <div className="flex items-center justify-center py-8">

@@ -109,33 +109,24 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-particles flex items-center justify-center p-4">
       <div className="max-w-md w-full space-y-6">
-        {/* Card principal */}
-        <div className="bg-offwhite-50 rounded-2xl shadow-xl p-6 md:p-8 border border-primary-100">
-          {/* Logo e título */}
+        <div className="card-glow rounded-2xl shadow-xl p-6 md:p-8">
           <div className="text-center mb-6">
-            <div className="mx-auto h-16 w-16 bg-gradient-to-br from-[#D4A017] to-[#B8860B] rounded-full flex items-center justify-center mb-4">
+            <div className="mx-auto h-16 w-16 bg-gradient-to-br from-amber-400 to-orange-600 rounded-full flex items-center justify-center mb-4 shadow-[0_0_24px_rgba(255,140,0,0.4)]">
               <svg className="h-8 w-8 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                {/* Letra A elegante em branco */}
                 <path d="M12 4L8 18H10L11 14H13L14 18H16L12 4ZM11.5 12L12 10L12.5 12H11.5Z" fill="white" stroke="white" strokeWidth="0.5" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-softgray-800 mb-2">
-              Alume
-            </h1>
-            <p className="text-softgray-600 text-sm">
-              Você já vendeu hoje?
-            </p>
+            <h1 className="text-2xl font-bold text-orange-400 mb-2">Alume</h1>
+            <p className="text-text-secondary text-sm">Você já vendeu hoje?</p>
           </div>
 
           {/* Formulário de login */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Campo Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-softgray-700 mb-1">
-                Email
-              </label>
+              <label htmlFor="email" className="block text-sm font-medium text-text-secondary mb-1">Email</label>
               <input
                 id="email"
                 name="email"
@@ -143,16 +134,12 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-softgray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white transition-colors"
+                className="w-full px-4 py-3 border border-[var(--border-subtle)] rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-[var(--surface-hover)] text-text-primary placeholder-text-secondary transition-colors"
                 placeholder="Seu email"
               />
             </div>
-
-            {/* Campo Senha */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-softgray-700 mb-1">
-                Senha
-              </label>
+              <label htmlFor="password" className="block text-sm font-medium text-text-secondary mb-1">Senha</label>
               <input
                 id="password"
                 name="password"
@@ -160,7 +147,7 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-softgray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white transition-colors"
+                className="w-full px-4 py-3 border border-[var(--border-subtle)] rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-[var(--surface-hover)] text-text-primary placeholder-text-secondary transition-colors"
                 placeholder="Sua senha"
               />
             </div>
@@ -176,26 +163,19 @@ export default function LoginPage() {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-softgray-300 rounded"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-softgray-700">
-                  Manter senha
-                </label>
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-text-secondary">Manter senha</label>
               </div>
-
               <div className="text-sm">
-                <Link href="/esqueci-senha" className="font-medium text-primary-600 hover:text-primary-500">
-                  Esqueceu a senha?
-                </Link>
+                <Link href="/esqueci-senha" className="font-medium text-orange-400 hover:text-orange-300">Esqueceu a senha?</Link>
               </div>
             </div>
-
-            {/* Mensagem de Erro */}
-            {error && <p className="text-sm text-red-600 bg-red-100 p-3 rounded-lg text-center">{error}</p>}
+            {error && <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 p-3 rounded-lg text-center">{error}</p>}
 
             {/* Botão de Login */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-primary-500 hover:bg-primary-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:bg-primary-300 disabled:cursor-not-allowed"
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 focus:ring-offset-[var(--bg-card)] disabled:opacity-60 disabled:cursor-not-allowed shadow-[0_0_14px_rgba(255,140,0,0.25)]"
             >
               {isLoading ? 'Entrando...' : 'Entrar'}
             </button>

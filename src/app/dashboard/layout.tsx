@@ -109,7 +109,7 @@ export default function DashboardLayout({
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#F5F6FA]"><p className="text-[#2E2F38]">Carregando...</p></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-particles"><p className="text-text-primary">Carregando...</p></div>;
   if (!user) return null;
 
   // Adicionar uma tipagem local para userData que inclua permissoes opcional
@@ -139,43 +139,43 @@ export default function DashboardLayout({
     { href: '#', icon: LogOutIcon, label: 'Desconectar', isLogout: true },
   ];
 
+  const displayName = userData?.nome || user?.email?.split('@')[0] || 'usuário';
+  const pontosExemplo = 2150; // gamificação: exibir do userData quando existir
+
   return (
-    <div className={`flex h-screen bg-[#F5F6FA] dark:bg-[#181C23]`}>
-      {/* Sidebar */}
-      <div className={`flex flex-col h-screen fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-white dark:bg-[#23283A] shadow-lg transition-all duration-300 text-xs pb-8`}>
+    <div className="flex h-screen min-h-screen bg-particles">
+      {/* Sidebar — logo com glow, item ativo com borda laranja à esquerda */}
+      <div className={`flex flex-col h-screen fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-background-card border-r border-[var(--border-subtle)] transition-all duration-300 text-xs pb-8 shadow-[4px_0_24px_rgba(0,0,0,0.2)]`}>
         <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
-            <button 
+          <div className="flex items-center justify-between p-5 border-b border-[var(--border-subtle)]">
+            <button
               onClick={() => router.push('/dashboard')}
-              className="flex items-center gap-2 hover:scale-105 transition-transform cursor-pointer"
+              className="flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer [filter:drop-shadow(0_0_8px_rgba(255,140,0,0.4))]"
               title="Voltar ao Dashboard"
             >
-              <AlumeLogo className="h-8 w-8" />
-              {!collapsed && <h1 className="text-xl font-bold text-[#2E2F38] dark:text-white transition-all">Alume</h1>}
+              <AlumeLogo className="h-8 w-8 shrink-0" />
+              {!collapsed && <h1 className="text-xl font-bold text-white transition-all">Alume</h1>}
             </button>
             <button
               onClick={() => setCollapsed(!collapsed)}
-              className="p-1 rounded-lg hover:bg-[#E8E9F1] transition-colors"
+              className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors text-text-secondary"
               title={collapsed ? 'Expandir menu' : 'Recolher menu'}
             >
-              <ChevronLeftIcon className={`h-5 w-5 text-[#6B6F76] transition-transform ${collapsed ? 'rotate-180' : ''}`} />
+              <ChevronLeftIcon className={`h-5 w-5 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
             </button>
           </div>
-          
-          <nav className="flex-1 p-4">
+
+          <nav className="flex-1 p-3 overflow-y-auto scrollbar-thin">
             <ul className="space-y-0.5">
               {navItems.map((item) => (
                 <li key={item.href}>
                   {item.isLogout ? (
                     <button
                       onClick={handleLogout}
-                      className={`flex items-center ${collapsed ? 'justify-center' : ''} w-full px-4 py-2.5 rounded-lg transition-colors text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-400`}
+                      className={`flex items-center ${collapsed ? 'justify-center' : ''} w-full px-4 py-2.5 rounded-lg transition-colors text-orange-400 border border-orange-500/40 hover:bg-orange-500/10 hover:text-orange-300`}
                       title="Desconectar"
                     >
-                      <span className="mr-3">
-                        <item.icon className="h-5 w-5" />
-                      </span>
+                      <span className="mr-3"><item.icon className="h-5 w-5" /></span>
                       {!collapsed && item.label}
                     </button>
                   ) : item.isExternal ? (
@@ -183,36 +183,26 @@ export default function DashboardLayout({
                       href={item.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`flex items-center ${collapsed ? 'justify-center' : ''} px-4 py-2.5 rounded-lg transition-colors relative text-[#6B6F76] dark:text-gray-300 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] hover:text-[#2E2F38] dark:hover:text-white`}
+                      className={`flex items-center ${collapsed ? 'justify-center' : ''} px-4 py-2.5 rounded-lg transition-colors relative text-text-secondary hover:bg-[var(--surface-hover)] hover:text-white`}
                       title={`Abrir ${item.label} em nova aba`}
                     >
-                      <span className="mr-3 relative">
-                        <item.icon className="h-5 w-5" />
-                      </span>
+                      <span className="mr-3 relative"><item.icon className="h-5 w-5" /></span>
                       {!collapsed && item.label}
                     </a>
                   ) : (
                     <Link
                       href={item.href}
-                      className={`flex items-center ${collapsed ? 'justify-center' : ''} px-4 py-2.5 rounded-lg transition-colors relative ${
+                      className={`flex items-center ${collapsed ? 'justify-center' : ''} px-4 py-2.5 rounded-lg transition-all relative ${
                         pathname === item.href
-                          ? 'bg-primary-500 text-white'
-                          : 'text-[#6B6F76] dark:text-gray-300 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] hover:text-[#2E2F38] dark:hover:text-white'
+                          ? 'bg-[var(--surface-hover)] text-white border-l-[3px] border-l-orange-500 shadow-[0_0_14px_rgba(255,140,0,0.15)]'
+                          : 'text-text-secondary hover:bg-[var(--surface-hover)] hover:text-white border-l-[3px] border-l-transparent'
                       }`}
                       onClick={() => setCollapsed(false)}
                     >
                       <span className="mr-3 relative">
-                        {item.label === 'Incluir imóvel' ? (
-                          <HouseIcon active={pathname === item.href} className="h-5 w-5" />
-                        ) : item.label === 'Área do Desenvolvedor' ? (
-                          <CodeIcon className="h-5 w-5" />
-                        ) : (
-                          <item.icon className="h-5 w-5" />
-                        )}
-                        {/* Badge de notificação */}
+                        {item.label === 'Incluir imóvel' ? <HouseIcon active={pathname === item.href} className="h-5 w-5" /> : item.label === 'Área do Desenvolvedor' ? <CodeIcon className="h-5 w-5" /> : <item.icon className="h-5 w-5" />}
                         {item.notifications && (
-                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-3 w-3 flex items-center justify-center animate-pulse">
-                          </span>
+                          <span className="absolute -top-1 -right-1 bg-red-500 rounded-full h-2.5 w-2.5 flex animate-pulse" />
                         )}
                       </span>
                       {!collapsed && item.label}
@@ -225,22 +215,36 @@ export default function DashboardLayout({
         </div>
       </div>
 
-      {/* Main content */}
       <div className={`flex-1 flex flex-col transition-all duration-300 ${collapsed ? 'ml-16' : 'ml-64'}`}>
-        {/* Header */}
-        <header className="bg-white dark:bg-[#23283A] shadow-sm border-b border-[#E8E9F1] dark:border-[#23283A] p-4">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => setCollapsed(true)}
-              className="md:hidden text-[#6B6F76] dark:text-gray-300 hover:text-[#2E2F38] dark:hover:text-white"
-            >
-              ☰
+        {/* Header gamificado: saudação laranja, notificação, moedas, avatar */}
+        <header className="bg-background-card/80 backdrop-blur-sm border-b border-[var(--border-subtle)] px-4 py-3 shrink-0 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-orange-400 truncate">
+            Olá, {displayName}! 👋
+          </h2>
+          <div className="flex items-center gap-3">
+            <button type="button" className="relative p-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors text-text-secondary hover:text-white" title="Notificações">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+              {notifications.comunidade && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-orange-500 rounded-full ring-2 ring-[var(--bg-card)]" />
+              )}
             </button>
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[var(--surface-hover)] border border-orange-500/20">
+              <svg className="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v3.35c-1.84.42-2.59 1.33-2.59 2.77 0 1.52 1.21 2.69 3 3.21 1.78.52 2.34 1.15 2.34 1.87 0 .71-.64 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-3.54c1.92-.3 2.86-1.27 2.86-2.77 0-1.47-.99-2.45-2.7-2.95z"/></svg>
+              <span className="text-sm font-bold text-white tabular-nums">{pontosExemplo.toLocaleString('pt-BR')}</span>
+            </div>
+            <div className="relative flex items-center gap-2 pl-2 border-l border-[var(--border-subtle)]">
+              <div className="relative">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white font-semibold text-sm">
+                  {(displayName || 'U').charAt(0).toUpperCase()}
+                </div>
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[var(--bg-card)]" title="Online" />
+              </div>
+              <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+            </div>
           </div>
         </header>
 
-        {/* Content */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto p-4 md:p-6">
           {children}
         </main>
       </div>

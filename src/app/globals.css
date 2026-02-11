@@ -68,27 +68,52 @@
   --foreground-rgb: 46, 47, 56;
   --background-start-rgb: 245, 246, 250;
   --background-end-rgb: 255, 255, 255;
+  --bg-primary: #F5F6FA;
+  --bg-card: #ffffff;
+  --bg-card-hover: #E8E9F1;
+  --text-primary: #2E2F38;
+  --text-secondary: #6B6F76;
+  --surface-hover: #F5F6FA;
+  --border-subtle: #E8E9F1;
+  --accent-glow: rgba(255, 140, 0, 0.5);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+/* Tema escuro gamificado (referência layout) */
+.dark {
+  --foreground-rgb: 245, 245, 245;
+  --bg-primary: #0a0a0c;
+  --bg-card: #1a1a1e;
+  --bg-card-hover: #222228;
+  --text-primary: #f5f5f5;
+  --text-secondary: #a1a1aa;
+  --surface-hover: #25252b;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --accent-glow: rgba(255, 140, 0, 0.6);
+}
+
+/* Background com partículas (foto 1): fundo escuro + faixas luminosas + pontos */
+.bg-particles {
+  background-color: #0a0a0c;
+  background-image:
+    radial-gradient(ellipse 70% 50% at 18% 22%, rgba(255, 140, 0, 0.12) 0%, transparent 55%),
+    radial-gradient(ellipse 65% 45% at 82% 78%, rgba(255, 165, 0, 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 30% at 50% 50%, rgba(255, 180, 80, 0.04) 0%, transparent 45%),
+    url('/particles-tile.svg');
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100px 100px;
+  background-position: 0 0, 0 0, 0 0, 0 0;
+  background-repeat: no-repeat, no-repeat, no-repeat, repeat;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  color: var(--text-primary);
+  background: var(--bg-primary);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.dark body {
+  background: var(--bg-primary);
 }
 
 /* Estilos personalizados para inputs */
@@ -109,16 +134,25 @@ input:focus {
 }
 
 ::-webkit-scrollbar-track {
-  background: #F5F6FA;
+  background: var(--bg-primary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #E8E9F1;
+  background: var(--border-subtle);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(212, 160, 23, 0.6);
+  background: rgba(255, 140, 0, 0.4);
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #0a0a0c;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #2a2a30;
+  border-radius: 4px;
 }
 
 /* Animações personalizadas */
@@ -220,10 +254,22 @@ input:focus {
 
 /* Cards com bordas suaves */
 .card-soft {
-  background: white;
+  background: var(--bg-card);
   border-radius: 16px;
-  border: 1px solid #E8E9F1;
-  box-shadow: 0 2px 8px rgba(46, 47, 56, 0.05);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* Card com borda luminosa laranja (layout referência) */
+.dark .card-glow {
+  background: rgba(26, 26, 30, 0.85);
+  border: 1px solid rgba(255, 140, 0, 0.35);
+  border-radius: 16px;
+  box-shadow: 0 0 20px rgba(255, 140, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+.dark .card-glow:hover {
+  border-color: rgba(255, 165, 0, 0.45);
+  box-shadow: 0 0 28px rgba(255, 140, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 /* Botões personalizados */
@@ -244,17 +290,17 @@ input:focus {
 }
 
 .btn-secondary {
-  background: #E8E9F1;
-  color: #2E2F38;
+  background: var(--surface-hover);
+  color: var(--text-primary);
   padding: 12px 24px;
   border-radius: 12px;
   font-weight: 600;
   transition: all 0.2s ease-in-out;
-  border: none;
+  border: 1px solid var(--border-subtle);
   cursor: pointer;
 }
 
 .btn-secondary:hover {
-  background: #F5F6FA;
+  background: var(--bg-card);
   transform: translateY(-1px);
 }

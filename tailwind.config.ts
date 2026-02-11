@@ -10,15 +10,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Nova paleta de cores do Dashboard
-        // Paleta Principal (Interface Base)
         background: {
-          primary: '#F5F6FA',    // Fundo principal claro
-          secondary: '#E8E9F1',   // Fundo alternativo (cards)
+          primary: 'var(--bg-primary)',
+          card: 'var(--bg-card)',
+          secondary: 'var(--bg-card-hover, #E8E9F1)',
         },
         text: {
-          primary: '#2E2F38',     // Texto principal
-          secondary: '#6B6F76',   // Texto secundário
+          primary: 'var(--text-primary)',
+          secondary: 'var(--text-secondary)',
         },
         
         // Cor Primária (Ação e Identidade) — Amarelo/âmbar suave (menos gritante)
