@@ -1567,22 +1567,6 @@ export default function DashboardPage() {
 
         {/* Coluna Direita — rola independente; scrollbar totalmente oculta */}
         <div id="trending-section" className="dashboard-scroll-hide overflow-y-auto overflow-x-hidden pr-2 min-h-0 space-y-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          {/* Minhas Moedas — card gamificado */}
-          <div className="card-glow rounded-2xl p-5 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-amber-400 rounded-r" />
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center shadow-[0_0_20px_rgba(255,180,0,0.4)]">
-                  <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v3.35c-1.84.42-2.59 1.33-2.59 2.77 0 1.52 1.21 2.69 3 3.21 1.78.52 2.34 1.15 2.34 1.87 0 .71-.64 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-3.54c1.92-.3 2.86-1.27 2.86-2.77 0-1.47-.99-2.45-2.7-2.95z"/></svg>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-amber-400/90">Minhas Moedas</p>
-                  <p className="text-2xl font-black text-white tabular-nums">2.150 <span className="text-sm font-semibold text-text-secondary">pontos</span></p>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <div className="card-glow rounded-2xl p-6 relative overflow-hidden animate-fade-in">
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-orange-500 rounded-r" />
 
