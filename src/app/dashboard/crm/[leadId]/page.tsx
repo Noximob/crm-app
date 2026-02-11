@@ -477,7 +477,7 @@ export default function LeadDetailPage() {
                         <div className="h-48 overflow-y-auto pr-2">
                             {interactions.length > 0 ? (
                                 <ul className="space-y-3">
-                                    {interactions.slice(0, 3).map(interaction => {
+                                    {interactions.map(interaction => {
                                         const isPendingTask = interaction.type === 'Tarefa Agendada' &&
                                             interaction.taskId &&
                                             tasks.some(task => task.id === interaction.taskId);
@@ -558,13 +558,6 @@ export default function LeadDetailPage() {
                                              </li>
                                          );
                                      })}
-                                     {interactions.length > 3 && (
-                                         <li className="text-center py-2">
-                                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                 +{interactions.length - 3} ações anteriores
-                                             </p>
-                                         </li>
-                                     )}
                                  </ul>
                              ) : (
                                  <div className="h-full flex items-center justify-center">
