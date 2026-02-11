@@ -49,17 +49,42 @@ export default function ImportarLeadsPage() {
     }
     // Aceita tabulação, vírgula ou ponto e vírgula como separador
     const lines = input.split(/\r?\n/).filter(Boolean);
-    const leads: LeadPreview[] = lines.map(line => {
-      let [nome, telefone] = line.split(/\t|,|;/);
-      if (!telefone) {
-        telefone = nome;
-        nome = '';
-      }
-      return {
-        nome: nome?.trim() || '',
-        telefone: telefone?.trim() || '',
-      };
-    }).filter(l => l.telefone);
+
+    const looksLikePhone = (value: string | undefined | null) => {
+      if (!value) return false;
+      const digits = value.replace(/\D/g, '');
+      return digits.length >= 8; // heurística simples para telefone
+    };
+
+    const leads: LeadPreview[] = lines
+      .map(line => {
+        const [rawA = '', rawB = ''] = line.split(/\t|,|;/);
+        let nome = rawA;
+        let telefone = rawB;
+
+        // Caso só tenha 1 coluna, assume que é telefone
+        if (!telefone) {
+          telefone = nome;
+          nome = '';
+        } else {
+          const aIsPhone = looksLikePhone(rawA);
+          const bIsPhone = looksLikePhone(rawB);
+
+          // Se a primeira coluna parece telefone e a segunda parece nome, inverte
+          if (aIsPhone && !bIsPhone) {
+            telefone = rawA;
+            nome = rawB;
+          }
+          // Se a segunda coluna parece telefone e a primeira parece nome, mantém (nome, telefone)
+          // Caso ambas pareçam telefone ou nenhuma pareça, deixa como veio.
+        }
+
+        return {
+          nome: nome?.trim() || '',
+          telefone: telefone?.trim() || '',
+        };
+      })
+      .filter(l => l.telefone);
     setLeadsPreview(leads);
   }, [input]);
 
