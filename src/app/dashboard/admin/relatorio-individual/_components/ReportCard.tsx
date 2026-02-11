@@ -36,7 +36,7 @@ export default function ReportCard({ data }: { data: RelatorioIndividualData }) 
       id="relatorio-individual-card"
     >
       {/* Header com marca */}
-      <div className="bg-gradient-to-br from-[#D4A017] to-[#B8860B] px-8 py-6 text-white">
+      <div className="bg-black px-8 py-6 text-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <AlummaLogoFullInline theme="dark" height={44} className="shrink-0" />
