@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -30,6 +30,19 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
     const [origemOutros, setOrigemOutros] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+
+    // Limpa o formulário sempre que o modal abre
+    useEffect(() => {
+        if (isOpen) {
+            setName('');
+            setPhone('');
+            setEmail('');
+            setSituation(PIPELINE_STAGES[0]);
+            setOrigem('Networking');
+            setOrigemOutros('');
+            setError('');
+        }
+    }, [isOpen]);
 
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         // 1. Limpa tudo que não for dígito
