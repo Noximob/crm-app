@@ -57,24 +57,17 @@ export default function LandingPage() {
             Plataforma única que conecta CRM, site focado em SEO orgânico, dashboards para TV e relatórios em tempo real
             para corretores e gestores de alta performance.
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-4 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-            <Link
-              href={platformHref}
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold text-lg hover:from-amber-600 hover:to-orange-700 transition-all shadow-[0_0_24px_rgba(255,140,0,0.35)] hover:shadow-[0_0_32px_rgba(255,140,0,0.45)]"
-            >
-              Acessar plataforma
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-            </Link>
+          <div className="flex justify-center animate-fade-in" style={{ animationDelay: '0.3s' }}>
             <a
               href={WHATSAPP_LINK}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl border-2 border-emerald-400/60 text-emerald-300 font-bold text-lg hover:bg-emerald-500/10 transition-all"
+              className="inline-flex items-center gap-3 px-10 py-4 rounded-xl bg-gradient-to-r from-emerald-400 via-green-500 to-teal-500 text-white font-bold text-lg shadow-[0_0_28px_rgba(16,185,129,0.5)] hover:shadow-[0_0_36px_rgba(16,185,129,0.6)] hover:scale-105 transition-all"
             >
-              Falar no WhatsApp
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+              <svg className="w-6 h-6 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12.04 2C6.58 2 2.2 6.26 2.2 11.58c0 1.9.56 3.67 1.54 5.17L2 22l5.44-1.7a9.95 9.95 0 0 0 4.6 1.15h.01c5.46 0 9.84-4.26 9.84-9.58C21.9 6.26 17.5 2 12.04 2Zm5.8 13.38c-.24.68-1.2 1.29-1.96 1.46-.52.11-1.2.2-3.5-.75-2.94-1.22-4.83-4.22-4.98-4.42-.15-.2-1.18-1.57-1.18-3 0-1.43.75-2.13 1.02-2.42.27-.29.59-.36.79-.36h.57c.18 0 .43-.07.67.5.24.58.82 2 0 .43-.2.48-.41.42-.6.71-.18.29-.32.43-.48.72-.15.29-.31.61-.13.9.18.29.8 1.3 1.72 2.1 1.18 1.06 2.18 1.4 2.52 1.56.34.15.54.13.74-.08.2-.22.85-.95 1.08-1.28.22-.32.45-.27.76-.16.31.11 1.97.93 2.31 1.1.34.18.56.27.64.42.08.15.08.88-.16 1.55Z" />
               </svg>
+              Falar no WhatsApp
             </a>
           </div>
         </div>
@@ -216,22 +209,22 @@ export default function LandingPage() {
       {/* CTA final */}
       <section className="py-24 px-4">
         <div className="max-w-3xl mx-auto text-center">
-          <div className="card-glow rounded-3xl p-12 relative overflow-hidden border-orange-500/30">
-            <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-amber-400 to-orange-500 rounded-r" />
+          <div className="card-glow rounded-3xl p-12 relative overflow-hidden border-emerald-500/30">
+            <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-emerald-400 to-teal-500 rounded-r" />
             <h2 className="text-2xl sm:text-3xl font-bold mb-3">Pronto para vender mais?</h2>
             <p className="text-text-secondary mb-8">
-              Acesse a plataforma ou fale com a gente pelo WhatsApp para entender se faz sentido para sua operação.
+              Fale com a gente pelo WhatsApp e entenda se a Alumma faz sentido para sua operação.
             </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <Link href={platformHref} className="px-8 py-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold hover:from-amber-600 hover:to-orange-700 transition-all shadow-[0_0_20px_rgba(255,140,0,0.3)]">
-                Acessar plataforma
-              </Link>
+            <div className="flex justify-center">
               <a
                 href={WHATSAPP_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-8 py-4 rounded-xl border-2 border-emerald-400/60 text-emerald-300 font-bold hover:bg-emerald-500/10 transition-all"
+                className="inline-flex items-center gap-3 px-10 py-4 rounded-xl bg-gradient-to-r from-emerald-400 via-green-500 to-teal-500 text-white font-bold shadow-[0_0_28px_rgba(16,185,129,0.5)] hover:shadow-[0_0_36px_rgba(16,185,129,0.6)] hover:scale-105 transition-all"
               >
+                <svg className="w-6 h-6 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12.04 2C6.58 2 2.2 6.26 2.2 11.58c0 1.9.56 3.67 1.54 5.17L2 22l5.44-1.7a9.95 9.95 0 0 0 4.6 1.15h.01c5.46 0 9.84-4.26 9.84-9.58C21.9 6.26 17.5 2 12.04 2Zm5.8 13.38c-.24.68-1.2 1.29-1.96 1.46-.52.11-1.2.2-3.5-.75-2.94-1.22-4.83-4.22-4.98-4.42-.15-.2-1.18-1.57-1.18-3 0-1.43.75-2.13 1.02-2.42.27-.29.59-.36.79-.36h.57c.18 0 .43-.07.67.5.24.58.82 2 0 .43-.2.48-.41.42-.6.71-.18.29-.32.43-.48.72-.15.29-.31.61-.13.9.18.29.8 1.3 1.72 2.1 1.18 1.06 2.18 1.4 2.52 1.56.34.15.54.13.74-.08.2-.22.85-.95 1.08-1.28.22-.32.45-.27.76-.16.31.11 1.97.93 2.31 1.1.34.18.56.27.64.42.08.15.08.88-.16 1.55Z" />
+                </svg>
                 Falar no WhatsApp
               </a>
             </div>

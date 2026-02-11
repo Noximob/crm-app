@@ -202,7 +202,7 @@ export default function DashboardLayout({
         </div>
       </div>
 
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${collapsed ? 'ml-16' : 'ml-64'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300 ${collapsed ? 'ml-16' : 'ml-64'}`}>
         {/* Header gamificado: saudação laranja, notificação, moedas, avatar */}
         <header className="border-b border-white/[0.06] px-4 py-3 shrink-0 flex items-center justify-between">
           <h2 className="text-lg font-bold text-orange-400 truncate">
