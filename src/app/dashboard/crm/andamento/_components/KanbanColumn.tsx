@@ -41,7 +41,7 @@ export default function KanbanColumn({ id, title, leads }: KanbanColumnProps) {
       </div>
       
       {/* Área de conteúdo da coluna */}
-      <div className="flex-grow min-h-[100px] p-3 space-y-3 overflow-y-auto flex flex-col items-center bg-[#F8F9FB] dark:bg-[#181C23] rounded-b-2xl relative">
+      <div className="flex-grow min-h-[100px] p-3 space-y-3 flex flex-col items-center bg-[#F8F9FB] dark:bg-[#181C23] rounded-b-2xl relative">
         {leads.length > 0 ? (
           // Se há leads, usar a área normal droppable
           <div 
