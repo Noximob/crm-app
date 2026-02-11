@@ -1211,10 +1211,10 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Grid em 2 colunas com rolagem independente e scrollbars camufladas */}
+      {/* Grid em 2 colunas com rolagem independente; barras de rolagem ocultas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0 pt-2" style={{ height: 'calc(100vh - 220px)' }}>
-        {/* Coluna Esquerda — rola independente */}
-        <div className="space-y-6 overflow-y-auto overflow-x-hidden pr-2 scrollbar-camouflage min-h-0">
+        {/* Coluna Esquerda — rola independente, scrollbar escondida */}
+        <div className="space-y-6 overflow-y-auto overflow-x-hidden pr-2 dashboard-scroll-hide min-h-0">
           {/* Quadro: eventos em que fui marcado — Confirmar Presença / Cancelar */}
           {eventosEmQueFuiMarcado.length > 0 && (
             <div className="bg-background-card rounded-2xl border border-[var(--border-subtle)] p-5 shadow-sm">
@@ -1317,20 +1317,21 @@ export default function DashboardPage() {
             )}
           </div>
 
-                     {/* Avisos Importantes */}
-           <div className="bg-background-card rounded-xl p-5 border border-red-500/20 shadow-sm">
+                     {/* Avisos Importantes — mesmo padrão do site */}
+           <div className="card-glow rounded-xl p-5 relative overflow-hidden">
+             <div className="absolute top-0 left-0 w-1 h-full bg-red-500 rounded-r" />
              <div className="flex items-center justify-between mb-3">
                <div className="flex items-center gap-2">
                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                  <h3 className="font-semibold text-white text-base">Avisos Importantes</h3>
-                 <span className="px-1.5 py-0.5 bg-[#FF6B6B]/10 text-[#FF6B6B] text-xs font-medium rounded">
+                 <span className="px-1.5 py-0.5 bg-red-500/20 text-red-300 text-xs font-medium rounded">
                    {avisosImportantes.length}
                  </span>
                </div>
                {avisosImportantes.length > 0 && (
                  <button
                    onClick={() => setShowAvisosModal(true)}
-                   className="px-3 py-1.5 text-xs font-semibold text-[#FF6B6B] bg-[#FF6B6B]/10 rounded-lg hover:bg-[#FF6B6B]/20 transition-colors border border-[#FF6B6B]/30"
+                   className="px-3 py-1.5 text-xs font-semibold text-red-300 bg-red-500/10 rounded-lg hover:bg-red-500/20 transition-colors border border-red-500/30"
                  >
                    Ver Todos
                  </button>
@@ -1348,18 +1349,18 @@ export default function DashboardPage() {
                    .map((aviso, idx) => (
                      <div
                        key={aviso.id}
-                       className="group p-3 rounded-lg hover:bg-[#FF6B6B]/5 transition-colors border-l-2 border-[#FF6B6B]/30 hover:border-[#FF6B6B]/60"
+                       className="group p-3 rounded-lg hover:bg-white/[0.04] transition-colors border-l-2 border-red-500/30 hover:border-red-500/50"
                      >
                        <div className="flex items-start gap-2">
-                         <div className="w-1.5 h-1.5 bg-[#FF6B6B] rounded-full mt-1.5 flex-shrink-0"></div>
+                         <div className="w-1.5 h-1.5 bg-red-500 rounded-full mt-1.5 flex-shrink-0" />
                          <div className="flex-1 min-w-0">
-                           <div className="text-sm font-medium text-white mb-1 group-hover:text-red-400 transition-colors truncate">
+                           <div className="text-sm font-medium text-white mb-1 group-hover:text-red-300 transition-colors truncate">
                              {aviso.titulo}
                            </div>
                            <div className="text-xs text-text-secondary leading-relaxed line-clamp-2">
                              {aviso.mensagem}
                            </div>
-                           <div className="text-[10px] text-[#FF6B6B]/70 font-medium mt-1">
+                           <div className="text-[10px] text-red-400/80 font-medium mt-1">
                              {aviso.dataInicio && (
                                <div>Início: {aviso.dataInicio.toDate ? aviso.dataInicio.toDate().toLocaleDateString('pt-BR', { 
                                  day: '2-digit', 
@@ -1386,7 +1387,7 @@ export default function DashboardPage() {
                  <div className="text-center pt-2">
                    <button
                      onClick={() => setShowAvisosModal(true)}
-                     className="text-xs text-[#FF6B6B] hover:text-[#FF5252] font-medium hover:underline transition-colors cursor-pointer"
+                     className="text-xs text-red-400 hover:text-red-300 font-medium hover:underline transition-colors cursor-pointer"
                    >
                      +{avisosImportantes.length - 3} avisos anteriores
                    </button>
@@ -1395,8 +1396,9 @@ export default function DashboardPage() {
              </div>
            </div>
 
-           {/* Agenda Imobiliária — estilo do site */}
-           <div className="card-glow rounded-xl p-5">
+           {/* Agenda Imobiliária — congruente com o site (card-glow + faixa) */}
+           <div className="card-glow rounded-xl p-5 relative overflow-hidden">
+             <div className="absolute top-0 left-0 w-1 h-full bg-violet-500 rounded-r" />
              <div className="flex items-center justify-between mb-3">
                <div className="flex items-center gap-2">
                  <div className="w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
@@ -1487,8 +1489,9 @@ export default function DashboardPage() {
            </div>
 
 
-          {/* Plantões — estilo do site */}
-          <div className="card-glow rounded-xl p-5">
+          {/* Plantões — congruente com o site (card-glow + faixa) */}
+          <div className="card-glow rounded-xl p-5 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-amber-500 rounded-r" />
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
@@ -1555,15 +1558,15 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Metas */}
-          <div className="bg-gradient-to-br from-[#E8C547]/30 to-[#D4A017]/10 border-2 border-[#D4A017]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl animate-fade-in">
-            <div className="absolute top-0 left-0 w-1 h-full bg-[#D4A017]"></div>
+          {/* Metas — congruente com o site */}
+          <div className="card-glow rounded-2xl p-6 relative overflow-hidden animate-fade-in">
+            <div className="absolute top-0 left-0 w-1 h-full bg-amber-500 rounded-r" />
             <MetasCard meta={meta} nomeImobiliaria={nomeImobiliaria} />
           </div>
         </div>
 
-        {/* Coluna Direita — rola independente, scrollbar camuflada */}
-        <div id="trending-section" className="overflow-y-auto overflow-x-hidden pr-2 scrollbar-camouflage min-h-0 space-y-4">
+        {/* Coluna Direita — rola independente, scrollbar escondida */}
+        <div id="trending-section" className="overflow-y-auto overflow-x-hidden pr-2 dashboard-scroll-hide min-h-0 space-y-4">
           {/* Minhas Moedas — card gamificado */}
           <div className="card-glow rounded-2xl p-5 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-amber-400 rounded-r" />
