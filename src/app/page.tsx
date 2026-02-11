@@ -1,21 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { AlummaLogoFullInline } from '@/components/AlummaLogo';
 
 export default function LandingPage() {
-  const { currentUser, isApproved, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && currentUser && isApproved) router.push('/dashboard');
-  }, [loading, currentUser, isApproved, router]);
-
-  if (loading) return <div className="min-h-screen bg-particles flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-2 border-orange-500 border-t-transparent" /></div>;
-  if (currentUser && isApproved) return null;
+  const { currentUser, isApproved } = useAuth();
+  const isLoggedIn = Boolean(currentUser && isApproved);
 
   return (
     <div className="min-h-screen bg-particles text-white">
@@ -28,10 +19,18 @@ export default function LandingPage() {
           <nav className="flex items-center gap-6">
             <Link href="#solucoes" className="text-sm font-medium text-text-secondary hover:text-orange-400 transition-colors">Soluções</Link>
             <Link href="#diferencial" className="text-sm font-medium text-text-secondary hover:text-orange-400 transition-colors">Diferencial</Link>
-            <Link href="/entrar" className="text-sm font-medium text-text-secondary hover:text-orange-400 transition-colors">Entrar</Link>
-            <Link href="/cadastro" className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold text-sm hover:from-amber-600 hover:to-orange-700 transition-all shadow-[0_0_14px_rgba(255,140,0,0.25)]">
-              Começar agora
-            </Link>
+            {isLoggedIn ? (
+              <Link href="/dashboard" className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold text-sm hover:from-amber-600 hover:to-orange-700 transition-all shadow-[0_0_14px_rgba(255,140,0,0.25)]">
+                Acessar plataforma
+              </Link>
+            ) : (
+              <>
+                <Link href="/entrar" className="text-sm font-medium text-text-secondary hover:text-orange-400 transition-colors">Entrar</Link>
+                <Link href="/cadastro" className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold text-sm hover:from-amber-600 hover:to-orange-700 transition-all shadow-[0_0_14px_rgba(255,140,0,0.25)]">
+                  Começar agora
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       </header>
