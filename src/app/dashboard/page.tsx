@@ -1211,10 +1211,10 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Grid de conteúdo principal */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0 pt-2">
-        {/* Coluna Esquerda - Agenda, Avisos e Metas com scroll único */}
-        <div className="space-y-6 overflow-y-auto pr-2 dashboard-scroll-hide h-full min-h-0">
+      {/* Grid em 2 colunas com rolagem independente e scrollbars camufladas */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0 pt-2" style={{ height: 'calc(100vh - 220px)' }}>
+        {/* Coluna Esquerda — rola independente */}
+        <div className="space-y-6 overflow-y-auto overflow-x-hidden pr-2 scrollbar-camouflage min-h-0">
           {/* Quadro: eventos em que fui marcado — Confirmar Presença / Cancelar */}
           {eventosEmQueFuiMarcado.length > 0 && (
             <div className="bg-background-card rounded-2xl border border-[var(--border-subtle)] p-5 shadow-sm">
@@ -1222,21 +1222,21 @@ export default function DashboardPage() {
                 <UsersIcon className="h-5 w-5 text-orange-400" />
                 Você foi marcado(a) nestas ações
               </h2>
-              <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-4">Confirme ou cancele sua presença. Essas informações serão usadas para acompanhamento.</p>
+              <p className="text-sm text-text-secondary mb-4">Confirme ou cancele sua presença. Essas informações serão usadas para acompanhamento.</p>
               <ul className="space-y-3">
                 {eventosEmQueFuiMarcado.map((ev) => {
                   const key = `${ev.tipo}-${ev.id}`;
                   const loading = respondendoPresenca === key;
                   return (
-                    <li key={key} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-[#F5F6FA] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A]">
+                    <li key={key} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.08]">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-[#D4A017]/20 text-[#D4A017] dark:bg-[#D4A017]/30 dark:text-[#E8C547]">
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-orange-500/20 text-orange-400">
                             {ev.tipoLabel}
                           </span>
-                          <span className="font-semibold text-[#2E2F38] dark:text-white truncate">{ev.titulo}</span>
+                          <span className="font-semibold text-white truncate">{ev.titulo}</span>
                         </div>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-[#6B6F76] dark:text-gray-400">
+                        <div className="flex items-center gap-3 mt-1 text-xs text-text-secondary">
                           {ev.dataStr && <span>{ev.dataStr}</span>}
                           {ev.horarioStr && <span className="flex items-center gap-1"><ClockIcon className="h-3 w-3" /> {ev.horarioStr}</span>}
                         </div>
@@ -1340,7 +1340,7 @@ export default function DashboardPage() {
                {avisosImportantes
                  .sort((a, b) => b.dataHora?.toDate() - a.dataHora?.toDate())
                  .length === 0 ? (
-                 <p className="text-[#6B6F76] dark:text-gray-300 text-sm italic">Nenhum aviso importante cadastrado pela imobiliária.</p>
+                 <p className="text-text-secondary text-sm italic">Nenhum aviso importante cadastrado pela imobiliária.</p>
                ) : (
                  avisosImportantes
                    .sort((a, b) => b.data?.toDate() - a.data?.toDate())
@@ -1353,10 +1353,10 @@ export default function DashboardPage() {
                        <div className="flex items-start gap-2">
                          <div className="w-1.5 h-1.5 bg-[#FF6B6B] rounded-full mt-1.5 flex-shrink-0"></div>
                          <div className="flex-1 min-w-0">
-                           <div className="text-sm font-medium text-[#2E2F38] dark:text-white mb-1 group-hover:text-[#FF6B6B] transition-colors truncate">
+                           <div className="text-sm font-medium text-white mb-1 group-hover:text-red-400 transition-colors truncate">
                              {aviso.titulo}
                            </div>
-                           <div className="text-xs text-[#6B6F76] dark:text-gray-300 leading-relaxed line-clamp-2">
+                           <div className="text-xs text-text-secondary leading-relaxed line-clamp-2">
                              {aviso.mensagem}
                            </div>
                            <div className="text-[10px] text-[#FF6B6B]/70 font-medium mt-1">
@@ -1395,20 +1395,20 @@ export default function DashboardPage() {
              </div>
            </div>
 
-           {/* Agenda Imobiliária */}
-           <div className="bg-white dark:bg-[#23283A] rounded-xl p-5 border border-purple-500/20 shadow-sm">
+           {/* Agenda Imobiliária — estilo do site */}
+           <div className="card-glow rounded-xl p-5">
              <div className="flex items-center justify-between mb-3">
                <div className="flex items-center gap-2">
-                 <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
-                 <h3 className="font-semibold text-[#2E2F38] dark:text-white text-base">Agenda Imobiliária</h3>
-                 <span className="px-1.5 py-0.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs font-medium rounded">
+                 <div className="w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
+                 <h3 className="font-semibold text-white text-base">Agenda Imobiliária</h3>
+                 <span className="px-1.5 py-0.5 bg-violet-500/20 text-violet-300 text-xs font-medium rounded">
                    {agendaImobiliaria.length}
                  </span>
                </div>
                {agendaImobiliaria.length > 0 && (
                  <button
                    onClick={() => setShowAgendaModal(true)}
-                   className="px-3 py-1.5 text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-colors border border-purple-500/30"
+                   className="px-3 py-1.5 text-xs font-semibold text-violet-300 bg-violet-500/10 rounded-lg hover:bg-violet-500/20 transition-colors border border-violet-500/30"
                  >
                    Ver Todos
                  </button>
@@ -1416,11 +1416,10 @@ export default function DashboardPage() {
              </div>
              <div className="space-y-2">
                {agendaImobiliaria.length === 0 ? (
-                 <p className="text-[#6B6F76] dark:text-gray-300 text-sm italic">Nenhum evento agendado pela imobiliária.</p>
+                 <p className="text-text-secondary text-sm italic">Nenhum evento agendado pela imobiliária.</p>
                ) : (
                  agendaImobiliaria
                    .sort((a, b) => {
-                     // Priorizar eventos com dataInicio
                      if (a.dataInicio && !b.dataInicio) return -1;
                      if (!a.dataInicio && b.dataInicio) return 1;
                      if (a.dataInicio && b.dataInicio) {
@@ -1428,35 +1427,35 @@ export default function DashboardPage() {
                      }
                      return a.data.toDate().getTime() - b.data.toDate().getTime();
                    })
-                   .slice(0, 3) // Mostrar apenas os 3 mais próximos
+                   .slice(0, 3)
                    .map((evento, idx) => (
                      <div
                        key={evento.id}
-                       className="group p-3 rounded-lg hover:bg-purple-500/5 transition-colors border-l-2 border-purple-500/30 hover:border-purple-500/60"
+                       className="group p-3 rounded-lg hover:bg-white/[0.04] transition-colors border-l-2 border-violet-500/30 hover:border-violet-500/50"
                      >
                        <div className="flex items-start gap-2">
-                         <div className="w-1.5 h-1.5 bg-purple-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                         <div className="w-1.5 h-1.5 bg-violet-400 rounded-full mt-1.5 flex-shrink-0" />
                          <div className="flex-1 min-w-0">
                            <div className="flex items-center gap-2 mb-1">
-                             <div className="text-sm font-medium text-[#2E2F38] dark:text-white group-hover:text-purple-600 transition-colors truncate">
+                             <div className="text-sm font-medium text-white group-hover:text-violet-300 transition-colors truncate">
                                {evento.titulo}
                              </div>
                              <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
-                               evento.tipo === 'reuniao' ? 'bg-amber-500' :
-                               evento.tipo === 'evento' ? 'bg-purple-500' :
-                               evento.tipo === 'treinamento' ? 'bg-green-500' : 'bg-gray-500'
-                             } text-white`}>
+                               evento.tipo === 'reuniao' ? 'bg-amber-500/20 text-amber-300' :
+                               evento.tipo === 'evento' ? 'bg-violet-500/20 text-violet-300' :
+                               evento.tipo === 'treinamento' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-text-secondary'
+                             }`}>
                                {evento.tipo === 'reuniao' ? '👥' : 
                                 evento.tipo === 'evento' ? '🎉' : 
                                 evento.tipo === 'treinamento' ? '📚' : '📅'} {evento.tipo}
                              </span>
                            </div>
                            {evento.descricao && (
-                             <div className="text-xs text-[#6B6F76] dark:text-gray-300 leading-relaxed line-clamp-2">
+                             <div className="text-xs text-text-secondary leading-relaxed line-clamp-2">
                                {evento.descricao}
                              </div>
                            )}
-                           <div className="text-[10px] text-purple-500/70 font-medium mt-1">
+                           <div className="text-[10px] text-violet-400/80 font-medium mt-1">
                              {evento.dataInicio && (
                                <div>Início: {evento.dataInicio.toDate ? evento.dataInicio.toDate().toLocaleDateString('pt-BR', { 
                                  day: '2-digit', 
@@ -1478,7 +1477,7 @@ export default function DashboardPage() {
                  <div className="text-center pt-2">
                    <button
                      onClick={() => setShowAgendaModal(true)}
-                     className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium hover:underline transition-colors cursor-pointer"
+                     className="text-xs text-violet-400 hover:text-violet-300 font-medium hover:underline transition-colors cursor-pointer"
                    >
                      +{agendaImobiliaria.length - 3} eventos anteriores
                    </button>
@@ -1488,20 +1487,20 @@ export default function DashboardPage() {
            </div>
 
 
-          {/* Plantões */}
-          <div className="bg-white dark:bg-[#23283A] rounded-xl p-5 border border-orange-500/20 shadow-sm">
+          {/* Plantões — estilo do site */}
+          <div className="card-glow rounded-xl p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-                <h3 className="font-semibold text-[#2E2F38] dark:text-white text-base">Plantões</h3>
-                <span className="px-1.5 py-0.5 bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-medium rounded">
+                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
+                <h3 className="font-semibold text-white text-base">Plantões</h3>
+                <span className="px-1.5 py-0.5 bg-orange-500/20 text-orange-300 text-xs font-medium rounded">
                   {plantoes.length}
                 </span>
               </div>
               {plantoes.length > 0 && (
                 <button
                   onClick={() => setShowPlantoesModal(true)}
-                  className="px-3 py-1.5 text-xs font-semibold text-orange-600 dark:text-orange-400 bg-orange-500/10 rounded-lg hover:bg-orange-500/20 transition-colors border border-orange-500/30"
+                  className="px-3 py-1.5 text-xs font-semibold text-orange-300 bg-orange-500/10 rounded-lg hover:bg-orange-500/20 transition-colors border border-orange-500/30"
                 >
                   Ver Todos
                 </button>
@@ -1509,26 +1508,26 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-2">
               {plantoes.length === 0 ? (
-                <p className="text-[#6B6F76] dark:text-gray-300 text-sm italic">Nenhum plantão agendado pela imobiliária.</p>
+                <p className="text-text-secondary text-sm italic">Nenhum plantão agendado pela imobiliária.</p>
               ) : (
                 plantoes
                   .sort((a, b) => new Date(a.dataInicio).getTime() - new Date(a.dataInicio).getTime())
-                  .slice(0, 3) // Mostrar apenas os 3 próximos
+                  .slice(0, 3)
                   .map((plantao, idx) => (
                     <div
                       key={plantao.id}
-                      className="group p-3 rounded-lg hover:bg-orange-500/5 transition-colors border-l-2 border-orange-500/30 hover:border-orange-500/60"
+                      className="group p-3 rounded-lg hover:bg-white/[0.04] transition-colors border-l-2 border-orange-500/30 hover:border-orange-500/50"
                     >
                       <div className="flex items-start gap-2">
-                        <div className="w-1.5 h-1.5 bg-orange-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                        <div className="w-1.5 h-1.5 bg-orange-500 rounded-full mt-1.5 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-[#2E2F38] dark:text-white mb-1 group-hover:text-orange-600 transition-colors truncate">
+                          <div className="text-sm font-medium text-white mb-1 group-hover:text-orange-400 transition-colors truncate">
                             Plantão {plantao.construtora}
                           </div>
-                          <div className="text-xs text-[#6B6F76] dark:text-gray-300 leading-relaxed line-clamp-2">
+                          <div className="text-xs text-text-secondary leading-relaxed line-clamp-2">
                             Corretor: {plantao.corretorResponsavel} - Horário: {plantao.horario}
                           </div>
-                          <div className="text-[10px] text-orange-500/70 font-medium mt-1">
+                          <div className="text-[10px] text-orange-400/80 font-medium mt-1">
                             <div>Início: {new Date(plantao.dataInicio).toLocaleDateString('pt-BR', { 
                               day: '2-digit', 
                               month: '2-digit'
@@ -1547,7 +1546,7 @@ export default function DashboardPage() {
                 <div className="text-center pt-2">
                   <button
                     onClick={() => setShowPlantoesModal(true)}
-                    className="text-xs text-orange-600 dark:text-orange-400 hover:text-orange-700 font-medium hover:underline transition-colors cursor-pointer"
+                    className="text-xs text-orange-400 hover:text-orange-300 font-medium hover:underline transition-colors cursor-pointer"
                   >
                     +{plantoes.length - 3} plantões anteriores
                   </button>
@@ -1563,8 +1562,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Coluna Direita - Minhas Moedas + Feed gamificado */}
-        <div id="trending-section" className="overflow-y-auto pr-2 dashboard-scroll-hide h-full min-h-0 space-y-4">
+        {/* Coluna Direita — rola independente, scrollbar camuflada */}
+        <div id="trending-section" className="overflow-y-auto overflow-x-hidden pr-2 scrollbar-camouflage min-h-0 space-y-4">
           {/* Minhas Moedas — card gamificado */}
           <div className="card-glow rounded-2xl p-5 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-amber-400 rounded-r" />

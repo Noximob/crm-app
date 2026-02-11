@@ -48,6 +48,29 @@
   background: transparent !important;
 }
 
+/* Barra de rolagem camuflada (fininha, cor do fundo) */
+.scrollbar-camouflage {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+}
+
+.scrollbar-camouflage::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-camouflage::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-camouflage::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+}
+
+.scrollbar-camouflage::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
 /* Animações */
 @keyframes fade-in {
   from {
