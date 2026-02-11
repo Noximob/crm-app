@@ -48,6 +48,16 @@
   background: transparent !important;
 }
 
+/* Garantir scrollbar oculta nas colunas do dashboard (fallback por id) */
+#dashboard-two-columns > div {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+#dashboard-two-columns > div::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+}
+
 /* Barra de rolagem camuflada (fininha, cor do fundo) */
 .scrollbar-camouflage {
   scrollbar-width: thin;

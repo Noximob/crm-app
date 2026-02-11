@@ -1212,9 +1212,9 @@ export default function DashboardPage() {
       )}
 
       {/* Grid em 2 colunas com rolagem independente; barras de rolagem ocultas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0 pt-2" style={{ height: 'calc(100vh - 220px)' }}>
-        {/* Coluna Esquerda — rola independente, scrollbar escondida */}
-        <div className="space-y-6 overflow-y-auto overflow-x-hidden pr-2 dashboard-scroll-hide min-h-0">
+      <div id="dashboard-two-columns" className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0 pt-2" style={{ height: 'calc(100vh - 220px)' }}>
+        {/* Coluna Esquerda — rola independente; scrollbar totalmente oculta */}
+        <div className="dashboard-scroll-hide space-y-6 overflow-y-auto overflow-x-hidden pr-2 min-h-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {/* Quadro: eventos em que fui marcado — Confirmar Presença / Cancelar */}
           {eventosEmQueFuiMarcado.length > 0 && (
             <div className="bg-background-card rounded-2xl border border-[var(--border-subtle)] p-5 shadow-sm">
@@ -1396,9 +1396,9 @@ export default function DashboardPage() {
              </div>
            </div>
 
-           {/* Agenda Imobiliária — congruente com o site (card-glow + faixa) */}
-           <div className="card-glow rounded-xl p-5 relative overflow-hidden">
-             <div className="absolute top-0 left-0 w-1 h-full bg-violet-500 rounded-r" />
+           {/* Agenda Imobiliária — mesmo padrão Agenda do Dia: card-glow + barra lateral visível */}
+           <div className="card-glow rounded-2xl p-6 relative overflow-hidden">
+             <div className="absolute top-0 left-0 w-1.5 h-full bg-violet-500 rounded-r shadow-[0_0_12px_rgba(139,92,246,0.6)]" />
              <div className="flex items-center justify-between mb-3">
                <div className="flex items-center gap-2">
                  <div className="w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
@@ -1489,9 +1489,9 @@ export default function DashboardPage() {
            </div>
 
 
-          {/* Plantões — congruente com o site (card-glow + faixa) */}
-          <div className="card-glow rounded-xl p-5 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-amber-500 rounded-r" />
+          {/* Plantões — mesmo padrão Agenda do Dia: card-glow + barra lateral visível */}
+          <div className="card-glow rounded-2xl p-6 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500 rounded-r shadow-[0_0_12px_rgba(245,158,11,0.6)]" />
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
@@ -1565,8 +1565,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Coluna Direita — rola independente, scrollbar escondida */}
-        <div id="trending-section" className="overflow-y-auto overflow-x-hidden pr-2 dashboard-scroll-hide min-h-0 space-y-4">
+        {/* Coluna Direita — rola independente; scrollbar totalmente oculta */}
+        <div id="trending-section" className="dashboard-scroll-hide overflow-y-auto overflow-x-hidden pr-2 min-h-0 space-y-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {/* Minhas Moedas — card gamificado */}
           <div className="card-glow rounded-2xl p-5 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-amber-400 rounded-r" />
