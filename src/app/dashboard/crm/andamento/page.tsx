@@ -171,7 +171,7 @@ export default function AndamentoPage() {
                             onDragStart={handleDragStart}
                             onDragEnd={handleDragEnd}
                         >
-                            <div className="flex gap-6 overflow-x-auto overflow-y-visible pb-4 min-h-0">
+                            <div className="flex gap-6 overflow-x-auto overflow-y-visible pb-4 min-h-0 w-full max-w-full">
                                 {PIPELINE_STAGES.map(stage => (
                                     <KanbanColumn 
                                         key={stage} 
