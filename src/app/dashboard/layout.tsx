@@ -221,14 +221,13 @@ export default function DashboardLayout({
               <svg className="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v3.35c-1.84.42-2.59 1.33-2.59 2.77 0 1.52 1.21 2.69 3 3.21 1.78.52 2.34 1.15 2.34 1.87 0 .71-.64 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-3.54c1.92-.3 2.86-1.27 2.86-2.77 0-1.47-.99-2.45-2.7-2.95z"/></svg>
               <span className="text-sm font-bold text-white tabular-nums">{pontosExemplo.toLocaleString('pt-BR')}</span>
             </div>
-            <div className="relative flex items-center gap-2 pl-3 border-l border-white/[0.06]">
-              <div className="relative">
+            <div className="pl-3 border-l border-white/[0.06]">
+              <div className="relative w-8 h-8">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white font-semibold text-sm">
                   {(displayName || 'U').charAt(0).toUpperCase()}
                 </div>
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[var(--bg-card)]" title="Online" />
               </div>
-              <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
             </div>
           </div>
         </header>

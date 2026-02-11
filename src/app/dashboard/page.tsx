@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, getDoc, Timestamp, orderBy, limit, deleteDoc, setDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { db, storage } from '@/lib/firebase';
+import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, getDoc, Timestamp, orderBy, limit, deleteDoc, setDoc, doc, serverTimestamp, updateDoc, addDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Link from 'next/link';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
@@ -395,6 +396,10 @@ export default function DashboardPage() {
   const [repostWithComment, setRepostWithComment] = useState(false);
   const [repostComment, setRepostComment] = useState('');
   const [repostInputId, setRepostInputId] = useState<string | null>(null);
+  const [novoPostComunidade, setNovoPostComunidade] = useState('');
+  const [postandoComunidade, setPostandoComunidade] = useState(false);
+  const [fileComunidade, setFileComunidade] = useState<File | null>(null);
+  const [filePreviewComunidade, setFilePreviewComunidade] = useState<string | null>(null);
   const [showEmojiComment, setShowEmojiComment] = useState(false);
   const [showLikesModal, setShowLikesModal] = useState(false);
   const [selectedPostForLikes, setSelectedPostForLikes] = useState<any>(null);
@@ -967,6 +972,78 @@ export default function DashboardPage() {
       setCommentText('');
     } catch (error) {
       console.error('Erro ao comentar:', error);
+    }
+  };
+
+  const getComunidadeAvatar = () => {
+    if (userData?.photoURL) return userData.photoURL;
+    const nome = userData?.nome || currentUser?.email?.split('@')[0] || 'U';
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(nome)}&background=random`;
+  };
+  const getComunidadeNome = () => userData?.nome || currentUser?.email?.split('@')[0] || 'Usuário';
+
+  const handleFileComunidadeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (!f.type.startsWith('image/') && !f.type.startsWith('video/')) return;
+    setFileComunidade(f);
+    const reader = new FileReader();
+    reader.onload = () => setFilePreviewComunidade(reader.result as string);
+    reader.readAsDataURL(f);
+    e.target.value = '';
+  };
+
+  const handlePostarComunidade = async () => {
+    if (!currentUser || (!novoPostComunidade.trim() && !fileComunidade)) return;
+    setPostandoComunidade(true);
+    try {
+      let fileUrl: string | null = null;
+      let fileMeta: { name: string; type: string } | null = null;
+      if (fileComunidade) {
+        const fileName = `${Date.now()}_${fileComunidade.name}`;
+        const folder = fileComunidade.type.startsWith('image/') ? 'images' : 'videos';
+        const storageRef = ref(storage, `comunidade/${currentUser.uid}/${folder}/${fileName}`);
+        await uploadBytes(storageRef, fileComunidade);
+        fileUrl = await getDownloadURL(storageRef);
+        fileMeta = { name: fileComunidade.name, type: fileComunidade.type };
+      }
+      const postData = {
+        texto: novoPostComunidade.trim() || '',
+        userId: currentUser.uid,
+        nome: getComunidadeNome(),
+        email: currentUser.email || '',
+        avatar: getComunidadeAvatar(),
+        createdAt: serverTimestamp(),
+        likes: 0,
+        likedBy: [],
+        comments: [],
+        file: fileUrl,
+        fileMeta,
+        youtubeLink: null,
+        youtubeData: null,
+        ...(userData?.imobiliariaId && { imobiliariaId: userData.imobiliariaId }),
+      };
+      const docRef = await addDoc(collection(db, 'comunidadePosts'), postData);
+      const newPost = {
+        id: docRef.id,
+        ...postData,
+        createdAt: { toDate: () => new Date() },
+        userLiked: false,
+        likes: 0,
+        commentsCount: 0,
+        repostsCount: 0,
+        totalEngagement: 0,
+        avatar: getComunidadeAvatar(),
+        nome: getComunidadeNome(),
+      };
+      setTrendingPosts(prev => [newPost, ...prev]);
+      setNovoPostComunidade('');
+      setFileComunidade(null);
+      setFilePreviewComunidade(null);
+    } catch (error) {
+      console.error('Erro ao criar post:', error);
+    } finally {
+      setPostandoComunidade(false);
     }
   };
 
@@ -1569,6 +1646,47 @@ export default function DashboardPage() {
         <div id="trending-section" className="dashboard-scroll-hide overflow-y-auto overflow-x-hidden pr-2 min-h-0 space-y-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           <div className="card-glow rounded-2xl p-6 relative overflow-hidden animate-fade-in">
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-orange-500 rounded-r" />
+
+            {/* Composer: postar direto da comunidade (igual à página Comunidade) */}
+            <div className="mb-6 pb-6 border-b border-white/10 dark:border-[#23283A]">
+              <div className="flex gap-3">
+                <img src={getComunidadeAvatar()} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-white/20 shrink-0" onError={(e) => { (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=U&background=random`; }} />
+                <div className="flex-1 min-w-0 flex flex-col gap-2">
+                  <textarea
+                    className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white/80 dark:bg-[#181C23] text-[#2E2F38] dark:text-white resize-none min-h-[72px] text-sm placeholder-[#6B6F76] dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#D4A017]/50"
+                    placeholder="O que está acontecendo?"
+                    value={novoPostComunidade}
+                    onChange={(e) => setNovoPostComunidade(e.target.value)}
+                    disabled={postandoComunidade}
+                  />
+                  {filePreviewComunidade && (
+                    <div className="relative inline-block">
+                      {fileComunidade?.type.startsWith('image/') && (
+                        <img src={filePreviewComunidade} alt="" className="max-h-28 rounded-lg border border-[#E8E9F1] dark:border-[#23283A]" />
+                      )}
+                      {fileComunidade?.type.startsWith('video/') && (
+                        <video src={filePreviewComunidade} controls className="max-h-28 rounded-lg border border-[#E8E9F1] dark:border-[#23283A]" />
+                      )}
+                      <button type="button" onClick={() => { setFileComunidade(null); setFilePreviewComunidade(null); }} className="absolute top-1 right-1 bg-black/60 hover:bg-red-500 text-white rounded-full p-1 text-xs">✕</button>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center">
+                    <label className="cursor-pointer text-[#D4A017] hover:text-[#B8860B] text-lg" title="Anexar foto ou vídeo">
+                      <span>📎</span>
+                      <input type="file" className="hidden" accept="image/*,video/*" onChange={handleFileComunidadeChange} />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handlePostarComunidade}
+                      disabled={postandoComunidade || (!novoPostComunidade.trim() && !fileComunidade)}
+                      className="px-4 py-2 rounded-lg bg-[#D4A017] text-white font-semibold text-sm hover:bg-[#B8860B] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {postandoComunidade ? 'Postando...' : 'Postar'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {trendingLoading ? (
               <div className="flex items-center justify-center py-8">
