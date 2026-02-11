@@ -890,6 +890,7 @@ export default function ComunidadePage() {
       case 'meet': return '🎥';
       case 'youtube': return '📺';
       case 'instagram': return '📱';
+      case 'discord': return '💬';
       default: return '📅';
     }
   };
@@ -899,6 +900,7 @@ export default function ComunidadePage() {
       case 'meet': return 'bg-amber-500';
       case 'youtube': return 'bg-red-500';
       case 'instagram': return 'bg-pink-500';
+      case 'discord': return 'bg-indigo-500';
       default: return 'bg-gray-500';
     }
   };
@@ -1557,11 +1559,12 @@ export default function ComunidadePage() {
               <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">
                 Tipo de Evento
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
                   { key: 'meet', label: 'Google Meet', icon: '🎥', color: 'bg-amber-500' },
                   { key: 'youtube', label: 'YouTube Live', icon: '📺', color: 'bg-red-500' },
-                  { key: 'instagram', label: 'Instagram Live', icon: '📱', color: 'bg-pink-500' }
+                  { key: 'instagram', label: 'Instagram Live', icon: '📱', color: 'bg-pink-500' },
+                  { key: 'discord', label: 'Discord', icon: '💬', color: 'bg-indigo-500' }
                 ].map((tipo) => (
                   <button
                     key={tipo.key}
@@ -1625,7 +1628,11 @@ export default function ComunidadePage() {
                     ? 'https://meet.google.com/xxx-xxxx-xxx'
                     : eventForm.tipo === 'youtube'
                     ? 'https://youtube.com/watch?v=...'
-                    : 'https://instagram.com/live/...'
+                    : eventForm.tipo === 'instagram'
+                    ? 'https://instagram.com/live/...'
+                    : eventForm.tipo === 'discord'
+                    ? 'https://discord.gg/... ou link do servidor'
+                    : 'Cole o link do evento'
                 }
                 required
               />
