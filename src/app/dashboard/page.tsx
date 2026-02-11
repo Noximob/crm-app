@@ -400,6 +400,9 @@ export default function DashboardPage() {
   const [postandoComunidade, setPostandoComunidade] = useState(false);
   const [fileComunidade, setFileComunidade] = useState<File | null>(null);
   const [filePreviewComunidade, setFilePreviewComunidade] = useState<string | null>(null);
+  const [youtubeLinkComunidade, setYoutubeLinkComunidade] = useState('');
+  const [youtubePreviewComunidade, setYoutubePreviewComunidade] = useState<{ videoId: string; embedUrl: string; thumbnail: string; url: string; isShort: boolean } | null>(null);
+  const [showEmojiComunidade, setShowEmojiComunidade] = useState(false);
   const [showEmojiComment, setShowEmojiComment] = useState(false);
   const [showLikesModal, setShowLikesModal] = useState(false);
   const [selectedPostForLikes, setSelectedPostForLikes] = useState<any>(null);
@@ -993,8 +996,47 @@ export default function DashboardPage() {
     e.target.value = '';
   };
 
+  const getYouTubeVideoId = (url: string) => {
+    const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
+    return match?.[1];
+  };
+  const isYouTubeShort = (url: string) => url.includes('/shorts/') || url.includes('youtube.com/shorts/');
+  const getYouTubeEmbedUrl = (url: string) => {
+    const videoId = getYouTubeVideoId(url);
+    if (!videoId) return undefined;
+    return isYouTubeShort(url)
+      ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&controls=1&autoplay=0`
+      : `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&controls=1`;
+  };
+  const getYouTubeThumbnail = (url: string) => {
+    const videoId = getYouTubeVideoId(url);
+    return videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : undefined;
+  };
+  const handleYoutubeLinkChangeComunidade = (link: string) => {
+    setYoutubeLinkComunidade(link);
+    if (link.trim()) {
+      const videoId = getYouTubeVideoId(link);
+      if (videoId) {
+        setYoutubePreviewComunidade({
+          videoId,
+          embedUrl: getYouTubeEmbedUrl(link)!,
+          thumbnail: getYouTubeThumbnail(link)!,
+          url: link,
+          isShort: isYouTubeShort(link),
+        });
+      } else {
+        setYoutubePreviewComunidade(null);
+      }
+    } else {
+      setYoutubePreviewComunidade(null);
+    }
+  };
+  const handleEmojiSelectComunidade = (emoji: { native: string }) => {
+    setNovoPostComunidade(prev => prev + emoji.native);
+  };
+
   const handlePostarComunidade = async () => {
-    if (!currentUser || (!novoPostComunidade.trim() && !fileComunidade)) return;
+    if (!currentUser || (!novoPostComunidade.trim() && !fileComunidade && !youtubePreviewComunidade)) return;
     setPostandoComunidade(true);
     try {
       let fileUrl: string | null = null;
@@ -1019,8 +1061,8 @@ export default function DashboardPage() {
         comments: [],
         file: fileUrl,
         fileMeta,
-        youtubeLink: null,
-        youtubeData: null,
+        youtubeLink: youtubePreviewComunidade ? youtubePreviewComunidade.url : null,
+        youtubeData: youtubePreviewComunidade ? { videoId: youtubePreviewComunidade.videoId, embedUrl: youtubePreviewComunidade.embedUrl, thumbnail: youtubePreviewComunidade.thumbnail } : null,
         ...(userData?.imobiliariaId && { imobiliariaId: userData.imobiliariaId }),
       };
       const docRef = await addDoc(collection(db, 'comunidadePosts'), postData);
@@ -1035,11 +1077,15 @@ export default function DashboardPage() {
         totalEngagement: 0,
         avatar: getComunidadeAvatar(),
         nome: getComunidadeNome(),
+        youtubeData: youtubePreviewComunidade ? { videoId: youtubePreviewComunidade.videoId, embedUrl: youtubePreviewComunidade.embedUrl, thumbnail: youtubePreviewComunidade.thumbnail } : null,
       };
       setTrendingPosts(prev => [newPost, ...prev]);
       setNovoPostComunidade('');
       setFileComunidade(null);
       setFilePreviewComunidade(null);
+      setYoutubeLinkComunidade('');
+      setYoutubePreviewComunidade(null);
+      setShowEmojiComunidade(false);
     } catch (error) {
       console.error('Erro ao criar post:', error);
     } finally {
@@ -1659,6 +1705,28 @@ export default function DashboardPage() {
                     onChange={(e) => setNovoPostComunidade(e.target.value)}
                     disabled={postandoComunidade}
                   />
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white/80 dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm placeholder-[#6B6F76] dark:placeholder-gray-400 focus:outline-none"
+                    placeholder="🔗 Link do YouTube (opcional)"
+                    value={youtubeLinkComunidade}
+                    onChange={(e) => handleYoutubeLinkChangeComunidade(e.target.value)}
+                    disabled={postandoComunidade}
+                  />
+                  {youtubePreviewComunidade && (
+                    <div className="relative rounded-lg overflow-hidden border border-[#E8E9F1] dark:border-[#23283A] bg-black/20">
+                      <iframe
+                        src={youtubePreviewComunidade.embedUrl}
+                        title="YouTube"
+                        className={`w-full ${youtubePreviewComunidade.isShort ? 'h-48' : 'h-36'}`}
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                      <button type="button" onClick={() => { setYoutubeLinkComunidade(''); setYoutubePreviewComunidade(null); }} className="absolute top-1 right-1 bg-black/60 hover:bg-red-500 text-white rounded-full p-1 text-xs">✕</button>
+                      {youtubePreviewComunidade.isShort && <span className="absolute top-1 left-1 bg-red-600 text-white px-2 py-0.5 rounded text-xs font-semibold">SHORT</span>}
+                    </div>
+                  )}
                   {filePreviewComunidade && (
                     <div className="relative inline-block">
                       {fileComunidade?.type.startsWith('image/') && (
@@ -1670,15 +1738,24 @@ export default function DashboardPage() {
                       <button type="button" onClick={() => { setFileComunidade(null); setFilePreviewComunidade(null); }} className="absolute top-1 right-1 bg-black/60 hover:bg-red-500 text-white rounded-full p-1 text-xs">✕</button>
                     </div>
                   )}
-                  <div className="flex justify-between items-center">
-                    <label className="cursor-pointer text-[#D4A017] hover:text-[#B8860B] text-lg" title="Anexar foto ou vídeo">
-                      <span>📎</span>
-                      <input type="file" className="hidden" accept="image/*,video/*" onChange={handleFileComunidadeChange} />
-                    </label>
+                  <div className="flex justify-between items-center flex-wrap gap-2">
+                    <div className="flex items-center gap-2 relative">
+                      <label className="cursor-pointer text-[#D4A017] hover:text-[#B8860B] text-lg" title="Anexar foto ou vídeo">
+                        <span>📎</span>
+                        <input type="file" className="hidden" accept="image/*,video/*" onChange={handleFileComunidadeChange} />
+                      </label>
+                      <button type="button" onClick={() => setShowEmojiComunidade(v => !v)} className="text-[#D4A017] hover:text-[#B8860B] text-lg" title="Emoji">😊</button>
+                      {showEmojiComunidade && (
+                        <div className="absolute left-0 bottom-8 z-50">
+                          <Picker data={data} onEmojiSelect={handleEmojiSelectComunidade} theme={typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light'} />
+                        </div>
+                      )}
+                      <Link href="/dashboard/comunidade" className="text-[#3AC17C] hover:text-[#2E9D63] text-lg" title="Agendar evento">📅</Link>
+                    </div>
                     <button
                       type="button"
                       onClick={handlePostarComunidade}
-                      disabled={postandoComunidade || (!novoPostComunidade.trim() && !fileComunidade)}
+                      disabled={postandoComunidade || (!novoPostComunidade.trim() && !fileComunidade && !youtubePreviewComunidade)}
                       className="px-4 py-2 rounded-lg bg-[#D4A017] text-white font-semibold text-sm hover:bg-[#B8860B] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {postandoComunidade ? 'Postando...' : 'Postar'}
