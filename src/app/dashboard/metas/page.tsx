@@ -32,7 +32,7 @@ const ranking = [
 
 export default function MetasPage() {
   return (
-    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
+    <div className="min-h-full py-8 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2 text-left">Metas</h1>

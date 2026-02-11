@@ -412,7 +412,7 @@ export default function LeadDetailPage() {
     // Usar o status da tarefa calculado no useEffect
 
     return (
-        <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
+        <div className="min-h-full p-4 sm:p-6 lg:p-8">
             <CrmHeader />
             {readOnly && (
               <div className="mb-4 px-4 py-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-800 dark:text-amber-200 text-sm font-medium flex items-center gap-2">

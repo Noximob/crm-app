@@ -169,7 +169,7 @@ export default function DetalhesImovelPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] flex items-center justify-center">
+      <div className="min-h-full flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4A017]"></div>
       </div>
     );
@@ -177,7 +177,7 @@ export default function DetalhesImovelPage() {
 
   if (!imovel) {
     return (
-      <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] flex items-center justify-center">
+      <div className="min-h-full flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-xl font-semibold text-[#2E2F38] dark:text-white mb-2">Imóvel não encontrado</h2>
           <button
@@ -192,7 +192,7 @@ export default function DetalhesImovelPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
+    <div className="min-h-full py-8 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">

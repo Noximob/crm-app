@@ -8,7 +8,7 @@ export default function DWVPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
+    <div className="min-h-full py-8 px-4">
       <div className="max-w-5xl mx-auto">
         <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-4 text-left">DWV</h1>
         <p className="text-[#6B6F76] dark:text-gray-300 mb-8 text-left text-base">Acesse o sistema DWV em uma nova aba.</p>

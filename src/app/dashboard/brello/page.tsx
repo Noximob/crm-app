@@ -844,14 +844,14 @@ const Brello = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0F0F23] flex items-center justify-center">
+      <div className="min-h-full flex items-center justify-center">
         <div className="text-white text-xl">Carregando Brello...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0F0F23] p-4 sm:p-6 lg:p-8">
+    <div className="min-h-full p-4 sm:p-6 lg:p-8">
       <div className="w-full">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">

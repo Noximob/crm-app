@@ -266,8 +266,8 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
   const reunioesRestantes = slotsRestantesHoje.filter((s) => !s.isAcaoVenda);
 
   return (
-    <div className="h-screen w-full flex flex-col bg-[#0c0f1a] text-white overflow-hidden relative">
-      <div className="absolute inset-0 bg-gradient-to-br from-violet-950/20 via-[#0c0f1a] to-cyan-950/10 pointer-events-none" />
+    <div className="h-screen w-full flex flex-col bg-particles text-white overflow-hidden relative">
+      <div className="absolute inset-0 bg-gradient-to-br from-violet-950/20 via-transparent to-cyan-950/10 pointer-events-none" />
       <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '28px 28px' }} />
 
       <header className="relative shrink-0 flex items-center justify-between gap-3 py-3 px-4 border-b border-white/10">

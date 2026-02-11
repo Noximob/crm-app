@@ -344,7 +344,7 @@ export default function MateriaisConstrutorasPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
+    <div className="min-h-full py-8 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>

@@ -117,7 +117,7 @@ export default function AdminEntidadesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
+      <div className="min-h-full py-8 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center">
             <p>Carregando imobiliárias...</p>
@@ -128,7 +128,7 @@ export default function AdminEntidadesPage() {
 }
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
+    <div className="min-h-full py-8 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">

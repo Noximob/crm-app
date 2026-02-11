@@ -358,14 +358,14 @@ export default function DashboardsTvPage() {
 
   if (!imobiliariaId) {
     return (
-      <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4 flex items-center justify-center">
+      <div className="min-h-full py-8 px-4 flex items-center justify-center">
         <p className="text-[#6B6F76] dark:text-gray-300">Acesso restrito.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
+    <div className="min-h-full py-8 px-4">
       <div className="max-w-3xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>

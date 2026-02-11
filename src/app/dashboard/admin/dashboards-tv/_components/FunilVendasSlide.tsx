@@ -41,7 +41,7 @@ export function FunilVendasSlide({
   );
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-gradient-to-b from-[#0f1220] via-[#151b2d] to-[#0f1220] text-white overflow-hidden">
+    <div className="min-h-screen w-full flex flex-col bg-particles text-white overflow-hidden">
       {/* Header */}
       <div className="shrink-0 pt-6 pb-4 px-6 text-center border-b border-white/10">
         <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-[#D4A017] via-[#60a5fa] to-[#D4A017] bg-clip-text text-transparent drop-shadow-lg">

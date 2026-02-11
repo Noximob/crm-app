@@ -45,7 +45,7 @@ export function FunilVendasIndividualSlide({
   const maxTotal = useMemo(() => Math.max(...top9.map((c) => c.total), 1), [top9]);
 
   return (
-    <div className="h-screen w-full flex flex-col bg-[#080b12] text-white overflow-hidden">
+    <div className="h-screen w-full flex flex-col bg-particles text-white overflow-hidden">
       {/* Header compacto — TV: tudo em 1 página */}
       <header className="shrink-0 py-2 px-4 text-center">
         <div className="inline-flex items-center gap-2">

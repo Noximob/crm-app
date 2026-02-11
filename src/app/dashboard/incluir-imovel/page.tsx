@@ -144,7 +144,7 @@ export default function IncluirImovelPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
+    <div className="min-h-full py-8 px-4">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <HouseIcon className="h-8 w-8 text-[#D4A017]" />

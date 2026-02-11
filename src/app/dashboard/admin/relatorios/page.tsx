@@ -393,7 +393,7 @@ export default function RelatoriosAdminPage() {
 
   if (!imobiliariaId) {
     return (
-      <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4 flex items-center justify-center">
+      <div className="min-h-full py-8 px-4 flex items-center justify-center">
         <p className="text-[#6B6F76] dark:text-gray-300">Acesso restrito à imobiliária.</p>
       </div>
     );
@@ -402,7 +402,7 @@ export default function RelatoriosAdminPage() {
   const formatDate = (d: Date) => d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-6 px-4 md:px-8">
+    <div className="min-h-full py-6 px-4 md:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>

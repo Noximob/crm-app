@@ -233,7 +233,7 @@ export default function TvPage() {
   if (currentSlide?.id === 'noticia-semana') {
     const temConteudo = noticiaSemana.titulo?.trim() || noticiaSemana.imageUrl;
     return (
-      <div className="h-screen max-h-screen flex flex-col bg-[#181C23] text-white overflow-hidden">
+      <div className="h-screen max-h-screen flex flex-col bg-particles text-white overflow-hidden">
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {noticiaSemana.imageUrl ? (
             <div className="flex-1 min-h-0 overflow-hidden relative">
@@ -244,11 +244,11 @@ export default function TvPage() {
               />
             </div>
           ) : (
-            <div className="flex-1 min-h-0 flex items-center justify-center bg-gradient-to-b from-[#23283A] to-[#181C23] overflow-hidden">
+            <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden">
               <div className="text-center text-[#6B6F76] px-4">Sem imagem</div>
             </div>
           )}
-          <div className="shrink-0 px-6 py-4 bg-[#181C23]/95 border-t border-white/10 overflow-hidden">
+          <div className="shrink-0 px-6 py-4 bg-[var(--bg-primary)]/95 border-t border-white/10 overflow-hidden">
             <h2 className="text-xl md:text-3xl font-bold text-white text-center md:text-left truncate">
               {noticiaSemana.titulo?.trim() || 'Notícia da Semana'}
             </h2>

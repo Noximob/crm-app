@@ -16,7 +16,7 @@ const ConstructionIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export default function PagamentosPage() {
   return (
-    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
+    <div className="min-h-full py-8 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="text-center">
           {/* Ícone de construção */}

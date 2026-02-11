@@ -27,7 +27,7 @@ export function SelecaoNoxSlide({ imoveis, fraseRolante }: SelecaoNoxSlideProps)
   const list = imoveis.slice(0, 3);
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-gradient-to-b from-[#181C23] via-[#1a1f2e] to-[#181C23] text-white overflow-hidden">
+    <div className="min-h-screen w-full flex flex-col bg-particles text-white overflow-hidden">
       {/* Subtítulo no topo */}
       <p className="text-center text-[#E8C547]/90 text-lg md:text-xl pt-8 pb-4 px-4">
         com foco em valorização, localização estratégica e qualidade construtiva.

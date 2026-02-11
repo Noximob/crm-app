@@ -138,9 +138,9 @@ export function MetasResultadosSlide({
   const weatherStyle = weather ? getWeatherStyle(weather.code) : null;
 
   return (
-    <div className="h-screen w-full flex flex-col bg-[#0c0f1a] text-white overflow-hidden relative">
+    <div className="h-screen w-full flex flex-col bg-particles text-white overflow-hidden relative">
       {/* Fundo mais rico: gradiente + grid sutil */}
-      <div className="absolute inset-0 bg-gradient-to-br from-violet-950/30 via-[#0c0f1a] to-cyan-950/20 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-violet-950/30 via-transparent to-cyan-950/20 pointer-events-none" />
       <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
 
       <header className="relative shrink-0 flex flex-wrap items-center justify-between gap-4 py-4 px-6 border-b border-white/10">

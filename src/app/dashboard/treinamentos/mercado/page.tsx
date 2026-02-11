@@ -93,7 +93,7 @@ export default function MercadoPage() {
   const videos = treinamentos.filter(t => t.tipo === 'video');
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
+    <div className="min-h-full py-8 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">🏢 Mercado</h1>
