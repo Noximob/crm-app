@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { AlummaLogoFullInline } from '@/components/AlummaLogo';
 
-const WHATSAPP_LINK = 'https://wa.me/5547999999999';
-const WHATSAPP_DISPLAY = '(47) 99999-9999';
-const INSTAGRAM_HANDLE = '@alumma.crm';
-const CONTACT_EMAIL = 'contato@alumma.com.br';
+const WHATSAPP_LINK = 'https://wa.me/5547992577075';
+const WHATSAPP_DISPLAY = '47 99257-7075';
+const INSTAGRAM_HANDLE = '@alumma.app';
+const CONTACT_EMAIL = 'alummaapp@gmail.com';
 
 export default function LandingPage() {
   const { currentUser, isApproved } = useAuth();
