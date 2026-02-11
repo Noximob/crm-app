@@ -8,6 +8,7 @@ import { signOut } from 'firebase/auth';
 import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
 import { useNotifications } from '@/context/NotificationContext';
+import { AlummaLogo } from '@/components/AlummaLogo';
 
 // Ícones
 const AlertTriangleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>;
@@ -50,20 +51,6 @@ const CodeIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns
 const LogOutIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>;
 
 const ChevronLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15,18 9,12 15,6"/></svg>;
-
-const AlumeLogo = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style={{stopColor: '#D4A017', stopOpacity: 1}} />
-        <stop offset="100%" style={{stopColor: '#B8860B', stopOpacity: 1}} />
-      </linearGradient>
-    </defs>
-    <circle cx="12" cy="12" r="10" fill="url(#logoGradient)" />
-    {/* Letra A elegante em branco */}
-    <path d="M12 4L8 18H10L11 14H13L14 18H16L12 4ZM11.5 12L12 10L12.5 12H11.5Z" fill="white" stroke="white" strokeWidth="0.5" />
-  </svg>
-);
 
 const NavLink = ({ href, icon: Icon, children, collapsed, isActive }: any) => (
     <Link href={href} className={`flex items-center px-3 py-2.5 text-[#2E2F38] hover:bg-[#E8E9F1] rounded-lg transition-all duration-200 text-sm font-medium ${
@@ -126,7 +113,7 @@ export default function DashboardLayout({
     { href: '/dashboard/treinamentos', icon: PresentationIcon, label: 'Academia' },
     { href: '/dashboard/comunidade', icon: CommunityIcon, label: 'Comunidade', notifications: notifications.comunidade },
     { href: '/dashboard/incluir-imovel', icon: HouseIcon, label: 'Incluir imóvel' },
-    { href: '/dashboard/pagamentos', icon: CreditCardIcon, label: 'Alume Pró' },
+    { href: '/dashboard/pagamentos', icon: CreditCardIcon, label: 'Alumma Pró' },
     { href: '/dashboard/configuracoes', icon: SettingsIcon, label: 'Configurações' },
     // Exibir admin se for imobiliaria OU tiver permissao admin
     ...((userDataWithPerms?.tipoConta === 'imobiliaria' || userDataWithPerms?.permissoes?.admin) ? [
@@ -153,8 +140,8 @@ export default function DashboardLayout({
               className="flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer [filter:drop-shadow(0_0_8px_rgba(255,140,0,0.4))]"
               title="Voltar ao Dashboard"
             >
-              <AlumeLogo className="h-8 w-8 shrink-0" />
-              {!collapsed && <h1 className="text-xl font-bold text-white transition-all">Alume</h1>}
+              <AlummaLogo variant={collapsed ? 'a' : 'full'} theme="dark" className="h-8 shrink-0 w-auto" width={collapsed ? 32 : 120} height={32} />
+              {!collapsed && <span className="sr-only">Alumma</span>}
             </button>
             <button
               onClick={() => setCollapsed(!collapsed)}

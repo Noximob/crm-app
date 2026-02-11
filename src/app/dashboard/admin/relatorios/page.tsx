@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
+import { AlummaLogo } from '@/components/AlummaLogo';
 import { collection, query, where, doc, onSnapshot } from 'firebase/firestore';
 import { PIPELINE_STAGES } from '@/lib/constants';
 
@@ -405,8 +406,11 @@ export default function RelatoriosAdminPage() {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-[#2E2F38] dark:text-white">Relatórios</h1>
-            <p className="text-base text-[#6B6F76] dark:text-gray-300 mt-1">Storytelling por corretor · Atualização em tempo real · Pronto para TV</p>
+            <div className="flex items-center gap-3 mb-1">
+              <AlummaLogo variant="a" theme="dark" width={36} height={36} className="hidden sm:block shrink-0" />
+              <h1 className="text-3xl md:text-4xl font-bold text-[#2E2F38] dark:text-white">Relatórios da galera</h1>
+            </div>
+            <p className="text-base text-[#6B6F76] dark:text-gray-300 mt-1">Alumma · Storytelling por corretor · Atualização em tempo real · Pronto para TV</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <select

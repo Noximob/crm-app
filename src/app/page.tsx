@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { auth, db, googleProvider } from '@/lib/firebase';
+import { AlummaLogo } from '@/components/AlummaLogo';
 import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -113,12 +114,10 @@ export default function LoginPage() {
       <div className="max-w-md w-full space-y-6">
         <div className="card-glow rounded-2xl shadow-xl p-6 md:p-8">
           <div className="text-center mb-6">
-            <div className="mx-auto h-16 w-16 bg-gradient-to-br from-amber-400 to-orange-600 rounded-full flex items-center justify-center mb-4 shadow-[0_0_24px_rgba(255,140,0,0.4)]">
-              <svg className="h-8 w-8 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 4L8 18H10L11 14H13L14 18H16L12 4ZM11.5 12L12 10L12.5 12H11.5Z" fill="white" stroke="white" strokeWidth="0.5" />
-              </svg>
+            <div className="flex justify-center mb-4">
+              <AlummaLogo variant="full" theme="dark" width={160} height={48} />
             </div>
-            <h1 className="text-2xl font-bold text-orange-400 mb-2">Alume</h1>
+            <h1 className="text-2xl font-bold text-orange-400 mb-2">Alumma</h1>
             <p className="text-text-secondary text-sm">Você já vendeu hoje?</p>
           </div>
 

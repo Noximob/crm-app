@@ -3,19 +3,7 @@
 import React from 'react';
 import type { RelatorioIndividualData, ReportMetric } from '../_lib/reportData';
 import { REPORT_FUNIL_ETAPAS } from '../_lib/reportData';
-
-const AlumeLogo = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="reportLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style={{ stopColor: '#D4A017', stopOpacity: 1 }} />
-        <stop offset="100%" style={{ stopColor: '#B8860B', stopOpacity: 1 }} />
-      </linearGradient>
-    </defs>
-    <circle cx="12" cy="12" r="10" fill="url(#reportLogoGrad)" />
-    <path d="M12 4L8 18H10L11 14H13L14 18H16L12 4ZM11.5 12L12 10L12.5 12H11.5Z" fill="white" stroke="white" strokeWidth="0.5" />
-  </svg>
-);
+import { AlummaLogoImg } from '@/components/AlummaLogo';
 
 function VariacaoBadge({ m }: { m: ReportMetric<number> }) {
   if (m.variacao == null) return null;
@@ -51,10 +39,10 @@ export default function ReportCard({ data }: { data: RelatorioIndividualData }) 
       <div className="bg-gradient-to-br from-[#D4A017] to-[#B8860B] px-8 py-6 text-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <AlumeLogo className="w-12 h-12" />
+            <AlummaLogoImg variant="full" theme="light" width={140} height={44} className="shrink-0" />
             <div>
               <h1 className="text-xl font-bold tracking-tight">Relatório Individual</h1>
-              <p className="text-white/90 text-sm">Alume · Para o corretor e para análise</p>
+              <p className="text-white/90 text-sm">Alumma · Para o corretor e para análise</p>
             </div>
           </div>
           <div className="text-right text-sm text-white/90">
@@ -262,8 +250,8 @@ export default function ReportCard({ data }: { data: RelatorioIndividualData }) 
 
         {/* Footer marca */}
         <div className="pt-6 border-t border-gray-200 flex items-center justify-center gap-2 text-gray-400 text-sm">
-          <AlumeLogo className="w-5 h-5" />
-          <span>Relatório gerado pela Alume · Use para acompanhamento e envio ao seu gerente ou agente de análise.</span>
+          <AlummaLogoImg variant="a" theme="light" width={20} height={20} className="shrink-0 opacity-80" />
+          <span>Relatório gerado pela Alumma · Use para acompanhamento e envio ao seu gerente ou agente de análise.</span>
         </div>
       </div>
     </div>

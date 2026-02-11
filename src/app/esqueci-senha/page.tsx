@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { auth } from '@/lib/firebase';
 import { sendPasswordResetEmail } from 'firebase/auth';
+import { AlummaLogo } from '@/components/AlummaLogo';
 
 export default function EsqueciSenhaPage() {
   const [email, setEmail] = useState('');
@@ -46,10 +47,8 @@ export default function EsqueciSenhaPage() {
         <div className="bg-offwhite-50 rounded-2xl shadow-xl p-6 md:p-8 border border-primary-100">
           {/* Logo e título */}
           <div className="text-center mb-6">
-            <div className="mx-auto h-16 w-16 bg-primary-500 rounded-full flex items-center justify-center mb-4">
-              <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-              </svg>
+            <div className="flex justify-center mb-4">
+              <AlummaLogo variant="full" theme="light" width={140} height={40} />
             </div>
             <h1 className="text-2xl font-bold text-softgray-800 mb-2">
               Esqueceu sua senha?
