@@ -3,8 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
+import { getDoc, doc } from 'firebase/firestore';
 import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
 import { useNotifications } from '@/context/NotificationContext';
@@ -52,6 +53,24 @@ const LogOutIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xml
 
 const ChevronLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15,18 9,12 15,6"/></svg>;
 
+const TrendUpIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>;
+const TrendDownIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>;
+
+const INDICADORES_LIST = [
+  { key: 'cub', label: 'CUB (SC)' },
+  { key: 'selic', label: 'SELIC' },
+  { key: 'ipca', label: 'IPCA' },
+  { key: 'igpm', label: 'IGP-M' },
+  { key: 'incc', label: 'INCC' },
+];
+
+function calcularVariacaoIndicador(atual: string, anterior: string): number | null {
+  const a = parseFloat((atual || '').replace(/[^\d,.-]/g, '').replace(',', '.'));
+  const b = parseFloat((anterior || '').replace(/[^\d,.-]/g, '').replace(',', '.'));
+  if (isNaN(a) || isNaN(b) || b === 0) return null;
+  return ((a - b) / b) * 100;
+}
+
 const NavLink = ({ href, icon: Icon, children, collapsed, isActive }: any) => (
     <Link href={href} className={`flex items-center px-3 py-2.5 text-[#2E2F38] hover:bg-[#E8E9F1] rounded-lg transition-all duration-200 text-sm font-medium ${
         isActive ? 'bg-primary-500 text-white shadow-md' : 'hover:text-primary-600'
@@ -86,6 +105,28 @@ export default function DashboardLayout({
       resetNotification('comunidade');
     }
   }, [pathname, resetNotification]);
+
+  const [indicadoresExternos, setIndicadoresExternos] = useState<Record<string, string> | null>(null);
+  const [indicadoresExternosAnterior, setIndicadoresExternosAnterior] = useState<Record<string, string> | null>(null);
+  useEffect(() => {
+    const now = new Date();
+    const docIdAtual = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const docIdAnterior = now.getMonth() === 0
+      ? `${now.getFullYear() - 1}-12`
+      : `${now.getFullYear()}-${String(now.getMonth()).padStart(2, '0')}`;
+    (async () => {
+      try {
+        const [snapAtual, snapAnterior] = await Promise.all([
+          getDoc(doc(db, 'indicadoresExternos', docIdAtual)),
+          getDoc(doc(db, 'indicadoresExternos', docIdAnterior)),
+        ]);
+        if (snapAtual.exists()) setIndicadoresExternos(snapAtual.data() as Record<string, string>);
+        if (snapAnterior.exists()) setIndicadoresExternosAnterior(snapAnterior.data() as Record<string, string>);
+      } catch (e) {
+        // ignore
+      }
+    })();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -203,12 +244,36 @@ export default function DashboardLayout({
       </div>
 
       <div className={`flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300 ${collapsed ? 'ml-16' : 'ml-64'}`}>
-        {/* Header gamificado: saudação laranja, notificação, moedas, avatar */}
-        <header className="border-b border-white/[0.06] px-4 py-3 shrink-0 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-orange-400 truncate">
+        {/* Header gamificado: Olá | indicadores (CUB, SELIC...) | Ideias, moedas, avatar */}
+        <header className="border-b border-white/[0.06] px-4 py-2 shrink-0 flex items-center justify-between gap-3">
+          <h2 className="text-lg font-bold text-orange-400 truncate shrink-0">
             Olá, {displayName}! 👋
           </h2>
-          <div className="flex items-center gap-3">
+          {indicadoresExternos && indicadoresExternosAnterior && (
+            <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-center overflow-x-auto py-0.5">
+              {INDICADORES_LIST.map((ind) => {
+                const variacao = calcularVariacaoIndicador(indicadoresExternos[ind.key], indicadoresExternosAnterior[ind.key]);
+                return (
+                  <div
+                    key={ind.key}
+                    className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/[0.04] border border-white/[0.08] hover:border-orange-500/25 transition-colors shrink-0"
+                  >
+                    <div className="text-center">
+                      <div className="text-xs font-bold text-white leading-tight">{indicadoresExternos[ind.key] || '--'}</div>
+                      <div className="text-[9px] text-text-secondary leading-tight">{ind.label}</div>
+                    </div>
+                    {variacao !== null && (
+                      <div className={`flex items-center gap-0.5 text-[9px] font-semibold ${variacao > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {variacao > 0 ? <TrendUpIcon className="w-2.5 h-2.5" /> : <TrendDownIcon className="w-2.5 h-2.5" />}
+                        {Math.abs(variacao).toFixed(2)}%
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <div className="flex items-center gap-3 shrink-0">
             <Link
               href="/dashboard/ideias"
               className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-semibold text-sm transition-all shadow-[0_0_14px_rgba(255,140,0,0.25)] hover:shadow-[0_0_20px_rgba(255,140,0,0.35)]"

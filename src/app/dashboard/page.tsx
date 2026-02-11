@@ -372,8 +372,6 @@ export default function DashboardPage() {
   const { currentUser, userData } = useAuth();
   const router = useRouter();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [indicadoresExternos, setIndicadoresExternos] = useState<any>(null);
-  const [indicadoresExternosAnterior, setIndicadoresExternosAnterior] = useState<any>(null);
   const [agendaLeads, setAgendaLeads] = useState<any[]>([]);
   const [agendaLoading, setAgendaLoading] = useState(true);
   const [avisosImportantes, setAvisosImportantes] = useState<any[]>([]);
@@ -447,33 +445,7 @@ export default function DashboardPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // Buscar indicadores econômicos
-  useEffect(() => {
-    const fetchIndicadores = async () => {
-      try {
-        const now = new Date();
-        const docIdAtual = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-        const docIdAnterior = `${now.getMonth() === 0 ? now.getFullYear()-1 : now.getFullYear()}-${String(now.getMonth() === 0 ? 12 : now.getMonth()).padStart(2,'0')}`;
-        const refAtual = firestoreDoc(db, 'indicadoresExternos', docIdAtual);
-        const refAnterior = firestoreDoc(db, 'indicadoresExternos', docIdAnterior);
-        const snapAtual = await getDoc(refAtual);
-        const snapAnterior = await getDoc(refAnterior);
-        if (snapAtual.exists()) {
-          setIndicadoresExternos(snapAtual.data());
-        } else {
-          setIndicadoresExternos(null);
-        }
-        if (snapAnterior.exists()) {
-          setIndicadoresExternosAnterior(snapAnterior.data());
-        } else {
-          setIndicadoresExternosAnterior(null);
-        }
-      } catch (error) {
-        console.error('Erro ao buscar indicadores:', error);
-      }
-    };
-    fetchIndicadores();
-  }, []);
+  // Indicadores econômicos (CUB, SELIC, etc.) são exibidos no header pelo layout
 
   // Buscar agenda do dia
   useEffect(() => {
@@ -1297,43 +1269,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-full flex flex-col">
-      {/* Linha dos indicadores — logo abaixo do header, harmoniosa, sem sticky/nuvem */}
-      {indicadoresExternos && indicadoresExternosAnterior && indicadoresList.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 px-0 py-3 mb-2 border-b border-white/[0.06]">
-          {indicadoresList.map(ind => (
-            <div
-              key={ind.key}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] hover:border-orange-500/25 transition-all duration-200 cursor-pointer group"
-            >
-              <div className="text-center min-w-[2.5rem]">
-                <div className="text-sm font-bold text-white group-hover:text-orange-400/90 transition-colors">
-                  {indicadoresExternos?.[ind.key] || '--'}
-                </div>
-                <div className="text-[10px] text-text-secondary font-medium">
-                  {ind.label}
-                </div>
-              </div>
-              {calcularVariacao(indicadoresExternos?.[ind.key], indicadoresExternosAnterior?.[ind.key]) !== null && (
-                <div className={`flex items-center gap-0.5 text-[10px] font-semibold ${
-                  (calcularVariacao(indicadoresExternos?.[ind.key], indicadoresExternosAnterior?.[ind.key]) || 0) > 0
-                    ? 'text-emerald-400'
-                    : 'text-red-400'
-                }`}>
-                  {(calcularVariacao(indicadoresExternos?.[ind.key], indicadoresExternosAnterior?.[ind.key]) || 0) > 0 ? (
-                    <TrendingUpIcon className="w-2.5 h-2.5" />
-                  ) : (
-                    <TrendingDownIcon className="w-2.5 h-2.5" />
-                  )}
-                  <span>
-                    {Math.abs(calcularVariacao(indicadoresExternos?.[ind.key], indicadoresExternosAnterior?.[ind.key]) || 0).toFixed(2)}%
-                  </span>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Grid em 2 colunas com rolagem independente; barras de rolagem ocultas */}
       <div id="dashboard-two-columns" className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0 pt-2" style={{ height: 'calc(100vh - 220px)' }}>
         {/* Coluna Esquerda — rola independente; scrollbar totalmente oculta */}
