@@ -33,21 +33,22 @@ export default function EntrarPage() {
 
   if (currentUser && !isApproved) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-particles flex items-center justify-center p-4">
         <div className="max-w-md w-full">
-          <div className="bg-offwhite-50 rounded-2xl shadow-xl p-8 border border-primary-100 text-center">
-            <div className="mx-auto h-16 w-16 bg-yellow-500 rounded-full flex items-center justify-center mb-4">
-              <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="card-glow rounded-2xl p-8 relative overflow-hidden text-center">
+            <div className="absolute top-0 left-0 w-1 h-full bg-amber-500 rounded-r" />
+            <div className="mx-auto h-16 w-16 bg-amber-500/20 rounded-full flex items-center justify-center mb-4 border border-amber-500/30">
+              <svg className="h-8 w-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            <h1 className="text-xl font-bold text-softgray-800 mb-2">Aguardando Aprovação</h1>
-            <p className="text-softgray-600 mb-4">
+            <h1 className="text-xl font-bold text-white mb-2">Aguardando Aprovação</h1>
+            <p className="text-text-secondary mb-4">
               Olá {userData?.nome}! Seu cadastro está sendo analisado. Você receberá um e-mail quando for aprovado.
             </p>
             <button
               onClick={() => auth.signOut()}
-              className="w-full bg-primary-500 hover:bg-primary-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 px-4 rounded-lg transition-colors border border-orange-500/30"
             >
               Sair
             </button>

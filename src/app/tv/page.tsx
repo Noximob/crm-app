@@ -134,7 +134,7 @@ export default function TvPage() {
 
   if (!imobiliariaId) {
     return (
-      <div className="min-h-screen bg-[#181C23] flex items-center justify-center text-white">
+      <div className="min-h-screen bg-particles flex items-center justify-center text-white">
         <p>Faça login para exibir os dashboards na TV.</p>
       </div>
     );
@@ -142,18 +142,18 @@ export default function TvPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#181C23] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#D4A017] border-t-transparent" />
+      <div className="min-h-screen bg-particles flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-2 border-amber-500 border-t-transparent" />
       </div>
     );
   }
 
   if (config.length === 0) {
     return (
-      <div className="min-h-screen bg-[#181C23] flex flex-col items-center justify-center text-white p-8">
-        <TvIcon className="w-16 h-16 text-[#D4A017] mb-4" />
+      <div className="min-h-screen bg-particles flex flex-col items-center justify-center text-white p-8">
+        <TvIcon className="w-16 h-16 text-amber-500 mb-4" />
         <p className="text-xl font-semibold mb-2">Nenhuma tela ativa</p>
-        <p className="text-gray-400 text-center max-w-md">
+        <p className="text-text-secondary text-center max-w-md">
           Configure as telas em Admin → Dashboards TV e ative pelo menos uma.
         </p>
       </div>
@@ -165,8 +165,8 @@ export default function TvPage() {
     return (
       <div className="min-h-screen flex flex-col">
         {agendaTvData.loading ? (
-          <div className="min-h-screen flex items-center justify-center bg-[#0f1220]">
-            <div className="animate-spin rounded-full h-14 w-14 border-2 border-[#D4A017] border-t-transparent" />
+          <div className="min-h-screen flex items-center justify-center bg-particles">
+            <div className="animate-spin rounded-full h-14 w-14 border-2 border-amber-500 border-t-transparent" />
           </div>
         ) : (
           <AgendaTvSlide
@@ -187,8 +187,8 @@ export default function TvPage() {
     return (
       <div className="min-h-screen flex flex-col">
         {agendaTvData.loading ? (
-          <div className="min-h-screen flex items-center justify-center bg-[#0f1220]">
-            <div className="animate-spin rounded-full h-14 w-14 border-2 border-[#D4A017] border-t-transparent" />
+          <div className="min-h-screen flex items-center justify-center bg-particles">
+            <div className="animate-spin rounded-full h-14 w-14 border-2 border-amber-500 border-t-transparent" />
           </div>
         ) : (
           <AgendaTvSlide
@@ -266,8 +266,8 @@ export default function TvPage() {
     return (
       <div className="min-h-screen flex flex-col">
         {funilData.loading ? (
-          <div className="min-h-screen flex items-center justify-center bg-[#0f1220]">
-            <div className="animate-spin rounded-full h-14 w-14 border-2 border-[#D4A017] border-t-transparent" />
+          <div className="min-h-screen flex items-center justify-center bg-particles">
+            <div className="animate-spin rounded-full h-14 w-14 border-2 border-amber-500 border-t-transparent" />
           </div>
         ) : (
           <FunilVendasSlide
@@ -286,8 +286,8 @@ export default function TvPage() {
     return (
       <div className="min-h-screen flex flex-col">
         {funilData.loading ? (
-          <div className="min-h-screen flex items-center justify-center bg-[#0f1220]">
-            <div className="animate-spin rounded-full h-14 w-14 border-2 border-[#D4A017] border-t-transparent" />
+          <div className="min-h-screen flex items-center justify-center bg-particles">
+            <div className="animate-spin rounded-full h-14 w-14 border-2 border-amber-500 border-t-transparent" />
           </div>
         ) : (
           <FunilVendasIndividualSlide funilPorCorretor={funilData.funilPorCorretor} />
@@ -301,8 +301,8 @@ export default function TvPage() {
     return (
       <div className="min-h-screen flex flex-col">
         {metasData.loading ? (
-          <div className="min-h-screen flex items-center justify-center bg-[#0f1220]">
-            <div className="animate-spin rounded-full h-14 w-14 border-2 border-[#D4A017] border-t-transparent" />
+          <div className="min-h-screen flex items-center justify-center bg-particles">
+            <div className="animate-spin rounded-full h-14 w-14 border-2 border-amber-500 border-t-transparent" />
           </div>
         ) : (
           <MetasResultadosSlide
@@ -317,16 +317,16 @@ export default function TvPage() {
 
   // Placeholder para outras telas (em breve)
   return (
-    <div className="min-h-screen bg-[#181C23] text-white overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-particles text-white overflow-hidden flex flex-col">
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#D4A017]/20 text-[#D4A017] mb-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-500/20 text-amber-500 mb-6">
             <TvIcon className="w-8 h-8" />
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-2">{currentSlide?.name}</h1>
-          <p className="text-gray-400">Conteúdo desta tela em breve.</p>
+          <p className="text-text-secondary">Conteúdo desta tela em breve.</p>
           {duration > 0 && (
-            <p className="text-sm text-gray-500 mt-4">Próxima tela em {duration}s</p>
+            <p className="text-sm text-text-secondary/80 mt-4">Próxima tela em {duration}s</p>
           )}
         </div>
       </div>
