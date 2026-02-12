@@ -1569,76 +1569,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Metas — congruente com o site */}
-          <div className="card-glow rounded-2xl p-6 relative overflow-hidden animate-fade-in">
-            <div className="absolute top-0 left-0 w-1 h-full bg-amber-500 rounded-r" />
-            <MetasCard meta={meta} nomeImobiliaria={nomeImobiliaria} />
-          </div>
-        </div>
-
-        {/* Coluna Direita — rola independente; scrollbar totalmente oculta */}
-        <div id="trending-section" className="dashboard-scroll-hide overflow-y-auto overflow-x-hidden pr-2 min-h-0 space-y-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          {/* Funil de vendas individual — igual Dashboard TV FunilVendasIndividualSlide (4 etapas, nível, barras) */}
-          <div className="card-glow rounded-2xl p-5 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-r from-[#D4A017] to-[#60a5fa] rounded-r" />
-            {agendaLoading ? (
-              <p className="text-gray-400 text-sm">Carregando...</p>
-            ) : (() => {
-              const porEtapa = funilPessoal;
-              const totalFunil = Object.values(porEtapa).reduce((a, b) => a + b, 0);
-              const ETAPAS_EXIBIR = [
-                { key: 'qualif', label: 'Qualif.', getVal: (p: Record<string, number>) => p['Qualificação'] ?? 0 },
-                { key: 'visita-lig', label: 'Lig. e visita', getVal: (p: Record<string, number>) => (p['Ligação agendada'] ?? 0) + (p['Visita agendada'] ?? 0) },
-                { key: 'negoc', label: 'Negoc. e prop.', quente: true, getVal: (p: Record<string, number>) => p['Negociação e Proposta'] ?? 0 },
-                { key: 'int-futuro', label: 'Int. futuro', getVal: (p: Record<string, number>) => p['Interesse Futuro'] ?? 0 },
-              ];
-              const valores = ETAPAS_EXIBIR.map((e) => e.getVal(porEtapa));
-              const maxLocal = Math.max(...valores, 1);
-              const getNivel = (total: number) => {
-                if (total >= 50) return { label: 'Líder', emoji: '🏆', bg: 'bg-amber-500/25 border-amber-400/40', text: 'text-amber-300' };
-                if (total >= 25) return { label: 'Elite', emoji: '⭐', bg: 'bg-amber-500/15 border-amber-400/30', text: 'text-amber-200' };
-                if (total >= 10) return { label: 'Em alta', emoji: '🔥', bg: 'bg-orange-500/15 border-orange-400/30', text: 'text-orange-300' };
-                if (total >= 5) return { label: 'Subindo', emoji: '📈', bg: 'bg-emerald-500/15 border-emerald-400/30', text: 'text-emerald-300' };
-                return { label: 'Em jogo', emoji: '🎯', bg: 'bg-[#D4A017]/15 border-[#D4A017]/30', text: 'text-[#93c5fd]' };
-              };
-              const nivel = getNivel(totalFunil);
-              return (
-                <>
-                  <div className="flex items-center gap-2 mb-3">
-                    <h2 className="text-base font-bold text-white">Funil de vendas</h2>
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border ${nivel.bg} ${nivel.text}`}>
-                      {nivel.emoji} {nivel.label}
-                    </span>
-                  </div>
-                  <div className="inline-flex items-baseline gap-2 px-4 py-2 rounded-xl bg-[#D4A017]/20 border border-[#D4A017]/40 mb-4">
-                    <span className="text-gray-400 text-sm font-medium">Total</span>
-                    <span className="text-2xl font-black tabular-nums text-[#60a5fa]">{totalFunil}</span>
-                    <span className="text-gray-400 text-sm">leads</span>
-                  </div>
-                  <div className="space-y-2">
-                    {ETAPAS_EXIBIR.map((etapa) => {
-                      const qtd = etapa.getVal(porEtapa);
-                      const pct = maxLocal > 0 ? Math.round((qtd / maxLocal) * 100) : 0;
-                      const widthPct = qtd > 0 ? Math.max(pct, 20) : 0;
-                      return (
-                        <div key={etapa.key} className="flex items-center gap-2">
-                          <span className="text-xs text-[#94a3b8] font-medium w-20 shrink-0">{etapa.label}</span>
-                          <div className="flex-1 min-w-0 h-2 bg-white/10 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${(etapa as any).quente ? 'bg-amber-400' : 'bg-[#D4A017]'}`}
-                              style={{ width: `${widthPct}%`, minWidth: qtd > 0 ? 6 : 0 }}
-                            />
-                          </div>
-                          <span className="text-xs font-bold text-white tabular-nums w-5 text-right shrink-0">{qtd}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-
+          {/* Comunidade — debaixo das Missões Diárias */}
           <div className="card-glow rounded-2xl p-6 relative overflow-hidden animate-fade-in">
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-orange-500 rounded-r" />
 
@@ -1715,285 +1646,125 @@ export default function DashboardPage() {
             </div>
 
             {trendingLoading ? (
-              <div className="flex items-center justify-center py-8">
+              <div className="flex justify-center py-6">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#D4A017]"></div>
               </div>
             ) : trendingPosts.length === 0 ? (
-              <div className="text-center py-8">
+              <div className="text-center py-6">
                 <div className="text-4xl mb-2">📱</div>
                 <p className="text-[#6B6F76] dark:text-gray-300 text-sm">Nenhum post ainda. Seja o primeiro!</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {trendingPostsFiltered.slice(0, 8).map((post, index) => (
-                  <div 
-                    key={post.id} 
+                {trendingPostsFiltered.slice(0, 6).map((post, index) => (
+                  <div
+                    key={post.id}
                     className={`group relative backdrop-blur-sm rounded-xl p-4 transition-all duration-300 cursor-pointer border hover:scale-[1.02] shadow-lg hover:shadow-xl ${
                       post.isEvento
-                        ? 'bg-gradient-to-r from-yellow-50/80 to-orange-50/80 dark:from-yellow-900/20 dark:to-orange-900/20 border-yellow-200/50 dark:border-yellow-700/50 hover:bg-gradient-to-r hover:from-yellow-100/90 hover:to-orange-100/90 dark:hover:from-yellow-800/30 dark:hover:to-orange-800/30'
+                        ? 'bg-gradient-to-r from-yellow-50/80 to-orange-50/80 dark:from-yellow-900/20 dark:to-orange-900/20 border-yellow-200/50 dark:border-yellow-700/50'
                         : 'bg-white/60 dark:bg-[#23283A]/60 border-white/20 hover:bg-white/80 dark:hover:bg-[#23283A]/80 hover:border-[#D4A017]/30'
                     }`}
-                    // onClick={() => openPostModal(post)}
                   >
-                    {/* Badge de ranking */}
-                    <div className="absolute -top-2 -left-2 w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
-                      #{index + 1}
-                    </div>
-
-                    {/* Badge Especial para eventos */}
-                    {post.isEvento && (
-                      <div className="absolute top-2 right-2 z-10">
-                        <div className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg">
-                          <span>⭐</span>
-                          <span>ESPECIAL</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Header do post */}
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="relative">
-                        <img src={post.avatar} alt={post.nome} className="w-12 h-12 rounded-full object-cover border-2 border-white dark:border-[#23283A] shadow-md" />
-                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-[#23283A]"></div>
-                      </div>
+                    <div className="absolute -top-2 -left-2 w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg">#{index + 1}</div>
+                    <div className="flex items-start gap-3">
+                      <img src={post.avatar} alt={post.nome} className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-[#23283A] shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-bold text-[#2E2F38] dark:text-white text-sm truncate">{post.nome}</span>
-                          <span className="text-xs text-[#6B6F76] dark:text-gray-300">
-                            {post.createdAt?.toDate ? 
-                              post.createdAt.toDate().toLocaleString('pt-BR', { 
-                                day: '2-digit', 
-                                month: '2-digit', 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              }) : ''
-                            }
+                          <span className="text-[10px] text-[#6B6F76] dark:text-gray-300">
+                            {post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}
                           </span>
                         </div>
-                        
-                        {/* Badge de evento agendado */}
-                        {post.isEvento && (
-                          <div className="mb-2">
-                            <button
-                              onClick={() => window.open(post.eventoLink, '_blank')}
-                              className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold ${getEventColor(post.eventoTipo)} text-white hover:opacity-80 transition-opacity cursor-pointer`}
-                              title="Clique para participar do evento"
-                            >
-                              <span>{getEventIcon(post.eventoTipo)}</span>
-                              <span>{post.titulo}</span>
-                              <span className="text-xs opacity-90">
-                                {post.eventoData?.toDate ? post.eventoData.toDate().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}
-                              </span>
-                            </button>
-                            {post.eventoStatus === 'acontecendo' && (
-                              <div className="mt-1 inline-flex items-center gap-1 px-2 py-1 bg-green-500 text-white text-xs rounded-full font-semibold animate-pulse">
-                                <span>🔴</span>
-                                <span>AO VIVO</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        {/* Se for repost, mostrar SOMENTE o comentário do repostador e o card aninhado do post original */}
-                        {post.repostOf ? (
-                          <div>
-                            {post.repostComment && (
-                              <div className="mb-2 px-3 py-2 bg-[#F5F6FA] dark:bg-[#23283A] border-l-4 border-[#D4A017] text-[#D4A017] rounded-r-lg text-sm font-medium">
-                                <span className="font-semibold">{post.nome}:</span> {post.repostComment}
-                              </div>
-                            )}
-                            <div className="bg-white dark:bg-[#23283A] border border-[#D4A017]/20 rounded-lg p-3 shadow-inner mt-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="px-2 py-0.5 bg-[#D4A017]/10 text-[#D4A017] text-xs rounded-full font-semibold">🔁 Repost de {post.repostAuthorName || 'Original'}</span>
-                              </div>
-                              <div className="text-xs text-[#6B6F76] dark:text-gray-300 mb-1">{post.originalCreatedAt}</div>
-                              <div className="text-sm text-[#2E2F38] dark:text-white leading-relaxed mb-2">{post.originalTexto}</div>
-                              {/* Mídia do post original */}
-                              {post.originalFileMeta && post.originalFileMeta.type.startsWith('image/') && (
-                                <img src={post.originalFile} alt="Post image" className="w-full rounded-lg mb-2" />
-                              )}
-                              {post.originalFileMeta && post.originalFileMeta.type.startsWith('video/') && (
-                                <video src={post.originalFile} controls className="w-full rounded-lg mb-2" />
-                              )}
-                              {post.originalYoutubeData && (
-                                <div className="relative aspect-video bg-black rounded-lg overflow-hidden mb-2">
-                                  <iframe
-                                    src={post.originalYoutubeData.embedUrl}
-                                    title="YouTube video"
-                                    className="w-full h-full"
-                                    frameBorder="0"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    allowFullScreen
-                                  ></iframe>
-                                  <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded text-xs font-semibold">
-                                    YOUTUBE
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ) : (
-                          post.texto && <div className="text-sm text-[#2E2F38] dark:text-white line-clamp-2 leading-relaxed">{post.texto}</div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Preview de mídia - APENAS para posts originais (não reposts) */}
-                    {!post.repostOf && (post.file || post.youtubeData) && (
-                      <div className="mb-3 relative overflow-hidden rounded-lg">
-                        {post.youtubeData && (
-                          <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
-                            <iframe
-                              src={post.youtubeData.embedUrl}
-                              title="YouTube video"
-                              className="w-full h-full"
-                              frameBorder="0"
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                              allowFullScreen
-                            ></iframe>
-                            <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded text-xs font-semibold">
-                              YOUTUBE
-                            </div>
-                          </div>
-                        )}
-                        {post.file && post.fileMeta && post.fileMeta.type.startsWith('image/') && (
-                          <div className="relative aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
-                            <img 
-                              src={post.file} 
-                              alt="Post image" 
-                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                            />
-                            <div className="absolute top-2 left-2 bg-amber-600 text-white px-2 py-1 rounded text-xs font-semibold">
-                              FOTO
-                            </div>
-                          </div>
-                        )}
-                        {post.file && post.fileMeta && post.fileMeta.type.startsWith('video/') && (
-                          <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
-                            <video 
-                              src={post.file} 
-                              className="w-full h-full object-cover"
-                              controls
-                              muted
-                              loop
-                            />
-                            <div className="absolute top-2 left-2 bg-purple-600 text-white px-2 py-1 rounded text-xs font-semibold">
-                              VÍDEO
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Estatísticas de engajamento */}
-                    <div className="flex items-center justify-between pt-3 border-t border-white/20 dark:border-[#23283A]/20">
-                      <div className="flex items-center gap-4">
-                        {/* Botão Curtir */}
-                        <div className="flex items-center gap-1.5">
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); handleLike(post.id); }}
-                            disabled={isLiking === post.id}
-                            className={`flex items-center gap-1.5 text-sm font-medium transition-all duration-200 ${
-                              post.userLiked 
-                                ? 'text-red-500 scale-110' 
-                                : 'text-[#6B6F76] dark:text-gray-300 hover:text-red-500 hover:scale-105'
-                            }`}
-                          >
-                            {isLiking === post.id ? (
-                              <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-                            ) : (
-                              <span className="text-lg">{post.userLiked ? '❤️' : '🤍'}</span>
-                            )}
-                          </button>
-                          {/* Número de likes clicável */}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleShowLikes(post); }}
-                            className={`text-sm font-medium transition-all duration-200 hover:scale-105 ${
-                              post.likes > 0 
-                                ? 'text-[#6B6F76] dark:text-gray-300 hover:text-[#D4A017] cursor-pointer' 
-                                : 'text-[#6B6F76] dark:text-gray-300 cursor-default'
-                            }`}
-                            disabled={!post.likes || post.likes === 0}
-                          >
-                            {post.likes || 0}
-                          </button>
-                        </div>
-                        
-                        {/* Botão Comentar */}
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); openPostModal(post); }}
-                          className="flex items-center gap-1.5 text-sm font-medium text-[#6B6F76] dark:text-gray-300 hover:text-[#D4A017] hover:scale-105 transition-all duration-200"
-                        >
-                          <span className="text-lg">💬</span>
-                          <span>{post.commentsCount || 0}</span>
-                        </button>
-                        
-                        {/* Botão Repostar */}
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); setRepostInputId(post.id); setRepostComment(''); }}
-                          className="flex items-center gap-1.5 text-sm font-medium text-[#6B6F76] dark:text-gray-300 hover:text-green-500 hover:scale-105 transition-all duration-200"
-                        >
-                          <span className="text-lg">🔁</span>
-                          <span>{post.repostsCount || 0}</span>
-                        </button>
-                      </div>
-                      
-                      {/* Indicador de engajamento com gradiente */}
-                      <div className="px-2 py-1 bg-gradient-to-r from-[#D4A017]/20 to-[#E8C547]/20 rounded-full border border-[#D4A017]/30">
-                        <span className="text-xs font-medium text-[#D4A017] dark:text-[#E8C547]">
-                          🔥 {post.totalEngagement}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Campo de repost abaixo do post */}
-                    {repostInputId === post.id && (
-                      <div className="mt-4 bg-[#F5F6FA] dark:bg-[#181C23] rounded-lg p-4 border border-[#D4A017]/20 flex flex-col gap-2 animate-fade-in">
-                        <textarea
-                          className="w-full rounded p-2 text-sm bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400 focus:outline-none"
-                          placeholder="Adicione um comentário (opcional) para o repost..."
-                          value={repostComment}
-                          onChange={e => setRepostComment(e.target.value)}
-                          rows={2}
-                        />
-                        <div className="flex gap-2 justify-end">
-                          <button
-                            className="px-4 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 text-sm"
-                            onClick={() => { setRepostInputId(null); setRepostComment(''); }}
-                          >
-                            Cancelar
-                          </button>
-                          <button
-                            className="px-4 py-1 rounded bg-green-500 hover:bg-green-600 text-white text-sm font-semibold"
-                            onClick={async () => {
-                              await handleRepost(post.id, repostComment);
-                              setRepostInputId(null);
-                              setRepostComment('');
-                            }}
-                          >
-                            Repostar
-                          </button>
+                        {!post.repostOf && post.texto && <div className="text-sm text-[#2E2F38] dark:text-white line-clamp-2">{post.texto}</div>}
+                        {post.repostOf && post.repostComment && <div className="text-xs text-[#6B6F76] dark:text-gray-400 italic">Repost: {post.repostComment}</div>}
+                        <div className="flex items-center gap-3 mt-2 text-xs text-[#6B6F76] dark:text-gray-400">
+                          <span>❤️ {post.likes || 0}</span>
+                          <span>💬 {post.commentsCount || 0}</span>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); openPostModal(post); }} className="text-[#D4A017] hover:underline">Ver</button>
                         </div>
                       </div>
-                    )}
-
-                    {/* Efeito de brilho no hover */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Footer com link para comunidade */}
-            <div className="mt-6 pt-4 border-t border-white/20 dark:border-[#23283A]/20">
-              <Link 
-                href="/dashboard/comunidade" 
-                className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-gradient-to-r from-[#D4A017] to-[#E8C547] text-white font-semibold rounded-lg hover:from-[#B8860B] hover:to-[#D4A017] transition-all duration-300 transform hover:scale-105 shadow-lg"
-              >
+            <div className="mt-4 pt-4 border-t border-white/20 dark:border-[#23283A]/20">
+              <Link href="/dashboard/comunidade" className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-gradient-to-r from-[#D4A017] to-[#E8C547] text-white font-semibold rounded-lg hover:from-[#B8860B] hover:to-[#D4A017] transition-all text-sm">
                 <span>🚀</span>
                 <span>Ver mais na Comunidade</span>
                 <span>→</span>
               </Link>
+            </div>
           </div>
+        </div>
+
+        {/* Coluna Direita — rola independente; scrollbar totalmente oculta */}
+        <div id="trending-section" className="dashboard-scroll-hide overflow-y-auto overflow-x-hidden pr-2 min-h-0 space-y-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {/* Funil de vendas — exatamente igual Dashboard TV (FunilVendasSlide): 11 etapas, total, mesmo estilo */}
+          <div className="card-glow rounded-2xl p-5 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-r from-[#D4A017] to-[#60a5fa] rounded-r" />
+            {agendaLoading ? (
+              <p className="text-gray-400 text-sm">Carregando...</p>
+            ) : (() => {
+              const funilCorporativo = funilPessoal;
+              const totalCorporativo = Object.values(funilCorporativo).reduce((a, b) => a + b, 0);
+              const maxCorporativo = Math.max(...Object.values(funilCorporativo), 1);
+              const STAGE_LABELS: Record<string, string> = {
+                'Pré Qualificação': 'Pré Qualif.', 'Qualificação': 'Qualificação', 'Apresentação do imóvel': 'Apres. imóvel',
+                'Ligação agendada': 'Lig. agendada', 'Visita agendada': 'Visita agend.', 'Negociação e Proposta': 'Negoc. e Proposta',
+                'Contrato e fechamento': 'Contrato', 'Pós Venda e Fidelização': 'Pós Venda', 'Interesse Futuro': 'Int. Futuro',
+                'Carteira': 'Carteira', 'Geladeira': 'Geladeira',
+              };
+              return (
+                <>
+                  <div className="shrink-0 pb-3 border-b border-white/10">
+                    <h1 className="text-lg font-bold bg-gradient-to-r from-[#D4A017] via-[#60a5fa] to-[#D4A017] bg-clip-text text-transparent">
+                      Funil de Vendas
+                    </h1>
+                    <p className="text-[#94a3b8] text-xs mt-0.5">Dados em tempo real do CRM</p>
+                  </div>
+                  <div className="shrink-0 py-3 flex justify-center">
+                    <div className="inline-flex items-baseline gap-2 px-4 py-2 rounded-2xl bg-[#D4A017]/20 border border-[#D4A017]/40 shadow-[0_0_20px_-5px_rgba(52,120,246,0.3)]">
+                      <span className="text-[#94a3b8] text-sm font-medium">Total no funil</span>
+                      <span className="text-2xl font-black tabular-nums text-white">{totalCorporativo}</span>
+                      <span className="text-[#94a3b8] text-sm">leads</span>
+                    </div>
+                  </div>
+                  <div className="grid gap-2 grid-cols-2 sm:grid-cols-3">
+                    {PIPELINE_STAGES.map((etapa) => {
+                      const qtd = funilCorporativo[etapa] ?? 0;
+                      const pct = maxCorporativo ? Math.round((qtd / maxCorporativo) * 100) : 0;
+                      const label = STAGE_LABELS[etapa] ?? etapa;
+                      const isQuente = ['Negociação e Proposta', 'Contrato e fechamento', 'Pós Venda e Fidelização'].includes(etapa);
+                      return (
+                        <div
+                          key={etapa}
+                          className="group flex flex-col rounded-xl bg-white/5 border border-white/10 p-2.5 hover:border-[#D4A017]/40 hover:bg-white/10 transition-all duration-300"
+                        >
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs font-medium text-[#cbd5e1] truncate pr-1" title={etapa}>{label}</span>
+                            <span className={`text-sm font-bold tabular-nums shrink-0 ${isQuente ? 'text-amber-400' : 'text-[#D4A017]'}`}>{qtd}</span>
+                          </div>
+                          <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-[#D4A017] to-[#60a5fa] transition-all duration-500"
+                              style={{ width: `${Math.max(pct, 4)}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+
+          {/* Metas — debaixo do funil (coluna direita) */}
+          <div className="card-glow rounded-2xl p-6 relative overflow-hidden animate-fade-in">
+            <div className="absolute top-0 left-0 w-1 h-full bg-amber-500 rounded-r" />
+            <MetasCard meta={meta} nomeImobiliaria={nomeImobiliaria} />
           </div>
         </div>
       </div>
