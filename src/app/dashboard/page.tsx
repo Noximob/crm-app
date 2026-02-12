@@ -9,6 +9,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Link from 'next/link';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
+import { PIPELINE_STAGES } from '@/lib/constants';
 import AvisosImportantesModal from './_components/AvisosImportantesModal';
 import AgendaImobiliariaModal from './_components/AgendaImobiliariaModal';
 import PlantoesModal from './_components/PlantoesModal';
@@ -374,6 +375,10 @@ export default function DashboardPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [agendaLeads, setAgendaLeads] = useState<any[]>([]);
   const [agendaLoading, setAgendaLoading] = useState(true);
+  const [funilPessoal, setFunilPessoal] = useState<Record<string, number>>({});
+  const [tarefaAtrasadaCount, setTarefaAtrasadaCount] = useState(0);
+  const [tarefaDiaCount, setTarefaDiaCount] = useState(0);
+  const [semTarefaCount, setSemTarefaCount] = useState(0);
   const [avisosImportantes, setAvisosImportantes] = useState<any[]>([]);
   const [agendaImobiliaria, setAgendaImobiliaria] = useState<any[]>([]);
   const [trendingPosts, setTrendingPosts] = useState<any[]>([]);
@@ -466,13 +471,29 @@ export default function DashboardPage() {
           return { ...lead, taskStatus, tasks };
         });
         const settledLeads = await Promise.all(leadsWithTasksPromises);
-        // Filtra para não mostrar tarefas futuras
+        // Funil pessoal: contagem por etapa
+        const porEtapa: Record<string, number> = {};
+        PIPELINE_STAGES.forEach(e => { porEtapa[e] = 0; });
+        allLeads.forEach((lead: any) => {
+          const etapa = lead.etapa || PIPELINE_STAGES[0];
+          if (PIPELINE_STAGES.includes(etapa)) porEtapa[etapa] = (porEtapa[etapa] || 0) + 1;
+        });
+        setFunilPessoal(porEtapa);
+        // Contagens: Tarefa em Atraso, Tarefa do Dia, Sem tarefa
+        setTarefaAtrasadaCount(settledLeads.filter(l => l.taskStatus === 'Tarefa em Atraso').length);
+        setTarefaDiaCount(settledLeads.filter(l => l.taskStatus === 'Tarefa do Dia').length);
+        setSemTarefaCount(settledLeads.filter(l => l.taskStatus === 'Sem tarefa').length);
+        // Lista para compatibilidade (ex.: link Ver Completa)
         const leadsToShow = settledLeads.filter(lead => lead.taskStatus !== 'Tarefa Futura');
         leadsToShow.sort((a, b) => TAREFA_STATUS_ORDER.indexOf(a.taskStatus) - TAREFA_STATUS_ORDER.indexOf(b.taskStatus));
-        setAgendaLeads(leadsToShow.slice(0, 6));
+        setAgendaLeads(leadsToShow);
       } catch (error) {
         console.error('Erro ao buscar agenda:', error);
         setAgendaLeads([]);
+        setFunilPessoal({});
+        setTarefaAtrasadaCount(0);
+        setTarefaDiaCount(0);
+        setSemTarefaCount(0);
       } finally {
         setAgendaLoading(false);
       }
@@ -597,6 +618,72 @@ export default function DashboardPage() {
     lista.sort((a, b) => a.sortTime - b.sortTime); // mais próximo primeiro
     return lista;
   }, [currentUser?.uid, plantoes, agendaImobiliaria]);
+
+  // Próximo evento em que o usuário está CONFIRMADO (participa de 1 por vez) — atualiza conforme o horário
+  const proximoEventoConfirmado = useMemo(() => {
+    const uid = currentUser?.uid;
+    const now = currentTime.getTime();
+    if (!uid) return null;
+    const lista: { tipo: 'plantao' | 'agenda'; id: string; titulo: string; tipoLabel: string; dataStr: string; horarioStr: string; sortTime: number }[] = [];
+    plantoes.forEach((p: any) => {
+      if (!Array.isArray(p.presentesIds) || !p.presentesIds.includes(uid)) return;
+      if (p.respostasPresenca?.[uid] !== 'confirmado') return;
+      const dataInicio = p.dataInicio || '';
+      const dataFim = p.dataFim || dataInicio;
+      const horario = (p.horario || '00:00').substring(0, 5);
+      const start = dataInicio ? new Date(`${dataInicio}T${horario}`).getTime() : 0;
+      if (start > now) {
+        const dataStr = dataInicio ? new Date(dataInicio).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+        lista.push({
+          tipo: 'plantao',
+          id: p.id,
+          titulo: p.construtora ? `Plantão — ${p.construtora}` : 'Plantão',
+          tipoLabel: 'Plantão',
+          dataStr,
+          horarioStr: horario,
+          sortTime: start
+        });
+      } else if (dataFim && dataInicio) {
+        const dIni = new Date(dataInicio);
+        const dFim = new Date(dataFim);
+        for (let d = new Date(dIni); d <= dFim; d.setDate(d.getDate() + 1)) {
+          const dt = new Date(`${d.toISOString().slice(0, 10)}T${horario}`);
+          if (dt.getTime() > now) {
+            lista.push({
+              tipo: 'plantao',
+              id: p.id,
+              titulo: p.construtora ? `Plantão — ${p.construtora}` : 'Plantão',
+              tipoLabel: 'Plantão',
+              dataStr: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+              horarioStr: horario,
+              sortTime: dt.getTime()
+            });
+            break;
+          }
+        }
+      }
+    });
+    agendaImobiliaria.forEach((a: any) => {
+      if (!Array.isArray(a.presentesIds) || !a.presentesIds.includes(uid)) return;
+      if (a.respostasPresenca?.[uid] !== 'confirmado') return;
+      const dt = a.dataInicio?.toDate ? a.dataInicio.toDate() : (a.dataInicio ? new Date(a.dataInicio) : null);
+      const sortTime = dt ? dt.getTime() : 0;
+      if (sortTime <= now) return;
+      const dataStr = dt ? dt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+      const horarioStr = dt ? dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+      lista.push({
+        tipo: 'agenda',
+        id: a.id,
+        titulo: a.titulo || 'Evento',
+        tipoLabel: getTipoAgendaLabel(a.tipo || 'outro'),
+        dataStr,
+        horarioStr,
+        sortTime
+      });
+    });
+    lista.sort((a, b) => a.sortTime - b.sortTime);
+    return lista[0] ?? null;
+  }, [currentUser?.uid, plantoes, agendaImobiliaria, currentTime]);
 
   const [respondendoPresenca, setRespondendoPresenca] = useState<string | null>(null);
   const responderPresenca = async (tipo: 'plantao' | 'agenda', id: string, status: 'confirmado' | 'cancelado') => {
@@ -1324,7 +1411,7 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Agenda do Dia — card com borda luminosa laranja */}
+          {/* Agenda do Dia — próximo evento + funil pessoal + totais por status de tarefa */}
           <div className="card-glow rounded-2xl p-6 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-orange-500 rounded-r" />
             <div className="flex items-center justify-between mb-4">
@@ -1337,42 +1424,77 @@ export default function DashboardPage() {
                 Ver Completa
               </Link>
             </div>
-            {agendaLoading ? (
-              <p className="text-gray-300">Carregando tarefas...</p>
-            ) : agendaLeads.length === 0 ? (
-              <p className="text-gray-300">Nenhuma tarefa prioritária encontrada.</p>
-            ) : (
-              <table className="w-full text-left">
-                <thead className="text-xs text-gray-400 uppercase">
-                  <tr>
-                    <th className="py-2 px-3 font-semibold">Lead</th>
-                    <th className="py-2 px-3 font-semibold">Status</th>
-                    <th className="py-2 px-3 font-semibold">Ação</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {agendaLeads.map(lead => (
-                    <tr key={lead.id} className="border-b border-gray-700 last:border-0 hover:bg-gray-700/30 transition-colors">
-                      <td className="py-3 px-3 font-semibold text-white whitespace-nowrap">{lead.nome}</td>
-                      <td className="py-3 px-3">
-                        <div className={`flex items-center gap-2 text-sm`}>
-                          <span className={`h-2.5 w-2.5 ${statusInfo[lead.taskStatus as TaskStatus].color} rounded-full`}></span>
-                          <span className="text-gray-300">{statusInfo[lead.taskStatus as TaskStatus].text}</span>
+
+            {/* 1) Próximo evento confirmado */}
+            <div className="mb-5">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Próximo evento</p>
+              {agendaLoading ? (
+                <p className="text-gray-400 text-sm">Carregando...</p>
+              ) : proximoEventoConfirmado ? (
+                <div className="rounded-xl bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/40 p-4">
+                  <div className="font-semibold text-white">{proximoEventoConfirmado.titulo}</div>
+                  <div className="text-sm text-orange-200 mt-1">{proximoEventoConfirmado.tipoLabel}</div>
+                  <div className="text-sm text-gray-300 mt-1">
+                    {proximoEventoConfirmado.dataStr} · {proximoEventoConfirmado.horarioStr}
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-xl bg-gray-700/30 border border-gray-600/50 p-4 text-gray-400 text-sm">
+                  Nenhum evento confirmado no momento.
+                </div>
+              )}
+            </div>
+
+            {/* 2) Funil de vendas pessoal */}
+            <div className="mb-5">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Seu funil</p>
+              {agendaLoading ? (
+                <p className="text-gray-400 text-sm">Carregando...</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {PIPELINE_STAGES.map((etapa) => {
+                    const qtd = funilPessoal[etapa] ?? 0;
+                    const maxQtd = Math.max(...Object.values(funilPessoal), 1);
+                    const pct = Math.round((qtd / maxQtd) * 100);
+                    const label = { 'Pré Qualificação': 'Pré Qualif.', 'Apresentação do imóvel': 'Apres. imóvel', 'Ligação agendada': 'Lig. agendada', 'Visita agendada': 'Visita agend.', 'Negociação e Proposta': 'Negoc. e Proposta', 'Contrato e fechamento': 'Contrato', 'Pós Venda e Fidelização': 'Pós Venda', 'Interesse Futuro': 'Int. Futuro' }[etapa] ?? etapa;
+                    const isQuente = ['Negociação e Proposta', 'Contrato e fechamento', 'Pós Venda e Fidelização'].includes(etapa);
+                    return (
+                      <div key={etapa} className="rounded-lg bg-white/5 border border-white/10 p-2">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-[10px] sm:text-xs text-gray-400 truncate pr-1" title={etapa}>{label}</span>
+                          <span className={`text-sm font-bold tabular-nums ${isQuente ? 'text-amber-400' : 'text-orange-400'}`}>{qtd}</span>
                         </div>
-                      </td>
-                      <td className="py-3 px-3">
-                        <button
-                          onClick={() => openLeadModal(lead)}
-                          className="px-4 py-1.5 text-sm font-semibold text-white bg-orange-500 hover:bg-orange-600 rounded-lg transition-all cursor-pointer shadow-[0_0_12px_rgba(255,140,0,0.25)]"
-                        >
-                          Abrir
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                        <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-500 transition-all" style={{ width: `${Math.max(pct, 4)}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* 3) Totais: Tarefa Atrasada, Tarefa do dia, Sem tarefa */}
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Leads por tarefa</p>
+              <div className="flex flex-wrap gap-2">
+                <Link href="/dashboard/agenda?filtro=atraso" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-500/20 border border-red-500/50 text-red-200 hover:bg-red-500/30 transition-colors">
+                  <span className="h-3 w-3 bg-red-500 rounded-full" />
+                  <span className="text-sm font-medium">Tarefa Atrasada</span>
+                  <span className="text-lg font-bold tabular-nums">{tarefaAtrasadaCount}</span>
+                </Link>
+                <Link href="/dashboard/agenda?filtro=hoje" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-yellow-500/20 border border-yellow-500/50 text-yellow-200 hover:bg-yellow-500/30 transition-colors">
+                  <span className="h-3 w-3 bg-yellow-500 rounded-full" />
+                  <span className="text-sm font-medium">Tarefa do dia</span>
+                  <span className="text-lg font-bold tabular-nums">{tarefaDiaCount}</span>
+                </Link>
+                <Link href="/dashboard/agenda?filtro=sem" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-500/20 border border-gray-500/50 text-gray-300 hover:bg-gray-500/30 transition-colors">
+                  <span className="h-3 w-3 bg-gray-500 rounded-full" />
+                  <span className="text-sm font-medium">Sem tarefa</span>
+                  <span className="text-lg font-bold tabular-nums">{semTarefaCount}</span>
+                </Link>
+              </div>
+            </div>
           </div>
 
                      {/* Avisos Importantes — mesmo padrão do site */}
