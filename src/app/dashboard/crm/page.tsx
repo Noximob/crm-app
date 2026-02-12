@@ -394,21 +394,31 @@ export default function CrmPage() {
                                 </div>
                             )}
                         </div>
-                        {/* Filtro Completo — modal com filtros avançados */}
-                        <button
-                            type="button"
-                            onClick={() => setFilterModalOpen(true)}
-                            className="relative flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white bg-[#D4A017] hover:bg-[#B8860B] rounded-lg transition-colors shadow-soft flex-shrink-0"
-                        >
-                            <span>Filtro Completo</span>
-                            {activeAdvancedFilterCount > 0 && (
-                                <span className="bg-[#3AC17C] text-white text-[10px] font-bold rounded-full px-2 py-0.5 ml-1 animate-pulse-slow">
-                                    {activeAdvancedFilterCount}
-                                </span>
+                        {/* Filtro Completo + Limpar filtros (quando aparece) — lado a lado */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setFilterModalOpen(true)}
+                                className="relative flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white bg-[#D4A017] hover:bg-[#B8860B] rounded-lg transition-colors shadow-soft"
+                            >
+                                <span>Filtro Completo</span>
+                                {activeAdvancedFilterCount > 0 && (
+                                    <span className="bg-[#3AC17C] text-white text-[10px] font-bold rounded-full px-2 py-0.5 ml-1 animate-pulse-slow">
+                                        {activeAdvancedFilterCount}
+                                    </span>
+                                )}
+                            </button>
+                            {(searchTerm.trim() || activeFilter || activeTaskFilter || activeAdvancedFilterCount > 0) && (
+                                <button
+                                    onClick={handleClearFilters}
+                                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-[#F45B69] bg-[#F45B69]/10 hover:bg-[#F45B69]/20 rounded-lg transition-colors"
+                                >
+                                    <XIcon className="h-4 w-4" /> Limpar filtros
+                                </button>
                             )}
-                        </button>
-                        {/* Contagem e paginação — mesma linha (não um em cima do outro) para sobrar espaço pros leads */}
-                        <div className="flex-1 min-w-0 flex items-center justify-center gap-2 flex-nowrap">
+                        </div>
+                        {/* Contagem e paginação — jogados pro canto (quase na borda direita) */}
+                        <div className="ml-auto flex items-center gap-2 flex-nowrap shrink-0">
                             {totalFiltered > 0 ? (
                                 <>
                                     <span className="text-xs text-gray-400 whitespace-nowrap tabular-nums shrink-0">
@@ -453,14 +463,6 @@ export default function CrmPage() {
                                 </>
                             ) : <span className="text-xs text-gray-500">—</span>}
                         </div>
-                        {(searchTerm.trim() || activeFilter || activeTaskFilter || activeAdvancedFilterCount > 0) && (
-                            <button
-                                onClick={handleClearFilters}
-                                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-[#F45B69] bg-[#F45B69]/10 hover:bg-[#F45B69]/20 rounded-lg transition-colors flex-shrink-0"
-                            >
-                                <XIcon className="h-4 w-4" /> Limpar filtros
-                            </button>
-                        )}
                     </div>
                     {/* Só esta parte rola: corpo da tabela (leads). Cabeçalho da tabela fica fixo no topo desta área. */}
                     <div className="flex-1 min-h-0 overflow-auto rounded-xl border border-white/10">
