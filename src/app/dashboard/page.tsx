@@ -1491,9 +1491,9 @@ export default function DashboardPage() {
   return (
     <div className="min-h-full flex flex-col">
       {/* Grid em 2 colunas com rolagem independente; barras de rolagem ocultas */}
-      <div id="dashboard-two-columns" className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-6 flex-1 min-h-0 pt-2" style={{ height: 'calc(100vh - 220px)' }}>
+      <div id="dashboard-two-columns" className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-2 flex-1 min-h-0 pt-0.5" style={{ height: 'calc(100vh - 220px)' }}>
         {/* Coluna Esquerda — rola independente; scrollbar totalmente oculta */}
-        <div className="dashboard-scroll-hide space-y-6 overflow-y-auto overflow-x-hidden pr-2 min-h-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div className="dashboard-scroll-hide space-y-2 overflow-y-auto overflow-x-hidden pr-2 min-h-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {/* Quadro: eventos em que fui marcado — Confirmar Presença / Cancelar */}
           {eventosEmQueFuiMarcado.length > 0 && (
             <div className="bg-[#1a1a1e]/35 backdrop-blur-sm rounded-2xl border border-[var(--border-subtle)] p-5 shadow-sm">
@@ -1546,9 +1546,9 @@ export default function DashboardPage() {
           )}
 
           {/* Missões Diárias — próximo evento + totais por status de tarefa (funil está na coluna direita) */}
-          <div className="card-glow rounded-2xl p-6 relative overflow-hidden">
+          <div className="card-glow rounded-2xl p-4 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-orange-500 rounded-r" />
-            <div className="flex items-center justify-between gap-3 mb-4">
+            <div className="flex items-center justify-between gap-3 mb-3">
               <h2 className="text-lg font-bold text-white">Missões Diárias</h2>
               <div className="flex items-center gap-2">
                 <Link
@@ -1569,8 +1569,8 @@ export default function DashboardPage() {
             </div>
 
             {/* 1) Próximas ações — 1ª linha: só a do momento; 2ª linha: 2 cards (mesmo style) */}
-            <div className="mb-5">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Próximas ações</p>
+            <div className="mb-2">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Próximas ações</p>
               {agendaLoading ? (
                 <p className="text-gray-400 text-sm">Carregando...</p>
               ) : proximosEventosConfirmados.length === 0 ? (
@@ -1684,11 +1684,11 @@ export default function DashboardPage() {
           </div>
 
           {/* Comunidade — debaixo das Missões Diárias */}
-          <div className="card-glow rounded-2xl p-6 relative overflow-hidden animate-fade-in">
+          <div className="card-glow rounded-2xl p-4 relative overflow-hidden animate-fade-in">
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-orange-500 rounded-r" />
 
             {/* Composer: postar direto da comunidade (igual à página Comunidade) */}
-            <div className="mb-6 pb-6 border-b border-white/10 dark:border-[#23283A]">
+            <div className="mb-3 pb-3 border-b border-white/10 dark:border-[#23283A]">
               <div className="flex gap-3">
                 <img src={getComunidadeAvatar()} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-white/20 shrink-0" onError={(e) => { (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=U&background=random`; }} />
                 <div className="flex-1 min-w-0 flex flex-col gap-2">
@@ -1769,7 +1769,7 @@ export default function DashboardPage() {
                 <p className="text-[#6B6F76] dark:text-gray-300 text-sm">Nenhum post ainda. Seja o primeiro!</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {trendingPostsFiltered.slice(0, 6).map((post, index) => (
                   <div
                     key={post.id}
@@ -1803,7 +1803,7 @@ export default function DashboardPage() {
               </div>
             )}
 
-            <div className="mt-4 pt-4 border-t border-white/20 dark:border-[#23283A]/20">
+            <div className="mt-2 pt-2 border-t border-white/20 dark:border-[#23283A]/20">
               <Link href="/dashboard/comunidade" className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-gradient-to-r from-[#D4A017] to-[#E8C547] text-white font-semibold rounded-lg hover:from-[#B8860B] hover:to-[#D4A017] transition-all text-sm">
                 <span>🚀</span>
                 <span>Ver mais na Comunidade</span>
@@ -1814,9 +1814,9 @@ export default function DashboardPage() {
         </div>
 
         {/* Coluna Direita — compacta para caber na tela; scroll suave se precisar */}
-        <div id="trending-section" className="dashboard-scroll-hide overflow-y-auto overflow-x-hidden pr-2 min-h-0 space-y-2 pb-8" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div id="trending-section" className="dashboard-scroll-hide overflow-y-auto overflow-x-hidden pr-2 min-h-0 space-y-1.5 pb-6" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {/* Funil de vendas individual — compacto */}
-          <div className="card-glow rounded-xl p-3 relative overflow-hidden">
+          <div className="card-glow rounded-xl p-2 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-0.5 h-full bg-gradient-to-r from-[#D4A017] to-[#60a5fa] rounded-r" />
             {agendaLoading ? (
               <p className="text-gray-400 text-sm">Carregando...</p>
@@ -1878,8 +1878,8 @@ export default function DashboardPage() {
             })()}
           </div>
 
-          {/* Meta Individual + 2 painéis (Minhas Moedas | Meta imobiliária) — compacto */}
-          <div className="card-glow rounded-xl p-3 relative overflow-hidden animate-fade-in">
+          {/* Meta Individual + 2 painéis (Ranking | Meta Nox | Minhas Moedas) — compacto */}
+          <div className="card-glow rounded-xl p-2 relative overflow-hidden animate-fade-in">
             <div className="absolute top-0 left-0 w-0.5 h-full bg-amber-500 rounded-r" />
             <MetaIndividualCard metaPessoal={metaPessoal} meta={meta} />
             <GamificacaoMetasRow

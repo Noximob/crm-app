@@ -55,9 +55,9 @@ export function GamificacaoMetasRow({ pontos = PONTOS_EXEMPLO, meta, nomeImobili
   const colors = getProgressColors();
 
   return (
-    <div className="space-y-3 mt-2">
+    <div className="space-y-1.5 mt-1">
       {/* Linha 1: Ranking (esquerda) | Meta Nox — só VGV total (direita) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {/* 1. Ranking dos corretores — no lugar das moedas */}
         <div className={`${CARD_BASE} bg-[#23283A]/30 backdrop-blur-sm p-3`}>
           <div className={GLOW} />
