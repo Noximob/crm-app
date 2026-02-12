@@ -1411,11 +1411,11 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Agenda do Dia — próximo evento + funil pessoal + totais por status de tarefa */}
+          {/* Missões Diárias — próximo evento + totais por status de tarefa (funil está na coluna direita) */}
           <div className="card-glow rounded-2xl p-6 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-orange-500 rounded-r" />
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-white">Agenda do Dia</h2>
+              <h2 className="text-lg font-bold text-white">Missões Diárias</h2>
               <Link
                 href="/dashboard/agenda"
                 className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg transition-colors border border-emerald-400/30"
@@ -1445,53 +1445,24 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* 2) Funil de vendas pessoal */}
-            <div className="mb-5">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Seu funil</p>
-              {agendaLoading ? (
-                <p className="text-gray-400 text-sm">Carregando...</p>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {PIPELINE_STAGES.map((etapa) => {
-                    const qtd = funilPessoal[etapa] ?? 0;
-                    const maxQtd = Math.max(...Object.values(funilPessoal), 1);
-                    const pct = Math.round((qtd / maxQtd) * 100);
-                    const label = { 'Pré Qualificação': 'Pré Qualif.', 'Apresentação do imóvel': 'Apres. imóvel', 'Ligação agendada': 'Lig. agendada', 'Visita agendada': 'Visita agend.', 'Negociação e Proposta': 'Negoc. e Proposta', 'Contrato e fechamento': 'Contrato', 'Pós Venda e Fidelização': 'Pós Venda', 'Interesse Futuro': 'Int. Futuro' }[etapa] ?? etapa;
-                    const isQuente = ['Negociação e Proposta', 'Contrato e fechamento', 'Pós Venda e Fidelização'].includes(etapa);
-                    return (
-                      <div key={etapa} className="rounded-lg bg-white/5 border border-white/10 p-2">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-[10px] sm:text-xs text-gray-400 truncate pr-1" title={etapa}>{label}</span>
-                          <span className={`text-sm font-bold tabular-nums ${isQuente ? 'text-amber-400' : 'text-orange-400'}`}>{qtd}</span>
-                        </div>
-                        <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-500 transition-all" style={{ width: `${Math.max(pct, 4)}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* 3) Totais: Tarefa Atrasada, Tarefa do dia, Sem tarefa */}
+            {/* 2) Leads por tarefa — 3 botões lado a lado, compactos, bolinha piscando + texto */}
             <div>
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Leads por tarefa</p>
-              <div className="flex flex-wrap gap-2">
-                <Link href="/dashboard/agenda?filtro=atraso" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-500/20 border border-red-500/50 text-red-200 hover:bg-red-500/30 transition-colors">
-                  <span className="h-3 w-3 bg-red-500 rounded-full" />
-                  <span className="text-sm font-medium">Tarefa Atrasada</span>
-                  <span className="text-lg font-bold tabular-nums">{tarefaAtrasadaCount}</span>
+              <div className="flex gap-2 flex-nowrap">
+                <Link href="/dashboard/agenda?filtro=atraso" className="flex-1 min-w-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-500/15 border border-red-500/40 text-red-200 hover:bg-red-500/25 transition-colors">
+                  <span className="h-2 w-2 bg-red-500 rounded-full shrink-0 animate-pulse" />
+                  <span className="text-xs font-medium truncate">Atrasada</span>
+                  <span className="text-sm font-bold tabular-nums shrink-0">{tarefaAtrasadaCount}</span>
                 </Link>
-                <Link href="/dashboard/agenda?filtro=hoje" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-yellow-500/20 border border-yellow-500/50 text-yellow-200 hover:bg-yellow-500/30 transition-colors">
-                  <span className="h-3 w-3 bg-yellow-500 rounded-full" />
-                  <span className="text-sm font-medium">Tarefa do dia</span>
-                  <span className="text-lg font-bold tabular-nums">{tarefaDiaCount}</span>
+                <Link href="/dashboard/agenda?filtro=hoje" className="flex-1 min-w-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-yellow-500/15 border border-yellow-500/40 text-yellow-200 hover:bg-yellow-500/25 transition-colors">
+                  <span className="h-2 w-2 bg-yellow-500 rounded-full shrink-0 animate-pulse" />
+                  <span className="text-xs font-medium truncate">Hoje</span>
+                  <span className="text-sm font-bold tabular-nums shrink-0">{tarefaDiaCount}</span>
                 </Link>
-                <Link href="/dashboard/agenda?filtro=sem" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-500/20 border border-gray-500/50 text-gray-300 hover:bg-gray-500/30 transition-colors">
-                  <span className="h-3 w-3 bg-gray-500 rounded-full" />
-                  <span className="text-sm font-medium">Sem tarefa</span>
-                  <span className="text-lg font-bold tabular-nums">{semTarefaCount}</span>
+                <Link href="/dashboard/agenda?filtro=sem" className="flex-1 min-w-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-500/15 border border-gray-500/40 text-gray-300 hover:bg-gray-500/25 transition-colors">
+                  <span className="h-2 w-2 bg-gray-500 rounded-full shrink-0 animate-pulse" />
+                  <span className="text-xs font-medium truncate">Sem tarefa</span>
+                  <span className="text-sm font-bold tabular-nums shrink-0">{semTarefaCount}</span>
                 </Link>
               </div>
             </div>
@@ -1747,6 +1718,54 @@ export default function DashboardPage() {
 
         {/* Coluna Direita — rola independente; scrollbar totalmente oculta */}
         <div id="trending-section" className="dashboard-scroll-hide overflow-y-auto overflow-x-hidden pr-2 min-h-0 space-y-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {/* Funil de vendas individual — estilo Dashboard TV */}
+          <div className="card-glow rounded-2xl p-5 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-r from-[#D4A017] to-[#60a5fa] rounded-r" />
+            <h2 className="text-base font-bold text-white mb-1">Funil de vendas</h2>
+            <p className="text-xs text-gray-400 mb-4">Seus leads por etapa</p>
+            {agendaLoading ? (
+              <p className="text-gray-400 text-sm">Carregando...</p>
+            ) : (() => {
+              const totalFunil = Object.values(funilPessoal).reduce((a, b) => a + b, 0);
+              const maxLocal = Math.max(...Object.values(funilPessoal), 1);
+              const STAGE_LABELS: Record<string, string> = {
+                'Pré Qualificação': 'Pré Qualif.', 'Qualificação': 'Qualificação', 'Apresentação do imóvel': 'Apres. imóvel',
+                'Ligação agendada': 'Lig. agendada', 'Visita agendada': 'Visita agend.', 'Negociação e Proposta': 'Negoc. e Proposta',
+                'Contrato e fechamento': 'Contrato', 'Pós Venda e Fidelização': 'Pós Venda', 'Interesse Futuro': 'Int. Futuro',
+                'Carteira': 'Carteira', 'Geladeira': 'Geladeira'
+              };
+              return (
+                <>
+                  <div className="inline-flex items-baseline gap-2 px-4 py-2 rounded-xl bg-[#D4A017]/20 border border-[#D4A017]/40 mb-4">
+                    <span className="text-gray-400 text-sm font-medium">Total no funil</span>
+                    <span className="text-2xl font-black tabular-nums text-white">{totalFunil}</span>
+                    <span className="text-gray-400 text-sm">leads</span>
+                  </div>
+                  <div className="space-y-2">
+                    {PIPELINE_STAGES.map((etapa) => {
+                      const qtd = funilPessoal[etapa] ?? 0;
+                      const pct = Math.round((qtd / maxLocal) * 100);
+                      const label = STAGE_LABELS[etapa] ?? etapa;
+                      const isQuente = ['Negociação e Proposta', 'Contrato e fechamento', 'Pós Venda e Fidelização'].includes(etapa);
+                      return (
+                        <div key={etapa} className="flex items-center gap-2">
+                          <span className="text-xs text-gray-400 w-24 truncate" title={etapa}>{label}</span>
+                          <div className="flex-1 min-w-0 h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-[#D4A017] to-[#60a5fa] transition-all duration-500"
+                              style={{ width: `${Math.max(pct, 8)}%` }}
+                            />
+                          </div>
+                          <span className={`text-xs font-semibold tabular-nums w-6 text-right ${isQuente ? 'text-amber-400' : 'text-[#D4A017]'}`}>{qtd}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+
           <div className="card-glow rounded-2xl p-6 relative overflow-hidden animate-fade-in">
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-orange-500 rounded-r" />
 
