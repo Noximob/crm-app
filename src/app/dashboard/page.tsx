@@ -13,6 +13,7 @@ import { PIPELINE_STAGES } from '@/lib/constants';
 import AvisosImportantesModal from './_components/AvisosImportantesModal';
 import AgendaImobiliariaModal from './_components/AgendaImobiliariaModal';
 import PlantoesModal from './_components/PlantoesModal';
+import { GamificacaoMetasRow, type MetaPessoalData } from './_components/GamificacaoMetasRow';
 
 // Ícones
 const TrendingUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -383,7 +384,27 @@ export default function DashboardPage() {
   const [trendingLoading, setTrendingLoading] = useState(true);
   const [meta, setMeta] = useState<any>(null);
   const [nomeImobiliaria, setNomeImobiliaria] = useState('Imobiliária');
-  
+  const [metaPessoalValorAlmejado, setMetaPessoalValorAlmejado] = useState<number>(0);
+  const [contribuicoesMeta, setContribuicoesMeta] = useState<{ corretorId: string; valor: number; dataVenda?: string }[]>([]);
+  const pontosExemplo = 2150;
+
+  const metaPessoal: MetaPessoalData | null = useMemo(() => {
+    const inicio = meta?.inicio ? String(meta.inicio).split('T')[0] : undefined;
+    const fim = meta?.fim ? String(meta.fim).split('T')[0] : undefined;
+    const alcancado = currentUser?.uid && inicio && fim
+      ? contribuicoesMeta
+          .filter((c) => c.corretorId === currentUser.uid && c.dataVenda && c.dataVenda >= inicio && c.dataVenda <= fim)
+          .reduce((s, c) => s + c.valor, 0)
+      : 0;
+    if (metaPessoalValorAlmejado <= 0 && alcancado <= 0) return null;
+    return {
+      valorAlmejado: metaPessoalValorAlmejado,
+      alcancadoPessoal: alcancado,
+      metaInicio: inicio,
+      metaFim: fim,
+    };
+  }, [meta?.inicio, meta?.fim, metaPessoalValorAlmejado, contribuicoesMeta, currentUser?.uid]);
+
   // Estados para interatividade do Top Trending
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const [showPostModal, setShowPostModal] = useState(false);
@@ -1267,6 +1288,42 @@ export default function DashboardPage() {
     };
   }, [userData, currentUser]);
 
+  // Meta pessoal (valor almejado) e contribuições para calcular realizado no período
+  useEffect(() => {
+    if (!userData?.imobiliariaId) return;
+    const imobiliariaId = userData.imobiliariaId;
+
+    const unsubMetaPessoal = currentUser?.uid
+      ? onSnapshot(firestoreDoc(db, 'metas', imobiliariaId, 'metasPessoais', currentUser.uid), (snap) => {
+          if (snap.exists()) {
+            const v = snap.data()?.valorAlmejado;
+            setMetaPessoalValorAlmejado(typeof v === 'number' ? v : 0);
+          } else {
+            setMetaPessoalValorAlmejado(0);
+          }
+        })
+      : () => {};
+
+    const contribRef = collection(db, 'metas', imobiliariaId, 'contribuicoes');
+    const unsubContrib = onSnapshot(query(contribRef, orderBy('createdAt', 'desc')), (snap) => {
+      setContribuicoesMeta(
+        snap.docs.map((d) => {
+          const x = d.data();
+          return {
+            corretorId: x.corretorId ?? '',
+            valor: Number(x.valor) ?? 0,
+            dataVenda: x.dataVenda ?? undefined,
+          };
+        })
+      );
+    });
+
+    return () => {
+      if (typeof unsubMetaPessoal === 'function') unsubMetaPessoal();
+      unsubContrib();
+    };
+  }, [userData?.imobiliariaId, currentUser?.uid]);
+
   function calcularVariacao(atual: string, anterior: string) {
     const a = parseFloat((atual || '').replace(/[^\d,.-]/g, '').replace(',', '.'));
     const b = parseFloat((anterior || '').replace(/[^\d,.-]/g, '').replace(',', '.'));
@@ -1760,6 +1817,12 @@ export default function DashboardPage() {
           <div className="card-glow rounded-2xl p-6 relative overflow-hidden animate-fade-in">
             <div className="absolute top-0 left-0 w-1 h-full bg-amber-500 rounded-r" />
             <MetasCard meta={meta} nomeImobiliaria={nomeImobiliaria} />
+            <GamificacaoMetasRow
+              pontos={pontosExemplo}
+              metaPessoal={metaPessoal}
+              metaInicio={meta?.inicio ? String(meta.inicio).split('T')[0] : undefined}
+              metaFim={meta?.fim ? String(meta.fim).split('T')[0] : undefined}
+            />
           </div>
         </div>
       </div>

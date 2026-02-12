@@ -42,6 +42,10 @@ export default function AdminMetasPage() {
   });
   const [adding, setAdding] = useState(false);
 
+  const [metasPessoais, setMetasPessoais] = useState<Record<string, number>>({});
+  const [valorAlmejadoInputs, setValorAlmejadoInputs] = useState<Record<string, string>>({});
+  const [savingPessoal, setSavingPessoal] = useState<string | null>(null);
+
   const totalRealizado = contribuicoes.reduce((s, c) => s + c.valor, 0);
   const percentualCalculado = vgv && totalRealizado >= 0 ? Math.round((totalRealizado / parseFloat(vgv)) * 100) : 0;
 
@@ -66,6 +70,25 @@ export default function AdminMetasPage() {
       setCorretores(snapshot.docs.map(d => ({ id: d.id, nome: d.data().nome })));
     };
     fetchCorretores();
+  }, [userData?.imobiliariaId]);
+
+  // Buscar metas pessoais (valor almejado por corretor)
+  useEffect(() => {
+    if (!userData?.imobiliariaId) return;
+    const refPessoais = collection(db, 'metas', userData.imobiliariaId, 'metasPessoais');
+    getDocs(refPessoais).then((snap) => {
+      const map: Record<string, number> = {};
+      const inputs: Record<string, string> = {};
+      snap.docs.forEach((d) => {
+        const v = Number(d.data().valorAlmejado);
+        if (!isNaN(v)) {
+          map[d.id] = v;
+          inputs[d.id] = v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+      });
+      setMetasPessoais(map);
+      setValorAlmejadoInputs((prev) => ({ ...prev, ...inputs }));
+    });
   }, [userData?.imobiliariaId]);
 
   // Buscar meta e contribuições
@@ -171,6 +194,24 @@ export default function AdminMetasPage() {
       await updateMetaAlcancado(novaLista.reduce((s, c) => s + c.valor, 0));
     } catch (err) {
       console.error('Erro ao remover contribuição:', err);
+    }
+  }
+
+  async function handleSaveMetaPessoal(corretorId: string) {
+    if (!userData?.imobiliariaId) return;
+    const raw = valorAlmejadoInputs[corretorId] ?? '';
+    const valor = parseValorBR(raw);
+    if (isNaN(valor) || valor < 0) return;
+    setSavingPessoal(corretorId);
+    try {
+      const refPessoal = doc(db, 'metas', userData.imobiliariaId, 'metasPessoais', corretorId);
+      await setDoc(refPessoal, { valorAlmejado: valor }, { merge: true });
+      setMetasPessoais((prev) => ({ ...prev, [corretorId]: valor }));
+      setValorAlmejadoInputs((prev) => ({ ...prev, [corretorId]: valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }));
+    } catch (err) {
+      console.error('Erro ao salvar meta pessoal:', err);
+    } finally {
+      setSavingPessoal(null);
     }
   }
 
@@ -385,6 +426,51 @@ export default function AdminMetasPage() {
         </button>
         {success && <div className="text-green-400 font-semibold mt-2">Meta salva com sucesso!</div>}
       </form>
+
+      {/* Metas pessoais dos corretores — fora do form para não dar submit/reload ao pressionar Enter */}
+      <div className="rounded-xl border border-amber-500/40 bg-[#23283A]/50 p-4 space-y-4 mt-6">
+        <h3 className="text-base font-semibold text-white flex items-center gap-2">
+          <span className="text-amber-400">🎯</span> Metas pessoais dos corretores
+        </h3>
+        <p className="text-sm text-white/80">
+          O período é o mesmo da meta da imobiliária (acima). Defina o valor almejado de cada corretor para acompanhar a meta.
+        </p>
+        {inicio && fim && (
+          <p className="text-xs text-amber-200/90 font-medium">
+            Período (somente leitura): {new Date(inicio + 'T12:00:00').toLocaleDateString('pt-BR')} a {new Date(fim + 'T12:00:00').toLocaleDateString('pt-BR')}
+          </p>
+        )}
+        <div className="space-y-3 max-h-60 overflow-y-auto">
+          {corretores.map((c) => (
+            <div key={c.id} className="flex flex-wrap items-center gap-3 py-2 border-b border-white/10 last:border-0">
+              <span className="font-medium text-white min-w-[140px] truncate">{c.nome}</span>
+              <div className="flex-1 min-w-[160px] flex items-center gap-2">
+                <label className="text-xs text-white/70 shrink-0">Valor almejado (R$)</label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="Ex: 500.000,00"
+                  value={valorAlmejadoInputs[c.id] ?? ''}
+                  onChange={(e) => setValorAlmejadoInputs((prev) => ({ ...prev, [c.id]: e.target.value }))}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSaveMetaPessoal(c.id); } }}
+                  className="flex-1 rounded-lg border px-3 py-2 text-white bg-[#23283A]/70 border-amber-500/30 max-w-[180px]"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleSaveMetaPessoal(c.id)}
+                  disabled={savingPessoal === c.id}
+                  className="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-3 rounded-lg text-sm disabled:opacity-50"
+                >
+                  {savingPessoal === c.id ? '...' : 'Salvar'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        {corretores.length === 0 && (
+          <p className="text-sm text-white/60">Nenhum corretor aprovado na imobiliária.</p>
+        )}
+      </div>
     </div>
   );
 } 
