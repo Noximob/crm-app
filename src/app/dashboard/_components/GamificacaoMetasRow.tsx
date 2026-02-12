@@ -126,21 +126,49 @@ export function GamificacaoMetasRow({ pontos = PONTOS_EXEMPLO, meta, nomeImobili
         </div>
       </div>
 
-      {/* Linha 2: Minhas Moedas — full width */}
-      <div className={`${CARD_BASE} bg-[#23283A]/5 p-3`}>
+      {/* Linha 2: Minhas Moedas — full width, estilo banner gamificado */}
+      <div className={`${CARD_BASE} bg-gradient-to-r from-[#1a1a1e]/70 via-[#1a1a1e]/40 to-[#1a1a1e]/10 p-3`}>
         <div className={GLOW} />
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div className="p-1 rounded bg-amber-500/20 border border-amber-500/30">
+        <div className="flex items-center justify-between gap-4">
+          {/* Bloco de texto e pontos */}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-1.5 rounded-lg bg-amber-500/25 border border-amber-400/50 shadow-[0_0_12px_rgba(248,191,59,0.45)]">
               <CoinIcon className="w-5 h-5" />
             </div>
-            <span className="font-bold text-[#E8C547] text-sm">Minhas Moedas</span>
+            <div className="flex flex-col min-w-0">
+              <span className="text-[11px] font-semibold text-amber-200/90 tracking-wide uppercase">
+                Minhas Moedas
+              </span>
+              <span className="text-xl font-black text-[#F8D34A] tabular-nums leading-tight">
+                {pontos.toLocaleString('pt-BR')}{' '}
+                <span className="text-xs font-semibold text-amber-200/90">pontos</span>
+              </span>
+              <span className="text-[10px] text-amber-100/85 mt-0.5">
+                Acumule moedas participando das ações da imobiliária.
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <CoinIcon className="w-8 h-8 text-amber-400 shrink-0" />
-            <span className="text-xl font-black text-[#E8C547] tabular-nums">
-              {pontos.toLocaleString('pt-BR')} <span className="text-sm font-semibold text-amber-200/90">pontos</span>
-            </span>
+
+          {/* Ilustração de moedas empilhadas — inspirado no mockup */}
+          <div className="relative w-28 h-16 shrink-0">
+            {/* brilho de fundo */}
+            <div className="absolute inset-x-2 bottom-0 h-6 bg-amber-500/40 blur-md rounded-full" />
+            {/* moeda esquerda (mais baixa) */}
+            <div className="absolute left-0 bottom-0 scale-75 origin-bottom">
+              <CoinIcon className="w-12 h-12" />
+            </div>
+            {/* moeda central (principal) */}
+            <div className="absolute left-5 bottom-1 scale-90 origin-bottom">
+              <CoinIcon className="w-14 h-14" />
+            </div>
+            {/* moeda direita (um pouco mais alta) */}
+            <div className="absolute right-0 bottom-2 scale-80 origin-bottom">
+              <CoinIcon className="w-12 h-12" />
+            </div>
+            {/* estrelinhas de fundo para dar sensação de festa */}
+            <span className="absolute top-1 left-3 text-xs text-amber-300/90">✦</span>
+            <span className="absolute top-0 right-6 text-[10px] text-amber-200/90">✶</span>
+            <span className="absolute top-4 right-2 text-[9px] text-amber-300/80">✦</span>
           </div>
         </div>
       </div>
