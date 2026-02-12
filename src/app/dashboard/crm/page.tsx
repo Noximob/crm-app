@@ -303,32 +303,76 @@ export default function CrmPage() {
             <main className="flex flex-col gap-4 mt-4">
                 {/* Card principal do CRM — sem fundo sólido, deixa o background aparecer (igual Brello/Comunidade) */}
                 <div className="p-4 rounded-2xl border border-white/10">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
-                        <div className="flex flex-col md:flex-row md:items-center gap-4">
-                            <SectionTitle>Gestão de Leads</SectionTitle>
-                            {/* Campo de busca por nome */}
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <SearchIcon className="h-4 w-4 text-gray-400" />
-                                </div>
-                                <input
-                                    type="text"
-                                    placeholder="Buscar lead por nome..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="block w-64 pl-10 pr-3 py-1.5 border border-white/10 rounded-lg text-sm bg-white/5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#D4A017]/50 focus:border-transparent"
-                                />
-                                {searchTerm && (
-                                    <button
-                                        onClick={() => setSearchTerm('')}
-                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
-                                    >
-                                        <XIcon className="h-4 w-4" />
-                                    </button>
-                                )}
+                    {/* Linha única: Gestão de Leads | Busca | Contagem + Paginação | Filtrar | Limpar */}
+                    <div className="flex flex-wrap items-center gap-3 md:gap-4 mb-4">
+                        <SectionTitle>Gestão de Leads</SectionTitle>
+                        <div className="relative flex-shrink-0">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <SearchIcon className="h-4 w-4 text-gray-400" />
                             </div>
+                            <input
+                                type="text"
+                                placeholder="Buscar lead por nome..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="block w-56 sm:w-64 pl-10 pr-3 py-1.5 border border-white/10 rounded-lg text-sm bg-white/5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#D4A017]/50 focus:border-transparent"
+                            />
+                            {searchTerm && (
+                                <button
+                                    onClick={() => setSearchTerm('')}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
+                                >
+                                    <XIcon className="h-4 w-4" />
+                                </button>
+                            )}
                         </div>
-                        <div className="flex items-center gap-2">
+                        {/* Contagem e paginação — entre busca e Filtrar, proporcional */}
+                        <div className="flex-1 min-w-0 flex items-center justify-center gap-3 sm:gap-4 flex-wrap">
+                        {totalFiltered > 0 ? (
+                            <>
+                                <span className="text-xs text-gray-400 whitespace-nowrap tabular-nums">
+                                    {((currentPage - 1) * PAGE_SIZE) + 1}–{Math.min(currentPage * PAGE_SIZE, totalFiltered)} de {totalFiltered} {totalFiltered === 1 ? 'lead' : 'leads'}
+                                </span>
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => goToPage(currentPage - 1)}
+                                        disabled={currentPage <= 1}
+                                        className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-white/10 bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+                                    >
+                                        Anterior
+                                    </button>
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                        .filter(p => p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2))
+                                        .map((p, idx, arr) => (
+                                            <React.Fragment key={p}>
+                                                {idx > 0 && arr[idx - 1] !== p - 1 && <span className="px-1 text-gray-400">…</span>}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => goToPage(p)}
+                                                    className={`min-w-[2rem] px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
+                                                        p === currentPage
+                                                            ? 'bg-[#D4A017] border-[#D4A017] text-white'
+                                                            : 'border-white/10 bg-white/5 hover:bg-white/10'
+                                                    }`}
+                                                >
+                                                    {p}
+                                                </button>
+                                            </React.Fragment>
+                                        ))}
+                                    <button
+                                        type="button"
+                                        onClick={() => goToPage(currentPage + 1)}
+                                        disabled={currentPage >= totalPages}
+                                        className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-white/10 bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+                                    >
+                                        Próximo
+                                    </button>
+                                </div>
+                            </>
+                        ) : <span className="text-xs text-gray-500">—</span>}
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
                             <button
                                 onClick={() => setFilterModalOpen(true)}
                                 className="relative flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-[#D4A017] hover:bg-[#B8860B] rounded-lg transition-colors shadow-soft"
@@ -373,50 +417,6 @@ export default function CrmPage() {
                                 </FilterChip>
                             ))}
                         </div>
-                        {/* Paginação */}
-                        {totalFiltered > 0 && (
-                            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/10">
-                                <span className="text-xs text-gray-400">
-                                    {((currentPage - 1) * PAGE_SIZE) + 1}–{Math.min(currentPage * PAGE_SIZE, totalFiltered)} de {totalFiltered} {totalFiltered === 1 ? 'lead' : 'leads'}
-                                </span>
-                                <div className="flex items-center gap-1">
-                                    <button
-                                        type="button"
-                                        onClick={() => goToPage(currentPage - 1)}
-                                        disabled={currentPage <= 1}
-                                        className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-white/10 bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
-                                    >
-                                        Anterior
-                                    </button>
-                                    {Array.from({ length: totalPages }, (_, i) => i + 1)
-                                        .filter(p => p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2))
-                                        .map((p, idx, arr) => (
-                                            <React.Fragment key={p}>
-                                                {idx > 0 && arr[idx - 1] !== p - 1 && <span className="px-1 text-gray-400">…</span>}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => goToPage(p)}
-                                                    className={`min-w-[2rem] px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
-                                                        p === currentPage
-                                                            ? 'bg-[#D4A017] border-[#D4A017] text-white'
-                                                            : 'border-white/10 bg-white/5 hover:bg-white/10'
-                                                    }`}
-                                                >
-                                                    {p}
-                                                </button>
-                                            </React.Fragment>
-                                        ))}
-                                    <button
-                                        type="button"
-                                        onClick={() => goToPage(currentPage + 1)}
-                                        disabled={currentPage >= totalPages}
-                                        className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-white/10 bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
-                                    >
-                                        Próximo
-                                    </button>
-                                </div>
-                            </div>
-                        )}
                     </div>
                     {/* Lista de leads — só quadro, sem -mx; overflow contido para não sobresair/sumir ao rolar */}
                     <div className="overflow-auto max-h-[calc(100vh-18rem)] rounded-xl border border-white/10">
