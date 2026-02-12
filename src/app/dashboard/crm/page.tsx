@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { PIPELINE_STAGES } from '@/lib/constants';
 import CrmHeader from './_components/CrmHeader';
 import { useAuth } from '@/context/AuthContext';
@@ -107,8 +108,16 @@ const SectionTitle = ({ children, className = '' }: { children: React.ReactNode,
   </div>
 );
 
+const TAREFA_PARAM_MAP: Record<string, TaskStatus> = {
+    atraso: 'Tarefa em Atraso',
+    hoje: 'Tarefa do Dia',
+    sem: 'Sem tarefa',
+    futura: 'Tarefa Futura',
+};
+
 export default function CrmPage() {
     const { currentUser } = useAuth();
+    const searchParams = useSearchParams();
     const [leads, setLeads] = useState<Lead[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState<string | null>(null);
@@ -120,6 +129,14 @@ export default function CrmPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const PAGE_SIZE = 15;
     const isFirstLoad = useRef(true);
+
+    // Filtro de tarefa vindo da URL (?tarefa=atraso|hoje|sem)
+    useEffect(() => {
+        const tarefa = searchParams.get('tarefa');
+        if (tarefa && TAREFA_PARAM_MAP[tarefa]) {
+            setActiveTaskFilter(TAREFA_PARAM_MAP[tarefa]);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         if (currentUser) {

@@ -1542,22 +1542,22 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* 2) Leads por tarefa — 3 botões lado a lado, compactos, bolinha piscando + texto */}
+            {/* 2) Leads por tarefa — Atrasada e Hoje piscam como evento Agora; todos levam ao CRM com filtro selecionado */}
             <div>
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Leads por tarefa</p>
               <div className="flex gap-2 flex-nowrap">
-                <Link href="/dashboard/agenda?filtro=atraso" className="flex-1 min-w-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-500/15 border border-red-500/40 text-red-200 hover:bg-red-500/25 transition-colors">
+                <Link href="/dashboard/crm?tarefa=atraso" className="flex-1 min-w-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-500/15 border border-red-500/40 text-red-200 hover:bg-red-500/25 transition-colors animate-pulse">
                   <span className="h-2 w-2 bg-red-500 rounded-full shrink-0 animate-pulse" />
                   <span className="text-xs font-medium truncate">Atrasada</span>
                   <span className="text-sm font-bold tabular-nums shrink-0">{tarefaAtrasadaCount}</span>
                 </Link>
-                <Link href="/dashboard/agenda?filtro=hoje" className="flex-1 min-w-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-yellow-500/15 border border-yellow-500/40 text-yellow-200 hover:bg-yellow-500/25 transition-colors">
+                <Link href="/dashboard/crm?tarefa=hoje" className="flex-1 min-w-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-yellow-500/15 border border-yellow-500/40 text-yellow-200 hover:bg-yellow-500/25 transition-colors animate-pulse">
                   <span className="h-2 w-2 bg-yellow-500 rounded-full shrink-0 animate-pulse" />
                   <span className="text-xs font-medium truncate">Hoje</span>
                   <span className="text-sm font-bold tabular-nums shrink-0">{tarefaDiaCount}</span>
                 </Link>
-                <Link href="/dashboard/agenda?filtro=sem" className="flex-1 min-w-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-500/15 border border-gray-500/40 text-gray-300 hover:bg-gray-500/25 transition-colors">
-                  <span className="h-2 w-2 bg-gray-500 rounded-full shrink-0 animate-pulse" />
+                <Link href="/dashboard/crm?tarefa=sem" className="flex-1 min-w-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-500/15 border border-gray-500/40 text-gray-300 hover:bg-gray-500/25 transition-colors">
+                  <span className="h-2 w-2 bg-gray-500 rounded-full shrink-0" />
                   <span className="text-xs font-medium truncate">Sem tarefa</span>
                   <span className="text-sm font-bold tabular-nums shrink-0">{semTarefaCount}</span>
                 </Link>
