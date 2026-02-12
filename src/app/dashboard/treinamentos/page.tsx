@@ -7,7 +7,7 @@ import { collection, query, where, getDocs, doc, setDoc, deleteDoc, onSnapshot, 
 
 interface Treinamento {
   id: string;
-  categoria?: 'audiobooks' | 'vendas' | 'mercado' | 'institucional' | 'técnicas' | 'motivacional' | 'gestão';
+  categoria?: 'audiobooks' | 'vendas' | 'mercado' | 'institucional' | 'técnicas' | 'motivacional' | 'gestão' | 'autoral';
   categorias?: string[]; // Para compatibilidade com dados do admin
   titulo: string;
   descricao: string;
@@ -35,6 +35,7 @@ const categorias = [
   { key: 'mercado', label: 'Mercado', icon: '🏢', color: 'bg-purple-500' },
   { key: 'institucional', label: 'Institucional', icon: '🏛️', color: 'bg-red-500' },
   { key: 'gestão', label: 'Gestão', icon: '👔', color: 'bg-indigo-500' },
+  { key: 'autoral', label: 'Autoral', icon: '✍️', color: 'bg-orange-500' },
 ];
 
 export default function TreinamentosPage() {

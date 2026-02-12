@@ -65,7 +65,8 @@ export default function TreinamentosAdminPage() {
     { key: 'audiobooks', label: 'Áudio Book', icon: '📚' },
     { key: 'mercado', label: 'Mercado', icon: '🏢' },
     { key: 'institucional', label: 'Institucional', icon: '🏛️' },
-    { key: 'gestão', label: 'Gestão', icon: '👔' }
+    { key: 'gestão', label: 'Gestão', icon: '👔' },
+    { key: 'autoral', label: 'Autoral', icon: '✍️' },
   ];
 
   useEffect(() => {
