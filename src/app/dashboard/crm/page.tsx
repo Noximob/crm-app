@@ -103,8 +103,8 @@ const getTaskStatusInfo = (tasks: Task[]): TaskStatus => {
 // Novo componente para título com barra colorida
 const SectionTitle = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
   <div className={`relative ${className}`}>
-    <h2 className="text-lg font-bold text-white relative z-10">{children}</h2>
-    <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-[#D4A017] to-[#E8C547] rounded-r-full opacity-60" />
+    <h2 className="text-base font-bold text-white relative z-10">{children}</h2>
+    <div className="absolute -left-1.5 top-1/2 transform -translate-y-1/2 w-0.5 h-5 bg-gradient-to-b from-[#D4A017] to-[#E8C547] rounded-r-full opacity-60" />
   </div>
 );
 
@@ -314,13 +314,13 @@ export default function CrmPage() {
     return (
         <>
         {/* Altura fixa: só os leads rolam; título, busca, paginação, filtros e cabeçalho da tabela ficam fixos */}
-        <div className="flex flex-col h-[calc(100vh-5rem)] min-h-0 p-4 sm:p-6 lg:p-8 overflow-hidden">
+        <div className="flex flex-col h-[calc(100vh-5rem)] min-h-0 p-3 sm:p-4 overflow-hidden">
             <CrmHeader />
-            <main className="flex flex-col flex-1 min-h-0 gap-4 mt-4">
-                {/* Card principal — parte de cima fixa (título, busca, paginação, filtros, cabeçalho da tabela); só os leads rolam */}
-                <div className="flex flex-col flex-1 min-h-0 p-4 rounded-2xl border border-white/10">
-                    {/* Linha única (mockup): Gestão de Leads | Busca | Filtro Rápido | Filtro Completo | 1-20 de 36 | Paginação | Limpar */}
-                    <div className="flex flex-wrap items-center gap-3 md:gap-4 mb-4 flex-shrink-0">
+            <main className="flex flex-col flex-1 min-h-0 gap-2 mt-2">
+                {/* Card principal — parte de cima fixa; compacta para sobrar mais espaço pros leads */}
+                <div className="flex flex-col flex-1 min-h-0 p-3 rounded-2xl border border-white/10">
+                    {/* Uma linha só: título | busca | filtros | contagem+paginação (lado a lado) | limpar */}
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 flex-shrink-0">
                         <SectionTitle>Gestão de Leads</SectionTitle>
                         <div className="relative flex-shrink-0">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -331,7 +331,7 @@ export default function CrmPage() {
                                 placeholder="Buscar lead por nome..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="block w-56 sm:w-64 pl-10 pr-3 py-1.5 border border-white/10 rounded-lg text-sm bg-white/5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#D4A017]/50 focus:border-transparent"
+                                className="block w-52 sm:w-60 pl-9 pr-3 py-1 border border-white/10 rounded-lg text-sm bg-white/5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#D4A017]/50 focus:border-transparent"
                             />
                             {searchTerm && (
                                 <button
@@ -347,7 +347,7 @@ export default function CrmPage() {
                             <button
                                 type="button"
                                 onClick={() => setFiltroRapidoOpen((o) => !o)}
-                                className="relative flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-[#D4A017] hover:bg-[#B8860B] rounded-lg transition-colors shadow-soft"
+                                className="relative flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white bg-[#D4A017] hover:bg-[#B8860B] rounded-lg transition-colors shadow-soft"
                             >
                                 <span>Filtro Rápido</span>
                                 {(activeFilter || activeTaskFilter) && (
@@ -398,7 +398,7 @@ export default function CrmPage() {
                         <button
                             type="button"
                             onClick={() => setFilterModalOpen(true)}
-                            className="relative flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-[#D4A017] hover:bg-[#B8860B] rounded-lg transition-colors shadow-soft flex-shrink-0"
+                            className="relative flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white bg-[#D4A017] hover:bg-[#B8860B] rounded-lg transition-colors shadow-soft flex-shrink-0"
                         >
                             <span>Filtro Completo</span>
                             {activeAdvancedFilterCount > 0 && (
@@ -407,19 +407,19 @@ export default function CrmPage() {
                                 </span>
                             )}
                         </button>
-                        {/* Contagem e paginação */}
-                        <div className="flex-1 min-w-0 flex items-center justify-center gap-3 sm:gap-4 flex-wrap">
+                        {/* Contagem e paginação — mesma linha (não um em cima do outro) para sobrar espaço pros leads */}
+                        <div className="flex-1 min-w-0 flex items-center justify-center gap-2 flex-nowrap">
                             {totalFiltered > 0 ? (
                                 <>
-                                    <span className="text-xs text-gray-400 whitespace-nowrap tabular-nums">
+                                    <span className="text-xs text-gray-400 whitespace-nowrap tabular-nums shrink-0">
                                         {((currentPage - 1) * PAGE_SIZE) + 1}–{Math.min(currentPage * PAGE_SIZE, totalFiltered)} de {totalFiltered} {totalFiltered === 1 ? 'lead' : 'leads'}
                                     </span>
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center gap-1 shrink-0">
                                         <button
                                             type="button"
                                             onClick={() => goToPage(currentPage - 1)}
                                             disabled={currentPage <= 1}
-                                            className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-white/10 bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+                                            className="px-2 py-1 text-xs font-semibold rounded-lg border border-white/10 bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
                                         >
                                             Anterior
                                         </button>
@@ -431,7 +431,7 @@ export default function CrmPage() {
                                                     <button
                                                         type="button"
                                                         onClick={() => goToPage(p)}
-                                                        className={`min-w-[2rem] px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
+                                                        className={`min-w-[1.75rem] px-2 py-1 text-xs font-semibold rounded-lg border transition-colors ${
                                                             p === currentPage
                                                                 ? 'bg-[#D4A017] border-[#D4A017] text-white'
                                                                 : 'border-white/10 bg-white/5 hover:bg-white/10'
@@ -445,7 +445,7 @@ export default function CrmPage() {
                                             type="button"
                                             onClick={() => goToPage(currentPage + 1)}
                                             disabled={currentPage >= totalPages}
-                                            className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-white/10 bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+                                            className="px-2 py-1 text-xs font-semibold rounded-lg border border-white/10 bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
                                         >
                                             Próximo
                                         </button>
@@ -456,7 +456,7 @@ export default function CrmPage() {
                         {(searchTerm.trim() || activeFilter || activeTaskFilter || activeAdvancedFilterCount > 0) && (
                             <button
                                 onClick={handleClearFilters}
-                                className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-[#F45B69] bg-[#F45B69]/10 hover:bg-[#F45B69]/20 rounded-lg transition-colors flex-shrink-0"
+                                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-[#F45B69] bg-[#F45B69]/10 hover:bg-[#F45B69]/20 rounded-lg transition-colors flex-shrink-0"
                             >
                                 <XIcon className="h-4 w-4" /> Limpar filtros
                             </button>
@@ -467,12 +467,12 @@ export default function CrmPage() {
                         <table className="min-w-full table-fixed">
                             <thead className="sticky top-0 z-10">
                                 <tr className="border-b border-white/10 bg-[var(--bg-card)]/95 backdrop-blur-sm text-gray-200 text-xs shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
-                                    <th className="px-4 py-3 font-semibold text-left w-1/5 rounded-tl-xl">Nome</th>
-                                    <th className="px-4 py-3 font-semibold text-left w-1/6">Telefone</th>
-                                    <th className="px-4 py-3 font-semibold text-center w-1/12">WhatsApp</th>
-                                    <th className="px-4 py-3 font-semibold text-left w-1/5">Etapa</th>
-                                    <th className="px-4 py-3 font-semibold text-left w-1/5">Status da Tarefa</th>
-                                    <th className="px-4 py-3 font-semibold text-center w-1/5 rounded-tr-xl">Ações</th>
+                                    <th className="px-3 py-2 font-semibold text-left w-1/5 rounded-tl-xl">Nome</th>
+                                    <th className="px-3 py-2 font-semibold text-left w-1/6">Telefone</th>
+                                    <th className="px-3 py-2 font-semibold text-center w-1/12">WhatsApp</th>
+                                    <th className="px-3 py-2 font-semibold text-left w-1/5">Etapa</th>
+                                    <th className="px-3 py-2 font-semibold text-left w-1/5">Status da Tarefa</th>
+                                    <th className="px-3 py-2 font-semibold text-center w-1/5 rounded-tr-xl">Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
