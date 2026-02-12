@@ -34,16 +34,24 @@ export interface MetaPessoalData {
   metaFim?: string;
 }
 
+interface CorretorRanking {
+  id: string;
+  nome: string;
+}
+
 interface GamificacaoMetasRowProps {
   pontos?: number;
   meta: any;
   nomeImobiliaria: string;
+  corretores?: CorretorRanking[];
 }
 
 const CARD_BASE = 'rounded-xl border border-amber-500/25 flex flex-col relative overflow-hidden shadow-md';
 const GLOW = 'absolute left-0 top-0 w-0.5 h-full bg-[#D4A017]';
 
-export function GamificacaoMetasRow({ pontos = PONTOS_EXEMPLO, meta, nomeImobiliaria }: GamificacaoMetasRowProps) {
+export function GamificacaoMetasRow({ pontos = PONTOS_EXEMPLO, meta, nomeImobiliaria, corretores = [] }: GamificacaoMetasRowProps) {
+  const top3 = corretores.slice(0, 3);
+  const posicoes = ['1º', '2º', '3º'] as const;
   const progresso = meta?.percentual !== undefined ? meta.percentual : (meta?.valor > 0 ? Math.round(((meta?.alcancado ?? 0) / meta.valor) * 100) : 0);
   const progressoDisplay = progresso > 100 ? 100 : progresso;
   const getProgressColors = () => {
@@ -58,37 +66,42 @@ export function GamificacaoMetasRow({ pontos = PONTOS_EXEMPLO, meta, nomeImobili
     <div className="space-y-1.5 mt-1">
       {/* Linha 1: Ranking (esquerda) | Meta Nox — só VGV total (direita) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {/* 1. Ranking dos corretores — no lugar das moedas */}
-        <div className={`${CARD_BASE} bg-[#23283A]/30 backdrop-blur-sm p-3`}>
+        {/* 1. Ranking — 1º, 2º, 3º com nomes dos corretores */}
+        <div className={`${CARD_BASE} bg-[#23283A]/12 backdrop-blur-sm p-3`}>
           <div className={GLOW} />
           <div className="flex items-center gap-2 mb-2">
             <span className="text-amber-400">🏆</span>
             <span className="font-bold text-white text-sm">Ranking</span>
           </div>
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              <span className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-black text-[10px] shrink-0">1º</span>
-              <div className="w-6 h-6 rounded-full bg-white/15 flex items-center justify-center text-sm shrink-0">👤</div>
-              <span className="flex-1 min-w-0 font-semibold text-white text-xs truncate">Corretor destaque</span>
-              <span className="text-[10px] font-bold text-amber-400 tabular-nums">2.450</span>
-            </div>
-            <div className="flex items-center gap-2 p-1.5 rounded-lg bg-white/5 border border-white/10">
-              <span className="w-5 h-5 rounded-full bg-gray-400/80 flex items-center justify-center text-white font-bold text-[9px] shrink-0">2º</span>
-              <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-xs shrink-0">👤</div>
-              <span className="flex-1 min-w-0 font-medium text-white/80 text-xs truncate">Segundo lugar</span>
-              <span className="text-[9px] font-bold text-amber-200/90 tabular-nums">2.150</span>
-            </div>
-            <div className="flex items-center gap-2 p-1.5 rounded-lg bg-white/5 border border-white/10">
-              <span className="w-5 h-5 rounded-full bg-amber-700/90 flex items-center justify-center text-amber-200 font-bold text-[9px] shrink-0">3º</span>
-              <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-xs shrink-0">👤</div>
-              <span className="flex-1 min-w-0 font-medium text-white/70 text-xs truncate">Terceiro lugar</span>
-              <span className="text-[9px] font-bold text-amber-200/80 tabular-nums">1.890</span>
-            </div>
+            {posicoes.map((pos, i) => {
+              const c = top3[i];
+              const isFirst = i === 0;
+              const isSecond = i === 1;
+              const isThird = i === 2;
+              return (
+                <div
+                  key={c?.id || i}
+                  className={`flex items-center gap-2 py-1.5 px-2 rounded-lg border ${
+                    isFirst ? 'bg-amber-500/10 border-amber-500/25' : 'bg-white/5 border-white/10'
+                  }`}
+                >
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-white font-black text-[10px] shrink-0 ${
+                    isFirst ? 'bg-gradient-to-br from-amber-400 to-amber-600' : isSecond ? 'bg-gray-400/90' : 'bg-amber-700/90'
+                  }`}>
+                    {pos}
+                  </span>
+                  <span className="flex-1 min-w-0 font-medium text-white text-xs truncate">
+                    {c?.nome || `Corretor ${i + 1}`}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
         {/* 2. Meta Nox — somente VGV total (percentual em cima já explica) */}
-        <div className={`${CARD_BASE} bg-[#23283A]/30 backdrop-blur-sm p-3`}>
+        <div className={`${CARD_BASE} bg-[#23283A]/12 backdrop-blur-sm p-3`}>
           <div className={GLOW} />
           <div className="flex items-center justify-between gap-2 mb-1">
             <span className="font-bold text-white text-xs truncate">
@@ -113,8 +126,8 @@ export function GamificacaoMetasRow({ pontos = PONTOS_EXEMPLO, meta, nomeImobili
         </div>
       </div>
 
-      {/* Linha 2: Minhas Moedas — full width, no lugar do ranking */}
-      <div className={`${CARD_BASE} bg-[#23283A]/30 backdrop-blur-sm p-3`}>
+      {/* Linha 2: Minhas Moedas — full width */}
+      <div className={`${CARD_BASE} bg-[#23283A]/12 backdrop-blur-sm p-3`}>
         <div className={GLOW} />
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">

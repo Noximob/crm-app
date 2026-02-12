@@ -295,7 +295,7 @@ input:focus {
 
 /* Card com borda luminosa — fundo transparente para ver o background */
 .dark .card-glow {
-  background: rgba(26, 26, 30, 0.35);
+  background: rgba(26, 26, 30, 0.2);
   border: 1px solid rgba(255, 140, 0, 0.35);
   border-radius: 16px;
   box-shadow: 0 0 20px rgba(255, 140, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.03);
@@ -303,6 +303,15 @@ input:focus {
 .dark .card-glow:hover {
   border-color: rgba(255, 165, 0, 0.45);
   box-shadow: 0 0 28px rgba(255, 140, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Dias restantes — gradiente vermelho piscando para chamar atenção */
+@keyframes pulse-red-glow {
+  0%, 100% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.5); opacity: 1; }
+  50% { box-shadow: 0 0 24px rgba(239, 68, 68, 0.9); opacity: 0.92; }
+}
+.animate-pulse-red {
+  animation: pulse-red-glow 1.2s ease-in-out infinite;
 }
 
 /* Botões personalizados */

@@ -317,7 +317,7 @@ const MetaIndividualCard = ({ metaPessoal, meta }: { metaPessoal: { valorAlmejad
   };
   const colors = getProgressColors();
   return (
-    <div className="flex flex-col gap-1.5 p-3 rounded-xl shadow-lg bg-[#23283A]/25 backdrop-blur-sm border border-[#D4A017]/20 relative overflow-hidden">
+    <div className="flex flex-col gap-1.5 p-3 rounded-xl shadow-lg bg-[#23283A]/12 backdrop-blur-sm border border-[#D4A017]/20 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-0.5 h-full bg-[#D4A017]" />
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
@@ -329,8 +329,12 @@ const MetaIndividualCard = ({ metaPessoal, meta }: { metaPessoal: { valorAlmejad
             {progresso}%
           </span>
           {dias !== null && (
-            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold tabular-nums animate-pulse ${
-              dias > 0 ? 'bg-amber-500/25 text-amber-300 border border-amber-400/50' : dias === 0 ? 'bg-orange-500/30 text-orange-200 border border-orange-400/60' : 'bg-white/10 text-white/80'
+            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold tabular-nums ${
+              dias > 0
+                ? 'bg-gradient-to-r from-red-500/50 to-red-600/50 text-red-100 border border-red-400/70 animate-pulse-red'
+                : dias === 0
+                  ? 'bg-gradient-to-r from-orange-500/50 to-red-500/50 text-orange-100 border border-orange-400/70 animate-pulse'
+                  : 'bg-white/10 text-white/80'
             }`}>
               {dias > 0 ? `${dias} dias` : dias === 0 ? 'Último dia!' : 'Encerrado'}
             </span>
@@ -453,6 +457,7 @@ export default function DashboardPage() {
   const [nomeImobiliaria, setNomeImobiliaria] = useState('Imobiliária');
   const [metaPessoalValorAlmejado, setMetaPessoalValorAlmejado] = useState<number>(0);
   const [contribuicoesMeta, setContribuicoesMeta] = useState<{ corretorId: string; valor: number; dataVenda?: string }[]>([]);
+  const [corretoresRanking, setCorretoresRanking] = useState<{ id: string; nome: string }[]>([]);
   const pontosExemplo = 2150;
 
   const metaPessoal: MetaPessoalData | null = useMemo(() => {
@@ -1391,6 +1396,20 @@ export default function DashboardPage() {
     };
   }, [userData?.imobiliariaId, currentUser?.uid]);
 
+  // Corretores da imobiliária para o ranking (1º, 2º, 3º)
+  useEffect(() => {
+    if (!userData?.imobiliariaId) return;
+    const q = query(
+      collection(db, 'usuarios'),
+      where('imobiliariaId', '==', userData.imobiliariaId),
+      where('tipoConta', 'in', ['corretor-vinculado', 'corretor-autonomo', 'imobiliaria']),
+      where('aprovado', '==', true)
+    );
+    getDocs(q).then((snap) => {
+      setCorretoresRanking(snap.docs.map((d) => ({ id: d.id, nome: d.data().nome || 'Corretor' })));
+    });
+  }, [userData?.imobiliariaId]);
+
   function calcularVariacao(atual: string, anterior: string) {
     const a = parseFloat((atual || '').replace(/[^\d,.-]/g, '').replace(',', '.'));
     const b = parseFloat((anterior || '').replace(/[^\d,.-]/g, '').replace(',', '.'));
@@ -1687,6 +1706,17 @@ export default function DashboardPage() {
           <div className="card-glow rounded-2xl p-4 relative overflow-hidden animate-fade-in">
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-orange-500 rounded-r" />
 
+            {/* Tópico / título chamativo */}
+            <div className="mb-3 pb-3 border-b border-amber-500/20">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <span className="text-2xl">💬</span>
+                Comunidade
+              </h2>
+              <p className="text-xs text-amber-200/90 mt-0.5">
+                Conte pra equipe · Novidades, dicas e celebrações
+              </p>
+            </div>
+
             {/* Composer: postar direto da comunidade (igual à página Comunidade) */}
             <div className="mb-3 pb-3 border-b border-white/10 dark:border-[#23283A]">
               <div className="flex gap-3">
@@ -1886,6 +1916,7 @@ export default function DashboardPage() {
               pontos={pontosExemplo}
               meta={meta}
               nomeImobiliaria={nomeImobiliaria}
+              corretores={corretoresRanking}
             />
           </div>
         </div>
