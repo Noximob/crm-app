@@ -694,7 +694,7 @@ export default function DashboardPage() {
       });
     });
     lista.sort((a, b) => a.startTime - b.startTime);
-    return lista.slice(0, 4);
+    return lista.slice(0, 2);
   }, [currentUser?.uid, plantoes, agendaImobiliaria, currentTime]);
 
   const [respondendoPresenca, setRespondendoPresenca] = useState<string | null>(null);
