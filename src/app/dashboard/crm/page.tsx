@@ -350,9 +350,9 @@ export default function CrmPage() {
                                 className="relative flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white bg-[#D4A017] hover:bg-[#B8860B] rounded-lg transition-colors shadow-soft"
                             >
                                 <span>Filtro Rápido</span>
-                                {(activeFilter || activeTaskFilter) && (
+                                {((activeFilter ? 1 : 0) + (activeTaskFilter ? 1 : 0)) > 0 && (
                                     <span className="bg-white/90 text-[#D4A017] text-[10px] font-bold rounded-full min-w-[1.25rem] h-5 px-1.5 flex items-center justify-center">
-                                        1
+                                        {(activeFilter ? 1 : 0) + (activeTaskFilter ? 1 : 0)}
                                     </span>
                                 )}
                             </button>
