@@ -319,8 +319,8 @@ export default function CrmPage() {
             <main className="flex flex-col flex-1 min-h-0 gap-2 mt-2">
                 {/* Card principal — parte de cima fixa; compacta para sobrar mais espaço pros leads */}
                 <div className="flex flex-col flex-1 min-h-0 p-3 rounded-2xl border border-white/10">
-                    {/* Uma linha só: título | busca | filtros | contagem+paginação (lado a lado) | limpar */}
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 flex-shrink-0">
+                    {/* Uma linha (pode quebrar): título | busca | filtros | Filtro Completo + Limpar | contagem+setas — setas economizam espaço */}
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 flex-shrink-0 min-w-0">
                         <SectionTitle>Gestão de Leads</SectionTitle>
                         <div className="relative flex-shrink-0">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -394,8 +394,8 @@ export default function CrmPage() {
                                 </div>
                             )}
                         </div>
-                        {/* Filtro Completo + Limpar filtros (quando aparece) — lado a lado */}
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        {/* Filtro Completo + Limpar filtros (quando aparece) — lado a lado, permitem quebrar antes da paginação */}
+                        <div className="flex items-center gap-2 flex-shrink-0 min-w-0">
                             <button
                                 type="button"
                                 onClick={() => setFilterModalOpen(true)}
@@ -417,31 +417,32 @@ export default function CrmPage() {
                                 </button>
                             )}
                         </div>
-                        {/* Contagem e paginação — jogados pro canto (quase na borda direita) */}
-                        <div className="ml-auto flex items-center gap-2 flex-nowrap shrink-0">
+                        {/* Contagem e paginação — no canto; setas < > economizam espaço e evitam sumir quando Limpar aparece */}
+                        <div className="ml-auto flex items-center gap-1.5 flex-nowrap shrink-0 w-full sm:w-auto justify-end sm:justify-start">
                             {totalFiltered > 0 ? (
                                 <>
                                     <span className="text-xs text-gray-400 whitespace-nowrap tabular-nums shrink-0">
                                         {((currentPage - 1) * PAGE_SIZE) + 1}–{Math.min(currentPage * PAGE_SIZE, totalFiltered)} de {totalFiltered} {totalFiltered === 1 ? 'lead' : 'leads'}
                                     </span>
-                                    <div className="flex items-center gap-1 shrink-0">
+                                    <div className="flex items-center gap-0.5 shrink-0" role="navigation" aria-label="Paginação">
                                         <button
                                             type="button"
                                             onClick={() => goToPage(currentPage - 1)}
                                             disabled={currentPage <= 1}
-                                            className="px-2 py-1 text-xs font-semibold rounded-lg border border-white/10 bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+                                            title="Anterior"
+                                            className="w-7 h-7 flex items-center justify-center text-xs font-bold rounded-lg border border-white/10 bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
                                         >
-                                            Anterior
+                                            {'<'}
                                         </button>
                                         {Array.from({ length: totalPages }, (_, i) => i + 1)
                                             .filter(p => p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2))
                                             .map((p, idx, arr) => (
                                                 <React.Fragment key={p}>
-                                                    {idx > 0 && arr[idx - 1] !== p - 1 && <span className="px-1 text-gray-400">…</span>}
+                                                    {idx > 0 && arr[idx - 1] !== p - 1 && <span className="px-0.5 text-gray-400">…</span>}
                                                     <button
                                                         type="button"
                                                         onClick={() => goToPage(p)}
-                                                        className={`min-w-[1.75rem] px-2 py-1 text-xs font-semibold rounded-lg border transition-colors ${
+                                                        className={`min-w-[1.75rem] w-7 h-7 flex items-center justify-center text-xs font-semibold rounded-lg border transition-colors ${
                                                             p === currentPage
                                                                 ? 'bg-[#D4A017] border-[#D4A017] text-white'
                                                                 : 'border-white/10 bg-white/5 hover:bg-white/10'
@@ -455,9 +456,10 @@ export default function CrmPage() {
                                             type="button"
                                             onClick={() => goToPage(currentPage + 1)}
                                             disabled={currentPage >= totalPages}
-                                            className="px-2 py-1 text-xs font-semibold rounded-lg border border-white/10 bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+                                            title="Próximo"
+                                            className="w-7 h-7 flex items-center justify-center text-xs font-bold rounded-lg border border-white/10 bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
                                         >
-                                            Próximo
+                                            {'>'}
                                         </button>
                                     </div>
                                 </>
