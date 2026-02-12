@@ -350,8 +350,8 @@ export default function CrmPage() {
                             )}
                         </div>
                     </div>
-                    {/* Segundo header: filtros + paginação fixos ao rolar — sem fundo sólido, deixa o background aparecer */}
-                    <div className="sticky top-0 z-10 -mx-4 px-4 py-3 mb-4 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm">
+                    {/* Segundo header: só quadro (borda), sem fundo — igual aos outros cards */}
+                    <div className="sticky top-0 z-10 -mx-4 px-4 py-3 mb-4 rounded-xl border border-white/10">
                         <div className="flex flex-wrap items-center gap-2 mb-3">
                             {PIPELINE_STAGES.map((stage) => (
                                 <FilterChip
@@ -418,11 +418,11 @@ export default function CrmPage() {
                             </div>
                         )}
                     </div>
-                    {/* Lista de leads — container com scroll para o cabeçalho da tabela ficar fixo */}
-                    <div className="overflow-auto max-h-[calc(100vh-18rem)] rounded-xl border border-white/10">
+                    {/* Lista de leads — alinhado ao filtro (-mx-4), só quadro, sem fundo */}
+                    <div className="overflow-auto max-h-[calc(100vh-18rem)] -mx-4 rounded-xl border border-white/10">
                         <table className="min-w-full table-fixed">
                             <thead className="sticky top-0 z-10">
-                                <tr className="border-b border-white/10 bg-white/10 backdrop-blur-sm text-gray-200 text-xs">
+                                <tr className="border-b border-white/10 text-gray-200 text-xs">
                                     <th className="px-4 py-3 font-semibold text-left w-1/5 rounded-tl-xl">Nome</th>
                                     <th className="px-4 py-3 font-semibold text-left w-1/6">Telefone</th>
                                     <th className="px-4 py-3 font-semibold text-center w-1/12">WhatsApp</th>
