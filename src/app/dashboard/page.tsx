@@ -327,51 +327,41 @@ const MetasCard = ({ meta, nomeImobiliaria }: { meta: any, nomeImobiliaria: stri
   const colors = getProgressColors();
 
   return (
-    <div className="flex flex-col gap-3 p-6 rounded-2xl shadow-xl bg-gradient-to-br from-[#E8C547]/30 to-[#D4A017]/10 border-2 border-[#D4A017]/20 min-h-[200px] relative overflow-hidden">
-      {/* Borda azul à esquerda */}
+    <div className="flex flex-col gap-2 p-4 rounded-2xl shadow-xl bg-gradient-to-br from-[#E8C547]/30 to-[#D4A017]/10 border-2 border-[#D4A017]/20 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-1 h-full bg-[#D4A017]" />
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-1">
-        <svg className="h-6 w-6 text-[#D4A017]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-        <span className="font-bold text-white text-lg tracking-tight">Metas</span>
-        {nomeImobiliaria && (
-          <span className="ml-2 px-2 py-0.5 rounded bg-[#D4A017]/10 text-[#D4A017] text-xs font-semibold">{nomeImobiliaria}</span>
-        )}
+      {/* Título: Metas - Nome | percentual à direita */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <svg className="h-5 w-5 text-[#D4A017] shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          <span className="font-bold text-white text-base tracking-tight truncate">
+            Metas{nomeImobiliaria ? ` — ${nomeImobiliaria}` : ''}
+          </span>
+        </div>
+        <span className={`shrink-0 px-2.5 py-1 rounded-full text-sm font-bold ${colors.percentual} ${colors.percentualBg} border border-current/20`}>
+          {progresso}%
+        </span>
       </div>
-      {/* Datas (mesmo formato do admin, sem deslocamento por fuso) */}
-      <div className="flex items-center gap-2 text-xs text-[#E8C547] mb-2">
+      {/* Datas */}
+      <div className="flex items-center gap-2 text-[10px] text-[#E8C547]">
         <span className="font-semibold">Início:</span>
         <span className="text-white">{formatMetaDate(meta?.inicio)}</span>
         <span>|</span>
         <span className="font-semibold">Fim:</span>
         <span className="text-white">{formatMetaDate(meta?.fim)}</span>
       </div>
-      {/* Valores principais */}
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex flex-col">
-          <span className="text-xs text-[#E8C547]">VGV da Meta</span>
-          <span className="text-xl font-bold text-[#D4A017]">{meta?.valor ? meta.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}</span>
+      {/* Valores + barra */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-col min-w-0">
+          <span className="text-[10px] text-[#E8C547]">VGV da Meta</span>
+          <span className="text-sm font-bold text-[#D4A017] truncate">{meta?.valor ? meta.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}</span>
         </div>
-        <div className="flex flex-col items-end">
-          <span className="text-xs text-[#E8C547]">Já Realizado</span>
-          <span className={`text-xl font-bold ${progresso >= 100 ? 'text-[#3AC17C]' : 'text-[#D4A017]'}`}>{typeof meta?.alcancado === 'number' ? meta.alcancado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}</span>
-        </div>
-      </div>
-      {/* Barra de progresso com gradiente */}
-      <div className="w-full h-3 bg-[#23283A] rounded-full overflow-hidden mb-2 relative">
-        <div 
-          className={`h-3 rounded-full transition-all duration-1000 ease-out bg-gradient-to-r ${colors.barra} shadow-lg`} 
-          style={{ width: `${progressoDisplay}%` }}
-        >
-          {/* Efeito de brilho na barra */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
+        <div className="flex flex-col items-end min-w-0">
+          <span className="text-[10px] text-[#E8C547]">Realizado</span>
+          <span className={`text-sm font-bold ${progresso >= 100 ? 'text-[#3AC17C]' : 'text-[#D4A017]'}`}>{typeof meta?.alcancado === 'number' ? meta.alcancado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}</span>
         </div>
       </div>
-      {/* Percentual destacado */}
-      <div className={`text-right`}>
-        <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold ${colors.percentual} ${colors.percentualBg} border border-current/20 shadow-sm`}>
-          {progresso}% da meta
-        </span>
+      <div className="w-full h-2 bg-[#23283A] rounded-full overflow-hidden relative">
+        <div className={`h-2 rounded-full transition-all duration-1000 ease-out bg-gradient-to-r ${colors.barra} shadow-lg`} style={{ width: `${progressoDisplay}%` }} />
       </div>
     </div>
   );
