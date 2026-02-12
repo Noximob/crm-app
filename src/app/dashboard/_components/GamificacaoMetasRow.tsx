@@ -6,16 +6,21 @@ const PONTOS_EXEMPLO = 2150;
 
 const CoinIcon = ({ className = 'w-10 h-10' }: { className?: string }) => (
   <svg className={className} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="32" cy="32" r="28" fill="url(#coinGold)" stroke="#E8C547" strokeWidth="2"/>
-    <circle cx="32" cy="32" r="22" fill="none" stroke="#D4A017" strokeWidth="1" opacity="0.6"/>
-    <circle cx="32" cy="28" r="6" fill="none" stroke="#B8860B" strokeWidth="1" opacity="0.5"/>
     <defs>
       <linearGradient id="coinGold" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#F5D547"/>
-        <stop offset="0.5" stopColor="#D4A017"/>
+        <stop stopColor="#FFE066"/>
+        <stop offset="0.4" stopColor="#F5D547"/>
+        <stop offset="0.7" stopColor="#D4A017"/>
         <stop offset="1" stopColor="#B8860B"/>
       </linearGradient>
+      <filter id="coinGlow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="1" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
     </defs>
+    <circle cx="32" cy="32" r="28" fill="url(#coinGold)" stroke="#E8C547" strokeWidth="2" filter="url(#coinGlow)"/>
+    <circle cx="32" cy="32" r="22" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1"/>
+    <circle cx="32" cy="28" r="6" fill="none" stroke="#B8860B" strokeWidth="1" opacity="0.6"/>
   </svg>
 );
 
@@ -63,17 +68,17 @@ export function GamificacaoMetasRow({ pontos = PONTOS_EXEMPLO, meta, nomeImobili
   const colors = getProgressColors();
 
   return (
-    <div className="space-y-1.5 mt-1">
+    <div className="space-y-1 mt-0.5">
       {/* Linha 1: Ranking (esquerda) | Meta Nox — só VGV total (direita) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {/* 1. Ranking — 1º, 2º, 3º com nomes dos corretores */}
-        <div className={`${CARD_BASE} bg-[#23283A]/5 p-3`}>
+        <div className={`${CARD_BASE} bg-[#23283A]/5 p-2`}>
           <div className={GLOW} />
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-amber-400">🏆</span>
-            <span className="font-bold text-white text-sm">Ranking</span>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <span className="text-amber-400 text-sm">🏆</span>
+            <span className="font-bold text-white text-xs">Ranking</span>
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             {posicoes.map((pos, i) => {
               const c = top3[i];
               const isFirst = i === 0;
@@ -101,74 +106,65 @@ export function GamificacaoMetasRow({ pontos = PONTOS_EXEMPLO, meta, nomeImobili
         </div>
 
         {/* 2. Meta Nox — somente VGV total (percentual em cima já explica) */}
-        <div className={`${CARD_BASE} bg-[#23283A]/5 p-3`}>
+        <div className={`${CARD_BASE} bg-[#23283A]/5 p-2`}>
           <div className={GLOW} />
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <span className="font-bold text-white text-xs truncate">
+          <div className="flex items-center justify-between gap-1.5 mb-0.5">
+            <span className="font-bold text-white text-[11px] truncate">
               Metas{nomeImobiliaria ? ` — ${nomeImobiliaria}` : ''}
             </span>
-            <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold ${colors.percentual} bg-white/10`}>
+            <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold ${colors.percentual} bg-white/10`}>
               {progresso}%
             </span>
           </div>
-          <div className="text-xs font-bold text-amber-200/95 mb-2">
+          <div className="text-[10px] font-bold text-amber-200/95 mb-1">
             {formatMetaDate(meta?.inicio)} → {formatMetaDate(meta?.fim)}
           </div>
           <div className="flex-1 flex flex-col justify-center">
-            <p className="text-[10px] text-amber-200/90 uppercase tracking-wide mb-0.5">VGV total</p>
-            <p className="text-lg font-black text-[#E8C547] tabular-nums leading-tight">
+            <p className="text-[9px] text-amber-200/90 uppercase tracking-wide mb-0.5">VGV total</p>
+            <p className="text-base font-black text-[#E8C547] tabular-nums leading-tight">
               {meta?.valor != null ? meta.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}
             </p>
           </div>
-          <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden mt-2">
+          <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden mt-1">
             <div className={`h-full rounded-full transition-all duration-500 ease-out bg-gradient-to-r ${colors.barra}`} style={{ width: `${progressoDisplay}%` }} />
           </div>
         </div>
       </div>
 
-      {/* Linha 2: Minhas Moedas — full width, estilo banner gamificado */}
-      <div className={`${CARD_BASE} bg-gradient-to-r from-[#1a1a1e]/70 via-[#1a1a1e]/40 to-[#1a1a1e]/10 p-3`}>
-        <div className={GLOW} />
-        <div className="flex items-center justify-between gap-4">
-          {/* Bloco de texto e pontos */}
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="p-1.5 rounded-lg bg-amber-500/25 border border-amber-400/50 shadow-[0_0_12px_rgba(248,191,59,0.45)]">
-              <CoinIcon className="w-5 h-5" />
+      {/* Linha 2: Minhas Moedas — compacto + gamificado (evita barra de rolagem) */}
+      <div className={`${CARD_BASE} p-2 min-h-0 overflow-hidden bg-gradient-to-r from-[#1a1510]/90 via-[#1a1612]/70 to-[#0d0a08]/80 border-amber-500/30 shadow-[0_0_20px_rgba(212,160,23,0.12),inset_0_1px_0_rgba(255,255,255,0.06)]`}>
+        <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-amber-300 via-[#D4A017] to-amber-600 rounded-r-full shadow-[0_0_10px_rgba(212,160,23,0.5)]" />
+        <div className="flex items-center justify-between gap-2 pl-1">
+          {/* Esquerda: ícone + título + pontos em linha compacta */}
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="p-1 rounded-lg bg-amber-500/30 border border-amber-400/50 shadow-[0_0_10px_rgba(248,191,59,0.4)] ring-1 ring-amber-300/20 shrink-0">
+              <CoinIcon className="w-4 h-4" />
             </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-[11px] font-semibold text-amber-200/90 tracking-wide uppercase">
+            <div className="flex items-baseline gap-2 min-w-0 flex-wrap">
+              <span className="text-[10px] font-bold text-amber-200/95 tracking-wide uppercase shrink-0">
                 Minhas Moedas
               </span>
-              <span className="text-xl font-black text-[#F8D34A] tabular-nums leading-tight">
-                {pontos.toLocaleString('pt-BR')}{' '}
-                <span className="text-xs font-semibold text-amber-200/90">pontos</span>
+              <span className="text-base font-black text-[#F8D34A] tabular-nums leading-none drop-shadow-[0_0_8px_rgba(248,211,74,0.5)]">
+                {pontos.toLocaleString('pt-BR')}
               </span>
-              <span className="text-[10px] text-amber-100/85 mt-0.5">
-                Acumule moedas participando das ações da imobiliária.
-              </span>
+              <span className="text-[10px] font-semibold text-amber-200/80 shrink-0">pts</span>
             </div>
           </div>
 
-          {/* Ilustração de moedas empilhadas — inspirado no mockup */}
-          <div className="relative w-28 h-16 shrink-0">
-            {/* brilho de fundo */}
-            <div className="absolute inset-x-2 bottom-0 h-6 bg-amber-500/40 blur-md rounded-full" />
-            {/* moeda esquerda (mais baixa) */}
-            <div className="absolute left-0 bottom-0 scale-75 origin-bottom">
-              <CoinIcon className="w-12 h-12" />
+          {/* Direita: pilha de moedas menor + brilho */}
+          <div className="relative w-20 h-10 shrink-0 flex items-end justify-end">
+            <div className="absolute inset-0 bottom-0 h-4 bg-amber-500/30 blur-md rounded-full scale-75 origin-bottom" />
+            <div className="absolute right-0 bottom-0 scale-75 origin-bottom">
+              <CoinIcon className="w-8 h-8" />
             </div>
-            {/* moeda central (principal) */}
-            <div className="absolute left-5 bottom-1 scale-90 origin-bottom">
-              <CoinIcon className="w-14 h-14" />
+            <div className="absolute right-4 bottom-0.5 scale-90 origin-bottom">
+              <CoinIcon className="w-9 h-9" />
             </div>
-            {/* moeda direita (um pouco mais alta) */}
-            <div className="absolute right-0 bottom-2 scale-80 origin-bottom">
-              <CoinIcon className="w-12 h-12" />
+            <div className="absolute right-8 bottom-1 scale-70 origin-bottom">
+              <CoinIcon className="w-7 h-7" />
             </div>
-            {/* estrelinhas de fundo para dar sensação de festa */}
-            <span className="absolute top-1 left-3 text-xs text-amber-300/90">✦</span>
-            <span className="absolute top-0 right-6 text-[10px] text-amber-200/90">✶</span>
-            <span className="absolute top-4 right-2 text-[9px] text-amber-300/80">✦</span>
+            <span className="absolute top-0 right-2 text-[8px] text-amber-300/80">✦</span>
+            <span className="absolute top-1 right-6 text-[7px] text-amber-200/70">✶</span>
           </div>
         </div>
       </div>
