@@ -175,13 +175,13 @@ export default function DashboardLayout({
       {/* Sidebar — mesmo background (partículas), borda sutil */}
       <div className={`flex flex-col h-screen fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-transparent transition-all duration-300 text-xs pb-8`}>
         <div className="flex-1 flex flex-col">
-          <div className="flex items-center justify-between p-5">
+          <div className="h-16 flex items-center justify-between px-5 shrink-0">
             <button
               onClick={() => router.push('/dashboard')}
               className="flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer [filter:drop-shadow(0_0_8px_rgba(255,140,0,0.4))]"
               title="Voltar ao Dashboard"
             >
-              <AlummaLogoFullInline theme="dark" height={32} iconOnly={collapsed} className="shrink-0" />
+              <AlummaLogoFullInline theme="dark" height={28} iconOnly={collapsed} className="shrink-0" />
               {!collapsed && <span className="sr-only">Alumma</span>}
             </button>
             <button
@@ -245,7 +245,7 @@ export default function DashboardLayout({
 
       <div className={`flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300 ${collapsed ? 'ml-16' : 'ml-64'}`}>
         {/* Header gamificado: Olá | indicadores (CUB, SELIC...) | Ideias, moedas, avatar */}
-        <header className="px-5 py-2 shrink-0 flex items-center justify-between gap-3">
+        <header className="h-16 px-5 shrink-0 flex items-center justify-between gap-3">
           <h2 className="text-lg font-bold text-orange-400 truncate shrink-0">
             Olá, {displayName}! 👋
           </h2>
