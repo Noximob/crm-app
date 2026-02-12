@@ -1597,9 +1597,9 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Comunidade — debaixo das Missões Diárias */}
-          <div className="card-glow rounded-2xl p-4 relative overflow-hidden animate-fade-in">
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-orange-500 rounded-r" />
+          {/* Comunidade — debaixo das Missões Diárias (design alinhado ao Brello: fundo visível) */}
+          <div className="rounded-2xl p-4 relative overflow-hidden animate-fade-in border border-white/10">
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-orange-500 rounded-r pointer-events-none" />
 
             {/* Tópico chamativo — foguinho tempo real */}
             <div className="mb-3 pb-3 border-b border-amber-500/20">
@@ -1613,13 +1613,13 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            {/* Composer: postar direto da comunidade (igual à página Comunidade) */}
-            <div className="mb-3 pb-3 border-b border-white/10 dark:border-[#23283A]">
+            {/* Composer: bloco semi-transparente para deixar o background aparecer */}
+            <div className="mb-3 rounded-xl p-4 bg-white/10 backdrop-blur-sm border border-white/10">
               <div className="flex gap-3">
                 <img src={getComunidadeAvatar()} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-white/20 shrink-0" onError={(e) => { (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=U&background=random`; }} />
                 <div className="flex-1 min-w-0 flex flex-col gap-2">
                   <textarea
-                    className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white/80 dark:bg-[#181C23] text-[#2E2F38] dark:text-white resize-none min-h-[72px] text-sm placeholder-[#6B6F76] dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#D4A017]/50"
+                    className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-white resize-none min-h-[72px] text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#D4A017]/50"
                     placeholder="O que está acontecendo?"
                     value={novoPostComunidade}
                     onChange={(e) => setNovoPostComunidade(e.target.value)}
@@ -1627,14 +1627,14 @@ export default function DashboardPage() {
                   />
                   <input
                     type="text"
-                    className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white/80 dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm placeholder-[#6B6F76] dark:placeholder-gray-400 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#D4A017]/50"
                     placeholder="🔗 Link do YouTube (opcional)"
                     value={youtubeLinkComunidade}
                     onChange={(e) => handleYoutubeLinkChangeComunidade(e.target.value)}
                     disabled={postandoComunidade}
                   />
                   {youtubePreviewComunidade && (
-                    <div className="relative rounded-lg overflow-hidden border border-[#E8E9F1] dark:border-[#23283A] bg-black/20">
+                    <div className="relative rounded-lg overflow-hidden border border-white/10 bg-black/20">
                       <iframe
                         src={youtubePreviewComunidade.embedUrl}
                         title="YouTube"
@@ -1650,10 +1650,10 @@ export default function DashboardPage() {
                   {filePreviewComunidade && (
                     <div className="relative inline-block">
                       {fileComunidade?.type.startsWith('image/') && (
-                        <img src={filePreviewComunidade} alt="" className="max-h-28 rounded-lg border border-[#E8E9F1] dark:border-[#23283A]" />
+                        <img src={filePreviewComunidade} alt="" className="max-h-28 rounded-lg border border-white/10" />
                       )}
                       {fileComunidade?.type.startsWith('video/') && (
-                        <video src={filePreviewComunidade} controls className="max-h-28 rounded-lg border border-[#E8E9F1] dark:border-[#23283A]" />
+                        <video src={filePreviewComunidade} controls className="max-h-28 rounded-lg border border-white/10" />
                       )}
                       <button type="button" onClick={() => { setFileComunidade(null); setFilePreviewComunidade(null); }} className="absolute top-1 right-1 bg-black/60 hover:bg-red-500 text-white rounded-full p-1 text-xs">✕</button>
                     </div>
@@ -1692,32 +1692,32 @@ export default function DashboardPage() {
             ) : trendingPosts.length === 0 ? (
               <div className="text-center py-6">
                 <div className="text-4xl mb-2">📱</div>
-                <p className="text-[#6B6F76] dark:text-gray-300 text-sm">Nenhum post ainda. Seja o primeiro!</p>
+                <p className="text-gray-300 text-sm">Nenhum post ainda. Seja o primeiro!</p>
               </div>
             ) : (
               <div className="space-y-2">
                 {trendingPostsFiltered.slice(0, 6).map((post, index) => (
                   <div
                     key={post.id}
-                    className={`group relative rounded-xl p-4 transition-all duration-300 cursor-pointer border hover:scale-[1.02] shadow-lg hover:shadow-xl ${
+                    className={`group relative rounded-xl p-4 transition-all duration-300 cursor-pointer border backdrop-blur-sm hover:scale-[1.02] ${
                       post.isEvento
-                        ? 'bg-gradient-to-r from-yellow-50/40 to-orange-50/40 dark:from-yellow-900/15 dark:to-orange-900/15 border-yellow-200/50 dark:border-yellow-700/50'
-                        : 'bg-white/15 dark:bg-[#23283A]/10 border-white/20 hover:bg-white/25 dark:hover:bg-[#23283A]/18 hover:border-[#D4A017]/30'
+                        ? 'bg-amber-500/15 border-amber-400/30 hover:bg-amber-500/20'
+                        : 'bg-white/10 border-white/10 hover:bg-white/15 hover:border-white/20'
                     }`}
                   >
                     <div className="absolute -top-2 -left-2 w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg">#{index + 1}</div>
                     <div className="flex items-start gap-3">
-                      <img src={post.avatar} alt={post.nome} className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-[#23283A] shrink-0" />
+                      <img src={post.avatar} alt={post.nome} className="w-10 h-10 rounded-full object-cover border-2 border-white/20 shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-bold text-[#2E2F38] dark:text-white text-sm truncate">{post.nome}</span>
-                          <span className="text-[10px] text-[#6B6F76] dark:text-gray-300">
+                          <span className="font-bold text-white text-sm truncate">{post.nome}</span>
+                          <span className="text-[10px] text-gray-300">
                             {post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}
                           </span>
                         </div>
-                        {!post.repostOf && post.texto && <div className="text-sm text-[#2E2F38] dark:text-white line-clamp-2">{post.texto}</div>}
-                        {post.repostOf && post.repostComment && <div className="text-xs text-[#6B6F76] dark:text-gray-400 italic">Repost: {post.repostComment}</div>}
-                        <div className="flex items-center gap-3 mt-2 text-xs text-[#6B6F76] dark:text-gray-400">
+                        {!post.repostOf && post.texto && <div className="text-sm text-white line-clamp-2">{post.texto}</div>}
+                        {post.repostOf && post.repostComment && <div className="text-xs text-gray-400 italic">Repost: {post.repostComment}</div>}
+                        <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
                           <span>❤️ {post.likes || 0}</span>
                           <span>💬 {post.commentsCount || 0}</span>
                           <button type="button" onClick={(e) => { e.stopPropagation(); openPostModal(post); }} className="text-[#D4A017] hover:underline">Ver</button>
@@ -1729,7 +1729,7 @@ export default function DashboardPage() {
               </div>
             )}
 
-            <div className="mt-2 pt-2 border-t border-white/20 dark:border-[#23283A]/20">
+            <div className="mt-2 pt-2 border-t border-white/10">
               <Link href="/dashboard/comunidade" className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-gradient-to-r from-[#D4A017] to-[#E8C547] text-white font-semibold rounded-lg hover:from-[#B8860B] hover:to-[#D4A017] transition-all text-sm">
                 <span>🚀</span>
                 <span>Ver mais na Comunidade</span>
