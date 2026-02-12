@@ -702,7 +702,7 @@ export default function DashboardPage() {
       });
     });
     lista.sort((a, b) => a.startTime - b.startTime);
-    return lista.slice(0, 2);
+    return lista.slice(0, 3);
   }, [currentUser?.uid, plantoes, agendaImobiliaria, currentTime]);
 
   const [respondendoPresenca, setRespondendoPresenca] = useState<string | null>(null);
@@ -1454,7 +1454,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* 1) Próximas ações — Agora + Em breve + próximos (até 4 cards), igual TV Agenda do Dia */}
+            {/* 1) Próximas ações — 1ª linha: só a do momento; 2ª linha: 2 cards (mesmo style) */}
             <div className="mb-5">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Próximas ações</p>
               {agendaLoading ? (
@@ -1464,8 +1464,10 @@ export default function DashboardPage() {
                   Nenhum evento confirmado no momento.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {proximosEventosConfirmados.map((item) => {
+                <div className="space-y-3">
+                  {/* 1ª linha: somente a do momento (primeiro item) */}
+                  {proximosEventosConfirmados[0] && (() => {
+                    const item = proximosEventosConfirmados[0];
                     const nowTime = currentTime.getTime();
                     const isAgora = item.startTime <= nowTime && item.fimTime >= nowTime;
                     const ATENCAO_MS = 45 * 60 * 1000;
@@ -1497,7 +1499,45 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     );
-                  })}
+                  })()}
+                  {/* 2ª linha: 2 cards */}
+                  {(proximosEventosConfirmados[1] || proximosEventosConfirmados[2]) && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[proximosEventosConfirmados[1], proximosEventosConfirmados[2]].filter(Boolean).map((item) => {
+                        const nowTime = currentTime.getTime();
+                        const isAgora = item!.startTime <= nowTime && item!.fimTime >= nowTime;
+                        const ATENCAO_MS = 45 * 60 * 1000;
+                        const emBreve = item!.startTime > nowTime && item!.startTime - nowTime <= ATENCAO_MS;
+                        const destaque = isAgora || emBreve;
+                        const cardClass = destaque
+                          ? isAgora
+                            ? 'rounded-xl border-2 border-red-500 bg-red-600/30 shadow-xl shadow-red-500/40 ring-2 ring-red-500/70'
+                            : 'rounded-xl border-2 border-amber-400 bg-amber-500/25 shadow-xl shadow-amber-500/40 ring-2 ring-amber-400/70'
+                          : 'rounded-xl border-2 border-emerald-400 bg-emerald-500/20';
+                        const icon = item!.tipoChave ? (TIPO_ICON[item!.tipoChave] ?? TIPO_ICON.outro) : (item!.tipo === 'plantao' ? '🏢' : TIPO_ICON.outro);
+                        return (
+                          <div key={`${item!.tipo}-${item!.id}-${item!.startTime}`} className={`${cardClass} ${destaque ? 'animate-pulse' : ''} p-4 flex flex-col gap-2 min-h-[100px] relative`}>
+                            {isAgora && (
+                              <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-red-500 text-white text-[10px] font-bold uppercase animate-pulse">Agora</span>
+                            )}
+                            {emBreve && !isAgora && (
+                              <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-amber-400 text-black text-[10px] font-bold uppercase">Em breve</span>
+                            )}
+                            <p className="font-bold text-white text-sm truncate pr-16" title={item!.titulo}>{item!.titulo}</p>
+                            <div className="flex items-center justify-between mt-0.5 text-[11px]">
+                              <div className="flex items-center gap-1">
+                                <span className="text-sm">{icon}</span>
+                                <span className={destaque ? 'text-white/90' : 'text-emerald-200/90'}>{item!.tipoLabel}</span>
+                              </div>
+                              <span className="text-emerald-100/90 font-mono">
+                                {item!.dataStr} · {item!.horarioStr}–{item!.horarioFimStr}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
