@@ -637,13 +637,18 @@ export default function DashboardPage() {
     return lista;
   }, [currentUser?.uid, plantoes, agendaImobiliaria]);
 
-  // Próximo evento em que o usuário está CONFIRMADO — mesmo esquema do Dashboard TV (Agenda do Dia): startTime, fimTime, horário início–fim
-  const proximoEventoConfirmado = useMemo(() => {
+  // Próximas ações: eventos em que o usuário está CONFIRMADO — Agora + Em breve + próximos (até 4), igual TV Agenda do Dia
+  const proximosEventosConfirmados = useMemo(() => {
     const uid = currentUser?.uid;
     const now = currentTime.getTime();
-    if (!uid) return null;
+    if (!uid) return [];
     type Item = { tipo: 'plantao' | 'agenda'; id: string; titulo: string; tipoLabel: string; tipoChave?: string; dataStr: string; horarioStr: string; horarioFimStr: string; startTime: number; fimTime: number };
     const lista: Item[] = [];
+    const pushPlantao = (p: any, startTime: number, dataStr: string, horarioStr: string) => {
+      const fimTime = startTime + 2 * 60 * 60 * 1000;
+      const horarioFimStr = new Date(fimTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      lista.push({ tipo: 'plantao', id: p.id, titulo: p.construtora ? `Plantão — ${p.construtora}` : 'Plantão', tipoLabel: 'Plantão', dataStr, horarioStr, horarioFimStr, startTime, fimTime });
+    };
     plantoes.forEach((p: any) => {
       if (!Array.isArray(p.presentesIds) || !p.presentesIds.includes(uid)) return;
       if (p.respostasPresenca?.[uid] !== 'confirmado') return;
@@ -651,53 +656,27 @@ export default function DashboardPage() {
       const dataFim = p.dataFim || dataInicio;
       const horario = (p.horario || '00:00').substring(0, 5);
       const [hh = 9, mm = 0] = horario.split(':').map(Number);
-      let startTime = 0;
-      let dataStr = '';
-      if (dataInicio) {
-        const d = new Date(dataInicio);
-        startTime = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hh, mm, 0, 0).getTime();
-        dataStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      }
-      if (startTime > now) {
+      if (!dataInicio) return;
+      const dIni = new Date(dataInicio);
+      const dFim = new Date(dataFim);
+      for (let d = new Date(dIni); d <= dFim; d.setDate(d.getDate() + 1)) {
+        const dt = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hh, mm, 0, 0);
+        const startTime = dt.getTime();
         const fimTime = startTime + 2 * 60 * 60 * 1000;
-        const fimDate = new Date(fimTime);
-        const horarioFimStr = fimDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        lista.push({ tipo: 'plantao', id: p.id, titulo: p.construtora ? `Plantão — ${p.construtora}` : 'Plantão', tipoLabel: 'Plantão', dataStr, horarioStr: horario, horarioFimStr, startTime, fimTime });
-        return;
-      }
-      if (dataFim && dataInicio) {
-        const dIni = new Date(dataInicio);
-        const dFim = new Date(dataFim);
-        for (let d = new Date(dIni); d <= dFim; d.setDate(d.getDate() + 1)) {
-          const dt = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hh, mm, 0, 0);
-          if (dt.getTime() > now) {
-            const startTime = dt.getTime();
-            const fimTime = startTime + 2 * 60 * 60 * 1000;
-            const horarioFimStr = new Date(fimTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-            lista.push({
-              tipo: 'plantao',
-              id: p.id,
-              titulo: p.construtora ? `Plantão — ${p.construtora}` : 'Plantão',
-              tipoLabel: 'Plantão',
-              dataStr: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-              horarioStr: horario,
-              horarioFimStr,
-              startTime,
-              fimTime,
-            });
-            break;
-          }
-        }
+        if (fimTime < now) continue;
+        const dataStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        pushPlantao(p, startTime, dataStr, horario);
       }
     });
     agendaImobiliaria.forEach((a: any) => {
       if (!Array.isArray(a.presentesIds) || !a.presentesIds.includes(uid)) return;
       if (a.respostasPresenca?.[uid] !== 'confirmado') return;
       const dt = a.dataInicio?.toDate ? a.dataInicio.toDate() : (a.dataInicio ? new Date(a.dataInicio) : null);
-      if (!dt || dt.getTime() <= now) return;
+      if (!dt) return;
       const startTime = dt.getTime();
       const dtFim = a.dataFim?.toDate ? a.dataFim.toDate() : null;
       const fimTime = dtFim ? dtFim.getTime() : startTime + 60 * 60 * 1000;
+      if (fimTime < now) return;
       const dataStr = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
       const horarioStr = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
       const horarioFimStr = new Date(fimTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -715,7 +694,7 @@ export default function DashboardPage() {
       });
     });
     lista.sort((a, b) => a.startTime - b.startTime);
-    return lista[0] ?? null;
+    return lista.slice(0, 4);
   }, [currentUser?.uid, plantoes, agendaImobiliaria, currentTime]);
 
   const [respondendoPresenca, setRespondendoPresenca] = useState<string | null>(null);
@@ -1458,46 +1437,50 @@ export default function DashboardPage() {
               </Link>
             </div>
 
-            {/* 1) Próximo evento confirmado — mesmo esquema Dashboard TV Agenda do Dia: cores Agora/Em breve, horário início–fim, ícone */}
+            {/* 1) Próximas ações — Agora + Em breve + próximos (até 4 cards), igual TV Agenda do Dia */}
             <div className="mb-5">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Próximo evento</p>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Próximas ações</p>
               {agendaLoading ? (
                 <p className="text-gray-400 text-sm">Carregando...</p>
-              ) : proximoEventoConfirmado ? (() => {
-                const nowTime = currentTime.getTime();
-                const isAgora = proximoEventoConfirmado.startTime <= nowTime && proximoEventoConfirmado.fimTime >= nowTime;
-                const ATENCAO_MS = 45 * 60 * 1000;
-                const emBreve = proximoEventoConfirmado.startTime > nowTime && proximoEventoConfirmado.startTime - nowTime <= ATENCAO_MS;
-                const destaque = isAgora || emBreve;
-                const cardClass = destaque
-                  ? isAgora
-                    ? 'rounded-xl border-2 border-red-500 bg-red-600/30 shadow-xl shadow-red-500/40 ring-2 ring-red-500/70'
-                    : 'rounded-xl border-2 border-amber-400 bg-amber-500/25 shadow-xl shadow-amber-500/40 ring-2 ring-amber-400/70'
-                  : 'rounded-xl border-2 border-emerald-400 bg-emerald-500/20';
-                const icon = proximoEventoConfirmado.tipoChave ? (TIPO_ICON[proximoEventoConfirmado.tipoChave] ?? TIPO_ICON.outro) : (proximoEventoConfirmado.tipo === 'plantao' ? '🏢' : TIPO_ICON.outro);
-                return (
-                  <div className={`${cardClass} ${destaque ? 'animate-pulse' : ''} p-4 flex flex-col gap-2 min-h-[100px] relative`}>
-                    {isAgora && (
-                      <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-red-500 text-white text-[10px] font-bold uppercase animate-pulse">Agora</span>
-                    )}
-                    {emBreve && !isAgora && (
-                      <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-amber-400 text-black text-[10px] font-bold uppercase">Em breve</span>
-                    )}
-                    <p className="font-bold text-white text-sm truncate pr-16" title={proximoEventoConfirmado.titulo}>{proximoEventoConfirmado.titulo}</p>
-                    <div className="flex items-center justify-between mt-0.5 text-[11px]">
-                      <div className="flex items-center gap-1">
-                        <span className="text-sm">{icon}</span>
-                        <span className={destaque ? 'text-white/90' : 'text-emerald-200/90'}>{proximoEventoConfirmado.tipoLabel}</span>
-                      </div>
-                      <span className="text-emerald-100/90 font-mono">
-                        {proximoEventoConfirmado.dataStr} · {proximoEventoConfirmado.horarioStr}–{proximoEventoConfirmado.horarioFimStr}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })() : (
+              ) : proximosEventosConfirmados.length === 0 ? (
                 <div className="rounded-xl bg-gray-700/30 border border-gray-600/50 p-4 text-gray-400 text-sm">
                   Nenhum evento confirmado no momento.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {proximosEventosConfirmados.map((item) => {
+                    const nowTime = currentTime.getTime();
+                    const isAgora = item.startTime <= nowTime && item.fimTime >= nowTime;
+                    const ATENCAO_MS = 45 * 60 * 1000;
+                    const emBreve = item.startTime > nowTime && item.startTime - nowTime <= ATENCAO_MS;
+                    const destaque = isAgora || emBreve;
+                    const cardClass = destaque
+                      ? isAgora
+                        ? 'rounded-xl border-2 border-red-500 bg-red-600/30 shadow-xl shadow-red-500/40 ring-2 ring-red-500/70'
+                        : 'rounded-xl border-2 border-amber-400 bg-amber-500/25 shadow-xl shadow-amber-500/40 ring-2 ring-amber-400/70'
+                      : 'rounded-xl border-2 border-emerald-400 bg-emerald-500/20';
+                    const icon = item.tipoChave ? (TIPO_ICON[item.tipoChave] ?? TIPO_ICON.outro) : (item.tipo === 'plantao' ? '🏢' : TIPO_ICON.outro);
+                    return (
+                      <div key={`${item.tipo}-${item.id}-${item.startTime}`} className={`${cardClass} ${destaque ? 'animate-pulse' : ''} p-4 flex flex-col gap-2 min-h-[100px] relative`}>
+                        {isAgora && (
+                          <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-red-500 text-white text-[10px] font-bold uppercase animate-pulse">Agora</span>
+                        )}
+                        {emBreve && !isAgora && (
+                          <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-amber-400 text-black text-[10px] font-bold uppercase">Em breve</span>
+                        )}
+                        <p className="font-bold text-white text-sm truncate pr-16" title={item.titulo}>{item.titulo}</p>
+                        <div className="flex items-center justify-between mt-0.5 text-[11px]">
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm">{icon}</span>
+                            <span className={destaque ? 'text-white/90' : 'text-emerald-200/90'}>{item.tipoLabel}</span>
+                          </div>
+                          <span className="text-emerald-100/90 font-mono">
+                            {item.dataStr} · {item.horarioStr}–{item.horarioFimStr}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1775,45 +1758,58 @@ export default function DashboardPage() {
 
         {/* Coluna Direita — rola independente; scrollbar totalmente oculta */}
         <div id="trending-section" className="dashboard-scroll-hide overflow-y-auto overflow-x-hidden pr-2 min-h-0 space-y-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          {/* Funil de vendas individual — estilo Dashboard TV */}
+          {/* Funil de vendas individual — igual Dashboard TV FunilVendasIndividualSlide (4 etapas, nível, barras) */}
           <div className="card-glow rounded-2xl p-5 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-r from-[#D4A017] to-[#60a5fa] rounded-r" />
-            <h2 className="text-base font-bold text-white mb-1">Funil de vendas</h2>
-            <p className="text-xs text-gray-400 mb-4">Seus leads por etapa</p>
             {agendaLoading ? (
               <p className="text-gray-400 text-sm">Carregando...</p>
             ) : (() => {
-              const totalFunil = Object.values(funilPessoal).reduce((a, b) => a + b, 0);
-              const maxLocal = Math.max(...Object.values(funilPessoal), 1);
-              const STAGE_LABELS: Record<string, string> = {
-                'Pré Qualificação': 'Pré Qualif.', 'Qualificação': 'Qualificação', 'Apresentação do imóvel': 'Apres. imóvel',
-                'Ligação agendada': 'Lig. agendada', 'Visita agendada': 'Visita agend.', 'Negociação e Proposta': 'Negoc. e Proposta',
-                'Contrato e fechamento': 'Contrato', 'Pós Venda e Fidelização': 'Pós Venda', 'Interesse Futuro': 'Int. Futuro',
-                'Carteira': 'Carteira', 'Geladeira': 'Geladeira'
+              const porEtapa = funilPessoal;
+              const totalFunil = Object.values(porEtapa).reduce((a, b) => a + b, 0);
+              const ETAPAS_EXIBIR = [
+                { key: 'qualif', label: 'Qualif.', getVal: (p: Record<string, number>) => p['Qualificação'] ?? 0 },
+                { key: 'visita-lig', label: 'Lig. e visita', getVal: (p: Record<string, number>) => (p['Ligação agendada'] ?? 0) + (p['Visita agendada'] ?? 0) },
+                { key: 'negoc', label: 'Negoc. e prop.', quente: true, getVal: (p: Record<string, number>) => p['Negociação e Proposta'] ?? 0 },
+                { key: 'int-futuro', label: 'Int. futuro', getVal: (p: Record<string, number>) => p['Interesse Futuro'] ?? 0 },
+              ];
+              const valores = ETAPAS_EXIBIR.map((e) => e.getVal(porEtapa));
+              const maxLocal = Math.max(...valores, 1);
+              const getNivel = (total: number) => {
+                if (total >= 50) return { label: 'Líder', emoji: '🏆', bg: 'bg-amber-500/25 border-amber-400/40', text: 'text-amber-300' };
+                if (total >= 25) return { label: 'Elite', emoji: '⭐', bg: 'bg-amber-500/15 border-amber-400/30', text: 'text-amber-200' };
+                if (total >= 10) return { label: 'Em alta', emoji: '🔥', bg: 'bg-orange-500/15 border-orange-400/30', text: 'text-orange-300' };
+                if (total >= 5) return { label: 'Subindo', emoji: '📈', bg: 'bg-emerald-500/15 border-emerald-400/30', text: 'text-emerald-300' };
+                return { label: 'Em jogo', emoji: '🎯', bg: 'bg-[#D4A017]/15 border-[#D4A017]/30', text: 'text-[#93c5fd]' };
               };
+              const nivel = getNivel(totalFunil);
               return (
                 <>
+                  <div className="flex items-center gap-2 mb-3">
+                    <h2 className="text-base font-bold text-white">Funil de vendas</h2>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border ${nivel.bg} ${nivel.text}`}>
+                      {nivel.emoji} {nivel.label}
+                    </span>
+                  </div>
                   <div className="inline-flex items-baseline gap-2 px-4 py-2 rounded-xl bg-[#D4A017]/20 border border-[#D4A017]/40 mb-4">
-                    <span className="text-gray-400 text-sm font-medium">Total no funil</span>
-                    <span className="text-2xl font-black tabular-nums text-white">{totalFunil}</span>
+                    <span className="text-gray-400 text-sm font-medium">Total</span>
+                    <span className="text-2xl font-black tabular-nums text-[#60a5fa]">{totalFunil}</span>
                     <span className="text-gray-400 text-sm">leads</span>
                   </div>
                   <div className="space-y-2">
-                    {PIPELINE_STAGES.map((etapa) => {
-                      const qtd = funilPessoal[etapa] ?? 0;
-                      const pct = Math.round((qtd / maxLocal) * 100);
-                      const label = STAGE_LABELS[etapa] ?? etapa;
-                      const isQuente = ['Negociação e Proposta', 'Contrato e fechamento', 'Pós Venda e Fidelização'].includes(etapa);
+                    {ETAPAS_EXIBIR.map((etapa) => {
+                      const qtd = etapa.getVal(porEtapa);
+                      const pct = maxLocal > 0 ? Math.round((qtd / maxLocal) * 100) : 0;
+                      const widthPct = qtd > 0 ? Math.max(pct, 20) : 0;
                       return (
-                        <div key={etapa} className="flex items-center gap-2">
-                          <span className="text-xs text-gray-400 w-24 truncate" title={etapa}>{label}</span>
+                        <div key={etapa.key} className="flex items-center gap-2">
+                          <span className="text-xs text-[#94a3b8] font-medium w-20 shrink-0">{etapa.label}</span>
                           <div className="flex-1 min-w-0 h-2 bg-white/10 rounded-full overflow-hidden">
                             <div
-                              className="h-full rounded-full bg-gradient-to-r from-[#D4A017] to-[#60a5fa] transition-all duration-500"
-                              style={{ width: `${Math.max(pct, 8)}%` }}
+                              className={`h-full rounded-full ${(etapa as any).quente ? 'bg-amber-400' : 'bg-[#D4A017]'}`}
+                              style={{ width: `${widthPct}%`, minWidth: qtd > 0 ? 6 : 0 }}
                             />
                           </div>
-                          <span className={`text-xs font-semibold tabular-nums w-6 text-right ${isQuente ? 'text-amber-400' : 'text-[#D4A017]'}`}>{qtd}</span>
+                          <span className="text-xs font-bold text-white tabular-nums w-5 text-right shrink-0">{qtd}</span>
                         </div>
                       );
                     })}
