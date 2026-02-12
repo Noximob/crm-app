@@ -317,7 +317,7 @@ const MetaIndividualCard = ({ metaPessoal, meta }: { metaPessoal: { valorAlmejad
   };
   const colors = getProgressColors();
   return (
-    <div className="flex flex-col gap-1.5 p-3 rounded-xl shadow-lg bg-gradient-to-br from-[#E8C547]/30 to-[#D4A017]/10 border border-[#D4A017]/20 relative overflow-hidden">
+    <div className="flex flex-col gap-1.5 p-3 rounded-xl shadow-lg bg-[#23283A]/25 backdrop-blur-sm border border-[#D4A017]/20 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-0.5 h-full bg-[#D4A017]" />
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
@@ -1490,7 +1490,7 @@ export default function DashboardPage() {
         <div className="dashboard-scroll-hide space-y-6 overflow-y-auto overflow-x-hidden pr-2 min-h-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {/* Quadro: eventos em que fui marcado — Confirmar Presença / Cancelar */}
           {eventosEmQueFuiMarcado.length > 0 && (
-            <div className="bg-background-card rounded-2xl border border-[var(--border-subtle)] p-5 shadow-sm">
+            <div className="bg-[#1a1a1e]/35 backdrop-blur-sm rounded-2xl border border-[var(--border-subtle)] p-5 shadow-sm">
               <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
                 <UsersIcon className="h-5 w-5 text-orange-400" />
                 Você foi marcado(a) nestas ações
@@ -1881,39 +1881,6 @@ export default function DashboardPage() {
               meta={meta}
               nomeImobiliaria={nomeImobiliaria}
             />
-          </div>
-
-          {/* Ranking dos corretores — mockup visual (1º, 2º, 3º) */}
-          <div className="rounded-xl border border-amber-500/30 bg-gradient-to-br from-[#23283A] to-[#181C23] p-3 relative overflow-hidden shadow-md">
-            <div className="absolute left-0 top-0 w-0.5 h-full bg-gradient-to-b from-amber-400 to-amber-600" />
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-amber-400">🏆</span>
-              <span className="font-bold text-white text-sm">Ranking dos corretores</span>
-            </div>
-            <div className="space-y-2">
-              {/* 1º */}
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/15 border border-amber-500/30">
-                <span className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-black text-xs shrink-0 shadow-md">1º</span>
-                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-lg shrink-0">👤</div>
-                <span className="flex-1 min-w-0 font-semibold text-white text-sm truncate">Corretor destaque</span>
-                <span className="text-xs font-bold text-amber-400 tabular-nums">2.450 pts</span>
-              </div>
-              {/* 2º */}
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10">
-                <span className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center text-white font-bold text-[10px] shrink-0">2º</span>
-                <div className="w-7 h-7 rounded-full bg-white/15 flex items-center justify-center text-base shrink-0">👤</div>
-                <span className="flex-1 min-w-0 font-medium text-white/90 text-xs truncate">Segundo lugar</span>
-                <span className="text-[10px] font-bold text-amber-200/90 tabular-nums">2.150 pts</span>
-              </div>
-              {/* 3º */}
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10">
-                <span className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center text-amber-200 font-bold text-[10px] shrink-0">3º</span>
-                <div className="w-7 h-7 rounded-full bg-white/15 flex items-center justify-center text-base shrink-0">👤</div>
-                <span className="flex-1 min-w-0 font-medium text-white/80 text-xs truncate">Terceiro lugar</span>
-                <span className="text-[10px] font-bold text-amber-200/80 tabular-nums">1.890 pts</span>
-              </div>
-            </div>
-            <p className="text-[9px] text-white/50 mt-2 text-center">Mockup — dados reais em breve</p>
           </div>
         </div>
       </div>
