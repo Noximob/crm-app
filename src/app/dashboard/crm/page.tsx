@@ -298,13 +298,14 @@ export default function CrmPage() {
 
     return (
         <>
-        <div className="min-h-full p-4 sm:p-6 lg:p-8 overflow-x-hidden">
+        {/* Altura fixa: só os leads rolam; título, busca, paginação, filtros e cabeçalho da tabela ficam fixos */}
+        <div className="flex flex-col h-[calc(100vh-5rem)] min-h-0 p-4 sm:p-6 lg:p-8 overflow-hidden">
             <CrmHeader />
-            <main className="flex flex-col gap-4 mt-4">
-                {/* Card principal do CRM — sem fundo sólido, deixa o background aparecer (igual Brello/Comunidade) */}
-                <div className="p-4 rounded-2xl border border-white/10">
-                    {/* Linha única: Gestão de Leads | Busca | Contagem + Paginação | Filtrar | Limpar */}
-                    <div className="flex flex-wrap items-center gap-3 md:gap-4 mb-4">
+            <main className="flex flex-col flex-1 min-h-0 gap-4 mt-4">
+                {/* Card principal — parte de cima fixa (título, busca, paginação, filtros, cabeçalho da tabela); só os leads rolam */}
+                <div className="flex flex-col flex-1 min-h-0 p-4 rounded-2xl border border-white/10">
+                    {/* Linha fixa: Gestão de Leads | Busca | Contagem + Paginação | Filtrar | Limpar */}
+                    <div className="flex flex-wrap items-center gap-3 md:gap-4 mb-4 flex-shrink-0">
                         <SectionTitle>Gestão de Leads</SectionTitle>
                         <div className="relative flex-shrink-0">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -394,9 +395,9 @@ export default function CrmPage() {
                             )}
                         </div>
                     </div>
-                    {/* Segundo header: só quadro (borda), sem fundo — sem -mx para não invadir a sidebar ao rolar */}
-                    <div className="sticky top-0 z-10 py-3 mb-4 rounded-xl border border-white/10 px-4">
-                        <div className="flex flex-wrap items-center gap-2 mb-3">
+                    {/* Chips de filtro — fixos, não rolam */}
+                    <div className="py-3 mb-4 rounded-xl border border-white/10 px-4 flex-shrink-0">
+                        <div className="flex flex-wrap items-center gap-2">
                             {PIPELINE_STAGES.map((stage) => (
                                 <FilterChip
                                     key={stage}
@@ -418,8 +419,8 @@ export default function CrmPage() {
                             ))}
                         </div>
                     </div>
-                    {/* Lista de leads — só quadro, sem -mx; overflow contido para não sobresair/sumir ao rolar */}
-                    <div className="overflow-auto max-h-[calc(100vh-18rem)] rounded-xl border border-white/10">
+                    {/* Só esta parte rola: corpo da tabela (leads). Cabeçalho da tabela fica fixo no topo desta área. */}
+                    <div className="flex-1 min-h-0 overflow-auto rounded-xl border border-white/10">
                         <table className="min-w-full table-fixed">
                             <thead className="sticky top-0 z-10">
                                 <tr className="border-b border-white/10 bg-[var(--bg-card)]/95 backdrop-blur-sm text-gray-200 text-xs shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
