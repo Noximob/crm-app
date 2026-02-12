@@ -111,7 +111,7 @@ export function GamificacaoMetasRow({ pontos = PONTOS_EXEMPLO, meta, nomeImobili
               {progresso}%
             </span>
           </div>
-          <div className="text-[9px] text-amber-200/80 mb-2">
+          <div className="text-xs font-bold text-amber-200/95 mb-2">
             {formatMetaDate(meta?.inicio)} → {formatMetaDate(meta?.fim)}
           </div>
           <div className="flex-1 flex flex-col justify-center">

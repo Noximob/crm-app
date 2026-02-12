@@ -1706,14 +1706,15 @@ export default function DashboardPage() {
           <div className="card-glow rounded-2xl p-4 relative overflow-hidden animate-fade-in">
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-orange-500 rounded-r" />
 
-            {/* Tópico / título chamativo */}
+            {/* Tópico chamativo — foguinho tempo real */}
             <div className="mb-3 pb-3 border-b border-amber-500/20">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <span className="text-2xl">💬</span>
+                <span className="text-2xl animate-pulse" title="Ao vivo">🔥</span>
                 Comunidade
               </h2>
-              <p className="text-xs text-amber-200/90 mt-0.5">
-                Conte pra equipe · Novidades, dicas e celebrações
+              <p className="text-xs font-semibold text-amber-300/95 mt-1 flex items-center gap-1.5">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Em tempo real · O que tá rolando na equipe
               </p>
             </div>
 
