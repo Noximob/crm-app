@@ -1701,57 +1701,62 @@ export default function DashboardPage() {
 
         {/* Coluna Direita — rola independente; scrollbar totalmente oculta */}
         <div id="trending-section" className="dashboard-scroll-hide overflow-y-auto overflow-x-hidden pr-2 min-h-0 space-y-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          {/* Funil de vendas — exatamente igual Dashboard TV (FunilVendasSlide): 11 etapas, total, mesmo estilo */}
+          {/* Funil de vendas individual — igual Dashboard TV FunilVendasIndividualSlide: nome do corretor, nível, total, 4 etapas */}
           <div className="card-glow rounded-2xl p-5 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-r from-[#D4A017] to-[#60a5fa] rounded-r" />
             {agendaLoading ? (
               <p className="text-gray-400 text-sm">Carregando...</p>
             ) : (() => {
-              const funilCorporativo = funilPessoal;
-              const totalCorporativo = Object.values(funilCorporativo).reduce((a, b) => a + b, 0);
-              const maxCorporativo = Math.max(...Object.values(funilCorporativo), 1);
-              const STAGE_LABELS: Record<string, string> = {
-                'Pré Qualificação': 'Pré Qualif.', 'Qualificação': 'Qualificação', 'Apresentação do imóvel': 'Apres. imóvel',
-                'Ligação agendada': 'Lig. agendada', 'Visita agendada': 'Visita agend.', 'Negociação e Proposta': 'Negoc. e Proposta',
-                'Contrato e fechamento': 'Contrato', 'Pós Venda e Fidelização': 'Pós Venda', 'Interesse Futuro': 'Int. Futuro',
-                'Carteira': 'Carteira', 'Geladeira': 'Geladeira',
+              const porEtapa = funilPessoal;
+              const totalFunil = Object.values(porEtapa).reduce((a, b) => a + b, 0);
+              const ETAPAS_FUNIL_INDIVIDUAL = [
+                { key: 'qualif', label: 'Qualif.', getVal: (p: Record<string, number>) => p['Qualificação'] ?? 0 },
+                { key: 'visita-lig', label: 'Lig. e visita', getVal: (p: Record<string, number>) => (p['Ligação agendada'] ?? 0) + (p['Visita agendada'] ?? 0) },
+                { key: 'negoc', label: 'Negoc. e prop.', quente: true, getVal: (p: Record<string, number>) => p['Negociação e Proposta'] ?? 0 },
+                { key: 'int-futuro', label: 'Int. futuro', getVal: (p: Record<string, number>) => p['Interesse Futuro'] ?? 0 },
+              ];
+              const valores = ETAPAS_FUNIL_INDIVIDUAL.map((e) => e.getVal(porEtapa));
+              const maxLocal = Math.max(...valores, 1);
+              const getNivel = (total: number) => {
+                if (total >= 50) return { label: 'Líder', emoji: '🏆', bg: 'bg-amber-500/25 border-amber-400/40', text: 'text-amber-300' };
+                if (total >= 25) return { label: 'Elite', emoji: '⭐', bg: 'bg-amber-500/15 border-amber-400/30', text: 'text-amber-200' };
+                if (total >= 10) return { label: 'Em alta', emoji: '🔥', bg: 'bg-orange-500/15 border-orange-400/30', text: 'text-orange-300' };
+                if (total >= 5) return { label: 'Subindo', emoji: '📈', bg: 'bg-emerald-500/15 border-emerald-400/30', text: 'text-emerald-300' };
+                return { label: 'Em jogo', emoji: '🎯', bg: 'bg-[#D4A017]/15 border-[#D4A017]/30', text: 'text-[#93c5fd]' };
               };
+              const nivel = getNivel(totalFunil);
+              const nomeCorretor = userData?.nome || currentUser?.email?.split('@')[0] || 'Corretor';
               return (
                 <>
-                  <div className="shrink-0 pb-3 border-b border-white/10">
-                    <h1 className="text-lg font-bold bg-gradient-to-r from-[#D4A017] via-[#60a5fa] to-[#D4A017] bg-clip-text text-transparent">
-                      Funil de Vendas
-                    </h1>
-                    <p className="text-[#94a3b8] text-xs mt-0.5">Dados em tempo real do CRM</p>
+                  {/* Topo: ícone + nome | badge nível + total (azul) — igual TV individual */}
+                  <div className="flex items-center gap-2 flex-shrink-0 mb-4">
+                    <span className="w-8 h-8 rounded-lg bg-amber-500/30 flex items-center justify-center text-amber-400 border border-amber-400/40 shrink-0">
+                      <TrophyIcon className="w-4 h-4" />
+                    </span>
+                    <span className="flex-1 min-w-0 font-semibold text-white text-sm truncate" title={nomeCorretor}>
+                      {nomeCorretor}
+                    </span>
+                    <span className={`shrink-0 px-2 py-1 rounded text-[10px] font-semibold border ${nivel.bg} ${nivel.text}`}>
+                      {nivel.emoji} {nivel.label}
+                    </span>
+                    <span className="shrink-0 text-lg font-black tabular-nums text-[#60a5fa]">{totalFunil}</span>
                   </div>
-                  <div className="shrink-0 py-3 flex justify-center">
-                    <div className="inline-flex items-baseline gap-2 px-4 py-2 rounded-2xl bg-[#D4A017]/20 border border-[#D4A017]/40 shadow-[0_0_20px_-5px_rgba(52,120,246,0.3)]">
-                      <span className="text-[#94a3b8] text-sm font-medium">Total no funil</span>
-                      <span className="text-2xl font-black tabular-nums text-white">{totalCorporativo}</span>
-                      <span className="text-[#94a3b8] text-sm">leads</span>
-                    </div>
-                  </div>
-                  <div className="grid gap-2 grid-cols-2 sm:grid-cols-3">
-                    {PIPELINE_STAGES.map((etapa) => {
-                      const qtd = funilCorporativo[etapa] ?? 0;
-                      const pct = maxCorporativo ? Math.round((qtd / maxCorporativo) * 100) : 0;
-                      const label = STAGE_LABELS[etapa] ?? etapa;
-                      const isQuente = ['Negociação e Proposta', 'Contrato e fechamento', 'Pós Venda e Fidelização'].includes(etapa);
+                  {/* 4 etapas: label + barra + número */}
+                  <div className="space-y-3">
+                    {ETAPAS_FUNIL_INDIVIDUAL.map((etapa) => {
+                      const qtd = etapa.getVal(porEtapa);
+                      const pct = maxLocal > 0 ? Math.round((qtd / maxLocal) * 100) : 0;
+                      const widthPct = qtd > 0 ? Math.max(pct, 20) : 0;
                       return (
-                        <div
-                          key={etapa}
-                          className="group flex flex-col rounded-xl bg-white/5 border border-white/10 p-2.5 hover:border-[#D4A017]/40 hover:bg-white/10 transition-all duration-300"
-                        >
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-xs font-medium text-[#cbd5e1] truncate pr-1" title={etapa}>{label}</span>
-                            <span className={`text-sm font-bold tabular-nums shrink-0 ${isQuente ? 'text-amber-400' : 'text-[#D4A017]'}`}>{qtd}</span>
-                          </div>
-                          <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div key={etapa.key} className="flex items-center gap-2">
+                          <span className="text-xs text-[#94a3b8] font-medium w-20 shrink-0">{etapa.label}</span>
+                          <div className="flex-1 min-w-0 h-2 bg-white/10 rounded-full overflow-hidden">
                             <div
-                              className="h-full rounded-full bg-gradient-to-r from-[#D4A017] to-[#60a5fa] transition-all duration-500"
-                              style={{ width: `${Math.max(pct, 4)}%` }}
+                              className={`h-full rounded-full ${(etapa as { quente?: boolean }).quente ? 'bg-amber-400' : 'bg-[#D4A017]'}`}
+                              style={{ width: `${widthPct}%`, minWidth: qtd > 0 ? 6 : 0 }}
                             />
                           </div>
+                          <span className="text-xs font-bold text-white tabular-nums w-5 text-right shrink-0">{qtd}</span>
                         </div>
                       );
                     })}
