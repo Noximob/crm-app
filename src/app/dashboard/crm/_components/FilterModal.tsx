@@ -17,7 +17,7 @@ const TASK_STATUS_OPTIONS = [
     'Tarefa em Atraso',
     'Tarefa do Dia', 
     'Tarefa Futura',
-    'Sem tarefa'
+    'Criar Tarefa'
 ];
 
 export interface Filters {

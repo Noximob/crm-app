@@ -282,8 +282,9 @@ export default function LeadDetailPage() {
         setIsSavingTask(true);
 
         const { description, type, date, time } = task;
+        // Cria a data/hora exatamente como o corretor escolheu (horário local),
+        // sem aplicar ajustes manuais de fuso para evitar deslocar para 06:00 etc.
         const dueDate = new Date(`${date}T${time}`);
-        const dueDateTimestamp = new Date(dueDate.getTime() - dueDate.getTimezoneOffset() * 60000);
 
         try {
             // Adicionar a tarefa
@@ -291,7 +292,7 @@ export default function LeadDetailPage() {
             const taskDoc = await addDoc(tasksCol, {
                 description,
                 type,
-                dueDate: dueDateTimestamp,
+                dueDate,
                 status: 'pendente'
             });
 
