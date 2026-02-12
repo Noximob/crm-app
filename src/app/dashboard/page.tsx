@@ -1739,8 +1739,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Coluna Direita — compacta para caber na tela; scroll suave se precisar */}
-        <div id="trending-section" className="dashboard-scroll-hide overflow-y-auto overflow-x-hidden pr-2 min-h-0 space-y-1.5 pb-6" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        {/* Coluna Direita — flex para Minhas Moedas ir quase até o fim */}
+        <div id="trending-section" className="dashboard-scroll-hide overflow-y-auto overflow-x-hidden pr-2 min-h-0 flex flex-col gap-1.5 pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {/* Funil de vendas individual — compacto */}
           <div className="card-glow rounded-xl p-2 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-0.5 h-full bg-gradient-to-r from-[#D4A017] to-[#60a5fa] rounded-r" />
@@ -1804,8 +1804,8 @@ export default function DashboardPage() {
             })()}
           </div>
 
-          {/* Meta Individual + 2 painéis (Ranking | Meta Nox | Minhas Moedas) — compacto */}
-          <div className="card-glow rounded-xl p-2 relative overflow-hidden animate-fade-in">
+          {/* Meta Individual + 2 painéis (Ranking | Meta Nox | Minhas Moedas) — cresce até o fim */}
+          <div className="card-glow rounded-xl p-2 relative overflow-hidden animate-fade-in flex-1 flex flex-col min-h-0">
             <div className="absolute top-0 left-0 w-0.5 h-full bg-amber-500 rounded-r" />
             <MetaIndividualCard metaPessoal={metaPessoal} meta={meta} />
             <GamificacaoMetasRow

@@ -68,9 +68,9 @@ export function GamificacaoMetasRow({ pontos = PONTOS_EXEMPLO, meta, nomeImobili
   const colors = getProgressColors();
 
   return (
-    <div className="space-y-1 mt-0.5">
+    <div className="flex flex-col flex-1 min-h-0 gap-1 mt-0.5">
       {/* Linha 1: Ranking (esquerda) | Meta Nox — só VGV total (direita) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 shrink-0">
         {/* 1. Ranking — 1º, 2º, 3º com nomes dos corretores */}
         <div className={`${CARD_BASE} bg-[#23283A]/5 p-2`}>
           <div className={GLOW} />
@@ -131,40 +131,41 @@ export function GamificacaoMetasRow({ pontos = PONTOS_EXEMPLO, meta, nomeImobili
         </div>
       </div>
 
-      {/* Linha 2: Minhas Moedas — compacto + gamificado (evita barra de rolagem) */}
-      <div className={`${CARD_BASE} p-2 min-h-0 overflow-hidden bg-gradient-to-r from-[#1a1510]/90 via-[#1a1612]/70 to-[#0d0a08]/80 border-amber-500/30 shadow-[0_0_20px_rgba(212,160,23,0.12),inset_0_1px_0_rgba(255,255,255,0.06)]`}>
-        <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-amber-300 via-[#D4A017] to-amber-600 rounded-r-full shadow-[0_0_10px_rgba(212,160,23,0.5)]" />
-        <div className="flex items-center justify-between gap-2 pl-1">
-          {/* Esquerda: ícone + título + pontos em linha compacta */}
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <div className="p-1 rounded-lg bg-amber-500/30 border border-amber-400/50 shadow-[0_0_10px_rgba(248,191,59,0.4)] ring-1 ring-amber-300/20 shrink-0">
-              <CoinIcon className="w-4 h-4" />
+      {/* Linha 2: Minhas Moedas — preenche até quase a borda, bonito e elegante */}
+      <div className={`${CARD_BASE} flex-1 min-h-[72px] flex flex-col justify-center overflow-hidden bg-gradient-to-br from-[#1a1510]/95 via-[#1a1612]/85 to-[#0d0a08]/90 border-amber-500/35 shadow-[0_0_24px_rgba(212,160,23,0.15),inset_0_1px_0_rgba(255,255,255,0.08)] rounded-xl`}>
+        <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-amber-200 via-[#D4A017] to-amber-700 rounded-r-full shadow-[0_0_12px_rgba(212,160,23,0.6)]" />
+        <div className="flex items-center justify-between gap-4 px-3 py-4 pl-4">
+          {/* Esquerda: ícone + título + pontos — elegante */}
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="p-2 rounded-xl bg-amber-500/25 border border-amber-400/40 shadow-[0_0_14px_rgba(248,191,59,0.35)] ring-1 ring-amber-300/25 shrink-0">
+              <CoinIcon className="w-6 h-6" />
             </div>
-            <div className="flex items-baseline gap-2 min-w-0 flex-wrap">
-              <span className="text-[10px] font-bold text-amber-200/95 tracking-wide uppercase shrink-0">
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <span className="text-[11px] font-bold text-amber-200/95 tracking-widest uppercase">
                 Minhas Moedas
               </span>
-              <span className="text-base font-black text-[#F8D34A] tabular-nums leading-none drop-shadow-[0_0_8px_rgba(248,211,74,0.5)]">
+              <span className="text-2xl font-black text-[#F8D34A] tabular-nums leading-tight drop-shadow-[0_0_12px_rgba(248,211,74,0.55)]">
                 {pontos.toLocaleString('pt-BR')}
+                <span className="text-sm font-semibold text-amber-200/90 ml-1">pts</span>
               </span>
-              <span className="text-[10px] font-semibold text-amber-200/80 shrink-0">pts</span>
             </div>
           </div>
 
-          {/* Direita: pilha de moedas menor + brilho */}
-          <div className="relative w-20 h-10 shrink-0 flex items-end justify-end">
-            <div className="absolute inset-0 bottom-0 h-4 bg-amber-500/30 blur-md rounded-full scale-75 origin-bottom" />
-            <div className="absolute right-0 bottom-0 scale-75 origin-bottom">
-              <CoinIcon className="w-8 h-8" />
+          {/* Direita: pilha de moedas com brilho — elegante */}
+          <div className="relative w-24 h-14 shrink-0 flex items-end justify-end">
+            <div className="absolute inset-x-0 bottom-0 h-8 bg-amber-500/25 blur-xl rounded-full" />
+            <div className="absolute right-0 bottom-0 origin-bottom">
+              <CoinIcon className="w-10 h-10" />
             </div>
-            <div className="absolute right-4 bottom-0.5 scale-90 origin-bottom">
+            <div className="absolute right-5 bottom-1 origin-bottom">
+              <CoinIcon className="w-12 h-12" />
+            </div>
+            <div className="absolute right-10 bottom-2 origin-bottom">
               <CoinIcon className="w-9 h-9" />
             </div>
-            <div className="absolute right-8 bottom-1 scale-70 origin-bottom">
-              <CoinIcon className="w-7 h-7" />
-            </div>
-            <span className="absolute top-0 right-2 text-[8px] text-amber-300/80">✦</span>
-            <span className="absolute top-1 right-6 text-[7px] text-amber-200/70">✶</span>
+            <span className="absolute top-1 right-3 text-[10px] text-amber-300/90">✦</span>
+            <span className="absolute top-0 right-8 text-[9px] text-amber-200/85">✶</span>
+            <span className="absolute top-3 right-1 text-[8px] text-amber-300/75">✦</span>
           </div>
         </div>
       </div>
