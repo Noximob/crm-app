@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PIPELINE_STAGES } from '@/lib/constants';
 import CrmHeader from './_components/CrmHeader';
@@ -126,8 +126,23 @@ export default function CrmPage() {
     const [advancedFilters, setAdvancedFilters] = useState<Filters>({});
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [filtroRapidoOpen, setFiltroRapidoOpen] = useState(false);
+    const filtroRapidoRef = useRef<HTMLDivElement>(null);
     const PAGE_SIZE = 20;
     const MAX_LEADS_LOAD = 500;
+
+    // Fechar dropdown Filtro Rápido ao clicar fora
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (filtroRapidoRef.current && !filtroRapidoRef.current.contains(e.target as Node)) {
+                setFiltroRapidoOpen(false);
+            }
+        };
+        if (filtroRapidoOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [filtroRapidoOpen]);
 
     // Filtro de tarefa vindo da URL (?tarefa=atraso|hoje|sem)
     useEffect(() => {
@@ -304,7 +319,7 @@ export default function CrmPage() {
             <main className="flex flex-col flex-1 min-h-0 gap-4 mt-4">
                 {/* Card principal — parte de cima fixa (título, busca, paginação, filtros, cabeçalho da tabela); só os leads rolam */}
                 <div className="flex flex-col flex-1 min-h-0 p-4 rounded-2xl border border-white/10">
-                    {/* Linha fixa: Gestão de Leads | Busca | Contagem + Paginação | Filtrar | Limpar */}
+                    {/* Linha única (mockup): Gestão de Leads | Busca | Filtro Rápido | Filtro Completo | 1-20 de 36 | Paginação | Limpar */}
                     <div className="flex flex-wrap items-center gap-3 md:gap-4 mb-4 flex-shrink-0">
                         <SectionTitle>Gestão de Leads</SectionTitle>
                         <div className="relative flex-shrink-0">
@@ -327,97 +342,125 @@ export default function CrmPage() {
                                 </button>
                             )}
                         </div>
-                        {/* Contagem e paginação — entre busca e Filtrar, proporcional */}
-                        <div className="flex-1 min-w-0 flex items-center justify-center gap-3 sm:gap-4 flex-wrap">
-                        {totalFiltered > 0 ? (
-                            <>
-                                <span className="text-xs text-gray-400 whitespace-nowrap tabular-nums">
-                                    {((currentPage - 1) * PAGE_SIZE) + 1}–{Math.min(currentPage * PAGE_SIZE, totalFiltered)} de {totalFiltered} {totalFiltered === 1 ? 'lead' : 'leads'}
-                                </span>
-                                <div className="flex items-center gap-1">
-                                    <button
-                                        type="button"
-                                        onClick={() => goToPage(currentPage - 1)}
-                                        disabled={currentPage <= 1}
-                                        className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-white/10 bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
-                                    >
-                                        Anterior
-                                    </button>
-                                    {Array.from({ length: totalPages }, (_, i) => i + 1)
-                                        .filter(p => p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2))
-                                        .map((p, idx, arr) => (
-                                            <React.Fragment key={p}>
-                                                {idx > 0 && arr[idx - 1] !== p - 1 && <span className="px-1 text-gray-400">…</span>}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => goToPage(p)}
-                                                    className={`min-w-[2rem] px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
-                                                        p === currentPage
-                                                            ? 'bg-[#D4A017] border-[#D4A017] text-white'
-                                                            : 'border-white/10 bg-white/5 hover:bg-white/10'
-                                                    }`}
-                                                >
-                                                    {p}
-                                                </button>
-                                            </React.Fragment>
-                                        ))}
-                                    <button
-                                        type="button"
-                                        onClick={() => goToPage(currentPage + 1)}
-                                        disabled={currentPage >= totalPages}
-                                        className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-white/10 bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
-                                    >
-                                        Próximo
-                                    </button>
-                                </div>
-                            </>
-                        ) : <span className="text-xs text-gray-500">—</span>}
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        {/* Filtro Rápido — dropdown com chips (etapa + tarefa); página fica clean */}
+                        <div className="relative flex-shrink-0" ref={filtroRapidoRef}>
                             <button
-                                onClick={() => setFilterModalOpen(true)}
+                                type="button"
+                                onClick={() => setFiltroRapidoOpen((o) => !o)}
                                 className="relative flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-[#D4A017] hover:bg-[#B8860B] rounded-lg transition-colors shadow-soft"
                             >
-                                <span>Filtrar</span>
-                                {activeAdvancedFilterCount > 0 && (
-                                    <span className="bg-[#3AC17C] text-white text-[10px] font-bold rounded-full px-2 py-0.5 ml-1 animate-pulse-slow">
-                                        {activeAdvancedFilterCount}
+                                <span>Filtro Rápido</span>
+                                {(activeFilter || activeTaskFilter) && (
+                                    <span className="bg-white/90 text-[#D4A017] text-[10px] font-bold rounded-full min-w-[1.25rem] h-5 px-1.5 flex items-center justify-center">
+                                        1
                                     </span>
                                 )}
                             </button>
-                            {(searchTerm.trim() || activeFilter || activeTaskFilter || activeAdvancedFilterCount > 0) && (
-                                <button
-                                    onClick={handleClearFilters}
-                                    className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-[#F45B69] bg-[#F45B69]/10 hover:bg-[#F45B69]/20 rounded-lg transition-colors"
-                                >
-                                    <XIcon className="h-4 w-4" /> Limpar filtros
-                                </button>
+                            {filtroRapidoOpen && (
+                                <div className="absolute left-0 top-full mt-1.5 z-50 w-[min(90vw,420px)] max-h-[70vh] overflow-y-auto rounded-xl border border-white/10 bg-[var(--bg-card)] shadow-xl py-3 px-3">
+                                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2 px-1">Etapa do funil</p>
+                                    <div className="flex flex-wrap gap-2 mb-3">
+                                        {PIPELINE_STAGES.map((stage) => (
+                                            <FilterChip
+                                                key={stage}
+                                                selected={activeFilter === stage}
+                                                onClick={() => {
+                                                    setActiveFilter(activeFilter === stage ? null : stage);
+                                                    setCurrentPage(1);
+                                                    setFiltroRapidoOpen(false);
+                                                }}
+                                            >
+                                                {stage}
+                                            </FilterChip>
+                                        ))}
+                                    </div>
+                                    <div className="w-full h-px bg-white/10 my-2" />
+                                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2 px-1">Status da tarefa</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {taskStatusFilters.map((taskStatus) => (
+                                            <FilterChip
+                                                key={taskStatus}
+                                                selected={activeTaskFilter === taskStatus}
+                                                onClick={() => {
+                                                    setActiveTaskFilter(activeTaskFilter === taskStatus ? null : taskStatus);
+                                                    setCurrentPage(1);
+                                                    setFiltroRapidoOpen(false);
+                                                }}
+                                            >
+                                                {taskStatus}
+                                            </FilterChip>
+                                        ))}
+                                    </div>
+                                </div>
                             )}
                         </div>
-                    </div>
-                    {/* Chips de filtro — fixos, não rolam */}
-                    <div className="py-3 mb-4 rounded-xl border border-white/10 px-4 flex-shrink-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                            {PIPELINE_STAGES.map((stage) => (
-                                <FilterChip
-                                    key={stage}
-                                    selected={activeFilter === stage}
-                                    onClick={() => { setActiveFilter(activeFilter === stage ? null : stage); setCurrentPage(1); }}
-                                >
-                                    {stage}
-                                </FilterChip>
-                            ))}
-                            <div className="w-px h-6 bg-white/20 mx-1" aria-hidden />
-                            {taskStatusFilters.map((taskStatus) => (
-                                <FilterChip
-                                    key={taskStatus}
-                                    selected={activeTaskFilter === taskStatus}
-                                    onClick={() => { setActiveTaskFilter(activeTaskFilter === taskStatus ? null : taskStatus); setCurrentPage(1); }}
-                                >
-                                    {taskStatus}
-                                </FilterChip>
-                            ))}
+                        {/* Filtro Completo — modal com filtros avançados */}
+                        <button
+                            type="button"
+                            onClick={() => setFilterModalOpen(true)}
+                            className="relative flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-[#D4A017] hover:bg-[#B8860B] rounded-lg transition-colors shadow-soft flex-shrink-0"
+                        >
+                            <span>Filtro Completo</span>
+                            {activeAdvancedFilterCount > 0 && (
+                                <span className="bg-[#3AC17C] text-white text-[10px] font-bold rounded-full px-2 py-0.5 ml-1 animate-pulse-slow">
+                                    {activeAdvancedFilterCount}
+                                </span>
+                            )}
+                        </button>
+                        {/* Contagem e paginação */}
+                        <div className="flex-1 min-w-0 flex items-center justify-center gap-3 sm:gap-4 flex-wrap">
+                            {totalFiltered > 0 ? (
+                                <>
+                                    <span className="text-xs text-gray-400 whitespace-nowrap tabular-nums">
+                                        {((currentPage - 1) * PAGE_SIZE) + 1}–{Math.min(currentPage * PAGE_SIZE, totalFiltered)} de {totalFiltered} {totalFiltered === 1 ? 'lead' : 'leads'}
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => goToPage(currentPage - 1)}
+                                            disabled={currentPage <= 1}
+                                            className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-white/10 bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+                                        >
+                                            Anterior
+                                        </button>
+                                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                            .filter(p => p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2))
+                                            .map((p, idx, arr) => (
+                                                <React.Fragment key={p}>
+                                                    {idx > 0 && arr[idx - 1] !== p - 1 && <span className="px-1 text-gray-400">…</span>}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => goToPage(p)}
+                                                        className={`min-w-[2rem] px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
+                                                            p === currentPage
+                                                                ? 'bg-[#D4A017] border-[#D4A017] text-white'
+                                                                : 'border-white/10 bg-white/5 hover:bg-white/10'
+                                                        }`}
+                                                    >
+                                                        {p}
+                                                    </button>
+                                                </React.Fragment>
+                                            ))}
+                                        <button
+                                            type="button"
+                                            onClick={() => goToPage(currentPage + 1)}
+                                            disabled={currentPage >= totalPages}
+                                            className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-white/10 bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+                                        >
+                                            Próximo
+                                        </button>
+                                    </div>
+                                </>
+                            ) : <span className="text-xs text-gray-500">—</span>}
                         </div>
+                        {(searchTerm.trim() || activeFilter || activeTaskFilter || activeAdvancedFilterCount > 0) && (
+                            <button
+                                onClick={handleClearFilters}
+                                className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-[#F45B69] bg-[#F45B69]/10 hover:bg-[#F45B69]/20 rounded-lg transition-colors flex-shrink-0"
+                            >
+                                <XIcon className="h-4 w-4" /> Limpar filtros
+                            </button>
+                        )}
                     </div>
                     {/* Só esta parte rola: corpo da tabela (leads). Cabeçalho da tabela fica fixo no topo desta área. */}
                     <div className="flex-1 min-h-0 overflow-auto rounded-xl border border-white/10">
