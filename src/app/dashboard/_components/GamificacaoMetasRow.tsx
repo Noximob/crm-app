@@ -52,63 +52,57 @@ export function GamificacaoMetasRow({ pontos = PONTOS_EXEMPLO, meta, nomeImobili
   };
   const colors = getProgressColors();
 
-  const cardBase = 'rounded-2xl border-2 border-[#D4A017]/30 bg-gradient-to-br from-[#23283A] to-[#181C23] flex flex-col relative overflow-hidden shadow-lg';
-  const glowLeft = 'absolute left-0 top-0 w-1 h-full bg-[#D4A017]';
+  const cardBase = 'rounded-xl border border-[#D4A017]/30 bg-gradient-to-br from-[#23283A] to-[#181C23] flex flex-col relative overflow-hidden shadow-md';
+  const glowLeft = 'absolute left-0 top-0 w-0.5 h-full bg-[#D4A017]';
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-      {/* 1. Minhas Moedas — igual à foto: título + ícone pequeno no topo, moeda grande + pontos abaixo (nosso background) */}
-      <div className={`${cardBase} p-5 min-h-[140px]`}>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+      {/* 1. Minhas Moedas — layout da foto, compacto */}
+      <div className={`${cardBase} p-3`}>
         <div className={glowLeft} />
-        <div className="flex items-center gap-2 mb-3">
-          <div className="p-1.5 rounded-lg bg-amber-500/20 border border-amber-500/30">
-            <CoinIcon className="w-6 h-6" />
+        <div className="flex items-center gap-1.5 mb-2">
+          <div className="p-1 rounded bg-amber-500/20 border border-amber-500/30">
+            <CoinIcon className="w-5 h-5" />
           </div>
-          <span className="font-bold text-[#E8C547] text-base tracking-tight">Minhas Moedas</span>
+          <span className="font-bold text-[#E8C547] text-sm tracking-tight">Minhas Moedas</span>
         </div>
-        <div className="flex items-center gap-3 flex-1">
-          <CoinIcon className="w-12 h-12 text-amber-400 shrink-0" />
-          <span className="text-2xl font-black text-[#E8C547] tabular-nums">
-            {pontos.toLocaleString('pt-BR')} <span className="text-base font-semibold text-amber-200/90">pontos</span>
+        <div className="flex items-center gap-2">
+          <CoinIcon className="w-9 h-9 text-amber-400 shrink-0" />
+          <span className="text-xl font-black text-[#E8C547] tabular-nums leading-tight">
+            {pontos.toLocaleString('pt-BR')} <span className="text-sm font-semibold text-amber-200/90">pontos</span>
           </span>
         </div>
       </div>
 
-      {/* 2. Meta da imobiliária (conteúdo que estava no card do topo) */}
-      <div className={`${cardBase} p-4`}>
+      {/* 2. Meta da imobiliária — compacto */}
+      <div className={`${cardBase} p-3`}>
         <div className={glowLeft} />
-        <div className="flex items-center justify-between gap-2 mb-1">
-          <div className="flex items-center gap-2 min-w-0">
-            <svg className="h-5 w-5 text-[#D4A017] shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-            <span className="font-bold text-white text-sm tracking-tight truncate">
+        <div className="flex items-center justify-between gap-1 mb-0.5">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <svg className="h-4 w-4 text-[#D4A017] shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <span className="font-bold text-white text-xs tracking-tight truncate">
               Metas{nomeImobiliaria ? ` — ${nomeImobiliaria}` : ''}
             </span>
           </div>
-          <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-bold ${colors.percentual} bg-white/10 border border-current/20`}>
+          <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold ${colors.percentual} bg-white/10`}>
             {progresso}%
           </span>
         </div>
-        <div className="flex items-center gap-2 text-[10px] text-[#E8C547] mb-2">
-          <span>Início: {formatMetaDate(meta?.inicio)}</span>
-          <span>|</span>
-          <span>Fim: {formatMetaDate(meta?.fim)}</span>
+        <div className="text-[9px] text-[#E8C547] mb-1">
+          {formatMetaDate(meta?.inicio)} → {formatMetaDate(meta?.fim)}
         </div>
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex flex-col min-w-0">
-            <span className="text-[10px] text-[#E8C547]">VGV da Meta</span>
-            <span className="text-sm font-bold text-[#D4A017] truncate">
-              {meta?.valor != null ? meta.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}
-            </span>
-          </div>
-          <div className="flex flex-col items-end min-w-0">
-            <span className="text-[10px] text-[#E8C547]">Realizado</span>
-            <span className={`text-sm font-bold ${progresso >= 100 ? 'text-[#3AC17C]' : 'text-[#D4A017]'}`}>
-              {typeof meta?.alcancado === 'number' ? meta.alcancado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}
-            </span>
-          </div>
+        <div className="flex items-center justify-between gap-1 text-[10px]">
+          <span className="text-[#E8C547]">VGV</span>
+          <span className="font-bold text-[#D4A017] truncate">
+            {meta?.valor != null ? meta.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}
+          </span>
+          <span className="text-[#E8C547]">Realizado</span>
+          <span className={`font-bold ${progresso >= 100 ? 'text-[#3AC17C]' : 'text-[#D4A017]'}`}>
+            {typeof meta?.alcancado === 'number' ? meta.alcancado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}
+          </span>
         </div>
-        <div className="w-full h-2 bg-[#23283A] rounded-full overflow-hidden mt-2">
-          <div className={`h-2 rounded-full transition-all duration-1000 ease-out bg-gradient-to-r ${colors.barra}`} style={{ width: `${progressoDisplay}%` }} />
+        <div className="w-full h-1.5 bg-[#23283A] rounded-full overflow-hidden mt-1">
+          <div className={`h-full rounded-full transition-all duration-500 ease-out bg-gradient-to-r ${colors.barra}`} style={{ width: `${progressoDisplay}%` }} />
         </div>
       </div>
     </div>

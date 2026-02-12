@@ -302,7 +302,7 @@ function diasRestantesMeta(fimStr: string | undefined): number | null {
   return Math.ceil((fim.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-// Card do topo: Meta Individual (minha meta do corretor)
+// Card do topo: Meta Individual (compacto para caber na coluna direita)
 const MetaIndividualCard = ({ metaPessoal, meta }: { metaPessoal: { valorAlmejado: number; alcancadoPessoal: number } | null; meta: any }) => {
   const valorAlmejado = metaPessoal?.valorAlmejado ?? 0;
   const alcancado = metaPessoal?.alcancadoPessoal ?? 0;
@@ -317,46 +317,36 @@ const MetaIndividualCard = ({ metaPessoal, meta }: { metaPessoal: { valorAlmejad
   };
   const colors = getProgressColors();
   return (
-    <div className="flex flex-col gap-2 p-4 rounded-2xl shadow-xl bg-gradient-to-br from-[#E8C547]/30 to-[#D4A017]/10 border-2 border-[#D4A017]/20 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-1 h-full bg-[#D4A017]" />
+    <div className="flex flex-col gap-1.5 p-3 rounded-xl shadow-lg bg-gradient-to-br from-[#E8C547]/30 to-[#D4A017]/10 border border-[#D4A017]/20 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-0.5 h-full bg-[#D4A017]" />
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <svg className="h-5 w-5 text-[#D4A017] shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-          <span className="font-bold text-white text-base tracking-tight truncate">Minha Meta</span>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <svg className="h-4 w-4 text-[#D4A017] shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          <span className="font-bold text-white text-sm truncate">Minha Meta</span>
         </div>
-        <span className={`shrink-0 px-2.5 py-1 rounded-full text-sm font-bold ${colors.percentual} ${colors.percentualBg} border border-current/20`}>
+        <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-bold ${colors.percentual} ${colors.percentualBg} border border-current/20`}>
           {progresso}%
         </span>
       </div>
-      <div className="flex items-center gap-2 text-[10px] text-[#E8C547]">
-        <span className="font-semibold">Início:</span>
-        <span className="text-white">{formatMetaDate(meta?.inicio)}</span>
-        <span>|</span>
-        <span className="font-semibold">Fim:</span>
-        <span className="text-white">{formatMetaDate(meta?.fim)}</span>
+      <div className="flex items-center justify-between gap-2 text-[9px] text-[#E8C547]">
+        <span>{formatMetaDate(meta?.inicio)} → {formatMetaDate(meta?.fim)}</span>
+        {dias !== null && (
+          <span>{dias > 0 ? `${dias} dias` : dias === 0 ? 'Último dia' : 'Encerrado'}</span>
+        )}
       </div>
       <div className="flex items-center justify-between gap-2">
-        <div className="flex flex-col min-w-0">
-          <span className="text-[10px] text-[#E8C547]">Valor almejado</span>
-          <span className="text-sm font-bold text-[#D4A017] truncate">
-            {valorAlmejado > 0 ? valorAlmejado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0'}
-          </span>
-        </div>
-        <div className="flex flex-col items-end min-w-0">
-          <span className="text-[10px] text-[#E8C547]">Realizado</span>
-          <span className={`text-sm font-bold ${progresso >= 100 ? 'text-[#3AC17C]' : 'text-[#D4A017]'}`}>
-            {alcancado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-          </span>
-        </div>
+        <span className="text-[9px] text-[#E8C547]">Almejado</span>
+        <span className="text-xs font-bold text-[#D4A017] truncate">
+          {valorAlmejado > 0 ? valorAlmejado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0'}
+        </span>
+        <span className="text-[9px] text-[#E8C547]">Realizado</span>
+        <span className={`text-xs font-bold ${progresso >= 100 ? 'text-[#3AC17C]' : 'text-[#D4A017]'}`}>
+          {alcancado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+        </span>
       </div>
-      <div className="w-full h-2 bg-[#23283A] rounded-full overflow-hidden relative">
-        <div className={`h-2 rounded-full transition-all duration-1000 ease-out bg-gradient-to-r ${colors.barra} shadow-lg`} style={{ width: `${progressoDisplay}%` }} />
+      <div className="w-full h-1.5 bg-[#23283A] rounded-full overflow-hidden">
+        <div className={`h-full rounded-full transition-all duration-500 ease-out bg-gradient-to-r ${colors.barra}`} style={{ width: `${progressoDisplay}%` }} />
       </div>
-      {dias !== null && (
-        <p className="text-[10px] text-[#E8C547]">
-          {dias > 0 ? `${dias} dias restantes` : dias === 0 ? 'Último dia!' : 'Período encerrado'}
-        </p>
-      )}
     </div>
   );
 };
@@ -1817,11 +1807,11 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Coluna Direita — rola independente; scrollbar totalmente oculta */}
-        <div id="trending-section" className="dashboard-scroll-hide overflow-y-auto overflow-x-hidden pr-2 min-h-0 space-y-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          {/* Funil de vendas individual — igual Dashboard TV FunilVendasIndividualSlide: nome do corretor, nível, total, 4 etapas */}
-          <div className="card-glow rounded-2xl p-5 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-r from-[#D4A017] to-[#60a5fa] rounded-r" />
+        {/* Coluna Direita — compacta para caber na tela; scroll suave se precisar */}
+        <div id="trending-section" className="dashboard-scroll-hide overflow-y-auto overflow-x-hidden pr-2 min-h-0 space-y-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {/* Funil de vendas individual — compacto */}
+          <div className="card-glow rounded-xl p-3 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-0.5 h-full bg-gradient-to-r from-[#D4A017] to-[#60a5fa] rounded-r" />
             {agendaLoading ? (
               <p className="text-gray-400 text-sm">Carregando...</p>
             ) : (() => {
@@ -1846,35 +1836,33 @@ export default function DashboardPage() {
               const nomeCorretor = userData?.nome || currentUser?.email?.split('@')[0] || 'Corretor';
               return (
                 <>
-                  {/* Topo: ícone + nome | badge nível + total (azul) — igual TV individual */}
-                  <div className="flex items-center gap-2 flex-shrink-0 mb-4">
-                    <span className="w-8 h-8 rounded-lg bg-amber-500/30 flex items-center justify-center text-amber-400 border border-amber-400/40 shrink-0">
-                      <TrophyIcon className="w-4 h-4" />
+                  <div className="flex items-center gap-1.5 flex-shrink-0 mb-2">
+                    <span className="w-6 h-6 rounded bg-amber-500/30 flex items-center justify-center text-amber-400 border border-amber-400/40 shrink-0">
+                      <TrophyIcon className="w-3 h-3" />
                     </span>
-                    <span className="flex-1 min-w-0 font-semibold text-white text-sm truncate" title={nomeCorretor}>
+                    <span className="flex-1 min-w-0 font-semibold text-white text-xs truncate" title={nomeCorretor}>
                       {nomeCorretor}
                     </span>
-                    <span className={`shrink-0 px-2 py-1 rounded text-[10px] font-semibold border ${nivel.bg} ${nivel.text}`}>
+                    <span className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold border ${nivel.bg} ${nivel.text}`}>
                       {nivel.emoji} {nivel.label}
                     </span>
-                    <span className="shrink-0 text-lg font-black tabular-nums text-[#60a5fa]">{totalFunil}</span>
+                    <span className="shrink-0 text-sm font-black tabular-nums text-[#60a5fa]">{totalFunil}</span>
                   </div>
-                  {/* 4 etapas: label + barra + número */}
-                  <div className="space-y-3">
+                  <div className="space-y-1.5">
                     {ETAPAS_FUNIL_INDIVIDUAL.map((etapa) => {
                       const qtd = etapa.getVal(porEtapa);
                       const pct = maxLocal > 0 ? Math.round((qtd / maxLocal) * 100) : 0;
                       const widthPct = qtd > 0 ? Math.max(pct, 20) : 0;
                       return (
-                        <div key={etapa.key} className="flex items-center gap-2">
-                          <span className="text-xs text-[#94a3b8] font-medium w-20 shrink-0">{etapa.label}</span>
-                          <div className="flex-1 min-w-0 h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div key={etapa.key} className="flex items-center gap-1.5">
+                          <span className="text-[10px] text-[#94a3b8] font-medium w-16 shrink-0">{etapa.label}</span>
+                          <div className="flex-1 min-w-0 h-1.5 bg-white/10 rounded-full overflow-hidden">
                             <div
                               className={`h-full rounded-full ${(etapa as { quente?: boolean }).quente ? 'bg-amber-400' : 'bg-[#D4A017]'}`}
-                              style={{ width: `${widthPct}%`, minWidth: qtd > 0 ? 6 : 0 }}
+                              style={{ width: `${widthPct}%`, minWidth: qtd > 0 ? 4 : 0 }}
                             />
                           </div>
-                          <span className="text-xs font-bold text-white tabular-nums w-5 text-right shrink-0">{qtd}</span>
+                          <span className="text-[10px] font-bold text-white tabular-nums w-4 text-right shrink-0">{qtd}</span>
                         </div>
                       );
                     })}
@@ -1884,9 +1872,9 @@ export default function DashboardPage() {
             })()}
           </div>
 
-          {/* Meta Individual no topo; abaixo 2 painéis: Minhas Moedas + Meta da imobiliária */}
-          <div className="card-glow rounded-2xl p-6 relative overflow-hidden animate-fade-in">
-            <div className="absolute top-0 left-0 w-1 h-full bg-amber-500 rounded-r" />
+          {/* Meta Individual + 2 painéis (Minhas Moedas | Meta imobiliária) — compacto */}
+          <div className="card-glow rounded-xl p-3 relative overflow-hidden animate-fade-in">
+            <div className="absolute top-0 left-0 w-0.5 h-full bg-amber-500 rounded-r" />
             <MetaIndividualCard metaPessoal={metaPessoal} meta={meta} />
             <GamificacaoMetasRow
               pontos={pontosExemplo}
