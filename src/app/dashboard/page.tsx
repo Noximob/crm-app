@@ -550,7 +550,7 @@ export default function DashboardPage() {
     fetchPlantoes();
   }, [userData]);
 
-  // Labels do tipo da agenda (igual ao admin)
+  // Labels e ícones do tipo da agenda (igual Dashboard TV - Agenda do Dia)
   const getTipoAgendaLabel = (tipo: string) => {
     const map: Record<string, string> = {
       reuniao: 'Reunião',
@@ -560,9 +560,27 @@ export default function DashboardPage() {
       'ligacao-ativa': 'Ligação Ativa',
       'acao-de-rua': 'Ação de rua',
       'disparo-de-msg': 'Disparo de Msg',
-      outro: 'Outro'
+      outro: 'Outro',
+      meet: 'Google Meet',
+      youtube: 'YouTube Live',
+      instagram: 'Instagram Live',
+      discord: 'Discord',
     };
     return map[tipo] || tipo;
+  };
+  const TIPO_ICON: Record<string, string> = {
+    reuniao: '👥',
+    evento: '🎉',
+    treinamento: '📚',
+    'revisar-crm': '📋',
+    'ligacao-ativa': '📞',
+    'acao-de-rua': '📍',
+    'disparo-de-msg': '💬',
+    outro: '📅',
+    meet: '🎥',
+    youtube: '📺',
+    instagram: '📱',
+    discord: '💬',
   };
 
   // Eventos/plantões em que o usuário foi marcado e ainda NÃO respondeu — ordenado do mais próximo no tempo
@@ -619,36 +637,43 @@ export default function DashboardPage() {
     return lista;
   }, [currentUser?.uid, plantoes, agendaImobiliaria]);
 
-  // Próximo evento em que o usuário está CONFIRMADO (participa de 1 por vez) — atualiza conforme o horário
+  // Próximo evento em que o usuário está CONFIRMADO — mesmo esquema do Dashboard TV (Agenda do Dia): startTime, fimTime, horário início–fim
   const proximoEventoConfirmado = useMemo(() => {
     const uid = currentUser?.uid;
     const now = currentTime.getTime();
     if (!uid) return null;
-    const lista: { tipo: 'plantao' | 'agenda'; id: string; titulo: string; tipoLabel: string; dataStr: string; horarioStr: string; sortTime: number }[] = [];
+    type Item = { tipo: 'plantao' | 'agenda'; id: string; titulo: string; tipoLabel: string; tipoChave?: string; dataStr: string; horarioStr: string; horarioFimStr: string; startTime: number; fimTime: number };
+    const lista: Item[] = [];
     plantoes.forEach((p: any) => {
       if (!Array.isArray(p.presentesIds) || !p.presentesIds.includes(uid)) return;
       if (p.respostasPresenca?.[uid] !== 'confirmado') return;
       const dataInicio = p.dataInicio || '';
       const dataFim = p.dataFim || dataInicio;
       const horario = (p.horario || '00:00').substring(0, 5);
-      const start = dataInicio ? new Date(`${dataInicio}T${horario}`).getTime() : 0;
-      if (start > now) {
-        const dataStr = dataInicio ? new Date(dataInicio).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
-        lista.push({
-          tipo: 'plantao',
-          id: p.id,
-          titulo: p.construtora ? `Plantão — ${p.construtora}` : 'Plantão',
-          tipoLabel: 'Plantão',
-          dataStr,
-          horarioStr: horario,
-          sortTime: start
-        });
-      } else if (dataFim && dataInicio) {
+      const [hh = 9, mm = 0] = horario.split(':').map(Number);
+      let startTime = 0;
+      let dataStr = '';
+      if (dataInicio) {
+        const d = new Date(dataInicio);
+        startTime = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hh, mm, 0, 0).getTime();
+        dataStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      }
+      if (startTime > now) {
+        const fimTime = startTime + 2 * 60 * 60 * 1000;
+        const fimDate = new Date(fimTime);
+        const horarioFimStr = fimDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        lista.push({ tipo: 'plantao', id: p.id, titulo: p.construtora ? `Plantão — ${p.construtora}` : 'Plantão', tipoLabel: 'Plantão', dataStr, horarioStr: horario, horarioFimStr, startTime, fimTime });
+        return;
+      }
+      if (dataFim && dataInicio) {
         const dIni = new Date(dataInicio);
         const dFim = new Date(dataFim);
         for (let d = new Date(dIni); d <= dFim; d.setDate(d.getDate() + 1)) {
-          const dt = new Date(`${d.toISOString().slice(0, 10)}T${horario}`);
+          const dt = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hh, mm, 0, 0);
           if (dt.getTime() > now) {
+            const startTime = dt.getTime();
+            const fimTime = startTime + 2 * 60 * 60 * 1000;
+            const horarioFimStr = new Date(fimTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
             lista.push({
               tipo: 'plantao',
               id: p.id,
@@ -656,7 +681,9 @@ export default function DashboardPage() {
               tipoLabel: 'Plantão',
               dataStr: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }),
               horarioStr: horario,
-              sortTime: dt.getTime()
+              horarioFimStr,
+              startTime,
+              fimTime,
             });
             break;
           }
@@ -667,21 +694,27 @@ export default function DashboardPage() {
       if (!Array.isArray(a.presentesIds) || !a.presentesIds.includes(uid)) return;
       if (a.respostasPresenca?.[uid] !== 'confirmado') return;
       const dt = a.dataInicio?.toDate ? a.dataInicio.toDate() : (a.dataInicio ? new Date(a.dataInicio) : null);
-      const sortTime = dt ? dt.getTime() : 0;
-      if (sortTime <= now) return;
-      const dataStr = dt ? dt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-      const horarioStr = dt ? dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+      if (!dt || dt.getTime() <= now) return;
+      const startTime = dt.getTime();
+      const dtFim = a.dataFim?.toDate ? a.dataFim.toDate() : null;
+      const fimTime = dtFim ? dtFim.getTime() : startTime + 60 * 60 * 1000;
+      const dataStr = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const horarioStr = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      const horarioFimStr = new Date(fimTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
       lista.push({
         tipo: 'agenda',
         id: a.id,
         titulo: a.titulo || 'Evento',
         tipoLabel: getTipoAgendaLabel(a.tipo || 'outro'),
+        tipoChave: a.tipo || 'outro',
         dataStr,
         horarioStr,
-        sortTime
+        horarioFimStr,
+        startTime,
+        fimTime,
       });
     });
-    lista.sort((a, b) => a.sortTime - b.sortTime);
+    lista.sort((a, b) => a.startTime - b.startTime);
     return lista[0] ?? null;
   }, [currentUser?.uid, plantoes, agendaImobiliaria, currentTime]);
 
@@ -1425,20 +1458,44 @@ export default function DashboardPage() {
               </Link>
             </div>
 
-            {/* 1) Próximo evento confirmado */}
+            {/* 1) Próximo evento confirmado — mesmo esquema Dashboard TV Agenda do Dia: cores Agora/Em breve, horário início–fim, ícone */}
             <div className="mb-5">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Próximo evento</p>
               {agendaLoading ? (
                 <p className="text-gray-400 text-sm">Carregando...</p>
-              ) : proximoEventoConfirmado ? (
-                <div className="rounded-xl bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/40 p-4">
-                  <div className="font-semibold text-white">{proximoEventoConfirmado.titulo}</div>
-                  <div className="text-sm text-orange-200 mt-1">{proximoEventoConfirmado.tipoLabel}</div>
-                  <div className="text-sm text-gray-300 mt-1">
-                    {proximoEventoConfirmado.dataStr} · {proximoEventoConfirmado.horarioStr}
+              ) : proximoEventoConfirmado ? (() => {
+                const nowTime = currentTime.getTime();
+                const isAgora = proximoEventoConfirmado.startTime <= nowTime && proximoEventoConfirmado.fimTime >= nowTime;
+                const ATENCAO_MS = 45 * 60 * 1000;
+                const emBreve = proximoEventoConfirmado.startTime > nowTime && proximoEventoConfirmado.startTime - nowTime <= ATENCAO_MS;
+                const destaque = isAgora || emBreve;
+                const cardClass = destaque
+                  ? isAgora
+                    ? 'rounded-xl border-2 border-red-500 bg-red-600/30 shadow-xl shadow-red-500/40 ring-2 ring-red-500/70'
+                    : 'rounded-xl border-2 border-amber-400 bg-amber-500/25 shadow-xl shadow-amber-500/40 ring-2 ring-amber-400/70'
+                  : 'rounded-xl border-2 border-emerald-400 bg-emerald-500/20';
+                const icon = proximoEventoConfirmado.tipoChave ? (TIPO_ICON[proximoEventoConfirmado.tipoChave] ?? TIPO_ICON.outro) : (proximoEventoConfirmado.tipo === 'plantao' ? '🏢' : TIPO_ICON.outro);
+                return (
+                  <div className={`${cardClass} ${destaque ? 'animate-pulse' : ''} p-4 flex flex-col gap-2 min-h-[100px] relative`}>
+                    {isAgora && (
+                      <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-red-500 text-white text-[10px] font-bold uppercase animate-pulse">Agora</span>
+                    )}
+                    {emBreve && !isAgora && (
+                      <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-amber-400 text-black text-[10px] font-bold uppercase">Em breve</span>
+                    )}
+                    <p className="font-bold text-white text-sm truncate pr-16" title={proximoEventoConfirmado.titulo}>{proximoEventoConfirmado.titulo}</p>
+                    <div className="flex items-center justify-between mt-0.5 text-[11px]">
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm">{icon}</span>
+                        <span className={destaque ? 'text-white/90' : 'text-emerald-200/90'}>{proximoEventoConfirmado.tipoLabel}</span>
+                      </div>
+                      <span className="text-emerald-100/90 font-mono">
+                        {proximoEventoConfirmado.dataStr} · {proximoEventoConfirmado.horarioStr}–{proximoEventoConfirmado.horarioFimStr}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ) : (
+                );
+              })() : (
                 <div className="rounded-xl bg-gray-700/30 border border-gray-600/50 p-4 text-gray-400 text-sm">
                   Nenhum evento confirmado no momento.
                 </div>
