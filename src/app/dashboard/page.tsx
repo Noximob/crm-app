@@ -674,60 +674,6 @@ export default function DashboardPage() {
     discord: '💬',
   };
 
-  // Eventos/plantões em que o usuário foi marcado e ainda NÃO respondeu — ordenado do mais próximo no tempo
-  const eventosEmQueFuiMarcado = useMemo(() => {
-    const uid = currentUser?.uid;
-    if (!uid) return [];
-    const lista: {
-      tipo: 'plantao' | 'agenda';
-      id: string;
-      titulo: string;
-      tipoLabel: string;
-      dataStr: string;
-      horarioStr: string;
-      sortTime: number;
-      respostasPresenca?: Record<string, string>;
-    }[] = [];
-    plantoes.forEach((p: any) => {
-      if (!Array.isArray(p.presentesIds) || !p.presentesIds.includes(uid)) return;
-      if (p.respostasPresenca?.[uid]) return; // já respondeu → não aparece
-      const dataInicio = p.dataInicio || '';
-      const horario = p.horario || '00:00';
-      const sortTime = dataInicio && horario ? new Date(`${dataInicio}T${horario.substring(0, 5)}`).getTime() : 0;
-      const dataStr = dataInicio ? new Date(dataInicio).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
-      lista.push({
-        tipo: 'plantao',
-        id: p.id,
-        titulo: p.construtora ? `Plantão — ${p.construtora}` : 'Plantão',
-        tipoLabel: 'Plantão',
-        dataStr,
-        horarioStr: horario.substring(0, 5),
-        sortTime,
-        respostasPresenca: p.respostasPresenca
-      });
-    });
-    agendaImobiliaria.forEach((a: any) => {
-      if (!Array.isArray(a.presentesIds) || !a.presentesIds.includes(uid)) return;
-      if (a.respostasPresenca?.[uid]) return; // já respondeu → não aparece
-      const dt = a.dataInicio?.toDate ? a.dataInicio.toDate() : (a.dataInicio ? new Date(a.dataInicio) : null);
-      const sortTime = dt ? dt.getTime() : 0;
-      const dataStr = dt ? dt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-      const horarioStr = dt ? dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
-      lista.push({
-        tipo: 'agenda',
-        id: a.id,
-        titulo: a.titulo || 'Evento',
-        tipoLabel: getTipoAgendaLabel(a.tipo || 'outro'),
-        dataStr,
-        horarioStr,
-        sortTime,
-        respostasPresenca: a.respostasPresenca
-      });
-    });
-    lista.sort((a, b) => a.sortTime - b.sortTime); // mais próximo primeiro
-    return lista;
-  }, [currentUser?.uid, plantoes, agendaImobiliaria]);
-
   // Próximas ações: eventos em que o usuário está CONFIRMADO — Agora + Em breve + próximos (até 4), igual TV Agenda do Dia
   const proximosEventosConfirmados = useMemo(() => {
     const uid = currentUser?.uid;
@@ -1513,57 +1459,6 @@ export default function DashboardPage() {
       <div id="dashboard-two-columns" className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-2 flex-1 min-h-0 pt-0.5" style={{ height: 'calc(100vh - 220px)' }}>
         {/* Coluna Esquerda — rola independente; scrollbar totalmente oculta */}
         <div className="dashboard-scroll-hide space-y-2 overflow-y-auto overflow-x-hidden pr-2 min-h-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          {/* Quadro: eventos em que fui marcado — Confirmar Presença / Cancelar */}
-          {eventosEmQueFuiMarcado.length > 0 && (
-            <div className="bg-[#1a1a1e]/35 backdrop-blur-sm rounded-2xl border border-[var(--border-subtle)] p-5 shadow-sm">
-              <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-                <UsersIcon className="h-5 w-5 text-orange-400" />
-                Você foi marcado(a) nestas ações
-              </h2>
-              <p className="text-sm text-text-secondary mb-4">Confirme ou cancele sua presença. Essas informações serão usadas para acompanhamento.</p>
-              <ul className="space-y-3">
-                {eventosEmQueFuiMarcado.map((ev) => {
-                  const key = `${ev.tipo}-${ev.id}`;
-                  const loading = respondendoPresenca === key;
-                  return (
-                    <li key={key} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.08]">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-orange-500/20 text-orange-400">
-                            {ev.tipoLabel}
-                          </span>
-                          <span className="font-semibold text-white truncate">{ev.titulo}</span>
-                        </div>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-text-secondary">
-                          {ev.dataStr && <span>{ev.dataStr}</span>}
-                          {ev.horarioStr && <span className="flex items-center gap-1"><ClockIcon className="h-3 w-3" /> {ev.horarioStr}</span>}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          type="button"
-                          disabled={loading}
-                          onClick={() => responderPresenca(ev.tipo, ev.id, 'confirmado')}
-                          className="px-3 py-1.5 text-xs font-semibold text-white bg-[#3AC17C] hover:bg-[#2fa866] rounded-lg transition-colors disabled:opacity-50"
-                        >
-                          {loading ? '...' : 'Confirmar Presença'}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={loading}
-                          onClick={() => responderPresenca(ev.tipo, ev.id, 'cancelado')}
-                          className="px-3 py-1.5 text-xs font-semibold text-[#F45B69] bg-[#F45B69]/10 hover:bg-[#F45B69]/20 rounded-lg transition-colors disabled:opacity-50"
-                        >
-                          Cancelar
-                        </button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
-
           {/* Missões Diárias — próximo evento + totais por status de tarefa (funil está na coluna direita) */}
           <div className="card-glow rounded-2xl p-4 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-orange-500 rounded-r" />
