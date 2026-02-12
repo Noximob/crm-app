@@ -290,7 +290,78 @@ const formatMetaDate = (value: string | undefined) => {
   return new Date(y, m - 1, d).toLocaleDateString('pt-BR');
 };
 
-// Novo Card de Metas moderno
+function diasRestantesMeta(fimStr: string | undefined): number | null {
+  if (!fimStr) return null;
+  const s = String(fimStr).split('T')[0];
+  const [y, m, d] = s.split('-').map(Number);
+  if (!y || !m || !d) return null;
+  const fim = new Date(y, m - 1, d);
+  fim.setHours(23, 59, 59, 999);
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  return Math.ceil((fim.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+// Card do topo: Meta Individual (minha meta do corretor)
+const MetaIndividualCard = ({ metaPessoal, meta }: { metaPessoal: { valorAlmejado: number; alcancadoPessoal: number } | null; meta: any }) => {
+  const valorAlmejado = metaPessoal?.valorAlmejado ?? 0;
+  const alcancado = metaPessoal?.alcancadoPessoal ?? 0;
+  const progresso = valorAlmejado > 0 ? Math.min(100, Math.round((alcancado / valorAlmejado) * 100)) : 0;
+  const progressoDisplay = progresso > 100 ? 100 : progresso;
+  const dias = diasRestantesMeta(meta?.fim);
+  const getProgressColors = () => {
+    if (progresso >= 100) return { barra: 'from-[#3AC17C] to-[#2E8B57]', percentual: 'text-[#3AC17C]', percentualBg: 'bg-[#3AC17C]/10' };
+    if (progresso >= 75) return { barra: 'from-[#4CAF50] to-[#45A049]', percentual: 'text-[#4CAF50]', percentualBg: 'bg-[#4CAF50]/10' };
+    if (progresso >= 50) return { barra: 'from-[#FF9800] to-[#F57C00]', percentual: 'text-[#FF9800]', percentualBg: 'bg-[#FF9800]/10' };
+    return { barra: 'from-[#E8C547] to-[#D4A017]', percentual: 'text-[#D4A017]', percentualBg: 'bg-[#D4A017]/10' };
+  };
+  const colors = getProgressColors();
+  return (
+    <div className="flex flex-col gap-2 p-4 rounded-2xl shadow-xl bg-gradient-to-br from-[#E8C547]/30 to-[#D4A017]/10 border-2 border-[#D4A017]/20 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-1 h-full bg-[#D4A017]" />
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <svg className="h-5 w-5 text-[#D4A017] shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          <span className="font-bold text-white text-base tracking-tight truncate">Minha Meta</span>
+        </div>
+        <span className={`shrink-0 px-2.5 py-1 rounded-full text-sm font-bold ${colors.percentual} ${colors.percentualBg} border border-current/20`}>
+          {progresso}%
+        </span>
+      </div>
+      <div className="flex items-center gap-2 text-[10px] text-[#E8C547]">
+        <span className="font-semibold">Início:</span>
+        <span className="text-white">{formatMetaDate(meta?.inicio)}</span>
+        <span>|</span>
+        <span className="font-semibold">Fim:</span>
+        <span className="text-white">{formatMetaDate(meta?.fim)}</span>
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-col min-w-0">
+          <span className="text-[10px] text-[#E8C547]">Valor almejado</span>
+          <span className="text-sm font-bold text-[#D4A017] truncate">
+            {valorAlmejado > 0 ? valorAlmejado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0'}
+          </span>
+        </div>
+        <div className="flex flex-col items-end min-w-0">
+          <span className="text-[10px] text-[#E8C547]">Realizado</span>
+          <span className={`text-sm font-bold ${progresso >= 100 ? 'text-[#3AC17C]' : 'text-[#D4A017]'}`}>
+            {alcancado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+          </span>
+        </div>
+      </div>
+      <div className="w-full h-2 bg-[#23283A] rounded-full overflow-hidden relative">
+        <div className={`h-2 rounded-full transition-all duration-1000 ease-out bg-gradient-to-r ${colors.barra} shadow-lg`} style={{ width: `${progressoDisplay}%` }} />
+      </div>
+      {dias !== null && (
+        <p className="text-[10px] text-[#E8C547]">
+          {dias > 0 ? `${dias} dias restantes` : dias === 0 ? 'Último dia!' : 'Período encerrado'}
+        </p>
+      )}
+    </div>
+  );
+};
+
+// Card de Meta da Imobiliária (usado no painel ao lado de Minhas Moedas)
 const MetasCard = ({ meta, nomeImobiliaria }: { meta: any, nomeImobiliaria: string }) => {
   // Usar o percentual salvo no Firestore, ou calcular automaticamente se não existir
   const progresso = meta?.percentual !== undefined ? meta.percentual : (meta && meta.valor > 0 ? Math.round(((meta.alcancado ?? 0) / meta.valor) * 100) : 0);
@@ -1813,15 +1884,14 @@ export default function DashboardPage() {
             })()}
           </div>
 
-          {/* Metas — debaixo do funil (coluna direita) */}
+          {/* Meta Individual no topo; abaixo 2 painéis: Minhas Moedas + Meta da imobiliária */}
           <div className="card-glow rounded-2xl p-6 relative overflow-hidden animate-fade-in">
             <div className="absolute top-0 left-0 w-1 h-full bg-amber-500 rounded-r" />
-            <MetasCard meta={meta} nomeImobiliaria={nomeImobiliaria} />
+            <MetaIndividualCard metaPessoal={metaPessoal} meta={meta} />
             <GamificacaoMetasRow
               pontos={pontosExemplo}
-              metaPessoal={metaPessoal}
-              metaInicio={meta?.inicio ? String(meta.inicio).split('T')[0] : undefined}
-              metaFim={meta?.fim ? String(meta.fim).split('T')[0] : undefined}
+              meta={meta}
+              nomeImobiliaria={nomeImobiliaria}
             />
           </div>
         </div>

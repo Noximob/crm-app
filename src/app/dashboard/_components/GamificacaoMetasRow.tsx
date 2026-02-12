@@ -20,33 +20,12 @@ const CoinIcon = ({ className = 'w-10 h-10' }: { className?: string }) => (
   </svg>
 );
 
-const TargetIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"/>
-    <circle cx="12" cy="12" r="6"/>
-    <circle cx="12" cy="12" r="2"/>
-  </svg>
-);
-
 function formatMetaDate(dateStr: string | undefined): string {
   if (!dateStr) return '--';
   const s = String(dateStr).split('T')[0];
   const [y, m, d] = s.split('-').map(Number);
   if (!y || !m || !d) return '--';
   return new Date(y, m - 1, d).toLocaleDateString('pt-BR');
-}
-
-function diasRestantes(fimStr: string | undefined): number | null {
-  if (!fimStr) return null;
-  const s = String(fimStr).split('T')[0];
-  const [y, m, d] = s.split('-').map(Number);
-  if (!y || !m || !d) return null;
-  const fim = new Date(y, m - 1, d);
-  fim.setHours(23, 59, 59, 999);
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
-  const diff = Math.ceil((fim.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
-  return diff;
 }
 
 export interface MetaPessoalData {
@@ -58,102 +37,78 @@ export interface MetaPessoalData {
 
 interface GamificacaoMetasRowProps {
   pontos?: number;
-  metaPessoal: MetaPessoalData | null;
-  metaInicio?: string;
-  metaFim?: string;
+  meta: any;
+  nomeImobiliaria: string;
 }
 
-export function GamificacaoMetasRow({ pontos = PONTOS_EXEMPLO, metaPessoal, metaInicio, metaFim }: GamificacaoMetasRowProps) {
-  const valorAlmejado = metaPessoal?.valorAlmejado ?? 0;
-  const alcancado = metaPessoal?.alcancadoPessoal ?? 0;
-  const percentualPessoal = valorAlmejado > 0 ? Math.min(100, Math.round((alcancado / valorAlmejado) * 100)) : 0;
-  const dias = diasRestantes(metaFim ?? metaPessoal?.metaFim);
+export function GamificacaoMetasRow({ pontos = PONTOS_EXEMPLO, meta, nomeImobiliaria }: GamificacaoMetasRowProps) {
+  const progresso = meta?.percentual !== undefined ? meta.percentual : (meta?.valor > 0 ? Math.round(((meta?.alcancado ?? 0) / meta.valor) * 100) : 0);
+  const progressoDisplay = progresso > 100 ? 100 : progresso;
+  const getProgressColors = () => {
+    if (progresso >= 100) return { barra: 'from-[#3AC17C] to-[#2E8B57]', percentual: 'text-[#3AC17C]' };
+    if (progresso >= 75) return { barra: 'from-[#4CAF50] to-[#45A049]', percentual: 'text-[#4CAF50]' };
+    if (progresso >= 50) return { barra: 'from-[#FF9800] to-[#F57C00]', percentual: 'text-[#FF9800]' };
+    return { barra: 'from-[#E8C547] to-[#D4A017]', percentual: 'text-[#D4A017]' };
+  };
+  const colors = getProgressColors();
 
-  const cardBase = 'rounded-lg border border-amber-500/30 bg-gradient-to-br from-[#23283A] to-[#181C23] p-2.5 flex flex-col relative overflow-hidden';
-  const glowLeft = 'absolute left-0 top-0 w-0.5 h-full bg-gradient-to-b from-amber-400 to-amber-600';
+  const cardBase = 'rounded-2xl border-2 border-[#D4A017]/30 bg-gradient-to-br from-[#23283A] to-[#181C23] flex flex-col relative overflow-hidden shadow-lg';
+  const glowLeft = 'absolute left-0 top-0 w-1 h-full bg-[#D4A017]';
 
   return (
-    <div className="grid grid-cols-3 gap-2 mt-2">
-      {/* 1. Minhas Moedas (esquerda) */}
-      <div className={`${cardBase} shadow-md hover:shadow-amber-500/10 transition-shadow`}>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+      {/* 1. Minhas Moedas — igual à foto: título + ícone pequeno no topo, moeda grande + pontos abaixo (nosso background) */}
+      <div className={`${cardBase} p-5 min-h-[140px]`}>
         <div className={glowLeft} />
-        <div className="flex items-center gap-1.5 mb-0.5">
-          <div className="p-1 rounded bg-amber-500/20">
-            <CoinIcon className="w-4 h-4" />
+        <div className="flex items-center gap-2 mb-3">
+          <div className="p-1.5 rounded-lg bg-amber-500/20 border border-amber-500/30">
+            <CoinIcon className="w-6 h-6" />
           </div>
-          <span className="text-[10px] font-semibold text-amber-200/90 uppercase tracking-wide">Minhas Moedas</span>
+          <span className="font-bold text-[#E8C547] text-base tracking-tight">Minhas Moedas</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <CoinIcon className="w-5 h-5 text-amber-400 shrink-0" />
-          <span className="text-base font-black text-amber-400 tabular-nums leading-tight">
-            {pontos.toLocaleString('pt-BR')} <span className="text-[10px] font-semibold text-white/80">pts</span>
+        <div className="flex items-center gap-3 flex-1">
+          <CoinIcon className="w-12 h-12 text-amber-400 shrink-0" />
+          <span className="text-2xl font-black text-[#E8C547] tabular-nums">
+            {pontos.toLocaleString('pt-BR')} <span className="text-base font-semibold text-amber-200/90">pontos</span>
           </span>
         </div>
-        <div className="absolute bottom-0.5 right-0.5 opacity-20 pointer-events-none">
-          <div className="flex -space-x-1">
-            {[1, 2].map((i) => (
-              <CoinIcon key={i} className="w-3 h-3" />
-            ))}
-          </div>
-        </div>
       </div>
 
-      {/* 2. Minha Meta (meio) — sempre mostra layout; se não setou meta fica zerado */}
-      <div className={`${cardBase} shadow-md hover:shadow-amber-500/10 transition-shadow`}>
+      {/* 2. Meta da imobiliária (conteúdo que estava no card do topo) */}
+      <div className={`${cardBase} p-4`}>
         <div className={glowLeft} />
-        <div className="flex items-center gap-1 mb-0.5">
-          <TargetIcon className="w-4 h-4 text-amber-400 shrink-0" />
-          <span className="text-[10px] font-semibold text-amber-200/90 uppercase tracking-wide">Minha Meta</span>
-        </div>
-        <div className="text-[9px] text-amber-200/70">
-          {formatMetaDate(metaInicio)} → {formatMetaDate(metaFim)}
-        </div>
-        <div className="mt-1 space-y-0.5">
-          <div className="flex justify-between items-baseline gap-1">
-            <span className="text-[9px] text-amber-200/80">Almejado</span>
-            <span className="text-xs font-bold text-amber-400 truncate">
-              {valorAlmejado > 0 ? valorAlmejado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0'}
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <div className="flex items-center gap-2 min-w-0">
+            <svg className="h-5 w-5 text-[#D4A017] shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <span className="font-bold text-white text-sm tracking-tight truncate">
+              Metas{nomeImobiliaria ? ` — ${nomeImobiliaria}` : ''}
             </span>
           </div>
-          <div className="flex justify-between items-baseline gap-1">
-            <span className="text-[9px] text-amber-200/80">Realizado</span>
-            <span className="text-xs font-bold text-white">
-              {alcancado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+          <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-bold ${colors.percentual} bg-white/10 border border-current/20`}>
+            {progresso}%
+          </span>
+        </div>
+        <div className="flex items-center gap-2 text-[10px] text-[#E8C547] mb-2">
+          <span>Início: {formatMetaDate(meta?.inicio)}</span>
+          <span>|</span>
+          <span>Fim: {formatMetaDate(meta?.fim)}</span>
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col min-w-0">
+            <span className="text-[10px] text-[#E8C547]">VGV da Meta</span>
+            <span className="text-sm font-bold text-[#D4A017] truncate">
+              {meta?.valor != null ? meta.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}
             </span>
           </div>
-          <div className="flex justify-between items-baseline gap-1">
-            <span className="text-[9px] text-amber-200/80">% feito</span>
-            <span className={`text-xs font-bold ${percentualPessoal >= 100 ? 'text-emerald-400' : 'text-amber-400'}`}>
-              {percentualPessoal}%
+          <div className="flex flex-col items-end min-w-0">
+            <span className="text-[10px] text-[#E8C547]">Realizado</span>
+            <span className={`text-sm font-bold ${progresso >= 100 ? 'text-[#3AC17C]' : 'text-[#D4A017]'}`}>
+              {typeof meta?.alcancado === 'number' ? meta.alcancado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}
             </span>
           </div>
-          <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${percentualPessoal >= 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-amber-500 to-amber-600'}`}
-              style={{ width: `${Math.min(percentualPessoal, 100)}%` }}
-            />
-          </div>
-          {dias !== null && (
-            <p className="text-[9px] text-amber-200/80">
-              {dias > 0 ? `${dias} dias` : dias === 0 ? 'Último dia' : 'Encerrado'}
-            </p>
-          )}
         </div>
-      </div>
-
-      {/* 3. Conquistas (direita) */}
-      <div className={`${cardBase} shadow-md hover:shadow-amber-500/10 transition-shadow`}>
-        <div className={glowLeft} />
-        <div className="flex items-center gap-1 mb-0.5">
-          <span className="text-[10px] font-semibold text-amber-200/90 uppercase tracking-wide">Conquistas</span>
-        </div>
-        <div className="flex-1 flex items-center justify-center min-h-[56px] relative">
-          <div className="flex items-end gap-0.5">
-            <CoinIcon className="w-6 h-6 text-amber-400/90" />
-            <CoinIcon className="w-7 h-7 text-amber-400 -ml-1.5 z-10" />
-            <CoinIcon className="w-6 h-6 text-amber-400/90 -ml-1.5" />
-          </div>
-          <span className="absolute text-2xl opacity-20">✨</span>
+        <div className="w-full h-2 bg-[#23283A] rounded-full overflow-hidden mt-2">
+          <div className={`h-2 rounded-full transition-all duration-1000 ease-out bg-gradient-to-r ${colors.barra}`} style={{ width: `${progressoDisplay}%` }} />
         </div>
       </div>
     </div>
