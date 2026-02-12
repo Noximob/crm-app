@@ -301,8 +301,8 @@ export default function CrmPage() {
         <div className="min-h-full p-4 sm:p-6 lg:p-8">
             <CrmHeader />
             <main className="flex flex-col gap-4 mt-4">
-                {/* Card principal do CRM — mais transparente para deixar o background aparecer */}
-                <div className="p-4 rounded-2xl shadow-soft border border-white/10 bg-white/90 dark:bg-[#14141b]/55 backdrop-blur-sm">
+                {/* Card principal do CRM — fundo bem transparente para ver o background estrelado */}
+                <div className="p-4 rounded-2xl shadow-soft border border-white/10 bg-white/90 dark:bg-black/15 dark:backdrop-blur-[2px]">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
                         <div className="flex flex-col md:flex-row md:items-center gap-4">
                             <SectionTitle>Gestão de Leads</SectionTitle>
@@ -376,9 +376,9 @@ export default function CrmPage() {
                     </div>
                     {/* Lista de leads */}
                     <div className="overflow-x-auto">
-                        <table className="min-w-full rounded-xl shadow-soft border border-white/10 bg-white/90 dark:bg-[#111827]/55 backdrop-blur-sm table-fixed">
+                        <table className="min-w-full rounded-xl shadow-soft border border-white/10 bg-white/90 dark:bg-black/15 dark:backdrop-blur-[2px] table-fixed">
                             <thead>
-                                <tr className="bg-[#F5F6FA]/90 dark:bg-white/5 text-[#6B6F76] dark:text-gray-200 text-xs">
+                                <tr className="bg-[#F5F6FA]/90 dark:bg-white/[0.06] text-[#6B6F76] dark:text-gray-200 text-xs">
                                     <th className="px-4 py-2 font-semibold text-left w-1/5 rounded-tl-xl">Nome</th>
                                     <th className="px-4 py-2 font-semibold text-left w-1/6">Telefone</th>
                                     <th className="px-4 py-2 font-semibold text-center w-1/12">WhatsApp</th>
@@ -397,7 +397,7 @@ export default function CrmPage() {
                                     </tr>
                                 )}
                                 {!loading && filteredLeads.map((lead) => (
-                                    <tr key={lead.id} className="border-b border-white/5 last:border-b-0 hover:bg-[#F5F6FA]/90 dark:hover:bg-white/5 transition-colors">
+                                    <tr key={lead.id} className="border-b border-white/10 last:border-b-0 hover:bg-[#F5F6FA]/90 dark:hover:bg-white/[0.06] transition-colors">
                                         <td className="px-4 py-3 text-sm font-medium text-[#2E2F38] dark:text-white w-1/5 truncate max-w-[180px]">{lead.nome}</td>
                                         <td className="px-4 py-3 text-xs text-[#6B6F76] dark:text-gray-100 w-1/6 truncate max-w-[140px]">{lead.telefone}</td>
                                         <td className="px-4 py-3 text-center w-1/12">
