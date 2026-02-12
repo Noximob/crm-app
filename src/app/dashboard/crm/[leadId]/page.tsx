@@ -424,8 +424,8 @@ export default function LeadDetailPage() {
             <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* --- COLUNA DA ESQUERDA (20% a mais) --- */}
                 <div className="lg:col-span-5 flex flex-col gap-6">
-                    {/* Card de Informações do Lead */}
-                    <div className="bg-white dark:bg-[#23283A] p-5 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+                    {/* Card de Informações do Lead — sem fundo escuro, só borda no dark */}
+                    <div className="bg-white/95 dark:bg-transparent p-5 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-white/10">
                         <div className="flex flex-col gap-3">
                             <div className="flex items-center gap-3">
                                 <h2 className="text-base font-semibold text-[#2E2F38] dark:text-white tracking-tight">{lead.nome}</h2>
@@ -472,8 +472,8 @@ export default function LeadDetailPage() {
                         </div>
                     </div>
 
-                    {/* Card de Próximos Passos */}
-                    <div className="bg-white dark:bg-[#23283A] p-5 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+                    {/* Card de Próximos Passos — sem painel cinza no dark */}
+                    <div className="bg-white/95 dark:bg-transparent p-5 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-white/10">
                         <h3 className="text-base font-semibold text-[#2E2F38] dark:text-white mb-4">Próximos Passos</h3>
                         <div className="h-48 overflow-y-auto pr-2">
                             {interactions.length > 0 ? (
@@ -573,8 +573,8 @@ export default function LeadDetailPage() {
 
                 {/* --- COLUNA DA DIREITA (20% a menos) --- */}
                 <div className="lg:col-span-7 flex flex-col gap-6">
-                    {/* Card de Qualificação do Lead */}
-                    <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+                    {/* Card de Qualificação do Lead — sem fundo cinza, mantém só a borda */}
+                    <div className="bg-white/95 dark:bg-transparent p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-white/10">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white">Qualificação do Lead</h3>
                                             {!readOnly && (
@@ -625,8 +625,8 @@ export default function LeadDetailPage() {
                         </div>
                     </div>
 
-                    {/* Card de Anotações */}
-                    <div className="bg-white dark:bg-[#23283A] p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] flex flex-col h-56">
+                    {/* Card de Anotações — sem bloco escuro, só contorno no dark */}
+                    <div className="bg-white/95 dark:bg-transparent p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-white/10 flex flex-col h-56">
                         <div className="flex justify-between items-center mb-4 flex-shrink-0">
                             <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white">Anotações</h3>
                             {!readOnly && !isEditingAnnotations && (
