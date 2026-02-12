@@ -131,33 +131,33 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center">
-            <div className="bg-white rounded-2xl shadow-soft border border-[#E8E9F1] p-6 w-full max-w-md relative">
-                <button onClick={onClose} className="absolute top-4 right-4 text-[#6B6F76] hover:text-[#D4A017] transition-colors">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+            <div className="bg-[#23283A] rounded-2xl shadow-xl border border-white/10 p-6 w-full max-w-md relative">
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-[#D4A017] transition-colors">
                     <XIcon className="h-6 w-6" />
                 </button>
-                <h2 className="text-2xl font-bold text-[#2E2F38] mb-6">Cadastrar Novo Lead</h2>
+                <h2 className="text-2xl font-bold text-white mb-6">Cadastrar Novo Lead</h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label htmlFor="name" className="block text-sm font-semibold text-[#2E2F38]">Nome *</label>
-                        <input type="text" id="name" value={name} onChange={(e) => setName(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-[#E8C547] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#D4A017] text-[#2E2F38]" required />
+                        <label htmlFor="name" className="block text-sm font-semibold text-gray-200">Nome *</label>
+                        <input type="text" id="name" value={name} onChange={(e) => setName(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white/10 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A017]/50 text-white placeholder-gray-400" placeholder="Nome do lead" required />
                     </div>
                     <div>
-                        <label htmlFor="phone" className="block text-sm font-semibold text-[#2E2F38]">Telefone *</label>
-                        <input type="tel" id="phone" value={phone} onChange={handlePhoneChange} className="mt-1 block w-full px-3 py-2 bg-white border border-[#E8C547] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#D4A017] text-[#2E2F38]" required maxLength={15} />
+                        <label htmlFor="phone" className="block text-sm font-semibold text-gray-200">Telefone *</label>
+                        <input type="tel" id="phone" value={phone} onChange={handlePhoneChange} className="mt-1 block w-full px-3 py-2 bg-white/10 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A017]/50 text-white placeholder-gray-400" placeholder="(00) 00000-0000" required maxLength={15} />
                     </div>
                     <div>
-                        <label htmlFor="email" className="block text-sm font-semibold text-[#2E2F38]">E-mail</label>
-                        <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-[#E8C547] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#D4A017] text-[#2E2F38]" />
+                        <label htmlFor="email" className="block text-sm font-semibold text-gray-200">E-mail</label>
+                        <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white/10 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A017]/50 text-white placeholder-gray-400" placeholder="email@exemplo.com" />
                     </div>
                     <div>
-                        <label htmlFor="situation" className="block text-sm font-semibold text-[#2E2F38]">Situação</label>
-                        <select id="situation" value={situation} onChange={(e) => setSituation(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-[#E8C547] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#D4A017] text-[#2E2F38]">
-                            {PIPELINE_STAGES.map(stage => <option key={stage} value={stage}>{stage}</option>)}
+                        <label htmlFor="situation" className="block text-sm font-semibold text-gray-200">Situação</label>
+                        <select id="situation" value={situation} onChange={(e) => setSituation(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white/10 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A017]/50 text-white">
+                            {PIPELINE_STAGES.map(stage => <option key={stage} value={stage} className="bg-[#23283A] text-white">{stage}</option>)}
                         </select>
                     </div>
                     <div>
-                        <span className="block text-sm font-semibold text-[#2E2F38] mb-2">Origem do lead</span>
+                        <span className="block text-sm font-semibold text-gray-200 mb-2">Origem do lead</span>
                         <div className="flex flex-wrap gap-2">
                             {ORIGEM_OPCOES.map((op) => (
                                 <label key={op} className="inline-flex items-center cursor-pointer">
@@ -169,32 +169,32 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
                                         onChange={() => setOrigem(op)}
                                         className="sr-only peer"
                                     />
-                                    <span className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors peer-checked:border-[#D4A017] peer-checked:bg-[#D4A017] peer-checked:text-white border-[#E8C547] bg-white text-[#2E2F38] hover:border-[#D4A017] hover:bg-[#D4A017]/10 ${origem === op ? '!bg-[#D4A017] !text-white border-[#D4A017]' : ''}`}>
+                                    <span className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${origem === op ? 'bg-[#D4A017] text-white border-[#D4A017]' : 'bg-white/10 border-white/10 text-gray-200 hover:bg-white/15 hover:border-white/20'}`}>
                                         {op}
                                     </span>
                                 </label>
                             ))}
                         </div>
                         {origem === 'Outros' && (
-                            <div className="mt-3 p-3 rounded-lg border border-[#E8C547] bg-[#F5F6FA] dark:bg-[#23283A] dark:border-[#23283A]">
-                                <label htmlFor="origem-outros" className="block text-sm font-medium text-[#6B6F76] dark:text-gray-300 mb-1">Especifique a origem</label>
+                            <div className="mt-3 p-3 rounded-lg border border-white/10 bg-white/5">
+                                <label htmlFor="origem-outros" className="block text-sm font-medium text-gray-300 mb-1">Especifique a origem</label>
                                 <input
                                     id="origem-outros"
                                     type="text"
                                     value={origemOutros}
                                     onChange={(e) => setOrigemOutros(e.target.value)}
                                     placeholder="Ex: Indicação do parceiro, Site..."
-                                    className="w-full px-3 py-2 bg-white dark:bg-[#181C23] border border-[#E8C547] dark:border-[#23283A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A017] text-[#2E2F38] dark:text-white"
+                                    className="w-full px-3 py-2 bg-white/10 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A017]/50 text-white placeholder-gray-400"
                                 />
                             </div>
                         )}
                     </div>
-                    {error && <p className="text-sm text-red-500">{error}</p>}
+                    {error && <p className="text-sm text-red-400">{error}</p>}
                     <div className="flex justify-end gap-4 pt-4">
-                        <button type="button" onClick={onClose} disabled={isLoading} className="px-4 py-2 text-sm font-semibold text-[#6B6F76] bg-[#E8E9F1] hover:bg-[#E8C547]/40 rounded-lg transition-colors disabled:opacity-50">
+                        <button type="button" onClick={onClose} disabled={isLoading} className="px-4 py-2 text-sm font-semibold text-gray-300 bg-white/10 border border-white/10 hover:bg-white/15 rounded-lg transition-colors disabled:opacity-50">
                             Cancelar
                         </button>
-                        <button type="submit" disabled={isLoading} className="px-4 py-2 text-sm font-semibold text-white bg-[#D4A017] hover:bg-[#B8860B] rounded-lg shadow-sm disabled:opacity-50 disabled:bg-[#E8C547]">
+                        <button type="submit" disabled={isLoading} className="px-4 py-2 text-sm font-semibold text-white bg-[#D4A017] hover:bg-[#B8860B] rounded-lg disabled:opacity-50">
                             {isLoading ? 'Cadastrando...' : 'Cadastrar'}
                         </button>
                     </div>

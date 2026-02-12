@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PIPELINE_STAGES } from '@/lib/constants';
 import CrmHeader from './_components/CrmHeader';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, Timestamp, orderBy, limit, startAfter, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, query, where, Timestamp, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import Link from 'next/link';
 import FilterModal, { Filters } from './_components/FilterModal';
 
@@ -124,11 +124,10 @@ export default function CrmPage() {
     const [activeTaskFilter, setActiveTaskFilter] = useState<TaskStatus | null>(null);
     const [isFilterModalOpen, setFilterModalOpen] = useState(false);
     const [advancedFilters, setAdvancedFilters] = useState<Filters>({});
-    const [lastVisible, setLastVisible] = useState<any>(null);
-    const [hasMore, setHasMore] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const PAGE_SIZE = 15;
-    const isFirstLoad = useRef(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const PAGE_SIZE = 20;
+    const MAX_LEADS_LOAD = 500;
 
     // Filtro de tarefa vindo da URL (?tarefa=atraso|hoje|sem)
     useEffect(() => {
@@ -179,49 +178,31 @@ export default function CrmPage() {
         return () => unsubscribe();
     }, [currentUser]);
 
-    const fetchLeads = async (loadMore = false) => {
+    // Carrega todos os leads do usuário (até MAX_LEADS_LOAD), com taskStatus calculado igual ao dashboard,
+    // para filtros de tarefa (Atrasada / Hoje) baterem com os números do dashboard e nenhum lead "sumir".
+    const fetchLeads = async () => {
         if (!currentUser) return;
         setLoading(true);
         try {
             const leadsRef = collection(db, 'leads');
-            let q = query(
+            const q = query(
                 leadsRef,
                 where("userId", "==", currentUser.uid),
                 orderBy("createdAt", "desc"),
-                limit(PAGE_SIZE)
+                limit(MAX_LEADS_LOAD)
             );
-            if (loadMore && lastVisible) {
-                q = query(
-                    leadsRef,
-                    where("userId", "==", currentUser.uid),
-                    orderBy("createdAt", "desc"),
-                    startAfter(lastVisible),
-                    limit(PAGE_SIZE)
-                );
-            }
             const snapshot = await getDocs(q);
             const newLeads = await Promise.all(snapshot.docs.map(async (leadDoc) => {
                 const leadData = { id: leadDoc.id, ...leadDoc.data() } as Lead;
                 const tasksCol = collection(db, 'leads', leadDoc.id, 'tarefas');
                 const tasksQuery = query(tasksCol, where('status', '==', 'pendente'));
                 const tasksSnapshot = await getDocs(tasksQuery);
-                const tasks = tasksSnapshot.docs.map(doc => doc.data() as Task);
+                const tasks = tasksSnapshot.docs.map(d => d.data() as Task);
                 leadData.taskStatus = getTaskStatusInfo(tasks);
                 leadData.qualificacao = leadDoc.data().qualificacao || {};
                 return leadData;
             }));
-            if (loadMore) {
-                setLeads(prev => {
-                    // Evita duplicatas
-                    const ids = new Set(prev.map(l => l.id));
-                    const filtered = newLeads.filter(l => !ids.has(l.id));
-                    return [...prev, ...filtered];
-                });
-            } else {
-                setLeads(newLeads);
-            }
-            setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
-            setHasMore(snapshot.docs.length === PAGE_SIZE);
+            setLeads(newLeads);
         } catch (error) {
             console.error("Erro ao buscar leads:", error);
         } finally {
@@ -239,6 +220,7 @@ export default function CrmPage() {
         setActiveFilter(null);
         setActiveTaskFilter(null);
         setAdvancedFilters({});
+        setCurrentPage(1);
     };
 
     const filteredLeads = useMemo(() => {
@@ -290,10 +272,28 @@ export default function CrmPage() {
 
         return leadsToFilter;
     }, [leads, searchTerm, activeFilter, activeTaskFilter, advancedFilters]);
-    
+
+    // Paginação em cima dos filtros (mesma lógica do dashboard: todos os leads carregados, filtrar e paginar)
+    const totalFiltered = filteredLeads.length;
+    const totalPages = Math.max(1, Math.ceil(totalFiltered / PAGE_SIZE));
+    const paginatedLeads = useMemo(() => {
+        const start = (currentPage - 1) * PAGE_SIZE;
+        return filteredLeads.slice(start, start + PAGE_SIZE);
+    }, [filteredLeads, currentPage]);
+
+    // Ao mudar filtros, voltar para página 1; se página atual ficar inválida, ajustar
+    useEffect(() => {
+        if (currentPage > totalPages) setCurrentPage(totalPages > 0 ? totalPages : 1);
+    }, [totalFiltered, totalPages, currentPage]);
+
+    const goToPage = (page: number) => {
+        const p = Math.max(1, Math.min(page, totalPages));
+        setCurrentPage(p);
+    };
+
     const activeAdvancedFilterCount = Object.values(advancedFilters).reduce((count, options: string[]) => count + options.length, 0);
 
-    // Status de tarefa para filtros rápidos
+    // Status de tarefa para filtros rápidos (mesma ordem e lógica do dashboard)
     const taskStatusFilters: TaskStatus[] = ['Tarefa em Atraso', 'Tarefa do Dia', 'Tarefa Futura', 'Sem tarefa'];
 
     return (
@@ -350,29 +350,73 @@ export default function CrmPage() {
                             )}
                         </div>
                     </div>
-                    {/* Chips de filtro rápido */}
-                    <div className="flex flex-wrap gap-2 mb-4">
-                        {PIPELINE_STAGES.map((stage) => (
-                            <FilterChip
-                                key={stage}
-                                selected={activeFilter === stage}
-                                onClick={() => setActiveFilter(activeFilter === stage ? null : stage)}
-                            >
-                                {stage}
-                            </FilterChip>
-                        ))}
-                        {/* Separador visual */}
-                        <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
-                        {/* Filtros de status de tarefa */}
-                        {taskStatusFilters.map((taskStatus) => (
-                            <FilterChip
-                                key={taskStatus}
-                                selected={activeTaskFilter === taskStatus}
-                                onClick={() => setActiveTaskFilter(activeTaskFilter === taskStatus ? null : taskStatus)}
-                            >
-                                {taskStatus}
-                            </FilterChip>
-                        ))}
+                    {/* Segundo header: filtros + paginação fixos ao rolar */}
+                    <div className="sticky top-0 z-10 -mx-4 px-4 py-3 mb-4 rounded-xl bg-white/95 dark:bg-[#23283A]/95 backdrop-blur-sm border border-white/10 shadow-sm">
+                        <div className="flex flex-wrap items-center gap-2 mb-3">
+                            {PIPELINE_STAGES.map((stage) => (
+                                <FilterChip
+                                    key={stage}
+                                    selected={activeFilter === stage}
+                                    onClick={() => { setActiveFilter(activeFilter === stage ? null : stage); setCurrentPage(1); }}
+                                >
+                                    {stage}
+                                </FilterChip>
+                            ))}
+                            <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1" aria-hidden />
+                            {taskStatusFilters.map((taskStatus) => (
+                                <FilterChip
+                                    key={taskStatus}
+                                    selected={activeTaskFilter === taskStatus}
+                                    onClick={() => { setActiveTaskFilter(activeTaskFilter === taskStatus ? null : taskStatus); setCurrentPage(1); }}
+                                >
+                                    {taskStatus}
+                                </FilterChip>
+                            ))}
+                        </div>
+                        {/* Paginação */}
+                        {totalFiltered > 0 && (
+                            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/10">
+                                <span className="text-xs text-[#6B6F76] dark:text-gray-400">
+                                    {((currentPage - 1) * PAGE_SIZE) + 1}–{Math.min(currentPage * PAGE_SIZE, totalFiltered)} de {totalFiltered} {totalFiltered === 1 ? 'lead' : 'leads'}
+                                </span>
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => goToPage(currentPage - 1)}
+                                        disabled={currentPage <= 1}
+                                        className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-white/10 bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+                                    >
+                                        Anterior
+                                    </button>
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                        .filter(p => p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2))
+                                        .map((p, idx, arr) => (
+                                            <React.Fragment key={p}>
+                                                {idx > 0 && arr[idx - 1] !== p - 1 && <span className="px-1 text-gray-400">…</span>}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => goToPage(p)}
+                                                    className={`min-w-[2rem] px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
+                                                        p === currentPage
+                                                            ? 'bg-[#D4A017] border-[#D4A017] text-white'
+                                                            : 'border-white/10 bg-white/5 hover:bg-white/10'
+                                                    }`}
+                                                >
+                                                    {p}
+                                                </button>
+                                            </React.Fragment>
+                                        ))}
+                                    <button
+                                        type="button"
+                                        onClick={() => goToPage(currentPage + 1)}
+                                        disabled={currentPage >= totalPages}
+                                        className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-white/10 bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+                                    >
+                                        Próximo
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                     {/* Lista de leads */}
                     <div className="overflow-x-auto">
@@ -396,7 +440,17 @@ export default function CrmPage() {
                                         <td colSpan={6} className="text-center text-[#6B6F76] dark:text-gray-300 py-8">Nenhum lead encontrado.</td>
                                     </tr>
                                 )}
-                                {!loading && filteredLeads.map((lead) => (
+                                {!loading && leads.length > 0 && totalFiltered === 0 && (
+                                    <tr>
+                                        <td colSpan={6} className="text-center text-[#6B6F76] dark:text-gray-300 py-8">Nenhum lead corresponde aos filtros. Limpe os filtros ou altere a busca.</td>
+                                    </tr>
+                                )}
+                                {!loading && totalFiltered > 0 && paginatedLeads.length === 0 && (
+                                    <tr>
+                                        <td colSpan={6} className="text-center text-[#6B6F76] dark:text-gray-300 py-8">Nenhum lead nesta página.</td>
+                                    </tr>
+                                )}
+                                {!loading && paginatedLeads.map((lead) => (
                                     <tr key={lead.id} className="border-b border-white/10 last:border-b-0 hover:bg-[#F5F6FA]/90 dark:hover:bg-white/5 transition-colors">
                                         <td className="px-4 py-3 text-sm font-medium text-[#2E2F38] dark:text-white w-1/5 truncate max-w-[180px]">{lead.nome}</td>
                                         <td className="px-4 py-3 text-xs text-[#6B6F76] dark:text-gray-100 w-1/6 truncate max-w-[140px]">{lead.telefone}</td>
@@ -433,15 +487,10 @@ export default function CrmPage() {
                                 ))}
                             </tbody>
                         </table>
-                        {hasMore && !loading && (
-                            <div className="flex justify-center mt-4">
-                                <button
-                                    onClick={() => fetchLeads(true)}
-                                    className="px-6 py-2 bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold rounded-lg shadow-soft transition-colors"
-                                >
-                                    Mostrar mais
-                                </button>
-                            </div>
+                        {!loading && leads.length >= MAX_LEADS_LOAD && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                                Exibindo os {MAX_LEADS_LOAD} leads mais recentes. Use os filtros para refinar.
+                            </p>
                         )}
                     </div>
                 </div>
