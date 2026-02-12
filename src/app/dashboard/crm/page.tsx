@@ -298,7 +298,7 @@ export default function CrmPage() {
 
     return (
         <>
-        <div className="min-h-full p-4 sm:p-6 lg:p-8">
+        <div className="min-h-full p-4 sm:p-6 lg:p-8 overflow-x-hidden">
             <CrmHeader />
             <main className="flex flex-col gap-4 mt-4">
                 {/* Card principal do CRM — sem fundo sólido, deixa o background aparecer (igual Brello/Comunidade) */}
@@ -350,8 +350,8 @@ export default function CrmPage() {
                             )}
                         </div>
                     </div>
-                    {/* Segundo header: só quadro (borda), sem fundo — igual aos outros cards */}
-                    <div className="sticky top-0 z-10 -mx-4 px-4 py-3 mb-4 rounded-xl border border-white/10">
+                    {/* Segundo header: só quadro (borda), sem fundo — sem -mx para não invadir a sidebar ao rolar */}
+                    <div className="sticky top-0 z-10 py-3 mb-4 rounded-xl border border-white/10 px-4">
                         <div className="flex flex-wrap items-center gap-2 mb-3">
                             {PIPELINE_STAGES.map((stage) => (
                                 <FilterChip
@@ -418,11 +418,11 @@ export default function CrmPage() {
                             </div>
                         )}
                     </div>
-                    {/* Lista de leads — alinhado ao filtro (-mx-4), só quadro, sem fundo */}
-                    <div className="overflow-auto max-h-[calc(100vh-18rem)] -mx-4 rounded-xl border border-white/10">
+                    {/* Lista de leads — só quadro, sem -mx; overflow contido para não sobresair/sumir ao rolar */}
+                    <div className="overflow-auto max-h-[calc(100vh-18rem)] rounded-xl border border-white/10">
                         <table className="min-w-full table-fixed">
                             <thead className="sticky top-0 z-10">
-                                <tr className="border-b border-white/10 text-gray-200 text-xs">
+                                <tr className="border-b border-white/10 bg-[var(--bg-card)]/95 backdrop-blur-sm text-gray-200 text-xs shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
                                     <th className="px-4 py-3 font-semibold text-left w-1/5 rounded-tl-xl">Nome</th>
                                     <th className="px-4 py-3 font-semibold text-left w-1/6">Telefone</th>
                                     <th className="px-4 py-3 font-semibold text-center w-1/12">WhatsApp</th>
