@@ -906,9 +906,9 @@ const Brello = () => {
           </div>
         )}
 
-        {/* Kanban Board */}
+        {/* Kanban Board — sem fundo preto, só colunas e cards; background do app aparece */}
         {currentBoard && (
-          <div className="bg-[#181C23] rounded-xl p-6">
+          <div className="rounded-xl p-6 border border-white/10">
             <div className="flex items-center gap-4 mb-6">
               <h2 className="text-2xl font-bold text-white">{currentBoard.title}</h2>
               <button
@@ -948,7 +948,7 @@ const Brello = () => {
                             >
                               <div
                                 {...provided.dragHandleProps}
-                                className={`bg-[#23283A] rounded-lg p-4 min-h-[500px] cursor-move transition-all ${
+                                className={`bg-[#23283A]/90 backdrop-blur-sm rounded-lg p-4 min-h-[500px] cursor-move transition-all border border-white/10 ${
                                   snapshot.isDragging ? 'shadow-lg transform rotate-1' : 'hover:shadow-md'
                                 }`}
                               >
@@ -970,7 +970,7 @@ const Brello = () => {
                                       ref={provided.innerRef}
                                       {...provided.droppableProps}
                                       className={`space-y-3 min-h-[400px] ${
-                                        snapshot.isDraggingOver ? 'bg-[#2A2F42] rounded-lg' : ''
+                                        snapshot.isDraggingOver ? 'bg-white/5 rounded-lg' : ''
                                       }`}
                                     >
                                       {columnCards.map((card, index) => (
@@ -980,8 +980,8 @@ const Brello = () => {
                                               ref={provided.innerRef}
                                               {...provided.draggableProps}
                                               {...provided.dragHandleProps}
-                                              className={`bg-[#181C23] rounded-lg p-4 cursor-move transition-all ${
-                                                snapshot.isDragging ? 'shadow-lg transform rotate-2' : 'hover:shadow-md'
+                                              className={`bg-white/10 rounded-lg p-4 cursor-move transition-all border border-white/10 ${
+                                                snapshot.isDragging ? 'shadow-lg transform rotate-2' : 'hover:shadow-md hover:bg-white/15'
                                               }`}
                                             >
                                               <div 
@@ -1009,7 +1009,7 @@ const Brello = () => {
                                           setSelectedColumnId(column.id);
                                           setShowNewCardModal(true);
                                         }}
-                                        className="w-full mt-3 p-3 bg-[#181C23] hover:bg-[#2A2F42] text-gray-400 hover:text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                                        className="w-full mt-3 p-3 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg transition-colors flex items-center justify-center gap-2 border border-dashed border-white/20"
                                       >
                                         <span className="text-xl">+</span>
                                         <span>Adicionar card</span>
