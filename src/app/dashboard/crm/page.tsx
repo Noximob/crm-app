@@ -500,9 +500,9 @@ export default function CrmPage() {
                                 )}
                                 {!loading && paginatedLeads.map((lead) => (
                                     <tr key={lead.id} className="border-b border-white/10 last:border-b-0 hover:bg-white/5 transition-colors">
-                                        <td className="px-4 py-3 text-sm font-medium text-white w-1/5 truncate max-w-[180px]">{lead.nome}</td>
-                                        <td className="px-4 py-3 text-xs text-gray-200 w-1/6 truncate max-w-[140px]">{lead.telefone}</td>
-                                        <td className="px-4 py-3 text-center w-1/12">
+                                        <td className="px-3 py-1.5 text-sm font-medium text-white w-1/5 truncate max-w-[180px]">{lead.nome}</td>
+                                        <td className="px-3 py-1.5 text-xs text-gray-200 w-1/6 truncate max-w-[140px]">{lead.telefone}</td>
+                                        <td className="px-3 py-1.5 text-center w-1/12">
                                             <a
                                                 href={`https://wa.me/${lead.telefone.replace(/\D/g, '')}`}
                                                 target="_blank"
@@ -510,22 +510,22 @@ export default function CrmPage() {
                                                 className="inline-flex items-center justify-center text-[#25D366] hover:text-[#128C7E]"
                                                 title="Conversar no WhatsApp"
                                             >
-                                                <WhatsAppIcon className="h-5 w-5" />
+                                                <WhatsAppIcon className="h-4 w-4" />
                                             </a>
                                         </td>
-                                        <td className="px-4 py-3 text-xs w-1/5">
-                                            <span className="inline-block px-2 py-1 rounded bg-white/10 border border-white/10 text-[#E8C547] font-semibold text-[11px] truncate max-w-[120px]">{lead.etapa}</span>
+                                        <td className="px-3 py-1.5 text-xs w-1/5">
+                                            <span className="inline-block px-2 py-0.5 rounded bg-white/10 border border-white/10 text-[#E8C547] font-semibold text-[11px] truncate max-w-[120px]">{lead.etapa}</span>
                                         </td>
-                                        <td className="px-4 py-3 text-xs w-1/5">
+                                        <td className="px-3 py-1.5 text-xs w-1/5">
                                             <span className="text-white">
                                                 <StatusIndicator status={lead.taskStatus} />
                                             </span>
                                         </td>
-                                        <td className="px-4 py-3 w-1/5 text-center">
+                                        <td className="px-3 py-1.5 w-1/5 text-center">
                                             <div className="flex justify-center">
                                                 <Link
                                                     href={`/dashboard/crm/${lead.id}`}
-                                                    className="px-3 py-1.5 text-xs font-semibold bg-[#D4A017] hover:bg-[#B8860B] text-white rounded-lg shadow-soft transition-colors"
+                                                    className="px-2 py-1 text-xs font-semibold bg-[#D4A017] hover:bg-[#B8860B] text-white rounded-lg shadow-soft transition-colors"
                                                 >
                                                     Ver
                                                 </Link>
