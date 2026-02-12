@@ -51,6 +51,14 @@ const CodeIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns
 
 const LogOutIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>;
 
+/** Ícone Shop — moeda amarela (único do menu com cor); gasto de moedas */
+const ShopIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="9" />
+    <circle cx="12" cy="12" r="5" />
+  </svg>
+);
+
 const ChevronLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15,18 9,12 15,6"/></svg>;
 
 // Label do tipo de evento/agenda (igual dashboard)
@@ -221,9 +229,7 @@ export default function DashboardLayout({
     { href: 'https://chat.openai.com', icon: ChatGPTIcon, label: 'ChatGPT', isExternal: true },
     { href: '/dashboard/treinamentos', icon: PresentationIcon, label: 'Academia' },
     { href: '/dashboard/comunidade', icon: CommunityIcon, label: 'Comunidade', notifications: notifications.comunidade },
-    { href: '/dashboard/incluir-imovel', icon: HouseIcon, label: 'Incluir imóvel' },
     { href: '/dashboard/pagamentos', icon: CreditCardIcon, label: 'Alumma Pró' },
-    { href: '/dashboard/configuracoes', icon: SettingsIcon, label: 'Configurações' },
     // Exibir admin se for imobiliaria OU tiver permissao admin
     ...((userDataWithPerms?.tipoConta === 'imobiliaria' || userDataWithPerms?.permissoes?.admin) ? [
     { href: '/dashboard/admin', icon: KeyIcon, label: 'Área administrador' },
@@ -232,6 +238,7 @@ export default function DashboardLayout({
     ...((userDataWithPerms?.tipoConta === 'imobiliaria' || userDataWithPerms?.permissoes?.developer) ? [
     { href: '/dashboard/developer', icon: CodeIcon, label: 'Área do Desenvolvedor' },
     ] : []),
+    { href: '/dashboard/shop', icon: ShopIcon, label: 'Shop', isShop: true },
     { href: '#', icon: LogOutIcon, label: 'Desconectar', isLogout: true },
   ];
 
@@ -262,13 +269,13 @@ export default function DashboardLayout({
           </div>
 
           <nav className="flex-1 p-3 overflow-y-auto scrollbar-thin">
-            <ul className="space-y-0.5">
+            <ul className="space-y-0">
               {navItems.map((item) => (
                 <li key={item.href}>
                   {item.isLogout ? (
                     <button
                       onClick={handleLogout}
-                      className={`flex items-center ${collapsed ? 'justify-center' : ''} w-full px-4 py-2.5 rounded-lg transition-colors text-orange-400 border border-orange-500/40 hover:bg-orange-500/10 hover:text-orange-300`}
+                      className={`flex items-center ${collapsed ? 'justify-center' : ''} w-full px-4 py-2 rounded-lg transition-colors text-orange-400 border border-orange-500/40 hover:bg-orange-500/10 hover:text-orange-300 mt-0.5`}
                       title="Desconectar"
                     >
                       <span className="mr-3"><item.icon className="h-5 w-5" /></span>
@@ -279,7 +286,7 @@ export default function DashboardLayout({
                       href={item.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`flex items-center ${collapsed ? 'justify-center' : ''} px-4 py-2.5 rounded-lg transition-colors relative text-text-secondary hover:bg-[var(--surface-hover)] hover:text-white`}
+                      className={`flex items-center ${collapsed ? 'justify-center' : ''} px-4 py-2 rounded-lg transition-colors relative text-text-secondary hover:bg-[var(--surface-hover)] hover:text-white mt-0.5`}
                       title={`Abrir ${item.label} em nova aba`}
                     >
                       <span className="mr-3 relative"><item.icon className="h-5 w-5" /></span>
@@ -288,7 +295,7 @@ export default function DashboardLayout({
                   ) : (
                     <Link
                       href={item.href}
-                      className={`flex items-center ${collapsed ? 'justify-center' : ''} px-4 py-2.5 rounded-lg transition-all relative ${
+                      className={`flex items-center ${collapsed ? 'justify-center' : ''} px-4 py-2 rounded-lg transition-all relative mt-0.5 ${
                         pathname === item.href
                           ? 'bg-[var(--surface-hover)] text-white border-l-[3px] border-l-orange-500 shadow-[0_0_14px_rgba(255,140,0,0.15)]'
                           : 'text-text-secondary hover:bg-[var(--surface-hover)] hover:text-white border-l-[3px] border-l-transparent'
@@ -296,7 +303,13 @@ export default function DashboardLayout({
                       onClick={() => setCollapsed(false)}
                     >
                       <span className="mr-3 relative">
-                        {item.label === 'Incluir imóvel' ? <HouseIcon active={pathname === item.href} className="h-5 w-5" /> : item.label === 'Área do Desenvolvedor' ? <CodeIcon className="h-5 w-5" /> : <item.icon className="h-5 w-5" />}
+                        {(item as { isShop?: boolean }).isShop ? (
+                          <ShopIcon className="h-5 w-5 text-amber-400" />
+                        ) : item.label === 'Área do Desenvolvedor' ? (
+                          <CodeIcon className="h-5 w-5" />
+                        ) : (
+                          <item.icon className="h-5 w-5" />
+                        )}
                         {item.notifications && (
                           <span className="absolute -top-1 -right-1 bg-red-500 rounded-full h-2.5 w-2.5 flex animate-pulse" />
                         )}
