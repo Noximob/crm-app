@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { auth, db } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
-import { getDoc, doc } from 'firebase/firestore';
+import { getDoc, doc, collection, getDocs, query, where, updateDoc } from 'firebase/firestore';
 import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
 import { useNotifications } from '@/context/NotificationContext';
@@ -53,22 +53,14 @@ const LogOutIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xml
 
 const ChevronLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15,18 9,12 15,6"/></svg>;
 
-const TrendUpIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>;
-const TrendDownIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>;
-
-const INDICADORES_LIST = [
-  { key: 'cub', label: 'CUB (SC)' },
-  { key: 'selic', label: 'SELIC' },
-  { key: 'ipca', label: 'IPCA' },
-  { key: 'igpm', label: 'IGP-M' },
-  { key: 'incc', label: 'INCC' },
-];
-
-function calcularVariacaoIndicador(atual: string, anterior: string): number | null {
-  const a = parseFloat((atual || '').replace(/[^\d,.-]/g, '').replace(',', '.'));
-  const b = parseFloat((anterior || '').replace(/[^\d,.-]/g, '').replace(',', '.'));
-  if (isNaN(a) || isNaN(b) || b === 0) return null;
-  return ((a - b) / b) * 100;
+// Label do tipo de evento/agenda (igual dashboard)
+function getTipoAgendaLabel(tipo: string): string {
+  const map: Record<string, string> = {
+    reuniao: 'Reunião', evento: 'Evento', treinamento: 'Treinamento', 'revisar-crm': 'Revisar CRM',
+    'ligacao-ativa': 'Ligação Ativa', 'acao-de-rua': 'Ação de rua', 'disparo-de-msg': 'Disparo de Msg',
+    outro: 'Outro', meet: 'Google Meet', youtube: 'YouTube Live', instagram: 'Instagram Live', discord: 'Discord',
+  };
+  return map[tipo] || tipo;
 }
 
 const NavLink = ({ href, icon: Icon, children, collapsed, isActive }: any) => (
@@ -106,27 +98,103 @@ export default function DashboardLayout({
     }
   }, [pathname, resetNotification]);
 
-  const [indicadoresExternos, setIndicadoresExternos] = useState<Record<string, string> | null>(null);
-  const [indicadoresExternosAnterior, setIndicadoresExternosAnterior] = useState<Record<string, string> | null>(null);
+  // Convites de eventos (plantoes + agenda) em que o usuário foi marcado e ainda não respondeu
+  const [plantoes, setPlantoes] = useState<any[]>([]);
+  const [agendaImobiliaria, setAgendaImobiliaria] = useState<any[]>([]);
+  const [respondendoPresenca, setRespondendoPresenca] = useState<string | null>(null);
+
   useEffect(() => {
-    const now = new Date();
-    const docIdAtual = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const docIdAnterior = now.getMonth() === 0
-      ? `${now.getFullYear() - 1}-12`
-      : `${now.getFullYear()}-${String(now.getMonth()).padStart(2, '0')}`;
-    (async () => {
+    const fetchPlantoes = async () => {
+      if (!userData?.imobiliariaId) return;
       try {
-        const [snapAtual, snapAnterior] = await Promise.all([
-          getDoc(doc(db, 'indicadoresExternos', docIdAtual)),
-          getDoc(doc(db, 'indicadoresExternos', docIdAnterior)),
-        ]);
-        if (snapAtual.exists()) setIndicadoresExternos(snapAtual.data() as Record<string, string>);
-        if (snapAnterior.exists()) setIndicadoresExternosAnterior(snapAnterior.data() as Record<string, string>);
+        const q = query(collection(db, 'plantoes'), where('imobiliariaId', '==', userData.imobiliariaId));
+        const snapshot = await getDocs(q);
+        setPlantoes(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
       } catch (e) {
-        // ignore
+        setPlantoes([]);
       }
-    })();
-  }, []);
+    };
+    fetchPlantoes();
+  }, [userData?.imobiliariaId]);
+
+  useEffect(() => {
+    const fetchAgenda = async () => {
+      if (!userData?.imobiliariaId) return;
+      try {
+        const q = query(collection(db, 'agendaImobiliaria'), where('imobiliariaId', '==', userData.imobiliariaId));
+        const snapshot = await getDocs(q);
+        setAgendaImobiliaria(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      } catch (e) {
+        setAgendaImobiliaria([]);
+      }
+    };
+    fetchAgenda();
+  }, [userData?.imobiliariaId]);
+
+  const convitesPendentes = React.useMemo(() => {
+    const uid = user?.uid;
+    if (!uid) return [];
+    const lista: { tipo: 'plantao' | 'agenda'; id: string; titulo: string; tipoLabel: string; dataStr: string; horarioStr: string; sortTime: number }[] = [];
+    plantoes.forEach((p: any) => {
+      if (!Array.isArray(p.presentesIds) || !p.presentesIds.includes(uid)) return;
+      if (p.respostasPresenca?.[uid]) return;
+      const dataInicio = p.dataInicio || '';
+      const horario = p.horario || '00:00';
+      const sortTime = dataInicio && horario ? new Date(`${dataInicio}T${horario.substring(0, 5)}`).getTime() : 0;
+      const dataStr = dataInicio ? new Date(dataInicio).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+      lista.push({
+        tipo: 'plantao',
+        id: p.id,
+        titulo: p.construtora ? `Plantão — ${p.construtora}` : 'Plantão',
+        tipoLabel: 'Plantão',
+        dataStr,
+        horarioStr: horario.substring(0, 5),
+        sortTime,
+      });
+    });
+    agendaImobiliaria.forEach((a: any) => {
+      if (!Array.isArray(a.presentesIds) || !a.presentesIds.includes(uid)) return;
+      if (a.respostasPresenca?.[uid]) return;
+      const dt = a.dataInicio?.toDate ? a.dataInicio.toDate() : (a.dataInicio ? new Date(a.dataInicio) : null);
+      const sortTime = dt ? dt.getTime() : 0;
+      const dataStr = dt ? dt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+      const horarioStr = dt ? dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+      lista.push({
+        tipo: 'agenda',
+        id: a.id,
+        titulo: a.titulo || 'Evento',
+        tipoLabel: getTipoAgendaLabel(a.tipo || 'outro'),
+        dataStr,
+        horarioStr,
+        sortTime,
+      });
+    });
+    lista.sort((a, b) => a.sortTime - b.sortTime);
+    return lista;
+  }, [user?.uid, plantoes, agendaImobiliaria]);
+
+  const responderPresenca = async (tipo: 'plantao' | 'agenda', id: string, status: 'confirmado' | 'cancelado') => {
+    const uid = user?.uid;
+    if (!uid) return;
+    const key = `${tipo}-${id}`;
+    setRespondendoPresenca(key);
+    try {
+      const col = tipo === 'plantao' ? 'plantoes' : 'agendaImobiliaria';
+      const ref = doc(db, col, id);
+      const item = tipo === 'plantao' ? plantoes.find((p: any) => p.id === id) : agendaImobiliaria.find((a: any) => a.id === id);
+      const atuais = (item?.respostasPresenca || {}) as Record<string, string>;
+      await updateDoc(ref, { respostasPresenca: { ...atuais, [uid]: status } });
+      if (tipo === 'plantao') {
+        setPlantoes(prev => prev.map((p: any) => p.id === id ? { ...p, respostasPresenca: { ...atuais, [uid]: status } } : p));
+      } else {
+        setAgendaImobiliaria(prev => prev.map((a: any) => a.id === id ? { ...a, respostasPresenca: { ...atuais, [uid]: status } } : a));
+      }
+    } catch (e) {
+      console.error('Erro ao atualizar presença:', e);
+    } finally {
+      setRespondendoPresenca(null);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -244,33 +312,41 @@ export default function DashboardLayout({
       </div>
 
       <div className={`flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300 ${collapsed ? 'ml-16' : 'ml-64'}`}>
-        {/* Header gamificado: Olá | indicadores (CUB, SELIC...) | Ideias, moedas, avatar */}
+        {/* Header: Olá | convites de eventos (1 por vez) | Ideias, moedas, avatar */}
         <header className="h-16 px-5 shrink-0 flex items-center justify-between gap-3">
           <h2 className="text-lg font-bold text-orange-400 truncate shrink-0">
             Olá, {displayName}! 👋
           </h2>
-          {indicadoresExternos && indicadoresExternosAnterior && (
-            <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-center overflow-x-auto py-0.5">
-              {INDICADORES_LIST.map((ind) => {
-                const variacao = calcularVariacaoIndicador(indicadoresExternos[ind.key], indicadoresExternosAnterior[ind.key]);
-                return (
-                  <div
-                    key={ind.key}
-                    className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/[0.04] border border-white/[0.08] hover:border-orange-500/25 transition-colors shrink-0"
+          {convitesPendentes.length > 0 && (
+            <div className="flex items-center gap-2 flex-1 min-w-0 justify-center overflow-hidden">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.06] border border-orange-500/25 max-w-full min-w-0">
+                <CalendarIcon className="w-4 h-4 text-amber-400 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] text-text-secondary leading-tight">
+                    Você tem <span className="font-bold text-white">{convitesPendentes.length}</span> {convitesPendentes.length === 1 ? 'evento' : 'eventos'} a confirmar
+                  </p>
+                  <p className="text-xs font-semibold text-white truncate">{convitesPendentes[0].titulo}</p>
+                  <p className="text-[10px] text-text-secondary">{convitesPendentes[0].dataStr} · {convitesPendentes[0].horarioStr}</p>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    disabled={respondendoPresenca === `${convitesPendentes[0].tipo}-${convitesPendentes[0].id}`}
+                    onClick={() => responderPresenca(convitesPendentes[0].tipo, convitesPendentes[0].id, 'confirmado')}
+                    className="px-2 py-1 text-[10px] font-semibold text-white bg-emerald-500/90 hover:bg-emerald-500 rounded transition-colors disabled:opacity-50"
                   >
-                    <div className="text-center">
-                      <div className="text-xs font-bold text-white leading-tight">{indicadoresExternos[ind.key] || '--'}</div>
-                      <div className="text-[9px] text-text-secondary leading-tight">{ind.label}</div>
-                    </div>
-                    {variacao !== null && (
-                      <div className={`flex items-center gap-0.5 text-[9px] font-semibold ${variacao > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {variacao > 0 ? <TrendUpIcon className="w-2.5 h-2.5" /> : <TrendDownIcon className="w-2.5 h-2.5" />}
-                        {Math.abs(variacao).toFixed(2)}%
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                    {respondendoPresenca === `${convitesPendentes[0].tipo}-${convitesPendentes[0].id}` ? '...' : 'Confirmar'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={respondendoPresenca === `${convitesPendentes[0].tipo}-${convitesPendentes[0].id}`}
+                    onClick={() => responderPresenca(convitesPendentes[0].tipo, convitesPendentes[0].id, 'cancelado')}
+                    className="px-2 py-1 text-[10px] font-semibold text-red-200 bg-red-500/20 hover:bg-red-500/30 rounded transition-colors disabled:opacity-50"
+                  >
+                    Recusar
+                  </button>
+                </div>
+              </div>
             </div>
           )}
           <div className="flex items-center gap-3 shrink-0">
