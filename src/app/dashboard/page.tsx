@@ -324,15 +324,21 @@ const MetaIndividualCard = ({ metaPessoal, meta }: { metaPessoal: { valorAlmejad
           <svg className="h-4 w-4 text-[#D4A017] shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
           <span className="font-bold text-white text-sm truncate">Minha Meta</span>
         </div>
-        <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-bold ${colors.percentual} ${colors.percentualBg} border border-current/20`}>
-          {progresso}%
-        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-bold ${colors.percentual} ${colors.percentualBg} border border-current/20`}>
+            {progresso}%
+          </span>
+          {dias !== null && (
+            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold tabular-nums animate-pulse ${
+              dias > 0 ? 'bg-amber-500/25 text-amber-300 border border-amber-400/50' : dias === 0 ? 'bg-orange-500/30 text-orange-200 border border-orange-400/60' : 'bg-white/10 text-white/80'
+            }`}>
+              {dias > 0 ? `${dias} dias` : dias === 0 ? 'Último dia!' : 'Encerrado'}
+            </span>
+          )}
+        </div>
       </div>
-      <div className="flex items-center justify-between gap-2 text-[9px] text-[#E8C547]">
+      <div className="text-[9px] text-[#E8C547]">
         <span>{formatMetaDate(meta?.inicio)} → {formatMetaDate(meta?.fim)}</span>
-        {dias !== null && (
-          <span>{dias > 0 ? `${dias} dias` : dias === 0 ? 'Último dia' : 'Encerrado'}</span>
-        )}
       </div>
       <div className="flex items-center justify-between gap-2">
         <span className="text-[9px] text-[#E8C547]">Almejado</span>
@@ -1485,7 +1491,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-full flex flex-col">
       {/* Grid em 2 colunas com rolagem independente; barras de rolagem ocultas */}
-      <div id="dashboard-two-columns" className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0 pt-2" style={{ height: 'calc(100vh - 220px)' }}>
+      <div id="dashboard-two-columns" className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-6 flex-1 min-h-0 pt-2" style={{ height: 'calc(100vh - 220px)' }}>
         {/* Coluna Esquerda — rola independente; scrollbar totalmente oculta */}
         <div className="dashboard-scroll-hide space-y-6 overflow-y-auto overflow-x-hidden pr-2 min-h-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {/* Quadro: eventos em que fui marcado — Confirmar Presença / Cancelar */}
@@ -1808,7 +1814,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Coluna Direita — compacta para caber na tela; scroll suave se precisar */}
-        <div id="trending-section" className="dashboard-scroll-hide overflow-y-auto overflow-x-hidden pr-2 min-h-0 space-y-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div id="trending-section" className="dashboard-scroll-hide overflow-y-auto overflow-x-hidden pr-2 min-h-0 space-y-2 pb-8" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {/* Funil de vendas individual — compacto */}
           <div className="card-glow rounded-xl p-3 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-0.5 h-full bg-gradient-to-r from-[#D4A017] to-[#60a5fa] rounded-r" />
