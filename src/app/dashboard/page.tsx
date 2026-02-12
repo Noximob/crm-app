@@ -317,7 +317,7 @@ const MetaIndividualCard = ({ metaPessoal, meta }: { metaPessoal: { valorAlmejad
   };
   const colors = getProgressColors();
   return (
-    <div className="flex flex-col gap-1.5 p-3 rounded-xl shadow-lg bg-[#23283A]/12 backdrop-blur-sm border border-[#D4A017]/20 relative overflow-hidden">
+    <div className="flex flex-col gap-1.5 p-3 rounded-xl shadow-lg bg-[#23283A]/5 border border-[#D4A017]/20 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-0.5 h-full bg-[#D4A017]" />
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
@@ -1804,10 +1804,10 @@ export default function DashboardPage() {
                 {trendingPostsFiltered.slice(0, 6).map((post, index) => (
                   <div
                     key={post.id}
-                    className={`group relative backdrop-blur-sm rounded-xl p-4 transition-all duration-300 cursor-pointer border hover:scale-[1.02] shadow-lg hover:shadow-xl ${
+                    className={`group relative rounded-xl p-4 transition-all duration-300 cursor-pointer border hover:scale-[1.02] shadow-lg hover:shadow-xl ${
                       post.isEvento
-                        ? 'bg-gradient-to-r from-yellow-50/80 to-orange-50/80 dark:from-yellow-900/20 dark:to-orange-900/20 border-yellow-200/50 dark:border-yellow-700/50'
-                        : 'bg-white/60 dark:bg-[#23283A]/60 border-white/20 hover:bg-white/80 dark:hover:bg-[#23283A]/80 hover:border-[#D4A017]/30'
+                        ? 'bg-gradient-to-r from-yellow-50/40 to-orange-50/40 dark:from-yellow-900/15 dark:to-orange-900/15 border-yellow-200/50 dark:border-yellow-700/50'
+                        : 'bg-white/15 dark:bg-[#23283A]/10 border-white/20 hover:bg-white/25 dark:hover:bg-[#23283A]/18 hover:border-[#D4A017]/30'
                     }`}
                   >
                     <div className="absolute -top-2 -left-2 w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg">#{index + 1}</div>

@@ -295,7 +295,7 @@ input:focus {
 
 /* Card com borda luminosa — fundo transparente para ver o background */
 .dark .card-glow {
-  background: rgba(26, 26, 30, 0.2);
+  background: rgba(26, 26, 30, 0.08);
   border: 1px solid rgba(255, 140, 0, 0.35);
   border-radius: 16px;
   box-shadow: 0 0 20px rgba(255, 140, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.03);

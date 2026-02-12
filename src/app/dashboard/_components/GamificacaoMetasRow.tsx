@@ -67,7 +67,7 @@ export function GamificacaoMetasRow({ pontos = PONTOS_EXEMPLO, meta, nomeImobili
       {/* Linha 1: Ranking (esquerda) | Meta Nox — só VGV total (direita) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {/* 1. Ranking — 1º, 2º, 3º com nomes dos corretores */}
-        <div className={`${CARD_BASE} bg-[#23283A]/12 backdrop-blur-sm p-3`}>
+        <div className={`${CARD_BASE} bg-[#23283A]/5 p-3`}>
           <div className={GLOW} />
           <div className="flex items-center gap-2 mb-2">
             <span className="text-amber-400">🏆</span>
@@ -101,7 +101,7 @@ export function GamificacaoMetasRow({ pontos = PONTOS_EXEMPLO, meta, nomeImobili
         </div>
 
         {/* 2. Meta Nox — somente VGV total (percentual em cima já explica) */}
-        <div className={`${CARD_BASE} bg-[#23283A]/12 backdrop-blur-sm p-3`}>
+        <div className={`${CARD_BASE} bg-[#23283A]/5 p-3`}>
           <div className={GLOW} />
           <div className="flex items-center justify-between gap-2 mb-1">
             <span className="font-bold text-white text-xs truncate">
@@ -127,7 +127,7 @@ export function GamificacaoMetasRow({ pontos = PONTOS_EXEMPLO, meta, nomeImobili
       </div>
 
       {/* Linha 2: Minhas Moedas — full width */}
-      <div className={`${CARD_BASE} bg-[#23283A]/12 backdrop-blur-sm p-3`}>
+      <div className={`${CARD_BASE} bg-[#23283A]/5 p-3`}>
         <div className={GLOW} />
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
