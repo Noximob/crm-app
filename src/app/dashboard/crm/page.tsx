@@ -153,6 +153,14 @@ export default function CrmPage() {
         }
     }, [searchParams]);
 
+    // Quando o funil (etapas) muda, limpar filtro rápido se a etapa selecionada não existir mais
+    useEffect(() => {
+        if (activeFilter && !stages.includes(activeFilter)) {
+            setActiveFilter(null);
+            setCurrentPage(1);
+        }
+    }, [stages.join(','), activeFilter]);
+
     useEffect(() => {
         if (currentUser) {
             setLoading(true);

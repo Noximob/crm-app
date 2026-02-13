@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { usePipelineStages } from '@/context/PipelineStagesContext';
 
 // Definições movidas para cá para evitar dependências circulares e manter o componente contido.
 const QUALIFICATION_QUESTIONS = [
@@ -29,7 +30,8 @@ interface FilterModalProps {
     onClose: () => void;
     onApply: (filters: Filters) => void;
     initialFilters: Filters;
-    pipelineStages: string[];
+    /** @deprecated Etapas vêm do contexto (funil configurável) */
+    pipelineStages?: string[];
 }
 
 const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -54,12 +56,24 @@ const FilterTag = ({ label, isSelected, onClick }: { label: string; isSelected: 
     </button>
 );
 
-export default function FilterModal({ isOpen, onClose, onApply, initialFilters, pipelineStages }: FilterModalProps) {
+export default function FilterModal({ isOpen, onClose, onApply, initialFilters }: FilterModalProps) {
+    const { stages: stagesFromContext } = usePipelineStages();
+    const pipelineStages = stagesFromContext;
     const [selectedFilters, setSelectedFilters] = useState<Filters>(initialFilters);
 
     useEffect(() => {
         setSelectedFilters(initialFilters);
     }, [initialFilters]);
+
+    useEffect(() => {
+        if (!pipelineStages.length) return;
+        setSelectedFilters((prev) => {
+            const etapaSelected = prev['etapa'] || [];
+            const valid = etapaSelected.filter((e) => pipelineStages.includes(e));
+            if (valid.length === etapaSelected.length) return prev;
+            return { ...prev, etapa: valid.length ? valid : [] };
+        });
+    }, [pipelineStages.join(',')]);
 
     const handleTagClick = (groupKey: string, option: string) => {
         const currentGroupFilters = selectedFilters[groupKey] || [];
@@ -78,7 +92,7 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters, 
     }
 
     const hasActiveFilters = Object.values(selectedFilters).some(arr => arr && arr.length > 0);
-    const situationQuestion = { title: 'Situação do Cliente', key: 'etapa', options: pipelineStages };
+    const situationQuestion = { title: 'Situação do Cliente (Etapa do funil)', key: 'etapa', options: pipelineStages };
 
     if (!isOpen) return null;
 

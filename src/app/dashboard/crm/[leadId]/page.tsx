@@ -108,7 +108,7 @@ interface Task {
 
 export default function LeadDetailPage() {
     const { currentUser, userData } = useAuth();
-    const { stages } = usePipelineStages();
+    const { stages, normalizeEtapa } = usePipelineStages();
     const params = useParams();
     const searchParams = useSearchParams();
     const leadId = params.leadId as string;
@@ -434,19 +434,15 @@ export default function LeadDetailPage() {
                             </div>
                             <div className="flex items-center justify-between">
                                 {readOnly ? (
-                                  <span className="px-2 py-1 text-xs font-medium text-[#2E2F38] dark:text-white bg-[#E8E9F1] dark:bg-[#181C23] rounded-md">{lead.etapa}</span>
+                                  <span className="px-2 py-1 text-xs font-medium text-[#2E2F38] dark:text-white bg-[#E8E9F1] dark:bg-[#181C23] rounded-md">{normalizeEtapa(lead.etapa)}</span>
                                 ) : (
                                   <select 
                                     id="lead-situation" 
-                                    value={lead.etapa} 
+                                    value={normalizeEtapa(lead.etapa)} 
                                     onChange={handleStageChange} 
                                     className="px-2 py-1 text-xs border border-[#E8C547] dark:border-[#D4A017] rounded-md bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white focus:ring-1 focus:ring-[#D4A017] focus:outline-none"
                                   >
-                                    {(() => {
-                                      const opts = [...stages];
-                                      if (lead.etapa && !stages.includes(lead.etapa)) opts.push(lead.etapa);
-                                      return opts.map(s => (<option key={s} value={s}>{s}</option>));
-                                    })()}
+                                    {stages.map(s => (<option key={s} value={s}>{s}</option>))}
                                   </select>
                                 )}
                                 {!readOnly && (
