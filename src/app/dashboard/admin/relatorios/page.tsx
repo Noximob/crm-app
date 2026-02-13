@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { AlummaLogo } from '@/components/AlummaLogo';
 import { collection, query, where, doc, onSnapshot } from 'firebase/firestore';
-import { PIPELINE_STAGES } from '@/lib/constants';
+import { usePipelineStages } from '@/context/PipelineStagesContext';
 
 type PeriodKey = 'hoje' | 'semana' | 'mes' | 'custom';
 
@@ -131,12 +131,24 @@ const AlertTriangleIcon = (p: React.SVGProps<SVGSVGElement>) => (
   <svg {...p} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
 );
 
-const ETAPAS_QUENTES = ['Negociação e Proposta', 'Contrato e fechamento', 'Pós Venda e Fidelização'];
-const ETAPAS_QUALIFICACAO_SEM_REUNIAO = ['Pré Qualificação', 'Qualificação', 'Apresentação do imóvel'];
-const ETAPAS_LIGACAO_OU_VISITA = ['Ligação agendada', 'Visita agendada'];
-
 export default function RelatoriosAdminPage() {
   const { userData } = useAuth();
+  const { stages, normalizeEtapa, stagesWithMeta } = usePipelineStages();
+  // Derivar listas de etapas a partir da config do funil (quentes, qualificação, reunião)
+  const { etapasQuentesSet, etapasQualificacaoSemReuniaoSet, etapasLigacaoOuVisitaSet } = useMemo(() => {
+    const quentes = stagesWithMeta.filter((s) => s.isQuente).map((s) => s.label);
+    const qualifSemReuniao = stagesWithMeta
+      .filter((s) => ['Topo de Funil', 'Qualificado', 'Apresentação do imóvel'].includes(s.reportCategory))
+      .map((s) => s.label);
+    const ligacaoOuVisita = stagesWithMeta
+      .filter((s) => s.reportCategory === 'Reunião agendada')
+      .map((s) => s.label);
+    return {
+      etapasQuentesSet: new Set(quentes),
+      etapasQualificacaoSemReuniaoSet: new Set(qualifSemReuniao),
+      etapasLigacaoOuVisitaSet: new Set(ligacaoOuVisita),
+    };
+  }, [stagesWithMeta]);
   const [leads, setLeads] = useState<LeadRaw[]>([]);
   const [corretores, setCorretores] = useState<Corretor[]>([]);
   const [meta, setMeta] = useState<MetaDoc | null>(null);
@@ -240,13 +252,13 @@ export default function RelatoriosAdminPage() {
 
   const porEtapa = useMemo(() => {
     const map: Record<string, number> = {};
-    PIPELINE_STAGES.forEach(e => { map[e] = 0; });
+    stages.forEach(e => { map[e] = 0; });
     filteredLeads.forEach(l => {
-      const etapa = l.etapa && PIPELINE_STAGES.includes(l.etapa) ? l.etapa : PIPELINE_STAGES[0];
+      const etapa = normalizeEtapa(l.etapa);
       map[etapa] = (map[etapa] || 0) + 1;
     });
     return map;
-  }, [filteredLeads]);
+  }, [filteredLeads, stages, normalizeEtapa]);
 
   const porOrigem = useMemo(() => {
     const map: Record<string, number> = {};
@@ -274,7 +286,7 @@ export default function RelatoriosAdminPage() {
   }, [leadsNoPeriodoCorporativo, corretores]);
 
   const totaisCards = useMemo(() => {
-    const quentes = filteredLeads.filter(l => ETAPAS_QUENTES.includes(l.etapa || ''));
+    const quentes = filteredLeads.filter((l) => etapasQuentesSet.has(l.etapa || ''));
     const corretoresComLead = new Set(filteredLeads.map(l => l.userId).filter(Boolean)).size;
     return {
       totalLeads: filteredLeads.length,
@@ -282,7 +294,7 @@ export default function RelatoriosAdminPage() {
       leadsQuentes: quentes.length,
       corretoresAtivos: corretoresComLead,
     };
-  }, [filteredLeads, leadsNoPeriodo]);
+  }, [filteredLeads, leadsNoPeriodo, etapasQuentesSet]);
 
   // Tabela por corretor (sempre visão corporativa): corretores + linha "Sem corretor" para soma bater
   const tabelaPorCorretor = useMemo(() => {
@@ -290,7 +302,7 @@ export default function RelatoriosAdminPage() {
     const rows = corretores.map(c => {
       const leadsDoCorretor = leads.filter(l => l.userId === c.id);
       const novos = leadsDoCorretor.filter(l => isInPeriod(leadCreatedAt(l), start, end));
-      const quentes = leadsDoCorretor.filter(l => ETAPAS_QUENTES.includes(l.etapa || ''));
+      const quentes = leadsDoCorretor.filter((l) => etapasQuentesSet.has(l.etapa || ''));
       const porOrigemLocal: Record<string, number> = {};
       leadsDoCorretor.forEach(l => {
         const o = l.origem || l.origemTipo || 'Não informado';
@@ -308,7 +320,7 @@ export default function RelatoriosAdminPage() {
     const leadsSemCorretor = leads.filter(l => !l.userId || !corretorIds.has(l.userId));
     if (leadsSemCorretor.length > 0) {
       const novos = leadsSemCorretor.filter(l => isInPeriod(leadCreatedAt(l), start, end));
-      const quentes = leadsSemCorretor.filter(l => ETAPAS_QUENTES.includes(l.etapa || ''));
+      const quentes = leadsSemCorretor.filter((l) => etapasQuentesSet.has(l.etapa || ''));
       const porOrigemLocal: Record<string, number> = {};
       leadsSemCorretor.forEach(l => {
         const o = l.origem || l.origemTipo || 'Não informado';
@@ -325,7 +337,7 @@ export default function RelatoriosAdminPage() {
       });
     }
     return rows.sort((a, b) => b.totalLeads - a.totalLeads);
-  }, [corretores, leads, start, end]);
+  }, [corretores, leads, start, end, etapasQuentesSet]);
 
   const { start: startAnt, end: endAnt } = useMemo(() => getPreviousPeriodBounds(period, start, end), [period, start, end]);
 
@@ -347,13 +359,13 @@ export default function RelatoriosAdminPage() {
   const fraseResumo = useMemo(() => {
     const total = filteredLeads.length;
     const novos = leadsNoPeriodo.length;
-    const quentes = filteredLeads.filter(l => ETAPAS_QUENTES.includes(l.etapa || '')).length;
+    const quentes = filteredLeads.filter((l) => etapasQuentesSet.has(l.etapa || '')).length;
     const ativos = new Set(filteredLeads.map(l => l.userId).filter(Boolean)).size;
     return `Neste período: ${total} leads no funil, ${novos} novos, ${quentes} em negociação e ${ativos} corretores ativos.`;
-  }, [filteredLeads, leadsNoPeriodo, start, end]);
+  }, [filteredLeads, leadsNoPeriodo, start, end, etapasQuentesSet]);
 
   const origemQueConverte = useMemo(() => {
-    const quentes = filteredLeads.filter(l => ETAPAS_QUENTES.includes(l.etapa || ''));
+    const quentes = filteredLeads.filter((l) => etapasQuentesSet.has(l.etapa || ''));
     const porOrigem: Record<string, number> = {};
     quentes.forEach(l => {
       const o = l.origem || l.origemTipo || 'Não informado';
@@ -361,7 +373,7 @@ export default function RelatoriosAdminPage() {
     });
     const ent = Object.entries(porOrigem).sort((a, b) => b[1] - a[1])[0];
     return ent ? { origem: ent[0], count: ent[1] } : null;
-  }, [filteredLeads]);
+  }, [filteredLeads, etapasQuentesSet]);
 
   const avisoEmDestaque = useMemo(() => {
     const tNow = Date.now();
@@ -376,11 +388,11 @@ export default function RelatoriosAdminPage() {
 
   // Alerta de atenção: avanço do funil, follow-up, qualificados sem ligação/reunião
   const alertaAtencao = useMemo(() => {
-    const emQualificacaoSemReuniao = filteredLeads.filter(l => ETAPAS_QUALIFICACAO_SEM_REUNIAO.includes(l.etapa || ''));
-    const novosAindaEmQualificacao = leadsNoPeriodo.filter(l => ETAPAS_QUALIFICACAO_SEM_REUNIAO.includes(l.etapa || ''));
-    const comLigacaoOuVisita = filteredLeads.filter(l => ETAPAS_LIGACAO_OU_VISITA.includes(l.etapa || ''));
+    const emQualificacaoSemReuniao = filteredLeads.filter((l) => etapasQualificacaoSemReuniaoSet.has(l.etapa || ''));
+    const novosAindaEmQualificacao = leadsNoPeriodo.filter((l) => etapasQualificacaoSemReuniaoSet.has(l.etapa || ''));
+    const comLigacaoOuVisita = filteredLeads.filter((l) => etapasLigacaoOuVisitaSet.has(l.etapa || ''));
     const total = filteredLeads.length || 1;
-    const quentes = filteredLeads.filter(l => ETAPAS_QUENTES.includes(l.etapa || '')).length;
+    const quentes = filteredLeads.filter((l) => etapasQuentesSet.has(l.etapa || '')).length;
     const pctQuentes = Math.round((quentes / total) * 100);
     return {
       totalEmQualificacaoSemReuniao: emQualificacaoSemReuniao.length,
@@ -389,7 +401,7 @@ export default function RelatoriosAdminPage() {
       pctEmEtapasQuentes: pctQuentes,
       totalLeads: filteredLeads.length,
     };
-  }, [filteredLeads, leadsNoPeriodo]);
+  }, [filteredLeads, leadsNoPeriodo, etapasQuentesSet, etapasQualificacaoSemReuniaoSet, etapasLigacaoOuVisitaSet]);
 
   if (!imobiliariaId) {
     return (
@@ -597,7 +609,7 @@ export default function RelatoriosAdminPage() {
                   Funil de vendas {corretorFilter && <span className="text-base font-normal text-[#6B6F76] dark:text-gray-400">(individual)</span>}
                 </h2>
                 <div className="space-y-4">
-                  {PIPELINE_STAGES.map((etapa) => {
+                  {stages.map((etapa) => {
                     const qtd = porEtapa[etapa] ?? 0;
                     const max = Math.max(...Object.values(porEtapa), 1);
                     const pct = max ? Math.round((qtd / max) * 100) : 0;

@@ -9,7 +9,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Link from 'next/link';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
-import { PIPELINE_STAGES } from '@/lib/constants';
+import { usePipelineStages } from '@/context/PipelineStagesContext';
 import AvisosImportantesModal from './_components/AvisosImportantesModal';
 import AgendaImobiliariaModal from './_components/AgendaImobiliariaModal';
 import PlantoesModal from './_components/PlantoesModal';
@@ -441,6 +441,7 @@ const MetasCard = ({ meta, nomeImobiliaria }: { meta: any, nomeImobiliaria: stri
 
 export default function DashboardPage() {
   const { currentUser, userData } = useAuth();
+  const { stages, normalizeEtapa, compactGroups } = usePipelineStages();
   const router = useRouter();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [agendaLeads, setAgendaLeads] = useState<any[]>([]);
@@ -564,10 +565,10 @@ export default function DashboardPage() {
         const settledLeads = await Promise.all(leadsWithTasksPromises);
         // Funil pessoal: contagem por etapa
         const porEtapa: Record<string, number> = {};
-        PIPELINE_STAGES.forEach(e => { porEtapa[e] = 0; });
+        stages.forEach(e => { porEtapa[e] = 0; });
         allLeads.forEach((lead: any) => {
-          const etapa = lead.etapa || PIPELINE_STAGES[0];
-          if (PIPELINE_STAGES.includes(etapa)) porEtapa[etapa] = (porEtapa[etapa] || 0) + 1;
+          const etapa = normalizeEtapa(lead.etapa);
+          porEtapa[etapa] = (porEtapa[etapa] || 0) + 1;
         });
         setFunilPessoal(porEtapa);
         // Contagens: Tarefa em Atraso, Tarefa do Dia, Sem tarefa
@@ -590,7 +591,7 @@ export default function DashboardPage() {
       }
     };
     fetchAgenda();
-  }, [currentUser]);
+  }, [currentUser, stages, normalizeEtapa]);
 
   // Buscar avisos importantes
   useEffect(() => {
@@ -1749,13 +1750,7 @@ export default function DashboardPage() {
             ) : (() => {
               const porEtapa = funilPessoal;
               const totalFunil = Object.values(porEtapa).reduce((a, b) => a + b, 0);
-              const ETAPAS_FUNIL_INDIVIDUAL = [
-                { key: 'qualif', label: 'Qualif.', getVal: (p: Record<string, number>) => p['Qualificação'] ?? 0 },
-                { key: 'visita-lig', label: 'Lig. e visita', getVal: (p: Record<string, number>) => (p['Ligação agendada'] ?? 0) + (p['Visita agendada'] ?? 0) },
-                { key: 'negoc', label: 'Negoc. e prop.', quente: true, getVal: (p: Record<string, number>) => p['Negociação e Proposta'] ?? 0 },
-                { key: 'int-futuro', label: 'Int. futuro', getVal: (p: Record<string, number>) => p['Interesse Futuro'] ?? 0 },
-              ];
-              const valores = ETAPAS_FUNIL_INDIVIDUAL.map((e) => e.getVal(porEtapa));
+              const valores = compactGroups.map((e) => e.getVal(porEtapa));
               const maxLocal = Math.max(...valores, 1);
               const getNivel = (total: number) => {
                 if (total >= 50) return { label: 'Líder', emoji: '🏆', bg: 'bg-amber-500/25 border-amber-400/40', text: 'text-amber-300' };
@@ -1781,7 +1776,7 @@ export default function DashboardPage() {
                     <span className="shrink-0 text-sm font-black tabular-nums text-[#60a5fa]">{totalFunil}</span>
                   </div>
                   <div className="space-y-1.5">
-                    {ETAPAS_FUNIL_INDIVIDUAL.map((etapa) => {
+                    {compactGroups.map((etapa) => {
                       const qtd = etapa.getVal(porEtapa);
                       const pct = maxLocal > 0 ? Math.round((qtd / maxLocal) * 100) : 0;
                       const widthPct = qtd > 0 ? Math.max(pct, 20) : 0;
@@ -1790,7 +1785,7 @@ export default function DashboardPage() {
                           <span className="text-[10px] text-[#94a3b8] font-medium w-16 shrink-0">{etapa.label}</span>
                           <div className="flex-1 min-w-0 h-1.5 bg-white/10 rounded-full overflow-hidden">
                             <div
-                              className={`h-full rounded-full ${(etapa as { quente?: boolean }).quente ? 'bg-amber-400' : 'bg-[#D4A017]'}`}
+                              className={`h-full rounded-full ${etapa.quente ? 'bg-amber-400' : 'bg-[#D4A017]'}`}
                               style={{ width: `${widthPct}%`, minWidth: qtd > 0 ? 4 : 0 }}
                             />
                           </div>

@@ -9,6 +9,7 @@ import { getDoc, doc, collection, getDocs, query, where, updateDoc } from 'fireb
 import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
 import { useNotifications } from '@/context/NotificationContext';
+import { PipelineStagesProvider } from '@/context/PipelineStagesContext';
 import { AlummaLogoFullInline } from '@/components/AlummaLogo';
 
 // Ícones
@@ -246,6 +247,7 @@ export default function DashboardLayout({
   const pontosExemplo = 2150; // gamificação: exibir do userData quando existir
 
   return (
+    <PipelineStagesProvider imobiliariaId={userData?.imobiliariaId}>
     <div className="flex h-screen min-h-screen bg-particles">
       {/* Sidebar — mesmo background (partículas), borda sutil */}
       <div className={`flex flex-col h-screen fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-transparent transition-all duration-300 text-xs pb-8`}>
@@ -399,5 +401,6 @@ export default function DashboardLayout({
         />
       )}
     </div>
+    </PipelineStagesProvider>
   );
 } 

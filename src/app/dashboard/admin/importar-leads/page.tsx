@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
-import { PIPELINE_STAGES } from '@/lib/constants';
+import { usePipelineStages } from '@/context/PipelineStagesContext';
 
 interface Corretor {
   id: string;
@@ -18,6 +18,7 @@ interface LeadPreview {
 
 export default function ImportarLeadsPage() {
   const { userData } = useAuth();
+  const { stages } = usePipelineStages();
   const [corretores, setCorretores] = useState<Corretor[]>([]);
   const [corretorDestino, setCorretorDestino] = useState('');
   const [input, setInput] = useState('');
@@ -100,7 +101,7 @@ export default function ImportarLeadsPage() {
           nome: lead.nome || 'Lead importado',
           telefone: lead.telefone,
           whatsapp: lead.telefone.replace(/\D/g, ''),
-          etapa: PIPELINE_STAGES[0],
+          etapa: stages[0] ?? '',
           origem: 'Importação em massa',
           createdAt: new Date(),
         });

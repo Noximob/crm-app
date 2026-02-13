@@ -4,7 +4,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { PIPELINE_STAGES } from '@/lib/constants';
+import { usePipelineStages } from '@/context/PipelineStagesContext';
 
 const ORIGEM_OPCOES = ['Networking', 'Ligação', 'Ação de rua', 'Disparo de msg', 'Outros'] as const;
 type OrigemLead = typeof ORIGEM_OPCOES[number];
@@ -22,10 +22,11 @@ const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
     const { currentUser, userData } = useContext(AuthContext);
+    const { stages } = usePipelineStages();
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
-    const [situation, setSituation] = useState(PIPELINE_STAGES[0]);
+    const [situation, setSituation] = useState(stages[0] ?? '');
     const [origem, setOrigem] = useState<OrigemLead>('Networking');
     const [origemOutros, setOrigemOutros] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -37,12 +38,12 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
             setName('');
             setPhone('');
             setEmail('');
-            setSituation(PIPELINE_STAGES[0]);
+            setSituation(stages[0] ?? '');
             setOrigem('Networking');
             setOrigemOutros('');
             setError('');
         }
-    }, [isOpen]);
+    }, [isOpen, stages]);
 
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         // 1. Limpa tudo que não for dígito
@@ -153,7 +154,7 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
                     <div>
                         <label htmlFor="situation" className="block text-sm font-semibold text-gray-200">Situação</label>
                         <select id="situation" value={situation} onChange={(e) => setSituation(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white/10 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A017]/50 text-white">
-                            {PIPELINE_STAGES.map(stage => <option key={stage} value={stage} className="bg-[#23283A] text-white">{stage}</option>)}
+                            {stages.map(stage => <option key={stage} value={stage} className="bg-[#23283A] text-white">{stage}</option>)}
                         </select>
                     </div>
                     <div>

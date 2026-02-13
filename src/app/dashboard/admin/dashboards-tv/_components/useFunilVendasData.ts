@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { PIPELINE_STAGES } from '@/lib/constants';
+import { usePipelineStages } from '@/context/PipelineStagesContext';
 
 export interface LeadFunil {
   id: string;
@@ -36,12 +36,8 @@ export interface FunilVendasData {
   error: string | null;
 }
 
-function normalizeEtapa(etapa: string | undefined): string {
-  if (etapa && PIPELINE_STAGES.includes(etapa)) return etapa;
-  return PIPELINE_STAGES[0];
-}
-
 export function useFunilVendasData(imobiliariaId: string | undefined, corretoresVisiveisIds?: string[]): FunilVendasData {
+  const { stages, normalizeEtapa } = usePipelineStages();
   const [leads, setLeads] = useState<LeadFunil[]>([]);
   const [corretores, setCorretores] = useState<CorretorFunil[]>([]);
   const [loading, setLoading] = useState(!!imobiliariaId);
@@ -93,7 +89,7 @@ export function useFunilVendasData(imobiliariaId: string | undefined, corretores
     const corretoresFiltrados = setVisiveis ? corretores.filter((c) => setVisiveis.has(c.id)) : corretores;
 
     const funilCorporativo: FunilPorEtapa = {};
-    PIPELINE_STAGES.forEach((e) => { funilCorporativo[e] = 0; });
+    stages.forEach((e) => { funilCorporativo[e] = 0; });
     leadsFiltrados.forEach((l) => {
       const etapa = normalizeEtapa(l.etapa);
       funilCorporativo[etapa] = (funilCorporativo[etapa] || 0) + 1;
@@ -104,7 +100,7 @@ export function useFunilVendasData(imobiliariaId: string | undefined, corretores
     const porCorretorMap = new Map<string, FunilPorEtapa>();
     corretoresFiltrados.forEach((c) => {
       const porEtapa: FunilPorEtapa = {};
-      PIPELINE_STAGES.forEach((e) => { porEtapa[e] = 0; });
+      stages.forEach((e) => { porEtapa[e] = 0; });
       porCorretorMap.set(c.id, porEtapa);
     });
     leadsFiltrados.forEach((l) => {
@@ -113,7 +109,7 @@ export function useFunilVendasData(imobiliariaId: string | undefined, corretores
       let porEtapa = porCorretorMap.get(uid);
       if (!porEtapa) {
         porEtapa = {};
-        PIPELINE_STAGES.forEach((e) => { porEtapa![e] = 0; });
+        stages.forEach((e) => { porEtapa![e] = 0; });
         porEtapa[normalizeEtapa(l.etapa)] = 1;
         porCorretorMap.set(uid, porEtapa);
       } else {
@@ -138,5 +134,5 @@ export function useFunilVendasData(imobiliariaId: string | undefined, corretores
       loading,
       error,
     };
-  }, [leads, corretores, loading, error, corretoresVisiveisIds?.join(',')]);
+  }, [leads, corretores, loading, error, stages, normalizeEtapa, corretoresVisiveisIds?.join(',')]);
 }

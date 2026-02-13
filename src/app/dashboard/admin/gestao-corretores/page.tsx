@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, doc, deleteDoc, query, where, onSnapshot, writeBatch } from 'firebase/firestore';
-import { PIPELINE_STAGES } from '@/lib/constants';
+import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { useRouter } from 'next/navigation';
 
 interface User {
@@ -31,6 +31,7 @@ interface Lead {
 
 export default function GestaoCorretoresPage() {
   const { userData } = useAuth();
+  const { stages } = usePipelineStages();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -134,7 +135,7 @@ export default function GestaoCorretoresPage() {
         const leadRef = doc(db, 'leads', leadId);
         batch.update(leadRef, {
           userId: selectedDestUser,
-          etapa: PIPELINE_STAGES[0] // Volta para pré qualificação
+          etapa: stages[0] ?? '' // Volta para primeira etapa do funil
         });
       });
 
@@ -283,7 +284,7 @@ export default function GestaoCorretoresPage() {
                   className="px-4 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
                 >
                   <option value="">Todas as etapas</option>
-                  {PIPELINE_STAGES.map(stage => {
+                  {stages.map(stage => {
                     const stageCount = leads.filter(lead => 
                       lead.userId === selectedOriginUser && lead.etapa === stage
                     ).length;

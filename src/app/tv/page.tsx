@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { PipelineStagesProvider } from '@/context/PipelineStagesContext';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { FunilVendasIndividualSlide } from '@/app/dashboard/admin/dashboards-tv/_components/FunilVendasIndividualSlide';
@@ -38,6 +39,16 @@ const TvIcon = (p: React.SVGProps<SVGSVGElement>) => (
 );
 
 export default function TvPage() {
+  const { userData } = useAuth();
+  const imobiliariaId = userData?.imobiliariaId;
+  return (
+    <PipelineStagesProvider imobiliariaId={imobiliariaId}>
+      <TvPageContent />
+    </PipelineStagesProvider>
+  );
+}
+
+function TvPageContent() {
   const { userData } = useAuth();
   const [config, setConfig] = useState<SlideConfig[]>([]);
   const [agendaFraseSemana, setAgendaFraseSemana] = useState('');

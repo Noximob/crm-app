@@ -1,17 +1,10 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import { usePipelineStages } from '@/context/PipelineStagesContext';
 import type { FunilCorretor } from './useFunilVendasData';
 
 const TOP_N = 9;
-
-// Só 4 etapas — labels curtos para não truncar na TV
-const ETAPAS_EXIBIR: { key: string; label: string; quente?: boolean; getVal: (p: Record<string, number>) => number }[] = [
-  { key: 'qualif', label: 'Qualif.', getVal: (p) => p['Qualificação'] ?? 0 },
-  { key: 'visita-lig', label: 'Lig. e visita', getVal: (p) => (p['Ligação agendada'] ?? 0) + (p['Visita agendada'] ?? 0) },
-  { key: 'negoc', label: 'Negoc. e prop.', quente: true, getVal: (p) => p['Negociação e Proposta'] ?? 0 },
-  { key: 'int-futuro', label: 'Int. futuro', getVal: (p) => p['Interesse Futuro'] ?? 0 },
-];
 
 function getNivel(total: number): { label: string; emoji: string; bg: string; text: string } {
   if (total >= 50) return { label: 'Líder', emoji: '🏆', bg: 'bg-amber-500/25 border-amber-400/40', text: 'text-amber-300' };
@@ -41,6 +34,7 @@ export function FunilVendasIndividualSlide({
   funilPorCorretor,
   compact = false,
 }: FunilVendasIndividualSlideProps) {
+  const { compactGroups } = usePipelineStages();
   const top9 = useMemo(() => funilPorCorretor.slice(0, TOP_N), [funilPorCorretor]);
   const maxTotal = useMemo(() => Math.max(...top9.map((c) => c.total), 1), [top9]);
 
@@ -60,7 +54,7 @@ export function FunilVendasIndividualSlide({
         <div className="h-full grid grid-cols-3 grid-rows-3 gap-2">
           {top9.map((corretor, idx) => {
             const porEtapa = corretor.porEtapa;
-            const valores = ETAPAS_EXIBIR.map((e) => e.getVal(porEtapa));
+            const valores = compactGroups.map((e) => e.getVal(porEtapa));
             const maxLocal = Math.max(...valores, 1);
             const nivel = getNivel(corretor.total);
             const pctDoMax = Math.round((corretor.total / maxTotal) * 100);
@@ -126,7 +120,7 @@ export function FunilVendasIndividualSlide({
 
                   {/* 4 etapas — preenche o espaço do card, letras um pouco maiores */}
                   <div className="flex-1 min-h-0 flex flex-col justify-center space-y-2">
-                    {ETAPAS_EXIBIR.map((etapa) => {
+                    {compactGroups.map((etapa) => {
                       const qtd = etapa.getVal(porEtapa);
                       const pct = maxLocal > 0 ? Math.round((qtd / maxLocal) * 100) : 0;
                       const widthPct = qtd > 0 ? Math.max(pct, 20) : 0;

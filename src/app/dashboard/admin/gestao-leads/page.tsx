@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
-import { PIPELINE_STAGES } from '@/lib/constants';
+import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { useRouter } from 'next/navigation';
 
 interface Corretor {
@@ -22,6 +22,7 @@ interface Lead {
 
 export default function GestaoLeadsPage() {
   const { userData } = useAuth();
+  const { stages } = usePipelineStages();
   const router = useRouter();
   const [corretores, setCorretores] = useState<Corretor[]>([]);
   const [corretorOrigem, setCorretorOrigem] = useState<string>('');
@@ -89,7 +90,7 @@ export default function GestaoLeadsPage() {
       await Promise.all(
         leadsSelecionados.map(async (leadId) => {
           const leadRef = doc(db, 'leads', leadId);
-          await updateDoc(leadRef, { userId: corretorDestino, etapa: PIPELINE_STAGES[0] });
+          await updateDoc(leadRef, { userId: corretorDestino, etapa: stages[0] ?? '' });
         })
       );
       setMensagem('Leads transferidos com sucesso!');

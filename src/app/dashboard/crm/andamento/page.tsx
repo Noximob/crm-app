@@ -5,7 +5,7 @@ import CrmHeader from '../_components/CrmHeader';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, query, doc, updateDoc, where } from 'firebase/firestore';
-import { PIPELINE_STAGES } from '@/lib/constants';
+import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay } from '@dnd-kit/core';
 import KanbanColumn from './_components/KanbanColumn';
 import { Lead } from '@/types';
@@ -23,6 +23,7 @@ const SectionTitle = ({ children, className = '' }: { children: React.ReactNode,
 
 export default function AndamentoPage() {
     const { currentUser } = useAuth();
+    const { stages, normalizeEtapa } = usePipelineStages();
     const [leads, setLeads] = useState<LeadsByStage>({});
     const [activeLead, setActiveLead] = useState<Lead | null>(null);
     const [loading, setLoading] = useState(true);
@@ -35,25 +36,24 @@ export default function AndamentoPage() {
         const q = query(leadsRef, where("userId", "==", currentUser.uid));
         
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            console.log('onSnapshot triggered, docs count:', snapshot.docs.length);
-            const leadsByStage = PIPELINE_STAGES.reduce<LeadsByStage>((acc, stage) => ({ ...acc, [stage]: [] }), {});
-            snapshot.forEach((doc) => {
-                const lead = { id: doc.id, ...doc.data() } as Lead;
-                const stage = lead.etapa || PIPELINE_STAGES[0]; 
-                console.log('Lead:', lead.id, 'Stage:', stage);
+            const stageList = stages.length ? stages : [];
+            const leadsByStage = stageList.reduce<LeadsByStage>((acc, stage) => ({ ...acc, [stage]: [] }), {});
+            snapshot.forEach((docSnap) => {
+                const lead = { id: docSnap.id, ...docSnap.data() } as Lead;
+                const stage = normalizeEtapa(lead.etapa);
                 if (leadsByStage[stage]) {
                     leadsByStage[stage].push(lead);
                 } else {
-                    leadsByStage[PIPELINE_STAGES[0]].push(lead);
+                    const first = stageList[0];
+                    if (first) leadsByStage[first].push(lead);
                 }
             });
-            console.log('Setting leads:', leadsByStage);
             setLeads(leadsByStage);
             setLoading(false);
         });
 
         return () => unsubscribe();
-    }, [currentUser]);
+    }, [currentUser, stages, normalizeEtapa]);
 
     const sensors = useSensors(
         useSensor(PointerSensor)
@@ -96,7 +96,7 @@ export default function AndamentoPage() {
 
         console.log('Target column:', targetColumn);
 
-        if (!targetColumn || !PIPELINE_STAGES.includes(targetColumn)) {
+        if (!targetColumn || !stages.includes(targetColumn)) {
             console.log('Invalid target column:', targetColumn);
             return;
         }
@@ -145,7 +145,7 @@ export default function AndamentoPage() {
     };
 
     const findContainer = (itemId: string | number) => {
-        for (const stage of PIPELINE_STAGES) {
+        for (const stage of stages) {
             if (leads[stage] && leads[stage].some(lead => lead.id === itemId)) {
                 return stage;
             }
@@ -172,7 +172,7 @@ export default function AndamentoPage() {
                             onDragEnd={handleDragEnd}
                         >
                             <div className="flex gap-6 flex-1 min-h-0 overflow-x-auto overflow-y-auto w-full max-w-full pb-4">
-                                {PIPELINE_STAGES.map(stage => (
+                                {stages.map(stage => (
                                     <KanbanColumn 
                                         key={stage} 
                                         id={stage} 

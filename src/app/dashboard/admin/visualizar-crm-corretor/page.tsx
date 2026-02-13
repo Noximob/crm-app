@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { PIPELINE_STAGES } from '@/lib/constants';
+import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, orderBy, limit, startAfter, Timestamp, updateDoc } from 'firebase/firestore';
@@ -107,6 +107,7 @@ const PAGE_SIZE = 15;
 
 export default function VisualizarCrmCorretorPage() {
   const { userData } = useAuth();
+  const { stages } = usePipelineStages();
   const [corretores, setCorretores] = useState<Corretor[]>([]);
   const [selectedCorretorId, setSelectedCorretorId] = useState<string>('');
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -332,7 +333,7 @@ export default function VisualizarCrmCorretorPage() {
             </div>
 
             <div className="flex flex-wrap gap-2 mb-4">
-              {PIPELINE_STAGES.map(stage => (
+              {stages.map(stage => (
                 <FilterChip
                   key={stage}
                   selected={activeFilter === stage}

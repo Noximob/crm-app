@@ -1,23 +1,12 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { PIPELINE_STAGES } from '@/lib/constants';
+import { usePipelineStages } from '@/context/PipelineStagesContext';
 import type { FunilPorEtapa, FunilCorretor } from './useFunilVendasData';
 
-// Labels curtos para caber na TV
-const STAGE_LABELS: Record<string, string> = {
-  'Pré Qualificação': 'Pré Qualif.',
-  'Qualificação': 'Qualificação',
-  'Apresentação do imóvel': 'Apres. imóvel',
-  'Ligação agendada': 'Lig. agendada',
-  'Visita agendada': 'Visita agend.',
-  'Negociação e Proposta': 'Negoc. e Proposta',
-  'Contrato e fechamento': 'Contrato',
-  'Pós Venda e Fidelização': 'Pós Venda',
-  'Interesse Futuro': 'Int. Futuro',
-  'Carteira': 'Carteira',
-  'Geladeira': 'Geladeira',
-};
+function getShortLabel(label: string, maxLen = 18): string {
+  return label.length > maxLen ? label.slice(0, maxLen - 1) + '…' : label;
+}
 
 interface FunilVendasSlideProps {
   funilCorporativo: FunilPorEtapa;
@@ -35,6 +24,12 @@ export function FunilVendasSlide({
   compact = false,
   somenteCorporativo = true,
 }: FunilVendasSlideProps) {
+  const { stages, stagesWithMeta } = usePipelineStages();
+  const isQuenteByLabel = useMemo(() => {
+    const m: Record<string, boolean> = {};
+    stagesWithMeta.forEach((s) => { m[s.label] = s.isQuente; });
+    return m;
+  }, [stagesWithMeta]);
   const maxCorporativo = useMemo(
     () => Math.max(...Object.values(funilCorporativo), 1),
     [funilCorporativo]
@@ -65,11 +60,11 @@ export function FunilVendasSlide({
       <div className="shrink-0 px-4 md:px-8 pb-4">
         <h2 className="text-sm md:text-lg font-semibold text-[#94a3b8] mb-3 px-2">Corporativo</h2>
         <div className={`grid gap-2 ${compact ? 'grid-cols-2' : 'grid-cols-1'} md:grid-cols-2 lg:grid-cols-3`}>
-          {PIPELINE_STAGES.map((etapa) => {
+          {stages.map((etapa) => {
             const qtd = funilCorporativo[etapa] ?? 0;
             const pct = maxCorporativo ? Math.round((qtd / maxCorporativo) * 100) : 0;
-            const label = STAGE_LABELS[etapa] ?? etapa;
-            const isQuente = ['Negociação e Proposta', 'Contrato e fechamento', 'Pós Venda e Fidelização'].includes(etapa);
+            const label = getShortLabel(etapa);
+            const isQuente = isQuenteByLabel[etapa] ?? false;
             return (
               <div
                 key={etapa}
@@ -124,14 +119,14 @@ export function FunilVendasSlide({
                     <span className="text-xl font-bold text-[#D4A017] tabular-nums">{corretor.total}</span>
                   </div>
                   <div className="space-y-1.5">
-                    {PIPELINE_STAGES.slice(0, 6).map((etapa) => {
+                    {stages.slice(0, 6).map((etapa) => {
                       const qtd = corretor.porEtapa[etapa] ?? 0;
                       if (qtd === 0) return null;
                       const pct = Math.round((qtd / maxLocal) * 100);
                       return (
                         <div key={etapa} className="flex items-center gap-2">
                           <span className="text-xs text-[#94a3b8] w-20 truncate" title={etapa}>
-                            {STAGE_LABELS[etapa] ?? etapa.slice(0, 10)}
+                            {getShortLabel(etapa, 10)}
                           </span>
                           <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                             <div
@@ -143,11 +138,11 @@ export function FunilVendasSlide({
                         </div>
                       );
                     })}
-                    {PIPELINE_STAGES.slice(6).some((e) => (corretor.porEtapa[e] ?? 0) > 0) && (
+                    {stages.slice(6).some((e) => (corretor.porEtapa[e] ?? 0) > 0) && (
                       <div className="flex items-center gap-2 pt-1 border-t border-white/10">
                         <span className="text-xs text-[#64748b]">+ outras etapas</span>
                         <span className="text-xs font-semibold text-[#94a3b8] tabular-nums">
-                          {PIPELINE_STAGES.slice(6).reduce((a, e) => a + (corretor.porEtapa[e] ?? 0), 0)}
+                          {stages.slice(6).reduce((a, e) => a + (corretor.porEtapa[e] ?? 0), 0)}
                         </span>
                       </div>
                     )}

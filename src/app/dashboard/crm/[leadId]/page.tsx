@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, onSnapshot, updateDoc, collection, query, orderBy, addDoc, serverTimestamp, where, writeBatch } from 'firebase/firestore';
 import Link from 'next/link';
-import { PIPELINE_STAGES } from '@/lib/constants';
+import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { Lead } from '@/types';
 import LogInteractionModal from '../_components/LogInteractionModal';
 import CrmHeader from '../_components/CrmHeader';
@@ -108,6 +108,7 @@ interface Task {
 
 export default function LeadDetailPage() {
     const { currentUser, userData } = useAuth();
+    const { stages } = usePipelineStages();
     const params = useParams();
     const searchParams = useSearchParams();
     const leadId = params.leadId as string;
@@ -441,7 +442,7 @@ export default function LeadDetailPage() {
                                     onChange={handleStageChange} 
                                     className="px-2 py-1 text-xs border border-[#E8C547] dark:border-[#D4A017] rounded-md bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white focus:ring-1 focus:ring-[#D4A017] focus:outline-none"
                                   >
-                                    {PIPELINE_STAGES.map(stage => (<option key={stage} value={stage}>{stage}</option>))}
+                                    {stages.map(stage => (<option key={stage} value={stage}>{stage}</option>))}
                                   </select>
                                 )}
                                 {!readOnly && (

@@ -11,35 +11,15 @@ import {
   orderBy,
   limit,
 } from 'firebase/firestore';
-import { PIPELINE_STAGES } from '@/lib/constants';
+import {
+  REPORT_FUNIL_ETAPAS,
+  buildEtapaBancoToReport,
+} from '@/lib/pipelineStagesConfig';
+import { resolvePipelineStages } from '@/lib/pipelineStagesFirestore';
 
 export type PeriodKey = 'dia' | 'semana' | 'mes';
 
-/** Etapas do funil como exibidas no relatório (nova nomenclatura) */
-export const REPORT_FUNIL_ETAPAS = [
-  'Topo de Funil',
-  'Qualificado',
-  'Apresentação do imóvel',
-  'Reunião agendada',
-  'Negociação e contrato',
-  'Follow up',
-  'Troca de Leads',
-] as const;
-
-/** Mapeia etapa salva no banco → label do relatório (agrupa algumas etapas) */
-export const ETAPA_BANCO_TO_REPORT: Record<string, string> = {
-  'Pré Qualificação': 'Topo de Funil',
-  'Qualificação': 'Qualificado',
-  'Apresentação do imóvel': 'Apresentação do imóvel',
-  'Ligação agendada': 'Reunião agendada',
-  'Visita agendada': 'Reunião agendada',
-  'Negociação e Proposta': 'Negociação e contrato',
-  'Contrato e fechamento': 'Negociação e contrato',
-  'Pós Venda e Fidelização': 'Follow up',
-  'Interesse Futuro': 'Troca de Leads',
-  'Carteira': 'Troca de Leads',
-  'Geladeira': 'Troca de Leads',
-};
+export { REPORT_FUNIL_ETAPAS };
 
 /** Tipos de evento da agenda → label no relatório */
 export const TIPO_EVENTO_LABEL: Record<string, string> = {
@@ -182,12 +162,18 @@ export async function fetchRelatorioIndividual(
   );
   const leads = leadsSnap.docs.map((d) => ({ id: d.id, ...d.data() } as { id: string; createdAt?: unknown; etapa?: string; userId?: string }));
 
+  // Config do funil da imobiliária (etapas customizadas ou padrão)
+  const stagesWithMeta = await resolvePipelineStages(imobiliariaId);
+  const etapaBancoToReport = buildEtapaBancoToReport(stagesWithMeta);
+  const firstStageLabel = stagesWithMeta[0]?.label ?? 'Pré Qualificação';
+  const stageLabels = new Set(stagesWithMeta.map((s) => s.label));
+
   // Agrupa por etapa do relatório (nova nomenclatura)
   const leadsPorEtapa: Record<string, number> = {};
   REPORT_FUNIL_ETAPAS.forEach((e) => { leadsPorEtapa[e] = 0; });
   leads.forEach((l) => {
-    const etapaBanco = l.etapa && PIPELINE_STAGES.includes(l.etapa) ? l.etapa : PIPELINE_STAGES[0];
-    const etapaReport = ETAPA_BANCO_TO_REPORT[etapaBanco] || 'Topo de Funil';
+    const etapaBanco = l.etapa && stageLabels.has(l.etapa) ? l.etapa : firstStageLabel;
+    const etapaReport = etapaBancoToReport[etapaBanco] || 'Topo de Funil';
     leadsPorEtapa[etapaReport] = (leadsPorEtapa[etapaReport] || 0) + 1;
   });
 

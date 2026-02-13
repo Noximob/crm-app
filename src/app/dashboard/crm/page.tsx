@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { PIPELINE_STAGES } from '@/lib/constants';
+import { usePipelineStages } from '@/context/PipelineStagesContext';
 import CrmHeader from './_components/CrmHeader';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
@@ -117,6 +117,7 @@ const TAREFA_PARAM_MAP: Record<string, TaskStatus> = {
 
 export default function CrmPage() {
     const { currentUser } = useAuth();
+    const { stages } = usePipelineStages();
     const searchParams = useSearchParams();
     const [leads, setLeads] = useState<Lead[]>([]);
     const [loading, setLoading] = useState(true);
@@ -360,7 +361,7 @@ export default function CrmPage() {
                                 <div className="absolute left-0 top-full mt-1.5 z-50 w-[min(90vw,420px)] max-h-[70vh] overflow-y-auto rounded-xl border border-white/10 bg-[var(--bg-card)] shadow-xl py-3 px-3">
                                     <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2 px-1">Etapa do funil</p>
                                     <div className="flex flex-wrap gap-2 mb-3">
-                                        {PIPELINE_STAGES.map((stage) => (
+                                        {stages.map((stage) => (
                                             <FilterChip
                                                 key={stage}
                                                 selected={activeFilter === stage}
@@ -549,7 +550,7 @@ export default function CrmPage() {
                     onClose={() => setFilterModalOpen(false)}
                     onApply={handleApplyFilters}
                     initialFilters={advancedFilters}
-                    pipelineStages={PIPELINE_STAGES}
+                    pipelineStages={stages}
                 />
             )}
         </div>
