@@ -39,7 +39,15 @@ const TvIcon = (p: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-export default function TvPage() {
+function TvPageFallback() {
+  return (
+    <div className="min-h-screen bg-particles flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-2 border-amber-500 border-t-transparent" />
+    </div>
+  );
+}
+
+function TvPageWithParams() {
   const searchParams = useSearchParams();
   const { userData } = useAuth();
   const imobiliariaIdFromUrl = searchParams.get('imobiliariaId') ?? undefined;
@@ -48,6 +56,14 @@ export default function TvPage() {
     <PipelineStagesProvider imobiliariaId={imobiliariaId ?? undefined}>
       <TvPageContent imobiliariaId={imobiliariaId ?? undefined} />
     </PipelineStagesProvider>
+  );
+}
+
+export default function TvPage() {
+  return (
+    <React.Suspense fallback={<TvPageFallback />}>
+      <TvPageWithParams />
+    </React.Suspense>
   );
 }
 
