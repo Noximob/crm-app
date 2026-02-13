@@ -730,7 +730,7 @@ const QUALIFICATION_QUESTIONS = [
     {
         title: 'Finalidade',
         key: 'finalidade',
-        options: ['Moradia', 'Veraneio', 'Investimento'],
+        options: ['Moradia', 'Veraneio', 'Investimento', 'Locação', 'Imóvel à Venda'],
     },
     {
         title: 'Estágio do Imóvel',

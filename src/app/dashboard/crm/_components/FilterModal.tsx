@@ -5,7 +5,7 @@ import { usePipelineStages } from '@/context/PipelineStagesContext';
 
 // Definições movidas para cá para evitar dependências circulares e manter o componente contido.
 const QUALIFICATION_QUESTIONS = [
-    { title: 'Finalidade', key: 'finalidade', options: ['Moradia', 'Veraneio', 'Investimento'] },
+    { title: 'Finalidade', key: 'finalidade', options: ['Moradia', 'Veraneio', 'Investimento', 'Locação', 'Imóvel à Venda'] },
     { title: 'Estágio do Imóvel', key: 'estagio', options: ['Lançamento', 'Em Construção', 'Pronto para Morar'] },
     { title: 'Quartos', key: 'quartos', options: ['1 quarto', '2 quartos', '1 Suíte + 1 Quarto', '3 quartos', '4 quartos'] },
     { title: 'Localização', key: 'localizacao', options: ['Penha', 'Piçarras', 'Barra Velha', 'Outros'] },
