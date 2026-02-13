@@ -1609,8 +1609,8 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Comunidade — mesmo conteúdo e funções da página Comunidade, em 70% da largura */}
-          <div className="w-full max-w-[70%]">
+          {/* Comunidade — mesmo conteúdo e funções da página Comunidade; cards ocupam toda a largura */}
+          <div className="w-full">
           <div className="rounded-2xl p-4 relative overflow-hidden animate-fade-in border border-white/10">
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-orange-500 rounded-r pointer-events-none" />
 
@@ -1757,29 +1757,31 @@ export default function DashboardPage() {
                         {!post.repostOf && post.texto && !post.isEvento && <div className="text-sm text-white line-clamp-2">{post.texto}</div>}
                         {!post.repostOf && post.texto && post.isEvento && <div className="text-xs text-gray-300 line-clamp-2">{post.texto}</div>}
                         {post.repostOf && post.repostComment && <div className="text-xs text-gray-400 italic">Repost: {post.repostComment}</div>}
-                        {/* Thumbnail estilo YouTube: menor, quadradinho, clicável para abrir o post */}
-                        {(post.file && post.fileMeta) || post.youtubeData?.thumbnail ? (
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); openPostModal(post); }}
-                            className="relative mt-2 flex items-center justify-center w-[120px] h-[90px] rounded-lg overflow-hidden border border-white/10 bg-black/30 hover:border-[#D4A017]/50 hover:ring-1 hover:ring-[#D4A017]/30 transition-all shrink-0"
-                          >
-                            {post.file && post.fileMeta && post.fileMeta.type?.startsWith('image/') && (
-                              <img src={post.file} alt="" className="w-full h-full object-cover" />
-                            )}
-                            {post.file && post.fileMeta && post.fileMeta.type?.startsWith('video/') && (
-                              <>
-                                <video src={post.file} className="w-full h-full object-cover" muted playsInline />
-                                <span className="absolute inset-0 flex items-center justify-center text-white/90 text-2xl drop-shadow">▶</span>
-                              </>
-                            )}
-                            {post.youtubeData?.thumbnail && !post.file && (
-                              <>
-                                <img src={post.youtubeData.thumbnail} alt="" className="w-full h-full object-cover" />
-                                <span className="absolute inset-0 flex items-center justify-center text-white/90 text-2xl drop-shadow">▶</span>
-                              </>
-                            )}
-                          </button>
+                        {/* Thumbnail centralizada, clicável para abrir o post */}
+                        {((post.file && post.fileMeta) || post.youtubeData?.thumbnail) ? (
+                          <div className="w-full flex justify-center mt-3">
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); openPostModal(post); }}
+                              className="relative flex items-center justify-center w-full max-w-[280px] aspect-video rounded-xl overflow-hidden border border-white/10 bg-black/30 hover:border-[#D4A017]/50 hover:ring-2 hover:ring-[#D4A017]/30 transition-all shadow-lg"
+                            >
+                              {post.file && post.fileMeta && post.fileMeta.type?.startsWith('image/') && (
+                                <img src={post.file} alt="" className="w-full h-full object-cover" />
+                              )}
+                              {post.file && post.fileMeta && post.fileMeta.type?.startsWith('video/') && (
+                                <>
+                                  <video src={post.file} className="w-full h-full object-cover" muted playsInline />
+                                  <span className="absolute inset-0 flex items-center justify-center text-white/90 text-4xl drop-shadow-lg bg-black/20 rounded-xl">▶</span>
+                                </>
+                              )}
+                              {post.youtubeData?.thumbnail && !post.file && (
+                                <>
+                                  <img src={post.youtubeData.thumbnail} alt="" className="w-full h-full object-cover" />
+                                  <span className="absolute inset-0 flex items-center justify-center text-white/90 text-4xl drop-shadow-lg bg-black/20 rounded-xl">▶</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
                         ) : null}
                         {/* Ações iguais à Comunidade: like, comentário, repost */}
                         <div className="flex items-center gap-4 mt-2 pt-2 border-t border-white/10 text-xs">
