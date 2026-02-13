@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
@@ -19,6 +19,8 @@ const firebaseConfig = {
 // evita que o app seja inicializado múltiplas vezes no ambiente de desenvolvimento
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
+// Garantir persistência local para a sessão não sumir ao fechar aba ou ficar muito tempo inativo
+setPersistence(auth, browserLocalPersistence).catch(() => {});
 const db = getFirestore(app);
 const storage = getStorage(app);
 

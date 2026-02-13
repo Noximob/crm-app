@@ -89,6 +89,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, []);
 
+  // Renovar o token ao voltar para a aba e a cada 50 min para evitar logout por inatividade
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const refreshToken = () => {
+      user.getIdToken(true).catch(() => {});
+    };
+
+    const onVisibilityChange = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') refreshToken();
+    };
+
+    const intervalMs = 50 * 60 * 1000; // 50 minutos
+    const intervalId = setInterval(refreshToken, intervalMs);
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      clearInterval(intervalId);
+      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [currentUser?.uid]);
+
   return (
     <AuthContext.Provider value={{ currentUser, userData, loading, isApproved }}>
       {children}
