@@ -118,7 +118,7 @@ export function FunilVendasIndividualSlide({
                     </div>
                   )}
 
-                  {/* Etapas: nome inteiro, barra começa logo em seguida e ocupa o resto */}
+                  {/* Etapas: largura fixa do label (cabe "Atendimento Agendado"), barras alinhadas */}
                   <div className="flex-1 min-h-0 flex flex-col justify-center space-y-2">
                     {etapasVisiveis.map((etapa) => {
                       const qtd = porEtapa[etapa] ?? 0;
@@ -126,7 +126,7 @@ export function FunilVendasIndividualSlide({
                       const widthPct = qtd > 0 ? Math.max(pct, 20) : 0;
                       return (
                         <div key={etapa} className="flex items-center gap-2 min-w-0">
-                          <span className="text-xs text-[#94a3b8] font-medium shrink-0 whitespace-nowrap max-w-[65%] truncate" title={etapa}>{etapa}</span>
+                          <span className="text-xs text-[#94a3b8] font-medium shrink-0 w-[10.5rem] truncate" title={etapa}>{etapa}</span>
                           <div className="flex-1 min-w-0 h-2 bg-white/10 rounded-full overflow-hidden">
                             <div
                               className="h-full rounded-full bg-[#D4A017]"
