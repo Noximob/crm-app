@@ -1745,24 +1745,30 @@ export default function DashboardPage() {
                         {!post.repostOf && post.texto && !post.isEvento && <div className="text-sm text-white line-clamp-2">{post.texto}</div>}
                         {!post.repostOf && post.texto && post.isEvento && <div className="text-xs text-gray-300 line-clamp-2">{post.texto}</div>}
                         {post.repostOf && post.repostComment && <div className="text-xs text-gray-400 italic">Repost: {post.repostComment}</div>}
-                        {/* Preview de mídia: card com mídia um pouco maior e alinhado */}
-                        {post.file && post.fileMeta && post.fileMeta.type?.startsWith('image/') && (
-                          <div className="mt-2 rounded-lg overflow-hidden border border-white/10 w-full aspect-video max-h-36 bg-black/20 flex items-center justify-center">
-                            <img src={post.file} alt="" className="w-full h-full object-contain" />
-                          </div>
-                        )}
-                        {post.file && post.fileMeta && post.fileMeta.type?.startsWith('video/') && (
-                          <div className="mt-2 rounded-lg overflow-hidden border border-white/10 w-full aspect-video max-h-36 bg-black/30 relative flex items-center justify-center">
-                            <video src={post.file} className="w-full h-full object-contain" muted playsInline />
-                            <span className="absolute inset-0 flex items-center justify-center text-white/90 text-3xl drop-shadow-lg">▶</span>
-                          </div>
-                        )}
-                        {post.youtubeData?.thumbnail && (
-                          <div className="mt-2 rounded-lg overflow-hidden border border-white/10 w-full aspect-video max-h-36 bg-black/30 relative flex items-center justify-center">
-                            <img src={post.youtubeData.thumbnail} alt="" className="w-full h-full object-cover" />
-                            <span className="absolute inset-0 flex items-center justify-center text-white/90 text-3xl drop-shadow-lg">▶</span>
-                          </div>
-                        )}
+                        {/* Thumbnail estilo YouTube: menor, quadradinho, clicável para abrir o post */}
+                        {(post.file && post.fileMeta) || post.youtubeData?.thumbnail ? (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); openPostModal(post); }}
+                            className="relative mt-2 flex items-center justify-center w-[120px] h-[90px] rounded-lg overflow-hidden border border-white/10 bg-black/30 hover:border-[#D4A017]/50 hover:ring-1 hover:ring-[#D4A017]/30 transition-all shrink-0"
+                          >
+                            {post.file && post.fileMeta && post.fileMeta.type?.startsWith('image/') && (
+                              <img src={post.file} alt="" className="w-full h-full object-cover" />
+                            )}
+                            {post.file && post.fileMeta && post.fileMeta.type?.startsWith('video/') && (
+                              <>
+                                <video src={post.file} className="w-full h-full object-cover" muted playsInline />
+                                <span className="absolute inset-0 flex items-center justify-center text-white/90 text-2xl drop-shadow">▶</span>
+                              </>
+                            )}
+                            {post.youtubeData?.thumbnail && !post.file && (
+                              <>
+                                <img src={post.youtubeData.thumbnail} alt="" className="w-full h-full object-cover" />
+                                <span className="absolute inset-0 flex items-center justify-center text-white/90 text-2xl drop-shadow">▶</span>
+                              </>
+                            )}
+                          </button>
+                        ) : null}
                         <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
                           <span>❤️ {post.likes || 0}</span>
                           <span>💬 {post.commentsCount || 0}</span>
