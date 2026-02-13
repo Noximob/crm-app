@@ -166,6 +166,7 @@ export default function AndamentoPage() {
                         <div className="text-center py-10">Carregando quadro...</div>
                     ) : (
                         <DndContext 
+                            key={stages.join('|')}
                             sensors={sensors} 
                             collisionDetection={closestCenter} 
                             onDragStart={handleDragStart}

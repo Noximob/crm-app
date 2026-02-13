@@ -53,23 +53,17 @@ export default function GestaoLeadsPage() {
     fetchCorretores();
   }, [userData]);
 
-  // Buscar leads do corretor selecionado e etapas únicas
-  const [etapasUnicas, setEtapasUnicas] = useState<string[]>([]);
+  // Buscar leads do corretor selecionado (filtro por etapa usa stages do funil configurado)
   useEffect(() => {
     if (!corretorOrigem) {
       setLeads([]);
-      setEtapasUnicas([]);
       return;
     }
     setLoadingLeads(true);
     const fetchLeads = async () => {
-      let qLeads = query(collection(db, 'leads'), where('userId', '==', corretorOrigem));
+      const qLeads = query(collection(db, 'leads'), where('userId', '==', corretorOrigem));
       const snapshot = await getDocs(qLeads);
       let lista = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
-      // Etapas únicas
-      const etapas = Array.from(new Set(lista.map(lead => lead.etapa).filter(Boolean)));
-      setEtapasUnicas(etapas);
-      // Filtro
       if (filtroEtapa) {
         lista = lista.filter(lead => lead.etapa === filtroEtapa);
       }
@@ -164,12 +158,16 @@ export default function GestaoLeadsPage() {
             <label className="font-medium text-[#6B6F76] dark:text-gray-300 block mb-1">Filtrar por etapa:</label>
             <select
               className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
-              value={filtroEtapa}
-              onChange={e => setFiltroEtapa(e.target.value)}
+              value={stages.includes(filtroEtapa) ? filtroEtapa : ''}
+              onChange={e => setFiltroEtapa(e.target.value || '')}
               disabled={loadingLeads}
             >
               <option value="">Todas</option>
-              {etapasUnicas.map(stage => <option key={stage} value={stage}>{stage}</option>)}
+              {stages.map(stage => (
+                <option key={stage} value={stage}>
+                  {stage}
+                </option>
+              ))}
             </select>
           </div>
         </div>
