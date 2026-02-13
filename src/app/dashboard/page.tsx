@@ -491,6 +491,8 @@ export default function DashboardPage() {
   const [repostWithComment, setRepostWithComment] = useState(false);
   const [repostComment, setRepostComment] = useState('');
   const [repostInputId, setRepostInputId] = useState<string | null>(null);
+  const [repostModalOpen, setRepostModalOpen] = useState(false);
+  const [repostTarget, setRepostTarget] = useState<any>(null);
   const [novoPostComunidade, setNovoPostComunidade] = useState('');
   const [postandoComunidade, setPostandoComunidade] = useState(false);
   const [fileComunidade, setFileComunidade] = useState<File | null>(null);
@@ -1046,6 +1048,15 @@ export default function DashboardPage() {
     }
   };
 
+  const confirmRepost = async (withComment: boolean) => {
+    if (!repostTarget) return;
+    await handleRepost(repostTarget.id, withComment ? repostComment : undefined);
+    setRepostModalOpen(false);
+    setRepostTarget(null);
+    setRepostComment('');
+    setRepostWithComment(false);
+  };
+
   const handleComment = async (postId: string) => {
     if (!currentUser || !commentText.trim()) return;
     
@@ -1598,7 +1609,8 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Comunidade — debaixo das Missões Diárias (design alinhado ao Brello: fundo visível) */}
+          {/* Comunidade — mesmo conteúdo e funções da página Comunidade, em 70% da largura */}
+          <div className="w-full max-w-[70%]">
           <div className="rounded-2xl p-4 relative overflow-hidden animate-fade-in border border-white/10">
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-orange-500 rounded-r pointer-events-none" />
 
@@ -1769,10 +1781,45 @@ export default function DashboardPage() {
                             )}
                           </button>
                         ) : null}
-                        <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
-                          <span>❤️ {post.likes || 0}</span>
-                          <span>💬 {post.commentsCount || 0}</span>
-                          <button type="button" onClick={(e) => { e.stopPropagation(); openPostModal(post); }} className="text-[#D4A017] hover:underline">Ver</button>
+                        {/* Ações iguais à Comunidade: like, comentário, repost */}
+                        <div className="flex items-center gap-4 mt-2 pt-2 border-t border-white/10 text-xs">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); handleLike(post.id); }}
+                            disabled={isLiking === post.id}
+                            className="flex items-center gap-1.5 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
+                          >
+                            {isLiking === post.id ? (
+                              <span className="inline-block w-3 h-3 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <span>{post.userLiked ? '❤️' : '🤍'}</span>
+                            )}
+                            <span>{post.likes ?? 0}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); openPostModal(post); }}
+                            className="flex items-center gap-1.5 text-gray-400 hover:text-[#D4A017] transition-colors"
+                          >
+                            <span>💬</span>
+                            <span>{post.commentsCount ?? 0}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setRepostTarget(post); setRepostModalOpen(true); }}
+                            disabled={isReposting === post.id}
+                            className="flex items-center gap-1.5 text-gray-400 hover:text-green-500 transition-colors disabled:opacity-50"
+                          >
+                            <span>🔁</span>
+                            <span>{post.repostsCount ?? 0}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); openPostModal(post); }}
+                            className="ml-auto text-[#D4A017] hover:underline text-xs font-medium"
+                          >
+                            Ver
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -1789,6 +1836,7 @@ export default function DashboardPage() {
                 <span>→</span>
               </Link>
             </div>
+          </div>
           </div>
         </div>
 
@@ -1867,18 +1915,72 @@ export default function DashboardPage() {
 
 
 
-      {/* Modal do Post */}
+      {/* Modal do Post — conteúdo completo igual à Comunidade: autor, texto, mídia, like/repost, comentários */}
       {showPostModal && selectedPost && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={() => setShowPostModal(false)}>
-          <div className="relative max-w-2xl w-full mx-2 bg-white dark:bg-[#23283A] rounded-2xl shadow-xl p-0" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setShowPostModal(false)} className="absolute top-4 right-4 text-white text-2xl z-10 hover:text-[#F45B69]">✕</button>
+          <div className="relative max-w-2xl w-full mx-2 max-h-[90vh] overflow-y-auto bg-white dark:bg-[#23283A] rounded-2xl shadow-xl p-0" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowPostModal(false)} className="absolute top-4 right-4 text-[#6B6F76] dark:text-gray-300 text-2xl z-10 hover:text-[#F45B69]">✕</button>
             
-            {/* Imagem do post se existir */}
-            {selectedPost.file && selectedPost.fileMeta && selectedPost.fileMeta.type.startsWith('image/') && (
-              <div className="flex justify-center items-center p-4">
-                <img src={selectedPost.file} alt="imagem ampliada" className="max-h-[60vh] rounded-xl mx-auto" />
+            <div className="p-4">
+              {/* Cabeçalho: autor e data */}
+              <div className="flex items-center gap-3 mb-3">
+                <img src={selectedPost.avatar} alt={selectedPost.nome} className="w-12 h-12 rounded-full object-cover border-2 border-white/20 shrink-0" />
+                <div>
+                  <div className="font-bold text-[#2E2F38] dark:text-white">{selectedPost.nome}</div>
+                  <div className="text-xs text-[#6B6F76] dark:text-gray-400">
+                    {selectedPost.createdAt?.toDate ? selectedPost.createdAt.toDate().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                  </div>
+                </div>
               </div>
-            )}
+              {/* Badge de evento */}
+              {selectedPost.isEvento && (
+                <div className="mb-3">
+                  <a
+                    href={selectedPost.eventoLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-semibold ${({ meet: 'bg-amber-500', youtube: 'bg-red-500', instagram: 'bg-pink-500', discord: 'bg-indigo-500' } as Record<string, string>)[selectedPost.eventoTipo || ''] || 'bg-gray-500'} text-white hover:opacity-90`}
+                  >
+                    <span>{({ meet: '🎥', youtube: '📺', instagram: '📱', discord: '💬' } as Record<string, string>)[selectedPost.eventoTipo || ''] || '📅'}</span>
+                    <span className="truncate max-w-[200px]">{selectedPost.titulo}</span>
+                    <span className="opacity-90">
+                      {selectedPost.eventoData?.toDate ? selectedPost.eventoData.toDate().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}
+                    </span>
+                  </a>
+                </div>
+              )}
+              {/* Texto do post */}
+              {selectedPost.texto && <p className="text-[#2E2F38] dark:text-gray-200 text-sm whitespace-pre-wrap mb-3">{selectedPost.texto}</p>}
+              {selectedPost.repostOf && selectedPost.repostComment && <p className="text-xs text-gray-500 italic mb-2">Repost: {selectedPost.repostComment}</p>}
+              {/* Mídia: imagem, vídeo ou YouTube */}
+              {selectedPost.file && selectedPost.fileMeta && selectedPost.fileMeta.type.startsWith('image/') && (
+                <div className="flex justify-center items-center mb-3">
+                  <img src={selectedPost.file} alt="imagem do post" className="max-h-[50vh] rounded-xl mx-auto" />
+                </div>
+              )}
+              {selectedPost.file && selectedPost.fileMeta && selectedPost.fileMeta.type.startsWith('video/') && (
+                <div className="rounded-xl overflow-hidden bg-black mb-3">
+                  <video src={selectedPost.file} controls className="w-full max-h-[50vh]" playsInline />
+                </div>
+              )}
+              {selectedPost.youtubeData?.embedUrl && !selectedPost.file && (
+                <div className="aspect-video rounded-xl overflow-hidden bg-black mb-3">
+                  <iframe src={selectedPost.youtubeData.embedUrl} title="YouTube" className="w-full h-full" allowFullScreen />
+                </div>
+              )}
+              {/* Ações: like, comentários, repost, ver quem curtiu */}
+              <div className="flex items-center gap-4 pt-2 border-t border-[#E8E9F1] dark:border-[#23283A] text-sm">
+                <button type="button" onClick={() => handleLike(selectedPost.id)} disabled={isLiking === selectedPost.id} className="flex items-center gap-1.5 text-[#6B6F76] dark:text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50">
+                  {isLiking === selectedPost.id ? <span className="inline-block w-3 h-3 border-2 border-red-500 border-t-transparent rounded-full animate-spin" /> : <span>{selectedPost.userLiked ? '❤️' : '🤍'}</span>}
+                  <span>{selectedPost.likes ?? 0}</span>
+                </button>
+                <span className="flex items-center gap-1.5 text-[#6B6F76] dark:text-gray-400">💬 {selectedPost.commentsCount ?? 0}</span>
+                <button type="button" onClick={() => { setRepostTarget(selectedPost); setShowPostModal(false); setRepostModalOpen(true); }} disabled={isReposting === selectedPost.id} className="flex items-center gap-1.5 text-[#6B6F76] dark:text-gray-400 hover:text-green-500 transition-colors disabled:opacity-50">
+                  <span>🔁</span><span>{selectedPost.repostsCount ?? 0}</span>
+                </button>
+                <button type="button" onClick={() => handleShowLikes(selectedPost)} className="ml-auto text-[#D4A017] hover:underline text-xs font-medium">Ver quem curtiu</button>
+              </div>
+            </div>
             
             {/* Seção de comentários */}
             <div className="p-4 border-t border-[#E8E9F1] dark:border-[#23283A]">
@@ -1939,6 +2041,49 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Modal de Repost (igual à página Comunidade) */}
+      {repostModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={() => { setRepostModalOpen(false); setRepostTarget(null); setRepostComment(''); setRepostWithComment(false); }}>
+          <div className="relative max-w-md w-full mx-4 bg-white dark:bg-[#23283A] rounded-2xl shadow-xl p-6" onClick={e => e.stopPropagation()}>
+            <button onClick={() => { setRepostModalOpen(false); setRepostTarget(null); setRepostComment(''); setRepostWithComment(false); }} className="absolute top-4 right-4 text-[#6B6F76] dark:text-gray-300 text-xl hover:text-[#F45B69]">✕</button>
+            <h2 className="font-bold text-lg mb-4 text-[#2E2F38] dark:text-white">Repostar</h2>
+            {!repostWithComment ? (
+              <div className="flex flex-col gap-4">
+                <button
+                  className="px-4 py-2 rounded-lg bg-[#D4A017] text-white font-bold shadow-soft hover:bg-[#B8860B] transition-colors"
+                  onClick={() => confirmRepost(false)}
+                  disabled={!!repostTarget && isReposting === repostTarget.id}
+                >Repostar direto</button>
+                <button
+                  className="px-4 py-2 rounded-lg bg-[#E8E9F1] text-[#2E2F38] dark:bg-[#23283A] dark:text-white font-bold shadow-soft hover:bg-[#E8C547] transition-colors"
+                  onClick={() => setRepostWithComment(true)}
+                  disabled={!!repostTarget && isReposting === repostTarget.id}
+                >Repostar com comentário</button>
+              </div>
+            ) : (
+              <>
+                <textarea
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white resize-none min-h-[60px]"
+                  placeholder="Adicione um comentário"
+                  value={repostComment}
+                  onChange={e => setRepostComment(e.target.value)}
+                  disabled={!!repostTarget && isReposting === repostTarget.id}
+                />
+                <div className="flex items-center gap-2 mt-2 relative">
+                  <button type="button" className="text-[#D4A017] hover:text-[#B8860B] text-xl" title="Adicionar emoji" onClick={() => setShowEmojiRepost((v) => !v)}>😊</button>
+                  {showEmojiRepost && (
+                    <div className="absolute z-50 top-12 left-0">
+                      <Picker data={data} onEmojiSelect={(emoji: any) => { setRepostComment((prev) => prev + emoji.native); setShowEmojiRepost(false); }} theme={typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light'} />
+                    </div>
+                  )}
+                  <button className="px-4 py-2 rounded-lg bg-[#D4A017] text-white font-bold shadow-soft hover:bg-[#B8860B] transition-colors" onClick={() => confirmRepost(true)} disabled={(!!repostTarget && isReposting === repostTarget.id) || !repostComment.trim()}>Ok</button>
+                  <button className="px-4 py-2 rounded-lg bg-[#F45B69] text-white font-bold shadow-soft hover:bg-[#F45B69]/80 transition-colors" onClick={() => { setRepostWithComment(false); setRepostComment(''); setShowEmojiRepost(false); }} disabled={!!repostTarget && isReposting === repostTarget.id}>Cancelar</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Modal de Notas */}
       {isModalOpen && (
