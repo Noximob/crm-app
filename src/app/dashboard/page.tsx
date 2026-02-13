@@ -441,7 +441,7 @@ const MetasCard = ({ meta, nomeImobiliaria }: { meta: any, nomeImobiliaria: stri
 
 export default function DashboardPage() {
   const { currentUser, userData } = useAuth();
-  const { stages, normalizeEtapa, compactGroups } = usePipelineStages();
+  const { stages, normalizeEtapa } = usePipelineStages();
   const router = useRouter();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [agendaLeads, setAgendaLeads] = useState<any[]>([]);
@@ -1750,8 +1750,8 @@ export default function DashboardPage() {
             ) : (() => {
               const porEtapa = funilPessoal;
               const totalFunil = Object.values(porEtapa).reduce((a, b) => a + b, 0);
-              const valores = compactGroups.map((e) => e.getVal(porEtapa));
-              const maxLocal = Math.max(...valores, 1);
+              const etapasVisiveis = stages.slice(0, 6);
+              const maxLocal = Math.max(...etapasVisiveis.map((e) => porEtapa[e] ?? 0), 1);
               const getNivel = (total: number) => {
                 if (total >= 50) return { label: 'Líder', emoji: '🏆', bg: 'bg-amber-500/25 border-amber-400/40', text: 'text-amber-300' };
                 if (total >= 25) return { label: 'Elite', emoji: '⭐', bg: 'bg-amber-500/15 border-amber-400/30', text: 'text-amber-200' };
@@ -1761,6 +1761,7 @@ export default function DashboardPage() {
               };
               const nivel = getNivel(totalFunil);
               const nomeCorretor = userData?.nome || currentUser?.email?.split('@')[0] || 'Corretor';
+              const short = (s: string) => s.length > 8 ? s.slice(0, 7) + '…' : s;
               return (
                 <>
                   <div className="flex items-center gap-1.5 flex-shrink-0 mb-2">
@@ -1776,16 +1777,16 @@ export default function DashboardPage() {
                     <span className="shrink-0 text-sm font-black tabular-nums text-[#60a5fa]">{totalFunil}</span>
                   </div>
                   <div className="space-y-1.5">
-                    {compactGroups.map((etapa) => {
-                      const qtd = etapa.getVal(porEtapa);
+                    {etapasVisiveis.map((etapa) => {
+                      const qtd = porEtapa[etapa] ?? 0;
                       const pct = maxLocal > 0 ? Math.round((qtd / maxLocal) * 100) : 0;
                       const widthPct = qtd > 0 ? Math.max(pct, 20) : 0;
                       return (
-                        <div key={etapa.key} className="flex items-center gap-1.5">
-                          <span className="text-[10px] text-[#94a3b8] font-medium w-16 shrink-0">{etapa.label}</span>
+                        <div key={etapa} className="flex items-center gap-1.5">
+                          <span className="text-[10px] text-[#94a3b8] font-medium w-16 shrink-0 truncate" title={etapa}>{short(etapa)}</span>
                           <div className="flex-1 min-w-0 h-1.5 bg-white/10 rounded-full overflow-hidden">
                             <div
-                              className={`h-full rounded-full ${etapa.quente ? 'bg-amber-400' : 'bg-[#D4A017]'}`}
+                              className="h-full rounded-full bg-[#D4A017]"
                               style={{ width: `${widthPct}%`, minWidth: qtd > 0 ? 4 : 0 }}
                             />
                           </div>

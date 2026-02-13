@@ -30,11 +30,15 @@ interface FunilVendasIndividualSlideProps {
   compact?: boolean;
 }
 
+function getShortLabel(label: string, maxLen = 12): string {
+  return label.length > maxLen ? label.slice(0, maxLen - 1) + '…' : label;
+}
+
 export function FunilVendasIndividualSlide({
   funilPorCorretor,
   compact = false,
 }: FunilVendasIndividualSlideProps) {
-  const { compactGroups } = usePipelineStages();
+  const { stages } = usePipelineStages();
   const top9 = useMemo(() => funilPorCorretor.slice(0, TOP_N), [funilPorCorretor]);
   const maxTotal = useMemo(() => Math.max(...top9.map((c) => c.total), 1), [top9]);
 
@@ -54,8 +58,8 @@ export function FunilVendasIndividualSlide({
         <div className="h-full grid grid-cols-3 grid-rows-3 gap-2">
           {top9.map((corretor, idx) => {
             const porEtapa = corretor.porEtapa;
-            const valores = compactGroups.map((e) => e.getVal(porEtapa));
-            const maxLocal = Math.max(...valores, 1);
+            const etapasVisiveis = stages.slice(0, 6);
+            const maxLocal = Math.max(...etapasVisiveis.map((e) => porEtapa[e] ?? 0), 1);
             const nivel = getNivel(corretor.total);
             const pctDoMax = Math.round((corretor.total / maxTotal) * 100);
             const isFirst = idx === 0;
@@ -118,18 +122,18 @@ export function FunilVendasIndividualSlide({
                     </div>
                   )}
 
-                  {/* 4 etapas — preenche o espaço do card, letras um pouco maiores */}
+                  {/* Etapas do funil (mesmas do corporativo) */}
                   <div className="flex-1 min-h-0 flex flex-col justify-center space-y-2">
-                    {compactGroups.map((etapa) => {
-                      const qtd = etapa.getVal(porEtapa);
+                    {etapasVisiveis.map((etapa) => {
+                      const qtd = porEtapa[etapa] ?? 0;
                       const pct = maxLocal > 0 ? Math.round((qtd / maxLocal) * 100) : 0;
                       const widthPct = qtd > 0 ? Math.max(pct, 20) : 0;
                       return (
-                        <div key={etapa.key} className="flex items-center gap-2">
-                          <span className="text-xs text-[#94a3b8] font-medium w-20 shrink-0">{etapa.label}</span>
+                        <div key={etapa} className="flex items-center gap-2">
+                          <span className="text-xs text-[#94a3b8] font-medium w-20 shrink-0 truncate" title={etapa}>{getShortLabel(etapa, 10)}</span>
                           <div className="flex-1 min-w-0 h-2 bg-white/10 rounded-full overflow-hidden">
                             <div
-                              className={`h-full rounded-full ${etapa.quente ? 'bg-amber-400' : 'bg-[#D4A017]'}`}
+                              className="h-full rounded-full bg-[#D4A017]"
                               style={{ width: `${widthPct}%`, minWidth: qtd > 0 ? 6 : 0 }}
                             />
                           </div>

@@ -134,9 +134,8 @@ const AlertTriangleIcon = (p: React.SVGProps<SVGSVGElement>) => (
 export default function RelatoriosAdminPage() {
   const { userData } = useAuth();
   const { stages, normalizeEtapa, stagesWithMeta } = usePipelineStages();
-  // Derivar listas de etapas a partir da config do funil (quentes, qualificação, reunião)
-  const { etapasQuentesSet, etapasQualificacaoSemReuniaoSet, etapasLigacaoOuVisitaSet } = useMemo(() => {
-    const quentes = stagesWithMeta.filter((s) => s.isQuente).map((s) => s.label);
+  // Derivar listas de etapas a partir da config do funil (qualificação, reunião)
+  const { etapasQualificacaoSemReuniaoSet, etapasLigacaoOuVisitaSet } = useMemo(() => {
     const qualifSemReuniao = stagesWithMeta
       .filter((s) => ['Topo de Funil', 'Qualificado', 'Apresentação do imóvel'].includes(s.reportCategory))
       .map((s) => s.label);
@@ -144,7 +143,6 @@ export default function RelatoriosAdminPage() {
       .filter((s) => s.reportCategory === 'Reunião agendada')
       .map((s) => s.label);
     return {
-      etapasQuentesSet: new Set(quentes),
       etapasQualificacaoSemReuniaoSet: new Set(qualifSemReuniao),
       etapasLigacaoOuVisitaSet: new Set(ligacaoOuVisita),
     };
@@ -286,15 +284,13 @@ export default function RelatoriosAdminPage() {
   }, [leadsNoPeriodoCorporativo, corretores]);
 
   const totaisCards = useMemo(() => {
-    const quentes = filteredLeads.filter((l) => etapasQuentesSet.has(l.etapa || ''));
     const corretoresComLead = new Set(filteredLeads.map(l => l.userId).filter(Boolean)).size;
     return {
       totalLeads: filteredLeads.length,
       novosNoPeriodo: leadsNoPeriodo.length,
-      leadsQuentes: quentes.length,
       corretoresAtivos: corretoresComLead,
     };
-  }, [filteredLeads, leadsNoPeriodo, etapasQuentesSet]);
+  }, [filteredLeads, leadsNoPeriodo]);
 
   // Tabela por corretor (sempre visão corporativa): corretores + linha "Sem corretor" para soma bater
   const tabelaPorCorretor = useMemo(() => {
@@ -302,7 +298,6 @@ export default function RelatoriosAdminPage() {
     const rows = corretores.map(c => {
       const leadsDoCorretor = leads.filter(l => l.userId === c.id);
       const novos = leadsDoCorretor.filter(l => isInPeriod(leadCreatedAt(l), start, end));
-      const quentes = leadsDoCorretor.filter((l) => etapasQuentesSet.has(l.etapa || ''));
       const porOrigemLocal: Record<string, number> = {};
       leadsDoCorretor.forEach(l => {
         const o = l.origem || l.origemTipo || 'Não informado';
@@ -313,14 +308,12 @@ export default function RelatoriosAdminPage() {
         ...c,
         totalLeads: leadsDoCorretor.length,
         novosNoPeriodo: novos.length,
-        leadsQuentes: quentes.length,
         principalOrigem,
       };
     });
     const leadsSemCorretor = leads.filter(l => !l.userId || !corretorIds.has(l.userId));
     if (leadsSemCorretor.length > 0) {
       const novos = leadsSemCorretor.filter(l => isInPeriod(leadCreatedAt(l), start, end));
-      const quentes = leadsSemCorretor.filter((l) => etapasQuentesSet.has(l.etapa || ''));
       const porOrigemLocal: Record<string, number> = {};
       leadsSemCorretor.forEach(l => {
         const o = l.origem || l.origemTipo || 'Não informado';
@@ -332,12 +325,11 @@ export default function RelatoriosAdminPage() {
         nome: 'Sem corretor / Não identificado',
         totalLeads: leadsSemCorretor.length,
         novosNoPeriodo: novos.length,
-        leadsQuentes: quentes.length,
         principalOrigem,
       });
     }
     return rows.sort((a, b) => b.totalLeads - a.totalLeads);
-  }, [corretores, leads, start, end, etapasQuentesSet]);
+  }, [corretores, leads, start, end]);
 
   const { start: startAnt, end: endAnt } = useMemo(() => getPreviousPeriodBounds(period, start, end), [period, start, end]);
 
@@ -359,21 +351,9 @@ export default function RelatoriosAdminPage() {
   const fraseResumo = useMemo(() => {
     const total = filteredLeads.length;
     const novos = leadsNoPeriodo.length;
-    const quentes = filteredLeads.filter((l) => etapasQuentesSet.has(l.etapa || '')).length;
     const ativos = new Set(filteredLeads.map(l => l.userId).filter(Boolean)).size;
-    return `Neste período: ${total} leads no funil, ${novos} novos, ${quentes} em negociação e ${ativos} corretores ativos.`;
-  }, [filteredLeads, leadsNoPeriodo, start, end, etapasQuentesSet]);
-
-  const origemQueConverte = useMemo(() => {
-    const quentes = filteredLeads.filter((l) => etapasQuentesSet.has(l.etapa || ''));
-    const porOrigem: Record<string, number> = {};
-    quentes.forEach(l => {
-      const o = l.origem || l.origemTipo || 'Não informado';
-      porOrigem[o] = (porOrigem[o] || 0) + 1;
-    });
-    const ent = Object.entries(porOrigem).sort((a, b) => b[1] - a[1])[0];
-    return ent ? { origem: ent[0], count: ent[1] } : null;
-  }, [filteredLeads, etapasQuentesSet]);
+    return `Neste período: ${total} leads no funil, ${novos} novos e ${ativos} corretores ativos.`;
+  }, [filteredLeads, leadsNoPeriodo, start, end]);
 
   const avisoEmDestaque = useMemo(() => {
     const tNow = Date.now();
@@ -386,22 +366,18 @@ export default function RelatoriosAdminPage() {
     return vigentes.length > 0 ? vigentes[vigentes.length - 1] : null;
   }, [avisos]);
 
-  // Alerta de atenção: avanço do funil, follow-up, qualificados sem ligação/reunião
+  // Alerta de atenção: qualificados sem ligação/reunião, com ligação ou visita
   const alertaAtencao = useMemo(() => {
     const emQualificacaoSemReuniao = filteredLeads.filter((l) => etapasQualificacaoSemReuniaoSet.has(l.etapa || ''));
     const novosAindaEmQualificacao = leadsNoPeriodo.filter((l) => etapasQualificacaoSemReuniaoSet.has(l.etapa || ''));
     const comLigacaoOuVisita = filteredLeads.filter((l) => etapasLigacaoOuVisitaSet.has(l.etapa || ''));
-    const total = filteredLeads.length || 1;
-    const quentes = filteredLeads.filter((l) => etapasQuentesSet.has(l.etapa || '')).length;
-    const pctQuentes = Math.round((quentes / total) * 100);
     return {
       totalEmQualificacaoSemReuniao: emQualificacaoSemReuniao.length,
       novosAindaEmQualificacao: novosAindaEmQualificacao.length,
       comLigacaoOuVisita: comLigacaoOuVisita.length,
-      pctEmEtapasQuentes: pctQuentes,
       totalLeads: filteredLeads.length,
     };
-  }, [filteredLeads, leadsNoPeriodo, etapasQuentesSet, etapasQualificacaoSemReuniaoSet, etapasLigacaoOuVisitaSet]);
+  }, [filteredLeads, leadsNoPeriodo, etapasQualificacaoSemReuniaoSet, etapasLigacaoOuVisitaSet]);
 
   if (!imobiliariaId) {
     return (
@@ -490,11 +466,6 @@ export default function RelatoriosAdminPage() {
                   <p className="text-2xl md:text-3xl font-bold text-[#2E2F38] dark:text-white tabular-nums">{alertaAtencao.comLigacaoOuVisita}</p>
                   <p className="text-xs text-[#6B6F76] dark:text-gray-400 mt-1">leads em ação agendada</p>
                 </div>
-                <div className="bg-white/80 dark:bg-[#23283A]/80 rounded-xl p-4 border border-[#D4A017]/30">
-                  <p className="text-sm font-semibold text-[#D4A017] mb-1">Concentração em negociação/contrato</p>
-                  <p className="text-2xl md:text-3xl font-bold text-[#2E2F38] dark:text-white tabular-nums">{alertaAtencao.pctEmEtapasQuentes}%</p>
-                  <p className="text-xs text-[#6B6F76] dark:text-gray-400 mt-1">do funil em etapas quentes — acompanhe o avanço</p>
-                </div>
               </div>
             </div>
 
@@ -512,13 +483,6 @@ export default function RelatoriosAdminPage() {
                   <p className="text-xl font-semibold text-amber-600 dark:text-amber-400 mt-1">{destaquePeriodo.count} novos leads</p>
                 </div>
               )}
-              {origemQueConverte && (
-                <div className="p-6 md:p-8 rounded-2xl bg-[#3AC17C]/15 dark:bg-[#3AC17C]/25 border-2 border-[#3AC17C]/40">
-                  <p className="text-sm font-bold text-[#3AC17C] uppercase tracking-wider">Origem que mais converte</p>
-                  <p className="text-2xl md:text-3xl font-bold text-[#2E2F38] dark:text-white mt-2">{origemQueConverte.origem}</p>
-                  <p className="text-xl font-semibold text-[#3AC17C] mt-1">{origemQueConverte.count} em negociação</p>
-                </div>
-              )}
             </div>
 
             {/* Aviso em destaque — maior */}
@@ -534,7 +498,7 @@ export default function RelatoriosAdminPage() {
             )}
 
             {/* Cards macro — números grandes para TV */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
               <div className="bg-white dark:bg-[#23283A] rounded-2xl border-2 border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-md">
                 <div className="flex items-center gap-4">
                   <div className="p-3 rounded-xl bg-[#D4A017]/10 text-[#D4A017]"><ChartIcon className="w-7 h-7" /></div>
@@ -558,15 +522,6 @@ export default function RelatoriosAdminPage() {
                         </span>
                       )}
                     </div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white dark:bg-[#23283A] rounded-2xl border-2 border-[#E8E9F1] dark:border-[#23283A] p-6 shadow-md">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-xl bg-amber-500/10 text-amber-500"><TargetIcon className="w-7 h-7" /></div>
-                  <div>
-                    <p className="text-base text-[#6B6F76] dark:text-gray-400 font-medium">Leads quentes</p>
-                    <p className="text-4xl md:text-5xl font-bold text-[#2E2F38] dark:text-white tabular-nums">{totaisCards.leadsQuentes}</p>
                   </div>
                 </div>
               </div>
@@ -636,7 +591,7 @@ export default function RelatoriosAdminPage() {
                 Por corretor (visão corporativa)
               </h2>
               <p className="text-base text-[#6B6F76] dark:text-gray-400 mb-6">
-                Entenda cada corretor: totais, novos no período, quentes e principal origem.
+                Entenda cada corretor: totais, novos no período e principal origem.
               </p>
               <table className="w-full text-base">
                 <thead>
@@ -646,7 +601,6 @@ export default function RelatoriosAdminPage() {
                     <th className="py-4 px-3 font-bold">Tipo</th>
                     <th className="py-4 px-3 font-bold text-center">Total</th>
                     <th className="py-4 px-3 font-bold text-center">Novos</th>
-                    <th className="py-4 px-3 font-bold text-center">Quentes</th>
                     <th className="py-4 px-3 font-bold">Principal origem</th>
                   </tr>
                 </thead>
@@ -664,7 +618,6 @@ export default function RelatoriosAdminPage() {
                       <td className="py-4 px-3 text-[#6B6F76] dark:text-gray-400">{row.tipoConta === 'imobiliaria' ? 'Imobiliária' : row.tipoConta === 'corretor-vinculado' ? 'Vinculado' : row.tipoConta === 'corretor-autonomo' ? 'Autônomo' : row.tipoConta || '–'}</td>
                       <td className="py-4 px-3 text-center font-bold text-[#D4A017] text-lg tabular-nums">{row.totalLeads}</td>
                       <td className="py-4 px-3 text-center font-bold text-[#3AC17C] text-lg tabular-nums">{row.novosNoPeriodo}</td>
-                      <td className="py-4 px-3 text-center font-bold text-amber-500 text-lg tabular-nums">{row.leadsQuentes}</td>
                       <td className="py-4 px-3 text-[#2E2F38] dark:text-gray-200">{row.principalOrigem}</td>
                     </tr>
                   ))}

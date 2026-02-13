@@ -71,10 +71,7 @@ function EtapaRow({
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-medium text-[var(--text-primary)] dark:text-white truncate">{stage.label}</p>
-        <p className="text-xs text-[var(--text-secondary)]">
-          {stage.reportCategory}
-          {stage.isQuente && <span className="ml-1 text-amber-500">· Quente</span>}
-        </p>
+        <p className="text-xs text-[var(--text-secondary)]">{stage.reportCategory}</p>
       </div>
       <span className="text-sm text-[var(--text-secondary)] tabular-nums shrink-0">
         {leadsCount} lead{leadsCount !== 1 ? 's' : ''}
@@ -109,13 +106,11 @@ export default function FunilVendasPage() {
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [editLabel, setEditLabel] = useState('');
   const [editCategory, setEditCategory] = useState<ReportCategory>('Topo de Funil');
-  const [editQuente, setEditQuente] = useState(false);
   const [removeIndex, setRemoveIndex] = useState<number | null>(null);
   const [migrateToStage, setMigrateToStage] = useState<string>('');
   const [adding, setAdding] = useState(false);
   const [newLabel, setNewLabel] = useState('');
   const [newCategory, setNewCategory] = useState<ReportCategory>('Topo de Funil');
-  const [newQuente, setNewQuente] = useState(false);
 
   const imobiliariaId = userData?.imobiliariaId;
 
@@ -163,7 +158,6 @@ export default function FunilVendasPage() {
     setEditIndex(index);
     setEditLabel(s.label);
     setEditCategory(s.reportCategory);
-    setEditQuente(s.isQuente);
   };
 
   const applyEdit = () => {
@@ -172,7 +166,7 @@ export default function FunilVendasPage() {
     if (!newLabelTrim) return;
     const oldLabel = localStages[editIndex].label;
     const next = [...localStages];
-    next[editIndex] = { label: newLabelTrim, reportCategory: editCategory, isQuente: editQuente };
+    next[editIndex] = { ...localStages[editIndex], label: newLabelTrim, reportCategory: editCategory };
     setLocalStages(next);
     setEditIndex(null);
     if (oldLabel !== newLabelTrim && imobiliariaId) {
@@ -232,11 +226,10 @@ export default function FunilVendasPage() {
       setMessage({ type: 'err', text: 'Já existe uma etapa com esse nome.' });
       return;
     }
-    setLocalStages([...localStages, { label, reportCategory: newCategory, isQuente: newQuente }]);
+    setLocalStages([...localStages, { label, reportCategory: newCategory, isQuente: false }]);
     setAdding(false);
     setNewLabel('');
     setNewCategory('Topo de Funil');
-    setNewQuente(false);
   };
 
   const resetToDefault = () => {
@@ -249,7 +242,7 @@ export default function FunilVendasPage() {
     localStages.length !== contextStages.length ||
     localStages.some((s, i) => {
       const c = contextStages[i];
-      return !c || s.label !== c.label || s.reportCategory !== c.reportCategory || s.isQuente !== c.isQuente;
+      return !c || s.label !== c.label || s.reportCategory !== c.reportCategory;
     });
 
   if (!imobiliariaId) {
@@ -324,11 +317,7 @@ export default function FunilVendasPage() {
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
-                <label className="flex items-center gap-2 mb-4">
-                  <input type="checkbox" checked={editQuente} onChange={(e) => setEditQuente(e.target.checked)} />
-                  <span className="text-sm text-[var(--text-secondary)]">Etapa quente (destaque em relatórios/TV)</span>
-                </label>
-                <div className="flex gap-2 justify-end">
+                <div className="flex gap-2 justify-end mt-4">
                   <button type="button" onClick={() => setEditIndex(null)} className="px-3 py-1.5 rounded-lg border border-[var(--border-subtle)] text-[var(--text-primary)]">Cancelar</button>
                   <button type="button" onClick={applyEdit} className="px-3 py-1.5 rounded-lg bg-amber-500 text-white font-medium">Aplicar</button>
                 </div>
@@ -383,11 +372,7 @@ export default function FunilVendasPage() {
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
-                <label className="flex items-center gap-2 mb-4">
-                  <input type="checkbox" checked={newQuente} onChange={(e) => setNewQuente(e.target.checked)} />
-                  <span className="text-sm text-[var(--text-secondary)]">Etapa quente</span>
-                </label>
-                <div className="flex gap-2 justify-end">
+                <div className="flex gap-2 justify-end mt-4">
                   <button type="button" onClick={() => setAdding(false)} className="px-3 py-1.5 rounded-lg border border-[var(--border-subtle)] text-[var(--text-primary)]">Cancelar</button>
                   <button type="button" onClick={addStage} className="px-3 py-1.5 rounded-lg bg-amber-500 text-white font-medium">Adicionar</button>
                 </div>

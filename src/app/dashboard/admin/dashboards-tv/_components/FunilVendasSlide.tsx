@@ -24,12 +24,7 @@ export function FunilVendasSlide({
   compact = false,
   somenteCorporativo = true,
 }: FunilVendasSlideProps) {
-  const { stages, stagesWithMeta } = usePipelineStages();
-  const isQuenteByLabel = useMemo(() => {
-    const m: Record<string, boolean> = {};
-    stagesWithMeta.forEach((s) => { m[s.label] = s.isQuente; });
-    return m;
-  }, [stagesWithMeta]);
+  const { stages } = usePipelineStages();
   const maxCorporativo = useMemo(
     () => Math.max(...Object.values(funilCorporativo), 1),
     [funilCorporativo]
@@ -64,7 +59,6 @@ export function FunilVendasSlide({
             const qtd = funilCorporativo[etapa] ?? 0;
             const pct = maxCorporativo ? Math.round((qtd / maxCorporativo) * 100) : 0;
             const label = getShortLabel(etapa);
-            const isQuente = isQuenteByLabel[etapa] ?? false;
             return (
               <div
                 key={etapa}
@@ -74,11 +68,7 @@ export function FunilVendasSlide({
                   <span className="text-xs md:text-sm font-medium text-[#cbd5e1] truncate pr-2" title={etapa}>
                     {label}
                   </span>
-                  <span
-                    className={`text-lg md:text-xl font-bold tabular-nums shrink-0 ${
-                      isQuente ? 'text-amber-400' : 'text-[#D4A017]'
-                    }`}
-                  >
+                  <span className="text-lg md:text-xl font-bold tabular-nums shrink-0 text-[#D4A017]">
                     {qtd}
                   </span>
                 </div>
