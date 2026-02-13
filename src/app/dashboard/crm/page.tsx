@@ -117,7 +117,7 @@ const TAREFA_PARAM_MAP: Record<string, TaskStatus> = {
 
 export default function CrmPage() {
     const { currentUser } = useAuth();
-    const { stages } = usePipelineStages();
+    const { stages, normalizeEtapa } = usePipelineStages();
     const searchParams = useSearchParams();
     const [leads, setLeads] = useState<Lead[]>([]);
     const [loading, setLoading] = useState(true);
@@ -258,7 +258,7 @@ export default function CrmPage() {
         }
         
         if (activeFilter) {
-            leadsToFilter = leadsToFilter.filter(lead => lead.etapa === activeFilter);
+            leadsToFilter = leadsToFilter.filter(lead => normalizeEtapa(lead.etapa) === activeFilter);
         }
 
         if (activeTaskFilter) {
@@ -278,7 +278,7 @@ export default function CrmPage() {
                         return selectedOptions.includes(lead.taskStatus);
                     }
 
-                    const leadValue = key === 'etapa' ? lead.etapa : lead.qualificacao?.[key];
+                    const leadValue = key === 'etapa' ? normalizeEtapa(lead.etapa) : lead.qualificacao?.[key];
                     
                     if (leadValue === undefined) {
                         return false; 
@@ -295,7 +295,7 @@ export default function CrmPage() {
         }
 
         return leadsToFilter;
-    }, [leads, searchTerm, activeFilter, activeTaskFilter, advancedFilters]);
+    }, [leads, searchTerm, activeFilter, activeTaskFilter, advancedFilters, normalizeEtapa]);
 
     // Paginação em cima dos filtros (mesma lógica do dashboard: todos os leads carregados, filtrar e paginar)
     const totalFiltered = filteredLeads.length;
@@ -523,7 +523,7 @@ export default function CrmPage() {
                                             </a>
                                         </td>
                                         <td className="px-3 py-1.5 text-xs w-1/5">
-                                            <span className="inline-block px-2 py-0.5 rounded bg-white/10 border border-white/10 text-[#E8C547] font-semibold text-[11px] truncate max-w-[120px]">{lead.etapa}</span>
+                                            <span className="inline-block px-2 py-0.5 rounded bg-white/10 border border-white/10 text-[#E8C547] font-semibold text-[11px] truncate max-w-[120px]">{normalizeEtapa(lead.etapa)}</span>
                                         </td>
                                         <td className="px-3 py-1.5 text-xs w-1/5">
                                             <span className="text-white">
