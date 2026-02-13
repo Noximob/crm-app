@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { PipelineStagesProvider } from '@/context/PipelineStagesContext';
 import { db } from '@/lib/firebase';
@@ -39,17 +40,22 @@ const TvIcon = (p: React.SVGProps<SVGSVGElement>) => (
 );
 
 export default function TvPage() {
+  const searchParams = useSearchParams();
   const { userData } = useAuth();
-  const imobiliariaId = userData?.imobiliariaId;
+  const imobiliariaIdFromUrl = searchParams.get('imobiliariaId') ?? undefined;
+  const imobiliariaId = imobiliariaIdFromUrl || userData?.imobiliariaId;
   return (
-    <PipelineStagesProvider imobiliariaId={imobiliariaId}>
-      <TvPageContent />
+    <PipelineStagesProvider imobiliariaId={imobiliariaId ?? undefined}>
+      <TvPageContent imobiliariaId={imobiliariaId ?? undefined} />
     </PipelineStagesProvider>
   );
 }
 
-function TvPageContent() {
+function TvPageContent({ imobiliariaId: imobiliariaIdProp }: { imobiliariaId?: string }) {
   const { userData } = useAuth();
+  const searchParams = useSearchParams();
+  const imobiliariaIdFromUrl = searchParams.get('imobiliariaId') ?? undefined;
+  const imobiliariaId = imobiliariaIdProp ?? imobiliariaIdFromUrl ?? userData?.imobiliariaId;
   const [config, setConfig] = useState<SlideConfig[]>([]);
   const [agendaFraseSemana, setAgendaFraseSemana] = useState('');
   const [corretoresVisiveisIds, setCorretoresVisiveisIds] = useState<string[]>([]);
@@ -59,7 +65,6 @@ function TvPageContent() {
   const [noticiaSemana, setNoticiaSemana] = useState<NoticiaSemanaData>({ titulo: '', imageUrl: '' });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  const imobiliariaId = userData?.imobiliariaId;
   const funilData = useFunilVendasData(imobiliariaId ?? undefined, corretoresVisiveisIds);
   const metasData = useMetasResultadosData(imobiliariaId ?? undefined);
   const agendaTvData = useAgendaTvData(imobiliariaId ?? undefined, corretoresVisiveisIds, corretoresStatusTv);

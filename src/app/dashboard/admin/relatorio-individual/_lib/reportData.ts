@@ -62,6 +62,10 @@ export interface RelatorioIndividualData {
   // Funil (labels do relatório: Topo de Funil, Qualificado, etc.)
   leadsTotal: ReportMetric<number>;
   leadsPorEtapa: Record<string, number>;
+  /** Categorias do relatório marcadas como "etapa quente" no funil */
+  categoriasQuentes: string[];
+  /** Soma de leads nas categorias quentes (destaque em relatórios/TV) */
+  leadsEmEtapasQuentes: number;
   novosLeads: ReportMetric<number>;
   leadsFechadosPeriodo: number;
 
@@ -176,6 +180,9 @@ export async function fetchRelatorioIndividual(
     const etapaReport = etapaBancoToReport[etapaBanco] || 'Topo de Funil';
     leadsPorEtapa[etapaReport] = (leadsPorEtapa[etapaReport] || 0) + 1;
   });
+
+  const categoriasQuentes = Array.from(new Set(stagesWithMeta.filter((s) => s.isQuente).map((s) => s.reportCategory)));
+  const leadsEmEtapasQuentes = categoriasQuentes.reduce((sum, cat) => sum + (leadsPorEtapa[cat] ?? 0), 0);
 
   const novosLeadsPeriodo = leads.filter((l) => isInPeriod(toDate(l.createdAt), start, end)).length;
   const novosLeadsAnterior = leads.filter((l) => isInPeriod(toDate(l.createdAt), startAnt, endAnt)).length;
@@ -399,6 +406,8 @@ export async function fetchRelatorioIndividual(
       variacao: undefined,
     },
     leadsPorEtapa,
+    categoriasQuentes,
+    leadsEmEtapasQuentes,
     novosLeads: {
       valor: novosLeadsPeriodo,
       anterior: novosLeadsAnterior,

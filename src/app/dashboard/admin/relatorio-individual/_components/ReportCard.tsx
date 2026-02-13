@@ -82,15 +82,31 @@ export default function ReportCard({ data }: { data: RelatorioIndividualData }) 
               <p className="text-2xl font-bold text-gray-900">{data.leadsFechadosPeriodo}</p>
             </div>
           </div>
+          {data.categoriasQuentes?.length > 0 && (
+            <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <p className="text-xs text-amber-800 font-semibold">Leads em negociação (etapas quentes)</p>
+              <p className="text-2xl font-bold text-amber-900">{data.leadsEmEtapasQuentes ?? 0}</p>
+              <p className="text-[10px] text-amber-700 mt-0.5">Etapas marcadas como quente no funil: {data.categoriasQuentes.join(', ')}</p>
+            </div>
+          )}
           <div className="rounded-xl border border-gray-200 overflow-hidden">
             <p className="text-xs font-semibold text-gray-500 bg-gray-50 px-4 py-2 border-b">Leads por etapa (Topo de Funil → Troca de Leads)</p>
             <div className="divide-y divide-gray-100">
-              {REPORT_FUNIL_ETAPAS.filter((e) => (data.leadsPorEtapa[e] ?? 0) > 0).map((etapa) => (
-                <div key={etapa} className="flex items-center justify-between px-4 py-2">
-                  <span className="text-sm text-gray-700 truncate max-w-[320px]">{etapa}</span>
-                  <span className="text-sm font-bold text-primary-600">{data.leadsPorEtapa[etapa] ?? 0}</span>
-                </div>
-              ))}
+              {REPORT_FUNIL_ETAPAS.filter((e) => (data.leadsPorEtapa[e] ?? 0) > 0).map((etapa) => {
+                const isQuente = data.categoriasQuentes?.includes(etapa);
+                return (
+                  <div
+                    key={etapa}
+                    className={`flex items-center justify-between px-4 py-2 ${isQuente ? 'bg-amber-50 border-l-4 border-amber-400' : ''}`}
+                  >
+                    <span className="text-sm text-gray-700 truncate max-w-[320px] flex items-center gap-2">
+                      {isQuente && <span className="text-amber-500 font-medium" title="Etapa quente">●</span>}
+                      {etapa}
+                    </span>
+                    <span className={`text-sm font-bold ${isQuente ? 'text-amber-700' : 'text-primary-600'}`}>{data.leadsPorEtapa[etapa] ?? 0}</span>
+                  </div>
+                );
+              })}
               {REPORT_FUNIL_ETAPAS.every((e) => (data.leadsPorEtapa[e] ?? 0) === 0) && (
                 <p className="px-4 py-3 text-sm text-gray-400">Nenhum lead nas etapas do funil.</p>
               )}
