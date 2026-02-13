@@ -30,10 +30,6 @@ interface FunilVendasIndividualSlideProps {
   compact?: boolean;
 }
 
-function getShortLabel(label: string, maxLen = 12): string {
-  return label.length > maxLen ? label.slice(0, maxLen - 1) + '…' : label;
-}
-
 export function FunilVendasIndividualSlide({
   funilPorCorretor,
   compact = false,
@@ -122,7 +118,7 @@ export function FunilVendasIndividualSlide({
                     </div>
                   )}
 
-                  {/* Etapas do funil (mesmas do corporativo) */}
+                  {/* Etapas do funil (mesmas do corporativo) — barra estreita para caber nome inteiro */}
                   <div className="flex-1 min-h-0 flex flex-col justify-center space-y-2">
                     {etapasVisiveis.map((etapa) => {
                       const qtd = porEtapa[etapa] ?? 0;
@@ -130,8 +126,8 @@ export function FunilVendasIndividualSlide({
                       const widthPct = qtd > 0 ? Math.max(pct, 20) : 0;
                       return (
                         <div key={etapa} className="flex items-center gap-2">
-                          <span className="text-xs text-[#94a3b8] font-medium w-20 shrink-0 truncate" title={etapa}>{getShortLabel(etapa, 10)}</span>
-                          <div className="flex-1 min-w-0 h-2 bg-white/10 rounded-full overflow-hidden">
+                          <span className="text-xs text-[#94a3b8] font-medium flex-1 min-w-0 truncate" title={etapa}>{etapa}</span>
+                          <div className="w-14 sm:w-16 h-2 shrink-0 bg-white/10 rounded-full overflow-hidden">
                             <div
                               className="h-full rounded-full bg-[#D4A017]"
                               style={{ width: `${widthPct}%`, minWidth: qtd > 0 ? 6 : 0 }}
