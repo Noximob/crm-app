@@ -294,10 +294,6 @@ export default function VisualizarCrmCorretorPage() {
           </div>
         ) : (
           <>
-            <div className="px-3 py-2 rounded-lg bg-[#D4A017]/10 border border-[#D4A017]/20 text-sm text-[#E8C547] mb-2 flex-shrink-0">
-              Visualizando CRM de: <strong>{selectedCorretor?.nome || selectedCorretor?.email}</strong>. Somente leitura — você não pode editar etapas, tarefas ou anotações.
-            </div>
-
             <main className="flex flex-col flex-1 min-h-0 gap-2 mt-0">
               <div className="flex flex-col flex-1 min-h-0 p-3 rounded-2xl border border-white/10">
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 flex-shrink-0 min-w-0">
@@ -438,7 +434,7 @@ export default function VisualizarCrmCorretorPage() {
                         <th className="px-3 py-2 font-semibold text-center w-1/12">WhatsApp</th>
                         <th className="px-3 py-2 font-semibold text-left w-1/5">Etapa</th>
                         <th className="px-3 py-2 font-semibold text-left w-1/5">Status da Tarefa</th>
-                        <th className="px-3 py-2 font-semibold text-center w-1/5 rounded-tr-xl">Ações</th>
+                        <th className="px-3 py-2 font-semibold text-center w-1/5 min-w-[140px] rounded-tr-xl">Ações</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -472,11 +468,11 @@ export default function VisualizarCrmCorretorPage() {
                           <td className="px-3 py-1.5 text-xs w-1/5">
                             <span className="text-white"><StatusIndicator status={lead.taskStatus} /></span>
                           </td>
-                          <td className="px-3 py-1.5 w-1/5 text-center">
+                          <td className="px-3 py-1.5 w-1/5 min-w-[140px] text-center">
                             <div className="flex justify-center">
                               <Link
                                 href={`/dashboard/crm/${lead.id}?viewAs=1`}
-                                className="px-2 py-1 text-xs font-semibold bg-[#D4A017] hover:bg-[#B8860B] text-white rounded-lg shadow-soft transition-colors"
+                                className="inline-flex items-center justify-center px-2 py-1 text-xs font-semibold bg-[#D4A017] hover:bg-[#B8860B] text-white rounded-lg shadow-soft transition-colors whitespace-nowrap"
                               >
                                 Ver (somente leitura)
                               </Link>
