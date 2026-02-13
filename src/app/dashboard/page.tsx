@@ -1696,15 +1696,21 @@ export default function DashboardPage() {
                 <p className="text-gray-300 text-sm">Nenhum post ainda. Seja o primeiro!</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {trendingPostsFiltered.slice(0, 6).map((post, index) => (
+              <div className="space-y-3">
+                {trendingPostsFiltered.slice(0, 6).map((post, index) => {
+                  const hasMedia = !!(post.file && post.fileMeta) || !!post.youtubeData?.thumbnail;
+                  const eventIcon = (t: string) => ({ meet: '🎥', youtube: '📺', instagram: '📱', discord: '💬' }[t] || '📅');
+                  const eventColor = (t: string) => ({ meet: 'bg-amber-500', youtube: 'bg-red-500', instagram: 'bg-pink-500', discord: 'bg-indigo-500' }[t] || 'bg-gray-500');
+                  return (
                   <div
                     key={post.id}
-                    className={`group relative rounded-xl p-4 transition-all duration-300 cursor-pointer border backdrop-blur-sm hover:scale-[1.02] ${
+                    className={`group relative rounded-xl transition-all duration-300 cursor-pointer border backdrop-blur-sm hover:scale-[1.01] ${
+                      hasMedia ? 'p-3' : 'p-4'
+                    } ${
                       post.isEvento
                         ? 'bg-amber-500/15 border-amber-400/30 hover:bg-amber-500/20'
                         : 'bg-white/10 border-white/10 hover:bg-white/15 hover:border-white/20'
-                    }`}
+                    } ${hasMedia ? 'min-h-[8rem]' : ''}`}
                   >
                     <div className="absolute -top-2 -left-2 w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg">#{index + 1}</div>
                     <div className="flex items-start gap-3">
@@ -1712,28 +1718,49 @@ export default function DashboardPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-bold text-white text-sm truncate">{post.nome}</span>
-                          <span className="text-[10px] text-gray-300">
+                          <span className="text-[10px] text-gray-300 shrink-0">
                             {post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}
                           </span>
                         </div>
-                        {!post.repostOf && post.texto && <div className="text-sm text-white line-clamp-2">{post.texto}</div>}
+                        {post.isEvento && (
+                          <div className="mb-2">
+                            <a
+                              href={post.eventoLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-semibold ${eventColor(post.eventoTipo || '')} text-white hover:opacity-90`}
+                            >
+                              <span>{eventIcon(post.eventoTipo || '')}</span>
+                              <span className="truncate max-w-[140px]">{post.titulo}</span>
+                              <span className="opacity-90">
+                                {post.eventoData?.toDate ? post.eventoData.toDate().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}
+                              </span>
+                            </a>
+                            {post.eventoLink && (
+                              <p className="text-[10px] text-gray-400 mt-0.5 truncate max-w-full" title={post.eventoLink}>Link: {post.eventoLink}</p>
+                            )}
+                          </div>
+                        )}
+                        {!post.repostOf && post.texto && !post.isEvento && <div className="text-sm text-white line-clamp-2">{post.texto}</div>}
+                        {!post.repostOf && post.texto && post.isEvento && <div className="text-xs text-gray-300 line-clamp-2">{post.texto}</div>}
                         {post.repostOf && post.repostComment && <div className="text-xs text-gray-400 italic">Repost: {post.repostComment}</div>}
-                        {/* Mini preview: foto, vídeo ou YouTube (card compacto do dashboard) */}
+                        {/* Preview de mídia: card com mídia um pouco maior e alinhado */}
                         {post.file && post.fileMeta && post.fileMeta.type?.startsWith('image/') && (
-                          <div className="mt-2 rounded-lg overflow-hidden border border-white/10 w-full max-h-20 flex items-center justify-center bg-black/20">
-                            <img src={post.file} alt="" className="max-h-20 w-full object-cover object-center" />
+                          <div className="mt-2 rounded-lg overflow-hidden border border-white/10 w-full aspect-video max-h-36 bg-black/20 flex items-center justify-center">
+                            <img src={post.file} alt="" className="w-full h-full object-contain" />
                           </div>
                         )}
                         {post.file && post.fileMeta && post.fileMeta.type?.startsWith('video/') && (
-                          <div className="mt-2 rounded-lg overflow-hidden border border-white/10 w-full max-h-20 flex items-center justify-center bg-black/30 relative">
-                            <video src={post.file} className="max-h-20 w-full object-cover" muted playsInline />
-                            <span className="absolute inset-0 flex items-center justify-center text-white/90 text-2xl drop-shadow">▶</span>
+                          <div className="mt-2 rounded-lg overflow-hidden border border-white/10 w-full aspect-video max-h-36 bg-black/30 relative flex items-center justify-center">
+                            <video src={post.file} className="w-full h-full object-contain" muted playsInline />
+                            <span className="absolute inset-0 flex items-center justify-center text-white/90 text-3xl drop-shadow-lg">▶</span>
                           </div>
                         )}
                         {post.youtubeData?.thumbnail && (
-                          <div className="mt-2 rounded-lg overflow-hidden border border-white/10 w-full max-h-20 flex items-center justify-center bg-black/30 relative">
-                            <img src={post.youtubeData.thumbnail} alt="" className="max-h-20 w-full object-cover object-center" />
-                            <span className="absolute inset-0 flex items-center justify-center text-white/90 text-2xl drop-shadow">▶</span>
+                          <div className="mt-2 rounded-lg overflow-hidden border border-white/10 w-full aspect-video max-h-36 bg-black/30 relative flex items-center justify-center">
+                            <img src={post.youtubeData.thumbnail} alt="" className="w-full h-full object-cover" />
+                            <span className="absolute inset-0 flex items-center justify-center text-white/90 text-3xl drop-shadow-lg">▶</span>
                           </div>
                         )}
                         <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
@@ -1744,7 +1771,8 @@ export default function DashboardPage() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
