@@ -1718,6 +1718,24 @@ export default function DashboardPage() {
                         </div>
                         {!post.repostOf && post.texto && <div className="text-sm text-white line-clamp-2">{post.texto}</div>}
                         {post.repostOf && post.repostComment && <div className="text-xs text-gray-400 italic">Repost: {post.repostComment}</div>}
+                        {/* Mini preview: foto, vídeo ou YouTube (card compacto do dashboard) */}
+                        {post.file && post.fileMeta && post.fileMeta.type?.startsWith('image/') && (
+                          <div className="mt-2 rounded-lg overflow-hidden border border-white/10 w-full max-h-20 flex items-center justify-center bg-black/20">
+                            <img src={post.file} alt="" className="max-h-20 w-full object-cover object-center" />
+                          </div>
+                        )}
+                        {post.file && post.fileMeta && post.fileMeta.type?.startsWith('video/') && (
+                          <div className="mt-2 rounded-lg overflow-hidden border border-white/10 w-full max-h-20 flex items-center justify-center bg-black/30 relative">
+                            <video src={post.file} className="max-h-20 w-full object-cover" muted playsInline />
+                            <span className="absolute inset-0 flex items-center justify-center text-white/90 text-2xl drop-shadow">▶</span>
+                          </div>
+                        )}
+                        {post.youtubeData?.thumbnail && (
+                          <div className="mt-2 rounded-lg overflow-hidden border border-white/10 w-full max-h-20 flex items-center justify-center bg-black/30 relative">
+                            <img src={post.youtubeData.thumbnail} alt="" className="max-h-20 w-full object-cover object-center" />
+                            <span className="absolute inset-0 flex items-center justify-center text-white/90 text-2xl drop-shadow">▶</span>
+                          </div>
+                        )}
                         <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
                           <span>❤️ {post.likes || 0}</span>
                           <span>💬 {post.commentsCount || 0}</span>
