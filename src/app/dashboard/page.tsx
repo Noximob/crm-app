@@ -1761,7 +1761,6 @@ export default function DashboardPage() {
               };
               const nivel = getNivel(totalFunil);
               const nomeCorretor = userData?.nome || currentUser?.email?.split('@')[0] || 'Corretor';
-              const short = (s: string) => s.length > 8 ? s.slice(0, 7) + '…' : s;
               return (
                 <>
                   <div className="flex items-center gap-1.5 flex-shrink-0 mb-2">
@@ -1776,14 +1775,14 @@ export default function DashboardPage() {
                     </span>
                     <span className="shrink-0 text-sm font-black tabular-nums text-[#60a5fa]">{totalFunil}</span>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-1.5 min-w-0">
                     {etapasVisiveis.map((etapa) => {
                       const qtd = porEtapa[etapa] ?? 0;
                       const pct = maxLocal > 0 ? Math.round((qtd / maxLocal) * 100) : 0;
                       const widthPct = qtd > 0 ? Math.max(pct, 20) : 0;
                       return (
-                        <div key={etapa} className="flex items-center gap-1.5">
-                          <span className="text-[10px] text-[#94a3b8] font-medium w-16 shrink-0 truncate" title={etapa}>{short(etapa)}</span>
+                        <div key={etapa} className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-[10px] text-[#94a3b8] font-medium shrink-0 w-[8.5rem] truncate" title={etapa}>{etapa}</span>
                           <div className="flex-1 min-w-0 h-1.5 bg-white/10 rounded-full overflow-hidden">
                             <div
                               className="h-full rounded-full bg-[#D4A017]"
