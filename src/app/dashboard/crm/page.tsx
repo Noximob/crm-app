@@ -358,7 +358,7 @@ export default function CrmPage() {
                                 )}
                             </button>
                             {filtroRapidoOpen && (
-                                <div className="absolute left-0 top-full mt-1.5 z-50 w-[min(90vw,420px)] max-h-[70vh] overflow-y-auto rounded-xl border border-white/10 bg-[var(--bg-card)] shadow-xl py-3 px-3">
+                                <div key={`filtro-etapas-${stages.join('-')}`} className="absolute left-0 top-full mt-1.5 z-50 w-[min(90vw,420px)] max-h-[70vh] overflow-y-auto rounded-xl border border-white/10 bg-[var(--bg-card)] shadow-xl py-3 px-3">
                                     <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2 px-1">Etapa do funil</p>
                                     <div className="flex flex-wrap gap-2 mb-3">
                                         {stages.map((stage) => (
@@ -546,6 +546,7 @@ export default function CrmPage() {
             </main>
             {isFilterModalOpen && (
                 <FilterModal
+                    key={`filter-${stages.join('-')}`}
                     isOpen={isFilterModalOpen}
                     onClose={() => setFilterModalOpen(false)}
                     onApply={handleApplyFilters}

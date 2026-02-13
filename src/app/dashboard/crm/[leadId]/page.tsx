@@ -442,7 +442,11 @@ export default function LeadDetailPage() {
                                     onChange={handleStageChange} 
                                     className="px-2 py-1 text-xs border border-[#E8C547] dark:border-[#D4A017] rounded-md bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white focus:ring-1 focus:ring-[#D4A017] focus:outline-none"
                                   >
-                                    {stages.map(stage => (<option key={stage} value={stage}>{stage}</option>))}
+                                    {(() => {
+                                      const opts = [...stages];
+                                      if (lead.etapa && !stages.includes(lead.etapa)) opts.push(lead.etapa);
+                                      return opts.map(s => (<option key={s} value={s}>{s}</option>));
+                                    })()}
                                   </select>
                                 )}
                                 {!readOnly && (
