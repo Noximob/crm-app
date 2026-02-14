@@ -6,30 +6,34 @@ function formatCurrency(n: number): string {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(n);
 }
 
-/** Círculo de progresso gamificado — valor no centro, arco colorido ao redor */
+/** Círculo de progresso gamificado — % feito no centro, arco colorido; mostra realizado vs necessário e "faltam" */
 function CircleCard({
   title,
-  value,
-  progress,
+  necessario,
+  realizado,
+  faltam,
+  unidade = 'un',
   variant = 'gold',
-  subtitle,
 }: {
   title: string;
-  value: string | number;
-  progress: number;
+  necessario: number;
+  realizado: number;
+  faltam?: number;
+  unidade?: 'un' | 'R$';
   variant?: 'gold' | 'green' | 'red' | 'gray';
-  subtitle?: string;
 }) {
-  const pct = Math.min(100, Math.max(0, progress * 100));
+  const pct = necessario > 0 ? Math.min(100, (realizado / necessario) * 100) : 0;
   const colors = { gold: '#D4A017', green: '#22c55e', red: '#ef4444', gray: 'rgba(255,255,255,0.3)' };
   const color = colors[variant];
-  const r = 36;
-  const stroke = 5;
+  const r = 32;
+  const stroke = 4;
   const circ = 2 * Math.PI * r;
   const offset = circ - (pct / 100) * circ;
+  const valorRealizado = unidade === 'R$' ? formatCurrency(realizado) : realizado % 1 === 0 ? realizado : realizado.toFixed(2).replace('.', ',');
+  const valorNecessario = unidade === 'R$' ? formatCurrency(necessario) : necessario % 1 === 0 ? necessario : necessario.toFixed(2).replace('.', ',');
 
   return (
-    <div className="flex flex-col items-center rounded-2xl border border-white/10 bg-white/5 p-4 min-w-[120px] shrink-0">
+    <div className="flex flex-col items-center rounded-xl border border-white/10 bg-white/5 p-3">
       <div className="relative" style={{ width: r * 2 + stroke * 2, height: r * 2 + stroke * 2 }}>
         <svg width={r * 2 + stroke * 2} height={r * 2 + stroke * 2} className="-rotate-90">
           <circle cx={r + stroke} cy={r + stroke} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
@@ -46,14 +50,20 @@ function CircleCard({
             className="transition-all duration-500"
           />
         </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-sm font-bold text-white tabular-nums">
-            {typeof value === 'number' ? value.toLocaleString('pt-BR') : value}
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className={`text-lg font-bold tabular-nums ${variant === 'green' ? 'text-emerald-400' : variant === 'red' ? 'text-red-400' : 'text-[#D4A017]'}`}>
+            {Math.round(pct)}%
           </span>
+          <span className="text-[10px] text-gray-500 font-medium">feito</span>
         </div>
       </div>
-      <p className="text-xs text-gray-400 mt-2 text-center font-medium leading-tight">{title}</p>
-      {subtitle && <p className="text-[10px] text-gray-500 mt-0.5 text-center">{subtitle}</p>}
+      <p className="text-xs text-white font-medium mt-2 text-center leading-tight">{title}</p>
+      <p className="text-[10px] text-gray-400 mt-0.5 text-center tabular-nums">
+        {valorRealizado} / {valorNecessario}
+      </p>
+      {faltam != null && faltam > 0 && (
+        <p className="text-[10px] text-amber-400 mt-0.5 text-center font-medium">faltam {unidade === 'R$' ? formatCurrency(Math.ceil(faltam)) : faltam % 1 === 0 ? faltam : faltam.toFixed(2).replace('.', ',')}</p>
+      )}
     </div>
   );
 }
@@ -105,17 +115,20 @@ const ETAPAS_FUNIL = [
   'Trocar Leads',
 ];
 
-/** Dados mock para o relatório — depois trocar por dados reais */
+/** Dados mock — necessário/realizado podem ser "no período" (mensal/trimestral) conforme recorte */
 const MOCK = {
   moedas: 1250,
+  periodoLabel: 'Mensal',
+  metaAno: 100_000,
+  metaNoPeriodo: 8_333,
   comoChegar: {
-    topoFunil: { necessario: 500, realizado: 380 },
-    qualificados: { necessario: 200, realizado: 95 },
-    reunioes: { necessario: 100, realizado: 42 },
-    vendasNecessarias: 4,
-    unidadesVender: 4,
-    vgvNecessario: 100_000,
-    vgvRealizado: 21_120,
+    topoFunil: { necessario: 42, realizado: 38 },
+    qualificados: { necessario: 17, realizado: 8 },
+    reunioes: { necessario: 8, realizado: 4 },
+    vendasNecessarias: 1,
+    unidadesVender: 1,
+    vgvNecessario: 8_333,
+    vgvRealizado: 2_120,
   },
   funilAgora: [
     { etapa: 'Topo de Funil', atual: 380, necessario: 500 },
@@ -144,68 +157,80 @@ const MOCK = {
 export default function RelatorioMockup() {
   const c = MOCK.comoChegar;
   const pctVgv = c.vgvNecessario > 0 ? c.vgvRealizado / c.vgvNecessario : 0;
+  const pctGeralPeriodo = Math.round(pctVgv * 100);
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Moedas */}
-      <div className="flex justify-end">
-        <div className="flex items-center gap-2 rounded-xl border border-[#D4A017]/40 bg-[#D4A017]/10 px-4 py-2">
-          <span className="text-2xl">🪙</span>
-          <span className="text-lg font-bold text-[#D4A017] tabular-nums">{MOCK.moedas.toLocaleString('pt-BR')}</span>
-          <span className="text-sm text-gray-400">moedas</span>
-        </div>
-      </div>
-
-      {/* Como chegar na sua meta do ano — círculos */}
+      {/* Como chegar na sua meta do ano — título + moedas à direita */}
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <h2 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-          <span className="w-0.5 h-5 bg-[#D4A017] rounded-r-full" />
-          Como chegar na sua meta do ano
-        </h2>
-        <p className="text-xs text-gray-400 mb-4">
-          Com base nas métricas: para bater a meta de VGV, você precisa destes números no funil.
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <h2 className="text-base font-bold text-white flex items-center gap-2">
+            <span className="w-0.5 h-5 bg-[#D4A017] rounded-r-full" />
+            Como chegar na sua meta do ano
+          </h2>
+          <div className="flex items-center gap-2 rounded-xl border border-[#D4A017]/40 bg-[#D4A017]/10 px-3 py-1.5">
+            <span className="text-lg">🪙</span>
+            <span className="font-bold text-[#D4A017] tabular-nums">{MOCK.moedas.toLocaleString('pt-BR')}</span>
+            <span className="text-xs text-gray-400">moedas</span>
+          </div>
+        </div>
+
+        <p className="text-sm text-gray-300 mb-1">
+          Meta do ano: <strong className="text-[#D4A017]">{formatCurrency(MOCK.metaAno)}</strong>. No período ({MOCK.periodoLabel.toLowerCase()}): você deveria fazer <strong className="text-white">{formatCurrency(MOCK.metaNoPeriodo)}</strong> em VGV.
         </p>
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+        <p className="text-xs text-gray-400 mb-4">
+          Abaixo: <strong className="text-white">% feito</strong> em cada camada do funil no período — o que você realizou vs o que precisaria para bater a meta no ritmo.
+        </p>
+
+        {/* Círculos em grid — sem barra de rolagem (2 linhas x 3 colunas) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <CircleCard
             title="Topo do funil"
-            value={c.topoFunil.necessario}
-            progress={c.topoFunil.realizado / c.topoFunil.necessario}
+            necessario={c.topoFunil.necessario}
+            realizado={c.topoFunil.realizado}
+            faltam={Math.max(0, c.topoFunil.necessario - c.topoFunil.realizado)}
             variant={c.topoFunil.realizado >= c.topoFunil.necessario ? 'green' : 'gold'}
-            subtitle={`tem ${c.topoFunil.realizado}`}
           />
           <CircleCard
             title="Leads qualificados"
-            value={c.qualificados.necessario}
-            progress={c.qualificados.realizado / c.qualificados.necessario}
+            necessario={c.qualificados.necessario}
+            realizado={c.qualificados.realizado}
+            faltam={Math.max(0, c.qualificados.necessario - c.qualificados.realizado)}
             variant={c.qualificados.realizado >= c.qualificados.necessario ? 'green' : 'gold'}
-            subtitle={`tem ${c.qualificados.realizado}`}
           />
           <CircleCard
             title="Reuniões agendadas"
-            value={c.reunioes.necessario}
-            progress={c.reunioes.realizado / c.reunioes.necessario}
+            necessario={c.reunioes.necessario}
+            realizado={c.reunioes.realizado}
+            faltam={Math.max(0, c.reunioes.necessario - c.reunioes.realizado)}
             variant={c.reunioes.realizado >= c.reunioes.necessario ? 'green' : 'gold'}
-            subtitle={`tem ${c.reunioes.realizado}`}
           />
           <CircleCard
-            title="Vendas necessárias"
-            value={c.vendasNecessarias}
-            progress={c.vgvRealizado / c.vgvNecessario}
-            variant="gold"
+            title="Vendas no período"
+            necessario={1}
+            realizado={Math.min(1, pctVgv)}
+            faltam={Math.max(0, 1 - pctVgv)}
+            variant={pctVgv >= 1 ? 'green' : 'gold'}
           />
           <CircleCard
             title="Unidades a vender"
-            value={c.unidadesVender}
-            progress={c.vgvRealizado / c.vgvNecessario}
-            variant="gold"
+            necessario={1}
+            realizado={Math.min(1, pctVgv)}
+            faltam={Math.max(0, 1 - pctVgv)}
+            variant={pctVgv >= 1 ? 'green' : 'gold'}
           />
           <CircleCard
-            title="VGV necessário"
-            value={formatCurrency(c.vgvNecessario)}
-            progress={pctVgv}
+            title="VGV no período"
+            necessario={c.vgvNecessario}
+            realizado={c.vgvRealizado}
+            faltam={Math.max(0, c.vgvNecessario - c.vgvRealizado)}
+            unidade="R$"
             variant={pctVgv >= 1 ? 'green' : pctVgv >= 0.5 ? 'gold' : 'red'}
-            subtitle={formatCurrency(c.vgvRealizado)}
           />
+        </div>
+
+        <div className={`mt-4 rounded-xl px-4 py-2 text-center text-sm font-semibold ${pctGeralPeriodo >= 100 ? 'bg-emerald-500/20 text-emerald-400' : pctGeralPeriodo >= 50 ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'}`}>
+          No período você fez <strong>{pctGeralPeriodo}%</strong> do VGV necessário para manter o ritmo da meta do ano.
         </div>
       </section>
 
