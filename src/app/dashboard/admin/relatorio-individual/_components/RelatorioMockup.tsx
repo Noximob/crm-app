@@ -115,16 +115,16 @@ const MOCK = {
   tempoCrmEstaSemana: { horas: 4.2, interacoes: 42 },
   tarefas: { total: 18, atrasadas: 3 },
   tempoCrmMes: { interacoes: 153, horasEquivalentes: 12 },
-  /** Funil de vendas: etapas na ordem invertida (fechamento → topo) para a linha do anexo 1 */
+  /** Funil de vendas: etapas na ordem invertida (fechamento → topo), design = círculos como anexo 2 */
   funilEtapasInvertido: [
-    'Contrato e fechamento',
-    'Negociação e Proposta',
-    'Atendimento Agendado',
-    'Oferta do imóvel',
-    'Qualificado',
-    'Qualificação',
-    'Topo de Funil',
-  ],
+    { etapa: 'Contrato e fechamento', necessario: 4, realizado: 2 },
+    { etapa: 'Negociação e Proposta', necessario: 40, realizado: 17 },
+    { etapa: 'Atendimento Agendado', necessario: 98, realizado: 41 },
+    { etapa: 'Oferta do imóvel', necessario: 80, realizado: 43 },
+    { etapa: 'Qualificado', necessario: 17, realizado: 12 },
+    { etapa: 'Qualificação', necessario: 200, realizado: 118 },
+    { etapa: 'Topo de Funil', necessario: 41, realizado: 31 },
+  ] as const,
   /** No máximo 4 ou 5 itens: crítico, atenção, muito bom — derivados das métricas */
   destaques: [
     { tipo: 'critico' as const, titulo: 'VGV abaixo do ritmo', texto: 'No período você está em 25% do VGV necessário para manter a meta anual.' },
@@ -179,39 +179,33 @@ export default function RelatorioMockup() {
         </div>
       </div>
 
-      {/* Meta no ritmo (visão mensal): 6 círculos — Topo, Qualificados, Reuniões | Vendas, Unidades, VGV */}
-      <div className="mb-4">
-        <p className="text-[10px] text-gray-500 mb-2">No ritmo da meta · quantos em cada etapa</p>
-        <div className="flex flex-nowrap gap-2 sm:gap-4">
-          <div className="flex flex-1 flex-nowrap gap-1 sm:gap-1.5 min-w-0">
-            <CircleCard title="Topo funil" necessario={c.topoFunil.necessario} realizado={c.topoFunil.realizado} faltam={Math.max(0, c.topoFunil.necessario - c.topoFunil.realizado)} />
-            <CircleCard title="Qualificados" necessario={c.qualificados.necessario} realizado={c.qualificados.realizado} faltam={Math.max(0, c.qualificados.necessario - c.qualificados.realizado)} />
-            <CircleCard title="Reuniões" necessario={c.reunioes.necessario} realizado={c.reunioes.realizado} faltam={Math.max(0, c.reunioes.necessario - c.reunioes.realizado)} />
-          </div>
-          <div className="flex flex-1 flex-nowrap gap-1 sm:gap-1.5 min-w-0 rounded-lg border border-[#D4A017]/25 bg-white/[0.04] pl-2 pr-2 py-1">
-            <CircleCard title="Vendas" necessario={1} realizado={Math.min(1, pctVgv)} faltam={Math.max(0, 1 - pctVgv)} />
-            <CircleCard title="Unidades" necessario={1} realizado={Math.min(1, pctVgv)} faltam={Math.max(0, 1 - pctVgv)} />
-            <CircleCard title="VGV" necessario={c.vgvNecessario} realizado={c.vgvRealizado} faltam={Math.max(0, c.vgvNecessario - c.vgvRealizado)} unidade="R$" />
-          </div>
-        </div>
-      </div>
-
-      {/* Funil de vendas: linha em ordem invertida (fechamento → topo), conforme anexo 1 */}
+      {/* Funil de vendas (anexo 1): etapas em ordem invertida — design do anexo 2 (círculos com % feito, realizado/necessário, faltam) */}
       <div className="mb-4 rounded-xl border border-[#D4A017]/20 bg-black/30 px-3 py-3">
         <h3 className="text-xs font-bold text-[#D4A017] mb-2 flex items-center gap-1.5">
           <span className="w-0.5 h-3.5 bg-[#D4A017] rounded-r-full shadow-[0_0_6px_rgba(212,160,23,0.4)]" />
           Funil de vendas
           <span className="text-[10px] font-normal text-gray-500">(ordem invertida: fechamento → topo)</span>
         </h3>
-        <div className="flex flex-wrap gap-2">
-          {MOCK.funilEtapasInvertido.map((etapa, i) => (
-            <span
-              key={etapa}
-              className="inline-flex items-center rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-medium text-white shadow-sm"
-            >
-              {etapa}
-            </span>
+        <div className="flex flex-nowrap gap-1 sm:gap-2 overflow-x-auto pb-1">
+          {MOCK.funilEtapasInvertido.map((f) => (
+            <CircleCard
+              key={f.etapa}
+              title={f.etapa}
+              necessario={f.necessario}
+              realizado={f.realizado}
+              faltam={Math.max(0, f.necessario - f.realizado)}
+            />
           ))}
+        </div>
+      </div>
+
+      {/* No ritmo da meta: Vendas, Unidades, VGV (bloco à parte) */}
+      <div className="mb-4">
+        <p className="text-[10px] text-gray-500 mb-2">No ritmo da meta</p>
+        <div className="flex flex-nowrap gap-1 sm:gap-2 rounded-lg border border-[#D4A017]/25 bg-white/[0.04] p-2">
+          <CircleCard title="Vendas" necessario={1} realizado={Math.min(1, pctVgv)} faltam={Math.max(0, 1 - pctVgv)} />
+          <CircleCard title="Unidades" necessario={1} realizado={Math.min(1, pctVgv)} faltam={Math.max(0, 1 - pctVgv)} />
+          <CircleCard title="VGV" necessario={c.vgvNecessario} realizado={c.vgvRealizado} faltam={Math.max(0, c.vgvNecessario - c.vgvRealizado)} unidade="R$" />
         </div>
       </div>
 
