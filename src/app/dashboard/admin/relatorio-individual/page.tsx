@@ -16,6 +16,7 @@ import FunnelMissionList from './_components/FunnelMissionList';
 import GapTableEnhanced from './_components/GapTableEnhanced';
 import FocusOfPeriodSmart from './_components/FocusOfPeriodSmart';
 import Page1OrigemResultado from './_components/Page1OrigemResultado';
+import GamifiedPanels from './_components/GamifiedPanels';
 import type { RelatorioIndividualData } from './_lib/reportData';
 
 interface Corretor {
@@ -165,7 +166,7 @@ export default function RelatorioIndividualPage() {
   }
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 max-w-4xl mx-auto">
+    <div className="min-h-screen p-4 sm:p-6 max-w-6xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <Link
           href="/dashboard/admin"
@@ -266,7 +267,6 @@ export default function RelatorioIndividualPage() {
 
       {!loading && hasData && template && periodBounds && report && (
         <div className="space-y-5">
-          {/* Resumo: bata o olho */}
           <SummaryHeader
             metaAno={metaAno}
             periodLabel={formatPeriodLabel(period)}
@@ -278,44 +278,16 @@ export default function RelatorioIndividualPage() {
             acimaAbaixo={acimaAbaixo}
           />
 
-          {/* Linha rápida: ritmo + VGV + leads + fechamentos */}
-          <div className="card-glow rounded-2xl border border-white/10 bg-white/5 dark:bg-[#23283A]/80 p-4">
-            <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500 uppercase tracking-wide">Ritmo</span>
-                <span className={`px-2.5 py-1 rounded-lg text-sm font-bold ${
-                  acimaAbaixo === 'acima' ? 'bg-emerald-500/20 text-emerald-400' :
-                  acimaAbaixo === 'abaixo' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'
-                }`}>
-                  {progressoPct != null ? `${(progressoPct * 100).toFixed(0)}%` : '—'} do esperado
-                </span>
-              </div>
-              {rotina && (
-                <>
-                  <div>
-                    <span className="text-xs text-gray-500 uppercase tracking-wide mr-1">VGV</span>
-                    <span className="text-lg font-bold text-[#D4A017] tabular-nums">{formatCurrency(rotina.valorRealizadoR)}</span>
-                  </div>
-                  <div>
-                    <span className="text-xs text-gray-500 uppercase tracking-wide mr-1">Tarefas</span>
-                    <span className="text-lg font-bold text-white tabular-nums">{rotina.tarefasConcluidas}</span>
-                  </div>
-                  <div>
-                    <span className="text-xs text-gray-500 uppercase tracking-wide mr-1">Interações</span>
-                    <span className="text-lg font-bold text-white tabular-nums">{rotina.interacoes}</span>
-                  </div>
-                </>
-              )}
-              <div>
-                <span className="text-xs text-gray-500 uppercase tracking-wide mr-1">Novos leads</span>
-                <span className="text-lg font-bold text-white tabular-nums">{report.novosLeads?.valor ?? 0}</span>
-              </div>
-              <div>
-                <span className="text-xs text-gray-500 uppercase tracking-wide mr-1">Fechamentos</span>
-                <span className="text-lg font-bold text-white tabular-nums">{report.contribuicoesPeriodoCount?.valor ?? report.leadsFechadosPeriodo ?? 0}</span>
-              </div>
-            </div>
-          </div>
+          {/* Quadros laterais gamificados: dando certo | precisa melhorar */}
+          <GamifiedPanels
+            report={report}
+            gaps={gaps}
+            focus={focus}
+            progressoPct={progressoPct}
+            acimaAbaixo={acimaAbaixo}
+            valorRealizadoR={rotina?.valorRealizadoR ?? 0}
+            tarefasConcluidas={rotina?.tarefasConcluidas ?? 0}
+          />
 
           {/* De onde veio o resultado */}
           <Page1OrigemResultado report={report} />
@@ -335,31 +307,6 @@ export default function RelatorioIndividualPage() {
             <SectionTitle className="mb-4">GAP por etapa</SectionTitle>
             <GapTableEnhanced gaps={gaps} defaultSort="pior" />
           </div>
-
-          {/* Rotina + Foco */}
-          {rotina && (
-            <div className="card-glow rounded-2xl border border-white/10 bg-white/5 dark:bg-[#23283A]/80 p-5">
-              <SectionTitle className="mb-4">Rotina no período</SectionTitle>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Tarefas concluídas</p>
-                  <p className="font-bold text-white text-lg tabular-nums">{rotina.tarefasConcluidas}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Horas em eventos</p>
-                  <p className="font-bold text-white text-lg tabular-nums">{rotina.horasEventos.toFixed(1)}h</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Interações</p>
-                  <p className="font-bold text-white text-lg tabular-nums">{rotina.interacoes}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">VGV realizado</p>
-                  <p className="font-bold text-[#D4A017] text-lg tabular-nums">{formatCurrency(rotina.valorRealizadoR)}</p>
-                </div>
-              </div>
-            </div>
-          )}
 
           {focus.length > 0 && (
             <div className="card-glow rounded-2xl border border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 p-5">
