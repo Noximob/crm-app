@@ -284,11 +284,11 @@ export default function RelatorioMockup() {
         </div>
       </div>
 
-      {/* 2 colunas de destaques da semana / período — embaixo do funil e das tarefas */}
-      <div className="mt-4">
-        <h3 className="text-xs font-bold text-white mb-2 flex items-center gap-1.5">
+      {/* 2 colunas de destaques do mês — sobe um pouco, título à direita, ligado aos cards */}
+      <div className="mt-2">
+        <h3 className="text-xs font-bold text-white mb-1.5 flex items-center justify-end gap-1.5">
           <span className="w-0.5 h-3.5 bg-[#D4A017] rounded-r-full" />
-          Destaques do período
+          Destaques do mês
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {MOCK.destaques.slice(0, 4).map((d, i) => (
