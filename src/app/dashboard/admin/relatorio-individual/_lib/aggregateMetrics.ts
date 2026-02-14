@@ -37,7 +37,7 @@ function mapReportToRealized(report: RelatorioIndividualData, template: FunnelTe
 }
 
 /**
- * Retorna também métricas extras para a seção Rotina (tarefas, horas, interações).
+ * Retorna também métricas extras e o report bruto para a Página 1 (de onde veio o resultado).
  */
 export interface AggregatedRealized {
   byStage: RealizedByStage[];
@@ -45,6 +45,8 @@ export interface AggregatedRealized {
   horasEventos: number;
   interacoes: number;
   valorRealizadoR: number; // VGV realizado no período
+  /** Report completo para exibir origem (eventos por tipo, leads, vendas) na Página 1 */
+  report: RelatorioIndividualData;
 }
 
 /**
@@ -74,5 +76,6 @@ export async function aggregateMetrics(
     horasEventos: report.totalHorasEventos?.valor ?? 0,
     interacoes: report.interacoesPeriodo?.valor ?? 0,
     valorRealizadoR: report.contribuicoesPeriodo?.valor ?? 0,
+    report,
   };
 }
