@@ -28,12 +28,21 @@ export default function RealizadoVsMetaBar({
 
   return (
     <div className={`space-y-1 ${className}`}>
-      <div className="flex justify-between items-baseline gap-2">
-        <span className="text-sm text-gray-300 truncate">{label}</span>
-        <span className="text-xs font-semibold tabular-nums shrink-0 text-white">
-          {realizado}{valueSuffix} / {necessario}{valueSuffix}
-        </span>
-      </div>
+      {(label !== undefined && label !== '') && (
+        <div className="flex justify-between items-baseline gap-2">
+          <span className="text-sm text-gray-300 truncate">{label}</span>
+          <span className="text-xs font-semibold tabular-nums shrink-0 text-white">
+            {realizado}{valueSuffix} / {necessario}{valueSuffix}
+          </span>
+        </div>
+      )}
+      {(!label || label === '') && (
+        <div className="flex justify-end">
+          <span className="text-xs font-semibold tabular-nums text-white">
+            {realizado}{valueSuffix} / {necessario}{valueSuffix}
+          </span>
+        </div>
+      )}
       <div className="flex items-center gap-2">
         <div className="flex-1 h-3 rounded-full bg-white/10 overflow-hidden flex">
           <div

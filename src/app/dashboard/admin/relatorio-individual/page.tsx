@@ -11,12 +11,11 @@ import { getPeriodBounds, getPeriodFractionOfYear, getWeeksRemainingInPeriod, fo
 import { computeInvertedFunnel, computeGaps, getFocusPriorities } from './_lib/funnelEngine';
 import type { PeriodKey } from './_lib/configTypes';
 import type { FunnelTemplate, NecessaryByStage, RealizedByStage, GapByStage, FocusPriority } from './_lib/configTypes';
-import SummaryHeader from './_components/SummaryHeader';
-import FunnelMissionList from './_components/FunnelMissionList';
 import GapTableEnhanced from './_components/GapTableEnhanced';
-import FocusOfPeriodSmart from './_components/FocusOfPeriodSmart';
-import Page1OrigemResultado from './_components/Page1OrigemResultado';
-import GamifiedPanels from './_components/GamifiedPanels';
+import ComoChegarMetaCard from './_components/ComoChegarMetaCard';
+import RealizadoNoRecorteCard from './_components/RealizadoNoRecorteCard';
+import { RotinaCard, FocoCard } from './_components/RotinaFocoCards';
+import ReportHero from './_components/ReportHero';
 import type { RelatorioIndividualData } from './_lib/reportData';
 
 interface Corretor {
@@ -266,72 +265,69 @@ export default function RelatorioIndividualPage() {
       )}
 
       {!loading && hasData && template && periodBounds && report && (
-        <div className="space-y-5">
-          <SummaryHeader
-            metaAno={metaAno}
-            periodLabel={formatPeriodLabel(period)}
-            periodStart={periodBounds.start.toLocaleDateString('pt-BR')}
-            periodEnd={periodBounds.end.toLocaleDateString('pt-BR')}
-            progressPct={periodBounds.progressPct}
-            usePace={usePace}
-            progressoPct={progressoPct}
-            acimaAbaixo={acimaAbaixo}
-          />
+        <>
+          {(() => {
+            const corretorNome = corretores.find((c) => c.id === selectedCorretor)?.nome ?? '';
+            const necessarioMes = metaAno / 12;
+            return (
+              <>
+                <ReportHero
+                  nomeCorretor={corretorNome}
+                  period={period}
+                  onPeriodChange={setPeriod}
+                  metaAno={metaAno}
+                  periodStart={periodBounds.start.toLocaleDateString('pt-BR')}
+                  periodEnd={periodBounds.end.toLocaleDateString('pt-BR')}
+                  progressPct={periodBounds.progressPct}
+                  usePace={usePace}
+                />
 
-          {/* Legenda rápida: como ler o relatório */}
-          <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-gray-400">
-            <p className="font-semibold text-white mb-1">Como ler este relatório</p>
-            <p>
-              (1) <strong className="text-white">Resultado vs meta</strong> acima · (2) <span className="text-emerald-400">Verde</span> = dando certo, <span className="text-amber-400">Âmbar</span> = precisa melhorar · (3) <strong className="text-white">De onde veio</strong> = atividade, leads e vendas · (4) <strong className="text-white">Funil</strong> = necessário vs realizado em cada etapa · (5) <strong className="text-amber-400">Onde focar</strong> = prioridades de ação.
-            </p>
-          </div>
+                <div className="space-y-5">
+                  {/* Card: Como chegar na meta do ano (círculos + barra) */}
+                  <ComoChegarMetaCard
+                    metaAno={metaAno}
+                    necessary={necessary}
+                    realized={realized}
+                    valorRealizadoR={rotina?.valorRealizadoR ?? 0}
+                    necessarioNoPeriodo={necessaryInPeriod}
+                    necessarioMes={necessarioMes}
+                    periodLabel={formatPeriodLabel(period)}
+                  />
 
-          {/* Quadros laterais gamificados: dando certo | precisa melhorar */}
-          <GamifiedPanels
-            report={report}
-            gaps={gaps}
-            focus={focus}
-            progressoPct={progressoPct}
-            acimaAbaixo={acimaAbaixo}
-            valorRealizadoR={rotina?.valorRealizadoR ?? 0}
-            tarefasConcluidas={rotina?.tarefasConcluidas ?? 0}
-          />
+                  {/* Grid: Realizado no recorte | GAP por etapa */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    <RealizadoNoRecorteCard
+                      valorRealizadoR={rotina?.valorRealizadoR ?? 0}
+                      necessary={necessary}
+                      realized={realized}
+                      weeksInPeriod={weeksInPeriod}
+                      periodLabel={formatPeriodLabel(period)}
+                    />
+                    <div className="card-glow rounded-2xl border border-white/10 bg-white/5 dark:bg-[#23283A]/80 p-5">
+                      <h2 className="text-base font-bold text-white mb-4 flex items-center gap-2">
+                        <span className="w-0.5 h-5 bg-gradient-to-b from-[#D4A017] to-[#E8C547] rounded-r-full opacity-60" />
+                        GAP por etapa
+                      </h2>
+                      <GapTableEnhanced gaps={gaps} defaultSort="pior" />
+                    </div>
+                  </div>
 
-          {/* De onde veio o resultado */}
-          <Page1OrigemResultado report={report} />
-
-          {/* Como chegar na meta + GAP */}
-          <div className="card-glow rounded-2xl border border-white/10 bg-white/5 dark:bg-[#23283A]/80 p-5">
-            <SectionTitle className="mb-4">Como chegar na meta do ano</SectionTitle>
-            <p className="text-sm text-gray-400 mb-4">
-              Cada barra mostra <strong className="text-white">quanto era necessário</strong> (100%) vs <strong className="text-white">quanto você realizou</strong>. Verde = no alvo, amarelo = falta um pouco, vermelho = prioridade.
-            </p>
-            <FunnelMissionList
-              metaAno={metaAno}
-              necessary={necessary}
-              realized={realized}
-              weeksInPeriod={weeksInPeriod}
-            />
-          </div>
-
-          <div className="card-glow rounded-2xl border border-white/10 bg-white/5 dark:bg-[#23283A]/80 p-5">
-            <SectionTitle className="mb-4">GAP por etapa</SectionTitle>
-            <p className="text-sm text-gray-400 mb-4">
-              Ordene por <strong className="text-white">maior GAP primeiro</strong> para ver onde está o gargalo, ou pela <strong className="text-white">ordem do funil</strong> para acompanhar etapa a etapa.
-            </p>
-            <GapTableEnhanced gaps={gaps} defaultSort="pior" />
-          </div>
-
-          {focus.length > 0 && (
-            <div className="card-glow rounded-2xl border border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 p-5">
-              <SectionTitle className="mb-4">Onde colocar o esforço</SectionTitle>
-              <p className="text-sm text-gray-400 mb-4">
-                Priorize estas ações <strong className="text-white">nesta ordem</strong>. Cada item tem uma sugestão concreta para a etapa.
-              </p>
-              <FocusOfPeriodSmart focus={focus} />
-            </div>
-          )}
-        </div>
+                  {/* Grid: Rotina | Foco */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    <RotinaCard
+                      tarefasConcluidas={rotina?.tarefasConcluidas ?? 0}
+                      horasEventos={rotina?.horasEventos ?? 0}
+                      interacoes={rotina?.interacoes ?? 0}
+                      valorRealizadoR={rotina?.valorRealizadoR ?? 0}
+                      tarefasAtrasadas={report.tarefasAtrasadas}
+                    />
+                    <FocoCard focus={focus} />
+                  </div>
+                </div>
+              </>
+            );
+          })()}
+        </>
       )}
     </div>
   );
