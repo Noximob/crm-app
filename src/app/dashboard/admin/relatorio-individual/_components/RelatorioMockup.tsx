@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { AlummaLogoFullInline } from '@/components/AlummaLogo';
 
 function formatCurrency(n: number): string {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(n);
@@ -99,7 +100,7 @@ function FunilRow({
   const barColor = status === 'ok' ? '#22c55e' : status === 'atencao' ? '#D4A017' : '#ef4444';
 
   return (
-    <div className="flex items-center gap-1.5 py-1 border-b border-white/5 last:border-0">
+    <div className="flex items-center gap-1.5 py-1.5 border-b border-white/5 last:border-0">
       <span className="text-[11px] text-gray-300 w-24 shrink-0 truncate">{etapa}</span>
       <div className="flex-1 min-w-0 h-1 rounded-full bg-white/10 overflow-hidden">
         <div
@@ -227,20 +228,20 @@ export default function RelatorioMockup() {
 
       <div className="border-t border-white/10 pt-3" />
 
-      {/* 2 colunas: funil (esq. maior, sem scroll) | participação + tarefas + destaques (dir.) */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-4 mb-0">
-        {/* Coluna esquerda: funil completo, sem barra de rolagem */}
-        <div className="rounded-lg border border-white/10 bg-black/30 p-3">
-          <h3 className="text-xs font-bold text-[#D4A017] mb-1.5 flex items-center gap-1.5">
-            <span className="w-0.5 h-3.5 bg-[#D4A017] rounded-r-full" />
+      {/* 2 colunas: funil (esq. acompanha até embaixo dos destaques) | participação + tarefas + destaques (dir.) */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-4 mb-0 items-stretch">
+        {/* Coluna esquerda: funil estica até a altura dos destaques, sem scroll */}
+        <div className="flex flex-col min-h-0 rounded-lg border border-[#D4A017]/20 bg-gradient-to-b from-black/40 to-black/30 p-3 shadow-inner">
+          <h3 className="text-xs font-bold text-[#D4A017] mb-1.5 flex items-center gap-1.5 shrink-0">
+            <span className="w-0.5 h-3.5 rounded-r-full bg-[#D4A017] shadow-[0_0_6px_rgba(212,160,23,0.4)]" />
             Funil de vendas
           </h3>
-          <div className="space-y-0 divide-y divide-white/5">
+          <div className="flex flex-1 flex-col justify-between min-h-0 py-0.5">
             {MOCK.funilCompleto.map((f) => (
               <FunilRow key={f.etapa} etapa={f.etapa} atual={f.atual} necessario={f.necessario} />
             ))}
           </div>
-          <div className="mt-2 flex items-center justify-between rounded-md bg-white/5 px-2 py-1.5 text-[11px]">
+          <div className="mt-2 flex shrink-0 items-center justify-between rounded-md bg-white/5 border border-white/5 px-2 py-1.5 text-[11px]">
             <span className="text-gray-400">vs meta</span>
             {MOCK.acimaAbaixoPeriodo >= 0 ? (
               <span className="text-emerald-400 font-bold">↑ +{MOCK.acimaAbaixoPeriodo}%</span>
@@ -251,8 +252,8 @@ export default function RelatorioMockup() {
         </div>
 
         {/* Coluna direita: participação, tarefas/atrasadas e 3–4 destaques */}
-        <div className="space-y-3">
-          <h3 className="text-xs font-bold text-[#D4A017] flex items-center gap-1.5">
+        <div className="flex flex-col min-h-0 rounded-lg border border-white/10 bg-black/20 p-3 space-y-3">
+          <h3 className="text-xs font-bold text-[#D4A017] flex items-center gap-1.5 shrink-0">
             <span className="w-0.5 h-3.5 bg-[#D4A017] rounded-r-full" />
             Participação e uso
           </h3>
@@ -319,6 +320,12 @@ export default function RelatorioMockup() {
             </ul>
           </div>
         </div>
+      </div>
+
+      {/* Marca Alumma no rodapé do relatório */}
+      <div className="border-t border-white/10 mt-4 pt-3 flex items-center justify-center gap-2">
+        <AlummaLogoFullInline theme="dark" height={22} className="opacity-90" />
+        <span className="text-[10px] text-gray-500">Relatório por Alumma</span>
       </div>
     </div>
   );
