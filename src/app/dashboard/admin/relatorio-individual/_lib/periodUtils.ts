@@ -80,3 +80,19 @@ export function formatPeriodLabel(period: PeriodKey): string {
   };
   return labels[period] ?? period;
 }
+
+/** Fração do ano que o período representa (para meta anual → meta no período) */
+export function getPeriodFractionOfYear(period: PeriodKey, start: Date, end: Date): number {
+  const daysPeriod = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)));
+  const daysYear = 365;
+  return Math.min(1, daysPeriod / daysYear);
+}
+
+/** Semanas restantes no período (para "alvo por semana") */
+export function getWeeksRemainingInPeriod(start: Date, end: Date): number {
+  const now = new Date();
+  if (now.getTime() >= end.getTime()) return 0;
+  const startMs = Math.max(start.getTime(), now.getTime());
+  const diff = end.getTime() - startMs;
+  return Math.max(0, Math.ceil(diff / (7 * 24 * 60 * 60 * 1000)));
+}
