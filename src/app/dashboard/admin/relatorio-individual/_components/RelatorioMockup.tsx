@@ -99,19 +99,19 @@ function FunilRow({
   const barColor = status === 'ok' ? '#22c55e' : status === 'atencao' ? '#D4A017' : '#ef4444';
 
   return (
-    <div className="flex items-center gap-2 py-1.5 border-b border-white/5 last:border-0">
-      <span className="text-xs text-gray-300 w-28 shrink-0 truncate">{etapa}</span>
-      <div className="flex-1 min-w-0 h-1.5 rounded-full bg-white/10 overflow-hidden">
+    <div className="flex items-center gap-1.5 py-1 border-b border-white/5 last:border-0">
+      <span className="text-[11px] text-gray-300 w-24 shrink-0 truncate">{etapa}</span>
+      <div className="flex-1 min-w-0 h-1 rounded-full bg-white/10 overflow-hidden">
         <div
           className="h-full rounded-full transition-all"
           style={{ width: `${Math.min(100, pct)}%`, backgroundColor: barColor }}
         />
       </div>
-      <span className="text-[11px] tabular-nums text-white w-12 text-right">{atual}/{necessario}</span>
+      <span className="text-[10px] tabular-nums text-white w-10 text-right">{atual}/{necessario}</span>
       {status === 'ok' ? (
-        <span className="text-emerald-400 text-xs" title="Acima ou no alvo">↑</span>
+        <span className="text-emerald-400 text-[10px]" title="Acima ou no alvo">↑</span>
       ) : (
-        <span className="text-red-400 text-xs" title="Abaixo do necessário">↓</span>
+        <span className="text-red-400 text-[10px]" title="Abaixo do necessário">↓</span>
       )}
     </div>
   );
@@ -227,14 +227,15 @@ export default function RelatorioMockup() {
 
       <div className="border-t border-white/10 pt-3" />
 
-      {/* 2 colunas: funil | participação */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+      {/* 2 colunas: funil (esq. maior, sem scroll) | participação + tarefas + destaques (dir.) */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-4 mb-0">
+        {/* Coluna esquerda: funil completo, sem barra de rolagem */}
         <div className="rounded-lg border border-white/10 bg-black/30 p-3">
           <h3 className="text-xs font-bold text-[#D4A017] mb-1.5 flex items-center gap-1.5">
             <span className="w-0.5 h-3.5 bg-[#D4A017] rounded-r-full" />
             Funil de vendas
           </h3>
-          <div className="max-h-[240px] overflow-y-auto space-y-0 divide-y divide-white/5 pr-0.5">
+          <div className="space-y-0 divide-y divide-white/5">
             {MOCK.funilCompleto.map((f) => (
               <FunilRow key={f.etapa} etapa={f.etapa} atual={f.atual} necessario={f.necessario} />
             ))}
@@ -249,7 +250,8 @@ export default function RelatorioMockup() {
           </div>
         </div>
 
-        <div className="space-y-2">
+        {/* Coluna direita: participação, tarefas/atrasadas e 3–4 destaques */}
+        <div className="space-y-3">
           <h3 className="text-xs font-bold text-[#D4A017] flex items-center gap-1.5">
             <span className="w-0.5 h-3.5 bg-[#D4A017] rounded-r-full" />
             Participação e uso
@@ -284,41 +286,39 @@ export default function RelatorioMockup() {
               </div>
             )}
           </div>
+
+          {/* Destaques do período: 3 ou 4 itens alinhados na coluna direita */}
+          <div>
+            <h3 className="text-xs font-bold text-white mb-1.5 flex items-center gap-1.5">
+              <span className="w-0.5 h-3.5 bg-[#D4A017] rounded-r-full" />
+              Destaques do período
+            </h3>
+            <ul className="space-y-1.5">
+              {MOCK.destaques.slice(0, 4).map((d, i) => (
+                <li
+                  key={i}
+                  className={`rounded-lg border px-2.5 py-1.5 flex items-start gap-2 ${
+                    d.tipo === 'critico' ? 'border-red-500/50 bg-red-500/10 shadow-[0_0_10px_rgba(239,68,68,0.12)]' :
+                    d.tipo === 'atencao' ? 'border-amber-500/50 bg-amber-500/10 shadow-[0_0_10px_rgba(245,158,11,0.12)]' :
+                    'border-emerald-500/40 bg-emerald-500/10 shadow-[0_0_10px_rgba(34,197,94,0.1)]'
+                  }`}
+                >
+                  <span className={`shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                    d.tipo === 'critico' ? 'bg-red-500/40 text-red-200' :
+                    d.tipo === 'atencao' ? 'bg-amber-500/40 text-amber-200' :
+                    'bg-emerald-500/40 text-emerald-200'
+                  }`}>
+                    {d.tipo === 'critico' ? '!' : d.tipo === 'atencao' ? '↑' : '★'}
+                  </span>
+                  <div className="min-w-0">
+                    <p className={`font-semibold text-[11px] leading-tight ${d.tipo === 'critico' ? 'text-red-300' : d.tipo === 'atencao' ? 'text-amber-300' : 'text-emerald-300'}`}>{d.titulo}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5 leading-snug line-clamp-2">{d.texto}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-      </div>
-
-      <div className="border-t border-white/10 pt-3" />
-
-      {/* Destaques: crítico / atenção / muito bom — máx 5 itens */}
-      <div>
-        <h3 className="text-xs font-bold text-white mb-2 flex items-center gap-1.5">
-          <span className="w-0.5 h-3.5 bg-[#D4A017] rounded-r-full" />
-          Destaques do período
-        </h3>
-        <ul className="space-y-2">
-          {MOCK.destaques.map((d, i) => (
-            <li
-              key={i}
-              className={`rounded-lg border px-3 py-2 flex items-start gap-2 ${
-                d.tipo === 'critico' ? 'border-red-500/50 bg-red-500/10 shadow-[0_0_12px_rgba(239,68,68,0.15)]' :
-                d.tipo === 'atencao' ? 'border-amber-500/50 bg-amber-500/10 shadow-[0_0_12px_rgba(245,158,11,0.15)]' :
-                'border-emerald-500/40 bg-emerald-500/10 shadow-[0_0_12px_rgba(34,197,94,0.12)]'
-              }`}
-            >
-              <span className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                d.tipo === 'critico' ? 'bg-red-500/40 text-red-200' :
-                d.tipo === 'atencao' ? 'bg-amber-500/40 text-amber-200' :
-                'bg-emerald-500/40 text-emerald-200'
-              }`}>
-                {d.tipo === 'critico' ? '!' : d.tipo === 'atencao' ? '↑' : '★'}
-              </span>
-              <div className="min-w-0">
-                <p className={`font-semibold text-xs ${d.tipo === 'critico' ? 'text-red-300' : d.tipo === 'atencao' ? 'text-amber-300' : 'text-emerald-300'}`}>{d.titulo}</p>
-                <p className="text-[11px] text-gray-400 mt-0.5 leading-snug">{d.texto}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
       </div>
     </div>
   );
