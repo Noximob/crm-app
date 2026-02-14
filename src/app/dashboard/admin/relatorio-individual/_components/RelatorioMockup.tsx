@@ -174,9 +174,15 @@ export default function RelatorioMockup() {
           </div>
         </div>
 
-        <p className="text-sm text-gray-300 mb-4">
-          Meta do ano: <strong className="text-[#D4A017]">{formatCurrency(MOCK.metaAno)}</strong>. No período ({MOCK.periodoLabel.toLowerCase()}): você deveria fazer <strong className="text-white">{formatCurrency(MOCK.metaNoPeriodo)}</strong> em VGV.
-        </p>
+        <div className="mb-4 space-y-1">
+          <p className="rounded-xl border border-[#D4A017]/30 bg-[#D4A017]/5 px-4 py-2 inline-block">
+            <span className="text-sm text-gray-400">Meta do ano</span>
+            <span className="ml-2 text-xl font-bold text-[#D4A017] tabular-nums">{formatCurrency(MOCK.metaAno)}</span>
+          </p>
+          <p className="text-sm text-gray-300">
+            {MOCK.periodoLabel}: você deveria fazer <strong className="text-white">{formatCurrency(MOCK.metaNoPeriodo)}</strong>
+          </p>
+        </div>
 
         {/* Círculos em uma única linha (ordem: VGV → Unidades → Vendas → Reuniões → Qualificados → Topo) */}
         <div className="flex flex-nowrap gap-1 sm:gap-2">
