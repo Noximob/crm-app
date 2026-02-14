@@ -85,39 +85,6 @@ function CircleCard({
   );
 }
 
-/** Linha do funil: etapa, atual / necessário, barra e setinha verde/vermelho */
-function FunilRow({
-  etapa,
-  atual,
-  necessario,
-}: {
-  etapa: string;
-  atual: number;
-  necessario: number;
-}) {
-  const pct = necessario > 0 ? (atual / necessario) * 100 : 0;
-  const status = pct >= 100 ? 'ok' : pct >= 50 ? 'atencao' : 'abaixo';
-  const barColor = status === 'ok' ? '#22c55e' : status === 'atencao' ? '#D4A017' : '#ef4444';
-
-  return (
-    <div className="flex items-center gap-1.5 py-1 border-b border-white/5 last:border-0">
-      <span className="text-[11px] text-gray-300 w-24 shrink-0 truncate">{etapa}</span>
-      <div className="flex-1 min-w-0 h-1 rounded-full bg-white/10 overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all"
-          style={{ width: `${Math.min(100, pct)}%`, backgroundColor: barColor }}
-        />
-      </div>
-      <span className="text-[10px] tabular-nums text-white w-10 text-right">{atual}/{necessario}</span>
-      {status === 'ok' ? (
-        <span className="text-emerald-400 text-[10px]" title="Acima ou no alvo">↑</span>
-      ) : (
-        <span className="text-red-400 text-[10px]" title="Abaixo do necessário">↓</span>
-      )}
-    </div>
-  );
-}
-
 /** Dados mock — necessário/realizado podem ser "no período" (mensal/trimestral) conforme recorte */
 const MOCK = {
   moedas: 1250,
@@ -133,21 +100,6 @@ const MOCK = {
     vgvNecessario: 8_317,
     vgvRealizado: 2_079,                               // ~25% (vermelho)
   },
-  /** Funil completo (topo até troca de leads) — usado na coluna esquerda; valores do mês em evolução */
-  funilCompleto: [
-    { etapa: 'Topo de Funil', atual: 378, necessario: 500 },
-    { etapa: 'Qualificação', atual: 118, necessario: 200 },
-    { etapa: 'Qualificado', atual: 94, necessario: 200 },
-    { etapa: 'Oferta do imóvel', atual: 43, necessario: 80 },
-    { etapa: 'Atendimento Agendado', atual: 41, necessario: 98 },
-    { etapa: 'Negociação e Proposta', atual: 17, necessario: 40 },
-    { etapa: 'Contrato e fechamento', atual: 2, necessario: 4 },
-    { etapa: 'Carteira Pessoal', atual: 28, necessario: 60 },
-    { etapa: 'Pós Venda e Fidelização', atual: 12, necessario: 25 },
-    { etapa: 'Interesse Futuro', atual: 45, necessario: 80 },
-    { etapa: 'Trocar Leads', atual: 8, necessario: 15 },
-  ],
-  acimaAbaixoPeriodo: -19,
   /** Horas no período (mês); relatório é mensal, evolução vista semana a semana */
   semanaAtualDoMes: 2,
   totalSemanasNoMes: 4,
@@ -217,40 +169,31 @@ export default function RelatorioMockup() {
         </div>
       </div>
 
-      {/* 6 círculos — esq.: Topo funil, Qualificados, Reuniões | dir. (bloco à parte): Vendas, Unidades, VGV */}
-      <div className="flex flex-nowrap gap-2 sm:gap-4 mb-4">
-        <div className="flex flex-1 flex-nowrap gap-1 sm:gap-1.5 min-w-0">
-          <CircleCard title="Topo funil" necessario={c.topoFunil.necessario} realizado={c.topoFunil.realizado} faltam={Math.max(0, c.topoFunil.necessario - c.topoFunil.realizado)} />
-          <CircleCard title="Qualificados" necessario={c.qualificados.necessario} realizado={c.qualificados.realizado} faltam={Math.max(0, c.qualificados.necessario - c.qualificados.realizado)} />
-          <CircleCard title="Reuniões" necessario={c.reunioes.necessario} realizado={c.reunioes.realizado} faltam={Math.max(0, c.reunioes.necessario - c.reunioes.realizado)} />
-        </div>
-        <div className="flex flex-1 flex-nowrap gap-1 sm:gap-1.5 min-w-0 rounded-lg border border-white/10 bg-white/[0.03] pl-2 pr-2 py-1">
-          <CircleCard title="Vendas" necessario={1} realizado={Math.min(1, pctVgv)} faltam={Math.max(0, 1 - pctVgv)} />
-          <CircleCard title="Unidades" necessario={1} realizado={Math.min(1, pctVgv)} faltam={Math.max(0, 1 - pctVgv)} />
-          <CircleCard title="VGV" necessario={c.vgvNecessario} realizado={c.vgvRealizado} faltam={Math.max(0, c.vgvNecessario - c.vgvRealizado)} unidade="R$" />
+      {/* Funil de vendas (invertido): Topo → Qualificados → Reuniões | Vendas → Unidades → VGV — só isso, sem lista de etapas */}
+      <div className="mb-4">
+        <h3 className="text-xs font-bold text-[#D4A017] mb-2 flex items-center gap-1.5">
+          <span className="w-0.5 h-3.5 bg-[#D4A017] rounded-r-full shadow-[0_0_6px_rgba(212,160,23,0.4)]" />
+          Funil de vendas
+          <span className="text-[10px] font-normal text-gray-500">(visão mensal · quantos em cada etapa)</span>
+        </h3>
+        <div className="flex flex-nowrap gap-2 sm:gap-4">
+          <div className="flex flex-1 flex-nowrap gap-1 sm:gap-1.5 min-w-0">
+            <CircleCard title="Topo funil" necessario={c.topoFunil.necessario} realizado={c.topoFunil.realizado} faltam={Math.max(0, c.topoFunil.necessario - c.topoFunil.realizado)} />
+            <CircleCard title="Qualificados" necessario={c.qualificados.necessario} realizado={c.qualificados.realizado} faltam={Math.max(0, c.qualificados.necessario - c.qualificados.realizado)} />
+            <CircleCard title="Reuniões" necessario={c.reunioes.necessario} realizado={c.reunioes.realizado} faltam={Math.max(0, c.reunioes.necessario - c.reunioes.realizado)} />
+          </div>
+          <div className="flex flex-1 flex-nowrap gap-1 sm:gap-1.5 min-w-0 rounded-lg border border-[#D4A017]/25 bg-white/[0.04] pl-2 pr-2 py-1">
+            <CircleCard title="Vendas" necessario={1} realizado={Math.min(1, pctVgv)} faltam={Math.max(0, 1 - pctVgv)} />
+            <CircleCard title="Unidades" necessario={1} realizado={Math.min(1, pctVgv)} faltam={Math.max(0, 1 - pctVgv)} />
+            <CircleCard title="VGV" necessario={c.vgvNecessario} realizado={c.vgvRealizado} faltam={Math.max(0, c.vgvNecessario - c.vgvRealizado)} unidade="R$" />
+          </div>
         </div>
       </div>
 
       <div className="border-t border-white/10 pt-3" />
 
-      {/* 1ª linha: funil (esq.) enquadrado com participação + tarefas (dir.) — sem vs meta, sem preto embaixo */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-4 items-start">
-        {/* Coluna esquerda: só funil, altura natural */}
-        <div className="rounded-xl border border-white/10 bg-gradient-to-b from-black/40 to-black/30 p-3 shadow-inner">
-          <h3 className="text-xs font-bold text-[#D4A017] mb-1.5 flex items-center gap-1.5">
-            <span className="w-0.5 h-3.5 bg-[#D4A017] rounded-r-full shadow-[0_0_6px_rgba(212,160,23,0.4)]" />
-            Funil de vendas
-            <span className="text-[10px] font-normal text-gray-500">(visão anual)</span>
-          </h3>
-          <div className="space-y-0 divide-y divide-white/5">
-            {MOCK.funilCompleto.map((f) => (
-              <FunilRow key={f.etapa} etapa={f.etapa} atual={f.atual} necessario={f.necessario} />
-            ))}
-          </div>
-        </div>
-
-        {/* Coluna direita: participação + tarefas e atrasadas */}
-        <div className="space-y-3">
+      {/* Participação e uso + tarefas (funil de vendas é só os 6 círculos invertidos em cima) */}
+      <div className="space-y-3">
           <h3 className="text-xs font-bold text-[#D4A017] flex items-center gap-1.5">
             <span className="w-0.5 h-3.5 bg-[#D4A017] rounded-r-full shadow-[0_0_6px_rgba(212,160,23,0.4)]" />
             Participação e uso
@@ -285,7 +228,6 @@ export default function RelatorioMockup() {
               </div>
             )}
           </div>
-        </div>
       </div>
 
       {/* 2 colunas de destaques do mês — sobe um pouco, título à direita, ligado aos cards */}
