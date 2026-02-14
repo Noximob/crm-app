@@ -228,38 +228,28 @@ export default function RelatorioMockup() {
 
       <div className="border-t border-white/10 pt-3" />
 
-      {/* 2 colunas: funil (esq. acompanha até embaixo dos destaques) | participação + tarefas + destaques (dir.) */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-4 mb-0 items-stretch">
-        {/* Coluna esquerda: funil estica até o fim da coluna direita, sem scroll */}
-        <div className="flex flex-col min-h-0 rounded-xl border border-white/10 bg-gradient-to-b from-black/40 to-black/30 p-3 shadow-inner">
-          <h3 className="text-xs font-bold text-[#D4A017] mb-1.5 flex items-center gap-1.5 shrink-0">
+      {/* 1ª linha: funil (esq.) enquadrado com participação + tarefas (dir.) — sem vs meta, sem preto embaixo */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-4 items-start">
+        {/* Coluna esquerda: só funil, altura natural */}
+        <div className="rounded-xl border border-white/10 bg-gradient-to-b from-black/40 to-black/30 p-3 shadow-inner">
+          <h3 className="text-xs font-bold text-[#D4A017] mb-1.5 flex items-center gap-1.5">
             <span className="w-0.5 h-3.5 bg-[#D4A017] rounded-r-full shadow-[0_0_6px_rgba(212,160,23,0.4)]" />
             Funil de vendas
           </h3>
-          <div className="flex-1 min-h-0 flex flex-col">
-            <div className="space-y-0 divide-y divide-white/5 shrink-0">
-              {MOCK.funilCompleto.map((f) => (
-                <FunilRow key={f.etapa} etapa={f.etapa} atual={f.atual} necessario={f.necessario} />
-              ))}
-            </div>
-          </div>
-          <div className="mt-2 flex items-center justify-between rounded-lg bg-white/5 border border-white/5 px-2.5 py-1.5 text-[11px] shrink-0">
-            <span className="text-gray-400">vs meta</span>
-            {MOCK.acimaAbaixoPeriodo >= 0 ? (
-              <span className="text-emerald-400 font-bold">↑ +{MOCK.acimaAbaixoPeriodo}%</span>
-            ) : (
-              <span className="text-red-400 font-bold">↓ {MOCK.acimaAbaixoPeriodo}%</span>
-            )}
+          <div className="space-y-0 divide-y divide-white/5">
+            {MOCK.funilCompleto.map((f) => (
+              <FunilRow key={f.etapa} etapa={f.etapa} atual={f.atual} necessario={f.necessario} />
+            ))}
           </div>
         </div>
 
-        {/* Coluna direita: participação, tarefas/atrasadas e 3–4 destaques */}
-        <div className="flex flex-col min-h-0 space-y-3">
-          <h3 className="text-xs font-bold text-[#D4A017] flex items-center gap-1.5 shrink-0">
+        {/* Coluna direita: participação + tarefas e atrasadas */}
+        <div className="space-y-3">
+          <h3 className="text-xs font-bold text-[#D4A017] flex items-center gap-1.5">
             <span className="w-0.5 h-3.5 bg-[#D4A017] rounded-r-full shadow-[0_0_6px_rgba(212,160,23,0.4)]" />
             Participação e uso
           </h3>
-          <div className="grid grid-cols-2 gap-2 shrink-0">
+          <div className="grid grid-cols-2 gap-2">
             <div className="rounded-lg border border-[#D4A017]/30 bg-[#D4A017]/10 p-2.5 text-center shadow-[0_0_8px_rgba(212,160,23,0.08)]">
               <p className="text-[10px] text-gray-500 uppercase">Corporativos</p>
               <p className="text-lg font-bold text-[#D4A017] tabular-nums">{MOCK.eventosCorporativos.horas}h</p>
@@ -277,7 +267,7 @@ export default function RelatorioMockup() {
               <p className="text-lg font-bold text-white tabular-nums">{MOCK.tempoCrmEstaSemana.horas}h</p>
             </div>
           </div>
-          <div className="flex gap-2 shrink-0">
+          <div className="flex gap-2">
             <div className="flex-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 flex items-center justify-between text-[11px]">
               <span className="text-gray-400">Tarefas</span>
               <span className="font-bold text-white">{MOCK.tarefas.total}</span>
@@ -289,38 +279,38 @@ export default function RelatorioMockup() {
               </div>
             )}
           </div>
+        </div>
+      </div>
 
-          {/* Destaques do período: 3 ou 4 itens alinhados na coluna direita */}
-          <div className="shrink-0">
-            <h3 className="text-xs font-bold text-white mb-1.5 flex items-center gap-1.5">
-              <span className="w-0.5 h-3.5 bg-[#D4A017] rounded-r-full" />
-              Destaques do período
-            </h3>
-            <ul className="space-y-1.5">
-              {MOCK.destaques.slice(0, 4).map((d, i) => (
-                <li
-                  key={i}
-                  className={`rounded-lg border px-2.5 py-1.5 flex items-start gap-2 ${
-                    d.tipo === 'critico' ? 'border-red-500/50 bg-red-500/10 shadow-[0_0_10px_rgba(239,68,68,0.12)]' :
-                    d.tipo === 'atencao' ? 'border-amber-500/50 bg-amber-500/10 shadow-[0_0_10px_rgba(245,158,11,0.12)]' :
-                    'border-emerald-500/40 bg-emerald-500/10 shadow-[0_0_10px_rgba(34,197,94,0.1)]'
-                  }`}
-                >
-                  <span className={`shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                    d.tipo === 'critico' ? 'bg-red-500/40 text-red-200' :
-                    d.tipo === 'atencao' ? 'bg-amber-500/40 text-amber-200' :
-                    'bg-emerald-500/40 text-emerald-200'
-                  }`}>
-                    {d.tipo === 'critico' ? '!' : d.tipo === 'atencao' ? '↑' : '★'}
-                  </span>
-                  <div className="min-w-0">
-                    <p className={`font-semibold text-[11px] leading-tight ${d.tipo === 'critico' ? 'text-red-300' : d.tipo === 'atencao' ? 'text-amber-300' : 'text-emerald-300'}`}>{d.titulo}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5 leading-snug line-clamp-2">{d.texto}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
+      {/* 2 colunas de destaques da semana / período — embaixo do funil e das tarefas */}
+      <div className="mt-4">
+        <h3 className="text-xs font-bold text-white mb-2 flex items-center gap-1.5">
+          <span className="w-0.5 h-3.5 bg-[#D4A017] rounded-r-full" />
+          Destaques do período
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {MOCK.destaques.slice(0, 4).map((d, i) => (
+            <div
+              key={i}
+              className={`rounded-lg border px-2.5 py-1.5 flex items-start gap-2 ${
+                d.tipo === 'critico' ? 'border-red-500/50 bg-red-500/10 shadow-[0_0_10px_rgba(239,68,68,0.12)]' :
+                d.tipo === 'atencao' ? 'border-amber-500/50 bg-amber-500/10 shadow-[0_0_10px_rgba(245,158,11,0.12)]' :
+                'border-emerald-500/40 bg-emerald-500/10 shadow-[0_0_10px_rgba(34,197,94,0.1)]'
+              }`}
+            >
+              <span className={`shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                d.tipo === 'critico' ? 'bg-red-500/40 text-red-200' :
+                d.tipo === 'atencao' ? 'bg-amber-500/40 text-amber-200' :
+                'bg-emerald-500/40 text-emerald-200'
+              }`}>
+                {d.tipo === 'critico' ? '!' : d.tipo === 'atencao' ? '↑' : '★'}
+              </span>
+              <div className="min-w-0">
+                <p className={`font-semibold text-[11px] leading-tight ${d.tipo === 'critico' ? 'text-red-300' : d.tipo === 'atencao' ? 'text-amber-300' : 'text-emerald-300'}`}>{d.titulo}</p>
+                <p className="text-[10px] text-gray-400 mt-0.5 leading-snug line-clamp-2">{d.texto}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
