@@ -138,38 +138,38 @@ const MOCK = {
   moedas: 1250,
   periodoLabel: 'Mensal',
   metaAno: 100_000,
-  metaNoPeriodo: 8_333,
+  metaNoPeriodo: 8_317,
   comoChegar: {
-    topoFunil: { necessario: 42, realizado: 32 },      // ~76% (verde)
-    qualificados: { necessario: 17, realizado: 13 },   // ~76% (verde)
-    reunioes: { necessario: 8, realizado: 6 },       // 75% (verde)
+    topoFunil: { necessario: 41, realizado: 31 },       // ~76% (verde)
+    qualificados: { necessario: 17, realizado: 12 },   // ~71% (verde)
+    reunioes: { necessario: 15, realizado: 8 },        // ~53% (amarelo)
     vendasNecessarias: 1,
     unidadesVender: 1,
-    vgvNecessario: 8_333,
-    vgvRealizado: 2_120,                              // 25% (vermelho)
+    vgvNecessario: 8_317,
+    vgvRealizado: 2_079,                               // ~25% (vermelho)
   },
   funilAgora: [
-    { etapa: 'Topo de Funil', atual: 380, necessario: 500 },
-    { etapa: 'Qualificação', atual: 120, necessario: 200 },
-    { etapa: 'Qualificado', atual: 95, necessario: 200 },
-    { etapa: 'Oferta do imóvel', atual: 45, necessario: 80 },
-    { etapa: 'Atendimento Agendado', atual: 42, necessario: 100 },
-    { etapa: 'Negociação e Proposta', atual: 18, necessario: 40 },
+    { etapa: 'Topo de Funil', atual: 378, necessario: 500 },
+    { etapa: 'Qualificação', atual: 118, necessario: 200 },
+    { etapa: 'Qualificado', atual: 94, necessario: 200 },
+    { etapa: 'Oferta do imóvel', atual: 43, necessario: 80 },
+    { etapa: 'Atendimento Agendado', atual: 41, necessario: 98 },
+    { etapa: 'Negociação e Proposta', atual: 17, necessario: 40 },
     { etapa: 'Contrato e fechamento', atual: 2, necessario: 4 },
   ],
-  acimaAbaixoPeriodo: -21,
+  acimaAbaixoPeriodo: -19,
   participacao: {
     eventosImobiliaria: 12,
     prospecao: {
-      ligacaoAtiva: 28,
+      ligacaoAtiva: 27,
       acaoRua: 14,
-      disparoMsg: 45,
-      leads: 32,
+      disparoMsg: 44,
+      leads: 31,
       plantoes: 6,
     },
   },
   tarefas: { total: 18, atrasadas: 3 },
-  tempoCrm: { interacoes: 156, horasEquivalentes: 12 },
+  tempoCrm: { interacoes: 153, horasEquivalentes: 12 },
 };
 
 export default function RelatorioMockup() {
