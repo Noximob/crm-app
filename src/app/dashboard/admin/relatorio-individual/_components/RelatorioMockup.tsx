@@ -119,20 +119,6 @@ function FunilRow({
   );
 }
 
-const ETAPAS_FUNIL = [
-  'Topo de Funil',
-  'Qualificação',
-  'Qualificado',
-  'Oferta do imóvel',
-  'Atendimento Agendado',
-  'Negociação e Proposta',
-  'Contrato e fechamento',
-  'Carteira Pessoal',
-  'Pós Venda e Fidelização',
-  'Interesse Futuro',
-  'Trocar Leads',
-];
-
 /** Dados mock — necessário/realizado podem ser "no período" (mensal/trimestral) conforme recorte */
 const MOCK = {
   moedas: 1250,
@@ -148,7 +134,8 @@ const MOCK = {
     vgvNecessario: 8_317,
     vgvRealizado: 2_079,                               // ~25% (vermelho)
   },
-  funilAgora: [
+  /** Funil completo (topo até troca de leads) — usado na coluna esquerda; valores do mês em evolução */
+  funilCompleto: [
     { etapa: 'Topo de Funil', atual: 378, necessario: 500 },
     { etapa: 'Qualificação', atual: 118, necessario: 200 },
     { etapa: 'Qualificado', atual: 94, necessario: 200 },
@@ -156,20 +143,35 @@ const MOCK = {
     { etapa: 'Atendimento Agendado', atual: 41, necessario: 98 },
     { etapa: 'Negociação e Proposta', atual: 17, necessario: 40 },
     { etapa: 'Contrato e fechamento', atual: 2, necessario: 4 },
+    { etapa: 'Carteira Pessoal', atual: 28, necessario: 60 },
+    { etapa: 'Pós Venda e Fidelização', atual: 12, necessario: 25 },
+    { etapa: 'Interesse Futuro', atual: 45, necessario: 80 },
+    { etapa: 'Trocar Leads', atual: 8, necessario: 15 },
   ],
   acimaAbaixoPeriodo: -19,
-  participacao: {
-    eventosImobiliaria: 12,
-    prospecao: {
-      ligacaoAtiva: 27,
-      acaoRua: 14,
-      disparoMsg: 44,
-      leads: 31,
-      plantoes: 6,
-    },
+  /** Horas no período (mês); relatório é mensal, evolução vista semana a semana */
+  semanaAtualDoMes: 2,
+  totalSemanasNoMes: 4,
+  eventosCorporativos: {
+    horas: 8.5,
+    detalhe: 'Treinamentos, reuniões, palestras',
   },
+  eventosProspecao: {
+    horas: 14,
+    detalhe: 'Ação de rua, ligação ativa, revisão CRM, disparo de msg',
+  },
+  captacoesProduto: 5,
+  tempoCrmEstaSemana: { horas: 4.2, interacoes: 42 },
   tarefas: { total: 18, atrasadas: 3 },
-  tempoCrm: { interacoes: 153, horasEquivalentes: 12 },
+  tempoCrmMes: { interacoes: 153, horasEquivalentes: 12 },
+  /** No máximo 4 ou 5 itens: crítico, atenção, muito bom — derivados das métricas */
+  destaques: [
+    { tipo: 'critico' as const, titulo: 'VGV abaixo do ritmo', texto: 'No período você está em 25% do VGV necessário para manter a meta anual.' },
+    { tipo: 'atencao' as const, titulo: 'Reuniões no meio do caminho', texto: '53% das reuniões agendadas. Faltam 7 para fechar o ritmo do mês.' },
+    { tipo: 'muito_bom' as const, titulo: 'Topo do funil forte', texto: '76% do topo do funil. Boa geração de leads para as próximas semanas.' },
+    { tipo: 'muito_bom' as const, titulo: 'Presença em eventos', texto: '8h30 em eventos corporativos e 14h em prospecção no mês.' },
+    { tipo: 'atencao' as const, titulo: 'Tarefas atrasadas', texto: '3 tarefas atrasadas. Vale priorizar para não acumular.' },
+  ],
 };
 
 export default function RelatorioMockup() {
@@ -238,79 +240,118 @@ export default function RelatorioMockup() {
         </div>
       </section>
 
-      {/* Funil de vendas agora — GAP */}
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <h2 className="text-base font-bold text-white mb-2 flex items-center gap-2">
-          <span className="w-0.5 h-5 bg-[#D4A017] rounded-r-full" />
-          Como está seu funil agora
-        </h2>
-        <p className="text-xs text-gray-400 mb-3">GAP: onde você está vs onde precisa estar (média de mercado).</p>
-        <div className="space-y-0 divide-y divide-white/5 rounded-xl bg-black/20 p-3">
-          {MOCK.funilAgora.map((f) => (
-            <FunilRow key={f.etapa} etapa={f.etapa} atual={f.atual} necessario={f.necessario} />
-          ))}
+      {/* Duas colunas: funil de vendas (esq.) | eventos + captações + CRM semana (dir.) — relatório mensal, evolução semanal */}
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-lg shadow-black/20">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-bold text-white flex items-center gap-2">
+            <span className="w-1 h-5 bg-[#D4A017] rounded-r-full" />
+            Visão do período
+          </h2>
+          <span className="text-xs text-gray-500 tabular-nums">
+            Semana {MOCK.semanaAtualDoMes} de {MOCK.totalSemanasNoMes} • evolução no mês
+          </span>
         </div>
-        <div className="mt-3 flex items-center justify-between rounded-xl bg-white/5 px-4 py-3">
-          <span className="text-sm text-gray-400">No período, você está</span>
-          {MOCK.acimaAbaixoPeriodo >= 0 ? (
-            <span className="flex items-center gap-1 text-emerald-400 font-bold">
-              <span className="text-lg">↑</span> +{MOCK.acimaAbaixoPeriodo}%
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 text-red-400 font-bold">
-              <span className="text-lg">↓</span> {MOCK.acimaAbaixoPeriodo}%
-            </span>
-          )}
-          <span className="text-xs text-gray-500">vs métricas da meta</span>
-        </div>
-      </section>
 
-      {/* Participação no período */}
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <h2 className="text-base font-bold text-white mb-3 flex items-center gap-2">
-          <span className="w-0.5 h-5 bg-[#D4A017] rounded-r-full" />
-          Participação no período
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
-            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Eventos da imobiliária</p>
-            <p className="text-3xl font-bold text-[#D4A017] tabular-nums">{MOCK.participacao.eventosImobiliaria}</p>
-            <p className="text-xs text-gray-400 mt-0.5">Reuniões, treinamentos e outros</p>
-          </div>
-          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-            <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Prospecção</p>
-            <div className="flex flex-wrap gap-2">
-              <span className="rounded-lg bg-white/10 px-2 py-1 text-xs text-gray-300">Ligação ativa: <strong className="text-white">{MOCK.participacao.prospecao.ligacaoAtiva}</strong></span>
-              <span className="rounded-lg bg-white/10 px-2 py-1 text-xs text-gray-300">Ação de rua: <strong className="text-white">{MOCK.participacao.prospecao.acaoRua}</strong></span>
-              <span className="rounded-lg bg-white/10 px-2 py-1 text-xs text-gray-300">Disparo: <strong className="text-white">{MOCK.participacao.prospecao.disparoMsg}</strong></span>
-              <span className="rounded-lg bg-white/10 px-2 py-1 text-xs text-gray-300">Leads: <strong className="text-white">{MOCK.participacao.prospecao.leads}</strong></span>
-              <span className="rounded-lg bg-white/10 px-2 py-1 text-xs text-gray-300">Plantões: <strong className="text-white">{MOCK.participacao.prospecao.plantoes}</strong></span>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Coluna 1: Nosso funil de vendas (topo até troca de leads) */}
+          <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+            <h3 className="text-sm font-bold text-[#D4A017] mb-2 flex items-center gap-2">
+              <span className="w-0.5 h-4 bg-[#D4A017] rounded-r-full" />
+              Nosso funil de vendas
+            </h3>
+            <p className="text-[11px] text-gray-500 mb-3">Do topo do funil até troca de leads — valores do mês.</p>
+            <div className="space-y-0 divide-y divide-white/5 max-h-[320px] overflow-y-auto pr-1">
+              {MOCK.funilCompleto.map((f) => (
+                <FunilRow key={f.etapa} etapa={f.etapa} atual={f.atual} necessario={f.necessario} />
+              ))}
+            </div>
+            <div className="mt-3 flex items-center justify-between rounded-lg bg-white/5 px-3 py-2">
+              <span className="text-xs text-gray-400">No período vs meta</span>
+              {MOCK.acimaAbaixoPeriodo >= 0 ? (
+                <span className="text-emerald-400 font-bold text-sm">↑ +{MOCK.acimaAbaixoPeriodo}%</span>
+              ) : (
+                <span className="text-red-400 font-bold text-sm">↓ {MOCK.acimaAbaixoPeriodo}%</span>
+              )}
             </div>
           </div>
+
+          {/* Coluna 2: Eventos corporativos, prospecção, captações, CRM esta semana */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-[#D4A017] flex items-center gap-2">
+              <span className="w-0.5 h-4 bg-[#D4A017] rounded-r-full" />
+              Participação e uso
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="rounded-xl border border-[#D4A017]/30 bg-[#D4A017]/5 p-4">
+                <p className="text-[11px] text-gray-500 uppercase tracking-wide mb-1">Eventos corporativos</p>
+                <p className="text-2xl font-bold text-[#D4A017] tabular-nums">{MOCK.eventosCorporativos.horas}h</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">{MOCK.eventosCorporativos.detalhe}</p>
+              </div>
+              <div className="rounded-xl border border-[#D4A017]/30 bg-[#D4A017]/5 p-4">
+                <p className="text-[11px] text-gray-500 uppercase tracking-wide mb-1">Eventos de prospecção</p>
+                <p className="text-2xl font-bold text-[#D4A017] tabular-nums">{MOCK.eventosProspecao.horas}h</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">{MOCK.eventosProspecao.detalhe}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <p className="text-[11px] text-gray-500 uppercase tracking-wide mb-1">Captações de produto</p>
+                <p className="text-2xl font-bold text-white tabular-nums">{MOCK.captacoesProduto}</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">No período</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <p className="text-[11px] text-gray-500 uppercase tracking-wide mb-1">Tempo no CRM esta semana</p>
+                <p className="text-2xl font-bold text-white tabular-nums">{MOCK.tempoCrmEstaSemana.horas}h</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">{MOCK.tempoCrmEstaSemana.interacoes} interações</p>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-white/10 bg-white/5 p-3 flex items-center justify-between">
+              <span className="text-xs text-gray-400">Tarefas na semana</span>
+              <span className="font-bold text-white tabular-nums">{MOCK.tarefas.total}</span>
+            </div>
+            {MOCK.tarefas.atrasadas > 0 && (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 flex items-center justify-between">
+                <span className="text-xs text-amber-400">Tarefas atrasadas</span>
+                <span className="font-bold text-amber-400 tabular-nums">{MOCK.tarefas.atrasadas}</span>
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
-      {/* Tarefas e tempo no CRM */}
+      {/* No máximo 4 ou 5 itens: crítico, atenção, muito bom — diante das métricas */}
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
         <h2 className="text-base font-bold text-white mb-3 flex items-center gap-2">
-          <span className="w-0.5 h-5 bg-[#D4A017] rounded-r-full" />
-          Tarefas e uso do CRM
+          <span className="w-1 h-5 bg-[#D4A017] rounded-r-full" />
+          Destaques do período
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-center">
-            <p className="text-xs text-gray-500 uppercase tracking-wide">Tarefas na semana</p>
-            <p className="text-2xl font-bold text-white tabular-nums">{MOCK.tarefas.total}</p>
-          </div>
-          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-center">
-            <p className="text-xs text-amber-400 uppercase tracking-wide">Atrasadas</p>
-            <p className="text-2xl font-bold text-amber-400 tabular-nums">{MOCK.tarefas.atrasadas}</p>
-          </div>
-          <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-center">
-            <p className="text-xs text-gray-500 uppercase tracking-wide">Interações / ações no CRM</p>
-            <p className="text-2xl font-bold text-white tabular-nums">{MOCK.tempoCrm.interacoes}</p>
-            <p className="text-[10px] text-gray-500">~{MOCK.tempoCrm.horasEquivalentes}h de uso</p>
-          </div>
-        </div>
+        <p className="text-xs text-gray-500 mb-4">O que merece foco com base nas métricas do mês.</p>
+        <ul className="space-y-3">
+          {MOCK.destaques.map((d, i) => (
+            <li key={i} className={`rounded-xl border px-4 py-3 flex items-start gap-3 ${
+              d.tipo === 'critico' ? 'border-red-500/40 bg-red-500/10' :
+              d.tipo === 'atencao' ? 'border-amber-500/40 bg-amber-500/10' :
+              'border-emerald-500/40 bg-emerald-500/10'
+            }`}>
+              <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                d.tipo === 'critico' ? 'bg-red-500/30 text-red-300' :
+                d.tipo === 'atencao' ? 'bg-amber-500/30 text-amber-300' :
+                'bg-emerald-500/30 text-emerald-300'
+              }`}>
+                {d.tipo === 'critico' ? '!' : d.tipo === 'atencao' ? '↑' : '✓'}
+              </span>
+              <div className="min-w-0">
+                <p className={`font-semibold text-sm ${
+                  d.tipo === 'critico' ? 'text-red-300' : d.tipo === 'atencao' ? 'text-amber-300' : 'text-emerald-300'
+                }`}>{d.titulo}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{d.texto}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
       </section>
     </div>
   );
