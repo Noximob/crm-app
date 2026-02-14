@@ -19,6 +19,10 @@ const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+function formatCurrency(n: number): string {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(n);
+}
+
 export default function RelatorioIndividualPage() {
   const { userData } = useAuth();
   const imobiliariaId = userData?.imobiliariaId;
@@ -26,7 +30,10 @@ export default function RelatorioIndividualPage() {
   const [corretores, setCorretores] = useState<Corretor[]>([]);
   const [selectedCorretor, setSelectedCorretor] = useState('');
   const [period, setPeriod] = useState<PeriodKey>('mes');
-  const [metaAno, setMetaAno] = useState<number>(0);
+  /** Meta do ano do corretor (indicada nas metas) — valor fixo para as métricas do relatório */
+  const [metaAnoCorretor, setMetaAnoCorretor] = useState<number>(0);
+  /** Filtro para exercitar com outro valor (ex.: simular meta menor); não altera as métricas reais */
+  const [metaFiltro, setMetaFiltro] = useState<number>(0);
   const [loadingList, setLoadingList] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,10 +67,14 @@ export default function RelatorioIndividualPage() {
     getDoc(doc(db, 'metas', imobiliariaId)).then((snap) => {
       if (snap.exists()) {
         const v = Number(snap.data()?.valorMensal);
-        if (v > 0 && metaAno === 0) setMetaAno(v * 12);
+        const metaAno = v > 0 ? v * 12 : 0;
+        setMetaAnoCorretor(metaAno);
+        setMetaFiltro((atual) => (atual === 0 && metaAno > 0 ? metaAno : atual));
       }
     });
   }, [imobiliariaId]);
+
+  const metaFiltroAbaixoDaMeta = metaAnoCorretor > 0 && metaFiltro > 0 && metaFiltro < metaAnoCorretor;
 
   const handleGerar = async () => {
     if (!imobiliariaId || !selectedCorretor) return;
@@ -102,7 +113,16 @@ export default function RelatorioIndividualPage() {
       </div>
 
       <header className="rounded-2xl border border-white/10 bg-white/5 p-4 mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        {/* Meta do Ano do Corretor (indicada nas metas) — valor fixo para métricas */}
+        <div className="mb-4 pb-4 border-b border-white/10">
+          <label className="block text-xs font-medium text-gray-400 mb-1">Meta do Ano do Corretor</label>
+          <p className="text-xl font-bold text-[#D4A017] tabular-nums">
+            {metaAnoCorretor > 0 ? formatCurrency(metaAnoCorretor) : '—'}
+          </p>
+          <p className="text-xs text-gray-500 mt-0.5">Valor indicado nas metas da imobiliária (usado nas métricas do relatório)</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1">Corretor</label>
             <select
@@ -135,18 +155,25 @@ export default function RelatorioIndividualPage() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Meta anual (R$)</label>
+            <label className="block text-xs font-medium text-gray-400 mb-1">Simular com outra meta (R$) — só para exercício</label>
             <input
               type="number"
               min={0}
               step={10000}
-              value={metaAno || ''}
-              onChange={(e) => setMetaAno(Number(e.target.value) || 0)}
-              placeholder="Ex: 2400000"
+              value={metaFiltro || ''}
+              onChange={(e) => setMetaFiltro(Number(e.target.value) || 0)}
+              placeholder={metaAnoCorretor > 0 ? String(metaAnoCorretor) : 'Ex: 600000'}
               className="w-full rounded-lg border border-white/10 bg-white/5 text-white px-3 py-2 text-sm placeholder-gray-500 focus:ring-2 focus:ring-[#D4A017]/50"
             />
           </div>
         </div>
+
+        {metaFiltroAbaixoDaMeta && (
+          <p className="text-amber-400 text-sm mb-3">
+            Que pena que você está baixando sua meta. As métricas do relatório continuam usando a meta do ano indicada acima.
+          </p>
+        )}
+
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
@@ -159,15 +186,6 @@ export default function RelatorioIndividualPage() {
         </div>
         {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
       </header>
-
-      {!loading && !loadingList && selectedCorretor && (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
-          <p className="text-gray-400">
-            Escolha o corretor, o período e a meta. Clique em <strong className="text-[#D4A017]">Gerar relatório</strong>.
-          </p>
-          <p className="text-sm text-gray-500 mt-2">Relatório em construção — pronto para ser montado do zero.</p>
-        </div>
-      )}
     </div>
   );
 }
