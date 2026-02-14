@@ -105,16 +105,18 @@ export function FocoCard({ focus }: FocoCardProps) {
       {focus.length === 0 ? (
         <p className="text-sm text-gray-400">Nada crítico. Mantenha o ritmo!</p>
       ) : (
-        <ul className="space-y-4">
-          {focus.map((f, i) => {
-            const acao = SUGESTAO_ACAO[f.stageId] ?? 'Revisar esta etapa do funil.';
-            const pct = f.gapPct != null ? Math.round(f.gapPct * 100) : null;
-            return (
-              <li key={f.stageId} className="rounded-xl border border-amber-500/20 bg-white/5 p-3">
-                <div className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-emerald-500/30 text-emerald-400 flex items-center justify-center text-xs font-bold">
-                    ✓
-                  </span>
+        <>
+          <p className="text-xs text-gray-400 mb-3">Seus próximos passos (faça nesta ordem):</p>
+          <ul className="space-y-4">
+            {focus.map((f, i) => {
+              const acao = SUGESTAO_ACAO[f.stageId] ?? 'Revisar esta etapa do funil.';
+              const pct = f.gapPct != null ? Math.round(f.gapPct * 100) : null;
+              return (
+                <li key={f.stageId} className="rounded-xl border border-amber-500/20 bg-white/5 p-3">
+                  <div className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#D4A017]/30 text-[#D4A017] flex items-center justify-center text-sm font-bold">
+                      {i + 1}
+                    </span>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-white text-sm">
                       {f.mensagem}
@@ -132,8 +134,9 @@ export function FocoCard({ focus }: FocoCardProps) {
                 </div>
               </li>
             );
-          })}
-        </ul>
+            })}
+          </ul>
+        </>
       )}
     </div>
   );

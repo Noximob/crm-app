@@ -11,11 +11,7 @@ import { getPeriodBounds, getPeriodFractionOfYear, getWeeksRemainingInPeriod, fo
 import { computeInvertedFunnel, computeGaps, getFocusPriorities } from './_lib/funnelEngine';
 import type { PeriodKey } from './_lib/configTypes';
 import type { FunnelTemplate, NecessaryByStage, RealizedByStage, GapByStage, FocusPriority } from './_lib/configTypes';
-import GapTableEnhanced from './_components/GapTableEnhanced';
-import ComoChegarMetaCard from './_components/ComoChegarMetaCard';
-import RealizadoNoRecorteCard from './_components/RealizadoNoRecorteCard';
-import { RotinaCard, FocoCard } from './_components/RotinaFocoCards';
-import ReportHero from './_components/ReportHero';
+import ReportThreeBlocks from './_components/ReportThreeBlocks';
 import type { RelatorioIndividualData } from './_lib/reportData';
 
 interface Corretor {
@@ -33,10 +29,6 @@ const SectionTitle = ({ children, className = '' }: { children: React.ReactNode;
 const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
 );
-
-function formatCurrency(n: number): string {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(n);
-}
 
 export default function RelatorioIndividualPage() {
   const { userData } = useAuth();
@@ -265,69 +257,31 @@ export default function RelatorioIndividualPage() {
       )}
 
       {!loading && hasData && template && periodBounds && report && (
-        <>
-          {(() => {
-            const corretorNome = corretores.find((c) => c.id === selectedCorretor)?.nome ?? '';
-            const necessarioMes = metaAno / 12;
-            return (
-              <>
-                <ReportHero
-                  nomeCorretor={corretorNome}
-                  period={period}
-                  onPeriodChange={setPeriod}
-                  metaAno={metaAno}
-                  periodStart={periodBounds.start.toLocaleDateString('pt-BR')}
-                  periodEnd={periodBounds.end.toLocaleDateString('pt-BR')}
-                  progressPct={periodBounds.progressPct}
-                  usePace={usePace}
-                />
-
-                <div className="space-y-5">
-                  {/* Card: Como chegar na meta do ano (círculos + barra) */}
-                  <ComoChegarMetaCard
-                    metaAno={metaAno}
-                    necessary={necessary}
-                    realized={realized}
-                    valorRealizadoR={rotina?.valorRealizadoR ?? 0}
-                    necessarioNoPeriodo={necessaryInPeriod}
-                    necessarioMes={necessarioMes}
-                    periodLabel={formatPeriodLabel(period)}
-                  />
-
-                  {/* Grid: Realizado no recorte | GAP por etapa */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                    <RealizadoNoRecorteCard
-                      valorRealizadoR={rotina?.valorRealizadoR ?? 0}
-                      necessary={necessary}
-                      realized={realized}
-                      weeksInPeriod={weeksInPeriod}
-                      periodLabel={formatPeriodLabel(period)}
-                    />
-                    <div className="card-glow rounded-2xl border border-white/10 bg-white/5 dark:bg-[#23283A]/80 p-5">
-                      <h2 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-                        <span className="w-0.5 h-5 bg-gradient-to-b from-[#D4A017] to-[#E8C547] rounded-r-full opacity-60" />
-                        GAP por etapa
-                      </h2>
-                      <GapTableEnhanced gaps={gaps} defaultSort="pior" />
-                    </div>
-                  </div>
-
-                  {/* Grid: Rotina | Foco */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                    <RotinaCard
-                      tarefasConcluidas={rotina?.tarefasConcluidas ?? 0}
-                      horasEventos={rotina?.horasEventos ?? 0}
-                      interacoes={rotina?.interacoes ?? 0}
-                      valorRealizadoR={rotina?.valorRealizadoR ?? 0}
-                      tarefasAtrasadas={report.tarefasAtrasadas}
-                    />
-                    <FocoCard focus={focus} />
-                  </div>
-                </div>
-              </>
-            );
-          })()}
-        </>
+        <ReportThreeBlocks
+          corretorNome={corretores.find((c) => c.id === selectedCorretor)?.nome ?? ''}
+          period={period}
+          onPeriodChange={setPeriod}
+          metaAno={metaAno}
+          periodStart={periodBounds.start.toLocaleDateString('pt-BR')}
+          periodEnd={periodBounds.end.toLocaleDateString('pt-BR')}
+          progressPct={periodBounds.progressPct}
+          usePace={usePace}
+          progressoPct={progressoPct}
+          acimaAbaixo={acimaAbaixo}
+          necessaryInPeriod={necessaryInPeriod}
+          necessarioMes={metaAno / 12}
+          periodLabel={formatPeriodLabel(period)}
+          necessary={necessary}
+          realized={realized}
+          gaps={gaps}
+          focus={focus}
+          report={report}
+          valorRealizadoR={rotina?.valorRealizadoR ?? 0}
+          tarefasConcluidas={rotina?.tarefasConcluidas ?? 0}
+          horasEventos={rotina?.horasEventos ?? 0}
+          interacoes={rotina?.interacoes ?? 0}
+          weeksInPeriod={weeksInPeriod}
+        />
       )}
     </div>
   );
