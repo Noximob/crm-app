@@ -157,7 +157,6 @@ const MOCK = {
 export default function RelatorioMockup() {
   const c = MOCK.comoChegar;
   const pctVgv = c.vgvNecessario > 0 ? c.vgvRealizado / c.vgvNecessario : 0;
-  const pctGeralPeriodo = Math.round(pctVgv * 100);
 
   return (
     <div className="space-y-6 pb-8">
@@ -175,11 +174,8 @@ export default function RelatorioMockup() {
           </div>
         </div>
 
-        <p className="text-sm text-gray-300 mb-1">
+        <p className="text-sm text-gray-300 mb-4">
           Meta do ano: <strong className="text-[#D4A017]">{formatCurrency(MOCK.metaAno)}</strong>. No período ({MOCK.periodoLabel.toLowerCase()}): você deveria fazer <strong className="text-white">{formatCurrency(MOCK.metaNoPeriodo)}</strong> em VGV.
-        </p>
-        <p className="text-xs text-gray-400 mb-4">
-          Abaixo: <strong className="text-white">% feito</strong> em cada camada do funil no período — o que você realizou vs o que precisaria para bater a meta no ritmo.
         </p>
 
         {/* Círculos em uma única linha (ordem: VGV → Unidades → Vendas → Reuniões → Qualificados → Topo) */}
@@ -227,10 +223,6 @@ export default function RelatorioMockup() {
             faltam={Math.max(0, c.topoFunil.necessario - c.topoFunil.realizado)}
             variant={c.topoFunil.realizado >= c.topoFunil.necessario ? 'green' : 'gold'}
           />
-        </div>
-
-        <div className={`mt-4 rounded-xl px-4 py-2 text-center text-sm font-semibold ${pctGeralPeriodo >= 100 ? 'bg-emerald-500/20 text-emerald-400' : pctGeralPeriodo >= 50 ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'}`}>
-          No período você fez <strong>{pctGeralPeriodo}%</strong> do VGV necessário para manter o ritmo da meta do ano.
         </div>
       </section>
 
