@@ -51,7 +51,7 @@ function CircleCard({
   const valorNecessario = unidade === 'R$' ? formatCurrency(necessario) : necessario % 1 === 0 ? necessario : necessario.toFixed(2).replace('.', ',');
 
   return (
-    <div className="flex flex-col items-center rounded-xl border border-white/10 bg-white/5 p-2 flex-1 min-w-0">
+    <div className="flex flex-col items-center rounded-lg border border-white/10 bg-white/[0.06] p-1.5 flex-1 min-w-0">
       <div className="relative" style={{ width: r * 2 + stroke * 2, height: r * 2 + stroke * 2 }}>
         <svg width={r * 2 + stroke * 2} height={r * 2 + stroke * 2} className="-rotate-90">
           <circle cx={r + stroke} cy={r + stroke} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
@@ -75,12 +75,10 @@ function CircleCard({
           <span className="text-[9px] text-gray-500 font-medium">feito</span>
         </div>
       </div>
-      <p className="text-xs text-white font-medium mt-2 text-center leading-tight">{title}</p>
-      <p className="text-[10px] text-gray-400 mt-0.5 text-center tabular-nums">
-        {valorRealizado} / {valorNecessario}
-      </p>
+      <p className="text-[11px] text-white font-medium mt-1.5 text-center leading-tight">{title}</p>
+      <p className="text-[9px] text-gray-400 mt-0.5 text-center tabular-nums">{valorRealizado}/{valorNecessario}</p>
       {faltam != null && faltam > 0 && (
-        <p className="text-[10px] text-amber-400 mt-0.5 text-center font-medium">faltam {unidade === 'R$' ? formatCurrency(Math.ceil(faltam)) : faltam % 1 === 0 ? faltam : faltam.toFixed(2).replace('.', ',')}</p>
+        <p className="text-[9px] text-amber-400 mt-0.5 text-center font-medium">faltam {unidade === 'R$' ? formatCurrency(Math.ceil(faltam)) : faltam % 1 === 0 ? faltam : faltam.toFixed(2).replace('.', ',')}</p>
       )}
     </div>
   );
@@ -101,19 +99,19 @@ function FunilRow({
   const barColor = status === 'ok' ? '#22c55e' : status === 'atencao' ? '#D4A017' : '#ef4444';
 
   return (
-    <div className="flex items-center gap-2 py-2 border-b border-white/5 last:border-0">
-      <span className="text-sm text-gray-300 w-32 shrink-0 truncate">{etapa}</span>
-      <div className="flex-1 min-w-0 h-2 rounded-full bg-white/10 overflow-hidden">
+    <div className="flex items-center gap-2 py-1.5 border-b border-white/5 last:border-0">
+      <span className="text-xs text-gray-300 w-28 shrink-0 truncate">{etapa}</span>
+      <div className="flex-1 min-w-0 h-1.5 rounded-full bg-white/10 overflow-hidden">
         <div
           className="h-full rounded-full transition-all"
           style={{ width: `${Math.min(100, pct)}%`, backgroundColor: barColor }}
         />
       </div>
-      <span className="text-xs tabular-nums text-white w-16 text-right">{atual} / {necessario}</span>
+      <span className="text-[11px] tabular-nums text-white w-12 text-right">{atual}/{necessario}</span>
       {status === 'ok' ? (
-        <span className="text-emerald-400" title="Acima ou no alvo">↑</span>
+        <span className="text-emerald-400 text-xs" title="Acima ou no alvo">↑</span>
       ) : (
-        <span className="text-red-400" title="Abaixo do necessário">↓</span>
+        <span className="text-red-400 text-xs" title="Abaixo do necessário">↓</span>
       )}
     </div>
   );
@@ -178,181 +176,150 @@ export default function RelatorioMockup() {
   const c = MOCK.comoChegar;
   const pctVgv = c.vgvNecessario > 0 ? c.vgvRealizado / c.vgvNecessario : 0;
 
+  const semanaPct = (MOCK.semanaAtualDoMes / MOCK.totalSemanasNoMes) * 100;
+
   return (
-    <div className="space-y-6 pb-8">
-      {/* Como chegar na sua meta do ano — tudo em 1 linha: título + meta + moedas */}
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-lg shadow-black/20">
-        <div className="flex flex-nowrap items-center gap-3 mb-4 overflow-hidden">
-          <h2 className="flex shrink-0 items-center gap-2 text-base font-bold text-white">
-            <span className="w-1 h-6 rounded-r-full bg-gradient-to-b from-[#D4A017] to-[#b8860b] shadow-[0_0_8px_rgba(212,160,23,0.4)]" />
-            Como chegar na sua meta do ano
-          </h2>
-          <div className="flex shrink-0 items-center gap-2 rounded-xl border border-[#D4A017]/50 bg-gradient-to-r from-[#D4A017]/15 to-[#D4A017]/5 px-4 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-            <span className="text-xs font-medium text-gray-400">Meta do ano</span>
-            <span className="text-lg font-bold tabular-nums text-[#D4A017] drop-shadow-[0_0_6px_rgba(212,160,23,0.5)]">{formatCurrency(MOCK.metaAno)}</span>
+    /* Um quadrado só: relatório inteiro em um único bloco gamificado */
+    <div className="relative overflow-hidden rounded-2xl border-2 border-[#D4A017]/40 bg-gradient-to-b from-[#1a1a1f] to-[#121218] p-4 shadow-[0_0_40px_-8px_rgba(212,160,23,0.25),0_8px_32px_rgba(0,0,0,0.4)]">
+      {/* Faixa dourada sutil no topo */}
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#D4A017]/60 to-transparent" />
+
+      {/* Cabeçalho: meta + moedas + semana */}
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
+        <h2 className="flex items-center gap-2 text-sm font-bold text-white">
+          <span className="w-1 h-5 rounded-r-full bg-gradient-to-b from-[#D4A017] to-[#b8860b] shadow-[0_0_6px_rgba(212,160,23,0.5)]" />
+          Como chegar na sua meta do ano
+        </h2>
+        <div className="flex items-center gap-2 rounded-lg border border-[#D4A017]/50 bg-[#D4A017]/10 px-3 py-1.5">
+          <span className="text-[10px] text-gray-400">Meta</span>
+          <span className="text-base font-bold tabular-nums text-[#D4A017]">{formatCurrency(MOCK.metaAno)}</span>
+        </div>
+        <div className="ml-auto flex items-center gap-2 rounded-lg border border-[#D4A017]/50 bg-[#D4A017]/15 px-3 py-1.5 shadow-[0_0_12px_rgba(212,160,23,0.2)]">
+          <span className="text-base">🪙</span>
+          <span className="font-bold tabular-nums text-[#D4A017]">{MOCK.moedas.toLocaleString('pt-BR')}</span>
+          <span className="text-[10px] text-gray-400">moedas</span>
+        </div>
+      </div>
+
+      {/* Barra “Semana X de Y” gamificada */}
+      <div className="mb-3">
+        <div className="flex justify-between text-[10px] text-gray-500 mb-1">
+          <span>Semana {MOCK.semanaAtualDoMes} de {MOCK.totalSemanasNoMes}</span>
+          <span>evolução no mês</span>
+        </div>
+        <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-[#D4A017] to-[#e8c234] shadow-[0_0_8px_rgba(212,160,23,0.5)] transition-all"
+            style={{ width: `${semanaPct}%` }}
+          />
+        </div>
+      </div>
+
+      {/* 6 círculos — meta no ritmo */}
+      <div className="flex flex-nowrap gap-1 sm:gap-1.5 mb-4">
+        <CircleCard title="VGV" necessario={c.vgvNecessario} realizado={c.vgvRealizado} faltam={Math.max(0, c.vgvNecessario - c.vgvRealizado)} unidade="R$" />
+        <CircleCard title="Unidades" necessario={1} realizado={Math.min(1, pctVgv)} faltam={Math.max(0, 1 - pctVgv)} />
+        <CircleCard title="Vendas" necessario={1} realizado={Math.min(1, pctVgv)} faltam={Math.max(0, 1 - pctVgv)} />
+        <CircleCard title="Reuniões" necessario={c.reunioes.necessario} realizado={c.reunioes.realizado} faltam={Math.max(0, c.reunioes.necessario - c.reunioes.realizado)} />
+        <CircleCard title="Leads" necessario={c.qualificados.necessario} realizado={c.qualificados.realizado} faltam={Math.max(0, c.qualificados.necessario - c.qualificados.realizado)} />
+        <CircleCard title="Topo funil" necessario={c.topoFunil.necessario} realizado={c.topoFunil.realizado} faltam={Math.max(0, c.topoFunil.necessario - c.topoFunil.realizado)} />
+      </div>
+
+      <div className="border-t border-white/10 pt-3" />
+
+      {/* 2 colunas: funil | participação */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <div className="rounded-lg border border-white/10 bg-black/30 p-3">
+          <h3 className="text-xs font-bold text-[#D4A017] mb-1.5 flex items-center gap-1.5">
+            <span className="w-0.5 h-3.5 bg-[#D4A017] rounded-r-full" />
+            Funil de vendas
+          </h3>
+          <div className="max-h-[240px] overflow-y-auto space-y-0 divide-y divide-white/5 pr-0.5">
+            {MOCK.funilCompleto.map((f) => (
+              <FunilRow key={f.etapa} etapa={f.etapa} atual={f.atual} necessario={f.necessario} />
+            ))}
           </div>
-          <div className="ml-auto flex shrink-0 items-center gap-2 rounded-xl border border-[#D4A017]/50 bg-gradient-to-r from-[#D4A017]/20 to-[#D4A017]/10 px-4 py-2">
-            <span className="text-xl">🪙</span>
-            <span className="font-bold tabular-nums text-[#D4A017]">{MOCK.moedas.toLocaleString('pt-BR')}</span>
-            <span className="text-xs text-gray-400">moedas</span>
+          <div className="mt-2 flex items-center justify-between rounded-md bg-white/5 px-2 py-1.5 text-[11px]">
+            <span className="text-gray-400">vs meta</span>
+            {MOCK.acimaAbaixoPeriodo >= 0 ? (
+              <span className="text-emerald-400 font-bold">↑ +{MOCK.acimaAbaixoPeriodo}%</span>
+            ) : (
+              <span className="text-red-400 font-bold">↓ {MOCK.acimaAbaixoPeriodo}%</span>
+            )}
           </div>
         </div>
 
-        {/* Círculos em uma única linha (ordem: VGV → Unidades → Vendas → Reuniões → Qualificados → Topo) */}
-        <div className="flex flex-nowrap gap-1 sm:gap-2">
-          <CircleCard
-            title="VGV no período"
-            necessario={c.vgvNecessario}
-            realizado={c.vgvRealizado}
-            faltam={Math.max(0, c.vgvNecessario - c.vgvRealizado)}
-            unidade="R$"
-          />
-          <CircleCard
-            title="Unidades a vender"
-            necessario={1}
-            realizado={Math.min(1, pctVgv)}
-            faltam={Math.max(0, 1 - pctVgv)}
-          />
-          <CircleCard
-            title="Vendas no período"
-            necessario={1}
-            realizado={Math.min(1, pctVgv)}
-            faltam={Math.max(0, 1 - pctVgv)}
-          />
-          <CircleCard
-            title="Reuniões agendadas"
-            necessario={c.reunioes.necessario}
-            realizado={c.reunioes.realizado}
-            faltam={Math.max(0, c.reunioes.necessario - c.reunioes.realizado)}
-          />
-          <CircleCard
-            title="Leads qualificados"
-            necessario={c.qualificados.necessario}
-            realizado={c.qualificados.realizado}
-            faltam={Math.max(0, c.qualificados.necessario - c.qualificados.realizado)}
-          />
-          <CircleCard
-            title="Topo do funil"
-            necessario={c.topoFunil.necessario}
-            realizado={c.topoFunil.realizado}
-            faltam={Math.max(0, c.topoFunil.necessario - c.topoFunil.realizado)}
-          />
-        </div>
-      </section>
-
-      {/* Duas colunas: funil de vendas (esq.) | eventos + captações + CRM semana (dir.) — relatório mensal, evolução semanal */}
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-lg shadow-black/20">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <span className="w-1 h-5 bg-[#D4A017] rounded-r-full" />
-            Visão do período
-          </h2>
-          <span className="text-xs text-gray-500 tabular-nums">
-            Semana {MOCK.semanaAtualDoMes} de {MOCK.totalSemanasNoMes} • evolução no mês
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Coluna 1: Nosso funil de vendas (topo até troca de leads) */}
-          <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-            <h3 className="text-sm font-bold text-[#D4A017] mb-2 flex items-center gap-2">
-              <span className="w-0.5 h-4 bg-[#D4A017] rounded-r-full" />
-              Nosso funil de vendas
-            </h3>
-            <p className="text-[11px] text-gray-500 mb-3">Do topo do funil até troca de leads — valores do mês.</p>
-            <div className="space-y-0 divide-y divide-white/5 max-h-[320px] overflow-y-auto pr-1">
-              {MOCK.funilCompleto.map((f) => (
-                <FunilRow key={f.etapa} etapa={f.etapa} atual={f.atual} necessario={f.necessario} />
-              ))}
+        <div className="space-y-2">
+          <h3 className="text-xs font-bold text-[#D4A017] flex items-center gap-1.5">
+            <span className="w-0.5 h-3.5 bg-[#D4A017] rounded-r-full" />
+            Participação e uso
+          </h3>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-lg border border-[#D4A017]/30 bg-[#D4A017]/10 p-2.5 text-center">
+              <p className="text-[10px] text-gray-500 uppercase">Corporativos</p>
+              <p className="text-lg font-bold text-[#D4A017] tabular-nums">{MOCK.eventosCorporativos.horas}h</p>
             </div>
-            <div className="mt-3 flex items-center justify-between rounded-lg bg-white/5 px-3 py-2">
-              <span className="text-xs text-gray-400">No período vs meta</span>
-              {MOCK.acimaAbaixoPeriodo >= 0 ? (
-                <span className="text-emerald-400 font-bold text-sm">↑ +{MOCK.acimaAbaixoPeriodo}%</span>
-              ) : (
-                <span className="text-red-400 font-bold text-sm">↓ {MOCK.acimaAbaixoPeriodo}%</span>
-              )}
+            <div className="rounded-lg border border-[#D4A017]/30 bg-[#D4A017]/10 p-2.5 text-center">
+              <p className="text-[10px] text-gray-500 uppercase">Prospecção</p>
+              <p className="text-lg font-bold text-[#D4A017] tabular-nums">{MOCK.eventosProspecao.horas}h</p>
+            </div>
+            <div className="rounded-lg border border-white/10 bg-white/5 p-2.5 text-center">
+              <p className="text-[10px] text-gray-500 uppercase">Captações</p>
+              <p className="text-lg font-bold text-white tabular-nums">{MOCK.captacoesProduto}</p>
+            </div>
+            <div className="rounded-lg border border-white/10 bg-white/5 p-2.5 text-center">
+              <p className="text-[10px] text-gray-500 uppercase">CRM esta sem.</p>
+              <p className="text-lg font-bold text-white tabular-nums">{MOCK.tempoCrmEstaSemana.horas}h</p>
             </div>
           </div>
-
-          {/* Coluna 2: Eventos corporativos, prospecção, captações, CRM esta semana */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-[#D4A017] flex items-center gap-2">
-              <span className="w-0.5 h-4 bg-[#D4A017] rounded-r-full" />
-              Participação e uso
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="rounded-xl border border-[#D4A017]/30 bg-[#D4A017]/5 p-4">
-                <p className="text-[11px] text-gray-500 uppercase tracking-wide mb-1">Eventos corporativos</p>
-                <p className="text-2xl font-bold text-[#D4A017] tabular-nums">{MOCK.eventosCorporativos.horas}h</p>
-                <p className="text-[11px] text-gray-400 mt-0.5">{MOCK.eventosCorporativos.detalhe}</p>
-              </div>
-              <div className="rounded-xl border border-[#D4A017]/30 bg-[#D4A017]/5 p-4">
-                <p className="text-[11px] text-gray-500 uppercase tracking-wide mb-1">Eventos de prospecção</p>
-                <p className="text-2xl font-bold text-[#D4A017] tabular-nums">{MOCK.eventosProspecao.horas}h</p>
-                <p className="text-[11px] text-gray-400 mt-0.5">{MOCK.eventosProspecao.detalhe}</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                <p className="text-[11px] text-gray-500 uppercase tracking-wide mb-1">Captações de produto</p>
-                <p className="text-2xl font-bold text-white tabular-nums">{MOCK.captacoesProduto}</p>
-                <p className="text-[11px] text-gray-400 mt-0.5">No período</p>
-              </div>
-              <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                <p className="text-[11px] text-gray-500 uppercase tracking-wide mb-1">Tempo no CRM esta semana</p>
-                <p className="text-2xl font-bold text-white tabular-nums">{MOCK.tempoCrmEstaSemana.horas}h</p>
-                <p className="text-[11px] text-gray-400 mt-0.5">{MOCK.tempoCrmEstaSemana.interacoes} interações</p>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-white/10 bg-white/5 p-3 flex items-center justify-between">
-              <span className="text-xs text-gray-400">Tarefas na semana</span>
-              <span className="font-bold text-white tabular-nums">{MOCK.tarefas.total}</span>
+          <div className="flex gap-2">
+            <div className="flex-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 flex items-center justify-between text-[11px]">
+              <span className="text-gray-400">Tarefas</span>
+              <span className="font-bold text-white">{MOCK.tarefas.total}</span>
             </div>
             {MOCK.tarefas.atrasadas > 0 && (
-              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 flex items-center justify-between">
-                <span className="text-xs text-amber-400">Tarefas atrasadas</span>
-                <span className="font-bold text-amber-400 tabular-nums">{MOCK.tarefas.atrasadas}</span>
+              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 flex items-center gap-1 text-[11px]">
+                <span className="text-amber-400">Atrasadas</span>
+                <span className="font-bold text-amber-400">{MOCK.tarefas.atrasadas}</span>
               </div>
             )}
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* No máximo 4 ou 5 itens: crítico, atenção, muito bom — diante das métricas */}
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <h2 className="text-base font-bold text-white mb-3 flex items-center gap-2">
-          <span className="w-1 h-5 bg-[#D4A017] rounded-r-full" />
+      <div className="border-t border-white/10 pt-3" />
+
+      {/* Destaques: crítico / atenção / muito bom — máx 5 itens */}
+      <div>
+        <h3 className="text-xs font-bold text-white mb-2 flex items-center gap-1.5">
+          <span className="w-0.5 h-3.5 bg-[#D4A017] rounded-r-full" />
           Destaques do período
-        </h2>
-        <p className="text-xs text-gray-500 mb-4">O que merece foco com base nas métricas do mês.</p>
-        <ul className="space-y-3">
+        </h3>
+        <ul className="space-y-2">
           {MOCK.destaques.map((d, i) => (
-            <li key={i} className={`rounded-xl border px-4 py-3 flex items-start gap-3 ${
-              d.tipo === 'critico' ? 'border-red-500/40 bg-red-500/10' :
-              d.tipo === 'atencao' ? 'border-amber-500/40 bg-amber-500/10' :
-              'border-emerald-500/40 bg-emerald-500/10'
-            }`}>
-              <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                d.tipo === 'critico' ? 'bg-red-500/30 text-red-300' :
-                d.tipo === 'atencao' ? 'bg-amber-500/30 text-amber-300' :
-                'bg-emerald-500/30 text-emerald-300'
+            <li
+              key={i}
+              className={`rounded-lg border px-3 py-2 flex items-start gap-2 ${
+                d.tipo === 'critico' ? 'border-red-500/50 bg-red-500/10 shadow-[0_0_12px_rgba(239,68,68,0.15)]' :
+                d.tipo === 'atencao' ? 'border-amber-500/50 bg-amber-500/10 shadow-[0_0_12px_rgba(245,158,11,0.15)]' :
+                'border-emerald-500/40 bg-emerald-500/10 shadow-[0_0_12px_rgba(34,197,94,0.12)]'
+              }`}
+            >
+              <span className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                d.tipo === 'critico' ? 'bg-red-500/40 text-red-200' :
+                d.tipo === 'atencao' ? 'bg-amber-500/40 text-amber-200' :
+                'bg-emerald-500/40 text-emerald-200'
               }`}>
-                {d.tipo === 'critico' ? '!' : d.tipo === 'atencao' ? '↑' : '✓'}
+                {d.tipo === 'critico' ? '!' : d.tipo === 'atencao' ? '↑' : '★'}
               </span>
               <div className="min-w-0">
-                <p className={`font-semibold text-sm ${
-                  d.tipo === 'critico' ? 'text-red-300' : d.tipo === 'atencao' ? 'text-amber-300' : 'text-emerald-300'
-                }`}>{d.titulo}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{d.texto}</p>
+                <p className={`font-semibold text-xs ${d.tipo === 'critico' ? 'text-red-300' : d.tipo === 'atencao' ? 'text-amber-300' : 'text-emerald-300'}`}>{d.titulo}</p>
+                <p className="text-[11px] text-gray-400 mt-0.5 leading-snug">{d.texto}</p>
               </div>
             </li>
           ))}
         </ul>
-      </section>
+      </div>
     </div>
   );
 }
