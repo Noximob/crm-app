@@ -190,6 +190,7 @@ export default function RelatorioMockup() {
         <h2 className="flex items-center gap-2 text-sm font-bold text-white">
           <span className="w-1 h-5 rounded-r-full bg-gradient-to-b from-[#D4A017] to-[#b8860b] shadow-[0_0_6px_rgba(212,160,23,0.5)]" />
           Como chegar na sua meta do ano
+          <span className="text-[10px] font-normal text-gray-500 normal-case">(visão mensal)</span>
         </h2>
         <div className="flex items-center gap-2 rounded-lg border border-[#D4A017]/50 bg-[#D4A017]/10 px-3 py-1.5">
           <span className="text-[10px] text-gray-400">Meta</span>
@@ -235,6 +236,7 @@ export default function RelatorioMockup() {
           <h3 className="text-xs font-bold text-[#D4A017] mb-1.5 flex items-center gap-1.5">
             <span className="w-0.5 h-3.5 bg-[#D4A017] rounded-r-full shadow-[0_0_6px_rgba(212,160,23,0.4)]" />
             Funil de vendas
+            <span className="text-[10px] font-normal text-gray-500">(visão anual)</span>
           </h3>
           <div className="space-y-0 divide-y divide-white/5">
             {MOCK.funilCompleto.map((f) => (
@@ -269,7 +271,7 @@ export default function RelatorioMockup() {
           </div>
           <div className="flex gap-2">
             <div className="flex-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 flex items-center justify-between text-[11px]">
-              <span className="text-gray-400">Tarefas</span>
+              <span className="text-gray-400">Tarefas da semana</span>
               <span className="font-bold text-white">{MOCK.tarefas.total}</span>
             </div>
             {MOCK.tarefas.atrasadas > 0 && (
