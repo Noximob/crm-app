@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import type { PeriodKey } from './_lib/configTypes';
+import RelatorioMockup from './_components/RelatorioMockup';
 
 interface Corretor {
   id: string;
@@ -37,6 +38,7 @@ export default function RelatorioIndividualPage() {
   const [loadingList, setLoadingList] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showReport, setShowReport] = useState(false);
 
   useEffect(() => {
     if (!imobiliariaId) {
@@ -80,9 +82,11 @@ export default function RelatorioIndividualPage() {
     if (!imobiliariaId || !selectedCorretor) return;
     setLoading(true);
     setError(null);
+    setShowReport(false);
     try {
-      // Aqui você reconstrói o relatório do zero
+      // Mock: exibe o mockup; depois trocar por dados reais
       await new Promise((r) => setTimeout(r, 800));
+      setShowReport(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro ao gerar.');
     } finally {
@@ -186,6 +190,8 @@ export default function RelatorioIndividualPage() {
         </div>
         {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
       </header>
+
+      {showReport && <RelatorioMockup />}
     </div>
   );
 }
