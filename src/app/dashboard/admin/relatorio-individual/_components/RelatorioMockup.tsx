@@ -217,14 +217,18 @@ export default function RelatorioMockup() {
         </div>
       </div>
 
-      {/* 6 círculos — meta no ritmo */}
-      <div className="flex flex-nowrap gap-1 sm:gap-1.5 mb-4">
-        <CircleCard title="VGV" necessario={c.vgvNecessario} realizado={c.vgvRealizado} faltam={Math.max(0, c.vgvNecessario - c.vgvRealizado)} unidade="R$" />
-        <CircleCard title="Unidades" necessario={1} realizado={Math.min(1, pctVgv)} faltam={Math.max(0, 1 - pctVgv)} />
-        <CircleCard title="Vendas" necessario={1} realizado={Math.min(1, pctVgv)} faltam={Math.max(0, 1 - pctVgv)} />
-        <CircleCard title="Reuniões" necessario={c.reunioes.necessario} realizado={c.reunioes.realizado} faltam={Math.max(0, c.reunioes.necessario - c.reunioes.realizado)} />
-        <CircleCard title="Leads" necessario={c.qualificados.necessario} realizado={c.qualificados.realizado} faltam={Math.max(0, c.qualificados.necessario - c.qualificados.realizado)} />
-        <CircleCard title="Topo funil" necessario={c.topoFunil.necessario} realizado={c.topoFunil.realizado} faltam={Math.max(0, c.topoFunil.necessario - c.topoFunil.realizado)} />
+      {/* 6 círculos — esq.: Topo funil, Qualificados, Reuniões | dir. (bloco à parte): Vendas, Unidades, VGV */}
+      <div className="flex flex-nowrap gap-2 sm:gap-4 mb-4">
+        <div className="flex flex-1 flex-nowrap gap-1 sm:gap-1.5 min-w-0">
+          <CircleCard title="Topo funil" necessario={c.topoFunil.necessario} realizado={c.topoFunil.realizado} faltam={Math.max(0, c.topoFunil.necessario - c.topoFunil.realizado)} />
+          <CircleCard title="Qualificados" necessario={c.qualificados.necessario} realizado={c.qualificados.realizado} faltam={Math.max(0, c.qualificados.necessario - c.qualificados.realizado)} />
+          <CircleCard title="Reuniões" necessario={c.reunioes.necessario} realizado={c.reunioes.realizado} faltam={Math.max(0, c.reunioes.necessario - c.reunioes.realizado)} />
+        </div>
+        <div className="flex flex-1 flex-nowrap gap-1 sm:gap-1.5 min-w-0 rounded-lg border border-white/10 bg-white/[0.03] pl-2 pr-2 py-1">
+          <CircleCard title="Vendas" necessario={1} realizado={Math.min(1, pctVgv)} faltam={Math.max(0, 1 - pctVgv)} />
+          <CircleCard title="Unidades" necessario={1} realizado={Math.min(1, pctVgv)} faltam={Math.max(0, 1 - pctVgv)} />
+          <CircleCard title="VGV" necessario={c.vgvNecessario} realizado={c.vgvRealizado} faltam={Math.max(0, c.vgvNecessario - c.vgvRealizado)} unidade="R$" />
+        </div>
       </div>
 
       <div className="border-t border-white/10 pt-3" />
