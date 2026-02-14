@@ -2,15 +2,9 @@
 
 import React, { useState } from 'react';
 import type { GapByStage } from '../_lib/configTypes';
+import RealizadoVsMetaBar from './RealizadoVsMetaBar';
 
 type SortMode = 'pior' | 'funil';
-
-function getStatus(gapPct: number | null): 'ok' | 'atencao' | 'critico' {
-  if (gapPct == null) return 'ok';
-  if (gapPct >= 1) return 'ok';
-  if (gapPct >= 0.5) return 'atencao';
-  return 'critico';
-}
 
 export interface GapTableEnhancedProps {
   gaps: GapByStage[];
@@ -25,13 +19,16 @@ export default function GapTableEnhanced({ gaps, defaultSort = 'pior' }: GapTabl
     sorted.sort((a, b) => {
       const pa = a.gapPct ?? 2;
       const pb = b.gapPct ?? 2;
-      return pa - pb; // menor % primeiro (pior)
+      return pa - pb;
     });
   }
 
   return (
-    <div className="overflow-x-auto">
-      <div className="flex items-center justify-between gap-2 mb-3">
+    <div>
+      <p className="text-sm text-gray-400 mb-3">
+        Cada etapa mostra <strong className="text-white">quanto você fez</strong> (barra colorida) vs <strong className="text-white">quanto era preciso</strong> (100%). Verde = no alvo, amarelo = atenção, vermelho = crítico.
+      </p>
+      <div className="flex items-center justify-between gap-2 mb-4">
         <span className="text-xs text-gray-400">Ordenar:</span>
         <div className="flex gap-1">
           <button
@@ -41,7 +38,7 @@ export default function GapTableEnhanced({ gaps, defaultSort = 'pior' }: GapTabl
               sort === 'pior' ? 'bg-[#D4A017] text-white' : 'bg-white/10 text-gray-400 hover:bg-white/15'
             }`}
           >
-            Pior %
+            Maior GAP primeiro
           </button>
           <button
             type="button"
@@ -50,57 +47,25 @@ export default function GapTableEnhanced({ gaps, defaultSort = 'pior' }: GapTabl
               sort === 'funil' ? 'bg-[#D4A017] text-white' : 'bg-white/10 text-gray-400 hover:bg-white/15'
             }`}
           >
-            Ordem funil
+            Ordem do funil
           </button>
         </div>
       </div>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-left text-gray-400 border-b border-white/10">
-            <th className="pb-2 pr-2 font-semibold">Etapa</th>
-            <th className="pb-2 pr-2 text-right font-semibold">Necessário</th>
-            <th className="pb-2 pr-2 text-right font-semibold">Realizado</th>
-            <th className="pb-2 pr-2 text-right font-semibold">GAP</th>
-            <th className="pb-2 w-28 font-semibold text-right">%</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((g) => {
-            const status = getStatus(g.gapPct);
-            const barPct = g.gapPct != null ? Math.min(100, g.gapPct * 100) : 0;
-            return (
-              <tr key={g.stageId} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                <td className="py-2.5 pr-2 font-medium text-white">{g.stageNome}</td>
-                <td className="py-2.5 pr-2 text-right tabular-nums text-gray-300">{g.necessario.toFixed(0)}</td>
-                <td className="py-2.5 pr-2 text-right tabular-nums text-gray-300">{g.realizado}</td>
-                <td className={`py-2.5 pr-2 text-right tabular-nums font-semibold ${
-                  g.gapAbs >= 0 ? 'text-emerald-400' : 'text-red-400'
-                }`}>
-                  {g.gapAbs >= 0 ? '+' : ''}{g.gapAbs.toFixed(0)}
-                </td>
-                <td className="py-2.5 w-28">
-                  <div className="flex items-center gap-2 justify-end">
-                    <div className="w-14 h-2 rounded-full bg-white/10 overflow-hidden flex-shrink-0">
-                      <div
-                        className="h-full rounded-full transition-all min-w-[4px]"
-                        style={{
-                          width: `${barPct}%`,
-                          backgroundColor: status === 'ok' ? '#22c55e' : status === 'atencao' ? '#eab308' : '#ef4444',
-                        }}
-                      />
-                    </div>
-                    <span className={`text-xs font-semibold tabular-nums w-10 text-right ${
-                      status === 'ok' ? 'text-emerald-400' : status === 'atencao' ? 'text-amber-400' : 'text-red-400'
-                    }`}>
-                      {g.gapPct != null ? `${(g.gapPct * 100).toFixed(0)}%` : '—'}
-                    </span>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <div className="space-y-4">
+        {sorted.map((g) => (
+          <RealizadoVsMetaBar
+            key={g.stageId}
+            label={g.stageNome}
+            realizado={g.realizado}
+            necessario={g.necessario}
+          />
+        ))}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-4 text-xs text-gray-500">
+        <span><span className="inline-block w-3 h-3 rounded-full bg-emerald-500 mr-1" /> 100% ou mais = no alvo</span>
+        <span><span className="inline-block w-3 h-3 rounded-full bg-amber-500 mr-1" /> 50–99% = atenção</span>
+        <span><span className="inline-block w-3 h-3 rounded-full bg-red-500 mr-1" /> abaixo de 50% = crítico</span>
+      </div>
     </div>
   );
 }

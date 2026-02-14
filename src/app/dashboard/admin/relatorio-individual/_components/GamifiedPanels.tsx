@@ -23,6 +23,8 @@ interface PanelItem {
   title: string;
   detail?: string;
   value?: string | number;
+  /** 0–100 para mini barra de progresso no card */
+  pct?: number;
 }
 
 function CheckIcon({ className = 'w-5 h-5' }: { className?: string }) {
@@ -68,6 +70,7 @@ function buildPositiveItems(props: GamifiedPanelsProps): PanelItem[] {
       title: acimaAbaixo === 'acima' ? 'Acima da projeção da meta' : 'No ritmo da meta',
       detail: progressoPct != null ? `${(progressoPct * 100).toFixed(0)}% do esperado no período` : undefined,
       value: progressoPct != null ? `${(progressoPct * 100).toFixed(0)}%` : undefined,
+      pct: progressoPct != null ? Math.min(100, progressoPct * 100) : undefined,
     });
   }
 
@@ -121,6 +124,7 @@ function buildPositiveItems(props: GamifiedPanelsProps): PanelItem[] {
       title: `${g.stageNome} no azul`,
       detail: `Realizado: ${g.realizado} (meta: ${g.necessario})`,
       value: '✓',
+      pct: 100,
     });
   });
 
@@ -177,11 +181,13 @@ function buildNegativeItems(props: GamifiedPanelsProps): PanelItem[] {
   }
 
   gaps.filter((g) => g.gapAbs > 0 && (g.gapPct == null || g.gapPct < 1)).forEach((g) => {
+    const pct = g.gapPct != null ? g.gapPct * 100 : 0;
     items.push({
       id: `gap-${g.stageId}`,
       title: `GAP em ${g.stageNome}`,
       detail: `Faltam ${Math.round(g.gapAbs)} (realizado ${g.realizado} / necessário ${g.necessario})`,
       value: g.gapPct != null ? `${(g.gapPct * 100).toFixed(0)}%` : '—',
+      pct,
     });
   });
 
@@ -238,6 +244,14 @@ function PositiveCard({ item, isExpanded, onToggle }: { item: PanelItem; isExpan
           {item.detail && (
             <p className={`text-xs text-gray-400 mt-0.5 ${isExpanded ? '' : 'line-clamp-1'}`}>{item.detail}</p>
           )}
+          {item.pct != null && (
+            <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                style={{ width: `${Math.min(100, item.pct)}%` }}
+              />
+            </div>
+          )}
         </div>
         {item.value != null && (
           <span className="flex-shrink-0 text-xs font-bold text-emerald-400 tabular-nums">{item.value}</span>
@@ -262,6 +276,15 @@ function NegativeCard({ item, isExpanded, onToggle }: { item: PanelItem; isExpan
           <p className="font-semibold text-white text-sm">{item.title}</p>
           {item.detail && (
             <p className={`text-xs text-gray-400 mt-0.5 ${isExpanded ? '' : 'line-clamp-1'}`}>{item.detail}</p>
+          )}
+          {item.pct != null && item.pct < 100 && (
+            <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden flex">
+              <div
+                className="h-full rounded-l-full bg-amber-500 transition-all duration-500"
+                style={{ width: `${item.pct}%` }}
+              />
+              <div className="h-full flex-1 bg-white/5" title="100% = meta" />
+            </div>
           )}
         </div>
         {item.value != null && (
@@ -299,7 +322,7 @@ export default function GamifiedPanels(props: GamifiedPanelsProps) {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* Dando certo */}
       <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-500/5 p-4 card-glow">
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-1">
           <span className="flex-shrink-0 w-9 h-9 rounded-xl bg-emerald-500/30 text-emerald-400 flex items-center justify-center">
             <TrophyIcon className="w-5 h-5" />
           </span>
@@ -308,6 +331,7 @@ export default function GamifiedPanels(props: GamifiedPanelsProps) {
             <p className="text-xs text-gray-400">{positive.length} ponto{positive.length !== 1 ? 's' : ''} forte{positive.length !== 1 ? 's' : ''}</p>
           </div>
         </div>
+        <p className="text-xs text-gray-500 mb-4 ml-11">O que está funcionando bem. Clique no card para ver o detalhe.</p>
         <div className="space-y-2">
           {positive.length === 0 ? (
             <p className="text-sm text-gray-500 py-4">Nenhum indicador positivo no período. Gere atividade e acompanhe as métricas.</p>
@@ -326,7 +350,7 @@ export default function GamifiedPanels(props: GamifiedPanelsProps) {
 
       {/* Precisa melhorar */}
       <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 dark:bg-amber-500/5 p-4 card-glow">
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-1">
           <span className="flex-shrink-0 w-9 h-9 rounded-xl bg-amber-500/30 text-amber-400 flex items-center justify-center">
             <XCircleIcon className="w-5 h-5" />
           </span>
@@ -335,6 +359,7 @@ export default function GamifiedPanels(props: GamifiedPanelsProps) {
             <p className="text-xs text-gray-400">{negative.length} ponto{negative.length !== 1 ? 's' : ''} de atenção</p>
           </div>
         </div>
+        <p className="text-xs text-gray-500 mb-4 ml-11">O que merece atenção. A barra mostra quanto você já fez (100% = meta). Clique para ver o detalhe.</p>
         <div className="space-y-2">
           {negative.length === 0 ? (
             <p className="text-sm text-emerald-400/80 py-4">Nada crítico. Mantenha o ritmo!</p>

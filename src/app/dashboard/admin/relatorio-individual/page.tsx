@@ -278,6 +278,14 @@ export default function RelatorioIndividualPage() {
             acimaAbaixo={acimaAbaixo}
           />
 
+          {/* Legenda rápida: como ler o relatório */}
+          <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-gray-400">
+            <p className="font-semibold text-white mb-1">Como ler este relatório</p>
+            <p>
+              (1) <strong className="text-white">Resultado vs meta</strong> acima · (2) <span className="text-emerald-400">Verde</span> = dando certo, <span className="text-amber-400">Âmbar</span> = precisa melhorar · (3) <strong className="text-white">De onde veio</strong> = atividade, leads e vendas · (4) <strong className="text-white">Funil</strong> = necessário vs realizado em cada etapa · (5) <strong className="text-amber-400">Onde focar</strong> = prioridades de ação.
+            </p>
+          </div>
+
           {/* Quadros laterais gamificados: dando certo | precisa melhorar */}
           <GamifiedPanels
             report={report}
@@ -295,6 +303,9 @@ export default function RelatorioIndividualPage() {
           {/* Como chegar na meta + GAP */}
           <div className="card-glow rounded-2xl border border-white/10 bg-white/5 dark:bg-[#23283A]/80 p-5">
             <SectionTitle className="mb-4">Como chegar na meta do ano</SectionTitle>
+            <p className="text-sm text-gray-400 mb-4">
+              Cada barra mostra <strong className="text-white">quanto era necessário</strong> (100%) vs <strong className="text-white">quanto você realizou</strong>. Verde = no alvo, amarelo = falta um pouco, vermelho = prioridade.
+            </p>
             <FunnelMissionList
               metaAno={metaAno}
               necessary={necessary}
@@ -305,12 +316,18 @@ export default function RelatorioIndividualPage() {
 
           <div className="card-glow rounded-2xl border border-white/10 bg-white/5 dark:bg-[#23283A]/80 p-5">
             <SectionTitle className="mb-4">GAP por etapa</SectionTitle>
+            <p className="text-sm text-gray-400 mb-4">
+              Ordene por <strong className="text-white">maior GAP primeiro</strong> para ver onde está o gargalo, ou pela <strong className="text-white">ordem do funil</strong> para acompanhar etapa a etapa.
+            </p>
             <GapTableEnhanced gaps={gaps} defaultSort="pior" />
           </div>
 
           {focus.length > 0 && (
             <div className="card-glow rounded-2xl border border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 p-5">
               <SectionTitle className="mb-4">Onde colocar o esforço</SectionTitle>
+              <p className="text-sm text-gray-400 mb-4">
+                Priorize estas ações <strong className="text-white">nesta ordem</strong>. Cada item tem uma sugestão concreta para a etapa.
+              </p>
               <FocusOfPeriodSmart focus={focus} />
             </div>
           )}
