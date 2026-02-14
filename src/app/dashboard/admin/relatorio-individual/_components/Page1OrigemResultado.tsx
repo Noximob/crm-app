@@ -51,110 +51,79 @@ export default function Page1OrigemResultado({ report }: Page1OrigemResultadoPro
   const countVendas = report.contribuicoesPeriodoCount?.valor ?? report.leadsFechadosPeriodo ?? 0;
 
   return (
-    <div className="space-y-6">
-      <div className="card-glow rounded-2xl border border-white/10 bg-white/5 dark:bg-[#23283A]/80 p-5">
-        <SectionTitle className="mb-4">De onde veio a atividade</SectionTitle>
-        <p className="text-sm text-gray-400 mb-4">
-          Horas e eventos em que o corretor participou no período (ação de rua, ligação ativa, reuniões, etc.).
-        </p>
-        {eventosPorTipo.length === 0 ? (
-          <p className="text-gray-500 text-sm">Nenhum evento registrado no período.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-gray-400 border-b border-white/10">
-                  <th className="pb-2 font-medium">Tipo</th>
-                  <th className="pb-2 font-medium text-right">Horas</th>
-                  <th className="pb-2 font-medium text-right">Eventos</th>
-                </tr>
-              </thead>
-              <tbody>
-                {eventosPorTipo.map(({ tipo, horas, quantidade }) => (
-                  <tr key={tipo} className="border-b border-white/5">
-                    <td className="py-2 text-white">{tipo}</td>
-                    <td className="py-2 text-right tabular-nums text-[#D4A017]">{horas}h</td>
-                    <td className="py-2 text-right tabular-nums text-gray-300">{quantidade}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        {report.totalHorasEventos?.valor != null && report.totalHorasEventos.valor > 0 && (
-          <p className="text-xs text-gray-500 mt-3">
-            Total: <strong className="text-white">{report.totalHorasEventos.valor}h</strong> no período
-            {report.totalHorasEventos.variacao != null && (
-              <span className={report.totalHorasEventos.variacao >= 0 ? 'text-emerald-400' : 'text-red-400'}>
-                {' '}({report.totalHorasEventos.variacao > 0 ? '+' : ''}{report.totalHorasEventos.variacao}% vs período anterior)
-              </span>
-            )}
-          </p>
-        )}
-      </div>
-
-      <div className="card-glow rounded-2xl border border-white/10 bg-white/5 dark:bg-[#23283A]/80 p-5">
-        <SectionTitle className="mb-4">De onde vieram os leads</SectionTitle>
-        <p className="text-sm text-gray-400 mb-4">
-          Distribuição dos leads do corretor por etapa do funil e novos leads no período.
-        </p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-          <div className="rounded-lg bg-white/5 border border-white/10 p-3">
-            <p className="text-xs text-gray-500 uppercase tracking-wide">Total de leads</p>
-            <p className="text-xl font-bold text-white tabular-nums">{report.leadsTotal?.valor ?? totalLeads}</p>
-          </div>
-          <div className="rounded-lg bg-white/5 border border-white/10 p-3">
-            <p className="text-xs text-gray-500 uppercase tracking-wide">Novos no período</p>
-            <p className="text-xl font-bold text-[#D4A017] tabular-nums">{report.novosLeads?.valor ?? 0}</p>
-            {report.novosLeads?.variacao != null && (
-              <p className={`text-xs mt-0.5 ${report.novosLeads.variacao >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                {report.novosLeads.variacao > 0 ? '+' : ''}{report.novosLeads.variacao}% vs anterior
-              </p>
-            )}
-          </div>
-        </div>
-        {leadsPorEtapaEntries.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-xs text-gray-500 uppercase tracking-wide">Por etapa do funil</p>
-            <div className="flex flex-wrap gap-2">
-              {leadsPorEtapaEntries.map(([etapa, n]) => (
-                <div
-                  key={etapa}
-                  className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 flex items-center justify-between gap-4 min-w-[140px]"
-                >
-                  <span className="text-sm text-gray-300 truncate">{etapa}</span>
-                  <span className="text-sm font-bold text-white tabular-nums">{n}</span>
+    <div className="card-glow rounded-2xl border border-white/10 bg-white/5 dark:bg-[#23283A]/80 p-5">
+      <SectionTitle className="mb-4">De onde veio o resultado</SectionTitle>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Atividade por tipo */}
+        <div>
+          <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Atividade (horas / eventos)</p>
+          {eventosPorTipo.length === 0 ? (
+            <p className="text-gray-500 text-sm">Nenhum evento no período.</p>
+          ) : (
+            <div className="space-y-1.5 text-sm">
+              {eventosPorTipo.map(({ tipo, horas, quantidade }) => (
+                <div key={tipo} className="flex justify-between gap-2">
+                  <span className="text-gray-300 truncate">{tipo}</span>
+                  <span className="tabular-nums shrink-0 text-[#D4A017]">{horas}h · {quantidade}</span>
                 </div>
               ))}
+              {report.totalHorasEventos?.valor != null && report.totalHorasEventos.valor > 0 && (
+                <p className="text-xs text-gray-500 pt-1 border-t border-white/10">
+                  Total {report.totalHorasEventos.valor}h
+                  {report.totalHorasEventos.variacao != null && (
+                    <span className={report.totalHorasEventos.variacao >= 0 ? 'text-emerald-400' : 'text-red-400'}>
+                      {' '}{report.totalHorasEventos.variacao > 0 ? '+' : ''}{report.totalHorasEventos.variacao}% vs ant.
+                    </span>
+                  )}
+                </p>
+              )}
             </div>
-          </div>
-        )}
-      </div>
-
-      <div className="card-glow rounded-2xl border border-white/10 bg-white/5 dark:bg-[#23283A]/80 p-5">
-        <SectionTitle className="mb-4">Vendas no período</SectionTitle>
-        <p className="text-sm text-gray-400 mb-4">
-          Contribuições (VGV) e quantidade de fechamentos no período.
-        </p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">VGV realizado</p>
-            <p className="text-2xl font-bold text-[#D4A017] tabular-nums">{formatCurrency(valorVendas)}</p>
-            {report.contribuicoesPeriodo?.variacao != null && (
-              <p className={`text-xs mt-0.5 ${report.contribuicoesPeriodo.variacao >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                {report.contribuicoesPeriodo.variacao > 0 ? '+' : ''}{report.contribuicoesPeriodo.variacao}% vs anterior
-              </p>
+          )}
+        </div>
+        {/* Leads */}
+        <div>
+          <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Leads</p>
+          <div className="flex flex-wrap gap-2 mb-2">
+            <span className="text-lg font-bold text-white tabular-nums">{report.leadsTotal?.valor ?? totalLeads}</span>
+            <span className="text-gray-500">total</span>
+            <span className="text-lg font-bold text-[#D4A017] tabular-nums">{report.novosLeads?.valor ?? 0}</span>
+            <span className="text-gray-500">novos</span>
+            {report.novosLeads?.variacao != null && (
+              <span className={`text-xs ${report.novosLeads.variacao >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {report.novosLeads.variacao > 0 ? '+' : ''}{report.novosLeads.variacao}%
+              </span>
             )}
           </div>
-          <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Fechamentos</p>
-            <p className="text-2xl font-bold text-white tabular-nums">{countVendas}</p>
-            {report.contribuicoesPeriodoCount?.variacao != null && (
-              <p className={`text-xs mt-0.5 ${report.contribuicoesPeriodoCount.variacao >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                {report.contribuicoesPeriodoCount.variacao > 0 ? '+' : ''}{report.contribuicoesPeriodoCount.variacao}% vs anterior
-              </p>
-            )}
-          </div>
+          {leadsPorEtapaEntries.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {leadsPorEtapaEntries.map(([etapa, n]) => (
+                <span key={etapa} className="rounded bg-white/5 px-2 py-0.5 text-xs text-gray-300">
+                  {etapa}: <strong className="text-white">{n}</strong>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        {/* Vendas */}
+        <div>
+          <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Vendas no período</p>
+          <p className="text-xl font-bold text-[#D4A017] tabular-nums">{formatCurrency(valorVendas)}</p>
+          <p className="text-sm text-white tabular-nums">{countVendas} fechamentos</p>
+          {(report.contribuicoesPeriodo?.variacao != null || report.contribuicoesPeriodoCount?.variacao != null) && (
+            <p className="text-xs text-gray-500 mt-0.5">
+              {report.contribuicoesPeriodo?.variacao != null && (
+                <span className={report.contribuicoesPeriodo.variacao >= 0 ? 'text-emerald-400' : 'text-red-400'}>
+                  VGV {report.contribuicoesPeriodo.variacao > 0 ? '+' : ''}{report.contribuicoesPeriodo.variacao}%
+                </span>
+              )}
+              {report.contribuicoesPeriodo?.variacao != null && report.contribuicoesPeriodoCount?.variacao != null && ' · '}
+              {report.contribuicoesPeriodoCount?.variacao != null && (
+                <span className={report.contribuicoesPeriodoCount.variacao >= 0 ? 'text-emerald-400' : 'text-red-400'}>
+                  Fech. {report.contribuicoesPeriodoCount.variacao > 0 ? '+' : ''}{report.contribuicoesPeriodoCount.variacao}%
+                </span>
+              )} vs ant.
+            </p>
+          )}
         </div>
       </div>
     </div>

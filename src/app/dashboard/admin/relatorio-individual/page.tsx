@@ -16,7 +16,6 @@ import FunnelMissionList from './_components/FunnelMissionList';
 import GapTableEnhanced from './_components/GapTableEnhanced';
 import FocusOfPeriodSmart from './_components/FocusOfPeriodSmart';
 import Page1OrigemResultado from './_components/Page1OrigemResultado';
-import ReportStepper from './_components/ReportStepper';
 import type { RelatorioIndividualData } from './_lib/reportData';
 
 interface Corretor {
@@ -61,13 +60,6 @@ export default function RelatorioIndividualPage() {
   const [rotina, setRotina] = useState<{ tarefasConcluidas: number; horasEventos: number; interacoes: number; valorRealizadoR: number } | null>(null);
   const [periodBounds, setPeriodBounds] = useState<{ start: Date; end: Date; progressPct: number } | null>(null);
   const [report, setReport] = useState<RelatorioIndividualData | null>(null);
-  const [currentStep, setCurrentStep] = useState(0);
-
-  const REPORT_STEPS = [
-    { label: 'De onde veio o resultado', short: 'Origem' },
-    { label: 'Como chegar na meta', short: 'Meta' },
-    { label: 'Conclusão e dicas', short: 'Conclusão' },
-  ];
 
   useEffect(() => {
     if (!imobiliariaId) {
@@ -273,111 +265,109 @@ export default function RelatorioIndividualPage() {
       )}
 
       {!loading && hasData && template && periodBounds && report && (
-        <>
-          <ReportStepper
-            currentStep={currentStep}
-            onStepChange={setCurrentStep}
-            steps={REPORT_STEPS}
+        <div className="space-y-5">
+          {/* Resumo: bata o olho */}
+          <SummaryHeader
+            metaAno={metaAno}
+            periodLabel={formatPeriodLabel(period)}
+            periodStart={periodBounds.start.toLocaleDateString('pt-BR')}
+            periodEnd={periodBounds.end.toLocaleDateString('pt-BR')}
+            progressPct={periodBounds.progressPct}
+            usePace={usePace}
+            progressoPct={progressoPct}
+            acimaAbaixo={acimaAbaixo}
           />
 
-          {currentStep === 0 && (
-            <Page1OrigemResultado report={report} />
-          )}
-
-          {currentStep === 1 && (
-            <div className="space-y-6">
-              <SummaryHeader
-                metaAno={metaAno}
-                periodLabel={formatPeriodLabel(period)}
-                periodStart={periodBounds.start.toLocaleDateString('pt-BR')}
-                periodEnd={periodBounds.end.toLocaleDateString('pt-BR')}
-                progressPct={periodBounds.progressPct}
-                usePace={usePace}
-                progressoPct={progressoPct}
-                acimaAbaixo={acimaAbaixo}
-              />
-
-              <div className="card-glow rounded-2xl border border-white/10 bg-white/5 dark:bg-[#23283A]/80 p-5">
-                <SectionTitle className="mb-4">Ritmo vs meta do período</SectionTitle>
-                <p className="text-sm text-gray-400 mb-4">
-                  No ritmo atual de trabalho, o corretor está{' '}
-                  <span className={acimaAbaixo === 'acima' ? 'text-emerald-400' : acimaAbaixo === 'abaixo' ? 'text-red-400' : 'text-amber-400'}>
-                    {progressoPct != null ? `${(progressoPct * 100).toFixed(0)}%` : '—'} do esperado
-                  </span>
-                  {' '}para o recorte {formatPeriodLabel(period).toLowerCase()} (meta anual fracionada{usePace ? ' com pace até hoje' : ''}).
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  <span className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${
-                    acimaAbaixo === 'acima' ? 'bg-emerald-500/20 text-emerald-400' :
-                    acimaAbaixo === 'abaixo' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'
-                  }`}>
-                    {acimaAbaixo === 'acima' ? 'Acima da projeção' : acimaAbaixo === 'abaixo' ? 'Abaixo da projeção' : 'No alvo'}
-                  </span>
-                </div>
+          {/* Linha rápida: ritmo + VGV + leads + fechamentos */}
+          <div className="card-glow rounded-2xl border border-white/10 bg-white/5 dark:bg-[#23283A]/80 p-4">
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 uppercase tracking-wide">Ritmo</span>
+                <span className={`px-2.5 py-1 rounded-lg text-sm font-bold ${
+                  acimaAbaixo === 'acima' ? 'bg-emerald-500/20 text-emerald-400' :
+                  acimaAbaixo === 'abaixo' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'
+                }`}>
+                  {progressoPct != null ? `${(progressoPct * 100).toFixed(0)}%` : '—'} do esperado
+                </span>
               </div>
-
-              <div className="card-glow rounded-2xl border border-white/10 bg-white/5 dark:bg-[#23283A]/80 p-5">
-                <SectionTitle className="mb-4">Como chegar na meta do ano</SectionTitle>
-                <FunnelMissionList
-                  metaAno={metaAno}
-                  necessary={necessary}
-                  realized={realized}
-                  weeksInPeriod={weeksInPeriod}
-                />
-              </div>
-
-              <div className="card-glow rounded-2xl border border-white/10 bg-white/5 dark:bg-[#23283A]/80 p-5">
-                <SectionTitle className="mb-4">GAP por etapa</SectionTitle>
-                <GapTableEnhanced gaps={gaps} defaultSort="pior" />
-              </div>
-            </div>
-          )}
-
-          {currentStep === 2 && (
-            <div className="space-y-6">
-              <div className="card-glow rounded-2xl border border-white/10 bg-white/5 dark:bg-[#23283A]/80 p-5">
-                <SectionTitle className="mb-4">Conclusão</SectionTitle>
-                <p className="text-sm text-gray-400 mb-4">
-                  Resumo da rotina do período e onde concentrar o esforço nas próximas semanas para atingir o resultado esperado.
-                </p>
-              </div>
-
               {rotina && (
-                <div className="card-glow rounded-2xl border border-white/10 bg-white/5 dark:bg-[#23283A]/80 p-5">
-                  <SectionTitle className="mb-4">Rotina / Atividade no período</SectionTitle>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Tarefas concluídas</p>
-                      <p className="font-bold text-white text-lg tabular-nums">{rotina.tarefasConcluidas}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Horas em eventos</p>
-                      <p className="font-bold text-white text-lg tabular-nums">{rotina.horasEventos.toFixed(1)}h</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Interações</p>
-                      <p className="font-bold text-white text-lg tabular-nums">{rotina.interacoes}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">VGV realizado</p>
-                      <p className="font-bold text-[#D4A017] text-lg tabular-nums">{formatCurrency(rotina.valorRealizadoR)}</p>
-                    </div>
+                <>
+                  <div>
+                    <span className="text-xs text-gray-500 uppercase tracking-wide mr-1">VGV</span>
+                    <span className="text-lg font-bold text-[#D4A017] tabular-nums">{formatCurrency(rotina.valorRealizadoR)}</span>
                   </div>
-                </div>
+                  <div>
+                    <span className="text-xs text-gray-500 uppercase tracking-wide mr-1">Tarefas</span>
+                    <span className="text-lg font-bold text-white tabular-nums">{rotina.tarefasConcluidas}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500 uppercase tracking-wide mr-1">Interações</span>
+                    <span className="text-lg font-bold text-white tabular-nums">{rotina.interacoes}</span>
+                  </div>
+                </>
               )}
+              <div>
+                <span className="text-xs text-gray-500 uppercase tracking-wide mr-1">Novos leads</span>
+                <span className="text-lg font-bold text-white tabular-nums">{report.novosLeads?.valor ?? 0}</span>
+              </div>
+              <div>
+                <span className="text-xs text-gray-500 uppercase tracking-wide mr-1">Fechamentos</span>
+                <span className="text-lg font-bold text-white tabular-nums">{report.contribuicoesPeriodoCount?.valor ?? report.leadsFechadosPeriodo ?? 0}</span>
+              </div>
+            </div>
+          </div>
 
-              {focus.length > 0 && (
-                <div className="card-glow rounded-2xl border border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 p-5">
-                  <SectionTitle className="mb-4">Onde colocar o esforço</SectionTitle>
-                  <p className="text-sm text-gray-400 mb-4">
-                    Dicas objetivas para melhorar e onde focar na semana para chegar no resultado esperado.
-                  </p>
-                  <FocusOfPeriodSmart focus={focus} />
+          {/* De onde veio o resultado */}
+          <Page1OrigemResultado report={report} />
+
+          {/* Como chegar na meta + GAP */}
+          <div className="card-glow rounded-2xl border border-white/10 bg-white/5 dark:bg-[#23283A]/80 p-5">
+            <SectionTitle className="mb-4">Como chegar na meta do ano</SectionTitle>
+            <FunnelMissionList
+              metaAno={metaAno}
+              necessary={necessary}
+              realized={realized}
+              weeksInPeriod={weeksInPeriod}
+            />
+          </div>
+
+          <div className="card-glow rounded-2xl border border-white/10 bg-white/5 dark:bg-[#23283A]/80 p-5">
+            <SectionTitle className="mb-4">GAP por etapa</SectionTitle>
+            <GapTableEnhanced gaps={gaps} defaultSort="pior" />
+          </div>
+
+          {/* Rotina + Foco */}
+          {rotina && (
+            <div className="card-glow rounded-2xl border border-white/10 bg-white/5 dark:bg-[#23283A]/80 p-5">
+              <SectionTitle className="mb-4">Rotina no período</SectionTitle>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Tarefas concluídas</p>
+                  <p className="font-bold text-white text-lg tabular-nums">{rotina.tarefasConcluidas}</p>
                 </div>
-              )}
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Horas em eventos</p>
+                  <p className="font-bold text-white text-lg tabular-nums">{rotina.horasEventos.toFixed(1)}h</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Interações</p>
+                  <p className="font-bold text-white text-lg tabular-nums">{rotina.interacoes}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">VGV realizado</p>
+                  <p className="font-bold text-[#D4A017] text-lg tabular-nums">{formatCurrency(rotina.valorRealizadoR)}</p>
+                </div>
+              </div>
             </div>
           )}
-        </>
+
+          {focus.length > 0 && (
+            <div className="card-glow rounded-2xl border border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 p-5">
+              <SectionTitle className="mb-4">Onde colocar o esforço</SectionTitle>
+              <FocusOfPeriodSmart focus={focus} />
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
