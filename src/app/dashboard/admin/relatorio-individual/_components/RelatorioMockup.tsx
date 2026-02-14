@@ -25,15 +25,15 @@ function CircleCard({
   const pct = necessario > 0 ? Math.min(100, (realizado / necessario) * 100) : 0;
   const colors = { gold: '#D4A017', green: '#22c55e', red: '#ef4444', gray: 'rgba(255,255,255,0.3)' };
   const color = colors[variant];
-  const r = 32;
-  const stroke = 4;
+  const r = 24;
+  const stroke = 3;
   const circ = 2 * Math.PI * r;
   const offset = circ - (pct / 100) * circ;
   const valorRealizado = unidade === 'R$' ? formatCurrency(realizado) : realizado % 1 === 0 ? realizado : realizado.toFixed(2).replace('.', ',');
   const valorNecessario = unidade === 'R$' ? formatCurrency(necessario) : necessario % 1 === 0 ? necessario : necessario.toFixed(2).replace('.', ',');
 
   return (
-    <div className="flex flex-col items-center rounded-xl border border-white/10 bg-white/5 p-3">
+    <div className="flex flex-col items-center rounded-xl border border-white/10 bg-white/5 p-2 flex-1 min-w-0">
       <div className="relative" style={{ width: r * 2 + stroke * 2, height: r * 2 + stroke * 2 }}>
         <svg width={r * 2 + stroke * 2} height={r * 2 + stroke * 2} className="-rotate-90">
           <circle cx={r + stroke} cy={r + stroke} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
@@ -51,10 +51,10 @@ function CircleCard({
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className={`text-lg font-bold tabular-nums ${variant === 'green' ? 'text-emerald-400' : variant === 'red' ? 'text-red-400' : 'text-[#D4A017]'}`}>
+          <span className={`text-sm font-bold tabular-nums ${variant === 'green' ? 'text-emerald-400' : variant === 'red' ? 'text-red-400' : 'text-[#D4A017]'}`}>
             {Math.round(pct)}%
           </span>
-          <span className="text-[10px] text-gray-500 font-medium">feito</span>
+          <span className="text-[9px] text-gray-500 font-medium">feito</span>
         </div>
       </div>
       <p className="text-xs text-white font-medium mt-2 text-center leading-tight">{title}</p>
@@ -182,35 +182,15 @@ export default function RelatorioMockup() {
           Abaixo: <strong className="text-white">% feito</strong> em cada camada do funil no período — o que você realizou vs o que precisaria para bater a meta no ritmo.
         </p>
 
-        {/* Círculos em grid — sem barra de rolagem (2 linhas x 3 colunas) */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {/* Círculos em uma única linha (ordem: VGV → Unidades → Vendas → Reuniões → Qualificados → Topo) */}
+        <div className="flex flex-nowrap gap-1 sm:gap-2">
           <CircleCard
-            title="Topo do funil"
-            necessario={c.topoFunil.necessario}
-            realizado={c.topoFunil.realizado}
-            faltam={Math.max(0, c.topoFunil.necessario - c.topoFunil.realizado)}
-            variant={c.topoFunil.realizado >= c.topoFunil.necessario ? 'green' : 'gold'}
-          />
-          <CircleCard
-            title="Leads qualificados"
-            necessario={c.qualificados.necessario}
-            realizado={c.qualificados.realizado}
-            faltam={Math.max(0, c.qualificados.necessario - c.qualificados.realizado)}
-            variant={c.qualificados.realizado >= c.qualificados.necessario ? 'green' : 'gold'}
-          />
-          <CircleCard
-            title="Reuniões agendadas"
-            necessario={c.reunioes.necessario}
-            realizado={c.reunioes.realizado}
-            faltam={Math.max(0, c.reunioes.necessario - c.reunioes.realizado)}
-            variant={c.reunioes.realizado >= c.reunioes.necessario ? 'green' : 'gold'}
-          />
-          <CircleCard
-            title="Vendas no período"
-            necessario={1}
-            realizado={Math.min(1, pctVgv)}
-            faltam={Math.max(0, 1 - pctVgv)}
-            variant={pctVgv >= 1 ? 'green' : 'gold'}
+            title="VGV no período"
+            necessario={c.vgvNecessario}
+            realizado={c.vgvRealizado}
+            faltam={Math.max(0, c.vgvNecessario - c.vgvRealizado)}
+            unidade="R$"
+            variant={pctVgv >= 1 ? 'green' : pctVgv >= 0.5 ? 'gold' : 'red'}
           />
           <CircleCard
             title="Unidades a vender"
@@ -220,12 +200,32 @@ export default function RelatorioMockup() {
             variant={pctVgv >= 1 ? 'green' : 'gold'}
           />
           <CircleCard
-            title="VGV no período"
-            necessario={c.vgvNecessario}
-            realizado={c.vgvRealizado}
-            faltam={Math.max(0, c.vgvNecessario - c.vgvRealizado)}
-            unidade="R$"
-            variant={pctVgv >= 1 ? 'green' : pctVgv >= 0.5 ? 'gold' : 'red'}
+            title="Vendas no período"
+            necessario={1}
+            realizado={Math.min(1, pctVgv)}
+            faltam={Math.max(0, 1 - pctVgv)}
+            variant={pctVgv >= 1 ? 'green' : 'gold'}
+          />
+          <CircleCard
+            title="Reuniões agendadas"
+            necessario={c.reunioes.necessario}
+            realizado={c.reunioes.realizado}
+            faltam={Math.max(0, c.reunioes.necessario - c.reunioes.realizado)}
+            variant={c.reunioes.realizado >= c.reunioes.necessario ? 'green' : 'gold'}
+          />
+          <CircleCard
+            title="Leads qualificados"
+            necessario={c.qualificados.necessario}
+            realizado={c.qualificados.realizado}
+            faltam={Math.max(0, c.qualificados.necessario - c.qualificados.realizado)}
+            variant={c.qualificados.realizado >= c.qualificados.necessario ? 'green' : 'gold'}
+          />
+          <CircleCard
+            title="Topo do funil"
+            necessario={c.topoFunil.necessario}
+            realizado={c.topoFunil.realizado}
+            faltam={Math.max(0, c.topoFunil.necessario - c.topoFunil.realizado)}
+            variant={c.topoFunil.realizado >= c.topoFunil.necessario ? 'green' : 'gold'}
           />
         </div>
 
