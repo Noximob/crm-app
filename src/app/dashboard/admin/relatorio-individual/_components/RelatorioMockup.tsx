@@ -160,28 +160,22 @@ export default function RelatorioMockup() {
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Como chegar na sua meta do ano — título + moedas à direita */}
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <span className="w-0.5 h-5 bg-[#D4A017] rounded-r-full" />
+      {/* Como chegar na sua meta do ano — tudo em 1 linha: título + meta + moedas */}
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-lg shadow-black/20">
+        <div className="flex flex-nowrap items-center gap-3 mb-4 overflow-hidden">
+          <h2 className="flex shrink-0 items-center gap-2 text-base font-bold text-white">
+            <span className="w-1 h-6 rounded-r-full bg-gradient-to-b from-[#D4A017] to-[#b8860b] shadow-[0_0_8px_rgba(212,160,23,0.4)]" />
             Como chegar na sua meta do ano
           </h2>
-          <div className="flex items-center gap-2 rounded-xl border border-[#D4A017]/40 bg-[#D4A017]/10 px-3 py-1.5">
-            <span className="text-lg">🪙</span>
-            <span className="font-bold text-[#D4A017] tabular-nums">{MOCK.moedas.toLocaleString('pt-BR')}</span>
+          <div className="flex shrink-0 items-center gap-2 rounded-xl border border-[#D4A017]/50 bg-gradient-to-r from-[#D4A017]/15 to-[#D4A017]/5 px-4 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+            <span className="text-xs font-medium text-gray-400">Meta do ano</span>
+            <span className="text-lg font-bold tabular-nums text-[#D4A017] drop-shadow-[0_0_6px_rgba(212,160,23,0.5)]">{formatCurrency(MOCK.metaAno)}</span>
+          </div>
+          <div className="ml-auto flex shrink-0 items-center gap-2 rounded-xl border border-[#D4A017]/50 bg-gradient-to-r from-[#D4A017]/20 to-[#D4A017]/10 px-4 py-2">
+            <span className="text-xl">🪙</span>
+            <span className="font-bold tabular-nums text-[#D4A017]">{MOCK.moedas.toLocaleString('pt-BR')}</span>
             <span className="text-xs text-gray-400">moedas</span>
           </div>
-        </div>
-
-        <div className="mb-4 space-y-1">
-          <p className="rounded-xl border border-[#D4A017]/30 bg-[#D4A017]/5 px-4 py-2 inline-block">
-            <span className="text-sm text-gray-400">Meta do ano</span>
-            <span className="ml-2 text-xl font-bold text-[#D4A017] tabular-nums">{formatCurrency(MOCK.metaAno)}</span>
-          </p>
-          <p className="text-sm text-gray-300">
-            {MOCK.periodoLabel}: você deveria fazer <strong className="text-white">{formatCurrency(MOCK.metaNoPeriodo)}</strong>
-          </p>
         </div>
 
         {/* Círculos em uma única linha (ordem: VGV → Unidades → Vendas → Reuniões → Qualificados → Topo) */}
