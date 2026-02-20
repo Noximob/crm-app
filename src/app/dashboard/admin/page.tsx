@@ -64,6 +64,7 @@ const adminCategories = [
       { title: 'Metas', icon: '🎯', description: 'Configure metas', href: '/dashboard/admin/metas' },
       { title: 'Relatórios', icon: '📊', description: 'Métricas e resultados', href: '/dashboard/admin/relatorios' },
       { title: 'Relatório Individual', icon: '📋', description: 'Relatório completo por corretor (dia/semana/mês) para download e envio', href: '/dashboard/admin/relatorio-individual' },
+      { title: 'Relatório Diário', icon: '📊', description: 'Funil e lista de leads para apresentação diária (qualificação, anotações, próxima tarefa)', href: '/dashboard/admin/relatorio-diario' },
       { title: 'Dashboards TV', icon: '📺', description: 'Telas para TV da imobiliária', href: '/dashboard/admin/dashboards-tv' },
     ]
   },
@@ -74,6 +75,7 @@ const adminCategories = [
     color: 'from-orange-500 to-orange-600',
     items: [
       { title: 'Funil de Vendas', icon: '📊', description: 'Adicionar, editar ou remover etapas do funil (CRM)', href: '/dashboard/admin/funil-vendas' },
+      { title: 'Integração CV CRM', icon: '🔗', description: 'Sincronizar leads do CV CRM com a conta matriz (Nox)', href: '/dashboard/admin/integração-cvcrm' },
       { title: 'Aprovação de Usuários', icon: '✅', description: 'Aprove novos cadastros', href: '#', special: true },
       { title: 'Site', icon: '🌐', description: 'Site institucional', href: '/dashboard/admin/site' },
     ]
