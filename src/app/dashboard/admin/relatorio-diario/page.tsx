@@ -22,6 +22,8 @@ const MAX_LEADS = 500;
 /** Dados de exemplo para visualização e impressão em PDF (Alumma + Nox) */
 function buildMockLeads(): LeadRow[] {
   const etapas = DEFAULT_PIPELINE_STAGES_WITH_META.map((s) => s.label);
+  /* Distribuição variada por etapa para % diversos no funil: 4,3,2,2,2,1,1,1,1,1,0 */
+  const etapaIndexPorPessoa = [0,0,0,0, 1,1,1, 2,2, 3,3, 4,4, 5, 6, 7, 8, 9];
   const tarefas = [
     { type: 'Ligação', description: 'Retornar contato sobre planta', data: '20/02 14:00' },
     { type: 'WhatsApp', description: 'Enviar vídeo do empreendimento', data: '20/02 10:30' },
@@ -41,26 +43,27 @@ function buildMockLeads(): LeadRow[] {
     { nome: 'Elena Souza Costa', email: 'elena.costa@yahoo.com.br', telefone: '(41) 98765-1111', etapa: etapas[3], entrouEm: entradasMock[4], qualificacao: { Financiamento: 'FGTS + Subsídio' }, anotacoes: 'Ligação agendada para 20/02 14h. Objetivo: fechar documentação.' },
     { nome: 'Fernando Martins Ribeiro', email: 'fernando.m@corp.com', telefone: '(51) 99999-2222', etapa: etapas[4], entrouEm: entradasMock[5], qualificacao: { Perfil: 'Primeira casa', Renda: 'Aprovado' }, anotacoes: 'Visita agendada 21/02 15h. Levar proposta de financiamento.' },
     { nome: 'Gabriela Nunes Pereira', email: 'gabi.nunes@email.com', telefone: '(11) 91234-5678', etapa: etapas[5], entrouEm: entradasMock[6], qualificacao: { Proposta: 'Enviada', Valor: 'R$ 1,1M' }, anotacoes: 'Em negociação. Aguardando retorno do banco. Cliente ansioso.' },
-    { nome: 'Henrique Castro Silva', email: 'henrique.silva@gmail.com', telefone: '(21) 98888-3333', etapa: etapas[5], entrouEm: entradasMock[7], qualificacao: {}, anotacoes: 'Proposta entregue. Reunião de alinhamento com advogado em 22/02.' },
-    { nome: 'Isabela Rocha Freitas', email: 'isa.rocha@empresa.com', telefone: '(19) 97777-4444', etapa: etapas[6], entrouEm: entradasMock[8], qualificacao: { Status: 'Contrato em análise' }, anotacoes: 'Contrato e fechamento. Assinatura prevista para 24/02.' },
-    { nome: 'João Pedro Lima', email: 'joao.pedro@email.com', telefone: '(11) 96666-5555', etapa: etapas[6], entrouEm: entradasMock[9], qualificacao: {}, anotacoes: 'Fechamento. Só falta laudo do imóvel.' },
-    { nome: 'Larissa Mendes Dias', email: 'larissa.dias@gmail.com', telefone: '(31) 95555-6666', etapa: etapas[7], entrouEm: entradasMock[10], qualificacao: { Pós: 'Fidelização' }, anotacoes: 'Pós venda. Cliente fechou em jan/25. Indicou 2 amigos.' },
-    { nome: 'Marcos Antonio Teixeira', email: 'marcos.t@outlook.com', telefone: '(41) 94444-7777', etapa: etapas[8], entrouEm: entradasMock[11], qualificacao: { Interesse: 'Futuro 2º imóvel' }, anotacoes: 'Interesse futuro. Quer lançamento com 4 dorm em 2026.' },
-    { nome: 'Natália Barbosa Campos', email: 'natalia.bc@email.com', telefone: '(51) 93333-8888', etapa: etapas[9], entrouEm: entradasMock[12], qualificacao: { Carteira: 'Ativa' }, anotacoes: 'Carteira. Mantém contato mensal. Possível venda em Q2.' },
-    { nome: 'Otávio Correia Neto', email: 'otavio.neto@corp.com', telefone: '(11) 92222-9999', etapa: etapas[10], entrouEm: entradasMock[13], qualificacao: { Motivo: 'Preço' }, anotacoes: 'Geladeira. Não fechou por preço. Reativar em junho com nova condição.' },
-    { nome: 'Patricia Almeida Souza', email: 'patricia.as@gmail.com', telefone: '(21) 91111-0000', etapa: etapas[0], entrouEm: entradasMock[14], qualificacao: { Origem: 'Indicação' }, anotacoes: 'Indicada por Larissa Mendes. Contato inicial em 19/02.' },
-    { nome: 'Ricardo Gomes Ferreira', email: 'ricardo.gomes@email.com', telefone: '(19) 90000-1234', etapa: etapas[1], entrouEm: entradasMock[15], qualificacao: { Orçamento: 'R$ 600k', Interesse: '2 dorm' }, anotacoes: 'Qualificado. Preferência por andar alto. Enviar plantas.' },
-    { nome: 'Sandra Cristina Moraes', email: 'sandra.moraes@yahoo.com.br', telefone: '(11) 98989-5678', etapa: etapas[3], entrouEm: entradasMock[16], qualificacao: { Visita: 'Agendada' }, anotacoes: 'Visita agendada 23/02 10h. Casal, primeiro imóvel.' },
-    { nome: 'Thiago Henrique Lopes', email: 'thiago.lopes@empresa.com', telefone: '(31) 97878-9012', etapa: etapas[4], entrouEm: entradasMock[17], qualificacao: {}, anotacoes: 'Ligação agendada para confirmar documentação e enviar minuta.' },
+    { nome: 'Henrique Castro Silva', email: 'henrique.silva@gmail.com', telefone: '(21) 98888-3333', etapa: etapas[6], entrouEm: entradasMock[7], qualificacao: {}, anotacoes: 'Proposta entregue. Reunião de alinhamento com advogado em 22/02.' },
+    { nome: 'Isabela Rocha Freitas', email: 'isa.rocha@empresa.com', telefone: '(19) 97777-4444', etapa: etapas[7], entrouEm: entradasMock[8], qualificacao: { Status: 'Contrato em análise' }, anotacoes: 'Contrato e fechamento. Assinatura prevista para 24/02.' },
+    { nome: 'João Pedro Lima', email: 'joao.pedro@email.com', telefone: '(11) 96666-5555', etapa: etapas[8], entrouEm: entradasMock[9], qualificacao: {}, anotacoes: 'Fechamento. Só falta laudo do imóvel.' },
+    { nome: 'Larissa Mendes Dias', email: 'larissa.dias@gmail.com', telefone: '(31) 95555-6666', etapa: etapas[9], entrouEm: entradasMock[10], qualificacao: { Pós: 'Fidelização' }, anotacoes: 'Pós venda. Cliente fechou em jan/25. Indicou 2 amigos.' },
+    { nome: 'Marcos Antonio Teixeira', email: 'marcos.t@outlook.com', telefone: '(41) 94444-7777', etapa: etapas[0], entrouEm: entradasMock[11], qualificacao: { Interesse: 'Futuro 2º imóvel' }, anotacoes: 'Interesse futuro. Quer lançamento com 4 dorm em 2026.' },
+    { nome: 'Natália Barbosa Campos', email: 'natalia.bc@email.com', telefone: '(51) 93333-8888', etapa: etapas[1], entrouEm: entradasMock[12], qualificacao: { Carteira: 'Ativa' }, anotacoes: 'Carteira. Mantém contato mensal. Possível venda em Q2.' },
+    { nome: 'Otávio Correia Neto', email: 'otavio.neto@corp.com', telefone: '(11) 92222-9999', etapa: etapas[2], entrouEm: entradasMock[13], qualificacao: { Motivo: 'Preço' }, anotacoes: 'Geladeira. Não fechou por preço. Reativar em junho com nova condição.' },
+    { nome: 'Patricia Almeida Souza', email: 'patricia.as@gmail.com', telefone: '(21) 91111-0000', etapa: etapas[3], entrouEm: entradasMock[14], qualificacao: { Origem: 'Indicação' }, anotacoes: 'Indicada por Larissa Mendes. Contato inicial em 19/02.' },
+    { nome: 'Ricardo Gomes Ferreira', email: 'ricardo.gomes@email.com', telefone: '(19) 90000-1234', etapa: etapas[4], entrouEm: entradasMock[15], qualificacao: { Orçamento: 'R$ 600k', Interesse: '2 dorm' }, anotacoes: 'Qualificado. Preferência por andar alto. Enviar plantas.' },
+    { nome: 'Sandra Cristina Moraes', email: 'sandra.moraes@yahoo.com.br', telefone: '(11) 98989-5678', etapa: etapas[5], entrouEm: entradasMock[16], qualificacao: { Visita: 'Agendada' }, anotacoes: 'Visita agendada 23/02 10h. Casal, primeiro imóvel.' },
+    { nome: 'Thiago Henrique Lopes', email: 'thiago.lopes@empresa.com', telefone: '(31) 97878-9012', etapa: etapas[6], entrouEm: entradasMock[17], qualificacao: {}, anotacoes: 'Ligação agendada para confirmar documentação e enviar minuta.' },
   ];
   return pessoas.map((p, i) => {
     const prox = tarefas[i % tarefas.length];
+    const etapaIdx = etapaIndexPorPessoa[i] ?? 0;
     return {
       id: `mock-${i + 1}`,
       nome: p.nome,
       email: p.email,
       telefone: p.telefone,
-      etapa: p.etapa,
+      etapa: etapas[etapaIdx],
       entrouEm: p.entrouEm,
       qualificacao: p.qualificacao ?? {},
       anotacoes: p.anotacoes ?? '',
@@ -108,6 +111,58 @@ function formatTaskDate(d: Timestamp | { seconds: number }): string {
   });
 }
 
+/** Cor gradual por %: vermelho → amarelo → verde (igual relatório individual) */
+function colorFromPct(pct: number): string {
+  const t = Math.max(0, Math.min(1, pct / 100));
+  const r1 = 239, g1 = 68, b1 = 68;
+  const r2 = 212, g2 = 160, b2 = 23;
+  const r3 = 34, g3 = 197, b3 = 94;
+  let r: number, g: number, b: number;
+  if (t <= 0.5) {
+    const u = t * 2;
+    r = Math.round(r1 + (r2 - r1) * u);
+    g = Math.round(g1 + (g2 - g1) * u);
+    b = Math.round(b1 + (b2 - b1) * u);
+  } else {
+    const u = (t - 0.5) * 2;
+    r = Math.round(r2 + (r3 - r2) * u);
+    g = Math.round(g2 + (g3 - g2) * u);
+    b = Math.round(b2 + (b3 - b2) * u);
+  }
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+
+/** Círculo do funil — estilo relatório individual, uma linha */
+function FunilCircle({ label, count, pct, total, selected, onSelect }: { label: string; count: number; pct: number; total: number; selected: boolean; onSelect: () => void }) {
+  const color = colorFromPct(pct);
+  const r = 20;
+  const stroke = 2.5;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (pct / 100) * circ;
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`no-print flex flex-col items-center rounded-lg border p-1.5 flex-shrink-0 min-w-0 transition-all print:pointer-events-none ${
+        selected ? 'border-amber-500 bg-amber-500/10 dark:bg-amber-500/20' : 'border-gray-200 dark:border-white/10 bg-white dark:bg-white/[0.06] hover:bg-gray-50 dark:hover:bg-white/10'
+      } print:border-gray-200`}
+      title={`${label}: ${count} (${pct}%)`}
+    >
+      <div className="relative" style={{ width: r * 2 + stroke * 2, height: r * 2 + stroke * 2 }}>
+        <svg width={r * 2 + stroke * 2} height={r * 2 + stroke * 2} className="-rotate-90">
+          <circle cx={r + stroke} cy={r + stroke} r={r} fill="none" stroke="rgba(0,0,0,0.06)" className="dark:stroke-white/10" strokeWidth={stroke} />
+          <circle cx={r + stroke} cy={r + stroke} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" className="transition-all duration-300" />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-[10px] font-bold tabular-nums leading-none" style={{ color }}>{pct}%</span>
+        </div>
+      </div>
+      <span className="text-[9px] font-medium text-gray-700 dark:text-gray-300 text-center leading-tight mt-1 truncate max-w-[72px] block print:text-gray-700" title={label}>{label}</span>
+      <span className="text-[9px] text-gray-500 dark:text-gray-400 tabular-nums">{count}/{total}</span>
+    </button>
+  );
+}
+
 /** Parse "DD/MM HH:mm" para timestamp (ano atual) — usado na ordenação do mock */
 function parseTaskDateString(s: string): number {
   const match = s.match(/^(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2})$/);
@@ -148,7 +203,6 @@ export default function RelatorioDiarioPage() {
   const [leads, setLeads] = useState<LeadRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtroEtapa, setFiltroEtapa] = useState<string | null>(null);
-  const [busca, setBusca] = useState('');
   const [useMockData, setUseMockData] = useState(true);
 
   useEffect(() => {
@@ -250,17 +304,8 @@ export default function RelatorioDiarioPage() {
   const filteredLeads = useMemo(() => {
     let list = [...leads];
     if (filtroEtapa) list = list.filter((l) => l.etapa === filtroEtapa);
-    if (busca.trim()) {
-      const b = busca.toLowerCase().trim();
-      list = list.filter(
-        (l) =>
-          l.nome?.toLowerCase().includes(b) ||
-          l.email?.toLowerCase().includes(b) ||
-          l.telefone?.includes(b)
-      );
-    }
     return list;
-  }, [leads, filtroEtapa, busca]);
+  }, [leads, filtroEtapa]);
 
   const countProximasAcoes = useMemo(() => filteredLeads.filter((l) => l.proximaTarefa).length, [filteredLeads]);
 
@@ -308,10 +353,9 @@ export default function RelatorioDiarioPage() {
           <ArrowLeftIcon className="h-4 w-4" /> Voltar ao administrador
         </Link>
 
-        {/* Cabeçalho limpo — tela e PDF */}
+        {/* Cabeçalho — só logo Alumma dourada */}
         <header className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-200 dark:border-white/10 print:border-gray-200 print:pb-3">
-          <AlummaLogoFullInline theme="dark" height={32} className="print:hidden" />
-          <AlummaLogoFullInline theme="light" height={32} className="hidden print:!block" />
+          <AlummaLogoFullInline theme="dark" height={32} />
           <div className="text-center flex-1 min-w-0">
             <h1 className="text-xl font-semibold text-gray-900 dark:text-white print:text-gray-900">Relatório diário</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 print:text-gray-600 capitalize">{dataHoje}</p>
@@ -335,48 +379,43 @@ export default function RelatorioDiarioPage() {
           <div className="py-12 text-center text-gray-500">Carregando...</div>
         ) : (
           <>
-            {/* Resumo — onde colocar o olho: próximas ações + total */}
-            <section className="mb-6 print:mb-4">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 print:grid-cols-3">
-                <div className="rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-500/10 p-4 print:bg-amber-50/50 print:border-amber-200">
-                  <p className="text-xs font-medium text-amber-800 dark:text-amber-300 print:text-amber-900">Próximas ações agendadas</p>
-                  <p className="text-2xl font-bold text-amber-900 dark:text-amber-200 tabular-nums print:text-amber-900">{countProximasAcoes}</p>
+            {/* Resumo — quadrados menores */}
+            <section className="mb-4 print:mb-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 print:grid-cols-3">
+                <div className="rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-500/10 p-2.5 print:bg-amber-50/50 print:border-amber-200">
+                  <p className="text-[10px] font-medium text-amber-800 dark:text-amber-300 print:text-amber-900">Próximas ações agendadas</p>
+                  <p className="text-lg font-bold text-amber-900 dark:text-amber-200 tabular-nums print:text-amber-900">{countProximasAcoes}</p>
                 </div>
-                <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 print:bg-gray-50 print:border-gray-200">
-                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 print:text-gray-600">Total de leads</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums print:text-gray-900">{filteredLeads.length}</p>
+                <div className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-2.5 print:bg-gray-50 print:border-gray-200">
+                  <p className="text-[10px] font-medium text-gray-600 dark:text-gray-400 print:text-gray-600">Total de leads</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white tabular-nums print:text-gray-900">{filteredLeads.length}</p>
                 </div>
-                <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 print:bg-gray-50 print:border-gray-200 col-span-2 sm:col-span-1">
-                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 print:text-gray-600">Etapas no funil</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums print:text-gray-900">{funil.length}</p>
+                <div className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-2.5 print:bg-gray-50 print:border-gray-200 col-span-2 sm:col-span-1">
+                  <p className="text-[10px] font-medium text-gray-600 dark:text-gray-400 print:text-gray-600">Espaço para outra informação</p>
+                  <p className="text-lg font-bold text-gray-500 dark:text-gray-400 tabular-nums print:text-gray-500">—</p>
                 </div>
               </div>
             </section>
 
-            {/* Funil compacto */}
+            {/* Funil de vendas — estilo redondo (relatório individual), uma linha */}
             <section className="mb-8 print:mb-6">
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 print:text-gray-700 mb-3">Funil de vendas</h2>
-              <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 print:bg-white print:border-gray-200">
-                <div className="flex flex-wrap gap-2">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 print:text-gray-700 mb-2">Funil de vendas</h2>
+              <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-3 print:bg-white print:border-gray-200">
+                <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1">
                   {funil.map(({ label, count, pct }) => (
-                    <button
+                    <FunilCircle
                       key={label}
-                      type="button"
-                      onClick={() => setFiltroEtapa((e) => (e === label ? null : label))}
-                      className={`no-print text-left px-3 py-2 rounded-lg border text-xs transition-all print:pointer-events-none ${
-                        filtroEtapa === label
-                          ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/20 dark:border-amber-500/50'
-                          : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5'
-                      } print:border-gray-200`}
-                    >
-                      <span className="font-medium text-gray-700 dark:text-gray-300 print:text-gray-700 truncate max-w-[120px] block" title={label}>{label}</span>
-                      <span className="text-gray-900 dark:text-white font-bold tabular-nums print:text-gray-900">{count}</span>
-                      <span className="text-amber-600 dark:text-amber-400 tabular-nums ml-1">({pct}%)</span>
-                    </button>
+                      label={label}
+                      count={count}
+                      pct={pct}
+                      total={leads.length}
+                      selected={filtroEtapa === label}
+                      onSelect={() => setFiltroEtapa((e) => (e === label ? null : label))}
+                    />
                   ))}
                 </div>
                 {filtroEtapa && (
-                  <p className="no-print mt-2 text-xs text-gray-500">
+                  <p className="no-print mt-2 text-[10px] text-gray-500">
                     Filtro: <span className="text-amber-600 font-medium">{filtroEtapa}</span>
                     {' · '}
                     <button type="button" onClick={() => setFiltroEtapa(null)} className="text-amber-600 hover:underline">Limpar</button>
@@ -384,17 +423,6 @@ export default function RelatorioDiarioPage() {
                 )}
               </div>
             </section>
-
-            {/* Busca — só tela */}
-            <div className="no-print mb-4">
-              <input
-                type="text"
-                placeholder="Buscar por nome, e-mail ou telefone..."
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                className="w-full max-w-md px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white placeholder-gray-400"
-              />
-            </div>
 
             {/* Próximas ações com clientes — os mais quentes primeiro */}
             <section className="mb-8 print:mb-6">
@@ -487,10 +515,9 @@ export default function RelatorioDiarioPage() {
               </div>
             </section>
 
-            {/* Rodapé */}
+            {/* Rodapé — só Alumma dourada + Nox */}
             <footer className="mt-8 pt-4 border-t border-gray-200 dark:border-white/10 flex items-center justify-between flex-wrap gap-4 print:border-gray-200 print:pt-3">
-              <AlummaLogoFullInline theme="dark" height={24} className="print:hidden opacity-80" />
-              <AlummaLogoFullInline theme="light" height={24} className="hidden print:!block opacity-90" />
+              <AlummaLogoFullInline theme="dark" height={24} className="opacity-80" />
               <NoxLogo className="print:opacity-90" />
             </footer>
           </>
