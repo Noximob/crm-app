@@ -10,3 +10,5 @@
 | `logo-alumma-white.png` | Só nome ALUMMA, fundo branco | Quando quiser só o nome em fundo claro |
 
 O componente `AlummaLogo` em `@/components/AlummaLogo` usa esses arquivos: `variant` = `a` | `alumma` | `full`, `theme` = `dark` | `light`.
+
+**Relatório diário (admin):** o cabeçalho e rodapé usam a logo **Nox**. Coloque a imagem em `nox.png` ou `logo-nox.png` nesta pasta; se não existir, é exibido o texto "Nox".

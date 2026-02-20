@@ -53,17 +53,21 @@ function buildMockLeads(): LeadRow[] {
     { nome: 'Sandra Cristina Moraes', email: 'sandra.moraes@yahoo.com.br', telefone: '(11) 98989-5678', etapa: etapas[3], entrouEm: entradasMock[16], qualificacao: { Visita: 'Agendada' }, anotacoes: 'Visita agendada 23/02 10h. Casal, primeiro imóvel.' },
     { nome: 'Thiago Henrique Lopes', email: 'thiago.lopes@empresa.com', telefone: '(31) 97878-9012', etapa: etapas[4], entrouEm: entradasMock[17], qualificacao: {}, anotacoes: 'Ligação agendada para confirmar documentação e enviar minuta.' },
   ];
-  return pessoas.map((p, i) => ({
-    id: `mock-${i + 1}`,
-    nome: p.nome,
-    email: p.email,
-    telefone: p.telefone,
-    etapa: p.etapa,
-    entrouEm: p.entrouEm,
-    qualificacao: p.qualificacao ?? {},
-    anotacoes: p.anotacoes ?? '',
-    proximaTarefa: tarefas[i % tarefas.length],
-  }));
+  return pessoas.map((p, i) => {
+    const prox = tarefas[i % tarefas.length];
+    return {
+      id: `mock-${i + 1}`,
+      nome: p.nome,
+      email: p.email,
+      telefone: p.telefone,
+      etapa: p.etapa,
+      entrouEm: p.entrouEm,
+      qualificacao: p.qualificacao ?? {},
+      anotacoes: p.anotacoes ?? '',
+      proximaTarefa: prox,
+      proximaTarefaDataOrdenacao: prox?.data ? parseTaskDateString(prox.data) : undefined,
+    };
+  });
 }
 const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
@@ -89,6 +93,8 @@ interface LeadRow {
   qualificacao?: Record<string, string | string[]>;
   anotacoes?: string;
   proximaTarefa?: { type: string; description: string; data: string };
+  /** Timestamp (ms) da próxima tarefa para ordenar "próximas ações" (mais cedo primeiro) */
+  proximaTarefaDataOrdenacao?: number;
 }
 
 function formatTaskDate(d: Timestamp | { seconds: number }): string {
@@ -102,22 +108,33 @@ function formatTaskDate(d: Timestamp | { seconds: number }): string {
   });
 }
 
-/** Logo Nox: imagem se existir em /logo/logo-nox.png, senão texto NOX (para PDF e tela) */
-function NoxLogo() {
-  const [imgFailed, setImgFailed] = useState(false);
-  const useImg = !imgFailed;
+/** Parse "DD/MM HH:mm" para timestamp (ano atual) — usado na ordenação do mock */
+function parseTaskDateString(s: string): number {
+  const match = s.match(/^(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2})$/);
+  if (!match) return 0;
+  const [, d, m, h, min] = match;
+  const year = new Date().getFullYear();
+  return new Date(year, Number(m) - 1, Number(d), Number(h), Number(min)).getTime();
+}
+
+/** Logo Nox: tenta /logo/nox.png (logo oficial) e /logo/logo-nox.png; fallback texto discreto */
+const NOX_LOGO_PATHS = ['/logo/nox.png', '/logo/logo-nox.png'];
+function NoxLogo({ className = '' }: { className?: string }) {
+  const [tried, setTried] = useState(0);
+  const src = NOX_LOGO_PATHS[tried];
+  const next = () => setTried((t) => Math.min(t + 1, NOX_LOGO_PATHS.length));
   return (
     <>
-      {useImg && (
+      {tried < NOX_LOGO_PATHS.length && (
         <img
-          src="/logo/logo-nox.png"
+          src={src}
           alt="Nox"
-          className="h-9 w-auto object-contain"
-          onError={() => setImgFailed(true)}
+          className={`h-8 w-auto object-contain ${className}`}
+          onError={next}
         />
       )}
-      {imgFailed && (
-        <span className="text-[#2E2F38] dark:text-white font-bold text-xl tracking-widest">NOX</span>
+      {tried >= NOX_LOGO_PATHS.length && (
+        <span className={`font-medium text-sm text-[#374151] dark:text-gray-300 ${className}`} aria-label="Nox">Nox</span>
       )}
     </>
   );
@@ -192,11 +209,13 @@ export default function RelatorioDiarioPage() {
             const tsnap = await getDocs(tq);
             if (!tsnap.empty) {
               const t = tsnap.docs[0].data() as Task;
+              const sec = t.dueDate && typeof t.dueDate === 'object' && 'seconds' in t.dueDate ? (t.dueDate as { seconds: number }).seconds : 0;
               lead.proximaTarefa = {
                 type: t.type || 'Tarefa',
                 description: t.description || '—',
                 data: formatTaskDate(t.dueDate),
               };
+              lead.proximaTarefaDataOrdenacao = sec ? sec * 1000 : undefined;
             }
           } catch {
             // índice pode não existir; ignorar
@@ -243,6 +262,16 @@ export default function RelatorioDiarioPage() {
     return list;
   }, [leads, filtroEtapa, busca]);
 
+  const countProximasAcoes = useMemo(() => filteredLeads.filter((l) => l.proximaTarefa).length, [filteredLeads]);
+
+  const { proximasAcoesLeads, demaisLeads } = useMemo(() => {
+    const comTarefa = filteredLeads.filter((l) => l.proximaTarefa);
+    const semTarefa = filteredLeads.filter((l) => !l.proximaTarefa);
+    comTarefa.sort((a, b) => (a.proximaTarefaDataOrdenacao ?? 0) - (b.proximaTarefaDataOrdenacao ?? 0));
+    semTarefa.sort((a, b) => a.nome.localeCompare(b.nome));
+    return { proximasAcoesLeads: comTarefa, demaisLeads: semTarefa };
+  }, [filteredLeads]);
+
   const dataHoje = new Date().toLocaleDateString('pt-BR', {
     weekday: 'long',
     day: '2-digit',
@@ -261,202 +290,155 @@ export default function RelatorioDiarioPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] text-[#2E2F38] dark:text-gray-100 relatorio-diario-print">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f1115] text-[#1e293b] dark:text-gray-100 relatorio-diario-print">
       <style>{`
         @media print {
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: #fff !important; }
           .no-print { display: none !important; }
-          .relatorio-diario-print { background: #fff !important; color: #1a1a1a !important; }
-          .relatorio-diario-print .dark\\:bg-\\[\\#181C23\\] { background: #fff !important; }
-          .relatorio-diario-print .dark\\:text-white { color: #1a1a1a !important; }
-          .relatorio-diario-print .dark\\:text-gray-400 { color: #555 !important; }
-          .relatorio-diario-print .dark\\:border-white\\/10 { border-color: #eee !important; }
-          .relatorio-diario-print .dark\\:bg-white\\/5 { background: #f8f8f8 !important; }
-          .page-break-inside-avoid { page-break-inside: avoid; break-inside: avoid; }
-          .relatorio-diario-print .break-inside-avoid { page-break-inside: avoid; break-inside: avoid; }
+          .relatorio-diario-print { background: #fff !important; color: #111 !important; }
+          .relatorio-diario-print .print\\:bg-white { background: #fff !important; }
+          .relatorio-diario-print .print\\:text-gray-900 { color: #111 !important; }
+          .relatorio-diario-print .print\\:border-gray-200 { border-color: #e5e7eb !important; }
+          .relatorio-diario-print .print\\:border-amber-200 { border-color: #fde68a !important; }
+          .break-inside-avoid, .page-break-inside-avoid { page-break-inside: avoid; break-inside: avoid; }
         }
       `}</style>
-      <div className="max-w-6xl mx-auto py-8 px-4">
-        <Link
-          href="/dashboard/admin"
-          className="no-print inline-flex items-center gap-2 text-sm text-[#D4A017] hover:underline mb-6"
-        >
-          <ArrowLeftIcon className="h-4 w-4" />
-          Voltar ao administrador
+      <div className="max-w-5xl mx-auto py-6 px-4 sm:px-6 print:py-4 print:px-0">
+        <Link href="/dashboard/admin" className="no-print inline-flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400 hover:underline mb-6">
+          <ArrowLeftIcon className="h-4 w-4" /> Voltar ao administrador
         </Link>
 
-        {/* Cabeçalho com logos Alumma e Nox — visível na tela e no PDF */}
-        <header className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-[#E8E9F1] dark:border-white/10">
-          <div className="flex items-center gap-3">
-            <AlummaLogoFullInline theme="dark" height={36} className="print:!hidden" />
-            <AlummaLogoFullInline theme="light" height={36} className="hidden print:!block" />
-          </div>
+        {/* Cabeçalho limpo — tela e PDF */}
+        <header className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-200 dark:border-white/10 print:border-gray-200 print:pb-3">
+          <AlummaLogoFullInline theme="dark" height={32} className="print:hidden" />
+          <AlummaLogoFullInline theme="light" height={32} className="hidden print:!block" />
           <div className="text-center flex-1 min-w-0">
-            <h1 className="text-2xl md:text-3xl font-bold text-[#2E2F38] dark:text-white">
-              Relatório diário
-            </h1>
-            <p className="text-[#6B6F76] dark:text-gray-400 mt-1 capitalize">{dataHoje}</p>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white print:text-gray-900">Relatório diário</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 print:text-gray-600 capitalize">{dataHoje}</p>
           </div>
-          <div className="flex items-center justify-end w-24">
-            <NoxLogo />
+          <div className="w-24 flex justify-end">
+            <NoxLogo className="print:opacity-90" />
           </div>
         </header>
 
         <div className="no-print flex flex-wrap items-center gap-4 mb-6">
-          <label className="inline-flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={useMockData}
-              onChange={(e) => setUseMockData(e.target.checked)}
-              className="rounded border-[#E8E9F1] text-[#D4A017] focus:ring-[#D4A017]"
-            />
-            <span className="text-sm text-[#2E2F38] dark:text-gray-300">Exibir dados de exemplo</span>
+          <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-gray-600 dark:text-gray-400">
+            <input type="checkbox" checked={useMockData} onChange={(e) => setUseMockData(e.target.checked)} className="rounded border-gray-300 text-amber-600 focus:ring-amber-500" />
+            Exibir dados de exemplo
           </label>
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="px-4 py-2 rounded-lg bg-[#D4A017] hover:bg-[#B8860B] text-white font-medium text-sm"
-          >
+          <button type="button" onClick={() => window.print()} className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-medium text-sm">
             Imprimir / Gerar PDF
           </button>
         </div>
 
         {loading ? (
-          <div className="py-12 text-center text-[#6B6F76] dark:text-gray-400">
-            Carregando leads e tarefas...
-          </div>
+          <div className="py-12 text-center text-gray-500">Carregando...</div>
         ) : (
           <>
-            {/* ——— TOPO: batida rápida (funil + % no estilo relatório individual) ——— */}
-            <section className="mb-8 print:mb-6">
-              <div className="relative overflow-hidden rounded-2xl border-2 border-[#D4A017]/40 bg-gradient-to-b from-[#1a1a1f] to-[#121218] p-4 shadow-[0_0_40px_-8px_rgba(212,160,23,0.25),0_8px_32px_rgba(0,0,0,0.4)] print:shadow-none print:border print:border-[#D4A017]/50">
-                <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#D4A017]/60 to-transparent" />
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                  <h2 className="flex items-center gap-2 text-sm font-bold text-white">
-                    <span className="w-1 h-5 rounded-r-full bg-gradient-to-b from-[#D4A017] to-[#b8860b] shadow-[0_0_6px_rgba(212,160,23,0.5)]" />
-                    Funil de vendas
-                  </h2>
-                  <div className="flex items-center gap-2 rounded-lg border border-[#D4A017]/50 bg-[#D4A017]/10 px-3 py-1.5">
-                    <span className="text-[10px] text-gray-400">Total de leads</span>
-                    <span className="text-lg font-bold tabular-nums text-[#D4A017]">{leads.length}</span>
-                  </div>
+            {/* Resumo — onde colocar o olho: próximas ações + total */}
+            <section className="mb-6 print:mb-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 print:grid-cols-3">
+                <div className="rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-500/10 p-4 print:bg-amber-50/50 print:border-amber-200">
+                  <p className="text-xs font-medium text-amber-800 dark:text-amber-300 print:text-amber-900">Próximas ações agendadas</p>
+                  <p className="text-2xl font-bold text-amber-900 dark:text-amber-200 tabular-nums print:text-amber-900">{countProximasAcoes}</p>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+                <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 print:bg-gray-50 print:border-gray-200">
+                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 print:text-gray-600">Total de leads</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums print:text-gray-900">{filteredLeads.length}</p>
+                </div>
+                <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 print:bg-gray-50 print:border-gray-200 col-span-2 sm:col-span-1">
+                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 print:text-gray-600">Etapas no funil</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums print:text-gray-900">{funil.length}</p>
+                </div>
+              </div>
+            </section>
+
+            {/* Funil compacto */}
+            <section className="mb-8 print:mb-6">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 print:text-gray-700 mb-3">Funil de vendas</h2>
+              <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 print:bg-white print:border-gray-200">
+                <div className="flex flex-wrap gap-2">
                   {funil.map(({ label, count, pct }) => (
                     <button
                       key={label}
                       type="button"
                       onClick={() => setFiltroEtapa((e) => (e === label ? null : label))}
-                      className={`no-print text-left p-3 rounded-xl border transition-all print:pointer-events-none ${
+                      className={`no-print text-left px-3 py-2 rounded-lg border text-xs transition-all print:pointer-events-none ${
                         filtroEtapa === label
-                          ? 'border-[#D4A017] bg-[#D4A017]/20 shadow-[0_0_12px_rgba(212,160,23,0.2)]'
-                          : 'border-white/10 bg-white/[0.06] hover:bg-white/[0.1]'
-                      }`}
+                          ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/20 dark:border-amber-500/50'
+                          : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5'
+                      } print:border-gray-200`}
                     >
-                      <div className="text-[10px] font-medium text-gray-400 truncate" title={label}>{label}</div>
-                      <div className="flex items-baseline gap-2 mt-1">
-                        <span className="text-xl font-bold text-white tabular-nums">{count}</span>
-                        <span className="text-xs font-medium text-[#D4A017] tabular-nums">{pct}%</span>
-                      </div>
-                      <div className="mt-1.5 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-[#D4A017] to-[#e8c234] rounded-full transition-all"
-                          style={{ width: `${Math.min(pct, 100)}%` }}
-                        />
-                      </div>
+                      <span className="font-medium text-gray-700 dark:text-gray-300 print:text-gray-700 truncate max-w-[120px] block" title={label}>{label}</span>
+                      <span className="text-gray-900 dark:text-white font-bold tabular-nums print:text-gray-900">{count}</span>
+                      <span className="text-amber-600 dark:text-amber-400 tabular-nums ml-1">({pct}%)</span>
                     </button>
                   ))}
                 </div>
                 {filtroEtapa && (
-                  <p className="no-print mt-2 text-[10px] text-gray-500">
-                    Filtro: <span className="text-[#D4A017] font-medium">{filtroEtapa}</span>
+                  <p className="no-print mt-2 text-xs text-gray-500">
+                    Filtro: <span className="text-amber-600 font-medium">{filtroEtapa}</span>
                     {' · '}
-                    <button type="button" onClick={() => setFiltroEtapa(null)} className="text-[#D4A017] hover:underline">Limpar</button>
+                    <button type="button" onClick={() => setFiltroEtapa(null)} className="text-amber-600 hover:underline">Limpar</button>
                   </p>
                 )}
               </div>
             </section>
 
-            {/* ——— EMBAIXO: descritivo (nome, quando entrou, qualif/anotações, estágio, próx tarefa) ——— */}
-            <section>
-              <h2 className="text-lg font-semibold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                <span className="w-1 h-6 bg-gradient-to-b from-[#D4A017] to-[#E8C547] rounded-full" />
-                Descritivo — leads conosco ({filteredLeads.length})
-                {useMockData && <span className="no-print ml-2 text-xs font-normal text-amber-600 dark:text-amber-400">(dados de exemplo)</span>}
+            {/* Busca — só tela */}
+            <div className="no-print mb-4">
+              <input
+                type="text"
+                placeholder="Buscar por nome, e-mail ou telefone..."
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                className="w-full max-w-md px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white placeholder-gray-400"
+              />
+            </div>
+
+            {/* Próximas ações com clientes — os mais quentes primeiro */}
+            <section className="mb-8 print:mb-6">
+              <h2 className="text-sm font-semibold text-gray-800 dark:text-white print:text-gray-800 mb-1 flex items-center gap-2">
+                <span className="w-1 h-4 rounded-full bg-amber-500" />
+                Próximas ações com clientes
+                <span className="text-xs font-normal text-gray-500 dark:text-gray-400">({proximasAcoesLeads.length} agendadas)</span>
               </h2>
-              <div className="no-print mb-4">
-                <input
-                  type="text"
-                  placeholder="Buscar por nome, e-mail ou telefone..."
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                  className="w-full max-w-md px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-white/10 bg-white dark:bg-white/5 text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-500"
-                />
-              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 print:text-gray-600">Leads com tarefa agendada, ordenados pela data da próxima ação.</p>
               <div className="space-y-3 print:space-y-2">
-                {filteredLeads.length === 0 ? (
-                  <div className="py-8 text-center text-[#6B6F76] dark:text-gray-400 rounded-xl border border-[#E8E9F1] dark:border-white/10">
-                    Nenhum lead encontrado.
+                {proximasAcoesLeads.length === 0 ? (
+                  <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 py-6 text-center text-sm text-gray-500 print:border-gray-200 print:bg-gray-50">
+                    Nenhuma próxima ação agendada.
                   </div>
                 ) : (
-                  filteredLeads.map((lead) => (
-                    <div
-                      key={lead.id}
-                      className="break-inside-avoid page-break-inside-avoid rounded-xl border border-[#E8E9F1] dark:border-white/10 bg-white dark:bg-white/[0.04] p-4 print:border print:border-gray-300 print:bg-gray-50/80 print:shadow-none"
-                    >
+                  proximasAcoesLeads.map((lead) => (
+                    <div key={lead.id} className="break-inside-avoid page-break-inside-avoid rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 print:border print:border-gray-200 print:bg-white print:shadow-none">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
-                          <h3 className="font-semibold text-[#2E2F38] dark:text-white">{lead.nome}</h3>
+                          <h3 className="font-semibold text-gray-900 dark:text-white print:text-gray-900">{lead.nome}</h3>
                           {(lead.telefone || lead.email) && (
-                            <p className="text-xs text-[#6B6F76] dark:text-gray-400 mt-0.5">
-                              {lead.telefone}
-                              {lead.telefone && lead.email ? ' · ' : ''}
-                              {lead.email}
-                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 print:text-gray-600 mt-0.5">{lead.telefone}{lead.telefone && lead.email ? ' · ' : ''}{lead.email}</p>
                           )}
-                          <p className="text-[11px] text-[#6B6F76] dark:text-gray-500 mt-1">
-                            <span className="font-medium text-[#2E2F38] dark:text-gray-300">Entrou em:</span> {lead.entrouEm}
-                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 print:text-gray-600 mt-1">Entrou em {lead.entrouEm}</p>
                         </div>
-                        <span className="shrink-0 inline-block px-2.5 py-1 rounded-lg bg-[#D4A017]/15 dark:bg-[#D4A017]/20 text-[#B8860B] dark:text-[#E8C547] font-medium text-xs">
-                          {lead.etapa}
-                        </span>
+                        <span className="shrink-0 px-2 py-1 rounded-md bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 text-xs font-medium print:bg-amber-50 print:text-amber-900">{lead.etapa}</span>
                       </div>
-                      <div className="mt-3 pt-3 border-t border-[#E8E9F1] dark:border-white/10">
-                        <p className="text-[10px] font-semibold text-[#6B6F76] dark:text-gray-400 uppercase tracking-wide mb-1">Qualificações / Anotações</p>
+                      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/10">
+                        <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 print:text-gray-600">Qualificações / Anotações</p>
                         <div className="flex flex-wrap gap-1 mb-1">
-                          {lead.qualificacao && Object.keys(lead.qualificacao).length > 0 ? (
-                            Object.entries(lead.qualificacao).map(([key, val]) => {
-                              const arr = Array.isArray(val) ? val : [val];
-                              return arr.map((v, i) =>
-                                v ? (
-                                  <span key={`${key}-${i}`} className="inline-block px-2 py-0.5 rounded bg-[#D4A017]/10 dark:bg-[#D4A017]/15 text-[10px] text-[#B8860B] dark:text-[#E8C547]">
-                                    {key}: {String(v)}
-                                  </span>
-                                ) : null
-                              );
-                            })
-                          ) : null}
+                          {lead.qualificacao && Object.entries(lead.qualificacao).map(([key, val]) => {
+                            const arr = Array.isArray(val) ? val : [val];
+                            return arr.map((v, i) => v ? <span key={`${key}-${i}`} className="inline-block px-2 py-0.5 rounded bg-gray-100 dark:bg-white/10 text-[10px] text-gray-700 dark:text-gray-300 print:bg-gray-100 print:text-gray-700">{key}: {String(v)}</span> : null);
+                          })}
                         </div>
-                        {lead.anotacoes ? (
-                          <p className="text-xs text-[#6B6F76] dark:text-gray-400 leading-snug">{lead.anotacoes}</p>
-                        ) : (
-                          <p className="text-xs text-[#6B6F76] dark:text-gray-500 italic">—</p>
-                        )}
+                        {lead.anotacoes ? <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug print:text-gray-700">{lead.anotacoes}</p> : <p className="text-xs text-gray-400 italic">—</p>}
                       </div>
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <p className="text-[10px] font-semibold text-[#6B6F76] dark:text-gray-400 uppercase tracking-wide">Próxima tarefa</p>
-                        {lead.proximaTarefa ? (
-                          <span className="text-xs text-[#2E2F38] dark:text-white">
-                            <span className="font-medium text-[#D4A017]">{lead.proximaTarefa.type}</span>
-                            {' — '}
-                            {lead.proximaTarefa.description}
-                            {' · '}
-                            <span className="text-[#D4A017]">{lead.proximaTarefa.data}</span>
-                          </span>
-                        ) : (
-                          <span className="text-xs text-[#6B6F76] dark:text-gray-500">Sem tarefa agendada</span>
-                        )}
+                      <div className="mt-2 flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100 dark:border-white/5">
+                        <span className="text-[10px] font-medium text-amber-700 dark:text-amber-400 uppercase print:text-amber-800">Próxima ação</span>
+                        <span className="text-xs text-gray-900 dark:text-white print:text-gray-900">
+                          <span className="font-medium text-amber-700 dark:text-amber-400 print:text-amber-800">{lead.proximaTarefa!.type}</span>
+                          {' — '}{lead.proximaTarefa!.description}
+                          {' · '}<span className="font-medium text-amber-700 dark:text-amber-400 print:text-amber-800">{lead.proximaTarefa!.data}</span>
+                        </span>
                       </div>
                     </div>
                   ))
@@ -464,13 +446,52 @@ export default function RelatorioDiarioPage() {
               </div>
             </section>
 
-            {/* Rodapé com marcas Alumma e Nox — para PDF e tela */}
-            <footer className="mt-10 pt-6 border-t border-[#E8E9F1] dark:border-white/10 flex items-center justify-between flex-wrap gap-4">
-              <AlummaLogoFullInline theme="dark" height={28} className="opacity-90 print:hidden" />
-              <AlummaLogoFullInline theme="light" height={28} className="opacity-90 hidden print:!block" />
-              <div className="flex items-center gap-2">
-                <NoxLogo />
+            {/* Demais leads */}
+            <section className="mb-8 print:mb-6">
+              <h2 className="text-sm font-semibold text-gray-800 dark:text-white print:text-gray-800 mb-1 flex items-center gap-2">
+                <span className="w-1 h-4 rounded-full bg-gray-400 dark:bg-gray-500" />
+                Demais leads
+                <span className="text-xs font-normal text-gray-500 dark:text-gray-400">({demaisLeads.length})</span>
+                {useMockData && <span className="no-print text-xs text-amber-600">(exemplo)</span>}
+              </h2>
+              <div className="space-y-3 print:space-y-2">
+                {demaisLeads.length === 0 ? (
+                  <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 py-6 text-center text-sm text-gray-500 print:border-gray-200">
+                    Nenhum outro lead no filtro atual.
+                  </div>
+                ) : (
+                  demaisLeads.map((lead) => (
+                    <div key={lead.id} className="break-inside-avoid page-break-inside-avoid rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 print:border print:border-gray-200 print:bg-white">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-semibold text-gray-900 dark:text-white print:text-gray-900">{lead.nome}</h3>
+                          {(lead.telefone || lead.email) && <p className="text-xs text-gray-500 dark:text-gray-400 print:text-gray-600 mt-0.5">{lead.telefone}{lead.telefone && lead.email ? ' · ' : ''}{lead.email}</p>}
+                          <p className="text-xs text-gray-500 dark:text-gray-400 print:text-gray-600 mt-1">Entrou em {lead.entrouEm}</p>
+                        </div>
+                        <span className="shrink-0 px-2 py-1 rounded-md bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 text-xs font-medium print:bg-gray-100 print:text-gray-800">{lead.etapa}</span>
+                      </div>
+                      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/10">
+                        <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-1 print:text-gray-600">Qualificações / Anotações</p>
+                        <div className="flex flex-wrap gap-1 mb-1">
+                          {lead.qualificacao && Object.entries(lead.qualificacao).map(([key, val]) => {
+                            const arr = Array.isArray(val) ? val : [val];
+                            return arr.map((v, i) => v ? <span key={`${key}-${i}`} className="inline-block px-2 py-0.5 rounded bg-gray-100 dark:bg-white/10 text-[10px] text-gray-700 dark:text-gray-300 print:bg-gray-100">{key}: {String(v)}</span> : null);
+                          })}
+                        </div>
+                        {lead.anotacoes ? <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug print:text-gray-700">{lead.anotacoes}</p> : <p className="text-xs text-gray-400 italic">—</p>}
+                      </div>
+                      <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 print:text-gray-600">Próxima tarefa: {lead.proximaTarefa ? `${lead.proximaTarefa.type} — ${lead.proximaTarefa.data}` : 'Sem tarefa agendada'}</div>
+                    </div>
+                  ))
+                )}
               </div>
+            </section>
+
+            {/* Rodapé */}
+            <footer className="mt-8 pt-4 border-t border-gray-200 dark:border-white/10 flex items-center justify-between flex-wrap gap-4 print:border-gray-200 print:pt-3">
+              <AlummaLogoFullInline theme="dark" height={24} className="print:hidden opacity-80" />
+              <AlummaLogoFullInline theme="light" height={24} className="hidden print:!block opacity-90" />
+              <NoxLogo className="print:opacity-90" />
             </footer>
           </>
         )}
