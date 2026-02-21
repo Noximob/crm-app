@@ -547,10 +547,18 @@ export default function FinanceiroPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border-2 border-amber-200 dark:border-amber-500/40 bg-amber-50/50 dark:bg-amber-500/10 p-4">
-              <div className="flex justify-between items-center">
-                <span className="font-bold text-gray-900 dark:text-white">Total geral de custos</span>
-                <span className="text-xl font-bold text-amber-900 dark:text-amber-200 tabular-nums">{formatCurrency(MOCK_CUSTOS.totalGeral)}</span>
+            {/* Retiradas */}
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 mt-8">
+              <span className="w-1 h-4 rounded-full bg-amber-500" />
+              Retiradas
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 -mt-2">Sócios, pró-labore e demais retiradas</p>
+            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden">
+              <div className="divide-y divide-gray-100 dark:divide-white/10">
+                {/* Espaço para listar retiradas — dados reais virão depois */}
+                <div className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                  Nenhuma retirada registrada no período
+                </div>
               </div>
             </div>
           </section>
@@ -599,46 +607,6 @@ export default function FinanceiroPage() {
                 <p className="text-[10px] font-medium text-gray-600 dark:text-gray-400">A pagar</p>
               </div>
               <p className="text-lg font-bold text-gray-900 dark:text-white tabular-nums">{formatCurrency(MOCK.contasAPagar)}</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Fluxo de caixa — barras (estilo relatório individual) */}
-        <section className="mb-6">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-            <span className="w-1 h-4 rounded-full bg-amber-500" />
-            Fluxo de caixa
-          </h2>
-          <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4">
-            <div className="flex gap-4 overflow-x-auto pb-2">
-              {MOCK.fluxoMeses.map((f) => {
-                const max = Math.max(...MOCK.fluxoMeses.flatMap((m) => [m.entrada, m.saida]));
-                return (
-                  <div key={f.mes} className="flex flex-col items-center min-w-[64px]">
-                    <div className="h-24 flex flex-col justify-end gap-1 mb-2">
-                      <div
-                        className="w-6 rounded-t bg-amber-500/80 dark:bg-amber-500/60"
-                        style={{ height: `${(f.entrada / max) * 80}px` }}
-                        title={`Entrada: ${formatCurrency(f.entrada)}`}
-                      />
-                      <div
-                        className="w-6 rounded-t bg-red-500/60 dark:bg-red-500/40"
-                        style={{ height: `${(f.saida / max) * 80}px` }}
-                        title={`Saída: ${formatCurrency(f.saida)}`}
-                      />
-                    </div>
-                    <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400">{f.mes}</span>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex gap-4 mt-2 pt-2 border-t border-gray-100 dark:border-white/10">
-              <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                <span className="w-2 h-2 rounded bg-amber-500" /> Entradas
-              </span>
-              <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                <span className="w-2 h-2 rounded bg-red-500" /> Saídas
-              </span>
             </div>
           </div>
         </section>
@@ -772,11 +740,43 @@ export default function FinanceiroPage() {
           </div>
         </section>
 
-        {/* Rodapé — DRE / Relatórios (placeholder) */}
+        {/* Fluxo de caixa — abaixo de movimentações recentes */}
         <section className="mt-6">
-          <div className="rounded-xl border border-dashed border-gray-300 dark:border-white/20 bg-gray-50/50 dark:bg-white/5 p-6 text-center">
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">DRE gerencial e relatórios financeiros</p>
-            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Em breve: exportação, filtros e integração</p>
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+            <span className="w-1 h-4 rounded-full bg-amber-500" />
+            Fluxo de caixa
+          </h2>
+          <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4">
+            <div className="flex gap-4 overflow-x-auto pb-2">
+              {MOCK.fluxoMeses.map((f) => {
+                const max = Math.max(...MOCK.fluxoMeses.flatMap((m) => [m.entrada, m.saida]));
+                return (
+                  <div key={f.mes} className="flex flex-col items-center min-w-[64px]">
+                    <div className="h-24 flex flex-col justify-end gap-1 mb-2">
+                      <div
+                        className="w-6 rounded-t bg-amber-500/80 dark:bg-amber-500/60"
+                        style={{ height: `${(f.entrada / max) * 80}px` }}
+                        title={`Entrada: ${formatCurrency(f.entrada)}`}
+                      />
+                      <div
+                        className="w-6 rounded-t bg-red-500/60 dark:bg-red-500/40"
+                        style={{ height: `${(f.saida / max) * 80}px` }}
+                        title={`Saída: ${formatCurrency(f.saida)}`}
+                      />
+                    </div>
+                    <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400">{f.mes}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex gap-4 mt-2 pt-2 border-t border-gray-100 dark:border-white/10">
+              <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <span className="w-2 h-2 rounded bg-amber-500" /> Entradas
+              </span>
+              <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <span className="w-2 h-2 rounded bg-red-500" /> Saídas
+              </span>
+            </div>
           </div>
         </section>
           </>
