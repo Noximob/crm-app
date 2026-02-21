@@ -1,7 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
+import { db } from '@/lib/firebase';
+import { collection, query, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, Timestamp } from 'firebase/firestore';
 
 const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
@@ -45,6 +48,27 @@ const PercentIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
+const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+    <path d="M5 12h14" /><path d="M12 5v14" />
+  </svg>
+);
+const EditIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+    <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+  </svg>
+);
+const TrashIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+    <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+  </svg>
+);
+
+const CATEGORIAS_ENTRADA = ['Comissão de Venda', 'Comissão de Aluguel', 'Taxa de Administração', 'Receita de Serviços', 'Outros'];
+const CATEGORIAS_SAIDA = ['Salários', 'Aluguel', 'Contas', 'Marketing', 'Material de Escritório', 'Impostos', 'Outros'];
+const FORMAS_PAGAMENTO = ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Transferência', 'Dinheiro', 'Outro'];
 
 function formatCurrency(n: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(n);
@@ -89,8 +113,150 @@ const MOCK = {
   ],
 };
 
+interface Movimentacao {
+  id: string;
+  tipo: 'entrada' | 'saida';
+  valor: number;
+  categoria: string;
+  descricao: string;
+  data: Date;
+  status: string;
+  formaPagamento?: string;
+  observacao?: string;
+}
+
 export default function FinanceiroPage() {
+  const { userData, currentUser } = useAuth();
+  const imobiliariaId = userData?.imobiliariaId ?? (userData?.tipoConta === 'imobiliaria' ? currentUser?.uid : undefined);
+  const [tab, setTab] = useState<'relatorio' | 'lancamentos'>('relatorio');
   const [periodo, setPeriodo] = useState<'mes' | 'trimestre'>('mes');
+
+  const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    tipo: 'entrada' as 'entrada' | 'saida',
+    valor: '',
+    categoria: '',
+    descricao: '',
+    data: new Date().toISOString().split('T')[0],
+    status: 'confirmado',
+    formaPagamento: '',
+    observacao: '',
+  });
+
+  useEffect(() => {
+    if (tab === 'lancamentos' && imobiliariaId) fetchMovimentacoes();
+  }, [tab, imobiliariaId]);
+
+  const fetchMovimentacoes = async () => {
+    if (!imobiliariaId) return;
+    setLoading(true);
+    try {
+      const q = query(
+        collection(db, 'financeiro_movimentacoes'),
+        where('imobiliariaId', '==', imobiliariaId),
+        orderBy('data', 'desc')
+      );
+      const snap = await getDocs(q);
+      const data = snap.docs.map((d) => {
+        const x = d.data();
+        const dt = x.data?.toDate ? x.data.toDate() : new Date(x.data);
+        return { id: d.id, ...x, data: dt } as Movimentacao;
+      });
+      setMovimentacoes(data);
+    } catch (err) {
+      setMsg('Erro ao carregar lançamentos');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setForm({
+      tipo: 'entrada',
+      valor: '',
+      categoria: '',
+      descricao: '',
+      data: new Date().toISOString().split('T')[0],
+      status: 'confirmado',
+      formaPagamento: '',
+      observacao: '',
+    });
+    setEditId(null);
+  };
+
+  const handleSalvar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.valor || !form.categoria || !form.descricao || !imobiliariaId) {
+      setMsg('Preencha todos os campos obrigatórios');
+      return;
+    }
+    setLoading(true);
+    setMsg(null);
+    try {
+      const dataObj = new Date(form.data);
+      const movData = {
+        tipo: form.tipo,
+        valor: Number(form.valor),
+        categoria: form.categoria,
+        descricao: form.descricao,
+        data: Timestamp.fromDate(dataObj),
+        status: form.status,
+        formaPagamento: form.formaPagamento || '',
+        observacao: form.observacao || '',
+        imobiliariaId,
+        usuarioId: currentUser?.uid,
+        criadoEm: Timestamp.now(),
+        atualizadoEm: Timestamp.now(),
+      };
+      if (editId) {
+        await updateDoc(doc(db, 'financeiro_movimentacoes', editId), movData);
+        setMsg('Lançamento atualizado!');
+      } else {
+        await addDoc(collection(db, 'financeiro_movimentacoes'), movData);
+        setMsg('Lançamento criado!');
+      }
+      setShowModal(false);
+      resetForm();
+      fetchMovimentacoes();
+    } catch (err) {
+      setMsg('Erro ao salvar');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditar = (m: Movimentacao) => {
+    setForm({
+      tipo: m.tipo,
+      valor: m.valor.toString(),
+      categoria: m.categoria,
+      descricao: m.descricao,
+      data: m.data.toISOString().split('T')[0],
+      status: m.status,
+      formaPagamento: m.formaPagamento || '',
+      observacao: m.observacao || '',
+    });
+    setEditId(m.id);
+    setShowModal(true);
+  };
+
+  const handleExcluir = async (id: string) => {
+    if (!confirm('Excluir este lançamento?')) return;
+    setLoading(true);
+    try {
+      await deleteDoc(doc(db, 'financeiro_movimentacoes', id));
+      setMovimentacoes((prev) => prev.filter((m) => m.id !== id));
+      setMsg('Lançamento excluído');
+    } catch {
+      setMsg('Erro ao excluir');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f1115] text-[#1e293b] dark:text-gray-100">
@@ -103,19 +269,117 @@ export default function FinanceiroPage() {
         <header className="mb-6">
           <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Financeiro</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Controle de caixa, fluxo e comissões da imobiliária</p>
-          <div className="flex items-center gap-2 mt-3">
-            <CalendarIcon className="h-4 w-4 text-gray-400" />
-            <select
-              value={periodo}
-              onChange={(e) => setPeriodo(e.target.value as 'mes' | 'trimestre')}
-              className="text-sm border border-gray-200 dark:border-white/10 rounded-lg bg-white dark:bg-white/5 px-3 py-1.5 text-gray-700 dark:text-gray-300"
-            >
-              <option value="mes">Este mês</option>
-              <option value="trimestre">Este trimestre</option>
-            </select>
+          <div className="flex items-center gap-4 mt-3 flex-wrap">
+            <div className="flex rounded-lg border border-gray-200 dark:border-white/10 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setTab('relatorio')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  tab === 'relatorio'
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-white dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/10'
+                }`}
+              >
+                Relatório
+              </button>
+              <button
+                type="button"
+                onClick={() => setTab('lancamentos')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  tab === 'lancamentos'
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-white dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/10'
+                }`}
+              >
+                Lançamentos
+              </button>
+            </div>
+            {tab === 'relatorio' && (
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4 text-gray-400" />
+                <select
+                  value={periodo}
+                  onChange={(e) => setPeriodo(e.target.value as 'mes' | 'trimestre')}
+                  className="text-sm border border-gray-200 dark:border-white/10 rounded-lg bg-white dark:bg-white/5 px-3 py-1.5 text-gray-700 dark:text-gray-300"
+                >
+                  <option value="mes">Este mês</option>
+                  <option value="trimestre">Este trimestre</option>
+                </select>
+              </div>
+            )}
           </div>
         </header>
 
+        {msg && (
+          <div
+            className={`mb-4 px-4 py-2 rounded-lg text-sm ${
+              msg.includes('Erro') ? 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300' : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+            }`}
+          >
+            {msg}
+          </div>
+        )}
+
+        {tab === 'lancamentos' ? (
+          /* ——— ABA LANÇAMENTOS ——— */
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                <span className="w-1 h-4 rounded-full bg-amber-500" />
+                Entradas e saídas
+              </h2>
+              <button
+                type="button"
+                onClick={() => { resetForm(); setShowModal(true); }}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-medium text-sm"
+              >
+                <PlusIcon className="h-4 w-4" /> Novo lançamento
+              </button>
+            </div>
+
+            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden">
+              {loading && movimentacoes.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">Carregando...</div>
+              ) : movimentacoes.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  <p className="font-medium mb-1">Nenhum lançamento</p>
+                  <p className="text-sm">Clique em Novo lançamento para adicionar entradas e saídas.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100 dark:divide-white/10">
+                  {movimentacoes.map((m) => (
+                    <div key={m.id} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className={`p-2 rounded-lg shrink-0 ${m.tipo === 'entrada' ? 'bg-emerald-100 dark:bg-emerald-500/20' : 'bg-red-100 dark:bg-red-500/20'}`}>
+                          {m.tipo === 'entrada' ? <TrendingUpIcon className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> : <TrendingDownIcon className="h-4 w-4 text-red-600 dark:text-red-400" />}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">{m.descricao}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {m.data.toLocaleDateString('pt-BR')} · {m.categoria}
+                            {m.formaPagamento && ` · ${m.formaPagamento}`}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`font-semibold tabular-nums ${m.tipo === 'entrada' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {m.tipo === 'entrada' ? '+' : '-'}{formatCurrency(m.valor)}
+                        </span>
+                        <button type="button" onClick={() => handleEditar(m)} className="p-1.5 text-amber-600 hover:bg-amber-100 dark:hover:bg-amber-500/20 rounded" title="Editar">
+                          <EditIcon className="h-4 w-4" />
+                        </button>
+                        <button type="button" onClick={() => handleExcluir(m.id)} className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-500/20 rounded" title="Excluir">
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        ) : (
+          <>
         {/* Resumo — cards principais (estilo Alumma) */}
         <section className="mb-6">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
@@ -337,6 +601,123 @@ export default function FinanceiroPage() {
             <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Em breve: exportação, filtros e integração</p>
           </div>
         </section>
+          </>
+        )}
+
+        {/* Modal Novo/Editar Lançamento */}
+        {showModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-[#1a1d24] rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{editId ? 'Editar' : 'Novo'} lançamento</h2>
+                  <button type="button" onClick={() => { setShowModal(false); resetForm(); }} className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-xl">×</button>
+                </div>
+                <form onSubmit={handleSalvar} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tipo *</label>
+                      <select
+                        value={form.tipo}
+                        onChange={(e) => setForm((p) => ({ ...p, tipo: e.target.value as 'entrada' | 'saida', categoria: '', formaPagamento: '' }))}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white text-sm"
+                        required
+                      >
+                        <option value="entrada">Entrada</option>
+                        <option value="saida">Saída</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Valor (R$) *</label>
+                      <input
+                        type="number"
+                        value={form.valor}
+                        onChange={(e) => setForm((p) => ({ ...p, valor: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white text-sm"
+                        placeholder="0,00"
+                        step="0.01"
+                        min="0.01"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                        {form.tipo === 'entrada' ? 'Categoria (entrada) *' : 'Categoria (saída) *'}
+                      </label>
+                      <select
+                        value={form.categoria}
+                        onChange={(e) => setForm((p) => ({ ...p, categoria: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white text-sm"
+                        required
+                      >
+                        <option value="">Selecione</option>
+                        {(form.tipo === 'entrada' ? CATEGORIAS_ENTRADA : CATEGORIAS_SAIDA).map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Data *</label>
+                      <input
+                        type="date"
+                        value={form.data}
+                        onChange={(e) => setForm((p) => ({ ...p, data: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white text-sm"
+                        required
+                      />
+                    </div>
+                  </div>
+                  {form.tipo === 'saida' && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Forma de pagamento</label>
+                      <select
+                        value={form.formaPagamento}
+                        onChange={(e) => setForm((p) => ({ ...p, formaPagamento: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white text-sm"
+                      >
+                        <option value="">Selecione</option>
+                        {FORMAS_PAGAMENTO.map((fp) => (
+                          <option key={fp} value={fp}>{fp}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Descrição *</label>
+                    <input
+                      type="text"
+                      value={form.descricao}
+                      onChange={(e) => setForm((p) => ({ ...p, descricao: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white text-sm"
+                      placeholder="Ex: Comissão venda Torre A"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Observação</label>
+                    <textarea
+                      value={form.observacao}
+                      onChange={(e) => setForm((p) => ({ ...p, observacao: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white text-sm resize-none"
+                      rows={2}
+                      placeholder="Observações adicionais..."
+                    />
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <button type="button" onClick={() => { setShowModal(false); resetForm(); }} className="flex-1 py-2 rounded-lg border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 font-medium text-sm hover:bg-gray-50 dark:hover:bg-white/5">
+                      Cancelar
+                    </button>
+                    <button type="submit" disabled={loading} className="flex-1 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-medium text-sm disabled:opacity-50">
+                      {loading ? 'Salvando...' : editId ? 'Atualizar' : 'Criar'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
