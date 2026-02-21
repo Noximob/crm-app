@@ -448,6 +448,21 @@ export default function FinanceiroPage() {
         {tab === 'custos' && (
           /* ——— RELATÓRIO DE CUSTOS ——— */
           <section className="space-y-6">
+            {/* Total de custos e caixa da imob no topo */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="rounded-xl border-2 border-amber-200 dark:border-amber-500/40 bg-amber-50/50 dark:bg-amber-500/10 p-4">
+                <p className="text-xs font-medium text-amber-800 dark:text-amber-300 mb-1">Total de custos</p>
+                <p className="text-2xl font-bold text-amber-900 dark:text-amber-200 tabular-nums">{formatCurrency(MOCK_CUSTOS.totalGeral)}</p>
+              </div>
+              <div className="rounded-xl border-2 border-emerald-200 dark:border-emerald-500/40 bg-emerald-50/50 dark:bg-emerald-500/10 p-4">
+                <p className="text-xs font-medium text-emerald-800 dark:text-emerald-300 mb-1">Caixa da imob</p>
+                <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-200 tabular-nums">
+                  {formatCurrency(Math.max(0, MOCK.entradasPeriodo - MOCK_CUSTOS.totalGeral))}
+                </p>
+                <p className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-1">Entradas − custos do período</p>
+              </div>
+            </div>
+
             {/* Resumo rápido — batida de olho */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-3">
