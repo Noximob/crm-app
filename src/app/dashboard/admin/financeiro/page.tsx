@@ -65,6 +65,11 @@ const TrashIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
   </svg>
 );
+const MegaphoneIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+    <path d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+  </svg>
+);
 
 const CATEGORIAS_ENTRADA = ['Comissão de Venda', 'Comissão de Aluguel', 'Taxa de Administração', 'Receita de Serviços', 'Outros'];
 const CATEGORIAS_SAIDA = ['Salários', 'Aluguel', 'Contas', 'Marketing', 'Material de Escritório', 'Impostos', 'Outros'];
@@ -113,6 +118,40 @@ const MOCK = {
   ],
 };
 
+/** Dados mock para Relatório de Custos */
+const MOCK_CUSTOS = {
+  periodo: 'Fevereiro 2025',
+  custosFixos: {
+    total: 18500,
+    itens: [
+      { desc: 'Aluguel do escritório', valor: 6500 },
+      { desc: 'Salários fixos (administrativo)', valor: 8200 },
+      { desc: 'Contas (luz, água, internet)', valor: 1800 },
+      { desc: 'Software e assinaturas', valor: 1200 },
+      { desc: 'Outros custos fixos', valor: 800 },
+    ],
+  },
+  custosVariaveis: {
+    total: 42100,
+    itens: [
+      { tipo: 'Comissão corretor', desc: 'Ana Silva — venda R$ 450k', valor: 13500 },
+      { tipo: 'Comissão corretor', desc: 'Bruno Costa — venda R$ 280k', valor: 8400 },
+      { tipo: 'Comissão corretor', desc: 'Carla Mendes — venda R$ 520k', valor: 13000 },
+      { tipo: 'Bônus por meta', desc: 'Meta mensal atingida — equipe', valor: 5200 },
+      { tipo: 'Bônus por meta', desc: 'Bônus individual — João', valor: 2000 },
+    ],
+  },
+  custosAquisicao: {
+    total: 12800,
+    itens: [
+      { canal: 'Meta Ads', valor: 5400, detalhe: 'Campanhas lançamentos e remarketing' },
+      { canal: 'Google Ads', valor: 4200, detalhe: 'Search e Display' },
+      { canal: 'Produção de mídia', valor: 3200, detalhe: 'Vídeos, fotos e materiais gráficos' },
+    ],
+  },
+  totalGeral: 73400,
+};
+
 interface Movimentacao {
   id: string;
   tipo: 'entrada' | 'saida';
@@ -128,7 +167,7 @@ interface Movimentacao {
 export default function FinanceiroPage() {
   const { userData, currentUser } = useAuth();
   const imobiliariaId = userData?.imobiliariaId ?? (userData?.tipoConta === 'imobiliaria' ? currentUser?.uid : undefined);
-  const [tab, setTab] = useState<'relatorio' | 'lancamentos'>('relatorio');
+  const [tab, setTab] = useState<'financeiro' | 'custos' | 'lancamentos'>('financeiro');
   const [periodo, setPeriodo] = useState<'mes' | 'trimestre'>('mes');
 
   const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>([]);
@@ -259,9 +298,15 @@ export default function FinanceiroPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f1115] text-[#1e293b] dark:text-gray-100">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f1115] text-[#1e293b] dark:text-gray-100 financeiro-print">
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          .financeiro-print { background: #fff !important; color: #111 !important; }
+        }
+      `}</style>
       <div className="max-w-5xl mx-auto py-6 px-4 sm:px-6">
-        <Link href="/dashboard/admin" className="inline-flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 hover:underline mb-6">
+        <Link href="/dashboard/admin" className="no-print inline-flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 hover:underline mb-6">
           <ArrowLeftIcon className="h-4 w-4" /> Voltar ao administrador
         </Link>
 
@@ -269,18 +314,29 @@ export default function FinanceiroPage() {
         <header className="mb-6">
           <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Financeiro</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Controle de caixa, fluxo e comissões da imobiliária</p>
-          <div className="flex items-center gap-4 mt-3 flex-wrap">
+          <div className="no-print flex items-center gap-4 mt-3 flex-wrap">
             <div className="flex rounded-lg border border-gray-200 dark:border-white/10 overflow-hidden">
               <button
                 type="button"
-                onClick={() => setTab('relatorio')}
+                onClick={() => setTab('financeiro')}
                 className={`px-4 py-2 text-sm font-medium transition-colors ${
-                  tab === 'relatorio'
+                  tab === 'financeiro'
                     ? 'bg-amber-600 text-white'
                     : 'bg-white dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/10'
                 }`}
               >
-                Relatório
+                Rel. Financeiro
+              </button>
+              <button
+                type="button"
+                onClick={() => setTab('custos')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  tab === 'custos'
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-white dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/10'
+                }`}
+              >
+                Rel. Custos
               </button>
               <button
                 type="button"
@@ -294,17 +350,26 @@ export default function FinanceiroPage() {
                 Lançamentos
               </button>
             </div>
-            {tab === 'relatorio' && (
-              <div className="flex items-center gap-2">
-                <CalendarIcon className="h-4 w-4 text-gray-400" />
-                <select
-                  value={periodo}
-                  onChange={(e) => setPeriodo(e.target.value as 'mes' | 'trimestre')}
-                  className="text-sm border border-gray-200 dark:border-white/10 rounded-lg bg-white dark:bg-white/5 px-3 py-1.5 text-gray-700 dark:text-gray-300"
+            {(tab === 'financeiro' || tab === 'custos') && (
+              <div className="no-print flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <CalendarIcon className="h-4 w-4 text-gray-400" />
+                  <select
+                    value={periodo}
+                    onChange={(e) => setPeriodo(e.target.value as 'mes' | 'trimestre')}
+                    className="text-sm border border-gray-200 dark:border-white/10 rounded-lg bg-white dark:bg-white/5 px-3 py-1.5 text-gray-700 dark:text-gray-300"
+                  >
+                    <option value="mes">Este mês</option>
+                    <option value="trimestre">Este trimestre</option>
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-medium text-sm"
                 >
-                  <option value="mes">Este mês</option>
-                  <option value="trimestre">Este trimestre</option>
-                </select>
+                  Baixar PDF
+                </button>
               </div>
             )}
           </div>
@@ -312,7 +377,7 @@ export default function FinanceiroPage() {
 
         {msg && (
           <div
-            className={`mb-4 px-4 py-2 rounded-lg text-sm ${
+            className={`no-print mb-4 px-4 py-2 rounded-lg text-sm ${
               msg.includes('Erro') ? 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300' : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
             }`}
           >
@@ -320,7 +385,7 @@ export default function FinanceiroPage() {
           </div>
         )}
 
-        {tab === 'lancamentos' ? (
+        {tab === 'lancamentos' && (
           /* ——— ABA LANÇAMENTOS ——— */
           <section>
             <div className="flex items-center justify-between mb-4">
@@ -378,7 +443,105 @@ export default function FinanceiroPage() {
               )}
             </div>
           </section>
-        ) : (
+        )}
+
+        {tab === 'custos' && (
+          /* ——— RELATÓRIO DE CUSTOS ——— */
+          <section className="space-y-6">
+            {/* Resumo rápido — batida de olho */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-3">
+                <p className="text-[10px] font-medium text-gray-600 dark:text-gray-400">Custos fixos</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-white tabular-nums">{formatCurrency(MOCK_CUSTOS.custosFixos.total)}</p>
+              </div>
+              <div className="rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-500/10 p-3">
+                <p className="text-[10px] font-medium text-amber-800 dark:text-amber-300">Custos variáveis</p>
+                <p className="text-lg font-bold text-amber-900 dark:text-amber-200 tabular-nums">{formatCurrency(MOCK_CUSTOS.custosVariaveis.total)}</p>
+              </div>
+              <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-3">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <MegaphoneIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                  <p className="text-[10px] font-medium text-gray-600 dark:text-gray-400">Aquisição / marketing</p>
+                </div>
+                <p className="text-lg font-bold text-gray-900 dark:text-white tabular-nums">{formatCurrency(MOCK_CUSTOS.custosAquisicao.total)}</p>
+              </div>
+            </div>
+
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+              <span className="w-1 h-4 rounded-full bg-amber-500" />
+              Custos fixos
+            </h2>
+            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden">
+              <div className="divide-y divide-gray-100 dark:divide-white/10">
+                {MOCK_CUSTOS.custosFixos.itens.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between px-4 py-3">
+                    <p className="font-medium text-gray-900 dark:text-white">{item.desc}</p>
+                    <span className="font-semibold text-gray-900 dark:text-white tabular-nums">{formatCurrency(item.valor)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="px-4 py-3 bg-gray-50 dark:bg-white/5 border-t border-gray-100 dark:border-white/10 flex justify-between items-center">
+                <span className="font-semibold text-gray-700 dark:text-gray-300">Total custos fixos</span>
+                <span className="font-bold text-amber-700 dark:text-amber-400 tabular-nums">{formatCurrency(MOCK_CUSTOS.custosFixos.total)}</span>
+              </div>
+            </div>
+
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 mt-8">
+              <span className="w-1 h-4 rounded-full bg-amber-500" />
+              Custos variáveis
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 -mt-2">Comissões e bônus por meta</p>
+            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden">
+              <div className="divide-y divide-gray-100 dark:divide-white/10">
+                {MOCK_CUSTOS.custosVariaveis.itens.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between px-4 py-3">
+                    <div>
+                      <span className="inline-block px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 text-[10px] font-medium mb-1">{item.tipo}</span>
+                      <p className="font-medium text-gray-900 dark:text-white">{item.desc}</p>
+                    </div>
+                    <span className="font-semibold text-gray-900 dark:text-white tabular-nums">{formatCurrency(item.valor)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="px-4 py-3 bg-gray-50 dark:bg-white/5 border-t border-gray-100 dark:border-white/10 flex justify-between items-center">
+                <span className="font-semibold text-gray-700 dark:text-gray-300">Total custos variáveis</span>
+                <span className="font-bold text-amber-700 dark:text-amber-400 tabular-nums">{formatCurrency(MOCK_CUSTOS.custosVariaveis.total)}</span>
+              </div>
+            </div>
+
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 mt-8">
+              <span className="w-1 h-4 rounded-full bg-amber-500" />
+              Custos de aquisição / marketing
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 -mt-2">Meta Ads, Google Ads e produção de mídia</p>
+            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden">
+              <div className="divide-y divide-gray-100 dark:divide-white/10">
+                {MOCK_CUSTOS.custosAquisicao.itens.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between px-4 py-3">
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">{item.canal}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{item.detalhe}</p>
+                    </div>
+                    <span className="font-semibold text-gray-900 dark:text-white tabular-nums">{formatCurrency(item.valor)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="px-4 py-3 bg-gray-50 dark:bg-white/5 border-t border-gray-100 dark:border-white/10 flex justify-between items-center">
+                <span className="font-semibold text-gray-700 dark:text-gray-300">Total custos aquisição</span>
+                <span className="font-bold text-amber-700 dark:text-amber-400 tabular-nums">{formatCurrency(MOCK_CUSTOS.custosAquisicao.total)}</span>
+              </div>
+            </div>
+
+            <div className="rounded-xl border-2 border-amber-200 dark:border-amber-500/40 bg-amber-50/50 dark:bg-amber-500/10 p-4">
+              <div className="flex justify-between items-center">
+                <span className="font-bold text-gray-900 dark:text-white">Total geral de custos</span>
+                <span className="text-xl font-bold text-amber-900 dark:text-amber-200 tabular-nums">{formatCurrency(MOCK_CUSTOS.totalGeral)}</span>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {tab === 'financeiro' && (
           <>
         {/* Resumo — cards principais (estilo Alumma) */}
         <section className="mb-6">
