@@ -93,6 +93,8 @@ const MOCK = {
   saldoAtual: 84750,
   /** Valor Geral de Vendas (período) */
   vgv: 1250000,
+  /** Meta de VGV para o período (para % da meta) */
+  metaVgv: 1000000,
   entradasPeriodo: 124300,
   saidasPeriodo: 39550,
   contasAReceber: 18200,
@@ -597,32 +599,40 @@ export default function FinanceiroPage() {
         {tab === 'financeiro' && (
           <>
         {/* ——— Dashboard Financeiro (modelo Power BI + padrão Alumma) ——— */}
-        {/* KPIs: VGV, Faturamento (comissão imob), Lucro, Margem % */}
+        {/* KPIs: VGV (% meta), Faturamento (cinza), Lucro (verde/vermelho), Margem (<15% vermelho, 15–25% amarelo, 25%+ verde) */}
         {(() => {
           const faturamento = MOCK.entradasPeriodo;
           const custos = MOCK.saidasPeriodo;
           const lucro = faturamento - custos;
           const margemPct = faturamento > 0 ? (lucro / faturamento) * 100 : 0;
+          const metaVgv = MOCK.metaVgv ?? MOCK.vgv;
+          const pctMetaVgv = metaVgv > 0 ? (MOCK.vgv / metaVgv) * 100 : 100;
+          const margemCor = margemPct >= 25 ? 'text-emerald-900 dark:text-emerald-200' : margemPct >= 15 ? 'text-amber-700 dark:text-amber-300' : 'text-red-900 dark:text-red-200';
           return (
             <section className="mb-6">
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="rounded-xl border border-gray-200 dark:border-amber-500/30 bg-white dark:bg-white/5 shadow-sm p-4">
-                  <p className="text-xs font-medium text-gray-600 dark:text-amber-400 uppercase tracking-wide">VGV</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums mt-1">{formatCurrency(MOCK.vgv)}</p>
+                <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm p-4">
+                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">VGV</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums mt-1 flex items-baseline gap-1.5 flex-wrap">
+                    <span>{formatCurrency(MOCK.vgv)}</span>
+                    <span className={`text-[10px] font-medium ${pctMetaVgv >= 100 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                      {pctMetaVgv.toFixed(0)}% meta
+                    </span>
+                  </p>
                 </div>
-                <div className="rounded-xl border border-emerald-200 dark:border-emerald-500/30 bg-white dark:bg-white/5 shadow-sm p-4">
-                  <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">Faturamento</p>
-                  <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-200 tabular-nums mt-1">{formatCurrency(faturamento)}</p>
+                <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm p-4">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Faturamento</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums mt-1">{formatCurrency(faturamento)}</p>
                 </div>
-                <div className="rounded-xl border border-amber-200 dark:border-amber-500/30 bg-white dark:bg-white/5 shadow-sm p-4">
-                  <p className="text-xs font-medium text-amber-700 dark:text-amber-400 uppercase tracking-wide">Lucro</p>
+                <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm p-4">
+                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">Lucro</p>
                   <p className={`text-2xl font-bold tabular-nums mt-1 ${lucro >= 0 ? 'text-emerald-900 dark:text-emerald-200' : 'text-red-900 dark:text-red-200'}`}>
                     {formatCurrency(lucro)}
                   </p>
                 </div>
-                <div className="rounded-xl border border-gray-200 dark:border-amber-500/30 bg-white dark:bg-white/5 shadow-sm p-4">
-                  <p className="text-xs font-medium text-gray-600 dark:text-amber-400 uppercase tracking-wide">Margem %</p>
-                  <p className={`text-2xl font-bold tabular-nums mt-1 ${margemPct >= 0 ? 'text-emerald-900 dark:text-emerald-200' : 'text-red-900 dark:text-red-200'}`}>
+                <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm p-4">
+                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">Margem %</p>
+                  <p className={`text-2xl font-bold tabular-nums mt-1 ${margemCor}`}>
                     {margemPct.toFixed(2).replace('.', ',')}%
                   </p>
                 </div>
@@ -631,13 +641,21 @@ export default function FinanceiroPage() {
           );
         })()}
 
-        {/* Saldo, A receber, A pagar — visão rápida */}
+        {/* Caixa (com projeção), A receber, A pagar — visão rápida */}
+        {(() => {
+          const custoMedioMensal = MOCK.saidasPeriodo || 1;
+          const mesesProjecao = MOCK.saldoAtual / custoMedioMensal;
+          const projCor = mesesProjecao >= 3 ? 'text-emerald-600 dark:text-emerald-400' : mesesProjecao >= 2 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400';
+          return (
         <div className="grid grid-cols-3 gap-2 mb-6">
           <div className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 flex items-center gap-2">
-            <WalletIcon className="h-4 w-4 text-emerald-500 shrink-0" />
+            <WalletIcon className="h-4 w-4 text-gray-500 dark:text-gray-400 shrink-0" />
             <div className="min-w-0">
-              <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">Saldo atual</p>
+              <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">Caixa</p>
               <p className="text-sm font-bold text-gray-900 dark:text-white tabular-nums truncate">{formatCurrency(MOCK.saldoAtual)}</p>
+              <p className={`text-[9px] font-medium tabular-nums mt-0.5 ${projCor}`}>
+                Projeção: {mesesProjecao >= 12 ? '12+' : mesesProjecao.toFixed(1).replace('.', ',')} {mesesProjecao >= 2 ? 'meses' : 'mês'}
+              </p>
             </div>
           </div>
           <div className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 flex items-center gap-2">
@@ -655,6 +673,8 @@ export default function FinanceiroPage() {
             </div>
           </div>
         </div>
+          );
+        })()}
 
         {/* Grid único: 2 colunas alinhadas, dentro da margem do dashboard */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-4 sm:gap-6 mb-6 items-stretch w-full min-w-0 max-w-full">
