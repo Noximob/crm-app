@@ -599,7 +599,7 @@ export default function FinanceiroPage() {
         {tab === 'financeiro' && (
           <>
         {/* ——— Dashboard Financeiro (modelo Power BI + padrão Alumma) ——— */}
-        {/* KPIs: VGV (% meta), Faturamento (cinza), Lucro (verde/vermelho), Margem (<15% vermelho, 15–25% amarelo, 25%+ verde) */}
+        {/* KPIs no estilo do print: VGV (% meta), Faturamento (cinza), Lucro, Margem */}
         {(() => {
           const faturamento = MOCK.entradasPeriodo;
           const custos = MOCK.saidasPeriodo;
@@ -607,53 +607,67 @@ export default function FinanceiroPage() {
           const margemPct = faturamento > 0 ? (lucro / faturamento) * 100 : 0;
           const metaVgv = MOCK.metaVgv ?? MOCK.vgv;
           const pctMetaVgv = metaVgv > 0 ? (MOCK.vgv / metaVgv) * 100 : 100;
-          const margemCor = margemPct >= 25 ? 'text-emerald-900 dark:text-emerald-200' : margemPct >= 15 ? 'text-amber-700 dark:text-amber-300' : 'text-red-900 dark:text-red-200';
+
+          const temaVgv = pctMetaVgv >= 100
+            ? { bg: 'bg-emerald-900/90 dark:bg-emerald-950/90', border: 'border-emerald-400/80 dark:border-emerald-400/60', label: 'text-emerald-200/90', valor: 'text-emerald-100' }
+            : { bg: 'bg-red-900/85 dark:bg-red-950/90', border: 'border-red-400/80 dark:border-red-400/60', label: 'text-red-200/90', valor: 'text-red-100' };
+
+          const temaFaturamento = { bg: 'bg-gray-800/80 dark:bg-gray-900/90', border: 'border-gray-400/50 dark:border-gray-500/40', label: 'text-gray-300', valor: 'text-white' };
+
+          const temaLucro = lucro >= 0
+            ? { bg: 'bg-emerald-900/90 dark:bg-emerald-950/90', border: 'border-emerald-400/80 dark:border-emerald-400/60', label: 'text-emerald-200/90', valor: 'text-emerald-100' }
+            : { bg: 'bg-red-900/85 dark:bg-red-950/90', border: 'border-red-400/80 dark:border-red-400/60', label: 'text-red-200/90', valor: 'text-red-100' };
+
+          const temaMargem = margemPct >= 25
+            ? { bg: 'bg-emerald-900/90 dark:bg-emerald-950/90', border: 'border-emerald-400/80 dark:border-emerald-400/60', label: 'text-emerald-200/90', valor: 'text-emerald-100' }
+            : margemPct >= 15
+            ? { bg: 'bg-amber-900/85 dark:bg-amber-950/90', border: 'border-amber-400/80 dark:border-amber-400/60', label: 'text-amber-200/90', valor: 'text-amber-100' }
+            : { bg: 'bg-red-900/85 dark:bg-red-950/90', border: 'border-red-400/80 dark:border-red-400/60', label: 'text-red-200/90', valor: 'text-red-100' };
+
           return (
             <section className="mb-6">
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm p-4">
-                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">VGV</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums mt-1 flex items-baseline gap-1.5 flex-wrap">
-                    <span>{formatCurrency(MOCK.vgv)}</span>
-                    <span className={`text-[10px] font-medium ${pctMetaVgv >= 100 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                      {pctMetaVgv.toFixed(0)}% meta
-                    </span>
-                  </p>
+                <div className={`rounded-xl border-2 ${temaVgv.bg} ${temaVgv.border} shadow-sm p-4`}>
+                  <p className={`text-xs font-medium uppercase tracking-wide ${temaVgv.label}`}>VGV</p>
+                  <p className={`text-2xl font-bold tabular-nums mt-1 ${temaVgv.valor}`}>{formatCurrency(MOCK.vgv)}</p>
+                  <p className={`text-[10px] font-medium tabular-nums mt-0.5 ${temaVgv.label}`}>{pctMetaVgv.toFixed(0)}% meta</p>
                 </div>
-                <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm p-4">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Faturamento</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums mt-1">{formatCurrency(faturamento)}</p>
+                <div className={`rounded-xl border-2 ${temaFaturamento.bg} ${temaFaturamento.border} shadow-sm p-4`}>
+                  <p className={`text-xs font-medium uppercase tracking-wide ${temaFaturamento.label}`}>Faturamento</p>
+                  <p className={`text-2xl font-bold tabular-nums mt-1 ${temaFaturamento.valor}`}>{formatCurrency(faturamento)}</p>
                 </div>
-                <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm p-4">
-                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">Lucro</p>
-                  <p className={`text-2xl font-bold tabular-nums mt-1 ${lucro >= 0 ? 'text-emerald-900 dark:text-emerald-200' : 'text-red-900 dark:text-red-200'}`}>
-                    {formatCurrency(lucro)}
-                  </p>
+                <div className={`rounded-xl border-2 ${temaLucro.bg} ${temaLucro.border} shadow-sm p-4`}>
+                  <p className={`text-xs font-medium uppercase tracking-wide ${temaLucro.label}`}>Lucro</p>
+                  <p className={`text-2xl font-bold tabular-nums mt-1 ${temaLucro.valor}`}>{formatCurrency(lucro)}</p>
                 </div>
-                <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm p-4">
-                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">Margem %</p>
-                  <p className={`text-2xl font-bold tabular-nums mt-1 ${margemCor}`}>
-                    {margemPct.toFixed(2).replace('.', ',')}%
-                  </p>
+                <div className={`rounded-xl border-2 ${temaMargem.bg} ${temaMargem.border} shadow-sm p-4`}>
+                  <p className={`text-xs font-medium uppercase tracking-wide ${temaMargem.label}`}>Margem %</p>
+                  <p className={`text-2xl font-bold tabular-nums mt-1 ${temaMargem.valor}`}>{margemPct.toFixed(2).replace('.', ',')}%</p>
                 </div>
               </div>
             </section>
           );
         })()}
 
-        {/* Caixa (com projeção), A receber, A pagar — visão rápida */}
+        {/* Caixa (com projeção) no estilo do print — verde / amarelo / vermelho / neutro */}
         {(() => {
           const custoMedioMensal = MOCK.saidasPeriodo || 1;
           const mesesProjecao = MOCK.saldoAtual / custoMedioMensal;
-          const projCor = mesesProjecao >= 3 ? 'text-emerald-600 dark:text-emerald-400' : mesesProjecao >= 2 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400';
+          const temaCaixa = mesesProjecao >= 3
+            ? { bg: 'bg-emerald-900/90 dark:bg-emerald-950/90', border: 'border-emerald-400/80 dark:border-emerald-400/60', label: 'text-emerald-200/90', valor: 'text-emerald-100', icon: 'text-emerald-300' }
+            : mesesProjecao >= 2
+            ? { bg: 'bg-amber-900/85 dark:bg-amber-950/90', border: 'border-amber-400/80 dark:border-amber-400/60', label: 'text-amber-200/90', valor: 'text-amber-100', icon: 'text-amber-300' }
+            : mesesProjecao >= 1
+            ? { bg: 'bg-red-900/85 dark:bg-red-950/90', border: 'border-red-400/80 dark:border-red-400/60', label: 'text-red-200/90', valor: 'text-red-100', icon: 'text-red-300' }
+            : { bg: 'bg-gray-800/80 dark:bg-gray-900/90', border: 'border-gray-400/50 dark:border-gray-500/40', label: 'text-gray-300', valor: 'text-white', icon: 'text-gray-400' };
           return (
         <div className="grid grid-cols-3 gap-2 mb-6">
-          <div className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 flex items-center gap-2">
-            <WalletIcon className="h-4 w-4 text-gray-500 dark:text-gray-400 shrink-0" />
+          <div className={`rounded-xl border-2 ${temaCaixa.bg} ${temaCaixa.border} px-3 py-2.5 flex items-center gap-2 shadow-sm`}>
+            <WalletIcon className={`h-4 w-4 shrink-0 ${temaCaixa.icon}`} />
             <div className="min-w-0">
-              <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">Caixa</p>
-              <p className="text-sm font-bold text-gray-900 dark:text-white tabular-nums truncate">{formatCurrency(MOCK.saldoAtual)}</p>
-              <p className={`text-[9px] font-medium tabular-nums mt-0.5 ${projCor}`}>
+              <p className={`text-[10px] font-medium uppercase tracking-wide ${temaCaixa.label}`}>Caixa</p>
+              <p className={`text-sm font-bold tabular-nums truncate ${temaCaixa.valor}`}>{formatCurrency(MOCK.saldoAtual)}</p>
+              <p className={`text-[9px] font-medium tabular-nums mt-0.5 ${temaCaixa.label}`}>
                 Projeção: {mesesProjecao >= 12 ? '12+' : mesesProjecao.toFixed(1).replace('.', ',')} {mesesProjecao >= 2 ? 'meses' : 'mês'}
               </p>
             </div>
