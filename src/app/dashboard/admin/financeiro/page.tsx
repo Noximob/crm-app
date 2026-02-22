@@ -656,15 +656,15 @@ export default function FinanceiroPage() {
           </div>
         </div>
 
-        {/* Grid único: 2 colunas alinhadas (esquerda = gráficos largos, direita = donut + indicadores) */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 mb-6 items-stretch">
+        {/* Grid único: 2 colunas alinhadas, dentro da margem do dashboard */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-4 sm:gap-6 mb-6 items-stretch w-full min-w-0 max-w-full">
           {/* (1,1) Faturamento e Custos por mês */}
-          <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm flex flex-col min-h-0">
+          <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-3 sm:p-4 shadow-sm flex flex-col min-h-0 min-w-0 overflow-hidden">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
               <span className="w-1 h-4 rounded-full bg-amber-500" />
               Faturamento e Custos por mês
             </h3>
-            <div className="flex gap-2 overflow-x-auto pb-2 min-h-[180px] items-end">
+            <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2 min-h-[180px] items-end min-w-0">
               {MOCK.fluxoAnual.map((f) => {
                 const max = Math.max(...MOCK.fluxoAnual.flatMap((m) => [m.faturamento, m.custos]));
                 const diferenca = f.faturamento - f.custos;
@@ -701,7 +701,7 @@ export default function FinanceiroPage() {
           </div>
 
           {/* (1,2) Custos por classe */}
-          <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm flex flex-col items-center justify-center min-h-0">
+          <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-3 sm:p-4 shadow-sm flex flex-col items-center justify-center min-h-0 min-w-0 shrink-0">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2 w-full">
               <span className="w-1 h-4 rounded-full bg-amber-500" />
               Custos por classe
@@ -720,7 +720,7 @@ export default function FinanceiroPage() {
               const dots = ['bg-amber-500', 'bg-emerald-500', 'bg-blue-500', 'bg-violet-500'];
               return (
                 <>
-                  <div className="relative w-36 h-36 flex items-center justify-center">
+                  <div className="relative w-28 h-28 sm:w-36 sm:h-36 flex items-center justify-center shrink-0 mx-auto">
                     <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
                       <circle cx="18" cy="18" r="15.9" fill="none" strokeWidth="3" className="text-gray-200 dark:text-gray-600" stroke="currentColor" />
                       <circle cx="18" cy="18" r="15.9" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray={`${fixosPct} ${100 - fixosPct}`} strokeLinecap="round" className="text-amber-500" />
@@ -764,13 +764,13 @@ export default function FinanceiroPage() {
           </div>
 
           {/* (2,1) Lucro por mês */}
-          <section className="flex flex-col min-h-0">
+          <section className="flex flex-col min-h-0 min-w-0 overflow-hidden">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
               <span className="w-1 h-4 rounded-full bg-amber-500" />
               Lucro por mês
             </h3>
-            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm flex-1 flex flex-col justify-end min-h-0">
-              <div className="flex gap-2 overflow-x-auto pb-2 min-h-[160px] items-end">
+            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-3 sm:p-4 shadow-sm flex-1 flex flex-col justify-end min-h-0 min-w-0 overflow-hidden">
+              <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2 min-h-[160px] items-end min-w-0">
                 {MOCK.fluxoAnual.map((f) => {
                   const res = f.faturamento - f.custos;
                   const maxAbs = Math.max(...MOCK.fluxoAnual.map((m) => Math.abs(m.faturamento - m.custos)), 1);
@@ -796,12 +796,12 @@ export default function FinanceiroPage() {
           </section>
 
           {/* (2,2) Indicadores de desempenho */}
-          <section className="flex flex-col min-h-0">
+          <section className="flex flex-col min-h-0 min-w-0 shrink-0">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
               <span className="w-1 h-4 rounded-full bg-amber-500" />
               Indicadores de desempenho
             </h3>
-            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-3 shadow-sm space-y-2 flex-1">
+            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-2.5 sm:p-3 shadow-sm space-y-2 flex-1 min-w-0">
               {(() => {
                 const custoTotal = MOCK.saidasPeriodo;
                 const vendas = MOCK.quantidadeVendas || 1;
