@@ -166,6 +166,7 @@ const MOCK_CUSTOS = {
       { canal: 'Produção de mídia', valor: 3200, detalhe: 'Vídeos, fotos e materiais gráficos' },
     ],
   },
+  retiradas: 8500,
   totalGeral: 73400,
 };
 
@@ -599,7 +600,6 @@ export default function FinanceiroPage() {
                 </div>
                 <div className="rounded-xl border border-emerald-200 dark:border-emerald-500/30 bg-white dark:bg-white/5 shadow-sm p-4">
                   <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">Faturamento</p>
-                  <p className="text-[10px] text-emerald-600 dark:text-emerald-500 mt-0.5">comissão imob</p>
                   <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-200 tabular-nums mt-1">{formatCurrency(faturamento)}</p>
                 </div>
                 <div className="rounded-xl border border-amber-200 dark:border-amber-500/30 bg-white dark:bg-white/5 shadow-sm p-4">
@@ -656,14 +656,14 @@ export default function FinanceiroPage() {
                 const max = Math.max(...MOCK.fluxoAnual.flatMap((m) => [m.faturamento, m.custos]));
                 return (
                   <div key={f.mes} className="flex flex-col items-center flex-1 min-w-0">
-                    <div className="w-full flex flex-col gap-1 items-center justify-end h-28">
+                    <div className="w-full flex flex-row gap-1 items-end justify-center h-28">
                       <div
-                        className="w-full max-w-[20px] rounded-t bg-emerald-500/90 dark:bg-emerald-500/70"
+                        className="flex-1 min-w-[14px] max-w-[24px] rounded-t bg-emerald-500/90 dark:bg-emerald-500/70"
                         style={{ height: `${max ? (f.faturamento / max) * 80 : 0}px` }}
                         title={`Faturamento: ${formatCurrency(f.faturamento)}`}
                       />
                       <div
-                        className="w-full max-w-[20px] rounded-t bg-red-500/80 dark:bg-red-500/60"
+                        className="flex-1 min-w-[14px] max-w-[24px] rounded-t bg-red-500/80 dark:bg-red-500/60"
                         style={{ height: `${max ? (f.custos / max) * 80 : 0}px` }}
                         title={`Custos: ${formatCurrency(f.custos)}`}
                       />
@@ -689,35 +689,26 @@ export default function FinanceiroPage() {
               Custos por classe
             </h3>
             {(() => {
-              const fixo = MOCK_CUSTOS.custosFixos.total + MOCK_CUSTOS.custosAquisicao.total;
-              const variavel = MOCK_CUSTOS.custosVariaveis.total;
-              const total = fixo + variavel;
-              const fixoPct = total ? (fixo / total) * 100 : 0;
-              const varPct = total ? (variavel / total) * 100 : 0;
+              const fixos = MOCK_CUSTOS.custosFixos.total;
+              const variaveis = MOCK_CUSTOS.custosVariaveis.total;
+              const marketing = MOCK_CUSTOS.custosAquisicao.total;
+              const retiradas = MOCK_CUSTOS.retiradas ?? 0;
+              const total = fixos + variaveis + marketing + retiradas;
+              const pct = (v: number) => (total ? (v / total) * 100 : 0);
+              const fixosPct = pct(fixos);
+              const variaveisPct = pct(variaveis);
+              const marketingPct = pct(marketing);
+              const retiradasPct = pct(retiradas);
+              const dots = ['bg-amber-500', 'bg-emerald-500', 'bg-blue-500', 'bg-violet-500'];
               return (
                 <>
                   <div className="relative w-36 h-36 flex items-center justify-center">
                     <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
                       <circle cx="18" cy="18" r="15.9" fill="none" strokeWidth="3" className="text-gray-200 dark:text-gray-600" stroke="currentColor" />
-                      <circle
-                        cx="18" cy="18" r="15.9"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeDasharray={`${varPct} ${100 - varPct}`}
-                        strokeLinecap="round"
-                        className="text-amber-500"
-                      />
-                      <circle
-                        cx="18" cy="18" r="15.9"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeDasharray={`${fixoPct} ${100 - fixoPct}`}
-                        strokeDashoffset={-varPct}
-                        strokeLinecap="round"
-                        className="text-emerald-500"
-                      />
+                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray={`${fixosPct} ${100 - fixosPct}`} strokeLinecap="round" className="text-amber-500" />
+                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray={`${variaveisPct} ${100 - variaveisPct}`} strokeDashoffset={-fixosPct} strokeLinecap="round" className="text-emerald-500" />
+                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray={`${marketingPct} ${100 - marketingPct}`} strokeDashoffset={-(fixosPct + variaveisPct)} strokeLinecap="round" className="text-blue-500" />
+                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray={`${retiradasPct} ${100 - retiradasPct}`} strokeDashoffset={-(fixosPct + variaveisPct + marketingPct)} strokeLinecap="round" className="text-violet-500" />
                     </svg>
                     <span className="absolute text-xs font-bold text-gray-700 dark:text-gray-200 tabular-nums text-center">
                       {formatCurrency(total)}
@@ -726,15 +717,27 @@ export default function FinanceiroPage() {
                   <div className="mt-3 space-y-1.5 w-full">
                     <div className="flex justify-between text-xs">
                       <span className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
-                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Variável
+                        <span className={`w-2.5 h-2.5 rounded-full ${dots[0]}`} /> Fixos
                       </span>
-                      <span className="font-semibold text-gray-900 dark:text-white tabular-nums">{formatCurrency(variavel)}</span>
+                      <span className="font-semibold text-gray-900 dark:text-white tabular-nums">{formatCurrency(fixos)}</span>
                     </div>
                     <div className="flex justify-between text-xs">
                       <span className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
-                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Fixo
+                        <span className={`w-2.5 h-2.5 rounded-full ${dots[1]}`} /> Variáveis
                       </span>
-                      <span className="font-semibold text-gray-900 dark:text-white tabular-nums">{formatCurrency(fixo)}</span>
+                      <span className="font-semibold text-gray-900 dark:text-white tabular-nums">{formatCurrency(variaveis)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+                        <span className={`w-2.5 h-2.5 rounded-full ${dots[2]}`} /> Marketing
+                      </span>
+                      <span className="font-semibold text-gray-900 dark:text-white tabular-nums">{formatCurrency(marketing)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+                        <span className={`w-2.5 h-2.5 rounded-full ${dots[3]}`} /> Retiradas
+                      </span>
+                      <span className="font-semibold text-gray-900 dark:text-white tabular-nums">{formatCurrency(retiradas)}</span>
                     </div>
                   </div>
                 </>
@@ -743,11 +746,11 @@ export default function FinanceiroPage() {
           </div>
         </div>
 
-        {/* Resultado por mês */}
+        {/* Lucro por mês */}
         <section className="mb-6">
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
             <span className="w-1 h-4 rounded-full bg-amber-500" />
-            Resultado por mês
+            Lucro por mês
           </h3>
           <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm">
             <div className="flex gap-2 overflow-x-auto pb-2 min-h-[140px] items-end">
@@ -760,7 +763,7 @@ export default function FinanceiroPage() {
                     <div
                       className={`w-full max-w-[24px] rounded-t ${res >= 0 ? 'bg-emerald-500/90 dark:bg-emerald-500/70' : 'bg-red-500/80 dark:bg-red-500/60'}`}
                       style={{ height: `${h}px` }}
-                      title={`Resultado: ${formatCurrency(res)}`}
+                      title={`Lucro: ${formatCurrency(res)}`}
                     />
                     <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400 mt-2">{f.mes}</span>
                   </div>
@@ -907,45 +910,6 @@ export default function FinanceiroPage() {
           </div>
         </section>
 
-        {/* Fluxo de caixa — abaixo de movimentações recentes */}
-        <section className="mt-6">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-            <span className="w-1 h-4 rounded-full bg-amber-500" />
-            Fluxo de caixa
-          </h2>
-          <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4">
-            <div className="flex gap-4 overflow-x-auto pb-2">
-              {MOCK.fluxoMeses.map((f) => {
-                const max = Math.max(...MOCK.fluxoMeses.flatMap((m) => [m.entrada, m.saida]));
-                return (
-                  <div key={f.mes} className="flex flex-col items-center min-w-[64px]">
-                    <div className="h-24 flex flex-col justify-end gap-1 mb-2">
-                      <div
-                        className="w-6 rounded-t bg-amber-500/80 dark:bg-amber-500/60"
-                        style={{ height: `${(f.entrada / max) * 80}px` }}
-                        title={`Entrada: ${formatCurrency(f.entrada)}`}
-                      />
-                      <div
-                        className="w-6 rounded-t bg-red-500/60 dark:bg-red-500/40"
-                        style={{ height: `${(f.saida / max) * 80}px` }}
-                        title={`Saída: ${formatCurrency(f.saida)}`}
-                      />
-                    </div>
-                    <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400">{f.mes}</span>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex gap-4 mt-2 pt-2 border-t border-gray-100 dark:border-white/10">
-              <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                <span className="w-2 h-2 rounded bg-amber-500" /> Entradas
-              </span>
-              <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                <span className="w-2 h-2 rounded bg-red-500" /> Saídas
-              </span>
-            </div>
-          </div>
-        </section>
           </>
         )}
 
