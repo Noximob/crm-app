@@ -133,6 +133,10 @@ const MOCK = {
     { data: '18/02', desc: 'Pagamento fornecedor', tipo: 'saida', valor: 3500 },
     { data: '17/02', desc: 'Taxa de administração', tipo: 'entrada', valor: 2200 },
   ],
+  /** Para indicadores: Custo por Venda, Custo por Lead, VGV médio por Corretor */
+  quantidadeVendas: 3,
+  quantidadeLeads: 142,
+  quantidadeCorretores: 3,
 };
 
 /** Dados mock para Relatório de Custos */
@@ -746,40 +750,86 @@ export default function FinanceiroPage() {
           </div>
         </div>
 
-        {/* Lucro por mês */}
-        <section className="mb-6">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-            <span className="w-1 h-4 rounded-full bg-amber-500" />
-            Lucro por mês
-          </h3>
-          <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm">
-            <div className="flex gap-2 overflow-x-auto pb-2 min-h-[140px] items-end">
-              {MOCK.fluxoAnual.map((f) => {
-                const res = f.faturamento - f.custos;
-                const maxAbs = Math.max(...MOCK.fluxoAnual.map((m) => Math.abs(m.faturamento - m.custos)), 1);
-                const h = (Math.abs(res) / maxAbs) * 70;
+        {/* Lucro por mês + Indicadores (Custo por Venda, Custo por Lead, VGV médio por Corretor) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <section>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+              <span className="w-1 h-4 rounded-full bg-amber-500" />
+              Lucro por mês
+            </h3>
+            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm">
+              <div className="flex gap-2 overflow-x-auto pb-2 min-h-[120px] items-end">
+                {MOCK.fluxoAnual.map((f) => {
+                  const res = f.faturamento - f.custos;
+                  const maxAbs = Math.max(...MOCK.fluxoAnual.map((m) => Math.abs(m.faturamento - m.custos)), 1);
+                  const h = (Math.abs(res) / maxAbs) * 58;
+                  return (
+                    <div key={f.mes} className="flex flex-col items-center flex-1 min-w-0">
+                      <div
+                        className={`w-full max-w-[20px] rounded-t ${res >= 0 ? 'bg-emerald-500/90 dark:bg-emerald-500/70' : 'bg-red-500/80 dark:bg-red-500/60'}`}
+                        style={{ height: `${h}px` }}
+                        title={`Lucro: ${formatCurrency(res)}`}
+                      />
+                      <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400 mt-2">{f.mes}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex gap-4 mt-2 pt-2 border-t border-gray-100 dark:border-white/10">
+                <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  <span className="w-2.5 h-2.5 rounded bg-emerald-500" /> Positivo
+                </span>
+                <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  <span className="w-2.5 h-2.5 rounded bg-red-500" /> Negativo
+                </span>
+              </div>
+            </div>
+          </section>
+
+          {/* Custo por Venda, Custo por Lead, VGV médio por Corretor */}
+          <section>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+              <span className="w-1 h-4 rounded-full bg-amber-500" />
+              Indicadores de desempenho
+            </h3>
+            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm space-y-4">
+              {(() => {
+                const custoTotal = MOCK.saidasPeriodo;
+                const vendas = MOCK.quantidadeVendas || 1;
+                const leads = MOCK.quantidadeLeads || 1;
+                const corretores = MOCK.quantidadeCorretores || 1;
+                const custoPorVenda = custoTotal / vendas;
+                const custoPorLead = (MOCK_CUSTOS.custosAquisicao?.total ?? 0) / leads;
+                const vgvMedioCorretor = MOCK.vgv / corretores;
                 return (
-                  <div key={f.mes} className="flex flex-col items-center flex-1 min-w-0">
-                    <div
-                      className={`w-full max-w-[24px] rounded-t ${res >= 0 ? 'bg-emerald-500/90 dark:bg-emerald-500/70' : 'bg-red-500/80 dark:bg-red-500/60'}`}
-                      style={{ height: `${h}px` }}
-                      title={`Lucro: ${formatCurrency(res)}`}
-                    />
-                    <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400 mt-2">{f.mes}</span>
-                  </div>
+                  <>
+                    <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-gray-50/80 dark:bg-white/5 border border-gray-100 dark:border-white/10">
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-amber-700 dark:text-amber-400 uppercase tracking-wide">Custo por venda</p>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Total de custos ÷ vendas fechadas</p>
+                      </div>
+                      <p className="text-lg font-bold text-gray-900 dark:text-white tabular-nums shrink-0">{formatCurrency(custoPorVenda)}</p>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-gray-50/80 dark:bg-white/5 border border-gray-100 dark:border-white/10">
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">Custo por lead</p>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Investimento em marketing ÷ leads gerados</p>
+                      </div>
+                      <p className="text-lg font-bold text-gray-900 dark:text-white tabular-nums shrink-0">{formatCurrency(Math.round(custoPorLead))}</p>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-gray-50/80 dark:bg-white/5 border border-gray-100 dark:border-white/10">
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">VGV médio por corretor</p>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">VGV do período ÷ quantidade de corretores</p>
+                      </div>
+                      <p className="text-lg font-bold text-emerald-900 dark:text-emerald-200 tabular-nums shrink-0">{formatCurrency(vgvMedioCorretor)}</p>
+                    </div>
+                  </>
                 );
-              })}
+              })()}
             </div>
-            <div className="flex gap-4 mt-3 pt-3 border-t border-gray-100 dark:border-white/10">
-              <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                <span className="w-3 h-3 rounded bg-emerald-500" /> Positivo
-              </span>
-              <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                <span className="w-3 h-3 rounded bg-red-500" /> Negativo
-              </span>
-            </div>
-          </div>
-        </section>
+          </section>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Contas a pagar */}
