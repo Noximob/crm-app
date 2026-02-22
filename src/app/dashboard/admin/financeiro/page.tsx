@@ -769,22 +769,24 @@ export default function FinanceiroPage() {
               <span className="w-1 h-4 rounded-full bg-amber-500" />
               Lucro por mês
             </h3>
-            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm flex-1 min-h-[220px] flex flex-col justify-end">
-              <div className="flex gap-2 overflow-x-auto pb-2 min-h-[200px] items-end">
+            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm flex-1 min-h-[260px] flex flex-col justify-end">
+              <div className="flex gap-2 overflow-x-auto pb-2 min-h-[180px] items-end">
                 {MOCK.fluxoAnual.map((f) => {
                   const res = f.faturamento - f.custos;
                   const maxAbs = Math.max(...MOCK.fluxoAnual.map((m) => Math.abs(m.faturamento - m.custos)), 1);
-                  const h = (Math.abs(res) / maxAbs) * 100;
+                  const h = (Math.abs(res) / maxAbs) * 80;
                   return (
                     <div key={f.mes} className="flex flex-col items-center flex-1 min-w-0">
                       <span className={`text-[9px] font-semibold tabular-nums mb-1 whitespace-nowrap max-w-full overflow-hidden text-ellipsis ${res >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`} title={formatCurrency(res)}>
                         {res >= 0 ? '' : '-'}{formatCurrencyMil(res)}
                       </span>
-                      <div
-                        className={`w-full max-w-[20px] rounded-t ${res >= 0 ? 'bg-emerald-500/90 dark:bg-emerald-500/70' : 'bg-red-500/80 dark:bg-red-500/60'}`}
-                        style={{ height: `${h}px` }}
-                        title={`Lucro: ${formatCurrency(res)}`}
-                      />
+                      <div className="w-full flex flex-col justify-end h-28">
+                        <div
+                          className={`w-full max-w-[20px] rounded-t ${res >= 0 ? 'bg-emerald-500/90 dark:bg-emerald-500/70' : 'bg-red-500/80 dark:bg-red-500/60'}`}
+                          style={{ height: `${h}px` }}
+                          title={`Lucro: ${formatCurrency(res)}`}
+                        />
+                      </div>
                       <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400 mt-2">{f.mes}</span>
                     </div>
                   );
@@ -807,7 +809,7 @@ export default function FinanceiroPage() {
               <span className="w-1 h-4 rounded-full bg-amber-500" />
               Indicadores de desempenho
             </h3>
-            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm space-y-4 flex-1 min-h-[220px]">
+            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-3 shadow-sm space-y-2">
               {(() => {
                 const custoTotal = MOCK.saidasPeriodo;
                 const vendas = MOCK.quantidadeVendas || 1;
@@ -818,26 +820,17 @@ export default function FinanceiroPage() {
                 const vgvMedioCorretor = MOCK.vgv / corretores;
                 return (
                   <>
-                    <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-gray-50/80 dark:bg-white/5 border border-gray-100 dark:border-white/10">
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium text-amber-700 dark:text-amber-400 uppercase tracking-wide">Custo por venda</p>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Total de custos ÷ vendas fechadas</p>
-                      </div>
-                      <p className="text-lg font-bold text-gray-900 dark:text-white tabular-nums shrink-0">{formatCurrency(custoPorVenda)}</p>
+                    <div className="flex items-center justify-between gap-2 py-2 px-3 rounded-lg bg-gray-50/80 dark:bg-white/5 border border-gray-100 dark:border-white/10">
+                      <p className="text-xs font-medium text-amber-700 dark:text-amber-400 uppercase tracking-wide">Custo por venda</p>
+                      <p className="text-base font-bold text-gray-900 dark:text-white tabular-nums shrink-0">{formatCurrency(custoPorVenda)}</p>
                     </div>
-                    <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-gray-50/80 dark:bg-white/5 border border-gray-100 dark:border-white/10">
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">Custo por lead</p>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Investimento em marketing ÷ leads gerados</p>
-                      </div>
-                      <p className="text-lg font-bold text-gray-900 dark:text-white tabular-nums shrink-0">{formatCurrency(Math.round(custoPorLead))}</p>
+                    <div className="flex items-center justify-between gap-2 py-2 px-3 rounded-lg bg-gray-50/80 dark:bg-white/5 border border-gray-100 dark:border-white/10">
+                      <p className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">Custo por lead</p>
+                      <p className="text-base font-bold text-gray-900 dark:text-white tabular-nums shrink-0">{formatCurrency(Math.round(custoPorLead))}</p>
                     </div>
-                    <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-gray-50/80 dark:bg-white/5 border border-gray-100 dark:border-white/10">
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">VGV médio por corretor</p>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">VGV do período ÷ quantidade de corretores</p>
-                      </div>
-                      <p className="text-lg font-bold text-emerald-900 dark:text-emerald-200 tabular-nums shrink-0">{formatCurrency(vgvMedioCorretor)}</p>
+                    <div className="flex items-center justify-between gap-2 py-2 px-3 rounded-lg bg-gray-50/80 dark:bg-white/5 border border-gray-100 dark:border-white/10">
+                      <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">VGV médio por corretor</p>
+                      <p className="text-base font-bold text-emerald-900 dark:text-emerald-200 tabular-nums shrink-0">{formatCurrency(vgvMedioCorretor)}</p>
                     </div>
                   </>
                 );
