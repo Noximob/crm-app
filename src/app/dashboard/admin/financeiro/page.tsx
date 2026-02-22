@@ -79,6 +79,14 @@ function formatCurrency(n: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(n);
 }
 
+/** Formato curto em milhares para gráficos: R$ 22,3 Mil */
+function formatCurrencyMil(n: number) {
+  const abs = Math.abs(n);
+  const valor = abs / 1000;
+  const str = valor % 1 === 0 ? valor.toFixed(0) : valor.toFixed(1).replace('.', ',');
+  return `R$ ${str} Mil`;
+}
+
 /** Dados mock para o template — baseado em CRMs imobiliários e ferramentas (QuickBooks, ZeroPaper, Supremo CRM) */
 const MOCK = {
   periodo: 'Fevereiro 2025',
@@ -662,7 +670,7 @@ export default function FinanceiroPage() {
                 return (
                   <div key={f.mes} className="flex flex-col items-center flex-1 min-w-0">
                     <span className={`text-[9px] font-semibold tabular-nums mb-1 whitespace-nowrap max-w-full overflow-hidden text-ellipsis ${diferenca >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`} title={formatCurrency(diferenca)}>
-                      {diferenca >= 0 ? '+' : ''}{formatCurrency(diferenca)}
+                      {diferenca >= 0 ? '' : '-'}{formatCurrencyMil(diferenca)}
                     </span>
                     <div className="w-full flex flex-row gap-1 items-end justify-center h-28">
                       <div
@@ -770,7 +778,7 @@ export default function FinanceiroPage() {
                   return (
                     <div key={f.mes} className="flex flex-col items-center flex-1 min-w-0">
                       <span className={`text-[9px] font-semibold tabular-nums mb-1 whitespace-nowrap max-w-full overflow-hidden text-ellipsis ${res >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`} title={formatCurrency(res)}>
-                        {res >= 0 ? '+' : ''}{formatCurrency(res)}
+                        {res >= 0 ? '' : '-'}{formatCurrencyMil(res)}
                       </span>
                       <div
                         className={`w-full max-w-[20px] rounded-t ${res >= 0 ? 'bg-emerald-500/90 dark:bg-emerald-500/70' : 'bg-red-500/80 dark:bg-red-500/60'}`}
