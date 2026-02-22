@@ -83,6 +83,8 @@ function formatCurrency(n: number) {
 const MOCK = {
   periodo: 'Fevereiro 2025',
   saldoAtual: 84750,
+  /** Valor Geral de Vendas (período) */
+  vgv: 1250000,
   entradasPeriodo: 124300,
   saidasPeriodo: 39550,
   contasAReceber: 18200,
@@ -95,6 +97,21 @@ const MOCK = {
     { mes: 'Dez', entrada: 112000, saida: 58000 },
     { mes: 'Jan', entrada: 105000, saida: 72000 },
     { mes: 'Fev', entrada: 124300, saida: 39550 },
+  ],
+  /** 12 meses para gráficos do dashboard (faturamento/custos e resultado por mês) */
+  fluxoAnual: [
+    { mes: 'Jan', faturamento: 98500, custos: 76200 },
+    { mes: 'Fev', faturamento: 124300, custos: 39550 },
+    { mes: 'Mar', faturamento: 118000, custos: 89100 },
+    { mes: 'Abr', faturamento: 132000, custos: 94500 },
+    { mes: 'Mai', faturamento: 108500, custos: 102200 },
+    { mes: 'Jun', faturamento: 142000, custos: 87800 },
+    { mes: 'Jul', faturamento: 135000, custos: 99600 },
+    { mes: 'Ago', faturamento: 128000, custos: 115400 },
+    { mes: 'Set', faturamento: 151000, custos: 92400 },
+    { mes: 'Out', faturamento: 138500, custos: 105200 },
+    { mes: 'Nov', faturamento: 98000, custos: 62000 },
+    { mes: 'Dez', faturamento: 112000, custos: 58000 },
   ],
   contasAPagarLista: [
     { desc: 'Aluguel escritório', venc: '05/03', valor: 4500 },
@@ -566,47 +583,197 @@ export default function FinanceiroPage() {
 
         {tab === 'financeiro' && (
           <>
-        {/* Resumo — cards principais (estilo Alumma) */}
+        {/* ——— Dashboard Financeiro (modelo Power BI + padrão Alumma) ——— */}
+        {/* KPIs: VGV, Faturamento (comissão imob), Lucro, Margem % */}
+        {(() => {
+          const faturamento = MOCK.entradasPeriodo;
+          const custos = MOCK.saidasPeriodo;
+          const lucro = faturamento - custos;
+          const margemPct = faturamento > 0 ? (lucro / faturamento) * 100 : 0;
+          return (
+            <section className="mb-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="rounded-xl border border-gray-200 dark:border-amber-500/30 bg-white dark:bg-white/5 shadow-sm p-4">
+                  <p className="text-xs font-medium text-gray-600 dark:text-amber-400 uppercase tracking-wide">VGV</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums mt-1">{formatCurrency(MOCK.vgv)}</p>
+                </div>
+                <div className="rounded-xl border border-emerald-200 dark:border-emerald-500/30 bg-white dark:bg-white/5 shadow-sm p-4">
+                  <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">Faturamento</p>
+                  <p className="text-[10px] text-emerald-600 dark:text-emerald-500 mt-0.5">comissão imob</p>
+                  <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-200 tabular-nums mt-1">{formatCurrency(faturamento)}</p>
+                </div>
+                <div className="rounded-xl border border-amber-200 dark:border-amber-500/30 bg-white dark:bg-white/5 shadow-sm p-4">
+                  <p className="text-xs font-medium text-amber-700 dark:text-amber-400 uppercase tracking-wide">Lucro</p>
+                  <p className={`text-2xl font-bold tabular-nums mt-1 ${lucro >= 0 ? 'text-emerald-900 dark:text-emerald-200' : 'text-red-900 dark:text-red-200'}`}>
+                    {formatCurrency(lucro)}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-gray-200 dark:border-amber-500/30 bg-white dark:bg-white/5 shadow-sm p-4">
+                  <p className="text-xs font-medium text-gray-600 dark:text-amber-400 uppercase tracking-wide">Margem %</p>
+                  <p className={`text-2xl font-bold tabular-nums mt-1 ${margemPct >= 0 ? 'text-emerald-900 dark:text-emerald-200' : 'text-red-900 dark:text-red-200'}`}>
+                    {margemPct.toFixed(2).replace('.', ',')}%
+                  </p>
+                </div>
+              </div>
+            </section>
+          );
+        })()}
+
+        {/* Saldo, A receber, A pagar — visão rápida */}
+        <div className="grid grid-cols-3 gap-2 mb-6">
+          <div className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 flex items-center gap-2">
+            <WalletIcon className="h-4 w-4 text-emerald-500 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">Saldo atual</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-white tabular-nums truncate">{formatCurrency(MOCK.saldoAtual)}</p>
+            </div>
+          </div>
+          <div className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 flex items-center gap-2">
+            <TrendingUpIcon className="h-4 w-4 text-amber-500 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">A receber</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-white tabular-nums truncate">{formatCurrency(MOCK.contasAReceber)}</p>
+            </div>
+          </div>
+          <div className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 flex items-center gap-2">
+            <TrendingDownIcon className="h-4 w-4 text-red-500 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">A pagar</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-white tabular-nums truncate">{formatCurrency(MOCK.contasAPagar)}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Gráficos: Faturamento/Custos por mês + Custos por classe (donut) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div className="lg:col-span-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+              <span className="w-1 h-4 rounded-full bg-amber-500" />
+              Faturamento e Custos por mês
+            </h3>
+            <div className="flex gap-2 overflow-x-auto pb-2 min-h-[180px] items-end">
+              {MOCK.fluxoAnual.map((f) => {
+                const max = Math.max(...MOCK.fluxoAnual.flatMap((m) => [m.faturamento, m.custos]));
+                return (
+                  <div key={f.mes} className="flex flex-col items-center flex-1 min-w-0">
+                    <div className="w-full flex flex-col gap-1 items-center justify-end h-28">
+                      <div
+                        className="w-full max-w-[20px] rounded-t bg-emerald-500/90 dark:bg-emerald-500/70"
+                        style={{ height: `${max ? (f.faturamento / max) * 80 : 0}px` }}
+                        title={`Faturamento: ${formatCurrency(f.faturamento)}`}
+                      />
+                      <div
+                        className="w-full max-w-[20px] rounded-t bg-red-500/80 dark:bg-red-500/60"
+                        style={{ height: `${max ? (f.custos / max) * 80 : 0}px` }}
+                        title={`Custos: ${formatCurrency(f.custos)}`}
+                      />
+                    </div>
+                    <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400 mt-2">{f.mes}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex gap-4 mt-3 pt-3 border-t border-gray-100 dark:border-white/10">
+              <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <span className="w-3 h-3 rounded bg-emerald-500" /> Faturamento
+              </span>
+              <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <span className="w-3 h-3 rounded bg-red-500" /> Custos
+              </span>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm flex flex-col items-center justify-center">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2 w-full">
+              <span className="w-1 h-4 rounded-full bg-amber-500" />
+              Custos por classe
+            </h3>
+            {(() => {
+              const fixo = MOCK_CUSTOS.custosFixos.total + MOCK_CUSTOS.custosAquisicao.total;
+              const variavel = MOCK_CUSTOS.custosVariaveis.total;
+              const total = fixo + variavel;
+              const fixoPct = total ? (fixo / total) * 100 : 0;
+              const varPct = total ? (variavel / total) * 100 : 0;
+              return (
+                <>
+                  <div className="relative w-36 h-36 flex items-center justify-center">
+                    <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                      <circle cx="18" cy="18" r="15.9" fill="none" strokeWidth="3" className="text-gray-200 dark:text-gray-600" stroke="currentColor" />
+                      <circle
+                        cx="18" cy="18" r="15.9"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeDasharray={`${varPct} ${100 - varPct}`}
+                        strokeLinecap="round"
+                        className="text-amber-500"
+                      />
+                      <circle
+                        cx="18" cy="18" r="15.9"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeDasharray={`${fixoPct} ${100 - fixoPct}`}
+                        strokeDashoffset={-varPct}
+                        strokeLinecap="round"
+                        className="text-emerald-500"
+                      />
+                    </svg>
+                    <span className="absolute text-xs font-bold text-gray-700 dark:text-gray-200 tabular-nums text-center">
+                      {formatCurrency(total)}
+                    </span>
+                  </div>
+                  <div className="mt-3 space-y-1.5 w-full">
+                    <div className="flex justify-between text-xs">
+                      <span className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Variável
+                      </span>
+                      <span className="font-semibold text-gray-900 dark:text-white tabular-nums">{formatCurrency(variavel)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Fixo
+                      </span>
+                      <span className="font-semibold text-gray-900 dark:text-white tabular-nums">{formatCurrency(fixo)}</span>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </div>
+
+        {/* Resultado por mês */}
         <section className="mb-6">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
             <span className="w-1 h-4 rounded-full bg-amber-500" />
-            Visão geral
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-            <div className="rounded-xl border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50/80 dark:bg-emerald-500/10 p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <WalletIcon className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <p className="text-[10px] font-medium text-emerald-800 dark:text-emerald-300">Saldo atual</p>
-              </div>
-              <p className="text-lg font-bold text-emerald-900 dark:text-emerald-200 tabular-nums">{formatCurrency(MOCK.saldoAtual)}</p>
+            Resultado por mês
+          </h3>
+          <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm">
+            <div className="flex gap-2 overflow-x-auto pb-2 min-h-[140px] items-end">
+              {MOCK.fluxoAnual.map((f) => {
+                const res = f.faturamento - f.custos;
+                const maxAbs = Math.max(...MOCK.fluxoAnual.map((m) => Math.abs(m.faturamento - m.custos)), 1);
+                const h = (Math.abs(res) / maxAbs) * 70;
+                return (
+                  <div key={f.mes} className="flex flex-col items-center flex-1 min-w-0">
+                    <div
+                      className={`w-full max-w-[24px] rounded-t ${res >= 0 ? 'bg-emerald-500/90 dark:bg-emerald-500/70' : 'bg-red-500/80 dark:bg-red-500/60'}`}
+                      style={{ height: `${h}px` }}
+                      title={`Resultado: ${formatCurrency(res)}`}
+                    />
+                    <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400 mt-2">{f.mes}</span>
+                  </div>
+                );
+              })}
             </div>
-            <div className="rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-500/10 p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <TrendingUpIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                <p className="text-[10px] font-medium text-amber-800 dark:text-amber-300">Entradas (período)</p>
-              </div>
-              <p className="text-lg font-bold text-amber-900 dark:text-amber-200 tabular-nums">{formatCurrency(MOCK.entradasPeriodo)}</p>
-            </div>
-            <div className="rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50/80 dark:bg-red-500/10 p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <TrendingDownIcon className="h-4 w-4 text-red-600 dark:text-red-400" />
-                <p className="text-[10px] font-medium text-red-800 dark:text-red-300">Saídas (período)</p>
-              </div>
-              <p className="text-lg font-bold text-red-900 dark:text-red-200 tabular-nums">{formatCurrency(MOCK.saidasPeriodo)}</p>
-            </div>
-            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <ReceiptIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                <p className="text-[10px] font-medium text-gray-600 dark:text-gray-400">A receber</p>
-              </div>
-              <p className="text-lg font-bold text-gray-900 dark:text-white tabular-nums">{formatCurrency(MOCK.contasAReceber)}</p>
-            </div>
-            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-3 col-span-2 sm:col-span-1">
-              <div className="flex items-center gap-2 mb-1">
-                <ReceiptIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                <p className="text-[10px] font-medium text-gray-600 dark:text-gray-400">A pagar</p>
-              </div>
-              <p className="text-lg font-bold text-gray-900 dark:text-white tabular-nums">{formatCurrency(MOCK.contasAPagar)}</p>
+            <div className="flex gap-4 mt-3 pt-3 border-t border-gray-100 dark:border-white/10">
+              <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <span className="w-3 h-3 rounded bg-emerald-500" /> Positivo
+              </span>
+              <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <span className="w-3 h-3 rounded bg-red-500" /> Negativo
+              </span>
             </div>
           </div>
         </section>
