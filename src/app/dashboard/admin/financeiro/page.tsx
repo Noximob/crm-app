@@ -762,8 +762,8 @@ export default function FinanceiroPage() {
           </div>
         </div>
 
-        {/* Lucro por mês + Indicadores (Custo por Venda, Custo por Lead, VGV médio por Corretor) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 items-stretch">
+        {/* Lucro por mês + Indicadores — chart mais largo, indicadores compactos */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 mb-6 items-stretch">
           <section className="flex flex-col min-h-0">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
               <span className="w-1 h-4 rounded-full bg-amber-500" />
@@ -801,7 +801,7 @@ export default function FinanceiroPage() {
               <span className="w-1 h-4 rounded-full bg-amber-500" />
               Indicadores de desempenho
             </h3>
-            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-3 shadow-sm space-y-2">
+            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-3 shadow-sm space-y-2 flex-1">
               {(() => {
                 const custoTotal = MOCK.saidasPeriodo;
                 const vendas = MOCK.quantidadeVendas || 1;
