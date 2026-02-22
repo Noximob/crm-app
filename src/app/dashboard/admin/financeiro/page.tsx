@@ -656,9 +656,10 @@ export default function FinanceiroPage() {
           </div>
         </div>
 
-        {/* Gráficos: Faturamento/Custos por mês + Custos por classe (donut) */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <div className="lg:col-span-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm">
+        {/* Grid único: 2 colunas alinhadas (esquerda = gráficos largos, direita = donut + indicadores) */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 mb-6 items-stretch">
+          {/* (1,1) Faturamento e Custos por mês */}
+          <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm flex flex-col min-h-0">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
               <span className="w-1 h-4 rounded-full bg-amber-500" />
               Faturamento e Custos por mês
@@ -699,7 +700,8 @@ export default function FinanceiroPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm flex flex-col items-center justify-center">
+          {/* (1,2) Custos por classe */}
+          <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm flex flex-col items-center justify-center min-h-0">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2 w-full">
               <span className="w-1 h-4 rounded-full bg-amber-500" />
               Custos por classe
@@ -760,10 +762,8 @@ export default function FinanceiroPage() {
               );
             })()}
           </div>
-        </div>
 
-        {/* Lucro por mês + Indicadores — chart mais largo, indicadores compactos */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 mb-6 items-stretch">
+          {/* (2,1) Lucro por mês */}
           <section className="flex flex-col min-h-0">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
               <span className="w-1 h-4 rounded-full bg-amber-500" />
@@ -795,7 +795,7 @@ export default function FinanceiroPage() {
             </div>
           </section>
 
-          {/* Custo por Venda, Custo por Lead, VGV médio por Corretor */}
+          {/* (2,2) Indicadores de desempenho */}
           <section className="flex flex-col min-h-0">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
               <span className="w-1 h-4 rounded-full bg-amber-500" />
