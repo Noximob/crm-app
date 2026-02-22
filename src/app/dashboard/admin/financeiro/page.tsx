@@ -769,8 +769,8 @@ export default function FinanceiroPage() {
               <span className="w-1 h-4 rounded-full bg-amber-500" />
               Lucro por mês
             </h3>
-            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm flex-1 min-h-[260px] flex flex-col justify-end">
-              <div className="flex gap-2 overflow-x-auto pb-2 min-h-[180px] items-end">
+            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm flex-1 flex flex-col justify-end min-h-0">
+              <div className="flex gap-2 overflow-x-auto pb-2 min-h-[160px] items-end">
                 {MOCK.fluxoAnual.map((f) => {
                   const res = f.faturamento - f.custos;
                   const maxAbs = Math.max(...MOCK.fluxoAnual.map((m) => Math.abs(m.faturamento - m.custos)), 1);
@@ -791,14 +791,6 @@ export default function FinanceiroPage() {
                     </div>
                   );
                 })}
-              </div>
-              <div className="flex gap-4 mt-2 pt-2 border-t border-gray-100 dark:border-white/10">
-                <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                  <span className="w-2.5 h-2.5 rounded bg-emerald-500" /> Positivo
-                </span>
-                <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                  <span className="w-2.5 h-2.5 rounded bg-red-500" /> Negativo
-                </span>
               </div>
             </div>
           </section>
