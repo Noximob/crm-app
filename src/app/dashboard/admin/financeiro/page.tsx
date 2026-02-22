@@ -658,8 +658,12 @@ export default function FinanceiroPage() {
             <div className="flex gap-2 overflow-x-auto pb-2 min-h-[180px] items-end">
               {MOCK.fluxoAnual.map((f) => {
                 const max = Math.max(...MOCK.fluxoAnual.flatMap((m) => [m.faturamento, m.custos]));
+                const diferenca = f.faturamento - f.custos;
                 return (
                   <div key={f.mes} className="flex flex-col items-center flex-1 min-w-0">
+                    <span className={`text-[9px] font-semibold tabular-nums mb-1 whitespace-nowrap max-w-full overflow-hidden text-ellipsis ${diferenca >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`} title={formatCurrency(diferenca)}>
+                      {diferenca >= 0 ? '+' : ''}{formatCurrency(diferenca)}
+                    </span>
                     <div className="w-full flex flex-row gap-1 items-end justify-center h-28">
                       <div
                         className="flex-1 min-w-[14px] max-w-[24px] rounded-t bg-emerald-500/90 dark:bg-emerald-500/70"
@@ -751,20 +755,23 @@ export default function FinanceiroPage() {
         </div>
 
         {/* Lucro por mês + Indicadores (Custo por Venda, Custo por Lead, VGV médio por Corretor) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <section>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 items-stretch">
+          <section className="flex flex-col min-h-0">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
               <span className="w-1 h-4 rounded-full bg-amber-500" />
               Lucro por mês
             </h3>
-            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm">
-              <div className="flex gap-2 overflow-x-auto pb-2 min-h-[120px] items-end">
+            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm flex-1 min-h-[220px] flex flex-col justify-end">
+              <div className="flex gap-2 overflow-x-auto pb-2 min-h-[200px] items-end">
                 {MOCK.fluxoAnual.map((f) => {
                   const res = f.faturamento - f.custos;
                   const maxAbs = Math.max(...MOCK.fluxoAnual.map((m) => Math.abs(m.faturamento - m.custos)), 1);
-                  const h = (Math.abs(res) / maxAbs) * 58;
+                  const h = (Math.abs(res) / maxAbs) * 100;
                   return (
                     <div key={f.mes} className="flex flex-col items-center flex-1 min-w-0">
+                      <span className={`text-[9px] font-semibold tabular-nums mb-1 whitespace-nowrap max-w-full overflow-hidden text-ellipsis ${res >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`} title={formatCurrency(res)}>
+                        {res >= 0 ? '+' : ''}{formatCurrency(res)}
+                      </span>
                       <div
                         className={`w-full max-w-[20px] rounded-t ${res >= 0 ? 'bg-emerald-500/90 dark:bg-emerald-500/70' : 'bg-red-500/80 dark:bg-red-500/60'}`}
                         style={{ height: `${h}px` }}
@@ -787,12 +794,12 @@ export default function FinanceiroPage() {
           </section>
 
           {/* Custo por Venda, Custo por Lead, VGV médio por Corretor */}
-          <section>
+          <section className="flex flex-col min-h-0">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
               <span className="w-1 h-4 rounded-full bg-amber-500" />
               Indicadores de desempenho
             </h3>
-            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm space-y-4">
+            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm space-y-4 flex-1 min-h-[220px]">
               {(() => {
                 const custoTotal = MOCK.saidasPeriodo;
                 const vendas = MOCK.quantidadeVendas || 1;
