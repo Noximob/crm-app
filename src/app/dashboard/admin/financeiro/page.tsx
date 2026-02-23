@@ -552,6 +552,50 @@ export default function FinanceiroPage() {
               );
             })()}
 
+            {/* Contas a pagar e a receber — estilo do relatório financeiro */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                  <span className="w-1 h-4 rounded-full bg-amber-500" />
+                  Contas a pagar
+                </h2>
+                <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 divide-y divide-gray-100 dark:divide-white/10">
+                  {MOCK.contasAPagarLista.map((c, i) => (
+                    <div key={i} className="flex items-center justify-between px-4 py-3">
+                      <div>
+                        <p className="font-medium text-sm text-gray-900 dark:text-white">{c.desc}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Venc: {c.venc}</p>
+                      </div>
+                      <span className="font-semibold text-red-600 dark:text-red-400 tabular-nums">-{formatCurrency(c.valor)}</span>
+                    </div>
+                  ))}
+                  <div className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 text-center">
+                    Total: {formatCurrency(MOCK.contasAPagar)}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                  <span className="w-1 h-4 rounded-full bg-amber-500" />
+                  Contas a receber
+                </h2>
+                <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 divide-y divide-gray-100 dark:divide-white/10">
+                  {MOCK.contasAReceberLista.map((c, i) => (
+                    <div key={i} className="flex items-center justify-between px-4 py-3">
+                      <div>
+                        <p className="font-medium text-sm text-gray-900 dark:text-white">{c.desc}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Venc: {c.venc}</p>
+                      </div>
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">+{formatCurrency(c.valor)}</span>
+                    </div>
+                  ))}
+                  <div className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 text-center">
+                    Total: {formatCurrency(MOCK.contasAReceber)}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Resumo rápido — batida de olho */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-3">
