@@ -199,7 +199,7 @@ interface Movimentacao {
 export default function FinanceiroPage() {
   const { userData, currentUser } = useAuth();
   const imobiliariaId = userData?.imobiliariaId ?? (userData?.tipoConta === 'imobiliaria' ? currentUser?.uid : undefined);
-  const [tab, setTab] = useState<'financeiro' | 'custos' | 'lancamentos'>('financeiro');
+  const [tab, setTab] = useState<'financeiro' | 'custos' | 'comissoes' | 'lancamentos'>('financeiro');
   const [periodo, setPeriodo] = useState<'mes' | 'trimestre'>('mes');
 
   const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>([]);
@@ -357,7 +357,7 @@ export default function FinanceiroPage() {
                     : 'bg-white dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/10'
                 }`}
               >
-                Rel. Financeiro
+                Financeiro
               </button>
               <button
                 type="button"
@@ -368,7 +368,18 @@ export default function FinanceiroPage() {
                     : 'bg-white dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/10'
                 }`}
               >
-                Rel. Custos
+                Fluxo e Custos
+              </button>
+              <button
+                type="button"
+                onClick={() => setTab('comissoes')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  tab === 'comissoes'
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-white dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/10'
+                }`}
+              >
+                Comissões
               </button>
               <button
                 type="button"
@@ -592,6 +603,65 @@ export default function FinanceiroPage() {
                   Nenhuma retirada registrada no período
                 </div>
               </div>
+            </div>
+          </section>
+        )}
+
+        {tab === 'comissoes' && (
+          <section className="space-y-6">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+              <span className="w-1 h-4 rounded-full bg-amber-500" />
+              Comissões
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="rounded-xl border-2 border-amber-400/80 bg-amber-900/85 dark:bg-amber-950/90 p-3 shadow-sm">
+                <p className="text-[10px] font-medium text-amber-200/90 uppercase tracking-wide">Pendentes</p>
+                <p className="text-lg font-bold text-amber-100 tabular-nums">{formatCurrency(MOCK.comissoesPendentes)}</p>
+              </div>
+              <div className="rounded-xl border-2 border-gray-400/50 bg-gray-800/80 dark:bg-gray-900/90 p-3 shadow-sm">
+                <p className="text-[10px] font-medium text-gray-300 uppercase tracking-wide">Aprovadas</p>
+                <p className="text-lg font-bold text-white tabular-nums">{formatCurrency(MOCK.comissoesAprovadas)}</p>
+              </div>
+              <div className="rounded-xl border-2 border-emerald-400/80 bg-emerald-900/90 dark:bg-emerald-950/90 p-3 shadow-sm">
+                <p className="text-[10px] font-medium text-emerald-200/90 uppercase tracking-wide">Pagas (período)</p>
+                <p className="text-lg font-bold text-emerald-100 tabular-nums">{formatCurrency(MOCK.comissoesPagas)}</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
+                    <th className="text-left py-2 px-4 font-medium text-gray-600 dark:text-gray-400">Corretor</th>
+                    <th className="text-left py-2 px-4 font-medium text-gray-600 dark:text-gray-400">Venda</th>
+                    <th className="text-left py-2 px-4 font-medium text-gray-600 dark:text-gray-400">%</th>
+                    <th className="text-right py-2 px-4 font-medium text-gray-600 dark:text-gray-400">Valor</th>
+                    <th className="text-right py-2 px-4 font-medium text-gray-600 dark:text-gray-400">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {MOCK.comissoesLista.map((c, i) => (
+                    <tr key={i} className="border-b border-gray-50 dark:border-white/5">
+                      <td className="py-2 px-4 font-medium text-gray-900 dark:text-white">{c.corretor}</td>
+                      <td className="py-2 px-4 text-gray-600 dark:text-gray-400">{c.venda}</td>
+                      <td className="py-2 px-4 text-gray-600 dark:text-gray-400">{c.pct}%</td>
+                      <td className="py-2 px-4 text-right font-semibold text-gray-900 dark:text-white tabular-nums">{formatCurrency(c.valor)}</td>
+                      <td className="py-2 px-4 text-right">
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded text-[10px] font-medium ${
+                            c.status === 'paga'
+                              ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                              : c.status === 'aprovada'
+                              ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300'
+                              : 'bg-gray-100 dark:bg-gray-500/20 text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          {c.status === 'paga' ? 'Paga' : c.status === 'aprovada' ? 'Aprovada' : 'Pendente'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </section>
         )}
