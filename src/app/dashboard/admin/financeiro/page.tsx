@@ -506,6 +506,52 @@ export default function FinanceiroPage() {
               </div>
             </div>
 
+            {/* Gráfico de estrutura de custos — Alumma */}
+            {(() => {
+              const fixos = MOCK_CUSTOS.custosFixos.total;
+              const comissaoCorretores = MOCK_CUSTOS.custosVariaveis.itens
+                .filter((i) => i.tipo === 'Comissão corretor')
+                .reduce((s, i) => s + i.valor, 0);
+              const variaveis = MOCK_CUSTOS.custosVariaveis.total - comissaoCorretores;
+              const marketing = MOCK_CUSTOS.custosAquisicao.total;
+              const retiradas = MOCK_CUSTOS.retiradas ?? 0;
+              const totalEstrutura = fixos + comissaoCorretores + variaveis + marketing + retiradas;
+              const maxVal = Math.max(fixos, comissaoCorretores, variaveis, marketing, retiradas, 1);
+              const itens = [
+                { label: 'Custos fixos', valor: fixos, cor: 'bg-amber-500' },
+                { label: 'Variáveis', valor: variaveis, cor: 'bg-amber-400/90' },
+                { label: 'Marketing', valor: marketing, cor: 'bg-blue-500' },
+                { label: 'Comissão corretores', valor: comissaoCorretores, cor: 'bg-emerald-500' },
+                { label: 'Retiradas', valor: retiradas, cor: 'bg-violet-500' },
+              ];
+              return (
+                <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 shadow-sm">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
+                    <span className="w-1 h-4 rounded-full bg-amber-500" />
+                    Estrutura de custos
+                  </h3>
+                  <div className="space-y-3">
+                    {itens.map((item) => (
+                      <div key={item.label} className="flex items-center gap-3">
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 w-[140px] shrink-0">{item.label}</span>
+                        <div className="flex-1 h-7 rounded-lg bg-gray-100 dark:bg-white/10 overflow-hidden flex">
+                          <div
+                            className={`${item.cor} rounded-lg transition-all min-w-[4px]`}
+                            style={{ width: `${(item.valor / maxVal) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-semibold text-gray-900 dark:text-white tabular-nums w-20 text-right shrink-0">{formatCurrency(item.valor)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/10 flex justify-between items-center">
+                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">Total</span>
+                    <span className="text-sm font-bold text-amber-700 dark:text-amber-400 tabular-nums">{formatCurrency(totalEstrutura)}</span>
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Resumo rápido — batida de olho */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-3">
