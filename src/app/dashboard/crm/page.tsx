@@ -129,6 +129,7 @@ export default function CrmPage() {
     const [advancedFilters, setAdvancedFilters] = useState<Filters>({});
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [hasRestoredState, setHasRestoredState] = useState(false);
     const [filtroRapidoOpen, setFiltroRapidoOpen] = useState(false);
     const filtroRapidoRef = useRef<HTMLDivElement>(null);
     const PAGE_SIZE = 20;
@@ -157,18 +158,26 @@ export default function CrmPage() {
 
     // Restaurar filtros / busca / página ao voltar do detalhe do lead
     useEffect(() => {
-        if (typeof window === 'undefined') return;
+        if (typeof window === 'undefined') {
+            setHasRestoredState(true);
+            return;
+        }
         try {
             const raw = window.sessionStorage.getItem(CRM_LIST_STATE_KEY);
-            if (!raw) return;
-            const saved = JSON.parse(raw);
-            if (saved.activeFilter !== undefined) setActiveFilter(saved.activeFilter);
-            if (saved.activeTaskFilter !== undefined) setActiveTaskFilter(saved.activeTaskFilter);
-            if (saved.advancedFilters !== undefined) setAdvancedFilters(saved.advancedFilters);
-            if (saved.searchTerm !== undefined) setSearchTerm(saved.searchTerm);
-            if (saved.currentPage !== undefined) setCurrentPage(saved.currentPage);
+            if (raw) {
+                const saved = JSON.parse(raw);
+                if (saved.activeFilter !== undefined) setActiveFilter(saved.activeFilter);
+                if (saved.activeTaskFilter !== undefined) setActiveTaskFilter(saved.activeTaskFilter);
+                if (saved.advancedFilters !== undefined) setAdvancedFilters(saved.advancedFilters);
+                if (saved.searchTerm !== undefined) setSearchTerm(saved.searchTerm);
+                if (saved.currentPage !== undefined) setCurrentPage(saved.currentPage);
+            }
         } catch (err) {
             console.error('Erro ao restaurar estado da lista CRM:', err);
+        } finally {
+            // Marca que já tentamos restaurar (com ou sem dados salvos),
+            // para que o efeito de persistência só rode depois disso
+            setHasRestoredState(true);
         }
     }, []);
 
@@ -181,9 +190,11 @@ export default function CrmPage() {
         }
     }, [stages.join(','), activeFilter]);
 
-    // Persistir estado atual da lista (filtros, busca, página) para navegações de ida/volta
+    // Persistir estado atual da lista (filtros, busca, página) para navegações de ida/volta.
+    // Só começa a persistir depois que a tentativa de restore já aconteceu,
+    // para não sobrescrever o estado salvo logo no primeiro mount.
     useEffect(() => {
-        if (typeof window === 'undefined') return;
+        if (!hasRestoredState || typeof window === 'undefined') return;
         try {
             const toSave = {
                 activeFilter,
@@ -196,7 +207,7 @@ export default function CrmPage() {
         } catch (err) {
             console.error('Erro ao salvar estado da lista CRM:', err);
         }
-    }, [activeFilter, activeTaskFilter, advancedFilters, searchTerm, currentPage]);
+    }, [hasRestoredState, activeFilter, activeTaskFilter, advancedFilters, searchTerm, currentPage]);
 
     useEffect(() => {
         if (currentUser) {
