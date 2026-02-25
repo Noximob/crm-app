@@ -115,6 +115,8 @@ const TAREFA_PARAM_MAP: Record<string, TaskStatus> = {
     futura: 'Tarefa Futura',
 };
 
+const CRM_LIST_STATE_KEY = 'crm-list-state-v1';
+
 export default function CrmPage() {
     const { currentUser } = useAuth();
     const { stages, normalizeEtapa } = usePipelineStages();
@@ -153,6 +155,23 @@ export default function CrmPage() {
         }
     }, [searchParams]);
 
+    // Restaurar filtros / busca / página ao voltar do detalhe do lead
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        try {
+            const raw = window.sessionStorage.getItem(CRM_LIST_STATE_KEY);
+            if (!raw) return;
+            const saved = JSON.parse(raw);
+            if (saved.activeFilter !== undefined) setActiveFilter(saved.activeFilter);
+            if (saved.activeTaskFilter !== undefined) setActiveTaskFilter(saved.activeTaskFilter);
+            if (saved.advancedFilters !== undefined) setAdvancedFilters(saved.advancedFilters);
+            if (saved.searchTerm !== undefined) setSearchTerm(saved.searchTerm);
+            if (saved.currentPage !== undefined) setCurrentPage(saved.currentPage);
+        } catch (err) {
+            console.error('Erro ao restaurar estado da lista CRM:', err);
+        }
+    }, []);
+
     // Quando o funil (etapas) muda, limpar filtro rápido se a etapa selecionada não existir mais
     useEffect(() => {
         if (activeFilter && !stages.includes(activeFilter)) {
@@ -160,6 +179,23 @@ export default function CrmPage() {
             setCurrentPage(1);
         }
     }, [stages.join(','), activeFilter]);
+
+    // Persistir estado atual da lista (filtros, busca, página) para navegações de ida/volta
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        try {
+            const toSave = {
+                activeFilter,
+                activeTaskFilter,
+                advancedFilters,
+                searchTerm,
+                currentPage,
+            };
+            window.sessionStorage.setItem(CRM_LIST_STATE_KEY, JSON.stringify(toSave));
+        } catch (err) {
+            console.error('Erro ao salvar estado da lista CRM:', err);
+        }
+    }, [activeFilter, activeTaskFilter, advancedFilters, searchTerm, currentPage]);
 
     useEffect(() => {
         if (currentUser) {
