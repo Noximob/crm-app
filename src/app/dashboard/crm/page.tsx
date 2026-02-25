@@ -350,6 +350,25 @@ export default function CrmPage() {
     const goToPage = (page: number) => {
         const p = Math.max(1, Math.min(page, totalPages));
         setCurrentPage(p);
+
+        // Persistir a página imediatamente para garantir que, se o usuário clicar em um lead logo em seguida, o estado mais recente esteja salvo
+        if (typeof window !== 'undefined') {
+            try {
+                const raw = window.sessionStorage.getItem(CRM_LIST_STATE_KEY);
+                const saved = raw ? JSON.parse(raw) : {};
+                const toSave = {
+                    ...saved,
+                    activeFilter,
+                    activeTaskFilter,
+                    advancedFilters,
+                    searchTerm,
+                    currentPage: p,
+                };
+                window.sessionStorage.setItem(CRM_LIST_STATE_KEY, JSON.stringify(toSave));
+            } catch (err) {
+                console.error('Erro ao salvar página atual da lista CRM:', err);
+            }
+        }
     };
 
     const activeAdvancedFilterCount = Object.values(advancedFilters).reduce((count, options: string[]) => count + options.length, 0);
