@@ -173,8 +173,9 @@ export default function CrmPage() {
     }, []);
 
     // Quando o funil (etapas) muda, limpar filtro rápido se a etapa selecionada não existir mais
+    // Só aplica quando stages já foi carregado (length > 0) para não resetar página ao voltar do detalhe
     useEffect(() => {
-        if (activeFilter && !stages.includes(activeFilter)) {
+        if (stages.length > 0 && activeFilter && !stages.includes(activeFilter)) {
             setActiveFilter(null);
             setCurrentPage(1);
         }
@@ -341,9 +342,9 @@ export default function CrmPage() {
         return filteredLeads.slice(start, start + PAGE_SIZE);
     }, [filteredLeads, currentPage]);
 
-    // Ao mudar filtros, voltar para página 1; se página atual ficar inválida, ajustar
+    // Se página atual ficar inválida (ex.: menos resultados após filtro), ajustar. Só quando já temos leads para não sobrescrever o restore ao voltar do detalhe.
     useEffect(() => {
-        if (currentPage > totalPages) setCurrentPage(totalPages > 0 ? totalPages : 1);
+        if (totalFiltered > 0 && currentPage > totalPages) setCurrentPage(totalPages > 0 ? totalPages : 1);
     }, [totalFiltered, totalPages, currentPage]);
 
     const goToPage = (page: number) => {
