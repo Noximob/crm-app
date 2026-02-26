@@ -31,18 +31,20 @@ function formatPct(value: number): string {
 
 export default function RelatorioValorizacaoClientesPage() {
   const [nomeCliente, setNomeCliente] = useState('');
-  const [valorAplicado, setValorAplicado] = useState<number>(0);
+  const [produto, setProduto] = useState('');
+  const [unidade, setUnidade] = useState('');
+  const [valorContrato, setValorContrato] = useState<number>(0);
   const [valorAtual, setValorAtual] = useState<number>(0);
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
 
-  const { ganho, rentabilidadePct } = useMemo(() => {
-    const aplicado = Number(valorAplicado) || 0;
+  const { ganho, valorizacaoPct } = useMemo(() => {
+    const contrato = Number(valorContrato) || 0;
     const atual = Number(valorAtual) || 0;
-    const ganho = aplicado > 0 ? atual - aplicado : 0;
-    const rentabilidadePct = aplicado > 0 ? (ganho / aplicado) * 100 : 0;
-    return { ganho, rentabilidadePct };
-  }, [valorAplicado, valorAtual]);
+    const ganho = contrato > 0 ? atual - contrato : 0;
+    const valorizacaoPct = contrato > 0 ? (ganho / contrato) * 100 : 0;
+    return { ganho, valorizacaoPct };
+  }, [valorContrato, valorAtual]);
 
   const periodoLabel = useMemo(() => {
     if (dataInicio && dataFim) {
@@ -56,11 +58,13 @@ export default function RelatorioValorizacaoClientesPage() {
     return 'Período não informado';
   }, [dataInicio, dataFim]);
 
-  const aplicadoNum = Number(valorAplicado) || 0;
+  const contratoNum = Number(valorContrato) || 0;
   const atualNum = Number(valorAtual) || 0;
-  const maxBar = Math.max(aplicadoNum, atualNum, 1);
-  const barAplicadoPct = (aplicadoNum / maxBar) * 100;
+  const maxBar = Math.max(contratoNum, atualNum, 1);
+  const barContratoPct = (contratoNum / maxBar) * 100;
   const barAtualPct = (atualNum / maxBar) * 100;
+
+  const temDados = contratoNum > 0 || atualNum > 0;
 
   return (
     <div className="min-h-screen p-4 sm:p-6 max-w-4xl mx-auto">
@@ -68,7 +72,7 @@ export default function RelatorioValorizacaoClientesPage() {
         @media print {
           body * { visibility: hidden; }
           .print-area, .print-area * { visibility: visible; }
-          .print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 1rem; background: #fff; }
+          .print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 1.5rem; background: #fff; }
           .no-print { display: none !important; }
         }
       `}</style>
@@ -87,27 +91,47 @@ export default function RelatorioValorizacaoClientesPage() {
 
       {/* Formulário — não imprime */}
       <header className="no-print rounded-2xl border border-white/10 bg-white/5 p-4 mb-6">
-        <p className="text-xs text-gray-400 mb-4">Preencha os dados para montar o dashboard de valorização para o cliente investidor.</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-          <div className="sm:col-span-2 lg:col-span-1">
-            <label className="block text-xs font-medium text-gray-400 mb-1">Nome do cliente ou portfolio</label>
+        <p className="text-xs text-gray-400 mb-4">Preencha os dados para gerar o relatório de valorização para o cliente investidor.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-400 mb-1">Nome do cliente</label>
             <input
               type="text"
               value={nomeCliente}
               onChange={(e) => setNomeCliente(e.target.value)}
-              placeholder="Ex.: João Silva Investimentos"
+              placeholder="Ex.: João Silva"
               className="w-full rounded-lg border border-white/10 bg-white/5 text-white px-3 py-2 text-sm placeholder-gray-500 focus:ring-2 focus:ring-[#D4A017]/50"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Valor aplicado (R$)</label>
+            <label className="block text-xs font-medium text-gray-400 mb-1">Produto (empreendimento / imóvel)</label>
+            <input
+              type="text"
+              value={produto}
+              onChange={(e) => setProduto(e.target.value)}
+              placeholder="Ex.: Residencial Solar das Flores"
+              className="w-full rounded-lg border border-white/10 bg-white/5 text-white px-3 py-2 text-sm placeholder-gray-500 focus:ring-2 focus:ring-[#D4A017]/50"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-400 mb-1">Unidade</label>
+            <input
+              type="text"
+              value={unidade}
+              onChange={(e) => setUnidade(e.target.value)}
+              placeholder="Ex.: Torre A – Apto 101"
+              className="w-full rounded-lg border border-white/10 bg-white/5 text-white px-3 py-2 text-sm placeholder-gray-500 focus:ring-2 focus:ring-[#D4A017]/50"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-400 mb-1">Valor de contrato (R$)</label>
             <input
               type="number"
               min={0}
               step={1000}
-              value={valorAplicado || ''}
-              onChange={(e) => setValorAplicado(Number(e.target.value) || 0)}
-              placeholder="Ex.: 500000"
+              value={valorContrato || ''}
+              onChange={(e) => setValorContrato(Number(e.target.value) || 0)}
+              placeholder="Valor pago na aquisição"
               className="w-full rounded-lg border border-white/10 bg-white/5 text-white px-3 py-2 text-sm placeholder-gray-500 focus:ring-2 focus:ring-[#D4A017]/50 tabular-nums"
             />
           </div>
@@ -119,12 +143,12 @@ export default function RelatorioValorizacaoClientesPage() {
               step={1000}
               value={valorAtual || ''}
               onChange={(e) => setValorAtual(Number(e.target.value) || 0)}
-              placeholder="Ex.: 575000"
+              placeholder="Valor de mercado / avaliação atual"
               className="w-full rounded-lg border border-white/10 bg-white/5 text-white px-3 py-2 text-sm placeholder-gray-500 focus:ring-2 focus:ring-[#D4A017]/50 tabular-nums"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Data início</label>
+            <label className="block text-xs font-medium text-gray-400 mb-1">Data início do período</label>
             <input
               type="date"
               value={dataInicio}
@@ -133,7 +157,7 @@ export default function RelatorioValorizacaoClientesPage() {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Data fim</label>
+            <label className="block text-xs font-medium text-gray-400 mb-1">Data fim do período</label>
             <input
               type="date"
               value={dataFim}
@@ -146,7 +170,7 @@ export default function RelatorioValorizacaoClientesPage() {
           <button
             type="button"
             onClick={() => window.print()}
-            disabled={valorAplicado <= 0 && valorAtual <= 0}
+            disabled={!temDados}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#D4A017] text-white font-semibold text-sm hover:bg-[#B8860B] disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             <PdfIcon className="h-5 w-5" />
@@ -155,85 +179,111 @@ export default function RelatorioValorizacaoClientesPage() {
         </div>
       </header>
 
-      {/* Dashboard — área que vai no PDF: enxuto, fácil de entender */}
+      {/* Relatório — área que vai no PDF: dados que o cliente entende rápido */}
       <div className="print-area rounded-2xl border border-white/10 bg-[#181C23] p-6 print:bg-white print:border-gray-200 print:shadow-none">
-        <div className="flex items-center justify-between mb-6 print:mb-4">
+        <div className="flex items-center justify-between mb-5 print:mb-4">
           <AlummaLogoFullInline theme="light" className="h-8" />
-          <span className="text-xs text-gray-400 print:text-gray-500">Relatório de Valorização</span>
+          <span className="text-xs text-gray-400 print:text-gray-500 font-medium">Relatório de Valorização</span>
         </div>
 
-        {nomeCliente.trim() && (
-          <p className="text-sm font-semibold text-white print:text-gray-800 mb-1">{nomeCliente.trim()}</p>
-        )}
-        <p className="text-xs text-gray-400 print:text-gray-500 mb-6">{periodoLabel}</p>
+        {/* Identificação: cliente, produto, unidade, período */}
+        <div className="mb-6 print:mb-5 rounded-xl border border-white/10 bg-white/[0.04] p-4 print:bg-gray-50 print:border-gray-200">
+          {nomeCliente.trim() && (
+            <p className="text-sm font-bold text-white print:text-gray-900 mb-2">{nomeCliente.trim()}</p>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm">
+            {produto.trim() && (
+              <p className="text-gray-300 print:text-gray-700"><span className="text-gray-500 print:text-gray-500 font-medium">Produto:</span> {produto.trim()}</p>
+            )}
+            {unidade.trim() && (
+              <p className="text-gray-300 print:text-gray-700"><span className="text-gray-500 print:text-gray-500 font-medium">Unidade:</span> {unidade.trim()}</p>
+            )}
+          </div>
+          <p className="text-xs text-gray-400 print:text-gray-500 mt-2">{periodoLabel}</p>
+        </div>
 
-        {/* KPIs em linha — bater o olho e entender */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 print:mb-4">
+        {/* Valores do negócio */}
+        <div className="grid grid-cols-2 gap-4 mb-6 print:mb-5">
           <div className="rounded-xl border border-white/10 bg-white/[0.06] p-4 print:bg-gray-50 print:border-gray-200">
-            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide print:text-gray-500">Valor aplicado</p>
-            <p className="text-lg font-bold text-white tabular-nums mt-1 print:text-gray-900">{formatCurrency(aplicadoNum)}</p>
+            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide print:text-gray-500">Valor de contrato</p>
+            <p className="text-lg font-bold text-white tabular-nums mt-1 print:text-gray-900">{formatCurrency(contratoNum)}</p>
+            <p className="text-[10px] text-gray-500 print:text-gray-500 mt-0.5">capital aplicado</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/[0.06] p-4 print:bg-gray-50 print:border-gray-200">
             <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide print:text-gray-500">Valor atual</p>
             <p className="text-lg font-bold text-white tabular-nums mt-1 print:text-gray-900">{formatCurrency(atualNum)}</p>
+            <p className="text-[10px] text-gray-500 print:text-gray-500 mt-0.5">avaliação atual</p>
           </div>
-          <div className="rounded-xl border border-white/10 bg-white/[0.06] p-4 print:bg-gray-50 print:border-gray-200">
-            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide print:text-gray-500">Rentabilidade</p>
-            <p className={`text-lg font-bold tabular-nums mt-1 ${rentabilidadePct >= 0 ? 'text-emerald-400 print:text-emerald-700' : 'text-red-400 print:text-red-600'}`}>
-              {formatPct(rentabilidadePct)}
-            </p>
-          </div>
-          <div className="rounded-xl border border-white/10 bg-white/[0.06] p-4 print:bg-gray-50 print:border-gray-200">
-            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide print:text-gray-500">Ganho / Perda</p>
-            <p className={`text-lg font-bold tabular-nums mt-1 ${ganho >= 0 ? 'text-emerald-400 print:text-emerald-700' : 'text-red-400 print:text-red-600'}`}>
-              {formatCurrency(ganho)}
-            </p>
+        </div>
+
+        {/* Destaque: quanto ganhou, valorização, retorno — o cliente bate o olho e entende */}
+        <div className="mb-6 print:mb-5">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3 print:text-gray-600">Resultado do investimento</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="rounded-xl border-2 border-[#D4A017]/40 bg-[#D4A017]/10 p-4 print:bg-amber-50 print:border-amber-300">
+              <p className="text-[10px] font-medium text-[#E8C547] uppercase tracking-wide print:text-amber-800">Quanto ganhou</p>
+              <p className={`text-xl font-bold tabular-nums mt-1 ${ganho >= 0 ? 'text-emerald-400 print:text-emerald-700' : 'text-red-400 print:text-red-600'}`}>
+                {temDados ? formatCurrency(ganho) : '—'}
+              </p>
+            </div>
+            <div className="rounded-xl border-2 border-[#D4A017]/40 bg-[#D4A017]/10 p-4 print:bg-amber-50 print:border-amber-300">
+              <p className="text-[10px] font-medium text-[#E8C547] uppercase tracking-wide print:text-amber-800">Valorização do imóvel</p>
+              <p className={`text-xl font-bold tabular-nums mt-1 ${valorizacaoPct >= 0 ? 'text-emerald-400 print:text-emerald-700' : 'text-red-400 print:text-red-600'}`}>
+                {temDados ? formatPct(valorizacaoPct) : '—'}
+              </p>
+            </div>
+            <div className="rounded-xl border-2 border-[#D4A017]/40 bg-[#D4A017]/10 p-4 print:bg-amber-50 print:border-amber-300">
+              <p className="text-[10px] font-medium text-[#E8C547] uppercase tracking-wide print:text-amber-800">Retorno sobre capital aplicado</p>
+              <p className={`text-xl font-bold tabular-nums mt-1 ${valorizacaoPct >= 0 ? 'text-emerald-400 print:text-emerald-700' : 'text-red-400 print:text-red-600'}`}>
+                {temDados ? formatPct(valorizacaoPct) : '—'}
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Frase de impacto */}
         <div className="rounded-xl border border-[#D4A017]/30 bg-[#D4A017]/10 p-4 mb-6 print:bg-amber-50 print:border-amber-200">
-          <p className="text-sm font-semibold text-[#E8C547] print:text-amber-900 text-center">
-            {aplicadoNum > 0
-              ? rentabilidadePct >= 0
-                ? `Seu investimento valorizou ${formatPct(rentabilidadePct)} no período (${formatCurrency(ganho)}).`
-                : `No período, a variação foi de ${formatPct(rentabilidadePct)} (${formatCurrency(ganho)}).`
-              : 'Informe valor aplicado e valor atual para ver a valorização.'}
+          <p className="text-sm font-semibold text-[#E8C547] print:text-amber-900 text-center leading-relaxed">
+            {temDados
+              ? valorizacaoPct >= 0
+                ? `Seu investimento valorizou ${formatPct(valorizacaoPct)} no período. Você ganhou ${formatCurrency(ganho)} sobre o capital aplicado de ${formatCurrency(contratoNum)}.`
+                : `No período, a variação foi de ${formatPct(valorizacaoPct)} (${formatCurrency(ganho)}).`
+              : 'Preencha valor de contrato e valor atual para visualizar o resultado.'}
           </p>
         </div>
 
-        {/* Barras comparativas — visual enxuto */}
-        {aplicadoNum > 0 || atualNum > 0 ? (
+        {/* Comparativo visual */}
+        {temDados && (
           <div className="space-y-3 print:mb-0">
-            <p className="text-xs font-medium text-gray-400 print:text-gray-600">Comparativo</p>
+            <p className="text-xs font-medium text-gray-400 print:text-gray-600">Comparativo: contrato x valor atual</p>
             <div className="space-y-2">
               <div>
                 <div className="flex justify-between text-[10px] text-gray-400 print:text-gray-500 mb-0.5">
-                  <span>Aplicado</span>
-                  <span className="tabular-nums">{formatCurrency(aplicadoNum)}</span>
+                  <span>Valor de contrato</span>
+                  <span className="tabular-nums">{formatCurrency(contratoNum)}</span>
                 </div>
                 <div className="h-3 rounded-full bg-white/10 overflow-hidden print:bg-gray-200">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-[#D4A017] to-[#E8C547] print:bg-amber-400 transition-all duration-500"
-                    style={{ width: `${barAplicadoPct}%` }}
+                    style={{ width: `${barContratoPct}%` }}
                   />
                 </div>
               </div>
               <div>
                 <div className="flex justify-between text-[10px] text-gray-400 print:text-gray-500 mb-0.5">
-                  <span>Atual</span>
+                  <span>Valor atual</span>
                   <span className="tabular-nums">{formatCurrency(atualNum)}</span>
                 </div>
                 <div className="h-3 rounded-full bg-white/10 overflow-hidden print:bg-gray-200">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${rentabilidadePct >= 0 ? 'bg-emerald-500 print:bg-emerald-400' : 'bg-red-500 print:bg-red-400'}`}
+                    className={`h-full rounded-full transition-all duration-500 ${valorizacaoPct >= 0 ? 'bg-emerald-500 print:bg-emerald-400' : 'bg-red-500 print:bg-red-400'}`}
                     style={{ width: `${barAtualPct}%` }}
                   />
                 </div>
               </div>
             </div>
           </div>
-        ) : null}
+        )}
       </div>
     </div>
   );
