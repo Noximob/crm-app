@@ -64,6 +64,7 @@ const adminCategories = [
       { title: 'Metas', icon: '🎯', description: 'Configure metas', href: '/dashboard/admin/metas' },
       { title: 'Relatórios', icon: '📊', description: 'Métricas e resultados', href: '/dashboard/admin/relatorios' },
       { title: 'Relatório Individual', icon: '📋', description: 'Relatório completo por corretor (dia/semana/mês) para download e envio', href: '/dashboard/admin/relatorio-individual' },
+      { title: 'Relatório de Valorização dos Clientes', icon: '📈', description: 'Dashboard de valorização para clientes investidores com download em PDF', href: '/dashboard/admin/relatorio-valorizacao-clientes' },
       { title: 'Relatório Diário', icon: '📊', description: 'Funil e lista de leads para apresentação diária (qualificação, anotações, próxima tarefa)', href: '/dashboard/admin/relatorio-diario' },
       { title: 'Dashboards TV', icon: '📺', description: 'Telas para TV da imobiliária', href: '/dashboard/admin/dashboards-tv' },
     ]
