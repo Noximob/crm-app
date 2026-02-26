@@ -29,28 +29,43 @@ function formatPct(value: number): string {
   return new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 2 }).format(value / 100);
 }
 
+// Valores padrão temporários para preenchimento inicial (ex.: Orla da Barra)
+const DEFAULTS = {
+  nomeCliente: 'João',
+  produto: 'Orla da Barra',
+  unidade: '2606',
+  valorContrato: 997000,
+  valorAtual: 1600000,
+  dataInicio: '2026-02-10',
+  dataFim: '2029-12-10',
+};
+
 export default function RelatorioValorizacaoClientesPage() {
-  const [nomeCliente, setNomeCliente] = useState('');
-  const [produto, setProduto] = useState('');
-  const [unidade, setUnidade] = useState('');
-  const [valorContrato, setValorContrato] = useState<number>(0);
-  const [valorAtual, setValorAtual] = useState<number>(0);
-  const [dataInicio, setDataInicio] = useState('');
-  const [dataFim, setDataFim] = useState('');
+  const [nomeCliente, setNomeCliente] = useState(DEFAULTS.nomeCliente);
+  const [produto, setProduto] = useState(DEFAULTS.produto);
+  const [unidade, setUnidade] = useState(DEFAULTS.unidade);
+  const [valorContrato, setValorContrato] = useState<number>(DEFAULTS.valorContrato);
+  const [valorAtual, setValorAtual] = useState<number>(DEFAULTS.valorAtual);
+  const [capitalAplicadoAteAgora, setCapitalAplicadoAteAgora] = useState<number>(DEFAULTS.valorContrato);
+  const [dataInicio, setDataInicio] = useState(DEFAULTS.dataInicio);
+  const [dataFim, setDataFim] = useState(DEFAULTS.dataFim);
+
+  const capitalBase = Number(capitalAplicadoAteAgora) || Number(valorContrato) || 0;
 
   const { ganho, valorizacaoPct, taxaRetornoMensalPct } = useMemo(() => {
     const contrato = Number(valorContrato) || 0;
     const atual = Number(valorAtual) || 0;
-    const ganho = contrato > 0 ? atual - contrato : 0;
-    const valorizacaoPct = contrato > 0 ? (ganho / contrato) * 100 : 0;
+    const base = capitalBase || contrato;
+    const ganho = base > 0 ? atual - base : 0;
+    const valorizacaoPct = base > 0 ? (ganho / base) * 100 : 0;
     const meses = dataInicio && dataFim
       ? Math.max(1, Math.round((new Date(dataFim + 'T12:00:00').getTime() - new Date(dataInicio + 'T12:00:00').getTime()) / (30.44 * 24 * 60 * 60 * 1000)))
       : 12;
-    const taxaMensal = contrato > 0 && meses > 0 && atual > 0
-      ? (Math.pow(atual / contrato, 1 / meses) - 1) * 100
+    const taxaMensal = base > 0 && meses > 0 && atual > 0
+      ? (Math.pow(atual / base, 1 / meses) - 1) * 100
       : 0;
     return { ganho, valorizacaoPct, taxaRetornoMensalPct: taxaMensal };
-  }, [valorContrato, valorAtual, dataInicio, dataFim]);
+  }, [valorContrato, valorAtual, capitalBase, dataInicio, dataFim]);
 
   const periodoLabel = useMemo(() => {
     if (dataInicio && dataFim) {
@@ -179,6 +194,18 @@ export default function RelatorioValorizacaoClientesPage() {
             />
           </div>
           <div>
+            <label className="block text-xs font-medium text-gray-400 mb-1">Capital aplicado pelo cliente até o momento (R$)</label>
+            <input
+              type="number"
+              min={0}
+              step={1000}
+              value={capitalAplicadoAteAgora || ''}
+              onChange={(e) => setCapitalAplicadoAteAgora(Number(e.target.value) || 0)}
+              placeholder="Valor já efetivamente aplicado pelo cliente"
+              className="w-full rounded-lg border border-white/10 bg-white/5 text-white px-3 py-2 text-sm placeholder-gray-500 focus:ring-2 focus:ring-[#D4A017]/50 tabular-nums"
+            />
+          </div>
+          <div>
             <label className="block text-xs font-medium text-gray-400 mb-1">Valor atual (R$)</label>
             <input
               type="number"
@@ -245,10 +272,10 @@ export default function RelatorioValorizacaoClientesPage() {
           <p className="text-xs text-gray-400 print:text-gray-500 mt-2">{periodoLabel}</p>
         </div>
 
-        {/* Capital aplicado até o momento */}
+        {/* Capital aplicado até o momento (informado pelo corretor) */}
         <div className="mb-6 print:mb-5 rounded-xl border border-[#D4A017]/30 bg-[#D4A017]/10 p-4 print:bg-amber-50 print:border-amber-200">
           <p className="text-[10px] font-medium text-[#E8C547] uppercase tracking-wide print:text-amber-800">Capital aplicado até o momento</p>
-          <p className="text-xl font-bold text-white tabular-nums mt-1 print:text-gray-900">{formatCurrency(contratoNum)}</p>
+          <p className="text-xl font-bold text-white tabular-nums mt-1 print:text-gray-900">{formatCurrency(capitalBase)}</p>
         </div>
 
         {/* Valores do negócio */}
@@ -295,7 +322,7 @@ export default function RelatorioValorizacaoClientesPage() {
           <p className="text-sm font-semibold text-[#E8C547] print:text-amber-900 text-center leading-relaxed">
             {temDados
               ? valorizacaoPct >= 0
-                ? `Seu investimento valorizou ${formatPct(valorizacaoPct)} no período. Você ganhou ${formatCurrency(ganho)} sobre o capital aplicado de ${formatCurrency(contratoNum)}.`
+                ? `Seu investimento valorizou ${formatPct(valorizacaoPct)} no período. Você ganhou ${formatCurrency(ganho)} sobre o capital aplicado de ${formatCurrency(capitalBase)}.`
                 : `No período, a variação foi de ${formatPct(valorizacaoPct)} (${formatCurrency(ganho)}).`
               : 'Preencha valor de contrato e valor atual para visualizar o resultado.'}
           </p>
