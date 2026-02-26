@@ -38,13 +38,19 @@ export default function RelatorioValorizacaoClientesPage() {
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
 
-  const { ganho, valorizacaoPct } = useMemo(() => {
+  const { ganho, valorizacaoPct, taxaRetornoMensalPct } = useMemo(() => {
     const contrato = Number(valorContrato) || 0;
     const atual = Number(valorAtual) || 0;
     const ganho = contrato > 0 ? atual - contrato : 0;
     const valorizacaoPct = contrato > 0 ? (ganho / contrato) * 100 : 0;
-    return { ganho, valorizacaoPct };
-  }, [valorContrato, valorAtual]);
+    const meses = dataInicio && dataFim
+      ? Math.max(1, Math.round((new Date(dataFim + 'T12:00:00').getTime() - new Date(dataInicio + 'T12:00:00').getTime()) / (30.44 * 24 * 60 * 60 * 1000)))
+      : 12;
+    const taxaMensal = contrato > 0 && meses > 0 && atual > 0
+      ? (Math.pow(atual / contrato, 1 / meses) - 1) * 100
+      : 0;
+    return { ganho, valorizacaoPct, taxaRetornoMensalPct: taxaMensal };
+  }, [valorContrato, valorAtual, dataInicio, dataFim]);
 
   const periodoLabel = useMemo(() => {
     if (dataInicio && dataFim) {
@@ -239,12 +245,18 @@ export default function RelatorioValorizacaoClientesPage() {
           <p className="text-xs text-gray-400 print:text-gray-500 mt-2">{periodoLabel}</p>
         </div>
 
+        {/* Capital aplicado até o momento */}
+        <div className="mb-6 print:mb-5 rounded-xl border border-[#D4A017]/30 bg-[#D4A017]/10 p-4 print:bg-amber-50 print:border-amber-200">
+          <p className="text-[10px] font-medium text-[#E8C547] uppercase tracking-wide print:text-amber-800">Capital aplicado até o momento</p>
+          <p className="text-xl font-bold text-white tabular-nums mt-1 print:text-gray-900">{formatCurrency(contratoNum)}</p>
+        </div>
+
         {/* Valores do negócio */}
         <div className="grid grid-cols-2 gap-4 mb-6 print:mb-5">
           <div className="rounded-xl border border-white/10 bg-white/[0.06] p-4 print:bg-gray-50 print:border-gray-200">
             <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide print:text-gray-500">Valor de contrato</p>
             <p className="text-lg font-bold text-white tabular-nums mt-1 print:text-gray-900">{formatCurrency(contratoNum)}</p>
-            <p className="text-[10px] text-gray-500 print:text-gray-500 mt-0.5">capital aplicado</p>
+            <p className="text-[10px] text-gray-500 print:text-gray-500 mt-0.5">na aquisição</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/[0.06] p-4 print:bg-gray-50 print:border-gray-200">
             <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide print:text-gray-500">Valor atual</p>
@@ -253,26 +265,26 @@ export default function RelatorioValorizacaoClientesPage() {
           </div>
         </div>
 
-        {/* Destaque: quanto ganhou, valorização, retorno — o cliente bate o olho e entende */}
+        {/* Resultado do investimento: retorno líquido, ROI, taxa mensal */}
         <div className="mb-6 print:mb-5">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3 print:text-gray-600">Resultado do investimento</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="rounded-xl border-2 border-[#D4A017]/40 bg-[#D4A017]/10 p-4 print:bg-amber-50 print:border-amber-300">
-              <p className="text-[10px] font-medium text-[#E8C547] uppercase tracking-wide print:text-amber-800">Quanto ganhou</p>
+              <p className="text-[10px] font-medium text-[#E8C547] uppercase tracking-wide print:text-amber-800">Retorno líquido estimado</p>
               <p className={`text-xl font-bold tabular-nums mt-1 ${ganho >= 0 ? 'text-emerald-400 print:text-emerald-700' : 'text-red-400 print:text-red-600'}`}>
                 {temDados ? formatCurrency(ganho) : '—'}
               </p>
             </div>
             <div className="rounded-xl border-2 border-[#D4A017]/40 bg-[#D4A017]/10 p-4 print:bg-amber-50 print:border-amber-300">
-              <p className="text-[10px] font-medium text-[#E8C547] uppercase tracking-wide print:text-amber-800">Valorização do imóvel</p>
+              <p className="text-[10px] font-medium text-[#E8C547] uppercase tracking-wide print:text-amber-800">ROI</p>
               <p className={`text-xl font-bold tabular-nums mt-1 ${valorizacaoPct >= 0 ? 'text-emerald-400 print:text-emerald-700' : 'text-red-400 print:text-red-600'}`}>
                 {temDados ? formatPct(valorizacaoPct) : '—'}
               </p>
             </div>
             <div className="rounded-xl border-2 border-[#D4A017]/40 bg-[#D4A017]/10 p-4 print:bg-amber-50 print:border-amber-300">
-              <p className="text-[10px] font-medium text-[#E8C547] uppercase tracking-wide print:text-amber-800">Retorno sobre capital aplicado</p>
-              <p className={`text-xl font-bold tabular-nums mt-1 ${valorizacaoPct >= 0 ? 'text-emerald-400 print:text-emerald-700' : 'text-red-400 print:text-red-600'}`}>
-                {temDados ? formatPct(valorizacaoPct) : '—'}
+              <p className="text-[10px] font-medium text-[#E8C547] uppercase tracking-wide print:text-amber-800">Taxa de retorno mensal</p>
+              <p className={`text-xl font-bold tabular-nums mt-1 ${taxaRetornoMensalPct >= 0 ? 'text-emerald-400 print:text-emerald-700' : 'text-red-400 print:text-red-600'}`}>
+                {temDados ? formatPct(taxaRetornoMensalPct) : '—'}
               </p>
             </div>
           </div>
