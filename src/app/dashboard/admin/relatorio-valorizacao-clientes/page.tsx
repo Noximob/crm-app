@@ -60,11 +60,48 @@ export default function RelatorioValorizacaoClientesPage() {
 
   const contratoNum = Number(valorContrato) || 0;
   const atualNum = Number(valorAtual) || 0;
-  const maxBar = Math.max(contratoNum, atualNum, 1);
-  const barContratoPct = (contratoNum / maxBar) * 100;
-  const barAtualPct = (atualNum / maxBar) * 100;
-
   const temDados = contratoNum > 0 || atualNum > 0;
+
+  // Período em meses para o gráfico (data início/fim ou padrão 12 meses)
+  const mesesPeriodo = useMemo(() => {
+    if (dataInicio && dataFim) {
+      const d1 = new Date(dataInicio + 'T12:00:00');
+      const d2 = new Date(dataFim + 'T12:00:00');
+      const meses = Math.max(1, Math.round((d2.getTime() - d1.getTime()) / (30.44 * 24 * 60 * 60 * 1000)));
+      return Math.min(meses, 120); // cap 10 anos
+    }
+    return 12;
+  }, [dataInicio, dataFim]);
+
+  // Selic: taxa anual de referência (ex.: 10,5% a.a.) — capital aplicado renderizando mês a mês
+  const SELIC_ANUAL_PCT = 10.5;
+  const selicMensal = Math.pow(1 + SELIC_ANUAL_PCT / 100, 1 / 12) - 1;
+
+  const chartData = useMemo(() => {
+    if (!temDados) return { pontos: [], selic: [], imovel: [], minY: 0, maxY: 0 };
+    const selic: number[] = [];
+    const imovel: number[] = [];
+    for (let m = 0; m <= mesesPeriodo; m++) {
+      selic.push(contratoNum * Math.pow(1 + selicMensal, m));
+      imovel.push(contratoNum + (atualNum - contratoNum) * (m / mesesPeriodo));
+    }
+    const minY = Math.min(selic[0], imovel[0], ...selic, ...imovel);
+    const maxY = Math.max(...selic, ...imovel);
+    const pontos = selic.map((_, i) => i);
+    return { pontos, selic, imovel, minY, maxY };
+  }, [temDados, contratoNum, atualNum, mesesPeriodo, selicMensal]);
+
+  const chartW = 400;
+  const chartH = 200;
+  const pad = { left: 48, right: 16, top: 12, bottom: 28 };
+  const innerW = chartW - pad.left - pad.right;
+  const innerH = chartH - pad.top - pad.bottom;
+
+  const scaleX = (m: number) => pad.left + (m / mesesPeriodo) * innerW;
+  const scaleY = (v: number) => {
+    if (chartData.maxY <= chartData.minY) return pad.top + innerH / 2;
+    return pad.top + innerH - ((v - chartData.minY) / (chartData.maxY - chartData.minY)) * innerH;
+  };
 
   return (
     <div className="min-h-screen p-4 sm:p-6 max-w-4xl mx-auto">
@@ -252,33 +289,61 @@ export default function RelatorioValorizacaoClientesPage() {
           </p>
         </div>
 
-        {/* Comparativo visual */}
-        {temDados && (
-          <div className="space-y-3 print:mb-0">
-            <p className="text-xs font-medium text-gray-400 print:text-gray-600">Comparativo: contrato x valor atual</p>
-            <div className="space-y-2">
-              <div>
-                <div className="flex justify-between text-[10px] text-gray-400 print:text-gray-500 mb-0.5">
-                  <span>Valor de contrato</span>
-                  <span className="tabular-nums">{formatCurrency(contratoNum)}</span>
+        {/* Gráfico em linha: capital na Selic x retorno do imóvel */}
+        {temDados && chartData.pontos.length > 0 && (
+          <div className="space-y-2 print:mb-0">
+            <p className="text-xs font-medium text-gray-400 print:text-gray-600">Se o capital estivesse na Selic vs retorno do imóvel</p>
+            <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+              <svg width="100%" viewBox={`0 0 ${chartW} ${chartH}`} className="max-w-full h-auto" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                  <linearGradient id="line-selic" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#94a3b8" />
+                    <stop offset="100%" stopColor="#64748b" />
+                  </linearGradient>
+                  <linearGradient id="line-imovel" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#D4A017" />
+                    <stop offset="100%" stopColor="#22c55e" />
+                  </linearGradient>
+                </defs>
+                {/* Grid leve */}
+                {[0.25, 0.5, 0.75].map((t) => (
+                  <line key={t} x1={pad.left} y1={pad.top + t * innerH} x2={pad.left + innerW} y2={pad.top + t * innerH} stroke="currentColor" strokeOpacity={0.08} strokeWidth={1} className="print:stroke-gray-300" />
+                ))}
+                {/* Eixo Y: valores */}
+                <text x={pad.left - 4} y={pad.top} textAnchor="end" className="text-[9px] fill-gray-500 print:fill-gray-500" style={{ dominantBaseline: 'middle' }}>{formatCurrency(chartData.maxY)}</text>
+                <text x={pad.left - 4} y={pad.top + innerH} textAnchor="end" className="text-[9px] fill-gray-500 print:fill-gray-500" style={{ dominantBaseline: 'middle' }}>{formatCurrency(chartData.minY)}</text>
+                {/* Linha Selic */}
+                <polyline
+                  fill="none"
+                  stroke="url(#line-selic)"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="print:stroke-slate-500"
+                  points={chartData.selic.map((v, i) => `${scaleX(i)},${scaleY(v)}`).join(' ')}
+                />
+                {/* Linha Imóvel */}
+                <polyline
+                  fill="none"
+                  stroke={valorizacaoPct >= 0 ? 'url(#line-imovel)' : '#ef4444'}
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={valorizacaoPct >= 0 ? 'print:stroke-emerald-500' : 'print:stroke-red-500'}
+                  points={chartData.imovel.map((v, i) => `${scaleX(i)},${scaleY(v)}`).join(' ')}
+                />
+                {/* Eixo X: tempo */}
+                <text x={pad.left} y={chartH - 6} textAnchor="middle" className="text-[9px] fill-gray-500 print:fill-gray-500">Início</text>
+                <text x={pad.left + innerW} y={chartH - 6} textAnchor="middle" className="text-[9px] fill-gray-500 print:fill-gray-500">Hoje</text>
+              </svg>
+              <div className="flex flex-wrap gap-4 sm:flex-col sm:gap-2 text-[11px] print:text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-4 h-0.5 rounded-full bg-slate-400 print:bg-slate-500" />
+                  <span className="text-gray-400 print:text-gray-600">Se na Selic ({SELIC_ANUAL_PCT}% a.a.)</span>
                 </div>
-                <div className="h-3 rounded-full bg-white/10 overflow-hidden print:bg-gray-200">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-[#D4A017] to-[#E8C547] print:bg-amber-400 transition-all duration-500"
-                    style={{ width: `${barContratoPct}%` }}
-                  />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-[10px] text-gray-400 print:text-gray-500 mb-0.5">
-                  <span>Valor atual</span>
-                  <span className="tabular-nums">{formatCurrency(atualNum)}</span>
-                </div>
-                <div className="h-3 rounded-full bg-white/10 overflow-hidden print:bg-gray-200">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${valorizacaoPct >= 0 ? 'bg-emerald-500 print:bg-emerald-400' : 'bg-red-500 print:bg-red-400'}`}
-                    style={{ width: `${barAtualPct}%` }}
-                  />
+                <div className="flex items-center gap-2">
+                  <span className={`w-4 h-0.5 rounded-full ${valorizacaoPct >= 0 ? 'bg-emerald-500 print:bg-emerald-500' : 'bg-red-500 print:bg-red-500'}`} />
+                  <span className="text-gray-400 print:text-gray-600">Retorno do imóvel</span>
                 </div>
               </div>
             </div>
