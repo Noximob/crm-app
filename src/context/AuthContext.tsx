@@ -48,6 +48,7 @@ interface AuthContextType {
   isApproved: boolean;
   isEspelhoDemo: boolean;
   logout: () => Promise<void>;
+  enterEspelhoDemo: () => void;
 }
 
 export const AuthContext = createContext<AuthContextType>({ 
@@ -57,6 +58,7 @@ export const AuthContext = createContext<AuthContextType>({
   isApproved: false,
   isEspelhoDemo: false,
   logout: async () => {},
+  enterEspelhoDemo: () => {},
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -65,6 +67,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [isApproved, setIsApproved] = useState(false);
   const router = useRouter();
+
+  const enterEspelhoDemo = useCallback(() => {
+    if (typeof window !== 'undefined') window.sessionStorage.setItem(ESPELHO_STORAGE_KEY, '1');
+    setCurrentUser(ESPELHO_USER);
+    setUserData(ESPELHO_USER_DATA);
+    setIsApproved(true);
+    setLoading(false);
+  }, []);
 
   const logout = useCallback(async () => {
     if (currentUser?.uid === ESPELHO_DEMO_UID) {
@@ -86,10 +96,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.sessionStorage.getItem(ESPELHO_STORAGE_KEY) === '1') {
-      setCurrentUser(ESPELHO_USER);
-      setUserData(ESPELHO_USER_DATA);
-      setIsApproved(true);
-      setLoading(false);
+      enterEspelhoDemo();
       return;
     }
 
@@ -166,7 +173,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [currentUser?.uid, isEspelhoDemo]);
 
   return (
-    <AuthContext.Provider value={{ currentUser, userData, loading, isApproved, isEspelhoDemo, logout }}>
+    <AuthContext.Provider value={{ currentUser, userData, loading, isApproved, isEspelhoDemo, logout, enterEspelhoDemo }}>
       {children}
     </AuthContext.Provider>
   );

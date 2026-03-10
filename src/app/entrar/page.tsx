@@ -7,10 +7,10 @@ import { useAuth } from '@/context/AuthContext';
 import { auth, googleProvider } from '@/lib/firebase';
 import { AlummaLogo } from '@/components/AlummaLogo';
 import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
-import { ESPELHO_LOGIN, ESPELHO_PASSWORD, ESPELHO_STORAGE_KEY } from '@/lib/constants';
+import { ESPELHO_LOGIN, ESPELHO_PASSWORD } from '@/lib/constants';
 
 export default function EntrarPage() {
-  const { currentUser, userData, loading, isApproved } = useAuth();
+  const { currentUser, userData, loading, isApproved, enterEspelhoDemo } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -69,7 +69,7 @@ export default function EntrarPage() {
       return;
     }
     if (email.trim() === ESPELHO_LOGIN && password === ESPELHO_PASSWORD) {
-      if (typeof window !== 'undefined') window.sessionStorage.setItem(ESPELHO_STORAGE_KEY, '1');
+      enterEspelhoDemo();
       router.push('/dashboard');
       setIsLoading(false);
       return;
