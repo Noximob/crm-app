@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDoc, getDocs, setDoc, addDoc, deleteDoc, Timestamp, query, where, orderBy } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
+import { DEMO_REPORT_CORRETORES, DEMO_CONTRIBUICOES, DEMO_METAS_VGV, DEMO_METAS_VGV_MENSAL, DEMO_METAS_PESSOAIS } from '@/lib/espelho/demoData';
 
 interface Corretor {
   id: string;
@@ -20,7 +21,7 @@ interface Contribuicao {
 }
 
 export default function AdminMetasPage() {
-  const { userData, currentUser } = useAuth();
+  const { userData, currentUser, isEspelhoDemo } = useAuth();
   const [inicio, setInicio] = useState('');
   const [fim, setFim] = useState('');
   const [vgv, setVgv] = useState('');
@@ -58,11 +59,19 @@ export default function AdminMetasPage() {
 
   // Buscar corretores aprovados da imobiliária
   useEffect(() => {
-    if (!userData?.imobiliariaId) return;
+    if (!userData?.imobiliariaId && !isEspelhoDemo) return;
+    if (isEspelhoDemo) {
+      setCorretores(DEMO_REPORT_CORRETORES.map(c => ({ id: c.uid, nome: c.nome })));
+      setMetasPessoais(DEMO_METAS_PESSOAIS);
+      setValorAlmejadoInputs(
+        Object.fromEntries(Object.entries(DEMO_METAS_PESSOAIS).map(([id, v]) => [id, v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })]))
+      );
+      return;
+    }
     const fetchCorretores = async () => {
       const q = query(
         collection(db, 'usuarios'),
-        where('imobiliariaId', '==', userData.imobiliariaId),
+        where('imobiliariaId', '==', userData!.imobiliariaId),
         where('tipoConta', 'in', ['corretor-vinculado', 'corretor-autonomo', 'imobiliaria']),
         where('aprovado', '==', true)
       );
@@ -70,11 +79,11 @@ export default function AdminMetasPage() {
       setCorretores(snapshot.docs.map(d => ({ id: d.id, nome: d.data().nome })));
     };
     fetchCorretores();
-  }, [userData?.imobiliariaId]);
+  }, [userData?.imobiliariaId, isEspelhoDemo]);
 
   // Buscar metas pessoais (valor almejado por corretor)
   useEffect(() => {
-    if (!userData?.imobiliariaId) return;
+    if (!userData?.imobiliariaId || isEspelhoDemo) return;
     const refPessoais = collection(db, 'metas', userData.imobiliariaId, 'metasPessoais');
     getDocs(refPessoais).then((snap) => {
       const map: Record<string, number> = {};
@@ -89,17 +98,25 @@ export default function AdminMetasPage() {
       setMetasPessoais(map);
       setValorAlmejadoInputs((prev) => ({ ...prev, ...inputs }));
     });
-  }, [userData?.imobiliariaId]);
+  }, [userData?.imobiliariaId, isEspelhoDemo]);
 
   // Buscar meta e contribuições
   const fetchMeta = async () => {
-    if (!userData?.imobiliariaId) {
+    if (!userData?.imobiliariaId && !isEspelhoDemo) {
+      setFetching(false);
+      return;
+    }
+    if (isEspelhoDemo) {
+      setVgv(String(DEMO_METAS_VGV));
+      setVgvMensal(String(DEMO_METAS_VGV_MENSAL));
+      setContribuicoes(DEMO_CONTRIBUICOES as Contribuicao[]);
       setFetching(false);
       return;
     }
     setFetching(true);
+    const imobId = userData!.imobiliariaId!;
     try {
-      const metaRef = doc(db, 'metas', userData.imobiliariaId);
+      const metaRef = doc(db, 'metas', imobId);
       const snap = await getDoc(metaRef);
       if (snap.exists()) {
         const meta = snap.data();
@@ -111,7 +128,7 @@ export default function AdminMetasPage() {
         setVgvMensal(meta.valorMensal != null ? meta.valorMensal.toString() : '');
         setUltimaAtualizacaoPor(meta.updatedByNome ?? null);
       }
-      const contribRef = collection(db, 'metas', userData.imobiliariaId, 'contribuicoes');
+      const contribRef = collection(db, 'metas', imobId, 'contribuicoes');
       const contribSnap = await getDocs(query(contribRef, orderBy('createdAt', 'desc')));
       const lista = contribSnap.docs.map(d => ({
         id: d.id,
@@ -140,10 +157,10 @@ export default function AdminMetasPage() {
 
   useEffect(() => {
     fetchMeta();
-  }, [userData?.imobiliariaId]);
+  }, [userData?.imobiliariaId, isEspelhoDemo]);
 
   async function updateMetaAlcancado(alcancado: number) {
-    if (!userData?.imobiliariaId) return;
+    if (isEspelhoDemo || !userData?.imobiliariaId) return;
     const metaRef = doc(db, 'metas', userData.imobiliariaId);
     const valorNum = parseFloat(vgv) || 0;
     const percentual = valorNum > 0 ? Math.round((alcancado / valorNum) * 100) : 0;
@@ -158,6 +175,7 @@ export default function AdminMetasPage() {
 
   async function handleAddContribuicao(e?: React.FormEvent) {
     e?.preventDefault();
+    if (isEspelhoDemo) return;
     if (!userData?.imobiliariaId || !corretorSelecionado || !valorContribuicao?.trim()) return;
     const valor = parseValorBR(valorContribuicao);
     if (isNaN(valor) || valor <= 0) return;
@@ -186,6 +204,10 @@ export default function AdminMetasPage() {
   }
 
   async function handleRemoveContribuicao(id: string) {
+    if (isEspelhoDemo) {
+      setContribuicoes(prev => prev.filter(c => c.id !== id));
+      return;
+    }
     if (!userData?.imobiliariaId) return;
     try {
       await deleteDoc(doc(db, 'metas', userData.imobiliariaId, 'contribuicoes', id));
@@ -198,7 +220,7 @@ export default function AdminMetasPage() {
   }
 
   async function handleSaveMetaPessoal(corretorId: string) {
-    if (!userData?.imobiliariaId) return;
+    if (isEspelhoDemo || !userData?.imobiliariaId) return;
     const raw = valorAlmejadoInputs[corretorId] ?? '';
     const valor = parseValorBR(raw);
     if (isNaN(valor) || valor < 0) return;
@@ -217,7 +239,7 @@ export default function AdminMetasPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!userData?.imobiliariaId) return;
+    if (isEspelhoDemo || !userData?.imobiliariaId) return;
     setLoading(true);
     try {
       const metaRef = doc(db, 'metas', userData.imobiliariaId);

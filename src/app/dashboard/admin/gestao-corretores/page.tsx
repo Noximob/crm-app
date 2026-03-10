@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase';
 import { collection, doc, deleteDoc, query, where, onSnapshot, writeBatch } from 'firebase/firestore';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { useRouter } from 'next/navigation';
+import { getDemoLeads, DEMO_USUARIOS } from '@/lib/espelho/demoData';
 
 interface User {
   id: string;
@@ -30,7 +31,7 @@ interface Lead {
 }
 
 export default function GestaoCorretoresPage() {
-  const { userData } = useAuth();
+  const { userData, isEspelhoDemo } = useAuth();
   const { stages } = usePipelineStages();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
@@ -43,11 +44,15 @@ export default function GestaoCorretoresPage() {
 
   // Buscar usuários da imobiliária
   useEffect(() => {
-    if (!userData?.imobiliariaId) return;
+    if (!userData?.imobiliariaId && !isEspelhoDemo) return;
+
+    if (isEspelhoDemo) {
+      setUsers(DEMO_USUARIOS as User[]);
+      return;
+    }
 
     const usersRef = collection(db, 'usuarios');
-    const q = query(usersRef, where('imobiliariaId', '==', userData.imobiliariaId));
-    
+    const q = query(usersRef, where('imobiliariaId', '==', userData!.imobiliariaId));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const usersData = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -55,48 +60,46 @@ export default function GestaoCorretoresPage() {
       })) as User[];
       setUsers(usersData);
     });
-
     return () => unsubscribe();
-  }, [userData]);
+  }, [userData, isEspelhoDemo]);
 
   // Buscar leads
   useEffect(() => {
-    if (!userData?.imobiliariaId) {
-      console.log('userData ou imobiliariaId não encontrado para leads:', userData);
+    if (!userData?.imobiliariaId && !isEspelhoDemo) {
+      setLoading(false);
       return;
     }
 
-    console.log('=== DEBUG LEADS ===');
-    console.log('userData completo:', userData);
-    console.log('imobiliariaId sendo usado:', userData.imobiliariaId);
-    console.log('Tipo do imobiliariaId:', typeof userData.imobiliariaId);
-    
+    if (isEspelhoDemo) {
+      const demoLeads = getDemoLeads();
+      setLeads(demoLeads.map(l => ({
+        id: l.id,
+        nome: l.nome,
+        telefone: l.telefone,
+        etapa: l.etapa,
+        userId: l.userId,
+        imobiliariaId: 'espelho-demo',
+        createdAt: l.createdAt,
+      })) as Lead[]);
+      setLoading(false);
+      return;
+    }
+
     const leadsRef = collection(db, 'leads');
-    const q = query(leadsRef, where('imobiliariaId', '==', userData.imobiliariaId));
-    
+    const q = query(leadsRef, where('imobiliariaId', '==', userData!.imobiliariaId));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const leadsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Lead[];
-      
-      console.log('Query de leads executada');
-      console.log('Snapshot size:', snapshot.size);
-      console.log('Leads encontrados:', leadsData);
-      console.log('Leads por usuário:', leadsData.reduce((acc, lead) => {
-        acc[lead.userId] = (acc[lead.userId] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>));
-      
       setLeads(leadsData);
       setLoading(false);
     }, (error) => {
       console.error('Erro ao buscar leads:', error);
       setLoading(false);
     });
-
     return () => unsubscribe();
-  }, [userData]);
+  }, [userData, isEspelhoDemo]);
 
   const corretores = users.filter(user => 
     (user.tipoConta === 'corretor-vinculado' && user.aprovado) || 
@@ -128,19 +131,22 @@ export default function GestaoCorretoresPage() {
       return;
     }
 
+    if (isEspelhoDemo) {
+      setSelectedLeads([]);
+      alert(`Modo demonstração: ${selectedLeads.length} lead(s) transferido(s) com sucesso (simulado).`);
+      return;
+    }
+
     try {
       const batch = writeBatch(db);
-      
       selectedLeads.forEach(leadId => {
         const leadRef = doc(db, 'leads', leadId);
         batch.update(leadRef, {
           userId: selectedDestUser,
-          etapa: stages[0] ?? '' // Volta para primeira etapa do funil
+          etapa: stages[0] ?? ''
         });
       });
-
       await batch.commit();
-      
       setSelectedLeads([]);
       alert(`${selectedLeads.length} lead(s) transferido(s) com sucesso!`);
     } catch (error) {

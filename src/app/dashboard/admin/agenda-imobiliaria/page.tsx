@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where, orderBy, Timestamp } from 'firebase/firestore';
+import { DEMO_AGENDA_IMOBILIARIA, DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
 
 interface Corretor {
   id: string;
@@ -26,7 +27,7 @@ interface AgendaImobiliaria {
 }
 
 export default function AgendaImobiliariaAdminPage() {
-  const { currentUser, userData } = useAuth();
+  const { currentUser, userData, isEspelhoDemo } = useAuth();
   const [agenda, setAgenda] = useState<AgendaImobiliaria[]>([]);
   const [corretores, setCorretores] = useState<Corretor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,31 +47,28 @@ export default function AgendaImobiliariaAdminPage() {
 
   // Buscar agenda da imobiliária
   useEffect(() => {
+    if (!userData?.imobiliariaId && !isEspelhoDemo) return;
+    if (isEspelhoDemo) {
+      const sorted = [...DEMO_AGENDA_IMOBILIARIA].sort((a, b) => (b.dataInicio?.toMillis?.() ?? 0) - (a.dataInicio?.toMillis?.() ?? 0));
+      setAgenda(sorted as AgendaImobiliaria[]);
+      setCorretores(DEMO_REPORT_CORRETORES.map(c => ({ id: c.uid, nome: c.nome, email: c.email })));
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     const fetchAgenda = async () => {
-      if (!userData?.imobiliariaId) return;
-      
-      setLoading(true);
       try {
         const q = query(
           collection(db, 'agendaImobiliaria'),
-          where('imobiliariaId', '==', userData.imobiliariaId)
+          where('imobiliariaId', '==', userData!.imobiliariaId)
         );
         const snapshot = await getDocs(q);
-        const agendaData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as AgendaImobiliaria[];
-        
-        console.log('Agenda encontrada:', agendaData);
-        
-        // Ordenar localmente por data de início (mais recentes primeiro)
+        const agendaData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as AgendaImobiliaria[];
         const sortedAgenda = agendaData.sort((a, b) => {
           const aDate = a.dataInicio?.toDate ? a.dataInicio.toDate() : new Date(0);
           const bDate = b.dataInicio?.toDate ? b.dataInicio.toDate() : new Date(0);
           return bDate.getTime() - aDate.getTime();
         });
-        
-        console.log('Agenda ordenada:', sortedAgenda);
         setAgenda(sortedAgenda);
       } catch (error) {
         console.error('Erro ao buscar agenda:', error);
@@ -78,12 +76,11 @@ export default function AgendaImobiliariaAdminPage() {
         setLoading(false);
       }
     };
-
     fetchAgenda();
-  }, [userData]);
+  }, [userData, isEspelhoDemo]);
 
   useEffect(() => {
-    if (!userData?.imobiliariaId) return;
+    if (!userData?.imobiliariaId || isEspelhoDemo) return;
     const q = query(
       collection(db, 'usuarios'),
       where('imobiliariaId', '==', userData.imobiliariaId),
@@ -92,31 +89,33 @@ export default function AgendaImobiliariaAdminPage() {
     getDocs(q).then(snap => {
       setCorretores(snap.docs.map(d => ({ id: d.id, nome: (d.data().nome as string) || '', email: (d.data().email as string) || '' })));
     });
-  }, [userData?.imobiliariaId]);
+  }, [userData?.imobiliariaId, isEspelhoDemo]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userData?.imobiliariaId) return;
-
+    if (!userData?.imobiliariaId && !isEspelhoDemo) return;
+    if (isEspelhoDemo) {
+      resetForm();
+      setShowForm(false);
+      return;
+    }
     try {
-      const eventData = {
+      const eventData: Partial<AgendaImobiliaria> & { data: Timestamp; imobiliariaId: string; dataInicio?: Timestamp; dataFim?: Timestamp } = {
         ...formData,
         data: Timestamp.now(),
-        imobiliariaId: userData.imobiliariaId,
+        imobiliariaId: userData!.imobiliariaId!,
         dataInicio: formData.dataInicio ? Timestamp.fromDate(new Date(formData.dataInicio)) : undefined,
         dataFim: formData.dataFim ? Timestamp.fromDate(new Date(formData.dataFim)) : undefined
       };
 
       if (editingEvent) {
-        // Atualizar evento existente
         await updateDoc(doc(db, 'agendaImobiliaria', editingEvent.id), eventData);
-        setAgenda(prev => prev.map(event => 
-          event.id === editingEvent.id ? { ...event, ...eventData } : event
+        setAgenda(prev => prev.map(event =>
+          event.id === editingEvent.id ? { ...event, ...eventData } as AgendaImobiliaria : event
         ));
       } else {
-        // Criar novo evento
         const docRef = await addDoc(collection(db, 'agendaImobiliaria'), eventData);
-        const newEvent = { id: docRef.id, ...eventData };
+        const newEvent = { id: docRef.id, ...eventData } as AgendaImobiliaria;
         setAgenda(prev => [newEvent, ...prev]);
       }
 
@@ -142,8 +141,11 @@ export default function AgendaImobiliariaAdminPage() {
   };
 
   const handleDelete = async (eventId: string) => {
+    if (isEspelhoDemo) {
+      setAgenda(prev => prev.filter(e => e.id !== eventId));
+      return;
+    }
     if (!confirm('Tem certeza que deseja excluir este evento?')) return;
-
     try {
       await deleteDoc(doc(db, 'agendaImobiliaria', eventId));
       setAgenda(prev => prev.filter(event => event.id !== eventId));

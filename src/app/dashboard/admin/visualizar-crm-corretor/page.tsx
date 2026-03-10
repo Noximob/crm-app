@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, orderBy, limit, Timestamp } from 'firebase/firestore';
 import FilterModal, { Filters } from '@/app/dashboard/crm/_components/FilterModal';
+import { getDemoLeads, DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
 
 interface Task {
   id: string;
@@ -111,7 +112,7 @@ const PAGE_SIZE = 20;
 const taskStatusFilters: TaskStatus[] = ['Tarefa em Atraso', 'Tarefa do Dia', 'Tarefa Futura', 'Sem tarefa'];
 
 export default function VisualizarCrmCorretorPage() {
-  const { userData } = useAuth();
+  const { userData, isEspelhoDemo } = useAuth();
   const { stages, normalizeEtapa } = usePipelineStages();
   const [corretores, setCorretores] = useState<Corretor[]>([]);
   const [selectedCorretorId, setSelectedCorretorId] = useState<string>('');
@@ -137,11 +138,17 @@ export default function VisualizarCrmCorretorPage() {
   }, [filtroRapidoOpen]);
 
   useEffect(() => {
-    if (!userData?.imobiliariaId) return;
+    if (!userData?.imobiliariaId && !isEspelhoDemo) return;
+    if (isEspelhoDemo) {
+      const list = DEMO_REPORT_CORRETORES.map(c => ({ id: c.uid, nome: c.nome, email: c.email, tipoConta: 'corretor-vinculado' }));
+      setCorretores(list);
+      if (list.length && !selectedCorretorId) setSelectedCorretorId(list[0].id);
+      return;
+    }
     const usersRef = collection(db, 'usuarios');
     const q = query(
       usersRef,
-      where('imobiliariaId', '==', userData.imobiliariaId),
+      where('imobiliariaId', '==', userData!.imobiliariaId),
       where('tipoConta', 'in', ['corretor-vinculado', 'corretor-autonomo'])
     );
     getDocs(q).then(snap => {
@@ -149,11 +156,29 @@ export default function VisualizarCrmCorretorPage() {
       setCorretores(list);
       if (list.length === 1 && !selectedCorretorId) setSelectedCorretorId(list[0].id);
     });
-  }, [userData?.imobiliariaId]);
+  }, [userData?.imobiliariaId, isEspelhoDemo]);
 
   const fetchLeads = async () => {
     if (!selectedCorretorId) {
       setLeads([]);
+      setLoading(false);
+      return;
+    }
+    if (isEspelhoDemo) {
+      setLoading(true);
+      const demoLeads = getDemoLeads().filter(l => l.userId === selectedCorretorId);
+      const newLeads: Lead[] = demoLeads.map(l => {
+        const tasks = (l.tasks || []).filter(t => t.status === 'pendente').map(t => ({ id: t.id, dueDate: t.dueDate, status: t.status } as Task));
+        return {
+          id: l.id,
+          nome: l.nome,
+          telefone: l.telefone,
+          etapa: l.etapa,
+          taskStatus: getTaskStatusInfo(tasks),
+          qualificacao: l.qualificacao || {},
+        };
+      });
+      setLeads(newLeads);
       setLoading(false);
       return;
     }

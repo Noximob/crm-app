@@ -257,6 +257,8 @@ function buildAgendaImobiliaria() {
   });
 
   // 4) Demais eventos sortidos na semana para deixar a agenda cheia
+  const LOCAIS = ['Sala de reuniões', 'Stand principal', 'Google Meet', 'Escritório', 'Sala de treinamento', 'Auditório'];
+  const RESPONSAVEIS = ['Espelho', 'Ana Silva', 'Bruno Mendes', 'Carla Oliveira', 'Diego Ferreira'];
   for (let i = 0; i < 24; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() + (i % 7));
@@ -269,20 +271,30 @@ function buildAgendaImobiliaria() {
       tipo: TIPOS_AGENDA[i % TIPOS_AGENDA.length],
       dataInicio: ts(d),
       dataFim: ts(fim),
+      data: ts(d),
       imobiliariaId: 'espelho-demo',
       presentesIds: [ESPELHO_DEMO_UID],
       respostasPresenca: { [ESPELHO_DEMO_UID]: 'confirmado' },
+      local: LOCAIS[i % LOCAIS.length],
+      responsavel: RESPONSAVEIS[i % RESPONSAVEIS.length],
+      descricao: 'Evento de demonstração da agenda corporativa.',
     });
   }
   return items;
 }
 export const DEMO_AGENDA_IMOBILIARIA = buildAgendaImobiliaria();
 
-// --- Avisos importantes ---
+// --- Avisos importantes (admin) — com dataInicio/dataFim para exibição ---
+const avisoInicio = new Date(now);
+avisoInicio.setDate(avisoInicio.getDate() - 2);
+const avisoFim = new Date(now);
+avisoFim.setDate(avisoFim.getDate() + 7);
 export const DEMO_AVISOS = [
-  { id: 'aviso-1', titulo: 'Novo lançamento', mensagem: 'Lançamento Torre Sul disponível para visita a partir de segunda.', imobiliariaId: 'espelho-demo', data: ts(now) },
-  { id: 'aviso-2', titulo: 'Treinamento', mensagem: 'Treinamento de precificação na quinta às 14h.', imobiliariaId: 'espelho-demo', data: ts(now) },
-  { id: 'aviso-3', titulo: 'Meta do mês', mensagem: 'Meta do mês: 8 fechamentos. Estamos em 5.', imobiliariaId: 'espelho-demo', data: ts(now) },
+  { id: 'aviso-1', titulo: 'Novo lançamento', mensagem: 'Lançamento Torre Sul disponível para visita a partir de segunda.', imobiliariaId: 'espelho-demo', data: ts(now), dataInicio: ts(avisoInicio), dataFim: ts(avisoFim) },
+  { id: 'aviso-2', titulo: 'Treinamento', mensagem: 'Treinamento de precificação na quinta às 14h.', imobiliariaId: 'espelho-demo', data: ts(now), dataInicio: ts(avisoInicio), dataFim: ts(avisoFim) },
+  { id: 'aviso-3', titulo: 'Meta do mês', mensagem: 'Meta do mês: 8 fechamentos. Estamos em 5.', imobiliariaId: 'espelho-demo', data: ts(now), dataInicio: ts(avisoInicio), dataFim: ts(avisoFim) },
+  { id: 'aviso-4', titulo: 'Reunião geral', mensagem: 'Segunda às 9h — reunião de alinhamento da equipe.', imobiliariaId: 'espelho-demo', data: ts(now), dataInicio: ts(avisoInicio), dataFim: ts(avisoFim) },
+  { id: 'aviso-5', titulo: 'Documentação', mensagem: 'Enviar documentação pendente até sexta.', imobiliariaId: 'espelho-demo', data: ts(now), dataInicio: ts(avisoInicio), dataFim: ts(avisoFim) },
 ];
 
 // --- Comunidade: posts com comentários e likes ---
@@ -432,6 +444,64 @@ export const DEMO_REPORT_CORRETORES = [
   { uid: 'demo-u11', nome: 'João Pedro Souza', email: 'joao.souza@demo.com' },
   { uid: 'demo-u12', nome: 'Karina Martins', email: 'karina.martins@demo.com' },
 ];
+
+// --- Usuários/Corretores para admin (gestão de corretores, gestão de leads, etc.) ---
+export const DEMO_USUARIOS = DEMO_REPORT_CORRETORES.map((c, i) => ({
+  id: c.uid,
+  nome: c.nome,
+  email: c.email,
+  tipoConta: (i === 0 ? 'imobiliaria' : 'corretor-vinculado') as 'imobiliaria' | 'corretor-vinculado' | 'corretor-autonomo',
+  aprovado: true,
+  status: 'ativo' as const,
+  imobiliariaId: 'espelho-demo',
+}));
+
+// --- Plantões (admin) ---
+const CONSTRUTORAS = ['Construtora Alpha', 'Empreendimentos Beta', 'Incorporadora Gamma', 'Loteamento Delta', 'Obras Epsilon'];
+export const DEMO_PLANTOES = (() => {
+  const list: { id: string; dataInicio: string; dataFim: string; construtora: string; corretorResponsavel: string; horario: string; observacoes?: string; criadoEm: Timestamp; imobiliariaId: string }[] = [];
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() + (i % 14));
+    const dataStr = d.toISOString().slice(0, 10);
+    const corretor = DEMO_REPORT_CORRETORES[(i % DEMO_REPORT_CORRETORES.length)];
+    list.push({
+      id: `demo-plantao-${i}`,
+      dataInicio: dataStr,
+      dataFim: dataStr,
+      construtora: CONSTRUTORAS[i % CONSTRUTORAS.length],
+      corretorResponsavel: corretor.nome,
+      horario: `${9 + (i % 8)}:00`,
+      observacoes: i % 3 === 0 ? 'Plantão de demonstração. Confirmar chaves.' : undefined,
+      criadoEm: ts(d),
+      imobiliariaId: 'espelho-demo',
+    });
+  }
+  return list;
+})();
+
+// --- Metas (admin): VGV e contribuições por corretor ---
+export const DEMO_METAS_VGV = 5_000_000;
+export const DEMO_METAS_VGV_MENSAL = 420_000;
+export const DEMO_CONTRIBUICOES = (() => {
+  const list: { id: string; corretorId: string; corretorNome: string; valor: number; dataVenda?: string; createdAt: Timestamp }[] = [];
+  DEMO_REPORT_CORRETORES.slice(1, 8).forEach((c, i) => {
+    const d = new Date(now);
+    d.setMonth(d.getMonth() - (i % 2));
+    list.push({
+      id: `demo-contrib-${c.uid}`,
+      corretorId: c.uid,
+      corretorNome: c.nome,
+      valor: 80_000 + i * 25_000,
+      dataVenda: d.toISOString().slice(0, 10),
+      createdAt: ts(d),
+    });
+  });
+  return list;
+})();
+export const DEMO_METAS_PESSOAIS: Record<string, number> = Object.fromEntries(
+  DEMO_REPORT_CORRETORES.slice(0, 8).map((c, i) => [c.uid, 300_000 + i * 50_000])
+);
 
 // --- Treinamentos / Academia — bem sortido por categoria ---
 export const DEMO_TREINAMENTOS = [

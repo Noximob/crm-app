@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, orderBy, Timestamp, doc } from 'firebase/firestore';
+import { DEMO_PLANTOES, DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
 // Ícones customizados
 const CalendarIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -78,7 +79,7 @@ interface Plantao {
 }
 
 export default function PlantoesAdminPage() {
-  const { userData } = useAuth();
+  const { userData, isEspelhoDemo } = useAuth();
   const [plantoes, setPlantoes] = useState<Plantao[]>([]);
   const [corretores, setCorretores] = useState<Corretor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,11 +112,21 @@ export default function PlantoesAdminPage() {
   }
 
   useEffect(() => {
+    if (!userData?.imobiliariaId && !isEspelhoDemo) {
+      setLoading(false);
+      return;
+    }
+    if (isEspelhoDemo) {
+      setPlantoes(DEMO_PLANTOES as Plantao[]);
+      setCorretores(DEMO_REPORT_CORRETORES.map(c => ({ id: c.uid, nome: c.nome, email: c.email })));
+      setLoading(false);
+      return;
+    }
     fetchPlantoes();
-  }, []);
+  }, [userData?.imobiliariaId, isEspelhoDemo]);
 
   useEffect(() => {
-    if (!userData?.imobiliariaId) return;
+    if (!userData?.imobiliariaId || isEspelhoDemo) return;
     const q = query(
       collection(db, 'usuarios'),
       where('imobiliariaId', '==', userData.imobiliariaId),
@@ -124,35 +135,18 @@ export default function PlantoesAdminPage() {
     getDocs(q).then(snap => {
       setCorretores(snap.docs.map(d => ({ id: d.id, nome: (d.data().nome as string) || '', email: (d.data().email as string) || '' })));
     });
-  }, [userData?.imobiliariaId]);
+  }, [userData?.imobiliariaId, isEspelhoDemo]);
 
   const fetchPlantoes = async () => {
+    if (!userData?.imobiliariaId) return;
     try {
-      console.log('Buscando plantões para imobiliariaId:', userData.imobiliariaId);
       const q = query(
         collection(db, 'plantoes'),
         where('imobiliariaId', '==', userData.imobiliariaId)
       );
       const snapshot = await getDocs(q);
-      console.log('Plantões encontrados:', snapshot.docs.length);
-      
-      const plantoesData = snapshot.docs.map(doc => {
-        const data = doc.data();
-        console.log('Plantão encontrado:', { id: doc.id, ...data });
-        return {
-          id: doc.id,
-          ...data
-        };
-      }) as Plantao[];
-      
-      // Ordenar por data de início após buscar
-      const plantoesOrdenados = plantoesData.sort((a, b) => {
-        const dataA = new Date(a.dataInicio);
-        const dataB = new Date(b.dataInicio);
-        return dataA.getTime() - dataB.getTime();
-      });
-      
-      console.log('Plantões ordenados:', plantoesOrdenados);
+      const plantoesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Plantao[];
+      const plantoesOrdenados = plantoesData.sort((a, b) => new Date(a.dataInicio).getTime() - new Date(b.dataInicio).getTime());
       setPlantoes(plantoesOrdenados);
     } catch (error) {
       console.error('Erro ao buscar plantões:', error);
@@ -163,11 +157,16 @@ export default function PlantoesAdminPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    if (isEspelhoDemo) {
+      setShowForm(false);
+      setEditingPlantao(null);
+      setFormData({ dataInicio: '', dataFim: '', construtora: '', corretorResponsavel: '', horario: '', observacoes: '' });
+      return;
+    }
     try {
       const plantaoData = {
         ...formData,
-        imobiliariaId: userData.imobiliariaId,
+        imobiliariaId: userData!.imobiliariaId,
         criadoEm: Timestamp.now()
       };
 
@@ -207,6 +206,10 @@ export default function PlantoesAdminPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (isEspelhoDemo) {
+      setPlantoes(prev => prev.filter(p => p.id !== id));
+      return;
+    }
     if (confirm('Tem certeza que deseja excluir este plantão?')) {
       try {
         await deleteDoc(doc(db, 'plantoes', id));

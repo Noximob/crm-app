@@ -20,6 +20,7 @@ import {
   type ReportCategory,
 } from '@/lib/pipelineStagesConfig';
 import Link from 'next/link';
+import { getDemoLeads } from '@/lib/espelho/demoData';
 
 const SectionTitle = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
   <div className={`relative ${className}`}>
@@ -97,7 +98,7 @@ function EtapaRow({
 }
 
 export default function FunilVendasPage() {
-  const { userData } = useAuth();
+  const { userData, isEspelhoDemo } = useAuth();
   const { stagesWithMeta: contextStages, loading: contextLoading } = usePipelineStages();
   const [localStages, setLocalStages] = useState<PipelineStageWithMeta[]>([]);
   const [leadsCountByStage, setLeadsCountByStage] = useState<Record<string, number>>({});
@@ -119,7 +120,17 @@ export default function FunilVendasPage() {
   }, [contextStages]);
 
   useEffect(() => {
-    if (!imobiliariaId) return;
+    if (!imobiliariaId && !isEspelhoDemo) return;
+    if (isEspelhoDemo) {
+      const demoLeads = getDemoLeads();
+      const counts: Record<string, number> = {};
+      demoLeads.forEach((l) => {
+        const etapa = l.etapa || '';
+        counts[etapa] = (counts[etapa] || 0) + 1;
+      });
+      setLeadsCountByStage(counts);
+      return;
+    }
     const q = query(collection(db, 'leads'), where('imobiliariaId', '==', imobiliariaId));
     getDocs(q).then((snap) => {
       const counts: Record<string, number> = {};
@@ -129,14 +140,19 @@ export default function FunilVendasPage() {
       });
       setLeadsCountByStage(counts);
     });
-  }, [imobiliariaId, localStages]);
+  }, [imobiliariaId, isEspelhoDemo, localStages]);
 
   const handleSave = async () => {
-    if (!imobiliariaId) return;
+    if (!imobiliariaId && !isEspelhoDemo) return;
     setSaving(true);
     setMessage(null);
+    if (isEspelhoDemo) {
+      setMessage({ type: 'ok', text: 'Modo demonstração: alterações do funil não são salvas.' });
+      setSaving(false);
+      return;
+    }
     try {
-      await setPipelineStagesConfig(imobiliariaId, localStages);
+      await setPipelineStagesConfig(imobiliariaId!, localStages);
       setMessage({ type: 'ok', text: 'Funil salvo. As alterações já valem no CRM e relatórios.' });
     } catch (e: unknown) {
       setMessage({ type: 'err', text: (e as Error).message || 'Erro ao salvar.' });
@@ -169,7 +185,7 @@ export default function FunilVendasPage() {
     next[editIndex] = { ...localStages[editIndex], label: newLabelTrim, reportCategory: editCategory };
     setLocalStages(next);
     setEditIndex(null);
-    if (oldLabel !== newLabelTrim && imobiliariaId) {
+    if (oldLabel !== newLabelTrim && imobiliariaId && !isEspelhoDemo) {
       updateLeadsEtapa(imobiliariaId, oldLabel, newLabelTrim);
     }
   };
@@ -202,10 +218,10 @@ export default function FunilVendasPage() {
   };
 
   const applyRemove = async () => {
-    if (removeIndex === null || !imobiliariaId) return;
+    if (removeIndex === null || (!imobiliariaId && !isEspelhoDemo)) return;
     const stage = localStages[removeIndex];
     const count = leadsCountByStage[stage.label] || 0;
-    if (count > 0 && migrateToStage) {
+    if (!isEspelhoDemo && count > 0 && migrateToStage && imobiliariaId) {
       await updateLeadsEtapa(imobiliariaId, stage.label, migrateToStage);
     }
     const next = localStages.filter((_, i) => i !== removeIndex);

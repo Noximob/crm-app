@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { collection, addDoc, getDocs, query, where, deleteDoc, doc, updateDoc, Timestamp } from 'firebase/firestore';
+import { DEMO_AVISOS } from '@/lib/espelho/demoData';
 
 interface Aviso {
   id?: string;
@@ -21,7 +22,7 @@ function formatInputDateTime(ts: any) {
 }
 
 export default function AvisosImportantesPage() {
-  const { userData } = useAuth();
+  const { userData, isEspelhoDemo } = useAuth();
   const [avisos, setAvisos] = useState<Aviso[]>([]);
   const [titulo, setTitulo] = useState('');
   const [mensagem, setMensagem] = useState('');
@@ -31,8 +32,13 @@ export default function AvisosImportantesPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (isEspelhoDemo) {
+      setAvisos(DEMO_AVISOS as Aviso[]);
+      setLoading(false);
+      return;
+    }
     fetchAvisos();
-  }, [userData]);
+  }, [userData, isEspelhoDemo]);
 
   const fetchAvisos = async () => {
     if (!userData?.imobiliariaId) return;
@@ -45,27 +51,31 @@ export default function AvisosImportantesPage() {
 
   const handleSalvar = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!titulo.trim() || !mensagem.trim() || !userData?.imobiliariaId || !dataInicio || !dataFim) return;
+    if (!titulo.trim() || !mensagem.trim() || (!userData?.imobiliariaId && !isEspelhoDemo) || !dataInicio || !dataFim) return;
+    if (isEspelhoDemo) {
+      setTitulo('');
+      setMensagem('');
+      setDataInicio('');
+      setDataFim('');
+      setEditId(null);
+      return;
+    }
     setLoading(true);
-
     const tsInicio = Timestamp.fromDate(new Date(dataInicio));
     const tsFim = Timestamp.fromDate(new Date(dataFim));
-
     const avisoData = {
       titulo,
       mensagem,
       data: Timestamp.now(),
-      imobiliariaId: userData.imobiliariaId,
+      imobiliariaId: userData!.imobiliariaId,
       dataInicio: tsInicio,
       dataFim: tsFim
     };
-
     if (editId) {
       await updateDoc(doc(db, 'avisosImportantes', editId), avisoData);
     } else {
       await addDoc(collection(db, 'avisosImportantes'), avisoData);
     }
-
     setTitulo('');
     setMensagem('');
     setDataInicio('');
@@ -84,6 +94,10 @@ export default function AvisosImportantesPage() {
   };
 
   const handleExcluir = async (id: string) => {
+    if (isEspelhoDemo) {
+      setAvisos(prev => prev.filter(a => a.id !== id));
+      return;
+    }
     setLoading(true);
     await deleteDoc(doc(db, 'avisosImportantes', id));
     fetchAvisos();

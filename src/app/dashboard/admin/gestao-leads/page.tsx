@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { useRouter } from 'next/navigation';
+import { getDemoLeads, DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
 
 interface Corretor {
   id: string;
@@ -21,7 +22,7 @@ interface Lead {
 }
 
 export default function GestaoLeadsPage() {
-  const { userData } = useAuth();
+  const { userData, isEspelhoDemo } = useAuth();
   const { stages } = usePipelineStages();
   const router = useRouter();
   const [corretores, setCorretores] = useState<Corretor[]>([]);
@@ -36,12 +37,17 @@ export default function GestaoLeadsPage() {
 
   // Buscar corretores vinculados à imobiliária logada e aprovados
   useEffect(() => {
-    if (!userData?.imobiliariaId) return;
+    if (!userData?.imobiliariaId && !isEspelhoDemo) return;
+    if (isEspelhoDemo) {
+      setCorretores(DEMO_REPORT_CORRETORES.map(c => ({ id: c.uid, nome: c.nome })));
+      setLoadingCorretores(false);
+      return;
+    }
     setLoadingCorretores(true);
     const fetchCorretores = async () => {
       const q = query(
         collection(db, 'usuarios'),
-        where('imobiliariaId', '==', userData.imobiliariaId),
+        where('imobiliariaId', '==', userData!.imobiliariaId),
         where('tipoConta', 'in', ['corretor-vinculado', 'corretor-autonomo', 'imobiliaria']),
         where('aprovado', '==', true)
       );
@@ -51,12 +57,20 @@ export default function GestaoLeadsPage() {
       setLoadingCorretores(false);
     };
     fetchCorretores();
-  }, [userData]);
+  }, [userData, isEspelhoDemo]);
 
   // Buscar leads do corretor selecionado (filtro por etapa usa stages do funil configurado)
   useEffect(() => {
     if (!corretorOrigem) {
       setLeads([]);
+      return;
+    }
+    if (isEspelhoDemo) {
+      const demoLeads = getDemoLeads();
+      let lista = demoLeads.filter(l => l.userId === corretorOrigem).map(l => ({ id: l.id, nome: l.nome, telefone: l.telefone, etapa: l.etapa, email: undefined as string | undefined }));
+      if (filtroEtapa) lista = lista.filter(lead => lead.etapa === filtroEtapa);
+      setLeads(lista);
+      setLoadingLeads(false);
       return;
     }
     setLoadingLeads(true);
@@ -71,7 +85,7 @@ export default function GestaoLeadsPage() {
       setLoadingLeads(false);
     };
     fetchLeads();
-  }, [corretorOrigem, filtroEtapa]);
+  }, [corretorOrigem, filtroEtapa, isEspelhoDemo]);
 
   const handleSelectLead = (leadId: string) => {
     setLeadsSelecionados(prev => prev.includes(leadId) ? prev.filter(id => id !== leadId) : [...prev, leadId]);
@@ -80,6 +94,12 @@ export default function GestaoLeadsPage() {
   const handleTransferir = async () => {
     if (!corretorDestino || leadsSelecionados.length === 0) return;
     setMensagem(null);
+    if (isEspelhoDemo) {
+      setMensagem('Modo demonstração: transferência simulada com sucesso!');
+      setLeadsSelecionados([]);
+      setLeads(leads.filter(lead => !leadsSelecionados.includes(lead.id)));
+      return;
+    }
     try {
       await Promise.all(
         leadsSelecionados.map(async (leadId) => {
@@ -89,7 +109,6 @@ export default function GestaoLeadsPage() {
       );
       setMensagem('Leads transferidos com sucesso!');
       setLeadsSelecionados([]);
-      // Atualiza lista de leads
       setLeads(leads.filter(lead => !leadsSelecionados.includes(lead.id)));
     } catch (err) {
       setMensagem('Erro ao transferir leads.');
@@ -98,6 +117,12 @@ export default function GestaoLeadsPage() {
 
   const handleApagar = async (leadId: string) => {
     setMensagem(null);
+    if (isEspelhoDemo) {
+      setLeads(leads.filter(lead => lead.id !== leadId));
+      setLeadsSelecionados(leadsSelecionados.filter(id => id !== leadId));
+      setMensagem('Modo demonstração: lead removido da lista (simulado).');
+      return;
+    }
     try {
       await deleteDoc(doc(db, 'leads', leadId));
       setLeads(leads.filter(lead => lead.id !== leadId));

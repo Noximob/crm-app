@@ -16,6 +16,7 @@ import {
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { AlummaLogoFullInline } from '@/components/AlummaLogo';
 import { DEFAULT_PIPELINE_STAGES_WITH_META } from '@/lib/pipelineStagesConfig';
+import { getDemoLeads } from '@/lib/espelho/demoData';
 
 const MAX_LEADS = 500;
 
@@ -196,7 +197,7 @@ function NoxLogo({ className = '' }: { className?: string }) {
 }
 
 export default function RelatorioDiarioPage() {
-  const { userData, currentUser } = useAuth();
+  const { userData, currentUser, isEspelhoDemo } = useAuth();
   const { stages, normalizeEtapa } = usePipelineStages();
   const imobiliariaId = userData?.imobiliariaId ?? (userData?.tipoConta === 'imobiliaria' ? currentUser?.uid : undefined);
 
@@ -206,6 +207,32 @@ export default function RelatorioDiarioPage() {
   const [useMockData, setUseMockData] = useState(true);
 
   useEffect(() => {
+    if (isEspelhoDemo) {
+      const demoLeads = getDemoLeads();
+      const list: LeadRow[] = demoLeads.map((l) => {
+        const entrouEm = l.createdAt?.toMillis?.()
+          ? new Date(l.createdAt.toMillis()).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+          : '—';
+        const pendente = (l.tasks || []).filter((t) => t.status === 'pendente').sort((a, b) => a.dueDate.toMillis() - b.dueDate.toMillis())[0];
+        return {
+          id: l.id,
+          nome: l.nome,
+          email: undefined,
+          telefone: l.telefone,
+          etapa: normalizeEtapa(l.etapa),
+          entrouEm,
+          qualificacao: l.qualificacao || {},
+          anotacoes: '',
+          proximaTarefa: pendente
+            ? { type: pendente.type, description: pendente.description, data: formatTaskDate(pendente.dueDate) }
+            : undefined,
+          proximaTarefaDataOrdenacao: pendente?.dueDate?.toMillis?.(),
+        };
+      });
+      setLeads(list);
+      setLoading(false);
+      return;
+    }
     if (useMockData) {
       setLeads(buildMockLeads());
       setLoading(false);
@@ -284,7 +311,7 @@ export default function RelatorioDiarioPage() {
       }
     };
     load();
-  }, [imobiliariaId, normalizeEtapa, useMockData]);
+  }, [imobiliariaId, normalizeEtapa, useMockData, isEspelhoDemo]);
 
   const funil = useMemo(() => {
     const byEtapa: Record<string, number> = {};
