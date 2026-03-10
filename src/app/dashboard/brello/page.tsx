@@ -6,6 +6,7 @@ import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, delet
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
+import { DEMO_BRELLO_BOARDS, DEMO_BRELLO_BOARD_ID, DEMO_BRELLO_COLUMNS, DEMO_BRELLO_CARDS } from '@/lib/espelho/demoData';
 
 interface BrelloCard {
   id: string;
@@ -35,7 +36,7 @@ interface BrelloBoard {
 }
 
 const Brello = () => {
-  const { currentUser, userData } = useAuth();
+  const { currentUser, userData, isEspelhoDemo } = useAuth();
   const [boards, setBoards] = useState<BrelloBoard[]>([]);
   const [currentBoard, setCurrentBoard] = useState<BrelloBoard | null>(null);
   const [columns, setColumns] = useState<BrelloColumn[]>([]);
@@ -88,6 +89,15 @@ const Brello = () => {
   // Carregar boards
   useEffect(() => {
     if (!currentUser) {
+      setLoading(false);
+      return;
+    }
+
+    if (isEspelhoDemo) {
+      setBoards(DEMO_BRELLO_BOARDS as BrelloBoard[]);
+      if (DEMO_BRELLO_BOARDS.length > 0) {
+        setCurrentBoard(DEMO_BRELLO_BOARDS[0] as BrelloBoard);
+      }
       setLoading(false);
       return;
     }
@@ -226,6 +236,11 @@ const Brello = () => {
       return;
     }
 
+    if (isEspelhoDemo && currentBoard.id === DEMO_BRELLO_BOARD_ID) {
+      setColumns(DEMO_BRELLO_COLUMNS as BrelloColumn[]);
+      return;
+    }
+
     const q = query(
       collection(db, 'brelloColumns'),
       where('boardId', '==', currentBoard.id)
@@ -254,6 +269,11 @@ const Brello = () => {
   useEffect(() => {
     if (!currentBoard || columns.length === 0) {
       setCards([]);
+      return;
+    }
+
+    if (isEspelhoDemo && currentBoard.id === DEMO_BRELLO_BOARD_ID) {
+      setCards(DEMO_BRELLO_CARDS as BrelloCard[]);
       return;
     }
 

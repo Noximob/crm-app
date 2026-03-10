@@ -7,6 +7,11 @@ import { Timestamp } from 'firebase/firestore';
 import { PIPELINE_STAGES } from '@/lib/constants';
 import { ESPELHO_DEMO_UID } from '@/lib/constants';
 
+const DEMO_CORRETOR_UIDS = [
+  ESPELHO_DEMO_UID, 'demo-u2', 'demo-u3', 'demo-u4', 'demo-u5', 'demo-u6',
+  'demo-u7', 'demo-u8', 'demo-u9', 'demo-u10', 'demo-u11', 'demo-u12',
+];
+
 const now = new Date();
 const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 const yesterday = new Date(today);
@@ -72,31 +77,76 @@ function buildDemoLeads(): DemoLead[] {
   const statuses: ('pendente' | 'concluída' | 'cancelada')[] = ['pendente', 'pendente', 'pendente', 'concluída', 'cancelada'];
   for (let i = 0; i < NOMES.length; i++) {
     const etapa = PIPELINE_STAGES[i % PIPELINE_STAGES.length];
-    const numTasks = Math.floor(Math.random() * 4);
     const tasks: DemoTask[] = [];
-    for (let t = 0; t < numTasks; t++) {
-      const dayOffset = t === 0 ? -1 : (t === 1 ? 0 : 1);
-      const due = new Date(today);
-      due.setDate(due.getDate() + dayOffset);
-      due.setHours(10 + t, 0, 0, 0);
-      const descriptions: [string, string, string] = [
-        'Ligar para cliente',
-        'Enviar material no WhatsApp',
-        'Agendar visita',
-      ];
-      const types: DemoTask['type'][] = ['Ligação', 'WhatsApp', 'Visita'];
+
+    // Garantir 3 leads com estados bem definidos para o dashboard (Atraso, Hoje, Futuro)
+    if (i === 0) {
+      const due = new Date(yesterday);
+      due.setHours(now.getHours(), now.getMinutes(), 0, 0);
       tasks.push({
-        id: `task-${i}-${t}`,
-        description: descriptions[t % 3],
-        type: types[t % 3],
+        id: 'task-demo-atrasada',
+        description: 'Ligar URGENTE para cliente que não retornou',
+        type: 'Ligação',
         dueDate: ts(due),
-        status: statuses[Math.floor(Math.random() * statuses.length)],
+        status: 'pendente',
       });
+    } else if (i === 1) {
+      const due = new Date(today);
+      due.setHours(now.getHours() + 1, 0, 0, 0);
+      tasks.push({
+        id: 'task-demo-hoje',
+        description: 'Visita agendada para hoje',
+        type: 'Visita',
+        dueDate: ts(due),
+        status: 'pendente',
+      });
+    } else if (i === 2) {
+      const due = new Date(tomorrow);
+      due.setHours(10, 0, 0, 0);
+      tasks.push({
+        id: 'task-demo-futura',
+        description: 'Enviar proposta detalhada',
+        type: 'WhatsApp',
+        dueDate: ts(due),
+        status: 'pendente',
+      });
+    } else {
+      const numTasks = 1 + Math.floor(Math.random() * 3); // 1 a 3 tarefas por lead
+      for (let t = 0; t < numTasks; t++) {
+        const dayOffset = t === 0 ? -1 : (t === 1 ? 0 : 1);
+        const due = new Date(today);
+        due.setDate(due.getDate() + dayOffset);
+        due.setHours(9 + t * 2, 0, 0, 0);
+        const descriptions: [string, string, string] = [
+          'Ligar para cliente',
+          'Enviar material no WhatsApp',
+          'Agendar visita',
+        ];
+        const types: DemoTask['type'][] = ['Ligação', 'WhatsApp', 'Visita'];
+        tasks.push({
+          id: `task-${i}-${t}`,
+          description: descriptions[t % 3],
+          type: types[t % 3],
+          dueDate: ts(due),
+          status: statuses[Math.floor(Math.random() * statuses.length)],
+        });
+      }
     }
     const qualificacao: Record<string, string | string[]> = {};
     QUALIFICACAO_KEYS.forEach((k, idx) => {
       const opts = QUAL_VALUES[k];
-      if (opts && Math.random() > 0.3) qualificacao[k] = opts[idx % opts.length];
+      if (!opts) return;
+      // Aumentar chance de ter várias qualificações preenchidas
+      if (Math.random() > 0.1) {
+        if (k === 'localizacao' || k === 'tipo') {
+          // Algumas com múltiplas opções para testar filtro de multi-select
+          const first = opts[idx % opts.length];
+          const second = opts[(idx + 1) % opts.length];
+          qualificacao[k] = Math.random() > 0.5 ? [first, second] : first;
+        } else {
+          qualificacao[k] = opts[idx % opts.length];
+        }
+      }
     });
     const created = new Date(today);
     created.setDate(created.getDate() - Math.floor(Math.random() * 60));
@@ -105,7 +155,7 @@ function buildDemoLeads(): DemoLead[] {
       nome: NOMES[i],
       telefone: tel(),
       etapa,
-      userId: ESPELHO_DEMO_UID,
+      userId: DEMO_CORRETOR_UIDS[i % DEMO_CORRETOR_UIDS.length],
       createdAt: ts(created),
       qualificacao: Object.keys(qualificacao).length ? qualificacao : undefined,
       tasks,
@@ -157,6 +207,56 @@ const TITULOS_AGENDA = [
 ];
 function buildAgendaImobiliaria() {
   const items: any[] = [];
+
+  // 1) Evento acontecendo AGORA (para aparecer como "Agora" nas telas)
+  const agoraInicio = new Date(now);
+  agoraInicio.setMinutes(agoraInicio.getMinutes() - 15);
+  const agoraFim = new Date(now);
+  agoraFim.setMinutes(agoraFim.getMinutes() + 45);
+  items.push({
+    id: 'demo-agenda-agora',
+    titulo: 'Reunião com cliente VIP (Agora)',
+    tipo: 'reuniao',
+    dataInicio: ts(agoraInicio),
+    dataFim: ts(agoraFim),
+    imobiliariaId: 'espelho-demo',
+    presentesIds: [ESPELHO_DEMO_UID],
+    respostasPresenca: { [ESPELHO_DEMO_UID]: 'confirmado' },
+  });
+
+  // 2) Evento EM BREVE (próxima hora)
+  const breveInicio = new Date(now);
+  breveInicio.setMinutes(breveInicio.getMinutes() + 30);
+  const breveFim = new Date(breveInicio);
+  breveFim.setHours(breveFim.getHours() + 1);
+  items.push({
+    id: 'demo-agenda-breve',
+    titulo: 'Ligação de follow-up (Em breve)',
+    tipo: 'ligacao-ativa',
+    dataInicio: ts(breveInicio),
+    dataFim: ts(breveFim),
+    imobiliariaId: 'espelho-demo',
+    presentesIds: [ESPELHO_DEMO_UID],
+    respostasPresenca: { [ESPELHO_DEMO_UID]: 'confirmado' },
+  });
+
+  // 3) Evento MAIS TARDE (verde / depois)
+  const depoisInicio = new Date(today);
+  depoisInicio.setHours(18, 0, 0, 0);
+  const depoisFim = new Date(depoisInicio);
+  depoisFim.setHours(depoisFim.getHours() + 1);
+  items.push({
+    id: 'demo-agenda-depois',
+    titulo: 'Visita ao stand (Mais tarde)',
+    tipo: 'visita',
+    dataInicio: ts(depoisInicio),
+    dataFim: ts(depoisFim),
+    imobiliariaId: 'espelho-demo',
+    presentesIds: [ESPELHO_DEMO_UID],
+    respostasPresenca: { [ESPELHO_DEMO_UID]: 'confirmado' },
+  });
+
+  // 4) Demais eventos sortidos na semana para deixar a agenda cheia
   for (let i = 0; i < 24; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() + (i % 7));
@@ -317,21 +417,107 @@ export function getDemoInteractions(leadId: string): { id: string; type: string;
   ];
 }
 
-// --- Relatórios (admin): corretores e dados resumidos ---
+// --- Relatórios (admin): corretores e dados resumidos — vários para relatórios e TV ---
 export const DEMO_REPORT_CORRETORES = [
   { uid: ESPELHO_DEMO_UID, nome: 'Espelho', email: 'espelho@demo.alumma.com' },
-  { uid: 'demo-u2', nome: 'Ana Silva', email: 'ana@demo.com' },
-  { uid: 'demo-u3', nome: 'Bruno Mendes', email: 'bruno@demo.com' },
+  { uid: 'demo-u2', nome: 'Ana Silva', email: 'ana.silva@demo.com' },
+  { uid: 'demo-u3', nome: 'Bruno Mendes', email: 'bruno.mendes@demo.com' },
+  { uid: 'demo-u4', nome: 'Carla Oliveira', email: 'carla.oliveira@demo.com' },
+  { uid: 'demo-u5', nome: 'Diego Ferreira', email: 'diego.ferreira@demo.com' },
+  { uid: 'demo-u6', nome: 'Elena Costa', email: 'elena.costa@demo.com' },
+  { uid: 'demo-u7', nome: 'Fernando Lima', email: 'fernando.lima@demo.com' },
+  { uid: 'demo-u8', nome: 'Gabriela Santos', email: 'gabriela.santos@demo.com' },
+  { uid: 'demo-u9', nome: 'Henrique Alves', email: 'henrique.alves@demo.com' },
+  { uid: 'demo-u10', nome: 'Isabela Rocha', email: 'isabela.rocha@demo.com' },
+  { uid: 'demo-u11', nome: 'João Pedro Souza', email: 'joao.souza@demo.com' },
+  { uid: 'demo-u12', nome: 'Karina Martins', email: 'karina.martins@demo.com' },
 ];
 
-// --- Treinamentos / Academia ---
+// --- Treinamentos / Academia — bem sortido por categoria ---
 export const DEMO_TREINAMENTOS = [
   { id: 't1', titulo: 'Vendas de alto padrão', categoria: 'vendas', descricao: 'Técnicas para negociação em imóveis de alto valor.', link: '#', duracao: '45 min' },
   { id: 't2', titulo: 'Funil de vendas', categoria: 'vendas', descricao: 'Organize seu pipeline e feche mais.', link: '#', duracao: '30 min' },
-  { id: 't3', titulo: 'Comunicação não violenta', categoria: 'mercado', descricao: 'Melhore a comunicação com clientes.', link: '#', duracao: '1h' },
-  { id: 't4', titulo: 'LGPD no dia a dia', categoria: 'institucional', descricao: 'Boas práticas de proteção de dados.', link: '#', duracao: '20 min' },
-  { id: 't5', titulo: 'Audiobook: Mindset', categoria: 'audiobooks', descricao: 'Resumo do livro Mindset.', link: '#', duracao: '1h 15min' },
-  { id: 't6', titulo: 'Materiais de apoio', categoria: 'materiais', descricao: 'Templates e apresentações.', link: '#', duracao: '-' },
-  { id: 't7', titulo: 'Sistema Alumma', categoria: 'sistema', descricao: 'Tour pelo CRM e agenda.', link: '#', duracao: '25 min' },
-  { id: 't8', titulo: 'Indicadores econômicos', categoria: 'mercado', descricao: 'CUB, SELIC e impacto no mercado.', link: '#', duracao: '40 min' },
+  { id: 't3', titulo: 'Objeção de preço', categoria: 'vendas', descricao: 'Como responder às objeções mais comuns.', link: '#', duracao: '25 min' },
+  { id: 't4', titulo: 'Proposta comercial', categoria: 'vendas', descricao: 'Montando propostas que fecham.', link: '#', duracao: '35 min' },
+  { id: 't5', titulo: 'Pós-venda e indicações', categoria: 'vendas', descricao: 'Fidelização e rede de indicações.', link: '#', duracao: '40 min' },
+  { id: 't6', titulo: 'Comunicação não violenta', categoria: 'mercado', descricao: 'Melhore a comunicação com clientes.', link: '#', duracao: '1h' },
+  { id: 't7', titulo: 'Indicadores econômicos', categoria: 'mercado', descricao: 'CUB, SELIC e impacto no mercado.', link: '#', duracao: '40 min' },
+  { id: 't8', titulo: 'Mercado imobiliário 2025', categoria: 'mercado', descricao: 'Tendências e oportunidades.', link: '#', duracao: '50 min' },
+  { id: 't9', titulo: 'LGPD no dia a dia', categoria: 'institucional', descricao: 'Boas práticas de proteção de dados.', link: '#', duracao: '20 min' },
+  { id: 't10', titulo: 'Código de ética', categoria: 'institucional', descricao: 'CRECI e boas práticas.', link: '#', duracao: '30 min' },
+  { id: 't11', titulo: 'Audiobook: Mindset', categoria: 'audiobooks', descricao: 'Resumo do livro Mindset.', link: '#', duracao: '1h 15min' },
+  { id: 't12', titulo: 'Audiobook: Hábitos atômicos', categoria: 'audiobooks', descricao: 'Pequenos hábitos, grandes resultados.', link: '#', duracao: '1h 20min' },
+  { id: 't13', titulo: 'Audiobook: Vendas sem esforço', categoria: 'audiobooks', descricao: 'Técnicas de vendas consultivas.', link: '#', duracao: '55 min' },
+  { id: 't14', titulo: 'Gestão de tempo', categoria: 'gestão', descricao: 'Priorize e entregue mais.', link: '#', duracao: '35 min' },
+  { id: 't15', titulo: 'Liderança de equipe', categoria: 'gestão', descricao: 'Como motivar e coordenar o time.', link: '#', duracao: '45 min' },
+  { id: 't16', titulo: 'Conteúdo autoral', categoria: 'autoral', descricao: 'Crie posts e materiais que convertem.', link: '#', duracao: '40 min' },
+  { id: 't17', titulo: 'Materiais de apoio', categoria: 'materiais', descricao: 'Templates e apresentações.', link: '#', duracao: '-' },
+  { id: 't18', titulo: 'Sistema Alumma', categoria: 'sistema', descricao: 'Tour pelo CRM e agenda.', link: '#', duracao: '25 min' },
+  { id: 't19', titulo: 'Relatórios e metas', categoria: 'sistema', descricao: 'Acompanhando resultados no painel.', link: '#', duracao: '20 min' },
+  { id: 't20', titulo: 'Atendimento ao cliente', categoria: 'vendas', descricao: 'Do primeiro contato ao fechamento.', link: '#', duracao: '38 min' },
+];
+
+// --- Brello (quadros/colunas/cards) para modo Espelho ---
+export const DEMO_BRELLO_BOARD_ID = 'demo-brello-1';
+const brelloCreated = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+export const DEMO_BRELLO_BOARDS = [
+  {
+    id: DEMO_BRELLO_BOARD_ID,
+    title: 'Demonstração',
+    userId: ESPELHO_DEMO_UID,
+    createdAt: ts(brelloCreated),
+    imobiliariaId: 'espelho-demo',
+  },
+];
+
+export const DEMO_BRELLO_COLUMNS = [
+  { id: 'demo-col-1', title: 'A fazer', boardId: DEMO_BRELLO_BOARD_ID, order: 0, createdAt: ts(brelloCreated) },
+  { id: 'demo-col-2', title: 'Em andamento', boardId: DEMO_BRELLO_BOARD_ID, order: 1, createdAt: ts(brelloCreated) },
+  { id: 'demo-col-3', title: 'Revisão', boardId: DEMO_BRELLO_BOARD_ID, order: 2, createdAt: ts(brelloCreated) },
+  { id: 'demo-col-4', title: 'Feito', boardId: DEMO_BRELLO_BOARD_ID, order: 3, createdAt: ts(brelloCreated) },
+  { id: 'demo-col-5', title: 'Backlog', boardId: DEMO_BRELLO_BOARD_ID, order: 4, createdAt: ts(brelloCreated) },
+];
+
+const DEMO_BRELLO_CARD_TITLES = [
+  'Revisar proposta do apto Centro', 'Ligar para cliente Silva', 'Enviar plantas do empreendimento',
+  'Agendar visita imóvel Zona Sul', 'Fechar documentação venda', 'Pesquisar concorrência',
+  'Atualizar CRM pós-reunião', 'Preparar apresentação reunião segunda', 'Validar contrato com jurídico',
+  'Follow-up leads da feira', 'Criar material de divulgação', 'Organizar chaves e visitas',
+  'Enviar relatório semanal', 'Reunião com construtora', 'Atualizar fotos do imóvel',
+];
+
+export const DEMO_BRELLO_CARDS = [
+  ...DEMO_BRELLO_CARD_TITLES.slice(0, 4).map((title, i) => ({
+    id: `demo-card-${i + 1}`,
+    title,
+    description: 'Card de demonstração.',
+    columnId: 'demo-col-1',
+    order: i,
+    createdAt: ts(new Date(brelloCreated.getTime() + (i + 1) * 60 * 60 * 1000)),
+  })),
+  ...DEMO_BRELLO_CARD_TITLES.slice(4, 9).map((title, i) => ({
+    id: `demo-card-${i + 5}`,
+    title,
+    description: '',
+    columnId: 'demo-col-2',
+    order: i,
+    createdAt: ts(new Date(brelloCreated.getTime() + (i + 5) * 60 * 60 * 1000)),
+  })),
+  ...DEMO_BRELLO_CARD_TITLES.slice(9, 12).map((title, i) => ({
+    id: `demo-card-${i + 10}`,
+    title,
+    description: 'Em revisão.',
+    columnId: 'demo-col-3',
+    order: i,
+    createdAt: ts(new Date(brelloCreated.getTime() + (i + 10) * 60 * 60 * 1000)),
+  })),
+  ...DEMO_BRELLO_CARD_TITLES.slice(12, 15).map((title, i) => ({
+    id: `demo-card-${i + 13}`,
+    title,
+    description: 'Concluído.',
+    columnId: 'demo-col-4',
+    order: i,
+    createdAt: ts(new Date(brelloCreated.getTime() + (i + 13) * 60 * 60 * 1000)),
+  })),
 ];

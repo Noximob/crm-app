@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, limit, Timestamp } from 'firebase/firestore';
+import { DEMO_AGENDA_IMOBILIARIA, DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
 
 export interface AgendaEventoTv {
   id: string;
@@ -112,6 +113,34 @@ export function useAgendaTvData(
       setLoading(false);
       setCorretoresList([]);
       setCorretoresStatus([]);
+      return;
+    }
+
+    // Modo Espelho: usar apenas dados mockados, sem Firestore
+    if (imobiliariaId === 'espelho-demo') {
+      const list: AgendaEventoTv[] = DEMO_AGENDA_IMOBILIARIA.map((d: any) => ({
+        id: d.id,
+        titulo: d.titulo,
+        tipo: d.tipo,
+        local: d.local,
+        responsavel: d.responsavel,
+        dataInicio: d.dataInicio as Timestamp,
+        dataFim: d.dataFim as Timestamp | undefined,
+        respostasPresenca: d.respostasPresenca as Record<string, string> | undefined,
+      })).sort((a, b) => a.dataInicio.toMillis() - b.dataInicio.toMillis());
+
+      setEvents(list);
+      setPlantoes([]);
+      const statuses: CorretorStatusTv['status'][] = ['tarefa_atrasada', 'tarefa_dia', 'sem_tarefa', 'sem_uso_24h'];
+      setCorretoresList(DEMO_REPORT_CORRETORES.map((c) => ({ id: c.uid, nome: c.nome, photoURL: undefined })));
+      setCorretoresStatus(DEMO_REPORT_CORRETORES.map((c, i) => ({
+        id: c.uid,
+        nome: c.nome,
+        photoURL: undefined,
+        status: statuses[i % statuses.length],
+      })));
+      setLoading(false);
+      setCorretoresLoading(false);
       return;
     }
     let cancelled = false;

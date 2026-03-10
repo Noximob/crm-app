@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
+import { getDemoLeads, DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
 
 export interface LeadFunil {
   id: string;
@@ -45,6 +46,22 @@ export function useFunilVendasData(imobiliariaId: string | undefined, corretores
 
   useEffect(() => {
     if (!imobiliariaId) {
+      setLoading(false);
+      return;
+    }
+
+    // Modo Espelho: funil 100% mockado a partir dos leads demo
+    if (imobiliariaId === 'espelho-demo') {
+      const demoLeads = getDemoLeads();
+      setLeads(
+        demoLeads.map((l) => ({
+          id: l.id,
+          userId: l.userId,
+          etapa: l.etapa,
+        })) as LeadFunil[]
+      );
+      setCorretores(DEMO_REPORT_CORRETORES.map((c) => ({ id: c.uid, nome: c.nome })));
+      setError(null);
       setLoading(false);
       return;
     }
