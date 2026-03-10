@@ -3,8 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { auth, db } from '@/lib/firebase';
-import { signOut } from 'firebase/auth';
+import { db } from '@/lib/firebase';
 import { getDoc, doc, collection, getDocs, query, where, updateDoc } from 'firebase/firestore';
 import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
@@ -86,7 +85,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { currentUser: user, userData, loading } = useAuth();
+  const { currentUser: user, userData, loading, isEspelhoDemo, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
@@ -113,6 +112,11 @@ export default function DashboardLayout({
   const [respondendoPresenca, setRespondendoPresenca] = useState<string | null>(null);
 
   useEffect(() => {
+    if (isEspelhoDemo) {
+      setPlantoes([]);
+      setAgendaImobiliaria([]);
+      return;
+    }
     const fetchPlantoes = async () => {
       if (!userData?.imobiliariaId) return;
       try {
@@ -124,9 +128,10 @@ export default function DashboardLayout({
       }
     };
     fetchPlantoes();
-  }, [userData?.imobiliariaId]);
+  }, [userData?.imobiliariaId, isEspelhoDemo]);
 
   useEffect(() => {
+    if (isEspelhoDemo) return;
     const fetchAgenda = async () => {
       if (!userData?.imobiliariaId) return;
       try {
@@ -138,7 +143,7 @@ export default function DashboardLayout({
       }
     };
     fetchAgenda();
-  }, [userData?.imobiliariaId]);
+  }, [userData?.imobiliariaId, isEspelhoDemo]);
 
   const convitesPendentes = React.useMemo(() => {
     const uid = user?.uid;
@@ -206,12 +211,7 @@ export default function DashboardLayout({
   };
 
   const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      router.push('/');
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error);
-    }
+    await logout();
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-particles"><p className="text-text-primary">Carregando...</p></div>;

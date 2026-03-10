@@ -5,6 +5,13 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, Timestamp, orderBy } from 'firebase/firestore';
 import DayAgendaModal from './_components/DayAgendaModal';
+import {
+  DEMO_AGENDA_ITEMS,
+  DEMO_AGENDA_IMOBILIARIA,
+  DEMO_AVISOS,
+  DEMO_NOTES,
+  getDemoCrmTasksForAgenda,
+} from '@/lib/espelho/demoData';
 
 // Ícones
 const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -144,7 +151,7 @@ function getAgendaImobiliariaTipoLabel(tipo: string): string {
 }
 
 export default function AgendaPage() {
-  const { currentUser, userData } = useAuth();
+  const { currentUser, userData, isEspelhoDemo } = useAuth();
   const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [crmTasks, setCrmTasks] = useState<CrmTask[]>([]);
@@ -176,18 +183,30 @@ export default function AgendaPage() {
   });
 
   useEffect(() => {
+    if (isEspelhoDemo && currentUser) {
+      setAgendaItems(DEMO_AGENDA_ITEMS as AgendaItem[]);
+      setNotes(DEMO_NOTES as Note[]);
+      setCrmTasks(getDemoCrmTasksForAgenda());
+      setAvisos(DEMO_AVISOS as AvisoImportante[]);
+      setAgendaImobiliaria(DEMO_AGENDA_IMOBILIARIA as AgendaImobiliaria[]);
+      setPlantoes([]);
+      setEventosComunidade([]);
+      setLoading(false);
+      return;
+    }
     if (currentUser) {
       fetchAllData();
     }
-  }, [currentUser, selectedDate, filter]);
+  }, [currentUser, selectedDate, filter, isEspelhoDemo]);
 
   useEffect(() => {
+    if (isEspelhoDemo) return;
     if (userData?.imobiliariaId) {
       fetchAvisosImportantes();
       fetchAgendaImobiliaria();
       fetchPlantoes();
     }
-  }, [userData]);
+  }, [userData, isEspelhoDemo]);
 
   const fetchAvisosImportantes = async () => {
     if (!userData?.imobiliariaId) return;
@@ -378,7 +397,7 @@ export default function AgendaPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return;
+    if (!currentUser || isEspelhoDemo) return;
 
     try {
       console.log('Salvando compromisso:', formData);
@@ -438,6 +457,7 @@ export default function AgendaPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (isEspelhoDemo) return;
     if (confirm('Tem certeza que deseja excluir este item?')) {
       try {
         await deleteDoc(doc(db, 'agenda', id));

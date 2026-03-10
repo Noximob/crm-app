@@ -35,7 +35,7 @@ function useStagesFromDoc(imobiliariaId: string | undefined) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!imobiliariaId) {
+    if (!imobiliariaId || imobiliariaId === 'espelho-demo') {
       setStagesWithMeta(DEFAULT_PIPELINE_STAGES_WITH_META);
       setLoading(false);
       return;

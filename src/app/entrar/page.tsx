@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { auth, googleProvider } from '@/lib/firebase';
 import { AlummaLogo } from '@/components/AlummaLogo';
 import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { ESPELHO_LOGIN, ESPELHO_PASSWORD, ESPELHO_STORAGE_KEY } from '@/lib/constants';
 
 export default function EntrarPage() {
   const { currentUser, userData, loading, isApproved } = useAuth();
@@ -64,6 +65,12 @@ export default function EntrarPage() {
     setError(null);
     if (!email || !password) {
       setError('Por favor, preencha todos os campos.');
+      setIsLoading(false);
+      return;
+    }
+    if (email.trim() === ESPELHO_LOGIN && password === ESPELHO_PASSWORD) {
+      if (typeof window !== 'undefined') window.sessionStorage.setItem(ESPELHO_STORAGE_KEY, '1');
+      router.push('/dashboard');
       setIsLoading(false);
       return;
     }
@@ -158,6 +165,10 @@ export default function EntrarPage() {
           <div className="text-center mt-4">
             <p className="text-sm text-text-secondary">Não tem uma conta? <Link href="/cadastro" className="font-medium text-orange-400 hover:text-orange-300">Cadastre-se</Link></p>
           </div>
+        </div>
+        <div className="mt-4 p-4 rounded-xl bg-white/5 border border-orange-500/20 text-center">
+          <p className="text-xs font-semibold text-orange-400/90 mb-1">Acesso de demonstração (modo Espelho)</p>
+          <p className="text-xs text-text-secondary">Login: <strong className="text-white">{ESPELHO_LOGIN}</strong> · Senha: <strong className="text-white">{ESPELHO_PASSWORD}</strong></p>
         </div>
         <p className="text-center text-xs text-text-secondary">© Alumma. Todos os direitos reservados.</p>
       </div>

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, setDoc, deleteDoc, onSnapshot, orderBy, addDoc, Timestamp } from 'firebase/firestore';
+import { DEMO_TREINAMENTOS } from '@/lib/espelho/demoData';
 
 interface Treinamento {
   id: string;
@@ -39,7 +40,7 @@ const categorias = [
 ];
 
 export default function TreinamentosPage() {
-  const { userData, currentUser } = useAuth();
+  const { userData, currentUser, isEspelhoDemo } = useAuth();
   const [treinamentos, setTreinamentos] = useState<Treinamento[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -53,10 +54,26 @@ export default function TreinamentosPage() {
   const [userLikes, setUserLikes] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    if (isEspelhoDemo) {
+      const list = DEMO_TREINAMENTOS.map((t) => ({
+        id: t.id,
+        categoria: (t.categoria as Treinamento['categoria']) || 'vendas',
+        titulo: t.titulo,
+        descricao: t.descricao,
+        tipo: 'video' as const,
+        url: t.link || '#',
+        criadoEm: new Date(),
+        duracao: t.duracao || '00:00',
+      }));
+      setTreinamentos(list);
+      setLoading(false);
+      generateSuggestion();
+      return;
+    }
     if (!userData?.imobiliariaId) return;
     fetchTreinamentos();
     generateSuggestion();
-  }, [userData]);
+  }, [userData, isEspelhoDemo]);
 
   useEffect(() => {
     if (treinamentos.length > 0) {

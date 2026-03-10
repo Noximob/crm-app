@@ -12,6 +12,7 @@ import LogInteractionModal from '../_components/LogInteractionModal';
 import CrmHeader from '../_components/CrmHeader';
 import AgendaModal, { TaskPayload } from '../_components/AgendaModal';
 import CancelTaskModal from '../_components/CancelTaskModal';
+import { getDemoLeadById, getDemoInteractions } from '@/lib/espelho/demoData';
 
 
 // --- Ícones ---
@@ -107,7 +108,7 @@ interface Task {
 }
 
 export default function LeadDetailPage() {
-    const { currentUser, userData } = useAuth();
+    const { currentUser, userData, isEspelhoDemo } = useAuth();
     const { stages, normalizeEtapa } = usePipelineStages();
     const params = useParams();
     const searchParams = useSearchParams();
@@ -139,6 +140,27 @@ export default function LeadDetailPage() {
 
     // --- Lógica para buscar os dados do lead ---
     useEffect(() => {
+        if (isEspelhoDemo && leadId) {
+            const demoLead = getDemoLeadById(leadId);
+            if (demoLead) {
+                const leadData = { ...demoLead, automacao: { status: 'inativa' as const } } as Lead;
+                setLead(leadData);
+                setTempAnnotations((leadData as any).anotacoes || '');
+                const qual = demoLead.qualificacao || {};
+                const safe: QualificationData = {};
+                Object.entries(qual).forEach(([k, v]) => {
+                    safe[k] = Array.isArray(v) ? v : [v as string];
+                });
+                setQualifications(safe);
+                setTasks(demoLead.tasks || []);
+                setTaskStatus(getTaskStatusInfo(demoLead.tasks || []));
+                setInteractions(getDemoInteractions(leadId));
+            } else {
+                setLead(null);
+            }
+            setLoading(false);
+            return;
+        }
         if (!currentUser || !leadId) return;
         // Busca o lead diretamente da coleção principal 'leads'
         const leadRef = doc(db, 'leads', leadId);
@@ -201,10 +223,10 @@ export default function LeadDetailPage() {
         });
 
         return () => unsubscribe();
-    }, [currentUser, leadId]);
+    }, [currentUser, leadId, isEspelhoDemo]);
 
     useEffect(() => {
-        if (!currentUser || !leadId) return;
+        if (!currentUser || !leadId || isEspelhoDemo) return;
         // Caminhos atualizados para as sub-coleções
         const interactionsCol = collection(db, 'leads', leadId, 'interactions');
         const q = query(interactionsCol, orderBy('timestamp', 'desc'));
@@ -218,7 +240,7 @@ export default function LeadDetailPage() {
     }, [currentUser, leadId]);
 
     useEffect(() => {
-        if (!currentUser || !leadId) return;
+        if (!currentUser || !leadId || isEspelhoDemo) return;
         const tasksCol = collection(db, 'leads', leadId, 'tarefas');
         const q = query(tasksCol, where('status', '==', 'pendente'));
 
@@ -234,7 +256,7 @@ export default function LeadDetailPage() {
     }, [currentUser, leadId]);
 
     const handleStageChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-        if (!currentUser || !lead) return;
+        if (!currentUser || !lead || isEspelhoDemo) return;
         const newEtapa = e.target.value;
         const leadRef = doc(db, 'leads', lead.id);
         try {
@@ -250,7 +272,7 @@ export default function LeadDetailPage() {
     };
 
     const handleLogInteraction = async (notes: string) => {
-        if (!currentUser || !leadId) return;
+        if (!currentUser || !leadId || isEspelhoDemo) return;
         setIsSaving(true);
         const interactionsCol = collection(db, 'leads', leadId, 'interactions');
         try {
@@ -268,7 +290,7 @@ export default function LeadDetailPage() {
     };
 
     const handleSaveAnnotations = async () => {
-        if (!currentUser || !lead) return;
+        if (!currentUser || !lead || isEspelhoDemo) return;
         const leadRef = doc(db, 'leads', lead.id);
         try {
             await updateDoc(leadRef, { anotacoes: tempAnnotations });
@@ -279,7 +301,7 @@ export default function LeadDetailPage() {
     };
 
     const handleSaveTask = async (task: TaskPayload) => {
-        if (!currentUser || !leadId) return;
+        if (!currentUser || !leadId || isEspelhoDemo) return;
         setIsSavingTask(true);
 
         const { description, type, date, time } = task;
@@ -315,7 +337,7 @@ export default function LeadDetailPage() {
     };
 
     const handleUpdateTaskStatus = async (interactionId: string, taskId: string, status: 'concluída' | 'cancelada', reason?: string) => {
-        if (!currentUser || !leadId) return;
+        if (!currentUser || !leadId || isEspelhoDemo) return;
 
         const batch = writeBatch(db);
 

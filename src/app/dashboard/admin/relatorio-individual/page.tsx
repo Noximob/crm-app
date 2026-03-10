@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import type { PeriodKey } from './_lib/configTypes';
 import RelatorioMockup from './_components/RelatorioMockup';
+import { DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
 
 interface Corretor {
   id: string;
@@ -25,7 +26,7 @@ function formatCurrency(n: number): string {
 }
 
 export default function RelatorioIndividualPage() {
-  const { userData } = useAuth();
+  const { userData, isEspelhoDemo } = useAuth();
   const imobiliariaId = userData?.imobiliariaId;
 
   const [corretores, setCorretores] = useState<Corretor[]>([]);
@@ -41,6 +42,13 @@ export default function RelatorioIndividualPage() {
   const [showReport, setShowReport] = useState(false);
 
   useEffect(() => {
+    if (isEspelhoDemo) {
+      const list = DEMO_REPORT_CORRETORES.map((c) => ({ id: c.uid, nome: c.nome }));
+      setCorretores(list);
+      if (list.length && !selectedCorretor) setSelectedCorretor(list[0].id);
+      setLoadingList(false);
+      return;
+    }
     if (!imobiliariaId) {
       setLoadingList(false);
       return;
@@ -62,10 +70,10 @@ export default function RelatorioIndividualPage() {
       setLoadingList(false);
     };
     load();
-  }, [imobiliariaId]);
+  }, [imobiliariaId, isEspelhoDemo]);
 
   useEffect(() => {
-    if (!imobiliariaId) return;
+    if (!imobiliariaId || isEspelhoDemo) return;
     getDoc(doc(db, 'metas', imobiliariaId)).then((snap) => {
       if (snap.exists()) {
         const v = Number(snap.data()?.valorMensal);

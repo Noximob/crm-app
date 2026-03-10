@@ -22,6 +22,7 @@ import {
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
+import { DEMO_COMUNIDADE_POSTS } from '@/lib/espelho/demoData';
 
 const ActionIcon = ({ icon, label, onClick, active = false, danger = false }: { icon: React.ReactNode; label?: string; onClick?: () => void; active?: boolean; danger?: boolean }) => (
   <button
@@ -76,7 +77,7 @@ function gerarAvatarUrl(userId: string, fallbackNome: string, currentUser: any, 
 }
 
 export default function ComunidadePage() {
-  const { currentUser, userData } = useAuth();
+  const { currentUser, userData, isEspelhoDemo } = useAuth();
   const { resetNotification } = useNotifications();
   
   // Estados principais
@@ -227,6 +228,10 @@ export default function ComunidadePage() {
 
   // Buscar posts paginados
   const fetchPosts = async (direction: 'next' | 'prev' | 'first' = 'first') => {
+    if (isEspelhoDemo) {
+      setPostsLoading(false);
+      return;
+    }
     try {
       // Mostrar loading para todas as ações de paginação
       setPostsLoading(true);
@@ -332,10 +337,22 @@ export default function ComunidadePage() {
   };
 
   useEffect(() => {
+    if (isEspelhoDemo && currentUser) {
+      setPosts(DEMO_COMUNIDADE_POSTS.map(p => ({
+        ...p,
+        commentsCount: p.comentarios ?? 0,
+        repostsCount: 0,
+        viewsCount: 0,
+        userLiked: false,
+        likesIds: p.likesIds || [],
+      })));
+      setPostsLoading(false);
+      return;
+    }
     if (currentUser) {
       fetchPosts('first');
     }
-  }, [currentUser]);
+  }, [currentUser, isEspelhoDemo]);
 
   // Resetar notificação quando acessa a página da Comunidade
   useEffect(() => {

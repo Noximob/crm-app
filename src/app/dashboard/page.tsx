@@ -10,6 +10,8 @@ import Link from 'next/link';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
+import { getDemoLeads } from '@/lib/espelho/demoData';
+import { DEMO_AGENDA_IMOBILIARIA, DEMO_AVISOS, DEMO_COMUNIDADE_POSTS } from '@/lib/espelho/demoData';
 import AvisosImportantesModal from './_components/AvisosImportantesModal';
 import AgendaImobiliariaModal from './_components/AgendaImobiliariaModal';
 import PlantoesModal from './_components/PlantoesModal';
@@ -440,7 +442,7 @@ const MetasCard = ({ meta, nomeImobiliaria }: { meta: any, nomeImobiliaria: stri
 };
 
 export default function DashboardPage() {
-  const { currentUser, userData } = useAuth();
+  const { currentUser, userData, isEspelhoDemo } = useAuth();
   const { stages, normalizeEtapa } = usePipelineStages();
   const router = useRouter();
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -548,6 +550,24 @@ export default function DashboardPage() {
 
   // Buscar agenda do dia
   useEffect(() => {
+    if (isEspelhoDemo) {
+      const demoLeads = getDemoLeads();
+      const porEtapa: Record<string, number> = {};
+      stages.forEach(e => { porEtapa[e] = 0; });
+      demoLeads.forEach(lead => {
+        const etapa = normalizeEtapa(lead.etapa);
+        porEtapa[etapa] = (porEtapa[etapa] || 0) + 1;
+      });
+      setFunilPessoal(porEtapa);
+      setTarefaAtrasadaCount(demoLeads.filter(l => l.taskStatus === 'Tarefa em Atraso').length);
+      setTarefaDiaCount(demoLeads.filter(l => l.taskStatus === 'Tarefa do Dia').length);
+      setSemTarefaCount(demoLeads.filter(l => l.taskStatus === 'Sem tarefa').length);
+      const leadsToShow = demoLeads.filter(lead => lead.taskStatus !== 'Tarefa Futura');
+      leadsToShow.sort((a, b) => TAREFA_STATUS_ORDER.indexOf(a.taskStatus) - TAREFA_STATUS_ORDER.indexOf(b.taskStatus));
+      setAgendaLeads(leadsToShow);
+      setAgendaLoading(false);
+      return;
+    }
     const fetchAgenda = async () => {
       if (!currentUser) return;
       setAgendaLoading(true);
@@ -593,27 +613,29 @@ export default function DashboardPage() {
       }
     };
     fetchAgenda();
-  }, [currentUser, stages, normalizeEtapa]);
+  }, [currentUser, stages, normalizeEtapa, isEspelhoDemo]);
 
   // Buscar avisos importantes
   useEffect(() => {
+    if (isEspelhoDemo) {
+      setAvisosImportantes(DEMO_AVISOS);
+      return;
+    }
     const fetchAvisos = async () => {
-      console.log('fetchAvisos chamado, userData:', userData);
-      if (!userData?.imobiliariaId) {
-        console.log('userData ou imobiliariaId não encontrado');
-        return;
-      }
-      console.log('Buscando avisos para imobiliariaId:', userData.imobiliariaId);
+      if (!userData?.imobiliariaId) return;
       const q = query(collection(db, 'avisosImportantes'), where('imobiliariaId', '==', userData.imobiliariaId));
       const snapshot = await getDocs(q);
-      console.log('Avisos encontrados:', snapshot.docs.length);
       setAvisosImportantes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     };
     fetchAvisos();
-  }, [userData]);
+  }, [userData, isEspelhoDemo]);
 
   // Buscar agenda imobiliária
   useEffect(() => {
+    if (isEspelhoDemo) {
+      setAgendaImobiliaria(DEMO_AGENDA_IMOBILIARIA);
+      return;
+    }
     const fetchAgendaImobiliaria = async () => {
       if (!userData?.imobiliariaId) return;
       try {
@@ -626,10 +648,14 @@ export default function DashboardPage() {
       }
     };
     fetchAgendaImobiliaria();
-  }, [userData]);
+  }, [userData, isEspelhoDemo]);
 
   // Buscar plantões
   useEffect(() => {
+    if (isEspelhoDemo) {
+      setPlantoes([]);
+      return;
+    }
     const fetchPlantoes = async () => {
       if (!userData?.imobiliariaId) return;
       try {
@@ -642,7 +668,7 @@ export default function DashboardPage() {
       }
     };
     fetchPlantoes();
-  }, [userData]);
+  }, [userData, isEspelhoDemo]);
 
   // Labels e ícones do tipo da agenda (igual Dashboard TV - Agenda do Dia)
   const getTipoAgendaLabel = (tipo: string) => {
@@ -743,6 +769,13 @@ export default function DashboardPage() {
     if (!uid) return;
     const key = `${tipo}-${id}`;
     setRespondendoPresenca(key);
+    if (isEspelhoDemo) {
+      if (tipo === 'agenda') {
+        setAgendaImobiliaria(prev => prev.map((a: any) => a.id === id ? { ...a, respostasPresenca: { ...(a.respostasPresenca || {}), [uid]: status } } : a));
+      }
+      setRespondendoPresenca(null);
+      return;
+    }
     try {
       const col = tipo === 'plantao' ? 'plantoes' : 'agendaImobiliaria';
       const ref = doc(db, col, id);
@@ -762,12 +795,19 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
+    if (isEspelhoDemo) {
+      setTrendingPosts(DEMO_COMUNIDADE_POSTS.map(p => ({
+        ...p,
+        commentsCount: p.comentarios ?? 0,
+        repostsCount: 0,
+        totalEngagement: (p.likes ?? 0) + (p.comentarios ?? 0),
+        userLiked: false,
+      })));
+      setTrendingLoading(false);
+      return;
+    }
     const fetchTrendingPosts = async () => {
-      console.log('fetchTrendingPosts chamado, userData:', userData);
-      if (!userData?.imobiliariaId) {
-        console.log('userData ou imobiliariaId não encontrado para trending posts');
-        return;
-      }
+      if (!userData?.imobiliariaId) return;
       setTrendingLoading(true);
       try {
         const postsRef = collection(db, 'comunidadePosts');
@@ -841,7 +881,7 @@ export default function DashboardPage() {
       }
     };
     fetchTrendingPosts();
-  }, [userData, currentUser]);
+  }, [userData, currentUser, isEspelhoDemo]);
 
   // Verificar likes do usuário em tempo real para sincronizar com comunidade
   useEffect(() => {

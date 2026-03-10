@@ -9,6 +9,7 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, Timestamp, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import Link from 'next/link';
 import FilterModal, { Filters } from './_components/FilterModal';
+import { getDemoLeads } from '@/lib/espelho/demoData';
 
 // --- Tipos ---
 interface Task {
@@ -118,7 +119,7 @@ const TAREFA_PARAM_MAP: Record<string, TaskStatus> = {
 const CRM_LIST_STATE_KEY = 'crm-list-state-v1';
 
 export default function CrmPage() {
-    const { currentUser } = useAuth();
+    const { currentUser, isEspelhoDemo } = useAuth();
     const { stages, normalizeEtapa } = usePipelineStages();
     const searchParams = useSearchParams();
     const [leads, setLeads] = useState<Lead[]>([]);
@@ -210,6 +211,11 @@ export default function CrmPage() {
     }, [hasRestoredState, activeFilter, activeTaskFilter, advancedFilters, searchTerm, currentPage]);
 
     useEffect(() => {
+        if (isEspelhoDemo) {
+            setLeads(getDemoLeads() as Lead[]);
+            setLoading(false);
+            return;
+        }
         if (currentUser) {
             setLoading(true);
             fetchLeads();
@@ -217,11 +223,11 @@ export default function CrmPage() {
             setLeads([]);
             setLoading(false);
         }
-    }, [currentUser]);
+    }, [currentUser, isEspelhoDemo]);
 
-    // Tempo real para o lead mais novo
+    // Tempo real para o lead mais novo (não usado no modo Espelho)
     useEffect(() => {
-        if (!currentUser) return;
+        if (!currentUser || isEspelhoDemo) return;
         const leadsRef = collection(db, 'leads');
         const q = query(
             leadsRef,
