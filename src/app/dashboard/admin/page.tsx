@@ -76,7 +76,6 @@ const adminCategories = [
     color: 'from-orange-500 to-orange-600',
     items: [
       { title: 'Funil de Vendas', icon: '📊', description: 'Adicionar, editar ou remover etapas do funil (CRM)', href: '/dashboard/admin/funil-vendas' },
-      { title: 'Integração CV CRM', icon: '🔗', description: 'Sincronizar leads do CV CRM com a conta matriz (Nox)', href: '/dashboard/admin/integração-cvcrm' },
       { title: 'Aprovação de Usuários', icon: '✅', description: 'Aprove novos cadastros', href: '#', special: true },
       { title: 'Site', icon: '🌐', description: 'Site institucional', href: '/dashboard/admin/site' },
     ]
