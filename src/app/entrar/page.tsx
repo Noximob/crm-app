@@ -115,7 +115,7 @@ export default function EntrarPage() {
             <h1 className="text-2xl font-bold text-orange-400 mb-2">Alumma</h1>
             <p className="text-text-secondary text-sm">Você já vendeu hoje?</p>
           </div>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-text-secondary mb-1">Email</label>
               <input
@@ -165,10 +165,6 @@ export default function EntrarPage() {
           <div className="text-center mt-4">
             <p className="text-sm text-text-secondary">Não tem uma conta? <Link href="/cadastro" className="font-medium text-orange-400 hover:text-orange-300">Cadastre-se</Link></p>
           </div>
-        </div>
-        <div className="mt-4 p-4 rounded-xl bg-white/5 border border-orange-500/20 text-center">
-          <p className="text-xs font-semibold text-orange-400/90 mb-1">Acesso de demonstração (modo Espelho)</p>
-          <p className="text-xs text-text-secondary">Login: <strong className="text-white">{ESPELHO_LOGIN}</strong> · Senha: <strong className="text-white">{ESPELHO_PASSWORD}</strong></p>
         </div>
         <p className="text-center text-xs text-text-secondary">© Alumma. Todos os direitos reservados.</p>
       </div>
