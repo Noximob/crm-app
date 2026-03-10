@@ -143,7 +143,7 @@ export default function LeadDetailPage() {
         if (isEspelhoDemo && leadId) {
             const demoLead = getDemoLeadById(leadId);
             if (demoLead) {
-                const leadData = { ...demoLead, automacao: { status: 'inativa' as const } } as Lead;
+                const leadData = { ...demoLead, automacao: { status: 'inativa' as const } } as unknown as Lead;
                 setLead(leadData);
                 setTempAnnotations((leadData as any).anotacoes || '');
                 const qual = demoLead.qualificacao || {};

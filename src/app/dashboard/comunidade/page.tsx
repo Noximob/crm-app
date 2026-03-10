@@ -970,7 +970,7 @@ export default function ComunidadePage() {
     }
     
     // Se não tiver userData.nome, usar displayName do Firebase
-    if (currentUser?.displayName && currentUser.displayName.trim() !== '') {
+    if (currentUser && 'displayName' in currentUser && currentUser.displayName && currentUser.displayName.trim() !== '') {
       return currentUser.displayName;
     }
     

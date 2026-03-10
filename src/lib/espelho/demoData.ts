@@ -79,10 +79,16 @@ function buildDemoLeads(): DemoLead[] {
       const due = new Date(today);
       due.setDate(due.getDate() + dayOffset);
       due.setHours(10 + t, 0, 0, 0);
+      const descriptions: [string, string, string] = [
+        'Ligar para cliente',
+        'Enviar material no WhatsApp',
+        'Agendar visita',
+      ];
+      const types: DemoTask['type'][] = ['Ligação', 'WhatsApp', 'Visita'];
       tasks.push({
         id: `task-${i}-${t}`,
-        description: ['Ligar para cliente', 'Enviar material no WhatsApp', 'Agendar visita'][t % 3],
-        type: ['Ligação', 'WhatsApp', 'Visita'][t % 3],
+        description: descriptions[t % 3],
+        type: types[t % 3],
         dueDate: ts(due),
         status: statuses[Math.floor(Math.random() * statuses.length)],
       });
@@ -264,8 +270,24 @@ function buildDemoNotes() {
 export const DEMO_NOTES = buildDemoNotes();
 
 /** Tarefas CRM no formato da página Agenda (por lead). */
-export function getDemoCrmTasksForAgenda(): { id: string; description: string; type: 'Ligação' | 'WhatsApp' | 'Visita'; dueDate: Timestamp; status: string; leadId: string; leadNome: string }[] {
-  const tasks: any[] = [];
+export function getDemoCrmTasksForAgenda(): {
+  id: string;
+  description: string;
+  type: 'Ligação' | 'WhatsApp' | 'Visita';
+  dueDate: Timestamp;
+  status: 'pendente' | 'concluída' | 'cancelada';
+  leadId: string;
+  leadNome: string;
+}[] {
+  const tasks: {
+    id: string;
+    description: string;
+    type: 'Ligação' | 'WhatsApp' | 'Visita';
+    dueDate: Timestamp;
+    status: 'pendente' | 'concluída' | 'cancelada';
+    leadId: string;
+    leadNome: string;
+  }[] = [];
   DEMO_LEADS.slice(0, 25).forEach(lead => {
     (lead.tasks || []).filter((t: DemoTask) => t.status === 'pendente').forEach((t: DemoTask) => {
       tasks.push({
@@ -273,7 +295,7 @@ export function getDemoCrmTasksForAgenda(): { id: string; description: string; t
         description: t.description,
         type: t.type,
         dueDate: t.dueDate,
-        status: t.status,
+        status: 'pendente',
         leadId: lead.id,
         leadNome: lead.nome,
       });

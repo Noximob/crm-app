@@ -2036,16 +2036,21 @@ export default function DashboardPage() {
                 ) : postComments.length === 0 ? (
                   <div className="text-gray-400 text-sm">Nenhum comentário ainda.</div>
                 ) : (
-                  postComments.map((c) => (
+                  postComments.map((c) => {
+                    const isCurrentUser = currentUser && c.userId === currentUser.uid;
+                    const currentUserPhoto = currentUser && 'photoURL' in currentUser ? currentUser.photoURL : undefined;
+                    const avatarSrc = isCurrentUser && currentUserPhoto ? currentUserPhoto : 'https://via.placeholder.com/32';
+                    return (
                     <div key={c.id} className="flex items-start gap-2">
-                      <img src={c.userId === currentUser?.uid ? currentUser?.photoURL || 'https://via.placeholder.com/32' : 'https://via.placeholder.com/32'} alt={c.nome} className="w-8 h-8 rounded-full object-cover" />
+                      <img src={avatarSrc} alt={c.nome} className="w-8 h-8 rounded-full object-cover" />
                       <div>
                         <div className="font-semibold text-[#2E2F38] dark:text-white text-sm">{c.nome}</div>
                         <div className="text-[#2E2F38] dark:text-gray-200 text-sm">{c.texto}</div>
                         <div className="text-xs text-gray-400">{c.createdAt?.toDate ? c.createdAt.toDate().toLocaleString('pt-BR') : ''}</div>
                       </div>
                     </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
               <div className="flex gap-2 mt-2 relative">
