@@ -115,13 +115,13 @@ export default function EntrarPage() {
             <h1 className="text-2xl font-bold text-orange-400 mb-2">Alumma</h1>
             <p className="text-text-secondary text-sm">Você já vendeu hoje?</p>
           </div>
-          <form onSubmit={handleSubmit} noValidate className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-text-secondary mb-1">Email</label>
               <input
                 id="email"
                 name="email"
-                type="email"
+                type="text"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
