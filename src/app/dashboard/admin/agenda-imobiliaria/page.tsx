@@ -12,6 +12,8 @@ interface Corretor {
   email: string;
 }
 
+type TipoAgenda = 'reuniao' | 'evento' | 'treinamento' | 'outro' | 'revisar-crm' | 'ligacao-ativa' | 'acao-de-rua' | 'disparo-de-msg' | 'plantao';
+
 interface AgendaImobiliaria {
   id: string;
   titulo: string;
@@ -19,9 +21,17 @@ interface AgendaImobiliaria {
   data: Timestamp;
   dataInicio?: Timestamp;
   dataFim?: Timestamp;
-  tipo: 'reuniao' | 'evento' | 'treinamento' | 'outro' | 'revisar-crm' | 'ligacao-ativa' | 'acao-de-rua' | 'disparo-de-msg';
+  /** Intervalo de dias (YYYY-MM-DD) — evento ocorre todos os dias entre diaInicio e diaFim */
+  diaInicio?: string;
+  diaFim?: string;
+  /** Faixa de horário diária (HH:MM) que se repete em cada dia do intervalo */
+  horaInicio?: string;
+  horaFim?: string;
+  tipo: TipoAgenda;
   local?: string;
   responsavel?: string;
+  /** Apenas para tipo 'plantao' */
+  construtora?: string;
   imobiliariaId: string;
   presentesIds?: string[];
 }
@@ -38,11 +48,14 @@ export default function AgendaImobiliariaAdminPage() {
   const [formData, setFormData] = useState({
     titulo: '',
     descricao: '',
-    dataInicio: '',
-    dataFim: '',
-    tipo: 'reuniao' as 'reuniao' | 'evento' | 'treinamento' | 'outro' | 'revisar-crm' | 'ligacao-ativa' | 'acao-de-rua' | 'disparo-de-msg',
+    diaInicio: '',
+    diaFim: '',
+    horaInicio: '',
+    horaFim: '',
+    tipo: 'reuniao' as TipoAgenda,
     local: '',
-    responsavel: ''
+    responsavel: '',
+    construtora: ''
   });
 
   // Buscar agenda da imobiliária
@@ -84,7 +97,8 @@ export default function AgendaImobiliariaAdminPage() {
     const q = query(
       collection(db, 'usuarios'),
       where('imobiliariaId', '==', userData.imobiliariaId),
-      where('tipoConta', 'in', ['corretor-vinculado', 'corretor-autonomo'])
+      where('tipoConta', 'in', ['corretor-vinculado', 'corretor-autonomo']),
+      where('aprovado', '==', true)
     );
     getDocs(q).then(snap => {
       setCorretores(snap.docs.map(d => ({ id: d.id, nome: (d.data().nome as string) || '', email: (d.data().email as string) || '' })));
@@ -100,12 +114,28 @@ export default function AgendaImobiliariaAdminPage() {
       return;
     }
     try {
-      const eventData: Partial<AgendaImobiliaria> & { data: Timestamp; imobiliariaId: string; dataInicio?: Timestamp; dataFim?: Timestamp } = {
-        ...formData,
+      const diaInicio = formData.diaInicio;
+      const diaFim = formData.diaFim || formData.diaInicio;
+      const horaInicio = formData.horaInicio || '00:00';
+      const horaFim = formData.horaFim || horaInicio;
+
+      const eventData: Partial<AgendaImobiliaria> & { data: Timestamp; imobiliariaId: string } = {
+        titulo: formData.titulo,
+        descricao: formData.descricao,
+        tipo: formData.tipo,
+        local: formData.local,
+        responsavel: formData.responsavel,
+        // construtora só faz sentido para plantão
+        construtora: formData.tipo === 'plantao' ? formData.construtora : '',
+        diaInicio,
+        diaFim,
+        horaInicio,
+        horaFim,
         data: Timestamp.now(),
         imobiliariaId: userData!.imobiliariaId!,
-        dataInicio: formData.dataInicio ? Timestamp.fromDate(new Date(formData.dataInicio)) : undefined,
-        dataFim: formData.dataFim ? Timestamp.fromDate(new Date(formData.dataFim)) : undefined
+        // Timestamps mantidos para compatibilidade e ordenação (1º dia @ início / último dia @ fim)
+        dataInicio: diaInicio ? Timestamp.fromDate(new Date(`${diaInicio}T${horaInicio}`)) : undefined,
+        dataFim: diaFim ? Timestamp.fromDate(new Date(`${diaFim}T${horaFim}`)) : undefined
       };
 
       if (editingEvent) {
@@ -128,14 +158,27 @@ export default function AgendaImobiliariaAdminPage() {
 
   const handleEdit = (event: AgendaImobiliaria) => {
     setEditingEvent(event);
+    // Deriva dia/hora dos campos novos; se for evento antigo, extrai dos Timestamps
+    const fromTs = (ts?: Timestamp) => {
+      if (!ts?.toDate) return { dia: '', hora: '' };
+      const d = ts.toDate();
+      const dia = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const hora = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      return { dia, hora };
+    };
+    const ini = fromTs(event.dataInicio);
+    const fim = fromTs(event.dataFim);
     setFormData({
       titulo: event.titulo,
       descricao: event.descricao || '',
-      dataInicio: event.dataInicio ? event.dataInicio.toDate().toISOString().slice(0, 16) : '',
-      dataFim: event.dataFim ? event.dataFim.toDate().toISOString().slice(0, 16) : '',
+      diaInicio: event.diaInicio || ini.dia,
+      diaFim: event.diaFim || fim.dia,
+      horaInicio: event.horaInicio || ini.hora,
+      horaFim: event.horaFim || fim.hora,
       tipo: event.tipo,
       local: event.local || '',
-      responsavel: event.responsavel || ''
+      responsavel: event.responsavel || '',
+      construtora: event.construtora || ''
     });
     setShowForm(true);
   };
@@ -171,26 +214,38 @@ export default function AgendaImobiliariaAdminPage() {
     setFormData({
       titulo: '',
       descricao: '',
-      dataInicio: '',
-      dataFim: '',
+      diaInicio: '',
+      diaFim: '',
+      horaInicio: '',
+      horaFim: '',
       tipo: 'reuniao',
       local: '',
-      responsavel: ''
+      responsavel: '',
+      construtora: ''
     });
     setEditingEvent(null);
   };
 
+  // Dia (YYYY-MM-DD) de início/fim de um evento, lidando com modelo novo e antigo
+  const getDiaInicio = (event: AgendaImobiliaria): string | null => {
+    if (event.diaInicio) return event.diaInicio;
+    const d = event.dataInicio?.toDate ? event.dataInicio.toDate() : event.data?.toDate ? event.data.toDate() : null;
+    return d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : null;
+  };
+  const getDiaFim = (event: AgendaImobiliaria): string | null => {
+    if (event.diaFim) return event.diaFim;
+    const d = event.dataFim?.toDate ? event.dataFim.toDate() : null;
+    return d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : getDiaInicio(event);
+  };
+
   const agendaFiltrada = useMemo(() => {
     if (!filtroData) return agenda;
-    const inicio = new Date(filtroData);
-    inicio.setHours(0, 0, 0, 0);
-    const fim = new Date(filtroData);
-    fim.setHours(23, 59, 59, 999);
+    // Evento aparece se o dia filtrado estiver dentro do intervalo [diaInicio, diaFim]
     return agenda.filter((event) => {
-      const di = event.dataInicio?.toDate ? event.dataInicio.toDate() : event.data?.toDate ? event.data.toDate() : null;
+      const di = getDiaInicio(event);
       if (!di) return false;
-      const t = di.getTime();
-      return t >= inicio.getTime() && t <= fim.getTime();
+      const df = getDiaFim(event) || di;
+      return filtroData >= di && filtroData <= df;
     });
   }, [agenda, filtroData]);
 
@@ -203,6 +258,7 @@ export default function AgendaImobiliariaAdminPage() {
       case 'ligacao-ativa': return '📞';
       case 'acao-de-rua': return '📍';
       case 'disparo-de-msg': return '💬';
+      case 'plantao': return '🏢';
       default: return '📅';
     }
   };
@@ -216,6 +272,7 @@ export default function AgendaImobiliariaAdminPage() {
       case 'ligacao-ativa': return 'bg-emerald-500';
       case 'acao-de-rua': return 'bg-amber-500';
       case 'disparo-de-msg': return 'bg-indigo-500';
+      case 'plantao': return 'bg-violet-600';
       default: return 'bg-gray-500';
     }
   };
@@ -229,6 +286,7 @@ export default function AgendaImobiliariaAdminPage() {
       case 'ligacao-ativa': return 'Ligação Ativa';
       case 'acao-de-rua': return 'Ação de rua';
       case 'disparo-de-msg': return 'Disparo de Msg';
+      case 'plantao': return 'Plantão';
       default: return 'Outro';
     }
   };
@@ -332,33 +390,77 @@ export default function AgendaImobiliariaAdminPage() {
                     <option value="ligacao-ativa">📞 Ligação Ativa</option>
                     <option value="acao-de-rua">📍 Ação de rua</option>
                     <option value="disparo-de-msg">💬 Disparo de Msg</option>
+                    <option value="plantao">🏢 Plantão</option>
                     <option value="outro">📅 Outro</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                    Data/Hora de Início
+                    Data de Início *
                   </label>
                   <input
-                    type="datetime-local"
-                    value={formData.dataInicio}
-                    onChange={(e) => setFormData(prev => ({ ...prev, dataInicio: e.target.value }))}
+                    type="date"
+                    required
+                    value={formData.diaInicio}
+                    onChange={(e) => setFormData(prev => ({ ...prev, diaInicio: e.target.value }))}
                     className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
-                    Data/Hora de Fim
+                    Data de Fim
                   </label>
                   <input
-                    type="datetime-local"
-                    value={formData.dataFim}
-                    onChange={(e) => setFormData(prev => ({ ...prev, dataFim: e.target.value }))}
+                    type="date"
+                    value={formData.diaFim}
+                    min={formData.diaInicio || undefined}
+                    onChange={(e) => setFormData(prev => ({ ...prev, diaFim: e.target.value }))}
+                    className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  <p className="text-xs text-[#6B6F76] dark:text-gray-400 mt-1">Deixe vazio para evento de um dia só.</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                    Horário de Início
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.horaInicio}
+                    onChange={(e) => setFormData(prev => ({ ...prev, horaInicio: e.target.value }))}
                     className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                    Horário de Fim
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.horaFim}
+                    onChange={(e) => setFormData(prev => ({ ...prev, horaFim: e.target.value }))}
+                    className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  <p className="text-xs text-[#6B6F76] dark:text-gray-400 mt-1">A faixa de horário vale para cada dia do intervalo.</p>
+                </div>
+
+                {formData.tipo === 'plantao' && (
+                  <div>
+                    <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                      Construtora
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.construtora}
+                      onChange={(e) => setFormData(prev => ({ ...prev, construtora: e.target.value }))}
+                      className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      placeholder="Nome da construtora"
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
@@ -501,28 +603,41 @@ export default function AgendaImobiliariaAdminPage() {
                       )}
 
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                        {event.dataInicio && (
+                        {(() => {
+                          const di = getDiaInicio(event);
+                          const df = getDiaFim(event);
+                          if (!di) return null;
+                          const fmt = (s: string) => {
+                            const [y, m, d] = s.split('-');
+                            return `${d}/${m}/${y}`;
+                          };
+                          const periodoStr = df && df !== di ? `${fmt(di)} a ${fmt(df)}` : fmt(di);
+                          const horaStr = event.horaInicio
+                            ? `${event.horaInicio}${event.horaFim ? ` às ${event.horaFim}` : ''}`
+                            : null;
+                          return (
+                            <div className="flex items-center gap-2">
+                              <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              <span className="text-[#6B6F76] dark:text-gray-300">
+                                <strong>Quando:</strong> {periodoStr}{horaStr ? ` · ${horaStr}` : ''}
+                              </span>
+                            </div>
+                          );
+                        })()}
+
+                        {event.tipo === 'plantao' && event.construtora && (
                           <div className="flex items-center gap-2">
                             <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
                             <span className="text-[#6B6F76] dark:text-gray-300">
-                              <strong>Início:</strong> {event.dataInicio.toDate().toLocaleString('pt-BR')}
+                              <strong>Construtora:</strong> {event.construtora}
                             </span>
                           </div>
                         )}
-                        
-                        {event.dataFim && (
-                          <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span className="text-[#6B6F76] dark:text-gray-300">
-                              <strong>Fim:</strong> {event.dataFim.toDate().toLocaleString('pt-BR')}
-                            </span>
-                          </div>
-                        )}
-                        
+
                         {event.local && (
                           <div className="flex items-center gap-2">
                             <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

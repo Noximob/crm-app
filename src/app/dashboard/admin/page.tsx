@@ -37,8 +37,7 @@ const adminCategories = [
       { title: 'Agenda dos Usuários', icon: '📅', description: 'Visualize agenda de todos os usuários', href: '/dashboard/admin/agenda-usuarios' },
       { title: 'Importar Leads', icon: '⬆️', description: 'Importe leads em massa', href: '/dashboard/admin/importar-leads' },
       { title: 'Avisos', icon: '📢', description: 'Avisos para corretores', href: '/dashboard/admin/avisos-importantes' },
-      { title: 'Agenda Imobiliária', icon: '📅', description: 'Gerencie agenda da imobiliária', href: '/dashboard/admin/agenda-imobiliaria' },
-      { title: 'Plantões', icon: '🏢', description: 'Gerencie plantões da imobiliária', href: '/dashboard/admin/plantoes' },
+      { title: 'Agenda Imobiliária', icon: '📅', description: 'Gerencie agenda e plantões da imobiliária', href: '/dashboard/admin/agenda-imobiliaria' },
     ]
   },
   {
