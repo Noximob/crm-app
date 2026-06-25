@@ -82,9 +82,10 @@ interface AgendaImobiliaria {
   data: Timestamp;
   dataInicio?: Timestamp;
   dataFim?: Timestamp;
-  tipo: 'reuniao' | 'evento' | 'treinamento' | 'outro' | 'revisar-crm' | 'ligacao-ativa' | 'acao-de-rua' | 'disparo-de-msg';
+  tipo: 'reuniao' | 'evento' | 'treinamento' | 'outro' | 'revisar-crm' | 'ligacao-ativa' | 'acao-de-rua' | 'disparo-de-msg' | 'plantao';
   local?: string;
   responsavel?: string;
+  construtora?: string;
   imobiliariaId: string;
 }
 
@@ -115,6 +116,7 @@ function getAgendaImobiliariaTipoLabel(tipo: string): string {
     'ligacao-ativa': 'Ligação Ativa',
     'acao-de-rua': 'Ação de rua',
     'disparo-de-msg': 'Disparo de Msg',
+    plantao: 'Plantão',
     outro: 'Outro'
   };
   return labels[tipo] ?? tipo;

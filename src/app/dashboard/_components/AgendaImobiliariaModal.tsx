@@ -48,6 +48,7 @@ export default function AgendaImobiliariaModal({ isOpen, onClose, agenda }: Agen
       case 'ligacao-ativa': return '📞';
       case 'acao-de-rua': return '📍';
       case 'disparo-de-msg': return '💬';
+      case 'plantao': return '🏢';
       default: return '📅';
     }
   };
@@ -61,6 +62,7 @@ export default function AgendaImobiliariaModal({ isOpen, onClose, agenda }: Agen
       case 'ligacao-ativa': return 'bg-emerald-500';
       case 'acao-de-rua': return 'bg-amber-500';
       case 'disparo-de-msg': return 'bg-indigo-500';
+      case 'plantao': return 'bg-violet-600';
       default: return 'bg-gray-500';
     }
   };
@@ -74,6 +76,7 @@ export default function AgendaImobiliariaModal({ isOpen, onClose, agenda }: Agen
       case 'ligacao-ativa': return 'Ligação Ativa';
       case 'acao-de-rua': return 'Ação de rua';
       case 'disparo-de-msg': return 'Disparo de Msg';
+      case 'plantao': return 'Plantão';
       default: return 'Outro';
     }
   };

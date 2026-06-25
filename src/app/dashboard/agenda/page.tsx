@@ -112,9 +112,14 @@ interface AgendaImobiliaria {
   data: Timestamp;
   dataInicio?: Timestamp;
   dataFim?: Timestamp;
-  tipo: 'reuniao' | 'evento' | 'treinamento' | 'outro' | 'revisar-crm' | 'ligacao-ativa' | 'acao-de-rua' | 'disparo-de-msg';
+  tipo: 'reuniao' | 'evento' | 'treinamento' | 'outro' | 'revisar-crm' | 'ligacao-ativa' | 'acao-de-rua' | 'disparo-de-msg' | 'plantao';
   local?: string;
   responsavel?: string;
+  construtora?: string;
+  diaInicio?: string;
+  diaFim?: string;
+  horaInicio?: string;
+  horaFim?: string;
   imobiliariaId: string;
 }
 
@@ -145,6 +150,7 @@ function getAgendaImobiliariaTipoLabel(tipo: string): string {
     'ligacao-ativa': 'Ligação Ativa',
     'acao-de-rua': 'Ação de rua',
     'disparo-de-msg': 'Disparo de Msg',
+    plantao: 'Plantão',
     outro: 'Outro'
   };
   return labels[tipo] ?? tipo;
@@ -160,7 +166,6 @@ export default function AgendaPage() {
   const [avisos, setAvisos] = useState<AvisoImportante[]>([]);
   const [eventosComunidade, setEventosComunidade] = useState<EventoComunidade[]>([]);
   const [agendaImobiliaria, setAgendaImobiliaria] = useState<AgendaImobiliaria[]>([]);
-  const [plantoes, setPlantoes] = useState<any[]>([]);
 
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -189,7 +194,6 @@ export default function AgendaPage() {
       setCrmTasks(getDemoCrmTasksForAgenda());
       setAvisos(DEMO_AVISOS as AvisoImportante[]);
       setAgendaImobiliaria(DEMO_AGENDA_IMOBILIARIA as AgendaImobiliaria[]);
-      setPlantoes([]);
       setEventosComunidade([]);
       setLoading(false);
       return;
@@ -204,7 +208,6 @@ export default function AgendaPage() {
     if (userData?.imobiliariaId) {
       fetchAvisosImportantes();
       fetchAgendaImobiliaria();
-      fetchPlantoes();
     }
   }, [userData, isEspelhoDemo]);
 
@@ -240,22 +243,6 @@ export default function AgendaPage() {
     }
   };
 
-  const fetchPlantoes = async () => {
-    if (!userData?.imobiliariaId) return;
-    try {
-      const q = query(
-        collection(db, 'plantoes'),
-        where('imobiliariaId', '==', userData.imobiliariaId)
-      );
-      const snapshot = await getDocs(q);
-      const plantoesData = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as any));
-      setPlantoes(plantoesData);
-    } catch (err) {
-      setPlantoes([]);
-    }
-  };
-
   const fetchAllData = async () => {
     if (!currentUser) return;
     setLoading(true);
@@ -267,8 +254,7 @@ export default function AgendaPage() {
         fetchCrmTasks(),
         fetchAvisosImportantes(),
         fetchEventosComunidade(),
-        fetchAgendaImobiliaria(),
-        fetchPlantoes()
+        fetchAgendaImobiliaria()
       ]);
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
@@ -651,8 +637,11 @@ export default function AgendaPage() {
       }
     });
 
-    // Adicionar agenda imobiliária
+    // Adicionar agenda imobiliária (inclui plantões, que agora são eventos tipo 'plantao')
     agendaImobiliaria.forEach(agenda => {
+      const tituloAgenda = agenda.tipo === 'plantao' && (agenda as any).construtora
+        ? `Plantão — ${(agenda as any).construtora}`
+        : agenda.titulo;
       // Se a agenda tem dataInicio e dataFim
       if (agenda.dataInicio && agenda.dataFim) {
         const inicioDate = agenda.dataInicio.toDate();
@@ -670,7 +659,7 @@ export default function AgendaPage() {
           if (currentDateOnly.getTime() === inicioDateOnly.getTime()) {
             allItems.push({
               id: `agenda_${agenda.id}`,
-              titulo: agenda.titulo,
+              titulo: tituloAgenda,
               descricao: `${agenda.descricao || ''}\n\nTipo: ${getAgendaImobiliariaTipoLabel(agenda.tipo)}\nLocal: ${agenda.local || 'Não informado'}\nResponsável: ${agenda.responsavel || 'Não informado'}`,
               dataHora: agenda.dataInicio,
               tipo: 'imobiliaria',
@@ -704,7 +693,7 @@ export default function AgendaPage() {
             
             allItems.push({
               id: `agenda_${agenda.id}`,
-              titulo: agenda.titulo,
+              titulo: tituloAgenda,
               descricao: descricao,
               dataHora: Timestamp.fromDate(dataHoraDia),
               tipo: 'imobiliaria',
@@ -738,45 +727,6 @@ export default function AgendaPage() {
       }
     });
     
-    // Adicionar plantões
-    plantoes.forEach(plantao => {
-      const inicioDate = new Date(plantao.dataInicio);
-      const fimDate = new Date(plantao.dataFim);
-      const currentDate = new Date(date);
-      
-      const inicioDateOnly = new Date(inicioDate.getFullYear(), inicioDate.getMonth(), inicioDate.getDate());
-      const fimDateOnly = new Date(fimDate.getFullYear(), fimDate.getMonth(), fimDate.getDate());
-      const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-      
-      // Verificar se está no período do plantão
-      if (currentDateOnly >= inicioDateOnly && currentDateOnly <= fimDateOnly) {
-        // Criar data/hora correta para o plantão
-        const plantaoDataHora = new Date(currentDate);
-        
-        // Extrair horário do plantão (formato HH:MM)
-        if (plantao.horario && plantao.horario.length >= 5) {
-          const [horas, minutos] = plantao.horario.substring(0, 5).split(':').map(Number);
-          plantaoDataHora.setHours(horas, minutos, 0, 0);
-        } else {
-          // Fallback: usar 09:00 se não houver horário
-          plantaoDataHora.setHours(9, 0, 0, 0);
-        }
-        
-        allItems.push({
-          id: `plantao_${plantao.id}`,
-          titulo: `Plantão ${plantao.construtora}`,
-          descricao: `Horário: ${plantao.horario}\nConstrutora: ${plantao.construtora}\nCorretor: ${plantao.corretorResponsavel}\nObservações: ${plantao.observacoes || 'Nenhuma'}`,
-          dataHora: Timestamp.fromDate(plantaoDataHora),
-          tipo: 'comunidade', // Usar tipo comunidade que tem cor laranja
-          status: 'pendente',
-          cor: '#F97316', // Cor laranja para plantão
-          createdAt: Timestamp.fromDate(new Date(plantao.criadoEm)),
-          userId: '',
-          source: 'comunidade', // Usar source comunidade
-          originalId: plantao.id
-        });
-      }
-    });
     
     // Aplicar filtro se necessário
     if (filter !== 'all') {

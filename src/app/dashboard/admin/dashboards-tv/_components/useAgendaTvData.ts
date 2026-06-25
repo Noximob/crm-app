@@ -155,6 +155,7 @@ export function useAgendaTvData(
         const snapAgenda = await getDocs(qAgenda);
         if (cancelled) return;
         const list: AgendaEventoTv[] = [];
+        const listP: PlantaoTv[] = [];
         snapAgenda.docs.forEach((docSnap) => {
           const d = docSnap.data();
           const dataInicio = d.dataInicio as Timestamp | undefined;
@@ -164,6 +165,23 @@ export function useAgendaTvData(
           const dataFim = d.dataFim as Timestamp | undefined;
           const fimDate = dataFim?.toDate();
           if (fimDate && fimDate < start) return;
+          // Plantão agora é um tipo de evento da agenda — roteia para a lista de plantões da TV
+          if ((d.tipo ?? '') === 'plantao') {
+            const di = inicioDate;
+            const df = fimDate ?? di;
+            const horario = (d.horaInicio as string) || di.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            listP.push({
+              id: docSnap.id,
+              construtora: (d.construtora as string) ?? '',
+              corretorResponsavel: (d.responsavel as string) ?? '',
+              horario,
+              dataInicio: di,
+              dataFim: df,
+              observacoes: d.descricao as string | undefined,
+              respostasPresenca: (d.respostasPresenca as Record<string, string>) || undefined,
+            });
+            return;
+          }
           list.push({
             id: docSnap.id,
             titulo: d.titulo ?? '',
@@ -206,27 +224,6 @@ export function useAgendaTvData(
         list.sort((a, b) => a.dataInicio.toMillis() - b.dataInicio.toMillis());
         setEvents(list);
 
-        const refPlantoes = collection(db, 'plantoes');
-        const qPlantoes = query(refPlantoes, where('imobiliariaId', '==', imobiliariaId));
-        const snapPlantoes = await getDocs(qPlantoes);
-        if (cancelled) return;
-        const listP: PlantaoTv[] = [];
-        snapPlantoes.docs.forEach((docSnap) => {
-          const d = docSnap.data();
-          const di = parseDate(d.dataInicio);
-          const df = parseDate(d.dataFim);
-          if (!di || !df || df < start || di > end) return;
-          listP.push({
-            id: docSnap.id,
-            construtora: d.construtora ?? '',
-            corretorResponsavel: d.corretorResponsavel ?? '',
-            horario: d.horario ?? '09:00',
-            dataInicio: di,
-            dataFim: df,
-            observacoes: d.observacoes,
-            respostasPresenca: (d.respostasPresenca as Record<string, string>) || undefined,
-          });
-        });
         listP.sort((a, b) => a.dataInicio.getTime() - b.dataInicio.getTime());
         setPlantoes(listP);
 

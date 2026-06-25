@@ -30,6 +30,7 @@ export const TIPO_EVENTO_LABEL: Record<string, string> = {
   'ligacao-ativa': 'Ligação Ativa',
   'acao-de-rua': 'Ação de Rua',
   'disparo-de-msg': 'Disparo de mensagem',
+  plantao: 'Plantão',
   outro: 'Outro',
 };
 
@@ -241,14 +242,33 @@ export async function fetchRelatorioIndividual(
     const dataInicio = toDate(d.dataInicio);
     const dataFim = toDate(d.dataFim);
     if (!dataInicio || !isInPeriod(dataInicio, start, end)) return;
-    const horas = dataFim
-      ? (dataFim.getTime() - dataInicio.getTime()) / (60 * 60 * 1000)
-      : 1;
+    // Horas: eventos com faixa de horário diária contam (horaFim-horaInicio) por dia do intervalo,
+    // para que um evento/plantão de vários dias não some o intervalo contínuo inteiro.
+    const horaIni = (d.horaInicio as string) || '';
+    const horaFim = (d.horaFim as string) || '';
+    let horas: number;
+    if (horaIni && horaFim) {
+      const [hih = 0, him = 0] = horaIni.split(':').map(Number);
+      const [hfh = 0, hfm = 0] = horaFim.split(':').map(Number);
+      const horasPorDia = Math.max(0, (hfh * 60 + hfm - (hih * 60 + him)) / 60);
+      const diaIni = (d.diaInicio as string) || formatDate(dataInicio);
+      const diaFimStr = (d.diaFim as string) || diaIni;
+      const dias = Math.max(
+        1,
+        Math.round((new Date(`${diaFimStr}T00:00:00`).getTime() - new Date(`${diaIni}T00:00:00`).getTime()) / (24 * 60 * 60 * 1000)) + 1
+      );
+      horas = horasPorDia * dias;
+    } else {
+      horas = dataFim ? (dataFim.getTime() - dataInicio.getTime()) / (60 * 60 * 1000) : 1;
+    }
     totalHorasPeriodo += horas;
     const tipoChave = (d.tipo as string) || 'outro';
     const tipoLabel = TIPO_EVENTO_LABEL[tipoChave] || 'Evento';
+    const ehPlantao = tipoChave === 'plantao';
     eventosParticipados.push({
-      titulo: (d.titulo as string) || 'Evento',
+      titulo: ehPlantao
+        ? ((d.construtora as string) ? `Plantão — ${d.construtora}` : 'Plantão')
+        : ((d.titulo as string) || 'Evento'),
       data: dataInicio.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
       horas: Math.round(horas * 10) / 10,
       tipo: tipoLabel,
