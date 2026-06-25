@@ -516,7 +516,6 @@ export default function DashboardPage() {
   
   // Estado para o modal de agenda imobiliária
   const [showAgendaModal, setShowAgendaModal] = useState(false);
-  const [plantoes, setPlantoes] = useState<any[]>([]);
   const [showPlantoesModal, setShowPlantoesModal] = useState(false);
 
   // Função para voltar ao topo da seção de trending
@@ -650,26 +649,6 @@ export default function DashboardPage() {
     fetchAgendaImobiliaria();
   }, [userData, isEspelhoDemo]);
 
-  // Buscar plantões
-  useEffect(() => {
-    if (isEspelhoDemo) {
-      setPlantoes([]);
-      return;
-    }
-    const fetchPlantoes = async () => {
-      if (!userData?.imobiliariaId) return;
-      try {
-        const q = query(collection(db, 'plantoes'), where('imobiliariaId', '==', userData.imobiliariaId));
-        const snapshot = await getDocs(q);
-        setPlantoes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      } catch (error) {
-        console.error('Erro ao buscar plantões:', error);
-        setPlantoes([]);
-      }
-    };
-    fetchPlantoes();
-  }, [userData, isEspelhoDemo]);
-
   // Labels e ícones do tipo da agenda (igual Dashboard TV - Agenda do Dia)
   const getTipoAgendaLabel = (tipo: string) => {
     const map: Record<string, string> = {
@@ -680,6 +659,7 @@ export default function DashboardPage() {
       'ligacao-ativa': 'Ligação Ativa',
       'acao-de-rua': 'Ação de rua',
       'disparo-de-msg': 'Disparo de Msg',
+      plantao: 'Plantão',
       outro: 'Outro',
       meet: 'Google Meet',
       youtube: 'YouTube Live',
@@ -696,12 +676,34 @@ export default function DashboardPage() {
     'ligacao-ativa': '📞',
     'acao-de-rua': '📍',
     'disparo-de-msg': '💬',
+    plantao: '🏢',
     outro: '📅',
     meet: '🎥',
     youtube: '📺',
     instagram: '📱',
     discord: '💬',
   };
+
+  // Plantões agora são eventos da agenda (tipo 'plantao') — derivados para o modal de plantões
+  const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const plantoes = useMemo(
+    () =>
+      (agendaImobiliaria as any[])
+        .filter((a) => a.tipo === 'plantao')
+        .map((a) => ({
+          id: a.id,
+          dataInicio: a.diaInicio || (a.dataInicio?.toDate ? ymd(a.dataInicio.toDate()) : ''),
+          dataFim: a.diaFim || (a.dataFim?.toDate ? ymd(a.dataFim.toDate()) : ''),
+          horario: a.horaInicio || (a.dataInicio?.toDate ? a.dataInicio.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''),
+          construtora: a.construtora || '',
+          corretorResponsavel: a.responsavel || '',
+          observacoes: a.descricao || '',
+          criadoEm: a.data ?? null,
+          presentesIds: a.presentesIds,
+          respostasPresenca: a.respostasPresenca,
+        })),
+    [agendaImobiliaria]
+  );
 
   // Próximas ações: eventos em que o usuário está CONFIRMADO — Agora + Em breve + próximos (até 4), igual TV Agenda do Dia
   const proximosEventosConfirmados = useMemo(() => {
@@ -710,58 +712,56 @@ export default function DashboardPage() {
     if (!uid) return [];
     type Item = { tipo: 'plantao' | 'agenda'; id: string; titulo: string; tipoLabel: string; tipoChave?: string; dataStr: string; horarioStr: string; horarioFimStr: string; startTime: number; fimTime: number };
     const lista: Item[] = [];
-    const pushPlantao = (p: any, startTime: number, dataStr: string, horarioStr: string) => {
-      const fimTime = startTime + 2 * 60 * 60 * 1000;
-      const horarioFimStr = new Date(fimTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-      lista.push({ tipo: 'plantao', id: p.id, titulo: p.construtora ? `Plantão — ${p.construtora}` : 'Plantão', tipoLabel: 'Plantão', dataStr, horarioStr, horarioFimStr, startTime, fimTime });
-    };
-    plantoes.forEach((p: any) => {
-      if (!Array.isArray(p.presentesIds) || !p.presentesIds.includes(uid)) return;
-      if (p.respostasPresenca?.[uid] !== 'confirmado') return;
-      const dataInicio = p.dataInicio || '';
-      const dataFim = p.dataFim || dataInicio;
-      const horario = (p.horario || '00:00').substring(0, 5);
-      const [hh = 9, mm = 0] = horario.split(':').map(Number);
-      if (!dataInicio) return;
-      const dIni = new Date(dataInicio);
-      const dFim = new Date(dataFim);
-      for (let d = new Date(dIni); d <= dFim; d.setDate(d.getDate() + 1)) {
-        const dt = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hh, mm, 0, 0);
-        const startTime = dt.getTime();
-        const fimTime = startTime + 2 * 60 * 60 * 1000;
-        if (fimTime < now) continue;
-        const dataStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        pushPlantao(p, startTime, dataStr, horario);
-      }
-    });
     agendaImobiliaria.forEach((a: any) => {
       if (!Array.isArray(a.presentesIds) || !a.presentesIds.includes(uid)) return;
       if (a.respostasPresenca?.[uid] !== 'confirmado') return;
-      const dt = a.dataInicio?.toDate ? a.dataInicio.toDate() : (a.dataInicio ? new Date(a.dataInicio) : null);
-      if (!dt) return;
-      const startTime = dt.getTime();
-      const dtFim = a.dataFim?.toDate ? a.dataFim.toDate() : null;
-      const fimTime = dtFim ? dtFim.getTime() : startTime + 60 * 60 * 1000;
-      if (fimTime < now) return;
-      const dataStr = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      const horarioStr = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-      const horarioFimStr = new Date(fimTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-      lista.push({
-        tipo: 'agenda',
-        id: a.id,
-        titulo: a.titulo || 'Evento',
-        tipoLabel: getTipoAgendaLabel(a.tipo || 'outro'),
-        tipoChave: a.tipo || 'outro',
-        dataStr,
-        horarioStr,
-        horarioFimStr,
-        startTime,
-        fimTime,
-      });
+
+      // Intervalo de dias (modelo novo diaInicio/diaFim; fallback p/ Timestamps antigos)
+      const diaIni = a.diaInicio || (a.dataInicio?.toDate ? ymd(a.dataInicio.toDate()) : (a.dataInicio ? ymd(new Date(a.dataInicio)) : ''));
+      if (!diaIni) return;
+      const diaFim = a.diaFim || (a.dataFim?.toDate ? ymd(a.dataFim.toDate()) : diaIni);
+      const horaIni = a.horaInicio || (a.dataInicio?.toDate ? a.dataInicio.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '00:00');
+      const horaFim = a.horaFim || (a.dataFim?.toDate ? a.dataFim.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '');
+      const [hi = 0, mi = 0] = horaIni.split(':').map(Number);
+
+      const ehPlantao = a.tipo === 'plantao';
+      const titulo = ehPlantao ? (a.construtora ? `Plantão — ${a.construtora}` : (a.titulo || 'Plantão')) : (a.titulo || 'Evento');
+      const tipoLabel = getTipoAgendaLabel(a.tipo || 'outro');
+
+      const dIni = new Date(`${diaIni}T00:00:00`);
+      const dFim = new Date(`${diaFim}T00:00:00`);
+      // Evento ocorre todos os dias do intervalo, na mesma faixa de horário
+      for (let d = new Date(dIni); d <= dFim; d.setDate(d.getDate() + 1)) {
+        const dt = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hi, mi, 0, 0);
+        const startTime = dt.getTime();
+        let fimTime: number;
+        if (horaFim) {
+          const [hf = hi, mf = mi] = horaFim.split(':').map(Number);
+          fimTime = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hf, mf, 0, 0).getTime();
+        } else {
+          fimTime = startTime + 60 * 60 * 1000;
+        }
+        if (fimTime < now) continue;
+        const dataStr = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const horarioStr = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const horarioFimStr = new Date(fimTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        lista.push({
+          tipo: ehPlantao ? 'plantao' : 'agenda',
+          id: a.id,
+          titulo,
+          tipoLabel,
+          tipoChave: a.tipo || 'outro',
+          dataStr,
+          horarioStr,
+          horarioFimStr,
+          startTime,
+          fimTime,
+        });
+      }
     });
     lista.sort((a, b) => a.startTime - b.startTime);
     return lista.slice(0, 3);
-  }, [currentUser?.uid, plantoes, agendaImobiliaria, currentTime]);
+  }, [currentUser?.uid, agendaImobiliaria, currentTime]);
 
   const [respondendoPresenca, setRespondendoPresenca] = useState<string | null>(null);
   const responderPresenca = async (tipo: 'plantao' | 'agenda', id: string, status: 'confirmado' | 'cancelado') => {
@@ -777,16 +777,12 @@ export default function DashboardPage() {
       return;
     }
     try {
-      const col = tipo === 'plantao' ? 'plantoes' : 'agendaImobiliaria';
-      const ref = doc(db, col, id);
-      const item = tipo === 'plantao' ? plantoes.find((p: any) => p.id === id) : agendaImobiliaria.find((a: any) => a.id === id);
+      // Plantões agora também vivem em 'agendaImobiliaria' (coleção unificada)
+      const ref = doc(db, 'agendaImobiliaria', id);
+      const item = agendaImobiliaria.find((a: any) => a.id === id);
       const atuais = (item?.respostasPresenca || {}) as Record<string, string>;
       await updateDoc(ref, { respostasPresenca: { ...atuais, [uid]: status } });
-      if (tipo === 'plantao') {
-        setPlantoes(prev => prev.map((p: any) => p.id === id ? { ...p, respostasPresenca: { ...atuais, [uid]: status } } : p));
-      } else {
-        setAgendaImobiliaria(prev => prev.map((a: any) => a.id === id ? { ...a, respostasPresenca: { ...atuais, [uid]: status } } : a));
-      }
+      setAgendaImobiliaria(prev => prev.map((a: any) => a.id === id ? { ...a, respostasPresenca: { ...atuais, [uid]: status } } : a));
     } catch (e) {
       console.error('Erro ao atualizar presença:', e);
     } finally {

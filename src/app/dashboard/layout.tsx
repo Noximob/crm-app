@@ -66,6 +66,7 @@ function getTipoAgendaLabel(tipo: string): string {
   const map: Record<string, string> = {
     reuniao: 'Reunião', evento: 'Evento', treinamento: 'Treinamento', 'revisar-crm': 'Revisar CRM',
     'ligacao-ativa': 'Ligação Ativa', 'acao-de-rua': 'Ação de rua', 'disparo-de-msg': 'Disparo de Msg',
+    plantao: 'Plantão',
     outro: 'Outro', meet: 'Google Meet', youtube: 'YouTube Live', instagram: 'Instagram Live', discord: 'Discord',
   };
   return map[tipo] || tipo;
@@ -107,28 +108,8 @@ export default function DashboardLayout({
   }, [pathname, resetNotification]);
 
   // Convites de eventos (plantoes + agenda) em que o usuário foi marcado e ainda não respondeu
-  const [plantoes, setPlantoes] = useState<any[]>([]);
   const [agendaImobiliaria, setAgendaImobiliaria] = useState<any[]>([]);
   const [respondendoPresenca, setRespondendoPresenca] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (isEspelhoDemo) {
-      setPlantoes([]);
-      setAgendaImobiliaria([]);
-      return;
-    }
-    const fetchPlantoes = async () => {
-      if (!userData?.imobiliariaId) return;
-      try {
-        const q = query(collection(db, 'plantoes'), where('imobiliariaId', '==', userData.imobiliariaId));
-        const snapshot = await getDocs(q);
-        setPlantoes(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-      } catch (e) {
-        setPlantoes([]);
-      }
-    };
-    fetchPlantoes();
-  }, [userData?.imobiliariaId, isEspelhoDemo]);
 
   useEffect(() => {
     if (isEspelhoDemo) return;
@@ -149,23 +130,6 @@ export default function DashboardLayout({
     const uid = user?.uid;
     if (!uid) return [];
     const lista: { tipo: 'plantao' | 'agenda'; id: string; titulo: string; tipoLabel: string; dataStr: string; horarioStr: string; sortTime: number }[] = [];
-    plantoes.forEach((p: any) => {
-      if (!Array.isArray(p.presentesIds) || !p.presentesIds.includes(uid)) return;
-      if (p.respostasPresenca?.[uid]) return;
-      const dataInicio = p.dataInicio || '';
-      const horario = p.horario || '00:00';
-      const sortTime = dataInicio && horario ? new Date(`${dataInicio}T${horario.substring(0, 5)}`).getTime() : 0;
-      const dataStr = dataInicio ? new Date(dataInicio).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
-      lista.push({
-        tipo: 'plantao',
-        id: p.id,
-        titulo: p.construtora ? `Plantão — ${p.construtora}` : 'Plantão',
-        tipoLabel: 'Plantão',
-        dataStr,
-        horarioStr: horario.substring(0, 5),
-        sortTime,
-      });
-    });
     agendaImobiliaria.forEach((a: any) => {
       if (!Array.isArray(a.presentesIds) || !a.presentesIds.includes(uid)) return;
       if (a.respostasPresenca?.[uid]) return;
@@ -185,7 +149,7 @@ export default function DashboardLayout({
     });
     lista.sort((a, b) => a.sortTime - b.sortTime);
     return lista;
-  }, [user?.uid, plantoes, agendaImobiliaria]);
+  }, [user?.uid, agendaImobiliaria]);
 
   const responderPresenca = async (tipo: 'plantao' | 'agenda', id: string, status: 'confirmado' | 'cancelado') => {
     const uid = user?.uid;
@@ -193,16 +157,12 @@ export default function DashboardLayout({
     const key = `${tipo}-${id}`;
     setRespondendoPresenca(key);
     try {
-      const col = tipo === 'plantao' ? 'plantoes' : 'agendaImobiliaria';
-      const ref = doc(db, col, id);
-      const item = tipo === 'plantao' ? plantoes.find((p: any) => p.id === id) : agendaImobiliaria.find((a: any) => a.id === id);
+      // Plantões agora também são eventos da agenda imobiliária (coleção unificada)
+      const ref = doc(db, 'agendaImobiliaria', id);
+      const item = agendaImobiliaria.find((a: any) => a.id === id);
       const atuais = (item?.respostasPresenca || {}) as Record<string, string>;
       await updateDoc(ref, { respostasPresenca: { ...atuais, [uid]: status } });
-      if (tipo === 'plantao') {
-        setPlantoes(prev => prev.map((p: any) => p.id === id ? { ...p, respostasPresenca: { ...atuais, [uid]: status } } : p));
-      } else {
-        setAgendaImobiliaria(prev => prev.map((a: any) => a.id === id ? { ...a, respostasPresenca: { ...atuais, [uid]: status } } : a));
-      }
+      setAgendaImobiliaria(prev => prev.map((a: any) => a.id === id ? { ...a, respostasPresenca: { ...atuais, [uid]: status } } : a));
     } catch (e) {
       console.error('Erro ao atualizar presença:', e);
     } finally {
