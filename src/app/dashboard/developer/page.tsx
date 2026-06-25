@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, updateDoc, query, where, Timestamp, setDoc, doc as firestoreDoc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc, writeBatch, query, where, Timestamp, setDoc, doc as firestoreDoc, getDoc } from 'firebase/firestore';
+import { PIPELINE_STAGES } from '@/lib/constants';
 
 interface Imobiliaria {
   id: string;
@@ -103,6 +104,70 @@ export default function DeveloperPage() {
       setMessage(`Permissão de ${tipo === 'admin' ? 'Admin' : 'Desenvolvedor'} ${valor ? 'concedida' : 'removida'}!`);
     } catch (err) {
       setMessage('Erro ao atualizar permissões');
+    }
+  };
+
+  const handleExcluirCorretor = async (user: Usuario) => {
+    if (user.tipoConta === 'imobiliaria') {
+      setMessage('Não é possível excluir a conta da imobiliária.');
+      return;
+    }
+    const ok = window.confirm(
+      `Excluir o corretor "${user.nome || user.email}"?\n\nOs leads dele serão enviados para o topo do funil da imobiliária. Esta ação não pode ser desfeita.`
+    );
+    if (!ok) return;
+    setMessage(null);
+    try {
+      const imobiliariaId = user.imobiliariaId || selectedImobiliaria?.id || undefined;
+
+      // 1. Conta da imobiliária = destino dos leads
+      let destinoUid: string | null = null;
+      if (imobiliariaId) {
+        const ownerQ = query(
+          collection(db, 'usuarios'),
+          where('imobiliariaId', '==', imobiliariaId),
+          where('tipoConta', '==', 'imobiliaria')
+        );
+        const ownerSnap = await getDocs(ownerQ);
+        destinoUid = ownerSnap.docs[0]?.id ?? null;
+      }
+
+      // 2. Primeira etapa do funil (topo) — usa config da imobiliária se existir
+      let primeiraEtapa = PIPELINE_STAGES[0];
+      if (imobiliariaId) {
+        const cfgSnap = await getDoc(firestoreDoc(db, 'configFunilVendas', imobiliariaId));
+        const stages = cfgSnap.exists() ? (cfgSnap.data().stages as Array<{ label?: string }>) : null;
+        if (Array.isArray(stages) && stages[0]?.label) primeiraEtapa = stages[0].label!;
+      }
+
+      // 3. Reatribuir leads do corretor para a imobiliária (topo do funil)
+      const leadsSnap = await getDocs(query(collection(db, 'leads'), where('userId', '==', user.id)));
+      if (!leadsSnap.empty) {
+        if (!destinoUid) {
+          setMessage('Conta da imobiliária (destino dos leads) não encontrada. Exclusão cancelada.');
+          return;
+        }
+        const docsArr = leadsSnap.docs;
+        for (let i = 0; i < docsArr.length; i += 450) {
+          const batch = writeBatch(db);
+          docsArr.slice(i, i + 450).forEach(d => {
+            batch.update(d.ref, { userId: destinoUid, etapa: primeiraEtapa });
+          });
+          await batch.commit();
+        }
+      }
+
+      // 4. Excluir o cadastro do corretor
+      await deleteDoc(doc(db, 'usuarios', user.id));
+      setCorretores(prev => prev.filter(c => c.id !== user.id));
+      setMessage(
+        leadsSnap.size > 0
+          ? `Corretor excluído. ${leadsSnap.size} lead(s) enviados ao topo do funil da imobiliária.`
+          : 'Corretor excluído.'
+      );
+    } catch (err) {
+      console.error('Erro ao excluir corretor:', err);
+      setMessage('Erro ao excluir corretor.');
     }
   };
 
@@ -216,6 +281,7 @@ export default function DeveloperPage() {
                   <th className="px-4 py-3 text-center">Aprovado</th>
                   <th className="px-4 py-3 text-center">Admin</th>
                   <th className="px-4 py-3 text-center">Desenvolvedor</th>
+                  <th className="px-4 py-3 text-center">Excluir</th>
                 </tr>
               </thead>
               <tbody>
@@ -234,6 +300,17 @@ export default function DeveloperPage() {
                     <td className="px-4 py-3 text-center"><input type="checkbox" checked={!!corretor.aprovado} onChange={e => handleAprovarCheckbox(corretor, e.target.checked)} /></td>
                     <td className="px-4 py-3 text-center"><input type="checkbox" checked={!!corretor.permissoes?.admin} onChange={e => handlePermissao(corretor, 'admin', e.target.checked)} /></td>
                     <td className="px-4 py-3 text-center"><input type="checkbox" checked={!!corretor.permissoes?.developer} onChange={e => handlePermissao(corretor, 'developer', e.target.checked)} /></td>
+                    <td className="px-4 py-3 text-center">
+                      {corretor.tipoConta !== 'imobiliaria' && (
+                        <button
+                          onClick={() => handleExcluirCorretor(corretor)}
+                          title="Excluir corretor"
+                          className="text-red-500 hover:text-red-700 p-1 rounded transition-colors"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
