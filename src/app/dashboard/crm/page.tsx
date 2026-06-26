@@ -48,6 +48,15 @@ const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+/** Bola de futebol — substitui o ícone do WhatsApp no tema Copa do Mundo */
+const SoccerBallIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} viewBox="0 0 32 32" width="24" height="24" fill="none">
+    <circle cx="16" cy="16" r="15" fill="#ffffff" stroke="#1a1a1a" strokeWidth="1.4" />
+    <polygon points="16,10 20.3,13.1 18.7,18.2 13.3,18.2 11.7,13.1" fill="#1a1a1a" />
+    <path d="M16 10 V4 M20.3 13.1 L25.5 9.8 M18.7 18.2 L22.5 23 M13.3 18.2 L9.5 23 M11.7 13.1 L6.5 9.8" stroke="#1a1a1a" strokeWidth="1.4" fill="none" />
+  </svg>
+);
+
 
 // --- Componentes ---
 const FilterChip = ({ children, selected, onClick }: { children: React.ReactNode, selected?: boolean, onClick: () => void }) => (
@@ -552,7 +561,7 @@ export default function CrmPage() {
                     <div className="flex-1 min-h-0 overflow-auto rounded-xl border border-white/10">
                         <table className="min-w-full table-fixed">
                             <thead className="sticky top-0 z-10">
-                                <tr className="border-b border-white/10 bg-[var(--bg-card)]/95 backdrop-blur-sm text-gray-200 text-xs shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
+                                <tr className="copa-th border-b border-white/10 bg-[var(--bg-card)]/95 backdrop-blur-sm text-gray-200 text-xs shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
                                     <th className="px-3 py-2 font-semibold text-left w-1/5 rounded-tl-xl">Nome</th>
                                     <th className="px-3 py-2 font-semibold text-left w-1/6">Telefone</th>
                                     <th className="px-3 py-2 font-semibold text-center w-1/12">WhatsApp</th>
@@ -592,7 +601,8 @@ export default function CrmPage() {
                                                 className="inline-flex items-center justify-center text-[#25D366] hover:text-[#128C7E]"
                                                 title="Conversar no WhatsApp"
                                             >
-                                                <WhatsAppIcon className="h-4 w-4" />
+                                                <WhatsAppIcon className="h-4 w-4 wa-default" />
+                                                <SoccerBallIcon className="h-4 w-4 wa-soccer" />
                                             </a>
                                         </td>
                                         <td className="px-3 py-1.5 text-xs w-1/5">

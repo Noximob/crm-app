@@ -29,9 +29,9 @@ export default function KanbanColumn({ id, title, leads }: KanbanColumnProps) {
   });
 
   return (
-    <div className="flex flex-col flex-shrink-0 w-40 bg-[#F8F9FB] dark:bg-[#181C23] rounded-2xl shadow-soft border border-[#E8C547] dark:border-[#D4A017]/40 transition-all duration-200 min-h-[340px] mx-1">
+    <div className="kanban-col flex flex-col flex-shrink-0 w-40 bg-[#F8F9FB] dark:bg-[#181C23] rounded-2xl shadow-soft border border-[#E8C547] dark:border-[#D4A017]/40 transition-all duration-200 min-h-[340px] mx-1">
       {/* Header da coluna */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#E8C547] dark:border-[#D4A017]/40 bg-[#F0F4FF] dark:bg-[#23283A] rounded-t-2xl">
+      <div className="kanban-col-head flex items-center justify-between px-4 py-3 border-b border-[#E8C547] dark:border-[#D4A017]/40 bg-[#F0F4FF] dark:bg-[#23283A] rounded-t-2xl">
         <h3 className="text-base font-bold text-[#2E2F38] dark:text-white tracking-tight">
           {title}
         </h3>

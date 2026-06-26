@@ -439,3 +439,49 @@ input:focus {
 .copa-theme header .rounded-full {
   box-shadow: 0 0 0 2px rgba(255, 223, 0, 0.55);
 }
+
+/* WhatsApp vira bola de futebol no tema Copa (troca por CSS, sem mexer na lógica) */
+.wa-soccer { display: none; }
+.copa-theme .wa-default { display: none; }
+.copa-theme .wa-soccer { display: inline-block; animation: copaBallSpin 6s linear infinite; }
+@keyframes copaBallSpin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Topo tricolor (verde/amarelo/azul) nas colunas do kanban */
+.copa-theme .kanban-col { position: relative; }
+.copa-theme .kanban-col::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 5px;
+  border-radius: 16px 16px 0 0;
+  background: linear-gradient(90deg, var(--copa-verde), var(--copa-amarelo) 50%, var(--copa-azul));
+  z-index: 2;
+}
+.copa-theme .kanban-col-head {
+  background: linear-gradient(180deg, rgba(255, 223, 0, 0.08), transparent) !important;
+}
+
+/* Faixa tricolor no topo dos cards luminosos (aparece em várias telas) */
+.copa-theme .card-glow { position: relative; }
+.copa-theme .card-glow::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 16px 16px 0 0;
+  background: linear-gradient(90deg, var(--copa-verde), var(--copa-amarelo) 50%, var(--copa-azul));
+  opacity: 0.9;
+}
+
+/* Cabeçalho de tabela com leve degradê tricolor */
+.copa-theme tr.copa-th {
+  background: linear-gradient(90deg, rgba(0, 156, 59, 0.22), rgba(255, 223, 0, 0.18), rgba(0, 39, 118, 0.22)) !important;
+}
+
+/* Barra de rolagem dourada no clima Copa */
+.copa-theme ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--copa-verde), var(--copa-amarelo), var(--copa-azul));
+}
