@@ -106,13 +106,13 @@ export default function DashboardLayout({
 }) {
   const { currentUser: user, userData, loading, isEspelhoDemo, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
-  const [copaTheme, setCopaTheme] = useState(false);
+  const [copaTheme, setCopaTheme] = useState(true);
   const router = useRouter();
 
-  // Tema Copa do Mundo: lembra a preferência no navegador
+  // Tema Copa do Mundo: ligado por padrão; só desliga se o usuário escolher
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setCopaTheme(window.localStorage.getItem('copaTheme') === '1');
+      setCopaTheme(window.localStorage.getItem('copaTheme') !== '0');
     }
   }, []);
 
@@ -326,7 +326,7 @@ export default function DashboardLayout({
         {/* Header: Olá | convites de eventos (1 por vez) | Ideias, moedas, avatar */}
         <header className="h-16 px-5 shrink-0 flex items-center justify-between gap-3">
           <h2 className="text-lg font-bold text-orange-400 truncate shrink-0">
-            Olá, {displayName}! 👋
+            Olá, {displayName}! {copaTheme ? '🇧🇷' : '👋'}
           </h2>
           {convitesPendentes.length > 0 && (
             <div className="flex items-center gap-2 flex-1 min-w-0 justify-center overflow-hidden">
