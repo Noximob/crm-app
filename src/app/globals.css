@@ -485,3 +485,44 @@ input:focus {
 .copa-theme ::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, var(--copa-verde), var(--copa-amarelo), var(--copa-azul));
 }
+
+/* Cabeçalho de QUALQUER tabela com leve degradê tricolor */
+.copa-theme thead tr {
+  background-image: linear-gradient(90deg, rgba(0, 156, 59, 0.20), rgba(255, 223, 0, 0.16), rgba(0, 39, 118, 0.20)) !important;
+}
+
+/* Botões e barras de gradiente (funil, botões principais) viram verde-amarelo-azul */
+.copa-theme [class*="bg-gradient-to"] {
+  --tw-gradient-from: #009C3B !important;
+  --tw-gradient-to: #002776 !important;
+  --tw-gradient-stops: #009C3B, #FFDF00, #002776 !important;
+}
+
+/* Confete caindo de leve (todas as páginas) */
+.copa-confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;
+  overflow: hidden;
+}
+.copa-confetti-piece {
+  position: absolute;
+  top: -14px;
+  width: 8px;
+  height: 13px;
+  border-radius: 1px;
+  opacity: 0;
+  animation-name: copaFall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.copa-confetti-piece.c0 { background: var(--copa-verde); }
+.copa-confetti-piece.c1 { background: var(--copa-amarelo); }
+.copa-confetti-piece.c2 { background: var(--copa-azul); }
+@keyframes copaFall {
+  0%   { transform: translateY(-14px) rotate(0deg); opacity: 0; }
+  8%   { opacity: 0.7; }
+  92%  { opacity: 0.7; }
+  100% { transform: translateY(100vh) rotate(420deg); opacity: 0; }
+}

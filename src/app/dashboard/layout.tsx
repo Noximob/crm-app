@@ -119,10 +119,20 @@ export default function DashboardLayout({
   const toggleCopaTheme = () => {
     setCopaTheme((prev) => {
       const next = !prev;
-      if (typeof window !== 'undefined') window.localStorage.setItem('copaTheme', next ? '1' : '0');
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('copaTheme', next ? '1' : '0');
+        window.dispatchEvent(new Event('copa-toggle'));
+      }
       return next;
     });
   };
+
+  // Contagem regressiva para a final da Copa (calculada no cliente p/ evitar mismatch)
+  const [diasCopa, setDiasCopa] = useState<number | null>(null);
+  useEffect(() => {
+    const final = new Date('2026-07-19T00:00:00').getTime();
+    setDiasCopa(Math.max(0, Math.ceil((final - Date.now()) / 86400000)));
+  }, []);
   const pathname = usePathname();
   const { theme } = useTheme();
   const { notifications, resetNotification } = useNotifications();
@@ -243,8 +253,6 @@ export default function DashboardLayout({
   return (
     <PipelineStagesProvider imobiliariaId={userData?.imobiliariaId}>
     <div className={`flex h-screen min-h-screen bg-particles ${copaTheme ? 'copa-theme' : ''}`}>
-      {/* Moldura decorativa do tema Copa do Mundo (todas as abas) */}
-      {copaTheme && <div className="copa-frame" aria-hidden="true" />}
       {/* Sidebar — mesmo background (partículas), borda sutil */}
       <div className={`flex flex-col h-screen fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-transparent transition-all duration-300 text-xs pb-8`}>
         <div className="flex-1 flex flex-col">
@@ -361,6 +369,15 @@ export default function DashboardLayout({
             </div>
           )}
           <div className="flex items-center gap-3 shrink-0">
+            {copaTheme && diasCopa !== null && (
+              <div
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white border border-yellow-300/60 bg-gradient-to-r from-[#009C3B] to-[#002776]"
+                title="Contagem regressiva para a final da Copa"
+              >
+                <span className="[filter:drop-shadow(0_0_4px_rgba(255,223,0,0.6))]">🏆</span>
+                {diasCopa > 0 ? `Faltam ${diasCopa} dias` : 'É Copa! 🇧🇷'}
+              </div>
+            )}
             {copaTheme && (
               <BrasilFlag className="rounded-sm shadow-sm hidden sm:block [filter:drop-shadow(0_0_4px_rgba(255,223,0,0.35))]" />
             )}

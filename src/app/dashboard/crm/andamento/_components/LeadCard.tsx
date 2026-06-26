@@ -8,6 +8,14 @@ const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg viewBox="0 0 24 24" fill="currentColor" {...props}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
 );
 
+const SoccerBallIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 32 32" fill="none" {...props}>
+    <circle cx="16" cy="16" r="15" fill="#ffffff" stroke="#1a1a1a" strokeWidth="1.6" />
+    <polygon points="16,10 20.3,13.1 18.7,18.2 13.3,18.2 11.7,13.1" fill="#1a1a1a" />
+    <path d="M16 10 V4 M20.3 13.1 L25.5 9.8 M18.7 18.2 L22.5 23 M13.3 18.2 L9.5 23 M11.7 13.1 L6.5 9.8" stroke="#1a1a1a" strokeWidth="1.6" fill="none" />
+  </svg>
+);
+
 export default function LeadCard({ lead }: { lead: Lead }) {
   const {
     attributes,
@@ -52,7 +60,8 @@ export default function LeadCard({ lead }: { lead: Lead }) {
           onClick={e => e.stopPropagation()}
           className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-green-600 dark:text-green-400 border border-green-200 dark:border-green-500/40 rounded-md hover:bg-green-50 dark:hover:bg-green-500/10 transition-colors w-full justify-center"
         >
-          <WhatsAppIcon className="h-3 w-3" />
+          <WhatsAppIcon className="h-3 w-3 wa-default" />
+          <SoccerBallIcon className="h-3 w-3 wa-soccer" />
           WhatsApp
         </a>
                             <Link href={`/dashboard/crm/${lead.id}`} onClick={e => e.stopPropagation()} className="w-full">

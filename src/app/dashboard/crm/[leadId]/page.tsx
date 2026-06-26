@@ -19,6 +19,7 @@ import { getDemoLeadById, getDemoInteractions } from '@/lib/espelho/demoData';
 const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>;
 const PhoneIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>;
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="currentColor" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>;
+const SoccerBallIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="#ffffff" stroke="#1a1a1a" strokeWidth="1.6"/><polygon points="16,10 20.3,13.1 18.7,18.2 13.3,18.2 11.7,13.1" fill="#1a1a1a"/><path d="M16 10 V4 M20.3 13.1 L25.5 9.8 M18.7 18.2 L22.5 23 M13.3 18.2 L9.5 23 M11.7 13.1 L6.5 9.8" stroke="#1a1a1a" strokeWidth="1.6" fill="none"/></svg>;
 const BuildingIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>;
 const TaskIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
 const CheckCircleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>;
@@ -489,7 +490,8 @@ export default function LeadDetailPage() {
                                         className="text-green-500 hover:text-green-600 transition-colors"
                                         onClick={(e) => e.stopPropagation()}
                                     >
-                                    <WhatsAppIcon className="h-3 w-3 fill-current"/>
+                                    <WhatsAppIcon className="h-3 w-3 fill-current wa-default"/>
+                                    <SoccerBallIcon className="h-4 w-4 wa-soccer"/>
                                     </a>
                                 </div>
                         </div>
