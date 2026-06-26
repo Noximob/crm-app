@@ -61,6 +61,24 @@ const ShopIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 const ChevronLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15,18 9,12 15,6"/></svg>;
 
+/** Bandeira do Brasil (simplificada) — usada no tema Copa do Mundo */
+const BrasilFlag = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 28 20" width="28" height="20" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <rect width="28" height="20" rx="2.5" fill="#009C3B" />
+    <path d="M14 2.5 L25.5 10 L14 17.5 L2.5 10 Z" fill="#FFDF00" />
+    <circle cx="14" cy="10" r="4.3" fill="#002776" />
+  </svg>
+);
+
+/** Ícone bola de futebol — botão do tema Copa */
+const BallIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <path d="m12 7 4.5 3.2-1.7 5.3H9.2l-1.7-5.3z" />
+    <path d="M12 2v5M2.5 9l5 1.2M21.5 9l-5 1.2M5.5 20l3.7-4M18.5 20l-3.7-4" />
+  </svg>
+);
+
 // Label do tipo de evento/agenda (igual dashboard)
 function getTipoAgendaLabel(tipo: string): string {
   const map: Record<string, string> = {
@@ -88,7 +106,23 @@ export default function DashboardLayout({
 }) {
   const { currentUser: user, userData, loading, isEspelhoDemo, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+  const [copaTheme, setCopaTheme] = useState(false);
   const router = useRouter();
+
+  // Tema Copa do Mundo: lembra a preferência no navegador
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setCopaTheme(window.localStorage.getItem('copaTheme') === '1');
+    }
+  }, []);
+
+  const toggleCopaTheme = () => {
+    setCopaTheme((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') window.localStorage.setItem('copaTheme', next ? '1' : '0');
+      return next;
+    });
+  };
   const pathname = usePathname();
   const { theme } = useTheme();
   const { notifications, resetNotification } = useNotifications();
@@ -208,7 +242,9 @@ export default function DashboardLayout({
 
   return (
     <PipelineStagesProvider imobiliariaId={userData?.imobiliariaId}>
-    <div className="flex h-screen min-h-screen bg-particles">
+    <div className={`flex h-screen min-h-screen bg-particles ${copaTheme ? 'copa-theme' : ''}`}>
+      {/* Moldura decorativa do tema Copa do Mundo (todas as abas) */}
+      {copaTheme && <div className="copa-frame" aria-hidden="true" />}
       {/* Sidebar — mesmo background (partículas), borda sutil */}
       <div className={`flex flex-col h-screen fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-transparent transition-all duration-300 text-xs pb-8`}>
         <div className="flex-1 flex flex-col">
@@ -325,6 +361,22 @@ export default function DashboardLayout({
             </div>
           )}
           <div className="flex items-center gap-3 shrink-0">
+            {copaTheme && (
+              <BrasilFlag className="rounded-sm shadow-sm hidden sm:block [filter:drop-shadow(0_0_4px_rgba(255,223,0,0.35))]" />
+            )}
+            <button
+              type="button"
+              onClick={toggleCopaTheme}
+              title={copaTheme ? 'Desligar tema Copa do Mundo' : 'Ligar tema Copa do Mundo'}
+              aria-pressed={copaTheme}
+              className={`flex items-center justify-center w-9 h-9 rounded-lg border transition-all ${
+                copaTheme
+                  ? 'copa-toggle-on'
+                  : 'bg-white/[0.06] border-orange-500/20 text-text-secondary hover:text-white hover:bg-white/[0.1]'
+              }`}
+            >
+              <BallIcon className="w-5 h-5" />
+            </button>
             <Link
               href="/dashboard/ideias"
               className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-semibold text-sm transition-all shadow-[0_0_14px_rgba(255,140,0,0.25)] hover:shadow-[0_0_20px_rgba(255,140,0,0.35)]"

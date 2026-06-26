@@ -352,3 +352,54 @@ input:focus {
   background: var(--bg-card);
   transform: translateY(-1px);
 }
+
+/* ===================================================================
+   Tema Copa do Mundo (Brasil) — camada decorativa, ativada por .copa-theme
+   Não altera lógica nem dados; só aparência. Ligado/desligado no cabeçalho.
+   =================================================================== */
+:root {
+  --copa-verde: #009C3B;
+  --copa-amarelo: #FFDF00;
+  --copa-azul: #002776;
+}
+
+/* Moldura verde-amarelo-azul ao redor da tela (vale para todas as abas) */
+.copa-frame {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  padding: 4px;
+  border-radius: 12px;
+  background: linear-gradient(
+    120deg,
+    var(--copa-verde) 0%,
+    var(--copa-amarelo) 40%,
+    var(--copa-amarelo) 60%,
+    var(--copa-azul) 100%
+  );
+  /* deixa só a borda (centro transparente) */
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  animation: copaGlow 4s ease-in-out infinite;
+}
+@keyframes copaGlow {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(0, 156, 59, 0.35)); }
+  50%      { filter: drop-shadow(0 0 11px rgba(255, 223, 0, 0.45)); }
+}
+
+/* Acento sutil no cabeçalho quando o tema está ligado */
+.copa-theme header {
+  border-bottom: 2px solid transparent;
+  border-image: linear-gradient(90deg, var(--copa-verde), var(--copa-amarelo), var(--copa-azul)) 1;
+}
+
+/* Botão do tema quando ativo */
+.copa-toggle-on {
+  background: linear-gradient(135deg, var(--copa-verde), var(--copa-amarelo) 55%, var(--copa-azul)) !important;
+  color: #00351a !important;
+  border-color: rgba(255, 223, 0, 0.6) !important;
+}
