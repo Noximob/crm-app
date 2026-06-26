@@ -403,3 +403,34 @@ input:focus {
   color: #00351a !important;
   border-color: rgba(255, 223, 0, 0.6) !important;
 }
+
+/* Guirlanda de bandeirinhas (verde/amarelo/azul) no topo do conteúdo */
+.copa-bunting {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: 22px;
+  margin: -6px -6px 8px;
+  pointer-events: none;
+  background-repeat: repeat-x;
+  background-position: top center;
+  background-size: 60px 22px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='22'%3E%3Cline x1='0' y1='1.5' x2='60' y2='1.5' stroke='%23ffffff' stroke-opacity='0.3' stroke-width='1'/%3E%3Cpolygon points='2,2 18,2 10,19' fill='%23009C3B'/%3E%3Cpolygon points='22,2 38,2 30,19' fill='%23FFDF00'/%3E%3Cpolygon points='42,2 58,2 50,19' fill='%23002776'/%3E%3C/svg%3E");
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25));
+}
+
+/* Brilho festivo no fundo (verde/amarelo/azul) quando o tema está ligado */
+.copa-theme.bg-particles {
+  background-image:
+    radial-gradient(ellipse 60% 42% at 12% 8%, rgba(0, 156, 59, 0.14) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 42% at 88% 92%, rgba(0, 39, 118, 0.16) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 38% at 50% 45%, rgba(255, 223, 0, 0.06) 0%, transparent 50%),
+    url('/particles-tile.svg');
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100px 100px;
+  background-repeat: no-repeat, no-repeat, no-repeat, repeat;
+}
+
+/* Avatar/destaques com aro dourado no clima Copa */
+.copa-theme header .rounded-full {
+  box-shadow: 0 0 0 2px rgba(255, 223, 0, 0.55);
+}
