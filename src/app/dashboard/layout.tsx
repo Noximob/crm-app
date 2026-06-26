@@ -10,6 +10,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { PipelineStagesProvider } from '@/context/PipelineStagesContext';
 import { AlummaLogoFullInline } from '@/components/AlummaLogo';
+import CopaJogosModal from './_components/CopaJogosModal';
 
 // Ícones
 const AlertTriangleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>;
@@ -129,6 +130,7 @@ export default function DashboardLayout({
 
   // Contagem regressiva para a final da Copa (calculada no cliente p/ evitar mismatch)
   const [diasCopa, setDiasCopa] = useState<number | null>(null);
+  const [showCopaJogos, setShowCopaJogos] = useState(false);
   useEffect(() => {
     const final = new Date('2026-07-19T00:00:00').getTime();
     setDiasCopa(Math.max(0, Math.ceil((final - Date.now()) / 86400000)));
@@ -370,13 +372,16 @@ export default function DashboardLayout({
           )}
           <div className="flex items-center gap-3 shrink-0">
             {copaTheme && diasCopa !== null && (
-              <div
-                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white border border-yellow-300/60 bg-gradient-to-r from-[#009C3B] to-[#002776]"
-                title="Contagem regressiva para a final da Copa"
+              <button
+                type="button"
+                onClick={() => setShowCopaJogos(true)}
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white border border-yellow-300/60 bg-gradient-to-r from-[#009C3B] to-[#002776] hover:brightness-110 transition-all"
+                title="Ver os jogos do Brasil na Copa"
               >
                 <span className="[filter:drop-shadow(0_0_4px_rgba(255,223,0,0.6))]">🏆</span>
                 {diasCopa > 0 ? `Faltam ${diasCopa} dias` : 'É Copa! 🇧🇷'}
-              </div>
+                <svg className="w-3 h-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              </button>
             )}
             {copaTheme && (
               <BrasilFlag className="rounded-sm shadow-sm hidden sm:block [filter:drop-shadow(0_0_4px_rgba(255,223,0,0.35))]" />
@@ -430,6 +435,8 @@ export default function DashboardLayout({
           onClick={() => setCollapsed(false)}
         />
       )}
+
+      <CopaJogosModal isOpen={showCopaJogos} onClose={() => setShowCopaJogos(false)} />
     </div>
     </PipelineStagesProvider>
   );
