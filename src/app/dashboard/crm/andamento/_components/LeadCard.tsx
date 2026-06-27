@@ -3,17 +3,10 @@ import Link from 'next/link';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Lead } from '@/types';
+import { SoccerBallIcon } from '@/components/SoccerBall';
 
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg viewBox="0 0 24 24" fill="currentColor" {...props}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-);
-
-const SoccerBallIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 32 32" fill="none" {...props}>
-    <circle cx="16" cy="16" r="15" fill="#ffffff" stroke="#1a1a1a" strokeWidth="1.6" />
-    <polygon points="16,10 20.3,13.1 18.7,18.2 13.3,18.2 11.7,13.1" fill="#1a1a1a" />
-    <path d="M16 10 V4 M20.3 13.1 L25.5 9.8 M18.7 18.2 L22.5 23 M13.3 18.2 L9.5 23 M11.7 13.1 L6.5 9.8" stroke="#1a1a1a" strokeWidth="1.6" fill="none" />
-  </svg>
 );
 
 export default function LeadCard({ lead }: { lead: Lead }) {

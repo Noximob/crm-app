@@ -10,6 +10,7 @@ import { collection, getDocs, query, where, Timestamp, orderBy, limit, onSnapsho
 import Link from 'next/link';
 import FilterModal, { Filters } from './_components/FilterModal';
 import { getDemoLeads } from '@/lib/espelho/demoData';
+import { SoccerBallIcon } from '@/components/SoccerBall';
 
 // --- Tipos ---
 interface Task {
@@ -48,14 +49,6 @@ const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-/** Bola de futebol — substitui o ícone do WhatsApp no tema Copa do Mundo */
-const SoccerBallIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} viewBox="0 0 32 32" width="24" height="24" fill="none">
-    <circle cx="16" cy="16" r="15" fill="#ffffff" stroke="#1a1a1a" strokeWidth="1.4" />
-    <polygon points="16,10 20.3,13.1 18.7,18.2 13.3,18.2 11.7,13.1" fill="#1a1a1a" />
-    <path d="M16 10 V4 M20.3 13.1 L25.5 9.8 M18.7 18.2 L22.5 23 M13.3 18.2 L9.5 23 M11.7 13.1 L6.5 9.8" stroke="#1a1a1a" strokeWidth="1.4" fill="none" />
-  </svg>
-);
 
 
 // --- Componentes ---

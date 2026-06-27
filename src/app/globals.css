@@ -443,7 +443,11 @@ input:focus {
 /* WhatsApp vira bola de futebol no tema Copa (troca por CSS, sem mexer na lógica) */
 .wa-soccer { display: none; }
 .copa-theme .wa-default { display: none; }
-.copa-theme .wa-soccer { display: inline-block; animation: copaBallSpin 6s linear infinite; }
+.copa-theme .wa-soccer {
+  display: inline-block;
+  animation: copaBallSpin 9s linear infinite;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.35));
+}
 @keyframes copaBallSpin {
   0%   { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
