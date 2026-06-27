@@ -13,7 +13,7 @@
 
 export interface CopaTime {
   nome: string;
-  flag: string; // emoji da bandeira
+  cod: string; // código da bandeira (flagcdn): br, jp, ma, ht, gb-sct...
 }
 
 export interface CopaJogo {
@@ -26,7 +26,7 @@ export interface CopaJogo {
   golsFora: number | null;
 }
 
-const BRASIL: CopaTime = { nome: 'Brasil', flag: '🇧🇷' };
+const BRASIL: CopaTime = { nome: 'Brasil', cod: 'br' };
 
 export const COPA_JOGOS: CopaJogo[] = [
   {
@@ -34,7 +34,7 @@ export const COPA_JOGOS: CopaJogo[] = [
     dataISO: '2026-06-06T16:00:00',
     fase: 'Classificatórias',
     casa: BRASIL,
-    fora: { nome: 'Marrocos', flag: '🇲🇦' },
+    fora: { nome: 'Marrocos', cod: 'ma' },
     golsCasa: 1,
     golsFora: 1,
   },
@@ -43,7 +43,7 @@ export const COPA_JOGOS: CopaJogo[] = [
     dataISO: '2026-06-13T16:00:00',
     fase: 'Classificatórias',
     casa: BRASIL,
-    fora: { nome: 'Haiti', flag: '🇭🇹' },
+    fora: { nome: 'Haiti', cod: 'ht' },
     golsCasa: 3,
     golsFora: 0,
   },
@@ -52,7 +52,7 @@ export const COPA_JOGOS: CopaJogo[] = [
     dataISO: '2026-06-20T16:00:00',
     fase: 'Classificatórias',
     casa: BRASIL,
-    fora: { nome: 'Escócia', flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿' },
+    fora: { nome: 'Escócia', cod: 'gb-sct' },
     golsCasa: 3,
     golsFora: 0,
   },
@@ -61,7 +61,7 @@ export const COPA_JOGOS: CopaJogo[] = [
     dataISO: '2026-06-29T14:00:00',
     fase: '',
     casa: BRASIL,
-    fora: { nome: 'Japão', flag: '🇯🇵' },
+    fora: { nome: 'Japão', cod: 'jp' },
     golsCasa: null,
     golsFora: null,
   },

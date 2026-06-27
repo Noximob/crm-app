@@ -335,8 +335,8 @@ export default function DashboardLayout({
       <div className={`flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300 ${collapsed ? 'ml-16' : 'ml-64'}`}>
         {/* Header: Olá | convites de eventos (1 por vez) | Ideias, moedas, avatar */}
         <header className="h-16 px-5 shrink-0 flex items-center justify-between gap-3">
-          <h2 className="text-lg font-bold text-orange-400 truncate shrink-0">
-            Olá, {displayName}! {copaTheme ? '🇧🇷' : '👋'}
+          <h2 className="text-lg font-bold text-orange-400 truncate shrink-0 flex items-center gap-1.5">
+            Olá, {displayName}! {copaTheme ? <BrasilFlag className="inline-block w-6 h-4 rounded-[2px]" /> : '👋'}
           </h2>
           {convitesPendentes.length > 0 && (
             <div className="flex items-center gap-2 flex-1 min-w-0 justify-center overflow-hidden">
@@ -379,7 +379,7 @@ export default function DashboardLayout({
                 title="Ver os jogos do Brasil na Copa"
               >
                 <span className="[filter:drop-shadow(0_0_4px_rgba(255,223,0,0.6))]">🏆</span>
-                {diasCopa > 0 ? `Faltam ${diasCopa} dias` : 'É Copa! 🇧🇷'}
+                {diasCopa > 0 ? `Faltam ${diasCopa} dias` : 'É Copa! ⚽'}
                 <svg className="w-3 h-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
               </button>
             )}

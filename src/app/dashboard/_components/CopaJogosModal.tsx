@@ -4,50 +4,53 @@ import React, { useMemo } from 'react';
 import { COPA_JOGOS, jogoEncerrado, type CopaJogo } from '@/lib/copaJogos';
 
 function fmtData(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 }
 function fmtHora(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 function diaSemana(iso: string) {
   return new Date(iso).toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
 }
 
+function Flag({ cod, nome }: { cod: string; nome: string }) {
+  return (
+    <img
+      src={`https://flagcdn.com/h20/${cod}.png`}
+      alt={nome}
+      className="h-4 w-auto rounded-[2px] shrink-0 shadow-sm"
+      loading="lazy"
+    />
+  );
+}
+
 function LinhaJogo({ jogo, agora, destaque }: { jogo: CopaJogo; agora: number; destaque?: boolean }) {
-  const encerrado = jogoEncerrado(jogo, agora);
   const temPlacar = jogo.golsCasa !== null && jogo.golsFora !== null;
   return (
     <div
-      className={`flex flex-col px-3 py-2 rounded-lg border ${
+      className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border ${
         destaque ? 'border-yellow-300/60 bg-yellow-400/[0.08]' : 'border-white/10 bg-white/[0.03]'
       }`}
     >
-      <div className="flex items-center justify-center gap-2">
-        <span className="flex items-center gap-1.5 flex-1 justify-end text-[13px] font-semibold text-white truncate">
-          {jogo.casa.nome} <span className="text-xl leading-none">{jogo.casa.flag}</span>
-        </span>
-        <span className="shrink-0 text-center min-w-[58px]">
-          {temPlacar ? (
-            <span className="text-[15px] font-extrabold text-white tabular-nums">
-              {jogo.golsCasa} <span className="text-text-secondary font-normal">x</span> {jogo.golsFora}
-            </span>
-          ) : (
-            <span className="inline-block text-[11px] font-bold text-amber-300 leading-tight">
-              {diaSemana(jogo.dataISO)}<br />{fmtHora(jogo.dataISO)}
-            </span>
-          )}
-        </span>
-        <span className="flex items-center gap-1.5 flex-1 text-[13px] font-semibold text-white truncate">
-          <span className="text-xl leading-none">{jogo.fora.flag}</span> {jogo.fora.nome}
-        </span>
-      </div>
-      <div className="mt-0.5 text-center text-[10px] text-text-secondary">
-        {jogo.fase ? `${jogo.fase} · ` : ''}{fmtData(jogo.dataISO)}
-        {destaque && <span className="ml-1.5 text-amber-300 font-bold">• Próximo</span>}
-        {encerrado && !destaque && <span className="ml-1.5 text-emerald-400/80">• Encerrado</span>}
-      </div>
+      <span className="flex items-center gap-1.5 flex-1 justify-end text-[13px] font-semibold text-white truncate">
+        {jogo.casa.nome} <Flag cod={jogo.casa.cod} nome={jogo.casa.nome} />
+      </span>
+      <span className="shrink-0 text-center min-w-[62px]">
+        {temPlacar ? (
+          <span className="text-[15px] font-extrabold text-white tabular-nums">
+            {jogo.golsCasa} <span className="text-text-secondary font-normal">x</span> {jogo.golsFora}
+          </span>
+        ) : (
+          <span className="inline-block text-[11px] font-bold text-amber-300 leading-tight">
+            {diaSemana(jogo.dataISO)} {fmtData(jogo.dataISO)}
+            <br />
+            {fmtHora(jogo.dataISO)}
+          </span>
+        )}
+      </span>
+      <span className="flex items-center gap-1.5 flex-1 text-[13px] font-semibold text-white truncate">
+        <Flag cod={jogo.fora.cod} nome={jogo.fora.nome} /> {jogo.fora.nome}
+      </span>
     </div>
   );
 }
@@ -85,7 +88,7 @@ export default function CopaJogosModal({ isOpen, onClose }: { isOpen: boolean; o
         {/* Banner motivacional */}
         <div className="px-4 py-2 text-center" style={{ background: 'linear-gradient(90deg,#009C3B,#002776)' }}>
           <p className="text-sm font-extrabold tracking-wide text-yellow-300 [text-shadow:0_1px_2px_rgba(0,0,0,0.4)]">
-            🇧🇷 RUMO AO HEXA! Bora pra cima, Brasil! ⚽
+            RUMO AO HEXA! Bora pra cima, Brasil! ⚽
           </p>
         </div>
 
@@ -111,10 +114,6 @@ export default function CopaJogosModal({ isOpen, onClose }: { isOpen: boolean; o
               </div>
             </div>
           )}
-
-          <p className="text-[10px] text-text-secondary text-center">
-            Jogos e placares editáveis em <code className="text-amber-300/80">src/lib/copaJogos.ts</code>
-          </p>
         </div>
       </div>
     </div>
