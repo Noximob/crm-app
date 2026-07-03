@@ -288,6 +288,9 @@
   @media(max-width:620px){.rel-kpis{grid-template-columns:repeat(2,1fr)}.mn-year{flex-direction:column;gap:4px}}
   .role-select{font-size:11px;font-weight:700;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:var(--card);color:var(--ink-text);cursor:pointer;width:96px}
   .role-select:focus{outline:none;border-color:var(--brass);box-shadow:0 0 0 3px var(--brass-soft)}
+  .crm-link{font-size:11px;border:1px dashed var(--line);border-radius:6px;padding:4px 6px;background:#faf8f3;color:var(--muted);cursor:pointer;max-width:150px}
+  .crm-link:focus{outline:none;border-color:var(--teal);color:var(--ink-text)}
+  .crm-link.linked{border-style:solid;border-color:var(--teal);color:var(--teal);background:var(--teal-soft)}
   .name-input{flex:1;min-width:80px;border:1px solid transparent;background:transparent;border-radius:6px;padding:6px 8px;font-size:14px;font-weight:600;color:var(--ink-text)}
   .name-input:hover{background:#faf8f3}
   .name-input:focus{outline:none;border-color:var(--brass);background:#fff;box-shadow:0 0 0 3px var(--brass-soft)}
@@ -1079,6 +1082,7 @@ function buildTeams(){
         <div class="person-head">
           <span class="role-chip mgr">Gerente</span>
           <input class="name-input" data-ti="${ti}" data-k="mgrname" value="${esc(tm.mgr.name)}" placeholder="Nome do gerente">
+          <select class="crm-link${tm.mgr.uid?' linked':''}" data-ti="${ti}" data-role="m" data-k3="crmlink" title="Vincular ao usuário do CRM">${crmOptions(tm.mgr.uid)}</select>
           <span class="person-total" id="ptot-${ti}-m-x"><b>${fmt(mTot)}</b> · ${tm.mgr.deals.length} ${tm.mgr.deals.length===1?'venda':'vendas'}</span>
           <span class="x-btn ghost">✕</span>
         </div>
@@ -1093,6 +1097,7 @@ function buildTeams(){
             <option value="sdr"${b.type==='sdr'?' selected':''}>SDR</option>
           </select>
           <input class="name-input" data-ti="${ti}" data-bi="${bi}" data-k="brname" value="${esc(b.name)}" placeholder="Nome">
+          <select class="crm-link${b.uid?' linked':''}" data-ti="${ti}" data-bi="${bi}" data-role="b" data-k3="crmlink" title="Vincular ao usuário do CRM">${crmOptions(b.uid)}</select>
           <span class="person-total" id="ptot-${ti}-b-${bi}"><b>${fmt(t)}</b> · ${b.deals.length} ${b.deals.length===1?'venda':'vendas'}</span>
           <button class="x-btn" data-act="delbroker" data-ti="${ti}" data-bi="${bi}" title="Remover">✕</button>
         </div>
@@ -1115,6 +1120,7 @@ function buildSolos(){
         <div class="person-head">
           <span class="role-chip solo">Sem equipe</span>
           <input class="name-input" data-ti="${si}" data-k="soloname" value="${esc(s.name)}" placeholder="Nome do corretor">
+          <select class="crm-link${s.uid?' linked':''}" data-ti="${si}" data-role="s" data-k3="crmlink" title="Vincular ao usuário do CRM">${crmOptions(s.uid)}</select>
           <span class="person-total" id="ptot-${si}-s-x"><b>${fmt(t)}</b> · ${s.deals.length} ${s.deals.length===1?'venda':'vendas'}</span>
           <button class="x-btn" data-act="delsolo" data-ti="${si}" data-role="s" title="Remover">✕</button>
         </div>
@@ -1140,6 +1146,17 @@ function bindInputs(){
     sel.addEventListener('change',e=>{
       teams[+e.target.dataset.ti].brokers[+e.target.dataset.bi].type=e.target.value;
       renderAll();
+    });
+  });
+  // vínculo pessoa ⇄ usuário do CRM
+  document.querySelectorAll('select[data-k3="crmlink"]').forEach(sel=>{
+    sel.addEventListener('change',e=>{
+      const ti=+e.target.dataset.ti, role=e.target.dataset.role, bi=e.target.dataset.bi!=null?+e.target.dataset.bi:null;
+      const p=personFrom(ti,role,bi), uid=e.target.value;
+      const u=(typeof CRM!=='undefined') ? CRM.users.find(x=>x.uid===uid) : null;
+      p.uid=uid||null; p.crmName=u?u.nome:null; p.crmEmail=u?u.email:null;
+      e.target.classList.toggle('linked', !!uid);
+      saveState();
     });
   });
   // edição inline de valor / parcelas de cada venda
@@ -1404,6 +1421,7 @@ function buildCorSelect(){
 
 // ---------- meta simulator ----------
 let metaMode='ganho';
+let goals={}; // meta por pessoa (vínculo CRM): goals[uid] = {alvo, mode}
 // inverte a comissão do corretor (2 faixas): dado o ganho, acha o VGV
 function vgvForEarnings(E){
   const NET=netRate(), T=cfgTarget(), B=cfgBand();
@@ -1534,6 +1552,7 @@ function saveState(){
     const data={
       cfg:{tax:v('cfgTax'),target:v('cfgTarget'),band:v('cfgBand'),start:v('cfgStart'),end:v('cfgEnd'),pol:POL},
       meta:{ticket:v('mTicket'),contatos:v('mContatos'),reunioes:v('mReunioes'),visitas:v('mVisitas'),propostas:v('mPropostas'),fechamentos:v('mFechamentos'),alvo:v('mAlvo'),mode:metaMode},
+      goals,
       teams, solos, cashEntries, archives, events, seq
     };
     localStorage.setItem(LS_KEY, JSON.stringify(data));
@@ -1571,6 +1590,7 @@ function loadState(){
         document.getElementById('mAlvoLabel').textContent = metaMode==='ganho'?'Ganho desejado (R$)':'VGV desejado (R$)';
       }
     }
+    goals = (data.goals && typeof data.goals==='object') ? data.goals : {};
     if(Array.isArray(data.teams) && data.teams.length){
       teams=data.teams; seq=data.seq||teams.length;
       const normSch=arr=>{ let s=(Array.isArray(arr)&&arr.length)?arr.map(x=>({pct:+x.pct||0,month:x.month||'',done:!!x.done,paid:!!x.paid})):[{pct:100,month:'',done:false,paid:false}]; if(s.length>2){ s=[{pct:50,month:s[0].month,done:s[0].done,paid:s[0].paid},{pct:50,month:s[1].month,done:s[1].done,paid:s[1].paid}]; } return s; };
@@ -1578,7 +1598,7 @@ function loadState(){
       teams.forEach(tm=>{ delete tm.mgr.schedule; normDeals(tm.mgr); tm.brokers.forEach(b=>{ delete b.schedule; if(!b.type) b.type='corretor'; normDeals(b); }); });
       solos=Array.isArray(data.solos)?data.solos:[];
       // migra quem ficou marcado como 'solo' dentro de uma equipe para a seção própria
-      teams.forEach(tm=>{ for(let i=tm.brokers.length-1;i>=0;i--){ if(tm.brokers[i].type==='solo'){ const mv=tm.brokers.splice(i,1)[0]; solos.unshift({name:mv.name,type:'solo',deals:mv.deals}); } } });
+      teams.forEach(tm=>{ for(let i=tm.brokers.length-1;i>=0;i--){ if(tm.brokers[i].type==='solo'){ const mv=tm.brokers.splice(i,1)[0]; solos.unshift({name:mv.name,type:'solo',deals:mv.deals,uid:mv.uid,crmName:mv.crmName,crmEmail:mv.crmEmail}); } } });
       solos.forEach(s=>{ s.type='solo'; delete s.schedule; normDeals(s); });
     }
   }catch(e){}
@@ -2208,13 +2228,13 @@ document.getElementById('resetData').addEventListener('click',()=>{
   }
 });
 
-// meta simulator wiring (salva a última estimativa ao editar)
-['mTicket','mContatos','mReunioes','mVisitas','mPropostas','mFechamentos','mAlvo'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{ renderMeta(); saveState(); }));
+// meta simulator wiring (salva a última estimativa ao editar; meta por pessoa no modo view)
+['mTicket','mContatos','mReunioes','mVisitas','mPropostas','mFechamentos','mAlvo'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{ renderMeta(); persistMyGoal(); saveState(); }));
 document.querySelectorAll('#metaMode .tg').forEach(b=>b.onclick=()=>{
   metaMode=b.dataset.mode;
   document.querySelectorAll('#metaMode .tg').forEach(x=>x.classList.toggle('active',x===b));
   document.getElementById('mAlvoLabel').textContent = metaMode==='ganho'?'Ganho desejado (R$)':'VGV desejado (R$)';
-  renderMeta(); saveState();
+  renderMeta(); persistMyGoal(); saveState();
 });
 
 // login (usuário/senha fixos — ver constante AUTH)
@@ -2228,22 +2248,97 @@ try{ if(sessionStorage.getItem('nox_auth')==='1') unlock(); }catch(e){}
 document.getElementById('loginBtn').addEventListener('click',tryLogin);
 ['loginUser','loginPass'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); tryLogin(); } }));
 
-// ===== Modo embutido no CRM (?mode=admin | ?mode=view) =====
-// Sem mexer na lógica: só libera o login interno (o CRM já autentica),
-// esconde header/rodapé e mostra apenas as abas de cada área.
+// ===== Integração com o CRM (embutido via iframe) =====
+// O CRM (autenticado) manda a lista de usuários e quem está logado via postMessage.
+// Guardamos só o vínculo (uid) no estado. Papéis (gerente/corretor/SDR/autônomo) já existem.
+let CRM = { users: [], me: null };
+const currentMode = new URLSearchParams(location.search).get('mode'); // 'admin' | 'view' | null
+
+function crmOptions(uid){
+  let h = '<option value="">— sem vínculo —</option>';
+  (CRM.users||[]).forEach(u=>{ h += `<option value="${esc(u.uid)}"${u.uid===uid?' selected':''}>${esc(u.nome||u.email||u.uid)}</option>`; });
+  return h;
+}
+function personByUid(uid){
+  if(!uid) return null;
+  for(let ti=0;ti<teams.length;ti++){ if(teams[ti].mgr.uid===uid) return {kind:'mgr',ti}; for(let bi=0;bi<teams[ti].brokers.length;bi++) if(teams[ti].brokers[bi].uid===uid) return {kind:'broker',ti,bi}; }
+  for(let si=0;si<solos.length;si++) if(solos[si].uid===uid) return {kind:'solo',si};
+  return null;
+}
+function findMyPerson(){
+  if(!CRM.me) return null;
+  const byUid=personByUid(CRM.me.uid); if(byUid) return byUid;
+  const email=(CRM.me.email||'').trim().toLowerCase(), nome=(CRM.me.nome||'').trim().toLowerCase();
+  const m=p=> (email && (p.crmEmail||'').trim().toLowerCase()===email) || (nome && (p.name||'').trim().toLowerCase()===nome);
+  for(let ti=0;ti<teams.length;ti++){ if(m(teams[ti].mgr)) return {kind:'mgr',ti}; for(let bi=0;bi<teams[ti].brokers.length;bi++) if(m(teams[ti].brokers[bi])) return {kind:'broker',ti,bi}; }
+  for(let si=0;si<solos.length;si++) if(m(solos[si])) return {kind:'solo',si};
+  return null;
+}
+function lockSel(id){ const s=document.getElementById(id); if(!s) return; s.style.display='none'; const lab=s.parentElement&&s.parentElement.querySelector('label'); if(lab) lab.style.display='none'; }
+function setMetricsLocked(on){
+  ['mTicket','mContatos','mReunioes','mVisitas','mPropostas','mFechamentos'].forEach(id=>{ const el=document.getElementById(id); if(el){ el.disabled=on; el.style.opacity=on?'0.65':''; el.style.cursor=on?'not-allowed':''; } });
+  const eb=document.querySelector('#tab-meta .eyebrow'); if(eb) eb.textContent = on ? 'Métricas — definidas pela administração' : 'Métricas — edite conforme sua realidade';
+}
+function loadMyGoal(){
+  if(!CRM.me) return;
+  const g=goals[CRM.me.uid];
+  if(g){ const a=document.getElementById('mAlvo'); if(a) a.value=g.alvo;
+    if(g.mode){ metaMode=g.mode; document.querySelectorAll('#metaMode .tg').forEach(x=>x.classList.toggle('active',x.dataset.mode===metaMode)); const lb=document.getElementById('mAlvoLabel'); if(lb) lb.textContent = metaMode==='ganho'?'Ganho desejado (R$)':'VGV desejado (R$)'; }
+  }
+  renderMeta();
+}
+function persistMyGoal(){ if(currentMode==='view' && CRM.me){ goals[CRM.me.uid]={ alvo:+document.getElementById('mAlvo').value||0, mode:metaMode }; } }
+let _notice=null, _viewLanded=false;
+function showViewNotice(msg){
+  if(!_notice){ _notice=document.createElement('div'); _notice.style.cssText='background:#fef3c7;border:1px solid #f0d38a;color:#7a5b13;border-radius:10px;padding:12px 16px;margin:0 0 16px;font-size:13.5px;line-height:1.5'; const tabsEl=document.querySelector('.tabs'); if(tabsEl&&tabsEl.parentNode) tabsEl.parentNode.insertBefore(_notice, tabsEl.nextSibling); }
+  _notice.textContent=msg||''; _notice.style.display=msg?'':'none';
+}
+function refreshView(){
+  if(currentMode!=='view') return;
+  const tabs=[...document.querySelectorAll('.tab')];
+  const me=findMyPerson();
+  setMetricsLocked(true);
+  let reportTab=null;
+  if(me && me.kind==='mgr'){ reportTab='ger'; gerSel=me.ti; buildGerSelect(); lockSel('gerSelect'); renderGer(); }
+  else if(me && me.kind==='broker'){ reportTab='cor'; corSel=`${me.ti}:${me.bi}`; buildCorSelect(); lockSel('corSelect'); renderCor(); }
+  else if(me && me.kind==='solo'){ reportTab='cor'; corSel=`s:${me.si}`; buildCorSelect(); lockSel('corSelect'); renderCor(); }
+  const shown = reportTab ? [reportTab,'meta'] : ['meta'];
+  tabs.forEach(t=> t.style.display = shown.includes(t.dataset.tab)?'':'none');
+  if(reportTab && !_viewLanded){ _viewLanded=true; const tb=tabs.find(t=>t.dataset.tab===reportTab); if(tb) tb.click(); }
+  else { const cur=document.querySelector('.tab.active'); if(!cur || cur.style.display==='none'){ const first=tabs.find(t=>shown.includes(t.dataset.tab)); if(first) first.click(); } }
+  loadMyGoal();
+  showViewNotice(me ? '' : 'Seu usuário ainda não está vinculado a uma pessoa nas equipes. Você pode usar a calculadora de meta abaixo; peça para a administração vincular você em Comissões para ver seus ganhos.');
+}
+function applyCRM(){
+  if(currentMode==='admin'){ buildAll(); renderAll(); }
+  else if(currentMode==='view'){ refreshView(); }
+}
+window.addEventListener('message', e=>{
+  const d=e.data; if(!d || !d.__noxCRM) return;
+  if(Array.isArray(d.users)) CRM.users=d.users;
+  if(d.me) CRM.me=d.me;
+  applyCRM();
+});
+
+// Modo embutido: libera login interno, esconde header/rodapé e filtra abas por área/pessoa
 (function(){
-  const mode = new URLSearchParams(location.search).get('mode');
-  if(!mode) return; // aberto direto = app completo, comportamento normal
+  if(!currentMode) return; // aberto direto = app completo, comportamento normal
   try{ sessionStorage.setItem('nox_auth','1'); }catch(e){}
-  const login = document.getElementById('login'); if(login) login.style.display='none';
+  const login=document.getElementById('login'); if(login) login.style.display='none';
   document.querySelectorAll('header, footer').forEach(el=>el.style.display='none');
-  const wrap = document.querySelector('.wrap'); if(wrap) wrap.style.padding='12px 20px 60px';
-  const ALLOWED = mode==='admin' ? ['admin','eventos','rel'] : ['ger','cor','meta'];
-  const tabs = [...document.querySelectorAll('.tab')];
-  tabs.forEach(t=>{ if(!ALLOWED.includes(t.dataset.tab)) t.style.display='none'; });
-  const activate = ()=>{ const first=tabs.find(t=>ALLOWED.includes(t.dataset.tab)); if(first) first.click(); };
-  activate();                                   // mostra já a aba certa (sem flash)
-  document.addEventListener('nox-ready', activate); // re-renderiza com os dados da nuvem
+  const wrap=document.querySelector('.wrap'); if(wrap) wrap.style.padding='12px 20px 60px';
+  const tabs=[...document.querySelectorAll('.tab')];
+  if(currentMode==='view'){
+    // até saber quem está logado, mostra só a calculadora (evita flash do restante)
+    tabs.forEach(t=> t.style.display=(t.dataset.tab==='meta')?'':'none');
+    const meta=tabs.find(t=>t.dataset.tab==='meta'); if(meta) meta.click();
+    setMetricsLocked(true);
+    document.addEventListener('nox-ready', refreshView);
+  } else { // admin: vê tudo (Administrativa, Gerente, Corretor, Eventos, Calculadora, Relatórios)
+    const first=tabs.find(t=>t.dataset.tab==='admin'); if(first) first.click();
+  }
+  // avisa o CRM que o iframe está pronto pra receber os dados
+  try{ if(parent && parent!==window) parent.postMessage({__noxCommReady:1},'*'); }catch(e){}
 })();
 
 // init

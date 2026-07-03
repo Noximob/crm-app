@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
+import ComissoesEmbed from '@/components/ComissoesEmbed';
 
 export default function AdminComissoesPage() {
   const { userData } = useAuth();
@@ -13,15 +14,10 @@ export default function AdminComissoesPage() {
     <div className="flex flex-col h-full min-h-0">
       <div className="px-4 pt-4 pb-2">
         <h1 className="text-2xl font-bold text-white">Comissões — Administrativo</h1>
-        <p className="text-sm text-text-secondary">Configure imposto, meta, política de comissão e lance as vendas por equipe. É o que alimenta as visões do corretor e do gerente.</p>
+        <p className="text-sm text-text-secondary">Configure imposto, meta, métricas da calculadora e política; lance as vendas e vincule cada pessoa ao usuário do CRM (gerente, corretor, SDR ou autônomo).</p>
       </div>
       <div className="flex-1 min-h-0 px-2 pb-2">
-        <iframe
-          src="/comissoes/index.html?mode=admin"
-          title="Comissões — Administrativo"
-          className="w-full h-full rounded-xl border border-white/10 bg-[#f7f5f0]"
-          style={{ minHeight: 'calc(100vh - 140px)' }}
-        />
+        <ComissoesEmbed mode="admin" />
       </div>
     </div>
   );
