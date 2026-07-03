@@ -61,6 +61,17 @@ export default function MateriaisPage() {
     return map;
   }, [construtoras]);
 
+  // Construtoras sem duplicatas (a base pode ter nomes repetidos)
+  const construtorasView = useMemo(() => {
+    const seen = new Set<string>();
+    return construtoras.filter((c) => {
+      const k = (c.name || '').trim().toLowerCase();
+      if (!k || seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  }, [construtoras]);
+
   const listaFiltrada = useMemo(() => {
     const q = busca.trim().toLowerCase();
     return imoveis.filter((p) => {
@@ -139,7 +150,7 @@ export default function MateriaisPage() {
                   >
                     Todas
                   </button>
-                  {construtoras.map((c) => (
+                  {construtorasView.map((c) => (
                     <button
                       key={c.id}
                       onClick={() => setFiltroCo(c.name)}
@@ -151,7 +162,7 @@ export default function MateriaisPage() {
                   ))}
                 </div>
               </div>
-              <div className="max-h-80 overflow-y-auto scrollbar-thin p-2 space-y-1">
+              <div className="max-h-[60vh] overflow-y-auto scrollbar-thin p-2 space-y-1">
                 {listaFiltrada.map((p) => (
                   <button
                     key={p.id}
