@@ -40,6 +40,19 @@ const categorias = [
 ];
 
 export default function TreinamentosPage() {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center text-center py-24">
+      <div className="text-6xl mb-4">🚧</div>
+      <h1 className="text-2xl font-bold text-white mb-1">Academia</h1>
+      <p className="text-lg font-semibold text-amber-400">Em Construção</p>
+      <p className="text-sm text-text-secondary mt-2">Novos treinamentos chegando em breve.</p>
+    </div>
+  );
+}
+
+// Código completo da Academia preservado abaixo (é só voltar a usar este como default quando pronto).
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function AcademiaOriginal() {
   const { userData, currentUser, isEspelhoDemo } = useAuth();
   const [treinamentos, setTreinamentos] = useState<Treinamento[]>([]);
   const [loading, setLoading] = useState(true);
