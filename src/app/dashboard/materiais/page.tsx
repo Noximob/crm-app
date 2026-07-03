@@ -93,7 +93,8 @@ export default function MateriaisPage() {
     CATEGORIES.forEach((c) => {
       if (matsOf(sel, c.key).length) arr.push({ key: c.key, label: c.label });
     });
-    if (sel.end || sel.cid) arr.push({ key: 'local', label: 'Localização' });
+    // Localização: mostra se houver material de localização OU endereço cadastrado
+    if (!arr.some((x) => x.key === 'localizacao') && (sel.end || sel.cid)) arr.push({ key: 'localizacao', label: 'Localização' });
     return arr;
   }, [sel]);
 
@@ -304,11 +305,20 @@ function TabConteudo({ imovel, tab, onLightbox }: { imovel: Imovel; tab: string;
     );
   }
 
-  if (tab === 'local') {
-    const q = encodeURIComponent([imovel.end, imovel.cid].filter(Boolean).join(', '));
+  if (tab === 'localizacao') {
+    const locMat = matsOf(imovel, 'localizacao')[0];
+    const link = locMat?.url?.trim();
+    const q = encodeURIComponent(link || [imovel.end, imovel.cid].filter(Boolean).join(', '));
     return (
-      <div className="rounded-xl overflow-hidden border border-white/10 h-[420px]">
-        <iframe title="Mapa" className="w-full h-full" src={`https://www.google.com/maps?q=${q}&output=embed`} />
+      <div>
+        {link && (
+          <div className="mb-2">
+            <a href={link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-md border border-white/15 text-white/80 hover:bg-white/5">Abrir no Google Maps</a>
+          </div>
+        )}
+        <div className="rounded-xl overflow-hidden border border-white/10 h-[420px]">
+          <iframe title="Mapa" className="w-full h-full" src={`https://www.google.com/maps?q=${q}&output=embed`} />
+        </div>
       </div>
     );
   }

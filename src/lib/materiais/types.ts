@@ -15,7 +15,8 @@ export type MaterialCat =
   | 'decorado'
   | 'imagens'
   | 'video'
-  | 'links';
+  | 'links'
+  | 'localizacao';
 
 export interface Material {
   cat: MaterialCat | string;
@@ -67,6 +68,7 @@ export const CATEGORIES: CategoriaMaterial[] = [
   { key: 'imagens', label: 'Imagens', kind: 'image' },
   { key: 'video', label: 'Vídeos', kind: 'video' },
   { key: 'links', label: 'Links', kind: 'linklist' },
+  { key: 'localizacao', label: 'Localização', kind: 'link', single: true },
 ];
 
 export const catByKey = (k: string) => CATEGORIES.find((c) => c.key === k);

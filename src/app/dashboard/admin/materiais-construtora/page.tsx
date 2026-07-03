@@ -174,9 +174,9 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
   const [salvando, setSalvando] = useState(false);
   const [err, setErr] = useState('');
 
-  const imgMats = materiais.filter((m) => catByKey(m.cat)?.kind === 'image');
   const kind = catByKey(mCat)?.kind;
-  const isArquivo = kind === 'pdf' || kind === 'image' || kind === 'video'; // upload; senão (link/linklist) é link
+  // upload de arquivo p/ pdf/imagem/vídeo e p/ Capa; link p/ Tabela/Links/Localização
+  const isArquivo = mCat === 'capa' || kind === 'pdf' || kind === 'image' || kind === 'video';
 
   const addLink = () => {
     if (!mUrl.trim()) { setErr('Cole o link.'); return; }
@@ -197,7 +197,8 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
       (error) => { setErr('Erro no upload: ' + error.message); setProg(null); },
       async () => {
         const url = await getDownloadURL(task.snapshot.ref);
-        setMateriais((prev) => [...prev, { cat, name, url }]);
+        if (cat === 'capa') setCapa(url); // Capa define a foto do topo (não vira material)
+        else setMateriais((prev) => [...prev, { cat, name, url }]);
         setProg(null); setMName('');
       }
     );
@@ -299,7 +300,7 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
           {/* Materiais */}
           <div className="rounded-xl border border-white/10 p-3">
             <p className="text-xs font-bold uppercase tracking-wide text-text-secondary mb-1">Materiais</p>
-            <p className="text-[11px] text-text-secondary mb-3">Escolha o <b>Tipo</b>, dê um <b>Nome</b> e <b>envie o arquivo</b> — sobe pro Storage e abre direto aqui pro corretor. (Só <b>Tabela</b> e <b>Links</b> usam link.)</p>
+            <p className="text-[11px] text-text-secondary mb-3">Escolha o <b>Tipo</b>, dê um <b>Nome</b> e <b>envie o arquivo</b> — sobe pro Storage e abre direto aqui pro corretor. (<b>Tabela</b>, <b>Links</b> e <b>Localização</b> usam link; <b>Capa</b> define a foto do topo.)</p>
 
             <div className="space-y-1 mb-3">
               {materiais.map((m, i) => (
@@ -318,6 +319,7 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
                   <label className="block text-[11px] text-text-secondary mb-1">Tipo</label>
                   <select value={mCat} onChange={(ev) => { setMCat(ev.target.value); setErr(''); }} className={SEL}>
                     {CATEGORIES.map((c) => <option key={c.key} value={c.key} className={OPT}>{c.label}</option>)}
+                    <option value="capa" className={OPT}>Capa (foto do topo)</option>
                   </select>
                 </div>
                 <div>
@@ -336,19 +338,23 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
                 </div>
               ) : (
                 <div className="flex gap-2">
-                  <input value={mUrl} onChange={(ev) => setMUrl(ev.target.value)} placeholder={mCat === 'tabela' ? 'link da tabela de valores' : 'colar o link'} className={INP} />
+                  <input value={mUrl} onChange={(ev) => setMUrl(ev.target.value)} placeholder={mCat === 'localizacao' ? 'link do Google Maps' : mCat === 'tabela' ? 'link da tabela de valores' : 'colar o link'} className={INP} />
                   <button onClick={addLink} className="px-4 py-2 rounded-lg bg-amber-500 text-black font-semibold text-sm hover:bg-amber-400 whitespace-nowrap">Adicionar</button>
                 </div>
               )}
             </div>
 
-            <div className="mt-3 pt-3 border-t border-white/10">
-              <label className="block text-[11px] text-text-secondary mb-1">⭐ Foto de capa (retângulo do topo)</label>
-              <select value={capa} onChange={(ev) => setCapa(ev.target.value)} className={SEL}>
-                <option value="" className={OPT}>Primeira imagem (automático)</option>
-                {imgMats.map((m, i) => <option key={i} value={m.url} className={OPT}>{m.name || m.url}</option>)}
-              </select>
-              <p className="text-[11px] text-text-secondary mt-1">Adicione imagens primeiro para poder escolher.</p>
+            <div className="mt-3 pt-3 border-t border-white/10 flex items-center gap-3">
+              <span className="text-[11px] text-text-secondary">⭐ Capa do topo:</span>
+              {capa ? (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={capa} alt="capa" className="h-10 w-16 object-cover rounded border border-white/15" />
+                  <button onClick={() => setCapa('')} className="text-xs text-red-400 hover:text-red-300">remover</button>
+                </>
+              ) : (
+                <span className="text-[11px] text-text-secondary">automática (1ª imagem). Para definir, escolha o tipo <b>“Capa (foto do topo)”</b> e envie a foto.</span>
+              )}
             </div>
           </div>
 
