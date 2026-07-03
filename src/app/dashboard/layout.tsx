@@ -237,7 +237,6 @@ export default function DashboardLayout({
     { href: '/dashboard/treinamentos', icon: PresentationIcon, label: 'Academia' },
     { href: '/dashboard/comunidade', icon: CommunityIcon, label: 'Comunidade', notifications: notifications.comunidade },
     { href: '/dashboard/pagamentos', icon: CreditCardIcon, label: 'Alumma Pró' },
-    { href: '/dashboard/shop', icon: ShopIcon, label: 'Shop', isShop: true },
     // Exibir admin se for imobiliaria OU tiver permissao admin
     ...((userDataWithPerms?.tipoConta === 'imobiliaria' || userDataWithPerms?.permissoes?.admin) ? [
     { href: '/dashboard/admin', icon: KeyIcon, label: 'Área administrador' },
