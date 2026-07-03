@@ -6,12 +6,15 @@ import { apoioDb } from '@/lib/apoioFirebase';
 import { CATEGORIES, catByKey, type Construtora, type Imovel, type Material } from '@/lib/materiais/types';
 import { toCdn, youtubeId, waLink, encaminharWhatsApp } from '@/lib/materiais/toCdn';
 
+function matsArr(p: Imovel): Material[] {
+  return Array.isArray(p.materiais) ? p.materiais : [];
+}
 function matsOf(p: Imovel, key: string): Material[] {
-  return (p.materiais || []).filter((m) => m.cat === key);
+  return matsArr(p).filter((m) => m && m.cat === key);
 }
 function coverImg(p: Imovel): string | null {
   if (p.capa) return toCdn(p.capa);
-  const m = (p.materiais || []).find((x) => x.cat === 'imagens' || catByKey(x.cat)?.kind === 'image');
+  const m = matsArr(p).find((x) => x.cat === 'imagens' || catByKey(x.cat)?.kind === 'image');
   return m ? toCdn(m.url) : null;
 }
 
@@ -236,7 +239,7 @@ function TabConteudo({ imovel, tab, onLightbox }: { imovel: Imovel; tab: string;
           </div>
         )}
         {imovel.resumo && <p className="text-sm text-text-secondary whitespace-pre-line leading-relaxed">{imovel.resumo}</p>}
-        {imovel.tip && imovel.tip.length > 0 && (
+        {Array.isArray(imovel.tip) && imovel.tip.length > 0 && (
           <div>
             <h3 className="text-sm font-bold text-white mb-2">Tipologias</h3>
             <div className="grid sm:grid-cols-2 gap-2">
@@ -249,7 +252,7 @@ function TabConteudo({ imovel, tab, onLightbox }: { imovel: Imovel; tab: string;
             </div>
           </div>
         )}
-        {imovel.dif && imovel.dif.length > 0 && (
+        {Array.isArray(imovel.dif) && imovel.dif.length > 0 && (
           <div>
             <h3 className="text-sm font-bold text-white mb-2">Diferenciais</h3>
             <div className="flex flex-wrap gap-1.5">

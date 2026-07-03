@@ -1,5 +1,5 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp, getApps, getApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
@@ -15,9 +15,9 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-// A lógica getApps().length ? getApp() : initializeApp(firebaseConfig) 
-// evita que o app seja inicializado múltiplas vezes no ambiente de desenvolvimento
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+// Busca especificamente o app padrão ('[DEFAULT]') — assim continua funcionando mesmo
+// quando existe um segundo app nomeado (ex.: 'apoio' para o material de apoio).
+const app = getApps().find((a) => a.name === '[DEFAULT]') ?? initializeApp(firebaseConfig);
 const auth = getAuth(app);
 // Garantir persistência local para a sessão não sumir ao fechar aba ou ficar muito tempo inativo
 setPersistence(auth, browserLocalPersistence).catch(() => {});
