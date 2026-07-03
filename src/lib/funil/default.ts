@@ -29,7 +29,7 @@ export const FUNIL_DEFAULT: FunilConfig = {
       pergunta: 'O que aconteceu?',
       choices: [
         { label: 'Cliente atendeu', icon: '📞', target: 'call1_answered' },
-        { label: 'Cliente não atendeu', icon: '☎️', target: 'call1_no_answer' },
+        { label: 'Cliente não atendeu', icon: '☎️', desc: 'Sequência de follow-up até o encerramento', target: 'sem_resposta' },
       ],
     },
     {
@@ -47,15 +47,6 @@ export const FUNIL_DEFAULT: FunilConfig = {
         { label: 'Cliente perguntou outra coisa', icon: '💬', desc: 'Desviou da pergunta inicial', target: 'qual_outra' },
       ],
     },
-    {
-      id: 'call1_no_answer',
-      eyebrow: 'Etapa 01',
-      titulo: 'Cliente não atendeu',
-      descricao: 'Depois da primeira ligação sem resposta, envie uma mensagem explicando o motivo do contato e avisando que tentará ligar novamente em outro horário.',
-      mensagem: 'Bom dia, [Nome]! Tudo bem? Aqui é [Seu nome], da Nox Imóveis.\n\nRecebi seu contato pelo anúncio do [Produto] e tentei te ligar agora há pouco pra entender melhor o que você está buscando.\n\nComo não conseguimos conversar, vou tentar te ligar novamente às [Horário], que talvez você esteja mais tranquilo.',
-      choices: [{ label: 'Registrar 2ª tentativa de ligação', icon: '➡️', target: 'call2' }],
-    },
-
     // ETAPA 02 — QUALIFICAÇÃO
     {
       id: 'qual_moradia',
@@ -256,64 +247,41 @@ export const FUNIL_DEFAULT: FunilConfig = {
       mensagem: 'Sem problemas, [Nome]. Vou deixar você mais à vontade por aqui. Se em algum momento quiser avaliar alguma opção aqui no Litoral, fico por aqui pra te ajudar.',
     },
 
-    // ETAPA 05 — FOLLOW-UP
+    // SEM RESPOSTA — sequência de follow-up numa página só (menos clique)
     {
-      id: 'call2',
-      eyebrow: 'Etapa 02',
-      titulo: 'Segunda tentativa',
-      descricao: 'Tente ligar novamente no horário informado ao cliente. Depois selecione o resultado.',
-      pergunta: 'O que aconteceu?',
-      choices: [
-        { label: 'Cliente atendeu', icon: '📞', desc: 'Mesmo script da ligação 1', target: 'call1_answered' },
-        { label: 'Cliente não atendeu', icon: '☎️', desc: 'Enviar follow-up 2', target: 'call2_no_answer' },
+      id: 'sem_resposta',
+      eyebrow: 'Sem resposta',
+      titulo: 'Cliente não está atendendo',
+      descricao: 'Trabalhe a sequência de cima pra baixo, na ordem. A cada tentativa de ligação sem sucesso, mande a mensagem correspondente. Se o cliente responder em qualquer momento, use os botões no fim.',
+      passos: [
+        {
+          titulo: '1ª tentativa — ligou e não atendeu, mande esta mensagem',
+          mensagem: 'Bom dia, [Nome]! Tudo bem? Aqui é [Seu nome], da Nox Imóveis.\n\nRecebi seu contato pelo anúncio do [Produto] e tentei te ligar agora há pouco pra entender melhor o que você está buscando.\n\nComo não conseguimos conversar, vou tentar te ligar novamente às [Horário], que talvez você esteja mais tranquilo.',
+        },
+        {
+          titulo: '2ª tentativa — ligue de novo. Não atendeu? Mande o follow-up',
+          mensagem: '[Nome], tentei falar contigo novamente agora há pouco. 😊\n\nVi que teu contato veio pelo anúncio do [Produto] e queria entender melhor se você estava olhando mais para moradia, veraneio ou investimento, pra não te mandar nada fora do que procura.\n\nSe fizer sentido, me responde por aqui que eu te direciono melhor.',
+        },
+        {
+          titulo: '3ª mensagem — ainda sem resposta, puxe o assunto do anúncio',
+          mensagensPorProduto: {
+            orla_da_barra: 'Oi, [Nome]! Passando só pra te explicar rapidinho: o Orla da Barra é uma opção frente mar em Barra Velha, pensada para quem busca localização forte, vista mar e potencial de valorização.\n\nPelo que você viu no anúncio, algo nesse estilo tem a ver com o que você está procurando?',
+            barra_view: 'Oi, [Nome]! Passando só pra te explicar rapidinho: o Barra View é uma opção aqui em Barra Velha que pode fazer sentido para quem busca uma oportunidade bem localizada no Litoral.\n\nPelo que você viu no anúncio, algo nesse estilo tem a ver com o que você está procurando?',
+            viverde: 'Oi, [Nome]! Passando só pra te explicar rapidinho: o Viverde é uma opção com proposta de qualidade de vida, lazer e contato com a região do Litoral.\n\nPelo que você viu no anúncio, algo nesse estilo tem a ver com o que você está procurando?',
+            nao_sei: 'Oi, [Nome]! Passando só pra entender melhor teu momento. Como você demonstrou interesse em imóveis aqui no Litoral, queria saber se busca algo mais para moradia, veraneio ou investimento.\n\nAssim consigo te mostrar algo mais próximo do que você procura.',
+          },
+        },
+        {
+          titulo: 'Última tentativa — ligue mais uma vez. Não atendeu? Encerre com leveza',
+          mensagem: '[Nome], tentei te chamar algumas vezes porque recebi teu interesse no anúncio do [Produto].\n\nVou deixar você mais à vontade por aqui. Se em algum momento quiser avaliar alguma opção, fico por aqui pra te ajudar.',
+        },
       ],
-    },
-    {
-      id: 'call2_no_answer',
-      eyebrow: 'Etapa 02',
-      titulo: 'Cliente não atendeu',
-      descricao: 'Follow-up 2 — após segunda ligação.',
-      mensagem: '[Nome], tentei falar contigo novamente agora há pouco. 😊\n\nVi que teu contato veio pelo anúncio do [Produto] e queria entender melhor se você estava olhando mais para moradia, veraneio ou investimento, pra não te mandar nada fora do que procura.\n\nSe fizer sentido, me responde por aqui que eu te direciono melhor.',
-      pergunta: 'O cliente respondeu?',
+      infoNote: 'Encerrou sem resposta? Mantenha o atendimento em aberto — o cliente pode responder no futuro.',
+      pergunta: 'O rumo mudou?',
       choices: [
-        { label: 'Cliente respondeu', icon: '💬', desc: 'Identificar caminho', target: 'hub_replied' },
-        { label: 'Cliente não respondeu', icon: '🌙', desc: 'Avançar para follow-up 3', target: 'fup3' },
+        { label: 'Cliente atendeu uma ligação', icon: '📞', desc: 'Ir para o script da ligação', target: 'call1_answered' },
+        { label: 'Cliente respondeu no WhatsApp', icon: '💬', desc: 'Identificar o caminho', target: 'hub_replied' },
       ],
-    },
-    {
-      id: 'fup3',
-      eyebrow: 'Etapa 03',
-      titulo: 'Follow-up 3',
-      descricao: 'Use esta mensagem se o cliente não atendeu as duas ligações e também não respondeu a mensagem anterior. Aqui a ideia é puxar assunto com base no anúncio específico.',
-      mensagensPorProduto: {
-        orla_da_barra: 'Oi, [Nome]! Passando só pra te explicar rapidinho: o Orla da Barra é uma opção frente mar em Barra Velha, pensada para quem busca localização forte, vista mar e potencial de valorização.\n\nPelo que você viu no anúncio, algo nesse estilo tem a ver com o que você está procurando?',
-        barra_view: 'Oi, [Nome]! Passando só pra te explicar rapidinho: o Barra View é uma opção aqui em Barra Velha que pode fazer sentido para quem busca uma oportunidade bem localizada no Litoral.\n\nPelo que você viu no anúncio, algo nesse estilo tem a ver com o que você está procurando?',
-        viverde: 'Oi, [Nome]! Passando só pra te explicar rapidinho: o Viverde é uma opção com proposta de qualidade de vida, lazer e contato com a região do Litoral.\n\nPelo que você viu no anúncio, algo nesse estilo tem a ver com o que você está procurando?',
-        nao_sei: 'Oi, [Nome]! Passando só pra entender melhor teu momento. Como você demonstrou interesse em imóveis aqui no Litoral, queria saber se busca algo mais para moradia, veraneio ou investimento.\n\nAssim consigo te mostrar algo mais próximo do que você procura.',
-      },
-      pergunta: 'O cliente respondeu?',
-      choices: [
-        { label: 'Cliente respondeu', icon: '💬', desc: 'Identificar caminho', target: 'hub_replied' },
-        { label: 'Cliente não respondeu', icon: '🌙', desc: 'Última tentativa', target: 'call3' },
-      ],
-    },
-    {
-      id: 'call3',
-      eyebrow: 'Etapa 04',
-      titulo: 'Última tentativa',
-      descricao: 'Faça mais uma tentativa de ligação. Se não atender, envie a mensagem de encerramento leve, deixando o atendimento em aberto.',
-      pergunta: 'O que aconteceu?',
-      choices: [
-        { label: 'Cliente atendeu', icon: '📞', desc: 'Script da ligação', target: 'call1_answered' },
-        { label: 'Cliente não atendeu', icon: '☎️', desc: 'Encerramento gentil', target: 'call3_no_answer' },
-      ],
-    },
-    {
-      id: 'call3_no_answer',
-      eyebrow: 'Encerramento',
-      titulo: 'Cliente não atendeu na última tentativa',
-      mensagem: '[Nome], tentei te chamar algumas vezes porque recebi teu interesse no anúncio do [Produto].\n\nVou deixar você mais à vontade por aqui. Se em algum momento quiser avaliar alguma opção, fico por aqui pra te ajudar.',
-      infoNote: 'Próximo passo: encerrar a tentativa ativa, mas manter o atendimento em aberto. O cliente pode responder no futuro.',
     },
 
     // ETAPA 06 — MATERIAIS
