@@ -1,9 +1,9 @@
 import type { FunilConfig } from './types';
 
 /**
- * Mapa mental de LIGAÇÃO ATIVA (Nox Imóveis).
- * Premissa: o cliente ATENDEU. O objetivo da ligação é conduzir a conversa
- * e marcar a VISITA/reunião. Sem follow-up de mensagem.
+ * Mapa mental de LIGAÇÃO ATIVA (Nox Imóveis) — papel de PRÉ-VENDAS / SDR.
+ * Premissa: o cliente ATENDEU. O objetivo da ligação é gerar interesse e
+ * MARCAR UM GOOGLE MEET. Depois, o FECHADOR assume a reunião. Sem follow-up de mensagem.
  * Semente/fallback — o admin pode editar tudo depois.
  */
 export const FUNIL_DEFAULT: FunilConfig = {
@@ -53,8 +53,8 @@ export const FUNIL_DEFAULT: FunilConfig = {
       id: 'sondagem',
       eyebrow: 'Sondagem',
       titulo: 'Entenda o cliente antes de oferecer',
-      descricao: 'Quem pergunta conduz. Faça perguntas abertas e ESCUTE — só ofereça depois de entender. Use as perguntas abaixo como guia (adapte, não leia robótico).',
-      mensagem: '• O que te fez procurar um imóvel aqui no Litoral agora?\n• Seria mais pra morar, curtir no verão ou investir?\n• Você já conhece a região? Já chegou a visitar algum imóvel por aqui?\n• Tem um prazo em mente ou está começando a pesquisar?',
+      descricao: 'Quem pergunta conduz. Faça perguntas abertas e ESCUTE — só direcione depois de entender. Use as perguntas abaixo como guia (adapte, não leia robótico).',
+      mensagem: '• O que te fez procurar um imóvel aqui no Litoral agora?\n• Seria mais pra morar, curtir no verão ou investir?\n• Você já conhece a região? Já chegou a ver algum imóvel por aqui?\n• Tem um prazo em mente ou está começando a pesquisar?',
       pergunta: 'Qual perfil apareceu?',
       choices: [
         { label: 'Quer morar', icon: '🏡', target: 'perfil_moradia' },
@@ -67,36 +67,36 @@ export const FUNIL_DEFAULT: FunilConfig = {
       id: 'perfil_moradia',
       eyebrow: 'Perfil · Moradia',
       titulo: 'Cliente quer morar',
-      descricao: 'Conecte com o momento de vida dele. Pra morar, o que pesa é localização, entrega, estrutura e o dia a dia.',
-      mensagem: 'Que bom, [Nome]! A gente tem boas opções pra morar aqui na região, tanto prontas quanto na planta com condições facilitadas. Como é pra você morar, faz toda diferença ver de perto a localização, a planta e a estrutura — é rapidinho e você já sente se é a sua cara.',
+      descricao: 'Conecte com o momento de vida dele. Gere curiosidade — quem mostra tudo é o especialista no Meet.',
+      mensagem: 'Que bom, [Nome]! A gente tem boas opções pra morar aqui na região, tanto prontas quanto na planta com condições facilitadas. O melhor jeito de te mostrar é numa conversa rápida por Google Meet: nosso especialista te apresenta na tela a localização, as plantas e as condições, e você já sente se é a sua cara — sem sair de casa.',
       pergunta: 'O que ele prefere?',
       choices: [
-        { label: 'Pronto pra morar', icon: '🔑', target: 'fechar_visita' },
-        { label: 'Aceita na planta', icon: '📐', target: 'fechar_visita' },
+        { label: 'Pronto pra morar', icon: '🔑', target: 'fechar_meet' },
+        { label: 'Aceita na planta', icon: '📐', target: 'fechar_meet' },
       ],
     },
     {
       id: 'perfil_veraneio',
       eyebrow: 'Perfil · Veraneio',
       titulo: 'Cliente quer veraneio',
-      descricao: 'Venda a experiência: praia, lazer, família. E, se fizer sentido, a renda de temporada como bônus.',
-      mensagem: 'Perfeito, [Nome]! Temos opções com estrutura de lazer estilo resort e fácil acesso à praia — e, se você quiser, algumas ainda geram renda com locação por temporada quando não estiver usando. Vale muito ver de perto pra sentir o clima do lugar.',
+      descricao: 'Venda a experiência: praia, lazer, família. E, se fizer sentido, a renda de temporada como bônus. Puxe pro Meet pra mostrar tudo.',
+      mensagem: 'Perfeito, [Nome]! Temos opções com estrutura de lazer estilo resort e fácil acesso à praia — e, se quiser, algumas ainda geram renda de temporada quando você não estiver usando. Numa conversa rápida por Google Meet a gente te mostra tudo na tela e você vê qual combina mais com você.',
       pergunta: 'Como é o uso?',
       choices: [
-        { label: 'Só pra curtir', icon: '🌴', target: 'fechar_visita' },
-        { label: 'Curtir + gerar renda', icon: '💰', target: 'fechar_visita' },
+        { label: 'Só pra curtir', icon: '🌴', target: 'fechar_meet' },
+        { label: 'Curtir + gerar renda', icon: '💰', target: 'fechar_meet' },
       ],
     },
     {
       id: 'perfil_investimento',
       eyebrow: 'Perfil · Investimento',
       titulo: 'Cliente quer investir',
-      descricao: 'Fale a língua dele: números, valorização e rentabilidade. Uma conversa presencial mostra os dados melhor que qualquer mensagem.',
-      mensagem: 'Ótimo, [Nome]! A gente trabalha com empreendimentos em regiões em crescimento, com bom potencial de valorização, e também opções voltadas pra renda com locação — algumas com gestoras que cuidam de tudo. Numa conversa rápida eu te mostro os números e você vê qual estratégia rende mais pra você.',
+      descricao: 'Fale a língua dele: números, valorização e rentabilidade. Quem abre os números é o especialista no Meet.',
+      mensagem: 'Ótimo, [Nome]! A gente trabalha com empreendimentos em regiões em crescimento, com bom potencial de valorização, e também opções voltadas pra renda com locação — algumas com gestoras que cuidam de tudo. Numa conversa rápida por Google Meet nosso especialista te mostra os números na tela e você vê qual estratégia rende mais pra você.',
       pergunta: 'Qual o foco?',
       choices: [
-        { label: 'Valorização (revenda)', icon: '📊', target: 'fechar_visita' },
-        { label: 'Renda mensal (locação)', icon: '🏨', target: 'fechar_visita' },
+        { label: 'Valorização (revenda)', icon: '📊', target: 'fechar_meet' },
+        { label: 'Renda mensal (locação)', icon: '🏨', target: 'fechar_meet' },
       ],
     },
     {
@@ -113,14 +113,14 @@ export const FUNIL_DEFAULT: FunilConfig = {
       ],
     },
     {
-      id: 'fechar_visita',
+      id: 'fechar_meet',
       eyebrow: 'Fechamento',
-      titulo: 'Convide para a visita',
-      descricao: 'O objetivo da ligação é ESTE: tirar o cliente do telefone e levar pra uma visita/reunião. Não pergunte "se" ele quer — pergunte "quando". Ofereça duas opções de horário.',
-      mensagem: '[Nome], acho que vale muito você conhecer de perto pra sentir se é o que procura. Eu consigo te atender [dia] ou [dia] — o que fica melhor pra você, de manhã ou à tarde?',
+      titulo: 'Marque o Google Meet',
+      descricao: 'O objetivo da ligação é ESTE: marcar um Google Meet rápido (uns 20-30 min) com o nosso especialista, que vai mostrar tudo com calma e conduzir daí pra frente. Não pergunte "se" — pergunte "quando". Ofereça dois horários.',
+      mensagem: 'Olha, [Nome], pra não te tomar tempo agora e te mostrar tudo direitinho, o ideal é a gente marcar um Google Meet rápido, uns 20 minutinhos, onde nosso especialista te apresenta as opções na tela e tira todas as dúvidas — bem prático, você participa de onde estiver. Consigo encaixar [dia] ou [dia]: o que fica melhor pra você, de manhã ou à tarde?',
       pergunta: 'Como o cliente reagiu?',
       choices: [
-        { label: 'Topou e marcou', icon: '✅', desc: 'Confirmar a visita', target: 'visita_confirmada' },
+        { label: 'Topou e marcou', icon: '✅', desc: 'Confirmar o Meet', target: 'meet_confirmado' },
         { label: 'Levantou uma objeção', icon: '🤔', desc: 'Contornar e voltar a fechar', target: 'objecoes' },
         { label: 'Prefere WhatsApp', icon: '💬', target: 'obj_whats' },
         { label: 'Não quer agora', icon: '🌙', desc: 'Encerrar com leveza', target: 'encerrar_leve' },
@@ -129,8 +129,8 @@ export const FUNIL_DEFAULT: FunilConfig = {
     {
       id: 'objecoes',
       eyebrow: 'Objeções',
-      titulo: 'Contorne a objeção e volte a fechar',
-      descricao: 'Objeção é sinal de interesse. Acolha, responda com segurança e conduza de volta pra visita — sempre com duas opções de horário.',
+      titulo: 'Contorne a objeção e volte a marcar o Meet',
+      descricao: 'Objeção é sinal de interesse. Acolha, responda com segurança e conduza de volta pro Google Meet — sempre com duas opções de horário.',
       pergunta: 'Qual objeção apareceu?',
       choices: [
         { label: '"Tô só pesquisando"', icon: '🔎', target: 'obj_pesquisando' },
@@ -144,51 +144,51 @@ export const FUNIL_DEFAULT: FunilConfig = {
       id: 'obj_pesquisando',
       eyebrow: 'Objeção',
       titulo: '"Tô só pesquisando"',
-      mensagem: 'Perfeito, [Nome], pesquisar é o certo mesmo! E é justamente por isso que vale conhecer de perto — foto e vídeo não passam a real do imóvel. Sem compromisso nenhum, você já sai sabendo comparar de verdade. Prefere [dia] ou [dia]?',
-      choices: [{ label: 'Voltar a marcar a visita', icon: '↩️', target: 'fechar_visita' }],
+      mensagem: 'Perfeito, [Nome], pesquisar é o certo mesmo! E é justamente por isso que vale um Google Meet rápido — nosso especialista te mostra tudo na tela e você compara de verdade, sem compromisso nenhum. Prefere [dia] ou [dia]?',
+      choices: [{ label: 'Voltar a marcar o Meet', icon: '↩️', target: 'fechar_meet' }],
     },
     {
       id: 'obj_preco',
       eyebrow: 'Objeção',
       titulo: '"Achei caro / fora do orçamento"',
-      mensagem: 'Entendo, [Nome]. E é bem por isso que vale a conversa: a gente tem opções e condições diferentes, e muita coisa que parece fora do orçamento tem um fluxo de pagamento que cabe. Deixa eu te mostrar as possibilidades — você prefere [dia] ou [dia]?',
-      choices: [{ label: 'Voltar a marcar a visita', icon: '↩️', target: 'fechar_visita' }],
+      mensagem: 'Entendo, [Nome]. E é bem por isso que vale a conversa: a gente tem opções e condições diferentes, e muita coisa que parece fora do orçamento tem um fluxo de pagamento que cabe. Num Google Meet rápido o especialista te mostra as possibilidades na tela — você prefere [dia] ou [dia]?',
+      choices: [{ label: 'Voltar a marcar o Meet', icon: '↩️', target: 'fechar_meet' }],
     },
     {
       id: 'obj_pensar',
       eyebrow: 'Objeção',
       titulo: '"Vou pensar / falar com esposo(a)"',
-      mensagem: 'Claro, [Nome], decisão de imóvel é a dois mesmo! Que tal já trazerem os dois na visita? Assim vocês veem juntos e decidem com tudo na mão, sem eu ficar te mandando informação solta. Fica melhor [dia] ou [dia]?',
-      choices: [{ label: 'Voltar a marcar a visita', icon: '↩️', target: 'fechar_visita' }],
+      mensagem: 'Claro, [Nome], decisão de imóvel é a dois mesmo! E o bom do Google Meet é isso: dá pra vocês dois participarem juntos, de casa, verem tudo na tela e tirarem as dúvidas na hora. Fica melhor [dia] ou [dia]?',
+      choices: [{ label: 'Voltar a marcar o Meet', icon: '↩️', target: 'fechar_meet' }],
     },
     {
       id: 'obj_whats',
       eyebrow: 'Objeção',
       titulo: '"Me manda por WhatsApp"',
-      descricao: 'Aceite mandar, mas não deixe a conversa morrer no WhatsApp: puxe pra visita e, se ele insistir, combine um retorno com dia e hora.',
-      mensagem: 'Mando sim, [Nome]! Mas te adianto: por WhatsApp vai só um pedacinho — quem realmente decide é vendo de perto. Que tal a gente já deixar a visita marcada e eu te mando o material antes, pra você chegar já sabendo? Prefere [dia] ou [dia]?',
-      infoNote: 'Se insistir só no WhatsApp: mande o material e combine um retorno com dia e hora. Nunca deixe em aberto.',
-      choices: [{ label: 'Voltar a marcar a visita', icon: '↩️', target: 'fechar_visita' }],
+      descricao: 'Aceite mandar algo, mas puxe pro Meet — e se insistir, combine o Meet com dia e hora.',
+      mensagem: 'Mando sim, [Nome]! Mas te adianto: por WhatsApp vai só um pedacinho. Num Google Meet rápido nosso especialista te mostra tudo na tela e você já sai com as dúvidas resolvidas — bem mais prático. Que tal a gente já deixar marcado? Prefere [dia] ou [dia]?',
+      infoNote: 'Se insistir só no WhatsApp: mande um resumo e combine o Meet com dia e hora. Nunca deixe em aberto.',
+      choices: [{ label: 'Voltar a marcar o Meet', icon: '↩️', target: 'fechar_meet' }],
     },
     {
       id: 'obj_regiao',
       eyebrow: 'Objeção',
       titulo: '"Não conheço bem a região"',
-      mensagem: 'Então esse é o melhor motivo pra vir, [Nome]! Eu te mostro a região, os acessos, a estrutura em volta — é o tipo de coisa que só sentindo no lugar. E de quebra você já conhece o imóvel. Fica bom [dia] ou [dia]?',
-      choices: [{ label: 'Voltar a marcar a visita', icon: '↩️', target: 'fechar_visita' }],
+      mensagem: 'Esse é o melhor motivo pra gente conversar, [Nome]! Num Google Meet rápido eu te mostro a região no mapa, os acessos e a estrutura em volta na tela — e de quebra já te apresento o imóvel. Fica bom [dia] ou [dia]?',
+      choices: [{ label: 'Voltar a marcar o Meet', icon: '↩️', target: 'fechar_meet' }],
     },
     {
-      id: 'visita_confirmada',
-      eyebrow: 'Visita marcada 🎉',
-      titulo: 'Confirme e prepare a visita',
-      descricao: 'Fechou! Agora confirme os detalhes e deixe tudo pronto pra visita ser impecável.',
-      mensagem: 'Combinado, [Nome]! Então fica marcado pra [dia] às [Horário]. Vou te mandar a localização e um resumo por WhatsApp pra facilitar. Qualquer imprevisto, é só me avisar. Até lá! 😊',
+      id: 'meet_confirmado',
+      eyebrow: 'Meet marcado 🎉',
+      titulo: 'Confirme o Meet e passe pro fechador',
+      descricao: 'Fechou! Seu papel na ligação ativa termina aqui: confirme o Meet, mande o link e passe o lead com o resumo pro fechador conduzir a reunião.',
+      mensagem: 'Combinado, [Nome]! Então nosso Google Meet fica pra [dia] às [Horário]. Vou te mandar o link por aqui, é só clicar na hora — não precisa instalar nada. Qualquer imprevisto, me avisa. Até lá! 😊',
       checklist: [
         'Confirmar dia e horário com o cliente',
-        'Mandar a localização do ponto de encontro',
-        'Mandar um resumo/booking do imóvel antes',
-        'Separar 2 ou 3 opções alinhadas ao perfil dele',
-        'Confirmar 1 dia antes (lembrete rápido)',
+        'Gerar e mandar o link do Google Meet',
+        'Colocar no calendário / criar o convite',
+        'Passar o lead pro fechador com o resumo (perfil, o que ele busca, objeções que apareceram)',
+        'Confirmar com o cliente 1 dia antes (lembrete rápido)',
       ],
     },
     {
