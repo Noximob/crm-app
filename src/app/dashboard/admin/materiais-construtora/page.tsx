@@ -1,1047 +1,324 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { apoioDb, apoioStorage } from '@/lib/apoioFirebase';
 import { useAuth } from '@/context/AuthContext';
-import { db, storage } from '@/lib/firebase';
-import { collection, query, where, getDocs, addDoc, deleteDoc, orderBy, doc, Timestamp, updateDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { CATEGORIES, type Construtora, type Imovel, type Material } from '@/lib/materiais/types';
 
-interface Construtora {
-  id: string;
-  nome: string;
-  logoUrl?: string;
-  criadoEm: Date;
+const CORES = ['#D4A017', '#b39af0', '#5dc2a5', '#e0777b', '#7aa2f7', '#f0a35e', '#9d83b8', '#4fb0c6'];
+
+interface FormImovel {
+  id?: string;
+  co: string; n: string; l: string; cid: string; end: string;
+  pr: string; m2: string; st: string; t: string; a: string; ap: string; e: string;
+  resumo: string; capa: string; tipText: string; difText: string;
+  materiais: Material[];
+}
+const EMPTY: FormImovel = { co: '', n: '', l: '', cid: '', end: '', pr: '', m2: '', st: '', t: '', a: '', ap: '', e: '', resumo: '', capa: '', tipText: '', difText: '', materiais: [] };
+
+function toForm(p: Imovel): FormImovel {
+  return {
+    id: p.id, co: p.co || '', n: p.n || '', l: p.l || '', cid: p.cid || '', end: p.end || '',
+    pr: p.pr || '', m2: p.m2 || '', st: p.st || '', t: p.t || '', a: p.a || '', ap: p.ap || '', e: p.e || '',
+    resumo: p.resumo || '', capa: p.capa || '',
+    tipText: Array.isArray(p.tip) ? p.tip.map((t) => `${t[0]} | ${t[1]}`).join('\n') : '',
+    difText: Array.isArray(p.dif) ? p.dif.join('\n') : '',
+    materiais: Array.isArray(p.materiais) ? p.materiais : [],
+  };
 }
 
-interface Produto {
-  id: string;
-  construtoraId: string;
-  nome: string;
-  descricao?: string;
-  criadoEm: Date;
-}
+export default function AdminMateriaisPage() {
+  const { userData } = useAuth();
+  const isAdmin = userData?.tipoConta === 'imobiliaria' || userData?.permissoes?.admin;
 
-interface Material {
-  id: string;
-  produtoId: string;
-  nome: string;
-  tipo: 'pdf' | 'link' | 'foto' | 'video';
-  url?: string;
-  tamanho?: number;
-  extensao?: string;
-  criadoEm: Date;
-}
-
-interface ImovelCaptado {
-  id: string;
-  imobiliariaId: string;
-  corretorId: string;
-  corretorNome: string;
-  nome: string;
-  endereco: string;
-  bairro: string;
-  cidade: string;
-  estado: string;
-  localizacao: string; // Link do Google Maps
-  tipo: 'casa' | 'apartamento' | 'terreno' | 'comercial';
-  valor: number;
-  descricao: string;
-  fotos: string[];
-  criadoEm: Date;
-}
-
-// Ícones
-const BuildingIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M3 21h18"/>
-    <path d="M5 21V7l8-4v18"/>
-    <path d="M19 21V11l-6-4"/>
-    <path d="M9 9h.01"/>
-    <path d="M9 12h.01"/>
-    <path d="M9 15h.01"/>
-    <path d="M9 18h.01"/>
-  </svg>
-);
-
-const PackageIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M16.466 7.5C15.643 4.237 13.952 2 12 2 9.239 2 7 6.477 7 12s2.239 10 5 10c.342 0 .677-.069 1-.2"/>
-    <path d="m15.194 13.707 3.306 3.307a1 1 0 0 1 0 1.414l-1.586 1.586a1 1 0 0 1-1.414 0l-3.307-3.306"/>
-    <path d="M10 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
-  </svg>
-);
-
-const FileIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
-    <polyline points="14 2 14 8 20 8"/>
-  </svg>
-);
-
-const LinkIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-  </svg>
-);
-
-const ImageIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
-    <circle cx="9" cy="9" r="2"/>
-    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
-  </svg>
-);
-
-const VideoIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="m22 8-6 4 6 4V8Z"/>
-    <rect width="14" height="12" x="2" y="6" rx="2" ry="2"/>
-  </svg>
-);
-
-const HouseIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-    <polyline points="9 22 9 12 15 12 15 22"/>
-  </svg>
-);
-
-const MapIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0 0 21 18.382V7.618a1 1 0 0 0-1.447-.894L15 4m0 13V4m-6 3l6-3"/>
-  </svg>
-);
-
-const StoreIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-  </svg>
-);
-
-const MapPinIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-    <circle cx="12" cy="10" r="3"/>
-  </svg>
-);
-
-export default function MateriaisConstrutoraAdminPage() {
-  const { userData, currentUser } = useAuth();
   const [construtoras, setConstrutoras] = useState<Construtora[]>([]);
-  const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [materiais, setMateriais] = useState<Material[]>([]);
-  const [imoveisCaptados, setImoveisCaptados] = useState<ImovelCaptado[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [imoveis, setImoveis] = useState<Imovel[]>([]);
+  const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<string | null>(null);
 
-  // Navegação
-  const [view, setView] = useState<'construtoras' | 'produtos' | 'materiais' | 'captacoes'>('construtoras');
-  const [selectedConstrutora, setSelectedConstrutora] = useState<Construtora | null>(null);
-  const [selectedProduto, setSelectedProduto] = useState<Produto | null>(null);
+  const [novaCo, setNovaCo] = useState('');
+  const [novaCor, setNovaCor] = useState(CORES[0]);
+  const [filtroCo, setFiltroCo] = useState('');
+  const [form, setForm] = useState<FormImovel | null>(null);
+  const [salvando, setSalvando] = useState(false);
 
-  // Formulários
-  const [formConstrutora, setFormConstrutora] = useState({ nome: '', logo: null as File | null });
-  const [formProduto, setFormProduto] = useState({ nome: '', descricao: '' });
-  const [formMaterial, setFormMaterial] = useState({ nome: '', tipo: 'pdf' as 'pdf' | 'link' | 'foto' | 'video', url: '', descricao: '' });
-  const [uploading, setUploading] = useState(false);
-
-  // Modal de edição de logo
-  const [editingLogo, setEditingLogo] = useState<{ construtora: Construtora, logo: File | null } | null>(null);
-
-  // Buscar dados
-  useEffect(() => {
-    if (!userData?.imobiliariaId) return;
-    fetchConstrutoras();
-  }, [userData]);
-
-  useEffect(() => {
-    if (selectedConstrutora) {
-      fetchProdutos(selectedConstrutora.id);
-    }
-  }, [selectedConstrutora]);
-
-  useEffect(() => {
-    if (selectedProduto) {
-      fetchMateriais(selectedProduto.id);
-    }
-  }, [selectedProduto]);
-
-  const fetchConstrutoras = async () => {
+  const carregar = async () => {
     setLoading(true);
     try {
-      const q = query(
-        collection(db, 'construtoras'),
-        where('imobiliariaId', '==', userData?.imobiliariaId),
-        orderBy('nome')
-      );
-      const snap = await getDocs(q);
-      setConstrutoras(snap.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          criadoEm: data.criadoEm?.toDate ? data.criadoEm.toDate() : data.criadoEm
-        } as Construtora;
-      }));
-    } catch (err: any) {
-      setMsg('Erro ao carregar construtoras: ' + (err?.message || err));
+      const [sc, si] = await Promise.all([getDocs(collection(apoioDb, 'construtoras')), getDocs(collection(apoioDb, 'imoveis'))]);
+      setConstrutoras(sc.docs.map((d) => ({ id: d.id, ...d.data() }) as Construtora).sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0)));
+      setImoveis(si.docs.map((d) => ({ id: d.id, ...d.data() }) as Imovel).sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0)));
+    } catch (e) {
+      setMsg('Erro ao carregar do apoio-nox.');
     } finally {
       setLoading(false);
     }
   };
+  useEffect(() => { carregar(); }, []);
 
-  const fetchProdutos = async (construtoraId: string) => {
-    setLoading(true);
+  const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(null), 2500); };
+
+  const imoveisFiltrados = useMemo(() => imoveis.filter((p) => !filtroCo || p.co === filtroCo), [imoveis, filtroCo]);
+
+  // ---- Construtoras ----
+  const criarConstrutora = async () => {
+    if (!novaCo.trim()) return;
     try {
-      const q = query(
-        collection(db, 'produtos'),
-        where('construtoraId', '==', construtoraId),
-        orderBy('nome')
-      );
-      const snap = await getDocs(q);
-      setProdutos(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Produto)));
-    } catch (err) {
-      setMsg('Erro ao carregar produtos.');
-    } finally {
-      setLoading(false);
-    }
+      await addDoc(collection(apoioDb, 'construtoras'), { name: novaCo.trim(), color: novaCor, ordem: construtoras.length });
+      setNovaCo('');
+      flash('Construtora criada.');
+      carregar();
+    } catch { flash('Erro ao criar construtora.'); }
+  };
+  const excluirConstrutora = async (c: Construtora) => {
+    if (!window.confirm(`Excluir a construtora "${c.name}"? Os imóveis dela não são apagados.`)) return;
+    try { await deleteDoc(doc(apoioDb, 'construtoras', c.id)); flash('Construtora excluída.'); carregar(); }
+    catch { flash('Erro ao excluir.'); }
+  };
+  const mudarCor = async (c: Construtora, color: string) => {
+    try { await updateDoc(doc(apoioDb, 'construtoras', c.id), { color }); setConstrutoras((prev) => prev.map((x) => x.id === c.id ? { ...x, color } : x)); }
+    catch { flash('Erro ao mudar cor.'); }
   };
 
-  const fetchMateriais = async (produtoId: string) => {
-    setLoading(true);
+  // ---- Imóvel form ----
+  const set = (k: keyof FormImovel, v: string) => setForm((f) => (f ? { ...f, [k]: v } : f));
+
+  const addMaterial = (cat: string, name: string, url: string, dl?: string) => {
+    if (!url.trim()) return;
+    setForm((f) => (f ? { ...f, materiais: [...f.materiais, { cat, name: name.trim(), url: url.trim(), ...(dl ? { dl: dl.trim() } : {}) }] } : f));
+  };
+  const removeMaterial = (i: number) => setForm((f) => (f ? { ...f, materiais: f.materiais.filter((_, k) => k !== i) } : f));
+
+  const uploadArquivo = async (file: File, cat: string) => {
+    if (!form) return;
     try {
-      const q = query(
-        collection(db, 'materiais'),
-        where('produtoId', '==', produtoId),
-        orderBy('nome')
-      );
-      const snap = await getDocs(q);
-      setMateriais(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Material)));
-    } catch (err) {
-      setMsg('Erro ao carregar materiais.');
-    } finally {
-      setLoading(false);
-    }
+      flash('Enviando arquivo…');
+      const path = `imoveis/${form.id || 'novos'}/${cat}/${Date.now()}_${file.name}`;
+      const r = ref(apoioStorage, path);
+      await uploadBytes(r, file);
+      const url = await getDownloadURL(r);
+      addMaterial(cat, file.name, url);
+      flash('Arquivo enviado.');
+    } catch { flash('Erro no upload.'); }
   };
 
-  const fetchImoveisCaptados = async () => {
-    setLoading(true);
+  const salvarImovel = async () => {
+    if (!form || !form.n.trim() || !form.co) { flash('Preencha nome e construtora.'); return; }
+    setSalvando(true);
     try {
-      const q = query(
-        collection(db, 'imoveis_captados'),
-        where('imobiliariaId', '==', userData?.imobiliariaId)
-      );
-      const snap = await getDocs(q);
-      const imoveisData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ImovelCaptado));
-      imoveisData.sort((a, b) => b.criadoEm.getTime() - a.criadoEm.getTime());
-      setImoveisCaptados(imoveisData);
-    } catch (err) {
-      setMsg('Erro ao carregar imóveis captados.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteImovel = async (id: string, fotos: string[]) => {
-    if (!confirm('Tem certeza que deseja excluir este imóvel?')) return;
-    
-    setLoading(true);
-    try {
-      // Deletar fotos do storage
-      for (const fotoUrl of fotos) {
-        const fotoRef = ref(storage, fotoUrl);
-        await deleteObject(fotoRef);
+      const tip = form.tipText.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => { const [a, ...d] = l.split('|'); return [a.trim(), d.join('|').trim()] as [string, string]; });
+      const dif = form.difText.split('\n').map((l) => l.trim()).filter(Boolean);
+      const data: Record<string, any> = {
+        co: form.co, n: form.n.trim(), l: form.l, cid: form.cid, end: form.end, pr: form.pr, m2: form.m2, st: form.st,
+        t: form.t, a: form.a, ap: form.ap, e: form.e, resumo: form.resumo, capa: form.capa, tip, dif, materiais: form.materiais,
+      };
+      if (form.id) {
+        await updateDoc(doc(apoioDb, 'imoveis', form.id), data);
+      } else {
+        await addDoc(collection(apoioDb, 'imoveis'), { ...data, ordem: imoveis.length });
       }
-      
-      await deleteDoc(doc(db, 'imoveis_captados', id));
-      fetchImoveisCaptados();
-      setMsg('Imóvel excluído com sucesso!');
-    } catch (err) {
-      setMsg('Erro ao excluir imóvel.');
-    } finally {
-      setLoading(false);
-    }
+      flash('Empreendimento salvo.');
+      setForm(null);
+      carregar();
+    } catch { flash('Erro ao salvar.'); }
+    finally { setSalvando(false); }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
+  const excluirImovel = async (p: Imovel) => {
+    if (!window.confirm(`Excluir o empreendimento "${p.n}"?`)) return;
+    try { await deleteDoc(doc(apoioDb, 'imoveis', p.id)); flash('Excluído.'); carregar(); }
+    catch { flash('Erro ao excluir.'); }
   };
 
-  const getTipoIcon = (tipo: string) => {
-    switch (tipo) {
-      case 'casa':
-        return <HouseIcon className="h-5 w-5" />;
-      case 'apartamento':
-        return <BuildingIcon className="h-5 w-5" />;
-      case 'terreno':
-        return <MapIcon className="h-5 w-5" />;
-      case 'comercial':
-        return <StoreIcon className="h-5 w-5" />;
-      default:
-        return <HouseIcon className="h-5 w-5" />;
-    }
-  };
-
-  // CRUD Construtora
-  const handleAddConstrutora = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formConstrutora.nome.trim()) return;
-    setLoading(true);
-    setMsg(null);
-    try {
-      let logoUrl = '';
-      if (formConstrutora.logo) {
-        const logoRef = ref(storage, `logos/${Date.now()}_${formConstrutora.logo.name}`);
-        const snapshot = await uploadBytes(logoRef, formConstrutora.logo);
-        logoUrl = await getDownloadURL(snapshot.ref);
-      }
-
-      const construtora = {
-        nome: formConstrutora.nome.trim(),
-        logoUrl,
-        imobiliariaId: userData?.imobiliariaId,
-        criadoEm: Timestamp.now(),
-      };
-      await addDoc(collection(db, 'construtoras'), construtora);
-      setFormConstrutora({ nome: '', logo: null });
-      fetchConstrutoras();
-      setMsg('Construtora criada com sucesso!');
-    } catch (err) {
-      setMsg('Erro ao criar construtora.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteConstrutora = async (id: string) => {
-    if (!confirm('Tem certeza? Isso excluirá todos os produtos e materiais.')) return;
-    setLoading(true);
-    try {
-      await deleteDoc(doc(db, 'construtoras', id));
-      fetchConstrutoras();
-      setMsg('Construtora excluída!');
-    } catch (err) {
-      setMsg('Erro ao excluir construtora.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Editar logo da construtora
-  const handleEditLogo = async () => {
-    if (!editingLogo?.construtora || !editingLogo.logo) return;
-    
-    setLoading(true);
-    setMsg(null);
-    try {
-      // Upload da nova logo
-      const logoRef = ref(storage, `logos/${Date.now()}_${editingLogo.logo.name}`);
-      const snapshot = await uploadBytes(logoRef, editingLogo.logo);
-      const logoUrl = await getDownloadURL(snapshot.ref);
-
-      // Atualizar no Firestore
-      await updateDoc(doc(db, 'construtoras', editingLogo.construtora.id), {
-        logoUrl
-      });
-
-      setEditingLogo(null);
-      fetchConstrutoras();
-      setMsg('Logo atualizada com sucesso!');
-    } catch (err) {
-      setMsg('Erro ao atualizar logo.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // CRUD Produto
-  const handleAddProduto = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formProduto.nome.trim() || !selectedConstrutora) return;
-    setLoading(true);
-    setMsg(null);
-    try {
-      const produto = {
-        nome: formProduto.nome.trim(),
-        descricao: formProduto.descricao.trim(),
-        construtoraId: selectedConstrutora.id,
-        criadoEm: Timestamp.now(),
-      };
-      await addDoc(collection(db, 'produtos'), produto);
-      setFormProduto({ nome: '', descricao: '' });
-      fetchProdutos(selectedConstrutora.id);
-      setMsg('Produto criado!');
-    } catch (err) {
-      setMsg('Erro ao criar produto.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteProduto = async (id: string) => {
-    if (!confirm('Tem certeza? Isso excluirá todos os materiais.')) return;
-    setLoading(true);
-    try {
-      await deleteDoc(doc(db, 'produtos', id));
-      fetchProdutos(selectedConstrutora!.id);
-      setMsg('Produto excluído!');
-    } catch (err) {
-      setMsg('Erro ao excluir produto.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // CRUD Material
-  const handleAddMaterial = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formMaterial.nome.trim() || !selectedProduto) return;
-    setLoading(true);
-    setMsg(null);
-    try {
-      const material = {
-        nome: formMaterial.nome.trim(),
-        tipo: 'link' as const, // Forçar tipo link
-        url: formMaterial.url.trim(),
-        descricao: formMaterial.descricao.trim(),
-        produtoId: selectedProduto.id,
-        criadoEm: Timestamp.now(),
-      };
-      await addDoc(collection(db, 'materiais'), material);
-      setFormMaterial({ nome: '', tipo: 'pdf', url: '', descricao: '' });
-      fetchMateriais(selectedProduto.id);
-      setMsg('Link criado!');
-    } catch (err) {
-      setMsg('Erro ao criar link.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUploadFile = async (file: File, tipo: 'pdf' | 'foto' | 'video') => {
-    if (!selectedProduto) return;
-
-    setUploading(true);
-    setMsg(null);
-    try {
-      const fileName = `${Date.now()}_${file.name}`;
-      // Para fotos, criar pasta "Fotos avulsas"
-      const folderPath = tipo === 'foto' ? 'Fotos avulsas' : tipo;
-      const storageRef = ref(storage, `materiais/${selectedProduto.id}/${folderPath}/${fileName}`);
-      const snapshot = await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(snapshot.ref);
-
-      const material = {
-        nome: file.name,
-        tipo,
-        url: downloadURL,
-        tamanho: file.size,
-        extensao: file.name.split('.').pop()?.toLowerCase(),
-        produtoId: selectedProduto.id,
-        criadoEm: Timestamp.now(),
-      };
-      await addDoc(collection(db, 'materiais'), material);
-      fetchMateriais(selectedProduto.id);
-      setMsg('Arquivo enviado com sucesso!');
-    } catch (err) {
-      setMsg('Erro ao enviar arquivo.');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleUploadMultipleFiles = async (files: FileList, tipo: 'foto' | 'video') => {
-    if (!selectedProduto) return;
-    
-    setUploading(true);
-    setMsg(null);
-    try {
-      const uploadPromises = Array.from(files).map(file => handleUploadFile(file, tipo));
-      await Promise.all(uploadPromises);
-      setMsg(`${files.length} arquivo(s) enviado(s) com sucesso!`);
-    } catch (err) {
-      setMsg('Erro ao enviar arquivos.');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleDeleteMaterial = async (id: string, url?: string) => {
-    if (!confirm('Tem certeza?')) return;
-    setLoading(true);
-    try {
-      if (url) {
-        const storageRef = ref(storage, url);
-        await deleteObject(storageRef);
-      }
-      await deleteDoc(doc(db, 'materiais', id));
-      fetchMateriais(selectedProduto!.id);
-      setMsg('Material excluído!');
-    } catch (err) {
-      setMsg('Erro ao excluir material.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getBreadcrumbs = () => {
-    const breadcrumbs = ['Materiais Construtoras'];
-    if (selectedConstrutora) breadcrumbs.push(selectedConstrutora.nome);
-    if (selectedProduto) breadcrumbs.push(selectedProduto.nome);
-    return breadcrumbs.join(' > ');
-  };
-
-  const getMaterialIcon = (tipo: string) => {
-    switch (tipo) {
-      case 'pdf': return <FileIcon className="h-5 w-5" />;
-      case 'link': return <LinkIcon className="h-5 w-5" />;
-      case 'foto': return <ImageIcon className="h-5 w-5" />;
-      case 'video': return <VideoIcon className="h-5 w-5" />;
-      default: return <FileIcon className="h-5 w-5" />;
-    }
-  };
+  if (!isAdmin) {
+    return <div className="p-8 text-center text-text-secondary">Você não tem permissão para acessar esta página.</div>;
+  }
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">Gestão de Materiais Construtoras</h1>
-            <p className="text-[#6B6F76] dark:text-gray-300">{getBreadcrumbs()}</p>
+    <div className="max-w-6xl mx-auto p-4 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-white">Material de apoio — administração</h1>
+        <p className="text-sm text-text-secondary">Construtoras, empreendimentos e materiais (grava no apoio-nox, aparece pro corretor em “Materiais de apoio”).</p>
+      </div>
+      {msg && <div className="px-3 py-2 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-200 text-sm">{msg}</div>}
+
+      {/* Construtoras */}
+      <section className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+        <h2 className="text-lg font-bold text-white mb-3">Construtoras</h2>
+        <div className="flex flex-wrap items-end gap-2 mb-4">
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-xs text-text-secondary mb-1">Nome</label>
+            <input value={novaCo} onChange={(e) => setNovaCo(e.target.value)} placeholder="Ex.: MRV, Cyrela…" className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white" />
           </div>
-          {view !== 'construtoras' && (
-            <button
-              onClick={() => {
-                setView('construtoras');
-                setSelectedConstrutora(null);
-                setSelectedProduto(null);
-              }}
-              className="px-4 py-2 bg-[#D4A017] hover:bg-[#B8860B] text-white rounded-lg font-semibold transition-colors"
-            >
-              ← Voltar
-            </button>
-          )}
+          <div className="flex items-center gap-1">
+            {CORES.map((c) => (
+              <button key={c} onClick={() => setNovaCor(c)} className={`w-6 h-6 rounded-full border-2 ${novaCor === c ? 'border-white' : 'border-transparent'}`} style={{ background: c }} />
+            ))}
+          </div>
+          <button onClick={criarConstrutora} className="px-4 py-2 rounded-lg bg-amber-500 text-black font-semibold text-sm hover:bg-amber-400">Criar</button>
         </div>
-
-        {/* Mensagem */}
-        {msg && (
-          <div className={`p-4 rounded-lg mb-6 ${msg.includes('Erro') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-            {msg}
-          </div>
-        )}
-
-        {/* Construtoras */}
-        {view === 'construtoras' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Formulário */}
-            <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                <BuildingIcon className="h-6 w-6 text-[#D4A017]" />
-                Nova Construtora
-              </h2>
-              <form onSubmit={handleAddConstrutora} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Nome da Construtora</label>
-                  <input
-                    type="text"
-                    value={formConstrutora.nome}
-                    onChange={e => setFormConstrutora({ ...formConstrutora, nome: e.target.value })}
-                    className="w-full rounded-lg border px-3 py-2"
-                    placeholder="Ex: MRV, Cyrela, etc."
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Logo (opcional)</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={e => setFormConstrutora({ ...formConstrutora, logo: e.target.files?.[0] || null })}
-                    className="w-full rounded-lg border px-3 py-2"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {loading ? 'Criando...' : 'Criar Construtora'}
-                </button>
-              </form>
-            </div>
-
-            {/* Lista */}
-            <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4">Construtoras Cadastradas</h2>
-              {loading ? (
-                <div className="text-center py-8">Carregando...</div>
-              ) : construtoras.length === 0 ? (
-                <div className="text-center py-8 text-[#6B6F76] dark:text-gray-300">
-                  Nenhuma construtora cadastrada
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {construtoras.map(construtora => (
-                    <div
-                      key={construtora.id}
-                      className="flex items-center justify-between p-3 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        {construtora.logoUrl ? (
-                          <img src={construtora.logoUrl} alt={construtora.nome} className="w-8 h-8 rounded-full object-cover" />
-                        ) : (
-                          <div className="w-8 h-8 bg-[#D4A017] rounded-full flex items-center justify-center">
-                            <BuildingIcon className="h-4 w-4 text-white" />
-                          </div>
-                        )}
-                        <span className="font-semibold text-[#2E2F38] dark:text-white">{construtora.nome}</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            setSelectedConstrutora(construtora);
-                            setView('produtos');
-                          }}
-                          className="px-3 py-1 bg-[#D4A017] hover:bg-[#B8860B] text-white text-sm rounded transition-colors"
-                        >
-                          Produtos
-                        </button>
-                        <button
-                          onClick={() => setEditingLogo({ construtora, logo: null })}
-                          className="px-3 py-1 bg-[#3AC17C] hover:bg-[#2E9D63] text-white text-sm rounded transition-colors"
-                        >
-                          Logo
-                        </button>
-                        <button
-                          onClick={() => handleDeleteConstrutora(construtora.id)}
-                          className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors"
-                        >
-                          Excluir
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Produtos */}
-        {view === 'produtos' && selectedConstrutora && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Formulário */}
-            <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                <PackageIcon className="h-6 w-6 text-[#D4A017]" />
-                Novo Produto
-              </h2>
-              <form onSubmit={handleAddProduto} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Nome do Produto</label>
-                  <input
-                    type="text"
-                    value={formProduto.nome}
-                    onChange={e => setFormProduto({ ...formProduto, nome: e.target.value })}
-                    className="w-full rounded-lg border px-3 py-2"
-                    placeholder="Ex: Residencial Jardim das Flores"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Descrição (opcional)</label>
-                  <textarea
-                    value={formProduto.descricao}
-                    onChange={e => setFormProduto({ ...formProduto, descricao: e.target.value })}
-                    className="w-full rounded-lg border px-3 py-2"
-                    rows={3}
-                    placeholder="Descrição do produto..."
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {loading ? 'Criando...' : 'Criar Produto'}
-                </button>
-              </form>
-            </div>
-
-            {/* Lista */}
-            <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4">Produtos de {selectedConstrutora.nome}</h2>
-              {loading ? (
-                <div className="text-center py-8">Carregando...</div>
-              ) : produtos.length === 0 ? (
-                <div className="text-center py-8 text-[#6B6F76] dark:text-gray-300">
-                  Nenhum produto cadastrado
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {produtos.map(produto => (
-                    <div
-                      key={produto.id}
-                      className="flex items-center justify-between p-3 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors"
-                    >
-                      <div>
-                        <span className="font-semibold text-[#2E2F38] dark:text-white">{produto.nome}</span>
-                        {produto.descricao && (
-                          <p className="text-sm text-[#6B6F76] dark:text-gray-300">{produto.descricao}</p>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            setSelectedProduto(produto);
-                            setView('materiais');
-                          }}
-                          className="px-3 py-1 bg-[#D4A017] hover:bg-[#B8860B] text-white text-sm rounded transition-colors"
-                        >
-                          Materiais
-                        </button>
-                        <button
-                          onClick={() => handleDeleteProduto(produto.id)}
-                          className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors"
-                        >
-                          Excluir
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Materiais */}
-        {view === 'materiais' && selectedProduto && (
-          <div className="space-y-6">
-            {/* Formulários de Material */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* PDF */}
-              <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-                <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                  <FileIcon className="h-5 w-5 text-[#D4A017]" />
-                  Upload PDF
-                </h3>
-                <input
-                  type="file"
-                  accept=".pdf"
-                  onChange={e => {
-                    const file = e.target.files?.[0];
-                    if (file) handleUploadFile(file, 'pdf');
-                  }}
-                  disabled={uploading}
-                  className="w-full rounded-lg border px-3 py-2"
-                />
-                {uploading && <p className="text-sm text-[#6B6F76] mt-2">Enviando...</p>}
+        <div className="flex flex-wrap gap-2">
+          {construtoras.map((c) => (
+            <div key={c.id} className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5">
+              <span className="w-3 h-3 rounded-full" style={{ background: c.color || '#D4A017' }} />
+              <span className="text-sm font-semibold text-white">{c.name}</span>
+              <div className="flex items-center gap-0.5">
+                {CORES.map((col) => <button key={col} onClick={() => mudarCor(c, col)} title="mudar cor" className="w-3 h-3 rounded-full opacity-50 hover:opacity-100" style={{ background: col }} />)}
               </div>
-
-              {/* Links */}
-              <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-                <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                  <LinkIcon className="h-5 w-5 text-[#D4A017]" />
-                  Adicionar Link
-                </h3>
-                <form onSubmit={handleAddMaterial} className="space-y-3">
-                  <input
-                    type="text"
-                    value={formMaterial.nome}
-                    onChange={e => setFormMaterial({ ...formMaterial, nome: e.target.value })}
-                    placeholder="Nome do link"
-                    className="w-full rounded-lg border px-3 py-2"
-                    required
-                  />
-                  <input
-                    type="text"
-                    value={formMaterial.descricao}
-                    onChange={e => setFormMaterial({ ...formMaterial, descricao: e.target.value })}
-                    placeholder="Descrição do link (opcional)"
-                    className="w-full rounded-lg border px-3 py-2"
-                  />
-                  <input
-                    type="url"
-                    value={formMaterial.url}
-                    onChange={e => setFormMaterial({ ...formMaterial, url: e.target.value })}
-                    placeholder="URL do link"
-                    className="w-full rounded-lg border px-3 py-2"
-                    required
-                  />
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    {loading ? 'Adicionando...' : 'Adicionar Link'}
-                  </button>
-                </form>
-              </div>
-            </div>
-
-            {/* Upload de Fotos e Vídeos */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Fotos */}
-              <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-                <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                  <ImageIcon className="h-5 w-5 text-[#D4A017]" />
-                  Upload Fotos
-                </h3>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={e => {
-                    if (e.target.files) {
-                      handleUploadMultipleFiles(e.target.files, 'foto');
-                    }
-                  }}
-                  disabled={uploading}
-                  className="w-full rounded-lg border px-3 py-2"
-                />
-                {uploading && <p className="text-sm text-[#6B6F76] mt-2">Enviando...</p>}
-              </div>
-
-              {/* Vídeos */}
-              <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-                <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                  <VideoIcon className="h-5 w-5 text-[#D4A017]" />
-                  Upload Vídeos
-                </h3>
-                <input
-                  type="file"
-                  accept="video/*"
-                  multiple
-                  onChange={e => {
-                    if (e.target.files) {
-                      handleUploadMultipleFiles(e.target.files, 'video');
-                    }
-                  }}
-                  disabled={uploading}
-                  className="w-full rounded-lg border px-3 py-2"
-                />
-                {uploading && <p className="text-sm text-[#6B6F76] mt-2">Enviando...</p>}
-              </div>
-            </div>
-
-            {/* Lista de Materiais */}
-            <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-              <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4">Materiais de {selectedProduto.nome}</h3>
-              {loading ? (
-                <div className="text-center py-8">Carregando...</div>
-              ) : materiais.length === 0 ? (
-                <div className="text-center py-8 text-[#6B6F76] dark:text-gray-300">
-                  Nenhum material cadastrado
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {materiais.map(material => (
-                    <div
-                      key={material.id}
-                      className="p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors"
-                    >
-                      <div className="flex items-center gap-3 mb-2">
-                        {getMaterialIcon(material.tipo)}
-                        <span className="font-semibold text-[#2E2F38] dark:text-white text-sm">{material.nome}</span>
-                      </div>
-                      <div className="flex gap-2">
-                        {material.url && (
-                          <a
-                            href={material.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-2 py-1 bg-[#D4A017] hover:bg-[#B8860B] text-white text-xs rounded transition-colors"
-                          >
-                            Ver
-                          </a>
-                        )}
-                        <button
-                          onClick={() => handleDeleteMaterial(material.id, material.url)}
-                          className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors"
-                        >
-                          Excluir
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Captações */}
-        {view === 'captacoes' && (
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <HouseIcon className="h-8 w-8 text-[#3AC17C]" />
-                <div>
-                  <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white">Captações</h2>
-                  <p className="text-[#6B6F76] dark:text-gray-300">Imóveis captados pelos corretores</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setView('construtoras')}
-                className="px-4 py-2 bg-[#D4A017] hover:bg-[#B8860B] text-white rounded-lg font-semibold transition-colors"
-              >
-                ← Voltar
-              </button>
-            </div>
-            
-            {loading ? (
-              <div className="text-center py-8">Carregando...</div>
-            ) : imoveisCaptados.length === 0 ? (
-              <div className="text-center py-8 text-[#6B6F76] dark:text-gray-300">
-                Nenhum imóvel captado ainda
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {imoveisCaptados.map((imovel) => (
-                  <div
-                    key={imovel.id}
-                    className="p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors"
-                  >
-                    {/* Fotos */}
-                    {imovel.fotos.length > 0 && (
-                      <div className="mb-3">
-                        <img
-                          src={imovel.fotos[0]}
-                          alt="Foto principal"
-                          className="w-full h-32 object-cover rounded-lg"
-                        />
-                        {imovel.fotos.length > 1 && (
-                          <div className="flex gap-1 mt-1">
-                            {imovel.fotos.slice(1, 4).map((foto, index) => (
-                              <img
-                                key={index}
-                                src={foto}
-                                alt={`Foto ${index + 2}`}
-                                className="w-8 h-8 object-cover rounded"
-                              />
-                            ))}
-                            {imovel.fotos.length > 4 && (
-                              <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center text-xs text-gray-500">
-                                +{imovel.fotos.length - 4}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Informações */}
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        {getTipoIcon(imovel.tipo)}
-                        <h3 className="font-semibold text-[#2E2F38] dark:text-white text-sm">
-                          {imovel.nome}
-                        </h3>
-                      </div>
-                      
-                      <p className="text-sm text-[#6B6F76] dark:text-gray-300">
-                        {imovel.endereco}
-                      </p>
-                      
-                      <p className="text-sm text-[#6B6F76] dark:text-gray-300">
-                        {imovel.bairro}, {imovel.cidade} - {imovel.estado}
-                      </p>
-                      
-                      <p className="text-lg font-bold text-[#D4A017]">
-                        {formatCurrency(imovel.valor)}
-                      </p>
-                      
-                      {imovel.descricao && (
-                        <p className="text-sm text-[#6B6F76] dark:text-gray-300 line-clamp-2">
-                          {imovel.descricao}
-                        </p>
-                      )}
-                      
-                      <div className="flex items-center justify-between pt-2">
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs text-[#6B6F76] dark:text-gray-300">
-                            {imovel.corretorNome}
-                          </p>
-                          {imovel.localizacao && (
-                            <a
-                              href={imovel.localizacao}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-1 text-xs text-[#D4A017] hover:underline"
-                            >
-                              <MapPinIcon className="h-3 w-3" />
-                              Maps
-                            </a>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => handleDeleteImovel(imovel.id, imovel.fotos)}
-                          className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors"
-                        >
-                          Excluir
-                        </button>
-                      </div>
-                    </div>
+              <button onClick={() => excluirConstrutora(c)} className="text-red-400 hover:text-red-300 text-xs ml-1">excluir</button>
             </div>
           ))}
+          {construtoras.length === 0 && !loading && <p className="text-sm text-text-secondary">Nenhuma construtora ainda.</p>}
         </div>
-            )}
+      </section>
+
+      {/* Empreendimentos */}
+      <section className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+        <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+          <h2 className="text-lg font-bold text-white">Empreendimentos</h2>
+          <div className="flex items-center gap-2">
+            <select value={filtroCo} onChange={(e) => setFiltroCo(e.target.value)} className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white">
+              <option value="">Todas construtoras</option>
+              {construtoras.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+            </select>
+            <button onClick={() => setForm({ ...EMPTY, co: filtroCo || construtoras[0]?.name || '' })} className="px-4 py-1.5 rounded-lg bg-amber-500 text-black font-semibold text-sm hover:bg-amber-400">+ Novo</button>
+          </div>
+        </div>
+
+        {loading ? (
+          <p className="text-sm text-text-secondary py-6 text-center">Carregando…</p>
+        ) : (
+          <div className="divide-y divide-white/10">
+            {imoveisFiltrados.map((p) => (
+              <div key={p.id} className="flex items-center gap-3 py-2">
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: (construtoras.find((c) => c.name === p.co)?.color) || '#D4A017' }} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-white truncate">{p.n}</div>
+                  <div className="text-[11px] text-text-secondary truncate">{p.co}{p.cid ? ` · ${p.cid}` : ''} · {Array.isArray(p.materiais) ? p.materiais.length : 0} materiais</div>
+                </div>
+                <button onClick={() => setForm(toForm(p))} className="px-2.5 py-1 rounded-md text-xs text-amber-300 border border-amber-500/40 hover:bg-amber-500/10">Editar</button>
+                <button onClick={() => excluirImovel(p)} className="px-2.5 py-1 rounded-md text-xs text-red-300 border border-red-500/40 hover:bg-red-500/10">Excluir</button>
+              </div>
+            ))}
+            {imoveisFiltrados.length === 0 && <p className="text-sm text-text-secondary py-6 text-center">Nenhum empreendimento.</p>}
           </div>
         )}
-      </div>
+      </section>
 
-      {/* Modal de Edição de Logo */}
-      {editingLogo && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] w-full max-w-md">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white flex items-center gap-2">
-                <BuildingIcon className="h-6 w-6 text-[#D4A017]" />
-                Editar Logo da Construtora
-              </h2>
-              <button
-                onClick={() => setEditingLogo(null)}
-                className="text-[#6B6F76] hover:text-[#2E2F38] dark:text-gray-300 dark:hover:text-white"
-              >
-                ✕
-              </button>
+      {form && <ImovelForm form={form} construtoras={construtoras} salvando={salvando} setField={set} addMaterial={addMaterial} removeMaterial={removeMaterial} uploadArquivo={uploadArquivo} onSave={salvarImovel} onCancel={() => setForm(null)} />}
+    </div>
+  );
+}
+
+function ImovelForm({ form, construtoras, salvando, setField, addMaterial, removeMaterial, uploadArquivo, onSave, onCancel }: {
+  form: FormImovel;
+  construtoras: Construtora[];
+  salvando: boolean;
+  setField: (k: keyof FormImovel, v: string) => void;
+  addMaterial: (cat: string, name: string, url: string, dl?: string) => void;
+  removeMaterial: (i: number) => void;
+  uploadArquivo: (file: File, cat: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  const [mCat, setMCat] = useState<string>(CATEGORIES[0].key);
+  const [mName, setMName] = useState('');
+  const [mUrl, setMUrl] = useState('');
+  const [mDl, setMDl] = useState('');
+
+  // função (não componente) p/ os inputs não perderem foco a cada tecla
+  const campo = (k: keyof FormImovel, label: string, ph?: string) => (
+    <div key={k as string}>
+      <label className="block text-xs text-text-secondary mb-1">{label}</label>
+      <input value={(form[k] as string) || ''} onChange={(e) => setField(k, e.target.value)} placeholder={ph} className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white" />
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 z-[75] bg-black/70 flex items-start justify-center p-4 overflow-y-auto" onClick={onCancel}>
+      <div className="w-full max-w-3xl my-4 rounded-2xl bg-[#15151a] border border-white/15 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
+          <h3 className="text-lg font-bold text-white">{form.id ? 'Editar empreendimento' : 'Novo empreendimento'}</h3>
+          <button onClick={onCancel} className="text-white/70 hover:text-white">✕</button>
+        </div>
+
+        <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto scrollbar-thin">
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-text-secondary mb-1">Construtora *</label>
+              <select value={form.co} onChange={(e) => setField('co', e.target.value)} className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white">
+                {construtoras.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+              </select>
             </div>
-            <div className="space-y-4">
+            {campo('n', 'Nome *', 'Ex.: Stein One')}
+            {campo('l', 'Linha/selo')}
+            {campo('st', 'Status', 'Lançamento, Em obras…')}
+            {campo('cid', 'Cidade')}
+            {campo('end', 'Endereço')}
+            {campo('pr', 'Preço (a partir de)', '2.400.000')}
+            {campo('m2', 'Valor m²', '21.000')}
+            {campo('t', 'Torres')}
+            {campo('a', 'Andares')}
+            {campo('ap', 'Apartamentos')}
+            {campo('e', 'Entrega', 'Dez/30')}
+          </div>
+
+          <div>
+            <label className="block text-xs text-text-secondary mb-1">Resumo</label>
+            <textarea value={form.resumo} onChange={(e) => setField('resumo', e.target.value)} rows={3} className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white" />
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-text-secondary mb-1">Tipologias (uma por linha: “área | descrição”)</label>
+              <textarea value={form.tipText} onChange={(e) => setField('tipText', e.target.value)} rows={4} placeholder={'110,00 | 3 suítes\n168,00 | 4 suítes'} className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white" />
+            </div>
+            <div>
+              <label className="block text-xs text-text-secondary mb-1">Diferenciais (um por linha)</label>
+              <textarea value={form.difText} onChange={(e) => setField('difText', e.target.value)} rows={4} placeholder={'Frente mar\nInfinity pool'} className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white" />
+            </div>
+          </div>
+          {campo('capa', 'Foto de capa (URL)', 'cole aqui ou use “usar de capa” num material de imagem')}
+
+          {/* Materiais */}
+          <div className="rounded-xl border border-white/10 p-3">
+            <h4 className="text-sm font-bold text-white mb-2">Materiais</h4>
+            <div className="space-y-1 mb-3">
+              {form.materiais.map((m, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs bg-white/[0.03] rounded-md px-2 py-1.5">
+                  <span className="px-1.5 py-0.5 rounded bg-white/10 text-white/80">{m.cat}</span>
+                  <span className="text-white truncate flex-1">{m.name || m.url}</span>
+                  {(m.cat === 'imagens' || m.cat === 'plantas' || m.cat === 'decorado') && <button onClick={() => setField('capa', m.url)} className="text-amber-300 hover:underline">usar de capa</button>}
+                  <button onClick={() => removeMaterial(i)} className="text-red-400 hover:text-red-300">remover</button>
+                </div>
+              ))}
+              {form.materiais.length === 0 && <p className="text-xs text-text-secondary">Nenhum material adicionado.</p>}
+            </div>
+            <div className="grid sm:grid-cols-2 gap-2 items-end">
               <div>
-                <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Nova Logo (opcional)</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={e => setEditingLogo({ ...editingLogo, logo: e.target.files?.[0] || null })}
-                  className="w-full rounded-lg border px-3 py-2"
-                />
+                <label className="block text-[11px] text-text-secondary mb-1">Categoria</label>
+                <select value={mCat} onChange={(e) => setMCat(e.target.value)} className="w-full px-2 py-1.5 rounded-md bg-white/[0.04] border border-white/10 text-sm text-white">
+                  {CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
+                </select>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setEditingLogo(null)}
-                  className="flex-1 px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleEditLogo}
-                  disabled={loading}
-                  className="flex-1 bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {loading ? 'Atualizando...' : 'Atualizar Logo'}
-                </button>
-              </div>
+              <input value={mName} onChange={(e) => setMName(e.target.value)} placeholder="Nome (opcional)" className="px-2 py-1.5 rounded-md bg-white/[0.04] border border-white/10 text-sm text-white" />
+              <input value={mUrl} onChange={(e) => setMUrl(e.target.value)} placeholder="Link (GitHub, Drive, YouTube…)" className="px-2 py-1.5 rounded-md bg-white/[0.04] border border-white/10 text-sm text-white" />
+              <input value={mDl} onChange={(e) => setMDl(e.target.value)} placeholder="Link de download (opcional, vídeo)" className="px-2 py-1.5 rounded-md bg-white/[0.04] border border-white/10 text-sm text-white" />
+              <button onClick={() => { addMaterial(mCat, mName, mUrl, mDl || undefined); setMName(''); setMUrl(''); setMDl(''); }} className="px-3 py-1.5 rounded-md bg-white/10 text-white text-sm hover:bg-white/15">Adicionar por link</button>
+              <label className="px-3 py-1.5 rounded-md bg-white/10 text-white text-sm hover:bg-white/15 cursor-pointer text-center">
+                Enviar arquivo
+                <input type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadArquivo(f, mCat); e.currentTarget.value = ''; }} />
+              </label>
             </div>
           </div>
         </div>
-      )}
+
+        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-white/10">
+          <button onClick={onCancel} className="px-4 py-2 rounded-lg text-sm text-white/80 hover:bg-white/10">Cancelar</button>
+          <button onClick={onSave} disabled={salvando} className="px-5 py-2 rounded-lg bg-amber-500 text-black font-semibold text-sm hover:bg-amber-400 disabled:opacity-60">{salvando ? 'Salvando…' : 'Salvar'}</button>
+        </div>
+      </div>
     </div>
   );
-} 
+}
