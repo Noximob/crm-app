@@ -24,25 +24,19 @@ function textoDe(x: { mensagem?: string; mensagensPorProduto?: Record<string, st
   return x.mensagem || '';
 }
 
-function MensagemCard({ idKey, titulo, texto, audio, copiadoId, onCopiar }: {
-  idKey: string; titulo?: string; texto: string; audio?: boolean; copiadoId: string | null; onCopiar: (id: string, t: string) => void;
-}) {
+function MensagemCard({ titulo, texto, audio }: { titulo?: string; texto: string; audio?: boolean }) {
   if (!texto) return null;
-  const copiado = copiadoId === idKey;
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.05] overflow-hidden">
+    <div className="rounded-2xl border border-white/10 bg-[#20202a] overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
       {titulo && (
-        <div className="px-4 py-2.5 bg-white/[0.04] border-b border-white/10 flex items-center gap-2">
-          {audio && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/30 text-purple-200 shrink-0">🎙 ÁUDIO</span>}
+        <div className="px-4 py-2.5 bg-black/25 border-b border-white/10 flex items-center gap-2">
+          {audio && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/40 text-purple-100 shrink-0">🎙 ÁUDIO</span>}
           <span className="text-[13px] font-semibold text-amber-200">{titulo}</span>
         </div>
       )}
       <div className="p-4">
-        {!titulo && audio && <span className="inline-block mb-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/30 text-purple-200">🎙 grave lendo o texto</span>}
-        <p className="text-[15px] text-white whitespace-pre-line leading-[1.75]">{texto}</p>
-        <button onClick={() => onCopiar(idKey, texto)} className={`mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold transition-colors ${copiado ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-black hover:bg-amber-400'}`}>
-          {copiado ? '✓ Copiado!' : '📋 Copiar mensagem'}
-        </button>
+        {!titulo && audio && <span className="inline-block mb-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/40 text-purple-100">🎙 grave lendo o texto</span>}
+        <p className="text-[15.5px] text-white whitespace-pre-line leading-[1.8]">{texto}</p>
       </div>
     </div>
   );
@@ -62,7 +56,6 @@ export default function LigacaoAtivaPage() {
   const [currentNode, setCurrentNode] = useState('');
   const [history, setHistory] = useState<string[]>([]);
   const [marcados, setMarcados] = useState<Record<string, boolean>>({});
-  const [copiadoId, setCopiadoId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -91,7 +84,6 @@ export default function LigacaoAtivaPage() {
   const navegar = (target: string) => { if (!nodeById[target]) return; setHistory((h) => [...h, currentNode]); setCurrentNode(target); setMarcados({}); window.scrollTo?.({ top: 0 }); };
   const voltar = () => setHistory((h) => { if (!h.length) return h; setCurrentNode(h[h.length - 1]); return h.slice(0, -1); });
   const recomecar = () => { setCurrentNode(cfg.startNode); setHistory([]); setMarcados({}); };
-  const copiar = async (id: string, texto: string) => { try { await navigator.clipboard.writeText(texto); setCopiadoId(id); setTimeout(() => setCopiadoId(null), 1600); } catch { /* noop */ } };
 
   const produtoNome = cfg.produtos.find((p) => p.key === product)?.label || '—';
   const objetivoNome = cfg.objetivos.find((o) => o.key === goal)?.label || '—';
@@ -171,13 +163,13 @@ export default function LigacaoAtivaPage() {
           {node.passos && node.passos.length > 0 && (
             <div className="space-y-3">
               {node.passos.map((p: FunilPasso, i) => (
-                <MensagemCard key={i} idKey={`p${i}`} titulo={p.titulo} audio={p.audio} texto={interpolar(textoDe(p, product), sessao, prodLabel)} copiadoId={copiadoId} onCopiar={copiar} />
+                <MensagemCard key={i} titulo={p.titulo} audio={p.audio} texto={interpolar(textoDe(p, product), sessao, prodLabel)} />
               ))}
             </div>
           )}
 
           {/* Mensagem única */}
-          {msgPrincipal && <MensagemCard idKey="msg" audio={node.audio} texto={msgPrincipal} copiadoId={copiadoId} onCopiar={copiar} />}
+          {msgPrincipal && <MensagemCard audio={node.audio} texto={msgPrincipal} />}
 
           {node.infoNote && (
             <div className="rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-[13px] text-sky-100 leading-relaxed">💡 {node.infoNote}</div>
