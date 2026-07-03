@@ -140,7 +140,6 @@ export default function LigacaoAtivaPage() {
           </div>
         </div>
         <button onClick={voltar} disabled={!history.length} className="px-3 py-2.5 rounded-xl text-sm font-semibold border border-white/15 text-white/85 hover:bg-white/5 disabled:opacity-40">← Voltar uma etapa</button>
-        <button onClick={() => navegar('hub_replied')} className="px-3 py-2.5 rounded-xl text-sm font-bold bg-emerald-500/90 text-white hover:bg-emerald-500" title="Atalho: pula direto pra 'qual foi a resposta do cliente?'">💬 Cliente respondeu</button>
         <button onClick={recomecar} className="px-3 py-2.5 rounded-xl text-sm font-semibold border border-white/15 text-text-secondary hover:bg-white/5">↺ Recomeçar</button>
       </aside>
 
