@@ -236,6 +236,7 @@ export default function DashboardLayout({
     { href: '/dashboard/brello', icon: FileTextIcon, label: 'Brello' },
     { href: '/dashboard/materiais', icon: FileTextIcon, label: 'Materiais de apoio' },
     { href: '/dashboard/ligacao-ativa', icon: PhoneIcon, label: 'Ligação Ativa' },
+    { href: '/dashboard/comissoes', icon: CreditCardIcon, label: 'Comissões' },
     { href: 'https://chat.openai.com', icon: ChatGPTIcon, label: 'ChatGPT', isExternal: true },
     { href: 'https://noximobiliaria.com.br/', icon: HouseIcon, label: 'Site', isExternal: true },
     { href: '/dashboard/treinamentos', icon: PresentationIcon, label: 'Academia' },

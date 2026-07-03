@@ -1,0 +1,2253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Comissões — Nox Imóveis</title>
+<style>
+  :root{
+    --ink:#13212e; --ink-2:#1c2f40; --paper:#f7f5f0; --card:#ffffff;
+    --brass:#b9852b; --brass-soft:#f3e6c9; --teal:#1f6f6b; --teal-soft:#e2efed;
+    --line:#e6e1d6; --muted:#6c7480; --ink-text:#1a2733;
+    --danger:#b23b3b; --danger-soft:#f6e2e0;
+    --shadow:0 1px 2px rgba(19,33,46,.06),0 8px 24px rgba(19,33,46,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--paper);color:var(--ink-text);line-height:1.45;-webkit-font-smoothing:antialiased}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px 80px}
+  .muted-line{color:var(--muted);font-size:13px;padding:5px 0}
+
+  header{background:var(--ink);color:#f4f1ea;padding:34px 0 30px;margin-bottom:24px}
+  .head-inner{max-width:1080px;margin:0 auto;padding:0 20px;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap}
+  .brand{font-family:Georgia,"Times New Roman",serif;font-size:13px;letter-spacing:.32em;text-transform:uppercase;color:var(--brass);font-weight:400}
+  h1{font-family:Georgia,"Times New Roman",serif;font-size:30px;font-weight:600;line-height:1.1;margin-top:6px;letter-spacing:-.01em}
+  .sub{color:#9fb0bf;font-size:14px;margin-top:8px;max-width:48ch}
+  .head-tag{font-size:12px;color:#9fb0bf;text-align:right;line-height:1.7}
+  .head-tag b{color:#f4f1ea;font-weight:600}
+
+  /* tabs */
+  .tabs{display:flex;gap:2px;border-bottom:2px solid var(--line);margin-bottom:26px}
+  .tab{border:none;background:transparent;padding:12px 20px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .15s}
+  .tab:hover{color:var(--ink-text)}
+  .tab.active{color:var(--ink);border-bottom-color:var(--brass)}
+  .tabpane[hidden]{display:none}
+
+  .rules{background:var(--ink-2);border-left:3px solid var(--brass);border-radius:8px;padding:16px 18px;margin-bottom:26px;color:#dfe6ec;font-size:13px}
+  .rules summary{cursor:pointer;font-weight:600;color:#f4f1ea;list-style:none;display:flex;align-items:center;gap:8px}
+  .rules summary::-webkit-details-marker{display:none}
+  .rules summary::before{content:"▸";color:var(--brass);transition:transform .2s}
+  .rules[open] summary::before{transform:rotate(90deg)}
+  .rules ul{margin:12px 0 0 4px;padding-left:18px}
+  .rules li{margin-bottom:7px}
+  .rules b{color:var(--brass-soft)}
+  .cfg-hint{font-size:12px;color:var(--muted);margin:-14px 0 24px;line-height:1.5}
+  .cfg-hint b{color:var(--ink-text)}
+  .rules-body{margin-top:12px}
+  .rules-lead{font-size:12.5px;color:#aebcc7;margin:0 0 14px}
+  .rules-block{margin-bottom:14px;font-size:13px}
+  .rules-block>b{display:block;color:#f4f1ea;font-family:Georgia,serif;font-size:14px;margin-bottom:5px}
+  .rules-block ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+  .rules-block li{line-height:1.55;color:#dfe6ec}
+  .rules-foot{font-size:12px;color:#aebcc7;border-top:1px solid rgba(255,255,255,.12);padding-top:12px;margin:6px 0 0;line-height:1.6}
+
+  .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0 0 12px;display:flex;align-items:center;gap:10px}
+  .eyebrow::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  .config{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px}
+  .field label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+  .field input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:7px;font-size:15px;background:var(--card);color:var(--ink-text);font-variant-numeric:tabular-nums}
+  .field input:focus{outline:none;border-color:var(--brass);box-shadow:0 0 0 3px var(--brass-soft)}
+
+  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:8px}
+  .scard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow)}
+  .scard .lab{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+  .scard .big{font-family:Georgia,serif;font-size:30px;font-weight:600;margin-top:6px;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+  .scard.v- .big{color:var(--ink)} .scard.p- .big{color:var(--brass)} .scard.h- .big{color:var(--teal)}
+  .scard .small{font-size:12px;color:var(--muted);margin-top:4px}
+  .opline{font-size:13px;color:var(--muted);margin-bottom:24px;text-align:center}
+
+  .team-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:18px;box-shadow:var(--shadow)}
+  .team-head{display:flex;align-items:center;gap:10px;margin-bottom:6px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+  .team-name-input{flex:1;font-family:Georgia,serif;font-size:19px;font-weight:600;border:1px solid transparent;background:transparent;border-radius:7px;padding:5px 8px;color:var(--ink)}
+  .team-name-input:hover{background:#faf8f3}
+  .team-name-input:focus{outline:none;border-color:var(--brass);background:#fff;box-shadow:0 0 0 3px var(--brass-soft)}
+
+  .person-block{padding:11px 0;border-bottom:1px solid #f3efe6}
+  .person-block:last-of-type{border-bottom:none}
+  .person-head{display:flex;align-items:center;gap:10px}
+  .role-chip{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:4px 8px;border-radius:6px;background:#eef0f2;color:var(--muted);white-space:nowrap;width:78px;text-align:center}
+  .role-chip.mgr{background:var(--brass-soft);color:var(--brass)}
+  .role-chip.solo{background:var(--teal-soft);color:var(--teal)}
+  .solo-zone{margin-top:34px;padding-top:26px;border-top:1px dashed var(--line)}
+  .solo-zone-head{margin-bottom:14px}
+  .solo-zone-head h3{font-size:16px;font-weight:700;color:var(--ink);font-family:Georgia,serif}
+  .solo-zone-head .muted-line{display:block;margin-top:2px}
+  .solo-card{border-left:3px solid var(--teal)}
+  .solo-empty{padding:6px 2px}
+  .rel-controls{flex-wrap:wrap;gap:14px}
+  .rel-period{display:inline-flex;align-items:center;gap:8px}
+  .rel-period label{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700}
+  .rel-period input{border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:14px}
+  .rel-tri-label{font-weight:700;color:var(--ink);font-size:14px}
+  .rel-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0 6px}
+  .rel-kpi{background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:13px 15px}
+  .rel-kpi span{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+  .rel-kpi b{display:block;margin-top:5px;font-family:Georgia,serif;font-size:21px;color:var(--ink);font-variant-numeric:tabular-nums}
+  .rep-tbl .hit{color:var(--teal);font-weight:800}
+  .rel-saldo{display:flex;flex-direction:column;gap:2px;background:linear-gradient(100deg,var(--ink),var(--ink-2));color:#fff;border-radius:12px;padding:16px 22px;margin:14px 0 6px}
+  .rel-saldo span{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#c8d2db;font-weight:700}
+  .rel-saldo b{font-family:Georgia,serif;font-size:28px;font-variant-numeric:tabular-nums}
+  .rel-saldo small{color:#aebcc7;font-size:12px}
+  .rel-saldo.neg b{color:#ff9b8a}
+  .rel-panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:18px;box-shadow:var(--shadow)}
+  .rp-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .rp-toggle{flex:0 0 auto}
+  .rp-hint{font-size:12.5px;color:var(--muted);line-height:1.4}
+  .rp-hint b{color:var(--ink-text)}
+  .rp-tri{margin-top:13px;padding-top:13px;border-top:1px solid var(--line);font-size:14px;color:var(--ink-text)}
+  .rp-tri b{color:var(--ink)}
+  .rp-months{margin-top:13px;padding-top:13px;border-top:1px solid var(--line)}
+  .rp-mlabel{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;margin-bottom:10px}
+  .rp-empty{margin-top:13px;padding-top:13px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+  .mn-year{display:flex;align-items:flex-start;gap:12px;padding:6px 0}
+  .mn-year+.mn-year{border-top:1px dashed var(--line)}
+  .mn-ylab{flex:0 0 52px;font-family:Georgia,serif;font-weight:700;color:var(--ink);font-size:15px;padding-top:6px}
+  .mn-chips{display:flex;flex-wrap:wrap;gap:7px;flex:1}
+  .month-chip{display:flex;flex-direction:column;align-items:flex-start;gap:1px;border:1px solid var(--line);background:var(--paper);border-radius:9px;padding:6px 11px;cursor:pointer;min-width:74px;transition:all .12s}
+  .month-chip:hover{border-color:var(--brass)}
+  .month-chip .mc-m{font-size:13px;font-weight:700;color:var(--ink-text);text-transform:capitalize}
+  .month-chip .mc-v{font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .month-chip.sel{background:var(--ink);border-color:var(--ink)}
+  .month-chip.sel .mc-m{color:#fff}
+  .month-chip.sel .mc-v{color:#aebcc7}
+  .rel-empty{padding:24px 4px}
+  .cm-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:18px;box-shadow:var(--shadow)}
+  .cm-title{font-size:14px;font-weight:700;color:var(--ink);font-family:Georgia,serif}
+  .cm-sub{font-size:12px;color:var(--muted);margin:2px 0 12px}
+  .cm-form{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+  .cm-form select,.cm-form input{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;background:var(--paper)}
+  .cm-form #ceType{font-weight:700}
+  .cm-form #ceCat{min-width:150px;flex:1 1 150px}
+  .cm-form #ceDesc{min-width:140px;flex:1 1 140px}
+  .cm-form #ceAmount{width:120px}
+  .cm-form select:focus,.cm-form input:focus{outline:none;border-color:var(--brass)}
+  .cm-tbl{width:100%;border-collapse:collapse;font-size:13px}
+  .cm-tbl th{text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;padding:6px 8px;border-bottom:1px solid var(--line)}
+  .cm-tbl th.txt{text-align:left}
+  .cm-tbl td{padding:7px 8px;border-bottom:1px solid #f1ede4;text-align:right;font-variant-numeric:tabular-nums}
+  .cm-tbl td.txt{text-align:left}
+  .cm-empty{font-size:13px;color:var(--muted);padding:4px 2px}
+  .ce-tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px}
+  .ce-tag.in{background:var(--teal-soft);color:var(--teal)}
+  .ce-tag.out{background:#f7e7e3;color:#b3492f}
+  .ce-desc{color:var(--muted);font-weight:400}
+  .ce-amt.in{color:var(--teal);font-weight:700}
+  .ce-amt.out{color:#b3492f;font-weight:700}
+  .ce-status{border:1px solid var(--line);background:var(--paper);border-radius:20px;padding:3px 11px;font-size:11px;font-weight:700;cursor:pointer;color:var(--muted);white-space:nowrap}
+  .ce-status:hover{border-color:var(--brass)}
+  .ce-status.done{background:var(--teal-soft);color:var(--teal);border-color:transparent}
+  .cm-summary{display:flex;flex-wrap:wrap;gap:18px;margin-top:12px;padding-top:11px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+  .cm-summary b{color:var(--ink-text)}
+  .ce-acts{white-space:nowrap;display:flex;gap:4px;justify-content:flex-end}
+  .chip-e{border:1px solid var(--line);background:var(--paper);border-radius:6px;width:24px;height:24px;cursor:pointer;color:var(--muted);font-size:12px}
+  .chip-e:hover{border-color:var(--brass);color:var(--brass)}
+  .ce-editing{background:var(--brass-soft)}
+  .lucro-card{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:6px 0 26px}
+  .lucro-cell{background:var(--ink);border-radius:14px;padding:16px 20px;color:#fff}
+  .lucro-cell.real{background:var(--teal)}
+  .lucro-cell span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#aebcc7}
+  .lucro-cell.real span{color:#cdeee6}
+  .lucro-cell b{display:block;font-size:27px;font-family:Georgia,serif;margin:3px 0;font-variant-numeric:tabular-nums}
+  .lucro-cell b.neg{color:#ff9c8a}
+  .lucro-cell small{font-size:11px;color:#9fb0bc}
+  .lucro-cell.real small{color:#bfe6dd}
+  .rank-empty{color:var(--muted);font-size:13px;padding:6px 2px 22px}
+  .rank-list{display:flex;flex-direction:column;gap:11px;margin-bottom:26px}
+  .rank-row{display:flex;align-items:center;gap:13px}
+  .rank-pos{width:30px;text-align:center;font-size:17px;font-weight:700;color:var(--muted);flex-shrink:0}
+  .rank-body{flex:1;min-width:0}
+  .rank-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:4px}
+  .rank-name{font-size:13.5px;font-weight:600;color:var(--ink-text)}
+  .rank-name em{font-style:normal;font-size:11.5px;color:var(--muted);font-weight:400}
+  .rank-vgv{font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .rank-bar{height:9px;background:var(--line);border-radius:6px;overflow:hidden}
+  .rank-fill{height:100%;background:linear-gradient(90deg,var(--brass),#caa45e);border-radius:6px;transition:width .4s}
+  .rank-fill.hit{background:linear-gradient(90deg,var(--teal),#3fae97)}
+  .rank-meta{font-size:11px;color:var(--muted);margin-top:3px}
+  .alert-card{background:#fdf3ef;border:1px solid #f0c9bd;border-radius:14px;padding:15px 18px;margin-bottom:18px}
+  .alert-head{font-size:14px;font-weight:700;color:#b3492f;font-family:Georgia,serif}
+  .alert-sub{font-size:11px;font-weight:400;color:#c08a78}
+  .alert-sec{margin-top:11px}
+  .alert-lab{font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:#9a5a45;font-weight:700;margin-bottom:5px}
+  .alert-lab b{color:#b3492f}
+  .alert-row{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;padding:4px 0;border-bottom:1px solid #f3ddd4}
+  .alert-row em{font-style:normal;color:var(--muted)}
+  .alert-foot{font-size:11px;color:#9a5a45;margin-top:10px}
+  @media(max-width:560px){.lucro-card{grid-template-columns:1fr}}
+  .lucro-break{font-size:11.5px;color:var(--muted);margin:-14px 0 22px;line-height:1.5}
+  .report .lucro-card{margin:6px 0 6px}
+  .arq-list{display:flex;flex-direction:column;gap:8px}
+  .arq-item{display:flex;align-items:center;gap:8px}
+  .arq-open{flex:1;display:flex;flex-direction:column;gap:1px;text-align:left;border:1px solid var(--line);background:var(--paper);border-radius:9px;padding:9px 13px;cursor:pointer}
+  .arq-open:hover{border-color:var(--brass)}
+  .arq-open b{font-size:13.5px;color:var(--ink)}
+  .arq-open span{font-size:11px;color:var(--muted)}
+  .arq-item.sel .arq-open{background:var(--ink);border-color:var(--ink)}
+  .arq-item.sel .arq-open b{color:#fff} .arq-item.sel .arq-open span{color:#aebcc7}
+  .arq-sub{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px;padding:10px;background:var(--card);border:1px solid var(--line);border-radius:10px}
+  .arq-sub-lab{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;align-self:center;margin-right:4px}
+  .arq-tab{border:1px solid var(--line);background:var(--paper);border-radius:20px;padding:5px 12px;font-size:12px;cursor:pointer;color:var(--ink-text)}
+  .arq-tab:hover{border-color:var(--brass)}
+  .arq-tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .tri-filter{display:inline-flex;gap:4px;margin-left:8px;vertical-align:middle}
+  .tri-filter button{border:1px solid var(--line);background:var(--paper);border-radius:14px;padding:2px 9px;font-size:10.5px;font-weight:600;cursor:pointer;color:var(--muted)}
+  .tri-filter button.on{background:var(--brass);color:#fff;border-color:var(--brass)}
+  .ev-intro{font-size:13px;color:var(--muted);line-height:1.6;margin:0 0 16px;max-width:760px}
+  .ev-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+  .ev-chip{border:1px solid var(--line);background:var(--paper);border-radius:9px;padding:8px 15px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink-text)}
+  .ev-chip:hover{border-color:var(--brass)}
+  .ev-chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .ev-chip.add{color:var(--brass);font-weight:700;border-style:dashed}
+  .ev-empty{color:var(--muted);font-size:14px;padding:30px 0}
+  .ev-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 24px;box-shadow:var(--shadow);max-width:820px}
+  .ev-row1{display:flex;gap:12px;align-items:center;margin-bottom:18px}
+  .ev-name{flex:1;font-family:Georgia,serif;font-size:20px;font-weight:700;color:var(--ink);border:none;border-bottom:2px solid var(--line);padding:4px 2px;background:transparent}
+  .ev-name:focus{outline:none;border-color:var(--brass)}
+  .ev-cfg{margin-bottom:6px}
+  .ev-cfg .field{max-width:340px}
+  .ev-cfg-note{font-size:11.5px;color:var(--muted);margin-top:6px}
+  .ev-split{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-bottom:8px}
+  .ev-split .field{width:130px}
+  .ev-spsum{font-size:12px;font-weight:700;padding-bottom:9px}
+  .ev-spsum.ok{color:var(--teal)} .ev-spsum.bad{color:#b3492f}
+  .ev-parts{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+  .ev-prow{display:flex;gap:8px;align-items:center}
+  .ev-prow .ev-f{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;background:var(--paper)}
+  .ev-prow .ev-f:focus{outline:none;border-color:var(--brass)}
+  .ev-prow input[data-ev-f="name"]{flex:1;min-width:120px}
+  .ev-prow select{min-width:150px}
+  .ev-prow input[data-ev-f="vgv"]{width:150px;text-align:right}
+  .ev-people{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin:14px 0 4px}
+  .ev-pcol .eyebrow{margin-top:0}
+  .ev-list{display:flex;flex-direction:column;gap:6px}
+  .ev-list-empty{font-size:12px;color:var(--muted)}
+  .ev-lrow{display:flex;gap:6px;align-items:center}
+  .ev-lname{flex:1;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px;background:var(--paper)}
+  .ev-lname:focus{outline:none;border-color:var(--brass)}
+  .ev-lname.solo{width:100%}
+  .ev-sales{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+  .ev-srow{display:flex;gap:8px;align-items:center}
+  .ev-srow .ev-sf{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;background:var(--paper)}
+  .ev-srow .ev-sf:focus{outline:none;border-color:var(--brass)}
+  .ev-srow select[data-ev-sale="seller"]{flex:1;min-width:140px}
+  .ev-srow input[data-ev-sale="vgv"]{width:160px;text-align:right}
+  .ev-srow select[data-ev-sale="sat"]{min-width:150px}
+  .ev-extra{color:var(--muted);font-weight:400;font-size:11.5px}
+  @media(max-width:620px){.ev-people{grid-template-columns:1fr}.ev-srow{flex-wrap:wrap}.ev-srow select[data-ev-sale="seller"],.ev-srow input[data-ev-sale="vgv"],.ev-srow select[data-ev-sale="sat"]{width:100%;flex:none}}
+  .ev-result{margin-top:20px;border-top:1px solid var(--line);padding-top:18px}
+  .ev-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+  .ev-kpi{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 15px}
+  .ev-kpi span{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700}
+  .ev-kpi b{display:block;font-size:20px;font-family:Georgia,serif;margin-top:3px;font-variant-numeric:tabular-nums}
+  .ev-kpi.h{background:var(--ink)} .ev-kpi.h span{color:#aebcc7} .ev-kpi.h b{color:#fff}
+  .ev-pools{display:flex;flex-wrap:wrap;gap:18px;font-size:12.5px;color:var(--muted);margin-bottom:12px}
+  .ev-pools b{color:var(--ink-text)}
+  .ev-warn{font-size:12px;color:#b3492f;background:#fdf3ef;border-radius:8px;padding:8px 11px;margin-bottom:12px}
+  .ev-tbl{width:100%;border-collapse:collapse;font-size:13px}
+  .ev-tbl th{text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;padding:7px 8px;border-bottom:1px solid var(--line)}
+  .ev-tbl th.txt{text-align:left}
+  .ev-tbl td{padding:8px;border-bottom:1px solid #f1ede4;text-align:right;font-variant-numeric:tabular-nums}
+  .ev-tbl td.txt{text-align:left}
+  @media(max-width:560px){.ev-kpis{grid-template-columns:1fr}.ev-prow{flex-wrap:wrap}.ev-prow input[data-ev-f="vgv"]{width:100%}}
+  .eyebrow-note{font-size:11px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0}
+  .pol-tbl{border-collapse:collapse;margin-bottom:24px;font-size:13px}
+  .pol-tbl th{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;padding:6px 10px;text-align:center}
+  .pol-tbl th:first-child{text-align:left}
+  .pol-tbl td{padding:4px 6px}
+  .pol-tbl .pol-role{font-size:12.5px;color:var(--ink-text);font-weight:600;padding-right:14px;white-space:nowrap}
+  .pol-input{width:62px;text-align:center;border:1px solid var(--line);border-radius:7px;padding:6px;font-size:13px;font-variant-numeric:tabular-nums}
+  .pol-input:focus{outline:none;border-color:var(--brass);box-shadow:0 0 0 3px var(--brass-soft)}
+  .cf-viz{margin:4px 0 16px}
+  .cf-legend{font-size:11px;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .cf-dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .cf-dot.in{background:var(--teal)} .cf-dot.out{background:#caa24a}
+  .cf-sep{color:var(--line)}
+  .cf-row{display:grid;grid-template-columns:62px 1fr 84px;align-items:center;gap:10px;padding:7px 0;border-top:1px solid #f1ede4}
+  .cf-row:first-of-type{border-top:none}
+  .cf-m{font-size:12px;color:var(--ink-text);font-weight:600}
+  .cf-bars{display:flex;flex-direction:column;gap:4px;min-width:0}
+  .cf-bar{display:grid;grid-template-columns:1fr 62px;align-items:center;gap:8px}
+  .cf-track{height:9px;background:var(--paper);border-radius:5px;overflow:hidden}
+  .cf-track i{display:block;height:100%;border-radius:5px}
+  .cf-bar.in .cf-track i{background:var(--teal)}
+  .cf-bar.out .cf-track i{background:#caa24a}
+  .cf-bar span{font-size:10.5px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+  .cf-saldo{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink)}
+  .cf-saldo.neg{color:var(--danger)}
+  @media(max-width:620px){.rel-kpis{grid-template-columns:repeat(2,1fr)}.mn-year{flex-direction:column;gap:4px}}
+  .role-select{font-size:11px;font-weight:700;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:var(--card);color:var(--ink-text);cursor:pointer;width:96px}
+  .role-select:focus{outline:none;border-color:var(--brass);box-shadow:0 0 0 3px var(--brass-soft)}
+  .name-input{flex:1;min-width:80px;border:1px solid transparent;background:transparent;border-radius:6px;padding:6px 8px;font-size:14px;font-weight:600;color:var(--ink-text)}
+  .name-input:hover{background:#faf8f3}
+  .name-input:focus{outline:none;border-color:var(--brass);background:#fff;box-shadow:0 0 0 3px var(--brass-soft)}
+  .person-total{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .person-total b{color:var(--ink-text);font-weight:700}
+  .x-btn{border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:17px;line-height:1;padding:3px 7px;border-radius:6px;width:30px}
+  .x-btn:hover{background:var(--danger-soft);color:var(--danger)}
+  .x-btn.ghost{visibility:hidden}
+
+  .deals{display:flex;flex-direction:column;gap:7px;align-items:flex-start;padding:9px 0 4px 88px}
+  @media(max-width:620px){.deals{padding-left:0}}
+  .sale-row{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;width:100%;background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:9px}
+  .sf{display:flex;flex-direction:column;gap:4px}
+  .sf label{font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700}
+  .sf-prop{flex:1 1 190px;min-width:150px}
+  .sf-val{flex:0 0 132px}
+  .sf-date{flex:0 0 152px}
+  .sf-recv{flex:1 1 240px;min-width:200px}
+  .sf input{background:var(--card)}
+  .sf-prop .sale-prop-input{width:100%;min-width:0}
+  .recv-controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .sf-extra{flex:1 1 100%;display:flex;gap:12px;flex-wrap:wrap;margin-top:4px;padding-top:10px;border-top:1px dashed var(--line)}
+  .sx{display:flex;flex-direction:column;gap:3px}
+  .sx label{font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);font-weight:700}
+  .sx input{border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:13px;width:110px}
+  .sx input:focus{outline:none;border-color:var(--brass)}
+  .sx-who{flex:1;min-width:160px}
+  .sx-who input{width:100%}
+  .sale-val-input{width:100%;border:1px solid var(--line);border-radius:7px;padding:7px 9px;font-size:14px;font-variant-numeric:tabular-nums;font-weight:600}
+  .sale-val-input:focus{outline:none;border-color:var(--brass);box-shadow:0 0 0 3px var(--brass-soft)}
+  .sale-date-input{width:100%}
+  .del-sale{align-self:center;margin-bottom:2px}
+  .psch-row{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:7px;padding:3px 5px 3px 8px}
+  .psch-lab{font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap}
+  .recv-flag{border:1px solid var(--line);background:var(--paper);border-radius:20px;padding:3px 10px;font-size:10.5px;font-weight:700;cursor:pointer;color:var(--muted);white-space:nowrap}
+  .recv-flag:hover{border-color:var(--brass)}
+  .recv-flag.done{background:var(--teal-soft);color:var(--teal);border-color:transparent}
+  .recv-flag.pay.done{background:var(--brass-soft);color:var(--brass)}
+  .recv-mini{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px}
+  .recv-mini.ok{background:var(--teal-soft);color:var(--teal)}
+  .recv-mini.pay{background:var(--brass-soft);color:var(--brass)}
+  .recv-hint{font-size:10px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0}
+  .cloud-status{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--ink-soft,#eee);color:var(--muted);margin-left:8px;white-space:nowrap}
+  .cloud-status.ok{background:var(--teal-soft);color:var(--teal)}
+  .cloud-status.saving{background:var(--brass-soft);color:var(--brass)}
+  .cloud-status.warn{background:#fbeaea;color:#b3261e}
+  .st-ok{color:var(--teal);font-weight:700;font-size:12px}
+  .st-pend{color:#b07d2b;font-weight:600;font-size:12px}
+  .parc-tag{display:inline-block;background:var(--brass-soft);color:var(--brass);font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:4px;vertical-align:middle}
+  .realiz-note{margin-top:10px;font-size:12px;color:var(--muted);background:var(--teal-soft);border-radius:8px;padding:8px 11px}
+  .realiz-note b{color:var(--ink-text)}
+  .psch-pct{width:50px;text-align:right;border:1px solid var(--line);border-radius:5px;padding:5px 5px;font-size:12px;font-variant-numeric:tabular-nums}
+  .psch-month{border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:13px}
+  .psch-row input:focus,.recv-controls input:focus,.sf input:focus{outline:none;border-color:var(--brass)}
+  .psch-sum{color:var(--muted);font-size:11.5px}
+  .psch-sum.bad{color:var(--danger);font-weight:600}
+  .btn-mini.ghost{border-style:dashed;color:var(--muted);background:transparent}
+  .btn-mini.ghost:hover{border-color:var(--brass);color:var(--brass)}
+  .add-sale{margin-top:2px}
+  .deal-chip{display:inline-flex;align-items:center;gap:6px;background:var(--teal-soft);color:var(--teal);border-radius:7px;padding:4px 6px 4px 11px;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+  .chip-x{border:none;background:transparent;color:var(--teal);cursor:pointer;font-size:13px;line-height:1;opacity:.55;padding:0 2px}
+  .chip-x:hover{opacity:1}
+  .btn-mini{border:1px solid var(--line);background:var(--card);border-radius:7px;padding:6px 11px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--ink-text)}
+  .btn-mini:hover{border-color:var(--brass);color:var(--brass)}
+
+  .btn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:7px 13px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink-text)}
+  .btn:hover{border-color:var(--brass);color:var(--brass)}
+  .btn-dark{background:var(--ink);color:#f4f1ea;border-color:var(--ink)}
+  .btn-dark:hover{background:var(--ink-2);color:#fff}
+  .team-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .add-team-wrap{margin:6px 0 4px}
+
+  .team-stats{display:flex;gap:8px 22px;flex-wrap:wrap;margin:16px 0 6px;padding:13px 15px;background:var(--paper);border-radius:10px}
+  .team-stat .lab{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+  .team-stat .val{font-family:Georgia,serif;font-size:19px;font-variant-numeric:tabular-nums;margin-top:2px}
+  .team-stat.g- .val{color:var(--brass)} .team-stat.h- .val{color:var(--teal)} .team-stat.v- .val{color:var(--ink)}
+
+  .reslabel{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:14px 0 10px}
+  .detail{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:760px){.detail{grid-template-columns:1fr}}
+  .pcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .pcard.mgr{grid-column:1/-1;border-top:3px solid var(--brass)}
+  .pcard h3{font-size:14px;font-weight:700;display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:2px}
+  .pcard h3 .total{font-family:Georgia,serif;font-size:21px;color:var(--brass);font-variant-numeric:tabular-nums}
+  .pcard .vgv{font-size:12px;color:var(--muted);margin-bottom:12px}
+  .pcard .vgv .eff{color:var(--teal);font-weight:600}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:right;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;padding:0 0 6px;border-bottom:1px solid var(--line)}
+  th:first-child{text-align:left}
+  td{padding:7px 0;border-bottom:1px solid #f1ede4;font-variant-numeric:tabular-nums;text-align:right}
+  td:first-child{text-align:left;color:var(--muted)}
+  tr:last-child td{border-bottom:none}
+  .tier-tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:5px;background:var(--teal-soft);color:var(--teal);font-weight:600}
+  .tier-tag.base{background:#eef0f2;color:var(--muted)}
+  .tier-tag.cap{background:var(--brass-soft);color:var(--brass)}
+
+  .mgr-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:620px){.mgr-grid{grid-template-columns:1fr}}
+  .mgr-block .blab{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin-bottom:8px}
+  .ov-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1ede4;font-size:13px;font-variant-numeric:tabular-nums}
+  .ov-row:last-child{border-bottom:none}
+  .ov-row b{color:var(--ink-text)}
+  .notice{background:var(--teal-soft);border:1px solid #bcdcd8;color:var(--teal);border-radius:8px;padding:9px 13px;font-size:12.5px;margin:10px 0 0}
+
+  /* presentation statements */
+  .sel-wrap{margin-bottom:20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .sel-wrap label{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+  .sel{border:1px solid var(--line);border-radius:8px;padding:9px 13px;font-size:14px;background:var(--card);min-width:260px;font-weight:600;color:var(--ink-text)}
+  .sel:focus{outline:none;border-color:var(--brass);box-shadow:0 0 0 3px var(--brass-soft)}
+  .statement{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px 26px;box-shadow:var(--shadow);max-width:720px}
+  .st-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:1px solid var(--line);padding-bottom:16px}
+  .st-who .nm{font-family:Georgia,serif;font-size:23px;font-weight:600;color:var(--ink)}
+  .st-who .tm{font-size:13px;color:var(--muted);margin-top:3px}
+  .st-total{text-align:right}
+  .st-total .lab{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+  .st-total .amt{font-family:Georgia,serif;font-size:31px;color:var(--brass);font-variant-numeric:tabular-nums;line-height:1.1;margin-top:3px}
+  .st-section{margin-top:20px}
+  .st-section .sh{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin-bottom:10px}
+  .st-deals{display:flex;flex-wrap:wrap;gap:7px}
+  .next-faixa{background:var(--brass-soft);border-radius:8px;padding:10px 14px;font-size:13px;color:#7a5814;margin-top:14px;font-weight:600}
+
+  .deal-break{border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin-bottom:10px}
+  .db-head{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:13px;margin-bottom:8px}
+  .db-amt{font-family:Georgia,serif;font-size:16px;font-variant-numeric:tabular-nums}
+  .db-seg{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:5px 0;font-variant-numeric:tabular-nums}
+  .db-seg-l{color:var(--muted)}
+  .db-seg.bonus .db-seg-l{color:var(--brass);font-weight:600}
+  .db-seg-r{font-weight:600;white-space:nowrap}
+  .db-total{display:flex;justify-content:space-between;border-top:1px solid var(--line);margin-top:6px;padding-top:7px;font-size:13px;font-variant-numeric:tabular-nums}
+  .db-total b{color:var(--brass)}
+  .bonus-badge{display:inline-block;background:var(--brass-soft);color:var(--brass);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;margin-left:8px;text-transform:uppercase;letter-spacing:.03em;vertical-align:middle}
+
+  /* meta simulator */
+  .meta-metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:6px;max-width:520px}
+  @media(max-width:640px){.meta-metrics{grid-template-columns:1fr}}
+  .funnel-edit{display:flex;align-items:flex-end;gap:6px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:6px;box-shadow:var(--shadow)}
+  .fe-item{display:flex;flex-direction:column;gap:5px;flex:1;min-width:84px}
+  .fe-item label{font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);font-weight:700;text-align:center}
+  .fe-item input{border:1px solid var(--line);border-radius:7px;padding:8px;font-size:16px;text-align:center;font-variant-numeric:tabular-nums}
+  .fe-item input:focus{outline:none;border-color:var(--brass);box-shadow:0 0 0 3px var(--brass-soft)}
+  .fe-arrow{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:9px;color:var(--muted);font-size:10.5px;font-weight:700;min-width:40px}
+  .fe-arrow::before{content:"→";font-size:16px;color:var(--brass);line-height:1}
+  .toggle{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:12px}
+  .tg{border:none;background:var(--card);padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted)}
+  .tg.active{background:var(--ink);color:#f4f1ea}
+  .tg+.tg{border-left:1px solid var(--line)}
+  .meta-goal .field{max-width:280px}
+  .meta-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0 10px}
+  @media(max-width:640px){.meta-stats{grid-template-columns:repeat(2,1fr)}}
+  .meta-stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 16px;box-shadow:var(--shadow)}
+  .meta-stat .lab{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+  .meta-stat .val{font-family:Georgia,serif;font-size:23px;margin-top:4px;font-variant-numeric:tabular-nums}
+  .meta-stat.hl .val{color:var(--brass)}
+  .funnel{margin-top:6px}
+  .fn-step{display:flex;align-items:center;gap:16px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 18px}
+  .fn-num{font-family:Georgia,serif;font-size:30px;color:var(--ink);font-variant-numeric:tabular-nums;min-width:74px}
+  .fn-info{flex:1}
+  .fn-info .t{font-weight:700;font-size:15px}
+  .fn-info .s{font-size:12px;color:var(--muted)}
+  .fn-month{font-size:12px;color:var(--teal);font-weight:600;text-align:right;white-space:nowrap}
+  .fn-conv{text-align:center;color:var(--muted);font-size:11px;font-weight:700;margin:5px 0;letter-spacing:.03em}
+
+  /* print */
+  .print-only{display:none}
+  @media print{
+    @page{margin:12mm}
+    body{background:#fff;color:#000}
+    header,.tabs,.sel-wrap,.no-print,footer,.toggle,.rel-panel{display:none!important}
+    .wrap{padding:0;max-width:100%}
+    .statement{box-shadow:none;border:none;padding:0;max-width:100%}
+    .report{box-shadow:none;border:none;padding:0;max-width:100%;margin:0}
+    .print-only{display:block!important}
+    .print-brand{font-family:Georgia,serif;font-size:15px;color:#13212e;border-bottom:2px solid #b9852b;padding-bottom:8px;margin-bottom:18px;letter-spacing:.02em}
+    .rep-hero{background:#13212e!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .rel-saldo,.cf-track i,.cf-dot,.realiz-note,.lucro-cell,.rank-fill,.alert-card{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .rep-sec,.rep-tbl,.rules-tbl,.sign-area,.deal-break,.fn-step,.meta-stat,.pcard,table{break-inside:avoid}
+    .meta-stat,.fn-step,.funnel-edit{box-shadow:none}
+  }
+
+  footer{margin-top:34px;font-size:12px;color:var(--muted);text-align:center;line-height:1.7}
+
+  .st-period{font-size:12px;color:var(--muted);margin-top:12px}
+
+  /* ===== relatório (gerente / corretor) ===== */
+  .report{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 28px;box-shadow:var(--shadow);max-width:780px;margin:0 auto;overflow:hidden}
+  .rep-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;border-bottom:2px solid var(--ink);padding-bottom:16px}
+  .rep-logo{font-family:Georgia,serif;font-size:20px;font-weight:700;letter-spacing:.12em;color:var(--ink)}
+  .rep-logo span{color:var(--brass);font-weight:400}
+  .rep-title{font-size:12px;color:var(--muted);margin-top:4px;letter-spacing:.02em}
+  .rep-who{text-align:right}
+  .rep-name{font-family:Georgia,serif;font-size:20px;font-weight:600;color:var(--ink)}
+  .rep-meta{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .rep-hero{display:flex;align-items:center;justify-content:space-between;gap:16px;background:linear-gradient(100deg,var(--ink),var(--ink-2));color:#f4f1ea;border-radius:12px;padding:16px 22px;margin:20px 0 6px}
+  .rep-hero span{font-size:13px;color:#c8d2db;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+  .rep-hero b{font-family:Georgia,serif;font-size:30px;color:#fff;font-variant-numeric:tabular-nums}
+  .rep-sec{margin-top:24px}
+  .rep-sec h4{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink);font-weight:700;padding-left:10px;border-left:3px solid var(--brass);margin-bottom:12px}
+  .rep-note{font-size:12.5px;color:var(--muted);margin-bottom:12px;line-height:1.55}
+  .rep-subh{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--brass);font-weight:700;margin:14px 0 7px}
+  .rules-tbl,.rep-tbl{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:4px}
+  .rep-tbl{table-layout:fixed}
+  .rules-tbl th,.rep-tbl th{text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:.02em;color:var(--muted);font-weight:700;padding:7px 8px;background:var(--paper);border-bottom:1px solid var(--line)}
+  .rules-tbl th:first-child,.rep-tbl th:first-child{text-align:left;border-radius:7px 0 0 0}
+  .rules-tbl th:last-child,.rep-tbl th:last-child{border-radius:0 7px 0 0}
+  .rules-tbl td,.rep-tbl td{padding:7px 8px;border-bottom:1px solid #f1ede4;font-variant-numeric:tabular-nums;text-align:right;vertical-align:top}
+  .rules-tbl td:first-child,.rep-tbl td:first-child{text-align:left;color:var(--ink-text);font-weight:600}
+  .rep-tbl td.txt{word-break:break-word}
+  .rules-tbl tbody tr:last-child td,.rep-tbl tbody tr:last-child td{border-bottom:none}
+  .rep-tbl .recv-cell{display:block;margin-bottom:3px;line-height:1.25}
+  .rep-tbl .recv-cell:last-child{margin-bottom:0}
+  .rep-tbl .recv-when{display:inline;margin-left:5px;color:var(--teal);font-weight:600;font-size:11px}
+  .rep-tbl .todo,.todo-row td{color:var(--danger)}
+  .rep-tbl tr.sub-row td{border-top:2px solid var(--line);border-bottom:none;padding-top:8px;font-weight:700;color:var(--ink);background:var(--paper)}
+  .rep-tbl tr.sub-row td.txt{text-transform:uppercase;font-size:10px;letter-spacing:.04em;color:var(--muted)}
+  .recv-sum{max-width:380px}
+  .recv-sum .tot-row td{border-top:2px solid var(--line);font-weight:700;color:var(--ink);font-size:14px;padding-top:9px}
+  .sign-area{display:flex;gap:40px;margin-top:40px;flex-wrap:wrap}
+  .sign-block{flex:1;min-width:200px}
+  .sign-line{border-bottom:1px solid var(--ink-text);height:34px}
+  .sign-cap{font-size:12px;color:var(--muted);margin-top:6px;text-align:center}
+  .rep-foot{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);line-height:1.5}
+  .sale-date-input{border:1px solid var(--line);border-radius:6px;padding:5px 7px;font-size:13px}
+  .sale-prop-input{border:1px solid var(--line);border-radius:6px;padding:6px 9px;font-size:13px;min-width:150px;flex:1 1 150px}
+  .rep-tbl th.txt,.rep-tbl td.txt{text-align:left}
+  .rep-tbl tr.seg-row td.seg-cell{background:var(--paper);border-left:2px solid var(--brass);border-bottom:1px solid #f1ede4;padding:9px 12px 10px 13px}
+  .seg-title{font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--brass);font-weight:700;margin-bottom:5px}
+  .seg-part{display:block;font-size:11.5px;color:var(--ink-text);line-height:1.7;white-space:normal;overflow-wrap:anywhere}
+  .seg-part b{color:var(--ink)}
+  .seg-part .seg-earn{color:var(--ink)}
+  .seg-rate{color:var(--muted)}
+  .saved-note{font-size:12px;color:var(--muted);margin-left:10px}
+
+  .sched{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);max-width:520px}
+  .sch-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .sch-pct{width:78px;text-align:right;border:1px solid var(--line);border-radius:7px;padding:7px 9px;font-size:14px;font-variant-numeric:tabular-nums}
+  .sch-month{border:1px solid var(--line);border-radius:7px;padding:7px 9px;font-size:14px}
+  .sch-row input:focus{outline:none;border-color:var(--brass);box-shadow:0 0 0 3px var(--brass-soft)}
+  .sch-pctlabel{color:var(--muted);font-size:13px}
+  .sch-sum{font-size:12.5px;color:var(--muted);margin-top:6px}
+  .sch-sum.bad{color:var(--danger);font-weight:600}
+  .cal-recv{margin-top:2px}
+  .recv-line{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1ede4;font-size:13px;font-variant-numeric:tabular-nums}
+  .recv-line:last-child{border-bottom:none}
+  .recv-line.pending span{color:var(--danger)}
+  .cal-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);margin-bottom:24px;max-width:620px}
+
+  .login-overlay{position:fixed;inset:0;background:var(--ink);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}
+  .login-card{background:var(--card);border-radius:16px;padding:34px 32px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:12px}
+  .login-card .brand{font-family:Georgia,serif;font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:var(--brass)}
+  .login-card h2{font-family:Georgia,serif;font-size:22px;color:var(--ink);font-weight:600;margin-bottom:6px}
+  .login-card input{border:1px solid var(--line);border-radius:9px;padding:11px 13px;font-size:15px}
+  .login-card input:focus{outline:none;border-color:var(--brass);box-shadow:0 0 0 3px var(--brass-soft)}
+  .login-card button{background:var(--ink);color:#f4f1ea;border:none;border-radius:9px;padding:12px;font-size:15px;font-weight:600;cursor:pointer;margin-top:4px}
+  .login-card button:hover{background:var(--ink-2)}
+  .login-err{color:var(--danger);font-size:13px;min-height:16px;text-align:center}
+
+  @media(max-width:760px){.config{grid-template-columns:repeat(2,1fr)}.summary{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="login-overlay" id="login">
+  <form class="login-card" id="loginForm">
+    <div class="brand">Nox Imóveis</div>
+    <h2>Calculadora de Comissões</h2>
+    <input id="loginUser" placeholder="Usuário" autocomplete="username">
+    <input id="loginPass" type="password" placeholder="Senha" autocomplete="current-password">
+    <button type="button" id="loginBtn">Entrar</button>
+    <div class="login-err" id="loginErr"></div>
+  </form>
+</div>
+<header>
+  <div class="head-inner">
+    <div>
+      <div class="brand">Nox Imóveis</div>
+      <h1>Calculadora de Comissões</h1>
+      <p class="sub">Lance as vendas e veja o ganho por equipe — com visões separadas para administração, gerente e corretor.</p>
+    </div>
+    <div class="head-tag">
+      <b>Equipe-padrão</b><br>1 gerente · 3 corretores<br>
+      <b>Meta</b> R$ 1,2M / trimestre por pessoa
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="tabs">
+    <button class="tab active" data-tab="admin">Administrativa</button>
+    <button class="tab" data-tab="ger">Visão do gerente</button>
+    <button class="tab" data-tab="cor">Visão do corretor</button>
+    <button class="tab" data-tab="eventos">Comissão eventos</button>
+    <button class="tab" data-tab="meta">Calculadora de meta</button>
+    <button class="tab" data-tab="rel">Relatórios</button>
+  </div>
+
+  <!-- ============ ADMIN ============ -->
+  <div class="tabpane" id="tab-admin">
+    <details class="rules">
+      <summary>Como o cálculo funciona (clique para abrir)</summary>
+      <div class="rules-body">
+        <p class="rules-lead">Resumo de tudo que entra na conta. Os valores em cinza são configuráveis logo abaixo.</p>
+
+        <div class="rules-block"><b>1. Da venda até a comissão líquida</b>
+          <ul>
+            <li>A imobiliária recebe a <b>comissão bruta</b> sobre o VGV (padrão <b>5%</b>, mas dá pra mudar venda a venda — ex.: 6%).</li>
+            <li>Sobre a bruta incide o <b>imposto na fonte</b> (padrão <b>10%</b>). O que sobra é a <b>comissão líquida</b> — é ela que se divide entre as pessoas.</li>
+            <li>Exemplo: venda de R$ 1.000.000 a 5% = R$ 50.000 de bruta − 10% de imposto = <b>R$ 45.000 líquidos</b>.</li>
+          </ul>
+        </div>
+
+        <div class="rules-block"><b>2. Captação do imóvel (quando houver)</b>
+          <ul>
+            <li>Se alguém captou o imóvel, essa pessoa leva um % da líquida (ex.: <b>10%</b>) <b>antes</b> da divisão normal. O resto rateia normal.</li>
+            <li>Você define o % e o nome de quem captou em cada venda. Sem captação, 100% da líquida vai para a divisão normal.</li>
+          </ul>
+        </div>
+
+        <div class="rules-block"><b>3. Divisão da líquida (por papel)</b>
+          <ul>
+            <li><b>Corretor</b> e <b>SDR</b> recebem um % da líquida; o <b>gerente</b> ganha na venda própria e um <b>override</b> sobre o que a equipe vende.</li>
+            <li><b>Corretor sem equipe</b> (autônomo): recebe mais, mas não tem gerente nem gera override.</li>
+            <li>Todos esses percentuais estão na tabela <b>"Política de comissão"</b> e são editáveis.</li>
+          </ul>
+        </div>
+
+        <div class="rules-block"><b>4. Faixas por meta</b>
+          <ul>
+            <li>A comissão cresce em <b>2 faixas</b> conforme o volume vendido no trimestre: base até a meta, 1ª faixa na banda seguinte, 2ª faixa daí em diante.</li>
+            <li>Meta e tamanho da banda são configuráveis. Eventos <b>não</b> entram nas faixas (têm aba própria).</li>
+          </ul>
+        </div>
+
+        <div class="rules-block"><b>5. Recebimento</b>
+          <ul>
+            <li>Cada venda tem data e recebimento próprios (à vista ou 2x 50/50), porque depende da construtora.</li>
+            <li>Marque <b>recebido</b> quando a construtora paga e <b>repassado</b> quando você paga o corretor — o financeiro mostra previsto × realizado.</li>
+          </ul>
+        </div>
+
+        <p class="rules-foot">As abas <b>Gerente</b> e <b>Corretor</b> geram o relatório individual assinável; <b>Relatórios</b> é o financeiro consolidado; <b>Comissão eventos</b> é o cálculo à parte.</p>
+      </div>
+    </details>
+
+    <div class="eyebrow">Configuração do modelo</div>
+    <div class="config">
+      <div class="field"><label>Imposto na fonte (%)</label><input id="cfgTax" type="number" value="10" step="1"></div>
+      <div class="field"><label>Meta por pessoa (R$)</label><input id="cfgTarget" type="number" value="1200000" step="100000"></div>
+      <div class="field"><label>Faixa progressiva (R$)</label><input id="cfgBand" type="number" value="500000" step="100000"></div>
+    </div>
+    <div class="cfg-hint">A <b>comissão (%)</b> agora é definida em cada venda no lançamento (padrão 5%). O imposto acima é fixo e incide sobre todas.</div>
+
+    <div class="eyebrow">Política de comissão <span class="eyebrow-note">(% da comissão líquida — edite conforme a política do Renan)</span></div>
+    <div id="policyBox"></div>
+
+    <div class="eyebrow">Período do trimestre</div>
+    <div class="config" style="grid-template-columns:repeat(2,1fr);max-width:440px">
+      <div class="field"><label>Início</label><input id="cfgStart" type="date"></div>
+      <div class="field"><label>Fim</label><input id="cfgEnd" type="date"></div>
+    </div>
+
+    <div class="eyebrow">Resumo da operação</div>
+    <div class="summary">
+      <div class="scard v-"><div class="lab">VGV total</div><div class="big num" id="gVGV">—</div><div class="small" id="gVGVsub"></div></div>
+      <div class="scard p-"><div class="lab">Repasse total a pessoas</div><div class="big num" id="gPaid">—</div><div class="small" id="gPaidSub"></div></div>
+      <div class="scard h-"><div class="lab">Fica com a casa</div><div class="big num" id="gHouse">—</div><div class="small" id="gHouseSub"></div></div>
+    </div>
+    <div class="opline" id="opline"></div>
+    <div class="eyebrow">Placar do trimestre <span class="eyebrow-note">(ranking por VGV vendido)</span></div>
+    <div id="rankingBox"></div>
+
+    <div class="eyebrow">Equipes &amp; lançamento de vendas</div>
+    <datalist id="peopleList"></datalist>
+    <div id="teams"></div>
+    <div class="add-team-wrap"><button class="btn btn-dark" id="addTeam">+ Adicionar equipe</button><button class="btn no-print" id="exportData">⤓ Exportar backup</button><button class="btn no-print" id="importData">⤒ Importar backup</button><input type="file" id="importFile" accept="application/json,.json" style="display:none"><button class="btn no-print" id="zeroQuarter">↺ Zerar trimestre</button><button class="btn no-print" id="resetData">Limpar tudo</button><span class="saved-note">Salvo neste navegador e na nuvem.</span><span id="cloudStatus" class="cloud-status">☁ conectando…</span></div>
+
+    <div class="solo-zone">
+      <div class="solo-zone-head">
+        <h3>Corretores sem equipe</h3>
+        <span class="muted-line">Autônomos — comissão 60% / 65% / 70% nas faixas, sem gerente e sem override.</span>
+      </div>
+      <div id="solos"></div>
+      <div class="add-team-wrap"><button class="btn btn-dark" id="addSolo">+ Adicionar corretor sem equipe</button></div>
+    </div>
+  </div>
+
+  <!-- ============ GERENTE ============ -->
+  <div class="tabpane" id="tab-ger" hidden>
+    <div class="sel-wrap"><label>Gerente</label><select class="sel" id="gerSelect"></select><button class="btn no-print" onclick="window.print()">🖨 Imprimir</button></div>
+    <div id="gerBox"></div>
+  </div>
+
+  <!-- ============ CORRETOR ============ -->
+  <div class="tabpane" id="tab-cor" hidden>
+    <div class="sel-wrap"><label>Corretor</label><select class="sel" id="corSelect"></select><button class="btn no-print" onclick="window.print()">🖨 Imprimir</button></div>
+    <div id="corBox"></div>
+  </div>
+
+  <!-- ============ COMISSÃO DE EVENTOS ============ -->
+  <div class="tabpane" id="tab-eventos" hidden>
+    <div class="sel-wrap"><label>Comissão de eventos</label><span style="flex:1"></span><button class="btn no-print" onclick="window.print()">🖨 Imprimir</button></div>
+    <p class="ev-intro">Eventos <b>não entram nas faixas de meta</b>. A comissão do evento é dividida por percentual entre a imobiliária, o gerente do evento, os corretores e os auxiliares. Lance o que cada um vendeu para ver quanto cada participante recebe. Crie quantos eventos quiser nas abas abaixo.</p>
+    <div id="evTabs" class="ev-tabs no-print"></div>
+    <div id="evEditor"></div>
+  </div>
+
+  <!-- ============ SIMULADOR DE META ============ -->
+  <div class="tabpane" id="tab-meta" hidden>
+    <div class="sel-wrap"><label>Calculadora de meta</label><span style="flex:1"></span><button class="btn no-print" onclick="window.print()">🖨 Imprimir</button></div>
+    <div class="meta-wrap">
+      <div class="print-only print-brand">Nox Imóveis · Plano de meta do trimestre</div>
+
+      <div class="eyebrow">Métricas — edite conforme sua realidade</div>
+      <div class="meta-metrics">
+        <div class="field"><label>Ticket médio do imóvel (R$)</label><input id="mTicket" type="number" value="600000" step="50000"></div>
+      </div>
+      <div class="funnel-edit">
+        <div class="fe-item"><label>Contatos</label><input id="mContatos" type="number" value="200" step="1" min="0"></div>
+        <div class="fe-arrow"><span id="convCR">10%</span></div>
+        <div class="fe-item"><label>Reuniões</label><input id="mReunioes" type="number" value="20" step="1" min="0"></div>
+        <div class="fe-arrow"><span id="convRV">50%</span></div>
+        <div class="fe-item"><label>Visitas</label><input id="mVisitas" type="number" value="10" step="1" min="0"></div>
+        <div class="fe-arrow"><span id="convVP">50%</span></div>
+        <div class="fe-item"><label>Propostas</label><input id="mPropostas" type="number" value="5" step="1" min="0"></div>
+        <div class="fe-arrow"><span id="convPF">40%</span></div>
+        <div class="fe-item"><label>Fechamentos</label><input id="mFechamentos" type="number" value="2" step="1" min="0"></div>
+      </div>
+
+      <div class="eyebrow" style="margin-top:24px">Sua meta no trimestre</div>
+      <div class="meta-goal">
+        <div class="toggle" id="metaMode">
+          <button data-mode="ganho" class="tg active">Quero ganhar</button>
+          <button data-mode="vgv" class="tg">Quero vender (VGV)</button>
+        </div>
+        <div class="field"><label id="mAlvoLabel">Ganho desejado (R$)</label><input id="mAlvo" type="number" value="60000" step="5000"></div>
+        <div class="muted-line">Conversão de ganho ⇄ VGV usa a estrutura de comissão do corretor (progressiva, com teto).</div>
+      </div>
+
+      <div id="metaResult"></div>
+    </div>
+  </div>
+
+  <!-- ============ RELATÓRIOS ============ -->
+  <div class="tabpane" id="tab-rel" hidden>
+    <div class="sel-wrap rel-controls">
+      <label>Relatório financeiro</label>
+      <span style="flex:1"></span>
+      <button class="btn no-print" onclick="window.print()">🖨 Imprimir</button>
+    </div>
+    <div id="relAlerts" class="no-print"></div>
+    <div id="cashMgr" class="no-print"></div>
+    <div id="relBox"></div>
+  </div>
+
+  <footer>
+    Modelo de simulação · valores marginais por faixa · premissas editáveis na aba administrativa.<br>
+    Confirme as regras de split com o Renan antes de fechar a política definitiva.
+  </footer>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script>
+const fmt  = n => 'R$ ' + (Math.round((+n||0)*100)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtM = n => 'R$ ' + (n/1e6).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:2}) + 'M';
+const pct  = n => n.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:1}) + '%';
+const rate = n => (+n.toFixed(1)).toLocaleString('pt-BR') + '%';
+const esc  = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const personTotal = p => p.deals.reduce((a,d)=>a+dealValue(d),0);
+function allPeopleNames(){ const s=new Set(); teams.forEach(tm=>{ if(tm.mgr.name) s.add(tm.mgr.name); tm.brokers.forEach(b=>{ if(b.name) s.add(b.name); }); }); solos.forEach(x=>{ if(x.name) s.add(x.name); }); return [...s]; }
+function captacaoFor(name){ if(!name) return {total:0,items:[]}; const items=[]; let total=0; const scan=deals=>deals.forEach(d=>{ if(dealCaptWho(d)===name){ const amt=dealValue(d)*dealNet(d)*dealCaptPct(d)/100; if(amt>0){ total+=amt; items.push({prop:dealProp(d),amount:amt,schedule:dealSched(d)}); } } }); teams.forEach(tm=>{ scan(tm.mgr.deals); tm.brokers.forEach(b=>scan(b.deals)); }); solos.forEach(s=>scan(s.deals)); return {total,items}; }
+function captSection(capt){
+  if(capt.total<=0) return '';
+  return `<div class="rep-sec"><h4>Captação de imóveis</h4><p class="rep-note">Imóveis que você captou — você recebe a comissão de captação, paga junto com o recebível da venda.</p>`
+    + `<table class="rep-tbl"><colgroup><col style="width:70%"><col style="width:30%"></colgroup><thead><tr><th class="txt">Empreendimento</th><th>Captação</th></tr></thead><tbody>`
+    + capt.items.map(it=>`<tr><td class="txt">${esc(it.prop)||'—'}</td><td><b>${fmt(it.amount)}</b></td></tr>`).join('')
+    + `<tr class="tot-row"><td class="txt">Total captação</td><td>${fmt(capt.total)}</td></tr></tbody></table></div>`;
+}
+
+// política de comissão editável — % da comissão líquida por faixa [base, 1ª, 2ª]
+let POL = {
+  corretor:{ br:[50,55,60], ov:[15,17,19] },
+  sdr:     { br:[40,45,50], ov:[20,22,24] },
+  solo:    { br:[60,65,70], ov:[0,0,0] },
+  gerente: { br:[60,65,70] }
+};
+function brRate(type,tier){ const r=POL[type]||POL.corretor; return (r.br[Math.min(tier,2)]||0); }
+function ovRate(type,tier){ const r=POL[type]||POL.corretor; return (r.ov?r.ov[Math.min(tier,2)]:0)||0; }
+function mgrRate(tier){ return POL.gerente.br[Math.min(tier,2)]||0; }
+function roleLabel(type){ return type==='sdr' ? 'SDR' : (type==='solo' ? 'Corretor sem equipe' : 'Corretor'); }
+function buildPolicy(){
+  const box=document.getElementById('policyBox'); if(!box) return;
+  const rows=[
+    ['Corretor — comissão','corretor','br'],
+    ['↳ override do gerente','corretor','ov'],
+    ['SDR — comissão','sdr','br'],
+    ['↳ override do gerente','sdr','ov'],
+    ['Gerente — venda própria','gerente','br'],
+    ['Corretor sem equipe','solo','br']
+  ];
+  let h=`<table class="pol-tbl"><thead><tr><th>Papel</th><th>Base</th><th>1ª faixa</th><th>2ª faixa</th></tr></thead><tbody>`;
+  rows.forEach(([label,role,kind])=>{
+    h+=`<tr><td class="pol-role">${label}</td>`;
+    for(let t=0;t<3;t++) h+=`<td><input class="pol-input" type="number" min="0" max="100" step="1" value="${POL[role][kind][t]}" data-pol="${role}:${kind}:${t}"></td>`;
+    h+=`</tr>`;
+  });
+  box.innerHTML=h+`</tbody></table>`;
+  box.querySelectorAll('.pol-input').forEach(inp=>inp.addEventListener('input',e=>{
+    const [role,kind,t]=e.target.dataset.pol.split(':'); POL[role][kind][+t]=+e.target.value||0; renderAll(); renderMeta(); saveState();
+  }));
+}
+
+// ---------- state ----------
+let seq=0, pendingFocus=null;
+// cada venda é um objeto { value, date, prop, schedule:[{pct,month}] }
+function uid(p){ return (p||'d')+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function newDeal(value){ return { id:uid('d'), value, date:'', prop:'', gross:null, capt:0, captWho:'', schedule:[{pct:100,month:'',done:false,paid:false}] }; }
+function findDealById(id){ for(const tm of teams){ for(const d of tm.mgr.deals) if(d.id===id) return d; for(const b of tm.brokers) for(const d of b.deals) if(d.id===id) return d; } for(const s of solos) for(const d of s.deals) if(d.id===id) return d; return null; }
+function dealValue(d){ return typeof d==='number' ? d : (d&&d.value)||0; }
+function dealDate(d){ return (d&&typeof d==='object'&&d.date)||''; }
+function dealProp(d){ return (d&&typeof d==='object'&&d.prop)||''; }
+function dealSched(d){ if(d&&typeof d==='object'){ if(!Array.isArray(d.schedule)) d.schedule=[{pct:100,month:''}]; return d.schedule; } return []; }
+function cfgGrossPct(){ return DEFAULT_GROSS; }
+function cfgTaxPct(){ return +document.getElementById('cfgTax').value||0; }
+function dealGross(d){ return (d&&typeof d==='object'&&d.gross!=null&&d.gross!=='')?+d.gross:cfgGrossPct(); } // comissão bruta % da venda
+function dealNet(d){ return dealGross(d)/100*(1-cfgTaxPct()/100); } // fração líquida sobre o VGV
+function dealCaptPct(d){ return (d&&typeof d==='object'&&+d.capt)||0; } // % de captação sobre a líquida
+function dealCaptWho(d){ return (d&&typeof d==='object'&&d.captWho)||''; }
+function newTeam(){
+  seq++;
+  return {
+    name:'Equipe '+seq,
+    mgr:{name:'Gerente '+seq, deals:[]},
+    brokers:[1,2,3].map(i=>({name:'Corretor '+i, type:'corretor', deals:[]}))
+  };
+}
+let teams=[newTeam()];
+let solos=[];
+let gerSel=0, corSel='0:0';
+function personFrom(ti, role, bi){ return role==='m' ? teams[ti].mgr : (role==='s' ? solos[ti] : teams[ti].brokers[bi]); }
+
+// ---------- config getters ----------
+const DEFAULT_GROSS = 5; // comissão bruta padrão por venda (%), ajustável em cada lançamento
+function netRate(){ return DEFAULT_GROSS/100*(1-(+document.getElementById('cfgTax').value||0)/100); }
+function cfgTarget(){return +document.getElementById('cfgTarget').value||0;}
+function cfgBand(){return +document.getElementById('cfgBand').value||1;}
+
+// no máximo 3 segmentos: base (até a meta), 1ª faixa (1 banda), 2ª faixa (todo o resto)
+function tiers(S){
+  const T=cfgTarget(), B=cfgBand(); const out=[];
+  if(S<=0) return out;
+  out.push({value:Math.min(S,T), tier:0});
+  if(S>T){
+    out.push({value:Math.min(S-T,B), tier:1});
+    if(S>T+B) out.push({value:S-T-B, tier:2});
+  }
+  return out;
+}
+function calcBroker(S, type){
+  const NET=netRate(); let brTot=0, ovTot=0, pool=0; const rows=[];
+  for(const t of tiers(S)){
+    const p=t.value*NET, b=brRate(type,t.tier), o=ovRate(type,t.tier);
+    brTot+=p*b/100; ovTot+=p*o/100; pool+=p;
+    rows.push({...t,pool:p,brRate:b,ovRate:o});
+  }
+  return {brTot,ovTot,pool,rows};
+}
+function calcMgr(S){
+  const NET=netRate(); let tot=0,pool=0; const rows=[];
+  for(const t of tiers(S)){
+    const p=t.value*NET, r=mgrRate(t.tier);
+    tot+=p*r/100; pool+=p;
+    rows.push({...t,pool:p,ratePct:r,c:p*r/100});
+  }
+  return {tot,pool,rows};
+}
+function computeTeam(tm){
+  const mgrSales=personTotal(tm.mgr);
+  const mgrOwn=mgrTotals(tm.mgr.deals);
+  const brokers=tm.brokers.map(b=>{const s=personTotal(b), type=b.type||'corretor'; return {name:b.name, type, sales:s, calc:brokerTotals(b.deals, type)};});
+  const ovTotal=brokers.reduce((a,b)=>a+b.calc.ovTot,0);
+  const mgrTotal=mgrOwn.tot+ovTotal;
+  const vgv=mgrSales+brokers.reduce((a,b)=>a+b.sales,0);
+  const pool=mgrOwn.pool+brokers.reduce((a,b)=>a+b.calc.pool,0);
+  const captTot=mgrOwn.capt+brokers.reduce((a,b)=>a+b.calc.capt,0);
+  const paid=mgrTotal+brokers.reduce((a,b)=>a+b.calc.brTot,0)+captTot;
+  return {mgrSales,mgrOwn,brokers,ovTotal,mgrTotal,vgv,pool,paid,captTot,house:pool-paid};
+}
+function nextFaixa(total){
+  const T=cfgTarget(), B=cfgBand();
+  if(total<=0) return 'Lance as vendas para ver a projeção de ganho.';
+  if(total<T) return `Faltam ${fmt(T-total)} para bater a meta e começar a 1ª faixa (+5%).`;
+  if(total < T+B-1e-9) return `Faltam ${fmt(T+B-total)} para a 2ª faixa (+5% extra).`;
+  return 'Você já está na 2ª faixa — comissão máxima do modelo.';
+}
+
+// ---------- per-deal (cumulative) breakdown ----------
+function tierAtPos(pos){
+  const T=cfgTarget(), B=cfgBand();
+  if(pos < T-1e-6) return {tier:0, end:T};
+  if(pos < T+B-1e-6) return {tier:1, end:T+B};
+  return {tier:2, end:Infinity};
+}
+// ganho do corretor/SDR + override por VENDA (cumulativo)
+function brokerDeals(deals, type){
+  let cum=0; const out=[];
+  for(const d of deals){
+    const v=dealValue(d), net=dealNet(d), captF=dealCaptPct(d)/100, splitF=1-captF;
+    let rem=v, pos=cum, brEarn=0, ovEarn=0, guard=0;
+    while(rem>1e-6 && guard++<50){
+      const {tier,end}=tierAtPos(pos); const take=Math.min(rem,end-pos);
+      brEarn+=take*net*splitF*brRate(type,tier)/100; ovEarn+=take*net*splitF*ovRate(type,tier)/100;
+      pos+=take; rem-=take;
+    }
+    const liquido=v*net, capt=liquido*captF;
+    out.push({value:v, date:dealDate(d), prop:dealProp(d), brEarn, ovEarn, capt, captWho:dealCaptWho(d), liquido, gross:dealGross(d), schedule:dealSched(d)}); cum+=v;
+  }
+  return out;
+}
+// ganho do gerente em VENDAS PRÓPRIAS por venda (cumulativo)
+function mgrDeals(deals){
+  let cum=0; const out=[];
+  for(const d of deals){
+    const v=dealValue(d), net=dealNet(d), captF=dealCaptPct(d)/100, splitF=1-captF;
+    let rem=v, pos=cum, earn=0, guard=0;
+    while(rem>1e-6 && guard++<50){
+      const {tier,end}=tierAtPos(pos); const take=Math.min(rem,end-pos);
+      earn+=take*net*splitF*mgrRate(tier)/100; pos+=take; rem-=take;
+    }
+    const liquido=v*net, capt=liquido*captF;
+    out.push({value:v, date:dealDate(d), prop:dealProp(d), earn, capt, captWho:dealCaptWho(d), liquido, gross:dealGross(d), schedule:dealSched(d)}); cum+=v;
+  }
+  return out;
+}
+function brokerTotals(deals,type){
+  const dd=brokerDeals(deals,type);
+  const vgvT=[0,0,0]; let cum=0;
+  for(const d of deals){ const v=dealValue(d); let rem=v,pos=cum,g=0; while(rem>1e-6&&g++<50){ const {tier,end}=tierAtPos(pos); const take=Math.min(rem,end-pos); vgvT[tier]+=take; pos+=take; rem-=take; } cum+=v; }
+  const rows=[0,1,2].filter(t=>vgvT[t]>1e-6).map(t=>({value:vgvT[t],tier:t,brRate:brRate(type,t),ovRate:ovRate(type,t)}));
+  return {deals:dd, brTot:dd.reduce((a,d)=>a+d.brEarn,0), ovTot:dd.reduce((a,d)=>a+d.ovEarn,0), capt:dd.reduce((a,d)=>a+d.capt,0), pool:dd.reduce((a,d)=>a+d.liquido,0), rows};
+}
+function mgrTotals(deals){
+  const dd=mgrDeals(deals);
+  const vgvT=[0,0,0], earnT=[0,0,0]; let cum=0;
+  for(const d of deals){ const v=dealValue(d),net=dealNet(d),splitF=1-dealCaptPct(d)/100; let rem=v,pos=cum,g=0; while(rem>1e-6&&g++<50){ const {tier,end}=tierAtPos(pos); const take=Math.min(rem,end-pos); vgvT[tier]+=take; earnT[tier]+=take*net*splitF*mgrRate(tier)/100; pos+=take; rem-=take; } cum+=v; }
+  const rows=[0,1,2].filter(t=>vgvT[t]>1e-6).map(t=>({value:vgvT[t],tier:t,ratePct:mgrRate(t),c:earnT[t]}));
+  return {deals:dd, tot:dd.reduce((a,d)=>a+d.earn,0), capt:dd.reduce((a,d)=>a+d.capt,0), pool:dd.reduce((a,d)=>a+d.liquido,0), rows};
+}
+// ---------- recebíveis (por venda) ----------
+function monthLabel(ym){
+  if(!ym) return 'a definir';
+  const [y,m]=ym.split('-'); const n=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  return `${n[(+m)-1]||'?'}/${y}`;
+}
+function scheduleSum(sch){ return (sch||[]).reduce((a,s)=>a+(+s.pct||0),0); }
+function installments(amount, sch){
+  const arr=(sch&&sch.length)?sch:[{pct:100,month:''}];
+  const sum=arr.reduce((a,s)=>a+(+s.pct||0),0);
+  if(sum<=0) return [{month:arr[0].month||'', value:amount}];
+  // normaliza pelos pesos: garante que 100% da comissão seja sempre distribuída
+  return arr.map(s=>({month:s.month||'', value:amount*(+s.pct||0)/sum}));
+}
+// soma os recebíveis (mês -> valor) de uma lista de {amount, schedule}
+function receivablesByMonth(items){
+  const map={};
+  items.forEach(it=> installments(it.amount, it.schedule).forEach(ins=>{ map[ins.month]=(map[ins.month]||0)+ins.value; }));
+  return map;
+}
+function mgrReceivables(tm){
+  const items=[];
+  mgrDeals(tm.mgr.deals).forEach(d=>items.push({amount:d.earn, schedule:d.schedule}));
+  tm.brokers.forEach(b=> brokerDeals(b.deals, b.type||'corretor').forEach(d=>items.push({amount:d.ovEarn, schedule:d.schedule})));
+  return receivablesByMonth(items);
+}
+function brokerReceivables(b){
+  return receivablesByMonth(brokerDeals(b.deals, b.type||'corretor').map(d=>({amount:d.brEarn, schedule:d.schedule})));
+}
+function receivablesHTML(map){
+  const keys=Object.keys(map).sort((a,b)=> a===''?1 : b===''? -1 : a.localeCompare(b));
+  if(!keys.length) return '<div class="muted-line">Sem recebíveis lançados.</div>';
+  let h='<div class="cal-recv">';
+  keys.forEach(k=> h+=`<div class="recv-line${k===''?' pending':''}"><span>${monthLabel(k)}</span><b>${fmt(map[k])}</b></div>`);
+  return h+'</div>';
+}
+// processa as vendas na ordem lançada, fatiando cada uma pelas faixas que ela cruza
+function dealBreakdown(deals, rateFn){
+  const baseRate=rateFn(0);
+  let cum=0; const out=[];
+  for(const d of deals){
+    const v=dealValue(d), net=dealNet(d), splitF=1-dealCaptPct(d)/100;
+    let rem=v, pos=cum; const segs=[]; let guard=0;
+    while(rem>1e-6 && guard++<50){
+      const {tier,end}=tierAtPos(pos); const take=Math.min(rem, end-pos);
+      const rt=rateFn(tier);
+      segs.push({value:take, tier, rate:rt, delta:rt-baseRate, eff:net*splitF*rt, earn:take*net*splitF*rt/100});
+      pos+=take; rem-=take;
+    }
+    out.push({deal:v, segs, earn:segs.reduce((a,s)=>a+s.earn,0)});
+    cum+=v;
+  }
+  return out;
+}
+function faixaLabel(s){
+  if(s.tier===0) return 'na meta (base)';
+  const d=(+s.delta.toFixed(1)).toLocaleString('pt-BR');
+  return `${s.tier}ª faixa acima da meta (+${d}%)`;
+}
+function renderDealBreak(bd){
+  if(!bd.length) return '<div class="muted-line">Nenhuma venda lançada.</div>';
+  let h='';
+  bd.forEach((d,i)=>{
+    const crossed=d.segs.some(s=>s.tier>0);
+    h+=`<div class="deal-break"><div class="db-head"><span>Venda ${i+1}${crossed?'<span class="bonus-badge">bônus de faixa</span>':''}</span><span class="db-amt">${fmt(d.deal)}</span></div>`;
+    d.segs.forEach(s=>{ h+=`<div class="db-seg${s.tier>0?' bonus':''}"><span class="db-seg-l">${fmt(s.value)} · ${faixaLabel(s)} · ${rate(s.eff)} do valor</span><span class="db-seg-r">${fmt(s.earn)}</span></div>`; });
+    if(d.segs.length>1) h+=`<div class="db-total"><span>Ganho desta venda</span><b>${fmt(d.earn)}</b></div>`;
+    h+=`</div>`;
+  });
+  return h;
+}
+
+// ---------- shared tables ----------
+function tierTag(r){
+  return r.tier===0 ? '<span class="tier-tag base">Base</span>' : `<span class="tier-tag">+${r.tier}ª faixa</span>`;
+}
+function mgrTable(rows){
+  if(!rows.length) return '<div class="muted-line">Sem vendas no período.</div>';
+  let h=`<table><thead><tr><th>Faixa</th><th>Volume</th><th>Split</th><th>Casa</th><th>Ganho</th></tr></thead><tbody>`;
+  rows.forEach(r=>{ h+=`<tr><td>${tierTag(r)}</td><td>${fmt(r.value)}</td><td>${rate(r.ratePct)}</td><td>${rate(100-r.ratePct)}</td><td>${fmt(r.c)}</td></tr>`; });
+  return h+'</tbody></table>';
+}
+function brokerTable(rows){
+  if(!rows.length) return '<div class="muted-line">Sem vendas no período.</div>';
+  let h=`<table><thead><tr><th>Faixa</th><th>Volume</th><th>Vendedor</th><th>Override</th><th>Casa</th></tr></thead><tbody>`;
+  rows.forEach(r=>{ h+=`<tr><td>${tierTag(r)}</td><td>${fmt(r.value)}</td><td>${rate(r.brRate)}</td><td>${rate(r.ovRate)}</td><td>${rate(100-r.brRate-r.ovRate)}</td></tr>`; });
+  return h+'</tbody></table>';
+}
+// presentation table: only volume + own earning + effective %
+function earnTable(rows){
+  if(!rows.length) return '<div class="muted-line">Sem vendas lançadas.</div>';
+  let h=`<table><thead><tr><th>Faixa</th><th>Volume</th><th>Ganho</th><th>% da venda</th></tr></thead><tbody>`;
+  rows.forEach(r=>{ h+=`<tr><td>${tierTag(r)}</td><td>${fmt(r.value)}</td><td>${fmt(r.ganho)}</td><td>${rate(r.eff)}</td></tr>`; });
+  return h+'</tbody></table>';
+}
+
+// ---------- ADMIN: build inputs ----------
+function dealsHTML(ti, role, bi, deals){
+  const ctx = `data-ti="${ti}" data-role="${role}" ${bi!=null?`data-bi="${bi}"`:''}`;
+  const tag = `${ti}-${role}-${bi!=null?bi:'x'}`;
+  let h='<div class="deals">';
+  deals.forEach((d,idx)=>{
+    const sch=dealSched(d);
+    h+=`<div class="sale-row">
+      <div class="sf sf-prop"><label>Empreendimento / construtora</label><input class="sale-prop-input" type="text" value="${esc(dealProp(d))}" ${ctx} data-idx="${idx}" data-dk="prop" placeholder="Ex: Breeze do Paulo · SANTER"></div>
+      <div class="sf sf-val"><label>Valor (VGV)</label><input class="sale-val-input num" id="dv-${tag}-${idx}" type="number" step="50000" min="0" value="${dealValue(d)||''}" ${ctx} data-idx="${idx}" data-dk="value" placeholder="R$"></div>
+      <div class="sf sf-date"><label>Data da venda</label><input class="sale-date-input" type="date" value="${dealDate(d)}" ${ctx} data-idx="${idx}" data-dk="date"></div>
+      <div class="sf sf-recv"><label>Recebimento da comissão <span class="recv-hint">(marque recebido/repassado no Financeiro)</span></label><div class="recv-controls">`;
+    if(sch.length<=1){
+      const s=sch[0]||{month:'',done:false,paid:false};
+      h+=`<span class="psch-row"><input class="psch-month" type="month" value="${s.month||''}" ${ctx} data-idx="${idx}" data-si="0" data-dk="month">${s.done?'<span class="recv-mini ok">✓ recebido</span>':''}${s.paid?'<span class="recv-mini pay">✓ repassado</span>':''}</span>`;
+      h+=`<button class="btn-mini ghost" data-act="addparc" ${ctx} data-idx="${idx}">dividir em 2x (50/50)</button>`;
+    } else {
+      sch.forEach((s,si)=>{
+        h+=`<span class="psch-row"><span class="psch-lab">${si===0?'1ª':'2ª'} · 50%</span><input class="psch-month" type="month" value="${s.month||''}" ${ctx} data-idx="${idx}" data-si="${si}" data-dk="month">${s.done?'<span class="recv-mini ok">✓ recebido</span>':''}${s.paid?'<span class="recv-mini pay">✓ repassado</span>':''}</span>`;
+      });
+      h+=`<button class="btn-mini ghost" data-act="avista" ${ctx} data-idx="${idx}">à vista</button>`;
+    }
+    h+=`</div></div>
+      <div class="sf sf-extra">
+        <div class="sx"><label>Comissão (%)</label><input class="sale-gross-input num" type="number" step="0.5" min="0" value="${d&&d.gross!=null&&d.gross!==''?d.gross:''}" ${ctx} data-idx="${idx}" data-dk="gross" placeholder="${cfgGrossPct()}"></div>
+        <div class="sx"><label>Captação (%)</label><input class="sale-capt-input num" type="number" step="1" min="0" max="100" value="${d&&d.capt?d.capt:''}" ${ctx} data-idx="${idx}" data-dk="capt" placeholder="0"></div>
+        <div class="sx sx-who"><label>Quem captou</label><input class="sale-captwho-input" type="text" list="peopleList" value="${esc(dealCaptWho(d))}" ${ctx} data-idx="${idx}" data-dk="captWho" placeholder="nome do corretor ou externo"></div>
+      </div>
+      <button class="x-btn del-sale" data-act="deldeal" ${ctx} data-idx="${idx}" title="Remover venda">✕</button>
+    </div>`;
+  });
+  h+=`<button class="btn add-sale" data-act="newsale" ${ctx}>+ lançar venda</button></div>`;
+  return h;
+}
+function buildTeams(){
+  const root=document.getElementById('teams'); root.innerHTML='';
+  teams.forEach((tm,ti)=>{
+    const card=document.createElement('div'); card.className='team-card';
+    const mTot=personTotal(tm.mgr);
+    let html=`<div class="team-head">
+        <input class="team-name-input" data-ti="${ti}" data-k="teamname" value="${esc(tm.name)}">
+        <button class="x-btn ${teams.length<=1?'ghost':''}" data-act="delteam" data-ti="${ti}" title="Remover equipe">✕</button>
+      </div>
+      <div class="person-block">
+        <div class="person-head">
+          <span class="role-chip mgr">Gerente</span>
+          <input class="name-input" data-ti="${ti}" data-k="mgrname" value="${esc(tm.mgr.name)}" placeholder="Nome do gerente">
+          <span class="person-total" id="ptot-${ti}-m-x"><b>${fmt(mTot)}</b> · ${tm.mgr.deals.length} ${tm.mgr.deals.length===1?'venda':'vendas'}</span>
+          <span class="x-btn ghost">✕</span>
+        </div>
+        ${dealsHTML(ti,'m',null,tm.mgr.deals)}
+      </div>`;
+    tm.brokers.forEach((b,bi)=>{
+      const t=personTotal(b);
+      html+=`<div class="person-block">
+        <div class="person-head">
+          <select class="role-select" data-ti="${ti}" data-bi="${bi}" data-k2="brtype" title="Corretor ou SDR">
+            <option value="corretor"${(b.type||'corretor')==='corretor'?' selected':''}>Corretor</option>
+            <option value="sdr"${b.type==='sdr'?' selected':''}>SDR</option>
+          </select>
+          <input class="name-input" data-ti="${ti}" data-bi="${bi}" data-k="brname" value="${esc(b.name)}" placeholder="Nome">
+          <span class="person-total" id="ptot-${ti}-b-${bi}"><b>${fmt(t)}</b> · ${b.deals.length} ${b.deals.length===1?'venda':'vendas'}</span>
+          <button class="x-btn" data-act="delbroker" data-ti="${ti}" data-bi="${bi}" title="Remover">✕</button>
+        </div>
+        ${dealsHTML(ti,'b',bi,b.deals)}
+      </div>`;
+    });
+    html+=`<div class="team-actions"><button class="btn" data-act="addbroker" data-ti="${ti}">+ Corretor</button></div>
+      <div class="team-results" id="results-${ti}"></div>`;
+    card.innerHTML=html;
+    root.appendChild(card);
+  });
+}
+function buildSolos(){
+  const root=document.getElementById('solos'); root.innerHTML='';
+  if(!solos.length){ root.innerHTML='<div class="solo-empty muted-line">Nenhum corretor sem equipe ainda.</div>'; return; }
+  solos.forEach((s,si)=>{
+    const card=document.createElement('div'); card.className='team-card solo-card';
+    const t=personTotal(s);
+    card.innerHTML=`<div class="person-block">
+        <div class="person-head">
+          <span class="role-chip solo">Sem equipe</span>
+          <input class="name-input" data-ti="${si}" data-k="soloname" value="${esc(s.name)}" placeholder="Nome do corretor">
+          <span class="person-total" id="ptot-${si}-s-x"><b>${fmt(t)}</b> · ${s.deals.length} ${s.deals.length===1?'venda':'vendas'}</span>
+          <button class="x-btn" data-act="delsolo" data-ti="${si}" data-role="s" title="Remover">✕</button>
+        </div>
+        ${dealsHTML(si,'s',null,s.deals)}
+      </div>
+      <div class="team-results" id="sres-${si}"></div>`;
+    root.appendChild(card);
+  });
+}
+function buildAll(){ buildTeams(); buildSolos(); bindInputs(); if(pendingFocus){ const el=document.getElementById(pendingFocus); if(el) el.focus(); pendingFocus=null; } }
+function bindInputs(){
+  document.querySelectorAll('input[data-k]').forEach(inp=>{
+    inp.addEventListener('input',e=>{
+      const ti=+e.target.dataset.ti, k=e.target.dataset.k;
+      if(k==='teamname') teams[ti].name=e.target.value;
+      else if(k==='mgrname') teams[ti].mgr.name=e.target.value;
+      else if(k==='brname') teams[ti].brokers[+e.target.dataset.bi].name=e.target.value;
+      else if(k==='soloname') solos[ti].name=e.target.value;
+      renderAll();
+    });
+  });
+  document.querySelectorAll('select[data-k2]').forEach(sel=>{
+    sel.addEventListener('change',e=>{
+      teams[+e.target.dataset.ti].brokers[+e.target.dataset.bi].type=e.target.value;
+      renderAll();
+    });
+  });
+  // edição inline de valor / parcelas de cada venda
+  document.querySelectorAll('input[data-dk]').forEach(inp=>{
+    inp.addEventListener('input',e=>{
+      const ti=+e.target.dataset.ti, role=e.target.dataset.role, bi=e.target.dataset.bi!=null?+e.target.dataset.bi:null;
+      const p=personFrom(ti,role,bi), idx=+e.target.dataset.idx, k=e.target.dataset.dk, d=p.deals[idx];
+      if(k==='value'){
+        d.value=+e.target.value||0;
+        const span=document.getElementById(`ptot-${ti}-${role}-${bi!=null?bi:'x'}`);
+        if(span) span.innerHTML=`<b>${fmt(personTotal(p))}</b> · ${p.deals.length} ${p.deals.length===1?'venda':'vendas'}`;
+      } else if(k==='date'){ d.date=e.target.value; }
+      else if(k==='prop'){ d.prop=e.target.value; }
+      else if(k==='gross'){ d.gross=e.target.value===''?null:(+e.target.value||0); }
+      else if(k==='capt'){ d.capt=+e.target.value||0; }
+      else if(k==='captWho'){ d.captWho=e.target.value; }
+      else {
+        const sch=dealSched(d), si=+e.target.dataset.si;
+        if(k==='pct') sch[si].pct=+e.target.value||0; else sch[si].month=e.target.value;
+      }
+      renderAll();
+    });
+  });
+  document.querySelectorAll('[data-act]').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      const el=e.currentTarget, ti=+el.dataset.ti, act=el.dataset.act;
+      const role=el.dataset.role, bi=el.dataset.bi!=null?+el.dataset.bi:null;
+      if(act==='delteam' && teams.length>1) teams.splice(ti,1);
+      else if(act==='addbroker') teams[ti].brokers.push({name:'Corretor '+(teams[ti].brokers.length+1), type:'corretor', deals:[]});
+      else if(act==='delbroker') teams[ti].brokers.splice(bi,1);
+      else if(act==='delsolo') solos.splice(ti,1);
+      else if(act==='deldeal') personFrom(ti,role,bi).deals.splice(+el.dataset.idx,1);
+      else if(act==='newsale'){ const p=personFrom(ti,role,bi); p.deals.push(newDeal(0)); pendingFocus=`dv-${ti}-${role}-${bi!=null?bi:'x'}-${p.deals.length-1}`; }
+      else if(act==='addparc'){ const sch=dealSched(personFrom(ti,role,bi).deals[+el.dataset.idx]); if(sch.length<2){ sch[0].pct=50; sch.push({pct:50,month:'',done:false,paid:false}); } }
+      else if(act==='avista'){ const d=personFrom(ti,role,bi).deals[+el.dataset.idx], sch=dealSched(d); d.schedule=[{pct:100,month:sch[0]?sch[0].month:'',done:sch[0]?!!sch[0].done:false,paid:sch[0]?!!sch[0].paid:false}]; }
+      else if(act==='delparc'){ const sch=dealSched(personFrom(ti,role,bi).deals[+el.dataset.idx]); sch.splice(+el.dataset.si,1); if(sch.length===1) sch[0].pct=100; }
+      else if(act==='recv'){ const sch=dealSched(personFrom(ti,role,bi).deals[+el.dataset.idx]), si=+el.dataset.si; sch[si].done=!sch[si].done; saveState(); buildAll(); renderAll(); return; }
+      else if(act==='pago'){ const sch=dealSched(personFrom(ti,role,bi).deals[+el.dataset.idx]), si=+el.dataset.si; sch[si].paid=!sch[si].paid; saveState(); buildAll(); renderAll(); return; }
+      buildAll(); renderAll();
+    });
+  });
+}
+
+// ---------- ADMIN: render results ----------
+function renderAdmin(){
+  let gVGV=0,gPool=0,gPaid=0,gHouse=0,gMgr=0,gBroker=0,people=0;
+  teams.forEach((tm,ti)=>{
+    const r=computeTeam(tm);
+    gVGV+=r.vgv; gPool+=r.pool; gPaid+=r.paid; gHouse+=r.house; gMgr+=r.mgrTotal;
+    gBroker+=r.brokers.reduce((a,b)=>a+b.calc.brTot,0);
+    people+=1+tm.brokers.length;
+    const box=document.getElementById('results-'+ti); if(!box) return;
+    let h=`<div class="team-stats">
+        <div class="team-stat v-"><div class="lab">VGV equipe</div><div class="val num">${fmtM(r.vgv)}</div></div>
+        <div class="team-stat g-"><div class="lab">Gerente</div><div class="val num">${fmt(r.mgrTotal)}</div></div>
+        <div class="team-stat h-"><div class="lab">Casa</div><div class="val num">${fmt(r.house)}</div></div>
+      </div>`;
+    h+=`<div class="reslabel">Detalhamento interno</div><div class="detail">`;
+    h+=`<div class="pcard mgr">
+        <h3>${esc(tm.mgr.name)||'Gerente'} <span class="total num">${fmt(r.mgrTotal)}</span></h3>
+        <div class="vgv">Ganho total = venda própria + override sobre os corretores</div>
+        <div class="mgr-grid">
+          <div class="mgr-block"><div class="blab">Venda própria · ${fmt(r.mgrSales)} (${fmt(r.mgrOwn.tot)})</div>${mgrTable(r.mgrOwn.rows)}</div>
+          <div class="mgr-block"><div class="blab">Override sobre os corretores · ${fmt(r.ovTotal)}</div>`;
+    if(r.brokers.length) r.brokers.forEach(b=>{ h+=`<div class="ov-row"><span>${esc(b.name)||'Corretor'} · ${fmt(b.sales)}</span><b>${fmt(b.calc.ovTot)}</b></div>`; });
+    else h+=`<div class="muted-line">Sem corretores nesta equipe.</div>`;
+    h+=`</div></div></div>`;
+    r.brokers.forEach(b=>{
+      const eff=b.sales>0?b.calc.brTot/b.sales*100:0;
+      h+=`<div class="pcard">
+        <h3>${esc(b.name)||roleLabel(b.type)} <span class="total num">${fmt(b.calc.brTot)}</span></h3>
+        <div class="vgv">${roleLabel(b.type)} · VGV ${fmt(b.sales)} · ganha <span class="eff">${pct(eff)} do que vende</span>${b.calc.ovTot>0?` · gera ${fmt(b.calc.ovTot)} de override`:' · sem override'}</div>
+        ${brokerTable(b.calc.rows)}
+      </div>`;
+    });
+    h+=`</div>`;
+    box.innerHTML=h;
+  });
+  // corretores sem equipe
+  solos.forEach((s,si)=>{
+    const sales=personTotal(s), c=brokerTotals(s.deals,'solo'), pool=c.pool, house=pool-c.brTot-c.capt;
+    gVGV+=sales; gPool+=pool; gPaid+=c.brTot+c.capt; gHouse+=house; gBroker+=c.brTot; people+=1;
+    const box=document.getElementById('sres-'+si); if(!box) return;
+    const eff=sales>0?c.brTot/sales*100:0;
+    box.innerHTML=`<div class="team-stats">
+        <div class="team-stat v-"><div class="lab">VGV</div><div class="val num">${fmtM(sales)}</div></div>
+        <div class="team-stat g-"><div class="lab">Comissão</div><div class="val num">${fmt(c.brTot)}</div></div>
+        <div class="team-stat h-"><div class="lab">Casa</div><div class="val num">${fmt(house)}</div></div>
+      </div>
+      <div class="reslabel">Detalhamento interno</div>
+      <div class="pcard"><div class="vgv">Corretor sem equipe · ganha <span class="eff">${pct(eff)} do que vende</span> · sem override${c.capt>0?` · ${fmt(c.capt)} de captação`:''}</div>${brokerTable(c.rows)}</div>`;
+  });
+  const pl=document.getElementById('peopleList'); if(pl) pl.innerHTML=allPeopleNames().map(n=>`<option value="${esc(n)}"></option>`).join('');
+  document.getElementById('gVGV').textContent=fmtM(gVGV);
+  document.getElementById('gVGVsub').textContent=fmt(gVGV)+' · comissão líquida '+fmt(gPool);
+  document.getElementById('gPaid').textContent=fmt(gPaid);
+  document.getElementById('gPaidSub').textContent='gerentes '+fmt(gMgr)+' · corretores '+fmt(gBroker);
+  document.getElementById('gHouse').textContent=fmt(gHouse);
+  document.getElementById('gHouseSub').textContent=(gPool>0?pct(gHouse/gPool*100):'—')+' da comissão líquida';
+  document.getElementById('opline').textContent=`${teams.length} ${teams.length===1?'equipe':'equipes'} · ${people} ${people===1?'pessoa':'pessoas'}`+(periodText()?` · Trimestre ${periodText()}`:'');
+
+  saveState();
+}
+
+// ---------- relatórios (gerente / corretor) ----------
+function effPct(split){ return rate(netRate()*split); }
+function repFaixa(t){ return t===0?'na base':(t===1?'na 1ª faixa':'na 2ª faixa'); }
+function roleRules(role){
+  const T=cfgTarget(), B=cfgBand();
+  const arr = role==='gerente' ? POL.gerente.br : (POL[role]||POL.corretor).br;
+  const defs=[
+    {fx:'Base', vol:`até ${fmt(T)}`, sp:arr[0]},
+    {fx:'1ª faixa', vol:`de ${fmt(T)} a ${fmt(T+B)}`, sp:arr[1]},
+    {fx:'2ª faixa', vol:`acima de ${fmt(T+B)}`, sp:arr[2]}
+  ];
+  let h=`<table class="rules-tbl"><thead><tr><th>Faixa no trimestre</th><th>Volume (VGV)</th><th>% da comissão</th><th>Você recebe (do VGV)</th></tr></thead><tbody>`;
+  defs.forEach(t=> h+=`<tr><td>${t.fx}</td><td>${t.vol}</td><td>${t.sp}%</td><td><b>${effPct(t.sp)}</b></td></tr>`);
+  return h+'</tbody></table>';
+}
+function salesRecvTable(items, valueLabel, withWho){
+  if(!items.length) return '<div class="muted-line">Nenhuma venda lançada.</div>';
+  const cols=withWho?6:5;
+  const cg=withWho
+    ? '<col style="width:12%"><col style="width:18%"><col style="width:13%"><col style="width:16%"><col style="width:14%"><col style="width:27%">'
+    : '<col style="width:24%"><col style="width:15%"><col style="width:18%"><col style="width:16%"><col style="width:27%">';
+  let h=`<table class="rep-tbl"><colgroup>${cg}</colgroup><thead><tr>${withWho?'<th class="txt">Vendedor</th>':''}<th class="txt">Empreendimento</th><th class="txt">Data da venda</th><th>${valueLabel}</th><th>Comissão</th><th>Recebimento</th></tr></thead><tbody>`;
+  let subV=0, subC=0;
+  items.forEach(it=>{
+    subV+=it.value; subC+=it.commission;
+    const recv=installments(it.commission,it.schedule).map(x=>`<span class="recv-cell"><b>${fmt(x.value)}</b><span class="recv-when">${monthLabel(x.month)}</span></span>`).join('');
+    h+=`<tr class="sale-main">${withWho?`<td class="txt">${esc(it.who)||'—'}</td>`:''}<td class="txt">${esc(it.prop)||'—'}</td><td class="txt">${it.date?fmtDate(it.date):'<span class="todo">a definir</span>'}</td><td>${fmt(it.value)}</td><td><b>${fmt(it.commission)}</b></td><td>${recv}</td></tr>`;
+    if(it.segs && it.segs.length>1){
+      const parts=it.segs.map(s=>`<div class="seg-part"><b>${fmt(s.value)}</b> ${repFaixa(s.tier)} <span class="seg-rate">${(+s.eff.toFixed(2)).toLocaleString('pt-BR')}% do VGV</span> = <b class="seg-earn">${fmt(s.earn)}</b></div>`).join('');
+      h+=`<tr class="seg-row"><td colspan="${cols}" class="seg-cell"><div class="seg-title">Esta venda cruzou a meta — comissão dividida por faixa</div>${parts}</td></tr>`;
+    }
+  });
+  h+=`<tr class="sub-row"><td class="txt" colspan="${cols-3}">Subtotal</td><td>${fmt(subV)}</td><td>${fmt(subC)}</td><td></td></tr>`;
+  return h+'</tbody></table>';
+}
+function recvSummary(map){
+  const keys=Object.keys(map).sort((a,b)=> a===''?1 : b===''? -1 : a.localeCompare(b));
+  if(!keys.length) return '<div class="muted-line">Sem recebíveis.</div>';
+  let h=`<table class="rep-tbl recv-sum"><thead><tr><th>Data de recebimento</th><th>Valor a receber</th></tr></thead><tbody>`;
+  let tot=0; keys.forEach(k=>{ tot+=map[k]; h+=`<tr class="${k===''?'todo-row':''}"><td>${monthLabel(k)}</td><td>${fmt(map[k])}</td></tr>`; });
+  return h+`<tr class="tot-row"><td>Total</td><td>${fmt(tot)}</td></tr></tbody></table>`;
+}
+function signatureHTML(name){
+  return `<div class="sign-area">
+    <div class="sign-block"><div class="sign-line"></div><div class="sign-cap">${esc(name)||'Assinatura'}</div></div>
+    <div class="sign-block"><div class="sign-line"></div><div class="sign-cap">Data</div></div>
+  </div>`;
+}
+function repHeader(name, roleTxt){
+  return `<div class="rep-head">
+    <div class="rep-brand"><div class="rep-logo">NOX <span>IMÓVEIS</span></div><div class="rep-title">Relatório de Comissões e Recebíveis</div></div>
+    <div class="rep-who"><div class="rep-name">${esc(name)||roleTxt}</div><div class="rep-meta">${roleTxt}${periodText()?` · ${periodText()}`:''}</div></div>
+  </div>`;
+}
+
+// ---------- GERENTE ----------
+function gerHTML(ti){
+  const tm=teams[ti]; if(!tm) return '';
+  const r=computeTeam(tm);
+  const mgrPays=mgrDeals(tm.mgr.deals), mgrBrk=dealBreakdown(tm.mgr.deals, mgrRate);
+  const ownItems=mgrPays.map((d,i)=>({date:d.date,prop:d.prop,value:d.value,commission:d.earn,schedule:d.schedule,segs:mgrBrk[i].segs})).filter(d=>d.value>0);
+  const ovItems=[];
+  tm.brokers.forEach(b=>{
+    const type=b.type||'corretor', pays=brokerDeals(b.deals,type), brk=dealBreakdown(b.deals, t=>ovRate(type,t));
+    pays.forEach((d,i)=>{ if(d.value>0 && d.ovEarn>0) ovItems.push({who:b.name||roleLabel(type),date:d.date,prop:d.prop,value:d.value,commission:d.ovEarn,schedule:d.schedule,segs:brk[i].segs}); });
+  });
+  const capt=captacaoFor(tm.mgr.name);
+  const recv=mgrReceivables(tm);
+  capt.items.forEach(it=> installments(it.amount,it.schedule).forEach(x=>{ recv[x.month]=(recv[x.month]||0)+x.value; }));
+  return `<div class="report">
+    ${repHeader(tm.mgr.name,'Gerente / Fechador · '+esc(tm.name))}
+    <div class="rep-hero"><span>Total a receber no período</span><b>${fmt(r.mgrTotal+capt.total)}</b></div>
+
+    <div class="rep-sec"><h4>Como sua comissão é calculada</h4>
+      <p class="rep-note">A imobiliária recebe a comissão sobre o VGV e retém o imposto na fonte; sobre esse líquido incidem os percentuais abaixo. O ganho cresce em 2 faixas conforme o volume vendido no trimestre.</p>
+      <div class="rep-subh">Suas vendas próprias</div>
+      ${roleRules('gerente')}
+      <div class="rep-subh">Override — você também ganha sobre o que cada pessoa da sua equipe vende</div>
+      <table class="rules-tbl"><thead><tr><th>Papel</th><th>Base</th><th>1ª faixa</th><th>2ª faixa</th></tr></thead><tbody>
+        <tr><td>Corretor</td><td>${POL.corretor.ov[0]}%</td><td>${POL.corretor.ov[1]}%</td><td>${POL.corretor.ov[2]}%</td></tr>
+        <tr><td>SDR</td><td>${POL.sdr.ov[0]}%</td><td>${POL.sdr.ov[1]}%</td><td>${POL.sdr.ov[2]}%</td></tr>
+      </tbody></table>
+    </div>
+
+    <div class="rep-sec"><h4>Suas vendas próprias</h4>${salesRecvTable(ownItems,'VGV',false)}</div>
+    <div class="rep-sec"><h4>Override sobre a equipe</h4>${ovItems.length?salesRecvTable(ovItems,'VGV',true):'<div class="muted-line">Sem vendas da equipe lançadas.</div>'}</div>
+    ${captSection(capt)}
+    <div class="rep-sec"><h4>Recebíveis consolidados — quando entra no seu bolso</h4>${recvSummary(recv)}</div>
+
+    ${signatureHTML(tm.mgr.name)}
+    <div class="rep-foot">Documento gerado pelo Calculadora de Comissões · Nox Imóveis. Valores sujeitos à confirmação do recebível pela construtora.</div>
+  </div>`;
+}
+function renderGer(){
+  const box=document.getElementById('gerBox');
+  if(!teams.length){ box.innerHTML='<div class="muted-line">Nenhuma equipe.</div>'; return; }
+  if(gerSel>=teams.length) gerSel=0;
+  box.innerHTML=gerHTML(gerSel);
+}
+
+// ---------- CORRETOR / SDR ----------
+function corHTML(sel){
+  let b, tmName;
+  if(sel.startsWith('s:')){ b=solos[+sel.slice(2)]; tmName='Autônomo'; }
+  else { const [ti,bi]=sel.split(':').map(Number); const tm=teams[ti]; b=tm&&tm.brokers[bi]; tmName=tm&&tm.name; }
+  if(!b) return '';
+  const type=sel.startsWith('s:')?'solo':(b.type||'corretor'), total=personTotal(b), c=brokerTotals(b.deals,type);
+  const pays=brokerDeals(b.deals,type), brk=dealBreakdown(b.deals, t=>brRate(type,t));
+  const items=pays.map((d,i)=>({date:d.date,prop:d.prop,value:d.value,commission:d.brEarn,schedule:d.schedule,segs:brk[i].segs})).filter(d=>d.value>0);
+  const capt=captacaoFor(b.name);
+  const recv=brokerReceivables(b);
+  capt.items.forEach(it=> installments(it.amount,it.schedule).forEach(x=>{ recv[x.month]=(recv[x.month]||0)+x.value; }));
+  return `<div class="report">
+    ${repHeader(b.name, roleLabel(type)+(type==='solo'?'':' · '+esc(tmName)))}
+    <div class="rep-hero"><span>Total a receber no período</span><b>${fmt(c.brTot+capt.total)}</b></div>
+
+    <div class="rep-sec"><h4>Como sua comissão é calculada</h4>
+      <p class="rep-note">A imobiliária recebe a comissão sobre o VGV e retém o imposto na fonte; sobre esse líquido você recebe os percentuais abaixo. Ao passar a meta do trimestre, a parte que excede ganha o bônus de faixa.</p>
+      ${roleRules(type)}
+    </div>
+
+    <div class="rep-sec"><h4>Suas vendas e recebimentos</h4>${salesRecvTable(items,'VGV',false)}</div>
+    ${captSection(capt)}
+    <div class="rep-sec"><h4>Recebíveis consolidados — quando entra no seu bolso</h4>${recvSummary(recv)}</div>
+
+    ${signatureHTML(b.name)}
+    <div class="rep-foot">Documento gerado pela Calculadora de Comissões · Nox Imóveis. Valores sujeitos à confirmação do recebível pela construtora.</div>
+  </div>`;
+}
+function renderCor(){
+  const box=document.getElementById('corBox');
+  if(!corSel || (corSel.startsWith('s:')?!solos[+corSel.slice(2)]:true)){ /* fallthrough handled below */ }
+  const html=corHTML(corSel);
+  box.innerHTML = html || '<div class="muted-line">Selecione um corretor.</div>';
+}
+
+// ---------- selects ----------
+function buildGerSelect(){
+  const sel=document.getElementById('gerSelect');
+  if(gerSel>=teams.length) gerSel=0;
+  sel.innerHTML=teams.map((t,i)=>`<option value="${i}">${esc(t.name)} — ${esc(t.mgr.name)}</option>`).join('');
+  sel.value=gerSel;
+}
+function buildCorSelect(){
+  const sel=document.getElementById('corSelect');
+  const teamOpts=[]; teams.forEach((t,ti)=>t.brokers.forEach((b,bi)=>teamOpts.push({v:`${ti}:${bi}`,l:`${t.name} — ${b.name}`})));
+  const soloOpts=solos.map((s,si)=>({v:`s:${si}`,l:s.name||'Corretor sem equipe'}));
+  const all=[...teamOpts,...soloOpts];
+  if(!all.length){ sel.innerHTML='<option value="">Nenhum corretor</option>'; corSel=''; return; }
+  if(!all.some(o=>o.v===corSel)) corSel=all[0].v;
+  let html='';
+  if(teamOpts.length) html+=`<optgroup label="Equipes">${teamOpts.map(o=>`<option value="${o.v}">${esc(o.l)}</option>`).join('')}</optgroup>`;
+  if(soloOpts.length) html+=`<optgroup label="Sem equipe">${soloOpts.map(o=>`<option value="${o.v}">${esc(o.l)}</option>`).join('')}</optgroup>`;
+  sel.innerHTML=html;
+  sel.value=corSel;
+}
+
+
+// ---------- meta simulator ----------
+let metaMode='ganho';
+// inverte a comissão do corretor (2 faixas): dado o ganho, acha o VGV
+function vgvForEarnings(E){
+  const NET=netRate(), T=cfgTarget(), B=cfgBand();
+  const defs=[{w:T,tier:0},{w:B,tier:1},{w:Infinity,tier:2}];
+  let vgv=0, rem=E;
+  for(const d of defs){
+    const eff=NET*brRate('corretor',d.tier)/100;
+    if(eff<=0) break;
+    const capE=d.w*eff;
+    if(rem<=capE+1e-9){ vgv+=rem/eff; rem=0; break; } else { vgv+=d.w; rem-=capE; }
+  }
+  return vgv;
+}
+function readMeta(){
+  const g=id=>+document.getElementById(id).value||0;
+  return { ticket:g('mTicket'), alvo:g('mAlvo'),
+    ref:{contatos:g('mContatos'),reunioes:g('mReunioes'),visitas:g('mVisitas'),propostas:g('mPropostas'),fechamentos:g('mFechamentos')} };
+}
+function renderMeta(){
+  const m=readMeta(), safe=(a,b)=>b>0?a/b*100:0;
+  document.getElementById('convCR').textContent=pct(safe(m.ref.reunioes,m.ref.contatos));
+  document.getElementById('convRV').textContent=pct(safe(m.ref.visitas,m.ref.reunioes));
+  document.getElementById('convVP').textContent=pct(safe(m.ref.propostas,m.ref.visitas));
+  document.getElementById('convPF').textContent=pct(safe(m.ref.fechamentos,m.ref.propostas));
+
+  let vgv, ganho;
+  if(metaMode==='ganho'){ vgv=vgvForEarnings(m.alvo); ganho=m.alvo; }
+  else { vgv=m.alvo; ganho=calcBroker(vgv,'corretor').brTot; }
+  const fechRaw = m.ticket>0 ? vgv/m.ticket : 0;
+  const scale = m.ref.fechamentos>0 ? fechRaw/m.ref.fechamentos : 0;
+  const st={
+    contatos:Math.ceil(m.ref.contatos*scale), reunioes:Math.ceil(m.ref.reunioes*scale),
+    visitas:Math.ceil(m.ref.visitas*scale), propostas:Math.ceil(m.ref.propostas*scale),
+    fechamentos:Math.ceil(fechRaw)
+  };
+  const mm=n=>Math.ceil(n/3);
+  const steps=[
+    {n:st.contatos,t:'Contatos',s:'pessoas para abordar'},
+    {n:st.reunioes,t:'Reuniões (meet)',s:'trazidas para conversa'},
+    {n:st.visitas,t:'Visitas',s:'ao imóvel'},
+    {n:st.propostas,t:'Propostas',s:'enviadas'},
+    {n:st.fechamentos,t:'Fechamentos',s:'vendas concluídas'}
+  ];
+  const convs=[safe(m.ref.reunioes,m.ref.contatos),safe(m.ref.visitas,m.ref.reunioes),safe(m.ref.propostas,m.ref.visitas),safe(m.ref.fechamentos,m.ref.propostas)];
+  let h=`<div class="meta-stats">
+    <div class="meta-stat hl"><div class="lab">${metaMode==='ganho'?'VGV necessário':'Ganho estimado'}</div><div class="val num">${metaMode==='ganho'?fmtM(vgv):fmt(ganho)}</div></div>
+    <div class="meta-stat"><div class="lab">${metaMode==='ganho'?'Você ganharia':'VGV informado'}</div><div class="val num">${metaMode==='ganho'?fmt(ganho):fmtM(vgv)}</div></div>
+    <div class="meta-stat"><div class="lab">Fechamentos</div><div class="val num">${st.fechamentos}</div></div>
+    <div class="meta-stat"><div class="lab">Ticket médio</div><div class="val num">${fmtM(m.ticket)}</div></div>
+  </div>
+  <div class="funnel">`;
+  steps.forEach((s,i)=>{
+    h+=`<div class="fn-step"><div class="fn-num num">${s.n.toLocaleString('pt-BR')}</div><div class="fn-info"><div class="t">${s.t}</div><div class="s">${s.s}</div></div><div class="fn-month">≈ ${mm(s.n).toLocaleString('pt-BR')}/mês</div></div>`;
+    if(i<steps.length-1) h+=`<div class="fn-conv">↓ ${pct(convs[i])} convertem</div>`;
+  });
+  h+=`</div>
+  <div class="muted-line" style="margin-top:14px">Para ${metaMode==='ganho'?`ganhar ${fmt(ganho)}`:`vender ${fmt(vgv)}`} no trimestre, com ticket médio de ${fmt(m.ticket)}, você precisa fechar <b>${st.fechamentos}</b> ${st.fechamentos===1?'imóvel':'imóveis'} — e alimentar o funil acima (≈ ${mm(st.contatos).toLocaleString('pt-BR')} contatos por mês).</div>`;
+  document.getElementById('metaResult').innerHTML=h;
+  saveState();
+}
+
+// ---------- orchestration ----------
+// >>> Credenciais fixas — TROQUE AQUI <<<
+const AUTH = { user: 'nox', pass: 'nox2025' };
+
+function fmtDate(d){ if(!d) return ''; const p=d.split('-'); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:''; }
+function periodText(){
+  const s=document.getElementById('cfgStart').value, e=document.getElementById('cfgEnd').value;
+  if(s&&e) return `${fmtDate(s)} a ${fmtDate(e)}`;
+  if(s) return `a partir de ${fmtDate(s)}`;
+  if(e) return `até ${fmtDate(e)}`;
+  return '';
+}
+
+// ---------- persistência (localStorage, com fallback seguro) ----------
+const LS_KEY='nox_sim_v1';
+/* ===== Firebase (banco de números) ===== */
+const firebaseConfig = {
+  apiKey: "AIzaSyBpE9DsSpuGGsyE9Fu-xLKPUygFQTKUoZw",
+  authDomain: "comissoes-nox.firebaseapp.com",
+  projectId: "comissoes-nox",
+  storageBucket: "comissoes-nox.firebasestorage.app",
+  messagingSenderId: "582693043695",
+  appId: "1:582693043695:web:320a1add71226610a6ca1a"
+};
+let cloudReady=false, cloudTimer=null;
+function setCloudStatus(t,cls){ const el=document.getElementById('cloudStatus'); if(el){ el.textContent=t; el.className='cloud-status'+(cls?' '+cls:''); } }
+function cloudInit(){
+  try{
+    if(typeof firebase==='undefined') throw new Error('SDK não carregou');
+    firebase.initializeApp(firebaseConfig);
+    window._db=firebase.firestore();
+    cloudReady=true;
+  }catch(e){ console.warn('Firebase indisponível, seguindo só no aparelho:', e); cloudReady=false; setCloudStatus('⚠ sem nuvem (salvo no aparelho)','warn'); }
+}
+function cloudDoc(){ return window._db.collection('nox').doc('state'); }
+function cloudSave(){
+  if(!cloudReady) return;
+  if(cloudTimer) clearTimeout(cloudTimer);
+  setCloudStatus('☁ salvando…','saving');
+  cloudTimer=setTimeout(()=>{
+    const blob=localStorage.getItem(LS_KEY)||'{}';
+    cloudDoc().set({blob, ts:Date.now()})
+      .then(()=>setCloudStatus('☁ sincronizado','ok'))
+      .catch(e=>{ console.warn('Falha ao salvar na nuvem:', e); setCloudStatus('⚠ offline (salvo no aparelho)','warn'); });
+  }, 1200);
+}
+async function cloudBoot(){
+  cloudInit();
+  if(cloudReady){
+    try{
+      const snap=await cloudDoc().get();
+      if(snap.exists){
+        const d=snap.data()||{};
+        const localTs=+localStorage.getItem(LS_KEY+'_ts')||0;
+        if(d.blob && (d.ts||0) >= localTs){ localStorage.setItem(LS_KEY, d.blob); localStorage.setItem(LS_KEY+'_ts', String(d.ts||Date.now())); }
+      }
+      setCloudStatus('☁ sincronizado','ok');
+    }catch(e){ console.warn('Falha ao ler da nuvem:', e); setCloudStatus('⚠ offline (salvo no aparelho)','warn'); }
+  }
+  loadState(); buildPolicy(); buildAll(); renderAll(); renderMeta();
+  if(cloudReady){ const blob=localStorage.getItem(LS_KEY); if(blob){ try{ cloudDoc().set({blob, ts:+localStorage.getItem(LS_KEY+'_ts')||Date.now()}); }catch(e){} } }
+  try{ document.dispatchEvent(new Event('nox-ready')); }catch(e){}
+}
+function v(id){ const el=document.getElementById(id); return el?el.value:''; }
+function saveState(){
+  try{
+    const data={
+      cfg:{tax:v('cfgTax'),target:v('cfgTarget'),band:v('cfgBand'),start:v('cfgStart'),end:v('cfgEnd'),pol:POL},
+      meta:{ticket:v('mTicket'),contatos:v('mContatos'),reunioes:v('mReunioes'),visitas:v('mVisitas'),propostas:v('mPropostas'),fechamentos:v('mFechamentos'),alvo:v('mAlvo'),mode:metaMode},
+      teams, solos, cashEntries, archives, events, seq
+    };
+    localStorage.setItem(LS_KEY, JSON.stringify(data));
+    localStorage.setItem(LS_KEY+'_ts', String(Date.now()));
+    cloudSave();
+  }catch(e){ /* armazenamento indisponível: segue só na sessão */ }
+}
+function loadState(){
+  let data=null;
+  try{ const raw=localStorage.getItem(LS_KEY); if(raw) data=JSON.parse(raw); }catch(e){}
+  if(!data) return;
+  cashEntries = Array.isArray(data.cashEntries) ? data.cashEntries : [];
+  archives = Array.isArray(data.archives) ? data.archives : [];
+  events = Array.isArray(data.events) ? data.events.map(e=>({
+    id:e.id||('e'+Math.random().toString(36).slice(2,8)),
+    name:e.name||'Evento',
+    gross:(e.gross!=null?+e.gross:(e.commPct!=null?+e.commPct:cfgGrossPct())),
+    tax:(e.tax!=null?+e.tax:(e.commPct!=null?0:cfgTaxPct())),
+    split:{imob:+((e.split||{}).imob)||0,ger:+((e.split||{}).ger)||0,cor:+((e.split||{}).cor)||0,aux:+((e.split||{}).aux)||0,sat:+((e.split||{}).sat)||0},
+    gerente:e.gerente||'',
+    corretores:Array.isArray(e.corretores)?e.corretores.slice():(Array.isArray(e.parts)?e.parts.filter(p=>p.role==='corretor').map(p=>p.name||''):['']),
+    auxiliares:Array.isArray(e.auxiliares)?e.auxiliares.slice():(Array.isArray(e.parts)?e.parts.filter(p=>p.role==='auxiliar').map(p=>p.name||''):[]),
+    satelites:Array.isArray(e.satelites)?e.satelites.slice():[],
+    sales:Array.isArray(e.sales)?e.sales.map(s=>({seller:s.seller||'c0',vgv:+s.vgv||0,sat:s.sat||''})):[{seller:'c0',vgv:0,sat:''}]
+  })) : [];
+  if(data.cfg && data.cfg.pol){ try{ ['corretor','sdr','solo','gerente'].forEach(role=>{ if(data.cfg.pol[role]){ if(data.cfg.pol[role].br) POL[role].br=data.cfg.pol[role].br.map(Number); if(data.cfg.pol[role].ov&&POL[role].ov) POL[role].ov=data.cfg.pol[role].ov.map(Number); } }); }catch(e){} }
+  try{
+    if(data.cfg) [['tax','cfgTax'],['target','cfgTarget'],['band','cfgBand'],['start','cfgStart'],['end','cfgEnd']]
+      .forEach(([k,id])=>{ if(data.cfg[k]!=null && document.getElementById(id)) document.getElementById(id).value=data.cfg[k]; });
+    if(data.meta){
+      [['ticket','mTicket'],['contatos','mContatos'],['reunioes','mReunioes'],['visitas','mVisitas'],['propostas','mPropostas'],['fechamentos','mFechamentos'],['alvo','mAlvo']]
+        .forEach(([k,id])=>{ if(data.meta[k]!=null && document.getElementById(id)) document.getElementById(id).value=data.meta[k]; });
+      if(data.meta.mode){ metaMode=data.meta.mode;
+        document.querySelectorAll('#metaMode .tg').forEach(x=>x.classList.toggle('active',x.dataset.mode===metaMode));
+        document.getElementById('mAlvoLabel').textContent = metaMode==='ganho'?'Ganho desejado (R$)':'VGV desejado (R$)';
+      }
+    }
+    if(Array.isArray(data.teams) && data.teams.length){
+      teams=data.teams; seq=data.seq||teams.length;
+      const normSch=arr=>{ let s=(Array.isArray(arr)&&arr.length)?arr.map(x=>({pct:+x.pct||0,month:x.month||'',done:!!x.done,paid:!!x.paid})):[{pct:100,month:'',done:false,paid:false}]; if(s.length>2){ s=[{pct:50,month:s[0].month,done:s[0].done,paid:s[0].paid},{pct:50,month:s[1].month,done:s[1].done,paid:s[1].paid}]; } return s; };
+      const normDeals=p=>{ p.deals=(p.deals||[]).map(d=> typeof d==='number' ? newDeal(d) : {id:(d&&d.id)||uid('d'), value:(d&&d.value)||0, date:(d&&d.date)||'', prop:(d&&d.prop)||'', gross:(d&&d.gross!=null&&d.gross!=='')?+d.gross:null, capt:(d&&+d.capt)||0, captWho:(d&&d.captWho)||'', schedule:normSch(d&&d.schedule)} ); };
+      teams.forEach(tm=>{ delete tm.mgr.schedule; normDeals(tm.mgr); tm.brokers.forEach(b=>{ delete b.schedule; if(!b.type) b.type='corretor'; normDeals(b); }); });
+      solos=Array.isArray(data.solos)?data.solos:[];
+      // migra quem ficou marcado como 'solo' dentro de uma equipe para a seção própria
+      teams.forEach(tm=>{ for(let i=tm.brokers.length-1;i>=0;i--){ if(tm.brokers[i].type==='solo'){ const mv=tm.brokers.splice(i,1)[0]; solos.unshift({name:mv.name,type:'solo',deals:mv.deals}); } } });
+      solos.forEach(s=>{ s.type='solo'; delete s.schedule; normDeals(s); });
+    }
+  }catch(e){}
+}
+
+
+// ---------- ABA RELATÓRIOS ----------
+let relMode='mes', relSelMonth=null; // relSelMonth null = escolhe o 1º mês com recebível
+let cashEntries=[]; // lançamentos manuais de caixa (despesas e outras entradas)
+let editingCashId=null;
+let archives=[]; // trimestres arquivados (snapshot do relatório no fechamento)
+let relArchSel=null, relArchSub='fin', relTriPeriodOnly=false;
+const CASH_OUT_CATS=['Marketing','Meta Ads','Google Ads','Faxineira','Contabilidade','Jurídico','Aluguel','Água','Luz','Internet','Telefone','Salários / Pró-labore','Software / Assinaturas','Impostos / Taxas','Material de escritório','Outros'];
+const CASH_IN_CATS=['Comissão de corretor (externa)','Comissão de parceria','Outra receita','Aporte de sócio','Reembolso','Juros / Rendimentos','Outros'];
+function manualSum(type, ym){ return cashEntries.filter(e=>e.type===type && (ym==null || (e.month||'')===ym)).reduce((a,e)=>a+e.amount,0); }
+function manualByMonthMap(){ const m={}; cashEntries.forEach(e=>{ const k=e.month||''; (m[k]=m[k]||{in:0,out:0}); m[k][e.type]+=e.amount; }); return m; }
+function manualCatTable(type, ym){
+  const m={}; cashEntries.filter(e=>e.type===type && (ym==null || (e.month||'')===ym)).forEach(e=>{ m[e.cat]=(m[e.cat]||0)+e.amount; });
+  const keys=Object.keys(m).sort((a,b)=>m[b]-m[a]); if(!keys.length) return '';
+  const tot=keys.reduce((a,k)=>a+m[k],0);
+  return `<table class="rep-tbl recv-sum"><thead><tr><th class="txt">Categoria</th><th>Valor</th></tr></thead><tbody>`
+    + keys.map(k=>`<tr><td class="txt">${esc(k)}</td><td>${fmt(m[k])}</td></tr>`).join('')
+    + `<tr class="tot-row"><td>Total</td><td>${fmt(tot)}</td></tr></tbody></table>`;
+}
+function renderCashMgr(){
+  const box=document.getElementById('cashMgr'); if(!box) return;
+  const ed = editingCashId ? cashEntries.find(x=>x.id===editingCashId) : null;
+  const rows=cashEntries.slice().sort((a,b)=>(a.month||'9999-99').localeCompare(b.month||'9999-99')).map(e=>`<tr class="${e.id===editingCashId?'ce-editing':''}">
+      <td><span class="ce-tag ${e.type}">${e.type==='in'?'Entrada':'Saída'}</span></td>
+      <td class="txt">${esc(e.cat)}${e.desc?` <span class="ce-desc">· ${esc(e.desc)}</span>`:''}</td>
+      <td>${e.month?monthLabel(e.month):'a definir'}</td>
+      <td class="ce-amt ${e.type}">${e.type==='in'?'+':'−'} ${fmt(e.amount)}</td>
+      <td><button class="ce-status ${e.done?'done':''}" onclick="toggleCashDone('${e.id}')">${e.done?(e.type==='in'?'✓ recebido':'✓ pago'):(e.type==='in'?'a receber':'a pagar')}</button></td>
+      <td class="ce-acts"><button class="chip-e" onclick="editCashEntry('${e.id}')" title="Editar">✎</button><button class="chip-x" onclick="delCashEntry('${e.id}')" title="Remover">✕</button></td>
+    </tr>`).join('');
+  const aPagar=cashEntries.filter(e=>e.type==='out'&&!e.done).reduce((a,e)=>a+e.amount,0);
+  const pago=cashEntries.filter(e=>e.type==='out'&&e.done).reduce((a,e)=>a+e.amount,0);
+  const aReceber=cashEntries.filter(e=>e.type==='in'&&!e.done).reduce((a,e)=>a+e.amount,0);
+  const recebido=cashEntries.filter(e=>e.type==='in'&&e.done).reduce((a,e)=>a+e.amount,0);
+  const summary = cashEntries.length ? `<div class="cm-summary">
+      <span>Despesas: <b>${fmt(pago)}</b> pago · <b>${fmt(aPagar)}</b> a pagar</span>
+      ${(aReceber+recebido)>0?`<span>Outras entradas: <b>${fmt(recebido)}</b> recebido · <b>${fmt(aReceber)}</b> a receber</span>`:''}
+    </div>` : '';
+  box.innerHTML=`<div class="cm-card">
+    <div class="cm-title">Lançamentos de caixa — despesas e outras entradas</div>
+    <div class="cm-sub">Some aqui o que não é comissão (marketing, contabilidade, água, luz...). Marque "pago/recebido" quando o dinheiro de fato sair/entrar.</div>
+    <div class="cm-form">
+      <select id="ceType" onchange="updateCeCats()"><option value="out" ${ed&&ed.type==='out'?'selected':''}>Saída</option><option value="in" ${ed&&ed.type==='in'?'selected':''}>Entrada</option></select>
+      <input id="ceCat" list="ceCatList" placeholder="Categoria" value="${ed?esc(ed.cat):''}"><datalist id="ceCatList"></datalist>
+      <input id="ceDesc" placeholder="Descrição (opcional)" value="${ed?esc(ed.desc||''):''}">
+      <input id="ceAmount" type="number" step="50" min="0" placeholder="Valor (R$)" value="${ed?ed.amount:''}">
+      <input id="ceMonth" type="month" title="Mês de competência" value="${ed?ed.month||'':''}">
+      <button class="btn btn-dark" onclick="addCashEntry()">${ed?'Salvar':'+ Adicionar'}</button>
+      ${ed?'<button class="btn" onclick="cancelCashEdit()">Cancelar</button>':''}
+    </div>
+    ${cashEntries.length?`<table class="cm-tbl"><thead><tr><th>Tipo</th><th class="txt">Categoria</th><th>Mês</th><th>Valor</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table>${summary}`
+      :'<div class="cm-empty">Nenhum lançamento manual ainda.</div>'}
+  </div>`;
+  updateCeCats();
+}
+function toggleCashDone(id){ const e=cashEntries.find(x=>x.id===id); if(e){ e.done=!e.done; saveState(); renderCashMgr(); renderRel(); } }
+function editCashEntry(id){ editingCashId=id; renderCashMgr(); const el=document.getElementById('ceCat'); if(el) el.focus(); }
+function opFinance(){
+  const liq=liquidoEvents();
+  let comReceber=0,comPagar=0,recebido=0,repassado=0;
+  liq.forEach(e=>{ comReceber+=e.liquido; comPagar+=e.paid; const insts=installments(e.liquido,e.schedule),paidI=installments(e.paid,e.schedule); e.schedule.forEach((s,i)=>{ if(s.done) recebido+=insts[i].value; if(s.paid) repassado+=paidI[i].value; }); });
+  const mIn=manualSum('in'), mOut=manualSum('out');
+  const mInDone=cashEntries.filter(e=>e.type==='in'&&e.done).reduce((a,e)=>a+e.amount,0);
+  const mOutDone=cashEntries.filter(e=>e.type==='out'&&e.done).reduce((a,e)=>a+e.amount,0);
+  return { prev:(comReceber-comPagar)+mIn-mOut, real:(recebido-repassado)+mInDone-mOutDone, comReceber, comPagar, recebido, repassado, mIn, mOut, mInDone, mOutDone };
+}
+function lucroCardHTML(){
+  const f=opFinance();
+  return `<div class="lucro-card">
+    <div class="lucro-cell"><span>Lucro previsto do período</span><b class="${f.prev<0?'neg':''}">${fmt(f.prev)}</b><small>casa de comissão − despesas + outras entradas</small></div>
+    <div class="lucro-cell real"><span>Realizado até agora</span><b class="${f.real<0?'neg':''}">${fmt(f.real)}</b><small>só o que de fato já entrou e saiu</small></div>
+  </div>`;
+}
+function renderRanking(){
+  const box=document.getElementById('rankingBox'); if(!box) return;
+  const T=cfgTarget(); const list=[];
+  teams.forEach(tm=>{ list.push({name:tm.mgr.name||'Gerente',role:'Gerente',team:tm.name,vgv:personTotal(tm.mgr)}); tm.brokers.forEach(b=>list.push({name:b.name||roleLabel(b.type),role:roleLabel(b.type),team:tm.name,vgv:personTotal(b)})); });
+  solos.forEach(s=>list.push({name:s.name||'Autônomo',role:'Sem equipe',team:'—',vgv:personTotal(s)}));
+  const active=list.filter(p=>p.vgv>0).sort((a,b)=>b.vgv-a.vgv);
+  if(!active.length){ box.innerHTML='<div class="rank-empty">Nenhuma venda lançada ainda — o placar aparece quando o time começar a vender.</div>'; return; }
+  const max=active[0].vgv, medal=['🥇','🥈','🥉'];
+  box.innerHTML=`<div class="rank-list">`+active.map((p,i)=>{
+    const pctMeta=T>0?p.vgv/T*100:0, w=max>0?p.vgv/max*100:0;
+    return `<div class="rank-row">
+      <div class="rank-pos">${i<3?medal[i]:(i+1)}</div>
+      <div class="rank-body">
+        <div class="rank-top"><span class="rank-name">${esc(p.name)} <em>${p.role}${p.team&&p.team!=='—'?` · ${esc(p.team)}`:''}</em></span><span class="rank-vgv">${fmt(p.vgv)}</span></div>
+        <div class="rank-bar"><div class="rank-fill ${p.vgv>=T&&T>0?'hit':''}" style="width:${w.toFixed(1)}%"></div></div>
+        <div class="rank-meta">${T>0?pct(pctMeta)+' da meta':''}${p.vgv>=T&&T>0?' · ✔ bateu a meta':''}</div>
+      </div>
+    </div>`;
+  }).join('')+`</div>`;
+}
+function curYM(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function renderAlerts(){
+  const box=document.getElementById('relAlerts'); if(!box) return;
+  const now=curYM(); const liq=liquidoEvents();
+  const recAtraso=[], repAtraso=[];
+  liq.forEach(e=>{
+    const insts=installments(e.liquido,e.schedule), paidI=installments(e.paid,e.schedule);
+    e.schedule.forEach((s,i)=>{ const m=s.month||''; if(m && m<now){
+      if(!s.done) recAtraso.push({prop:e.prop,who:e.who,team:e.team,month:m,val:insts[i].value});
+      if(s.done && !s.paid) repAtraso.push({prop:e.prop,who:e.who,team:e.team,month:m,val:paidI[i].value});
+    }});
+  });
+  const ceAtraso=cashEntries.filter(e=>e.type==='out'&&!e.done&&e.month&&e.month<now);
+  if(!recAtraso.length && !repAtraso.length && !ceAtraso.length){ box.innerHTML=''; return; }
+  const recSum=recAtraso.reduce((a,r)=>a+r.val,0), repSum=repAtraso.reduce((a,r)=>a+r.val,0), ceSum=ceAtraso.reduce((a,r)=>a+r.amount,0);
+  let h=`<div class="alert-card"><div class="alert-head">⚠ Pendências em atraso <span class="alert-sub">(mês já passou)</span></div>`;
+  if(recAtraso.length) h+=`<div class="alert-sec"><div class="alert-lab">A receber das construtoras — <b>${fmt(recSum)}</b> (cobrar)</div>`
+    + recAtraso.sort((a,b)=>a.month.localeCompare(b.month)).map(r=>`<div class="alert-row"><span>${esc(r.prop)||'—'} <em>· ${esc(r.who)}</em></span><span>${monthLabel(r.month)} · <b>${fmt(r.val)}</b></span></div>`).join('')+`</div>`;
+  if(repAtraso.length) h+=`<div class="alert-sec"><div class="alert-lab">A repassar aos corretores — <b>${fmt(repSum)}</b></div>`
+    + repAtraso.sort((a,b)=>a.month.localeCompare(b.month)).map(r=>`<div class="alert-row"><span>${esc(r.who)} <em>· ${esc(r.prop)||'—'}</em></span><span>${monthLabel(r.month)} · <b>${fmt(r.val)}</b></span></div>`).join('')+`</div>`;
+  if(ceAtraso.length) h+=`<div class="alert-sec"><div class="alert-lab">Despesas não pagas — <b>${fmt(ceSum)}</b></div>`
+    + ceAtraso.sort((a,b)=>a.month.localeCompare(b.month)).map(r=>`<div class="alert-row"><span>${esc(r.cat)}${r.desc?` <em>· ${esc(r.desc)}</em>`:''}</span><span>${monthLabel(r.month)} · <b>${fmt(r.amount)}</b></span></div>`).join('')+`</div>`;
+  h+=`<div class="alert-foot">Marque como recebido/repassado/pago na Administrativa ou aqui no caixa conforme for quitando.</div></div>`;
+  box.innerHTML=h;
+}
+function updateCeCats(){
+  const t=document.getElementById('ceType'); const dl=document.getElementById('ceCatList'); if(!t||!dl) return;
+  dl.innerHTML=(t.value==='in'?CASH_IN_CATS:CASH_OUT_CATS).map(c=>`<option value="${c}"></option>`).join('');
+}
+function addCashEntry(){
+  const type=document.getElementById('ceType').value;
+  const cat=(document.getElementById('ceCat').value||'').trim() || (type==='in'?'Outra receita':'Outros');
+  const desc=(document.getElementById('ceDesc').value||'').trim();
+  const amount=+document.getElementById('ceAmount').value||0;
+  const month=document.getElementById('ceMonth').value||'';
+  if(amount<=0){ alert('Informe um valor maior que zero.'); return; }
+  if(editingCashId){ const e=cashEntries.find(x=>x.id===editingCashId); if(e){ e.type=type; e.cat=cat; e.desc=desc; e.amount=amount; e.month=month; } editingCashId=null; }
+  else cashEntries.push({id:'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), type, cat, desc, amount, month, done:false});
+  saveState(); renderCashMgr(); renderRel();
+}
+function delCashEntry(id){ cashEntries=cashEntries.filter(e=>e.id!==id); saveState(); renderCashMgr(); renderRel(); }
+function monthLong(ym){ if(!ym) return 'A definir'; const [y,m]=ym.split('-'); const N=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']; return (N[+m-1]||'')+' de '+y; }
+function monthShort(ym){ if(!ym) return 'a definir'; const m=ym.split('-')[1]; return ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][+m-1]||'?'; }
+function fmtK(n){ if(Math.abs(n)>=1e6) return 'R$ '+(n/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+'M'; if(Math.abs(n)>=1000) return 'R$ '+Math.round(n/1000)+'k'; return 'R$ '+Math.round(n); }
+function relMonthsData(){
+  const m={};
+  liquidoEvents().forEach(e=>(e.schedule||[]).forEach(s=>{ const f=(+s.pct||0)/100, k=s.month||''; (m[k]=m[k]||{entra:0,sai:0,casa:0}); m[k].entra+=e.liquido*f; m[k].sai+=e.paid*f; m[k].casa+=e.casa*f; }));
+  cashEntries.forEach(e=>{ const k=e.month||''; (m[k]=m[k]||{entra:0,sai:0,casa:0}); if(e.type==='in'){ m[k].entra+=e.amount; m[k].casa+=e.amount; } else { m[k].sai+=e.amount; m[k].casa-=e.amount; } });
+  return m;
+}
+function relTopPanel(mode, mdata, sel){
+  const toggle=`<div class="toggle rp-toggle"><button data-rmode="mes" class="tg${mode==='mes'?' active':''}">Mensal</button><button data-rmode="tri" class="tg${mode==='tri'?' active':''}">Trimestral</button><button data-rmode="arq" class="tg${mode==='arq'?' active':''}">Arquivados</button></div>`;
+  if(mode==='arq'){
+    let body;
+    if(!archives.length){ body=`<div class="rp-empty">Nenhum trimestre arquivado ainda. Use "Zerar trimestre" na Administrativa para arquivar o fechamento atual.</div>`; }
+    else body=`<div class="rp-months"><div class="rp-mlabel">Trimestres fechados — clique para abrir:</div><div class="arq-list">`
+      + archives.map(a=>`<div class="arq-item ${a.id===relArchSel?'sel':''}"><button class="arq-open" data-arch="${a.id}"><b>${esc(a.label)}</b><span>arquivado em ${esc(a.savedAt)}</span></button><button class="chip-x" data-arch-del="${a.id}" title="Excluir arquivo">✕</button></div>`).join('')
+      + `</div></div>`;
+    return `<div class="rel-panel"><div class="rp-top">${toggle}<div class="rp-hint"><b>Trimestres arquivados</b> — fechamentos salvos. Servem de histórico e não mudam mais.</div></div>${body}</div>`;
+  }
+  if(mode==='tri'){
+    return `<div class="rel-panel"><div class="rp-top">${toggle}<div class="rp-hint">Fechamento do <b>trimestre inteiro</b> — totais e fluxo de caixa mês a mês.</div></div>
+      <div class="rp-tri">Período: <b>${periodText()||'defina as datas da meta na aba Administrativa'}</b></div></div>`;
+  }
+  const keys=Object.keys(mdata).sort((a,b)=> a===''?1 : b===''?-1 : a.localeCompare(b));
+  let chips;
+  if(!keys.length){ chips=`<div class="rp-empty">Nenhum recebível lançado ainda — cadastre vendas com data de recebimento na aba Administrativa.</div>`; }
+  else{
+    const byYear={}; keys.forEach(k=>{ const y=k===''?'A definir':k.slice(0,4); (byYear[y]=byYear[y]||[]).push(k); });
+    const order=Object.keys(byYear).sort((a,b)=> a==='A definir'?1 : b==='A definir'?-1 : a.localeCompare(b));
+    chips=`<div class="rp-months"><div class="rp-mlabel">Escolha o mês para analisar — só aparecem meses com dinheiro a entrar/sair:</div>`
+      + order.map(y=>`<div class="mn-year"><div class="mn-ylab">${y}</div><div class="mn-chips">`
+        + byYear[y].map(k=>{ const d=mdata[k]; return `<button class="month-chip${k===sel?' sel':''}" data-month="${k}"><span class="mc-m">${monthShort(k)}</span><span class="mc-v">entra ${fmtK(d.entra)}</span></button>`; }).join('')
+        + `</div></div>`).join('')
+      + `</div>`;
+  }
+  return `<div class="rel-panel"><div class="rp-top">${toggle}<div class="rp-hint">Caixa de <b>um mês específico</b> — o que entra, o que sai e o saldo daquele mês.</div></div>${chips}</div>`;
+}
+function renderRel(){
+  const box=document.getElementById('relBox'); if(!box) return;
+  if(relMode==='arq'){
+    let body='';
+    if(archives.length){
+      if(relArchSel===null || !archives.some(a=>a.id===relArchSel)){ relArchSel=archives[0].id; relArchSub='fin'; }
+      const a=archives.find(x=>x.id===relArchSel);
+      if(a){
+        const fin = a.fin || a.html || '';
+        const gers = a.gers||[], cors = a.cors||[];
+        let nav=`<div class="arq-sub"><span class="arq-sub-lab">Relatório:</span><button class="arq-tab ${relArchSub==='fin'?'on':''}" data-arch-sub="fin">Financeiro</button>`;
+        gers.forEach((g,i)=>nav+=`<button class="arq-tab ${relArchSub==='g'+i?'on':''}" data-arch-sub="g${i}">${esc(g.name)}</button>`);
+        cors.forEach((c,i)=>nav+=`<button class="arq-tab ${relArchSub==='c'+i?'on':''}" data-arch-sub="c${i}">${esc(c.name)}</button>`);
+        nav+=`</div>`;
+        let rep=fin;
+        if(relArchSub.startsWith('g')){ const g=gers[+relArchSub.slice(1)]; rep=g?g.html:fin; }
+        else if(relArchSub.startsWith('c')){ const c=cors[+relArchSub.slice(1)]; rep=c?c.html:fin; }
+        body=nav+rep;
+      }
+    }
+    box.innerHTML = relTopPanel('arq') + body;
+    return;
+  }
+  if(relMode==='tri'){ box.innerHTML = relTopPanel('tri') + relTrimestral(); return; }
+  const mdata=relMonthsData();
+  const keys=Object.keys(mdata).sort((a,b)=> a===''?1 : b===''?-1 : a.localeCompare(b));
+  let sel=relSelMonth; if(keys.length){ if(sel===null || !(sel in mdata)) sel=keys[0]; relSelMonth=sel; }
+  box.innerHTML = relTopPanel('mes', mdata, sel) + (keys.length ? relMensalBody(sel) : '');
+}
+// todas as vendas (gerente próprio + corretores/SDR + autônomos) com comissão já calculada por venda
+function allSaleEvents(){
+  const ev=[];
+  teams.forEach(tm=>{
+    mgrDeals(tm.mgr.deals).forEach(d=>{ if(d.value>0) ev.push({who:tm.mgr.name||'Gerente',role:'Gerente',team:tm.name,date:d.date,prop:d.prop,value:d.value,commission:d.earn,override:0,schedule:d.schedule}); });
+    tm.brokers.forEach(b=>{ const ty=b.type||'corretor'; brokerDeals(b.deals,ty).forEach(d=>{ if(d.value>0) ev.push({who:b.name||roleLabel(ty),role:roleLabel(ty),team:tm.name,date:d.date,prop:d.prop,value:d.value,commission:d.brEarn,override:d.ovEarn||0,schedule:d.schedule}); }); });
+  });
+  solos.forEach(s=>{ brokerDeals(s.deals,'solo').forEach(d=>{ if(d.value>0) ev.push({who:s.name||'Autônomo',role:'Sem equipe',team:'—',date:d.date,prop:d.prop,value:d.value,commission:d.brEarn,override:0,schedule:d.schedule}); }); });
+  return ev;
+}
+// todos os recebíveis (parcelas) com quem recebe e em que mês
+function allReceivables(){
+  const out=[];
+  const add=(who,role,cat,amount,sch)=>{ if(amount>0) installments(amount,sch).forEach(x=>out.push({who,role,cat,month:x.month,amount:x.value})); };
+  teams.forEach(tm=>{
+    mgrDeals(tm.mgr.deals).forEach(d=>{ add(tm.mgr.name||'Gerente','Gerente · venda própria','Gerentes',d.earn,d.schedule); if(d.capt>0) add(d.captWho||'Captador','Captação do imóvel','Captação',d.capt,d.schedule); });
+    tm.brokers.forEach(b=>{ const ty=b.type||'corretor'; brokerDeals(b.deals,ty).forEach(d=>{ add(b.name||roleLabel(ty),roleLabel(ty),ty==='sdr'?'SDR':'Corretores',d.brEarn,d.schedule); if(d.ovEarn>0) add(tm.mgr.name||'Gerente','Gerente · override','Gerentes',d.ovEarn,d.schedule); if(d.capt>0) add(d.captWho||'Captador','Captação do imóvel','Captação',d.capt,d.schedule); }); });
+  });
+  solos.forEach(s=>brokerDeals(s.deals,'solo').forEach(d=>{ add(s.name||'Autônomo','Sem equipe','Autônomos',d.brEarn,d.schedule); if(d.capt>0) add(d.captWho||'Captador','Captação do imóvel','Captação',d.capt,d.schedule); }));
+  return out;
+}
+// decompõe cada venda no que a NOX recebe (líquido), paga (splits) e fica (casa)
+function schedFrac(sch, ym){ return (sch||[]).filter(s=>s.month===ym).reduce((a,s)=>a+(+s.pct||0),0)/100; }
+function liquidoEvents(){
+  const out=[];
+  const add=(id,prop,who,role,team,vgv,liquido,paid,sch)=>{ if(vgv>0) out.push({dealId:id,prop,who,role,team,vgv,liquido,paid,casa:liquido-paid,schedule:sch}); };
+  teams.forEach(tm=>{
+    mgrDeals(tm.mgr.deals).forEach((d,i)=>add(tm.mgr.deals[i]&&tm.mgr.deals[i].id,d.prop,tm.mgr.name||'Gerente','Gerente',tm.name,d.value,d.liquido,d.earn+d.capt,d.schedule));
+    tm.brokers.forEach(b=>{ const ty=b.type||'corretor'; brokerDeals(b.deals,ty).forEach((d,i)=>add(b.deals[i]&&b.deals[i].id,d.prop,b.name||roleLabel(ty),roleLabel(ty),tm.name,d.value,d.liquido,d.brEarn+d.ovEarn+d.capt,d.schedule)); });
+  });
+  solos.forEach(s=>brokerDeals(s.deals,'solo').forEach((d,i)=>add(s.deals[i]&&s.deals[i].id,d.prop,s.name||'Autônomo','Sem equipe','—',d.value,d.liquido,d.brEarn+d.capt,d.schedule)));
+  return out;
+}
+function relRepHead(title, name, meta){
+  return `<div class="rep-head"><div class="rep-brand"><div class="rep-logo">NOX <span>IMÓVEIS</span></div><div class="rep-title">${title}</div></div>
+    <div class="rep-who"><div class="rep-name">${name}</div><div class="rep-meta">${meta}</div></div></div>`;
+}
+function kpis(arr){ return `<div class="rel-kpis">${arr.map(k=>`<div class="rel-kpi"><span>${k[0]}</span><b>${k[1]}</b></div>`).join('')}</div>`; }
+function cashflowViz(mdata){
+  const keys=Object.keys(mdata).sort((a,b)=> a===''?1 : b===''?-1 : a.localeCompare(b));
+  if(!keys.length) return '';
+  const max=Math.max(1,...keys.map(k=>Math.max(mdata[k].entra,mdata[k].sai)));
+  const W=v=>Math.max(v/max*100, v>0?2:0);
+  return `<div class="cf-viz"><div class="cf-legend"><span class="cf-dot in"></span>Entra (recebemos) <span class="cf-dot out"></span>Sai (pagamos) <span class="cf-sep">·</span> saldo da casa à direita</div>`
+    + keys.map(k=>{ const d=mdata[k]; return `<div class="cf-row"><div class="cf-m">${monthLabel(k)}</div><div class="cf-bars">`
+      + `<div class="cf-bar in"><div class="cf-track"><i style="width:${W(d.entra)}%"></i></div><span>${fmtK(d.entra)}</span></div>`
+      + `<div class="cf-bar out"><div class="cf-track"><i style="width:${W(d.sai)}%"></i></div><span>${fmtK(d.sai)}</span></div>`
+      + `</div><div class="cf-saldo ${d.casa<0?'neg':''}">${fmtK(d.casa)}</div></div>`; }).join('')
+    + `</div>`;
+}
+function catTable(recv){
+  const cats=['Gerentes','Corretores','SDR','Autônomos','Captação'], m={};
+  recv.forEach(r=>{ m[r.cat]=(m[r.cat]||0)+r.amount; });
+  const present=cats.filter(c=>m[c]>0);
+  if(!present.length) return '';
+  const tot=present.reduce((a,c)=>a+m[c],0);
+  return `<table class="rep-tbl recv-sum"><thead><tr><th class="txt">Categoria</th><th>A pagar</th><th>% do total</th></tr></thead><tbody>`
+    + present.map(c=>`<tr><td class="txt">${c}</td><td>${fmt(m[c])}</td><td>${pct(m[c]/tot*100)}</td></tr>`).join('')
+    + `<tr class="tot-row"><td>Total a pagar</td><td>${fmt(tot)}</td><td>100%</td></tr></tbody></table>`;
+}
+
+function relMensalBody(ym){
+  const liq=liquidoEvents();
+  const inRows=[]; let comReceber=0, comPagar=0, recebido=0, repassado=0;
+  liq.forEach(e=>{
+    const insts=installments(e.liquido,e.schedule), paidI=installments(e.paid,e.schedule);
+    e.schedule.forEach((s,i)=>{ if((s.month||'')===ym){ comReceber+=insts[i].value; comPagar+=paidI[i].value; if(s.done) recebido+=insts[i].value; if(s.paid) repassado+=paidI[i].value; inRows.push({dealId:e.dealId,si:i,prop:e.prop,who:e.who,team:e.team,vgv:e.vgv,inc:insts[i].value,pay:paidI[i].value,done:!!s.done,paidF:!!s.paid,parc:e.schedule.length>1}); } });
+  });
+  inRows.sort((a,b)=>b.inc-a.inc);
+  const recv=allReceivables().filter(r=>r.month===ym);
+  const byWho={}; recv.forEach(r=>{ const k=r.who+'|'+r.role; (byWho[k]=byWho[k]||{who:r.who,role:r.role,amount:0}).amount+=r.amount; });
+  const payRows=Object.values(byWho).sort((a,b)=>b.amount-a.amount);
+  const manualIn=manualSum('in',ym), manualOut=manualSum('out',ym);
+  const entra=comReceber+manualIn, sai=comPagar+manualOut, casa=entra-sai;
+  const aReceber=comReceber-recebido;
+
+  const recebeTbl = inRows.length ? `<table class="rep-tbl"><colgroup><col style="width:26%"><col style="width:20%"><col style="width:14%"><col style="width:14%"><col style="width:13%"><col style="width:13%"></colgroup><thead><tr><th class="txt">Empreendimento / construtora</th><th class="txt">Origem</th><th>VGV</th><th>Entra</th><th>Recebido?</th><th>Repassado?</th></tr></thead><tbody>`
+      + inRows.map(r=>`<tr><td class="txt">${esc(r.prop)||'—'}${r.parc?' <span class="parc-tag">2x</span>':''}</td><td class="txt">${esc(r.who)}${r.team&&r.team!=='—'?` · ${esc(r.team)}`:''}</td><td>${fmt(r.vgv)}</td><td><b>${fmt(r.inc)}</b></td>`
+        + `<td><button class="recv-flag ${r.done?'done':''}" data-rtoggle="recv" data-deal="${r.dealId}" data-si="${r.si}">${r.done?'✓ recebido':'a receber'}</button></td>`
+        + `<td><button class="recv-flag pay ${r.paidF?'done':''}" data-rtoggle="pago" data-deal="${r.dealId}" data-si="${r.si}">${r.paidF?'✓ repassado':'a repassar'}</button></td></tr>`).join('')
+      + `<tr class="tot-row"><td class="txt" colspan="3">Comissão a receber no mês</td><td>${fmt(comReceber)}</td><td colspan="2">${recebido>0?`recebido <span class="st-ok">${fmt(recebido)}</span>`:'—'}</td></tr></tbody></table>`
+      + (comReceber>0?`<div class="realiz-note">Já recebido da construtora: <b>${fmt(recebido)}</b> · falta receber: <b>${fmt(aReceber)}</b>. Clique em "a receber/repassado" aqui mesmo conforme o dinheiro entra e sai.</div>`:'')
+    : '<div class="muted-line">Nenhuma comissão da construtora programada para este mês.</div>';
+  const pagarTbl = payRows.length ? `<table class="rep-tbl"><colgroup><col style="width:46%"><col style="width:30%"><col style="width:24%"></colgroup><thead><tr><th class="txt">Quem recebe</th><th class="txt">Papel</th><th>A pagar</th></tr></thead><tbody>`
+      + payRows.map(p=>`<tr><td class="txt">${esc(p.who)}</td><td class="txt">${p.role}</td><td><b>${fmt(p.amount)}</b></td></tr>`).join('')
+      + `<tr class="tot-row"><td class="txt" colspan="2">Comissões a pagar no mês</td><td>${fmt(comPagar)}</td></tr></tbody></table>`
+      + (comPagar>0?`<div class="realiz-note">Já repassado aos corretores: <b>${fmt(repassado)}</b> · falta repassar: <b>${fmt(comPagar-repassado)}</b>. Marque "repassado" na tabela de entradas acima.</div>`:'')
+    : '<div class="muted-line">Nenhuma comissão a pagar neste mês.</div>';
+  const outrasEntradas = manualIn>0 ? `<div class="rep-subh" style="margin-top:14px">Outras entradas</div>${manualCatTable('in',ym)}` : '';
+  const despesas = manualOut>0 ? `<div class="rep-subh" style="margin-top:14px">Despesas operacionais</div>${manualCatTable('out',ym)}` : '';
+
+  return `<div class="report">
+    ${relRepHead('Relatório Financeiro · Mensal', monthLong(ym), 'Fluxo de caixa do mês')}
+    ${kpis([['Entra (previsto)', fmt(entra)],['Sai (pagamos)', fmt(sai)],['Resultado do caixa', fmt(casa)]])}
+    <div class="rel-saldo ${casa<0?'neg':''}"><span>Resultado do mês para a Nox</span><b>${fmt(casa)}</b><small>${fmt(entra)} de entradas − ${fmt(sai)} de saídas${manualOut>0?` (inclui ${fmt(manualOut)} de despesas)`:''}</small></div>
+    <div class="rep-sec"><h4>Entradas — entra em ${monthLabel(ym)}</h4><p class="rep-note">Comissão líquida (5% do VGV menos 10% de imposto) que a construtora repassa neste mês, mais outras entradas lançadas. A coluna Status mostra o que já caiu.</p>${recebeTbl}${outrasEntradas}</div>
+    <div class="rep-sec"><h4>Saídas — sai em ${monthLabel(ym)}</h4><p class="rep-note">Comissões a repassar e despesas operacionais do mês.</p>
+      <div class="rep-subh">Comissões por categoria</div>${catTable(recv)}
+      <div class="rep-subh" style="margin-top:14px">Comissões — detalhe por pessoa</div>${pagarTbl}
+      ${despesas}
+    </div>
+    <div class="rep-foot">Relatório financeiro gerado pela Calculadora de Comissões · Nox Imóveis. Valores de comissão condicionados à confirmação do recebível pela construtora.</div>
+  </div>`;
+}
+function consolidadoSection(){
+  const consol={};
+  allReceivables().forEach(r=>{ (consol[r.who]=consol[r.who]||{com:0,ev:0}).com+=r.amount; });
+  (events||[]).forEach(ev=>{ const c=eventCalc(ev); const add=(name,amt)=>{ if(!name||amt<=0) return; (consol[name]=consol[name]||{com:0,ev:0}).ev+=amt; };
+    add(ev.gerente,c.gerTotal); (ev.corretores||[]).forEach((n,i)=>add(n,c.earnCor[i]||0)); (ev.satelites||[]).forEach((n,i)=>add(n,c.earnSat[i]||0)); (ev.auxiliares||[]).forEach(n=>add(n,c.auxEach)); });
+  const names=Object.keys(consol).filter(n=>(consol[n].com+consol[n].ev)>0.005).sort((a,b)=>(consol[b].com+consol[b].ev)-(consol[a].com+consol[a].ev));
+  if(!names.length) return '';
+  const anyEv=names.some(n=>consol[n].ev>0);
+  let tCom=0,tEv=0; names.forEach(n=>{ tCom+=consol[n].com; tEv+=consol[n].ev; });
+  return `<div class="rep-sec"><h4>Ganho consolidado por pessoa</h4><p class="rep-note">Total a pagar para cada um somando as comissões do trimestre${anyEv?' e os eventos':''} (captação já incluída). Serve como folha de pagamento.</p>
+    <table class="rep-tbl"><colgroup><col style="width:40%"><col style="width:${anyEv?'20%':'30%'}">${anyEv?'<col style="width:20%">':''}<col style="width:${anyEv?'20%':'30%'}"></colgroup>
+    <thead><tr><th class="txt">Pessoa</th><th>Comissões</th>${anyEv?'<th>Eventos</th>':''}<th>Total a receber</th></tr></thead><tbody>`
+    + names.map(n=>`<tr><td class="txt">${esc(n)}</td><td>${fmt(consol[n].com)}</td>${anyEv?`<td>${fmt(consol[n].ev)}</td>`:''}<td><b>${fmt(consol[n].com+consol[n].ev)}</b></td></tr>`).join('')
+    + `<tr class="tot-row"><td class="txt">Total</td><td>${fmt(tCom)}</td>${anyEv?`<td>${fmt(tEv)}</td>`:''}<td>${fmt(tCom+tEv)}</td></tr></tbody></table></div>`;
+}
+function relTrimestral(){
+  const liq=liquidoEvents();
+  const months=relMonthsData();
+  const keys=Object.keys(months).sort((a,b)=> a===''?1 : b===''?-1 : a.localeCompare(b));
+  let totEntra=0,totSai=0,totCasa=0; keys.forEach(k=>{ totEntra+=months[k].entra; totSai+=months[k].sai; totCasa+=months[k].casa; });
+  let comReceber=0,comPagar=0,gVGV=0,recebidoTot=0,repassadoTot=0; liq.forEach(e=>{ comReceber+=e.liquido; comPagar+=e.paid; gVGV+=e.vgv; const insts=installments(e.liquido,e.schedule), paidI=installments(e.paid,e.schedule); e.schedule.forEach((s,i)=>{ if(s.done) recebidoTot+=insts[i].value; if(s.paid) repassadoTot+=paidI[i].value; }); });
+  const comCasa=comReceber-comPagar;
+  const manualIn=manualSum('in'), manualOut=manualSum('out');
+  const margem = totEntra>0 ? totCasa/totEntra*100 : 0;
+
+  const startYM=((document.getElementById('cfgStart')||{}).value||'').slice(0,7);
+  const endYM=((document.getElementById('cfgEnd')||{}).value||'').slice(0,7);
+  const hasPeriod=!!(startYM&&endYM);
+  const fluxoKeys = (relTriPeriodOnly && hasPeriod) ? keys.filter(k=>k!=='' && k>=startYM && k<=endYM) : keys;
+  const fmonths={}; fluxoKeys.forEach(k=>fmonths[k]=months[k]);
+  let fEntra=0,fSai=0,fCasa=0; fluxoKeys.forEach(k=>{ fEntra+=months[k].entra; fSai+=months[k].sai; fCasa+=months[k].casa; });
+  const fluxoTbl = fluxoKeys.length ? `<table class="rep-tbl"><thead><tr><th class="txt">Mês</th><th>Entra (recebemos)</th><th>Sai (pagamos)</th><th>Saldo do caixa</th></tr></thead><tbody>`
+      + fluxoKeys.map(k=>`<tr class="${k===''?'todo-row':''}"><td class="txt">${monthLabel(k)}</td><td>${fmt(months[k].entra)}</td><td>${fmt(months[k].sai)}</td><td><b>${fmt(months[k].casa)}</b></td></tr>`).join('')
+      + `<tr class="tot-row"><td class="txt">Total</td><td>${fmt(fEntra)}</td><td>${fmt(fSai)}</td><td>${fmt(fCasa)}</td></tr></tbody></table>`
+    : '<div class="muted-line">Sem movimentações nesse recorte.</div>';
+  const triFilter = hasPeriod ? `<span class="tri-filter no-print"><button data-triperiod="0" class="${!relTriPeriodOnly?'on':''}">Todos os meses</button><button data-triperiod="1" class="${relTriPeriodOnly?'on':''}">Só o período da meta</button></span>` : '';
+
+  const emp={}; liq.forEach(e=>{ const k=e.prop||'(sem nome)'; (emp[k]=emp[k]||{vgv:0,liq:0}); emp[k].vgv+=e.vgv; emp[k].liq+=e.liquido; });
+  const empKeys=Object.keys(emp).sort((a,b)=>emp[b].liq-emp[a].liq);
+  const empTbl = empKeys.length ? `<table class="rep-tbl"><colgroup><col style="width:46%"><col style="width:27%"><col style="width:27%"></colgroup><thead><tr><th class="txt">Empreendimento</th><th>VGV vendido</th><th>A receber (líquido)</th></tr></thead><tbody>`
+      + empKeys.map(k=>`<tr><td class="txt">${esc(k)}</td><td>${fmt(emp[k].vgv)}</td><td><b>${fmt(emp[k].liq)}</b></td></tr>`).join('')
+      + `<tr class="tot-row"><td class="txt">Total comissões</td><td>${fmt(gVGV)}</td><td>${fmt(comReceber)}</td></tr></tbody></table>`
+    : '<div class="muted-line">Nenhuma venda lançada.</div>';
+
+  const pay=[]; const teamRows=[]; const T=cfgTarget(); let comHouse=0;
+  teams.forEach(tm=>{
+    const r=computeTeam(tm); comHouse+=r.house;
+    teamRows.push(`<tr><td class="txt">${esc(tm.name)}</td><td>${fmt(r.vgv)}</td><td>${fmt(r.paid)}</td><td>${fmt(r.house)}</td></tr>`);
+    pay.push({who:tm.mgr.name||'Gerente',role:'Gerente',vgv:r.mgrSales,amount:r.mgrTotal});
+    r.brokers.forEach(b=>pay.push({who:b.name||roleLabel(b.type),role:roleLabel(b.type),vgv:b.sales,amount:b.calc.brTot}));
+  });
+  let sVGV=0,sPaid=0,sHouse=0;
+  solos.forEach(s=>{ const sales=personTotal(s),c=brokerTotals(s.deals,'solo'),pool=c.pool; sVGV+=sales;sPaid+=c.brTot;sHouse+=pool-c.brTot-c.capt; comHouse+=pool-c.brTot-c.capt; pay.push({who:s.name||'Autônomo',role:'Sem equipe',vgv:sales,amount:c.brTot}); });
+  if(solos.length) teamRows.push(`<tr><td class="txt">Corretores sem equipe (${solos.length})</td><td>${fmt(sVGV)}</td><td>${fmt(sPaid)}</td><td>${fmt(sHouse)}</td></tr>`);
+  pay.sort((a,b)=>b.amount-a.amount);
+  const payTbl = pay.length ? `<table class="rep-tbl"><colgroup><col style="width:30%"><col style="width:18%"><col style="width:14%"><col style="width:19%"><col style="width:19%"></colgroup><thead><tr><th class="txt">Pessoa</th><th class="txt">Papel</th><th>Meta</th><th>VGV</th><th>A pagar</th></tr></thead><tbody>`
+      + pay.map(p=>`<tr><td class="txt">${esc(p.who)}</td><td class="txt">${p.role}</td><td>${T>0?pct(p.vgv/T*100):'—'}${p.vgv>=T&&T>0?' <span class="hit">✔</span>':''}</td><td>${fmt(p.vgv)}</td><td><b>${fmt(p.amount)}</b></td></tr>`).join('')
+      + `<tr class="tot-row"><td class="txt" colspan="3">Total comissões</td><td>${fmt(gVGV)}</td><td>${fmt(comPagar)}</td></tr></tbody></table>`
+    : '<div class="muted-line">Nenhuma venda lançada.</div>';
+  const teamTbl = `<table class="rep-tbl"><thead><tr><th class="txt">Equipe</th><th>VGV</th><th>Pago em comissões</th><th>Casa (comissões)</th></tr></thead><tbody>${teamRows.join('')}<tr class="tot-row"><td class="txt">Total</td><td>${fmt(gVGV)}</td><td>${fmt(comPagar)}</td><td>${fmt(comHouse)}</td></tr></tbody></table>`;
+
+  const despSec = manualOut>0 ? `<div class="rep-sec"><h4>Despesas operacionais — por categoria</h4><p class="rep-note">Saídas que não são comissão (marketing, contabilidade, contas fixas, etc.) lançadas no trimestre.</p>${manualCatTable('out')}</div>` : '';
+  const outInSec = manualIn>0 ? `<div class="rep-sec"><h4>Outras entradas — por categoria</h4>${manualCatTable('in')}</div>` : '';
+
+  return `<div class="report">
+    ${relRepHead('Relatório Financeiro · Trimestral', periodText()||'Trimestre atual', 'Fechamento do trimestre')}
+    ${kpis([['Entradas (total)', fmtM(totEntra)],['Saídas (total)', fmtM(totSai)],['Resultado do caixa', fmtM(totCasa)],['Margem', pct(margem)]])}
+    <div class="rep-subh" style="margin-top:4px">Resultado da operação</div>
+    ${lucroCardHTML()}
+    <div class="lucro-break">Previsto = casa de comissão ${fmt(comCasa)}${manualOut>0?` − ${fmt(manualOut)} despesas`:''}${manualIn>0?` + ${fmt(manualIn)} outras entradas`:''}. Realizado considera só parcelas recebidas/repassadas e lançamentos já pagos/recebidos.</div>
+    <div class="rep-sec"><h4>Fluxo de caixa — quando entra e quando sai ${triFilter}</h4><p class="rep-note">Tudo distribuído pelos meses. Barra verde = entra; âmbar = sai; à direita, o saldo do caixa.${relTriPeriodOnly&&hasPeriod?' <b>Mostrando só os meses dentro do período da meta.</b>':''}</p>${cashflowViz(fmonths)}${fluxoTbl}</div>
+    <div class="rep-sec"><h4>Comissões a receber — por empreendimento</h4><p class="rep-note">De onde vem o dinheiro: comissão líquida da Nox por empreendimento no trimestre.</p>${empTbl}${comReceber>0?`<div class="realiz-note">Já recebido das construtoras: <b>${fmt(recebidoTot)}</b> · falta receber: <b>${fmt(comReceber-recebidoTot)}</b>.</div>`:''}</div>
+    ${outInSec}
+    <div class="rep-sec"><h4>Comissões a pagar — por categoria</h4>${catTable(allReceivables())}</div>
+    ${despSec}
+    <div class="rep-sec"><h4>Comissões a pagar — por pessoa</h4><p class="rep-note">Quanto cada um recebe no trimestre, com VGV e atingimento da meta de ${fmt(T)}. ✔ = bateu a meta.</p>${payTbl}${comPagar>0?`<div class="realiz-note">Já repassado aos corretores: <b>${fmt(repassadoTot)}</b> · falta repassar: <b>${fmt(comPagar-repassadoTot)}</b>.</div>`:''}</div>
+    <div class="rep-sec"><h4>Resultado por equipe (comissões)</h4>${teamTbl}</div>
+    ${consolidadoSection()}
+    <div class="rep-foot">Relatório financeiro gerado pela Calculadora de Comissões · Nox Imóveis. Valores de comissão condicionados à confirmação do recebível pela construtora.</div>
+  </div>`;
+}
+
+function activeTab(){ return document.querySelector('.tab.active').dataset.tab; }
+// ---------- COMISSÃO DE EVENTOS ----------
+let events=[], evSel=null;
+function newEvent(){ return { id:'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,4), name:'Evento '+(events.length+1), gross:cfgGrossPct(), tax:cfgTaxPct(), split:{imob:40,ger:15,cor:25,aux:10,sat:10}, gerente:'', corretores:[''], auxiliares:[], satelites:[], sales:[{seller:'c0',vgv:0,sat:''}] }; }
+function evCurrent(){ if(!events.length) return null; if(evSel===null||!events.some(e=>e.id===evSel)) evSel=events[0].id; return events.find(e=>e.id===evSel); }
+function eventCalc(ev){
+  const gross=(+ev.gross||0)/100, tax=(+ev.tax||0)/100, rate=gross*(1-tax), sp=ev.split||{};
+  const spSum=(+sp.imob||0)+(+sp.ger||0)+(+sp.cor||0)+(+sp.aux||0)+(+sp.sat||0), div=spSum>0?spSum:100;
+  const cors=ev.corretores||[], auxs=ev.auxiliares||[], sats=ev.satelites||[];
+  const earnCor=cors.map(()=>0), earnSat=sats.map(()=>0);
+  let totalVGV=0, bruta=0, imposto=0, pool=0, house=0, gerOver=0, gerSales=0, auxTotal=0;
+  (ev.sales||[]).forEach(s=>{
+    const v=+s.vgv||0, b=v*gross, imp=b*tax, c=v*rate; totalVGV+=v; bruta+=b; imposto+=imp; pool+=c;
+    house += c*(+sp.imob||0)/div;
+    gerOver += c*(+sp.ger||0)/div;
+    auxTotal += c*(+sp.aux||0)/div;
+    const corP=c*(+sp.cor||0)/div;
+    if(s.seller==='g') gerSales+=corP;
+    else if((s.seller||'').startsWith('c')){ const i=+s.seller.slice(1); if(earnCor[i]!=null) earnCor[i]+=corP; else house+=corP; }
+    else house+=corP;
+    const satP=c*(+sp.sat||0)/div;
+    if((s.sat||'').startsWith('s')){ const i=+s.sat.slice(1); if(earnSat[i]!=null) earnSat[i]+=satP; else house+=satP; }
+    else house+=satP;
+  });
+  if(!auxs.length) house+=auxTotal;
+  const auxEach = auxs.length ? auxTotal/auxs.length : 0;
+  return { totalVGV, bruta, imposto, pool, house, gerTotal:gerOver+gerSales, gerOver, gerSales, earnCor, earnSat, auxEach, auxTotal, spSum, div };
+}
+function nameList(ev, key, label, placeholder){
+  const arr=ev[key]||[];
+  let h=`<div class="eyebrow">${label}</div><div class="ev-list">`;
+  if(!arr.length) h+=`<div class="ev-list-empty">Nenhum por enquanto.</div>`;
+  arr.forEach((n,i)=>{ h+=`<div class="ev-lrow"><input class="ev-lname" data-ev-list="${key}" data-i="${i}" value="${esc(n)}" placeholder="${placeholder} ${i+1}"><button class="chip-x" data-ev-listdel="${key}:${i}" title="Remover">✕</button></div>`; });
+  h+=`<button class="btn-mini ghost" data-ev-listadd="${key}">+ adicionar</button></div>`;
+  return h;
+}
+function sellerOptions(ev, sel){
+  let h=`<option value="g" ${sel==='g'?'selected':''}>${esc(ev.gerente||'Gerente do evento')} (gerente)</option>`;
+  (ev.corretores||[]).forEach((n,i)=>{ h+=`<option value="c${i}" ${sel==='c'+i?'selected':''}>${esc(n||'Corretor '+(i+1))}</option>`; });
+  return h;
+}
+function satOptions(ev, sel){
+  let h=`<option value="" ${!sel?'selected':''}>— sem satélite —</option>`;
+  (ev.satelites||[]).forEach((n,i)=>{ h+=`<option value="s${i}" ${sel==='s'+i?'selected':''}>${esc(n||'Satélite '+(i+1))}</option>`; });
+  return h;
+}
+function renderEvents(){
+  const tabs=document.getElementById('evTabs'), ed=document.getElementById('evEditor'); if(!tabs||!ed) return;
+  tabs.innerHTML = events.map(e=>`<button class="ev-chip ${e.id===evSel?'on':''}" data-ev-sel="${e.id}">${esc(e.name||'Evento')}</button>`).join('') + `<button class="ev-chip add" data-ev-add="1">+ novo evento</button>`;
+  const ev=evCurrent();
+  if(!ev){ ed.innerHTML='<div class="ev-empty">Nenhum evento ainda. Clique em “+ novo evento” para começar.</div>'; return; }
+  const sp=ev.split, spSum=(+sp.imob||0)+(+sp.ger||0)+(+sp.cor||0)+(+sp.aux||0)+(+sp.sat||0);
+  const saleRows=(ev.sales||[]).map((s,i)=>`<div class="ev-srow">
+      <select class="ev-sf" data-ev-sale="seller" data-i="${i}">${sellerOptions(ev,s.seller)}</select>
+      <input class="ev-sf num" type="number" step="50000" min="0" data-ev-sale="vgv" data-i="${i}" value="${s.vgv||''}" placeholder="VGV vendido (R$)">
+      <select class="ev-sf" data-ev-sale="sat" data-i="${i}">${satOptions(ev,s.sat)}</select>
+      <button class="chip-x" data-ev-saledel="${i}" title="Remover venda">✕</button>
+    </div>`).join('');
+  ed.innerHTML=`<div class="ev-card no-print">
+    <div class="ev-row1">
+      <input class="ev-name" data-ev-meta="name" value="${esc(ev.name)}" placeholder="Nome do evento">
+      <button class="btn no-print" data-ev-del="1">Excluir evento</button>
+    </div>
+    <div class="ev-cfg">
+      <div class="field"><label>Comissão bruta sobre o VGV (%)</label><input type="number" step="0.5" min="0" data-ev-meta="gross" value="${ev.gross}"></div>
+      <div class="field"><label>Imposto na fonte (%)</label><input type="number" step="1" min="0" data-ev-meta="tax" value="${ev.tax}"></div>
+      <div class="ev-cfg-note">A comissão líquida (bruta menos imposto) é o que será dividido entre todos.</div>
+    </div>
+    <div class="eyebrow">Divisão da comissão líquida (%) <span class="eyebrow-note">(incide sobre cada venda)</span></div>
+    <div class="ev-split">
+      <div class="field"><label>Imobiliária</label><input type="number" step="1" min="0" data-ev-split="imob" value="${sp.imob}"></div>
+      <div class="field"><label>Gerente do evento</label><input type="number" step="1" min="0" data-ev-split="ger" value="${sp.ger}"></div>
+      <div class="field"><label>Corretor (quem vende)</label><input type="number" step="1" min="0" data-ev-split="cor" value="${sp.cor}"></div>
+      <div class="field"><label>Auxiliares</label><input type="number" step="1" min="0" data-ev-split="aux" value="${sp.aux}"></div>
+      <div class="field"><label>Corretor satélite</label><input type="number" step="1" min="0" data-ev-split="sat" value="${sp.sat}"></div>
+      <div class="ev-spsum ${spSum===100?'ok':'bad'}">soma ${spSum}%</div>
+    </div>
+    <p class="ev-cfg-note">Gerente e auxiliares ganham <b>sobre tudo</b> (todas as vendas). O gerente também pode vender e, nesse caso, leva a parte de "corretor" da venda dele. O satélite só ganha nas vendas em que ele trouxe o cliente.</p>
+    <div class="ev-people">
+      <div class="ev-pcol"><div class="eyebrow">Gerente do evento</div><input class="ev-lname solo" data-ev-meta="gerente" value="${esc(ev.gerente)}" placeholder="Nome do gerente"></div>
+      <div class="ev-pcol">${nameList(ev,'corretores','Corretores','Corretor')}</div>
+      <div class="ev-pcol">${nameList(ev,'satelites','Corretores satélites','Satélite')}</div>
+      <div class="ev-pcol">${nameList(ev,'auxiliares','Auxiliares','Auxiliar')}</div>
+    </div>
+    <div class="eyebrow">Vendas do evento <span class="eyebrow-note">(quem vendeu · VGV · satélite que trouxe o cliente, se houve)</span></div>
+    <div class="ev-sales">${saleRows||'<div class="ev-list-empty">Nenhuma venda lançada.</div>'}</div>
+    <button class="btn-mini ghost" data-ev-saleadd="1">+ lançar venda</button>
+  </div>
+  <div id="evReport"></div>`;
+  bindEvInputs();
+  renderEvResult();
+}
+function renderEvResult(){
+  const box=document.getElementById('evReport'); const ev=evCurrent(); if(!box||!ev) return;
+  const c=eventCalc(ev);
+  const rows=[];
+  if(ev.gerente||c.gerTotal>0) rows.push({name:ev.gerente||'Gerente do evento',role:'Gerente do evento',earn:c.gerTotal,extra:c.gerSales>0?`inclui ${fmt(c.gerSales)} de venda própria`:''});
+  (ev.corretores||[]).forEach((n,i)=>{ if(n||c.earnCor[i]>0) rows.push({name:n||'Corretor '+(i+1),role:'Corretor',earn:c.earnCor[i]||0}); });
+  (ev.satelites||[]).forEach((n,i)=>{ if(n||c.earnSat[i]>0) rows.push({name:n||'Satélite '+(i+1),role:'Corretor satélite',earn:c.earnSat[i]||0}); });
+  (ev.auxiliares||[]).forEach((n,i)=>{ rows.push({name:n||'Auxiliar '+(i+1),role:'Auxiliar',earn:c.auxEach}); });
+  rows.sort((a,b)=>b.earn-a.earn);
+  const peopleRows=rows.map(r=>`<tr><td class="txt">${esc(r.name)}</td><td class="txt">${r.role}${r.extra?` <span class="ev-extra">· ${r.extra}</span>`:''}</td><td><b>${fmt(r.earn)}</b></td></tr>`).join('');
+  const salesRows=(ev.sales||[]).filter(s=>(+s.vgv||0)>0).map(s=>{
+    let seller=s.seller==='g'?(ev.gerente||'Gerente'):((s.seller||'').startsWith('c')?((ev.corretores||[])[+s.seller.slice(1)]||'Corretor'):'—');
+    const sat=(s.sat||'').startsWith('s')?((ev.satelites||[])[+s.sat.slice(1)]||'Satélite'):'—';
+    return `<tr><td class="txt">${esc(seller)}</td><td>${fmt(+s.vgv||0)}</td><td class="txt">${esc(sat)}</td></tr>`;
+  }).join('');
+  box.innerHTML=`<div class="report">
+    ${relRepHead('Comissão de Evento', esc(ev.name)||'Evento', `Comissão bruta ${rate(ev.gross)} · imposto ${rate(ev.tax)}`)}
+    <div class="rep-sec"><h4>Apuração do VGV e da comissão</h4>
+      <p class="rep-note">A comissão bruta é ${rate(ev.gross)} do VGV vendido. Sobre ela incide ${rate(ev.tax)} de imposto na fonte. O que sobra (líquida) é o que se divide entre os participantes.</p>
+      <table class="rep-tbl"><tbody>
+        <tr><td class="txt">VGV vendido no evento</td><td>${fmt(c.totalVGV)}</td></tr>
+        <tr><td class="txt">Comissão bruta (${rate(ev.gross)})</td><td>${fmt(c.bruta)}</td></tr>
+        <tr><td class="txt">(−) Imposto na fonte (${rate(ev.tax)})</td><td>− ${fmt(c.imposto)}</td></tr>
+        <tr class="tot-row"><td class="txt">= Comissão líquida a dividir</td><td>${fmt(c.pool)}</td></tr>
+      </tbody></table>
+    </div>
+    <div class="rep-sec"><h4>Quem recebe</h4>
+      <p class="rep-note">Gerente e auxiliares ganham sobre todas as vendas; corretor ganha sobre o que vendeu; satélite ganha sobre a venda que trouxe. O restante fica com a imobiliária.</p>
+      <table class="rep-tbl"><colgroup><col style="width:40%"><col style="width:38%"><col style="width:22%"></colgroup><thead><tr><th class="txt">Participante</th><th class="txt">Papel</th><th>Recebe</th></tr></thead><tbody>
+        ${peopleRows||'<tr><td colspan="3" class="txt muted-line">Cadastre pessoas e lance vendas.</td></tr>'}
+        <tr class="tot-row"><td class="txt" colspan="2">Fica com a imobiliária</td><td>${fmt(c.house)}</td></tr>
+      </tbody></table>
+      ${c.spSum!==100&&c.spSum>0?`<div class="ev-warn">A divisão soma ${c.spSum}% (o ideal é 100%). Os valores foram normalizados proporcionalmente.</div>`:''}
+    </div>
+    ${salesRows?`<div class="rep-sec"><h4>Vendas do evento</h4>
+      <table class="rep-tbl"><colgroup><col style="width:40%"><col style="width:30%"><col style="width:30%"></colgroup><thead><tr><th class="txt">Quem vendeu</th><th>VGV</th><th class="txt">Satélite</th></tr></thead><tbody>${salesRows}<tr class="tot-row"><td class="txt">Total</td><td>${fmt(c.totalVGV)}</td><td></td></tr></tbody></table>
+    </div>`:''}
+    <div class="rep-foot">Comissão de evento gerada pela Calculadora de Comissões · Nox Imóveis. Eventos não entram nas faixas de meta do trimestre.</div>
+  </div>`;
+}
+function bindEvInputs(){
+  const ed=document.getElementById('evEditor'); if(!ed) return;
+  ed.querySelectorAll('[data-ev-meta]').forEach(inp=>{
+    inp.addEventListener('input',e=>{ const ev=evCurrent(); if(!ev) return; const k=e.target.dataset.evMeta; ev[k]=(k==='name'||k==='gerente')?e.target.value:(+e.target.value||0); if(k==='name') document.querySelectorAll(`[data-ev-sel="${ev.id}"]`).forEach(b=>b.textContent=ev.name||'Evento'); saveState(); renderEvResult(); });
+    if(inp.dataset.evMeta==='gerente') inp.addEventListener('change',()=>renderEvents());
+  });
+  ed.querySelectorAll('[data-ev-split]').forEach(inp=>inp.addEventListener('input',e=>{ const ev=evCurrent(); if(!ev) return; ev.split[e.target.dataset.evSplit]=+e.target.value||0; saveState(); renderEvResult(); const sumEl=ed.querySelector('.ev-spsum'); if(sumEl){ const s=(+ev.split.imob||0)+(+ev.split.ger||0)+(+ev.split.cor||0)+(+ev.split.aux||0)+(+ev.split.sat||0); sumEl.textContent='soma '+s+'%'; sumEl.className='ev-spsum '+(s===100?'ok':'bad'); } }));
+  ed.querySelectorAll('[data-ev-list]').forEach(inp=>{
+    inp.addEventListener('input',e=>{ const ev=evCurrent(); if(!ev) return; const key=e.target.dataset.evList,i=+e.target.dataset.i; ev[key][i]=e.target.value; saveState(); renderEvResult(); });
+    inp.addEventListener('change',()=>renderEvents());
+  });
+  ed.querySelectorAll('[data-ev-sale]').forEach(inp=>inp.addEventListener('input',e=>{ const ev=evCurrent(); if(!ev) return; const f=e.target.dataset.evSale,i=+e.target.dataset.i,s=ev.sales[i]; if(!s) return; s[f]= f==='vgv'?(+e.target.value||0):e.target.value; saveState(); renderEvResult(); }));
+  ed.querySelectorAll('select[data-ev-sale]').forEach(sel=>sel.addEventListener('change',e=>{ const ev=evCurrent(); if(!ev) return; const f=e.target.dataset.evSale,i=+e.target.dataset.i,s=ev.sales[i]; if(s){ s[f]=e.target.value; saveState(); renderEvResult(); } }));
+}
+
+function renderAll(){
+  renderAdmin();
+  renderRanking();
+  if(!document.getElementById('tab-rel').hidden){ renderAlerts(); }
+  if(!document.getElementById('tab-ger').hidden) renderGer();
+  if(!document.getElementById('tab-cor').hidden) renderCor();
+}
+
+document.querySelectorAll('.tab').forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===t));
+    const id=t.dataset.tab;
+    ['admin','ger','cor','eventos','meta','rel'].forEach(k=>document.getElementById('tab-'+k).hidden=(k!==id));
+    if(id==='ger'){ buildGerSelect(); renderGer(); }
+    if(id==='cor'){ buildCorSelect(); renderCor(); }
+    if(id==='eventos'){ renderEvents(); }
+    if(id==='meta'){ renderMeta(); }
+    if(id==='rel'){ renderAlerts(); renderCashMgr(); renderRel(); }
+  };
+});
+document.getElementById('relBox').addEventListener('click',e=>{
+  const mo=e.target.closest('[data-rmode]'); if(mo){ relMode=mo.dataset.rmode; renderRel(); return; }
+  const ch=e.target.closest('[data-month]'); if(ch){ relSelMonth=ch.dataset.month; renderRel(); return; }
+  const rt=e.target.closest('[data-rtoggle]'); if(rt){ const d=findDealById(rt.dataset.deal); if(d){ const si=+rt.dataset.si, s=dealSched(d)[si]; if(s){ if(rt.dataset.rtoggle==='recv') s.done=!s.done; else s.paid=!s.paid; saveState(); renderRel(); renderAlerts(); } } return; }
+  const tp=e.target.closest('[data-triperiod]'); if(tp){ relTriPeriodOnly=tp.dataset.triperiod==='1'; renderRel(); return; }
+  const asub=e.target.closest('[data-arch-sub]'); if(asub){ relArchSub=asub.dataset.archSub; renderRel(); return; }
+  const adel=e.target.closest('[data-arch-del]'); if(adel){ if(confirm('Excluir este trimestre arquivado? Não dá pra desfazer.')){ archives=archives.filter(a=>a.id!==adel.dataset.archDel); if(relArchSel===adel.dataset.archDel) relArchSel=null; saveState(); renderRel(); } return; }
+  const ao=e.target.closest('[data-arch]'); if(ao){ relArchSel=ao.dataset.arch; relArchSub='fin'; renderRel(); return; }
+});
+document.getElementById('gerSelect').addEventListener('change',e=>{ gerSel=+e.target.value; renderGer(); });
+document.getElementById('corSelect').addEventListener('change',e=>{ corSel=e.target.value; renderCor(); });
+document.getElementById('tab-eventos').addEventListener('click',e=>{
+  const sel=e.target.closest('[data-ev-sel]'); if(sel){ evSel=sel.dataset.evSel; renderEvents(); return; }
+  const add=e.target.closest('[data-ev-add]'); if(add){ const ev=newEvent(); events.push(ev); evSel=ev.id; saveState(); renderEvents(); return; }
+  const del=e.target.closest('[data-ev-del]'); if(del){ const ev=evCurrent(); if(ev && confirm('Excluir o evento "'+(ev.name||'')+'"?')){ events=events.filter(x=>x.id!==ev.id); evSel=null; saveState(); renderEvents(); } return; }
+  const ladd=e.target.closest('[data-ev-listadd]'); if(ladd){ const ev=evCurrent(); if(ev){ const k=ladd.dataset.evListadd; (ev[k]=ev[k]||[]).push(''); saveState(); renderEvents(); } return; }
+  const ldel=e.target.closest('[data-ev-listdel]'); if(ldel){ const ev=evCurrent(); if(ev){ const [k,i]=ldel.dataset.evListdel.split(':'); ev[k].splice(+i,1); saveState(); renderEvents(); } return; }
+  const sadd=e.target.closest('[data-ev-saleadd]'); if(sadd){ const ev=evCurrent(); if(ev){ ev.sales.push({seller:(ev.corretores&&ev.corretores.length?'c0':'g'),vgv:0,sat:''}); saveState(); renderEvents(); } return; }
+  const sdel=e.target.closest('[data-ev-saledel]'); if(sdel){ const ev=evCurrent(); if(ev){ ev.sales.splice(+sdel.dataset.evSaledel,1); saveState(); renderEvents(); } return; }
+});
+['cfgTax','cfgTarget','cfgBand','cfgStart','cfgEnd'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{ renderAll(); renderMeta(); }));
+document.getElementById('addTeam').addEventListener('click',()=>{ teams.push(newTeam()); buildAll(); renderAll(); });
+document.getElementById('addSolo').addEventListener('click',()=>{ solos.push({name:'Corretor '+(solos.length+1), type:'solo', deals:[]}); buildAll(); renderAll(); });
+document.getElementById('zeroQuarter').addEventListener('click',()=>{
+  if(confirm('Zerar o trimestre?\n\nO fechamento atual será ARQUIVADO (fica salvo na aba Relatórios › Arquivados) e depois as vendas e lançamentos de caixa serão zerados, mantendo equipes, pessoas, papéis e configurações.')){
+    const hasData = teams.some(tm=>personTotal(tm.mgr)>0||tm.brokers.some(b=>personTotal(b)>0)) || solos.some(s=>personTotal(s)>0) || cashEntries.length;
+    if(hasData){
+      const gers=teams.map((tm,ti)=>({name:(tm.mgr.name||'Gerente')+' · '+(tm.name||'Equipe'), html:gerHTML(ti)}));
+      const cors=[];
+      teams.forEach((tm,ti)=>tm.brokers.forEach((b,bi)=>{ if(personTotal(b)>0) cors.push({name:(b.name||roleLabel(b.type))+' · '+(tm.name||''), html:corHTML(ti+':'+bi)}); }));
+      solos.forEach((s,si)=>{ if(personTotal(s)>0) cors.push({name:(s.name||'Autônomo')+' · sem equipe', html:corHTML('s:'+si)}); });
+      archives.unshift({ id:'q'+Date.now().toString(36), label: periodText()||('Fechado em '+new Date().toLocaleDateString('pt-BR')), savedAt: new Date().toLocaleDateString('pt-BR'), fin: relTrimestral(), gers, cors });
+    }
+    teams.forEach(tm=>{ tm.mgr.deals=[]; tm.brokers.forEach(b=>b.deals=[]); });
+    solos.forEach(s=>s.deals=[]);
+    cashEntries=[]; relSelMonth=null;
+    saveState(); buildAll(); renderAll(); renderCashMgr();
+    alert('Trimestre arquivado e zerado. Veja em Relatórios › Arquivados.');
+  }
+});
+document.getElementById('exportData').addEventListener('click',()=>{
+  saveState();
+  const raw=localStorage.getItem(LS_KEY)||'{}';
+  const blob=new Blob([raw],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='nox-calculadora-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+});
+document.getElementById('importData').addEventListener('click',()=>document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change',e=>{
+  const file=e.target.files[0]; if(!file) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      JSON.parse(r.result); // valida
+      if(confirm('Importar este backup? Os dados atuais neste navegador serão substituídos.')){
+        localStorage.setItem(LS_KEY, r.result);
+        location.reload();
+      }
+    }catch(err){ alert('Arquivo inválido — não parece ser um backup da Calculadora.'); }
+    e.target.value='';
+  };
+  r.readAsText(file);
+});
+document.getElementById('resetData').addEventListener('click',()=>{
+  if(confirm('Limpar todos os dados salvos (lançamentos, equipes, configurações) e recomeçar?')){
+    try{ localStorage.removeItem(LS_KEY); }catch(e){}
+    location.reload();
+  }
+});
+
+// meta simulator wiring (salva a última estimativa ao editar)
+['mTicket','mContatos','mReunioes','mVisitas','mPropostas','mFechamentos','mAlvo'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{ renderMeta(); saveState(); }));
+document.querySelectorAll('#metaMode .tg').forEach(b=>b.onclick=()=>{
+  metaMode=b.dataset.mode;
+  document.querySelectorAll('#metaMode .tg').forEach(x=>x.classList.toggle('active',x===b));
+  document.getElementById('mAlvoLabel').textContent = metaMode==='ganho'?'Ganho desejado (R$)':'VGV desejado (R$)';
+  renderMeta(); saveState();
+});
+
+// login (usuário/senha fixos — ver constante AUTH)
+function unlock(){ document.getElementById('login').style.display='none'; }
+function tryLogin(){
+  const u=document.getElementById('loginUser').value.trim(), p=document.getElementById('loginPass').value;
+  if(u===AUTH.user && p===AUTH.pass){ try{ sessionStorage.setItem('nox_auth','1'); }catch(e){} unlock(); }
+  else document.getElementById('loginErr').textContent='Usuário ou senha incorretos.';
+}
+try{ if(sessionStorage.getItem('nox_auth')==='1') unlock(); }catch(e){}
+document.getElementById('loginBtn').addEventListener('click',tryLogin);
+['loginUser','loginPass'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); tryLogin(); } }));
+
+// ===== Modo embutido no CRM (?mode=admin | ?mode=view) =====
+// Sem mexer na lógica: só libera o login interno (o CRM já autentica),
+// esconde header/rodapé e mostra apenas as abas de cada área.
+(function(){
+  const mode = new URLSearchParams(location.search).get('mode');
+  if(!mode) return; // aberto direto = app completo, comportamento normal
+  try{ sessionStorage.setItem('nox_auth','1'); }catch(e){}
+  const login = document.getElementById('login'); if(login) login.style.display='none';
+  document.querySelectorAll('header, footer').forEach(el=>el.style.display='none');
+  const wrap = document.querySelector('.wrap'); if(wrap) wrap.style.padding='12px 20px 60px';
+  const ALLOWED = mode==='admin' ? ['admin','eventos','rel'] : ['ger','cor','meta'];
+  const tabs = [...document.querySelectorAll('.tab')];
+  tabs.forEach(t=>{ if(!ALLOWED.includes(t.dataset.tab)) t.style.display='none'; });
+  const activate = ()=>{ const first=tabs.find(t=>ALLOWED.includes(t.dataset.tab)); if(first) first.click(); };
+  activate();                                   // mostra já a aba certa (sem flash)
+  document.addEventListener('nox-ready', activate); // re-renderiza com os dados da nuvem
+})();
+
+// init
+cloudBoot();
+</script>
+</body>
+</html>
