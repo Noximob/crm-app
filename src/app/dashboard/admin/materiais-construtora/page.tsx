@@ -220,7 +220,7 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
       if (initial.id) await updateDoc(doc(apoioDb, 'imoveis', initial.id), data);
       else await addDoc(collection(apoioDb, 'imoveis'), { ...data, ordem: imoveisCount });
       onSaved();
-    } catch { setErr('Erro ao salvar.'); }
+    } catch (e: any) { setErr('Erro ao salvar: ' + (e?.message || e)); }
     finally { setSalvando(false); }
   };
 
@@ -344,18 +344,14 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
               )}
             </div>
 
-            <div className="mt-3 pt-3 border-t border-white/10 flex items-center gap-3">
-              <span className="text-[11px] text-text-secondary">⭐ Capa do topo:</span>
-              {capa ? (
-                <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={capa} alt="capa" className="h-10 w-16 object-cover rounded border border-white/15" />
-                  <button onClick={() => setCapa('')} className="text-xs text-red-400 hover:text-red-300">remover</button>
-                </>
-              ) : (
-                <span className="text-[11px] text-text-secondary">automática (1ª imagem). Para definir, escolha o tipo <b>“Capa (foto do topo)”</b> e envie a foto.</span>
-              )}
-            </div>
+            {capa && (
+              <div className="mt-3 pt-3 border-t border-white/10 flex items-center gap-3">
+                <span className="text-[11px] text-text-secondary">⭐ Capa do topo:</span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={capa} alt="capa" className="h-10 w-16 object-cover rounded border border-white/15" />
+                <button onClick={() => setCapa('')} className="text-xs text-red-400 hover:text-red-300">remover</button>
+              </div>
+            )}
           </div>
 
           {err && <p className="text-sm text-red-400">{err}</p>}

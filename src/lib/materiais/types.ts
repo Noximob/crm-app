@@ -66,7 +66,6 @@ export const CATEGORIES: CategoriaMaterial[] = [
   { key: 'maquete', label: 'Maquete', kind: 'video', single: true },
   { key: 'decorado', label: 'Decorado', kind: 'video', single: true },
   { key: 'imagens', label: 'Imagens', kind: 'image' },
-  { key: 'video', label: 'Vídeos', kind: 'video' },
   { key: 'links', label: 'Links', kind: 'linklist' },
   { key: 'localizacao', label: 'Localização', kind: 'link', single: true },
 ];
