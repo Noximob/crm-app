@@ -5,7 +5,7 @@ import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { apoioDb, apoioStorage } from '@/lib/apoioFirebase';
 import { useAuth } from '@/context/AuthContext';
-import { CATEGORIES, catByKey, type Construtora, type Imovel, type Material } from '@/lib/materiais/types';
+import { CATEGORIES, catByKey, parseTip, type Construtora, type Imovel, type Material } from '@/lib/materiais/types';
 
 const CORES = ['#D4A017', '#b39af0', '#5dc2a5', '#e0777b', '#7aa2f7', '#f0a35e', '#9d83b8', '#4fb0c6'];
 const STATUS = ['Em construção', 'Lançamento', 'Pronto para morar'];
@@ -163,7 +163,7 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
   const [e, setE] = useState(initial.e || '');
   const [resumo, setResumo] = useState(initial.resumo || '');
   const [capa, setCapa] = useState(initial.capa || '');
-  const [tip, setTip] = useState<[string, string][]>(Array.isArray(initial.tip) && initial.tip.length ? initial.tip.map((x) => [x[0] || '', x[1] || '']) : [['', '']]);
+  const [tip, setTip] = useState<[string, string][]>(() => { const p = parseTip(initial.tip); return p.length ? p : [['', '']]; });
   const [dif, setDif] = useState<string[]>(Array.isArray(initial.dif) && initial.dif.length ? [...initial.dif] : ['']);
   const [materiais, setMateriais] = useState<Material[]>(Array.isArray(initial.materiais) ? initial.materiais : []);
 
@@ -213,7 +213,8 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
         co, n: n.trim(), l: l.trim(), st, cid: cid.trim(), end: end.trim(),
         pr: pr.trim(), m2: m2.trim(), t: t.trim(), a: a.trim(), ap: ap.trim(), e: e.trim(),
         resumo, capa,
-        tip: tip.map(([ar, de]) => [ar.trim(), de.trim()] as [string, string]).filter((x) => x[0] || x[1]),
+        // tip vai como JSON string (Firestore não aceita array-dentro-de-array)
+        tip: JSON.stringify(tip.map(([ar, de]) => [ar.trim(), de.trim()]).filter((x) => x[0] || x[1])),
         dif: dif.map((x) => x.trim()).filter(Boolean),
         materiais,
       };

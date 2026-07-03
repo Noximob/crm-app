@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { apoioDb } from '@/lib/apoioFirebase';
-import { CATEGORIES, catByKey, type Construtora, type Imovel, type Material } from '@/lib/materiais/types';
+import { CATEGORIES, catByKey, parseTip, type Construtora, type Imovel, type Material } from '@/lib/materiais/types';
 import { toCdn, youtubeId, waLink, encaminharWhatsApp } from '@/lib/materiais/toCdn';
 
 function matsArr(p: Imovel): Material[] {
@@ -272,14 +272,15 @@ function BtnDownload({ url }: { url: string }) {
 
 function TabConteudo({ imovel, tab, onLightbox }: { imovel: Imovel; tab: string; onLightbox: (s: LightboxState) => void }) {
   if (tab === 'resumo') {
+    const tips = parseTip(imovel.tip);
     return (
       <div className="space-y-4">
         {imovel.resumo && <p className="text-sm text-text-secondary whitespace-pre-line leading-relaxed">{imovel.resumo}</p>}
-        {Array.isArray(imovel.tip) && imovel.tip.length > 0 && (
+        {tips.length > 0 && (
           <div>
             <h3 className="text-sm font-bold text-white mb-2">Tipologias</h3>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {imovel.tip.map((t, i) => (
+              {tips.map((t, i) => (
                 <div key={i} className="rounded-lg bg-white/[0.03] px-3 py-2 flex items-baseline gap-2">
                   <span className="text-sm font-bold text-amber-300">{t[0]} m²</span>
                   <span className="text-xs text-text-secondary">{t[1]}</span>
@@ -298,7 +299,7 @@ function TabConteudo({ imovel, tab, onLightbox }: { imovel: Imovel; tab: string;
             </div>
           </div>
         )}
-        {!imovel.resumo && !(Array.isArray(imovel.tip) && imovel.tip.length) && !(Array.isArray(imovel.dif) && imovel.dif.length) && (
+        {!imovel.resumo && !tips.length && !(Array.isArray(imovel.dif) && imovel.dif.length) && (
           <p className="text-sm text-text-secondary">Sem descrição cadastrada. Veja os materiais nas abas acima.</p>
         )}
       </div>

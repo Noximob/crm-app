@@ -40,7 +40,7 @@ export interface Imovel {
   a?: string; // andares
   ap?: string; // apartamentos
   e?: string; // entrega
-  tip?: [string, string][]; // tipologias: [área, descrição]
+  tip?: string | [string, string][]; // tipologias: guardado como JSON string no Firestore (nested array não é suportado)
   dif?: string[]; // diferenciais
   resumo?: string;
   capa?: string; // foto de capa (url)
@@ -71,4 +71,14 @@ export const CATEGORIES: CategoriaMaterial[] = [
 ];
 
 export const catByKey = (k: string) => CATEGORIES.find((c) => c.key === k);
+
+/** Tipologias: no Firestore vêm como JSON string; aceita também array (seed/legado). */
+export function parseTip(v: unknown): [string, string][] {
+  const norm = (arr: any[]): [string, string][] => arr.map((t) => [String(t?.[0] ?? ''), String(t?.[1] ?? '')] as [string, string]);
+  if (Array.isArray(v)) return norm(v);
+  if (typeof v === 'string' && v.trim()) {
+    try { const a = JSON.parse(v); return Array.isArray(a) ? norm(a) : []; } catch { return []; }
+  }
+  return [];
+}
 
