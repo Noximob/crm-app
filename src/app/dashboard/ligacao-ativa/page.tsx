@@ -80,13 +80,12 @@ export default function LigacaoAtivaPage() {
   const node = nodeById[currentNode];
   const prodLabel = produtoLabel(cfg, product);
 
-  const iniciar = () => { if (!product || !goal) return; setCurrentNode(cfg.startNode); setHistory([]); setIniciado(true); setSetupOpen(false); };
+  const iniciar = () => { if (!product) return; setCurrentNode(cfg.startNode); setHistory([]); setIniciado(true); setSetupOpen(false); };
   const navegar = (target: string) => { if (!nodeById[target]) return; setHistory((h) => [...h, currentNode]); setCurrentNode(target); setMarcados({}); window.scrollTo?.({ top: 0 }); };
   const voltar = () => setHistory((h) => { if (!h.length) return h; setCurrentNode(h[h.length - 1]); return h.slice(0, -1); });
   const recomecar = () => { setCurrentNode(cfg.startNode); setHistory([]); setMarcados({}); };
 
   const produtoNome = cfg.produtos.find((p) => p.key === product)?.label || '—';
-  const objetivoNome = cfg.objetivos.find((o) => o.key === goal)?.label || '—';
 
   if (loading) return <div className="flex-1 flex items-center justify-center text-text-secondary">Carregando…</div>;
 
@@ -111,14 +110,10 @@ export default function LigacaoAtivaPage() {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-secondary mb-2">Produto *</label>
+            <label className="block text-xs font-semibold text-text-secondary mb-2">Sobre qual imóvel/empreendimento é a ligação?</label>
             <div className="flex flex-wrap gap-2">{cfg.produtos.map((p) => <button key={p.key} onClick={() => setProduct(p.key)} className={optBtn(product === p.key)}>{p.label}</button>)}</div>
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-text-secondary mb-2">Objetivo *</label>
-            <div className="flex flex-wrap gap-2">{cfg.objetivos.map((o) => <button key={o.key} onClick={() => setGoal(o.key)} className={optBtn(goal === o.key)}>{o.label}</button>)}</div>
-          </div>
-          <button onClick={iniciar} disabled={!product || !goal} className="w-full px-4 py-3 rounded-xl bg-amber-500 text-black font-bold text-[15px] hover:bg-amber-400 disabled:opacity-50">
+          <button onClick={iniciar} disabled={!product} className="w-full px-4 py-3 rounded-xl bg-amber-500 text-black font-bold text-[15px] hover:bg-amber-400 disabled:opacity-50">
             {iniciado ? 'Salvar' : 'Começar atendimento →'}
           </button>
         </div>
@@ -142,7 +137,6 @@ export default function LigacaoAtivaPage() {
           <p className="text-xs text-text-secondary mt-0.5">Corretor: {corretor || '—'}</p>
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-200">{produtoNome}</span>
-            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-white/10 text-white/90">{objetivoNome}</span>
           </div>
         </div>
         <button onClick={voltar} disabled={!history.length} className="px-3 py-2.5 rounded-xl text-sm font-semibold border border-white/15 text-white/85 hover:bg-white/5 disabled:opacity-40">← Voltar uma etapa</button>
