@@ -1139,13 +1139,13 @@ function bindInputs(){
       else if(k==='mgrname') teams[ti].mgr.name=e.target.value;
       else if(k==='brname') teams[ti].brokers[+e.target.dataset.bi].name=e.target.value;
       else if(k==='soloname') solos[ti].name=e.target.value;
-      renderAll();
+      renderAll(); saveState();
     });
   });
   document.querySelectorAll('select[data-k2]').forEach(sel=>{
     sel.addEventListener('change',e=>{
       teams[+e.target.dataset.ti].brokers[+e.target.dataset.bi].type=e.target.value;
-      renderAll();
+      renderAll(); saveState();
     });
   });
   // vínculo pessoa ⇄ usuário do CRM
@@ -1177,7 +1177,7 @@ function bindInputs(){
         const sch=dealSched(d), si=+e.target.dataset.si;
         if(k==='pct') sch[si].pct=+e.target.value||0; else sch[si].month=e.target.value;
       }
-      renderAll();
+      renderAll(); saveState();
     });
   });
   document.querySelectorAll('[data-act]').forEach(btn=>{
@@ -1195,7 +1195,7 @@ function bindInputs(){
       else if(act==='delparc'){ const sch=dealSched(personFrom(ti,role,bi).deals[+el.dataset.idx]); sch.splice(+el.dataset.si,1); if(sch.length===1) sch[0].pct=100; }
       else if(act==='recv'){ const sch=dealSched(personFrom(ti,role,bi).deals[+el.dataset.idx]), si=+el.dataset.si; sch[si].done=!sch[si].done; saveState(); buildAll(); renderAll(); return; }
       else if(act==='pago'){ const sch=dealSched(personFrom(ti,role,bi).deals[+el.dataset.idx]), si=+el.dataset.si; sch[si].paid=!sch[si].paid; saveState(); buildAll(); renderAll(); return; }
-      buildAll(); renderAll();
+      buildAll(); renderAll(); saveState();
     });
   });
 }
@@ -1421,6 +1421,7 @@ function buildCorSelect(){
 
 // ---------- meta simulator ----------
 let metaMode='ganho';
+let metaRole='corretor'; // papel usado na calculadora (faixas): corretor|sdr|solo|gerente
 let goals={}; // meta por pessoa (vínculo CRM): goals[uid] = {alvo, mode}
 // inverte a comissão do corretor (2 faixas): dado o ganho, acha o VGV
 function vgvForEarnings(E){
@@ -1428,7 +1429,7 @@ function vgvForEarnings(E){
   const defs=[{w:T,tier:0},{w:B,tier:1},{w:Infinity,tier:2}];
   let vgv=0, rem=E;
   for(const d of defs){
-    const eff=NET*brRate('corretor',d.tier)/100;
+    const eff=NET*brRate(metaRole,d.tier)/100;
     if(eff<=0) break;
     const capE=d.w*eff;
     if(rem<=capE+1e-9){ vgv+=rem/eff; rem=0; break; } else { vgv+=d.w; rem-=capE; }
@@ -1449,7 +1450,7 @@ function renderMeta(){
 
   let vgv, ganho;
   if(metaMode==='ganho'){ vgv=vgvForEarnings(m.alvo); ganho=m.alvo; }
-  else { vgv=m.alvo; ganho=calcBroker(vgv,'corretor').brTot; }
+  else { vgv=m.alvo; ganho=calcBroker(vgv,metaRole).brTot; }
   const fechRaw = m.ticket>0 ? vgv/m.ticket : 0;
   const scale = m.ref.fechamentos>0 ? fechRaw/m.ref.fechamentos : 0;
   const st={
@@ -1477,8 +1478,10 @@ function renderMeta(){
     h+=`<div class="fn-step"><div class="fn-num num">${s.n.toLocaleString('pt-BR')}</div><div class="fn-info"><div class="t">${s.t}</div><div class="s">${s.s}</div></div><div class="fn-month">≈ ${mm(s.n).toLocaleString('pt-BR')}/mês</div></div>`;
     if(i<steps.length-1) h+=`<div class="fn-conv">↓ ${pct(convs[i])} convertem</div>`;
   });
+  const roleLbl = metaRole==='gerente'?'Gerente':metaRole==='sdr'?'SDR':metaRole==='solo'?'Autônomo (sem equipe)':'Corretor';
   h+=`</div>
-  <div class="muted-line" style="margin-top:14px">Para ${metaMode==='ganho'?`ganhar ${fmt(ganho)}`:`vender ${fmt(vgv)}`} no trimestre, com ticket médio de ${fmt(m.ticket)}, você precisa fechar <b>${st.fechamentos}</b> ${st.fechamentos===1?'imóvel':'imóveis'} — e alimentar o funil acima (≈ ${mm(st.contatos).toLocaleString('pt-BR')} contatos por mês).</div>`;
+  <div class="muted-line" style="margin-top:14px">Para ${metaMode==='ganho'?`ganhar ${fmt(ganho)}`:`vender ${fmt(vgv)}`} no trimestre, com ticket médio de ${fmt(m.ticket)}, você precisa fechar <b>${st.fechamentos}</b> ${st.fechamentos===1?'imóvel':'imóveis'} — e alimentar o funil acima (≈ ${mm(st.contatos).toLocaleString('pt-BR')} contatos por mês).</div>
+  <div class="muted-line" style="margin-top:6px">Cálculo pelas faixas de comissão de <b>${roleLbl}</b> · comissão bruta de referência ${DEFAULT_GROSS}% (o imposto e as faixas vêm da administração).</div>`;
   document.getElementById('metaResult').innerHTML=h;
   saveState();
 }
@@ -2299,9 +2302,10 @@ function refreshView(){
   const me=findMyPerson();
   setMetricsLocked(true);
   let reportTab=null;
-  if(me && me.kind==='mgr'){ reportTab='ger'; gerSel=me.ti; buildGerSelect(); lockSel('gerSelect'); renderGer(); }
-  else if(me && me.kind==='broker'){ reportTab='cor'; corSel=`${me.ti}:${me.bi}`; buildCorSelect(); lockSel('corSelect'); renderCor(); }
-  else if(me && me.kind==='solo'){ reportTab='cor'; corSel=`s:${me.si}`; buildCorSelect(); lockSel('corSelect'); renderCor(); }
+  if(me && me.kind==='mgr'){ reportTab='ger'; metaRole='gerente'; gerSel=me.ti; buildGerSelect(); lockSel('gerSelect'); renderGer(); }
+  else if(me && me.kind==='broker'){ reportTab='cor'; metaRole=teams[me.ti].brokers[me.bi].type||'corretor'; corSel=`${me.ti}:${me.bi}`; buildCorSelect(); lockSel('corSelect'); renderCor(); }
+  else if(me && me.kind==='solo'){ reportTab='cor'; metaRole='solo'; corSel=`s:${me.si}`; buildCorSelect(); lockSel('corSelect'); renderCor(); }
+  else { metaRole='corretor'; }
   const shown = reportTab ? [reportTab,'meta'] : ['meta'];
   tabs.forEach(t=> t.style.display = shown.includes(t.dataset.tab)?'':'none');
   if(reportTab && !_viewLanded){ _viewLanded=true; const tb=tabs.find(t=>t.dataset.tab===reportTab); if(tb) tb.click(); }
