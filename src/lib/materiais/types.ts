@@ -47,14 +47,27 @@ export interface Imovel {
   ordem?: number;
 }
 
-/** Abas de materiais exibidas no visualizador (ordem + rótulo + ícone Tabler) */
-export const MATERIAL_ABAS: { key: MaterialCat; label: string; icon: string }[] = [
-  { key: 'apresentacao', label: 'Apresentação', icon: 'ti-presentation' },
-  { key: 'tabela', label: 'Tabela', icon: 'ti-table' },
-  { key: 'plantas', label: 'Plantas', icon: 'ti-blueprint' },
-  { key: 'maquete', label: 'Maquete', icon: 'ti-box' },
-  { key: 'decorado', label: 'Decorado', icon: 'ti-sofa' },
-  { key: 'imagens', label: 'Imagens', icon: 'ti-photo' },
-  { key: 'video', label: 'Vídeos', icon: 'ti-video' },
-  { key: 'links', label: 'Links', icon: 'ti-link' },
+export type MaterialKind = 'pdf' | 'link' | 'image' | 'video' | 'linklist';
+
+export interface CategoriaMaterial {
+  key: MaterialCat;
+  label: string;
+  kind: MaterialKind;
+  /** true = usa só o primeiro material da categoria */
+  single?: boolean;
+}
+
+/** Categorias de material (ordem, rótulo e como renderiza) — igual ao app original. */
+export const CATEGORIES: CategoriaMaterial[] = [
+  { key: 'apresentacao', label: 'Apresentação', kind: 'pdf', single: true },
+  { key: 'tabela', label: 'Tabela', kind: 'link', single: true },
+  { key: 'plantas', label: 'Plantas', kind: 'image' },
+  { key: 'maquete', label: 'Maquete', kind: 'video', single: true },
+  { key: 'decorado', label: 'Decorado', kind: 'video', single: true },
+  { key: 'imagens', label: 'Imagens', kind: 'image' },
+  { key: 'video', label: 'Vídeos', kind: 'video' },
+  { key: 'links', label: 'Links', kind: 'linklist' },
 ];
+
+export const catByKey = (k: string) => CATEGORIES.find((c) => c.key === k);
+
