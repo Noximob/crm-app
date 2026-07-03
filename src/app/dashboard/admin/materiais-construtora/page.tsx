@@ -10,6 +10,11 @@ import { CATEGORIES, catByKey, type Construtora, type Imovel, type Material } fr
 const CORES = ['#D4A017', '#b39af0', '#5dc2a5', '#e0777b', '#7aa2f7', '#f0a35e', '#9d83b8', '#4fb0c6'];
 const STATUS = ['Em construção', 'Lançamento', 'Pronto para morar'];
 
+// select com fundo sólido (evita opções invisíveis no dark do Chrome)
+const SEL = 'w-full px-3 py-2 rounded-lg bg-[#1e1e24] border border-white/10 text-sm text-white';
+const INP = 'w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white';
+const OPT = 'bg-[#15151a] text-white';
+
 export default function AdminMateriaisPage() {
   const { userData } = useAuth();
   const isAdmin = userData?.tipoConta === 'imobiliaria' || userData?.permissoes?.admin;
@@ -73,7 +78,7 @@ export default function AdminMateriaisPage() {
         <div className="flex flex-wrap items-end gap-2 mb-4">
           <div className="flex-1 min-w-[200px]">
             <label className="block text-xs text-text-secondary mb-1">Nome</label>
-            <input value={novaCo} onChange={(e) => setNovaCo(e.target.value)} placeholder="Ex.: MRV, Cyrela…" className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white" />
+            <input value={novaCo} onChange={(e) => setNovaCo(e.target.value)} placeholder="Ex.: MRV, Cyrela…" className={INP} />
           </div>
           <div className="flex items-center gap-1">
             {CORES.map((c) => <button key={c} onClick={() => setNovaCor(c)} className={`w-6 h-6 rounded-full border-2 ${novaCor === c ? 'border-white' : 'border-transparent'}`} style={{ background: c }} />)}
@@ -97,11 +102,11 @@ export default function AdminMateriaisPage() {
         <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
           <h2 className="text-lg font-bold text-white">Empreendimentos</h2>
           <div className="flex items-center gap-2">
-            <select value={filtroCo} onChange={(e) => setFiltroCo(e.target.value)} className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white">
-              <option value="">Todas construtoras</option>
-              {construtoras.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+            <select value={filtroCo} onChange={(e) => setFiltroCo(e.target.value)} className={SEL}>
+              <option value="" className={OPT}>Todas construtoras</option>
+              {construtoras.map((c) => <option key={c.id} value={c.name} className={OPT}>{c.name}</option>)}
             </select>
-            <button onClick={() => setEditing({ co: filtroCo || construtoras[0]?.name || '' })} className="px-4 py-1.5 rounded-lg bg-amber-500 text-black font-semibold text-sm hover:bg-amber-400">+ Novo</button>
+            <button onClick={() => setEditing({ co: filtroCo || construtoras[0]?.name || '' })} className="px-4 py-1.5 rounded-lg bg-amber-500 text-black font-semibold text-sm hover:bg-amber-400 whitespace-nowrap">+ Novo</button>
           </div>
         </div>
         {loading ? (
@@ -165,19 +170,18 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
   const [mCat, setMCat] = useState<string>(CATEGORIES[0].key);
   const [mName, setMName] = useState('');
   const [mUrl, setMUrl] = useState('');
-  const [mDl, setMDl] = useState('');
   const [prog, setProg] = useState<number | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [err, setErr] = useState('');
 
   const imgMats = materiais.filter((m) => catByKey(m.cat)?.kind === 'image');
+  const kind = catByKey(mCat)?.kind;
+  const isArquivo = kind === 'pdf' || kind === 'image' || kind === 'video'; // upload; senão (link/linklist) é link
 
   const addLink = () => {
-    if (!mUrl.trim()) { setErr('Cole o link do material (ou use “Enviar arquivo”).'); return; }
-    const item: Material = { cat: mCat, name: mName.trim() || catByKey(mCat)?.label || mCat, url: mUrl.trim() };
-    if (mDl.trim()) item.dl = mDl.trim();
-    setMateriais((prev) => [...prev, item]);
-    setMName(''); setMUrl(''); setMDl(''); setErr('');
+    if (!mUrl.trim()) { setErr('Cole o link.'); return; }
+    setMateriais((prev) => [...prev, { cat: mCat, name: mName.trim() || catByKey(mCat)?.label || mCat, url: mUrl.trim() }]);
+    setMName(''); setMUrl(''); setErr('');
   };
 
   const upload = (file: File) => {
@@ -219,11 +223,10 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
     finally { setSalvando(false); }
   };
 
-  const inp = 'w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white';
   const campo = (label: string, val: string, setter: (v: string) => void, ph?: string) => (
     <div>
       <label className="block text-xs text-text-secondary mb-1">{label}</label>
-      <input value={val} onChange={(ev) => setter(ev.target.value)} placeholder={ph} className={inp} />
+      <input value={val} onChange={(ev) => setter(ev.target.value)} placeholder={ph} className={INP} />
     </div>
   );
 
@@ -240,15 +243,15 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
             {campo('Empreendimento *', n, setN, 'Ex: Orla da Barra')}
             <div>
               <label className="block text-xs text-text-secondary mb-1">Construtora</label>
-              <select value={co} onChange={(ev) => setCo(ev.target.value)} className={inp}>
-                {construtoras.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+              <select value={co} onChange={(ev) => setCo(ev.target.value)} className={SEL}>
+                {construtoras.map((c) => <option key={c.id} value={c.name} className={OPT}>{c.name}</option>)}
               </select>
             </div>
             {campo('Linha / Selo', l, setL, 'Ex: Santer Prime')}
             <div>
               <label className="block text-xs text-text-secondary mb-1">Status</label>
-              <select value={st} onChange={(ev) => setSt(ev.target.value)} className={inp}>
-                {STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
+              <select value={st} onChange={(ev) => setSt(ev.target.value)} className={SEL}>
+                {STATUS.map((s) => <option key={s} value={s} className={OPT}>{s}</option>)}
               </select>
             </div>
             {campo('Cidade *', cid, setCid, 'Ex: Barra Velha, SC')}
@@ -263,10 +266,9 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
 
           <div>
             <label className="block text-xs text-text-secondary mb-1">Resumo / descrição</label>
-            <textarea value={resumo} onChange={(ev) => setResumo(ev.target.value)} rows={3} className={inp} placeholder="Texto livre que aparece na aba Resumo." />
+            <textarea value={resumo} onChange={(ev) => setResumo(ev.target.value)} rows={3} className={INP} placeholder="Texto livre que aparece na aba Resumo." />
           </div>
 
-          {/* Tipologias */}
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-text-secondary mb-2">Tipologias (área m² · descrição)</p>
             <div className="space-y-1.5">
@@ -281,7 +283,6 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
             <button onClick={() => setTip((p) => [...p, ['', '']])} className="mt-1.5 text-xs px-2 py-1 rounded-md bg-white/10 text-white hover:bg-white/15">+ tipologia</button>
           </div>
 
-          {/* Diferenciais */}
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-text-secondary mb-2">Diferenciais</p>
             <div className="space-y-1.5">
@@ -297,8 +298,8 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
 
           {/* Materiais */}
           <div className="rounded-xl border border-white/10 p-3">
-            <p className="text-xs font-bold uppercase tracking-wide text-text-secondary mb-1">Materiais (fotos, PDFs, vídeos, links)</p>
-            <p className="text-[11px] text-text-secondary mb-3">Escolha o <b>Tipo</b> e um <b>Nome</b>, depois <b>envie o arquivo</b> 📎 (sobe pro Storage e o link é criado sozinho). Ou <b>cole um link</b> (Maps, página externa…).</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-text-secondary mb-1">Materiais</p>
+            <p className="text-[11px] text-text-secondary mb-3">Escolha o <b>Tipo</b>, dê um <b>Nome</b> e <b>envie o arquivo</b> — sobe pro Storage e abre direto aqui pro corretor. (Só <b>Tabela</b> e <b>Links</b> usam link.)</p>
 
             <div className="space-y-1 mb-3">
               {materiais.map((m, i) => (
@@ -311,42 +312,43 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
               {materiais.length === 0 && <p className="text-xs text-text-secondary">Nenhum material ainda. Adicione abaixo.</p>}
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-2 mb-2">
-              <div>
-                <label className="block text-[11px] text-text-secondary mb-1">Tipo</label>
-                <select value={mCat} onChange={(ev) => setMCat(ev.target.value)} className="w-full px-2 py-1.5 rounded-md bg-white/[0.04] border border-white/10 text-sm text-white">
-                  {CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
-                </select>
+            <div className="rounded-lg bg-white/[0.03] p-3 space-y-2">
+              <div className="grid sm:grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] text-text-secondary mb-1">Tipo</label>
+                  <select value={mCat} onChange={(ev) => { setMCat(ev.target.value); setErr(''); }} className={SEL}>
+                    {CATEGORIES.map((c) => <option key={c.key} value={c.key} className={OPT}>{c.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] text-text-secondary mb-1">Nome (opcional)</label>
+                  <input value={mName} onChange={(ev) => setMName(ev.target.value)} placeholder="Ex: Book de apresentação" className={INP} />
+                </div>
               </div>
-              <div>
-                <label className="block text-[11px] text-text-secondary mb-1">Nome (opcional)</label>
-                <input value={mName} onChange={(ev) => setMName(ev.target.value)} placeholder="Ex: Book de apresentação" className="w-full px-2 py-1.5 rounded-md bg-white/[0.04] border border-white/10 text-sm text-white" />
-              </div>
-            </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <label className="px-3 py-1.5 rounded-md bg-amber-500 text-black text-sm font-semibold hover:bg-amber-400 cursor-pointer">
-                📎 Enviar arquivo
-                <input type="file" className="hidden" onChange={(ev) => { const f = ev.target.files?.[0]; if (f) upload(f); ev.currentTarget.value = ''; }} />
-              </label>
-              <span className="text-xs text-text-secondary">— ou —</span>
-              <input value={mUrl} onChange={(ev) => setMUrl(ev.target.value)} placeholder="colar link (Maps / externo)" className="flex-1 min-w-[180px] px-2 py-1.5 rounded-md bg-white/[0.04] border border-white/10 text-sm text-white" />
-              <button onClick={addLink} className="px-3 py-1.5 rounded-md bg-white/10 text-white text-sm hover:bg-white/15">+ add link</button>
-            </div>
-            {prog !== null && <div className="mt-2 text-xs text-amber-300">Enviando… {prog}%</div>}
-
-            <div className="mt-3">
-              <label className="block text-[11px] text-text-secondary mb-1">Link de download — opcional (só se colar um link de vídeo e quiser deixá-lo baixável)</label>
-              <input value={mDl} onChange={(ev) => setMDl(ev.target.value)} placeholder="deixe vazio se enviou o arquivo" className="w-full px-2 py-1.5 rounded-md bg-white/[0.04] border border-white/10 text-sm text-white" />
+              {isArquivo ? (
+                <div className="flex items-center gap-3">
+                  <label className={`px-4 py-2 rounded-lg font-semibold text-sm cursor-pointer ${prog !== null ? 'bg-white/10 text-white/60' : 'bg-amber-500 text-black hover:bg-amber-400'}`}>
+                    📎 Enviar arquivo
+                    <input type="file" className="hidden" disabled={prog !== null} onChange={(ev) => { const f = ev.target.files?.[0]; if (f) upload(f); ev.currentTarget.value = ''; }} />
+                  </label>
+                  {prog !== null && <span className="text-xs text-amber-300">Enviando… {prog}%</span>}
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input value={mUrl} onChange={(ev) => setMUrl(ev.target.value)} placeholder={mCat === 'tabela' ? 'link da tabela de valores' : 'colar o link'} className={INP} />
+                  <button onClick={addLink} className="px-4 py-2 rounded-lg bg-amber-500 text-black font-semibold text-sm hover:bg-amber-400 whitespace-nowrap">Adicionar</button>
+                </div>
+              )}
             </div>
 
             <div className="mt-3 pt-3 border-t border-white/10">
               <label className="block text-[11px] text-text-secondary mb-1">⭐ Foto de capa (retângulo do topo)</label>
-              <select value={capa} onChange={(ev) => setCapa(ev.target.value)} className={inp}>
-                <option value="">Primeira imagem (automático)</option>
-                {imgMats.map((m, i) => <option key={i} value={m.url}>{m.name || m.url}</option>)}
+              <select value={capa} onChange={(ev) => setCapa(ev.target.value)} className={SEL}>
+                <option value="" className={OPT}>Primeira imagem (automático)</option>
+                {imgMats.map((m, i) => <option key={i} value={m.url} className={OPT}>{m.name || m.url}</option>)}
               </select>
-              <p className="text-[11px] text-text-secondary mt-1">Escolhe qual imagem aparece como capa. Adicione imagens primeiro para poder escolher.</p>
+              <p className="text-[11px] text-text-secondary mt-1">Adicione imagens primeiro para poder escolher.</p>
             </div>
           </div>
 
