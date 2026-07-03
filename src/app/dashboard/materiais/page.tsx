@@ -34,6 +34,7 @@ export default function MateriaisPage() {
   const [selId, setSelId] = useState<string | null>(null);
   const [tab, setTab] = useState<string>('resumo');
   const [lightbox, setLightbox] = useState<LightboxState | null>(null);
+  const [menuAberto, setMenuAberto] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -89,13 +90,89 @@ export default function MateriaisPage() {
     if (abas.length && !abas.some((a) => a.key === tab)) setTab(abas[0].key);
   }, [abas, tab]);
 
+  const temImoveis = !loading && !erro && imoveis.length > 0;
+
   return (
     <div className="flex-1 min-h-0 flex flex-col">
-      <div className="mb-3">
-        <h1 className="text-2xl font-bold text-white">Materiais de apoio</h1>
-        <p className="text-sm text-text-secondary">Catálogos, apresentações e mídias das construtoras parceiras.</p>
+      {/* Cabeçalho + seletor de empreendimento */}
+      <div className="relative shrink-0 mb-3 z-30">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Materiais de apoio</h1>
+            <p className="text-sm text-text-secondary">Catálogos, apresentações e mídias das construtoras parceiras.</p>
+          </div>
+          {temImoveis && (
+            <button
+              onClick={() => setMenuAberto((v) => !v)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.09] transition-colors max-w-full"
+            >
+              {sel ? (
+                <>
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: corCo[sel.co] || '#D4A017' }} />
+                  <span className="font-semibold text-sm text-white truncate max-w-[200px]">{sel.n}</span>
+                  <span className="text-xs text-text-secondary hidden sm:inline">· {sel.co}</span>
+                </>
+              ) : (
+                <span className="text-sm text-white">Selecionar empreendimento</span>
+              )}
+              <svg className={`w-4 h-4 text-text-secondary transition-transform ${menuAberto ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+            </button>
+          )}
+        </div>
+
+        {menuAberto && (
+          <>
+            <div className="fixed inset-0 z-20" onClick={() => setMenuAberto(false)} />
+            <div className="absolute right-0 mt-2 w-full sm:w-96 max-w-full z-30 rounded-xl border border-white/10 bg-[#15151a] shadow-2xl overflow-hidden">
+              <div className="p-3 border-b border-white/10 space-y-2">
+                <input
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  placeholder="Buscar empreendimento…"
+                  autoFocus
+                  className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white placeholder:text-text-secondary focus:outline-none focus:ring-1 focus:ring-amber-500"
+                />
+                <div className="flex flex-wrap gap-1">
+                  <button
+                    onClick={() => setFiltroCo('')}
+                    className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${!filtroCo ? 'bg-amber-500 text-black' : 'bg-white/[0.06] text-text-secondary'}`}
+                  >
+                    Todas
+                  </button>
+                  {construtoras.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => setFiltroCo(c.name)}
+                      className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${filtroCo === c.name ? 'text-black' : 'text-text-secondary bg-white/[0.06]'}`}
+                      style={filtroCo === c.name ? { background: c.color || '#D4A017' } : undefined}
+                    >
+                      {c.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="max-h-80 overflow-y-auto scrollbar-thin p-2 space-y-1">
+                {listaFiltrada.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => { setSelId(p.id); setMenuAberto(false); }}
+                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${selId === p.id ? 'bg-white/[0.08]' : 'hover:bg-white/[0.04]'}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: corCo[p.co] || '#D4A017' }} />
+                      <span className="text-sm font-semibold text-white truncate">{p.n}</span>
+                    </div>
+                    <div className="text-[11px] text-text-secondary truncate pl-4">{p.co}{p.cid ? ` · ${p.cid}` : ''}</div>
+                  </button>
+                ))}
+                {listaFiltrada.length === 0 && <p className="text-xs text-text-secondary text-center py-6">Nada encontrado.</p>}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
+      {/* Corpo (largura total) */}
       {loading ? (
         <div className="flex-1 flex items-center justify-center text-text-secondary">Carregando materiais…</div>
       ) : erro ? (
@@ -103,103 +180,56 @@ export default function MateriaisPage() {
       ) : imoveis.length === 0 ? (
         <div className="flex-1 flex items-center justify-center text-text-secondary">Nenhum imóvel cadastrado ainda.</div>
       ) : (
-        <div className="flex-1 min-h-0 flex gap-3">
-          <aside className="w-64 shrink-0 flex flex-col rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden">
-            <div className="p-3 border-b border-white/10 space-y-2">
-              <input
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                placeholder="Buscar imóvel…"
-                className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white placeholder:text-text-secondary focus:outline-none focus:ring-1 focus:ring-amber-500"
-              />
-              <div className="flex flex-wrap gap-1">
-                <button
-                  onClick={() => setFiltroCo('')}
-                  className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${!filtroCo ? 'bg-amber-500 text-black' : 'bg-white/[0.06] text-text-secondary'}`}
-                >
-                  Todas
-                </button>
-                {construtoras.map((c) => (
+        <section className="flex-1 min-w-0 flex flex-col rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden">
+          {!sel ? (
+            <div className="flex-1 flex items-center justify-center text-text-secondary">Selecione um empreendimento no seletor acima.</div>
+          ) : (
+            <>
+              <div className="relative shrink-0 h-44 bg-[#181818]">
+                {coverImg(sel) && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={coverImg(sel)!} alt={sel.n} className="absolute inset-0 w-full h-full object-cover opacity-70" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-black" style={{ background: corCo[sel.co] || '#D4A017' }}>{sel.co}</span>
+                    {sel.st && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/15 text-white">{sel.st}</span>}
+                  </div>
+                  <h2 className="text-2xl font-bold text-white leading-tight">{sel.n}</h2>
+                  {(sel.cid || sel.end) && <p className="text-sm text-white/70">{[sel.end, sel.cid].filter(Boolean).join(' · ')}</p>}
+                </div>
+              </div>
+
+              <div className="shrink-0 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 p-3 border-b border-white/10 text-center">
+                {([['Torres', sel.t], ['Andares', sel.a], ['Aptos', sel.ap], ['Entrega', sel.e], ['A partir de', sel.pr ? `R$ ${sel.pr}` : undefined], ['Valor m²', sel.m2 ? `R$ ${sel.m2}` : undefined]] as [string, string | undefined][])
+                  .filter(([, v]) => v)
+                  .map(([k, v]) => (
+                    <div key={k} className="rounded-lg bg-white/[0.03] py-1.5">
+                      <div className="text-sm font-bold text-white truncate px-1">{v}</div>
+                      <div className="text-[10px] uppercase tracking-wide text-text-secondary">{k}</div>
+                    </div>
+                  ))}
+              </div>
+
+              <div className="shrink-0 flex gap-1 px-3 pt-2 overflow-x-auto scrollbar-thin border-b border-white/10">
+                {abas.map((a) => (
                   <button
-                    key={c.id}
-                    onClick={() => setFiltroCo(c.name)}
-                    className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${filtroCo === c.name ? 'text-black' : 'text-text-secondary bg-white/[0.06]'}`}
-                    style={filtroCo === c.name ? { background: c.color || '#D4A017' } : undefined}
+                    key={a.key}
+                    onClick={() => setTab(a.key)}
+                    className={`px-3 py-2 text-sm font-semibold whitespace-nowrap border-b-2 -mb-px ${tab === a.key ? 'border-amber-500 text-white' : 'border-transparent text-text-secondary hover:text-white'}`}
                   >
-                    {c.name}
+                    {a.label}
                   </button>
                 ))}
               </div>
-            </div>
-            <div className="flex-1 overflow-y-auto scrollbar-thin p-2 space-y-1">
-              {listaFiltrada.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => setSelId(p.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${selId === p.id ? 'bg-white/[0.08]' : 'hover:bg-white/[0.04]'}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: corCo[p.co] || '#D4A017' }} />
-                    <span className="text-sm font-semibold text-white truncate">{p.n}</span>
-                  </div>
-                  <div className="text-[11px] text-text-secondary truncate pl-4">{p.co}{p.cid ? ` · ${p.cid}` : ''}</div>
-                </button>
-              ))}
-              {listaFiltrada.length === 0 && <p className="text-xs text-text-secondary text-center py-6">Nada encontrado.</p>}
-            </div>
-          </aside>
 
-          <section className="flex-1 min-w-0 flex flex-col rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden">
-            {!sel ? (
-              <div className="flex-1 flex items-center justify-center text-text-secondary">Selecione um imóvel.</div>
-            ) : (
-              <>
-                <div className="relative shrink-0 h-40 bg-[#181818]">
-                  {coverImg(sel) && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={coverImg(sel)!} alt={sel.n} className="absolute inset-0 w-full h-full object-cover opacity-70" />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-black" style={{ background: corCo[sel.co] || '#D4A017' }}>{sel.co}</span>
-                      {sel.st && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/15 text-white">{sel.st}</span>}
-                    </div>
-                    <h2 className="text-xl font-bold text-white leading-tight">{sel.n}</h2>
-                    {(sel.cid || sel.end) && <p className="text-xs text-white/70">{[sel.end, sel.cid].filter(Boolean).join(' · ')}</p>}
-                  </div>
-                </div>
-
-                <div className="shrink-0 grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 border-b border-white/10 text-center">
-                  {([['Torres', sel.t], ['Andares', sel.a], ['Aptos', sel.ap], ['Entrega', sel.e]] as [string, string | undefined][])
-                    .filter(([, v]) => v)
-                    .map(([k, v]) => (
-                      <div key={k} className="rounded-lg bg-white/[0.03] py-1.5">
-                        <div className="text-sm font-bold text-white">{v}</div>
-                        <div className="text-[10px] uppercase tracking-wide text-text-secondary">{k}</div>
-                      </div>
-                    ))}
-                </div>
-
-                <div className="shrink-0 flex gap-1 px-3 pt-2 overflow-x-auto scrollbar-thin border-b border-white/10">
-                  {abas.map((a) => (
-                    <button
-                      key={a.key}
-                      onClick={() => setTab(a.key)}
-                      className={`px-3 py-2 text-sm font-semibold whitespace-nowrap border-b-2 -mb-px ${tab === a.key ? 'border-amber-500 text-white' : 'border-transparent text-text-secondary hover:text-white'}`}
-                    >
-                      {a.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex-1 overflow-y-auto scrollbar-thin p-4">
-                  <TabConteudo imovel={sel} tab={tab} onLightbox={setLightbox} />
-                </div>
-              </>
-            )}
-          </section>
-        </div>
+              <div className="flex-1 overflow-y-auto scrollbar-thin p-4">
+                <TabConteudo imovel={sel} tab={tab} onLightbox={setLightbox} />
+              </div>
+            </>
+          )}
+        </section>
       )}
 
       {lightbox && <Lightbox state={lightbox} onClose={() => setLightbox(null)} onNav={(i) => setLightbox({ ...lightbox, idx: i })} />}
@@ -232,17 +262,11 @@ function TabConteudo({ imovel, tab, onLightbox }: { imovel: Imovel; tab: string;
   if (tab === 'resumo') {
     return (
       <div className="space-y-4">
-        {(imovel.pr || imovel.m2) && (
-          <div className="flex gap-3">
-            {imovel.pr && <div className="rounded-lg bg-white/[0.03] px-3 py-2"><div className="text-[10px] text-text-secondary uppercase">A partir de</div><div className="text-lg font-bold text-white">R$ {imovel.pr}</div></div>}
-            {imovel.m2 && <div className="rounded-lg bg-white/[0.03] px-3 py-2"><div className="text-[10px] text-text-secondary uppercase">Valor m²</div><div className="text-lg font-bold text-white">R$ {imovel.m2}</div></div>}
-          </div>
-        )}
         {imovel.resumo && <p className="text-sm text-text-secondary whitespace-pre-line leading-relaxed">{imovel.resumo}</p>}
         {Array.isArray(imovel.tip) && imovel.tip.length > 0 && (
           <div>
             <h3 className="text-sm font-bold text-white mb-2">Tipologias</h3>
-            <div className="grid sm:grid-cols-2 gap-2">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {imovel.tip.map((t, i) => (
                 <div key={i} className="rounded-lg bg-white/[0.03] px-3 py-2 flex items-baseline gap-2">
                   <span className="text-sm font-bold text-amber-300">{t[0]} m²</span>
@@ -262,6 +286,9 @@ function TabConteudo({ imovel, tab, onLightbox }: { imovel: Imovel; tab: string;
             </div>
           </div>
         )}
+        {!imovel.resumo && !(Array.isArray(imovel.tip) && imovel.tip.length) && !(Array.isArray(imovel.dif) && imovel.dif.length) && (
+          <p className="text-sm text-text-secondary">Sem descrição cadastrada. Veja os materiais nas abas acima.</p>
+        )}
       </div>
     );
   }
@@ -269,7 +296,7 @@ function TabConteudo({ imovel, tab, onLightbox }: { imovel: Imovel; tab: string;
   if (tab === 'local') {
     const q = encodeURIComponent([imovel.end, imovel.cid].filter(Boolean).join(', '));
     return (
-      <div className="rounded-xl overflow-hidden border border-white/10 h-[380px]">
+      <div className="rounded-xl overflow-hidden border border-white/10 h-[420px]">
         <iframe title="Mapa" className="w-full h-full" src={`https://www.google.com/maps?q=${q}&output=embed`} />
       </div>
     );
@@ -290,7 +317,7 @@ function TabConteudo({ imovel, tab, onLightbox }: { imovel: Imovel; tab: string;
           <BtnWhats url={url} text={`${imovel.n} — ${m.name || cat.label}\n${url}`} asFile />
           <BtnDownload url={url} />
         </Toolbar>
-        <div className="rounded-xl overflow-hidden border border-white/10 h-[560px] bg-white">
+        <div className="rounded-xl overflow-hidden border border-white/10 h-[620px] bg-white">
           <iframe src={`${url}#view=FitH`} title={m.name || 'PDF'} className="w-full h-full" />
         </div>
       </div>
@@ -309,7 +336,7 @@ function TabConteudo({ imovel, tab, onLightbox }: { imovel: Imovel; tab: string;
           {fileUrl ? <BtnWhats url={fileUrl} text={`${imovel.n} — ${m.name || cat.label}`} asFile /> : yt ? <BtnWhats url={`https://youtu.be/${yt}`} text={`${imovel.n} — ${m.name || cat.label}\nhttps://youtu.be/${yt}`} asFile={false} /> : null}
           {fileUrl && <BtnDownload url={fileUrl} />}
         </Toolbar>
-        <div className="rounded-xl overflow-hidden border border-white/10 aspect-video bg-black">
+        <div className="rounded-xl overflow-hidden border border-white/10 aspect-video max-h-[620px] bg-black">
           {yt ? (
             <iframe className="w-full h-full" src={`https://www.youtube-nocookie.com/embed/${yt}?rel=0&modestbranding=1&playsinline=1`} allow="autoplay; fullscreen; encrypted-media" allowFullScreen title="Vídeo" />
           ) : (
@@ -325,7 +352,7 @@ function TabConteudo({ imovel, tab, onLightbox }: { imovel: Imovel; tab: string;
     return (
       <div>
         <p className="text-xs text-text-secondary mb-2">{cat.label} · {imgs.length} {imgs.length === 1 ? 'item' : 'itens'} — toque para ampliar, baixar ou encaminhar</p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
           {imgs.map((im, k) => (
             <button key={k} onClick={() => onLightbox({ imgs, idx: k })} className="aspect-[4/3] rounded-lg overflow-hidden border border-white/10 bg-white/[0.03]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -352,7 +379,7 @@ function TabConteudo({ imovel, tab, onLightbox }: { imovel: Imovel; tab: string;
 
   if (cat.kind === 'linklist') {
     return (
-      <div className="space-y-2">
+      <div className="space-y-2 max-w-2xl">
         {mats.map((m, i) => {
           const url = m.url.trim();
           return (
