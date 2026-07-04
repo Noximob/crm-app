@@ -8,7 +8,6 @@ import { doc, getDoc, onSnapshot, updateDoc, collection, query, orderBy, addDoc,
 import Link from 'next/link';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { Lead } from '@/types';
-import { SoccerBallIcon } from '@/components/SoccerBall';
 import LogInteractionModal from '../_components/LogInteractionModal';
 import CrmHeader from '../_components/CrmHeader';
 import AgendaModal, { TaskPayload } from '../_components/AgendaModal';
@@ -490,8 +489,7 @@ export default function LeadDetailPage() {
                                         className="text-green-500 hover:text-green-600 transition-colors"
                                         onClick={(e) => e.stopPropagation()}
                                     >
-                                    <WhatsAppIcon className="h-3 w-3 fill-current wa-default"/>
-                                    <SoccerBallIcon className="h-4 w-4 wa-soccer"/>
+                                    <WhatsAppIcon className="h-3 w-3 fill-current"/>
                                     </a>
                                 </div>
                         </div>

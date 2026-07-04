@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Lead } from '@/types';
-import { SoccerBallIcon } from '@/components/SoccerBall';
 
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg viewBox="0 0 24 24" fill="currentColor" {...props}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
@@ -53,8 +52,7 @@ export default function LeadCard({ lead }: { lead: Lead }) {
           onClick={e => e.stopPropagation()}
           className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-green-600 dark:text-green-400 border border-green-200 dark:border-green-500/40 rounded-md hover:bg-green-50 dark:hover:bg-green-500/10 transition-colors w-full justify-center"
         >
-          <WhatsAppIcon className="h-3 w-3 wa-default" />
-          <SoccerBallIcon className="h-3 w-3 wa-soccer" />
+          <WhatsAppIcon className="h-3 w-3" />
           WhatsApp
         </a>
                             <Link href={`/dashboard/crm/${lead.id}`} onClick={e => e.stopPropagation()} className="w-full">

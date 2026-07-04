@@ -10,7 +10,6 @@ import { useTheme } from '@/context/ThemeContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { PipelineStagesProvider } from '@/context/PipelineStagesContext';
 import { AlummaLogoFullInline } from '@/components/AlummaLogo';
-import CopaJogosModal from './_components/CopaJogosModal';
 
 // Ícones
 const AlertTriangleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>;
@@ -65,24 +64,6 @@ const ChevronLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props
 
 const PhoneIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>;
 
-/** Bandeira do Brasil (simplificada) — usada no tema Copa do Mundo */
-const BrasilFlag = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 28 20" width="28" height="20" xmlns="http://www.w3.org/2000/svg" {...props}>
-    <rect width="28" height="20" rx="2.5" fill="#009C3B" />
-    <path d="M14 2.5 L25.5 10 L14 17.5 L2.5 10 Z" fill="#FFDF00" />
-    <circle cx="14" cy="10" r="4.3" fill="#002776" />
-  </svg>
-);
-
-/** Ícone bola de futebol — botão do tema Copa */
-const BallIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" />
-    <path d="m12 7 4.5 3.2-1.7 5.3H9.2l-1.7-5.3z" />
-    <path d="M12 2v5M2.5 9l5 1.2M21.5 9l-5 1.2M5.5 20l3.7-4M18.5 20l-3.7-4" />
-  </svg>
-);
-
 // Label do tipo de evento/agenda (igual dashboard)
 function getTipoAgendaLabel(tipo: string): string {
   const map: Record<string, string> = {
@@ -110,51 +91,7 @@ export default function DashboardLayout({
 }) {
   const { currentUser: user, userData, loading, isEspelhoDemo, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
-  const [copaTheme, setCopaTheme] = useState(false);
-  const [noxTheme, setNoxTheme] = useState(true);
   const router = useRouter();
-
-  // Temas: ao introduzir o tema Nox, começa com Nox LIGADO e futebol DESLIGADO (migração única).
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (window.localStorage.getItem('noxThemeInit') !== '1') {
-      window.localStorage.setItem('noxThemeInit', '1');
-      window.localStorage.setItem('noxTheme', '1');
-      window.localStorage.setItem('copaTheme', '0');
-      setNoxTheme(true);
-      setCopaTheme(false);
-      return;
-    }
-    setNoxTheme(window.localStorage.getItem('noxTheme') !== '0');
-    setCopaTheme(window.localStorage.getItem('copaTheme') === '1');
-  }, []);
-
-  const toggleNoxTheme = () => {
-    setNoxTheme((prev) => {
-      const next = !prev;
-      if (typeof window !== 'undefined') window.localStorage.setItem('noxTheme', next ? '1' : '0');
-      return next;
-    });
-  };
-
-  const toggleCopaTheme = () => {
-    setCopaTheme((prev) => {
-      const next = !prev;
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem('copaTheme', next ? '1' : '0');
-        window.dispatchEvent(new Event('copa-toggle'));
-      }
-      return next;
-    });
-  };
-
-  // Contagem regressiva para a final da Copa (calculada no cliente p/ evitar mismatch)
-  const [diasCopa, setDiasCopa] = useState<number | null>(null);
-  const [showCopaJogos, setShowCopaJogos] = useState(false);
-  useEffect(() => {
-    const final = new Date('2026-07-19T00:00:00').getTime();
-    setDiasCopa(Math.max(0, Math.ceil((final - Date.now()) / 86400000)));
-  }, []);
   const pathname = usePathname();
   const { theme } = useTheme();
   const { notifications, resetNotification } = useNotifications();
@@ -274,7 +211,7 @@ export default function DashboardLayout({
 
   return (
     <PipelineStagesProvider imobiliariaId={userData?.imobiliariaId}>
-    <div className={`flex h-screen min-h-screen bg-particles ${copaTheme ? 'copa-theme' : ''} ${noxTheme ? 'nox-theme' : ''}`}>
+    <div className="flex h-screen min-h-screen bg-particles">
       {/* Sidebar — mesmo background (partículas), borda sutil */}
       <div className={`flex flex-col h-screen fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-transparent transition-all duration-300 text-xs pb-8`}>
         <div className="flex-1 flex flex-col">
@@ -284,11 +221,7 @@ export default function DashboardLayout({
               className="flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer [filter:drop-shadow(0_0_8px_rgba(255,140,0,0.4))]"
               title="Voltar ao Dashboard"
             >
-              {noxTheme ? (
-                <span className="nox-wordmark" aria-label="Nox Imóveis">{collapsed ? 'N' : <>N<span className="o">O</span>X</>}</span>
-              ) : (
-                <AlummaLogoFullInline theme="dark" height={28} iconOnly={collapsed} className="shrink-0" />
-              )}
+              <AlummaLogoFullInline theme="dark" height={28} iconOnly={collapsed} className="shrink-0" />
             </button>
             <button
               onClick={() => setCollapsed(!collapsed)}
@@ -355,7 +288,7 @@ export default function DashboardLayout({
         {/* Header: Olá | convites de eventos (1 por vez) | Ideias, moedas, avatar */}
         <header className="h-16 px-5 shrink-0 flex items-center justify-between gap-3">
           <h2 className="text-lg font-bold text-orange-400 truncate shrink-0 flex items-center gap-1.5">
-            Olá, {displayName}! {copaTheme ? <BrasilFlag className="inline-block w-6 h-4 rounded-[2px]" /> : '👋'}
+            Olá, {displayName}! 👋
           </h2>
           {convitesPendentes.length > 0 && (
             <div className="flex items-center gap-2 flex-1 min-w-0 justify-center overflow-hidden">
@@ -390,47 +323,6 @@ export default function DashboardLayout({
             </div>
           )}
           <div className="flex items-center gap-3 shrink-0">
-            {copaTheme && diasCopa !== null && (
-              <button
-                type="button"
-                onClick={() => setShowCopaJogos(true)}
-                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white border border-yellow-300/60 bg-gradient-to-r from-[#009C3B] to-[#002776] hover:brightness-110 transition-all"
-                title="Ver os jogos do Brasil na Copa"
-              >
-                <span className="[filter:drop-shadow(0_0_4px_rgba(255,223,0,0.6))]">🏆</span>
-                {diasCopa > 0 ? `Faltam ${diasCopa} dias` : 'É Copa! ⚽'}
-                <svg className="w-3 h-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-              </button>
-            )}
-            {copaTheme && (
-              <BrasilFlag className="rounded-sm shadow-sm hidden sm:block [filter:drop-shadow(0_0_4px_rgba(255,223,0,0.35))]" />
-            )}
-            <button
-              type="button"
-              onClick={toggleCopaTheme}
-              title={copaTheme ? 'Desligar tema Copa do Mundo' : 'Ligar tema Copa do Mundo'}
-              aria-pressed={copaTheme}
-              className={`flex items-center justify-center w-9 h-9 rounded-lg border transition-all ${
-                copaTheme
-                  ? 'copa-toggle-on'
-                  : 'bg-white/[0.06] border-orange-500/20 text-text-secondary hover:text-white hover:bg-white/[0.1]'
-              }`}
-            >
-              <BallIcon className="w-5 h-5" />
-            </button>
-            <button
-              type="button"
-              onClick={toggleNoxTheme}
-              title={noxTheme ? 'Desligar tema Nox' : 'Ligar tema Nox'}
-              aria-pressed={noxTheme}
-              className={`flex items-center justify-center w-9 h-9 rounded-lg border transition-all text-lg font-black leading-none ${
-                noxTheme
-                  ? 'nox-toggle-on'
-                  : 'bg-white/[0.06] border-orange-500/20 text-text-secondary hover:text-white hover:bg-white/[0.1]'
-              }`}
-            >
-              ✳
-            </button>
             <div className="pl-3 border-l border-white/[0.06]">
               <div className="relative w-8 h-8">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white font-semibold text-sm">
@@ -443,7 +335,6 @@ export default function DashboardLayout({
         </header>
 
         <main className="flex flex-col flex-1 min-h-0 overflow-x-hidden overflow-y-auto p-2 md:p-3">
-          {copaTheme && <div className="copa-bunting" aria-hidden="true" />}
           {children}
         </main>
       </div>
@@ -455,8 +346,6 @@ export default function DashboardLayout({
           onClick={() => setCollapsed(false)}
         />
       )}
-
-      <CopaJogosModal isOpen={showCopaJogos} onClose={() => setShowCopaJogos(false)} />
     </div>
     </PipelineStagesProvider>
   );

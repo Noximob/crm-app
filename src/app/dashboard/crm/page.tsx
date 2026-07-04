@@ -10,7 +10,6 @@ import { collection, getDocs, query, where, Timestamp, orderBy, limit, onSnapsho
 import Link from 'next/link';
 import FilterModal, { Filters } from './_components/FilterModal';
 import { getDemoLeads } from '@/lib/espelho/demoData';
-import { SoccerBallIcon } from '@/components/SoccerBall';
 
 // --- Tipos ---
 interface Task {
@@ -554,7 +553,7 @@ export default function CrmPage() {
                     <div className="flex-1 min-h-0 overflow-auto rounded-xl border border-white/10">
                         <table className="min-w-full table-fixed">
                             <thead className="sticky top-0 z-10">
-                                <tr className="copa-th border-b border-white/10 bg-[var(--bg-card)]/95 backdrop-blur-sm text-gray-200 text-xs shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
+                                <tr className="border-b border-white/10 bg-[var(--bg-card)]/95 backdrop-blur-sm text-gray-200 text-xs shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
                                     <th className="px-3 py-2 font-semibold text-left w-1/5 rounded-tl-xl">Nome</th>
                                     <th className="px-3 py-2 font-semibold text-left w-1/6">Telefone</th>
                                     <th className="px-3 py-2 font-semibold text-center w-1/12">WhatsApp</th>
@@ -594,8 +593,7 @@ export default function CrmPage() {
                                                 className="inline-flex items-center justify-center text-[#25D366] hover:text-[#128C7E]"
                                                 title="Conversar no WhatsApp"
                                             >
-                                                <WhatsAppIcon className="h-4 w-4 wa-default" />
-                                                <SoccerBallIcon className="h-4 w-4 wa-soccer" />
+                                                <WhatsAppIcon className="h-4 w-4" />
                                             </a>
                                         </td>
                                         <td className="px-3 py-1.5 text-xs w-1/5">
