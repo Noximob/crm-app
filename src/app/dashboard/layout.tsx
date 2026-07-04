@@ -331,7 +331,6 @@ export default function DashboardLayout({
                           ? 'bg-[var(--surface-hover)] text-white border-l-[3px] border-l-orange-500 shadow-[0_0_14px_rgba(255,140,0,0.15)]'
                           : 'text-text-secondary hover:bg-[var(--surface-hover)] hover:text-white border-l-[3px] border-l-transparent'
                       }`}
-                      onClick={() => setCollapsed(false)}
                     >
                       <span className="mr-3 relative">
                         {(item as { isShop?: boolean }).isShop ? (

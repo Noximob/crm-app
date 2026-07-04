@@ -315,6 +315,10 @@ function BtnDownload({ url }: { url: string }) {
 }
 
 function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; tab: string; presenting: boolean; onLightbox: (s: LightboxState) => void }) {
+  // Tela cheia só do PDF (aí o ⋮ do visualizador nativo, com o modo Apresentação, fica à mão)
+  const pdfRef = useRef<HTMLIFrameElement>(null);
+  const pdfFullscreen = () => pdfRef.current?.requestFullscreen?.();
+
   if (tab === 'resumo') {
     const tips = parseTip(imovel.tip);
     return (
@@ -382,13 +386,22 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
         {!presenting && (
           <Toolbar>
             <span className="text-sm font-semibold text-white mr-auto">{m.name || cat.label}</span>
+            <button onClick={pdfFullscreen} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-black hover:bg-amber-400 transition-colors" title="O PDF ocupa a tela inteira — e o menu ⋮ do visualizador tem o modo Apresentação">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+              Apresentar PDF
+            </button>
             <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs px-2.5 py-1.5 rounded-lg border border-white/15 text-white/75 hover:bg-white/5">Abrir em nova aba</a>
             <BtnDownload url={url} />
             <BtnWhats url={url} text={`${imovel.n} — ${m.name || cat.label}\n${url}`} asFile />
           </Toolbar>
         )}
-        <div className="flex-1 min-h-[420px] rounded-xl overflow-hidden border border-white/10 bg-white">
-          <iframe src={`${url}#zoom=100`} title={m.name || 'PDF'} className="w-full h-full" />
+        <div className="relative flex-1 min-h-[420px] rounded-xl overflow-hidden border border-white/10 bg-white">
+          <iframe ref={pdfRef} src={`${url}#zoom=100`} title={m.name || 'PDF'} className="w-full h-full" allow="fullscreen" allowFullScreen />
+          {presenting && (
+            <button onClick={pdfFullscreen} className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-black/75 text-white border border-white/25 hover:bg-black/90 transition-colors" title="Só o PDF na tela inteira">
+              ⛶ PDF em tela cheia
+            </button>
+          )}
         </div>
       </div>
     );
