@@ -9,27 +9,26 @@ const PERIODOS: Record<string, { label: string; meses: number }> = {
   anual: { label: 'Anuais', meses: 12 },
 };
 
+type Modo = 'rs' | 'pct';
+
 const brl = (n: number) => 'R$ ' + formatBRL(n);
 const numI = (s: string) => { const v = parseFloat(s); return isNaN(v) ? 0 : v; };
 const round2 = (n: number) => Math.round(n * 100) / 100;
+const round3 = (n: number) => Math.round(n * 1000) / 1000;
+const fmtPct = (n: number) => n.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + '%';
 
 const parseLocal = (s: string) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, (m || 1) - 1, d || 1); };
 const addMonths = (d: Date, n: number) => { const x = new Date(d); x.setMonth(x.getMonth() + n); return x; };
 const toYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const fmtData = (d: Date) => d.toLocaleDateString('pt-BR');
 
+// ---------- inputs (nível de módulo p/ não perder foco) ----------
 const inputCls = 'w-full px-3 py-2.5 rounded-xl border border-[#E8E9F1] dark:border-white/10 bg-white dark:bg-[#171b28] text-[15px] text-[#2E2F38] dark:text-white focus:outline-none focus:border-[#D4A017] focus:ring-2 focus:ring-[#D4A017]/20 transition';
 const Campo = ({ label, hint, children }: { label: string; hint?: React.ReactNode; children: React.ReactNode }) => (
   <div>
     <label className="block text-xs font-semibold text-[#6B6F76] dark:text-gray-300 mb-1.5">{label}</label>
     {children}
     {hint && <p className="text-[11px] text-[#9aa0a6] mt-1">{hint}</p>}
-  </div>
-);
-const Percent = ({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) => (
-  <div className="relative">
-    <input type="number" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={inputCls + ' pr-8 tabular-nums'} />
-    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[13px] text-[#9aa0a6] pointer-events-none">%</span>
   </div>
 );
 const Secao = ({ icon, titulo, children }: { icon: string; titulo: string; children: React.ReactNode }) => (
@@ -43,70 +42,131 @@ const Secao = ({ icon, titulo, children }: { icon: string; titulo: string; child
 );
 const btnFechar = 'text-xs px-3 py-1.5 rounded-lg bg-[#D4A017]/15 text-[#8a6d10] dark:text-[#e8c547] font-semibold hover:bg-[#D4A017]/25 transition';
 
+/** Campo de valor com raciocínio flexível: digite em R$ OU em % (do valor da proposta). Ao alternar, converte o número. */
+const ValorFlex = ({ label, mode, value, base, onMode, onValue, hint }: {
+  label: string; mode: Modo; value: number; base: number;
+  onMode: (m: Modo) => void; onValue: (n: number) => void; hint?: React.ReactNode;
+}) => {
+  const trocar = (m: Modo) => {
+    if (m === mode) return;
+    let v = value;
+    if (base > 0 && value > 0) v = m === 'pct' ? round3((value / base) * 100) : round2(base * (value / 100));
+    onMode(m); onValue(v);
+  };
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <label className="block text-xs font-semibold text-[#6B6F76] dark:text-gray-300 truncate">{label}</label>
+        <div className="flex rounded-md overflow-hidden border border-[#E8E9F1] dark:border-white/15 shrink-0">
+          {(['rs', 'pct'] as const).map((m) => (
+            <button key={m} type="button" onClick={() => trocar(m)} className={`px-2 py-0.5 text-[10px] font-bold transition-colors ${mode === m ? 'bg-[#D4A017] text-black' : 'text-[#9aa0a6] hover:text-[#6B6F76] dark:hover:text-white'}`}>
+              {m === 'rs' ? 'R$' : '%'}
+            </button>
+          ))}
+        </div>
+      </div>
+      {mode === 'rs' ? (
+        <MoneyInput value={value} onChange={onValue} placeholder="0,00" className={inputCls} />
+      ) : (
+        <div className="relative">
+          <input type="number" step="any" min="0" value={value || ''} onChange={(e) => onValue(parseFloat(e.target.value) || 0)} placeholder="0" className={inputCls + ' pr-8 tabular-nums'} />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[13px] text-[#9aa0a6] pointer-events-none">%</span>
+        </div>
+      )}
+      {hint && <p className="text-[11px] text-[#9aa0a6] mt-1">{hint}</p>}
+    </div>
+  );
+};
+
 export default function FluxoPagamentoPage() {
   const [empreendimento, setEmpreendimento] = useState('');
   const [unidade, setUnidade] = useState('');
   const [cliente, setCliente] = useState('');
   const [valorImovel, setValorImovel] = useState(0);
-  const [descontoPct, setDescontoPct] = useState('');
+  const [descMode, setDescMode] = useState<Modo>('pct');
+  const [descVal, setDescVal] = useState(0);
   const [permutaDesc, setPermutaDesc] = useState('');
   const [permutaValor, setPermutaValor] = useState(0);
-  const [pctChave, setPctChave] = useState('30');
-  const [entrada, setEntrada] = useState(0);
+  const [chaveMode, setChaveMode] = useState<Modo>('pct');
+  const [chaveVal, setChaveVal] = useState(30);
+  const [entradaMode, setEntradaMode] = useState<Modo>('rs');
+  const [entradaVal, setEntradaVal] = useState(0);
+  const [nEntrada, setNEntrada] = useState('1');
   const [dataBase, setDataBase] = useState('');
   const [nParcelas, setNParcelas] = useState('40');
-  const [parcela, setParcela] = useState(0);
+  const [parcelaMode, setParcelaMode] = useState<Modo>('rs');
+  const [parcelaVal, setParcelaVal] = useState(0);
   const [nReforcos, setNReforcos] = useState('3');
-  const [reforco, setReforco] = useState(0);
+  const [reforcoMode, setReforcoMode] = useState<Modo>('rs');
+  const [reforcoVal, setReforcoVal] = useState(0);
   const [periodicidade, setPeriodicidade] = useState('semestral');
   const [refDatas, setRefDatas] = useState<string[]>([]); // overrides YYYY-MM-DD; vazio = usa a sugerida
 
   const c = useMemo(() => {
     const valor = valorImovel;
-    const dPct = numI(descontoPct);
-    const descVal = valor * (dPct / 100);
-    const vp = Math.max(0, valor - descVal);
-    const p = numI(pctChave);
-    const ac = vp * (p / 100);
+    const descR = descMode === 'pct' ? valor * (descVal / 100) : descVal;
+    const vp = Math.max(0, valor - descR);
+    const pctDesc = valor > 0 ? (descR / valor) * 100 : 0;
+    const ac = chaveMode === 'pct' ? vp * (chaveVal / 100) : chaveVal; // total a pagar até a chave
+    const pctChaveEff = vp > 0 ? (ac / vp) * 100 : 0;
     const saldo = Math.max(0, vp - ac);
+    const entradaR = entradaMode === 'pct' ? vp * (entradaVal / 100) : entradaVal;
+    const nEntr = Math.max(1, Math.round(numI(nEntrada)) || 1);
+    const entradaParc = nEntr > 0 ? entradaR / nEntr : entradaR;
     const nParc = Math.max(0, Math.round(numI(nParcelas)));
+    const parcelaR = parcelaMode === 'pct' ? vp * (parcelaVal / 100) : parcelaVal;
     const nRef = Math.max(0, Math.round(numI(nReforcos)));
-    const totalParc = nParc * parcela;
-    const totalRef = nRef * reforco;
-    const montado = entrada + permutaValor + totalParc + totalRef; // permuta abate do que se paga até a chave
+    const reforcoR = reforcoMode === 'pct' ? vp * (reforcoVal / 100) : reforcoVal;
+    const totalParc = nParc * parcelaR;
+    const totalRef = nRef * reforcoR;
+    const montado = entradaR + permutaValor + totalParc + totalRef; // permuta abate do que se paga até a chave
     const diferenca = ac - montado;
-    const tol = 0.01 * (nParc + nRef) + 0.005;
+    const tol = 0.01 * (nParc + nRef + nEntr) + 0.005;
     const fecha = ac > 0 && Math.abs(diferenca) <= tol;
     const periodo = PERIODOS[periodicidade].meses;
     const base = dataBase ? parseLocal(dataBase) : null;
     const parcUltima = base && nParc > 0 ? addMonths(base, nParc - 1) : null;
-    // datas de reforço: override ou sugerida (mês periodo*(j+1) contando a 1ª parcela como mês 1)
     const refMeses = Array.from({ length: nRef }, (_, j) => periodo * (j + 1));
     const refDateObjs = Array.from({ length: nRef }, (_, j) => {
       if (refDatas[j]) return parseLocal(refDatas[j]);
       return base ? addMonths(base, refMeses[j] - 1) : null;
     });
     const refForaPrazo = nParc > 0 && refMeses.some((m) => m > nParc);
-    return { valor, dPct, descVal, vp, p, ac, saldo, nParc, nRef, totalParc, totalRef, montado, diferenca, fecha, periodo, base, parcUltima, refMeses, refDateObjs, refForaPrazo };
-  }, [valorImovel, descontoPct, pctChave, entrada, permutaValor, dataBase, nParcelas, parcela, nReforcos, reforco, periodicidade, refDatas]);
+    return { valor, descR, pctDesc, vp, ac, pctChaveEff, saldo, entradaR, nEntr, entradaParc, nParc, parcelaR, nRef, reforcoR, totalParc, totalRef, montado, diferenca, fecha, periodo, base, parcUltima, refMeses, refDateObjs, refForaPrazo };
+  }, [valorImovel, descMode, descVal, chaveMode, chaveVal, entradaMode, entradaVal, nEntrada, permutaValor, dataBase, nParcelas, parcelaMode, parcelaVal, nReforcos, reforcoMode, reforcoVal, periodicidade, refDatas]);
 
   const suggestedYMD = (j: number) => (c.base ? toYMD(addMonths(c.base, c.refMeses[j] - 1)) : '');
   const setRefData = (j: number, v: string) => setRefDatas((prev) => { const n = [...prev]; n[j] = v; return n; });
 
-  const fecharPelaParcela = () => { if (c.nParc > 0) setParcela(Math.max(0, round2((c.ac - entrada - permutaValor - c.totalRef) / c.nParc))); };
-  const fecharPeloReforco = () => { if (c.nRef > 0) setReforco(Math.max(0, round2((c.ac - entrada - permutaValor - c.totalParc) / c.nRef))); };
+  // “fechar”: calcula o R$ necessário e grava no modo atual do campo (R$ ou %)
+  const setNoModo = (alvoR: number, mode: Modo, setVal: (n: number) => void) => {
+    const v = Math.max(0, alvoR);
+    setVal(mode === 'pct' ? (c.vp > 0 ? round3((v / c.vp) * 100) : 0) : round2(v));
+  };
+  const fecharPelaParcela = () => { if (c.nParc > 0) setNoModo((c.ac - c.entradaR - permutaValor - c.totalRef) / c.nParc, parcelaMode, setParcelaVal); };
+  const fecharPeloReforco = () => { if (c.nRef > 0) setNoModo((c.ac - c.entradaR - permutaValor - c.totalParc) / c.nRef, reforcoMode, setReforcoVal); };
+
+  // dica “equivalente” pros campos flexíveis
+  const eq = (mode: Modo, val: number, extra?: React.ReactNode) => {
+    if (!val) return extra || undefined;
+    const conv = mode === 'pct' ? <>= <b>{brl(c.vp * (val / 100))}</b></> : c.vp > 0 ? <>= <b>{fmtPct((val / c.vp) * 100)}</b> da proposta</> : undefined;
+    return conv ? <>{conv}{extra ? <> · {extra}</> : null}</> : extra || undefined;
+  };
 
   const gerarPDF = () => {
     const linhas: string[] = [];
-    if (entrada > 0) linhas.push(`<tr><td>Entrada / ato <span class="mut">· no ato</span></td><td class="c">1×</td><td class="r">${brl(entrada)}</td><td class="r">${brl(entrada)}</td></tr>`);
-    if (permutaValor > 0) linhas.push(`<tr><td>Permuta${permutaDesc ? ` <span class="mut">· ${permutaDesc}</span>` : ''}</td><td class="c">1×</td><td class="r">${brl(permutaValor)}</td><td class="r">${brl(permutaValor)}</td></tr>`);
-    if (c.nParc > 0 && parcela > 0) {
-      const per = c.base && c.parcUltima ? ` <span class="mut">· ${fmtData(c.base)} a ${fmtData(c.parcUltima)}</span>` : '';
-      linhas.push(`<tr><td>Parcelas mensais${per}</td><td class="c">${c.nParc}×</td><td class="r">${brl(parcela)}</td><td class="r">${brl(c.totalParc)}</td></tr>`);
+    if (c.entradaR > 0) {
+      const detEntr = c.nEntr > 1 ? ` <span class="mut">· ${c.nEntr}× de ${brl(c.entradaParc)} (ato e meses seguintes)</span>` : ' <span class="mut">· no ato</span>';
+      linhas.push(`<tr><td>Entrada${detEntr}</td><td class="c">${c.nEntr}×</td><td class="r">${brl(c.entradaParc)}</td><td class="r">${brl(c.entradaR)}</td></tr>`);
     }
-    if (c.nRef > 0 && reforco > 0) {
+    if (permutaValor > 0) linhas.push(`<tr><td>Permuta${permutaDesc ? ` <span class="mut">· ${permutaDesc}</span>` : ''}</td><td class="c">1×</td><td class="r">${brl(permutaValor)}</td><td class="r">${brl(permutaValor)}</td></tr>`);
+    if (c.nParc > 0 && c.parcelaR > 0) {
+      const per = c.base && c.parcUltima ? ` <span class="mut">· ${fmtData(c.base)} a ${fmtData(c.parcUltima)}</span>` : '';
+      linhas.push(`<tr><td>Parcelas mensais${per}</td><td class="c">${c.nParc}×</td><td class="r">${brl(c.parcelaR)}</td><td class="r">${brl(c.totalParc)}</td></tr>`);
+    }
+    if (c.nRef > 0 && c.reforcoR > 0) {
       const datas = c.refDateObjs.map((d) => (d ? fmtData(d) : '')).filter(Boolean).join(' · ');
-      linhas.push(`<tr><td>Reforços ${PERIODOS[periodicidade].label.toLowerCase()}${datas ? ` <span class="mut">· ${datas}</span>` : ''}</td><td class="c">${c.nRef}×</td><td class="r">${brl(reforco)}</td><td class="r">${brl(c.totalRef)}</td></tr>`);
+      linhas.push(`<tr><td>Reforços ${PERIODOS[periodicidade].label.toLowerCase()}${datas ? ` <span class="mut">· ${datas}</span>` : ''}</td><td class="c">${c.nRef}×</td><td class="r">${brl(c.reforcoR)}</td><td class="r">${brl(c.totalRef)}</td></tr>`);
     }
     linhas.push(`<tr class="sub"><td colspan="3">Total até a entrega das chaves</td><td class="r">${brl(c.montado)}</td></tr>`);
     linhas.push(`<tr><td>Saldo financiado na entrega <span class="mut">· banco / construtora</span></td><td class="c">—</td><td class="r">—</td><td class="r">${brl(c.saldo)}</td></tr>`);
@@ -137,8 +197,8 @@ export default function FluxoPagamentoPage() {
     <div class="row"><span class="lab">Empreendimento</span><b>${empreendimento || '—'}</b></div>
     <div class="row"><span class="lab">Unidade / Torre</span><b>${unidade || '—'}</b></div>
     <div class="row"><span class="lab">Valor de tabela</span><b>${brl(c.valor)}</b></div>
-    ${c.descVal > 0 ? `<div class="row"><span class="lab">Desconto (${c.dPct.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%)</span><b>- ${brl(c.descVal)}</b></div><div class="row"><span class="lab">Valor da proposta</span><b>${brl(c.vp)}</b></div>` : ''}
-    <div class="row"><span class="lab">A pagar até a chave</span><b>${c.p.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}% · ${brl(c.ac)}</b></div>
+    ${c.descR > 0 ? `<div class="row"><span class="lab">Desconto (${c.pctDesc.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%)</span><b>- ${brl(c.descR)}</b></div><div class="row"><span class="lab">Valor da proposta</span><b>${brl(c.vp)}</b></div>` : ''}
+    <div class="row"><span class="lab">A pagar até a chave</span><b>${c.pctChaveEff.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}% · ${brl(c.ac)}</b></div>
   </div>
   <table><thead><tr><th>Condição</th><th class="c">Qtde</th><th class="r">Valor unit.</th><th class="r">Total</th></tr></thead><tbody>${linhas.join('')}</tbody></table>
   ${!c.fecha ? `<div class="disc"><b>Observação:</b> o fluxo montado ${c.diferenca > 0 ? 'está ' + brl(c.diferenca) + ' abaixo' : 'excede em ' + brl(Math.abs(c.diferenca))} do valor a pagar até a chave.</div>` : ''}
@@ -158,7 +218,7 @@ export default function FluxoPagamentoPage() {
       <div className="max-w-6xl mx-auto">
         <div className="mb-5">
           <h1 className="text-2xl font-bold text-[#2E2F38] dark:text-white">Fluxo de Pagamento</h1>
-          <p className="text-sm text-[#6B6F76] dark:text-gray-300">Monte a proposta de pagamento do imóvel e gere o PDF com a logo da Nox. Nada é salvo.</p>
+          <p className="text-sm text-[#6B6F76] dark:text-gray-300">Monte a proposta em R$ ou em % — cada campo tem o seletor. Gere o PDF com a logo da Nox. Nada é salvo.</p>
         </div>
 
         <div className="grid lg:grid-cols-[1fr_minmax(360px,420px)] gap-5 items-start">
@@ -172,7 +232,8 @@ export default function FluxoPagamentoPage() {
               <Campo label="Cliente (opcional)"><input value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Nome do cliente" className={inputCls} /></Campo>
               <div className="grid sm:grid-cols-2 gap-3">
                 <Campo label="Valor do imóvel"><MoneyInput value={valorImovel} onChange={setValorImovel} placeholder="500.000,00" className={inputCls} /></Campo>
-                <Campo label="Desconto" hint={c.descVal > 0 ? <>= {brl(c.descVal)} · proposta <b>{brl(c.vp)}</b></> : 'opcional'}><Percent value={descontoPct} onChange={setDescontoPct} placeholder="0" /></Campo>
+                <ValorFlex label="Desconto" mode={descMode} value={descVal} base={c.valor} onMode={setDescMode} onValue={setDescVal}
+                  hint={c.descR > 0 ? <>{descMode === 'pct' ? <>= {brl(c.descR)}</> : <>= {fmtPct(c.pctDesc)}</>} · proposta <b>{brl(c.vp)}</b></> : 'opcional'} />
               </div>
               <div className="grid sm:grid-cols-2 gap-3">
                 <Campo label="Permuta (o que entra)" hint="carro, casa, terreno… (opcional)"><input value={permutaDesc} onChange={(e) => setPermutaDesc(e.target.value)} placeholder="Ex: Honda Civic 2020" className={inputCls} /></Campo>
@@ -181,9 +242,14 @@ export default function FluxoPagamentoPage() {
             </Secao>
 
             <Secao icon="🔑" titulo="Até a entrega das chaves">
-              <div className="grid sm:grid-cols-3 gap-3">
-                <Campo label="% a pagar até a chave" hint={<>= <b>{brl(c.ac)}</b></>}><Percent value={pctChave} onChange={setPctChave} placeholder="30" /></Campo>
-                <Campo label="Entrada / ato"><MoneyInput value={entrada} onChange={setEntrada} placeholder="0,00" className={inputCls} /></Campo>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <ValorFlex label="A pagar até a chave" mode={chaveMode} value={chaveVal} base={c.vp} onMode={setChaveMode} onValue={setChaveVal}
+                  hint={c.ac > 0 ? (chaveMode === 'pct' ? <>= <b>{brl(c.ac)}</b></> : <>= <b>{fmtPct(c.pctChaveEff)}</b> da proposta</>) : undefined} />
+                <ValorFlex label="Entrada (total)" mode={entradaMode} value={entradaVal} base={c.vp} onMode={setEntradaMode} onValue={setEntradaVal}
+                  hint={eq(entradaMode, entradaVal, c.nEntr > 1 && c.entradaR > 0 ? <b>{c.nEntr}× de {brl(c.entradaParc)}</b> : undefined)} />
+                <Campo label="Entrada em quantas vezes" hint={c.nEntr > 1 ? 'no ato e meses seguintes' : '1 = à vista no ato'}>
+                  <input type="number" min="1" value={nEntrada} onChange={(e) => setNEntrada(e.target.value)} placeholder="1" className={inputCls + ' tabular-nums'} />
+                </Campo>
                 <Campo label="Data da 1ª parcela"><input type="date" value={dataBase} onChange={(e) => setDataBase(e.target.value)} className={inputCls} /></Campo>
               </div>
             </Secao>
@@ -191,7 +257,8 @@ export default function FluxoPagamentoPage() {
             <Secao icon="📅" titulo="Parcelas mensais">
               <div className="grid sm:grid-cols-2 gap-3">
                 <Campo label="Quantidade de parcelas"><input type="number" value={nParcelas} onChange={(e) => setNParcelas(e.target.value)} placeholder="40" className={inputCls + ' tabular-nums'} /></Campo>
-                <Campo label="Valor de cada parcela"><MoneyInput value={parcela} onChange={setParcela} placeholder="0,00" className={inputCls} /></Campo>
+                <ValorFlex label="Valor de cada parcela" mode={parcelaMode} value={parcelaVal} base={c.vp} onMode={setParcelaMode} onValue={setParcelaVal}
+                  hint={eq(parcelaMode, parcelaVal, c.totalParc > 0 ? <>total <b>{brl(c.totalParc)}</b></> : undefined)} />
               </div>
               {c.base && c.parcUltima && <p className="text-xs text-[#6B6F76] dark:text-gray-400">Vencimentos: <b>{fmtData(c.base)}</b> a <b>{fmtData(c.parcUltima)}</b> (mensal).</p>}
               <button onClick={fecharPelaParcela} className={btnFechar}>↳ calcular a parcela que fecha</button>
@@ -200,7 +267,8 @@ export default function FluxoPagamentoPage() {
             <Secao icon="💰" titulo="Reforços (balões)">
               <div className="grid sm:grid-cols-3 gap-3">
                 <Campo label="Quantidade"><input type="number" value={nReforcos} onChange={(e) => setNReforcos(e.target.value)} placeholder="3" className={inputCls + ' tabular-nums'} /></Campo>
-                <Campo label="Valor de cada reforço"><MoneyInput value={reforco} onChange={setReforco} placeholder="0,00" className={inputCls} /></Campo>
+                <ValorFlex label="Valor de cada reforço" mode={reforcoMode} value={reforcoVal} base={c.vp} onMode={setReforcoMode} onValue={setReforcoVal}
+                  hint={eq(reforcoMode, reforcoVal, c.totalRef > 0 ? <>total <b>{brl(c.totalRef)}</b></> : undefined)} />
                 <Campo label="Periodicidade (sugestão)">
                   <select value={periodicidade} onChange={(e) => setPeriodicidade(e.target.value)} className={inputCls}>
                     <option value="trimestral">Trimestrais</option><option value="semestral">Semestrais</option><option value="anual">Anuais</option>
@@ -232,7 +300,7 @@ export default function FluxoPagamentoPage() {
             <div className={`rounded-2xl border p-5 ${statusCor}`}>
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-semibold text-[#2E2F38] dark:text-white">
-                  {status === 'vazio' && 'Preencha o valor e o % até a chave'}
+                  {status === 'vazio' && 'Preencha o valor e o que vai até a chave'}
                   {status === 'ok' && '✓ O fluxo fecha certinho'}
                   {status === 'falta' && 'Falta pra fechar'}
                   {status === 'excedente' && 'Passou do necessário'}
@@ -247,10 +315,10 @@ export default function FluxoPagamentoPage() {
             <div className="bg-white dark:bg-[#23283A] rounded-2xl border border-[#E8E9F1] dark:border-white/10 overflow-hidden">
               <div className="px-5 py-3 border-b border-[#E8E9F1] dark:border-white/10 text-sm font-bold text-[#2E2F38] dark:text-white">Condições de pagamento</div>
               <div className="divide-y divide-[#E8E9F1] dark:divide-white/10 text-sm">
-                {entrada > 0 && <Linha nome="Entrada / ato" sub="no ato" qtd="1×" valor={brl(entrada)} total={brl(entrada)} />}
+                {c.entradaR > 0 && <Linha nome="Entrada" sub={c.nEntr > 1 ? `${c.nEntr}× de ${brl(c.entradaParc)} · ato e meses seguintes` : 'no ato'} qtd={`${c.nEntr}×`} valor={brl(c.entradaParc)} total={brl(c.entradaR)} />}
                 {permutaValor > 0 && <Linha nome="Permuta" sub={permutaDesc || undefined} qtd="1×" valor={brl(permutaValor)} total={brl(permutaValor)} />}
-                <Linha nome="Parcelas mensais" sub={c.base && c.parcUltima ? `${fmtData(c.base)} a ${fmtData(c.parcUltima)}` : undefined} qtd={`${c.nParc}×`} valor={brl(parcela)} total={brl(c.totalParc)} />
-                <Linha nome={`Reforços ${PERIODOS[periodicidade].label.toLowerCase()}`} sub={c.refDateObjs[0] ? c.refDateObjs.map((d) => (d ? fmtData(d) : '')).filter(Boolean).join(' · ') : c.nRef > 0 ? `meses ${c.refMeses.join(', ')}` : undefined} qtd={`${c.nRef}×`} valor={brl(reforco)} total={brl(c.totalRef)} />
+                <Linha nome="Parcelas mensais" sub={c.base && c.parcUltima ? `${fmtData(c.base)} a ${fmtData(c.parcUltima)}` : undefined} qtd={`${c.nParc}×`} valor={brl(c.parcelaR)} total={brl(c.totalParc)} />
+                <Linha nome={`Reforços ${PERIODOS[periodicidade].label.toLowerCase()}`} sub={c.refDateObjs[0] ? c.refDateObjs.map((d) => (d ? fmtData(d) : '')).filter(Boolean).join(' · ') : c.nRef > 0 ? `meses ${c.refMeses.join(', ')}` : undefined} qtd={`${c.nRef}×`} valor={brl(c.reforcoR)} total={brl(c.totalRef)} />
                 <Linha nome="Total até a entrega das chaves" total={brl(c.montado)} destaque />
                 <Linha nome="Saldo financiado na entrega" sub="banco / construtora" total={brl(c.saldo)} />
                 <Linha nome="Valor total do imóvel" total={brl(c.vp)} forte />
