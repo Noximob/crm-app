@@ -638,8 +638,8 @@
     <div class="eyebrow">Configuração do modelo</div>
     <div class="config">
       <div class="field"><label>Imposto na fonte (%)</label><input id="cfgTax" type="number" value="10" step="1"></div>
-      <div class="field"><label>Meta por pessoa (R$)</label><input id="cfgTarget" type="number" value="1200000" step="100000"></div>
-      <div class="field"><label>Faixa progressiva (R$)</label><input id="cfgBand" type="number" value="500000" step="100000"></div>
+      <div class="field"><label>Meta por pessoa (R$)</label><input id="cfgTarget" class="money" type="text" inputmode="numeric" value="1.200.000,00"></div>
+      <div class="field"><label>Faixa progressiva (R$)</label><input id="cfgBand" class="money" type="text" inputmode="numeric" value="500.000,00"></div>
     </div>
     <div class="cfg-hint">A <b>comissão (%)</b> agora é definida em cada venda no lançamento (padrão 5%). O imposto acima é fixo e incide sobre todas.</div>
 
@@ -705,7 +705,7 @@
 
       <div class="eyebrow">Métricas — edite conforme sua realidade</div>
       <div class="meta-metrics">
-        <div class="field"><label>Ticket médio do imóvel (R$)</label><input id="mTicket" type="number" value="600000" step="50000"></div>
+        <div class="field"><label>Ticket médio do imóvel (R$)</label><input id="mTicket" class="money" type="text" inputmode="numeric" value="600.000,00"></div>
       </div>
       <div class="funnel-edit">
         <div class="fe-item"><label>Contatos</label><input id="mContatos" type="number" value="200" step="1" min="0"></div>
@@ -725,7 +725,7 @@
           <button data-mode="ganho" class="tg active">Quero ganhar</button>
           <button data-mode="vgv" class="tg">Quero vender (VGV)</button>
         </div>
-        <div class="field"><label id="mAlvoLabel">Ganho desejado (R$)</label><input id="mAlvo" type="number" value="60000" step="5000"></div>
+        <div class="field"><label id="mAlvoLabel">Ganho desejado (R$)</label><input id="mAlvo" class="money" type="text" inputmode="numeric" value="60.000,00"></div>
         <div class="muted-line">Conversão de ganho ⇄ VGV usa a estrutura de comissão do corretor (progressiva, com teto).</div>
       </div>
 
@@ -754,6 +754,14 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script>
 const fmt  = n => 'R$ ' + (Math.round((+n||0)*100)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+// Máscara de moeda: digita os números e formata em centavos (50000 -> 500,00)
+const parseMoney = s => { const d=String(s==null?'':s).replace(/\D/g,''); return d?parseInt(d,10)/100:0; };
+const fmtMoney = n => (isFinite(n)?n:0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtMoneyOpt = n => (+n>0 ? fmtMoney(+n) : '');
+// normaliza valor salvo (número puro dos dados antigos, ou string pt-BR nova)
+const normMoneyStored = v => { if(v==null||v==='') return 0; if(typeof v==='number') return v; const s=String(v); return s.includes(',') ? parseMoney(s) : (+s||0); };
+const MONEY_IDS = { cfgTarget:1, cfgBand:1, mTicket:1, mAlvo:1 };
+document.addEventListener('input', e => { const el=e.target; if(el && el.classList && el.classList.contains('money')){ const n=parseMoney(el.value); el.value = n ? fmtMoney(n) : ''; } }, true);
 const fmtM = n => 'R$ ' + (n/1e6).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:2}) + 'M';
 const pct  = n => n.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:1}) + '%';
 const rate = n => (+n.toFixed(1)).toLocaleString('pt-BR') + '%';
@@ -834,8 +842,8 @@ function personFrom(ti, role, bi){ return role==='m' ? teams[ti].mgr : (role==='
 // ---------- config getters ----------
 const DEFAULT_GROSS = 5; // comissão bruta padrão por venda (%), ajustável em cada lançamento
 function netRate(){ return DEFAULT_GROSS/100*(1-(+document.getElementById('cfgTax').value||0)/100); }
-function cfgTarget(){return +document.getElementById('cfgTarget').value||0;}
-function cfgBand(){return +document.getElementById('cfgBand').value||1;}
+function cfgTarget(){return parseMoney(document.getElementById('cfgTarget').value);}
+function cfgBand(){return parseMoney(document.getElementById('cfgBand').value)||1;}
 
 // no máximo 3 segmentos: base (até a meta), 1ª faixa (1 banda), 2ª faixa (todo o resto)
 function tiers(S){
@@ -1043,7 +1051,7 @@ function dealsHTML(ti, role, bi, deals){
     const sch=dealSched(d);
     h+=`<div class="sale-row">
       <div class="sf sf-prop"><label>Empreendimento / construtora</label><input class="sale-prop-input" type="text" value="${esc(dealProp(d))}" ${ctx} data-idx="${idx}" data-dk="prop" placeholder="Ex: Breeze do Paulo · SANTER"></div>
-      <div class="sf sf-val"><label>Valor (VGV)</label><input class="sale-val-input num" id="dv-${tag}-${idx}" type="number" step="50000" min="0" value="${dealValue(d)||''}" ${ctx} data-idx="${idx}" data-dk="value" placeholder="R$"></div>
+      <div class="sf sf-val"><label>Valor (VGV)</label><input class="sale-val-input num money" id="dv-${tag}-${idx}" type="text" inputmode="numeric" value="${fmtMoneyOpt(dealValue(d))}" ${ctx} data-idx="${idx}" data-dk="value" placeholder="R$"></div>
       <div class="sf sf-date"><label>Data da venda</label><input class="sale-date-input" type="date" value="${dealDate(d)}" ${ctx} data-idx="${idx}" data-dk="date"></div>
       <div class="sf sf-recv"><label>Recebimento da comissão <span class="recv-hint">(marque recebido/repassado no Financeiro)</span></label><div class="recv-controls">`;
     if(sch.length<=1){
@@ -1165,7 +1173,7 @@ function bindInputs(){
       const ti=+e.target.dataset.ti, role=e.target.dataset.role, bi=e.target.dataset.bi!=null?+e.target.dataset.bi:null;
       const p=personFrom(ti,role,bi), idx=+e.target.dataset.idx, k=e.target.dataset.dk, d=p.deals[idx];
       if(k==='value'){
-        d.value=+e.target.value||0;
+        d.value=parseMoney(e.target.value);
         const span=document.getElementById(`ptot-${ti}-${role}-${bi!=null?bi:'x'}`);
         if(span) span.innerHTML=`<b>${fmt(personTotal(p))}</b> · ${p.deals.length} ${p.deals.length===1?'venda':'vendas'}`;
       } else if(k==='date'){ d.date=e.target.value; }
@@ -1437,7 +1445,8 @@ function vgvForEarnings(E){
 }
 function readMeta(){
   const g=id=>+document.getElementById(id).value||0;
-  return { ticket:g('mTicket'), alvo:g('mAlvo'),
+  const m=id=>parseMoney(document.getElementById(id).value);
+  return { ticket:m('mTicket'), alvo:m('mAlvo'),
     ref:{contatos:g('mContatos'),reunioes:g('mReunioes'),visitas:g('mVisitas'),propostas:g('mPropostas'),fechamentos:g('mFechamentos')} };
 }
 function renderMeta(){
@@ -1559,8 +1568,8 @@ async function cloudBoot(){
 function v(id){ const el=document.getElementById(id); return el?el.value:''; }
 function stateBlob(){
   return JSON.stringify({
-    cfg:{tax:v('cfgTax'),target:v('cfgTarget'),band:v('cfgBand'),start:v('cfgStart'),end:v('cfgEnd'),pol:POL},
-    meta:{ticket:v('mTicket'),contatos:v('mContatos'),reunioes:v('mReunioes'),visitas:v('mVisitas'),propostas:v('mPropostas'),fechamentos:v('mFechamentos'),alvo:v('mAlvo'),mode:metaMode},
+    cfg:{tax:v('cfgTax'),target:cfgTarget(),band:cfgBand(),start:v('cfgStart'),end:v('cfgEnd'),pol:POL},
+    meta:{ticket:parseMoney(v('mTicket')),contatos:v('mContatos'),reunioes:v('mReunioes'),visitas:v('mVisitas'),propostas:v('mPropostas'),fechamentos:v('mFechamentos'),alvo:parseMoney(v('mAlvo')),mode:metaMode},
     goals,
     teams, solos, cashEntries, archives, events, seq
   });
@@ -1596,10 +1605,10 @@ function loadState(rawOverride){
   if(data.cfg && data.cfg.pol){ try{ ['corretor','sdr','solo','gerente'].forEach(role=>{ if(data.cfg.pol[role]){ if(data.cfg.pol[role].br) POL[role].br=data.cfg.pol[role].br.map(Number); if(data.cfg.pol[role].ov&&POL[role].ov) POL[role].ov=data.cfg.pol[role].ov.map(Number); } }); }catch(e){} }
   try{
     if(data.cfg) [['tax','cfgTax'],['target','cfgTarget'],['band','cfgBand'],['start','cfgStart'],['end','cfgEnd']]
-      .forEach(([k,id])=>{ if(data.cfg[k]!=null && document.getElementById(id)) document.getElementById(id).value=data.cfg[k]; });
+      .forEach(([k,id])=>{ const el=document.getElementById(id); if(data.cfg[k]!=null && el) el.value = MONEY_IDS[id] ? fmtMoneyOpt(normMoneyStored(data.cfg[k])) : data.cfg[k]; });
     if(data.meta){
       [['ticket','mTicket'],['contatos','mContatos'],['reunioes','mReunioes'],['visitas','mVisitas'],['propostas','mPropostas'],['fechamentos','mFechamentos'],['alvo','mAlvo']]
-        .forEach(([k,id])=>{ if(data.meta[k]!=null && document.getElementById(id)) document.getElementById(id).value=data.meta[k]; });
+        .forEach(([k,id])=>{ const el=document.getElementById(id); if(data.meta[k]!=null && el) el.value = MONEY_IDS[id] ? fmtMoneyOpt(normMoneyStored(data.meta[k])) : data.meta[k]; });
       if(data.meta.mode){ metaMode=data.meta.mode;
         document.querySelectorAll('#metaMode .tg').forEach(x=>x.classList.toggle('active',x.dataset.mode===metaMode));
         document.getElementById('mAlvoLabel').textContent = metaMode==='ganho'?'Ganho desejado (R$)':'VGV desejado (R$)';
@@ -1664,7 +1673,7 @@ function renderCashMgr(){
       <select id="ceType" onchange="updateCeCats()"><option value="out" ${ed&&ed.type==='out'?'selected':''}>Saída</option><option value="in" ${ed&&ed.type==='in'?'selected':''}>Entrada</option></select>
       <input id="ceCat" list="ceCatList" placeholder="Categoria" value="${ed?esc(ed.cat):''}"><datalist id="ceCatList"></datalist>
       <input id="ceDesc" placeholder="Descrição (opcional)" value="${ed?esc(ed.desc||''):''}">
-      <input id="ceAmount" type="number" step="50" min="0" placeholder="Valor (R$)" value="${ed?ed.amount:''}">
+      <input id="ceAmount" class="money" type="text" inputmode="numeric" placeholder="Valor (R$)" value="${ed?fmtMoneyOpt(ed.amount):''}">
       <input id="ceMonth" type="month" title="Mês de competência" value="${ed?ed.month||'':''}">
       <button class="btn btn-dark" onclick="addCashEntry()">${ed?'Salvar':'+ Adicionar'}</button>
       ${ed?'<button class="btn" onclick="cancelCashEdit()">Cancelar</button>':''}
@@ -1745,7 +1754,7 @@ function addCashEntry(){
   const type=document.getElementById('ceType').value;
   const cat=(document.getElementById('ceCat').value||'').trim() || (type==='in'?'Outra receita':'Outros');
   const desc=(document.getElementById('ceDesc').value||'').trim();
-  const amount=+document.getElementById('ceAmount').value||0;
+  const amount=parseMoney(document.getElementById('ceAmount').value);
   const month=document.getElementById('ceMonth').value||'';
   if(amount<=0){ alert('Informe um valor maior que zero.'); return; }
   if(editingCashId){ const e=cashEntries.find(x=>x.id===editingCashId); if(e){ e.type=type; e.cat=cat; e.desc=desc; e.amount=amount; e.month=month; } editingCashId=null; }
@@ -2059,7 +2068,7 @@ function renderEvents(){
   const sp=ev.split, spSum=(+sp.imob||0)+(+sp.ger||0)+(+sp.cor||0)+(+sp.aux||0)+(+sp.sat||0);
   const saleRows=(ev.sales||[]).map((s,i)=>`<div class="ev-srow">
       <select class="ev-sf" data-ev-sale="seller" data-i="${i}">${sellerOptions(ev,s.seller)}</select>
-      <input class="ev-sf num" type="number" step="50000" min="0" data-ev-sale="vgv" data-i="${i}" value="${s.vgv||''}" placeholder="VGV vendido (R$)">
+      <input class="ev-sf num money" type="text" inputmode="numeric" data-ev-sale="vgv" data-i="${i}" value="${fmtMoneyOpt(s.vgv)}" placeholder="VGV vendido (R$)">
       <select class="ev-sf" data-ev-sale="sat" data-i="${i}">${satOptions(ev,s.sat)}</select>
       <button class="chip-x" data-ev-saledel="${i}" title="Remover venda">✕</button>
     </div>`).join('');
@@ -2148,7 +2157,7 @@ function bindEvInputs(){
     inp.addEventListener('input',e=>{ const ev=evCurrent(); if(!ev) return; const key=e.target.dataset.evList,i=+e.target.dataset.i; ev[key][i]=e.target.value; saveState(); renderEvResult(); });
     inp.addEventListener('change',()=>renderEvents());
   });
-  ed.querySelectorAll('[data-ev-sale]').forEach(inp=>inp.addEventListener('input',e=>{ const ev=evCurrent(); if(!ev) return; const f=e.target.dataset.evSale,i=+e.target.dataset.i,s=ev.sales[i]; if(!s) return; s[f]= f==='vgv'?(+e.target.value||0):e.target.value; saveState(); renderEvResult(); }));
+  ed.querySelectorAll('[data-ev-sale]').forEach(inp=>inp.addEventListener('input',e=>{ const ev=evCurrent(); if(!ev) return; const f=e.target.dataset.evSale,i=+e.target.dataset.i,s=ev.sales[i]; if(!s) return; s[f]= f==='vgv'?parseMoney(e.target.value):e.target.value; saveState(); renderEvResult(); }));
   ed.querySelectorAll('select[data-ev-sale]').forEach(sel=>sel.addEventListener('change',e=>{ const ev=evCurrent(); if(!ev) return; const f=e.target.dataset.evSale,i=+e.target.dataset.i,s=ev.sales[i]; if(s){ s[f]=e.target.value; saveState(); renderEvResult(); } }));
 }
 
