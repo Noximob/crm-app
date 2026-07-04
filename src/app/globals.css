@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -530,3 +531,89 @@ input:focus {
   92%  { opacity: 0.7; }
   100% { transform: translateY(100vh) rotate(420deg); opacity: 0; }
 }
+
+/* ============================================================
+   Tema NOX — identidade da marca (lime + índigo, grade de pontos,
+   tipografia bold). Ativado por .nox-theme no container raiz.
+   ============================================================ */
+:root {
+  --nox-lime: #E9F27E;
+  --nox-lime-soft: rgba(233, 242, 126, 0.14);
+  --nox-indigo: #5b4ff2;
+  --nox-indigo-deep: #3B31C4;
+  --nox-ink: #14122b;
+}
+
+/* Base escura tingida de índigo + grade de pontos (assinatura Nox) */
+.nox-theme {
+  --bg-primary: #0b0a1a;
+  --bg-card: #16142e;
+  --bg-card-hover: #201d40;
+  --surface-hover: #211d44;
+  --border-subtle: rgba(233, 242, 126, 0.10);
+  --text-primary: #f4f2ff;
+  --text-secondary: #a7a2ce;
+  --accent-glow: rgba(233, 242, 126, 0.5);
+  background-color: #0b0a1a;
+  background-image: radial-gradient(rgba(233, 242, 126, 0.07) 1.1px, transparent 1.1px);
+  background-size: 22px 22px;
+}
+.nox-theme .copa-frame, .nox-theme .copa-bunting { display: none !important; }
+
+/* Títulos com a fonte bold geométrica */
+.nox-theme h1, .nox-theme h2, .nox-theme h3, .nox-wordmark {
+  font-family: 'Archivo', 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.015em;
+}
+
+/* Acentos laranja/âmbar -> lime */
+.nox-theme .text-orange-400, .nox-theme .text-orange-300, .nox-theme .text-orange-500,
+.nox-theme .text-amber-400, .nox-theme .text-amber-300, .nox-theme .text-amber-200 {
+  color: var(--nox-lime) !important;
+}
+
+/* Menu ativo: realce lime (caixa da marca) */
+.nox-theme .border-l-orange-500 {
+  border-left-color: var(--nox-lime) !important;
+  background: var(--nox-lime-soft) !important;
+  box-shadow: 0 0 16px rgba(233, 242, 126, 0.16) !important;
+  color: #ffffff !important;
+}
+/* Botão sair */
+.nox-theme .border-orange-500\/40 { border-color: rgba(233, 242, 126, 0.4) !important; }
+.nox-theme .hover\:bg-orange-500\/10:hover { background: var(--nox-lime-soft) !important; }
+
+/* Wordmark NOX na sidebar */
+.nox-wordmark { font-weight: 900; font-size: 26px; letter-spacing: -0.03em; color: var(--nox-lime); line-height: 1; }
+.nox-wordmark .o { color: var(--nox-indigo); }
+
+/* Botão do toggle Nox ligado */
+.nox-toggle-on {
+  background: var(--nox-lime) !important;
+  color: var(--nox-ink) !important;
+  border-color: var(--nox-lime) !important;
+  box-shadow: 0 0 14px rgba(233, 242, 126, 0.45);
+}
+
+/* Dourado da marca antiga (#D4A017 / #E8C547) -> índigo Nox */
+.nox-theme .bg-\[\#D4A017\], .nox-theme .bg-\[\#B8860B\] { background-color: var(--nox-indigo) !important; }
+.nox-theme .hover\:bg-\[\#B8860B\]:hover { background-color: #4a3fd6 !important; }
+.nox-theme .text-\[\#D4A017\], .nox-theme .text-\[\#E8C547\] { color: var(--nox-lime) !important; }
+.nox-theme .border-\[\#D4A017\]\/30, .nox-theme .border-\[\#D4A017\]\/20 { border-color: rgba(233, 242, 126, 0.28) !important; }
+
+/* Gradientes laranja/âmbar/dourado -> índigo -> lime */
+.nox-theme [class*="from-amber-4"], .nox-theme [class*="from-orange-4"], .nox-theme [class*="from-amber-5"] {
+  --tw-gradient-from: var(--nox-indigo) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+.nox-theme [class*="to-orange-5"], .nox-theme [class*="to-orange-6"], .nox-theme [class*="to-amber-5"], .nox-theme [class*="to-amber-6"] {
+  --tw-gradient-to: var(--nox-lime) !important;
+}
+
+/* Barra de rolagem lime */
+.nox-theme ::-webkit-scrollbar-thumb { background: rgba(233, 242, 126, 0.35) !important; }
+.nox-theme ::-webkit-scrollbar-thumb:hover { background: rgba(233, 242, 126, 0.55) !important; }
+
+/* Avatar/detalhes que usavam laranja */
+.nox-theme .from-orange-500 { --tw-gradient-from: var(--nox-indigo) !important; }
+.nox-theme .to-amber-600 { --tw-gradient-to: var(--nox-indigo-deep) !important; }

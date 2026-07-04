@@ -110,15 +110,32 @@ export default function DashboardLayout({
 }) {
   const { currentUser: user, userData, loading, isEspelhoDemo, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
-  const [copaTheme, setCopaTheme] = useState(true);
+  const [copaTheme, setCopaTheme] = useState(false);
+  const [noxTheme, setNoxTheme] = useState(true);
   const router = useRouter();
 
-  // Tema Copa do Mundo: ligado por padrão; só desliga se o usuário escolher
+  // Temas: ao introduzir o tema Nox, começa com Nox LIGADO e futebol DESLIGADO (migração única).
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setCopaTheme(window.localStorage.getItem('copaTheme') !== '0');
+    if (typeof window === 'undefined') return;
+    if (window.localStorage.getItem('noxThemeInit') !== '1') {
+      window.localStorage.setItem('noxThemeInit', '1');
+      window.localStorage.setItem('noxTheme', '1');
+      window.localStorage.setItem('copaTheme', '0');
+      setNoxTheme(true);
+      setCopaTheme(false);
+      return;
     }
+    setNoxTheme(window.localStorage.getItem('noxTheme') !== '0');
+    setCopaTheme(window.localStorage.getItem('copaTheme') === '1');
   }, []);
+
+  const toggleNoxTheme = () => {
+    setNoxTheme((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') window.localStorage.setItem('noxTheme', next ? '1' : '0');
+      return next;
+    });
+  };
 
   const toggleCopaTheme = () => {
     setCopaTheme((prev) => {
@@ -257,7 +274,7 @@ export default function DashboardLayout({
 
   return (
     <PipelineStagesProvider imobiliariaId={userData?.imobiliariaId}>
-    <div className={`flex h-screen min-h-screen bg-particles ${copaTheme ? 'copa-theme' : ''}`}>
+    <div className={`flex h-screen min-h-screen bg-particles ${copaTheme ? 'copa-theme' : ''} ${noxTheme ? 'nox-theme' : ''}`}>
       {/* Sidebar — mesmo background (partículas), borda sutil */}
       <div className={`flex flex-col h-screen fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-transparent transition-all duration-300 text-xs pb-8`}>
         <div className="flex-1 flex flex-col">
@@ -267,8 +284,11 @@ export default function DashboardLayout({
               className="flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer [filter:drop-shadow(0_0_8px_rgba(255,140,0,0.4))]"
               title="Voltar ao Dashboard"
             >
-              <AlummaLogoFullInline theme="dark" height={28} iconOnly={collapsed} className="shrink-0" />
-              {!collapsed && <span className="sr-only">Alumma</span>}
+              {noxTheme ? (
+                <span className="nox-wordmark" aria-label="Nox Imóveis">{collapsed ? 'N' : <>N<span className="o">O</span>X</>}</span>
+              ) : (
+                <AlummaLogoFullInline theme="dark" height={28} iconOnly={collapsed} className="shrink-0" />
+              )}
             </button>
             <button
               onClick={() => setCollapsed(!collapsed)}
@@ -398,6 +418,19 @@ export default function DashboardLayout({
               }`}
             >
               <BallIcon className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              onClick={toggleNoxTheme}
+              title={noxTheme ? 'Desligar tema Nox' : 'Ligar tema Nox'}
+              aria-pressed={noxTheme}
+              className={`flex items-center justify-center w-9 h-9 rounded-lg border transition-all text-lg font-black leading-none ${
+                noxTheme
+                  ? 'nox-toggle-on'
+                  : 'bg-white/[0.06] border-orange-500/20 text-text-secondary hover:text-white hover:bg-white/[0.1]'
+              }`}
+            >
+              ✳
             </button>
             <div className="pl-3 border-l border-white/[0.06]">
               <div className="relative w-8 h-8">
