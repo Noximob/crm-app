@@ -5,6 +5,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { apoioDb } from '@/lib/apoioFirebase';
 import { CATEGORIES, catByKey, parseTip, type Construtora, type Imovel, type Material } from '@/lib/materiais/types';
 import { toCdn, youtubeId, waLink, encaminharWhatsApp } from '@/lib/materiais/toCdn';
+import PdfPager from '@/components/PdfPager';
 
 function matsArr(p: Imovel): Material[] {
   return Array.isArray(p.materiais) ? p.materiais : [];
@@ -315,9 +316,9 @@ function BtnDownload({ url }: { url: string }) {
 }
 
 function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; tab: string; presenting: boolean; onLightbox: (s: LightboxState) => void }) {
-  // Tela cheia só do PDF (aí o ⋮ do visualizador nativo, com o modo Apresentação, fica à mão)
-  const pdfRef = useRef<HTMLIFrameElement>(null);
-  const pdfFullscreen = () => pdfRef.current?.requestFullscreen?.();
+  // Tela cheia só do PDF (o pager já passa página a página com scroll/clique/setas)
+  const pdfRef = useRef<HTMLDivElement>(null);
+  const pdfFullscreen = () => { pdfRef.current?.requestFullscreen?.(); pdfRef.current?.focus?.(); };
 
   if (tab === 'resumo') {
     const tips = parseTip(imovel.tip);
@@ -385,7 +386,7 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
       <div className="h-full flex flex-col">
         <Toolbar>
           <span className="text-sm font-semibold text-white mr-auto">{m.name || cat.label}</span>
-          <button onClick={pdfFullscreen} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-black hover:bg-amber-400 transition-colors" title="O PDF ocupa a tela inteira — e o menu ⋮ do visualizador tem o modo Apresentação">
+          <button onClick={pdfFullscreen} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-black hover:bg-amber-400 transition-colors" title="Só o PDF na tela inteira — role o mouse, clique ou use as setas pra passar as páginas">
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
             Apresentar PDF
           </button>
@@ -396,8 +397,8 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
             </>
           )}
         </Toolbar>
-        <div className="flex-1 min-h-[420px] rounded-xl overflow-hidden border border-white/10 bg-white">
-          <iframe ref={pdfRef} src={`${url}#zoom=100`} title={m.name || 'PDF'} className="w-full h-full" allow="fullscreen" allowFullScreen />
+        <div className="flex-1 min-h-[420px] rounded-xl overflow-hidden border border-white/10">
+          <PdfPager url={url} innerRef={pdfRef} />
         </div>
       </div>
     );
