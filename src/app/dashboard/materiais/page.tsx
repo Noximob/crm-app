@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { apoioDb } from '@/lib/apoioFirebase';
 import { CATEGORIES, catByKey, parseTip, type Construtora, type Imovel, type Material } from '@/lib/materiais/types';
@@ -12,16 +12,15 @@ function matsArr(p: Imovel): Material[] {
 function matsOf(p: Imovel, key: string): Material[] {
   return matsArr(p).filter((m) => m && m.cat === key);
 }
-function coverImg(p: Imovel): string | null {
-  if (p.capa) return toCdn(p.capa);
-  const m = matsArr(p).find((x) => x.cat === 'imagens' || catByKey(x.cat)?.kind === 'image');
-  return m ? toCdn(m.url) : null;
-}
 
 interface LightboxState {
-  imgs: { url: string; name: string }[];
+  imgs: { url: string; name: string; label?: string }[];
   idx: number;
 }
+
+const WAIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.297-.497.1-.198.05-.371-.025-.52-.074-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+);
 
 export default function MateriaisPage() {
   const [construtoras, setConstrutoras] = useState<Construtora[]>([]);
@@ -35,6 +34,19 @@ export default function MateriaisPage() {
   const [tab, setTab] = useState<string>('resumo');
   const [lightbox, setLightbox] = useState<LightboxState | null>(null);
   const [menuAberto, setMenuAberto] = useState(false);
+
+  // Modo apresentação (tela cheia do navegador — ideal pra compartilhar no Meet)
+  const secRef = useRef<HTMLElement>(null);
+  const [fullscreen, setFullscreen] = useState(false);
+  useEffect(() => {
+    const h = () => setFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', h);
+    return () => document.removeEventListener('fullscreenchange', h);
+  }, []);
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) document.exitFullscreen?.();
+    else secRef.current?.requestFullscreen?.();
+  };
 
   useEffect(() => {
     (async () => {
@@ -88,10 +100,11 @@ export default function MateriaisPage() {
   }, [listaFiltrada, sel]);
 
   const abas = useMemo(() => {
-    if (!sel) return [] as { key: string; label: string }[];
-    const arr: { key: string; label: string }[] = [{ key: 'resumo', label: 'Resumo' }];
+    if (!sel) return [] as { key: string; label: string; count?: number }[];
+    const arr: { key: string; label: string; count?: number }[] = [{ key: 'resumo', label: 'Resumo' }];
     CATEGORIES.forEach((c) => {
-      if (matsOf(sel, c.key).length) arr.push({ key: c.key, label: c.label });
+      const n = matsOf(sel, c.key).length;
+      if (n) arr.push({ key: c.key, label: c.label, count: c.kind === 'image' ? n : undefined });
     });
     // Localização: mostra se houver material de localização OU endereço cadastrado
     if (!arr.some((x) => x.key === 'localizacao') && (sel.end || sel.cid)) arr.push({ key: 'localizacao', label: 'Localização' });
@@ -104,6 +117,11 @@ export default function MateriaisPage() {
 
   const temImoveis = !loading && !erro && imoveis.length > 0;
 
+  const stats: [string, string][] = sel
+    ? ([['Torres', sel.t], ['Andares', sel.a], ['Aptos', sel.ap], ['Entrega', sel.e], ['A partir de', sel.pr ? `R$ ${sel.pr}` : undefined], ['m²', sel.m2 ? `R$ ${sel.m2}` : undefined]] as [string, string | undefined][])
+        .filter((x): x is [string, string] => Boolean(x[1]))
+    : [];
+
   return (
     <div className="flex-1 min-h-0 flex flex-col">
       {/* Cabeçalho + seletor de empreendimento */}
@@ -111,7 +129,7 @@ export default function MateriaisPage() {
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
             <h1 className="text-2xl font-bold text-white">Materiais de apoio</h1>
-            <p className="text-sm text-text-secondary">Catálogos, apresentações e mídias das construtoras parceiras.</p>
+            <p className="text-sm text-text-secondary">Abra, apresente no Meet e encaminhe pro cliente no WhatsApp.</p>
           </div>
           {temImoveis && (
             <button
@@ -192,79 +210,93 @@ export default function MateriaisPage() {
       ) : imoveis.length === 0 ? (
         <div className="flex-1 flex items-center justify-center text-text-secondary">Nenhum imóvel cadastrado ainda.</div>
       ) : (
-        <section className="flex-1 min-w-0 flex flex-col rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden">
+        <section ref={secRef} className="flex-1 min-w-0 min-h-0 flex flex-col rounded-xl border border-white/10 bg-[#101015] overflow-hidden">
           {!sel ? (
             <div className="flex-1 flex items-center justify-center text-text-secondary">Selecione um empreendimento no seletor acima.</div>
           ) : (
             <>
-              <div className="relative shrink-0 h-44 bg-[#181818]">
-                {coverImg(sel) && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={coverImg(sel)!} alt={sel.n} className="absolute inset-0 w-full h-full object-cover opacity-70" />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-5">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-black" style={{ background: corCo[sel.co] || '#D4A017' }}>{sel.co}</span>
-                    {sel.st && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/15 text-white">{sel.st}</span>}
-                  </div>
-                  <h2 className="text-2xl font-bold text-white leading-tight">{sel.n}</h2>
-                  {(sel.cid || sel.end) && <p className="text-sm text-white/70">{[sel.end, sel.cid].filter(Boolean).join(' · ')}</p>}
+              {/* Cabeçalho fino: nome + dados + apresentar (sem capa — o conteúdo é o protagonista) */}
+              <div className="shrink-0 px-4 pt-3 pb-2.5 border-b border-white/10">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-black shrink-0" style={{ background: corCo[sel.co] || '#D4A017' }}>{sel.co}</span>
+                  <h2 className="text-xl font-extrabold text-white leading-tight truncate">{sel.n}</h2>
+                  {sel.st && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-white/80 shrink-0">{sel.st}</span>}
+                  {(sel.cid || sel.end) && <span className="text-xs text-text-secondary truncate">{[sel.end, sel.cid].filter(Boolean).join(' · ')}</span>}
+                  <button
+                    onClick={toggleFullscreen}
+                    className={`ml-auto shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${fullscreen ? 'bg-white/10 text-white hover:bg-white/15' : 'bg-amber-500 text-black hover:bg-amber-400'}`}
+                    title={fullscreen ? 'Sair da tela cheia (Esc)' : 'Tela cheia — ideal pra apresentar no Meet'}
+                  >
+                    {fullscreen ? (
+                      <>
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 9L4 4m0 0v4m0-4h4m7 5l5-5m0 0v4m0-4h-4M9 15l-5 5m0 0v-4m0 4h4m7-5l5 5m0 0v-4m0 4h-4" /></svg>
+                        Sair
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                        Apresentar
+                      </>
+                    )}
+                  </button>
                 </div>
+                {stats.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {stats.map(([k, v]) => (
+                      <span key={k} className="px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/10 text-[11px] text-text-secondary">
+                        {k}: <b className="text-white font-semibold">{v}</b>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <div className="shrink-0 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 p-3 border-b border-white/10 text-center">
-                {([['Torres', sel.t], ['Andares', sel.a], ['Aptos', sel.ap], ['Entrega', sel.e], ['A partir de', sel.pr ? `R$ ${sel.pr}` : undefined], ['Valor m²', sel.m2 ? `R$ ${sel.m2}` : undefined]] as [string, string | undefined][])
-                  .filter(([, v]) => v)
-                  .map(([k, v]) => (
-                    <div key={k} className="rounded-lg bg-white/[0.03] py-1.5">
-                      <div className="text-sm font-bold text-white truncate px-1">{v}</div>
-                      <div className="text-[10px] uppercase tracking-wide text-text-secondary">{k}</div>
-                    </div>
-                  ))}
-              </div>
-
-              <div className="shrink-0 flex gap-1 px-3 pt-2 overflow-x-auto scrollbar-thin border-b border-white/10">
+              {/* Abas em pílulas — grandes, fáceis de achar durante a call */}
+              <div className="shrink-0 flex gap-1.5 px-3 py-2.5 overflow-x-auto scrollbar-thin border-b border-white/10">
                 {abas.map((a) => (
                   <button
                     key={a.key}
                     onClick={() => setTab(a.key)}
-                    className={`px-3 py-2 text-sm font-semibold whitespace-nowrap border-b-2 -mb-px ${tab === a.key ? 'border-amber-500 text-white' : 'border-transparent text-text-secondary hover:text-white'}`}
+                    className={`px-3.5 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${tab === a.key ? 'bg-amber-500 text-black shadow-[0_0_14px_rgba(245,158,11,0.25)]' : 'bg-white/[0.05] text-text-secondary hover:text-white hover:bg-white/[0.09]'}`}
                   >
                     {a.label}
+                    {a.count ? <span className={`ml-1.5 text-[10px] font-extrabold ${tab === a.key ? 'text-black/60' : 'text-text-secondary'}`}>{a.count}</span> : null}
                   </button>
                 ))}
               </div>
 
-              <div className="flex-1 overflow-y-auto scrollbar-thin p-4">
+              <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin p-3">
                 <TabConteudo imovel={sel} tab={tab} onLightbox={setLightbox} />
               </div>
             </>
           )}
+
+          {/* Lightbox dentro da section pra funcionar também em tela cheia */}
+          {lightbox && <Lightbox state={lightbox} onClose={() => setLightbox(null)} onNav={(i) => setLightbox({ ...lightbox, idx: i })} />}
         </section>
       )}
-
-      {lightbox && <Lightbox state={lightbox} onClose={() => setLightbox(null)} onNav={(i) => setLightbox({ ...lightbox, idx: i })} />}
     </div>
   );
 }
 
 function Toolbar({ children }: { children: React.ReactNode }) {
-  return <div className="flex flex-wrap items-center gap-2 mb-3">{children}</div>;
+  return <div className="shrink-0 flex flex-wrap items-center gap-2 mb-2.5">{children}</div>;
 }
 function BtnWhats({ url, text, asFile }: { url: string; text: string; asFile: boolean }) {
   return (
     <button
       onClick={() => encaminharWhatsApp(url, text, asFile)}
-      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/10"
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-[#25D366] hover:bg-[#1fbd5a] transition-colors shadow-[0_2px_10px_rgba(37,211,102,0.3)]"
+      title="Encaminhar este material pro cliente no WhatsApp"
     >
-      Encaminhar
+      <WAIcon className="w-3.5 h-3.5" />
+      Enviar no WhatsApp
     </button>
   );
 }
 function BtnDownload({ url }: { url: string }) {
   return (
-    <a href={url} target="_blank" rel="noopener noreferrer" download className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-sky-300 border border-sky-500/40 hover:bg-sky-500/10">
+    <a href={url} target="_blank" rel="noopener noreferrer" download className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white/75 border border-white/15 hover:bg-white/5">
       Baixar
     </a>
   );
@@ -274,15 +306,15 @@ function TabConteudo({ imovel, tab, onLightbox }: { imovel: Imovel; tab: string;
   if (tab === 'resumo') {
     const tips = parseTip(imovel.tip);
     return (
-      <div className="space-y-4">
-        {imovel.resumo && <p className="text-sm text-text-secondary whitespace-pre-line leading-relaxed">{imovel.resumo}</p>}
+      <div className="space-y-5 max-w-4xl">
+        {imovel.resumo && <p className="text-[15px] text-white/85 whitespace-pre-line leading-relaxed">{imovel.resumo}</p>}
         {tips.length > 0 && (
           <div>
             <h3 className="text-sm font-bold text-white mb-2">Tipologias</h3>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {tips.map((t, i) => (
-                <div key={i} className="rounded-lg bg-white/[0.03] px-3 py-2 flex items-baseline gap-2">
-                  <span className="text-sm font-bold text-amber-300">{t[0]} m²</span>
+                <div key={i} className="rounded-lg bg-white/[0.04] border border-white/10 px-3 py-2.5 flex items-baseline gap-2">
+                  <span className="text-base font-bold text-amber-300">{t[0]} m²</span>
                   <span className="text-xs text-text-secondary">{t[1]}</span>
                 </div>
               ))}
@@ -294,7 +326,7 @@ function TabConteudo({ imovel, tab, onLightbox }: { imovel: Imovel; tab: string;
             <h3 className="text-sm font-bold text-white mb-2">Diferenciais</h3>
             <div className="flex flex-wrap gap-1.5">
               {imovel.dif.map((d, i) => (
-                <span key={i} className="px-2 py-1 rounded-full text-xs bg-white/[0.05] text-text-secondary border border-white/10">{d}</span>
+                <span key={i} className="px-2.5 py-1 rounded-full text-xs bg-white/[0.05] text-white/80 border border-white/10">{d}</span>
               ))}
             </div>
           </div>
@@ -311,13 +343,13 @@ function TabConteudo({ imovel, tab, onLightbox }: { imovel: Imovel; tab: string;
     const link = locMat?.url?.trim();
     const q = encodeURIComponent(link || [imovel.end, imovel.cid].filter(Boolean).join(', '));
     return (
-      <div>
-        {link && (
-          <div className="mb-2">
-            <a href={link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-md border border-white/15 text-white/80 hover:bg-white/5">Abrir no Google Maps</a>
-          </div>
-        )}
-        <div className="rounded-xl overflow-hidden border border-white/10 h-[420px]">
+      <div className="h-full flex flex-col">
+        <Toolbar>
+          <span className="text-sm font-semibold text-white mr-auto">Localização</span>
+          {link && <a href={link} target="_blank" rel="noopener noreferrer" className="text-xs px-2.5 py-1.5 rounded-lg border border-white/15 text-white/75 hover:bg-white/5">Abrir no Google Maps</a>}
+          <BtnWhats url={link || ''} text={`${imovel.n} — Localização\n${link || [imovel.end, imovel.cid].filter(Boolean).join(', ')}`} asFile={false} />
+        </Toolbar>
+        <div className="flex-1 min-h-[380px] rounded-xl overflow-hidden border border-white/10">
           <iframe title="Mapa" className="w-full h-full" src={`https://www.google.com/maps?q=${q}&output=embed`} />
         </div>
       </div>
@@ -332,14 +364,14 @@ function TabConteudo({ imovel, tab, onLightbox }: { imovel: Imovel; tab: string;
     const m = mats[0];
     const url = toCdn(m.url);
     return (
-      <div>
+      <div className="h-full flex flex-col">
         <Toolbar>
           <span className="text-sm font-semibold text-white mr-auto">{m.name || cat.label}</span>
-          <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs px-2.5 py-1 rounded-md border border-white/15 text-white/80 hover:bg-white/5">Tela cheia</a>
-          <BtnWhats url={url} text={`${imovel.n} — ${m.name || cat.label}\n${url}`} asFile />
+          <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs px-2.5 py-1.5 rounded-lg border border-white/15 text-white/75 hover:bg-white/5">Abrir em nova aba</a>
           <BtnDownload url={url} />
+          <BtnWhats url={url} text={`${imovel.n} — ${m.name || cat.label}\n${url}`} asFile />
         </Toolbar>
-        <div className="rounded-xl overflow-hidden border border-white/10 h-[620px] bg-white">
+        <div className="flex-1 min-h-[420px] rounded-xl overflow-hidden border border-white/10 bg-white">
           <iframe src={`${url}#view=FitH`} title={m.name || 'PDF'} className="w-full h-full" />
         </div>
       </div>
@@ -352,17 +384,17 @@ function TabConteudo({ imovel, tab, onLightbox }: { imovel: Imovel; tab: string;
     const yt = youtubeId(m.url);
     const fileUrl = m.dl && m.dl.trim() ? toCdn(m.dl) : yt ? null : url;
     return (
-      <div>
+      <div className="h-full flex flex-col">
         <Toolbar>
           <span className="text-sm font-semibold text-white mr-auto">{m.name || cat.label}</span>
-          {fileUrl ? <BtnWhats url={fileUrl} text={`${imovel.n} — ${m.name || cat.label}`} asFile /> : yt ? <BtnWhats url={`https://youtu.be/${yt}`} text={`${imovel.n} — ${m.name || cat.label}\nhttps://youtu.be/${yt}`} asFile={false} /> : null}
           {fileUrl && <BtnDownload url={fileUrl} />}
+          {fileUrl ? <BtnWhats url={fileUrl} text={`${imovel.n} — ${m.name || cat.label}`} asFile /> : yt ? <BtnWhats url={`https://youtu.be/${yt}`} text={`${imovel.n} — ${m.name || cat.label}\nhttps://youtu.be/${yt}`} asFile={false} /> : null}
         </Toolbar>
-        <div className="rounded-xl overflow-hidden border border-white/10 aspect-video max-h-[620px] bg-black">
+        <div className="flex-1 min-h-[380px] rounded-xl overflow-hidden border border-white/10 bg-black">
           {yt ? (
             <iframe className="w-full h-full" src={`https://www.youtube-nocookie.com/embed/${yt}?rel=0&modestbranding=1&playsinline=1`} allow="autoplay; fullscreen; encrypted-media" allowFullScreen title="Vídeo" />
           ) : (
-            <video src={url} controls playsInline preload="metadata" className="w-full h-full" />
+            <video src={url} controls playsInline preload="metadata" className="w-full h-full object-contain" />
           )}
         </div>
       </div>
@@ -370,15 +402,18 @@ function TabConteudo({ imovel, tab, onLightbox }: { imovel: Imovel; tab: string;
   }
 
   if (cat.kind === 'image') {
-    const imgs = mats.map((m) => ({ url: toCdn(m.url), name: imovel.n + (m.name ? ` — ${m.name}` : '') }));
+    const imgs = mats.map((m) => ({ url: toCdn(m.url), name: imovel.n + (m.name ? ` — ${m.name}` : ''), label: m.name || '' }));
     return (
       <div>
-        <p className="text-xs text-text-secondary mb-2">{cat.label} · {imgs.length} {imgs.length === 1 ? 'item' : 'itens'} — toque para ampliar, baixar ou encaminhar</p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+        <p className="text-xs text-text-secondary mb-2">{cat.label} · {imgs.length} {imgs.length === 1 ? 'item' : 'itens'} — clique para ampliar (use as setas do teclado pra navegar)</p>
+        <div className="grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2.5">
           {imgs.map((im, k) => (
-            <button key={k} onClick={() => onLightbox({ imgs, idx: k })} className="aspect-[4/3] rounded-lg overflow-hidden border border-white/10 bg-white/[0.03]">
+            <button key={k} onClick={() => onLightbox({ imgs, idx: k })} className="group relative aspect-[4/3] rounded-xl overflow-hidden border border-white/10 bg-white/[0.03] hover:border-amber-500/60 transition-colors">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={im.url} alt={im.name} loading="lazy" className="w-full h-full object-cover" />
+              <img src={im.url} alt={im.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
+              {im.label && (
+                <span className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent text-[11px] font-semibold text-white px-2.5 pt-4 pb-1.5 text-left truncate">{im.label}</span>
+              )}
             </button>
           ))}
         </div>
@@ -389,12 +424,17 @@ function TabConteudo({ imovel, tab, onLightbox }: { imovel: Imovel; tab: string;
   if (cat.kind === 'link') {
     const m = mats[0];
     return (
-      <div className="max-w-md mx-auto text-center rounded-xl border border-white/10 bg-white/[0.03] p-6">
-        <div className="text-base font-bold text-white mb-1">{m.name || cat.label}</div>
-        <p className="text-sm text-text-secondary mb-4">Abre em nova aba para você apresentar valores e disponibilidade.</p>
-        <a href={m.url.trim()} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500 text-black font-semibold text-sm hover:bg-amber-400">
-          Abrir {cat.label.toLowerCase()}
-        </a>
+      <div className="h-full flex items-center justify-center">
+        <div className="max-w-md w-full text-center rounded-2xl border border-white/10 bg-white/[0.03] p-8">
+          <div className="text-lg font-bold text-white mb-1">{m.name || cat.label}</div>
+          <p className="text-sm text-text-secondary mb-5">Abre em nova aba para você apresentar valores e disponibilidade.</p>
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            <a href={m.url.trim()} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 text-black font-bold text-sm hover:bg-amber-400">
+              Abrir {cat.label.toLowerCase()}
+            </a>
+            <BtnWhats url={m.url.trim()} text={`${imovel.n} — ${m.name || cat.label}\n${m.url.trim()}`} asFile={false} />
+          </div>
+        </div>
       </div>
     );
   }
@@ -405,13 +445,13 @@ function TabConteudo({ imovel, tab, onLightbox }: { imovel: Imovel; tab: string;
         {mats.map((m, i) => {
           const url = m.url.trim();
           return (
-            <div key={i} className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+            <div key={i} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5">
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold text-white truncate">{m.name || url}</div>
                 <div className="text-[11px] text-text-secondary truncate">{url}</div>
               </div>
-              <a href={waLink(`${imovel.n} — ${m.name || 'link'}\n${url}`)} target="_blank" rel="noopener noreferrer" className="px-2 py-1 rounded-md text-xs text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/10">WhatsApp</a>
-              <a href={url} target="_blank" rel="noopener noreferrer" className="px-2 py-1 rounded-md text-xs text-white/80 border border-white/15 hover:bg-white/5">Abrir</a>
+              <a href={url} target="_blank" rel="noopener noreferrer" className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white/75 border border-white/15 hover:bg-white/5">Abrir</a>
+              <a href={waLink(`${imovel.n} — ${m.name || 'link'}\n${url}`)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-[#25D366] hover:bg-[#1fbd5a]"><WAIcon className="w-3.5 h-3.5" />WhatsApp</a>
             </div>
           );
         })}
@@ -427,21 +467,35 @@ function Lightbox({ state, onClose, onNav }: { state: LightboxState; onClose: ()
   const cur = imgs[idx];
   const prev = () => onNav((idx - 1 + imgs.length) % imgs.length);
   const next = () => onNav((idx + 1) % imgs.length);
+
+  // Navegação por teclado — apresentação fluida (setas e Esc)
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      else if (e.key === 'ArrowLeft') prev();
+      else if (e.key === 'ArrowRight') next();
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx, imgs.length]);
+
   return (
-    <div className="fixed inset-0 z-[80] bg-black/90 flex flex-col items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute top-4 right-4 flex gap-2" onClick={(e) => e.stopPropagation()}>
-        <button onClick={() => encaminharWhatsApp(cur.url, cur.name, true)} className="px-3 py-1.5 rounded-md text-sm font-semibold text-emerald-300 border border-emerald-500/50 bg-black/40 hover:bg-emerald-500/10">Encaminhar</button>
-        <a href={cur.url} target="_blank" rel="noopener noreferrer" download className="px-3 py-1.5 rounded-md text-sm font-semibold text-sky-300 border border-sky-500/50 bg-black/40 hover:bg-sky-500/10">Baixar</a>
-        <button onClick={onClose} className="px-3 py-1.5 rounded-md text-sm font-semibold text-white border border-white/30 bg-black/40 hover:bg-white/10">Fechar</button>
+    <div className="fixed inset-0 z-[80] bg-black/95 flex flex-col items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute top-4 right-4 flex gap-2 z-10" onClick={(e) => e.stopPropagation()}>
+        <button onClick={() => encaminharWhatsApp(cur.url, cur.name, true)} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-bold text-white bg-[#25D366] hover:bg-[#1fbd5a]"><WAIcon className="w-4 h-4" />Enviar no WhatsApp</button>
+        <a href={cur.url} target="_blank" rel="noopener noreferrer" download className="px-3.5 py-2 rounded-lg text-sm font-semibold text-white/85 border border-white/25 bg-black/40 hover:bg-white/10">Baixar</a>
+        <button onClick={onClose} className="px-3.5 py-2 rounded-lg text-sm font-semibold text-white border border-white/25 bg-black/40 hover:bg-white/10">✕</button>
       </div>
+      {cur.label && <div className="absolute top-5 left-5 text-sm font-semibold text-white/85 bg-black/40 px-3 py-1.5 rounded-lg" onClick={(e) => e.stopPropagation()}>{cur.label}</div>}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={cur.url} alt={cur.name} className="max-w-full max-h-[82vh] object-contain rounded-lg" onClick={(e) => e.stopPropagation()} />
+      <img src={cur.url} alt={cur.name} className="max-w-full max-h-[86vh] object-contain rounded-lg select-none" onClick={(e) => e.stopPropagation()} />
       {imgs.length > 1 && (
-        <div className="mt-3 flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
-          <button onClick={prev} className="px-3 py-1.5 rounded-md text-white border border-white/30 hover:bg-white/10">‹</button>
-          <span className="text-sm text-white/70">{idx + 1} / {imgs.length}</span>
-          <button onClick={next} className="px-3 py-1.5 rounded-md text-white border border-white/30 hover:bg-white/10">›</button>
-        </div>
+        <>
+          <button onClick={(e) => { e.stopPropagation(); prev(); }} className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full text-2xl text-white bg-white/10 hover:bg-white/20 flex items-center justify-center">‹</button>
+          <button onClick={(e) => { e.stopPropagation(); next(); }} className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full text-2xl text-white bg-white/10 hover:bg-white/20 flex items-center justify-center">›</button>
+          <div className="absolute bottom-4 text-sm text-white/70 bg-black/40 px-3 py-1 rounded-full" onClick={(e) => e.stopPropagation()}>{idx + 1} / {imgs.length}</div>
+        </>
       )}
     </div>
   );
