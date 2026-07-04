@@ -2344,16 +2344,7 @@ window.addEventListener('message', e=>{
   applyCRM();
 });
 
-// Barra fixa de status/salvar (garante gravação e dá feedback visível)
-function mountSaveBar(){
-  if(document.getElementById('noxSaveBar')) return;
-  const bar=document.createElement('div');
-  bar.id='noxSaveBar';
-  bar.style.cssText='position:fixed;top:10px;right:14px;z-index:99999;display:flex;align-items:center;gap:10px;font-size:12.5px;font-family:inherit';
-  bar.innerHTML='<span id="noxSaveStatus" style="color:#8a7a55">☁</span><button id="noxSaveBtn" type="button" style="background:#1f6f6b;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer">Salvar</button>';
-  document.body.appendChild(bar);
-  document.getElementById('noxSaveBtn').addEventListener('click',()=>{ saveState(true); });
-}
+// (Botão "Salvar" removido — a gravação é automática; o status fica na aba Administrativa.)
 // grava pendências ao sair/trocar de aba (rede de segurança além do save imediato)
 function flushIfPending(){ if(cloudTimer) flushCloud(); }
 window.addEventListener('pagehide', flushIfPending);
@@ -2367,7 +2358,6 @@ document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState=
   const login=document.getElementById('login'); if(login) login.style.display='none';
   document.querySelectorAll('header, footer').forEach(el=>el.style.display='none');
   const wrap=document.querySelector('.wrap'); if(wrap) wrap.style.padding='12px 20px 60px';
-  mountSaveBar();
   const tabs=[...document.querySelectorAll('.tab')];
   if(currentMode==='view'){
     // até saber quem está logado, mostra só a calculadora (evita flash do restante)
