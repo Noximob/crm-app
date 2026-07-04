@@ -1501,38 +1501,86 @@ export default function DashboardPage() {
     });
   })();
 
-  return (
-    <div className="min-h-full flex flex-col">
-      {/* Grid em 2 colunas com rolagem independente; barras de rolagem ocultas */}
-      <div id="dashboard-two-columns" className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-2 flex-1 min-h-0 pt-0.5" style={{ height: 'calc(100vh - 220px)' }}>
-        {/* Coluna Esquerda — rola independente; scrollbar totalmente oculta */}
-        <div className="dashboard-scroll-hide space-y-2 overflow-y-auto overflow-x-hidden pr-2 min-h-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          {/* Missões Diárias — próximo evento + totais por status de tarefa (funil está na coluna direita) */}
-          <div className="card-glow rounded-2xl p-4 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-orange-500 rounded-r" />
-            <div className="flex items-center justify-between gap-3 mb-3">
-              <h2 className="text-lg font-bold text-white">Missões Diárias</h2>
-              <div className="flex items-center gap-2">
-                <Link
-                  href="/dashboard/agenda"
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-500/90 hover:bg-emerald-500 rounded-lg transition-colors border border-emerald-400/40 shadow-sm"
-                >
-                  <CalendarIcon className="h-3.5 w-3.5" />
-                  Agenda Completa
-                </Link>
-                <Link
-                  href="/dashboard/crm"
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-orange-500/90 hover:bg-orange-500 rounded-lg transition-colors border border-orange-400/40 shadow-sm"
-                >
-                  <BarChartIcon className="h-3.5 w-3.5" />
-                  Ir CRM
-                </Link>
-              </div>
-            </div>
+  const horaAgora = currentTime.getHours();
+  const saudacaoDia = horaAgora < 12 ? 'Bom dia' : horaAgora < 18 ? 'Boa tarde' : 'Boa noite';
+  const primeiroNomeHome = (userData?.nome || currentUser?.email?.split('@')[0] || 'corretor').split(' ')[0];
+  const totalFunilHome = Object.values(funilPessoal || {}).reduce((a, b) => a + (Number(b) || 0), 0);
 
-            {/* 1) Próximas ações — 1ª linha: só a do momento; 2ª linha: 2 cards (mesmo style) */}
-            <div className="mb-2">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Próximas ações</p>
+  return (
+    <div className="min-h-full pb-6">
+      {/* ===== Boas-vindas + números do dia ===== */}
+      <section className="al-card relative overflow-hidden p-5 mb-3">
+        <div className="absolute -top-24 -right-20 w-80 h-80 rounded-full bg-[#D4A017]/10 blur-3xl pointer-events-none" />
+        <div className="relative flex flex-wrap items-center justify-between gap-4 mb-4">
+          <div className="min-w-0">
+            <p className="al-eyebrow mb-1">{nomeImobiliaria || 'Sua imobiliária'}</p>
+            <h1 className="text-[25px] md:text-[27px] font-extrabold text-white leading-tight">
+              {saudacaoDia}, {primeiroNomeHome}! Bora vender? 🚀
+            </h1>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link href="/dashboard/agenda" className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white/90 rounded-xl border border-white/15 hover:bg-white/[0.06] transition-colors">
+              <CalendarIcon className="h-3.5 w-3.5" />
+              Agenda completa
+            </Link>
+            <Link href="/dashboard/crm" className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-black bg-gradient-to-r from-[#E8C547] to-[#D4A017] rounded-xl hover:brightness-110 transition-all shadow-[0_4px_16px_-4px_rgba(212,160,23,0.5)]">
+              <BarChartIcon className="h-3.5 w-3.5" />
+              Abrir CRM
+            </Link>
+          </div>
+        </div>
+        <div className="relative grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+          <Link href="/dashboard/crm" className="al-kpi rounded-2xl border border-[#D4A017]/25 bg-[#D4A017]/[0.08] p-3.5 transition-all hover:border-[#D4A017]/50">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[#E8C547]/90">Leads no funil</p>
+            <p className="text-[26px] font-black text-white tabular-nums leading-tight">{totalFunilHome}</p>
+            <p className="text-[11px] text-text-secondary">sua carteira ativa</p>
+          </Link>
+          <Link href="/dashboard/crm?tarefa=atraso" className={`al-kpi rounded-2xl border p-3.5 transition-all ${tarefaAtrasadaCount > 0 ? 'border-red-500/40 bg-red-500/[0.08] hover:border-red-400/60' : 'border-white/[0.07] bg-white/[0.02] hover:border-white/20'}`}>
+            <p className={`text-[11px] font-bold uppercase tracking-wider ${tarefaAtrasadaCount > 0 ? 'text-red-300' : 'text-text-secondary'}`}>Atrasadas {tarefaAtrasadaCount > 0 && <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse ml-0.5 align-middle" />}</p>
+            <p className="text-[26px] font-black text-white tabular-nums leading-tight">{tarefaAtrasadaCount}</p>
+            <p className="text-[11px] text-text-secondary">{tarefaAtrasadaCount > 0 ? 'resolva primeiro' : 'tudo em dia 🎉'}</p>
+          </Link>
+          <Link href="/dashboard/crm?tarefa=hoje" className={`al-kpi rounded-2xl border p-3.5 transition-all ${tarefaDiaCount > 0 ? 'border-amber-400/40 bg-amber-500/[0.08] hover:border-amber-400/60' : 'border-white/[0.07] bg-white/[0.02] hover:border-white/20'}`}>
+            <p className={`text-[11px] font-bold uppercase tracking-wider ${tarefaDiaCount > 0 ? 'text-amber-300' : 'text-text-secondary'}`}>Para hoje</p>
+            <p className="text-[26px] font-black text-white tabular-nums leading-tight">{tarefaDiaCount}</p>
+            <p className="text-[11px] text-text-secondary">tarefas do dia</p>
+          </Link>
+          <Link href="/dashboard/crm?tarefa=sem" className="al-kpi rounded-2xl border border-white/[0.07] bg-white/[0.02] p-3.5 transition-all hover:border-white/20">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">Sem tarefa</p>
+            <p className="text-[26px] font-black text-white tabular-nums leading-tight">{semTarefaCount}</p>
+            <p className="text-[11px] text-text-secondary">leads esquecidos</p>
+          </Link>
+        </div>
+      </section>
+
+      {/* ===== Atalhos rápidos ===== */}
+      <section className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2.5 mb-3">
+        {[
+          { href: '/dashboard/crm', emoji: '➕', t: 'Novo cliente', d: 'cadastre um lead' },
+          { href: '/dashboard/ligacao-ativa', emoji: '📞', t: 'Ligação Ativa', d: 'roteiro da ligação' },
+          { href: '/dashboard/fluxo-pagamento', emoji: '🧾', t: 'Fluxo de Pagto', d: 'proposta em PDF' },
+          { href: '/dashboard/materiais', emoji: '📂', t: 'Materiais', d: 'apresente no Meet' },
+          { href: '/dashboard/comissoes', emoji: '💵', t: 'Comissões', d: 'seus ganhos' },
+          { href: '/dashboard/treinamentos', emoji: '🎓', t: 'Academia', d: 'aprenda e evolua' },
+        ].map((a) => (
+          <Link key={a.href} href={a.href} className="al-shortcut al-card p-3.5 flex flex-col">
+            <span className="text-[22px] leading-none">{a.emoji}</span>
+            <span className="text-[13px] font-bold text-white leading-tight mt-2">{a.t}</span>
+            <span className="text-[11px] text-text-secondary leading-tight mt-0.5">{a.d}</span>
+          </Link>
+        ))}
+      </section>
+
+      {/* ===== Conteúdo: agenda à esquerda, funil e metas à direita ===== */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-3 items-start">
+        <div className="space-y-3 min-w-0">
+          {/* Sua agenda agora */}
+          <div className="al-card p-4 relative overflow-hidden">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <h2 className="text-base font-bold text-white">Sua agenda agora</h2>
+              <Link href="/dashboard/agenda" className="text-xs font-bold text-[#E8C547] hover:underline shrink-0">ver agenda →</Link>
+            </div>
+            <div>
               {agendaLoading ? (
                 <p className="text-gray-400 text-sm">Carregando...</p>
               ) : proximosEventosConfirmados.length === 0 ? (
@@ -1618,31 +1666,6 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* 2) Leads por tarefa — Atrasada e Hoje só aparecem e piscam se tiver contagem > 0 (missão cumprida = some); Sem tarefa sempre visível */}
-            <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Leads por tarefa</p>
-              <div className="flex gap-2 flex-nowrap">
-                {tarefaAtrasadaCount > 0 && (
-                  <Link href="/dashboard/crm?tarefa=atraso" className="flex-1 min-w-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-500/15 border border-red-500/40 text-red-200 hover:bg-red-500/25 transition-colors animate-pulse">
-                    <span className="h-2 w-2 bg-red-500 rounded-full shrink-0 animate-pulse" />
-                    <span className="text-xs font-medium truncate">Atrasada</span>
-                    <span className="text-sm font-bold tabular-nums shrink-0">{tarefaAtrasadaCount}</span>
-                  </Link>
-                )}
-                {tarefaDiaCount > 0 && (
-                  <Link href="/dashboard/crm?tarefa=hoje" className="flex-1 min-w-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-yellow-500/15 border border-yellow-500/40 text-yellow-200 hover:bg-yellow-500/25 transition-colors animate-pulse">
-                    <span className="h-2 w-2 bg-yellow-500 rounded-full shrink-0 animate-pulse" />
-                    <span className="text-xs font-medium truncate">Hoje</span>
-                    <span className="text-sm font-bold tabular-nums shrink-0">{tarefaDiaCount}</span>
-                  </Link>
-                )}
-                <Link href="/dashboard/crm?tarefa=sem" className="flex-1 min-w-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-500/15 border border-gray-500/40 text-gray-300 hover:bg-gray-500/25 transition-colors">
-                  <span className="h-2 w-2 bg-gray-500 rounded-full shrink-0" />
-                  <span className="text-xs font-medium truncate">Sem tarefa</span>
-                  <span className="text-sm font-bold tabular-nums shrink-0">{semTarefaCount}</span>
-                </Link>
-              </div>
-            </div>
           </div>
 
           {/* Comunidade — oculta da home a pedido (lógica preservada; usaremos depois). Basta remover "hidden" para reativar. */}
@@ -1878,11 +1901,10 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Coluna Direita — flex para Minhas Moedas ir quase até o fim */}
-        <div id="trending-section" className="dashboard-scroll-hide overflow-y-auto overflow-x-hidden pr-2 min-h-0 flex flex-col gap-1.5 pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          {/* Funil de vendas individual — compacto */}
-          <div className="card-glow rounded-xl p-2 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-0.5 h-full bg-gradient-to-r from-[#D4A017] to-[#60a5fa] rounded-r" />
+        {/* Coluna Direita — funil e metas */}
+        <div id="trending-section" className="space-y-3 min-w-0">
+          {/* Seu funil */}
+          <div className="al-card p-4 relative overflow-hidden">
             {agendaLoading ? (
               <p className="text-gray-400 text-sm">Carregando...</p>
             ) : (() => {
@@ -1937,9 +1959,8 @@ export default function DashboardPage() {
             })()}
           </div>
 
-          {/* Meta Individual + 2 painéis (Ranking | Meta Nox | Minhas Moedas) — cresce até o fim */}
-          <div className="card-glow rounded-xl p-2 relative overflow-hidden animate-fade-in flex-1 flex flex-col min-h-0">
-            <div className="absolute top-0 left-0 w-0.5 h-full bg-amber-500 rounded-r" />
+          {/* Metas e ranking */}
+          <div className="al-card p-3 relative overflow-hidden animate-fade-in">
             <MetaIndividualCard metaPessoal={metaPessoal} meta={meta} />
             <GamificacaoMetasRow
               pontos={pontosExemplo}

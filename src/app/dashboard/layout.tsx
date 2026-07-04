@@ -42,6 +42,8 @@ const PresentationIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...prop
 const HouseIcon = ({ active, ...props }: React.SVGProps<SVGSVGElement> & { active?: boolean }) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>;
 
 const CreditCardIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>;
+const UsersIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+const FolderIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>;
 const ReceiptIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>;
 
 const SettingsIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>;
@@ -93,6 +95,12 @@ export default function DashboardLayout({
   const [collapsed, setCollapsed] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+
+  // Data de hoje no header (client-side p/ evitar mismatch de hidratação)
+  const [hojeStr, setHojeStr] = useState('');
+  useEffect(() => {
+    setHojeStr(new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }));
+  }, []);
   const { theme } = useTheme();
   const { notifications, resetNotification } = useNotifications();
 
@@ -185,26 +193,34 @@ export default function DashboardLayout({
   type UserDataWithPerms = typeof userData & { permissoes?: { admin?: boolean; developer?: boolean } };
   const userDataWithPerms = userData as UserDataWithPerms;
 
-  const navItems = [
-    { href: '/dashboard', icon: LayoutDashboardIcon, label: 'Inicio' },
-    { href: '/dashboard/crm', icon: BarChartIcon, label: 'Clientes' },
-    { href: '/dashboard/brello', icon: FileTextIcon, label: 'Brello' },
-    { href: '/dashboard/materiais', icon: FileTextIcon, label: 'Materiais de apoio' },
-    { href: '/dashboard/ligacao-ativa', icon: PhoneIcon, label: 'Ligação Ativa' },
-    { href: '/dashboard/comissoes', icon: CreditCardIcon, label: 'Comissões' },
-    { href: '/dashboard/fluxo-pagamento', icon: ReceiptIcon, label: 'Fluxo de Pagamento' },
-    { href: 'https://chat.openai.com', icon: ChatGPTIcon, label: 'ChatGPT', isExternal: true },
-    { href: 'https://noximobiliaria.com.br/', icon: HouseIcon, label: 'Site', isExternal: true },
-    { href: '/dashboard/treinamentos', icon: PresentationIcon, label: 'Academia' },
-    // Exibir admin se for imobiliaria OU tiver permissao admin
-    ...((userDataWithPerms?.tipoConta === 'imobiliaria' || userDataWithPerms?.permissoes?.admin) ? [
-    { href: '/dashboard/admin', icon: KeyIcon, label: 'Área administrador' },
-    ] : []),
-    // Exibir dev se for imobiliaria OU tiver permissao developer
-    ...((userDataWithPerms?.tipoConta === 'imobiliaria' || userDataWithPerms?.permissoes?.developer) ? [
-    { href: '/dashboard/developer', icon: CodeIcon, label: 'Área do Desenvolvedor' },
-    ] : []),
-    { href: '#', icon: LogOutIcon, label: 'Desconectar', isLogout: true },
+  const isAdminUser = userDataWithPerms?.tipoConta === 'imobiliaria' || userDataWithPerms?.permissoes?.admin;
+  const isDevUser = userDataWithPerms?.tipoConta === 'imobiliaria' || userDataWithPerms?.permissoes?.developer;
+  type NavItem = { href: string; icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; label: string; isExternal?: boolean };
+  const navGroups: { titulo: string | null; itens: NavItem[] }[] = [
+    { titulo: null, itens: [
+      { href: '/dashboard', icon: LayoutDashboardIcon, label: 'Início' },
+    ] },
+    { titulo: 'Vendas', itens: [
+      { href: '/dashboard/crm', icon: UsersIcon, label: 'Clientes' },
+      { href: '/dashboard/brello', icon: FileTextIcon, label: 'Brello' },
+      { href: '/dashboard/ligacao-ativa', icon: PhoneIcon, label: 'Ligação Ativa' },
+    ] },
+    { titulo: 'Ferramentas', itens: [
+      { href: '/dashboard/materiais', icon: FolderIcon, label: 'Materiais de apoio' },
+      { href: '/dashboard/fluxo-pagamento', icon: ReceiptIcon, label: 'Fluxo de Pagamento' },
+      { href: '/dashboard/comissoes', icon: CreditCardIcon, label: 'Comissões' },
+    ] },
+    { titulo: 'Mais', itens: [
+      { href: '/dashboard/treinamentos', icon: PresentationIcon, label: 'Academia' },
+      { href: 'https://chat.openai.com', icon: ChatGPTIcon, label: 'ChatGPT', isExternal: true },
+      { href: 'https://noximobiliaria.com.br/', icon: HouseIcon as unknown as React.ComponentType<React.SVGProps<SVGSVGElement>>, label: 'Site', isExternal: true },
+    ] },
+    ...((isAdminUser || isDevUser) ? [{
+      titulo: 'Gestão', itens: [
+        ...(isAdminUser ? [{ href: '/dashboard/admin', icon: KeyIcon, label: 'Área administrador' }] : []),
+        ...(isDevUser ? [{ href: '/dashboard/developer', icon: CodeIcon, label: 'Área do Desenvolvedor' }] : []),
+      ] as NavItem[],
+    }] : []),
   ];
 
   const displayName = userData?.nome || user?.email?.split('@')[0] || 'usuário';
@@ -212,9 +228,9 @@ export default function DashboardLayout({
   return (
     <PipelineStagesProvider imobiliariaId={userData?.imobiliariaId}>
     <div className="flex h-screen min-h-screen bg-particles">
-      {/* Sidebar — mesmo background (partículas), borda sutil */}
-      <div className={`flex flex-col h-screen fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-transparent transition-all duration-300 text-xs pb-8`}>
-        <div className="flex-1 flex flex-col">
+      {/* Sidebar — superfície sutil sobre o fundo, borda à direita */}
+      <div className={`flex flex-col h-screen fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-black/25 backdrop-blur-sm border-r border-white/[0.05] transition-all duration-300 text-xs`}>
+        <div className="flex-1 flex flex-col min-h-0">
           <div className="h-16 flex items-center justify-between px-5 shrink-0">
             <button
               onClick={() => router.push('/dashboard')}
@@ -232,64 +248,67 @@ export default function DashboardLayout({
             </button>
           </div>
 
-          <nav className="flex-1 p-3 overflow-y-auto scrollbar-thin">
-            <ul className="space-y-0">
-              {navItems.map((item) => (
-                <li key={item.href}>
-                  {item.isLogout ? (
-                    <button
-                      onClick={handleLogout}
-                      className={`flex items-center ${collapsed ? 'justify-center' : ''} w-full px-4 py-2 rounded-lg transition-colors text-orange-400 border border-orange-500/40 hover:bg-orange-500/10 hover:text-orange-300 mt-0.5`}
-                      title="Desconectar"
-                    >
-                      <span className="mr-3"><item.icon className="h-5 w-5" /></span>
-                      {!collapsed && item.label}
-                    </button>
-                  ) : item.isExternal ? (
-                    <a
-                      href={item.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`flex items-center ${collapsed ? 'justify-center' : ''} px-4 py-2 rounded-lg transition-colors relative text-text-secondary hover:bg-[var(--surface-hover)] hover:text-white mt-0.5`}
-                      title={`Abrir ${item.label} em nova aba`}
-                    >
-                      <span className="mr-3 relative"><item.icon className="h-5 w-5" /></span>
-                      {!collapsed && item.label}
-                    </a>
-                  ) : (
-                    <Link
-                      href={item.href}
-                      className={`flex items-center ${collapsed ? 'justify-center' : ''} px-4 py-2 rounded-lg transition-all relative mt-0.5 ${
-                        pathname === item.href
-                          ? 'bg-[var(--surface-hover)] text-white border-l-[3px] border-l-orange-500 shadow-[0_0_14px_rgba(255,140,0,0.15)]'
-                          : 'text-text-secondary hover:bg-[var(--surface-hover)] hover:text-white border-l-[3px] border-l-transparent'
-                      }`}
-                    >
-                      <span className="mr-3 relative">
-                        {(item as { isShop?: boolean }).isShop ? (
-                          <ShopIcon className="h-5 w-5 text-amber-400" />
-                        ) : item.label === 'Área do Desenvolvedor' ? (
-                          <CodeIcon className="h-5 w-5" />
+          <nav className="flex-1 px-3 pt-1 pb-3 overflow-y-auto scrollbar-thin min-h-0">
+            {navGroups.map((grupo, gi) => (
+              <div key={grupo.titulo ?? gi} className={gi > 0 ? 'mt-4' : ''}>
+                {grupo.titulo && (
+                  collapsed
+                    ? <div className="mx-2 my-2 h-px bg-white/[0.07]" />
+                    : <p className="px-3 mb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-white/30">{grupo.titulo}</p>
+                )}
+                <ul className="space-y-0.5">
+                  {grupo.itens.map((item) => {
+                    const ativo = pathname === item.href;
+                    const base = `flex items-center ${collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2'} rounded-xl text-[13px] font-medium transition-all`;
+                    const cls = ativo
+                      ? `${base} bg-[#D4A017]/[0.13] text-white border border-[#D4A017]/30 shadow-[0_0_16px_rgba(212,160,23,0.12)]`
+                      : `${base} text-text-secondary border border-transparent hover:bg-white/[0.05] hover:text-white`;
+                    const icone = <item.icon className={`h-[18px] w-[18px] shrink-0 ${ativo ? 'text-[#E8C547]' : ''}`} />;
+                    return (
+                      <li key={item.href}>
+                        {item.isExternal ? (
+                          <a href={item.href} target="_blank" rel="noopener noreferrer" className={cls} title={`Abrir ${item.label} em nova aba`}>
+                            {icone}
+                            {!collapsed && <span className="truncate flex-1">{item.label}</span>}
+                            {!collapsed && <svg className="w-3 h-3 opacity-40 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3" /></svg>}
+                          </a>
                         ) : (
-                          <item.icon className="h-5 w-5" />
+                          <Link href={item.href} className={cls} title={item.label}>
+                            {icone}
+                            {!collapsed && <span className="truncate">{item.label}</span>}
+                          </Link>
                         )}
-                      </span>
-                      {!collapsed && item.label}
-                    </Link>
-                  )}
-                </li>
-              ))}
-            </ul>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
           </nav>
+
+          {/* Rodapé fixo: sair */}
+          <div className="shrink-0 p-3 border-t border-white/[0.06]">
+            <button
+              onClick={handleLogout}
+              className={`flex items-center ${collapsed ? 'justify-center px-0' : 'gap-3 px-3'} w-full py-2 rounded-xl text-[13px] font-medium text-text-secondary border border-transparent hover:bg-red-500/10 hover:text-red-300 hover:border-red-500/25 transition-all`}
+              title="Desconectar"
+            >
+              <LogOutIcon className="h-[18px] w-[18px] shrink-0" />
+              {!collapsed && 'Desconectar'}
+            </button>
+          </div>
         </div>
       </div>
 
       <div className={`flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300 ${collapsed ? 'ml-16' : 'ml-64'}`}>
-        {/* Header: Olá | convites de eventos (1 por vez) | Ideias, moedas, avatar */}
-        <header className="h-16 px-5 shrink-0 flex items-center justify-between gap-3">
-          <h2 className="text-lg font-bold text-orange-400 truncate shrink-0 flex items-center gap-1.5">
-            Olá, {displayName}! 👋
-          </h2>
+        {/* Header: saudação + data | convites de eventos (1 por vez) | avatar */}
+        <header className="h-16 px-5 shrink-0 flex items-center justify-between gap-3 border-b border-white/[0.05]">
+          <div className="shrink-0 min-w-0">
+            <h2 className="text-[17px] font-bold text-white truncate leading-tight">
+              Olá, {displayName}! 👋
+            </h2>
+            {hojeStr && <p className="text-[11px] text-text-secondary capitalize leading-tight">{hojeStr}</p>}
+          </div>
           {convitesPendentes.length > 0 && (
             <div className="flex items-center gap-2 flex-1 min-w-0 justify-center overflow-hidden">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.06] border border-orange-500/25 max-w-full min-w-0">
