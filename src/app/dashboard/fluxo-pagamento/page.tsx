@@ -278,7 +278,7 @@ export default function FluxoPagamentoPage() {
                 <Campo label="Permuta (o que entra)" hint="carro, casa, terreno… (opcional)"><input value={permutaDesc} onChange={(e) => setPermutaDesc(e.target.value)} placeholder="Ex: Honda Civic 2020" className={inputCls} /></Campo>
                 <Campo label="Valor da permuta" hint={permutaValor > 0
                   ? (c.ac > 0 && permutaValor > c.vp - c.ac
-                    ? <span className="text-rose-500 dark:text-rose-300">⚠ maior que o saldo da entrega ({brl(Math.max(0, c.vp - c.ac))}) — reduza o que vai até a chave</span>
+                    ? <span className="text-rose-500 dark:text-rose-300">⚠ maior que o saldo da entrega ({brl(Math.max(0, c.vp - c.ac))})</span>
                     : 'abate do saldo financiado na entrega')
                   : 'opcional'}><MoneyInput value={permutaValor} onChange={setPermutaValor} placeholder="0,00" className={inputCls} /></Campo>
               </div>
