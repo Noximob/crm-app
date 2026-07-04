@@ -1141,11 +1141,12 @@ function bindInputs(){
       else if(k==='soloname') solos[ti].name=e.target.value;
       renderAll(); saveState();
     });
+    inp.addEventListener('change',()=>saveState(true)); // ao sair do campo, grava na nuvem na hora
   });
   document.querySelectorAll('select[data-k2]').forEach(sel=>{
     sel.addEventListener('change',e=>{
       teams[+e.target.dataset.ti].brokers[+e.target.dataset.bi].type=e.target.value;
-      renderAll(); saveState();
+      renderAll(); saveState(true);
     });
   });
   // vínculo pessoa ⇄ usuário do CRM
@@ -1156,7 +1157,7 @@ function bindInputs(){
       const u=(typeof CRM!=='undefined') ? CRM.users.find(x=>x.uid===uid) : null;
       p.uid=uid||null; p.crmName=u?u.nome:null; p.crmEmail=u?u.email:null;
       e.target.classList.toggle('linked', !!uid);
-      saveState();
+      saveState(true);
     });
   });
   // edição inline de valor / parcelas de cada venda
@@ -1194,8 +1195,8 @@ function bindInputs(){
       else if(act==='avista'){ const d=personFrom(ti,role,bi).deals[+el.dataset.idx], sch=dealSched(d); d.schedule=[{pct:100,month:sch[0]?sch[0].month:'',done:sch[0]?!!sch[0].done:false,paid:sch[0]?!!sch[0].paid:false}]; }
       else if(act==='delparc'){ const sch=dealSched(personFrom(ti,role,bi).deals[+el.dataset.idx]); sch.splice(+el.dataset.si,1); if(sch.length===1) sch[0].pct=100; }
       else if(act==='recv'){ const sch=dealSched(personFrom(ti,role,bi).deals[+el.dataset.idx]), si=+el.dataset.si; sch[si].done=!sch[si].done; saveState(); buildAll(); renderAll(); return; }
-      else if(act==='pago'){ const sch=dealSched(personFrom(ti,role,bi).deals[+el.dataset.idx]), si=+el.dataset.si; sch[si].paid=!sch[si].paid; saveState(); buildAll(); renderAll(); return; }
-      buildAll(); renderAll(); saveState();
+      else if(act==='pago'){ const sch=dealSched(personFrom(ti,role,bi).deals[+el.dataset.idx]), si=+el.dataset.si; sch[si].paid=!sch[si].paid; saveState(true); buildAll(); renderAll(); return; }
+      buildAll(); renderAll(); saveState(true);
     });
   });
 }
@@ -1257,8 +1258,7 @@ function renderAdmin(){
   document.getElementById('gHouse').textContent=fmt(gHouse);
   document.getElementById('gHouseSub').textContent=(gPool>0?pct(gHouse/gPool*100):'—')+' da comissão líquida';
   document.getElementById('opline').textContent=`${teams.length} ${teams.length===1?'equipe':'equipes'} · ${people} ${people===1?'pessoa':'pessoas'}`+(periodText()?` · Trimestre ${periodText()}`:'');
-
-  saveState();
+  // NÃO salvar aqui: renderizar não pode gravar (senão um render com dados default sobrescreve os reais).
 }
 
 // ---------- relatórios (gerente / corretor) ----------
@@ -1483,7 +1483,7 @@ function renderMeta(){
   <div class="muted-line" style="margin-top:14px">Para ${metaMode==='ganho'?`ganhar ${fmt(ganho)}`:`vender ${fmt(vgv)}`} no trimestre, com ticket médio de ${fmt(m.ticket)}, você precisa fechar <b>${st.fechamentos}</b> ${st.fechamentos===1?'imóvel':'imóveis'} — e alimentar o funil acima (≈ ${mm(st.contatos).toLocaleString('pt-BR')} contatos por mês).</div>
   <div class="muted-line" style="margin-top:6px">Cálculo pelas faixas de comissão de <b>${roleLbl}</b> · comissão bruta de referência ${DEFAULT_GROSS}% (o imposto e as faixas vêm da administração).</div>`;
   document.getElementById('metaResult').innerHTML=h;
-  saveState();
+  // NÃO salvar aqui — a gravação acontece nos handlers de edição.
 }
 
 // ---------- orchestration ----------
@@ -1510,8 +1510,11 @@ const firebaseConfig = {
   messagingSenderId: "582693043695",
   appId: "1:582693043695:web:320a1add71226610a6ca1a"
 };
-let cloudReady=false, cloudTimer=null;
-function setCloudStatus(t,cls){ const el=document.getElementById('cloudStatus'); if(el){ el.textContent=t; el.className='cloud-status'+(cls?' '+cls:''); } }
+let cloudReady=false, cloudTimer=null, lastBlob='{}';
+function setCloudStatus(t,cls){
+  const el=document.getElementById('cloudStatus'); if(el){ el.textContent=t; el.className='cloud-status'+(cls?' '+cls:''); }
+  const b=document.getElementById('noxSaveStatus'); if(b){ b.textContent=t; b.style.color = cls==='ok'?'#1f6f6b':(cls==='warn'?'#b23b3b':'#8a7a55'); }
+}
 function cloudInit(){
   try{
     if(typeof firebase==='undefined') throw new Error('SDK não carregou');
@@ -1521,51 +1524,61 @@ function cloudInit(){
   }catch(e){ console.warn('Firebase indisponível, seguindo só no aparelho:', e); cloudReady=false; setCloudStatus('⚠ sem nuvem (salvo no aparelho)','warn'); }
 }
 function cloudDoc(){ return window._db.collection('nox').doc('state'); }
-function cloudSave(){
-  if(!cloudReady) return;
-  if(cloudTimer) clearTimeout(cloudTimer);
+function cacheLocal(blob){ try{ localStorage.setItem(LS_KEY, blob); localStorage.setItem(LS_KEY+'_ts', String(Date.now())); }catch(e){ /* iframe pode bloquear storage — ok, a nuvem é a fonte */ } }
+// grava o blob em memória DIRETO na nuvem (não depende do localStorage, que pode
+// estar isolado no iframe). Imediato — usado no debounce e no "salvar agora".
+function flushCloud(){
+  if(cloudTimer){ clearTimeout(cloudTimer); cloudTimer=null; }
+  if(!cloudReady){ setCloudStatus('⚠ sem nuvem','warn'); return Promise.resolve(); }
   setCloudStatus('☁ salvando…','saving');
-  cloudTimer=setTimeout(()=>{
-    const blob=localStorage.getItem(LS_KEY)||'{}';
-    cloudDoc().set({blob, ts:Date.now()})
-      .then(()=>setCloudStatus('☁ sincronizado','ok'))
-      .catch(e=>{ console.warn('Falha ao salvar na nuvem:', e); setCloudStatus('⚠ offline (salvo no aparelho)','warn'); });
-  }, 1200);
+  return cloudDoc().set({blob:lastBlob, ts:Date.now()})
+    .then(()=>setCloudStatus('✓ salvo na nuvem','ok'))
+    .catch(e=>{ console.warn('Falha ao salvar na nuvem:', e); setCloudStatus('⚠ erro ao salvar: '+((e&&e.code)||(e&&e.message)||e),'warn'); });
 }
 async function cloudBoot(){
   cloudInit();
+  let cloudBlob=null, cloudTs=0;
   if(cloudReady){
     try{
       const snap=await cloudDoc().get();
-      if(snap.exists){
-        const d=snap.data()||{};
-        const localTs=+localStorage.getItem(LS_KEY+'_ts')||0;
-        if(d.blob && (d.ts||0) >= localTs){ localStorage.setItem(LS_KEY, d.blob); localStorage.setItem(LS_KEY+'_ts', String(d.ts||Date.now())); }
-      }
-      setCloudStatus('☁ sincronizado','ok');
-    }catch(e){ console.warn('Falha ao ler da nuvem:', e); setCloudStatus('⚠ offline (salvo no aparelho)','warn'); }
+      if(snap.exists){ const d=snap.data()||{}; if(d.blob){ cloudBlob=d.blob; cloudTs=d.ts||0; } }
+    }catch(e){ console.warn('Falha ao ler da nuvem:', e); setCloudStatus('⚠ erro ao ler da nuvem','warn'); }
   }
-  loadState(); buildPolicy(); buildAll(); renderAll(); renderMeta();
-  if(cloudReady){ const blob=localStorage.getItem(LS_KEY); if(blob){ try{ cloudDoc().set({blob, ts:+localStorage.getItem(LS_KEY+'_ts')||Date.now()}); }catch(e){} } }
+  // cache local (best-effort — pode estar bloqueado no iframe)
+  let localBlob=null, localTs=0;
+  try{ localBlob=localStorage.getItem(LS_KEY); localTs=+localStorage.getItem(LS_KEY+'_ts')||0; }catch(e){}
+  // fonte da verdade: a mais recente entre nuvem e cache local
+  const raw = (cloudBlob!=null && (localBlob==null || cloudTs>=localTs)) ? cloudBlob : localBlob;
+  lastBlob = raw || '{}';
+  loadState(raw);          // carrega DIRETO do blob (não depende do localStorage)
+  cacheLocal(lastBlob);
+  if(cloudReady) setCloudStatus('☁ sincronizado','ok');
+  buildPolicy(); buildAll(); renderAll(); renderMeta();
+  booted = true;
   try{ document.dispatchEvent(new Event('nox-ready')); }catch(e){}
 }
 function v(id){ const el=document.getElementById(id); return el?el.value:''; }
-function saveState(){
-  try{
-    const data={
-      cfg:{tax:v('cfgTax'),target:v('cfgTarget'),band:v('cfgBand'),start:v('cfgStart'),end:v('cfgEnd'),pol:POL},
-      meta:{ticket:v('mTicket'),contatos:v('mContatos'),reunioes:v('mReunioes'),visitas:v('mVisitas'),propostas:v('mPropostas'),fechamentos:v('mFechamentos'),alvo:v('mAlvo'),mode:metaMode},
-      goals,
-      teams, solos, cashEntries, archives, events, seq
-    };
-    localStorage.setItem(LS_KEY, JSON.stringify(data));
-    localStorage.setItem(LS_KEY+'_ts', String(Date.now()));
-    cloudSave();
-  }catch(e){ /* armazenamento indisponível: segue só na sessão */ }
+function stateBlob(){
+  return JSON.stringify({
+    cfg:{tax:v('cfgTax'),target:v('cfgTarget'),band:v('cfgBand'),start:v('cfgStart'),end:v('cfgEnd'),pol:POL},
+    meta:{ticket:v('mTicket'),contatos:v('mContatos'),reunioes:v('mReunioes'),visitas:v('mVisitas'),propostas:v('mPropostas'),fechamentos:v('mFechamentos'),alvo:v('mAlvo'),mode:metaMode},
+    goals,
+    teams, solos, cashEntries, archives, events, seq
+  });
 }
-function loadState(){
+// now=true grava na nuvem imediatamente (vínculos, papéis, add/del); senão, debounce curto.
+function saveState(now){
+  lastBlob = stateBlob();
+  cacheLocal(lastBlob);
+  if(!cloudReady){ setCloudStatus('⚠ sem nuvem','warn'); return; }
+  if(now){ flushCloud(); return; }
+  if(cloudTimer) clearTimeout(cloudTimer);
+  setCloudStatus('☁ salvando…','saving');
+  cloudTimer=setTimeout(()=>flushCloud(), 600);
+}
+function loadState(rawOverride){
   let data=null;
-  try{ const raw=localStorage.getItem(LS_KEY); if(raw) data=JSON.parse(raw); }catch(e){}
+  try{ const raw = (rawOverride!=null) ? rawOverride : localStorage.getItem(LS_KEY); if(raw) data=JSON.parse(raw); }catch(e){}
   if(!data) return;
   cashEntries = Array.isArray(data.cashEntries) ? data.cashEntries : [];
   archives = Array.isArray(data.archives) ? data.archives : [];
@@ -2255,6 +2268,7 @@ document.getElementById('loginBtn').addEventListener('click',tryLogin);
 // O CRM (autenticado) manda a lista de usuários e quem está logado via postMessage.
 // Guardamos só o vínculo (uid) no estado. Papéis (gerente/corretor/SDR/autônomo) já existem.
 let CRM = { users: [], me: null };
+let booted = false; // vira true quando o cloudBoot terminou de carregar o estado
 const currentMode = new URLSearchParams(location.search).get('mode'); // 'admin' | 'view' | null
 
 function crmOptions(uid){
@@ -2314,6 +2328,7 @@ function refreshView(){
   showViewNotice(me ? '' : 'Seu usuário ainda não está vinculado a uma pessoa nas equipes. Você pode usar a calculadora de meta abaixo; peça para a administração vincular você em Comissões para ver seus ganhos.');
 }
 function applyCRM(){
+  if(!booted) return; // ainda carregando: os dados do CRM já ficaram guardados e o cloudBoot renderiza com eles
   if(currentMode==='admin'){ buildAll(); renderAll(); }
   else if(currentMode==='view'){ refreshView(); }
 }
@@ -2324,6 +2339,22 @@ window.addEventListener('message', e=>{
   applyCRM();
 });
 
+// Barra fixa de status/salvar (garante gravação e dá feedback visível)
+function mountSaveBar(){
+  if(document.getElementById('noxSaveBar')) return;
+  const bar=document.createElement('div');
+  bar.id='noxSaveBar';
+  bar.style.cssText='position:fixed;top:10px;right:14px;z-index:99999;display:flex;align-items:center;gap:10px;font-size:12.5px;font-family:inherit';
+  bar.innerHTML='<span id="noxSaveStatus" style="color:#8a7a55">☁</span><button id="noxSaveBtn" type="button" style="background:#1f6f6b;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer">Salvar</button>';
+  document.body.appendChild(bar);
+  document.getElementById('noxSaveBtn').addEventListener('click',()=>{ saveState(true); });
+}
+// grava pendências ao sair/trocar de aba (rede de segurança além do save imediato)
+function flushIfPending(){ if(cloudTimer) flushCloud(); }
+window.addEventListener('pagehide', flushIfPending);
+window.addEventListener('beforeunload', flushIfPending);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') flushIfPending(); });
+
 // Modo embutido: libera login interno, esconde header/rodapé e filtra abas por área/pessoa
 (function(){
   if(!currentMode) return; // aberto direto = app completo, comportamento normal
@@ -2331,6 +2362,7 @@ window.addEventListener('message', e=>{
   const login=document.getElementById('login'); if(login) login.style.display='none';
   document.querySelectorAll('header, footer').forEach(el=>el.style.display='none');
   const wrap=document.querySelector('.wrap'); if(wrap) wrap.style.padding='12px 20px 60px';
+  mountSaveBar();
   const tabs=[...document.querySelectorAll('.tab')];
   if(currentMode==='view'){
     // até saber quem está logado, mostra só a calculadora (evita flash do restante)
