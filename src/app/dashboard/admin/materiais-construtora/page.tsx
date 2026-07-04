@@ -191,7 +191,8 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
     const safe = file.name.replace(/[^\w.\-]+/g, '_');
     const path = `imoveis/${key}/${cat}/${Date.now()}_${safe}`;
     setErr(''); setProg(0);
-    const task = uploadBytesResumable(ref(apoioStorage, path), file);
+    // cacheControl: o navegador do corretor guarda o arquivo (nome tem timestamp, nunca muda)
+    const task = uploadBytesResumable(ref(apoioStorage, path), file, { cacheControl: 'public, max-age=31536000, immutable' });
     task.on('state_changed',
       (s) => setProg(Math.round((s.bytesTransferred / s.totalBytes) * 100)),
       (error) => { setErr('Erro no upload: ' + error.message); setProg(null); },

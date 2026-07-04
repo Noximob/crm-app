@@ -2,9 +2,60 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
+// ---- Cache local de PDFs (IndexedDB): baixou uma vez, abre na hora depois ----
+const DB_NAME = 'nox-pdf-cache';
+const STORE = 'pdfs';
+const MAX_ITENS = 12;
+
+function abrirDb(): Promise<IDBDatabase> {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(DB_NAME, 1);
+    r.onupgradeneeded = () => { r.result.createObjectStore(STORE); };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function cacheGet(url: string): Promise<ArrayBuffer | null> {
+  try {
+    const db = await abrirDb();
+    return await new Promise((res) => {
+      const t = db.transaction(STORE, 'readonly').objectStore(STORE).get(url);
+      t.onsuccess = () => res(t.result ? (t.result.data as ArrayBuffer) : null);
+      t.onerror = () => res(null);
+    });
+  } catch { return null; }
+}
+async function cachePut(url: string, data: ArrayBuffer): Promise<void> {
+  try {
+    const db = await abrirDb();
+    const st = db.transaction(STORE, 'readwrite').objectStore(STORE);
+    st.put({ ts: Date.now(), data }, url);
+    // poda os mais antigos além do limite
+    const keysReq = st.getAllKeys();
+    keysReq.onsuccess = () => {
+      const keys = keysReq.result as string[];
+      if (keys.length <= MAX_ITENS) return;
+      const st2 = db.transaction(STORE, 'readwrite').objectStore(STORE);
+      const items: { key: string; ts: number }[] = [];
+      const cur = st2.openCursor();
+      cur.onsuccess = () => {
+        const c = cur.result;
+        if (c) { items.push({ key: c.key as string, ts: (c.value?.ts as number) || 0 }); c.continue(); }
+        else {
+          items.sort((a, b) => a.ts - b.ts).slice(0, items.length - MAX_ITENS)
+            .forEach((i) => db.transaction(STORE, 'readwrite').objectStore(STORE).delete(i.key));
+        }
+      };
+    };
+  } catch { /* quota cheia etc — segue sem cache */ }
+}
+
+const fmtMB = (n: number) => (n / 1048576).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' MB';
+
 /**
  * Visualizador de PDF página a página (modo apresentação):
  * cada rolada do mouse, clique ou seta pula UMA página inteira, ajustada à tela.
+ * Baixa com barra de progresso e guarda em cache local (reabrir é instantâneo).
  * Se o PDF não puder ser lido (ex.: hospedagem sem CORS), cai pro iframe nativo.
  */
 export default function PdfPager({ url, innerRef }: { url: string; innerRef?: React.RefObject<HTMLDivElement> }) {
@@ -19,6 +70,7 @@ export default function PdfPager({ url, innerRef }: { url: string; innerRef?: Re
   const [page, setPage] = useState(1);
   const [erro, setErro] = useState(false);
   const [carregando, setCarregando] = useState(true);
+  const [prog, setProg] = useState<{ loaded: number; total: number } | null>(null);
   const lastNav = useRef(0);
 
   // Carrega o documento
@@ -26,18 +78,29 @@ export default function PdfPager({ url, innerRef }: { url: string; innerRef?: Re
     let vivo = true;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let loadTask: any = null;
-    setErro(false); setCarregando(true); setPage(1); setNumPages(0);
+    setErro(false); setCarregando(true); setPage(1); setNumPages(0); setProg(null);
     (async () => {
       try {
         const pdfjs = await import('pdfjs-dist');
         // worker servido de public/ (copiado de node_modules/pdfjs-dist/build — manter em sincronia ao atualizar o pacote)
         pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
-        loadTask = pdfjs.getDocument({ url });
+        const cached = await cacheGet(url);
+        if (cached) {
+          // já baixado antes: abre na hora
+          loadTask = pdfjs.getDocument({ data: new Uint8Array(cached.slice(0)) });
+        } else {
+          loadTask = pdfjs.getDocument({ url });
+          loadTask.onProgress = (p: { loaded: number; total?: number }) => { if (vivo) setProg({ loaded: p.loaded, total: p.total || 0 }); };
+        }
         const doc = await loadTask.promise;
         if (!vivo) return;
         docRef.current = doc;
         setNumPages(doc.numPages);
         setCarregando(false);
+        if (!cached) {
+          // guarda no cache local pra próxima abertura ser instantânea
+          doc.getData().then((d: Uint8Array) => { void cachePut(url, d.slice(0).buffer as ArrayBuffer); }).catch(() => { /* sem cache: ok */ });
+        }
       } catch {
         if (vivo) { setErro(true); setCarregando(false); }
       }
@@ -112,7 +175,19 @@ export default function PdfPager({ url, innerRef }: { url: string; innerRef?: Re
       title="Role o mouse, clique ou use as setas pra passar as páginas"
     >
       {carregando ? (
-        <span className="text-sm text-white/50">Carregando PDF…</span>
+        <div className="flex flex-col items-center gap-3 px-6 w-full max-w-sm">
+          <span className="text-sm text-white/65 tabular-nums">
+            {prog && prog.total > 0
+              ? `Baixando… ${fmtMB(prog.loaded)} de ${fmtMB(prog.total)} (${Math.min(100, Math.round((prog.loaded / prog.total) * 100))}%)`
+              : prog ? `Baixando… ${fmtMB(prog.loaded)}` : 'Carregando PDF…'}
+          </span>
+          {prog && prog.total > 0 && (
+            <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div className="h-full bg-amber-500 transition-all duration-300" style={{ width: `${Math.min(100, (prog.loaded / prog.total) * 100)}%` }} />
+            </div>
+          )}
+          <span className="text-[11px] text-white/35 text-center">Só na primeira vez — depois este material abre na hora.</span>
+        </div>
       ) : (
         <canvas ref={canvasRef} className="max-w-full max-h-full shadow-[0_8px_40px_rgba(0,0,0,0.6)]" />
       )}
