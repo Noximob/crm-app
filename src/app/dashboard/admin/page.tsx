@@ -33,7 +33,6 @@ const adminCategories = [
     color: 'from-primary-400 to-primary-600',
     items: [
       { title: 'Gestão de Corretores', icon: '🧑‍💼', description: 'Administre leads e desempenho dos corretores', href: '/dashboard/admin/gestao-corretores' },
-      { title: 'Aprovação de Usuários', icon: '✅', description: 'Aprove novos cadastros', href: '#', special: true },
       { title: 'Agenda dos Usuários', icon: '📅', description: 'Visualize a agenda de todos os usuários', href: '/dashboard/admin/agenda-usuarios' },
       { title: 'Importar Leads', icon: '⬆️', description: 'Importe leads em massa', href: '/dashboard/admin/importar-leads' },
     ]
@@ -172,58 +171,50 @@ export default function AdminPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">
-            Área do Administrador
-          </h1>
-          <p className="text-[#6B6F76] dark:text-gray-300 text-lg">
-            Gerencie todos os recursos da sua imobiliária de forma organizada
-          </p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#D4A017] mb-1.5">Painel de controle</p>
+          <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white">Área do Administrador</h1>
+          <p className="text-[#6B6F76] dark:text-gray-300 mt-1">Tudo da sua imobiliária, organizado por setor.</p>
         </div>
 
-        {/* Grid de Categorias */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Setores */}
+        <div className="space-y-9">
           {adminCategories.map((category) => (
-            <div key={category.title} className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] overflow-hidden">
-              {/* Header da Categoria */}
-              <div className={`bg-gradient-to-r ${category.color} p-6 text-white`}>
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl">{category.icon}</span>
-                  <div>
-                    <h2 className="text-xl font-bold">{category.title}</h2>
-                    <p className="text-amber-100 text-sm">{category.description}</p>
-                  </div>
+            <section key={category.title}>
+              {/* Cabeçalho do setor */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${category.color} flex items-center justify-center text-xl shadow-lg shrink-0`}>
+                  {category.icon}
                 </div>
+                <div className="min-w-0">
+                  <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white leading-tight">{category.title}</h2>
+                  <p className="text-xs text-[#6B6F76] dark:text-gray-400">{category.description}</p>
+                </div>
+                <div className="flex-1 h-px bg-gradient-to-r from-[#E8E9F1] dark:from-white/10 to-transparent ml-1" />
+                <span className="shrink-0 text-[11px] font-semibold text-[#9aa0a6] px-2 py-1 rounded-full bg-[#F0F1F5] dark:bg-white/[0.04]">{category.items.length}</span>
               </div>
 
-              {/* Itens da Categoria */}
-              <div className="p-6 space-y-4">
+              {/* Itens do setor */}
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {category.items.map((item) => (
                   <Link
-              key={item.title}
+                    key={item.title}
                     href={item.href}
-                    className="flex items-center gap-4 p-4 rounded-xl bg-[#F8F9FB] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] transition-all duration-200 hover:scale-[1.02] hover:shadow-md group cursor-pointer"
-                    onClick={e => item.special ? (e.preventDefault(), setShowAprovacao(true)) : null}
-            >
-                    <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#D4A017] to-[#E8C547] rounded-xl flex items-center justify-center text-white text-xl group-hover:scale-110 transition-transform">
+                    className="group relative flex items-center gap-3.5 p-4 rounded-2xl bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-white/[0.06] hover:border-[#D4A017]/60 dark:hover:border-[#D4A017]/45 hover:shadow-[0_10px_30px_-8px_rgba(212,160,23,0.30)] hover:-translate-y-0.5 transition-all duration-200"
+                  >
+                    <div className="shrink-0 w-12 h-12 rounded-xl bg-[#F8F9FB] dark:bg-white/[0.04] group-hover:bg-[#D4A017]/12 flex items-center justify-center text-2xl transition-colors">
                       {item.icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-[#2E2F38] dark:text-white group-hover:text-[#D4A017] transition-colors">
-                        {item.title}
-                      </h3>
-                      <p className="text-sm text-[#6B6F76] dark:text-gray-300 mt-1">
-                        {item.description}
-                      </p>
+                      <h3 className="font-semibold text-[#2E2F38] dark:text-white group-hover:text-[#D4A017] transition-colors truncate">{item.title}</h3>
+                      <p className="text-xs text-[#6B6F76] dark:text-gray-400 mt-0.5 line-clamp-2 leading-snug">{item.description}</p>
                     </div>
-                    <div className="flex-shrink-0 text-[#6B6F76] dark:text-gray-400 group-hover:text-[#D4A017] transition-colors">
-                      →
-                    </div>
+                    <span className="shrink-0 text-[#c9ccd4] dark:text-gray-500 group-hover:text-[#D4A017] group-hover:translate-x-0.5 transition-all">→</span>
                   </Link>
                 ))}
               </div>
-            </div>
+            </section>
           ))}
-      </div>
+        </div>
 
       {/* Modal Aprovação de Usuários */}
       {showAprovacao && (
