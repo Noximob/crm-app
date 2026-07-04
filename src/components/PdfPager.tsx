@@ -53,6 +53,41 @@ async function cachePut(url: string, data: ArrayBuffer): Promise<void> {
 const fmtMB = (n: number) => (n / 1048576).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' MB';
 
 /**
+ * Baixa o PDF com RETOMADA: se a conexão cair no meio (download longo/lento),
+ * continua de onde parou via Range (até 3 tentativas) em vez de recomeçar.
+ */
+async function baixarComRetomada(url: string, onProg: (loaded: number, total: number) => void): Promise<Uint8Array> {
+  const chunks: Uint8Array[] = [];
+  let recebido = 0, total = 0, tentativas = 0;
+  for (;;) {
+    try {
+      const resp = await fetch(url, recebido > 0 ? { headers: { Range: `bytes=${recebido}-` } } : undefined);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      if (recebido > 0 && resp.status === 200) { chunks.length = 0; recebido = 0; } // servidor ignorou o Range: recomeça
+      if (!total) {
+        const cr = resp.headers.get('content-range');
+        total = cr ? parseInt(cr.split('/')[1] || '0', 10) : parseInt(resp.headers.get('content-length') || '0', 10);
+      }
+      const reader = resp.body!.getReader();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value); recebido += value.length; onProg(recebido, total);
+      }
+      if (total && recebido < total) throw new Error('stream incompleto');
+      break;
+    } catch (e) {
+      if (++tentativas > 3) throw e;
+      await new Promise((r) => setTimeout(r, 1500 * tentativas)); // respira e retoma de onde parou
+    }
+  }
+  const out = new Uint8Array(recebido);
+  let off = 0;
+  for (const c of chunks) { out.set(c, off); off += c.length; }
+  return out;
+}
+
+/**
  * Visualizador de PDF página a página (modo apresentação):
  * cada rolada do mouse, clique ou seta pula UMA página inteira, ajustada à tela.
  * Baixa com barra de progresso e guarda em cache local (reabrir é instantâneo).
@@ -89,18 +124,17 @@ export default function PdfPager({ url, innerRef }: { url: string; innerRef?: Re
           // já baixado antes: abre na hora
           loadTask = pdfjs.getDocument({ data: new Uint8Array(cached.slice(0)) });
         } else {
-          loadTask = pdfjs.getDocument({ url });
-          loadTask.onProgress = (p: { loaded: number; total?: number }) => { if (vivo) setProg({ loaded: p.loaded, total: p.total || 0 }); };
+          // baixa com retomada (conexão pode cair num download longo) e só então parseia
+          const data = await baixarComRetomada(url, (l, t) => { if (vivo) setProg({ loaded: l, total: t }); });
+          if (!vivo) return;
+          void cachePut(url, data.slice().buffer as ArrayBuffer); // copia antes: o parser toma posse do buffer
+          loadTask = pdfjs.getDocument({ data });
         }
         const doc = await loadTask.promise;
         if (!vivo) return;
         docRef.current = doc;
         setNumPages(doc.numPages);
         setCarregando(false);
-        if (!cached) {
-          // guarda no cache local pra próxima abertura ser instantânea
-          doc.getData().then((d: Uint8Array) => { void cachePut(url, d.slice(0).buffer as ArrayBuffer); }).catch(() => { /* sem cache: ok */ });
-        }
       } catch {
         if (vivo) { setErro(true); setCarregando(false); }
       }
