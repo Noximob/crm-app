@@ -45,7 +45,6 @@ const adminCategories = [
     color: 'from-green-500 to-green-600',
     items: [
       { title: 'Agenda Imobiliária', icon: '📆', description: 'Gerencie agenda e plantões da imobiliária', href: '/dashboard/admin/agenda-imobiliaria' },
-      { title: 'Captações', icon: '🏠', description: 'Imóveis captados pelos usuários', href: '/dashboard/admin/captacoes' },
       { title: 'Materiais Construtora', icon: '🏗️', description: 'Materiais das construtoras', href: '/dashboard/admin/materiais-construtora' },
       { title: 'Ligação Ativa (roteiro)', icon: '📞', description: 'Edite o mapa mental da ligação ativa: mensagens, passos e botões', href: '/dashboard/admin/ligacao-ativa' },
       { title: 'Academia', icon: '🎓', description: 'Materiais educacionais', href: '/dashboard/admin/treinamentos' },
@@ -58,7 +57,6 @@ const adminCategories = [
     color: 'from-purple-500 to-purple-600',
     items: [
       { title: 'Comissões', icon: '💵', description: 'Imposto, meta, política de comissão e lançamento de vendas por equipe', href: '/dashboard/admin/comissoes' },
-      { title: 'Financeiro', icon: '💳', description: 'Controle financeiro', href: '/dashboard/admin/financeiro' },
       { title: 'Metas', icon: '🎯', description: 'Meta da imobiliária e soma das metas dos corretores', href: '/dashboard/admin/metas' },
       { title: 'Dashboards TV', icon: '📺', description: 'Telas para TV da imobiliária', href: '/dashboard/admin/dashboards-tv' },
     ]
