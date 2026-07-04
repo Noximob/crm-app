@@ -1505,70 +1505,98 @@ export default function DashboardPage() {
   const saudacaoDia = horaAgora < 12 ? 'Bom dia' : horaAgora < 18 ? 'Boa tarde' : 'Boa noite';
   const primeiroNomeHome = (userData?.nome || currentUser?.email?.split('@')[0] || 'corretor').split(' ')[0];
   const totalFunilHome = Object.values(funilPessoal || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+  const focoMsg = tarefaAtrasadaCount > 0
+    ? `Você tem ${tarefaAtrasadaCount} tarefa${tarefaAtrasadaCount > 1 ? 's' : ''} atrasada${tarefaAtrasadaCount > 1 ? 's' : ''} pedindo atenção — bora zerar?`
+    : tarefaDiaCount > 0
+      ? `${tarefaDiaCount} tarefa${tarefaDiaCount > 1 ? 's' : ''} pra fechar hoje. Foco total!`
+      : 'Nenhuma pendência. Dia livre pra caçar negócio novo.';
 
   return (
     <div className="min-h-full pb-6">
-      {/* ===== Boas-vindas + números do dia ===== */}
-      <section className="al-card relative overflow-hidden p-5 mb-3">
-        <div className="absolute -top-24 -right-20 w-80 h-80 rounded-full bg-[#D4A017]/10 blur-3xl pointer-events-none" />
-        <div className="relative flex flex-wrap items-center justify-between gap-4 mb-4">
-          <div className="min-w-0">
-            <p className="al-eyebrow mb-1">{nomeImobiliaria || 'Sua imobiliária'}</p>
-            <h1 className="text-[25px] md:text-[27px] font-extrabold text-white leading-tight">
-              {saudacaoDia}, {primeiroNomeHome}! Bora vender? 🚀
+      {/* ===== Boas-vindas + números do dia (aberto, sem caixa) ===== */}
+      <section className="relative mb-5 mt-1">
+        <div className="absolute -top-32 -left-28 w-[460px] h-[460px] rounded-full bg-[#D4A017]/[0.07] blur-3xl pointer-events-none" />
+        <div className="relative flex flex-wrap items-end justify-between gap-x-6 gap-y-4 mb-5">
+          <div className="min-w-0 al-rise">
+            <p className="al-eyebrow mb-2 flex items-center gap-2">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#E8C547] animate-pulse" />
+              {nomeImobiliaria || 'Sua imobiliária'}
+            </p>
+            <h1 className="al-display text-[30px] md:text-[38px] font-extrabold text-white leading-[1.06]">
+              {saudacaoDia}, {primeiroNomeHome}!{' '}
+              <span className="al-grad-text">Bora vender hoje?</span>
             </h1>
+            <p className="text-sm text-text-secondary mt-2.5">{focoMsg}</p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Link href="/dashboard/agenda" className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white/90 rounded-xl border border-white/15 hover:bg-white/[0.06] transition-colors">
+          <div className="flex items-center gap-2 shrink-0 al-rise al-d2">
+            <Link href="/dashboard/agenda" className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold text-white/90 rounded-xl border border-white/15 hover:bg-white/[0.06] transition-colors">
               <CalendarIcon className="h-3.5 w-3.5" />
               Agenda completa
             </Link>
-            <Link href="/dashboard/crm" className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-black bg-gradient-to-r from-[#E8C547] to-[#D4A017] rounded-xl hover:brightness-110 transition-all shadow-[0_4px_16px_-4px_rgba(212,160,23,0.5)]">
+            <Link href="/dashboard/crm" className="al-cta flex items-center gap-1.5 px-4 py-2.5 text-xs font-extrabold text-black bg-gradient-to-r from-[#FFE9A6] via-[#E8C547] to-[#D4A017] rounded-xl hover:brightness-105 transition-all shadow-[0_8px_24px_-8px_rgba(212,160,23,0.6)]">
               <BarChartIcon className="h-3.5 w-3.5" />
               Abrir CRM
             </Link>
           </div>
         </div>
-        <div className="relative grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-          <Link href="/dashboard/crm" className="al-kpi rounded-2xl border border-[#D4A017]/25 bg-[#D4A017]/[0.08] p-3.5 transition-all hover:border-[#D4A017]/50">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[#E8C547]/90">Leads no funil</p>
-            <p className="text-[26px] font-black text-white tabular-nums leading-tight">{totalFunilHome}</p>
-            <p className="text-[11px] text-text-secondary">sua carteira ativa</p>
+        <div className="relative grid grid-cols-2 xl:grid-cols-4 gap-3">
+          <Link href="/dashboard/crm" className="al-kpi al-card al-rise al-d1 p-4 flex items-start gap-3">
+            <span className="al-chip text-lg shrink-0">📊</span>
+            <span className="min-w-0">
+              <span className="block text-[11px] font-bold uppercase tracking-wider text-text-secondary">Leads no funil</span>
+              <span className="al-display block text-[30px] font-extrabold text-white tabular-nums leading-none mt-1.5">{totalFunilHome}</span>
+              <span className="block text-[11px] text-text-secondary mt-1.5">sua carteira ativa</span>
+            </span>
           </Link>
-          <Link href="/dashboard/crm?tarefa=atraso" className={`al-kpi rounded-2xl border p-3.5 transition-all ${tarefaAtrasadaCount > 0 ? 'border-red-500/40 bg-red-500/[0.08] hover:border-red-400/60' : 'border-white/[0.07] bg-white/[0.02] hover:border-white/20'}`}>
-            <p className={`text-[11px] font-bold uppercase tracking-wider ${tarefaAtrasadaCount > 0 ? 'text-red-300' : 'text-text-secondary'}`}>Atrasadas {tarefaAtrasadaCount > 0 && <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse ml-0.5 align-middle" />}</p>
-            <p className="text-[26px] font-black text-white tabular-nums leading-tight">{tarefaAtrasadaCount}</p>
-            <p className="text-[11px] text-text-secondary">{tarefaAtrasadaCount > 0 ? 'resolva primeiro' : 'tudo em dia 🎉'}</p>
+          <Link href="/dashboard/crm?tarefa=atraso" className="al-kpi al-card al-rise al-d2 p-4 flex items-start gap-3">
+            <span className={`al-chip text-lg shrink-0 ${tarefaAtrasadaCount > 0 ? '!border-red-500/40 !bg-red-500/10' : ''}`}>⏰</span>
+            <span className="min-w-0">
+              <span className={`block text-[11px] font-bold uppercase tracking-wider ${tarefaAtrasadaCount > 0 ? 'text-red-300' : 'text-text-secondary'}`}>Atrasadas{tarefaAtrasadaCount > 0 && <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse ml-1 align-middle" />}</span>
+              <span className="al-display block text-[30px] font-extrabold text-white tabular-nums leading-none mt-1.5">{tarefaAtrasadaCount}</span>
+              <span className="block text-[11px] text-text-secondary mt-1.5">{tarefaAtrasadaCount > 0 ? 'resolva primeiro' : 'tudo em dia 🎉'}</span>
+            </span>
           </Link>
-          <Link href="/dashboard/crm?tarefa=hoje" className={`al-kpi rounded-2xl border p-3.5 transition-all ${tarefaDiaCount > 0 ? 'border-amber-400/40 bg-amber-500/[0.08] hover:border-amber-400/60' : 'border-white/[0.07] bg-white/[0.02] hover:border-white/20'}`}>
-            <p className={`text-[11px] font-bold uppercase tracking-wider ${tarefaDiaCount > 0 ? 'text-amber-300' : 'text-text-secondary'}`}>Para hoje</p>
-            <p className="text-[26px] font-black text-white tabular-nums leading-tight">{tarefaDiaCount}</p>
-            <p className="text-[11px] text-text-secondary">tarefas do dia</p>
+          <Link href="/dashboard/crm?tarefa=hoje" className="al-kpi al-card al-rise al-d3 p-4 flex items-start gap-3">
+            <span className={`al-chip text-lg shrink-0 ${tarefaDiaCount > 0 ? '!border-amber-400/40 !bg-amber-500/10' : ''}`}>🔥</span>
+            <span className="min-w-0">
+              <span className={`block text-[11px] font-bold uppercase tracking-wider ${tarefaDiaCount > 0 ? 'text-amber-300' : 'text-text-secondary'}`}>Para hoje</span>
+              <span className="al-display block text-[30px] font-extrabold text-white tabular-nums leading-none mt-1.5">{tarefaDiaCount}</span>
+              <span className="block text-[11px] text-text-secondary mt-1.5">tarefas do dia</span>
+            </span>
           </Link>
-          <Link href="/dashboard/crm?tarefa=sem" className="al-kpi rounded-2xl border border-white/[0.07] bg-white/[0.02] p-3.5 transition-all hover:border-white/20">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">Sem tarefa</p>
-            <p className="text-[26px] font-black text-white tabular-nums leading-tight">{semTarefaCount}</p>
-            <p className="text-[11px] text-text-secondary">leads esquecidos</p>
+          <Link href="/dashboard/crm?tarefa=sem" className="al-kpi al-card al-rise al-d4 p-4 flex items-start gap-3">
+            <span className="al-chip text-lg shrink-0">🧊</span>
+            <span className="min-w-0">
+              <span className="block text-[11px] font-bold uppercase tracking-wider text-text-secondary">Sem tarefa</span>
+              <span className="al-display block text-[30px] font-extrabold text-white tabular-nums leading-none mt-1.5">{semTarefaCount}</span>
+              <span className="block text-[11px] text-text-secondary mt-1.5">leads esquecidos</span>
+            </span>
           </Link>
         </div>
       </section>
 
       {/* ===== Atalhos rápidos ===== */}
-      <section className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2.5 mb-3">
-        {[
-          { href: '/dashboard/crm', emoji: '➕', t: 'Novo cliente', d: 'cadastre um lead' },
-          { href: '/dashboard/ligacao-ativa', emoji: '📞', t: 'Ligação Ativa', d: 'roteiro da ligação' },
-          { href: '/dashboard/fluxo-pagamento', emoji: '🧾', t: 'Fluxo de Pagto', d: 'proposta em PDF' },
-          { href: '/dashboard/materiais', emoji: '📂', t: 'Materiais', d: 'apresente no Meet' },
-          { href: '/dashboard/comissoes', emoji: '💵', t: 'Comissões', d: 'seus ganhos' },
-          { href: '/dashboard/treinamentos', emoji: '🎓', t: 'Academia', d: 'aprenda e evolua' },
-        ].map((a) => (
-          <Link key={a.href} href={a.href} className="al-shortcut al-card p-3.5 flex flex-col">
-            <span className="text-[22px] leading-none">{a.emoji}</span>
-            <span className="text-[13px] font-bold text-white leading-tight mt-2">{a.t}</span>
-            <span className="text-[11px] text-text-secondary leading-tight mt-0.5">{a.d}</span>
-          </Link>
-        ))}
+      <section className="mb-5">
+        <p className="al-eyebrow mb-2.5">Acesso rápido</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
+          {[
+            { href: '/dashboard/crm', emoji: '➕', t: 'Novo cliente', d: 'cadastre um lead' },
+            { href: '/dashboard/ligacao-ativa', emoji: '📞', t: 'Ligação Ativa', d: 'roteiro da ligação' },
+            { href: '/dashboard/fluxo-pagamento', emoji: '🧾', t: 'Fluxo de Pagto', d: 'proposta em PDF' },
+            { href: '/dashboard/materiais', emoji: '📂', t: 'Materiais', d: 'apresente no Meet' },
+            { href: '/dashboard/comissoes', emoji: '💵', t: 'Comissões', d: 'seus ganhos' },
+            { href: '/dashboard/treinamentos', emoji: '🎓', t: 'Academia', d: 'aprenda e evolua' },
+          ].map((a, i) => (
+            <Link key={a.href} href={a.href} className={`al-shortcut al-card al-rise al-d${Math.min(i + 1, 6)} p-4 flex flex-col group`}>
+              <span className="al-chip text-xl">{a.emoji}</span>
+              <span className="al-display text-[13px] font-bold text-white leading-tight mt-3 flex items-center gap-1.5">
+                {a.t}
+                <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[#E8C547]">→</span>
+              </span>
+              <span className="text-[11px] text-text-secondary leading-tight mt-1">{a.d}</span>
+            </Link>
+          ))}
+        </div>
       </section>
 
       {/* ===== Conteúdo: agenda à esquerda, funil e metas à direita ===== */}
@@ -1577,7 +1605,7 @@ export default function DashboardPage() {
           {/* Sua agenda agora */}
           <div className="al-card p-4 relative overflow-hidden">
             <div className="flex items-center justify-between gap-3 mb-3">
-              <h2 className="text-base font-bold text-white">Sua agenda agora</h2>
+              <h2 className="al-display text-base font-bold text-white">Sua agenda agora</h2>
               <Link href="/dashboard/agenda" className="text-xs font-bold text-[#E8C547] hover:underline shrink-0">ver agenda →</Link>
             </div>
             <div>
@@ -1599,12 +1627,12 @@ export default function DashboardPage() {
                     const destaque = isAgora || emBreve;
                     const cardClass = destaque
                       ? isAgora
-                        ? 'rounded-xl border-2 border-red-500 bg-red-600/30 shadow-xl shadow-red-500/40 ring-2 ring-red-500/70'
-                        : 'rounded-xl border-2 border-amber-400 bg-amber-500/25 shadow-xl shadow-amber-500/40 ring-2 ring-amber-400/70'
-                      : 'rounded-xl border-2 border-emerald-400 bg-emerald-500/20';
+                        ? 'rounded-2xl border border-red-400/50 bg-gradient-to-br from-red-500/20 via-red-500/[0.05] to-transparent shadow-[0_0_32px_-10px_rgba(239,68,68,0.55)]'
+                        : 'rounded-2xl border border-amber-300/50 bg-gradient-to-br from-amber-400/20 via-amber-400/[0.05] to-transparent shadow-[0_0_32px_-10px_rgba(245,158,11,0.5)]'
+                      : 'rounded-2xl border border-emerald-400/35 bg-gradient-to-br from-emerald-500/[0.13] via-emerald-500/[0.03] to-transparent';
                     const icon = item.tipoChave ? (TIPO_ICON[item.tipoChave] ?? TIPO_ICON.outro) : (item.tipo === 'plantao' ? '🏢' : TIPO_ICON.outro);
                     return (
-                      <div key={`${item.tipo}-${item.id}-${item.startTime}`} className={`${cardClass} ${destaque ? 'animate-pulse' : ''} p-4 flex flex-col gap-2 min-h-[100px] relative`}>
+                      <div key={`${item.tipo}-${item.id}-${item.startTime}`} className={`${cardClass} p-4 flex flex-col gap-2 min-h-[100px] relative`}>
                         {isAgora && (
                           <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-red-500 text-white text-[10px] font-bold uppercase animate-pulse">Agora</span>
                         )}
@@ -1635,12 +1663,12 @@ export default function DashboardPage() {
                         const destaque = isAgora || emBreve;
                         const cardClass = destaque
                           ? isAgora
-                            ? 'rounded-xl border-2 border-red-500 bg-red-600/30 shadow-xl shadow-red-500/40 ring-2 ring-red-500/70'
-                            : 'rounded-xl border-2 border-amber-400 bg-amber-500/25 shadow-xl shadow-amber-500/40 ring-2 ring-amber-400/70'
-                          : 'rounded-xl border-2 border-emerald-400 bg-emerald-500/20';
+                            ? 'rounded-2xl border border-red-400/50 bg-gradient-to-br from-red-500/20 via-red-500/[0.05] to-transparent shadow-[0_0_32px_-10px_rgba(239,68,68,0.55)]'
+                            : 'rounded-2xl border border-amber-300/50 bg-gradient-to-br from-amber-400/20 via-amber-400/[0.05] to-transparent shadow-[0_0_32px_-10px_rgba(245,158,11,0.5)]'
+                          : 'rounded-2xl border border-emerald-400/35 bg-gradient-to-br from-emerald-500/[0.13] via-emerald-500/[0.03] to-transparent';
                         const icon = item!.tipoChave ? (TIPO_ICON[item!.tipoChave] ?? TIPO_ICON.outro) : (item!.tipo === 'plantao' ? '🏢' : TIPO_ICON.outro);
                         return (
-                          <div key={`${item!.tipo}-${item!.id}-${item!.startTime}`} className={`${cardClass} ${destaque ? 'animate-pulse' : ''} p-4 flex flex-col gap-2 min-h-[100px] relative`}>
+                          <div key={`${item!.tipo}-${item!.id}-${item!.startTime}`} className={`${cardClass} p-4 flex flex-col gap-2 min-h-[100px] relative`}>
                             {isAgora && (
                               <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-red-500 text-white text-[10px] font-bold uppercase animate-pulse">Agora</span>
                             )}
@@ -1933,7 +1961,7 @@ export default function DashboardPage() {
                     <span className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold border ${nivel.bg} ${nivel.text}`}>
                       {nivel.emoji} {nivel.label}
                     </span>
-                    <span className="shrink-0 text-sm font-black tabular-nums text-[#60a5fa]">{totalFunil}</span>
+                    <span className="al-display shrink-0 text-base font-extrabold tabular-nums al-grad-text">{totalFunil}</span>
                   </div>
                   <div className="space-y-1.5 min-w-0">
                     {etapasVisiveis.map((etapa) => {
@@ -1943,9 +1971,9 @@ export default function DashboardPage() {
                       return (
                         <div key={etapa} className="flex items-center gap-1.5 min-w-0">
                           <span className="text-[10px] text-[#94a3b8] font-medium shrink-0 w-[8.5rem] truncate" title={etapa}>{etapa}</span>
-                          <div className="flex-1 min-w-0 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                          <div className="flex-1 min-w-0 h-2 bg-white/[0.07] rounded-full overflow-hidden">
                             <div
-                              className="h-full rounded-full bg-[#D4A017]"
+                              className="h-full rounded-full bg-gradient-to-r from-[#FFE9A6] via-[#E8C547] to-[#D4A017] shadow-[0_0_10px_rgba(232,197,71,0.35)]"
                               style={{ width: `${widthPct}%`, minWidth: qtd > 0 ? 4 : 0 }}
                             />
                           </div>

@@ -228,9 +228,9 @@ export default function DashboardLayout({
   return (
     <PipelineStagesProvider imobiliariaId={userData?.imobiliariaId}>
     <div className="flex h-screen min-h-screen bg-particles">
-      {/* Sidebar — superfície sutil sobre o fundo, borda à direita */}
-      <div className={`flex flex-col h-screen fixed inset-y-0 left-0 z-50 ${collapsed ? 'w-16' : 'w-64'} bg-black/25 backdrop-blur-sm border-r border-white/[0.05] transition-all duration-300 text-xs`}>
-        <div className="flex-1 flex flex-col min-h-0">
+      {/* Sidebar — dock flutuante de vidro */}
+      <div className={`fixed left-3 top-3 bottom-3 z-50 ${collapsed ? 'w-[68px]' : 'w-[248px]'} transition-all duration-300 text-xs`}>
+        <div className="h-full flex flex-col min-h-0 al-card overflow-hidden">
           <div className="h-16 flex items-center justify-between px-5 shrink-0">
             <button
               onClick={() => router.push('/dashboard')}
@@ -261,7 +261,7 @@ export default function DashboardLayout({
                     const ativo = pathname === item.href;
                     const base = `flex items-center ${collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2'} rounded-xl text-[13px] font-medium transition-all`;
                     const cls = ativo
-                      ? `${base} bg-[#D4A017]/[0.13] text-white border border-[#D4A017]/30 shadow-[0_0_16px_rgba(212,160,23,0.12)]`
+                      ? `${base} bg-gradient-to-r from-[#E8C547]/[0.18] via-[#D4A017]/[0.08] to-transparent text-white border border-[#E8C547]/30 shadow-[0_0_18px_rgba(232,197,71,0.14)]`
                       : `${base} text-text-secondary border border-transparent hover:bg-white/[0.05] hover:text-white`;
                     const icone = <item.icon className={`h-[18px] w-[18px] shrink-0 ${ativo ? 'text-[#E8C547]' : ''}`} />;
                     return (
@@ -300,14 +300,14 @@ export default function DashboardLayout({
         </div>
       </div>
 
-      <div className={`flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300 ${collapsed ? 'ml-16' : 'ml-64'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300 ${collapsed ? 'ml-[86px]' : 'ml-[266px]'}`}>
         {/* Header: saudação + data | convites de eventos (1 por vez) | avatar */}
-        <header className="h-16 px-5 shrink-0 flex items-center justify-between gap-3 border-b border-white/[0.05]">
-          <div className="shrink-0 min-w-0">
-            <h2 className="text-[17px] font-bold text-white truncate leading-tight">
-              Olá, {displayName}! 👋
+        <header className="h-16 px-5 shrink-0 flex items-center justify-between gap-3">
+          <div className="shrink-0 min-w-0 flex items-baseline gap-2.5">
+            <h2 className="al-display text-[17px] font-bold text-white truncate leading-tight">
+              Olá, {displayName}!
             </h2>
-            {hojeStr && <p className="text-[11px] text-text-secondary capitalize leading-tight">{hojeStr}</p>}
+            {hojeStr && <p className="hidden sm:block text-[11px] text-text-secondary capitalize leading-tight">· {hojeStr}</p>}
           </div>
           {convitesPendentes.length > 0 && (
             <div className="flex items-center gap-2 flex-1 min-w-0 justify-center overflow-hidden">
@@ -342,12 +342,12 @@ export default function DashboardLayout({
             </div>
           )}
           <div className="flex items-center gap-3 shrink-0">
-            <div className="pl-3 border-l border-white/[0.06]">
-              <div className="relative w-8 h-8">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white font-semibold text-sm">
+            <div className="pl-3">
+              <div className="relative w-9 h-9 p-[2px] rounded-full bg-gradient-to-br from-[#FFE9A6] via-[#E8C547] to-[#B8860B] shadow-[0_0_14px_rgba(232,197,71,0.3)]">
+                <div className="w-full h-full rounded-full bg-[#15130c] flex items-center justify-center text-[#FFE9A6] font-bold text-sm al-display">
                   {(displayName || 'U').charAt(0).toUpperCase()}
                 </div>
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[var(--bg-card)]" title="Online" />
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[#0a0a10]" title="Online" />
               </div>
             </div>
           </div>

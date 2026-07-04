@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -130,14 +131,25 @@
   --accent-glow: rgba(212, 160, 23, 0.5);
 }
 
-/* Fundo do app: profundo e limpo, com brilhos dourados bem sutis nas bordas */
+/* Fundo do app: aurora premium (dourado + âmbar + um toque de violeta) com grão de filme */
 .bg-particles {
-  background-color: #0b0c11;
+  position: relative;
+  background-color: #0a0a10;
   background-image:
-    radial-gradient(1100px 520px at 88% -12%, rgba(212, 160, 23, 0.09) 0%, transparent 60%),
-    radial-gradient(900px 460px at -12% 112%, rgba(255, 140, 0, 0.06) 0%, transparent 55%),
-    linear-gradient(180deg, #0c0d13 0%, #0a0b0f 100%);
+    radial-gradient(1000px 620px at 88% -14%, rgba(212, 160, 23, 0.14) 0%, transparent 58%),
+    radial-gradient(760px 540px at -8% 18%, rgba(124, 58, 237, 0.10) 0%, transparent 55%),
+    radial-gradient(900px 640px at 50% 118%, rgba(255, 110, 40, 0.09) 0%, transparent 60%),
+    linear-gradient(180deg, #0b0b12 0%, #09090e 100%);
   background-repeat: no-repeat;
+}
+/* Grão de filme por cima de tudo — dá textura de produto caro */
+.bg-particles::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
 }
 
 body {
@@ -296,40 +308,84 @@ input:focus {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-/* Card padrão do sistema: superfície sólida discreta, borda neutra, brilho dourado só no hover */
+/* Card padrão do sistema (usado nas telas existentes): mesmo vidro premium */
 .dark .card-glow {
-  background: rgba(20, 22, 29, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(6px);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.055) 0%, rgba(255, 255, 255, 0.015) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  box-shadow: 0 24px 48px -24px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(14px);
 }
 .dark .card-glow:hover {
-  border-color: rgba(212, 160, 23, 0.35);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3), 0 0 18px rgba(212, 160, 23, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border-color: rgba(232, 197, 71, 0.32);
+  box-shadow: 0 24px 48px -24px rgba(0, 0, 0, 0.7), 0 0 22px rgba(212, 160, 23, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-/* Design system — utilitários do redesign */
+/* ============ Design system Alumma — utilitários ============ */
+/* Vidro premium: gradiente de superfície + borda com highlight no topo */
 .al-card {
-  background: rgba(20, 22, 29, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(6px);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.055) 0%, rgba(255, 255, 255, 0.015) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  box-shadow: 0 24px 48px -24px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(14px);
+}
+/* Tipografia display (títulos e números grandes) */
+.al-display {
+  font-family: 'Sora', 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.025em;
+}
+/* Texto com gradiente dourado */
+.al-grad-text {
+  background: linear-gradient(92deg, #FFE9A6 0%, #E8C547 40%, #F59E0B 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 .al-eyebrow {
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #9ca3b0;
 }
-.al-kpi:hover { transform: translateY(-2px); }
+/* Chip de ícone com fundo dourado profundo */
+.al-chip {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, rgba(232, 197, 71, 0.18) 0%, rgba(184, 134, 11, 0.07) 100%);
+  border: 1px solid rgba(232, 197, 71, 0.25);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+/* CTA com brilho que atravessa no hover */
+.al-cta { position: relative; overflow: hidden; }
+.al-cta::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.45) 50%, transparent 70%);
+  transform: translateX(-130%);
+}
+.al-cta:hover::after { animation: alShine 0.7s ease; }
+@keyframes alShine { to { transform: translateX(130%); } }
+/* Entrada em cascata */
+@keyframes alRise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.al-rise { animation: alRise 0.55s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+.al-d1 { animation-delay: 0.05s; } .al-d2 { animation-delay: 0.1s; } .al-d3 { animation-delay: 0.15s; }
+.al-d4 { animation-delay: 0.2s; } .al-d5 { animation-delay: 0.25s; } .al-d6 { animation-delay: 0.3s; }
+.al-kpi { transition: transform 0.18s ease, border-color 0.18s ease; }
+.al-kpi:hover { transform: translateY(-3px); }
 .al-shortcut { transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease; }
 .al-shortcut:hover {
-  transform: translateY(-3px);
-  border-color: rgba(212, 160, 23, 0.5) !important;
-  box-shadow: 0 12px 28px -10px rgba(212, 160, 23, 0.35);
+  transform: translateY(-4px);
+  border-color: rgba(232, 197, 71, 0.5) !important;
+  box-shadow: 0 16px 32px -12px rgba(212, 160, 23, 0.4);
 }
 
 /* Dias restantes — gradiente vermelho piscando para chamar atenção */
