@@ -100,7 +100,22 @@ export default function FluxoPagamentoPage() {
   const [reforcoMode, setReforcoMode] = useState<Modo>('rs');
   const [reforcoVal, setReforcoVal] = useState(0);
   const [periodicidade, setPeriodicidade] = useState('semestral');
+  const [dataLimite, setDataLimite] = useState(''); // até quando dá pra pagar (entrega das chaves)
   const [refDatas, setRefDatas] = useState<string[]>([]); // overrides YYYY-MM-DD; vazio = usa a sugerida
+
+  // Prazo total: com a 1ª parcela e o limite definidos, calcula sozinho quantas
+  // parcelas mensais cabem e quantos reforços cabem na periodicidade escolhida.
+  const mesesPrazo = React.useMemo(() => {
+    if (!dataBase || !dataLimite) return 0;
+    const a = parseLocal(dataBase), b = parseLocal(dataLimite);
+    const m = (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth()) + 1;
+    return m > 0 ? m : 0;
+  }, [dataBase, dataLimite]);
+  React.useEffect(() => {
+    if (!mesesPrazo) return;
+    setNParcelas(String(mesesPrazo));
+    setNReforcos(String(Math.floor(mesesPrazo / PERIODOS[periodicidade].meses)));
+  }, [mesesPrazo, periodicidade]);
 
   const c = useMemo(() => {
     const valor = valorImovel;
@@ -250,13 +265,16 @@ export default function FluxoPagamentoPage() {
                 <Campo label="Entrada em quantas vezes" hint={c.nEntr > 1 ? 'no ato e meses seguintes' : '1 = à vista no ato'}>
                   <input type="number" min="1" value={nEntrada} onChange={(e) => setNEntrada(e.target.value)} placeholder="1" className={inputCls + ' tabular-nums'} />
                 </Campo>
-                <Campo label="Data da 1ª parcela"><input type="date" value={dataBase} onChange={(e) => setDataBase(e.target.value)} className={inputCls} /></Campo>
+                <Campo label="Pagar até (entrega das chaves)" hint={mesesPrazo > 0 ? <>prazo de <b>{mesesPrazo} meses</b> → {mesesPrazo} parcelas e {Math.floor(mesesPrazo / PERIODOS[periodicidade].meses)} reforços {PERIODOS[periodicidade].label.toLowerCase()}</> : 'com a data da 1ª parcela, preenche parcelas e reforços sozinho'}>
+                  <input type="date" value={dataLimite} onChange={(e) => setDataLimite(e.target.value)} className={inputCls} />
+                </Campo>
               </div>
             </Secao>
 
             <Secao icon="📅" titulo="Parcelas mensais">
-              <div className="grid sm:grid-cols-2 gap-3">
-                <Campo label="Quantidade de parcelas"><input type="number" value={nParcelas} onChange={(e) => setNParcelas(e.target.value)} placeholder="40" className={inputCls + ' tabular-nums'} /></Campo>
+              <div className="grid sm:grid-cols-3 gap-3">
+                <Campo label="Data da 1ª parcela"><input type="date" value={dataBase} onChange={(e) => setDataBase(e.target.value)} className={inputCls} /></Campo>
+                <Campo label="Quantidade de parcelas" hint={mesesPrazo > 0 ? 'calculada pelo prazo (pode ajustar)' : undefined}><input type="number" value={nParcelas} onChange={(e) => setNParcelas(e.target.value)} placeholder="40" className={inputCls + ' tabular-nums'} /></Campo>
                 <ValorFlex label="Valor de cada parcela" mode={parcelaMode} value={parcelaVal} base={c.vp} onMode={setParcelaMode} onValue={setParcelaVal}
                   hint={eq(parcelaMode, parcelaVal, c.totalParc > 0 ? <>total <b>{brl(c.totalParc)}</b></> : undefined)} />
               </div>
@@ -266,7 +284,7 @@ export default function FluxoPagamentoPage() {
 
             <Secao icon="💰" titulo="Reforços (balões)">
               <div className="grid sm:grid-cols-3 gap-3">
-                <Campo label="Quantidade"><input type="number" value={nReforcos} onChange={(e) => setNReforcos(e.target.value)} placeholder="3" className={inputCls + ' tabular-nums'} /></Campo>
+                <Campo label="Quantidade" hint={mesesPrazo > 0 ? 'calculada pelo prazo (pode ajustar)' : undefined}><input type="number" value={nReforcos} onChange={(e) => setNReforcos(e.target.value)} placeholder="3" className={inputCls + ' tabular-nums'} /></Campo>
                 <ValorFlex label="Valor de cada reforço" mode={reforcoMode} value={reforcoVal} base={c.vp} onMode={setReforcoMode} onValue={setReforcoVal}
                   hint={eq(reforcoMode, reforcoVal, c.totalRef > 0 ? <>total <b>{brl(c.totalRef)}</b></> : undefined)} />
                 <Campo label="Periodicidade (sugestão)">
