@@ -1645,9 +1645,9 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Comunidade — mesmo conteúdo e funções da página Comunidade; cards ocupam toda a largura */}
+          {/* Comunidade — oculta da home a pedido (lógica preservada; usaremos depois). Basta remover "hidden" para reativar. */}
           <div className="w-full">
-          <div className="rounded-2xl p-4 relative overflow-hidden animate-fade-in border border-white/10">
+          <div className="rounded-2xl p-4 relative overflow-hidden animate-fade-in border border-white/10 hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-orange-500 rounded-r pointer-events-none" />
 
             {/* Tópico chamativo — foguinho tempo real */}

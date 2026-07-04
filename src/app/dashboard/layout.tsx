@@ -242,7 +242,6 @@ export default function DashboardLayout({
     { href: 'https://chat.openai.com', icon: ChatGPTIcon, label: 'ChatGPT', isExternal: true },
     { href: 'https://noximobiliaria.com.br/', icon: HouseIcon, label: 'Site', isExternal: true },
     { href: '/dashboard/treinamentos', icon: PresentationIcon, label: 'Academia' },
-    { href: '/dashboard/comunidade', icon: CommunityIcon, label: 'Comunidade', notifications: notifications.comunidade },
     // Exibir admin se for imobiliaria OU tiver permissao admin
     ...((userDataWithPerms?.tipoConta === 'imobiliaria' || userDataWithPerms?.permissoes?.admin) ? [
     { href: '/dashboard/admin', icon: KeyIcon, label: 'Área administrador' },
@@ -255,7 +254,6 @@ export default function DashboardLayout({
   ];
 
   const displayName = userData?.nome || user?.email?.split('@')[0] || 'usuário';
-  const pontosExemplo = 2150; // gamificação: exibir do userData quando existir
 
   return (
     <PipelineStagesProvider imobiliariaId={userData?.imobiliariaId}>
@@ -322,9 +320,6 @@ export default function DashboardLayout({
                           <CodeIcon className="h-5 w-5" />
                         ) : (
                           <item.icon className="h-5 w-5" />
-                        )}
-                        {item.notifications && (
-                          <span className="absolute -top-1 -right-1 bg-red-500 rounded-full h-2.5 w-2.5 flex animate-pulse" />
                         )}
                       </span>
                       {!collapsed && item.label}
@@ -404,18 +399,6 @@ export default function DashboardLayout({
             >
               <BallIcon className="w-5 h-5" />
             </button>
-            <Link
-              href="/dashboard/ideias"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-semibold text-sm transition-all shadow-[0_0_14px_rgba(255,140,0,0.25)] hover:shadow-[0_0_20px_rgba(255,140,0,0.35)]"
-              title="Ideias"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21h6"/><path d="M10 21c5-3 7-7 7-12a6 6 0 0 0-12 0c0 5 2 9 5 12z"/></svg>
-              Ideias
-            </Link>
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/[0.06] border border-orange-500/20">
-              <svg className="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v3.35c-1.84.42-2.59 1.33-2.59 2.77 0 1.52 1.21 2.69 3 3.21 1.78.52 2.34 1.15 2.34 1.87 0 .71-.64 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-3.54c1.92-.3 2.86-1.27 2.86-2.77 0-1.47-.99-2.45-2.7-2.95z"/></svg>
-              <span className="text-sm font-bold text-white tabular-nums">{pontosExemplo.toLocaleString('pt-BR')}</span>
-            </div>
             <div className="pl-3 border-l border-white/[0.06]">
               <div className="relative w-8 h-8">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white font-semibold text-sm">

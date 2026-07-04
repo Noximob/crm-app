@@ -27,57 +27,49 @@ const SectionTitle = ({ children, className = '' }: { children: React.ReactNode,
 // Categorias organizadas para melhor UX
 const adminCategories = [
   {
-    title: 'Gestão de Pessoas',
-    description: 'Administre corretores e usuários',
+    title: 'Equipe',
+    description: 'Corretores, acessos e leads',
     icon: '👥',
     color: 'from-primary-400 to-primary-600',
     items: [
-      { title: 'Gestão de Corretores', icon: '🧑‍💼', description: 'Administre leads dos corretores', href: '/dashboard/admin/gestao-corretores' },
-      { title: 'Visualizar CRM do Corretor', icon: '👁️', description: 'Veja o CRM exatamente como o corretor vê (somente leitura)', href: '/dashboard/admin/visualizar-crm-corretor' },
-      { title: 'Agenda dos Usuários', icon: '📅', description: 'Visualize agenda de todos os usuários', href: '/dashboard/admin/agenda-usuarios' },
+      { title: 'Gestão de Corretores', icon: '🧑‍💼', description: 'Administre leads e desempenho dos corretores', href: '/dashboard/admin/gestao-corretores' },
+      { title: 'Aprovação de Usuários', icon: '✅', description: 'Aprove novos cadastros', href: '#', special: true },
+      { title: 'Agenda dos Usuários', icon: '📅', description: 'Visualize a agenda de todos os usuários', href: '/dashboard/admin/agenda-usuarios' },
       { title: 'Importar Leads', icon: '⬆️', description: 'Importe leads em massa', href: '/dashboard/admin/importar-leads' },
-      { title: 'Avisos', icon: '📢', description: 'Avisos para corretores', href: '/dashboard/admin/avisos-importantes' },
-      { title: 'Agenda Imobiliária', icon: '📅', description: 'Gerencie agenda e plantões da imobiliária', href: '/dashboard/admin/agenda-imobiliaria' },
     ]
   },
   {
-    title: 'Materiais e Conteúdo',
-    description: 'Gerencie materiais e treinamentos',
-    icon: '📚',
+    title: 'Imobiliária',
+    description: 'Rotina, captações e conteúdo',
+    icon: '🏢',
     color: 'from-green-500 to-green-600',
     items: [
+      { title: 'Agenda Imobiliária', icon: '📆', description: 'Gerencie agenda e plantões da imobiliária', href: '/dashboard/admin/agenda-imobiliaria' },
+      { title: 'Captações', icon: '🏠', description: 'Imóveis captados pelos usuários', href: '/dashboard/admin/captacoes' },
       { title: 'Materiais Construtora', icon: '🏗️', description: 'Materiais das construtoras', href: '/dashboard/admin/materiais-construtora' },
       { title: 'Ligação Ativa (roteiro)', icon: '📞', description: 'Edite o mapa mental da ligação ativa: mensagens, passos e botões', href: '/dashboard/admin/ligacao-ativa' },
-      { title: 'Captações', icon: '🏠', description: 'Imóveis captados pelos usuários', href: '/dashboard/admin/captacoes' },
-      { title: 'Ideias', icon: '💡', description: 'Gestão de ideias dos usuários', href: '/dashboard/admin/ideias' },
       { title: 'Academia', icon: '🎓', description: 'Materiais educacionais', href: '/dashboard/admin/treinamentos' },
     ]
   },
   {
-    title: 'Gestão Financeira e Relatórios',
-    description: 'Controle financeiro e métricas',
+    title: 'Financeiro e Metas',
+    description: 'Comissões, caixa e objetivos',
     icon: '💰',
     color: 'from-purple-500 to-purple-600',
     items: [
-      { title: 'Financeiro', icon: '💳', description: 'Controle financeiro', href: '/dashboard/admin/financeiro' },
       { title: 'Comissões', icon: '💵', description: 'Imposto, meta, política de comissão e lançamento de vendas por equipe', href: '/dashboard/admin/comissoes' },
-      { title: 'Metas', icon: '🎯', description: 'Configure metas', href: '/dashboard/admin/metas' },
-      { title: 'Relatórios', icon: '📊', description: 'Métricas e resultados', href: '/dashboard/admin/relatorios' },
-      { title: 'Relatório Individual', icon: '📋', description: 'Relatório completo por corretor (dia/semana/mês) para download e envio', href: '/dashboard/admin/relatorio-individual' },
-      { title: 'Relatório de Valorização dos Clientes', icon: '📈', description: 'Dashboard de valorização para clientes investidores com download em PDF', href: '/dashboard/admin/relatorio-valorizacao-clientes' },
-      { title: 'Relatório Diário', icon: '📊', description: 'Funil e lista de leads para apresentação diária (qualificação, anotações, próxima tarefa)', href: '/dashboard/admin/relatorio-diario' },
+      { title: 'Financeiro', icon: '💳', description: 'Controle financeiro', href: '/dashboard/admin/financeiro' },
+      { title: 'Metas', icon: '🎯', description: 'Meta da imobiliária e soma das metas dos corretores', href: '/dashboard/admin/metas' },
       { title: 'Dashboards TV', icon: '📺', description: 'Telas para TV da imobiliária', href: '/dashboard/admin/dashboards-tv' },
     ]
   },
   {
-    title: 'Sistema e Configurações',
-    description: 'Configurações avançadas',
+    title: 'Configurações',
+    description: 'Estrutura do CRM',
     icon: '⚙️',
     color: 'from-orange-500 to-orange-600',
     items: [
       { title: 'Funil de Vendas', icon: '📊', description: 'Adicionar, editar ou remover etapas do funil (CRM)', href: '/dashboard/admin/funil-vendas' },
-      { title: 'Aprovação de Usuários', icon: '✅', description: 'Aprove novos cadastros', href: '#', special: true },
-      { title: 'Site', icon: '🌐', description: 'Site institucional', href: '/dashboard/admin/site' },
     ]
   }
 ];

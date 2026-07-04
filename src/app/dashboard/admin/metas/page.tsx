@@ -49,6 +49,9 @@ export default function AdminMetasPage() {
 
   const totalRealizado = contribuicoes.reduce((s, c) => s + c.valor, 0);
   const percentualCalculado = vgv && totalRealizado >= 0 ? Math.round((totalRealizado / parseFloat(vgv)) * 100) : 0;
+  // Soma das metas pessoais dos corretores (interliga com o que cada corretor tem definido)
+  const somaMetasPessoais = Object.values(metasPessoais).reduce((s, v) => s + (Number(v) || 0), 0);
+  const metaImobValor = parseFloat(vgv) || 0;
 
   // Converte valor em formato BR (3.000.000,00) ou número simples para número
   function parseValorBR(str: string): number {
@@ -492,6 +495,22 @@ export default function AdminMetasPage() {
         {corretores.length === 0 && (
           <p className="text-sm text-white/60">Nenhum corretor aprovado na imobiliária.</p>
         )}
+
+        {/* Soma das metas pessoais + comparação com a meta da imobiliária */}
+        <div className="pt-3 mt-1 border-t border-amber-500/20 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-white">Soma das metas pessoais</span>
+            <span className="text-lg font-bold text-amber-300">R$ {somaMetasPessoais.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+          </div>
+          {metaImobValor > 0 && (
+            <p className="text-xs text-white/70">
+              Meta da imobiliária: <span className="text-white font-medium">R$ {metaImobValor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span> ·{' '}
+              {somaMetasPessoais >= metaImobValor
+                ? <span className="text-emerald-300">✓ as metas pessoais já cobrem a meta da imobiliária</span>
+                : <>faltam <span className="text-amber-300 font-medium">R$ {(metaImobValor - somaMetasPessoais).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span> para cobrir a meta da imobiliária</>}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
