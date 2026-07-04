@@ -141,7 +141,8 @@ export default function FluxoPagamentoPage() {
     const pctDesc = valor > 0 ? (descR / valor) * 100 : 0;
     const ac = chaveMode === 'pct' ? vp * (chaveVal / 100) : chaveVal; // total a pagar até a chave
     const pctChaveEff = vp > 0 ? (ac / vp) * 100 : 0;
-    const saldo = Math.max(0, vp - ac);
+    // a permuta ABATE do saldo financiado na entrega (não do fluxo até a chave)
+    const saldo = Math.max(0, vp - ac - permutaValor);
     const entradaR = entradaMode === 'pct' ? vp * (entradaVal / 100) : entradaVal;
     const nEntr = Math.max(1, Math.round(numI(nEntrada)) || 1);
     const entradaParc = nEntr > 0 ? entradaR / nEntr : entradaR;
@@ -154,7 +155,7 @@ export default function FluxoPagamentoPage() {
     const reforcoR = reforcoMode === 'pct' ? baseReforco * (reforcoVal / 100) : reforcoVal;
     const totalParc = nParc * parcelaR;
     const totalRef = nRef * reforcoR;
-    const montado = entradaR + permutaValor + totalParc + totalRef; // permuta abate do que se paga até a chave
+    const montado = entradaR + totalParc + totalRef; // fluxo até a chave (a permuta fica no financiamento)
     const diferenca = ac - montado;
     const tol = 0.01 * (nParc + nRef + nEntr) + 0.005;
     const fecha = ac > 0 && Math.abs(diferenca) <= tol;
@@ -179,8 +180,8 @@ export default function FluxoPagamentoPage() {
     const v = Math.max(0, alvoR);
     setVal(mode === 'pct' ? (baseUnit > 0 ? round3((v / baseUnit) * 100) : 0) : round2(v));
   };
-  const fecharPelaParcela = () => { if (c.nParc > 0) setNoModo((c.ac - c.entradaR - permutaValor - c.totalRef) / c.nParc, parcelaMode, c.baseParcela, setParcelaVal); };
-  const fecharPeloReforco = () => { if (c.nRef > 0) setNoModo((c.ac - c.entradaR - permutaValor - c.totalParc) / c.nRef, reforcoMode, c.baseReforco, setReforcoVal); };
+  const fecharPelaParcela = () => { if (c.nParc > 0) setNoModo((c.ac - c.entradaR - c.totalRef) / c.nParc, parcelaMode, c.baseParcela, setParcelaVal); };
+  const fecharPeloReforco = () => { if (c.nRef > 0) setNoModo((c.ac - c.entradaR - c.totalParc) / c.nRef, reforcoMode, c.baseReforco, setReforcoVal); };
 
   // dica “equivalente” pros campos flexíveis
   const eq = (mode: Modo, val: number, extra?: React.ReactNode) => {
@@ -197,7 +198,6 @@ export default function FluxoPagamentoPage() {
       const detEntr = c.nEntr > 1 ? ` <span class="mut">· ${c.nEntr}× de ${brl(c.entradaParc)} · ${dtETxt}</span>` : ` <span class="mut">· ${dtETxt}</span>`;
       linhas.push(`<tr><td>Entrada${detEntr}</td><td class="c">${c.nEntr}×</td><td class="r">${brl(c.entradaParc)}</td><td class="r">${brl(c.entradaR)}</td></tr>`);
     }
-    if (permutaValor > 0) linhas.push(`<tr><td>Permuta${permutaDesc ? ` <span class="mut">· ${permutaDesc}</span>` : ''}</td><td class="c">1×</td><td class="r">${brl(permutaValor)}</td><td class="r">${brl(permutaValor)}</td></tr>`);
     if (c.nParc > 0 && c.parcelaR > 0) {
       const per = c.base && c.parcUltima ? ` <span class="mut">· ${fmtData(c.base)} a ${fmtData(c.parcUltima)}</span>` : '';
       linhas.push(`<tr><td>Parcelas mensais${per}</td><td class="c">${c.nParc}×</td><td class="r">${brl(c.parcelaR)}</td><td class="r">${brl(c.totalParc)}</td></tr>`);
@@ -207,7 +207,8 @@ export default function FluxoPagamentoPage() {
       linhas.push(`<tr><td>Reforços ${PERIODOS[periodicidade].label.toLowerCase()}${datas ? ` <span class="mut">· ${datas}</span>` : ''}</td><td class="c">${c.nRef}×</td><td class="r">${brl(c.reforcoR)}</td><td class="r">${brl(c.totalRef)}</td></tr>`);
     }
     linhas.push(`<tr class="sub"><td colspan="3">Total até a entrega das chaves</td><td class="r">${brl(c.montado)}</td></tr>`);
-    linhas.push(`<tr><td>Saldo financiado na entrega <span class="mut">· banco / construtora</span></td><td class="c">—</td><td class="r">—</td><td class="r">${brl(c.saldo)}</td></tr>`);
+    if (permutaValor > 0) linhas.push(`<tr><td>Permuta${permutaDesc ? ` <span class="mut">· ${permutaDesc}</span>` : ''} <span class="mut">· abate do saldo financiado</span></td><td class="c">1×</td><td class="r">${brl(permutaValor)}</td><td class="r">${brl(permutaValor)}</td></tr>`);
+    linhas.push(`<tr><td>Saldo financiado na entrega <span class="mut">· banco / construtora${permutaValor > 0 ? ' · já com a permuta abatida' : ''}</span></td><td class="c">—</td><td class="r">—</td><td class="r">${brl(c.saldo)}</td></tr>`);
     linhas.push(`<tr class="tot"><td colspan="3">Valor total do imóvel</td><td class="r">${brl(c.vp)}</td></tr>`);
     const hoje = new Date().toLocaleDateString('pt-BR');
     const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Proposta de Pagamento — Nox Imóveis</title>
@@ -275,7 +276,11 @@ export default function FluxoPagamentoPage() {
               </div>
               <div className="grid sm:grid-cols-2 gap-3">
                 <Campo label="Permuta (o que entra)" hint="carro, casa, terreno… (opcional)"><input value={permutaDesc} onChange={(e) => setPermutaDesc(e.target.value)} placeholder="Ex: Honda Civic 2020" className={inputCls} /></Campo>
-                <Campo label="Valor da permuta" hint={permutaValor > 0 ? 'abatido do que se paga até a chave' : 'opcional'}><MoneyInput value={permutaValor} onChange={setPermutaValor} placeholder="0,00" className={inputCls} /></Campo>
+                <Campo label="Valor da permuta" hint={permutaValor > 0
+                  ? (c.ac > 0 && permutaValor > c.vp - c.ac
+                    ? <span className="text-rose-500 dark:text-rose-300">⚠ maior que o saldo da entrega ({brl(Math.max(0, c.vp - c.ac))}) — reduza o que vai até a chave</span>
+                    : 'abate do saldo financiado na entrega')
+                  : 'opcional'}><MoneyInput value={permutaValor} onChange={setPermutaValor} placeholder="0,00" className={inputCls} /></Campo>
               </div>
             </Secao>
 
@@ -379,11 +384,11 @@ export default function FluxoPagamentoPage() {
               <div className="px-5 py-3 border-b border-[#E8E9F1] dark:border-white/10 text-sm font-bold text-[#2E2F38] dark:text-white">Condições de pagamento</div>
               <div className="divide-y divide-[#E8E9F1] dark:divide-white/10 text-sm">
                 {c.entradaR > 0 && <Linha nome="Entrada" sub={c.entradaDateObjs.length ? (c.nEntr > 1 ? `${c.nEntr}× de ${brl(c.entradaParc)} · ${fmtData(c.entradaDateObjs[0])} a ${fmtData(c.entradaDateObjs[c.nEntr - 1])}` : fmtData(c.entradaDateObjs[0])) : 'no ato'} qtd={`${c.nEntr}×`} valor={brl(c.entradaParc)} total={brl(c.entradaR)} />}
-                {permutaValor > 0 && <Linha nome="Permuta" sub={permutaDesc || undefined} qtd="1×" valor={brl(permutaValor)} total={brl(permutaValor)} />}
                 <Linha nome="Parcelas mensais" sub={c.base && c.parcUltima ? `${fmtData(c.base)} a ${fmtData(c.parcUltima)}` : undefined} qtd={`${c.nParc}×`} valor={brl(c.parcelaR)} total={brl(c.totalParc)} />
                 <Linha nome={`Reforços ${PERIODOS[periodicidade].label.toLowerCase()}`} sub={c.refDateObjs.length ? c.refDateObjs.map((d) => fmtData(d)).join(' · ') : undefined} qtd={`${c.nRef}×`} valor={brl(c.reforcoR)} total={brl(c.totalRef)} />
                 <Linha nome="Total até a entrega das chaves" total={brl(c.montado)} destaque />
-                <Linha nome="Saldo financiado na entrega" sub="banco / construtora" total={brl(c.saldo)} />
+                {permutaValor > 0 && <Linha nome="Permuta" sub={`${permutaDesc ? permutaDesc + ' · ' : ''}abate do financiamento`} qtd="1×" valor={brl(permutaValor)} total={brl(permutaValor)} />}
+                <Linha nome="Saldo financiado na entrega" sub={permutaValor > 0 ? 'banco / construtora · já com a permuta abatida' : 'banco / construtora'} total={brl(c.saldo)} />
                 {c.descR > 0 && <Linha nome="Valor de tabela" total={brl(c.valor)} />}
                 {c.descR > 0 && <Linha nome={`Desconto (${fmtPct(c.pctDesc)})`} sub="negociado pra proposta" total={`− ${brl(c.descR)}`} />}
                 <Linha nome="Valor total do imóvel" sub={c.descR > 0 ? 'já com o desconto' : undefined} total={brl(c.vp)} forte />
