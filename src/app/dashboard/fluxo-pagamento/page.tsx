@@ -19,6 +19,21 @@ const fmtPct = (n: number) => n.toLocaleString('pt-BR', { maximumFractionDigits:
 
 const parseLocal = (s: string) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, (m || 1) - 1, d || 1); };
 const addMonths = (d: Date, n: number) => { const x = new Date(d); x.setMonth(x.getMonth() + n); return x; };
+
+// Reforços vencem no FIM dos períodos do calendário (dia 30): semestral = jun/dez;
+// anual = dez; trimestral = mar/jun/set/dez. Sugere as N próximas após o início.
+const REF_MESES_FIM: Record<string, number[]> = { trimestral: [3, 6, 9, 12], semestral: [6, 12], anual: [12] };
+function sugerirReforcos(inicio: Date, per: string, n: number): Date[] {
+  const alvo = REF_MESES_FIM[per] || [6, 12];
+  const out: Date[] = [];
+  const d = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
+  let guard = 0;
+  while (out.length < n && guard++ < 600) {
+    d.setMonth(d.getMonth() + 1);
+    if (alvo.includes(d.getMonth() + 1)) out.push(new Date(d.getFullYear(), d.getMonth(), 30));
+  }
+  return out;
+}
 const toYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const fmtData = (d: Date) => d.toLocaleDateString('pt-BR');
 
@@ -43,9 +58,9 @@ const Secao = ({ icon, titulo, children }: { icon: string; titulo: string; child
 const btnFechar = 'text-xs px-3 py-1.5 rounded-lg bg-[#D4A017]/15 text-[#8a6d10] dark:text-[#e8c547] font-semibold hover:bg-[#D4A017]/25 transition';
 
 /** Campo de valor com raciocínio flexível: digite em R$ OU em % (do valor da proposta). Ao alternar, converte o número. */
-const ValorFlex = ({ label, mode, value, base, onMode, onValue, hint }: {
+const ValorFlex = ({ label, mode, value, base, onMode, onValue, hint, ph }: {
   label: string; mode: Modo; value: number; base: number;
-  onMode: (m: Modo) => void; onValue: (n: number) => void; hint?: React.ReactNode;
+  onMode: (m: Modo) => void; onValue: (n: number) => void; hint?: React.ReactNode; ph?: string;
 }) => {
   const trocar = (m: Modo) => {
     if (m === mode) return;
@@ -69,7 +84,7 @@ const ValorFlex = ({ label, mode, value, base, onMode, onValue, hint }: {
         <MoneyInput value={value} onChange={onValue} placeholder="0,00" className={inputCls} />
       ) : (
         <div className="relative">
-          <input type="number" step="any" min="0" value={value || ''} onChange={(e) => onValue(parseFloat(e.target.value) || 0)} placeholder="0" className={inputCls + ' pr-8 tabular-nums'} />
+          <input type="number" step="any" min="0" value={value || ''} onChange={(e) => onValue(parseFloat(e.target.value) || 0)} placeholder={ph || '0'} className={inputCls + ' pr-8 tabular-nums'} />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[13px] text-[#9aa0a6] pointer-events-none">%</span>
         </div>
       )}
@@ -88,15 +103,15 @@ export default function FluxoPagamentoPage() {
   const [permutaDesc, setPermutaDesc] = useState('');
   const [permutaValor, setPermutaValor] = useState(0);
   const [chaveMode, setChaveMode] = useState<Modo>('pct');
-  const [chaveVal, setChaveVal] = useState(30);
+  const [chaveVal, setChaveVal] = useState(0);
   const [entradaMode, setEntradaMode] = useState<Modo>('rs');
   const [entradaVal, setEntradaVal] = useState(0);
-  const [nEntrada, setNEntrada] = useState('1');
+  const [nEntrada, setNEntrada] = useState('');
   const [dataBase, setDataBase] = useState('');
-  const [nParcelas, setNParcelas] = useState('40');
+  const [nParcelas, setNParcelas] = useState('');
   const [parcelaMode, setParcelaMode] = useState<Modo>('rs');
   const [parcelaVal, setParcelaVal] = useState(0);
-  const [nReforcos, setNReforcos] = useState('3');
+  const [nReforcos, setNReforcos] = useState('');
   const [reforcoMode, setReforcoMode] = useState<Modo>('rs');
   const [reforcoVal, setReforcoVal] = useState(0);
   const [periodicidade, setPeriodicidade] = useState('semestral');
@@ -143,22 +158,19 @@ export default function FluxoPagamentoPage() {
     const diferenca = ac - montado;
     const tol = 0.01 * (nParc + nRef + nEntr) + 0.005;
     const fecha = ac > 0 && Math.abs(diferenca) <= tol;
-    const periodo = PERIODOS[periodicidade].meses;
+    const hoje = new Date();
     const base = dataBase ? parseLocal(dataBase) : null;
     const parcUltima = base && nParc > 0 ? addMonths(base, nParc - 1) : null;
-    const refMeses = Array.from({ length: nRef }, (_, j) => periodo * (j + 1));
-    const refDateObjs = Array.from({ length: nRef }, (_, j) => {
-      if (refDatas[j]) return parseLocal(refDatas[j]);
-      return base ? addMonths(base, refMeses[j] - 1) : null;
-    });
-    const refForaPrazo = nParc > 0 && refMeses.some((m) => m > nParc);
+    // reforços: datas sempre sugeridas no fim dos períodos do calendário (dia 30) — editáveis
+    const refSugeridas = sugerirReforcos(base || hoje, periodicidade, nRef);
+    const refDateObjs = refSugeridas.map((d, j) => (refDatas[j] ? parseLocal(refDatas[j]) : d));
+    const refForaPrazo = dataLimite ? refDateObjs.some((d) => d > parseLocal(dataLimite)) : false;
     // vencimentos da entrada: 1ª sugerida hoje (ato) e as demais nos meses seguintes — editáveis
-    const hoje = new Date();
     const entradaDateObjs = Array.from({ length: nEntr }, (_, j) => (entradaDatas[j] ? parseLocal(entradaDatas[j]) : addMonths(hoje, j)));
-    return { valor, descR, pctDesc, vp, ac, pctChaveEff, saldo, entradaR, nEntr, entradaParc, entradaDateObjs, nParc, baseParcela, parcelaR, nRef, baseReforco, reforcoR, totalParc, totalRef, montado, diferenca, fecha, periodo, base, parcUltima, refMeses, refDateObjs, refForaPrazo };
-  }, [valorImovel, descMode, descVal, chaveMode, chaveVal, entradaMode, entradaVal, nEntrada, entradaDatas, permutaValor, dataBase, nParcelas, parcelaMode, parcelaVal, nReforcos, reforcoMode, reforcoVal, periodicidade, refDatas]);
+    return { valor, descR, pctDesc, vp, ac, pctChaveEff, saldo, entradaR, nEntr, entradaParc, entradaDateObjs, nParc, baseParcela, parcelaR, nRef, baseReforco, reforcoR, totalParc, totalRef, montado, diferenca, fecha, base, parcUltima, refSugeridas, refDateObjs, refForaPrazo };
+  }, [valorImovel, descMode, descVal, chaveMode, chaveVal, entradaMode, entradaVal, nEntrada, entradaDatas, permutaValor, dataBase, dataLimite, nParcelas, parcelaMode, parcelaVal, nReforcos, reforcoMode, reforcoVal, periodicidade, refDatas]);
 
-  const suggestedYMD = (j: number) => (c.base ? toYMD(addMonths(c.base, c.refMeses[j] - 1)) : '');
+  const suggestedYMD = (j: number) => (c.refSugeridas[j] ? toYMD(c.refSugeridas[j]) : '');
   const setRefData = (j: number, v: string) => setRefDatas((prev) => { const n = [...prev]; n[j] = v; return n; });
   const setEntradaData = (j: number, v: string) => setEntradaDatas((prev) => { const n = [...prev]; n[j] = v; return n; });
 
@@ -269,16 +281,16 @@ export default function FluxoPagamentoPage() {
 
             <Secao icon="🔑" titulo="Até a entrega das chaves">
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <ValorFlex label="A pagar até a chave" mode={chaveMode} value={chaveVal} base={c.vp} onMode={setChaveMode} onValue={setChaveVal}
-                  hint={c.ac > 0 ? (chaveMode === 'pct' ? <>= <b>{brl(c.ac)}</b></> : <>= <b>{fmtPct(c.pctChaveEff)}</b> da proposta</>) : undefined} />
+                <ValorFlex label="A pagar até a chave" mode={chaveMode} value={chaveVal} base={c.vp} onMode={setChaveMode} onValue={setChaveVal} ph="30"
+                  hint={c.ac > 0 ? (chaveMode === 'pct' ? <>= <b>{brl(c.ac)}</b></> : <>= <b>{fmtPct(c.pctChaveEff)}</b> da proposta</>) : 'ex.: 30% até a entrega'} />
                 <ValorFlex label="Entrada (total)" mode={entradaMode} value={entradaVal} base={c.vp} onMode={setEntradaMode} onValue={setEntradaVal}
                   hint={eq(entradaMode, entradaVal, c.nEntr > 1 && c.entradaR > 0 ? <b>{c.nEntr}× de {brl(c.entradaParc)}</b> : undefined)} />
                 <Campo label="Entrada em quantas vezes" hint={c.nEntr > 1 ? 'no ato e meses seguintes' : '1 = à vista no ato'}>
                   <input type="number" min="1" value={nEntrada} onChange={(e) => setNEntrada(e.target.value)} placeholder="1" className={inputCls + ' tabular-nums'} />
                 </Campo>
-                <Campo label="Cliente pode pagar até quando?" hint={mesesPrazo > 0
+                <Campo label="Parcelamento com a construtora até quando?" hint={mesesPrazo > 0
                   ? <>prazo de <b>{mesesPrazo} meses</b> → já preenchi <b>{mesesPrazo} parcelas</b> e <b>{Math.floor(mesesPrazo / PERIODOS[periodicidade].meses)} reforços</b> {PERIODOS[periodicidade].label.toLowerCase()} lá embaixo{!dataBase ? ' (contando a partir de hoje)' : ''}</>
-                  : 'a data da entrega das chaves. Ao escolher, eu preencho sozinho quantas parcelas e reforços cabem no prazo.'}>
+                  : 'a data limite do parcelamento direto com a construtora (entrega das chaves). Ao escolher, preencho sozinho quantas parcelas e reforços cabem no prazo.'}>
                   <input type="date" value={dataLimite} onChange={(e) => setDataLimite(e.target.value)} className={inputCls} />
                 </Campo>
               </div>
@@ -329,7 +341,7 @@ export default function FluxoPagamentoPage() {
               {c.nRef > 0 && (
                 <div className="rounded-xl border border-[#E8E9F1] dark:border-white/10 p-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-[#6B6F76] dark:text-gray-300">Vencimento de cada reforço {c.base ? '(sugerido — pode alterar)' : '(defina a data da 1ª parcela p/ sugerir)'}</span>
+                    <span className="text-xs font-semibold text-[#6B6F76] dark:text-gray-300">Vencimento de cada reforço (sugerido no fim de {periodicidade === 'anual' ? 'dezembro' : periodicidade === 'trimestral' ? 'mar/jun/set/dez' : 'junho e dezembro'} — pode alterar)</span>
                     {refDatas.length > 0 && <button onClick={() => setRefDatas([])} className="text-[11px] text-[#8a6d10] dark:text-[#e8c547] font-semibold hover:underline">usar sugeridas</button>}
                   </div>
                   <div className="grid sm:grid-cols-2 gap-2">
@@ -369,10 +381,12 @@ export default function FluxoPagamentoPage() {
                 {c.entradaR > 0 && <Linha nome="Entrada" sub={c.entradaDateObjs.length ? (c.nEntr > 1 ? `${c.nEntr}× de ${brl(c.entradaParc)} · ${fmtData(c.entradaDateObjs[0])} a ${fmtData(c.entradaDateObjs[c.nEntr - 1])}` : fmtData(c.entradaDateObjs[0])) : 'no ato'} qtd={`${c.nEntr}×`} valor={brl(c.entradaParc)} total={brl(c.entradaR)} />}
                 {permutaValor > 0 && <Linha nome="Permuta" sub={permutaDesc || undefined} qtd="1×" valor={brl(permutaValor)} total={brl(permutaValor)} />}
                 <Linha nome="Parcelas mensais" sub={c.base && c.parcUltima ? `${fmtData(c.base)} a ${fmtData(c.parcUltima)}` : undefined} qtd={`${c.nParc}×`} valor={brl(c.parcelaR)} total={brl(c.totalParc)} />
-                <Linha nome={`Reforços ${PERIODOS[periodicidade].label.toLowerCase()}`} sub={c.refDateObjs[0] ? c.refDateObjs.map((d) => (d ? fmtData(d) : '')).filter(Boolean).join(' · ') : c.nRef > 0 ? `meses ${c.refMeses.join(', ')}` : undefined} qtd={`${c.nRef}×`} valor={brl(c.reforcoR)} total={brl(c.totalRef)} />
+                <Linha nome={`Reforços ${PERIODOS[periodicidade].label.toLowerCase()}`} sub={c.refDateObjs.length ? c.refDateObjs.map((d) => fmtData(d)).join(' · ') : undefined} qtd={`${c.nRef}×`} valor={brl(c.reforcoR)} total={brl(c.totalRef)} />
                 <Linha nome="Total até a entrega das chaves" total={brl(c.montado)} destaque />
                 <Linha nome="Saldo financiado na entrega" sub="banco / construtora" total={brl(c.saldo)} />
-                <Linha nome="Valor total do imóvel" total={brl(c.vp)} forte />
+                {c.descR > 0 && <Linha nome="Valor de tabela" total={brl(c.valor)} />}
+                {c.descR > 0 && <Linha nome={`Desconto (${fmtPct(c.pctDesc)})`} sub="negociado pra proposta" total={`− ${brl(c.descR)}`} />}
+                <Linha nome="Valor total do imóvel" sub={c.descR > 0 ? 'já com o desconto' : undefined} total={brl(c.vp)} forte />
               </div>
             </div>
 
