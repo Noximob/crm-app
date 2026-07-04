@@ -388,7 +388,7 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
           </Toolbar>
         )}
         <div className="flex-1 min-h-[420px] rounded-xl overflow-hidden border border-white/10 bg-white">
-          <iframe src={`${url}#view=FitH`} title={m.name || 'PDF'} className="w-full h-full" />
+          <iframe src={`${url}#zoom=100`} title={m.name || 'PDF'} className="w-full h-full" />
         </div>
       </div>
     );
