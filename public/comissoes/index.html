@@ -552,16 +552,7 @@
 </style>
 </head>
 <body>
-<div class="login-overlay" id="login">
-  <form class="login-card" id="loginForm">
-    <div class="brand">Nox Imóveis</div>
-    <h2>Calculadora de Comissões</h2>
-    <input id="loginUser" placeholder="Usuário" autocomplete="username">
-    <input id="loginPass" type="password" placeholder="Senha" autocomplete="current-password">
-    <button type="button" id="loginBtn">Entrar</button>
-    <div class="login-err" id="loginErr"></div>
-  </form>
-</div>
+<!-- (login antigo removido — a autenticação agora é do SaaS que embute esta página) -->
 <header>
   <div class="head-inner">
     <div>
@@ -1495,8 +1486,6 @@ function renderMeta(){
 }
 
 // ---------- orchestration ----------
-// >>> Credenciais fixas — TROQUE AQUI <<<
-const AUTH = { user: 'nox', pass: 'nox2025' };
 
 function fmtDate(d){ if(!d) return ''; const p=d.split('-'); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:''; }
 function periodText(){
@@ -2261,16 +2250,7 @@ document.querySelectorAll('#metaMode .tg').forEach(b=>b.onclick=()=>{
   renderMeta(); persistMyGoal(); saveState();
 });
 
-// login (usuário/senha fixos — ver constante AUTH)
-function unlock(){ document.getElementById('login').style.display='none'; }
-function tryLogin(){
-  const u=document.getElementById('loginUser').value.trim(), p=document.getElementById('loginPass').value;
-  if(u===AUTH.user && p===AUTH.pass){ try{ sessionStorage.setItem('nox_auth','1'); }catch(e){} unlock(); }
-  else document.getElementById('loginErr').textContent='Usuário ou senha incorretos.';
-}
-try{ if(sessionStorage.getItem('nox_auth')==='1') unlock(); }catch(e){}
-document.getElementById('loginBtn').addEventListener('click',tryLogin);
-['loginUser','loginPass'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); tryLogin(); } }));
+// (login antigo removido — a autenticação é do SaaS)
 
 // ===== Integração com o CRM (embutido via iframe) =====
 // O CRM (autenticado) manda a lista de usuários e quem está logado via postMessage.
@@ -2363,8 +2343,6 @@ document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState=
 // Modo embutido: libera login interno, esconde header/rodapé e filtra abas por área/pessoa
 (function(){
   if(!currentMode) return; // aberto direto = app completo, comportamento normal
-  try{ sessionStorage.setItem('nox_auth','1'); }catch(e){}
-  const login=document.getElementById('login'); if(login) login.style.display='none';
   document.querySelectorAll('header, footer').forEach(el=>el.style.display='none');
   const wrap=document.querySelector('.wrap'); if(wrap) wrap.style.padding='12px 20px 60px';
   const tabs=[...document.querySelectorAll('.tab')];
