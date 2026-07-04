@@ -679,19 +679,19 @@
 
   <!-- ============ GERENTE ============ -->
   <div class="tabpane" id="tab-ger" hidden>
-    <div class="sel-wrap"><label>Gerente</label><select class="sel" id="gerSelect"></select><button class="btn no-print" onclick="window.print()">🖨 Imprimir</button></div>
+    <div class="sel-wrap"><label>Gerente</label><select class="sel" id="gerSelect"></select></div>
     <div id="gerBox"></div>
   </div>
 
   <!-- ============ CORRETOR ============ -->
   <div class="tabpane" id="tab-cor" hidden>
-    <div class="sel-wrap"><label>Corretor</label><select class="sel" id="corSelect"></select><button class="btn no-print" onclick="window.print()">🖨 Imprimir</button></div>
+    <div class="sel-wrap"><label>Corretor</label><select class="sel" id="corSelect"></select></div>
     <div id="corBox"></div>
   </div>
 
   <!-- ============ COMISSÃO DE EVENTOS ============ -->
   <div class="tabpane" id="tab-eventos" hidden>
-    <div class="sel-wrap"><label>Comissão de eventos</label><span style="flex:1"></span><button class="btn no-print" onclick="window.print()">🖨 Imprimir</button></div>
+    <div class="sel-wrap"><label>Comissão de eventos</label></div>
     <p class="ev-intro">Eventos <b>não entram nas faixas de meta</b>. A comissão do evento é dividida por percentual entre a imobiliária, o gerente do evento, os corretores e os auxiliares. Lance o que cada um vendeu para ver quanto cada participante recebe. Crie quantos eventos quiser nas abas abaixo.</p>
     <div id="evTabs" class="ev-tabs no-print"></div>
     <div id="evEditor"></div>
@@ -699,7 +699,7 @@
 
   <!-- ============ SIMULADOR DE META ============ -->
   <div class="tabpane" id="tab-meta" hidden>
-    <div class="sel-wrap"><label>Calculadora de meta</label><span style="flex:1"></span><button class="btn no-print" onclick="window.print()">🖨 Imprimir</button></div>
+    <div class="sel-wrap"><label>Calculadora de meta</label></div>
     <div class="meta-wrap">
       <div class="print-only print-brand">Nox Imóveis · Plano de meta do trimestre</div>
 
@@ -738,7 +738,6 @@
     <div class="sel-wrap rel-controls">
       <label>Relatório financeiro</label>
       <span style="flex:1"></span>
-      <button class="btn no-print" onclick="window.print()">🖨 Imprimir</button>
     </div>
     <div id="relAlerts" class="no-print"></div>
     <div id="cashMgr" class="no-print"></div>
@@ -829,7 +828,7 @@ function newTeam(){
 }
 let teams=[newTeam()];
 let solos=[];
-let gerSel=0, corSel='0:0';
+let gerSel=0, corSel='0:0', corFilterTeam=null; // corFilterTeam: limita a aba Corretor a uma equipe (visão do gerente)
 function personFrom(ti, role, bi){ return role==='m' ? teams[ti].mgr : (role==='s' ? solos[ti] : teams[ti].brokers[bi]); }
 
 // ---------- config getters ----------
@@ -1406,8 +1405,8 @@ function buildGerSelect(){
 }
 function buildCorSelect(){
   const sel=document.getElementById('corSelect');
-  const teamOpts=[]; teams.forEach((t,ti)=>t.brokers.forEach((b,bi)=>teamOpts.push({v:`${ti}:${bi}`,l:`${t.name} — ${b.name}`})));
-  const soloOpts=solos.map((s,si)=>({v:`s:${si}`,l:s.name||'Corretor sem equipe'}));
+  const teamOpts=[]; teams.forEach((t,ti)=>{ if(corFilterTeam!=null && ti!==corFilterTeam) return; t.brokers.forEach((b,bi)=>teamOpts.push({v:`${ti}:${bi}`,l:`${t.name} — ${b.name}`})); });
+  const soloOpts=(corFilterTeam!=null)?[]:solos.map((s,si)=>({v:`s:${si}`,l:s.name||'Corretor sem equipe'}));
   const all=[...teamOpts,...soloOpts];
   if(!all.length){ sel.innerHTML='<option value="">Nenhum corretor</option>'; corSel=''; return; }
   if(!all.some(o=>o.v===corSel)) corSel=all[0].v;
@@ -2315,12 +2314,18 @@ function refreshView(){
   const tabs=[...document.querySelectorAll('.tab')];
   const me=findMyPerson();
   setMetricsLocked(true);
-  let reportTab=null;
-  if(me && me.kind==='mgr'){ reportTab='ger'; metaRole='gerente'; gerSel=me.ti; buildGerSelect(); lockSel('gerSelect'); renderGer(); }
-  else if(me && me.kind==='broker'){ reportTab='cor'; metaRole=teams[me.ti].brokers[me.bi].type||'corretor'; corSel=`${me.ti}:${me.bi}`; buildCorSelect(); lockSel('corSelect'); renderCor(); }
-  else if(me && me.kind==='solo'){ reportTab='cor'; metaRole='solo'; corSel=`s:${me.si}`; buildCorSelect(); lockSel('corSelect'); renderCor(); }
-  else { metaRole='corretor'; }
-  const shown = reportTab ? [reportTab,'meta'] : ['meta'];
+  corFilterTeam=null;
+  let reportTab=null, shown;
+  if(me && me.kind==='mgr'){
+    metaRole='gerente'; reportTab='ger';
+    gerSel=me.ti; buildGerSelect(); lockSel('gerSelect'); renderGer();
+    // gerente também vê os corretores vinculados a ele (só a equipe dele)
+    if(teams[me.ti].brokers.length){ corFilterTeam=me.ti; corSel=`${me.ti}:0`; buildCorSelect(); renderCor(); shown=['ger','cor','meta']; }
+    else shown=['ger','meta'];
+  }
+  else if(me && me.kind==='broker'){ reportTab='cor'; metaRole=teams[me.ti].brokers[me.bi].type||'corretor'; corSel=`${me.ti}:${me.bi}`; buildCorSelect(); lockSel('corSelect'); renderCor(); shown=['cor','meta']; }
+  else if(me && me.kind==='solo'){ reportTab='cor'; metaRole='solo'; corSel=`s:${me.si}`; buildCorSelect(); lockSel('corSelect'); renderCor(); shown=['cor','meta']; }
+  else { metaRole='corretor'; shown=['meta']; }
   tabs.forEach(t=> t.style.display = shown.includes(t.dataset.tab)?'':'none');
   if(reportTab && !_viewLanded){ _viewLanded=true; const tb=tabs.find(t=>t.dataset.tab===reportTab); if(tb) tb.click(); }
   else { const cur=document.querySelector('.tab.active'); if(!cur || cur.style.display==='none'){ const first=tabs.find(t=>shown.includes(t.dataset.tab)); if(first) first.click(); } }
