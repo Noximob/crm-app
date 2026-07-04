@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDoc, getDocs, setDoc, addDoc, deleteDoc, Timestamp, query, where, orderBy } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
+import MoneyInput from '@/components/MoneyInput';
 import { DEMO_REPORT_CORRETORES, DEMO_CONTRIBUICOES, DEMO_METAS_VGV, DEMO_METAS_VGV_MENSAL, DEMO_METAS_PESSOAIS } from '@/lib/espelho/demoData';
 
 interface Corretor {
@@ -24,10 +25,10 @@ export default function AdminMetasPage() {
   const { userData, currentUser, isEspelhoDemo } = useAuth();
   const [inicio, setInicio] = useState('');
   const [fim, setFim] = useState('');
-  const [vgv, setVgv] = useState('');
+  const [vgv, setVgv] = useState<number>(0);
   const [inicioMensal, setInicioMensal] = useState('');
   const [fimMensal, setFimMensal] = useState('');
-  const [vgvMensal, setVgvMensal] = useState('');
+  const [vgvMensal, setVgvMensal] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -36,7 +37,7 @@ export default function AdminMetasPage() {
   const [corretores, setCorretores] = useState<Corretor[]>([]);
   const [contribuicoes, setContribuicoes] = useState<Contribuicao[]>([]);
   const [corretorSelecionado, setCorretorSelecionado] = useState('');
-  const [valorContribuicao, setValorContribuicao] = useState('');
+  const [valorContribuicao, setValorContribuicao] = useState<number>(0);
   const [dataVendaContribuicao, setDataVendaContribuicao] = useState(() => {
     const d = new Date();
     return d.toISOString().slice(0, 10);
@@ -44,14 +45,14 @@ export default function AdminMetasPage() {
   const [adding, setAdding] = useState(false);
 
   const [metasPessoais, setMetasPessoais] = useState<Record<string, number>>({});
-  const [valorAlmejadoInputs, setValorAlmejadoInputs] = useState<Record<string, string>>({});
+  const [valorAlmejadoInputs, setValorAlmejadoInputs] = useState<Record<string, number>>({});
   const [savingPessoal, setSavingPessoal] = useState<string | null>(null);
 
   const totalRealizado = contribuicoes.reduce((s, c) => s + c.valor, 0);
-  const percentualCalculado = vgv && totalRealizado >= 0 ? Math.round((totalRealizado / parseFloat(vgv)) * 100) : 0;
+  const percentualCalculado = vgv > 0 && totalRealizado >= 0 ? Math.round((totalRealizado / vgv) * 100) : 0;
   // Soma das metas pessoais dos corretores (interliga com o que cada corretor tem definido)
   const somaMetasPessoais = Object.values(metasPessoais).reduce((s, v) => s + (Number(v) || 0), 0);
-  const metaImobValor = parseFloat(vgv) || 0;
+  const metaImobValor = vgv;
 
   // Converte valor em formato BR (3.000.000,00) ou número simples para número
   function parseValorBR(str: string): number {
@@ -66,9 +67,7 @@ export default function AdminMetasPage() {
     if (isEspelhoDemo) {
       setCorretores(DEMO_REPORT_CORRETORES.map(c => ({ id: c.uid, nome: c.nome })));
       setMetasPessoais(DEMO_METAS_PESSOAIS);
-      setValorAlmejadoInputs(
-        Object.fromEntries(Object.entries(DEMO_METAS_PESSOAIS).map(([id, v]) => [id, v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })]))
-      );
+      setValorAlmejadoInputs({ ...DEMO_METAS_PESSOAIS });
       return;
     }
     const fetchCorretores = async () => {
@@ -90,12 +89,12 @@ export default function AdminMetasPage() {
     const refPessoais = collection(db, 'metas', userData.imobiliariaId, 'metasPessoais');
     getDocs(refPessoais).then((snap) => {
       const map: Record<string, number> = {};
-      const inputs: Record<string, string> = {};
+      const inputs: Record<string, number> = {};
       snap.docs.forEach((d) => {
         const v = Number(d.data().valorAlmejado);
         if (!isNaN(v)) {
           map[d.id] = v;
-          inputs[d.id] = v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          inputs[d.id] = v;
         }
       });
       setMetasPessoais(map);
@@ -110,8 +109,8 @@ export default function AdminMetasPage() {
       return;
     }
     if (isEspelhoDemo) {
-      setVgv(String(DEMO_METAS_VGV));
-      setVgvMensal(String(DEMO_METAS_VGV_MENSAL));
+      setVgv(Number(DEMO_METAS_VGV));
+      setVgvMensal(Number(DEMO_METAS_VGV_MENSAL));
       setContribuicoes(DEMO_CONTRIBUICOES as Contribuicao[]);
       setFetching(false);
       return;
@@ -125,10 +124,10 @@ export default function AdminMetasPage() {
         const meta = snap.data();
         setInicio(meta.inicio ? meta.inicio.split('T')[0] : '');
         setFim(meta.fim ? meta.fim.split('T')[0] : '');
-        setVgv(meta.valor != null ? meta.valor.toString() : '');
+        setVgv(meta.valor != null ? Number(meta.valor) : 0);
         setInicioMensal(meta.inicioMensal ? meta.inicioMensal.split('T')[0] : '');
         setFimMensal(meta.fimMensal ? meta.fimMensal.split('T')[0] : '');
-        setVgvMensal(meta.valorMensal != null ? meta.valorMensal.toString() : '');
+        setVgvMensal(meta.valorMensal != null ? Number(meta.valorMensal) : 0);
         setUltimaAtualizacaoPor(meta.updatedByNome ?? null);
       }
       const contribRef = collection(db, 'metas', imobId, 'contribuicoes');
@@ -165,7 +164,7 @@ export default function AdminMetasPage() {
   async function updateMetaAlcancado(alcancado: number) {
     if (isEspelhoDemo || !userData?.imobiliariaId) return;
     const metaRef = doc(db, 'metas', userData.imobiliariaId);
-    const valorNum = parseFloat(vgv) || 0;
+    const valorNum = vgv;
     const percentual = valorNum > 0 ? Math.round((alcancado / valorNum) * 100) : 0;
     await setDoc(metaRef, {
       alcancado,
@@ -179,9 +178,9 @@ export default function AdminMetasPage() {
   async function handleAddContribuicao(e?: React.FormEvent) {
     e?.preventDefault();
     if (isEspelhoDemo) return;
-    if (!userData?.imobiliariaId || !corretorSelecionado || !valorContribuicao?.trim()) return;
-    const valor = parseValorBR(valorContribuicao);
-    if (isNaN(valor) || valor <= 0) return;
+    if (!userData?.imobiliariaId || !corretorSelecionado || !valorContribuicao) return;
+    const valor = valorContribuicao;
+    if (!valor || valor <= 0) return;
     const corretor = corretores.find(c => c.id === corretorSelecionado);
     setAdding(true);
     try {
@@ -193,7 +192,7 @@ export default function AdminMetasPage() {
         dataVenda: dataVendaContribuicao || new Date().toISOString().slice(0, 10),
         createdAt: Timestamp.now(),
       });
-      setValorContribuicao('');
+      setValorContribuicao(0);
       await fetchMeta();
       await updateMetaAlcancado(totalRealizado + valor);
       setUltimaAtualizacaoPor(userData?.nome ?? null);
@@ -224,15 +223,14 @@ export default function AdminMetasPage() {
 
   async function handleSaveMetaPessoal(corretorId: string) {
     if (isEspelhoDemo || !userData?.imobiliariaId) return;
-    const raw = valorAlmejadoInputs[corretorId] ?? '';
-    const valor = parseValorBR(raw);
-    if (isNaN(valor) || valor < 0) return;
+    const valor = valorAlmejadoInputs[corretorId] ?? 0;
+    if (valor < 0) return;
     setSavingPessoal(corretorId);
     try {
       const refPessoal = doc(db, 'metas', userData.imobiliariaId, 'metasPessoais', corretorId);
       await setDoc(refPessoal, { valorAlmejado: valor }, { merge: true });
       setMetasPessoais((prev) => ({ ...prev, [corretorId]: valor }));
-      setValorAlmejadoInputs((prev) => ({ ...prev, [corretorId]: valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }));
+      setValorAlmejadoInputs((prev) => ({ ...prev, [corretorId]: valor }));
     } catch (err) {
       console.error('Erro ao salvar meta pessoal:', err);
     } finally {
@@ -246,8 +244,8 @@ export default function AdminMetasPage() {
     setLoading(true);
     try {
       const metaRef = doc(db, 'metas', userData.imobiliariaId);
-      const valorNum = parseFloat(vgv) || 0;
-      const valorMensalNum = parseFloat(vgvMensal) || 0;
+      const valorNum = vgv;
+      const valorMensalNum = vgvMensal;
       const novaMeta = {
         imobiliariaId: userData.imobiliariaId,
         inicio,
@@ -314,16 +312,7 @@ export default function AdminMetasPage() {
         </div>
         <div>
           <label className="block text-sm font-medium mb-1 text-white">VGV Meta Trimestral (R$)</label>
-          <input 
-            type="number" 
-            className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30" 
-            value={vgv} 
-            onChange={e => setVgv(e.target.value)}
-            placeholder="0"
-            min="0"
-            step="0.01"
-            required 
-          />
+          <MoneyInput value={vgv} onChange={setVgv} className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30" />
         </div>
 
         <div className="border-t border-[#D4A017]/20 pt-4 mt-4">
@@ -340,7 +329,7 @@ export default function AdminMetasPage() {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1 text-white/80">VGV Meta Mensal (R$)</label>
-            <input type="number" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30" value={vgvMensal} onChange={e => setVgvMensal(e.target.value)} placeholder="0" min="0" step="0.01" />
+            <MoneyInput value={vgvMensal} onChange={setVgvMensal} className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30" />
           </div>
         </div>
 
@@ -372,20 +361,12 @@ export default function AdminMetasPage() {
             </div>
             <div className="flex-1 min-w-[140px]">
               <label className="block text-xs font-medium mb-1 text-white/80">Valor (R$)</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                placeholder="Ex: 3.000.000,00"
-                value={valorContribuicao}
-                onChange={e => setValorContribuicao(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddContribuicao(); } }}
-                className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30"
-              />
+              <MoneyInput value={valorContribuicao} onChange={setValorContribuicao} placeholder="0,00" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30" />
             </div>
             <button
               type="button"
               onClick={() => handleAddContribuicao()}
-              disabled={adding || !corretorSelecionado || !valorContribuicao?.trim()}
+              disabled={adding || !corretorSelecionado || !valorContribuicao}
               className="bg-[#3AC17C] hover:bg-[#2fa86a] text-white font-semibold py-2 px-4 rounded-lg disabled:opacity-50"
             >
               {adding ? '...' : 'Adicionar'}
@@ -471,15 +452,9 @@ export default function AdminMetasPage() {
               <span className="font-medium text-white min-w-[140px] truncate">{c.nome}</span>
               <div className="flex-1 min-w-[160px] flex items-center gap-2">
                 <label className="text-xs text-white/70 shrink-0">Valor almejado (R$)</label>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="Ex: 500.000,00"
-                  value={valorAlmejadoInputs[c.id] ?? ''}
-                  onChange={(e) => setValorAlmejadoInputs((prev) => ({ ...prev, [c.id]: e.target.value }))}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSaveMetaPessoal(c.id); } }}
-                  className="flex-1 rounded-lg border px-3 py-2 text-white bg-[#23283A]/70 border-amber-500/30 max-w-[180px]"
-                />
+                <div className="flex-1 max-w-[180px]">
+                  <MoneyInput value={valorAlmejadoInputs[c.id] ?? 0} onChange={(n) => setValorAlmejadoInputs((prev) => ({ ...prev, [c.id]: n }))} placeholder="0,00" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/70 border-amber-500/30" />
+                </div>
                 <button
                   type="button"
                   onClick={() => handleSaveMetaPessoal(c.id)}
