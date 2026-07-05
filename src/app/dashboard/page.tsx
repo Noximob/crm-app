@@ -17,10 +17,27 @@ import AgendaImobiliariaModal from './_components/AgendaImobiliariaModal';
 import PlantoesModal from './_components/PlantoesModal';
 import { GamificacaoMetasRow, type MetaPessoalData } from './_components/GamificacaoMetasRow';
 
-/** Figuinha 3D (Fluent Emoji da Microsoft via CDN) — visual de game de verdade */
-const Fig = ({ n, s = 24, className = '' }: { n: string; s?: number; className?: string }) => (
-  // eslint-disable-next-line @next/next/no-img-element
-  <img src={`https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/${n}`} alt="" width={s} height={s} className={className} loading="lazy" draggable={false} />
+/** Ícones de traço neon (estilo HUD) — coerentes com o visual GX, sem emoji */
+const IC_PATHS: Record<string, JSX.Element> = {
+  alert: <><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></>,
+  zap: <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />,
+  gem: <><path d="M6 3h12l4 6-10 13L2 9z" /><path d="M11 3 8 9l4 13 4-13-3-6" /><path d="M2 9h20" /></>,
+  users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></>,
+  folder: <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />,
+  receipt: <><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z" /><path d="M14 8H8" /><path d="M16 12H8" /><path d="M13 16H8" /></>,
+  phone: <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />,
+  rocket: <><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" /><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" /><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" /><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" /></>,
+  flame: <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />,
+  history: <><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l4 2" /></>,
+  trophy: <><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></>,
+  radar: <><path d="M19.07 4.93A10 10 0 0 0 6.99 3.34" /><path d="M4 6h.01" /><path d="M2.29 9.62a10 10 0 1 0 19.02-1.27" /><path d="M16.24 7.76a6 6 0 1 0-8.01 8.91" /><path d="M12 18h.01" /><path d="M17.99 11.66a6 6 0 0 1-2.22 5.01" /><circle cx="12" cy="12" r="2" /><path d="m13.41 10.59 5.66-5.66" /></>,
+  calendar: <><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><path d="m9 16 2 2 4-4" /></>,
+  chart: <><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></>,
+};
+const Ic = ({ k, s = 20, className = '' }: { k: string; s?: number; className?: string }) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+    {IC_PATHS[k]}
+  </svg>
 );
 
 /** Número que conta de 0 até o valor (HUD vivo) */
@@ -1533,16 +1550,6 @@ export default function DashboardPage() {
     : tarefaDiaCount > 0
       ? `${tarefaDiaCount} tarefa${tarefaDiaCount > 1 ? 's' : ''} pra fechar hoje. Foco total!`
       : 'Nenhuma pendência. Dia livre pra caçar negócio novo.';
-  // Gamificação com DADOS REAIS: rank pelo tamanho da carteira; progresso = meta pessoal do trimestre
-  const rankHome = totalFunilHome >= 50 ? { label: 'LÍDER', fig: 'Crown/3D/crown_3d.png' }
-    : totalFunilHome >= 25 ? { label: 'ELITE', fig: 'Star/3D/star_3d.png' }
-    : totalFunilHome >= 10 ? { label: 'EM ALTA', fig: 'Fire/3D/fire_3d.png' }
-    : totalFunilHome >= 5 ? { label: 'SUBINDO', fig: 'Chart%20increasing/3D/chart_increasing_3d.png' }
-    : { label: 'EM JOGO', fig: 'Joystick/3D/joystick_3d.png' };
-  const metaAlvo = metaPessoal?.valorAlmejado ?? 0;
-  const metaFeito = metaPessoal?.alcancadoPessoal ?? 0;
-  const metaPctHome = metaAlvo > 0 ? Math.min(100, Math.round((metaFeito / metaAlvo) * 100)) : 0;
-  const brlCompact = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', maximumFractionDigits: 1 }).format(v || 0);
   // MOCKUP visual do pódio de meets & visitas — o período será definido na área do administrador quando integrar
   const podioMeetsMock = [
     { nome: 'Renan', qtd: 12 },
@@ -1550,13 +1557,16 @@ export default function DashboardPage() {
     { nome: 'Breno', qtd: 7 },
   ];
   const meusMeetsMock = 5;
+  const historicoMeetsMock = { semana: 8, mes: 23, tri: 61 };
+  const minhaPosMock = podioMeetsMock.filter((p) => p.qtd > meusMeetsMock).length + 1;
+  const pctLiderMock = Math.min(100, Math.round((meusMeetsMock / podioMeetsMock[0].qtd) * 100));
 
   return (
     <div className="min-h-full lg:h-full flex flex-col pb-6 lg:pb-0 lg:overflow-hidden">
       {/* ===== WAR ROOM — bento grid que preenche exatamente a altura da tela (sem rolagem no desktop) ===== */}
       <div id="trending-section" className="grid grid-cols-6 lg:grid-cols-12 auto-rows-[minmax(84px,auto)] lg:grid-rows-[repeat(6,minmax(72px,1fr))] gap-3 [grid-auto-flow:dense] mt-1 lg:mt-0 lg:flex-1 lg:min-h-0">
 
-        {/* Identidade do corretor */}
+        {/* Identidade do corretor — o placar pessoal de meets & visitas (MOCKUP até integrar) */}
         <div className="col-span-6 lg:col-span-4 lg:row-span-2 al-card gx-stripes !rounded-[24px] relative overflow-hidden p-4 al-rise flex flex-col">
           <div className="absolute -top-20 -right-16 w-56 h-56 rounded-full bg-[#FF1E56]/[0.08] blur-3xl pointer-events-none" />
           <span className="gx-tag self-start relative"><span>{saudacaoDia} · {nomeImobiliaria || 'Sua imobiliária'}</span></span>
@@ -1569,22 +1579,20 @@ export default function DashboardPage() {
             <div className="min-w-0">
               <h1 className="al-display text-[20px] font-bold text-white uppercase tracking-wide leading-none truncate">{primeiroNomeHome}</h1>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 mt-1 rounded-full text-[9px] font-extrabold tracking-[0.14em] bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#E8C547]">
-                <Fig n={rankHome.fig} s={11} /> {rankHome.label}
+                <Ic k="trophy" s={11} /> {minhaPosMock}º NO RANKING
               </span>
             </div>
             <div className="ml-auto text-right shrink-0">
-              <CountUp n={totalFunilHome} className="al-display block text-[38px] font-bold gx-neon leading-none tabular-nums" />
-              <span className="block text-[8.5px] uppercase tracking-[0.2em] text-text-secondary mt-0.5">na carteira</span>
+              <CountUp n={meusMeetsMock} className="al-display block text-[40px] font-bold gx-neon leading-none tabular-nums" />
+              <span className="block text-[8.5px] uppercase tracking-[0.16em] text-text-secondary mt-0.5">meets & visitas</span>
             </div>
           </div>
           <div className="relative mt-auto pt-2.5">
-            {metaAlvo > 0 && (
-              <div className="mb-1.5">
-                <div className="gx-bar gold"><i style={{ width: `${Math.max(metaPctHome, 3)}%` }} /></div>
-                <span className="block text-[9.5px] text-text-secondary mt-1 tabular-nums">meta do tri: {brlCompact(metaFeito)} / {brlCompact(metaAlvo)} · <b className="text-[#E8C547]">{metaPctHome}%</b></span>
-              </div>
-            )}
-            <p className="text-[10.5px] text-text-secondary leading-snug truncate">{focoMsg}</p>
+            <div className="gx-bar gold"><i style={{ width: `${Math.max(pctLiderMock, 3)}%` }} /></div>
+            <span className="block text-[9.5px] text-text-secondary mt-1 tabular-nums">
+              <b className="text-[#E8C547]">{pctLiderMock}%</b> do líder do período{meusMeetsMock >= podioMeetsMock[2].qtd ? <> · <b className="text-emerald-300">você está no pódio</b></> : <> · faltam <b className="text-[#E8C547]">{podioMeetsMock[2].qtd - meusMeetsMock}</b> pro pódio</>}
+            </span>
+            <p className="text-[10.5px] text-text-secondary leading-snug truncate mt-1">{focoMsg}</p>
           </div>
         </div>
 
@@ -1596,7 +1604,7 @@ export default function DashboardPage() {
             <CountUp n={tarefaAtrasadaCount} className="al-display text-[36px] font-bold text-white leading-none tabular-nums" />
           </span>
           <span className="grid place-items-center w-11 h-11 rounded-xl bg-gradient-to-br from-[#FF1E56]/25 to-[#FF1E56]/[0.03] border border-[#FF1E56]/30 shrink-0 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-200">
-            <Fig n="Police%20car%20light/3D/police_car_light_3d.png" s={24} className="drop-shadow-[0_3px_6px_rgba(0,0,0,0.55)]" />
+            <Ic k="alert" s={22} className="text-[#FF7A97] drop-shadow-[0_0_8px_rgba(255,30,86,0.6)]" />
           </span>
         </Link>
 
@@ -1608,7 +1616,7 @@ export default function DashboardPage() {
             <CountUp n={tarefaDiaCount} className="al-display text-[36px] font-bold text-white leading-none tabular-nums" />
           </span>
           <span className="grid place-items-center w-11 h-11 rounded-xl bg-gradient-to-br from-[#E8C547]/25 to-[#E8C547]/[0.03] border border-[#E8C547]/30 shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-200">
-            <Fig n="High%20voltage/3D/high_voltage_3d.png" s={22} className="drop-shadow-[0_3px_6px_rgba(0,0,0,0.55)]" />
+            <Ic k="zap" s={20} className="text-[#E8C547] drop-shadow-[0_0_8px_rgba(232,197,71,0.6)]" />
           </span>
         </Link>
 
@@ -1620,7 +1628,7 @@ export default function DashboardPage() {
             <CountUp n={semTarefaCount} className="al-display text-[36px] font-bold text-white leading-none tabular-nums" />
           </span>
           <span className="grid place-items-center w-11 h-11 rounded-xl bg-gradient-to-br from-[#34D399]/25 to-[#34D399]/[0.03] border border-[#34D399]/30 shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-200">
-            <Fig n="Gem%20stone/3D/gem_stone_3d.png" s={22} className="drop-shadow-[0_3px_6px_rgba(0,0,0,0.55)]" />
+            <Ic k="gem" s={20} className="text-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
           </span>
         </Link>
 
@@ -1632,7 +1640,7 @@ export default function DashboardPage() {
           <span className="pointer-events-none absolute bottom-2 left-2 w-3.5 h-3.5 border-b-2 border-l-2 border-[#FF3364]/30 rounded-bl-sm" />
           <span className="pointer-events-none absolute bottom-2 right-2 w-3.5 h-3.5 border-b-2 border-r-2 border-[#FF3364]/30 rounded-br-sm" />
           <div className="flex items-center justify-between gap-3 mb-1.5">
-            <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Fig n="Satellite%20antenna/3D/satellite_antenna_3d.png" s={20} /> Radar de eventos</h2>
+            <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Ic k="radar" s={18} className="text-[#FF5C7E] drop-shadow-[0_0_8px_rgba(255,30,86,0.5)]" /> Radar de eventos</h2>
             <Link href="/dashboard/agenda" className="text-[11px] font-bold text-[#FF5C7E] hover:underline shrink-0">agenda completa ▸</Link>
           </div>
           <div className="flex gap-4 items-center flex-1 min-h-0">
@@ -1652,7 +1660,7 @@ export default function DashboardPage() {
                 <div className="flex flex-col items-center justify-center gap-2 text-center">
                   <p className="text-[12px] text-text-secondary">Nenhum sinal no radar — bom momento pra prospectar.</p>
                   <Link href="/dashboard/agenda" className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-[#FF3364]/40 text-[#FF7A97] text-[11px] font-bold hover:bg-[#FF1E56]/[0.09] hover:border-[#FF3364]/70 hover:-translate-y-0.5 active:scale-[0.97] transition-all">
-                    <Fig n="Bullseye/3D/bullseye_3d.png" s={15} /> agendar um evento ▸
+                    <Ic k="calendar" s={14} /> agendar um evento ▸
                   </Link>
                 </div>
               ) : (
@@ -1923,7 +1931,7 @@ export default function DashboardPage() {
           <div className="col-span-6 lg:col-span-4 lg:row-span-2 lg:col-start-1 lg:row-start-5 al-card p-3.5 relative overflow-hidden al-rise al-d4 flex flex-col">
             <div className="absolute inset-x-0 top-0 gx-line" />
             <div className="flex items-center justify-between gap-3 mb-1.5">
-              <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Fig n="Chart%20increasing/3D/chart_increasing_3d.png" s={20} /> Seu pipeline</h2>
+              <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Ic k="chart" s={18} className="text-[#FF5C7E] drop-shadow-[0_0_8px_rgba(255,30,86,0.5)]" /> Seu pipeline</h2>
               <Link href="/dashboard/crm/andamento" className="text-[11px] font-bold text-[#FF5C7E] hover:underline shrink-0">kanban ▸</Link>
             </div>
             {agendaLoading ? (
@@ -1960,20 +1968,20 @@ export default function DashboardPage() {
           {/* Acesso rápido — as ferramentas do dia a dia, em destaque acima do pipeline */}
           <div className="col-span-6 lg:col-span-4 lg:row-span-2 lg:col-start-1 lg:row-start-3 flex flex-col al-rise al-d2 min-h-0">
             <div className="flex items-center gap-2 mb-1.5 shrink-0">
-              <span className="gx-tag"><Fig n="Rocket/3D/rocket_3d.png" s={12} /><span>Acesso rápido</span></span>
+              <span className="gx-tag"><Ic k="rocket" s={11} /><span>Acesso rápido</span></span>
               <div className="flex-1 gx-line opacity-30" />
             </div>
             <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
               {[
-                { href: '/dashboard/crm', fig: 'Handshake/3D/handshake_3d.png', t: 'CRM', b: 'border-[#FF1E56]/35 hover:border-[#FF1E56]/70', bg: 'bg-[#FF1E56]/[0.05] hover:bg-[#FF1E56]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(255,30,86,0.5)]', chip: 'from-[#FF1E56]/25 to-[#FF1E56]/[0.03] border-[#FF1E56]/30' },
-                { href: '/dashboard/materiais', fig: 'Open%20file%20folder/3D/open_file_folder_3d.png', t: 'Produtos', b: 'border-[#34D399]/35 hover:border-[#34D399]/70', bg: 'bg-[#34D399]/[0.05] hover:bg-[#34D399]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(52,211,153,0.45)]', chip: 'from-[#34D399]/25 to-[#34D399]/[0.03] border-[#34D399]/30' },
-                { href: '/dashboard/fluxo-pagamento', fig: 'Receipt/3D/receipt_3d.png', t: 'Fluxo de Pagamento', b: 'border-[#9F6BFF]/35 hover:border-[#9F6BFF]/70', bg: 'bg-[#9F6BFF]/[0.05] hover:bg-[#9F6BFF]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(159,107,255,0.45)]', chip: 'from-[#9F6BFF]/25 to-[#9F6BFF]/[0.03] border-[#9F6BFF]/30' },
-                { href: '/dashboard/ligacao-ativa', fig: 'Telephone/3D/telephone_3d.png', t: 'Ligação Ativa', b: 'border-[#E8C547]/35 hover:border-[#E8C547]/70', bg: 'bg-[#E8C547]/[0.05] hover:bg-[#E8C547]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(232,197,71,0.45)]', chip: 'from-[#E8C547]/25 to-[#E8C547]/[0.03] border-[#E8C547]/30' },
+                { href: '/dashboard/crm', ic: 'users', icc: 'text-[#FF7A97] drop-shadow-[0_0_8px_rgba(255,30,86,0.6)]', t: 'CRM', b: 'border-[#FF1E56]/35 hover:border-[#FF1E56]/70', bg: 'bg-[#FF1E56]/[0.05] hover:bg-[#FF1E56]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(255,30,86,0.5)]', chip: 'from-[#FF1E56]/25 to-[#FF1E56]/[0.03] border-[#FF1E56]/30' },
+                { href: '/dashboard/materiais', ic: 'folder', icc: 'text-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]', t: 'Produtos', b: 'border-[#34D399]/35 hover:border-[#34D399]/70', bg: 'bg-[#34D399]/[0.05] hover:bg-[#34D399]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(52,211,153,0.45)]', chip: 'from-[#34D399]/25 to-[#34D399]/[0.03] border-[#34D399]/30' },
+                { href: '/dashboard/fluxo-pagamento', ic: 'receipt', icc: 'text-[#C4A6FF] drop-shadow-[0_0_8px_rgba(159,107,255,0.6)]', t: 'Fluxo de Pagamento', b: 'border-[#9F6BFF]/35 hover:border-[#9F6BFF]/70', bg: 'bg-[#9F6BFF]/[0.05] hover:bg-[#9F6BFF]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(159,107,255,0.45)]', chip: 'from-[#9F6BFF]/25 to-[#9F6BFF]/[0.03] border-[#9F6BFF]/30' },
+                { href: '/dashboard/ligacao-ativa', ic: 'phone', icc: 'text-[#E8C547] drop-shadow-[0_0_8px_rgba(232,197,71,0.6)]', t: 'Ligação Ativa', b: 'border-[#E8C547]/35 hover:border-[#E8C547]/70', bg: 'bg-[#E8C547]/[0.05] hover:bg-[#E8C547]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(232,197,71,0.45)]', chip: 'from-[#E8C547]/25 to-[#E8C547]/[0.03] border-[#E8C547]/30' },
               ].map((a) => (
                 <Link key={a.href} href={a.href} className={`group relative overflow-hidden rounded-2xl border ${a.b} ${a.bg} ${a.glow} flex items-center gap-2.5 px-3 py-2 hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200`}>
                   <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700" />
                   <span className={`grid place-items-center w-10 h-10 rounded-xl bg-gradient-to-br border ${a.chip} shrink-0 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-200`}>
-                    <Fig n={a.fig} s={24} className="drop-shadow-[0_3px_6px_rgba(0,0,0,0.55)]" />
+                    <Ic k={a.ic} s={20} className={a.icc} />
                   </span>
                   <span className="text-[11.5px] font-bold text-white leading-tight">{a.t}</span>
                 </Link>
@@ -1988,7 +1996,7 @@ export default function DashboardPage() {
             <div className="relative flex items-center justify-between gap-3 shrink-0">
               <div className="flex items-center gap-2.5 min-w-0">
                 <span className="grid place-items-center w-10 h-10 rounded-xl bg-gradient-to-br from-[#E8C547]/30 to-[#E8C547]/[0.04] border border-[#E8C547]/40 shrink-0">
-                  <Fig n="Fire/3D/fire_3d.png" s={24} className="drop-shadow-[0_3px_6px_rgba(0,0,0,0.55)]" />
+                  <Ic k="flame" s={21} className="text-[#E8C547] drop-shadow-[0_0_10px_rgba(232,197,71,0.7)]" />
                 </span>
                 <div className="min-w-0">
                   <h2 className="al-display text-[17px] font-bold text-white uppercase tracking-[0.14em] leading-none truncate">Meets & Visitas</h2>
@@ -2000,11 +2008,11 @@ export default function DashboardPage() {
             </div>
             <div className="relative flex items-stretch gap-4 flex-1 min-h-0 pt-2">
               <div className="flex-1 flex items-end justify-center gap-4 min-w-0">
-                {[{ i: 1, h: 'h-[34%]', ring: 'from-slate-200 via-slate-400 to-slate-600', medal: '2nd%20place%20medal/3D/2nd_place_medal_3d.png', grad: 'from-slate-300/30' }, { i: 0, h: 'h-[56%]', ring: 'from-[#FFE9A6] via-[#E8C547] to-[#8a6d13]', medal: '1st%20place%20medal/3D/1st_place_medal_3d.png', grad: 'from-[#E8C547]/45' }, { i: 2, h: 'h-[22%]', ring: 'from-[#f0b27a] via-[#c47a3d] to-[#7a4319]', medal: '3rd%20place%20medal/3D/3rd_place_medal_3d.png', grad: 'from-orange-600/35' }].map((p) => (
+                {[{ i: 1, h: 'h-[34%]', ring: 'from-slate-200 via-slate-400 to-slate-600', grad: 'from-slate-300/30' }, { i: 0, h: 'h-[56%]', ring: 'from-[#FFE9A6] via-[#E8C547] to-[#8a6d13]', grad: 'from-[#E8C547]/45' }, { i: 2, h: 'h-[22%]', ring: 'from-[#f0b27a] via-[#c47a3d] to-[#7a4319]', grad: 'from-orange-600/35' }].map((p) => (
                   <div key={p.i} className="flex-1 max-w-[150px] h-full flex flex-col items-center justify-end min-w-0 group">
                     <span className={`relative p-[2px] rounded-full bg-gradient-to-br ${p.ring} ${p.i === 0 ? 'w-[52px] h-[52px]' : 'w-11 h-11'} shrink-0 group-hover:scale-110 transition-transform duration-200`}>
                       <span className="w-full h-full rounded-full bg-[#17110a] grid place-items-center al-display font-bold text-white text-[17px]">{podioMeetsMock[p.i].nome.charAt(0)}</span>
-                      <Fig n={p.medal} s={p.i === 0 ? 20 : 17} className="absolute -bottom-1 -right-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
+                      <span className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full grid place-items-center al-display text-[10px] font-extrabold text-[#141414] bg-gradient-to-br ${p.ring} shadow-[0_2px_6px_rgba(0,0,0,0.6)]`}>{p.i + 1}</span>
                     </span>
                     <span className="text-[11px] font-bold text-white truncate w-full text-center mt-1" title={podioMeetsMock[p.i].nome}>{podioMeetsMock[p.i].nome}</span>
                     <span className="flex items-baseline gap-1">
@@ -2016,29 +2024,23 @@ export default function DashboardPage() {
                 ))}
               </div>
               <div className="hidden md:block w-px self-stretch bg-gradient-to-b from-transparent via-[#E8C547]/35 to-transparent shrink-0" />
-              <div className="hidden md:flex w-[220px] shrink-0 flex-col items-center justify-center gap-1.5 text-center">
-                <span className="text-[9.5px] font-extrabold uppercase tracking-[0.22em] text-[#E8C547]">Sua produção</span>
-                <span className="flex items-baseline gap-1.5">
-                  <CountUp n={meusMeetsMock} className="al-display text-[46px] font-bold al-grad-text leading-none tabular-nums" />
-                  <span className="text-[10px] text-[#E8C547]/80 font-bold uppercase tracking-wider">agendados</span>
-                </span>
-                {meusMeetsMock >= podioMeetsMock[2].qtd ? (
-                  <span className="text-[10px] font-bold text-emerald-300">você está no pódio — segura a posição!</span>
-                ) : (
-                  <span className="text-[10px] font-bold text-white/60">faltam <b className="text-[#E8C547]">{podioMeetsMock[2].qtd - meusMeetsMock}</b> pra entrar no pódio</span>
-                )}
-                <div className="w-full mt-1">
-                  <div className="gx-bar gold"><i style={{ width: `${Math.min(100, Math.round((meusMeetsMock / podioMeetsMock[0].qtd) * 100))}%` }} /></div>
-                  <span className="block text-[8.5px] text-white/45 mt-1 tabular-nums">{Math.min(100, Math.round((meusMeetsMock / podioMeetsMock[0].qtd) * 100))}% do líder</span>
-                </div>
+              <div className="hidden md:flex w-[220px] shrink-0 flex-col justify-center gap-1.5">
+                <span className="text-[9.5px] font-extrabold uppercase tracking-[0.22em] text-[#E8C547] flex items-center gap-1.5 mb-0.5"><Ic k="history" s={12} /> Seu histórico</span>
+                {[{ l: 'Semana passada', v: historicoMeetsMock.semana }, { l: 'Último mês', v: historicoMeetsMock.mes }, { l: 'Trimestre', v: historicoMeetsMock.tri }].map((h) => (
+                  <div key={h.l} className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 bg-white/[0.03] border border-white/[0.07] hover:bg-white/[0.05] hover:border-[#E8C547]/25 transition-colors">
+                    <span className="text-[10px] font-bold text-white/70">{h.l}</span>
+                    <CountUp n={h.v} className="al-display text-[18px] font-bold al-grad-text leading-none tabular-nums" />
+                  </div>
+                ))}
               </div>
             </div>
-            <div className="relative md:hidden shrink-0 mt-2 flex items-center justify-between gap-2 rounded-xl px-3 py-1.5 bg-[#E8C547]/[0.08] border border-[#E8C547]/30">
-              <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#E8C547]">Sua produção</span>
-              <span className="flex items-baseline gap-1.5">
-                <CountUp n={meusMeetsMock} className="al-display text-[22px] font-bold al-grad-text leading-none tabular-nums" />
-                <span className="text-[9px] text-[#E8C547]/80 font-bold uppercase">agendados</span>
-              </span>
+            <div className="relative md:hidden shrink-0 mt-2 grid grid-cols-3 gap-1.5">
+              {[{ l: 'Semana', v: historicoMeetsMock.semana }, { l: 'Mês', v: historicoMeetsMock.mes }, { l: 'Tri', v: historicoMeetsMock.tri }].map((h) => (
+                <div key={h.l} className="flex flex-col items-center rounded-lg px-2 py-1.5 bg-white/[0.03] border border-white/[0.07]">
+                  <CountUp n={h.v} className="al-display text-[17px] font-bold al-grad-text leading-none tabular-nums" />
+                  <span className="text-[8.5px] font-bold text-white/60 uppercase tracking-wider mt-0.5">{h.l}</span>
+                </div>
+              ))}
             </div>
           </div>
 
