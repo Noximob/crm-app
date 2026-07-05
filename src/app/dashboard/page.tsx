@@ -23,6 +23,26 @@ const Fig = ({ n, s = 24, className = '' }: { n: string; s?: number; className?:
   <img src={`https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/${n}`} alt="" width={s} height={s} className={className} loading="lazy" draggable={false} />
 );
 
+/** Anel de progresso (SVG) com gradiente dourado→carmesim */
+const Ring = ({ pct, size = 110 }: { pct: number; size?: number }) => {
+  const raio = (size - 12) / 2;
+  const circ = 2 * Math.PI * raio;
+  const cheio = (Math.min(Math.max(pct, 0), 100) / 100) * circ;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
+      <circle cx={size / 2} cy={size / 2} r={raio} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10" />
+      <circle cx={size / 2} cy={size / 2} r={raio} fill="none" stroke="url(#alRingGrad)" strokeWidth="10" strokeLinecap="round" strokeDasharray={`${cheio} ${circ}`} style={{ filter: 'drop-shadow(0 0 8px rgba(232,197,71,0.4))' }} />
+      <defs>
+        <linearGradient id="alRingGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#FFE9A6" />
+          <stop offset="55%" stopColor="#E8C547" />
+          <stop offset="100%" stopColor="#FF1E56" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+};
+
 // Ícones
 const TrendingUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1527,21 +1547,21 @@ export default function DashboardPage() {
   const brlCompact = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', maximumFractionDigits: 1 }).format(v || 0);
   const missoesHome = [
     ...(tarefaAtrasadaCount > 0 ? [{
-      fig: 'Ogre/3D/ogre_3d.png', tipo: 'BOSS FIGHT', titulo: 'Zerar atrasadas',
+      fig: 'Police%20car%20light/3D/police_car_light_3d.png', tipo: 'PRIORIDADE MÁXIMA', titulo: 'Zerar atrasadas',
       desc: `${tarefaAtrasadaCount} lead${tarefaAtrasadaCount > 1 ? 's' : ''} esperando retorno`,
       href: '/dashboard/crm?tarefa=atraso',
       cls: 'border-[#FF1E56]/35 bg-gradient-to-r from-[#FF1E56]/[0.10] to-transparent hover:border-[#FF1E56]/60',
       tag: 'text-[#FF5C7E]', btn: 'border-[#FF1E56]/50 text-[#FF6B93]',
     }] : []),
     ...(tarefaDiaCount > 0 ? [{
-      fig: 'High%20voltage/3D/high_voltage_3d.png', tipo: 'MISSÃO DIÁRIA', titulo: 'Fechar o dia',
+      fig: 'High%20voltage/3D/high_voltage_3d.png', tipo: 'META DO DIA', titulo: 'Fechar o dia',
       desc: `${tarefaDiaCount} tarefa${tarefaDiaCount > 1 ? 's' : ''} pra hoje`,
       href: '/dashboard/crm?tarefa=hoje',
       cls: 'border-[#E8C547]/35 bg-gradient-to-r from-[#E8C547]/[0.08] to-transparent hover:border-[#E8C547]/60',
       tag: 'text-[#E8C547]', btn: 'border-[#E8C547]/50 text-[#E8C547]',
     }] : []),
     ...(semTarefaCount > 0 ? [{
-      fig: 'Compass/3D/compass_3d.png', tipo: 'SIDE QUEST', titulo: 'Resgatar esquecidos',
+      fig: 'Gem%20stone/3D/gem_stone_3d.png', tipo: 'OPORTUNIDADE', titulo: 'Resgatar esquecidos',
       desc: `${semTarefaCount} lead${semTarefaCount > 1 ? 's' : ''} sem próxima tarefa`,
       href: '/dashboard/crm?tarefa=sem',
       cls: 'border-emerald-400/30 bg-gradient-to-r from-emerald-500/[0.07] to-transparent hover:border-emerald-400/60',
@@ -1599,14 +1619,14 @@ export default function DashboardPage() {
         <div className="al-card relative overflow-hidden p-5 al-rise al-d2">
           <div className="absolute inset-x-0 top-0 gx-line-gold" />
           <div className="flex items-center justify-between mb-3.5">
-            <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Fig n="Video%20game/3D/video_game_3d.png" s={20} /> Missões de hoje</h2>
+            <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Fig n="Bullseye/3D/bullseye_3d.png" s={20} /> Foco de hoje</h2>
             <Link href="/dashboard/crm" className="text-[11px] font-bold text-[#FF5C7E] hover:underline shrink-0">abrir CRM ▸</Link>
           </div>
           {missoesHome.length === 0 ? (
             <div className="rounded-xl border border-emerald-400/30 bg-emerald-500/[0.08] p-6 text-center">
               <Fig n="Trophy/3D/trophy_3d.png" s={44} className="mx-auto mb-2" />
-              <p className="al-display text-sm font-bold text-emerald-300 uppercase tracking-[0.2em]">Missões concluídas!</p>
-              <p className="text-[11px] text-text-secondary mt-1">Nada pendente — hora de caçar leads novos.</p>
+              <p className="al-display text-sm font-bold text-emerald-300 uppercase tracking-[0.2em]">Tudo em dia!</p>
+              <p className="text-[11px] text-text-secondary mt-1">Nenhuma pendência — hora de caçar negócio novo.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -1983,72 +2003,122 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Coluna Direita — funil e metas */}
+        {/* Coluna Direita — pipeline (funil de verdade), meta da equipe e pódio */}
         <div id="trending-section" className="space-y-3 min-w-0">
-          {/* Seu funil */}
-          <div className="al-card p-4 relative overflow-hidden">
+          {/* Pipeline em formato de funil */}
+          <div className="al-card p-4 relative overflow-hidden al-rise al-d2">
+            <div className="absolute inset-x-0 top-0 gx-line" />
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Fig n="Chart%20increasing/3D/chart_increasing_3d.png" s={20} /> Seu pipeline</h2>
+              <Link href="/dashboard/crm/andamento" className="text-[11px] font-bold text-[#FF5C7E] hover:underline shrink-0">kanban ▸</Link>
+            </div>
             {agendaLoading ? (
               <p className="text-gray-400 text-sm">Carregando...</p>
             ) : (() => {
               const porEtapa = funilPessoal;
-              const totalFunil = Object.values(porEtapa).reduce((a, b) => a + b, 0);
               const etapasVisiveis = stages.slice(0, 6);
               const maxLocal = Math.max(...etapasVisiveis.map((e) => porEtapa[e] ?? 0), 1);
-              const getNivel = (total: number) => {
-                if (total >= 50) return { label: 'Líder', emoji: '🏆', bg: 'bg-amber-500/25 border-amber-400/40', text: 'text-amber-300' };
-                if (total >= 25) return { label: 'Elite', emoji: '⭐', bg: 'bg-amber-500/15 border-amber-400/30', text: 'text-amber-200' };
-                if (total >= 10) return { label: 'Em alta', emoji: '🔥', bg: 'bg-orange-500/15 border-orange-400/30', text: 'text-orange-300' };
-                if (total >= 5) return { label: 'Subindo', emoji: '📈', bg: 'bg-emerald-500/15 border-emerald-400/30', text: 'text-emerald-300' };
-                return { label: 'Em jogo', emoji: '🎯', bg: 'bg-[#D4A017]/15 border-[#D4A017]/30', text: 'text-[#93c5fd]' };
-              };
-              const nivel = getNivel(totalFunil);
-              const nomeCorretor = userData?.nome || currentUser?.email?.split('@')[0] || 'Corretor';
+              const coresFunil = ['#FFE9A6', '#E8C547', '#D4A017', '#F59E0B', '#FF7A45', '#FF1E56'];
+              return (
+                <div className="space-y-1.5 min-w-0">
+                  {etapasVisiveis.map((etapa, ei) => {
+                    const qtd = porEtapa[etapa] ?? 0;
+                    const w = qtd > 0 ? Math.max((qtd / maxLocal) * 100, 18) : 5;
+                    const cor = coresFunil[ei % coresFunil.length];
+                    return (
+                      <Link key={etapa} href="/dashboard/crm" className="group flex items-center gap-2 min-w-0" title={`${etapa}: ${qtd} lead${qtd === 1 ? '' : 's'}`}>
+                        <span className="w-[7.5rem] shrink-0 text-[10px] text-text-secondary truncate text-right group-hover:text-white transition-colors">{etapa}</span>
+                        <span className="flex-1 flex justify-center min-w-0">
+                          <span
+                            className="h-[17px] rounded-[5px] transition-all duration-300 group-hover:brightness-125"
+                            style={{ width: `${w}%`, background: `linear-gradient(90deg, ${cor}e6, ${cor}55)`, boxShadow: qtd > 0 ? `0 0 12px ${cor}45` : 'none' }}
+                          />
+                        </span>
+                        <span className="w-6 shrink-0 al-display text-[13px] font-bold text-white tabular-nums">{qtd}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Meta da equipe — anel de progresso (dados reais do admin) */}
+          <div className="al-card p-4 relative overflow-hidden al-rise al-d3">
+            <div className="absolute inset-x-0 top-0 gx-line-gold" />
+            {(() => {
+              const vgvMeta = Number(meta?.valor) || 0;
+              const vgvFeito = Number(meta?.alcancado) || 0;
+              const pctEquipe = meta?.percentual != null ? Number(meta.percentual) : (vgvMeta > 0 ? Math.round((vgvFeito / vgvMeta) * 100) : 0);
+              const fmtD = (d?: string) => { if (!d) return null; const [y, m, dd] = String(d).split('T')[0].split('-'); return dd && m && y ? `${dd}/${m}` : null; };
+              const periodo = fmtD(meta?.inicio) && fmtD(meta?.fim) ? `${fmtD(meta?.inicio)} → ${fmtD(meta?.fim)}` : null;
               return (
                 <>
-                  <div className="flex items-center gap-1.5 flex-shrink-0 mb-2">
-                    <span className="w-6 h-6 rounded bg-amber-500/30 flex items-center justify-center text-amber-400 border border-amber-400/40 shrink-0">
-                      <TrophyIcon className="w-3 h-3" />
-                    </span>
-                    <span className="flex-1 min-w-0 font-semibold text-white text-xs truncate" title={nomeCorretor}>
-                      {nomeCorretor}
-                    </span>
-                    <span className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold border ${nivel.bg} ${nivel.text}`}>
-                      {nivel.emoji} {nivel.label}
-                    </span>
-                    <span className="al-display shrink-0 text-base font-extrabold tabular-nums al-grad-text">{totalFunil}</span>
+                  <div className="flex items-center justify-between gap-3 mb-2.5">
+                    <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Fig n="Chequered%20flag/3D/chequered_flag_3d.png" s={20} /> Meta da equipe</h2>
+                    {periodo && <span className="text-[10px] font-bold text-text-secondary tabular-nums shrink-0">{periodo}</span>}
                   </div>
-                  <div className="space-y-1.5 min-w-0">
-                    {etapasVisiveis.map((etapa) => {
-                      const qtd = porEtapa[etapa] ?? 0;
-                      const pct = maxLocal > 0 ? Math.round((qtd / maxLocal) * 100) : 0;
-                      const widthPct = qtd > 0 ? Math.max(pct, 20) : 0;
-                      return (
-                        <div key={etapa} className="flex items-center gap-1.5 min-w-0">
-                          <span className="text-[10px] text-[#94a3b8] font-medium shrink-0 w-[8.5rem] truncate" title={etapa}>{etapa}</span>
-                          <div className="flex-1 min-w-0 h-2 bg-white/[0.07] rounded-full overflow-hidden">
-                            <div
-                              className="h-full rounded-full bg-gradient-to-r from-[#FFE9A6] via-[#E8C547] to-[#D4A017] shadow-[0_0_10px_rgba(232,197,71,0.35)]"
-                              style={{ width: `${widthPct}%`, minWidth: qtd > 0 ? 4 : 0 }}
-                            />
-                          </div>
-                          <span className="text-[10px] font-bold text-white tabular-nums w-4 text-right shrink-0">{qtd}</span>
+                  {vgvMeta <= 0 ? (
+                    <p className="text-[11px] text-text-secondary">A meta da imobiliária ainda não foi configurada pelo gestor.</p>
+                  ) : (
+                    <div className="flex items-center gap-4">
+                      <div className="relative shrink-0">
+                        <Ring pct={pctEquipe} size={104} />
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="al-display text-[22px] font-bold text-white leading-none tabular-nums">{pctEquipe}%</span>
+                          <span className="text-[8px] uppercase tracking-[0.18em] text-text-secondary mt-0.5">do VGV</span>
                         </div>
-                      );
-                    })}
-                  </div>
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-2.5">
+                        <div>
+                          <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-text-secondary">Meta VGV</p>
+                          <p className="al-display text-[19px] font-bold al-grad-text leading-tight tabular-nums">{brlCompact(vgvMeta)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-text-secondary">Realizado</p>
+                          <p className="al-display text-[19px] font-bold text-white leading-tight tabular-nums">{brlCompact(vgvFeito)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </>
               );
             })()}
           </div>
 
-          {/* Metas e ranking */}
-          <div className="al-card p-3 relative overflow-hidden animate-fade-in">
-            <MetaIndividualCard metaPessoal={metaPessoal} meta={meta} />
-            <GamificacaoMetasRow
-              meta={meta}
-              nomeImobiliaria={nomeImobiliaria}
-              corretores={corretoresRanking}
-            />
+          {/* Pódio do trimestre — quem tá vendendo */}
+          <div className="al-card p-4 relative overflow-hidden al-rise al-d4">
+            <div className="absolute inset-x-0 top-0 gx-line" />
+            <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2 mb-3"><Fig n="Trophy/3D/trophy_3d.png" s={20} /> Pódio do trimestre</h2>
+            {corretoresRanking.length === 0 ? (
+              <p className="text-[11px] text-text-secondary">Sem vendas lançadas ainda — o pódio abre quando o time pontuar.</p>
+            ) : (
+              <>
+                <div className="flex items-end justify-center gap-2">
+                  {[{ i: 1, h: 'h-14', medal: '2nd%20place%20medal/3D/2nd_place_medal_3d.png', cor: 'from-slate-400/25' }, { i: 0, h: 'h-20', medal: '1st%20place%20medal/3D/1st_place_medal_3d.png', cor: 'from-[#E8C547]/30' }, { i: 2, h: 'h-10', medal: '3rd%20place%20medal/3D/3rd_place_medal_3d.png', cor: 'from-orange-700/30' }].map((p) => (
+                    corretoresRanking[p.i] ? (
+                      <div key={p.i} className="flex-1 max-w-[110px] flex flex-col items-center min-w-0">
+                        <Fig n={p.medal} s={p.i === 0 ? 34 : 26} className="mb-1" />
+                        <span className="text-[10px] font-bold text-white truncate w-full text-center leading-tight" title={corretoresRanking[p.i].nome}>{corretoresRanking[p.i].nome.split(' ')[0]}</span>
+                        <div className={`w-full ${p.h} mt-1.5 rounded-t-lg bg-gradient-to-t ${p.cor} to-transparent border border-white/[0.07] border-b-0 flex items-start justify-center pt-1`}>
+                          <span className="al-display text-[13px] font-bold text-white/60">{p.i + 1}º</span>
+                        </div>
+                      </div>
+                    ) : <div key={p.i} className="flex-1 max-w-[110px]" />
+                  ))}
+                </div>
+                {corretoresRanking.length > 3 && (
+                  <div className="mt-2.5 pt-2 border-t border-white/[0.06] space-y-1">
+                    {corretoresRanking.slice(3, 6).map((c, i) => (
+                      <div key={c.id} className="flex items-center gap-2 text-[11px]">
+                        <span className="w-6 text-text-secondary font-bold tabular-nums">{i + 4}º</span>
+                        <span className="text-white/80 truncate">{c.nome}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
