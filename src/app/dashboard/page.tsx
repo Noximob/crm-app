@@ -1575,33 +1575,35 @@ export default function DashboardPage() {
           <div className="absolute -top-20 -right-16 w-56 h-56 rounded-full bg-[#FF1E56]/[0.10] blur-3xl pointer-events-none" />
           <span className="pointer-events-none absolute top-2 left-2 w-3.5 h-3.5 border-t-2 border-l-2 border-[#E8C547]/45 rounded-tl-sm" />
           <span className="pointer-events-none absolute bottom-2 right-2 w-3.5 h-3.5 border-b-2 border-r-2 border-[#E8C547]/45 rounded-br-sm" />
-          <div className="relative flex items-center justify-between gap-2">
-            <span className="gx-tag"><span>{saudacaoDia} · {nomeImobiliaria || 'Sua imobiliária'}</span></span>
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[9.5px] font-extrabold tracking-[0.12em] uppercase animate-pulse shrink-0 whitespace-nowrap ${urgSemana.cls}`} style={{ background: urgSemana.bg, boxShadow: urgSemana.glow }}>
-              <Ic k="hourglass" s={11} /> {countdownSemana}
-            </span>
-          </div>
-          <div className="relative flex items-center gap-3 mt-3">
-            <div className="relative w-11 h-11 p-[2px] rounded-full bg-gradient-to-br from-[#FF6B93] via-[#FF1E56] to-[#8B0F31] shadow-[0_0_18px_rgba(255,30,86,0.4)] shrink-0">
-              <div className="w-full h-full rounded-full bg-[#16090e] flex items-center justify-center text-[#FF9EB5] al-display font-bold text-lg">
-                {primeiroNomeHome.charAt(0).toUpperCase()}
+          <div className="relative flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <span className="gx-tag"><span>{saudacaoDia} · {nomeImobiliaria || 'Sua imobiliária'}</span></span>
+              <div className="flex items-center gap-3 mt-3.5">
+                <div className="relative w-11 h-11 p-[2px] rounded-full bg-gradient-to-br from-[#FF6B93] via-[#FF1E56] to-[#8B0F31] shadow-[0_0_18px_rgba(255,30,86,0.4)] shrink-0">
+                  <div className="w-full h-full rounded-full bg-[#16090e] flex items-center justify-center text-[#FF9EB5] al-display font-bold text-lg">
+                    {primeiroNomeHome.charAt(0).toUpperCase()}
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <h1 className="al-display text-[20px] font-bold text-white uppercase tracking-wide leading-none truncate">{primeiroNomeHome}</h1>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 mt-1 rounded-full text-[9px] font-extrabold tracking-[0.14em] bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#E8C547]">
+                    <Ic k="trophy" s={11} /> {minhaPosMock}º NO RANKING
+                  </span>
+                </div>
               </div>
             </div>
-            <div className="min-w-0">
-              <h1 className="al-display text-[20px] font-bold text-white uppercase tracking-wide leading-none truncate">{primeiroNomeHome}</h1>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 mt-1 rounded-full text-[9px] font-extrabold tracking-[0.14em] bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#E8C547]">
-                <Ic k="trophy" s={11} /> {minhaPosMock}º NO RANKING
-              </span>
+            {/* Placar da semana — o número principal, emoldurado */}
+            <div className="relative shrink-0 rounded-2xl border border-[#E8C547]/50 px-4 py-2 text-right overflow-hidden group" style={{ background: 'linear-gradient(160deg, rgba(232,197,71,0.14), rgba(20,13,5,0.5))', boxShadow: '0 0 30px -6px rgba(232,197,71,0.5), inset 0 1px 0 rgba(232,197,71,0.3)' }}>
+              <span className="pointer-events-none absolute inset-0 gx-stripes opacity-40" />
+              <CountUp n={meusMeetsMock} className="relative al-display block text-[46px] font-bold al-grad-text leading-[0.9] tabular-nums drop-shadow-[0_0_18px_rgba(232,197,71,0.5)]" />
+              <span className="relative block text-[8.5px] font-extrabold uppercase tracking-[0.18em] text-[#E8C547] mt-0.5">meets & visitas</span>
+              <span className="relative block text-[7.5px] font-bold uppercase tracking-[0.2em] text-white/55">nesta semana</span>
             </div>
           </div>
           <div className="relative mt-auto pt-2 flex items-end justify-between gap-3">
-            <div className="flex items-end gap-3 min-w-0">
-              <CountUp n={meusMeetsMock} className="al-display text-[58px] font-bold al-grad-text leading-[0.85] tabular-nums drop-shadow-[0_0_20px_rgba(232,197,71,0.35)]" />
-              <div className="pb-1 min-w-0">
-                <span className="block text-[11px] font-extrabold uppercase tracking-[0.18em] text-white">meets & visitas</span>
-                <span className="block text-[9px] font-bold uppercase tracking-[0.2em] text-[#E8C547]/90 mt-0.5">nesta semana</span>
-              </div>
-            </div>
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[9.5px] font-extrabold tracking-[0.12em] uppercase animate-pulse shrink-0 whitespace-nowrap ${urgSemana.cls}`} style={{ background: urgSemana.bg, boxShadow: urgSemana.glow }}>
+              <Ic k="hourglass" s={11} /> {countdownSemana}
+            </span>
             {(() => {
               const hojeIdx = (currentTime.getDay() + 6) % 7;
               return (
@@ -1626,7 +1628,8 @@ export default function DashboardPage() {
           <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700" />
           <span className="flex flex-col min-w-0">
             <span className="text-[9.5px] font-extrabold tracking-[0.2em] text-[#FF7A97]">ATRASADAS</span>
-            <CountUp n={tarefaAtrasadaCount} className="al-display text-[36px] font-bold text-white leading-none tabular-nums" />
+            <CountUp n={tarefaAtrasadaCount} className="al-display text-[34px] font-bold text-white leading-none tabular-nums" />
+            <span className="text-[9px] font-bold text-[#FF7A97] mt-0.5 whitespace-nowrap">exige ação imediata ▸</span>
           </span>
           <span className="grid place-items-center w-11 h-11 rounded-xl bg-gradient-to-br from-[#FF1E56]/25 to-[#FF1E56]/[0.03] border border-[#FF1E56]/30 shrink-0 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-200">
             <Ic k="alert" s={22} className="text-[#FF7A97] drop-shadow-[0_0_8px_rgba(255,30,86,0.6)]" />
@@ -1638,7 +1641,8 @@ export default function DashboardPage() {
           <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700" />
           <span className="flex flex-col min-w-0">
             <span className="text-[9.5px] font-extrabold tracking-[0.2em] text-[#E8C547]">PARA HOJE</span>
-            <CountUp n={tarefaDiaCount} className="al-display text-[36px] font-bold text-white leading-none tabular-nums" />
+            <CountUp n={tarefaDiaCount} className="al-display text-[34px] font-bold text-white leading-none tabular-nums" />
+            <span className="text-[9px] font-bold text-[#E8C547] mt-0.5 whitespace-nowrap">feche o dia zerado ▸</span>
           </span>
           <span className="grid place-items-center w-11 h-11 rounded-xl bg-gradient-to-br from-[#E8C547]/25 to-[#E8C547]/[0.03] border border-[#E8C547]/30 shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-200">
             <Ic k="zap" s={20} className="text-[#E8C547] drop-shadow-[0_0_8px_rgba(232,197,71,0.6)]" />
@@ -1650,7 +1654,8 @@ export default function DashboardPage() {
           <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700" />
           <span className="flex flex-col min-w-0">
             <span className="text-[9.5px] font-extrabold tracking-[0.2em] text-emerald-300">SEM TAREFA</span>
-            <CountUp n={semTarefaCount} className="al-display text-[36px] font-bold text-white leading-none tabular-nums" />
+            <CountUp n={semTarefaCount} className="al-display text-[34px] font-bold text-white leading-none tabular-nums" />
+            <span className="text-[9px] font-bold text-emerald-300 mt-0.5 whitespace-nowrap">resgate esses leads ▸</span>
           </span>
           <span className="grid place-items-center w-11 h-11 rounded-xl bg-gradient-to-br from-[#34D399]/25 to-[#34D399]/[0.03] border border-[#34D399]/30 shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-200">
             <Ic k="gem" s={20} className="text-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
@@ -2031,25 +2036,25 @@ export default function DashboardPage() {
               <span className="gx-tag shrink-0"><span>01/07 → 07/07</span></span>
             </div>
             <div className="relative flex items-center gap-3 flex-1 min-h-0 pt-2">
-              <div className="flex-1 grid grid-cols-3 gap-2.5 min-w-0">
-                {[0, 1, 2].map((i) => {
-                  const ring = ['from-[#FFE9A6] via-[#E8C547] to-[#8a6d13]', 'from-slate-200 via-slate-400 to-slate-600', 'from-[#f0b27a] via-[#c47a3d] to-[#7a4319]'][i];
-                  return (
-                    <div key={i} className={`relative overflow-hidden rounded-xl border px-3 py-2 flex items-center gap-2.5 min-w-0 group transition-colors ${i === 0 ? 'border-[#E8C547]/40 bg-[#E8C547]/[0.07] hover:bg-[#E8C547]/[0.11]' : 'border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.05]'}`}>
-                      <span className={`relative p-[2px] rounded-full bg-gradient-to-br ${ring} ${i === 0 ? 'w-11 h-11' : 'w-10 h-10'} shrink-0 group-hover:scale-105 transition-transform duration-200`}>
-                        <span className="w-full h-full rounded-full bg-[#17110a] grid place-items-center al-display font-bold text-white text-[15px]">{podioMeetsMock[i].nome.charAt(0)}</span>
-                        <span className={`absolute -bottom-1 -right-1 w-[18px] h-[18px] rounded-full grid place-items-center al-display text-[9.5px] font-extrabold text-[#141414] bg-gradient-to-br ${ring} shadow-[0_2px_6px_rgba(0,0,0,0.6)]`}>{i + 1}</span>
-                      </span>
-                      <span className="flex flex-col min-w-0">
-                        <span className="text-[11px] font-bold text-white truncate" title={podioMeetsMock[i].nome}>{podioMeetsMock[i].nome}</span>
-                        <span className="flex items-baseline gap-1">
-                          <CountUp n={podioMeetsMock[i].qtd} className={`al-display font-bold leading-none tabular-nums ${i === 0 ? 'text-[24px] al-grad-text' : 'text-[19px] text-white/90'}`} />
-                          <span className="text-[8px] uppercase tracking-wider text-white/40 font-bold">agend.</span>
-                        </span>
-                      </span>
+              {/* Corrida da semana — raias com barra proporcional ao líder; a sua raia em carmesim */}
+              <div className="flex-1 min-w-0 flex flex-col justify-center gap-[7px]">
+                {[
+                  { nome: podioMeetsMock[0].nome, qtd: podioMeetsMock[0].qtd, pos: 1, ring: 'from-[#FFE9A6] via-[#E8C547] to-[#8a6d13]', bar: 'linear-gradient(90deg, #FFE9A6, #E8C547)', glow: 'rgba(232,197,71,0.5)', eu: false },
+                  { nome: podioMeetsMock[1].nome, qtd: podioMeetsMock[1].qtd, pos: 2, ring: 'from-slate-200 via-slate-400 to-slate-600', bar: 'linear-gradient(90deg, #E2E8F0, #94A3B8)', glow: 'rgba(148,163,184,0.4)', eu: false },
+                  { nome: podioMeetsMock[2].nome, qtd: podioMeetsMock[2].qtd, pos: 3, ring: 'from-[#f0b27a] via-[#c47a3d] to-[#7a4319]', bar: 'linear-gradient(90deg, #F0B27A, #C47A3D)', glow: 'rgba(196,122,61,0.4)', eu: false },
+                  { nome: 'Você', qtd: meusMeetsMock, pos: minhaPosMock, ring: 'from-[#FF6B93] via-[#FF1E56] to-[#8B0F31]', bar: 'linear-gradient(90deg, #FF6B93, #FF1E56)', glow: 'rgba(255,30,86,0.55)', eu: true },
+                ].map((l) => (
+                  <div key={`${l.pos}-${l.nome}`} className={`flex items-center gap-2.5 ${l.eu ? 'rounded-lg px-2 py-1 -mx-2 bg-[#FF1E56]/[0.08] border border-[#FF1E56]/35' : ''}`}>
+                    <span className={`w-[22px] h-[22px] rounded-full grid place-items-center al-display text-[10.5px] font-extrabold shrink-0 bg-gradient-to-br ${l.ring} ${l.eu ? 'text-white shadow-[0_0_10px_rgba(255,30,86,0.5)]' : 'text-[#141414]'}`}>{l.pos}</span>
+                    <span className={`w-16 shrink-0 truncate text-[11px] font-bold ${l.eu ? 'text-[#FF9EB5]' : 'text-white'}`} title={l.nome}>{l.nome}</span>
+                    <div className="flex-1 h-[13px] rounded-full bg-white/[0.05] border border-white/[0.06] overflow-hidden min-w-0">
+                      <i className="block h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(6, Math.round((l.qtd / podioMeetsMock[0].qtd) * 100))}%`, background: l.bar, boxShadow: `0 0 12px ${l.glow}` }} />
                     </div>
-                  );
-                })}
+                    <span className="w-8 shrink-0 text-right">
+                      <CountUp n={l.qtd} className={`al-display text-[16px] font-bold tabular-nums ${l.eu ? 'text-[#FF7A97]' : l.pos === 1 ? 'al-grad-text' : 'text-white/85'}`} />
+                    </span>
+                  </div>
+                ))}
               </div>
               <div className="hidden md:block w-px self-stretch bg-gradient-to-b from-transparent via-[#E8C547]/35 to-transparent shrink-0" />
               <div className="hidden md:flex w-[210px] shrink-0 flex-col justify-center gap-1">
