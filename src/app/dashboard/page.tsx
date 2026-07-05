@@ -23,6 +23,24 @@ const Fig = ({ n, s = 24, className = '' }: { n: string; s?: number; className?:
   <img src={`https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/${n}`} alt="" width={s} height={s} className={className} loading="lazy" draggable={false} />
 );
 
+/** Número que conta de 0 até o valor (HUD vivo) */
+const CountUp = ({ n, className = '' }: { n: number; className?: string }) => {
+  const [v, setV] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    const t0 = performance.now();
+    const dur = 850;
+    const step = (t: number) => {
+      const p = Math.min((t - t0) / dur, 1);
+      setV(Math.round(n * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [n]);
+  return <span className={className}>{v}</span>;
+};
+
 /** Anel de progresso (SVG) com gradiente dourado→carmesim */
 const Ring = ({ pct, size = 110 }: { pct: number; size?: number }) => {
   const raio = (size - 12) / 2;
@@ -1545,132 +1563,69 @@ export default function DashboardPage() {
   const metaFeito = metaPessoal?.alcancadoPessoal ?? 0;
   const metaPctHome = metaAlvo > 0 ? Math.min(100, Math.round((metaFeito / metaAlvo) * 100)) : 0;
   const brlCompact = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', maximumFractionDigits: 1 }).format(v || 0);
-  const missoesHome = [
-    ...(tarefaAtrasadaCount > 0 ? [{
-      fig: 'Police%20car%20light/3D/police_car_light_3d.png', tipo: 'PRIORIDADE MÁXIMA', titulo: 'Zerar atrasadas',
-      desc: `${tarefaAtrasadaCount} lead${tarefaAtrasadaCount > 1 ? 's' : ''} esperando retorno`,
-      href: '/dashboard/crm?tarefa=atraso',
-      cls: 'border-[#FF1E56]/35 bg-gradient-to-r from-[#FF1E56]/[0.10] to-transparent hover:border-[#FF1E56]/60',
-      tag: 'text-[#FF5C7E]', btn: 'border-[#FF1E56]/50 text-[#FF6B93]',
-    }] : []),
-    ...(tarefaDiaCount > 0 ? [{
-      fig: 'High%20voltage/3D/high_voltage_3d.png', tipo: 'META DO DIA', titulo: 'Fechar o dia',
-      desc: `${tarefaDiaCount} tarefa${tarefaDiaCount > 1 ? 's' : ''} pra hoje`,
-      href: '/dashboard/crm?tarefa=hoje',
-      cls: 'border-[#E8C547]/35 bg-gradient-to-r from-[#E8C547]/[0.08] to-transparent hover:border-[#E8C547]/60',
-      tag: 'text-[#E8C547]', btn: 'border-[#E8C547]/50 text-[#E8C547]',
-    }] : []),
-    ...(semTarefaCount > 0 ? [{
-      fig: 'Gem%20stone/3D/gem_stone_3d.png', tipo: 'OPORTUNIDADE', titulo: 'Resgatar esquecidos',
-      desc: `${semTarefaCount} lead${semTarefaCount > 1 ? 's' : ''} sem próxima tarefa`,
-      href: '/dashboard/crm?tarefa=sem',
-      cls: 'border-emerald-400/30 bg-gradient-to-r from-emerald-500/[0.07] to-transparent hover:border-emerald-400/60',
-      tag: 'text-emerald-300', btn: 'border-emerald-400/50 text-emerald-300',
-    }] : []),
-  ];
 
   return (
     <div className="min-h-full pb-6">
       {/* ===== BANNER DO JOGADOR (full-width, listras diagonais) ===== */}
       <section className="space-y-3 mb-3 mt-1">
-        <div className="al-card gx-stripes relative overflow-hidden p-5 md:p-6 al-rise">
+        <div className="al-card gx-stripes relative overflow-hidden p-5 md:p-6 al-rise !rounded-[28px]">
           <div className="absolute inset-x-0 top-0 gx-line" />
           <div className="absolute -top-24 -right-20 w-96 h-96 rounded-full bg-[#FF1E56]/[0.08] blur-3xl pointer-events-none" />
           <div className="absolute -bottom-28 -left-24 w-80 h-80 rounded-full bg-[#E8C547]/[0.05] blur-3xl pointer-events-none" />
-          <div className="relative mb-4"><span className="gx-tag"><span>{saudacaoDia} · {nomeImobiliaria || 'Sua imobiliária'}</span></span></div>
-          <div className="relative flex items-center gap-4 md:gap-5">
-            <div className="relative w-16 h-16 md:w-[72px] md:h-[72px] p-[2px] rounded-2xl bg-gradient-to-br from-[#FF6B93] via-[#FF1E56] to-[#8B0F31] shadow-[0_0_24px_rgba(255,30,86,0.4)] shrink-0">
-              <div className="w-full h-full rounded-[14px] bg-[#16090e] flex items-center justify-center text-[#FF9EB5] al-display font-bold text-2xl">
-                {primeiroNomeHome.charAt(0).toUpperCase()}
+          <div className="relative mb-5 flex items-center justify-between gap-3 flex-wrap">
+            <span className="gx-tag"><span>{saudacaoDia} · {nomeImobiliaria || 'Sua imobiliária'}</span></span>
+            <span className="text-[11px] text-text-secondary">{focoMsg}</span>
+          </div>
+          <div className="relative flex flex-wrap items-center gap-x-6 gap-y-5">
+            {/* identidade */}
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="relative w-16 h-16 p-[2px] rounded-full bg-gradient-to-br from-[#FF6B93] via-[#FF1E56] to-[#8B0F31] shadow-[0_0_24px_rgba(255,30,86,0.4)] shrink-0">
+                <div className="w-full h-full rounded-full bg-[#16090e] flex items-center justify-center text-[#FF9EB5] al-display font-bold text-2xl">
+                  {primeiroNomeHome.charAt(0).toUpperCase()}
+                </div>
               </div>
-            </div>
-            <div className="min-w-0">
-              <h1 className="al-display text-[30px] md:text-[36px] font-bold text-white uppercase tracking-wide leading-none truncate">{primeiroNomeHome}</h1>
-              <div className="flex items-center gap-2 mt-2.5">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-extrabold tracking-[0.14em] bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#E8C547]">
-                  <Fig n={rankHome.fig} s={15} /> {rankHome.label}
+              <div className="min-w-0">
+                <h1 className="al-display text-[28px] md:text-[32px] font-bold text-white uppercase tracking-wide leading-none truncate">{primeiroNomeHome}</h1>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 mt-2 rounded-full text-[10px] font-extrabold tracking-[0.14em] bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#E8C547]">
+                  <Fig n={rankHome.fig} s={14} /> {rankHome.label}
                 </span>
               </div>
             </div>
-            <div className="ml-auto text-right shrink-0">
-              <span className="al-display block text-[52px] md:text-[60px] font-bold gx-neon leading-none tabular-nums">{totalFunilHome}</span>
-              <span className="block text-[10px] uppercase tracking-[0.2em] text-text-secondary mt-1">leads na carteira</span>
-            </div>
-          </div>
-          <div className="relative mt-5 max-w-3xl">
-            {metaAlvo > 0 ? (
-              <>
-                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.18em] text-text-secondary mb-1.5">
-                  <span>Meta do trimestre</span>
-                  <span className="tabular-nums">{brlCompact(metaFeito)} / {brlCompact(metaAlvo)} · <b className="text-[#E8C547]">{metaPctHome}%</b></span>
-                </div>
-                <div className="gx-bar gold"><i style={{ width: `${Math.max(metaPctHome, 3)}%` }} /></div>
-              </>
-            ) : (
-              <div className="rounded-lg border border-white/[0.07] bg-white/[0.03] px-3 py-2 text-[11px] text-text-secondary">
-                🎯 Sua meta do trimestre ainda não foi definida — fale com o gestor pra entrar no jogo.
-              </div>
-            )}
-            <p className="text-[11px] text-text-secondary mt-2.5">{focoMsg}</p>
-          </div>
-        </div>
-
-        {/* MISSÕES DE HOJE */}
-        <div className="al-card relative overflow-hidden p-5 al-rise al-d2">
-          <div className="absolute inset-x-0 top-0 gx-line-gold" />
-          <div className="flex items-center justify-between mb-3.5">
-            <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Fig n="Bullseye/3D/bullseye_3d.png" s={20} /> Foco de hoje</h2>
-            <Link href="/dashboard/crm" className="text-[11px] font-bold text-[#FF5C7E] hover:underline shrink-0">abrir CRM ▸</Link>
-          </div>
-          {missoesHome.length === 0 ? (
-            <div className="rounded-xl border border-emerald-400/30 bg-emerald-500/[0.08] p-6 text-center">
-              <Fig n="Trophy/3D/trophy_3d.png" s={44} className="mx-auto mb-2" />
-              <p className="al-display text-sm font-bold text-emerald-300 uppercase tracking-[0.2em]">Tudo em dia!</p>
-              <p className="text-[11px] text-text-secondary mt-1">Nenhuma pendência — hora de caçar negócio novo.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              {missoesHome.map((m) => (
-                <Link key={m.href} href={m.href} className={`group flex flex-col rounded-xl border p-3.5 transition-all hover:-translate-y-1 ${m.cls}`}>
-                  <span className="flex items-center justify-between">
-                    <Fig n={m.fig} s={32} className="group-hover:scale-110 transition-transform" />
-                    <span className={`text-[9px] font-extrabold tracking-[0.22em] ${m.tag}`}>{m.tipo}</span>
+            {/* medidores do dia — a informação na cara, redonda e clicável */}
+            <div className="flex items-center gap-4 md:gap-6 mx-auto">
+              {[
+                { href: '/dashboard/crm?tarefa=atraso', n: tarefaAtrasadaCount, cor: '#FF3364', label: 'ATRASADAS' },
+                { href: '/dashboard/crm?tarefa=hoje', n: tarefaDiaCount, cor: '#E8C547', label: 'PARA HOJE' },
+                { href: '/dashboard/crm?tarefa=sem', n: semTarefaCount, cor: '#34D399', label: 'SEM TAREFA' },
+              ].map((g) => (
+                <Link key={g.href} href={g.href} className="group flex flex-col items-center gap-2" title={`${g.label}: abrir no CRM`}>
+                  <span
+                    className="relative w-[76px] h-[76px] rounded-full flex items-center justify-center border-2 bg-black/25 transition-transform group-hover:scale-105"
+                    style={{ borderColor: `${g.cor}55`, boxShadow: `0 0 24px ${g.cor}30, inset 0 0 20px ${g.cor}14` }}
+                  >
+                    <CountUp n={g.n} className="al-display text-[27px] font-bold text-white tabular-nums" />
+                    {g.n > 0 && <span className="absolute top-1 right-1.5 w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: g.cor }} />}
                   </span>
-                  <span className="al-display block text-[16px] font-bold text-white uppercase tracking-wide leading-tight mt-2.5">{m.titulo}</span>
-                  <span className="block text-[11px] text-text-secondary mt-0.5">{m.desc}</span>
-                  <span className={`mt-3 self-start px-2.5 py-1 rounded-lg text-[10px] font-extrabold tracking-[0.14em] border ${m.btn} opacity-80 group-hover:opacity-100 transition-opacity`}>INICIAR ▸</span>
+                  <span className="text-[9px] font-extrabold tracking-[0.2em]" style={{ color: g.cor }}>{g.label}</span>
                 </Link>
               ))}
             </div>
-          )}
+            {/* carteira + meta do trimestre */}
+            <div className="ml-auto text-right shrink-0 w-full sm:w-auto sm:min-w-[200px]">
+              <CountUp n={totalFunilHome} className="al-display block text-[52px] font-bold gx-neon leading-none tabular-nums" />
+              <span className="block text-[10px] uppercase tracking-[0.2em] text-text-secondary mt-1">leads na carteira</span>
+              {metaAlvo > 0 ? (
+                <div className="mt-3">
+                  <div className="gx-bar gold"><i style={{ width: `${Math.max(metaPctHome, 3)}%` }} /></div>
+                  <span className="block text-[10px] text-text-secondary mt-1 tabular-nums">meta do tri: {brlCompact(metaFeito)} / {brlCompact(metaAlvo)} · <b className="text-[#E8C547]">{metaPctHome}%</b></span>
+                </div>
+              ) : (
+                <span className="block text-[10px] text-text-secondary mt-2">meta do trimestre ainda não definida</span>
+              )}
+            </div>
+          </div>
         </div>
-      </section>
 
-      {/* ===== ARSENAL (atalhos) ===== */}
-      <section className="mb-4">
-        <div className="flex items-center gap-3 mb-3">
-          <span className="gx-tag"><Fig n="Rocket/3D/rocket_3d.png" s={14} /><span>Arsenal</span></span>
-          <div className="flex-1 gx-line opacity-25" />
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
-          {[
-            { href: '/dashboard/crm', fig: 'Handshake/3D/handshake_3d.png', t: 'Novo cliente', d: 'cadastre um lead' },
-            { href: '/dashboard/ligacao-ativa', fig: 'Telephone/3D/telephone_3d.png', t: 'Ligação Ativa', d: 'roteiro da ligação' },
-            { href: '/dashboard/fluxo-pagamento', fig: 'Receipt/3D/receipt_3d.png', t: 'Fluxo de Pagto', d: 'proposta em PDF' },
-            { href: '/dashboard/materiais', fig: 'Open%20file%20folder/3D/open_file_folder_3d.png', t: 'Materiais', d: 'apresente no Meet' },
-            { href: '/dashboard/comissoes', fig: 'Money%20bag/3D/money_bag_3d.png', t: 'Comissões', d: 'seus ganhos' },
-            { href: '/dashboard/treinamentos', fig: 'Graduation%20cap/3D/graduation_cap_3d.png', t: 'Academia', d: 'aprenda e evolua' },
-          ].map((a, i) => (
-            <Link key={a.href} href={a.href} className={`gx-tile al-rise al-d${Math.min(i + 1, 6)} p-4 flex flex-col group`}>
-              <Fig n={a.fig} s={30} className="group-hover:scale-110 transition-transform" />
-              <span className="al-display text-[13px] font-bold text-white uppercase tracking-wide leading-tight mt-2.5 flex items-center gap-1.5">
-                {a.t}
-                <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[#FF3364]">▸</span>
-              </span>
-              <span className="text-[11px] text-text-secondary leading-tight mt-1">{a.d}</span>
-            </Link>
-          ))}
-        </div>
       </section>
 
       {/* ===== Radar (faixa completa) + painéis: pipeline, meta e pódio ===== */}
@@ -1681,7 +1636,17 @@ export default function DashboardPage() {
               <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Fig n="Satellite%20antenna/3D/satellite_antenna_3d.png" s={20} /> Radar de eventos</h2>
               <Link href="/dashboard/agenda" className="text-[11px] font-bold text-[#FF5C7E] hover:underline shrink-0">agenda completa ▸</Link>
             </div>
-            <div>
+            <div className="flex flex-col md:flex-row gap-5 items-stretch">
+              <div className="hidden md:flex flex-col items-center justify-center shrink-0 pl-1">
+                <div className="gx-radar w-[126px] h-[126px]">
+                  <span className="gx-blip" style={{ left: '62%', top: '28%' }} />
+                  <span className="gx-blip" style={{ left: '36%', top: '56%', animationDelay: '0.7s' }} />
+                  <span className="gx-blip" style={{ left: '55%', top: '68%', animationDelay: '1.3s' }} />
+                  <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#FF3364] shadow-[0_0_8px_#FF3364]" />
+                </div>
+                <span className="al-display text-[9px] font-bold tracking-[0.26em] text-[#FF5C7E] mt-2.5">SCANNING</span>
+              </div>
+              <div className="flex-1 min-w-0">
               {agendaLoading ? (
                 <p className="text-gray-400 text-sm">Carregando...</p>
               ) : proximosEventosConfirmados.length === 0 ? (
@@ -1765,8 +1730,8 @@ export default function DashboardPage() {
                   )}
                 </div>
               )}
+              </div>
             </div>
-
           </div>
 
           {/* Comunidade — oculta da home a pedido (lógica preservada; usaremos depois). Basta remover "hidden" daqui e do card p/ reativar. */}
@@ -2117,6 +2082,29 @@ export default function DashboardPage() {
             )}
           </div>
       </div>
+
+      {/* ===== Arsenal — acesso rápido (rodapé, pílulas) ===== */}
+      <section className="mt-4">
+        <div className="flex items-center gap-3 mb-2.5">
+          <span className="gx-tag"><Fig n="Rocket/3D/rocket_3d.png" s={14} /><span>Arsenal</span></span>
+          <div className="flex-1 gx-line opacity-25" />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { href: '/dashboard/crm', fig: 'Handshake/3D/handshake_3d.png', t: 'Novo cliente' },
+            { href: '/dashboard/ligacao-ativa', fig: 'Telephone/3D/telephone_3d.png', t: 'Ligação Ativa' },
+            { href: '/dashboard/fluxo-pagamento', fig: 'Receipt/3D/receipt_3d.png', t: 'Fluxo de Pagamento' },
+            { href: '/dashboard/materiais', fig: 'Open%20file%20folder/3D/open_file_folder_3d.png', t: 'Materiais' },
+            { href: '/dashboard/comissoes', fig: 'Money%20bag/3D/money_bag_3d.png', t: 'Comissões' },
+            { href: '/dashboard/treinamentos', fig: 'Graduation%20cap/3D/graduation_cap_3d.png', t: 'Academia' },
+          ].map((a) => (
+            <Link key={a.href} href={a.href} className="group flex items-center gap-2 pl-2.5 pr-4 py-2 rounded-full border border-white/[0.08] bg-white/[0.03] hover:border-[#FF1E56]/50 hover:bg-[#FF1E56]/[0.06] transition-all">
+              <Fig n={a.fig} s={22} className="group-hover:scale-110 transition-transform" />
+              <span className="text-[12px] font-bold text-white whitespace-nowrap">{a.t}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
 
 
 

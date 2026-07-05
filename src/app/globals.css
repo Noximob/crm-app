@@ -404,6 +404,26 @@ input:focus {
 /* Cursor de terminal piscando */
 .gx-cursor { display: inline-block; color: #FF1E56; animation: gxBlink 1.1s steps(1) infinite; }
 @keyframes gxBlink { 50% { opacity: 0; } }
+/* Radar com varredura girando (conic-gradient) */
+.gx-radar {
+  position: relative;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 30, 86, 0.3);
+  background: radial-gradient(circle, rgba(255, 30, 86, 0.08), rgba(255, 30, 86, 0.02) 60%, transparent 78%);
+  overflow: hidden;
+}
+.gx-radar::before { content: ''; position: absolute; inset: 20%; border: 1px dashed rgba(255, 30, 86, 0.25); border-radius: 9999px; }
+.gx-radar::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 9999px;
+  background: conic-gradient(from 0deg, rgba(255, 30, 86, 0.45), rgba(255, 30, 86, 0.1) 55deg, transparent 72deg, transparent 360deg);
+  animation: gxSweep 3.2s linear infinite;
+}
+@keyframes gxSweep { to { transform: rotate(360deg); } }
+.gx-blip { position: absolute; width: 6px; height: 6px; border-radius: 9999px; background: #FF3364; box-shadow: 0 0 10px #FF3364; animation: gxBlipP 2.2s ease-in-out infinite; }
+@keyframes gxBlipP { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.25); } }
 /* Pulso neon (evento AGORA) */
 .gx-pulse { animation: gxPulse 1.7s ease-in-out infinite; }
 @keyframes gxPulse {
