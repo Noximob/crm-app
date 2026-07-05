@@ -1571,9 +1571,10 @@ export default function DashboardPage() {
       {/* ===== WAR ROOM — bento grid que preenche exatamente a altura da tela (sem rolagem no desktop) ===== */}
       <div id="trending-section" className="grid grid-cols-6 lg:grid-cols-12 auto-rows-[minmax(84px,auto)] lg:grid-rows-[repeat(6,minmax(72px,1fr))] gap-3 [grid-auto-flow:dense] mt-1 lg:mt-0 lg:flex-1 lg:min-h-0">
 
-        {/* Identidade do corretor — o card herói: os números da semana em destaque (MOCKUP até integrar) */}
-        <div className="col-span-6 lg:col-span-4 lg:row-span-2 al-card gx-stripes !rounded-[24px] !border-[#FF1E56]/25 relative overflow-hidden p-4 al-rise flex flex-col" style={{ boxShadow: '0 0 44px -14px rgba(255,30,86,0.45), inset 0 1px 0 rgba(255,30,86,0.14)' }}>
-          <div className="absolute -top-20 -right-16 w-56 h-56 rounded-full bg-[#FF1E56]/[0.10] blur-3xl pointer-events-none" />
+        {/* Identidade do corretor — o card herói: fundo calmo e escuro pra atenção ir toda pro placar (MOCKUP até integrar) */}
+        <div className="col-span-6 lg:col-span-4 lg:row-span-2 !rounded-[24px] border border-[#E8C547]/20 relative overflow-hidden p-4 al-rise flex flex-col" style={{ background: 'linear-gradient(150deg, #16121d 0%, #0d0b12 52%, #120e08 100%)', boxShadow: '0 0 40px -18px rgba(232,197,71,0.35), inset 0 1px 0 rgba(255,255,255,0.05)' }}>
+          <div className="absolute -top-24 -right-14 w-64 h-64 rounded-full bg-[#E8C547]/[0.09] blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-28 -left-20 w-56 h-56 rounded-full bg-[#FF1E56]/[0.05] blur-3xl pointer-events-none" />
           <span className="pointer-events-none absolute top-2 left-2 w-3.5 h-3.5 border-t-2 border-l-2 border-[#E8C547]/45 rounded-tl-sm" />
           <span className="pointer-events-none absolute bottom-2 right-2 w-3.5 h-3.5 border-b-2 border-r-2 border-[#E8C547]/45 rounded-br-sm" />
           <div className="relative flex items-start justify-between gap-3">
