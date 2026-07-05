@@ -1546,11 +1546,6 @@ export default function DashboardPage() {
   const saudacaoDia = horaAgora < 12 ? 'Bom dia' : horaAgora < 18 ? 'Boa tarde' : 'Boa noite';
   const primeiroNomeHome = (userData?.nome || currentUser?.email?.split('@')[0] || 'corretor').split(' ')[0];
   const totalFunilHome = Object.values(funilPessoal || {}).reduce((a, b) => a + (Number(b) || 0), 0);
-  const focoMsg = tarefaAtrasadaCount > 0
-    ? `Você tem ${tarefaAtrasadaCount} tarefa${tarefaAtrasadaCount > 1 ? 's' : ''} atrasada${tarefaAtrasadaCount > 1 ? 's' : ''} pedindo atenção — bora zerar?`
-    : tarefaDiaCount > 0
-      ? `${tarefaDiaCount} tarefa${tarefaDiaCount > 1 ? 's' : ''} pra fechar hoje. Foco total!`
-      : 'Nenhuma pendência. Dia livre pra caçar negócio novo.';
   // MOCKUP visual do pódio de meets & visitas — o período será definido na área do administrador quando integrar
   const podioMeetsMock = [
     { nome: 'Renan', qtd: 12 },
@@ -1560,7 +1555,6 @@ export default function DashboardPage() {
   const meusMeetsMock = 5;
   const historicoMeetsMock = { semana: 8, mes: 23, tri: 61 };
   const minhaPosMock = podioMeetsMock.filter((p) => p.qtd > meusMeetsMock).length + 1;
-  const pctLiderMock = Math.min(100, Math.round((meusMeetsMock / podioMeetsMock[0].qtd) * 100));
   // Dias até o fim da semana (domingo) — countdown real
   const diasFimSemana = (7 - currentTime.getDay()) % 7;
   const countdownSemana = diasFimSemana === 0 ? 'último dia da semana!' : diasFimSemana === 1 ? 'falta 1 dia' : `faltam ${diasFimSemana} dias`;
@@ -1570,9 +1564,9 @@ export default function DashboardPage() {
       {/* ===== WAR ROOM — bento grid que preenche exatamente a altura da tela (sem rolagem no desktop) ===== */}
       <div id="trending-section" className="grid grid-cols-6 lg:grid-cols-12 auto-rows-[minmax(84px,auto)] lg:grid-rows-[repeat(6,minmax(72px,1fr))] gap-3 [grid-auto-flow:dense] mt-1 lg:mt-0 lg:flex-1 lg:min-h-0">
 
-        {/* Identidade do corretor — o placar pessoal de meets & visitas (MOCKUP até integrar) */}
-        <div className="col-span-6 lg:col-span-4 lg:row-span-2 al-card gx-stripes !rounded-[24px] relative overflow-hidden p-4 al-rise flex flex-col">
-          <div className="absolute -top-20 -right-16 w-56 h-56 rounded-full bg-[#FF1E56]/[0.08] blur-3xl pointer-events-none" />
+        {/* Identidade do corretor — o card herói: os números da semana em destaque (MOCKUP até integrar) */}
+        <div className="col-span-6 lg:col-span-4 lg:row-span-2 al-card gx-stripes !rounded-[24px] !border-[#FF1E56]/25 relative overflow-hidden p-4 al-rise flex flex-col" style={{ boxShadow: '0 0 44px -14px rgba(255,30,86,0.45), inset 0 1px 0 rgba(255,30,86,0.14)' }}>
+          <div className="absolute -top-20 -right-16 w-56 h-56 rounded-full bg-[#FF1E56]/[0.10] blur-3xl pointer-events-none" />
           <div className="relative flex items-center justify-between gap-2">
             <span className="gx-tag"><span>{saudacaoDia} · {nomeImobiliaria || 'Sua imobiliária'}</span></span>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#FF1E56]/50 bg-[#FF1E56]/[0.10] text-[#FF7A97] text-[9px] font-extrabold tracking-[0.12em] uppercase animate-pulse shadow-[0_0_14px_rgba(255,30,86,0.35)] shrink-0 whitespace-nowrap">
@@ -1591,17 +1585,13 @@ export default function DashboardPage() {
                 <Ic k="trophy" s={11} /> {minhaPosMock}º NO RANKING
               </span>
             </div>
-            <div className="ml-auto text-right shrink-0">
-              <CountUp n={meusMeetsMock} className="al-display block text-[40px] font-bold gx-neon leading-none tabular-nums" />
-              <span className="block text-[8.5px] uppercase tracking-[0.16em] text-text-secondary mt-0.5">meets & visitas · semana</span>
-            </div>
           </div>
-          <div className="relative mt-auto pt-2.5">
-            <div className="gx-bar gold"><i style={{ width: `${Math.max(pctLiderMock, 3)}%` }} /></div>
-            <span className="block text-[9.5px] text-text-secondary mt-1 tabular-nums">
-              <b className="text-[#E8C547]">{pctLiderMock}%</b> do líder do período{meusMeetsMock >= podioMeetsMock[2].qtd ? <> · <b className="text-emerald-300">você está no pódio</b></> : <> · faltam <b className="text-[#E8C547]">{podioMeetsMock[2].qtd - meusMeetsMock}</b> pro pódio</>}
-            </span>
-            <p className="text-[10.5px] text-text-secondary leading-snug truncate mt-1">{focoMsg}</p>
+          <div className="relative mt-auto pt-2 flex items-end gap-3">
+            <CountUp n={meusMeetsMock} className="al-display text-[58px] font-bold al-grad-text leading-[0.85] tabular-nums drop-shadow-[0_0_20px_rgba(232,197,71,0.35)]" />
+            <div className="pb-1 min-w-0">
+              <span className="block text-[11px] font-extrabold uppercase tracking-[0.18em] text-white">meets & visitas</span>
+              <span className="block text-[9px] font-bold uppercase tracking-[0.2em] text-[#E8C547]/90 mt-0.5">nesta semana</span>
+            </div>
           </div>
         </div>
 
@@ -1999,9 +1989,8 @@ export default function DashboardPage() {
           </div>
 
           {/* PÓDIO MEETS & VISITAS — vitrine da produção (MOCKUP; datas de início/fim virão da área do administrador) */}
-          <div className="col-span-6 lg:col-span-8 lg:row-span-2 lg:col-start-5 lg:row-start-2 relative overflow-hidden !rounded-[26px] p-4 al-rise al-d3 flex flex-col border border-[#E8C547]/30" style={{ background: 'linear-gradient(160deg, rgba(232,197,71,0.13) 0%, rgba(20,13,5,0.93) 40%, rgba(255,30,86,0.07) 100%)', boxShadow: '0 0 52px -16px rgba(232,197,71,0.55), inset 0 1px 0 rgba(232,197,71,0.18)' }}>
-            <span className="pointer-events-none absolute -top-20 -right-16 w-64 h-64 rounded-full bg-[#E8C547]/[0.10] blur-3xl" />
-            <span className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 rounded-full bg-[#FF1E56]/[0.06] blur-3xl" />
+          <div className="col-span-6 lg:col-span-8 lg:row-span-2 lg:col-start-5 lg:row-start-2 al-card relative overflow-hidden p-4 al-rise al-d3 flex flex-col">
+            <div className="absolute inset-x-0 top-0 gx-line-gold" />
             <div className="relative flex items-center justify-between gap-3 shrink-0">
               <div className="flex items-center gap-2.5 min-w-0">
                 <span className="grid place-items-center w-10 h-10 rounded-xl bg-gradient-to-br from-[#E8C547]/30 to-[#E8C547]/[0.04] border border-[#E8C547]/40 shrink-0">
