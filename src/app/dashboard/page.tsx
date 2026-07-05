@@ -1629,7 +1629,7 @@ export default function DashboardPage() {
           <span className="flex flex-col min-w-0">
             <span className="text-[9.5px] font-extrabold tracking-[0.2em] text-[#FF7A97]">ATRASADAS</span>
             <CountUp n={tarefaAtrasadaCount} className="al-display text-[34px] font-bold text-white leading-none tabular-nums" />
-            <span className="text-[9px] font-bold text-[#FF7A97] mt-0.5 whitespace-nowrap">exige ação imediata ▸</span>
+            <span className="text-[11px] font-extrabold text-[#FF9EB5] mt-1 whitespace-nowrap drop-shadow-[0_0_6px_rgba(255,30,86,0.4)]">exige ação imediata ▸</span>
           </span>
           <span className="grid place-items-center w-11 h-11 rounded-xl bg-gradient-to-br from-[#FF1E56]/25 to-[#FF1E56]/[0.03] border border-[#FF1E56]/30 shrink-0 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-200">
             <Ic k="alert" s={22} className="text-[#FF7A97] drop-shadow-[0_0_8px_rgba(255,30,86,0.6)]" />
@@ -1642,7 +1642,7 @@ export default function DashboardPage() {
           <span className="flex flex-col min-w-0">
             <span className="text-[9.5px] font-extrabold tracking-[0.2em] text-[#E8C547]">PARA HOJE</span>
             <CountUp n={tarefaDiaCount} className="al-display text-[34px] font-bold text-white leading-none tabular-nums" />
-            <span className="text-[9px] font-bold text-[#E8C547] mt-0.5 whitespace-nowrap">feche o dia zerado ▸</span>
+            <span className="text-[11px] font-extrabold text-[#FFE9A6] mt-1 whitespace-nowrap drop-shadow-[0_0_6px_rgba(232,197,71,0.4)]">feche o dia zerado ▸</span>
           </span>
           <span className="grid place-items-center w-11 h-11 rounded-xl bg-gradient-to-br from-[#E8C547]/25 to-[#E8C547]/[0.03] border border-[#E8C547]/30 shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-200">
             <Ic k="zap" s={20} className="text-[#E8C547] drop-shadow-[0_0_8px_rgba(232,197,71,0.6)]" />
@@ -1655,7 +1655,7 @@ export default function DashboardPage() {
           <span className="flex flex-col min-w-0">
             <span className="text-[9.5px] font-extrabold tracking-[0.2em] text-emerald-300">SEM TAREFA</span>
             <CountUp n={semTarefaCount} className="al-display text-[34px] font-bold text-white leading-none tabular-nums" />
-            <span className="text-[9px] font-bold text-emerald-300 mt-0.5 whitespace-nowrap">resgate esses leads ▸</span>
+            <span className="text-[11px] font-extrabold text-emerald-200 mt-1 whitespace-nowrap drop-shadow-[0_0_6px_rgba(52,211,153,0.4)]">resgate esses leads ▸</span>
           </span>
           <span className="grid place-items-center w-11 h-11 rounded-xl bg-gradient-to-br from-[#34D399]/25 to-[#34D399]/[0.03] border border-[#34D399]/30 shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-200">
             <Ic k="gem" s={20} className="text-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
