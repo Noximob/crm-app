@@ -1642,7 +1642,7 @@ export default function DashboardPage() {
         </Link>
 
         {/* Radar de eventos — varredura + lista HUD */}
-        <div className="col-span-6 lg:col-span-8 lg:row-span-2 lg:col-start-5 lg:row-start-5 al-card relative overflow-hidden p-3.5 al-rise al-d5 flex flex-col">
+        <div className="col-span-6 lg:col-span-8 lg:row-span-3 lg:col-start-5 lg:row-start-4 al-card relative overflow-hidden p-3.5 al-rise al-d5 flex flex-col">
           <div className="absolute inset-x-0 top-0 gx-line opacity-60" />
           <span className="pointer-events-none absolute top-2 left-2 w-3.5 h-3.5 border-t-2 border-l-2 border-[#FF3364]/50 rounded-tl-sm" />
           <span className="pointer-events-none absolute top-2 right-2 w-3.5 h-3.5 border-t-2 border-r-2 border-[#FF3364]/50 rounded-tr-sm" />
@@ -1654,7 +1654,7 @@ export default function DashboardPage() {
           </div>
           <div className="flex gap-4 items-center flex-1 min-h-0">
             <div className="hidden sm:flex flex-col items-center shrink-0">
-              <div className="gx-radar w-[84px] h-[84px]">
+              <div className="gx-radar w-[100px] h-[100px]">
                 <span className="gx-blip" style={{ left: '62%', top: '28%' }} />
                 <span className="gx-blip" style={{ left: '36%', top: '56%', animationDelay: '0.7s' }} />
                 <span className="gx-blip" style={{ left: '55%', top: '68%', animationDelay: '1.3s' }} />
@@ -1674,7 +1674,7 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="space-y-1.5">
-                  {proximosEventosConfirmados.slice(0, 3).map((item) => {
+                  {proximosEventosConfirmados.slice(0, 5).map((item) => {
                     const nowTime = currentTime.getTime();
                     const isAgora = item.startTime <= nowTime && item.fimTime >= nowTime;
                     const emBreve = !isAgora && item.startTime > nowTime && item.startTime - nowTime <= 45 * 60 * 1000;
@@ -1999,7 +1999,7 @@ export default function DashboardPage() {
           </div>
 
           {/* PÓDIO MEETS & VISITAS — vitrine da produção (MOCKUP; datas de início/fim virão da área do administrador) */}
-          <div className="col-span-6 lg:col-span-8 lg:row-span-3 lg:col-start-5 lg:row-start-2 relative overflow-hidden !rounded-[26px] p-4 al-rise al-d3 flex flex-col border border-[#E8C547]/30" style={{ background: 'linear-gradient(160deg, rgba(232,197,71,0.13) 0%, rgba(20,13,5,0.93) 40%, rgba(255,30,86,0.07) 100%)', boxShadow: '0 0 52px -16px rgba(232,197,71,0.55), inset 0 1px 0 rgba(232,197,71,0.18)' }}>
+          <div className="col-span-6 lg:col-span-8 lg:row-span-2 lg:col-start-5 lg:row-start-2 relative overflow-hidden !rounded-[26px] p-4 al-rise al-d3 flex flex-col border border-[#E8C547]/30" style={{ background: 'linear-gradient(160deg, rgba(232,197,71,0.13) 0%, rgba(20,13,5,0.93) 40%, rgba(255,30,86,0.07) 100%)', boxShadow: '0 0 52px -16px rgba(232,197,71,0.55), inset 0 1px 0 rgba(232,197,71,0.18)' }}>
             <span className="pointer-events-none absolute -top-20 -right-16 w-64 h-64 rounded-full bg-[#E8C547]/[0.10] blur-3xl" />
             <span className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 rounded-full bg-[#FF1E56]/[0.06] blur-3xl" />
             <div className="relative flex items-center justify-between gap-3 shrink-0">
@@ -2015,30 +2015,34 @@ export default function DashboardPage() {
               {/* MOCKUP: período definido futuramente na área do administrador */}
               <span className="gx-tag shrink-0"><span>01/07 → 07/07</span></span>
             </div>
-            <div className="relative flex items-stretch gap-4 flex-1 min-h-0 pt-2">
-              <div className="flex-1 flex items-end justify-center gap-4 min-w-0">
-                {[{ i: 1, h: 'h-[34%]', ring: 'from-slate-200 via-slate-400 to-slate-600', grad: 'from-slate-300/30' }, { i: 0, h: 'h-[56%]', ring: 'from-[#FFE9A6] via-[#E8C547] to-[#8a6d13]', grad: 'from-[#E8C547]/45' }, { i: 2, h: 'h-[22%]', ring: 'from-[#f0b27a] via-[#c47a3d] to-[#7a4319]', grad: 'from-orange-600/35' }].map((p) => (
-                  <div key={p.i} className="flex-1 max-w-[150px] h-full flex flex-col items-center justify-end min-w-0 group">
-                    <span className={`relative p-[2px] rounded-full bg-gradient-to-br ${p.ring} ${p.i === 0 ? 'w-[52px] h-[52px]' : 'w-11 h-11'} shrink-0 group-hover:scale-110 transition-transform duration-200`}>
-                      <span className="w-full h-full rounded-full bg-[#17110a] grid place-items-center al-display font-bold text-white text-[17px]">{podioMeetsMock[p.i].nome.charAt(0)}</span>
-                      <span className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full grid place-items-center al-display text-[10px] font-extrabold text-[#141414] bg-gradient-to-br ${p.ring} shadow-[0_2px_6px_rgba(0,0,0,0.6)]`}>{p.i + 1}</span>
-                    </span>
-                    <span className="text-[11px] font-bold text-white truncate w-full text-center mt-1" title={podioMeetsMock[p.i].nome}>{podioMeetsMock[p.i].nome}</span>
-                    <span className="flex items-baseline gap-1">
-                      <CountUp n={podioMeetsMock[p.i].qtd} className={`al-display font-bold leading-none tabular-nums ${p.i === 0 ? 'text-[30px] al-grad-text' : 'text-[21px] text-white/90'}`} />
-                      <span className="text-[8px] uppercase tracking-wider text-white/40 font-bold">agend.</span>
-                    </span>
-                    <div className={`w-full ${p.h} min-h-[12px] mt-1.5 rounded-t-lg bg-gradient-to-t ${p.grad} to-transparent border border-white/[0.08] border-b-0`} />
-                  </div>
-                ))}
+            <div className="relative flex items-center gap-3 flex-1 min-h-0 pt-2">
+              <div className="flex-1 grid grid-cols-3 gap-2.5 min-w-0">
+                {[0, 1, 2].map((i) => {
+                  const ring = ['from-[#FFE9A6] via-[#E8C547] to-[#8a6d13]', 'from-slate-200 via-slate-400 to-slate-600', 'from-[#f0b27a] via-[#c47a3d] to-[#7a4319]'][i];
+                  return (
+                    <div key={i} className={`relative overflow-hidden rounded-xl border px-3 py-2 flex items-center gap-2.5 min-w-0 group transition-colors ${i === 0 ? 'border-[#E8C547]/40 bg-[#E8C547]/[0.07] hover:bg-[#E8C547]/[0.11]' : 'border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.05]'}`}>
+                      <span className={`relative p-[2px] rounded-full bg-gradient-to-br ${ring} ${i === 0 ? 'w-11 h-11' : 'w-10 h-10'} shrink-0 group-hover:scale-105 transition-transform duration-200`}>
+                        <span className="w-full h-full rounded-full bg-[#17110a] grid place-items-center al-display font-bold text-white text-[15px]">{podioMeetsMock[i].nome.charAt(0)}</span>
+                        <span className={`absolute -bottom-1 -right-1 w-[18px] h-[18px] rounded-full grid place-items-center al-display text-[9.5px] font-extrabold text-[#141414] bg-gradient-to-br ${ring} shadow-[0_2px_6px_rgba(0,0,0,0.6)]`}>{i + 1}</span>
+                      </span>
+                      <span className="flex flex-col min-w-0">
+                        <span className="text-[11px] font-bold text-white truncate" title={podioMeetsMock[i].nome}>{podioMeetsMock[i].nome}</span>
+                        <span className="flex items-baseline gap-1">
+                          <CountUp n={podioMeetsMock[i].qtd} className={`al-display font-bold leading-none tabular-nums ${i === 0 ? 'text-[24px] al-grad-text' : 'text-[19px] text-white/90'}`} />
+                          <span className="text-[8px] uppercase tracking-wider text-white/40 font-bold">agend.</span>
+                        </span>
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
               <div className="hidden md:block w-px self-stretch bg-gradient-to-b from-transparent via-[#E8C547]/35 to-transparent shrink-0" />
-              <div className="hidden md:flex w-[220px] shrink-0 flex-col justify-center gap-1.5">
-                <span className="text-[9.5px] font-extrabold uppercase tracking-[0.22em] text-[#E8C547] flex items-center gap-1.5 mb-0.5"><Ic k="history" s={12} /> Seu histórico</span>
+              <div className="hidden md:flex w-[210px] shrink-0 flex-col justify-center gap-1">
+                <span className="text-[9px] font-extrabold uppercase tracking-[0.22em] text-[#E8C547] flex items-center gap-1.5 mb-0.5"><Ic k="history" s={11} /> Seu histórico</span>
                 {[{ l: 'Semana passada', v: historicoMeetsMock.semana }, { l: 'Último mês', v: historicoMeetsMock.mes }, { l: 'Trimestre', v: historicoMeetsMock.tri }].map((h) => (
-                  <div key={h.l} className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 bg-white/[0.03] border border-white/[0.07] hover:bg-white/[0.05] hover:border-[#E8C547]/25 transition-colors">
+                  <div key={h.l} className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-1 bg-white/[0.03] border border-white/[0.07] hover:bg-white/[0.05] hover:border-[#E8C547]/25 transition-colors">
                     <span className="text-[10px] font-bold text-white/70">{h.l}</span>
-                    <CountUp n={h.v} className="al-display text-[18px] font-bold al-grad-text leading-none tabular-nums" />
+                    <CountUp n={h.v} className="al-display text-[16px] font-bold al-grad-text leading-none tabular-nums" />
                   </div>
                 ))}
               </div>
