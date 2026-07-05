@@ -92,7 +92,6 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { currentUser: user, userData, loading, isEspelhoDemo, logout } = useAuth();
-  const [collapsed, setCollapsed] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -228,54 +227,49 @@ export default function DashboardLayout({
   return (
     <PipelineStagesProvider imobiliariaId={userData?.imobiliariaId}>
     <div className="flex h-screen min-h-screen bg-particles">
-      {/* Sidebar — dock flutuante de vidro */}
-      <div className={`fixed left-3 top-3 bottom-3 z-50 ${collapsed ? 'w-[68px]' : 'w-[248px]'} transition-all duration-300 text-xs`}>
-        <div className="h-full flex flex-col min-h-0 al-card overflow-hidden">
-          <div className="h-16 flex items-center justify-between px-5 shrink-0">
+      {/* Sidebar — rail GX: fina com ícones, expande no hover */}
+      <div className="group/side fixed left-0 top-0 bottom-0 z-50 w-[74px] hover:w-[238px] transition-[width] duration-200 text-xs">
+        <div className="h-full flex flex-col min-h-0 bg-[#0d0d12]/95 backdrop-blur-md border-r border-white/[0.06] overflow-hidden">
+          <div className="h-16 flex items-center gap-2.5 px-[21px] shrink-0">
             <button
               onClick={() => router.push('/dashboard')}
-              className="flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer [filter:drop-shadow(0_0_8px_rgba(255,140,0,0.4))]"
-              title="Voltar ao Dashboard"
+              className="flex items-center gap-2.5 hover:opacity-90 transition-opacity cursor-pointer [filter:drop-shadow(0_0_10px_rgba(255,30,86,0.35))]"
+              title="Voltar ao Início"
             >
-              <AlummaLogoFullInline theme="dark" height={28} iconOnly={collapsed} className="shrink-0" />
-            </button>
-            <button
-              onClick={() => setCollapsed(!collapsed)}
-              className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors text-text-secondary"
-              title={collapsed ? 'Expandir menu' : 'Recolher menu'}
-            >
-              <ChevronLeftIcon className={`h-5 w-5 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
+              <AlummaLogoFullInline theme="dark" height={26} iconOnly className="shrink-0" />
+              <span className="al-display text-[15px] font-bold text-white uppercase tracking-[0.18em] opacity-0 group-hover/side:opacity-100 transition-opacity whitespace-nowrap">Alumma</span>
             </button>
           </div>
+          <div className="mx-4 gx-line opacity-30 shrink-0" />
 
-          <nav className="flex-1 px-3 pt-1 pb-3 overflow-y-auto scrollbar-thin min-h-0">
+          <nav className="flex-1 px-2.5 pt-2 pb-3 overflow-y-auto overflow-x-hidden scrollbar-thin min-h-0">
             {navGroups.map((grupo, gi) => (
-              <div key={grupo.titulo ?? gi} className={gi > 0 ? 'mt-4' : ''}>
+              <div key={grupo.titulo ?? gi} className={gi > 0 ? 'mt-3' : ''}>
                 {grupo.titulo && (
-                  collapsed
-                    ? <div className="mx-2 my-2 h-px bg-white/[0.07]" />
-                    : <p className="px-3 mb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-white/30">{grupo.titulo}</p>
+                  <p className="pl-[15px] h-4 mb-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/25 opacity-0 group-hover/side:opacity-100 transition-opacity whitespace-nowrap">{grupo.titulo}</p>
                 )}
                 <ul className="space-y-0.5">
                   {grupo.itens.map((item) => {
                     const ativo = pathname === item.href;
-                    const base = `flex items-center ${collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2'} rounded-xl text-[13px] font-medium transition-all`;
-                    const cls = ativo
-                      ? `${base} bg-gradient-to-r from-[#E8C547]/[0.18] via-[#D4A017]/[0.08] to-transparent text-white border border-[#E8C547]/30 shadow-[0_0_18px_rgba(232,197,71,0.14)]`
-                      : `${base} text-text-secondary border border-transparent hover:bg-white/[0.05] hover:text-white`;
-                    const icone = <item.icon className={`h-[18px] w-[18px] shrink-0 ${ativo ? 'text-[#E8C547]' : ''}`} />;
+                    const cls = `relative flex items-center gap-3 pl-[15px] pr-2 py-[9px] rounded-xl text-[13px] font-semibold transition-all ${
+                      ativo ? 'bg-white/[0.05] text-white' : 'text-text-secondary hover:bg-white/[0.04] hover:text-white'
+                    }`;
+                    const icone = <item.icon className={`h-[19px] w-[19px] shrink-0 transition-colors ${ativo ? 'text-[#FF3364] [filter:drop-shadow(0_0_6px_rgba(255,30,86,0.6))]' : ''}`} />;
+                    const indicador = ativo && <span className="absolute left-[-10px] top-1/2 -translate-y-1/2 h-6 w-[3px] rounded-r bg-[#FF1E56] shadow-[0_0_12px_#FF1E56]" />;
                     return (
                       <li key={item.href}>
                         {item.isExternal ? (
                           <a href={item.href} target="_blank" rel="noopener noreferrer" className={cls} title={`Abrir ${item.label} em nova aba`}>
+                            {indicador}
                             {icone}
-                            {!collapsed && <span className="truncate flex-1">{item.label}</span>}
-                            {!collapsed && <svg className="w-3 h-3 opacity-40 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3" /></svg>}
+                            <span className="truncate flex-1 opacity-0 group-hover/side:opacity-100 transition-opacity whitespace-nowrap">{item.label}</span>
+                            <svg className="w-3 h-3 opacity-0 group-hover/side:opacity-40 transition-opacity shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3" /></svg>
                           </a>
                         ) : (
                           <Link href={item.href} className={cls} title={item.label}>
+                            {indicador}
                             {icone}
-                            {!collapsed && <span className="truncate">{item.label}</span>}
+                            <span className="truncate opacity-0 group-hover/side:opacity-100 transition-opacity whitespace-nowrap">{item.label}</span>
                           </Link>
                         )}
                       </li>
@@ -287,20 +281,20 @@ export default function DashboardLayout({
           </nav>
 
           {/* Rodapé fixo: sair */}
-          <div className="shrink-0 p-3 border-t border-white/[0.06]">
+          <div className="shrink-0 p-2.5 border-t border-white/[0.06]">
             <button
               onClick={handleLogout}
-              className={`flex items-center ${collapsed ? 'justify-center px-0' : 'gap-3 px-3'} w-full py-2 rounded-xl text-[13px] font-medium text-text-secondary border border-transparent hover:bg-red-500/10 hover:text-red-300 hover:border-red-500/25 transition-all`}
+              className="flex items-center gap-3 pl-[15px] pr-2 w-full py-[9px] rounded-xl text-[13px] font-semibold text-text-secondary hover:bg-[#FF1E56]/10 hover:text-[#FF6B93] transition-all"
               title="Desconectar"
             >
-              <LogOutIcon className="h-[18px] w-[18px] shrink-0" />
-              {!collapsed && 'Desconectar'}
+              <LogOutIcon className="h-[19px] w-[19px] shrink-0" />
+              <span className="opacity-0 group-hover/side:opacity-100 transition-opacity whitespace-nowrap">Desconectar</span>
             </button>
           </div>
         </div>
       </div>
 
-      <div className={`flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300 ${collapsed ? 'ml-[86px]' : 'ml-[266px]'}`}>
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden ml-[74px]">
         {/* Header: saudação + data | convites de eventos (1 por vez) | avatar */}
         <header className="h-16 px-5 shrink-0 flex items-center justify-between gap-3">
           <div className="shrink-0 min-w-0 flex items-baseline gap-2.5">
@@ -343,11 +337,11 @@ export default function DashboardLayout({
           )}
           <div className="flex items-center gap-3 shrink-0">
             <div className="pl-3">
-              <div className="relative w-9 h-9 p-[2px] rounded-full bg-gradient-to-br from-[#FFE9A6] via-[#E8C547] to-[#B8860B] shadow-[0_0_14px_rgba(232,197,71,0.3)]">
-                <div className="w-full h-full rounded-full bg-[#15130c] flex items-center justify-center text-[#FFE9A6] font-bold text-sm al-display">
+              <div className="relative w-9 h-9 p-[2px] rounded-full bg-gradient-to-br from-[#FF6B93] via-[#FF1E56] to-[#8B0F31] shadow-[0_0_16px_rgba(255,30,86,0.4)]">
+                <div className="w-full h-full rounded-full bg-[#16090e] flex items-center justify-center text-[#FF9EB5] font-bold text-sm al-display">
                   {(displayName || 'U').charAt(0).toUpperCase()}
                 </div>
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[#0a0a10]" title="Online" />
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[#0a0a0e]" title="Online" />
               </div>
             </div>
           </div>
@@ -358,13 +352,6 @@ export default function DashboardLayout({
         </main>
       </div>
 
-      {/* Overlay */}
-      {collapsed && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-          onClick={() => setCollapsed(false)}
-        />
-      )}
     </div>
     </PipelineStagesProvider>
   );

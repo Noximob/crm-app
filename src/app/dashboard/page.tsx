@@ -1510,74 +1510,114 @@ export default function DashboardPage() {
     : tarefaDiaCount > 0
       ? `${tarefaDiaCount} tarefa${tarefaDiaCount > 1 ? 's' : ''} pra fechar hoje. Foco total!`
       : 'Nenhuma pendência. Dia livre pra caçar negócio novo.';
+  // Gamificação da home (XP mock por enquanto; rank vem do tamanho da carteira)
+  const xpPts = pontosExemplo;
+  const nivelJogador = Math.floor(xpPts / 500) + 1;
+  const xpNoNivel = xpPts % 500;
+  const xpPct = Math.round((xpNoNivel / 500) * 100);
+  const rankHome = totalFunilHome >= 50 ? { label: 'LÍDER', emoji: '🏆' }
+    : totalFunilHome >= 25 ? { label: 'ELITE', emoji: '⭐' }
+    : totalFunilHome >= 10 ? { label: 'EM ALTA', emoji: '🔥' }
+    : totalFunilHome >= 5 ? { label: 'SUBINDO', emoji: '📈' }
+    : { label: 'EM JOGO', emoji: '🎯' };
+  const missoesHome = [
+    ...(tarefaAtrasadaCount > 0 ? [{
+      emoji: '👹', tipo: 'BOSS FIGHT', titulo: 'Zerar atrasadas',
+      desc: `${tarefaAtrasadaCount} lead${tarefaAtrasadaCount > 1 ? 's' : ''} esperando retorno`,
+      href: '/dashboard/crm?tarefa=atraso',
+      cls: 'border-[#FF1E56]/35 bg-gradient-to-r from-[#FF1E56]/[0.10] to-transparent hover:border-[#FF1E56]/60',
+      tag: 'text-[#FF5C7E]', btn: 'border-[#FF1E56]/50 text-[#FF6B93]',
+    }] : []),
+    ...(tarefaDiaCount > 0 ? [{
+      emoji: '⚡', tipo: 'MISSÃO DIÁRIA', titulo: 'Fechar o dia',
+      desc: `${tarefaDiaCount} tarefa${tarefaDiaCount > 1 ? 's' : ''} pra hoje`,
+      href: '/dashboard/crm?tarefa=hoje',
+      cls: 'border-[#E8C547]/35 bg-gradient-to-r from-[#E8C547]/[0.08] to-transparent hover:border-[#E8C547]/60',
+      tag: 'text-[#E8C547]', btn: 'border-[#E8C547]/50 text-[#E8C547]',
+    }] : []),
+    ...(semTarefaCount > 0 ? [{
+      emoji: '🧭', tipo: 'SIDE QUEST', titulo: 'Resgatar esquecidos',
+      desc: `${semTarefaCount} lead${semTarefaCount > 1 ? 's' : ''} sem próxima tarefa`,
+      href: '/dashboard/crm?tarefa=sem',
+      cls: 'border-emerald-400/30 bg-gradient-to-r from-emerald-500/[0.07] to-transparent hover:border-emerald-400/60',
+      tag: 'text-emerald-300', btn: 'border-emerald-400/50 text-emerald-300',
+    }] : []),
+  ];
 
   return (
     <div className="min-h-full pb-6">
-      {/* ===== Boas-vindas + números do dia (aberto, sem caixa) ===== */}
-      <section className="relative mb-5 mt-1">
-        <div className="absolute -top-32 -left-28 w-[460px] h-[460px] rounded-full bg-[#D4A017]/[0.07] blur-3xl pointer-events-none" />
-        <div className="relative flex flex-wrap items-end justify-between gap-x-6 gap-y-4 mb-5">
-          <div className="min-w-0 al-rise">
-            <p className="al-eyebrow mb-2 flex items-center gap-2">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#E8C547] animate-pulse" />
-              {nomeImobiliaria || 'Sua imobiliária'}
-            </p>
-            <h1 className="al-display text-[30px] md:text-[38px] font-extrabold text-white leading-[1.06]">
-              {saudacaoDia}, {primeiroNomeHome}!{' '}
-              <span className="al-grad-text">Bora vender hoje?</span>
-            </h1>
-            <p className="text-sm text-text-secondary mt-2.5">{focoMsg}</p>
+      {/* ===== HUD: cartão do jogador + missões de hoje ===== */}
+      <section className="grid grid-cols-1 lg:grid-cols-[0.95fr_1.05fr] gap-3 mb-4 mt-1">
+        {/* PLAYER CARD */}
+        <div className="al-card relative overflow-hidden p-5 al-rise">
+          <div className="absolute inset-x-0 top-0 gx-line" />
+          <div className="absolute -top-20 -right-16 w-64 h-64 rounded-full bg-[#FF1E56]/[0.07] blur-3xl pointer-events-none" />
+          <p className="al-eyebrow mb-3.5">{saudacaoDia} · {nomeImobiliaria || 'Sua imobiliária'}</p>
+          <div className="relative flex items-center gap-4">
+            <div className="relative w-14 h-14 p-[2px] rounded-2xl bg-gradient-to-br from-[#FF6B93] via-[#FF1E56] to-[#8B0F31] shadow-[0_0_20px_rgba(255,30,86,0.35)] shrink-0">
+              <div className="w-full h-full rounded-[14px] bg-[#16090e] flex items-center justify-center text-[#FF9EB5] al-display font-bold text-xl">
+                {primeiroNomeHome.charAt(0).toUpperCase()}
+              </div>
+            </div>
+            <div className="min-w-0">
+              <h1 className="al-display text-[26px] font-bold text-white uppercase tracking-wide leading-none truncate">{primeiroNomeHome}</h1>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold tracking-[0.14em] bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#E8C547]">{rankHome.emoji} {rankHome.label}</span>
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold tracking-[0.14em] bg-white/[0.05] border border-white/10 text-text-secondary">LVL {nivelJogador}</span>
+              </div>
+            </div>
+            <div className="ml-auto text-right shrink-0">
+              <span className="al-display block text-[40px] font-bold gx-neon leading-none tabular-nums">{totalFunilHome}</span>
+              <span className="block text-[10px] uppercase tracking-[0.18em] text-text-secondary mt-1">leads na carteira</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0 al-rise al-d2">
-            <Link href="/dashboard/agenda" className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold text-white/90 rounded-xl border border-white/15 hover:bg-white/[0.06] transition-colors">
-              <CalendarIcon className="h-3.5 w-3.5" />
-              Agenda completa
-            </Link>
-            <Link href="/dashboard/crm" className="al-cta flex items-center gap-1.5 px-4 py-2.5 text-xs font-extrabold text-black bg-gradient-to-r from-[#FFE9A6] via-[#E8C547] to-[#D4A017] rounded-xl hover:brightness-105 transition-all shadow-[0_8px_24px_-8px_rgba(212,160,23,0.6)]">
-              <BarChartIcon className="h-3.5 w-3.5" />
-              Abrir CRM
-            </Link>
+          <div className="relative mt-5">
+            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.18em] text-text-secondary mb-1.5">
+              <span>Experiência</span>
+              <span className="tabular-nums">{xpNoNivel} / 500 XP</span>
+            </div>
+            <div className="gx-bar"><i style={{ width: `${Math.max(xpPct, 4)}%` }} /></div>
+            <p className="text-[11px] text-text-secondary mt-2.5">{focoMsg}</p>
           </div>
         </div>
-        <div className="relative grid grid-cols-2 xl:grid-cols-4 gap-3">
-          <Link href="/dashboard/crm" className="al-kpi al-card al-rise al-d1 p-4 flex items-start gap-3">
-            <span className="al-chip text-lg shrink-0">📊</span>
-            <span className="min-w-0">
-              <span className="block text-[11px] font-bold uppercase tracking-wider text-text-secondary">Leads no funil</span>
-              <span className="al-display block text-[30px] font-extrabold text-white tabular-nums leading-none mt-1.5">{totalFunilHome}</span>
-              <span className="block text-[11px] text-text-secondary mt-1.5">sua carteira ativa</span>
-            </span>
-          </Link>
-          <Link href="/dashboard/crm?tarefa=atraso" className="al-kpi al-card al-rise al-d2 p-4 flex items-start gap-3">
-            <span className={`al-chip text-lg shrink-0 ${tarefaAtrasadaCount > 0 ? '!border-red-500/40 !bg-red-500/10' : ''}`}>⏰</span>
-            <span className="min-w-0">
-              <span className={`block text-[11px] font-bold uppercase tracking-wider ${tarefaAtrasadaCount > 0 ? 'text-red-300' : 'text-text-secondary'}`}>Atrasadas{tarefaAtrasadaCount > 0 && <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse ml-1 align-middle" />}</span>
-              <span className="al-display block text-[30px] font-extrabold text-white tabular-nums leading-none mt-1.5">{tarefaAtrasadaCount}</span>
-              <span className="block text-[11px] text-text-secondary mt-1.5">{tarefaAtrasadaCount > 0 ? 'resolva primeiro' : 'tudo em dia 🎉'}</span>
-            </span>
-          </Link>
-          <Link href="/dashboard/crm?tarefa=hoje" className="al-kpi al-card al-rise al-d3 p-4 flex items-start gap-3">
-            <span className={`al-chip text-lg shrink-0 ${tarefaDiaCount > 0 ? '!border-amber-400/40 !bg-amber-500/10' : ''}`}>🔥</span>
-            <span className="min-w-0">
-              <span className={`block text-[11px] font-bold uppercase tracking-wider ${tarefaDiaCount > 0 ? 'text-amber-300' : 'text-text-secondary'}`}>Para hoje</span>
-              <span className="al-display block text-[30px] font-extrabold text-white tabular-nums leading-none mt-1.5">{tarefaDiaCount}</span>
-              <span className="block text-[11px] text-text-secondary mt-1.5">tarefas do dia</span>
-            </span>
-          </Link>
-          <Link href="/dashboard/crm?tarefa=sem" className="al-kpi al-card al-rise al-d4 p-4 flex items-start gap-3">
-            <span className="al-chip text-lg shrink-0">🧊</span>
-            <span className="min-w-0">
-              <span className="block text-[11px] font-bold uppercase tracking-wider text-text-secondary">Sem tarefa</span>
-              <span className="al-display block text-[30px] font-extrabold text-white tabular-nums leading-none mt-1.5">{semTarefaCount}</span>
-              <span className="block text-[11px] text-text-secondary mt-1.5">leads esquecidos</span>
-            </span>
-          </Link>
+
+        {/* MISSÕES DE HOJE */}
+        <div className="al-card relative overflow-hidden p-5 al-rise al-d2">
+          <div className="absolute inset-x-0 top-0 gx-line-gold" />
+          <div className="flex items-center justify-between mb-3.5">
+            <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">🎮 Missões de hoje</h2>
+            <Link href="/dashboard/crm" className="text-[11px] font-bold text-[#FF5C7E] hover:underline shrink-0">abrir CRM ▸</Link>
+          </div>
+          {missoesHome.length === 0 ? (
+            <div className="rounded-xl border border-emerald-400/30 bg-emerald-500/[0.08] p-6 text-center">
+              <p className="text-3xl mb-1.5">🏆</p>
+              <p className="al-display text-sm font-bold text-emerald-300 uppercase tracking-[0.2em]">Missões concluídas!</p>
+              <p className="text-[11px] text-text-secondary mt-1">Nada pendente — hora de caçar leads novos.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {missoesHome.map((m) => (
+                <Link key={m.href} href={m.href} className={`group flex items-center gap-3 rounded-xl border p-3 transition-all hover:translate-x-1 ${m.cls}`}>
+                  <span className="text-xl shrink-0">{m.emoji}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className={`block text-[9px] font-extrabold tracking-[0.24em] ${m.tag}`}>{m.tipo}</span>
+                    <span className="al-display block text-[15px] font-bold text-white uppercase tracking-wide leading-tight">{m.titulo}</span>
+                    <span className="block text-[11px] text-text-secondary">{m.desc}</span>
+                  </span>
+                  <span className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-extrabold tracking-[0.14em] border ${m.btn} opacity-80 group-hover:opacity-100 transition-opacity`}>INICIAR ▸</span>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
-      {/* ===== Atalhos rápidos ===== */}
-      <section className="mb-5">
-        <p className="al-eyebrow mb-2.5">Acesso rápido</p>
+      {/* ===== ARSENAL (atalhos) ===== */}
+      <section className="mb-4">
+        <div className="flex items-center gap-3 mb-2.5">
+          <p className="al-eyebrow">🛠 Arsenal</p>
+          <div className="flex-1 gx-line opacity-25" />
+        </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
           {[
             { href: '/dashboard/crm', emoji: '➕', t: 'Novo cliente', d: 'cadastre um lead' },
@@ -1587,11 +1627,11 @@ export default function DashboardPage() {
             { href: '/dashboard/comissoes', emoji: '💵', t: 'Comissões', d: 'seus ganhos' },
             { href: '/dashboard/treinamentos', emoji: '🎓', t: 'Academia', d: 'aprenda e evolua' },
           ].map((a, i) => (
-            <Link key={a.href} href={a.href} className={`al-shortcut al-card al-rise al-d${Math.min(i + 1, 6)} p-4 flex flex-col group`}>
-              <span className="al-chip text-xl">{a.emoji}</span>
-              <span className="al-display text-[13px] font-bold text-white leading-tight mt-3 flex items-center gap-1.5">
+            <Link key={a.href} href={a.href} className={`gx-tile al-rise al-d${Math.min(i + 1, 6)} p-4 flex flex-col group`}>
+              <span className="text-[22px] leading-none">{a.emoji}</span>
+              <span className="al-display text-[13px] font-bold text-white uppercase tracking-wide leading-tight mt-2.5 flex items-center gap-1.5">
                 {a.t}
-                <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[#E8C547]">→</span>
+                <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[#FF3364]">▸</span>
               </span>
               <span className="text-[11px] text-text-secondary leading-tight mt-1">{a.d}</span>
             </Link>
@@ -1605,8 +1645,8 @@ export default function DashboardPage() {
           {/* Sua agenda agora */}
           <div className="al-card p-4 relative overflow-hidden">
             <div className="flex items-center justify-between gap-3 mb-3">
-              <h2 className="al-display text-base font-bold text-white">Sua agenda agora</h2>
-              <Link href="/dashboard/agenda" className="text-xs font-bold text-[#E8C547] hover:underline shrink-0">ver agenda →</Link>
+              <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">📡 Radar de eventos</h2>
+              <Link href="/dashboard/agenda" className="text-[11px] font-bold text-[#FF5C7E] hover:underline shrink-0">agenda completa ▸</Link>
             </div>
             <div>
               {agendaLoading ? (
@@ -1627,7 +1667,7 @@ export default function DashboardPage() {
                     const destaque = isAgora || emBreve;
                     const cardClass = destaque
                       ? isAgora
-                        ? 'rounded-2xl border border-red-400/50 bg-gradient-to-br from-red-500/20 via-red-500/[0.05] to-transparent shadow-[0_0_32px_-10px_rgba(239,68,68,0.55)]'
+                        ? 'rounded-2xl border border-[#FF1E56]/50 bg-gradient-to-br from-[#FF1E56]/20 via-[#FF1E56]/[0.05] to-transparent gx-pulse'
                         : 'rounded-2xl border border-amber-300/50 bg-gradient-to-br from-amber-400/20 via-amber-400/[0.05] to-transparent shadow-[0_0_32px_-10px_rgba(245,158,11,0.5)]'
                       : 'rounded-2xl border border-emerald-400/35 bg-gradient-to-br from-emerald-500/[0.13] via-emerald-500/[0.03] to-transparent';
                     const icon = item.tipoChave ? (TIPO_ICON[item.tipoChave] ?? TIPO_ICON.outro) : (item.tipo === 'plantao' ? '🏢' : TIPO_ICON.outro);
@@ -1663,7 +1703,7 @@ export default function DashboardPage() {
                         const destaque = isAgora || emBreve;
                         const cardClass = destaque
                           ? isAgora
-                            ? 'rounded-2xl border border-red-400/50 bg-gradient-to-br from-red-500/20 via-red-500/[0.05] to-transparent shadow-[0_0_32px_-10px_rgba(239,68,68,0.55)]'
+                            ? 'rounded-2xl border border-[#FF1E56]/50 bg-gradient-to-br from-[#FF1E56]/20 via-[#FF1E56]/[0.05] to-transparent gx-pulse'
                             : 'rounded-2xl border border-amber-300/50 bg-gradient-to-br from-amber-400/20 via-amber-400/[0.05] to-transparent shadow-[0_0_32px_-10px_rgba(245,158,11,0.5)]'
                           : 'rounded-2xl border border-emerald-400/35 bg-gradient-to-br from-emerald-500/[0.13] via-emerald-500/[0.03] to-transparent';
                         const icon = item!.tipoChave ? (TIPO_ICON[item!.tipoChave] ?? TIPO_ICON.outro) : (item!.tipo === 'plantao' ? '🏢' : TIPO_ICON.outro);
