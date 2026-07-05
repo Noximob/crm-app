@@ -41,26 +41,6 @@ const CountUp = ({ n, className = '' }: { n: number; className?: string }) => {
   return <span className={className}>{v}</span>;
 };
 
-/** Anel de progresso (SVG) com gradiente dourado→carmesim */
-const Ring = ({ pct, size = 110 }: { pct: number; size?: number }) => {
-  const raio = (size - 12) / 2;
-  const circ = 2 * Math.PI * raio;
-  const cheio = (Math.min(Math.max(pct, 0), 100) / 100) * circ;
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
-      <circle cx={size / 2} cy={size / 2} r={raio} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10" />
-      <circle cx={size / 2} cy={size / 2} r={raio} fill="none" stroke="url(#alRingGrad)" strokeWidth="10" strokeLinecap="round" strokeDasharray={`${cheio} ${circ}`} style={{ filter: 'drop-shadow(0 0 8px rgba(232,197,71,0.4))' }} />
-      <defs>
-        <linearGradient id="alRingGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#FFE9A6" />
-          <stop offset="55%" stopColor="#E8C547" />
-          <stop offset="100%" stopColor="#FF1E56" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-};
-
 // Ícones
 const TrendingUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1563,6 +1543,13 @@ export default function DashboardPage() {
   const metaFeito = metaPessoal?.alcancadoPessoal ?? 0;
   const metaPctHome = metaAlvo > 0 ? Math.min(100, Math.round((metaFeito / metaAlvo) * 100)) : 0;
   const brlCompact = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', maximumFractionDigits: 1 }).format(v || 0);
+  // MOCKUP visual do pódio de meets & visitas — o período será definido na área do administrador quando integrar
+  const podioMeetsMock = [
+    { nome: 'Renan', qtd: 12 },
+    { nome: 'Toni', qtd: 9 },
+    { nome: 'Breno', qtd: 7 },
+  ];
+  const meusMeetsMock = 5;
 
   return (
     <div className="min-h-full lg:h-full flex flex-col pb-6 lg:pb-0 lg:overflow-hidden">
@@ -1638,25 +1625,25 @@ export default function DashboardPage() {
         </Link>
 
         {/* Radar de eventos — varredura + lista HUD */}
-        <div className="col-span-6 lg:col-span-8 lg:row-span-3 al-card relative overflow-hidden p-4 al-rise al-d2 flex flex-col">
+        <div className="col-span-6 lg:col-span-8 lg:row-span-2 lg:col-start-5 lg:row-start-5 al-card relative overflow-hidden p-3.5 al-rise al-d5 flex flex-col">
           <div className="absolute inset-x-0 top-0 gx-line opacity-60" />
           <span className="pointer-events-none absolute top-2 left-2 w-3.5 h-3.5 border-t-2 border-l-2 border-[#FF3364]/50 rounded-tl-sm" />
           <span className="pointer-events-none absolute top-2 right-2 w-3.5 h-3.5 border-t-2 border-r-2 border-[#FF3364]/50 rounded-tr-sm" />
           <span className="pointer-events-none absolute bottom-2 left-2 w-3.5 h-3.5 border-b-2 border-l-2 border-[#FF3364]/30 rounded-bl-sm" />
           <span className="pointer-events-none absolute bottom-2 right-2 w-3.5 h-3.5 border-b-2 border-r-2 border-[#FF3364]/30 rounded-br-sm" />
-          <div className="flex items-center justify-between gap-3 mb-2.5">
+          <div className="flex items-center justify-between gap-3 mb-1.5">
             <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Fig n="Satellite%20antenna/3D/satellite_antenna_3d.png" s={20} /> Radar de eventos</h2>
             <Link href="/dashboard/agenda" className="text-[11px] font-bold text-[#FF5C7E] hover:underline shrink-0">agenda completa ▸</Link>
           </div>
-          <div className="flex gap-5 items-center flex-1 min-h-0">
+          <div className="flex gap-4 items-center flex-1 min-h-0">
             <div className="hidden sm:flex flex-col items-center shrink-0">
-              <div className="gx-radar w-[110px] h-[110px]">
+              <div className="gx-radar w-[84px] h-[84px]">
                 <span className="gx-blip" style={{ left: '62%', top: '28%' }} />
                 <span className="gx-blip" style={{ left: '36%', top: '56%', animationDelay: '0.7s' }} />
                 <span className="gx-blip" style={{ left: '55%', top: '68%', animationDelay: '1.3s' }} />
                 <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#FF3364] shadow-[0_0_8px_#FF3364]" />
               </div>
-              <span className="al-display text-[9px] font-bold tracking-[0.26em] text-[#FF5C7E] mt-2">SCANNING</span>
+              <span className="al-display text-[9px] font-bold tracking-[0.26em] text-[#FF5C7E] mt-1.5">SCANNING</span>
             </div>
             <div className="flex-1 min-w-0 w-full self-stretch flex flex-col justify-center">
               {agendaLoading ? (
@@ -1670,7 +1657,7 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="space-y-1.5">
-                  {proximosEventosConfirmados.slice(0, 4).map((item) => {
+                  {proximosEventosConfirmados.slice(0, 3).map((item) => {
                     const nowTime = currentTime.getTime();
                     const isAgora = item.startTime <= nowTime && item.fimTime >= nowTime;
                     const emBreve = !isAgora && item.startTime > nowTime && item.startTime - nowTime <= 45 * 60 * 1000;
@@ -1681,7 +1668,7 @@ export default function DashboardPage() {
                         ? 'border-[#E8C547] bg-[#E8C547]/[0.06]'
                         : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.04]';
                     return (
-                      <Link href="/dashboard/agenda" key={`${item.tipo}-${item.id}-${item.startTime}`} className={`flex items-center gap-3 px-3 py-2 rounded-lg border-l-2 transition-all hover:translate-x-1 ${rowCls}`}>
+                      <Link href="/dashboard/agenda" key={`${item.tipo}-${item.id}-${item.startTime}`} className={`flex items-center gap-3 px-3 py-1.5 rounded-lg border-l-2 transition-all hover:translate-x-1 ${rowCls}`}>
                         <span className={`al-display text-[15px] font-bold tabular-nums w-12 shrink-0 ${horaCls}`}>{item.horarioStr}</span>
                         <span className="flex-1 min-w-0 truncate text-[13px] font-semibold text-white" title={item.titulo}>{item.titulo}</span>
                         <span className="hidden md:inline text-[10px] text-text-secondary shrink-0">{item.tipoLabel}</span>
@@ -1933,7 +1920,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Pipeline em formato de funil */}
-          <div className="col-span-6 lg:col-span-4 lg:row-span-2 al-card p-3.5 relative overflow-hidden al-rise al-d3 flex flex-col">
+          <div className="col-span-6 lg:col-span-4 lg:row-span-2 lg:col-start-1 lg:row-start-5 al-card p-3.5 relative overflow-hidden al-rise al-d4 flex flex-col">
             <div className="absolute inset-x-0 top-0 gx-line" />
             <div className="flex items-center justify-between gap-3 mb-1.5">
               <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Fig n="Chart%20increasing/3D/chart_increasing_3d.png" s={20} /> Seu pipeline</h2>
@@ -1970,84 +1957,70 @@ export default function DashboardPage() {
             })()}
           </div>
 
-          {/* Atalhos — grade 2x2 embaixo do pipeline */}
-          <div className="col-span-6 lg:col-span-4 lg:row-span-2 grid grid-cols-2 gap-2.5 al-rise al-d4">
-            {[
-              { href: '/dashboard/crm', fig: 'Handshake/3D/handshake_3d.png', t: 'CRM', bg: 'hover:bg-[#FF1E56]/[0.08]', ln: 'group-hover:via-[#FF1E56]/80' },
-              { href: '/dashboard/ligacao-ativa', fig: 'Telephone/3D/telephone_3d.png', t: 'Ligação Ativa', bg: 'hover:bg-[#E8C547]/[0.08]', ln: 'group-hover:via-[#E8C547]/80' },
-              { href: '/dashboard/fluxo-pagamento', fig: 'Receipt/3D/receipt_3d.png', t: 'Fluxo de Pagamento', bg: 'hover:bg-[#9F6BFF]/[0.08]', ln: 'group-hover:via-[#9F6BFF]/80' },
-              { href: '/dashboard/materiais', fig: 'Open%20file%20folder/3D/open_file_folder_3d.png', t: 'Materiais', bg: 'hover:bg-[#34D399]/[0.08]', ln: 'group-hover:via-[#34D399]/80' },
-            ].map((a) => (
-              <Link key={a.href} href={a.href} className={`group al-card !rounded-2xl relative overflow-hidden flex flex-col items-center justify-center gap-1.5 p-2 ${a.bg} hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200`}>
-                <span className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-transparent to-transparent ${a.ln} transition-all duration-300`} />
-                <Fig n={a.fig} s={30} className="group-hover:scale-125 group-hover:-rotate-3 transition-transform duration-200 drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]" />
-                <span className="text-[10.5px] font-bold text-white/85 group-hover:text-white text-center leading-tight transition-colors">{a.t}</span>
-              </Link>
-            ))}
+          {/* Acesso rápido — as ferramentas do dia a dia, em destaque acima do pipeline */}
+          <div className="col-span-6 lg:col-span-4 lg:row-span-2 lg:col-start-1 lg:row-start-3 flex flex-col al-rise al-d2 min-h-0">
+            <div className="flex items-center gap-2 mb-1.5 shrink-0">
+              <span className="gx-tag"><Fig n="Rocket/3D/rocket_3d.png" s={12} /><span>Acesso rápido</span></span>
+              <div className="flex-1 gx-line opacity-30" />
+            </div>
+            <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
+              {[
+                { href: '/dashboard/crm', fig: 'Handshake/3D/handshake_3d.png', t: 'CRM', b: 'border-[#FF1E56]/35 hover:border-[#FF1E56]/70', bg: 'bg-[#FF1E56]/[0.05] hover:bg-[#FF1E56]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(255,30,86,0.5)]' },
+                { href: '/dashboard/ligacao-ativa', fig: 'Telephone/3D/telephone_3d.png', t: 'Ligação Ativa', b: 'border-[#E8C547]/35 hover:border-[#E8C547]/70', bg: 'bg-[#E8C547]/[0.05] hover:bg-[#E8C547]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(232,197,71,0.45)]' },
+                { href: '/dashboard/fluxo-pagamento', fig: 'Receipt/3D/receipt_3d.png', t: 'Fluxo de Pagamento', b: 'border-[#9F6BFF]/35 hover:border-[#9F6BFF]/70', bg: 'bg-[#9F6BFF]/[0.05] hover:bg-[#9F6BFF]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(159,107,255,0.45)]' },
+                { href: '/dashboard/materiais', fig: 'Open%20file%20folder/3D/open_file_folder_3d.png', t: 'Materiais', b: 'border-[#34D399]/35 hover:border-[#34D399]/70', bg: 'bg-[#34D399]/[0.05] hover:bg-[#34D399]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(52,211,153,0.45)]' },
+              ].map((a) => (
+                <Link key={a.href} href={a.href} className={`group relative overflow-hidden rounded-2xl border ${a.b} ${a.bg} ${a.glow} flex items-center gap-2.5 px-3 py-2 hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200`}>
+                  <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700" />
+                  <Fig n={a.fig} s={30} className="shrink-0 group-hover:scale-125 group-hover:-rotate-3 transition-transform duration-200 drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]" />
+                  <span className="text-[11.5px] font-bold text-white leading-tight">{a.t}</span>
+                </Link>
+              ))}
+            </div>
           </div>
 
-          {/* Meta da equipe — anel de progresso (dados reais do admin) */}
-          <div className="col-span-6 lg:col-span-4 lg:row-span-2 al-card p-3.5 relative overflow-hidden al-rise al-d5">
-            <div className="absolute inset-x-0 top-0 gx-line-gold" />
-            {(() => {
-              const vgvMeta = Number(meta?.valor) || 0;
-              const vgvFeito = Number(meta?.alcancado) || 0;
-              const pctEquipe = meta?.percentual != null ? Number(meta.percentual) : (vgvMeta > 0 ? Math.round((vgvFeito / vgvMeta) * 100) : 0);
-              const fmtD = (d?: string) => { if (!d) return null; const [y, m, dd] = String(d).split('T')[0].split('-'); return dd && m && y ? `${dd}/${m}` : null; };
-              const periodo = fmtD(meta?.inicio) && fmtD(meta?.fim) ? `${fmtD(meta?.inicio)} → ${fmtD(meta?.fim)}` : null;
-              return (
-                <>
-                  <div className="flex items-center justify-between gap-3 mb-2.5">
-                    <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Fig n="Chequered%20flag/3D/chequered_flag_3d.png" s={20} /> Meta da equipe</h2>
-                    {periodo && <span className="text-[10px] font-bold text-text-secondary tabular-nums shrink-0">{periodo}</span>}
-                  </div>
-                  {vgvMeta <= 0 ? (
-                    <p className="text-[11px] text-text-secondary">A meta da imobiliária ainda não foi configurada pelo gestor.</p>
-                  ) : (
-                    <div className="flex items-center gap-3.5">
-                      <div className="relative shrink-0">
-                        <Ring pct={pctEquipe} size={86} />
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <span className="al-display text-[18px] font-bold text-white leading-none tabular-nums">{pctEquipe}%</span>
-                          <span className="text-[7px] uppercase tracking-[0.18em] text-text-secondary mt-0.5">do VGV</span>
-                        </div>
-                      </div>
-                      <div className="min-w-0 flex-1 space-y-1.5">
-                        <div>
-                          <p className="text-[8.5px] font-extrabold uppercase tracking-[0.2em] text-text-secondary">Meta VGV</p>
-                          <p className="al-display text-[16px] font-bold al-grad-text leading-tight tabular-nums">{brlCompact(vgvMeta)}</p>
-                        </div>
-                        <div>
-                          <p className="text-[8.5px] font-extrabold uppercase tracking-[0.2em] text-text-secondary">Realizado</p>
-                          <p className="al-display text-[16px] font-bold text-white leading-tight tabular-nums">{brlCompact(vgvFeito)}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </>
-              );
-            })()}
+          {/* PÓDIO MEETS & VISITAS — o número que converte (MOCKUP visual; período virá da área do administrador) */}
+          <div className="col-span-6 lg:col-span-5 lg:row-span-3 lg:col-start-5 lg:row-start-2 relative overflow-hidden !rounded-[26px] p-4 al-rise al-d3 flex flex-col border border-[#E8C547]/30" style={{ background: 'linear-gradient(165deg, rgba(232,197,71,0.12) 0%, rgba(20,13,5,0.92) 42%, rgba(255,30,86,0.08) 100%)', boxShadow: '0 0 46px -16px rgba(232,197,71,0.55), inset 0 1px 0 rgba(232,197,71,0.18)' }}>
+            <span className="pointer-events-none absolute -top-16 -right-14 w-52 h-52 rounded-full bg-[#E8C547]/[0.10] blur-3xl" />
+            <div className="relative flex items-center justify-between gap-2 shrink-0">
+              <h2 className="al-display text-[16px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Fig n="Fire/3D/fire_3d.png" s={22} /> Meets & Visitas</h2>
+              <span className="gx-tag"><span>semana</span></span>
+            </div>
+            <p className="relative text-[9.5px] text-[#E8C547]/90 font-extrabold uppercase tracking-[0.2em] mt-0.5 shrink-0">o número que converte</p>
+            <div className="relative flex items-end justify-center gap-3 flex-1 min-h-0 pt-2">
+              {[{ i: 1, h: 'h-[36%]', medal: '2nd%20place%20medal/3D/2nd_place_medal_3d.png', grad: 'from-slate-300/30' }, { i: 0, h: 'h-[60%]', medal: '1st%20place%20medal/3D/1st_place_medal_3d.png', grad: 'from-[#E8C547]/45' }, { i: 2, h: 'h-[24%]', medal: '3rd%20place%20medal/3D/3rd_place_medal_3d.png', grad: 'from-orange-600/35' }].map((p) => (
+                <div key={p.i} className="flex-1 max-w-[130px] h-full flex flex-col items-center justify-end min-w-0 group">
+                  <Fig n={p.medal} s={p.i === 0 ? 30 : 23} className="mb-0.5 group-hover:scale-125 transition-transform" />
+                  <span className="text-[11px] font-bold text-white truncate w-full text-center" title={podioMeetsMock[p.i].nome}>{podioMeetsMock[p.i].nome}</span>
+                  <CountUp n={podioMeetsMock[p.i].qtd} className={`al-display font-bold leading-none tabular-nums ${p.i === 0 ? 'text-[32px] al-grad-text' : 'text-[22px] text-white/90'}`} />
+                  <div className={`w-full ${p.h} min-h-[14px] mt-1.5 rounded-t-lg bg-gradient-to-t ${p.grad} to-transparent border border-white/[0.08] border-b-0`} />
+                </div>
+              ))}
+            </div>
+            <div className="relative shrink-0 mt-2 flex items-center justify-between gap-2 rounded-xl px-3 py-1.5 bg-[#E8C547]/[0.08] border border-[#E8C547]/30">
+              <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#E8C547]">Você esta semana</span>
+              <span className="flex items-baseline gap-1.5">
+                <CountUp n={meusMeetsMock} className="al-display text-[24px] font-bold al-grad-text leading-none tabular-nums" />
+                <span className="text-[9.5px] text-[#E8C547]/80 font-bold uppercase tracking-wider">agendados</span>
+              </span>
+            </div>
           </div>
 
-          {/* Pódio do trimestre — quem tá vendendo */}
-          <div className="col-span-6 lg:col-span-4 lg:row-span-2 al-card p-3.5 relative overflow-hidden al-rise al-d6">
+          {/* Pódio do trimestre — vendas (lista vertical) */}
+          <div className="col-span-6 lg:col-span-3 lg:row-span-3 lg:col-start-10 lg:row-start-2 al-card p-3.5 relative overflow-hidden al-rise al-d4 flex flex-col">
             <div className="absolute inset-x-0 top-0 gx-line" />
-            <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2 mb-2"><Fig n="Trophy/3D/trophy_3d.png" s={20} /> Pódio do trimestre</h2>
+            <h2 className="al-display text-[13.5px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2 mb-2 shrink-0"><Fig n="Trophy/3D/trophy_3d.png" s={18} /> Trimestre</h2>
             {corretoresRanking.length === 0 ? (
               <p className="text-[11px] text-text-secondary">Sem vendas lançadas ainda — o pódio abre quando o time pontuar.</p>
             ) : (
-              <div className="flex items-end justify-center gap-2">
-                {[{ i: 1, h: 'h-10', medal: '2nd%20place%20medal/3D/2nd_place_medal_3d.png', cor: 'from-slate-400/25' }, { i: 0, h: 'h-14', medal: '1st%20place%20medal/3D/1st_place_medal_3d.png', cor: 'from-[#E8C547]/30' }, { i: 2, h: 'h-7', medal: '3rd%20place%20medal/3D/3rd_place_medal_3d.png', cor: 'from-orange-700/30' }].map((p) => (
-                  corretoresRanking[p.i] ? (
-                    <div key={p.i} className="flex-1 max-w-[105px] flex flex-col items-center min-w-0 group">
-                      <Fig n={p.medal} s={p.i === 0 ? 28 : 22} className="mb-0.5 group-hover:scale-125 transition-transform" />
-                      <span className="text-[10px] font-bold text-white truncate w-full text-center leading-tight" title={corretoresRanking[p.i].nome}>{corretoresRanking[p.i].nome.split(' ')[0]}</span>
-                      <div className={`w-full ${p.h} mt-1 rounded-t-lg bg-gradient-to-t ${p.cor} to-transparent border border-white/[0.07] border-b-0 flex items-start justify-center pt-0.5`}>
-                        <span className="al-display text-[12px] font-bold text-white/60">{p.i + 1}º</span>
-                      </div>
-                    </div>
-                  ) : <div key={p.i} className="flex-1 max-w-[105px]" />
-                ))}
+              <div className="flex-1 min-h-0 flex flex-col justify-center gap-1.5">
+                {[0, 1, 2].map((i) => corretoresRanking[i] ? (
+                  <div key={i} className={`flex items-center gap-2 px-2.5 py-2 rounded-xl border transition-colors hover:bg-white/[0.05] ${i === 0 ? 'border-[#E8C547]/35 bg-[#E8C547]/[0.06]' : 'border-white/[0.07] bg-white/[0.02]'}`}>
+                    <Fig n={['1st%20place%20medal/3D/1st_place_medal_3d.png', '2nd%20place%20medal/3D/2nd_place_medal_3d.png', '3rd%20place%20medal/3D/3rd_place_medal_3d.png'][i]} s={i === 0 ? 24 : 20} />
+                    <span className="flex-1 min-w-0 truncate text-[12px] font-bold text-white" title={corretoresRanking[i].nome}>{corretoresRanking[i].nome.split(' ')[0]}</span>
+                    <span className="al-display text-[13px] font-bold text-white/50 tabular-nums">{i + 1}º</span>
+                  </div>
+                ) : null)}
               </div>
             )}
           </div>
