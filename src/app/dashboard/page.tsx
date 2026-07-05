@@ -1571,33 +1571,33 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-full pb-6">
-      {/* ===== HUD: cartão do jogador + missões de hoje ===== */}
-      <section className="grid grid-cols-1 lg:grid-cols-[0.95fr_1.05fr] gap-3 mb-4 mt-1">
-        {/* PLAYER CARD */}
-        <div className="al-card relative overflow-hidden p-5 al-rise">
+      {/* ===== BANNER DO JOGADOR (full-width, listras diagonais) ===== */}
+      <section className="space-y-3 mb-3 mt-1">
+        <div className="al-card gx-stripes relative overflow-hidden p-5 md:p-6 al-rise">
           <div className="absolute inset-x-0 top-0 gx-line" />
-          <div className="absolute -top-20 -right-16 w-64 h-64 rounded-full bg-[#FF1E56]/[0.07] blur-3xl pointer-events-none" />
-          <p className="al-eyebrow mb-3.5">{saudacaoDia} · {nomeImobiliaria || 'Sua imobiliária'}</p>
-          <div className="relative flex items-center gap-4">
-            <div className="relative w-14 h-14 p-[2px] rounded-2xl bg-gradient-to-br from-[#FF6B93] via-[#FF1E56] to-[#8B0F31] shadow-[0_0_20px_rgba(255,30,86,0.35)] shrink-0">
-              <div className="w-full h-full rounded-[14px] bg-[#16090e] flex items-center justify-center text-[#FF9EB5] al-display font-bold text-xl">
+          <div className="absolute -top-24 -right-20 w-96 h-96 rounded-full bg-[#FF1E56]/[0.08] blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-28 -left-24 w-80 h-80 rounded-full bg-[#E8C547]/[0.05] blur-3xl pointer-events-none" />
+          <div className="relative mb-4"><span className="gx-tag"><span>{saudacaoDia} · {nomeImobiliaria || 'Sua imobiliária'}</span></span></div>
+          <div className="relative flex items-center gap-4 md:gap-5">
+            <div className="relative w-16 h-16 md:w-[72px] md:h-[72px] p-[2px] rounded-2xl bg-gradient-to-br from-[#FF6B93] via-[#FF1E56] to-[#8B0F31] shadow-[0_0_24px_rgba(255,30,86,0.4)] shrink-0">
+              <div className="w-full h-full rounded-[14px] bg-[#16090e] flex items-center justify-center text-[#FF9EB5] al-display font-bold text-2xl">
                 {primeiroNomeHome.charAt(0).toUpperCase()}
               </div>
             </div>
             <div className="min-w-0">
-              <h1 className="al-display text-[26px] font-bold text-white uppercase tracking-wide leading-none truncate">{primeiroNomeHome}</h1>
-              <div className="flex items-center gap-2 mt-2">
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-extrabold tracking-[0.14em] bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#E8C547]">
-                  <Fig n={rankHome.fig} s={14} /> {rankHome.label}
+              <h1 className="al-display text-[30px] md:text-[36px] font-bold text-white uppercase tracking-wide leading-none truncate">{primeiroNomeHome}</h1>
+              <div className="flex items-center gap-2 mt-2.5">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-extrabold tracking-[0.14em] bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#E8C547]">
+                  <Fig n={rankHome.fig} s={15} /> {rankHome.label}
                 </span>
               </div>
             </div>
             <div className="ml-auto text-right shrink-0">
-              <span className="al-display block text-[40px] font-bold gx-neon leading-none tabular-nums">{totalFunilHome}</span>
-              <span className="block text-[10px] uppercase tracking-[0.18em] text-text-secondary mt-1">leads na carteira</span>
+              <span className="al-display block text-[52px] md:text-[60px] font-bold gx-neon leading-none tabular-nums">{totalFunilHome}</span>
+              <span className="block text-[10px] uppercase tracking-[0.2em] text-text-secondary mt-1">leads na carteira</span>
             </div>
           </div>
-          <div className="relative mt-5">
+          <div className="relative mt-5 max-w-3xl">
             {metaAlvo > 0 ? (
               <>
                 <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.18em] text-text-secondary mb-1.5">
@@ -1629,16 +1629,16 @@ export default function DashboardPage() {
               <p className="text-[11px] text-text-secondary mt-1">Nenhuma pendência — hora de caçar negócio novo.</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               {missoesHome.map((m) => (
-                <Link key={m.href} href={m.href} className={`group flex items-center gap-3 rounded-xl border p-3 transition-all hover:translate-x-1 ${m.cls}`}>
-                  <Fig n={m.fig} s={30} className="shrink-0 group-hover:scale-110 transition-transform" />
-                  <span className="min-w-0 flex-1">
-                    <span className={`block text-[9px] font-extrabold tracking-[0.24em] ${m.tag}`}>{m.tipo}</span>
-                    <span className="al-display block text-[15px] font-bold text-white uppercase tracking-wide leading-tight">{m.titulo}</span>
-                    <span className="block text-[11px] text-text-secondary">{m.desc}</span>
+                <Link key={m.href} href={m.href} className={`group flex flex-col rounded-xl border p-3.5 transition-all hover:-translate-y-1 ${m.cls}`}>
+                  <span className="flex items-center justify-between">
+                    <Fig n={m.fig} s={32} className="group-hover:scale-110 transition-transform" />
+                    <span className={`text-[9px] font-extrabold tracking-[0.22em] ${m.tag}`}>{m.tipo}</span>
                   </span>
-                  <span className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-extrabold tracking-[0.14em] border ${m.btn} opacity-80 group-hover:opacity-100 transition-opacity`}>INICIAR ▸</span>
+                  <span className="al-display block text-[16px] font-bold text-white uppercase tracking-wide leading-tight mt-2.5">{m.titulo}</span>
+                  <span className="block text-[11px] text-text-secondary mt-0.5">{m.desc}</span>
+                  <span className={`mt-3 self-start px-2.5 py-1 rounded-lg text-[10px] font-extrabold tracking-[0.14em] border ${m.btn} opacity-80 group-hover:opacity-100 transition-opacity`}>INICIAR ▸</span>
                 </Link>
               ))}
             </div>
@@ -1648,8 +1648,8 @@ export default function DashboardPage() {
 
       {/* ===== ARSENAL (atalhos) ===== */}
       <section className="mb-4">
-        <div className="flex items-center gap-3 mb-2.5">
-          <p className="al-eyebrow flex items-center gap-1.5"><Fig n="Rocket/3D/rocket_3d.png" s={15} /> Arsenal</p>
+        <div className="flex items-center gap-3 mb-3">
+          <span className="gx-tag"><Fig n="Rocket/3D/rocket_3d.png" s={14} /><span>Arsenal</span></span>
           <div className="flex-1 gx-line opacity-25" />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
@@ -1673,11 +1673,10 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* ===== Conteúdo: agenda à esquerda, funil e metas à direita ===== */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-3 items-start">
-        <div className="space-y-3 min-w-0">
-          {/* Sua agenda agora */}
-          <div className="al-card p-4 relative overflow-hidden">
+      {/* ===== Radar (faixa completa) + painéis: pipeline, meta e pódio ===== */}
+      <div id="trending-section" className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-start">
+          {/* Radar de eventos — faixa completa */}
+          <div className="al-card p-4 relative overflow-hidden lg:col-span-3 al-rise">
             <div className="flex items-center justify-between gap-3 mb-3">
               <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Fig n="Satellite%20antenna/3D/satellite_antenna_3d.png" s={20} /> Radar de eventos</h2>
               <Link href="/dashboard/agenda" className="text-[11px] font-bold text-[#FF5C7E] hover:underline shrink-0">agenda completa ▸</Link>
@@ -1770,8 +1769,8 @@ export default function DashboardPage() {
 
           </div>
 
-          {/* Comunidade — oculta da home a pedido (lógica preservada; usaremos depois). Basta remover "hidden" para reativar. */}
-          <div className="w-full">
+          {/* Comunidade — oculta da home a pedido (lógica preservada; usaremos depois). Basta remover "hidden" daqui e do card p/ reativar. */}
+          <div className="w-full hidden">
           <div className="rounded-2xl p-4 relative overflow-hidden animate-fade-in border border-white/10 hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-orange-500 rounded-r pointer-events-none" />
 
@@ -2001,10 +2000,7 @@ export default function DashboardPage() {
             </div>
           </div>
           </div>
-        </div>
 
-        {/* Coluna Direita — pipeline (funil de verdade), meta da equipe e pódio */}
-        <div id="trending-section" className="space-y-3 min-w-0">
           {/* Pipeline em formato de funil */}
           <div className="al-card p-4 relative overflow-hidden al-rise al-d2">
             <div className="absolute inset-x-0 top-0 gx-line" />
@@ -2120,7 +2116,6 @@ export default function DashboardPage() {
               </>
             )}
           </div>
-        </div>
       </div>
 
 

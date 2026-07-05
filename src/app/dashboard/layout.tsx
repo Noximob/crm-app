@@ -95,10 +95,18 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
 
-  // Data de hoje no header (client-side p/ evitar mismatch de hidratação)
+  // Data e relógio vivos no header (client-side p/ evitar mismatch de hidratação)
   const [hojeStr, setHojeStr] = useState('');
+  const [horaStr, setHoraStr] = useState('');
   useEffect(() => {
-    setHojeStr(new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }));
+    const tick = () => {
+      const agora = new Date();
+      setHojeStr(agora.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' }));
+      setHoraStr(agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+    };
+    tick();
+    const id = setInterval(tick, 20000);
+    return () => clearInterval(id);
   }, []);
   const { theme } = useTheme();
   const { notifications, resetNotification } = useNotifications();
@@ -295,13 +303,13 @@ export default function DashboardLayout({
       </div>
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden ml-[60px]">
-        {/* Header: saudação + data | convites de eventos (1 por vez) | avatar */}
-        <header className="h-16 px-5 shrink-0 flex items-center justify-between gap-3">
+        {/* Header: command bar — saudação com cursor + relógio vivo | convites | avatar */}
+        <header className="h-14 px-5 shrink-0 flex items-center justify-between gap-3 bg-[#0b0b10]/80 backdrop-blur-md relative">
+          <div className="absolute inset-x-0 bottom-0 h-[2px] gx-line pointer-events-none opacity-70" />
           <div className="shrink-0 min-w-0 flex items-baseline gap-2.5">
-            <h2 className="al-display text-[17px] font-bold text-white truncate leading-tight">
-              Olá, {displayName}!
+            <h2 className="al-display text-[16px] font-bold text-white uppercase tracking-[0.08em] truncate leading-tight">
+              Olá, {displayName}<span className="gx-cursor">▍</span>
             </h2>
-            {hojeStr && <p className="hidden sm:block text-[11px] text-text-secondary capitalize leading-tight">· {hojeStr}</p>}
           </div>
           {convitesPendentes.length > 0 && (
             <div className="flex items-center gap-2 flex-1 min-w-0 justify-center overflow-hidden">
@@ -336,7 +344,13 @@ export default function DashboardLayout({
             </div>
           )}
           <div className="flex items-center gap-3 shrink-0">
-            <div className="pl-3">
+            {horaStr && (
+              <div className="hidden sm:flex items-baseline gap-2 pr-3 border-r border-white/[0.07]">
+                <span className="al-display text-[19px] font-bold text-white tabular-nums leading-none">{horaStr}</span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-secondary">{hojeStr}</span>
+              </div>
+            )}
+            <div className="pl-0.5">
               <div className="relative w-9 h-9 p-[2px] rounded-full bg-gradient-to-br from-[#FF6B93] via-[#FF1E56] to-[#8B0F31] shadow-[0_0_16px_rgba(255,30,86,0.4)]">
                 <div className="w-full h-full rounded-full bg-[#16090e] flex items-center justify-center text-[#FF9EB5] font-bold text-sm al-display">
                   {(displayName || 'U').charAt(0).toUpperCase()}
