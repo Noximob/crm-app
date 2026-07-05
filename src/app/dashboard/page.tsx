@@ -1588,39 +1588,39 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ATRASADAS — bloco carmesim chapado, chanfrado */}
-        <Link href="/dashboard/crm?tarefa=atraso" className="col-span-3 lg:col-span-3 lg:row-span-1 gx-tile relative overflow-hidden px-4 py-3 flex items-center justify-between gap-2 al-rise al-d1 group hover:-translate-y-1 hover:brightness-110 active:scale-[0.98] transition-all duration-200" style={{ background: 'linear-gradient(150deg, #FF1E56 0%, #A50D38 100%)', boxShadow: '0 18px 44px -14px rgba(255,30,86,0.55)' }}>
-          <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700" />
+        {/* ATRASADAS — estilo suave, cor de assinatura carmesim */}
+        <Link href="/dashboard/crm?tarefa=atraso" className="col-span-3 lg:col-span-3 lg:row-span-1 relative overflow-hidden rounded-2xl border border-[#FF1E56]/35 bg-[#FF1E56]/[0.06] hover:bg-[#FF1E56]/[0.12] hover:border-[#FF1E56]/70 hover:shadow-[0_10px_30px_-10px_rgba(255,30,86,0.5)] px-4 py-3 flex items-center justify-between gap-2 al-rise al-d1 group hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200">
+          <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700" />
           <span className="flex flex-col min-w-0">
-            <span className="text-[9.5px] font-extrabold tracking-[0.2em] text-white/90">ATRASADAS</span>
-            <CountUp n={tarefaAtrasadaCount} className="al-display text-[38px] font-bold text-white leading-none tabular-nums" />
+            <span className="text-[9.5px] font-extrabold tracking-[0.2em] text-[#FF7A97]">ATRASADAS</span>
+            <CountUp n={tarefaAtrasadaCount} className="al-display text-[36px] font-bold text-white leading-none tabular-nums" />
           </span>
-          <span className="flex flex-col items-end gap-0.5 shrink-0">
-            <Fig n="Police%20car%20light/3D/police_car_light_3d.png" s={26} className="group-hover:scale-125 group-hover:-rotate-6 transition-transform duration-200" />
-            <span className="text-[9px] font-bold text-white/0 group-hover:text-white/90 transition-colors whitespace-nowrap">resolver ▸</span>
+          <span className="grid place-items-center w-11 h-11 rounded-xl bg-gradient-to-br from-[#FF1E56]/25 to-[#FF1E56]/[0.03] border border-[#FF1E56]/30 shrink-0 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-200">
+            <Fig n="Police%20car%20light/3D/police_car_light_3d.png" s={24} className="drop-shadow-[0_3px_6px_rgba(0,0,0,0.55)]" />
           </span>
         </Link>
 
-        {/* PARA HOJE — dourado chapado */}
-        <Link href="/dashboard/crm?tarefa=hoje" className="col-span-3 lg:col-span-2 lg:row-span-1 gx-tile relative overflow-hidden px-4 py-3 flex items-center justify-between gap-2 al-rise al-d2 group hover:-translate-y-1 hover:brightness-110 active:scale-[0.98] transition-all duration-200" style={{ background: 'linear-gradient(150deg, #FFD569 0%, #C89210 100%)', boxShadow: '0 18px 44px -14px rgba(212,160,23,0.45)' }}>
-          <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700" />
+        {/* PARA HOJE — dourado suave */}
+        <Link href="/dashboard/crm?tarefa=hoje" className="col-span-3 lg:col-span-2 lg:row-span-1 relative overflow-hidden rounded-2xl border border-[#E8C547]/35 bg-[#E8C547]/[0.06] hover:bg-[#E8C547]/[0.12] hover:border-[#E8C547]/70 hover:shadow-[0_10px_30px_-10px_rgba(232,197,71,0.45)] px-4 py-3 flex items-center justify-between gap-2 al-rise al-d2 group hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200">
+          <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700" />
           <span className="flex flex-col min-w-0">
-            <span className="text-[9.5px] font-extrabold tracking-[0.2em] text-[#181203]/80">PARA HOJE</span>
-            <CountUp n={tarefaDiaCount} className="al-display text-[38px] font-bold text-[#181203] leading-none tabular-nums" />
+            <span className="text-[9.5px] font-extrabold tracking-[0.2em] text-[#E8C547]">PARA HOJE</span>
+            <CountUp n={tarefaDiaCount} className="al-display text-[36px] font-bold text-white leading-none tabular-nums" />
           </span>
-          <Fig n="High%20voltage/3D/high_voltage_3d.png" s={24} className="shrink-0 group-hover:scale-125 group-hover:rotate-6 transition-transform duration-200" />
+          <span className="grid place-items-center w-11 h-11 rounded-xl bg-gradient-to-br from-[#E8C547]/25 to-[#E8C547]/[0.03] border border-[#E8C547]/30 shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-200">
+            <Fig n="High%20voltage/3D/high_voltage_3d.png" s={22} className="drop-shadow-[0_3px_6px_rgba(0,0,0,0.55)]" />
+          </span>
         </Link>
 
-        {/* SEM TAREFA — verde profundo */}
-        <Link href="/dashboard/crm?tarefa=sem" className="col-span-6 lg:col-span-3 lg:row-span-1 gx-tile relative overflow-hidden px-4 py-3 flex items-center justify-between gap-2 al-rise al-d3 group hover:-translate-y-1 hover:brightness-110 active:scale-[0.98] transition-all duration-200" style={{ background: 'linear-gradient(150deg, #0E4A3A 0%, #072B22 100%)', boxShadow: 'inset 0 0 0 1px rgba(52,211,153,0.3), 0 18px 44px -16px rgba(16,185,129,0.35)' }}>
-          <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-emerald-200/15 to-transparent transition-transform duration-700" />
+        {/* SEM TAREFA — esmeralda suave */}
+        <Link href="/dashboard/crm?tarefa=sem" className="col-span-6 lg:col-span-3 lg:row-span-1 relative overflow-hidden rounded-2xl border border-[#34D399]/35 bg-[#34D399]/[0.06] hover:bg-[#34D399]/[0.12] hover:border-[#34D399]/70 hover:shadow-[0_10px_30px_-10px_rgba(52,211,153,0.45)] px-4 py-3 flex items-center justify-between gap-2 al-rise al-d3 group hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200">
+          <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700" />
           <span className="flex flex-col min-w-0">
             <span className="text-[9.5px] font-extrabold tracking-[0.2em] text-emerald-300">SEM TAREFA</span>
-            <CountUp n={semTarefaCount} className="al-display text-[38px] font-bold text-white leading-none tabular-nums" />
+            <CountUp n={semTarefaCount} className="al-display text-[36px] font-bold text-white leading-none tabular-nums" />
           </span>
-          <span className="flex flex-col items-end gap-0.5 shrink-0">
-            <Fig n="Gem%20stone/3D/gem_stone_3d.png" s={24} className="group-hover:scale-125 group-hover:rotate-6 transition-transform duration-200" />
-            <span className="text-[9px] font-bold text-emerald-300/0 group-hover:text-emerald-200 transition-colors whitespace-nowrap">resgatar ▸</span>
+          <span className="grid place-items-center w-11 h-11 rounded-xl bg-gradient-to-br from-[#34D399]/25 to-[#34D399]/[0.03] border border-[#34D399]/30 shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-200">
+            <Fig n="Gem%20stone/3D/gem_stone_3d.png" s={22} className="drop-shadow-[0_3px_6px_rgba(0,0,0,0.55)]" />
           </span>
         </Link>
 
@@ -1965,65 +1965,83 @@ export default function DashboardPage() {
             </div>
             <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
               {[
-                { href: '/dashboard/crm', fig: 'Handshake/3D/handshake_3d.png', t: 'CRM', b: 'border-[#FF1E56]/35 hover:border-[#FF1E56]/70', bg: 'bg-[#FF1E56]/[0.05] hover:bg-[#FF1E56]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(255,30,86,0.5)]' },
-                { href: '/dashboard/ligacao-ativa', fig: 'Telephone/3D/telephone_3d.png', t: 'Ligação Ativa', b: 'border-[#E8C547]/35 hover:border-[#E8C547]/70', bg: 'bg-[#E8C547]/[0.05] hover:bg-[#E8C547]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(232,197,71,0.45)]' },
-                { href: '/dashboard/fluxo-pagamento', fig: 'Receipt/3D/receipt_3d.png', t: 'Fluxo de Pagamento', b: 'border-[#9F6BFF]/35 hover:border-[#9F6BFF]/70', bg: 'bg-[#9F6BFF]/[0.05] hover:bg-[#9F6BFF]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(159,107,255,0.45)]' },
-                { href: '/dashboard/materiais', fig: 'Open%20file%20folder/3D/open_file_folder_3d.png', t: 'Materiais', b: 'border-[#34D399]/35 hover:border-[#34D399]/70', bg: 'bg-[#34D399]/[0.05] hover:bg-[#34D399]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(52,211,153,0.45)]' },
+                { href: '/dashboard/crm', fig: 'Handshake/3D/handshake_3d.png', t: 'CRM', b: 'border-[#FF1E56]/35 hover:border-[#FF1E56]/70', bg: 'bg-[#FF1E56]/[0.05] hover:bg-[#FF1E56]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(255,30,86,0.5)]', chip: 'from-[#FF1E56]/25 to-[#FF1E56]/[0.03] border-[#FF1E56]/30' },
+                { href: '/dashboard/materiais', fig: 'Open%20file%20folder/3D/open_file_folder_3d.png', t: 'Produtos', b: 'border-[#34D399]/35 hover:border-[#34D399]/70', bg: 'bg-[#34D399]/[0.05] hover:bg-[#34D399]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(52,211,153,0.45)]', chip: 'from-[#34D399]/25 to-[#34D399]/[0.03] border-[#34D399]/30' },
+                { href: '/dashboard/fluxo-pagamento', fig: 'Receipt/3D/receipt_3d.png', t: 'Fluxo de Pagamento', b: 'border-[#9F6BFF]/35 hover:border-[#9F6BFF]/70', bg: 'bg-[#9F6BFF]/[0.05] hover:bg-[#9F6BFF]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(159,107,255,0.45)]', chip: 'from-[#9F6BFF]/25 to-[#9F6BFF]/[0.03] border-[#9F6BFF]/30' },
+                { href: '/dashboard/ligacao-ativa', fig: 'Telephone/3D/telephone_3d.png', t: 'Ligação Ativa', b: 'border-[#E8C547]/35 hover:border-[#E8C547]/70', bg: 'bg-[#E8C547]/[0.05] hover:bg-[#E8C547]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(232,197,71,0.45)]', chip: 'from-[#E8C547]/25 to-[#E8C547]/[0.03] border-[#E8C547]/30' },
               ].map((a) => (
                 <Link key={a.href} href={a.href} className={`group relative overflow-hidden rounded-2xl border ${a.b} ${a.bg} ${a.glow} flex items-center gap-2.5 px-3 py-2 hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200`}>
                   <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700" />
-                  <Fig n={a.fig} s={30} className="shrink-0 group-hover:scale-125 group-hover:-rotate-3 transition-transform duration-200 drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]" />
+                  <span className={`grid place-items-center w-10 h-10 rounded-xl bg-gradient-to-br border ${a.chip} shrink-0 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-200`}>
+                    <Fig n={a.fig} s={24} className="drop-shadow-[0_3px_6px_rgba(0,0,0,0.55)]" />
+                  </span>
                   <span className="text-[11.5px] font-bold text-white leading-tight">{a.t}</span>
                 </Link>
               ))}
             </div>
           </div>
 
-          {/* PÓDIO MEETS & VISITAS — o número que converte (MOCKUP visual; período virá da área do administrador) */}
-          <div className="col-span-6 lg:col-span-5 lg:row-span-3 lg:col-start-5 lg:row-start-2 relative overflow-hidden !rounded-[26px] p-4 al-rise al-d3 flex flex-col border border-[#E8C547]/30" style={{ background: 'linear-gradient(165deg, rgba(232,197,71,0.12) 0%, rgba(20,13,5,0.92) 42%, rgba(255,30,86,0.08) 100%)', boxShadow: '0 0 46px -16px rgba(232,197,71,0.55), inset 0 1px 0 rgba(232,197,71,0.18)' }}>
-            <span className="pointer-events-none absolute -top-16 -right-14 w-52 h-52 rounded-full bg-[#E8C547]/[0.10] blur-3xl" />
-            <div className="relative flex items-center justify-between gap-2 shrink-0">
-              <h2 className="al-display text-[16px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Fig n="Fire/3D/fire_3d.png" s={22} /> Meets & Visitas</h2>
-              <span className="gx-tag"><span>semana</span></span>
-            </div>
-            <p className="relative text-[9.5px] text-[#E8C547]/90 font-extrabold uppercase tracking-[0.2em] mt-0.5 shrink-0">o número que converte</p>
-            <div className="relative flex items-end justify-center gap-3 flex-1 min-h-0 pt-2">
-              {[{ i: 1, h: 'h-[36%]', medal: '2nd%20place%20medal/3D/2nd_place_medal_3d.png', grad: 'from-slate-300/30' }, { i: 0, h: 'h-[60%]', medal: '1st%20place%20medal/3D/1st_place_medal_3d.png', grad: 'from-[#E8C547]/45' }, { i: 2, h: 'h-[24%]', medal: '3rd%20place%20medal/3D/3rd_place_medal_3d.png', grad: 'from-orange-600/35' }].map((p) => (
-                <div key={p.i} className="flex-1 max-w-[130px] h-full flex flex-col items-center justify-end min-w-0 group">
-                  <Fig n={p.medal} s={p.i === 0 ? 30 : 23} className="mb-0.5 group-hover:scale-125 transition-transform" />
-                  <span className="text-[11px] font-bold text-white truncate w-full text-center" title={podioMeetsMock[p.i].nome}>{podioMeetsMock[p.i].nome}</span>
-                  <CountUp n={podioMeetsMock[p.i].qtd} className={`al-display font-bold leading-none tabular-nums ${p.i === 0 ? 'text-[32px] al-grad-text' : 'text-[22px] text-white/90'}`} />
-                  <div className={`w-full ${p.h} min-h-[14px] mt-1.5 rounded-t-lg bg-gradient-to-t ${p.grad} to-transparent border border-white/[0.08] border-b-0`} />
+          {/* PÓDIO MEETS & VISITAS — vitrine da produção (MOCKUP; datas de início/fim virão da área do administrador) */}
+          <div className="col-span-6 lg:col-span-8 lg:row-span-3 lg:col-start-5 lg:row-start-2 relative overflow-hidden !rounded-[26px] p-4 al-rise al-d3 flex flex-col border border-[#E8C547]/30" style={{ background: 'linear-gradient(160deg, rgba(232,197,71,0.13) 0%, rgba(20,13,5,0.93) 40%, rgba(255,30,86,0.07) 100%)', boxShadow: '0 0 52px -16px rgba(232,197,71,0.55), inset 0 1px 0 rgba(232,197,71,0.18)' }}>
+            <span className="pointer-events-none absolute -top-20 -right-16 w-64 h-64 rounded-full bg-[#E8C547]/[0.10] blur-3xl" />
+            <span className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 rounded-full bg-[#FF1E56]/[0.06] blur-3xl" />
+            <div className="relative flex items-center justify-between gap-3 shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="grid place-items-center w-10 h-10 rounded-xl bg-gradient-to-br from-[#E8C547]/30 to-[#E8C547]/[0.04] border border-[#E8C547]/40 shrink-0">
+                  <Fig n="Fire/3D/fire_3d.png" s={24} className="drop-shadow-[0_3px_6px_rgba(0,0,0,0.55)]" />
+                </span>
+                <div className="min-w-0">
+                  <h2 className="al-display text-[17px] font-bold text-white uppercase tracking-[0.14em] leading-none truncate">Meets & Visitas</h2>
+                  <p className="text-[9px] text-[#E8C547]/90 font-extrabold uppercase tracking-[0.22em] mt-1">o número que converte</p>
                 </div>
-              ))}
+              </div>
+              {/* MOCKUP: período definido futuramente na área do administrador */}
+              <span className="gx-tag shrink-0"><span>01/07 → 07/07</span></span>
             </div>
-            <div className="relative shrink-0 mt-2 flex items-center justify-between gap-2 rounded-xl px-3 py-1.5 bg-[#E8C547]/[0.08] border border-[#E8C547]/30">
-              <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#E8C547]">Você esta semana</span>
+            <div className="relative flex items-stretch gap-4 flex-1 min-h-0 pt-2">
+              <div className="flex-1 flex items-end justify-center gap-4 min-w-0">
+                {[{ i: 1, h: 'h-[34%]', ring: 'from-slate-200 via-slate-400 to-slate-600', medal: '2nd%20place%20medal/3D/2nd_place_medal_3d.png', grad: 'from-slate-300/30' }, { i: 0, h: 'h-[56%]', ring: 'from-[#FFE9A6] via-[#E8C547] to-[#8a6d13]', medal: '1st%20place%20medal/3D/1st_place_medal_3d.png', grad: 'from-[#E8C547]/45' }, { i: 2, h: 'h-[22%]', ring: 'from-[#f0b27a] via-[#c47a3d] to-[#7a4319]', medal: '3rd%20place%20medal/3D/3rd_place_medal_3d.png', grad: 'from-orange-600/35' }].map((p) => (
+                  <div key={p.i} className="flex-1 max-w-[150px] h-full flex flex-col items-center justify-end min-w-0 group">
+                    <span className={`relative p-[2px] rounded-full bg-gradient-to-br ${p.ring} ${p.i === 0 ? 'w-[52px] h-[52px]' : 'w-11 h-11'} shrink-0 group-hover:scale-110 transition-transform duration-200`}>
+                      <span className="w-full h-full rounded-full bg-[#17110a] grid place-items-center al-display font-bold text-white text-[17px]">{podioMeetsMock[p.i].nome.charAt(0)}</span>
+                      <Fig n={p.medal} s={p.i === 0 ? 20 : 17} className="absolute -bottom-1 -right-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
+                    </span>
+                    <span className="text-[11px] font-bold text-white truncate w-full text-center mt-1" title={podioMeetsMock[p.i].nome}>{podioMeetsMock[p.i].nome}</span>
+                    <span className="flex items-baseline gap-1">
+                      <CountUp n={podioMeetsMock[p.i].qtd} className={`al-display font-bold leading-none tabular-nums ${p.i === 0 ? 'text-[30px] al-grad-text' : 'text-[21px] text-white/90'}`} />
+                      <span className="text-[8px] uppercase tracking-wider text-white/40 font-bold">agend.</span>
+                    </span>
+                    <div className={`w-full ${p.h} min-h-[12px] mt-1.5 rounded-t-lg bg-gradient-to-t ${p.grad} to-transparent border border-white/[0.08] border-b-0`} />
+                  </div>
+                ))}
+              </div>
+              <div className="hidden md:block w-px self-stretch bg-gradient-to-b from-transparent via-[#E8C547]/35 to-transparent shrink-0" />
+              <div className="hidden md:flex w-[220px] shrink-0 flex-col items-center justify-center gap-1.5 text-center">
+                <span className="text-[9.5px] font-extrabold uppercase tracking-[0.22em] text-[#E8C547]">Sua produção</span>
+                <span className="flex items-baseline gap-1.5">
+                  <CountUp n={meusMeetsMock} className="al-display text-[46px] font-bold al-grad-text leading-none tabular-nums" />
+                  <span className="text-[10px] text-[#E8C547]/80 font-bold uppercase tracking-wider">agendados</span>
+                </span>
+                {meusMeetsMock >= podioMeetsMock[2].qtd ? (
+                  <span className="text-[10px] font-bold text-emerald-300">você está no pódio — segura a posição!</span>
+                ) : (
+                  <span className="text-[10px] font-bold text-white/60">faltam <b className="text-[#E8C547]">{podioMeetsMock[2].qtd - meusMeetsMock}</b> pra entrar no pódio</span>
+                )}
+                <div className="w-full mt-1">
+                  <div className="gx-bar gold"><i style={{ width: `${Math.min(100, Math.round((meusMeetsMock / podioMeetsMock[0].qtd) * 100))}%` }} /></div>
+                  <span className="block text-[8.5px] text-white/45 mt-1 tabular-nums">{Math.min(100, Math.round((meusMeetsMock / podioMeetsMock[0].qtd) * 100))}% do líder</span>
+                </div>
+              </div>
+            </div>
+            <div className="relative md:hidden shrink-0 mt-2 flex items-center justify-between gap-2 rounded-xl px-3 py-1.5 bg-[#E8C547]/[0.08] border border-[#E8C547]/30">
+              <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#E8C547]">Sua produção</span>
               <span className="flex items-baseline gap-1.5">
-                <CountUp n={meusMeetsMock} className="al-display text-[24px] font-bold al-grad-text leading-none tabular-nums" />
-                <span className="text-[9.5px] text-[#E8C547]/80 font-bold uppercase tracking-wider">agendados</span>
+                <CountUp n={meusMeetsMock} className="al-display text-[22px] font-bold al-grad-text leading-none tabular-nums" />
+                <span className="text-[9px] text-[#E8C547]/80 font-bold uppercase">agendados</span>
               </span>
             </div>
           </div>
 
-          {/* Pódio do trimestre — vendas (lista vertical) */}
-          <div className="col-span-6 lg:col-span-3 lg:row-span-3 lg:col-start-10 lg:row-start-2 al-card p-3.5 relative overflow-hidden al-rise al-d4 flex flex-col">
-            <div className="absolute inset-x-0 top-0 gx-line" />
-            <h2 className="al-display text-[13.5px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2 mb-2 shrink-0"><Fig n="Trophy/3D/trophy_3d.png" s={18} /> Trimestre</h2>
-            {corretoresRanking.length === 0 ? (
-              <p className="text-[11px] text-text-secondary">Sem vendas lançadas ainda — o pódio abre quando o time pontuar.</p>
-            ) : (
-              <div className="flex-1 min-h-0 flex flex-col justify-center gap-1.5">
-                {[0, 1, 2].map((i) => corretoresRanking[i] ? (
-                  <div key={i} className={`flex items-center gap-2 px-2.5 py-2 rounded-xl border transition-colors hover:bg-white/[0.05] ${i === 0 ? 'border-[#E8C547]/35 bg-[#E8C547]/[0.06]' : 'border-white/[0.07] bg-white/[0.02]'}`}>
-                    <Fig n={['1st%20place%20medal/3D/1st_place_medal_3d.png', '2nd%20place%20medal/3D/2nd_place_medal_3d.png', '3rd%20place%20medal/3D/3rd_place_medal_3d.png'][i]} s={i === 0 ? 24 : 20} />
-                    <span className="flex-1 min-w-0 truncate text-[12px] font-bold text-white" title={corretoresRanking[i].nome}>{corretoresRanking[i].nome.split(' ')[0]}</span>
-                    <span className="al-display text-[13px] font-bold text-white/50 tabular-nums">{i + 1}º</span>
-                  </div>
-                ) : null)}
-              </div>
-            )}
-          </div>
       </div>
 
 
