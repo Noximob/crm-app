@@ -66,6 +66,14 @@ const ChevronLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props
 
 const PhoneIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>;
 
+// Ícones novos — mais fiéis à função de cada item do menu
+const HomeIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>;
+const KanbanIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 7v7"/><path d="M12 7v4"/><path d="M16 7v9"/></svg>;
+const BanknoteIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01"/><path d="M18 12h.01"/></svg>;
+const GraduationCapIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>;
+const GlobeIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>;
+const ShieldIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>;
+
 // Label do tipo de evento/agenda (igual dashboard)
 function getTipoAgendaLabel(tipo: string): string {
   const map: Record<string, string> = {
@@ -202,30 +210,30 @@ export default function DashboardLayout({
 
   const isAdminUser = userDataWithPerms?.tipoConta === 'imobiliaria' || userDataWithPerms?.permissoes?.admin;
   const isDevUser = userDataWithPerms?.tipoConta === 'imobiliaria' || userDataWithPerms?.permissoes?.developer;
-  type NavItem = { href: string; icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; label: string; isExternal?: boolean };
+  type NavItem = { href: string; icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; label: string; isExternal?: boolean; cor?: string };
   const navGroups: { titulo: string | null; itens: NavItem[] }[] = [
     { titulo: null, itens: [
-      { href: '/dashboard', icon: LayoutDashboardIcon, label: 'Início' },
+      { href: '/dashboard', icon: HomeIcon, label: 'Início', cor: 'text-[#FF3364]' },
     ] },
     { titulo: 'Vendas', itens: [
-      { href: '/dashboard/crm', icon: UsersIcon, label: 'Clientes' },
-      { href: '/dashboard/brello', icon: FileTextIcon, label: 'Brello' },
-      { href: '/dashboard/ligacao-ativa', icon: PhoneIcon, label: 'Ligação Ativa' },
+      { href: '/dashboard/crm', icon: UsersIcon, label: 'Clientes', cor: 'text-[#FF7A97]' },
+      { href: '/dashboard/brello', icon: KanbanIcon, label: 'Brello', cor: 'text-[#7DD3FC]' },
+      { href: '/dashboard/ligacao-ativa', icon: PhoneIcon, label: 'Ligação Ativa', cor: 'text-[#E8C547]' },
     ] },
     { titulo: 'Ferramentas', itens: [
-      { href: '/dashboard/materiais', icon: FolderIcon, label: 'Materiais de apoio' },
-      { href: '/dashboard/fluxo-pagamento', icon: ReceiptIcon, label: 'Fluxo de Pagamento' },
-      { href: '/dashboard/comissoes', icon: CreditCardIcon, label: 'Comissões' },
+      { href: '/dashboard/materiais', icon: FolderIcon, label: 'Materiais de apoio', cor: 'text-[#34D399]' },
+      { href: '/dashboard/fluxo-pagamento', icon: ReceiptIcon, label: 'Fluxo de Pagamento', cor: 'text-[#C4A6FF]' },
+      { href: '/dashboard/comissoes', icon: BanknoteIcon, label: 'Comissões', cor: 'text-[#FFD569]' },
     ] },
     { titulo: 'Mais', itens: [
-      { href: '/dashboard/treinamentos', icon: PresentationIcon, label: 'Academia' },
-      { href: 'https://chat.openai.com', icon: ChatGPTIcon, label: 'ChatGPT', isExternal: true },
-      { href: 'https://noximobiliaria.com.br/', icon: HouseIcon as unknown as React.ComponentType<React.SVGProps<SVGSVGElement>>, label: 'Site', isExternal: true },
+      { href: '/dashboard/treinamentos', icon: GraduationCapIcon, label: 'Academia', cor: 'text-[#FB923C]' },
+      { href: 'https://chat.openai.com', icon: ChatGPTIcon, label: 'ChatGPT', isExternal: true, cor: 'text-white/75' },
+      { href: 'https://noximobiliaria.com.br/', icon: GlobeIcon, label: 'Site', isExternal: true, cor: 'text-[#60A5FA]' },
     ] },
     ...((isAdminUser || isDevUser) ? [{
       titulo: 'Gestão', itens: [
-        ...(isAdminUser ? [{ href: '/dashboard/admin', icon: KeyIcon, label: 'Área administrador' }] : []),
-        ...(isDevUser ? [{ href: '/dashboard/developer', icon: CodeIcon, label: 'Desenvolvedor' }] : []),
+        ...(isAdminUser ? [{ href: '/dashboard/admin', icon: ShieldIcon, label: 'Área administrador', cor: 'text-[#FF5C7E]' }] : []),
+        ...(isDevUser ? [{ href: '/dashboard/developer', icon: CodeIcon, label: 'Desenvolvedor', cor: 'text-[#C4A6FF]' }] : []),
       ] as NavItem[],
     }] : []),
   ];
@@ -259,10 +267,10 @@ export default function DashboardLayout({
                 <ul className="space-y-0.5">
                   {grupo.itens.map((item) => {
                     const ativo = pathname === item.href;
-                    const cls = `relative flex items-center gap-3 pl-[10px] pr-2 py-2 rounded-lg text-[12.5px] font-semibold transition-all ${
+                    const cls = `group relative flex items-center gap-3 pl-[10px] pr-2 py-2 rounded-lg text-[12.5px] font-semibold transition-all ${
                       ativo ? 'bg-white/[0.05] text-white' : 'text-text-secondary hover:bg-white/[0.04] hover:text-white'
                     }`;
-                    const icone = <item.icon className={`h-[19px] w-[19px] shrink-0 transition-colors ${ativo ? 'text-[#FF3364] [filter:drop-shadow(0_0_6px_rgba(255,30,86,0.6))]' : ''}`} />;
+                    const icone = <item.icon className={`h-[19px] w-[19px] shrink-0 transition-all ${item.cor || 'text-current'} ${ativo ? '[filter:drop-shadow(0_0_7px_currentColor)] brightness-125' : 'opacity-70 group-hover:opacity-100 group-hover:[filter:drop-shadow(0_0_6px_currentColor)]'}`} />;
                     const indicador = ativo && <span className="absolute left-[-10px] top-1/2 -translate-y-1/2 h-6 w-[3px] rounded-r bg-[#FF1E56] shadow-[0_0_12px_#FF1E56]" />;
                     return (
                       <li key={item.href}>

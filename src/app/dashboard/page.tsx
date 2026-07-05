@@ -1567,6 +1567,8 @@ export default function DashboardPage() {
         {/* Identidade do corretor — o card herói: os números da semana em destaque (MOCKUP até integrar) */}
         <div className="col-span-6 lg:col-span-4 lg:row-span-2 al-card gx-stripes !rounded-[24px] !border-[#FF1E56]/25 relative overflow-hidden p-4 al-rise flex flex-col" style={{ boxShadow: '0 0 44px -14px rgba(255,30,86,0.45), inset 0 1px 0 rgba(255,30,86,0.14)' }}>
           <div className="absolute -top-20 -right-16 w-56 h-56 rounded-full bg-[#FF1E56]/[0.10] blur-3xl pointer-events-none" />
+          <span className="pointer-events-none absolute top-2 left-2 w-3.5 h-3.5 border-t-2 border-l-2 border-[#E8C547]/45 rounded-tl-sm" />
+          <span className="pointer-events-none absolute bottom-2 right-2 w-3.5 h-3.5 border-b-2 border-r-2 border-[#E8C547]/45 rounded-br-sm" />
           <div className="relative flex items-center justify-between gap-2">
             <span className="gx-tag"><span>{saudacaoDia} · {nomeImobiliaria || 'Sua imobiliária'}</span></span>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#FF1E56]/50 bg-[#FF1E56]/[0.10] text-[#FF7A97] text-[9px] font-extrabold tracking-[0.12em] uppercase animate-pulse shadow-[0_0_14px_rgba(255,30,86,0.35)] shrink-0 whitespace-nowrap">
@@ -1586,12 +1588,30 @@ export default function DashboardPage() {
               </span>
             </div>
           </div>
-          <div className="relative mt-auto pt-2 flex items-end gap-3">
-            <CountUp n={meusMeetsMock} className="al-display text-[58px] font-bold al-grad-text leading-[0.85] tabular-nums drop-shadow-[0_0_20px_rgba(232,197,71,0.35)]" />
-            <div className="pb-1 min-w-0">
-              <span className="block text-[11px] font-extrabold uppercase tracking-[0.18em] text-white">meets & visitas</span>
-              <span className="block text-[9px] font-bold uppercase tracking-[0.2em] text-[#E8C547]/90 mt-0.5">nesta semana</span>
+          <div className="relative mt-auto pt-2 flex items-end justify-between gap-3">
+            <div className="flex items-end gap-3 min-w-0">
+              <CountUp n={meusMeetsMock} className="al-display text-[58px] font-bold al-grad-text leading-[0.85] tabular-nums drop-shadow-[0_0_20px_rgba(232,197,71,0.35)]" />
+              <div className="pb-1 min-w-0">
+                <span className="block text-[11px] font-extrabold uppercase tracking-[0.18em] text-white">meets & visitas</span>
+                <span className="block text-[9px] font-bold uppercase tracking-[0.2em] text-[#E8C547]/90 mt-0.5">nesta semana</span>
+              </div>
             </div>
+            {(() => {
+              const hojeIdx = (currentTime.getDay() + 6) % 7;
+              return (
+                <div className="hidden sm:flex flex-col items-center gap-1 pb-0.5 shrink-0">
+                  <div className="flex items-start gap-[5px]">
+                    {['S', 'T', 'Q', 'Q', 'S', 'S', 'D'].map((d, i) => (
+                      <span key={i} className="flex flex-col items-center gap-[3px]">
+                        <span className={`text-[7px] font-extrabold leading-none ${i === hojeIdx ? 'text-[#FF7A97]' : 'text-white/30'}`}>{d}</span>
+                        <span className={`w-[7px] h-[7px] rounded-full ${i < hojeIdx ? 'bg-[#E8C547] shadow-[0_0_6px_rgba(232,197,71,0.6)]' : i === hojeIdx ? 'bg-[#FF1E56] shadow-[0_0_8px_#FF1E56] animate-pulse' : 'bg-white/10'}`} />
+                      </span>
+                    ))}
+                  </div>
+                  <span className="text-[7.5px] font-bold uppercase tracking-[0.16em] text-white/35 whitespace-nowrap">progresso da semana</span>
+                </div>
+              );
+            })()}
           </div>
         </div>
 
