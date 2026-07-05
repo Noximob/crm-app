@@ -1593,9 +1593,9 @@ export default function DashboardPage() {
               </div>
             </div>
             {/* Placar da semana — o número principal, emoldurado */}
-            <div className="relative shrink-0 rounded-2xl border-2 border-[#E8C547]/55 px-5 py-2.5 text-right overflow-hidden group" style={{ background: 'linear-gradient(160deg, rgba(232,197,71,0.16), rgba(20,13,5,0.55))', boxShadow: '0 0 38px -6px rgba(232,197,71,0.6), inset 0 1px 0 rgba(232,197,71,0.35)' }}>
+            <div className="gx-placar gx-sheen relative shrink-0 rounded-2xl border-2 border-[#E8C547]/55 px-5 py-2.5 text-right overflow-hidden group" style={{ background: 'linear-gradient(160deg, rgba(232,197,71,0.16), rgba(20,13,5,0.55))' }}>
               <span className="pointer-events-none absolute inset-0 gx-stripes opacity-40" />
-              <CountUp n={meusMeetsMock} className="relative al-display block text-[56px] font-bold al-grad-text leading-[0.9] tabular-nums drop-shadow-[0_0_22px_rgba(232,197,71,0.55)]" />
+              <CountUp n={meusMeetsMock} className="relative al-display block text-[56px] font-bold al-grad-text leading-[0.9] tabular-nums drop-shadow-[0_0_26px_rgba(232,197,71,0.65)]" />
               <span className="relative block text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#E8C547] mt-0.5">meets & visitas</span>
               <span className="relative block text-[8.5px] font-bold uppercase tracking-[0.2em] text-white/60">nesta semana</span>
             </div>
@@ -2035,7 +2035,7 @@ export default function DashboardPage() {
               {/* MOCKUP: período definido futuramente na área do administrador */}
               <span className="gx-tag shrink-0"><span>01/07 → 07/07</span></span>
             </div>
-            <div className="relative flex items-center gap-3 flex-1 min-h-0 pt-3.5">
+            <div className="relative flex items-center gap-3 flex-1 min-h-0 pt-5">
               {/* Corrida da semana — raias com barra proporcional ao líder; a sua raia em carmesim */}
               <div className="flex-1 min-w-0 flex flex-col justify-center gap-2">
                 {[
