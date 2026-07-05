@@ -1566,174 +1566,125 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-full pb-6">
-      {/* ===== BANNER DO JOGADOR (full-width, listras diagonais) ===== */}
-      <section className="space-y-3 mb-3 mt-1">
-        <div className="al-card gx-stripes relative overflow-hidden p-5 md:p-6 al-rise !rounded-[28px]">
-          <div className="absolute inset-x-0 top-0 gx-line" />
-          <div className="absolute -top-24 -right-20 w-96 h-96 rounded-full bg-[#FF1E56]/[0.08] blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-28 -left-24 w-80 h-80 rounded-full bg-[#E8C547]/[0.05] blur-3xl pointer-events-none" />
-          <div className="relative mb-5 flex items-center justify-between gap-3 flex-wrap">
-            <span className="gx-tag"><span>{saudacaoDia} · {nomeImobiliaria || 'Sua imobiliária'}</span></span>
-            <span className="text-[11px] text-text-secondary">{focoMsg}</span>
+      {/* ===== WAR ROOM — bento grid (uma tela, tudo à vista) ===== */}
+      <div id="trending-section" className="grid grid-cols-6 lg:grid-cols-12 auto-rows-[minmax(96px,auto)] gap-3 [grid-auto-flow:dense] mt-1">
+
+        {/* Identidade do corretor */}
+        <div className="col-span-6 lg:col-span-4 lg:row-span-3 al-card gx-stripes !rounded-[26px] relative overflow-hidden p-5 al-rise flex flex-col">
+          <div className="absolute -top-20 -right-16 w-64 h-64 rounded-full bg-[#FF1E56]/[0.08] blur-3xl pointer-events-none" />
+          <span className="gx-tag self-start relative"><span>{saudacaoDia} · {nomeImobiliaria || 'Sua imobiliária'}</span></span>
+          <div className="relative flex items-center gap-3.5 mt-4">
+            <div className="relative w-14 h-14 p-[2px] rounded-full bg-gradient-to-br from-[#FF6B93] via-[#FF1E56] to-[#8B0F31] shadow-[0_0_22px_rgba(255,30,86,0.4)] shrink-0">
+              <div className="w-full h-full rounded-full bg-[#16090e] flex items-center justify-center text-[#FF9EB5] al-display font-bold text-xl">
+                {primeiroNomeHome.charAt(0).toUpperCase()}
+              </div>
+            </div>
+            <div className="min-w-0">
+              <h1 className="al-display text-[26px] font-bold text-white uppercase tracking-wide leading-none truncate">{primeiroNomeHome}</h1>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 mt-1.5 rounded-full text-[10px] font-extrabold tracking-[0.14em] bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#E8C547]">
+                <Fig n={rankHome.fig} s={13} /> {rankHome.label}
+              </span>
+            </div>
           </div>
-          <div className="relative flex flex-wrap items-center gap-x-6 gap-y-5">
-            {/* identidade */}
-            <div className="flex items-center gap-4 min-w-0">
-              <div className="relative w-16 h-16 p-[2px] rounded-full bg-gradient-to-br from-[#FF6B93] via-[#FF1E56] to-[#8B0F31] shadow-[0_0_24px_rgba(255,30,86,0.4)] shrink-0">
-                <div className="w-full h-full rounded-full bg-[#16090e] flex items-center justify-center text-[#FF9EB5] al-display font-bold text-2xl">
-                  {primeiroNomeHome.charAt(0).toUpperCase()}
-                </div>
+          <div className="relative mt-auto pt-5">
+            <CountUp n={totalFunilHome} className="al-display block text-[58px] font-bold gx-neon leading-none tabular-nums" />
+            <span className="block text-[10px] uppercase tracking-[0.22em] text-text-secondary mt-1">leads na carteira</span>
+            {metaAlvo > 0 ? (
+              <div className="mt-3.5">
+                <div className="gx-bar gold"><i style={{ width: `${Math.max(metaPctHome, 3)}%` }} /></div>
+                <span className="block text-[10px] text-text-secondary mt-1.5 tabular-nums">meta do tri: {brlCompact(metaFeito)} / {brlCompact(metaAlvo)} · <b className="text-[#E8C547]">{metaPctHome}%</b></span>
               </div>
-              <div className="min-w-0">
-                <h1 className="al-display text-[28px] md:text-[32px] font-bold text-white uppercase tracking-wide leading-none truncate">{primeiroNomeHome}</h1>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 mt-2 rounded-full text-[10px] font-extrabold tracking-[0.14em] bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#E8C547]">
-                  <Fig n={rankHome.fig} s={14} /> {rankHome.label}
-                </span>
+            ) : (
+              <span className="block text-[10px] text-text-secondary mt-2.5">meta do trimestre ainda não definida</span>
+            )}
+            <p className="text-[11px] text-text-secondary mt-2.5 leading-snug">{focoMsg}</p>
+          </div>
+        </div>
+
+        {/* ATRASADAS — bloco carmesim chapado, chanfrado */}
+        <Link href="/dashboard/crm?tarefa=atraso" className="col-span-3 lg:col-span-3 lg:row-span-2 gx-tile relative overflow-hidden p-4 flex flex-col justify-between al-rise al-d1 group" style={{ background: 'linear-gradient(150deg, #FF1E56 0%, #A50D38 100%)', boxShadow: '0 18px 44px -14px rgba(255,30,86,0.55)' }}>
+          <span className="flex items-center justify-between">
+            <span className="text-[10px] font-extrabold tracking-[0.22em] text-white/90">ATRASADAS</span>
+            <Fig n="Police%20car%20light/3D/police_car_light_3d.png" s={24} className="group-hover:scale-110 transition-transform" />
+          </span>
+          <CountUp n={tarefaAtrasadaCount} className="al-display text-[52px] font-bold text-white leading-none tabular-nums" />
+          <span className="text-[11px] font-bold text-white/80 group-hover:text-white transition-colors">resolver agora ▸</span>
+        </Link>
+
+        {/* PARA HOJE — dourado chapado */}
+        <Link href="/dashboard/crm?tarefa=hoje" className="col-span-3 lg:col-span-2 lg:row-span-2 gx-tile relative overflow-hidden p-4 flex flex-col justify-between al-rise al-d2 group" style={{ background: 'linear-gradient(150deg, #FFD569 0%, #C89210 100%)', boxShadow: '0 18px 44px -14px rgba(212,160,23,0.45)' }}>
+          <span className="flex items-center justify-between">
+            <span className="text-[10px] font-extrabold tracking-[0.22em] text-[#181203]/80">PARA HOJE</span>
+            <Fig n="High%20voltage/3D/high_voltage_3d.png" s={22} className="group-hover:scale-110 transition-transform" />
+          </span>
+          <CountUp n={tarefaDiaCount} className="al-display text-[52px] font-bold text-[#181203] leading-none tabular-nums" />
+          <span className="text-[11px] font-bold text-[#181203]/70 group-hover:text-[#181203] transition-colors">fechar o dia ▸</span>
+        </Link>
+
+        {/* SEM TAREFA — verde profundo */}
+        <Link href="/dashboard/crm?tarefa=sem" className="col-span-6 lg:col-span-3 lg:row-span-2 gx-tile relative overflow-hidden p-4 flex flex-col justify-between al-rise al-d3 group" style={{ background: 'linear-gradient(150deg, #0E4A3A 0%, #072B22 100%)', boxShadow: 'inset 0 0 0 1px rgba(52,211,153,0.3), 0 18px 44px -16px rgba(16,185,129,0.35)' }}>
+          <span className="flex items-center justify-between">
+            <span className="text-[10px] font-extrabold tracking-[0.22em] text-emerald-300">SEM TAREFA</span>
+            <Fig n="Gem%20stone/3D/gem_stone_3d.png" s={22} className="group-hover:scale-110 transition-transform" />
+          </span>
+          <CountUp n={semTarefaCount} className="al-display text-[52px] font-bold text-white leading-none tabular-nums" />
+          <span className="text-[11px] font-bold text-emerald-300/80 group-hover:text-emerald-200 transition-colors">resgatar leads ▸</span>
+        </Link>
+
+        {/* Radar de eventos — varredura + lista HUD */}
+        <div className="col-span-6 lg:col-span-8 lg:row-span-3 al-card relative overflow-hidden p-4 al-rise al-d2 flex flex-col">
+          <div className="absolute inset-x-0 top-0 gx-line opacity-60" />
+          <div className="flex items-center justify-between gap-3 mb-2.5">
+            <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Fig n="Satellite%20antenna/3D/satellite_antenna_3d.png" s={20} /> Radar de eventos</h2>
+            <Link href="/dashboard/agenda" className="text-[11px] font-bold text-[#FF5C7E] hover:underline shrink-0">agenda completa ▸</Link>
+          </div>
+          <div className="flex gap-5 items-center flex-1 min-h-0">
+            <div className="hidden sm:flex flex-col items-center shrink-0">
+              <div className="gx-radar w-[110px] h-[110px]">
+                <span className="gx-blip" style={{ left: '62%', top: '28%' }} />
+                <span className="gx-blip" style={{ left: '36%', top: '56%', animationDelay: '0.7s' }} />
+                <span className="gx-blip" style={{ left: '55%', top: '68%', animationDelay: '1.3s' }} />
+                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#FF3364] shadow-[0_0_8px_#FF3364]" />
               </div>
+              <span className="al-display text-[9px] font-bold tracking-[0.26em] text-[#FF5C7E] mt-2">SCANNING</span>
             </div>
-            {/* medidores do dia — a informação na cara, redonda e clicável */}
-            <div className="flex items-center gap-4 md:gap-6 mx-auto">
-              {[
-                { href: '/dashboard/crm?tarefa=atraso', n: tarefaAtrasadaCount, cor: '#FF3364', label: 'ATRASADAS' },
-                { href: '/dashboard/crm?tarefa=hoje', n: tarefaDiaCount, cor: '#E8C547', label: 'PARA HOJE' },
-                { href: '/dashboard/crm?tarefa=sem', n: semTarefaCount, cor: '#34D399', label: 'SEM TAREFA' },
-              ].map((g) => (
-                <Link key={g.href} href={g.href} className="group flex flex-col items-center gap-2" title={`${g.label}: abrir no CRM`}>
-                  <span
-                    className="relative w-[76px] h-[76px] rounded-full flex items-center justify-center border-2 bg-black/25 transition-transform group-hover:scale-105"
-                    style={{ borderColor: `${g.cor}55`, boxShadow: `0 0 24px ${g.cor}30, inset 0 0 20px ${g.cor}14` }}
-                  >
-                    <CountUp n={g.n} className="al-display text-[27px] font-bold text-white tabular-nums" />
-                    {g.n > 0 && <span className="absolute top-1 right-1.5 w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: g.cor }} />}
-                  </span>
-                  <span className="text-[9px] font-extrabold tracking-[0.2em]" style={{ color: g.cor }}>{g.label}</span>
-                </Link>
-              ))}
-            </div>
-            {/* carteira + meta do trimestre */}
-            <div className="ml-auto text-right shrink-0 w-full sm:w-auto sm:min-w-[200px]">
-              <CountUp n={totalFunilHome} className="al-display block text-[52px] font-bold gx-neon leading-none tabular-nums" />
-              <span className="block text-[10px] uppercase tracking-[0.2em] text-text-secondary mt-1">leads na carteira</span>
-              {metaAlvo > 0 ? (
-                <div className="mt-3">
-                  <div className="gx-bar gold"><i style={{ width: `${Math.max(metaPctHome, 3)}%` }} /></div>
-                  <span className="block text-[10px] text-text-secondary mt-1 tabular-nums">meta do tri: {brlCompact(metaFeito)} / {brlCompact(metaAlvo)} · <b className="text-[#E8C547]">{metaPctHome}%</b></span>
-                </div>
+            <div className="flex-1 min-w-0 self-start w-full">
+              {agendaLoading ? (
+                <p className="text-text-secondary text-sm">Carregando…</p>
+              ) : proximosEventosConfirmados.length === 0 ? (
+                <p className="text-[12px] text-text-secondary py-6 text-center">Nenhum evento confirmado no radar — bom momento pra prospectar.</p>
               ) : (
-                <span className="block text-[10px] text-text-secondary mt-2">meta do trimestre ainda não definida</span>
+                <div className="space-y-1.5">
+                  {proximosEventosConfirmados.slice(0, 5).map((item) => {
+                    const nowTime = currentTime.getTime();
+                    const isAgora = item.startTime <= nowTime && item.fimTime >= nowTime;
+                    const emBreve = !isAgora && item.startTime > nowTime && item.startTime - nowTime <= 45 * 60 * 1000;
+                    const horaCls = isAgora ? 'text-[#FF5C7E]' : emBreve ? 'text-[#E8C547]' : 'text-white/70';
+                    const rowCls = isAgora
+                      ? 'border-[#FF1E56] bg-[#FF1E56]/[0.09] gx-pulse'
+                      : emBreve
+                        ? 'border-[#E8C547] bg-[#E8C547]/[0.06]'
+                        : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.04]';
+                    return (
+                      <div key={`${item.tipo}-${item.id}-${item.startTime}`} className={`flex items-center gap-3 px-3 py-2 rounded-lg border-l-2 transition-colors ${rowCls}`}>
+                        <span className={`al-display text-[15px] font-bold tabular-nums w-12 shrink-0 ${horaCls}`}>{item.horarioStr}</span>
+                        <span className="flex-1 min-w-0 truncate text-[13px] font-semibold text-white" title={item.titulo}>{item.titulo}</span>
+                        <span className="hidden md:inline text-[10px] text-text-secondary shrink-0">{item.tipoLabel}</span>
+                        {isAgora ? (
+                          <span className="shrink-0 px-2 py-0.5 rounded-md bg-[#FF1E56] text-white text-[9px] font-extrabold tracking-[0.14em] animate-pulse">AGORA</span>
+                        ) : emBreve ? (
+                          <span className="shrink-0 px-2 py-0.5 rounded-md bg-[#E8C547] text-black text-[9px] font-extrabold tracking-[0.14em]">EM BREVE</span>
+                        ) : (
+                          <span className="shrink-0 text-[10px] text-text-secondary tabular-nums">{item.dataStr}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </div>
         </div>
-
-      </section>
-
-      {/* ===== Radar (faixa completa) + painéis: pipeline, meta e pódio ===== */}
-      <div id="trending-section" className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-start">
-          {/* Radar de eventos — faixa completa */}
-          <div className="al-card p-4 relative overflow-hidden lg:col-span-3 al-rise">
-            <div className="flex items-center justify-between gap-3 mb-3">
-              <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Fig n="Satellite%20antenna/3D/satellite_antenna_3d.png" s={20} /> Radar de eventos</h2>
-              <Link href="/dashboard/agenda" className="text-[11px] font-bold text-[#FF5C7E] hover:underline shrink-0">agenda completa ▸</Link>
-            </div>
-            <div className="flex flex-col md:flex-row gap-5 items-stretch">
-              <div className="hidden md:flex flex-col items-center justify-center shrink-0 pl-1">
-                <div className="gx-radar w-[126px] h-[126px]">
-                  <span className="gx-blip" style={{ left: '62%', top: '28%' }} />
-                  <span className="gx-blip" style={{ left: '36%', top: '56%', animationDelay: '0.7s' }} />
-                  <span className="gx-blip" style={{ left: '55%', top: '68%', animationDelay: '1.3s' }} />
-                  <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#FF3364] shadow-[0_0_8px_#FF3364]" />
-                </div>
-                <span className="al-display text-[9px] font-bold tracking-[0.26em] text-[#FF5C7E] mt-2.5">SCANNING</span>
-              </div>
-              <div className="flex-1 min-w-0">
-              {agendaLoading ? (
-                <p className="text-gray-400 text-sm">Carregando...</p>
-              ) : proximosEventosConfirmados.length === 0 ? (
-                <div className="rounded-xl bg-gray-700/30 border border-gray-600/50 p-4 text-gray-400 text-sm">
-                  Nenhum evento confirmado no momento.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {/* 1ª linha: somente a do momento (primeiro item) */}
-                  {proximosEventosConfirmados[0] && (() => {
-                    const item = proximosEventosConfirmados[0];
-                    const nowTime = currentTime.getTime();
-                    const isAgora = item.startTime <= nowTime && item.fimTime >= nowTime;
-                    const ATENCAO_MS = 45 * 60 * 1000;
-                    const emBreve = item.startTime > nowTime && item.startTime - nowTime <= ATENCAO_MS;
-                    const destaque = isAgora || emBreve;
-                    const cardClass = destaque
-                      ? isAgora
-                        ? 'rounded-2xl border border-[#FF1E56]/50 bg-gradient-to-br from-[#FF1E56]/20 via-[#FF1E56]/[0.05] to-transparent gx-pulse'
-                        : 'rounded-2xl border border-amber-300/50 bg-gradient-to-br from-amber-400/20 via-amber-400/[0.05] to-transparent shadow-[0_0_32px_-10px_rgba(245,158,11,0.5)]'
-                      : 'rounded-2xl border border-emerald-400/35 bg-gradient-to-br from-emerald-500/[0.13] via-emerald-500/[0.03] to-transparent';
-                    const icon = item.tipoChave ? (TIPO_ICON[item.tipoChave] ?? TIPO_ICON.outro) : (item.tipo === 'plantao' ? '🏢' : TIPO_ICON.outro);
-                    return (
-                      <div key={`${item.tipo}-${item.id}-${item.startTime}`} className={`${cardClass} p-4 flex flex-col gap-2 min-h-[100px] relative`}>
-                        {isAgora && (
-                          <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-red-500 text-white text-[10px] font-bold uppercase animate-pulse">Agora</span>
-                        )}
-                        {emBreve && !isAgora && (
-                          <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-amber-400 text-black text-[10px] font-bold uppercase">Em breve</span>
-                        )}
-                        <p className="font-bold text-white text-sm truncate pr-16" title={item.titulo}>{item.titulo}</p>
-                        <div className="flex items-center justify-between mt-0.5 text-[11px]">
-                          <div className="flex items-center gap-1">
-                            <span className="text-sm">{icon}</span>
-                            <span className={destaque ? 'text-white/90' : 'text-emerald-200/90'}>{item.tipoLabel}</span>
-                          </div>
-                          <span className="text-emerald-100/90 font-mono">
-                            {item.dataStr} · {item.horarioStr}–{item.horarioFimStr}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                  {/* 2ª linha: 2 cards */}
-                  {(proximosEventosConfirmados[1] || proximosEventosConfirmados[2]) && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {[proximosEventosConfirmados[1], proximosEventosConfirmados[2]].filter(Boolean).map((item) => {
-                        const nowTime = currentTime.getTime();
-                        const isAgora = item!.startTime <= nowTime && item!.fimTime >= nowTime;
-                        const ATENCAO_MS = 45 * 60 * 1000;
-                        const emBreve = item!.startTime > nowTime && item!.startTime - nowTime <= ATENCAO_MS;
-                        const destaque = isAgora || emBreve;
-                        const cardClass = destaque
-                          ? isAgora
-                            ? 'rounded-2xl border border-[#FF1E56]/50 bg-gradient-to-br from-[#FF1E56]/20 via-[#FF1E56]/[0.05] to-transparent gx-pulse'
-                            : 'rounded-2xl border border-amber-300/50 bg-gradient-to-br from-amber-400/20 via-amber-400/[0.05] to-transparent shadow-[0_0_32px_-10px_rgba(245,158,11,0.5)]'
-                          : 'rounded-2xl border border-emerald-400/35 bg-gradient-to-br from-emerald-500/[0.13] via-emerald-500/[0.03] to-transparent';
-                        const icon = item!.tipoChave ? (TIPO_ICON[item!.tipoChave] ?? TIPO_ICON.outro) : (item!.tipo === 'plantao' ? '🏢' : TIPO_ICON.outro);
-                        return (
-                          <div key={`${item!.tipo}-${item!.id}-${item!.startTime}`} className={`${cardClass} p-4 flex flex-col gap-2 min-h-[100px] relative`}>
-                            {isAgora && (
-                              <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-red-500 text-white text-[10px] font-bold uppercase animate-pulse">Agora</span>
-                            )}
-                            {emBreve && !isAgora && (
-                              <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-amber-400 text-black text-[10px] font-bold uppercase">Em breve</span>
-                            )}
-                            <p className="font-bold text-white text-sm truncate pr-16" title={item!.titulo}>{item!.titulo}</p>
-                            <div className="flex items-center justify-between mt-0.5 text-[11px]">
-                              <div className="flex items-center gap-1">
-                                <span className="text-sm">{icon}</span>
-                                <span className={destaque ? 'text-white/90' : 'text-emerald-200/90'}>{item!.tipoLabel}</span>
-                              </div>
-                              <span className="text-emerald-100/90 font-mono">
-                                {item!.dataStr} · {item!.horarioStr}–{item!.horarioFimStr}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-              </div>
-            </div>
-          </div>
-
           {/* Comunidade — oculta da home a pedido (lógica preservada; usaremos depois). Basta remover "hidden" daqui e do card p/ reativar. */}
           <div className="w-full hidden">
           <div className="rounded-2xl p-4 relative overflow-hidden animate-fade-in border border-white/10 hidden">
@@ -1967,7 +1918,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Pipeline em formato de funil */}
-          <div className="al-card p-4 relative overflow-hidden al-rise al-d2">
+          <div className="col-span-6 lg:col-span-4 lg:row-span-4 al-card p-4 relative overflow-hidden al-rise al-d3">
             <div className="absolute inset-x-0 top-0 gx-line" />
             <div className="flex items-center justify-between gap-3 mb-3">
               <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Fig n="Chart%20increasing/3D/chart_increasing_3d.png" s={20} /> Seu pipeline</h2>
@@ -2005,7 +1956,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Meta da equipe — anel de progresso (dados reais do admin) */}
-          <div className="al-card p-4 relative overflow-hidden al-rise al-d3">
+          <div className="col-span-6 lg:col-span-4 lg:row-span-2 al-card p-4 relative overflow-hidden al-rise al-d4">
             <div className="absolute inset-x-0 top-0 gx-line-gold" />
             {(() => {
               const vgvMeta = Number(meta?.valor) || 0;
@@ -2048,7 +1999,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Pódio do trimestre — quem tá vendendo */}
-          <div className="al-card p-4 relative overflow-hidden al-rise al-d4">
+          <div className="col-span-6 lg:col-span-4 lg:row-span-2 al-card p-4 relative overflow-hidden al-rise al-d5">
             <div className="absolute inset-x-0 top-0 gx-line" />
             <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2 mb-3"><Fig n="Trophy/3D/trophy_3d.png" s={20} /> Pódio do trimestre</h2>
             {corretoresRanking.length === 0 ? (
