@@ -1567,68 +1567,71 @@ export default function DashboardPage() {
   return (
     <div className="min-h-full pb-6">
       {/* ===== WAR ROOM — bento grid (uma tela, tudo à vista) ===== */}
-      <div id="trending-section" className="grid grid-cols-6 lg:grid-cols-12 auto-rows-[minmax(96px,auto)] gap-3 [grid-auto-flow:dense] mt-1">
+      <div id="trending-section" className="grid grid-cols-6 lg:grid-cols-12 auto-rows-[minmax(84px,auto)] gap-3 [grid-auto-flow:dense] mt-1">
 
         {/* Identidade do corretor */}
-        <div className="col-span-6 lg:col-span-4 lg:row-span-3 al-card gx-stripes !rounded-[26px] relative overflow-hidden p-5 al-rise flex flex-col">
-          <div className="absolute -top-20 -right-16 w-64 h-64 rounded-full bg-[#FF1E56]/[0.08] blur-3xl pointer-events-none" />
+        <div className="col-span-6 lg:col-span-4 lg:row-span-2 al-card gx-stripes !rounded-[24px] relative overflow-hidden p-4 al-rise flex flex-col">
+          <div className="absolute -top-20 -right-16 w-56 h-56 rounded-full bg-[#FF1E56]/[0.08] blur-3xl pointer-events-none" />
           <span className="gx-tag self-start relative"><span>{saudacaoDia} · {nomeImobiliaria || 'Sua imobiliária'}</span></span>
-          <div className="relative flex items-center gap-3.5 mt-4">
-            <div className="relative w-14 h-14 p-[2px] rounded-full bg-gradient-to-br from-[#FF6B93] via-[#FF1E56] to-[#8B0F31] shadow-[0_0_22px_rgba(255,30,86,0.4)] shrink-0">
-              <div className="w-full h-full rounded-full bg-[#16090e] flex items-center justify-center text-[#FF9EB5] al-display font-bold text-xl">
+          <div className="relative flex items-center gap-3 mt-3">
+            <div className="relative w-11 h-11 p-[2px] rounded-full bg-gradient-to-br from-[#FF6B93] via-[#FF1E56] to-[#8B0F31] shadow-[0_0_18px_rgba(255,30,86,0.4)] shrink-0">
+              <div className="w-full h-full rounded-full bg-[#16090e] flex items-center justify-center text-[#FF9EB5] al-display font-bold text-lg">
                 {primeiroNomeHome.charAt(0).toUpperCase()}
               </div>
             </div>
             <div className="min-w-0">
-              <h1 className="al-display text-[26px] font-bold text-white uppercase tracking-wide leading-none truncate">{primeiroNomeHome}</h1>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 mt-1.5 rounded-full text-[10px] font-extrabold tracking-[0.14em] bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#E8C547]">
-                <Fig n={rankHome.fig} s={13} /> {rankHome.label}
+              <h1 className="al-display text-[20px] font-bold text-white uppercase tracking-wide leading-none truncate">{primeiroNomeHome}</h1>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 mt-1 rounded-full text-[9px] font-extrabold tracking-[0.14em] bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#E8C547]">
+                <Fig n={rankHome.fig} s={11} /> {rankHome.label}
               </span>
             </div>
+            <div className="ml-auto text-right shrink-0">
+              <CountUp n={totalFunilHome} className="al-display block text-[38px] font-bold gx-neon leading-none tabular-nums" />
+              <span className="block text-[8.5px] uppercase tracking-[0.2em] text-text-secondary mt-0.5">na carteira</span>
+            </div>
           </div>
-          <div className="relative mt-auto pt-5">
-            <CountUp n={totalFunilHome} className="al-display block text-[58px] font-bold gx-neon leading-none tabular-nums" />
-            <span className="block text-[10px] uppercase tracking-[0.22em] text-text-secondary mt-1">leads na carteira</span>
-            {metaAlvo > 0 ? (
-              <div className="mt-3.5">
+          <div className="relative mt-auto pt-2.5">
+            {metaAlvo > 0 && (
+              <div className="mb-1.5">
                 <div className="gx-bar gold"><i style={{ width: `${Math.max(metaPctHome, 3)}%` }} /></div>
-                <span className="block text-[10px] text-text-secondary mt-1.5 tabular-nums">meta do tri: {brlCompact(metaFeito)} / {brlCompact(metaAlvo)} · <b className="text-[#E8C547]">{metaPctHome}%</b></span>
+                <span className="block text-[9.5px] text-text-secondary mt-1 tabular-nums">meta do tri: {brlCompact(metaFeito)} / {brlCompact(metaAlvo)} · <b className="text-[#E8C547]">{metaPctHome}%</b></span>
               </div>
-            ) : (
-              <span className="block text-[10px] text-text-secondary mt-2.5">meta do trimestre ainda não definida</span>
             )}
-            <p className="text-[11px] text-text-secondary mt-2.5 leading-snug">{focoMsg}</p>
+            <p className="text-[10.5px] text-text-secondary leading-snug truncate">{focoMsg}</p>
           </div>
         </div>
 
         {/* ATRASADAS — bloco carmesim chapado, chanfrado */}
-        <Link href="/dashboard/crm?tarefa=atraso" className="col-span-3 lg:col-span-3 lg:row-span-2 gx-tile relative overflow-hidden p-4 flex flex-col justify-between al-rise al-d1 group" style={{ background: 'linear-gradient(150deg, #FF1E56 0%, #A50D38 100%)', boxShadow: '0 18px 44px -14px rgba(255,30,86,0.55)' }}>
-          <span className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold tracking-[0.22em] text-white/90">ATRASADAS</span>
-            <Fig n="Police%20car%20light/3D/police_car_light_3d.png" s={24} className="group-hover:scale-110 transition-transform" />
+        <Link href="/dashboard/crm?tarefa=atraso" className="col-span-3 lg:col-span-3 lg:row-span-1 gx-tile relative overflow-hidden px-4 py-3 flex items-center justify-between gap-2 al-rise al-d1 group hover:-translate-y-1 hover:brightness-110 active:scale-[0.98] transition-all duration-200" style={{ background: 'linear-gradient(150deg, #FF1E56 0%, #A50D38 100%)', boxShadow: '0 18px 44px -14px rgba(255,30,86,0.55)' }}>
+          <span className="flex flex-col min-w-0">
+            <span className="text-[9.5px] font-extrabold tracking-[0.2em] text-white/90">ATRASADAS</span>
+            <CountUp n={tarefaAtrasadaCount} className="al-display text-[38px] font-bold text-white leading-none tabular-nums" />
           </span>
-          <CountUp n={tarefaAtrasadaCount} className="al-display text-[52px] font-bold text-white leading-none tabular-nums" />
-          <span className="text-[11px] font-bold text-white/80 group-hover:text-white transition-colors">resolver agora ▸</span>
+          <span className="flex flex-col items-end gap-0.5 shrink-0">
+            <Fig n="Police%20car%20light/3D/police_car_light_3d.png" s={26} className="group-hover:scale-125 group-hover:-rotate-6 transition-transform duration-200" />
+            <span className="text-[9px] font-bold text-white/0 group-hover:text-white/90 transition-colors whitespace-nowrap">resolver ▸</span>
+          </span>
         </Link>
 
         {/* PARA HOJE — dourado chapado */}
-        <Link href="/dashboard/crm?tarefa=hoje" className="col-span-3 lg:col-span-2 lg:row-span-2 gx-tile relative overflow-hidden p-4 flex flex-col justify-between al-rise al-d2 group" style={{ background: 'linear-gradient(150deg, #FFD569 0%, #C89210 100%)', boxShadow: '0 18px 44px -14px rgba(212,160,23,0.45)' }}>
-          <span className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold tracking-[0.22em] text-[#181203]/80">PARA HOJE</span>
-            <Fig n="High%20voltage/3D/high_voltage_3d.png" s={22} className="group-hover:scale-110 transition-transform" />
+        <Link href="/dashboard/crm?tarefa=hoje" className="col-span-3 lg:col-span-2 lg:row-span-1 gx-tile relative overflow-hidden px-4 py-3 flex items-center justify-between gap-2 al-rise al-d2 group hover:-translate-y-1 hover:brightness-110 active:scale-[0.98] transition-all duration-200" style={{ background: 'linear-gradient(150deg, #FFD569 0%, #C89210 100%)', boxShadow: '0 18px 44px -14px rgba(212,160,23,0.45)' }}>
+          <span className="flex flex-col min-w-0">
+            <span className="text-[9.5px] font-extrabold tracking-[0.2em] text-[#181203]/80">PARA HOJE</span>
+            <CountUp n={tarefaDiaCount} className="al-display text-[38px] font-bold text-[#181203] leading-none tabular-nums" />
           </span>
-          <CountUp n={tarefaDiaCount} className="al-display text-[52px] font-bold text-[#181203] leading-none tabular-nums" />
-          <span className="text-[11px] font-bold text-[#181203]/70 group-hover:text-[#181203] transition-colors">fechar o dia ▸</span>
+          <Fig n="High%20voltage/3D/high_voltage_3d.png" s={24} className="shrink-0 group-hover:scale-125 group-hover:rotate-6 transition-transform duration-200" />
         </Link>
 
         {/* SEM TAREFA — verde profundo */}
-        <Link href="/dashboard/crm?tarefa=sem" className="col-span-6 lg:col-span-3 lg:row-span-2 gx-tile relative overflow-hidden p-4 flex flex-col justify-between al-rise al-d3 group" style={{ background: 'linear-gradient(150deg, #0E4A3A 0%, #072B22 100%)', boxShadow: 'inset 0 0 0 1px rgba(52,211,153,0.3), 0 18px 44px -16px rgba(16,185,129,0.35)' }}>
-          <span className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold tracking-[0.22em] text-emerald-300">SEM TAREFA</span>
-            <Fig n="Gem%20stone/3D/gem_stone_3d.png" s={22} className="group-hover:scale-110 transition-transform" />
+        <Link href="/dashboard/crm?tarefa=sem" className="col-span-6 lg:col-span-3 lg:row-span-1 gx-tile relative overflow-hidden px-4 py-3 flex items-center justify-between gap-2 al-rise al-d3 group hover:-translate-y-1 hover:brightness-110 active:scale-[0.98] transition-all duration-200" style={{ background: 'linear-gradient(150deg, #0E4A3A 0%, #072B22 100%)', boxShadow: 'inset 0 0 0 1px rgba(52,211,153,0.3), 0 18px 44px -16px rgba(16,185,129,0.35)' }}>
+          <span className="flex flex-col min-w-0">
+            <span className="text-[9.5px] font-extrabold tracking-[0.2em] text-emerald-300">SEM TAREFA</span>
+            <CountUp n={semTarefaCount} className="al-display text-[38px] font-bold text-white leading-none tabular-nums" />
           </span>
-          <CountUp n={semTarefaCount} className="al-display text-[52px] font-bold text-white leading-none tabular-nums" />
-          <span className="text-[11px] font-bold text-emerald-300/80 group-hover:text-emerald-200 transition-colors">resgatar leads ▸</span>
+          <span className="flex flex-col items-end gap-0.5 shrink-0">
+            <Fig n="Gem%20stone/3D/gem_stone_3d.png" s={24} className="group-hover:scale-125 group-hover:rotate-6 transition-transform duration-200" />
+            <span className="text-[9px] font-bold text-emerald-300/0 group-hover:text-emerald-200 transition-colors whitespace-nowrap">resgatar ▸</span>
+          </span>
         </Link>
 
         {/* Radar de eventos — varredura + lista HUD */}
@@ -1655,7 +1658,7 @@ export default function DashboardPage() {
                 <p className="text-[12px] text-text-secondary py-6 text-center">Nenhum evento confirmado no radar — bom momento pra prospectar.</p>
               ) : (
                 <div className="space-y-1.5">
-                  {proximosEventosConfirmados.slice(0, 5).map((item) => {
+                  {proximosEventosConfirmados.slice(0, 4).map((item) => {
                     const nowTime = currentTime.getTime();
                     const isAgora = item.startTime <= nowTime && item.fimTime >= nowTime;
                     const emBreve = !isAgora && item.startTime > nowTime && item.startTime - nowTime <= 45 * 60 * 1000;
@@ -1666,7 +1669,7 @@ export default function DashboardPage() {
                         ? 'border-[#E8C547] bg-[#E8C547]/[0.06]'
                         : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.04]';
                     return (
-                      <div key={`${item.tipo}-${item.id}-${item.startTime}`} className={`flex items-center gap-3 px-3 py-2 rounded-lg border-l-2 transition-colors ${rowCls}`}>
+                      <Link href="/dashboard/agenda" key={`${item.tipo}-${item.id}-${item.startTime}`} className={`flex items-center gap-3 px-3 py-2 rounded-lg border-l-2 transition-all hover:translate-x-1 ${rowCls}`}>
                         <span className={`al-display text-[15px] font-bold tabular-nums w-12 shrink-0 ${horaCls}`}>{item.horarioStr}</span>
                         <span className="flex-1 min-w-0 truncate text-[13px] font-semibold text-white" title={item.titulo}>{item.titulo}</span>
                         <span className="hidden md:inline text-[10px] text-text-secondary shrink-0">{item.tipoLabel}</span>
@@ -1677,7 +1680,7 @@ export default function DashboardPage() {
                         ) : (
                           <span className="shrink-0 text-[10px] text-text-secondary tabular-nums">{item.dataStr}</span>
                         )}
-                      </div>
+                      </Link>
                     );
                   })}
                 </div>
@@ -1918,9 +1921,9 @@ export default function DashboardPage() {
           </div>
 
           {/* Pipeline em formato de funil */}
-          <div className="col-span-6 lg:col-span-4 lg:row-span-4 al-card p-4 relative overflow-hidden al-rise al-d3">
+          <div className="col-span-6 lg:col-span-4 lg:row-span-2 al-card p-4 relative overflow-hidden al-rise al-d3">
             <div className="absolute inset-x-0 top-0 gx-line" />
-            <div className="flex items-center justify-between gap-3 mb-3">
+            <div className="flex items-center justify-between gap-3 mb-2">
               <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Fig n="Chart%20increasing/3D/chart_increasing_3d.png" s={20} /> Seu pipeline</h2>
               <Link href="/dashboard/crm/andamento" className="text-[11px] font-bold text-[#FF5C7E] hover:underline shrink-0">kanban ▸</Link>
             </div>
@@ -1942,7 +1945,7 @@ export default function DashboardPage() {
                         <span className="w-[7.5rem] shrink-0 text-[10px] text-text-secondary truncate text-right group-hover:text-white transition-colors">{etapa}</span>
                         <span className="flex-1 flex justify-center min-w-0">
                           <span
-                            className="h-[17px] rounded-[5px] transition-all duration-300 group-hover:brightness-125"
+                            className="h-[15px] rounded-[5px] transition-all duration-300 group-hover:brightness-125"
                             style={{ width: `${w}%`, background: `linear-gradient(90deg, ${cor}e6, ${cor}55)`, boxShadow: qtd > 0 ? `0 0 12px ${cor}45` : 'none' }}
                           />
                         </span>
@@ -1955,8 +1958,24 @@ export default function DashboardPage() {
             })()}
           </div>
 
+          {/* Atalhos — grade 2x2 embaixo do pipeline */}
+          <div className="col-span-6 lg:col-span-4 lg:row-span-2 grid grid-cols-2 gap-2.5 al-rise al-d4">
+            {[
+              { href: '/dashboard/crm', fig: 'Handshake/3D/handshake_3d.png', t: 'CRM' },
+              { href: '/dashboard/ligacao-ativa', fig: 'Telephone/3D/telephone_3d.png', t: 'Ligação Ativa' },
+              { href: '/dashboard/fluxo-pagamento', fig: 'Receipt/3D/receipt_3d.png', t: 'Fluxo de Pagamento' },
+              { href: '/dashboard/materiais', fig: 'Open%20file%20folder/3D/open_file_folder_3d.png', t: 'Materiais' },
+            ].map((a) => (
+              <Link key={a.href} href={a.href} className="group al-card !rounded-2xl relative overflow-hidden flex flex-col items-center justify-center gap-1.5 p-2 hover:bg-[#FF1E56]/[0.07] hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200">
+                <span className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF1E56]/0 to-transparent group-hover:via-[#FF1E56]/70 transition-all duration-300" />
+                <Fig n={a.fig} s={30} className="group-hover:scale-125 group-hover:-rotate-3 transition-transform duration-200 drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]" />
+                <span className="text-[10.5px] font-bold text-white/85 group-hover:text-white text-center leading-tight transition-colors">{a.t}</span>
+              </Link>
+            ))}
+          </div>
+
           {/* Meta da equipe — anel de progresso (dados reais do admin) */}
-          <div className="col-span-6 lg:col-span-4 lg:row-span-2 al-card p-4 relative overflow-hidden al-rise al-d4">
+          <div className="col-span-6 lg:col-span-4 lg:row-span-2 al-card p-3.5 relative overflow-hidden al-rise al-d5">
             <div className="absolute inset-x-0 top-0 gx-line-gold" />
             {(() => {
               const vgvMeta = Number(meta?.valor) || 0;
@@ -1973,22 +1992,22 @@ export default function DashboardPage() {
                   {vgvMeta <= 0 ? (
                     <p className="text-[11px] text-text-secondary">A meta da imobiliária ainda não foi configurada pelo gestor.</p>
                   ) : (
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3.5">
                       <div className="relative shrink-0">
-                        <Ring pct={pctEquipe} size={104} />
+                        <Ring pct={pctEquipe} size={86} />
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <span className="al-display text-[22px] font-bold text-white leading-none tabular-nums">{pctEquipe}%</span>
-                          <span className="text-[8px] uppercase tracking-[0.18em] text-text-secondary mt-0.5">do VGV</span>
+                          <span className="al-display text-[18px] font-bold text-white leading-none tabular-nums">{pctEquipe}%</span>
+                          <span className="text-[7px] uppercase tracking-[0.18em] text-text-secondary mt-0.5">do VGV</span>
                         </div>
                       </div>
-                      <div className="min-w-0 flex-1 space-y-2.5">
+                      <div className="min-w-0 flex-1 space-y-1.5">
                         <div>
-                          <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-text-secondary">Meta VGV</p>
-                          <p className="al-display text-[19px] font-bold al-grad-text leading-tight tabular-nums">{brlCompact(vgvMeta)}</p>
+                          <p className="text-[8.5px] font-extrabold uppercase tracking-[0.2em] text-text-secondary">Meta VGV</p>
+                          <p className="al-display text-[16px] font-bold al-grad-text leading-tight tabular-nums">{brlCompact(vgvMeta)}</p>
                         </div>
                         <div>
-                          <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-text-secondary">Realizado</p>
-                          <p className="al-display text-[19px] font-bold text-white leading-tight tabular-nums">{brlCompact(vgvFeito)}</p>
+                          <p className="text-[8.5px] font-extrabold uppercase tracking-[0.2em] text-text-secondary">Realizado</p>
+                          <p className="al-display text-[16px] font-bold text-white leading-tight tabular-nums">{brlCompact(vgvFeito)}</p>
                         </div>
                       </div>
                     </div>
@@ -1999,63 +2018,28 @@ export default function DashboardPage() {
           </div>
 
           {/* Pódio do trimestre — quem tá vendendo */}
-          <div className="col-span-6 lg:col-span-4 lg:row-span-2 al-card p-4 relative overflow-hidden al-rise al-d5">
+          <div className="col-span-6 lg:col-span-4 lg:row-span-2 al-card p-3.5 relative overflow-hidden al-rise al-d6">
             <div className="absolute inset-x-0 top-0 gx-line" />
-            <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2 mb-3"><Fig n="Trophy/3D/trophy_3d.png" s={20} /> Pódio do trimestre</h2>
+            <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2 mb-2"><Fig n="Trophy/3D/trophy_3d.png" s={20} /> Pódio do trimestre</h2>
             {corretoresRanking.length === 0 ? (
               <p className="text-[11px] text-text-secondary">Sem vendas lançadas ainda — o pódio abre quando o time pontuar.</p>
             ) : (
-              <>
-                <div className="flex items-end justify-center gap-2">
-                  {[{ i: 1, h: 'h-14', medal: '2nd%20place%20medal/3D/2nd_place_medal_3d.png', cor: 'from-slate-400/25' }, { i: 0, h: 'h-20', medal: '1st%20place%20medal/3D/1st_place_medal_3d.png', cor: 'from-[#E8C547]/30' }, { i: 2, h: 'h-10', medal: '3rd%20place%20medal/3D/3rd_place_medal_3d.png', cor: 'from-orange-700/30' }].map((p) => (
-                    corretoresRanking[p.i] ? (
-                      <div key={p.i} className="flex-1 max-w-[110px] flex flex-col items-center min-w-0">
-                        <Fig n={p.medal} s={p.i === 0 ? 34 : 26} className="mb-1" />
-                        <span className="text-[10px] font-bold text-white truncate w-full text-center leading-tight" title={corretoresRanking[p.i].nome}>{corretoresRanking[p.i].nome.split(' ')[0]}</span>
-                        <div className={`w-full ${p.h} mt-1.5 rounded-t-lg bg-gradient-to-t ${p.cor} to-transparent border border-white/[0.07] border-b-0 flex items-start justify-center pt-1`}>
-                          <span className="al-display text-[13px] font-bold text-white/60">{p.i + 1}º</span>
-                        </div>
+              <div className="flex items-end justify-center gap-2">
+                {[{ i: 1, h: 'h-10', medal: '2nd%20place%20medal/3D/2nd_place_medal_3d.png', cor: 'from-slate-400/25' }, { i: 0, h: 'h-14', medal: '1st%20place%20medal/3D/1st_place_medal_3d.png', cor: 'from-[#E8C547]/30' }, { i: 2, h: 'h-7', medal: '3rd%20place%20medal/3D/3rd_place_medal_3d.png', cor: 'from-orange-700/30' }].map((p) => (
+                  corretoresRanking[p.i] ? (
+                    <div key={p.i} className="flex-1 max-w-[105px] flex flex-col items-center min-w-0 group">
+                      <Fig n={p.medal} s={p.i === 0 ? 28 : 22} className="mb-0.5 group-hover:scale-125 transition-transform" />
+                      <span className="text-[10px] font-bold text-white truncate w-full text-center leading-tight" title={corretoresRanking[p.i].nome}>{corretoresRanking[p.i].nome.split(' ')[0]}</span>
+                      <div className={`w-full ${p.h} mt-1 rounded-t-lg bg-gradient-to-t ${p.cor} to-transparent border border-white/[0.07] border-b-0 flex items-start justify-center pt-0.5`}>
+                        <span className="al-display text-[12px] font-bold text-white/60">{p.i + 1}º</span>
                       </div>
-                    ) : <div key={p.i} className="flex-1 max-w-[110px]" />
-                  ))}
-                </div>
-                {corretoresRanking.length > 3 && (
-                  <div className="mt-2.5 pt-2 border-t border-white/[0.06] space-y-1">
-                    {corretoresRanking.slice(3, 6).map((c, i) => (
-                      <div key={c.id} className="flex items-center gap-2 text-[11px]">
-                        <span className="w-6 text-text-secondary font-bold tabular-nums">{i + 4}º</span>
-                        <span className="text-white/80 truncate">{c.nome}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
+                    </div>
+                  ) : <div key={p.i} className="flex-1 max-w-[105px]" />
+                ))}
+              </div>
             )}
           </div>
       </div>
-
-      {/* ===== Arsenal — acesso rápido (rodapé, pílulas) ===== */}
-      <section className="mt-4">
-        <div className="flex items-center gap-3 mb-2.5">
-          <span className="gx-tag"><Fig n="Rocket/3D/rocket_3d.png" s={14} /><span>Arsenal</span></span>
-          <div className="flex-1 gx-line opacity-25" />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {[
-            { href: '/dashboard/crm', fig: 'Handshake/3D/handshake_3d.png', t: 'Novo cliente' },
-            { href: '/dashboard/ligacao-ativa', fig: 'Telephone/3D/telephone_3d.png', t: 'Ligação Ativa' },
-            { href: '/dashboard/fluxo-pagamento', fig: 'Receipt/3D/receipt_3d.png', t: 'Fluxo de Pagamento' },
-            { href: '/dashboard/materiais', fig: 'Open%20file%20folder/3D/open_file_folder_3d.png', t: 'Materiais' },
-            { href: '/dashboard/comissoes', fig: 'Money%20bag/3D/money_bag_3d.png', t: 'Comissões' },
-            { href: '/dashboard/treinamentos', fig: 'Graduation%20cap/3D/graduation_cap_3d.png', t: 'Academia' },
-          ].map((a) => (
-            <Link key={a.href} href={a.href} className="group flex items-center gap-2 pl-2.5 pr-4 py-2 rounded-full border border-white/[0.08] bg-white/[0.03] hover:border-[#FF1E56]/50 hover:bg-[#FF1E56]/[0.06] transition-all">
-              <Fig n={a.fig} s={22} className="group-hover:scale-110 transition-transform" />
-              <span className="text-[12px] font-bold text-white whitespace-nowrap">{a.t}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
 
 
 
