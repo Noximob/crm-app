@@ -1565,9 +1565,9 @@ export default function DashboardPage() {
   const brlCompact = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', maximumFractionDigits: 1 }).format(v || 0);
 
   return (
-    <div className="min-h-full pb-6">
-      {/* ===== WAR ROOM — bento grid (uma tela, tudo à vista) ===== */}
-      <div id="trending-section" className="grid grid-cols-6 lg:grid-cols-12 auto-rows-[minmax(84px,auto)] gap-3 [grid-auto-flow:dense] mt-1">
+    <div className="min-h-full lg:h-full flex flex-col pb-6 lg:pb-0 lg:overflow-hidden">
+      {/* ===== WAR ROOM — bento grid que preenche exatamente a altura da tela (sem rolagem no desktop) ===== */}
+      <div id="trending-section" className="grid grid-cols-6 lg:grid-cols-12 auto-rows-[minmax(84px,auto)] lg:grid-rows-[repeat(6,minmax(72px,1fr))] gap-3 [grid-auto-flow:dense] mt-1 lg:mt-0 lg:flex-1 lg:min-h-0">
 
         {/* Identidade do corretor */}
         <div className="col-span-6 lg:col-span-4 lg:row-span-2 al-card gx-stripes !rounded-[24px] relative overflow-hidden p-4 al-rise flex flex-col">
@@ -1603,6 +1603,7 @@ export default function DashboardPage() {
 
         {/* ATRASADAS — bloco carmesim chapado, chanfrado */}
         <Link href="/dashboard/crm?tarefa=atraso" className="col-span-3 lg:col-span-3 lg:row-span-1 gx-tile relative overflow-hidden px-4 py-3 flex items-center justify-between gap-2 al-rise al-d1 group hover:-translate-y-1 hover:brightness-110 active:scale-[0.98] transition-all duration-200" style={{ background: 'linear-gradient(150deg, #FF1E56 0%, #A50D38 100%)', boxShadow: '0 18px 44px -14px rgba(255,30,86,0.55)' }}>
+          <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700" />
           <span className="flex flex-col min-w-0">
             <span className="text-[9.5px] font-extrabold tracking-[0.2em] text-white/90">ATRASADAS</span>
             <CountUp n={tarefaAtrasadaCount} className="al-display text-[38px] font-bold text-white leading-none tabular-nums" />
@@ -1615,6 +1616,7 @@ export default function DashboardPage() {
 
         {/* PARA HOJE — dourado chapado */}
         <Link href="/dashboard/crm?tarefa=hoje" className="col-span-3 lg:col-span-2 lg:row-span-1 gx-tile relative overflow-hidden px-4 py-3 flex items-center justify-between gap-2 al-rise al-d2 group hover:-translate-y-1 hover:brightness-110 active:scale-[0.98] transition-all duration-200" style={{ background: 'linear-gradient(150deg, #FFD569 0%, #C89210 100%)', boxShadow: '0 18px 44px -14px rgba(212,160,23,0.45)' }}>
+          <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700" />
           <span className="flex flex-col min-w-0">
             <span className="text-[9.5px] font-extrabold tracking-[0.2em] text-[#181203]/80">PARA HOJE</span>
             <CountUp n={tarefaDiaCount} className="al-display text-[38px] font-bold text-[#181203] leading-none tabular-nums" />
@@ -1624,6 +1626,7 @@ export default function DashboardPage() {
 
         {/* SEM TAREFA — verde profundo */}
         <Link href="/dashboard/crm?tarefa=sem" className="col-span-6 lg:col-span-3 lg:row-span-1 gx-tile relative overflow-hidden px-4 py-3 flex items-center justify-between gap-2 al-rise al-d3 group hover:-translate-y-1 hover:brightness-110 active:scale-[0.98] transition-all duration-200" style={{ background: 'linear-gradient(150deg, #0E4A3A 0%, #072B22 100%)', boxShadow: 'inset 0 0 0 1px rgba(52,211,153,0.3), 0 18px 44px -16px rgba(16,185,129,0.35)' }}>
+          <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-emerald-200/15 to-transparent transition-transform duration-700" />
           <span className="flex flex-col min-w-0">
             <span className="text-[9.5px] font-extrabold tracking-[0.2em] text-emerald-300">SEM TAREFA</span>
             <CountUp n={semTarefaCount} className="al-display text-[38px] font-bold text-white leading-none tabular-nums" />
@@ -1637,6 +1640,10 @@ export default function DashboardPage() {
         {/* Radar de eventos — varredura + lista HUD */}
         <div className="col-span-6 lg:col-span-8 lg:row-span-3 al-card relative overflow-hidden p-4 al-rise al-d2 flex flex-col">
           <div className="absolute inset-x-0 top-0 gx-line opacity-60" />
+          <span className="pointer-events-none absolute top-2 left-2 w-3.5 h-3.5 border-t-2 border-l-2 border-[#FF3364]/50 rounded-tl-sm" />
+          <span className="pointer-events-none absolute top-2 right-2 w-3.5 h-3.5 border-t-2 border-r-2 border-[#FF3364]/50 rounded-tr-sm" />
+          <span className="pointer-events-none absolute bottom-2 left-2 w-3.5 h-3.5 border-b-2 border-l-2 border-[#FF3364]/30 rounded-bl-sm" />
+          <span className="pointer-events-none absolute bottom-2 right-2 w-3.5 h-3.5 border-b-2 border-r-2 border-[#FF3364]/30 rounded-br-sm" />
           <div className="flex items-center justify-between gap-3 mb-2.5">
             <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Fig n="Satellite%20antenna/3D/satellite_antenna_3d.png" s={20} /> Radar de eventos</h2>
             <Link href="/dashboard/agenda" className="text-[11px] font-bold text-[#FF5C7E] hover:underline shrink-0">agenda completa ▸</Link>
@@ -1651,11 +1658,16 @@ export default function DashboardPage() {
               </div>
               <span className="al-display text-[9px] font-bold tracking-[0.26em] text-[#FF5C7E] mt-2">SCANNING</span>
             </div>
-            <div className="flex-1 min-w-0 self-start w-full">
+            <div className="flex-1 min-w-0 w-full self-stretch flex flex-col justify-center">
               {agendaLoading ? (
                 <p className="text-text-secondary text-sm">Carregando…</p>
               ) : proximosEventosConfirmados.length === 0 ? (
-                <p className="text-[12px] text-text-secondary py-6 text-center">Nenhum evento confirmado no radar — bom momento pra prospectar.</p>
+                <div className="flex flex-col items-center justify-center gap-2 text-center">
+                  <p className="text-[12px] text-text-secondary">Nenhum sinal no radar — bom momento pra prospectar.</p>
+                  <Link href="/dashboard/agenda" className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-[#FF3364]/40 text-[#FF7A97] text-[11px] font-bold hover:bg-[#FF1E56]/[0.09] hover:border-[#FF3364]/70 hover:-translate-y-0.5 active:scale-[0.97] transition-all">
+                    <Fig n="Bullseye/3D/bullseye_3d.png" s={15} /> agendar um evento ▸
+                  </Link>
+                </div>
               ) : (
                 <div className="space-y-1.5">
                   {proximosEventosConfirmados.slice(0, 4).map((item) => {
@@ -1921,9 +1933,9 @@ export default function DashboardPage() {
           </div>
 
           {/* Pipeline em formato de funil */}
-          <div className="col-span-6 lg:col-span-4 lg:row-span-2 al-card p-4 relative overflow-hidden al-rise al-d3">
+          <div className="col-span-6 lg:col-span-4 lg:row-span-2 al-card p-3.5 relative overflow-hidden al-rise al-d3 flex flex-col">
             <div className="absolute inset-x-0 top-0 gx-line" />
-            <div className="flex items-center justify-between gap-3 mb-2">
+            <div className="flex items-center justify-between gap-3 mb-1.5">
               <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Fig n="Chart%20increasing/3D/chart_increasing_3d.png" s={20} /> Seu pipeline</h2>
               <Link href="/dashboard/crm/andamento" className="text-[11px] font-bold text-[#FF5C7E] hover:underline shrink-0">kanban ▸</Link>
             </div>
@@ -1935,7 +1947,7 @@ export default function DashboardPage() {
               const maxLocal = Math.max(...etapasVisiveis.map((e) => porEtapa[e] ?? 0), 1);
               const coresFunil = ['#FFE9A6', '#E8C547', '#D4A017', '#F59E0B', '#FF7A45', '#FF1E56'];
               return (
-                <div className="space-y-1.5 min-w-0">
+                <div className="min-w-0 flex-1 min-h-0 flex flex-col justify-center gap-[5px]">
                   {etapasVisiveis.map((etapa, ei) => {
                     const qtd = porEtapa[etapa] ?? 0;
                     const w = qtd > 0 ? Math.max((qtd / maxLocal) * 100, 18) : 5;
@@ -1945,7 +1957,7 @@ export default function DashboardPage() {
                         <span className="w-[7.5rem] shrink-0 text-[10px] text-text-secondary truncate text-right group-hover:text-white transition-colors">{etapa}</span>
                         <span className="flex-1 flex justify-center min-w-0">
                           <span
-                            className="h-[15px] rounded-[5px] transition-all duration-300 group-hover:brightness-125"
+                            className="h-[13px] rounded-[5px] transition-all duration-300 group-hover:brightness-125"
                             style={{ width: `${w}%`, background: `linear-gradient(90deg, ${cor}e6, ${cor}55)`, boxShadow: qtd > 0 ? `0 0 12px ${cor}45` : 'none' }}
                           />
                         </span>
@@ -1961,13 +1973,13 @@ export default function DashboardPage() {
           {/* Atalhos — grade 2x2 embaixo do pipeline */}
           <div className="col-span-6 lg:col-span-4 lg:row-span-2 grid grid-cols-2 gap-2.5 al-rise al-d4">
             {[
-              { href: '/dashboard/crm', fig: 'Handshake/3D/handshake_3d.png', t: 'CRM' },
-              { href: '/dashboard/ligacao-ativa', fig: 'Telephone/3D/telephone_3d.png', t: 'Ligação Ativa' },
-              { href: '/dashboard/fluxo-pagamento', fig: 'Receipt/3D/receipt_3d.png', t: 'Fluxo de Pagamento' },
-              { href: '/dashboard/materiais', fig: 'Open%20file%20folder/3D/open_file_folder_3d.png', t: 'Materiais' },
+              { href: '/dashboard/crm', fig: 'Handshake/3D/handshake_3d.png', t: 'CRM', bg: 'hover:bg-[#FF1E56]/[0.08]', ln: 'group-hover:via-[#FF1E56]/80' },
+              { href: '/dashboard/ligacao-ativa', fig: 'Telephone/3D/telephone_3d.png', t: 'Ligação Ativa', bg: 'hover:bg-[#E8C547]/[0.08]', ln: 'group-hover:via-[#E8C547]/80' },
+              { href: '/dashboard/fluxo-pagamento', fig: 'Receipt/3D/receipt_3d.png', t: 'Fluxo de Pagamento', bg: 'hover:bg-[#9F6BFF]/[0.08]', ln: 'group-hover:via-[#9F6BFF]/80' },
+              { href: '/dashboard/materiais', fig: 'Open%20file%20folder/3D/open_file_folder_3d.png', t: 'Materiais', bg: 'hover:bg-[#34D399]/[0.08]', ln: 'group-hover:via-[#34D399]/80' },
             ].map((a) => (
-              <Link key={a.href} href={a.href} className="group al-card !rounded-2xl relative overflow-hidden flex flex-col items-center justify-center gap-1.5 p-2 hover:bg-[#FF1E56]/[0.07] hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200">
-                <span className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF1E56]/0 to-transparent group-hover:via-[#FF1E56]/70 transition-all duration-300" />
+              <Link key={a.href} href={a.href} className={`group al-card !rounded-2xl relative overflow-hidden flex flex-col items-center justify-center gap-1.5 p-2 ${a.bg} hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200`}>
+                <span className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-transparent to-transparent ${a.ln} transition-all duration-300`} />
                 <Fig n={a.fig} s={30} className="group-hover:scale-125 group-hover:-rotate-3 transition-transform duration-200 drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]" />
                 <span className="text-[10.5px] font-bold text-white/85 group-hover:text-white text-center leading-tight transition-colors">{a.t}</span>
               </Link>
