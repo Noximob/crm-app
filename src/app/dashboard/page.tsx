@@ -33,6 +33,7 @@ const IC_PATHS: Record<string, JSX.Element> = {
   radar: <><path d="M19.07 4.93A10 10 0 0 0 6.99 3.34" /><path d="M4 6h.01" /><path d="M2.29 9.62a10 10 0 1 0 19.02-1.27" /><path d="M16.24 7.76a6 6 0 1 0-8.01 8.91" /><path d="M12 18h.01" /><path d="M17.99 11.66a6 6 0 0 1-2.22 5.01" /><circle cx="12" cy="12" r="2" /><path d="m13.41 10.59 5.66-5.66" /></>,
   calendar: <><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><path d="m9 16 2 2 4-4" /></>,
   chart: <><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></>,
+  clock: <><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></>,
 };
 const Ic = ({ k, s = 20, className = '' }: { k: string; s?: number; className?: string }) => (
   <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
@@ -1560,6 +1561,9 @@ export default function DashboardPage() {
   const historicoMeetsMock = { semana: 8, mes: 23, tri: 61 };
   const minhaPosMock = podioMeetsMock.filter((p) => p.qtd > meusMeetsMock).length + 1;
   const pctLiderMock = Math.min(100, Math.round((meusMeetsMock / podioMeetsMock[0].qtd) * 100));
+  // Dias até o fim da semana (domingo) — countdown real
+  const diasFimSemana = (7 - currentTime.getDay()) % 7;
+  const countdownSemana = diasFimSemana === 0 ? 'último dia da semana!' : diasFimSemana === 1 ? 'falta 1 dia' : `faltam ${diasFimSemana} dias`;
 
   return (
     <div className="min-h-full lg:h-full flex flex-col pb-6 lg:pb-0 lg:overflow-hidden">
@@ -1569,7 +1573,12 @@ export default function DashboardPage() {
         {/* Identidade do corretor — o placar pessoal de meets & visitas (MOCKUP até integrar) */}
         <div className="col-span-6 lg:col-span-4 lg:row-span-2 al-card gx-stripes !rounded-[24px] relative overflow-hidden p-4 al-rise flex flex-col">
           <div className="absolute -top-20 -right-16 w-56 h-56 rounded-full bg-[#FF1E56]/[0.08] blur-3xl pointer-events-none" />
-          <span className="gx-tag self-start relative"><span>{saudacaoDia} · {nomeImobiliaria || 'Sua imobiliária'}</span></span>
+          <div className="relative flex items-center justify-between gap-2">
+            <span className="gx-tag"><span>{saudacaoDia} · {nomeImobiliaria || 'Sua imobiliária'}</span></span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#FF1E56]/50 bg-[#FF1E56]/[0.10] text-[#FF7A97] text-[9px] font-extrabold tracking-[0.12em] uppercase animate-pulse shadow-[0_0_14px_rgba(255,30,86,0.35)] shrink-0 whitespace-nowrap">
+              <Ic k="clock" s={11} /> {countdownSemana}
+            </span>
+          </div>
           <div className="relative flex items-center gap-3 mt-3">
             <div className="relative w-11 h-11 p-[2px] rounded-full bg-gradient-to-br from-[#FF6B93] via-[#FF1E56] to-[#8B0F31] shadow-[0_0_18px_rgba(255,30,86,0.4)] shrink-0">
               <div className="w-full h-full rounded-full bg-[#16090e] flex items-center justify-center text-[#FF9EB5] al-display font-bold text-lg">
@@ -1584,7 +1593,7 @@ export default function DashboardPage() {
             </div>
             <div className="ml-auto text-right shrink-0">
               <CountUp n={meusMeetsMock} className="al-display block text-[40px] font-bold gx-neon leading-none tabular-nums" />
-              <span className="block text-[8.5px] uppercase tracking-[0.16em] text-text-secondary mt-0.5">meets & visitas</span>
+              <span className="block text-[8.5px] uppercase tracking-[0.16em] text-text-secondary mt-0.5">meets & visitas · semana</span>
             </div>
           </div>
           <div className="relative mt-auto pt-2.5">
