@@ -9,7 +9,6 @@ import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { PipelineStagesProvider } from '@/context/PipelineStagesContext';
-import { AlummaLogoFullInline } from '@/components/AlummaLogo';
 
 // Ícones
 const AlertTriangleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>;
@@ -236,11 +235,14 @@ export default function DashboardLayout({
           <div className="h-14 flex items-center gap-2.5 px-[16px] shrink-0">
             <button
               onClick={() => router.push('/dashboard')}
-              className="flex items-center gap-2.5 hover:opacity-90 transition-opacity cursor-pointer [filter:drop-shadow(0_0_10px_rgba(255,30,86,0.35))]"
+              className="flex items-center gap-2.5 hover:opacity-90 transition-opacity cursor-pointer group/logo"
               title="Voltar ao Início"
             >
-              <AlummaLogoFullInline theme="dark" height={26} iconOnly className="shrink-0" />
-              <span className="al-display text-[15px] font-bold text-white uppercase tracking-[0.18em] opacity-0 group-hover/side:opacity-100 transition-opacity whitespace-nowrap">Alumma</span>
+              {/* Marca Nox — círculo neon vazado com N, sem fundo */}
+              <span className="relative grid place-items-center w-9 h-9 rounded-full border-2 border-[#FF3364] shadow-[0_0_14px_rgba(255,30,86,0.55),inset_0_0_10px_rgba(255,30,86,0.22)] shrink-0 group-hover/logo:shadow-[0_0_22px_rgba(255,30,86,0.8),inset_0_0_12px_rgba(255,30,86,0.35)] transition-shadow">
+                <span className="al-display text-[16px] font-bold text-[#FF3364] leading-none [text-shadow:0_0_10px_rgba(255,30,86,0.85)]">N</span>
+              </span>
+              <span className="al-display text-[15px] font-bold text-white uppercase tracking-[0.18em] opacity-0 group-hover/side:opacity-100 transition-opacity whitespace-nowrap">Nox Imóveis</span>
             </button>
           </div>
           <div className="mx-4 gx-line opacity-30 shrink-0" />
