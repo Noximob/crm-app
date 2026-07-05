@@ -35,6 +35,7 @@ const IC_PATHS: Record<string, JSX.Element> = {
   chart: <><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></>,
   clock: <><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></>,
   hourglass: <><path d="M5 22h14" /><path d="M5 2h14" /><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" /><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" /></>,
+  chev: <polyline points="9 18 15 12 9 6" />,
 };
 const Ic = ({ k, s = 20, className = '' }: { k: string; s?: number; className?: string }) => (
   <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
@@ -1623,44 +1624,37 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ATRASADAS — estilo suave, cor de assinatura carmesim */}
-        <Link href="/dashboard/crm?tarefa=atraso" className="col-span-3 lg:col-span-3 lg:row-span-1 relative overflow-hidden rounded-2xl border border-[#FF1E56]/35 bg-[#FF1E56]/[0.06] hover:bg-[#FF1E56]/[0.12] hover:border-[#FF1E56]/70 hover:shadow-[0_10px_30px_-10px_rgba(255,30,86,0.5)] px-4 py-3 flex items-center justify-between gap-2 al-rise al-d1 group hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200">
-          <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700" />
-          <span className="flex flex-col min-w-0">
-            <span className="text-[9.5px] font-extrabold tracking-[0.2em] text-[#FF7A97]">ATRASADAS</span>
-            <CountUp n={tarefaAtrasadaCount} className="al-display text-[34px] font-bold text-white leading-none tabular-nums" />
-            <span className="text-[11px] font-extrabold text-[#FF9EB5] mt-1 whitespace-nowrap drop-shadow-[0_0_6px_rgba(255,30,86,0.4)]">exige ação imediata ▸</span>
-          </span>
-          <span className="grid place-items-center w-11 h-11 rounded-xl bg-gradient-to-br from-[#FF1E56]/25 to-[#FF1E56]/[0.03] border border-[#FF1E56]/30 shrink-0 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-200">
-            <Ic k="alert" s={22} className="text-[#FF7A97] drop-shadow-[0_0_8px_rgba(255,30,86,0.6)]" />
-          </span>
-        </Link>
-
-        {/* PARA HOJE — dourado suave */}
-        <Link href="/dashboard/crm?tarefa=hoje" className="col-span-3 lg:col-span-2 lg:row-span-1 relative overflow-hidden rounded-2xl border border-[#E8C547]/35 bg-[#E8C547]/[0.06] hover:bg-[#E8C547]/[0.12] hover:border-[#E8C547]/70 hover:shadow-[0_10px_30px_-10px_rgba(232,197,71,0.45)] px-4 py-3 flex items-center justify-between gap-2 al-rise al-d2 group hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200">
-          <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700" />
-          <span className="flex flex-col min-w-0">
-            <span className="text-[9.5px] font-extrabold tracking-[0.2em] text-[#E8C547]">PARA HOJE</span>
-            <CountUp n={tarefaDiaCount} className="al-display text-[34px] font-bold text-white leading-none tabular-nums" />
-            <span className="text-[11px] font-extrabold text-[#FFE9A6] mt-1 whitespace-nowrap drop-shadow-[0_0_6px_rgba(232,197,71,0.4)]">feche o dia zerado ▸</span>
-          </span>
-          <span className="grid place-items-center w-11 h-11 rounded-xl bg-gradient-to-br from-[#E8C547]/25 to-[#E8C547]/[0.03] border border-[#E8C547]/30 shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-200">
-            <Ic k="zap" s={20} className="text-[#E8C547] drop-shadow-[0_0_8px_rgba(232,197,71,0.6)]" />
-          </span>
-        </Link>
-
-        {/* SEM TAREFA — esmeralda suave */}
-        <Link href="/dashboard/crm?tarefa=sem" className="col-span-6 lg:col-span-3 lg:row-span-1 relative overflow-hidden rounded-2xl border border-[#34D399]/35 bg-[#34D399]/[0.06] hover:bg-[#34D399]/[0.12] hover:border-[#34D399]/70 hover:shadow-[0_10px_30px_-10px_rgba(52,211,153,0.45)] px-4 py-3 flex items-center justify-between gap-2 al-rise al-d3 group hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200">
-          <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700" />
-          <span className="flex flex-col min-w-0">
-            <span className="text-[9.5px] font-extrabold tracking-[0.2em] text-emerald-300">SEM TAREFA</span>
-            <CountUp n={semTarefaCount} className="al-display text-[34px] font-bold text-white leading-none tabular-nums" />
-            <span className="text-[11px] font-extrabold text-emerald-200 mt-1 whitespace-nowrap drop-shadow-[0_0_6px_rgba(52,211,153,0.4)]">resgate esses leads ▸</span>
-          </span>
-          <span className="grid place-items-center w-11 h-11 rounded-xl bg-gradient-to-br from-[#34D399]/25 to-[#34D399]/[0.03] border border-[#34D399]/30 shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-200">
-            <Ic k="gem" s={20} className="text-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
-          </span>
-        </Link>
+        {/* PLANO DE AÇÃO — a jornada do próximo agendamento: 1 atrasadas → 2 hoje → 3 sem tarefa → 4 ligação ativa */}
+        <div className="col-span-6 lg:col-span-8 lg:row-span-1 flex flex-col al-rise al-d1 min-h-0">
+          <div className="flex items-center gap-2.5 mb-1.5 shrink-0">
+            <span className="gx-tag"><Ic k="zap" s={11} /><span>Plano de ação</span></span>
+            <span className="hidden md:block text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/45 whitespace-nowrap">o caminho do próximo meet — siga a ordem</span>
+            <div className="flex-1 gx-line opacity-25" />
+          </div>
+          <div className="flex-1 min-h-0 grid grid-cols-2 sm:flex sm:items-stretch gap-1.5">
+            {[
+              { href: '/dashboard/crm?tarefa=atraso', n: 1, label: 'ATRASADAS', count: tarefaAtrasadaCount, ic: 'alert', icc: 'text-[#FF7A97] drop-shadow-[0_0_8px_rgba(255,30,86,0.6)]', lbl: 'text-[#FF9EB5]', box: 'border-[#FF1E56]/40 bg-[#FF1E56]/[0.06] hover:bg-[#FF1E56]/[0.13] hover:border-[#FF1E56]/80 hover:shadow-[0_10px_28px_-10px_rgba(255,30,86,0.55)]', num: 'border-[#FF1E56]/50 text-[#FF7A97] bg-[#FF1E56]/10', dash: '' },
+              { href: '/dashboard/crm?tarefa=hoje', n: 2, label: 'PARA HOJE', count: tarefaDiaCount, ic: 'zap', icc: 'text-[#E8C547] drop-shadow-[0_0_8px_rgba(232,197,71,0.6)]', lbl: 'text-[#FFE9A6]', box: 'border-[#E8C547]/40 bg-[#E8C547]/[0.06] hover:bg-[#E8C547]/[0.13] hover:border-[#E8C547]/80 hover:shadow-[0_10px_28px_-10px_rgba(232,197,71,0.5)]', num: 'border-[#E8C547]/50 text-[#E8C547] bg-[#E8C547]/10', dash: '' },
+              { href: '/dashboard/crm?tarefa=sem', n: 3, label: 'SEM TAREFA', count: semTarefaCount, ic: 'gem', icc: 'text-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]', lbl: 'text-emerald-200', box: 'border-[#34D399]/40 bg-[#34D399]/[0.06] hover:bg-[#34D399]/[0.13] hover:border-[#34D399]/80 hover:shadow-[0_10px_28px_-10px_rgba(52,211,153,0.5)]', num: 'border-[#34D399]/50 text-emerald-300 bg-[#34D399]/10', dash: '' },
+              { href: '/dashboard/ligacao-ativa', n: 4, label: 'LIGAÇÃO ATIVA', count: null, sub: 'fonte infinita ▸', ic: 'phone', icc: 'text-[#C4A6FF] drop-shadow-[0_0_8px_rgba(159,107,255,0.6)]', lbl: 'text-[#C4A6FF]', box: 'border-[#9F6BFF]/45 bg-[#9F6BFF]/[0.06] hover:bg-[#9F6BFF]/[0.14] hover:border-[#9F6BFF]/85 hover:shadow-[0_10px_28px_-10px_rgba(159,107,255,0.55)]', num: 'border-[#9F6BFF]/55 text-[#C4A6FF] bg-[#9F6BFF]/10', dash: 'border-dashed' },
+            ].map((s, i) => [
+              <Link key={`passo-${s.n}`} href={s.href} className={`group relative sm:flex-1 min-w-0 overflow-hidden rounded-xl border ${s.dash} ${s.box} px-3 py-1.5 flex items-center gap-2.5 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200`}>
+                <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700" />
+                <span className={`w-5 h-5 rounded-full grid place-items-center al-display text-[10px] font-extrabold shrink-0 border ${s.num}`}>{s.n}</span>
+                <span className="flex flex-col min-w-0">
+                  <span className={`text-[8.5px] font-extrabold tracking-[0.16em] whitespace-nowrap ${s.lbl}`}>{s.label}</span>
+                  {s.count != null ? (
+                    <CountUp n={s.count} className="al-display text-[24px] font-bold text-white leading-none tabular-nums" />
+                  ) : (
+                    <span className="text-[12px] font-extrabold text-white leading-tight mt-1 whitespace-nowrap">{s.sub}</span>
+                  )}
+                </span>
+                <Ic k={s.ic} s={18} className={`ml-auto shrink-0 ${s.icc} group-hover:scale-110 transition-transform duration-200`} />
+              </Link>,
+              i < 3 ? <Ic key={`seta-${s.n}`} k="chev" s={14} className="hidden sm:block self-center shrink-0 text-white/25" /> : null,
+            ])}
+          </div>
+        </div>
 
         {/* Radar de eventos — varredura + lista HUD */}
         <div className="col-span-6 lg:col-span-8 lg:row-span-3 lg:col-start-5 lg:row-start-4 al-card relative overflow-hidden p-3.5 al-rise al-d5 flex flex-col">
@@ -2001,19 +1995,19 @@ export default function DashboardPage() {
               <span className="gx-tag"><Ic k="rocket" s={11} /><span>Acesso rápido</span></span>
               <div className="flex-1 gx-line opacity-30" />
             </div>
-            <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
+            <div className="grid grid-cols-1 gap-2 flex-1 min-h-0">
               {[
-                { href: '/dashboard/crm', ic: 'users', icc: 'text-[#FF7A97] drop-shadow-[0_0_8px_rgba(255,30,86,0.6)]', t: 'CRM', b: 'border-[#FF1E56]/35 hover:border-[#FF1E56]/70', bg: 'bg-[#FF1E56]/[0.05] hover:bg-[#FF1E56]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(255,30,86,0.5)]', chip: 'from-[#FF1E56]/25 to-[#FF1E56]/[0.03] border-[#FF1E56]/30' },
-                { href: '/dashboard/materiais', ic: 'folder', icc: 'text-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]', t: 'Produtos', b: 'border-[#34D399]/35 hover:border-[#34D399]/70', bg: 'bg-[#34D399]/[0.05] hover:bg-[#34D399]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(52,211,153,0.45)]', chip: 'from-[#34D399]/25 to-[#34D399]/[0.03] border-[#34D399]/30' },
-                { href: '/dashboard/fluxo-pagamento', ic: 'receipt', icc: 'text-[#C4A6FF] drop-shadow-[0_0_8px_rgba(159,107,255,0.6)]', t: 'Fluxo de Pagamento', b: 'border-[#9F6BFF]/35 hover:border-[#9F6BFF]/70', bg: 'bg-[#9F6BFF]/[0.05] hover:bg-[#9F6BFF]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(159,107,255,0.45)]', chip: 'from-[#9F6BFF]/25 to-[#9F6BFF]/[0.03] border-[#9F6BFF]/30' },
-                { href: '/dashboard/ligacao-ativa', ic: 'phone', icc: 'text-[#E8C547] drop-shadow-[0_0_8px_rgba(232,197,71,0.6)]', t: 'Ligação Ativa', b: 'border-[#E8C547]/35 hover:border-[#E8C547]/70', bg: 'bg-[#E8C547]/[0.05] hover:bg-[#E8C547]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(232,197,71,0.45)]', chip: 'from-[#E8C547]/25 to-[#E8C547]/[0.03] border-[#E8C547]/30' },
+                { href: '/dashboard/crm', ic: 'users', icc: 'text-[#FF7A97] drop-shadow-[0_0_8px_rgba(255,30,86,0.6)]', t: 'CRM', b: 'border-[#FF1E56]/35 hover:border-[#FF1E56]/70', bg: 'bg-[#FF1E56]/[0.05] hover:bg-[#FF1E56]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(255,30,86,0.5)]', chip: 'from-[#FF1E56]/25 to-[#FF1E56]/[0.03] border-[#FF1E56]/30', arrow: 'text-[#FF7A97]' },
+                { href: '/dashboard/materiais', ic: 'folder', icc: 'text-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]', t: 'Produtos', b: 'border-[#34D399]/35 hover:border-[#34D399]/70', bg: 'bg-[#34D399]/[0.05] hover:bg-[#34D399]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(52,211,153,0.45)]', chip: 'from-[#34D399]/25 to-[#34D399]/[0.03] border-[#34D399]/30', arrow: 'text-emerald-300' },
+                { href: '/dashboard/fluxo-pagamento', ic: 'receipt', icc: 'text-[#C4A6FF] drop-shadow-[0_0_8px_rgba(159,107,255,0.6)]', t: 'Fluxo de Pagamento', b: 'border-[#9F6BFF]/35 hover:border-[#9F6BFF]/70', bg: 'bg-[#9F6BFF]/[0.05] hover:bg-[#9F6BFF]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(159,107,255,0.45)]', chip: 'from-[#9F6BFF]/25 to-[#9F6BFF]/[0.03] border-[#9F6BFF]/30', arrow: 'text-[#C4A6FF]' },
               ].map((a) => (
                 <Link key={a.href} href={a.href} className={`group relative overflow-hidden rounded-2xl border ${a.b} ${a.bg} ${a.glow} flex items-center gap-2.5 px-3 py-2 hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200`}>
                   <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700" />
                   <span className={`grid place-items-center w-10 h-10 rounded-xl bg-gradient-to-br border ${a.chip} shrink-0 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-200`}>
                     <Ic k={a.ic} s={20} className={a.icc} />
                   </span>
-                  <span className="text-[11.5px] font-bold text-white leading-tight">{a.t}</span>
+                  <span className="text-[12px] font-bold text-white leading-tight">{a.t}</span>
+                  <Ic k="chev" s={15} className={`ml-auto shrink-0 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 ${a.arrow}`} />
                 </Link>
               ))}
             </div>
