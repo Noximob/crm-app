@@ -1578,45 +1578,45 @@ export default function DashboardPage() {
           <div className="relative flex items-start justify-between gap-3">
             <div className="min-w-0">
               <span className="gx-tag"><span>{saudacaoDia} · {nomeImobiliaria || 'Sua imobiliária'}</span></span>
-              <div className="flex items-center gap-3 mt-3.5">
-                <div className="relative w-11 h-11 p-[2px] rounded-full bg-gradient-to-br from-[#FF6B93] via-[#FF1E56] to-[#8B0F31] shadow-[0_0_18px_rgba(255,30,86,0.4)] shrink-0">
-                  <div className="w-full h-full rounded-full bg-[#16090e] flex items-center justify-center text-[#FF9EB5] al-display font-bold text-lg">
+              <div className="flex items-center gap-3 mt-4">
+                <div className="relative w-[52px] h-[52px] p-[2px] rounded-full bg-gradient-to-br from-[#FF6B93] via-[#FF1E56] to-[#8B0F31] shadow-[0_0_22px_rgba(255,30,86,0.45)] shrink-0">
+                  <div className="w-full h-full rounded-full bg-[#16090e] flex items-center justify-center text-[#FF9EB5] al-display font-bold text-xl">
                     {primeiroNomeHome.charAt(0).toUpperCase()}
                   </div>
                 </div>
                 <div className="min-w-0">
-                  <h1 className="al-display text-[20px] font-bold text-white uppercase tracking-wide leading-none truncate">{primeiroNomeHome}</h1>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 mt-1 rounded-full text-[9px] font-extrabold tracking-[0.14em] bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#E8C547]">
-                    <Ic k="trophy" s={11} /> {minhaPosMock}º NO RANKING
+                  <h1 className="al-display text-[25px] font-bold text-white uppercase tracking-wide leading-none truncate">{primeiroNomeHome}</h1>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 mt-1.5 rounded-full text-[10px] font-extrabold tracking-[0.14em] bg-[#E8C547]/10 border border-[#E8C547]/40 text-[#E8C547] shadow-[0_0_12px_rgba(232,197,71,0.25)]">
+                    <Ic k="trophy" s={12} /> {minhaPosMock}º NO RANKING
                   </span>
                 </div>
               </div>
             </div>
             {/* Placar da semana — o número principal, emoldurado */}
-            <div className="relative shrink-0 rounded-2xl border border-[#E8C547]/50 px-4 py-2 text-right overflow-hidden group" style={{ background: 'linear-gradient(160deg, rgba(232,197,71,0.14), rgba(20,13,5,0.5))', boxShadow: '0 0 30px -6px rgba(232,197,71,0.5), inset 0 1px 0 rgba(232,197,71,0.3)' }}>
+            <div className="relative shrink-0 rounded-2xl border-2 border-[#E8C547]/55 px-5 py-2.5 text-right overflow-hidden group" style={{ background: 'linear-gradient(160deg, rgba(232,197,71,0.16), rgba(20,13,5,0.55))', boxShadow: '0 0 38px -6px rgba(232,197,71,0.6), inset 0 1px 0 rgba(232,197,71,0.35)' }}>
               <span className="pointer-events-none absolute inset-0 gx-stripes opacity-40" />
-              <CountUp n={meusMeetsMock} className="relative al-display block text-[46px] font-bold al-grad-text leading-[0.9] tabular-nums drop-shadow-[0_0_18px_rgba(232,197,71,0.5)]" />
-              <span className="relative block text-[8.5px] font-extrabold uppercase tracking-[0.18em] text-[#E8C547] mt-0.5">meets & visitas</span>
-              <span className="relative block text-[7.5px] font-bold uppercase tracking-[0.2em] text-white/55">nesta semana</span>
+              <CountUp n={meusMeetsMock} className="relative al-display block text-[56px] font-bold al-grad-text leading-[0.9] tabular-nums drop-shadow-[0_0_22px_rgba(232,197,71,0.55)]" />
+              <span className="relative block text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#E8C547] mt-0.5">meets & visitas</span>
+              <span className="relative block text-[8.5px] font-bold uppercase tracking-[0.2em] text-white/60">nesta semana</span>
             </div>
           </div>
           <div className="relative mt-auto pt-2 flex items-end justify-between gap-3">
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[9.5px] font-extrabold tracking-[0.12em] uppercase animate-pulse shrink-0 whitespace-nowrap ${urgSemana.cls}`} style={{ background: urgSemana.bg, boxShadow: urgSemana.glow }}>
-              <Ic k="hourglass" s={11} /> {countdownSemana}
+            <span className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-[11px] font-extrabold tracking-[0.12em] uppercase animate-pulse shrink-0 whitespace-nowrap ${urgSemana.cls}`} style={{ background: urgSemana.bg, boxShadow: urgSemana.glow }}>
+              <Ic k="hourglass" s={13} /> {countdownSemana}
             </span>
             {(() => {
               const hojeIdx = (currentTime.getDay() + 6) % 7;
               return (
-                <div className="hidden sm:flex flex-col items-center gap-1 pb-0.5 shrink-0">
-                  <div className="flex items-start gap-[5px]">
+                <div className="hidden sm:flex flex-col items-center gap-1.5 pb-0.5 shrink-0">
+                  <div className="flex items-start gap-[6px]">
                     {['S', 'T', 'Q', 'Q', 'S', 'S', 'D'].map((d, i) => (
-                      <span key={i} className="flex flex-col items-center gap-[3px]">
-                        <span className={`text-[7px] font-extrabold leading-none ${i === hojeIdx ? 'text-[#FF7A97]' : 'text-white/30'}`}>{d}</span>
-                        <span className={`w-[7px] h-[7px] rounded-full ${i < hojeIdx ? 'bg-[#E8C547] shadow-[0_0_6px_rgba(232,197,71,0.6)]' : i === hojeIdx ? 'bg-[#FF1E56] shadow-[0_0_8px_#FF1E56] animate-pulse' : 'bg-white/10'}`} />
+                      <span key={i} className="flex flex-col items-center gap-1">
+                        <span className={`text-[8px] font-extrabold leading-none ${i === hojeIdx ? 'text-[#FF7A97]' : 'text-white/30'}`}>{d}</span>
+                        <span className={`w-2 h-2 rounded-full ${i < hojeIdx ? 'bg-[#E8C547] shadow-[0_0_7px_rgba(232,197,71,0.65)]' : i === hojeIdx ? 'bg-[#FF1E56] shadow-[0_0_9px_#FF1E56] animate-pulse' : 'bg-white/10'}`} />
                       </span>
                     ))}
                   </div>
-                  <span className="text-[7.5px] font-bold uppercase tracking-[0.16em] text-white/35 whitespace-nowrap">progresso da semana</span>
+                  <span className="text-[8.5px] font-bold uppercase tracking-[0.16em] text-white/40 whitespace-nowrap">progresso da semana</span>
                 </div>
               );
             })()}
@@ -2035,9 +2035,9 @@ export default function DashboardPage() {
               {/* MOCKUP: período definido futuramente na área do administrador */}
               <span className="gx-tag shrink-0"><span>01/07 → 07/07</span></span>
             </div>
-            <div className="relative flex items-center gap-3 flex-1 min-h-0 pt-2">
+            <div className="relative flex items-center gap-3 flex-1 min-h-0 pt-3.5">
               {/* Corrida da semana — raias com barra proporcional ao líder; a sua raia em carmesim */}
-              <div className="flex-1 min-w-0 flex flex-col justify-center gap-[7px]">
+              <div className="flex-1 min-w-0 flex flex-col justify-center gap-2">
                 {[
                   { nome: podioMeetsMock[0].nome, qtd: podioMeetsMock[0].qtd, pos: 1, ring: 'from-[#FFE9A6] via-[#E8C547] to-[#8a6d13]', bar: 'linear-gradient(90deg, #FFE9A6, #E8C547)', glow: 'rgba(232,197,71,0.5)', eu: false },
                   { nome: podioMeetsMock[1].nome, qtd: podioMeetsMock[1].qtd, pos: 2, ring: 'from-slate-200 via-slate-400 to-slate-600', bar: 'linear-gradient(90deg, #E2E8F0, #94A3B8)', glow: 'rgba(148,163,184,0.4)', eu: false },
@@ -2045,7 +2045,11 @@ export default function DashboardPage() {
                   { nome: 'Você', qtd: meusMeetsMock, pos: minhaPosMock, ring: 'from-[#FF6B93] via-[#FF1E56] to-[#8B0F31]', bar: 'linear-gradient(90deg, #FF6B93, #FF1E56)', glow: 'rgba(255,30,86,0.55)', eu: true },
                 ].map((l) => (
                   <div key={`${l.pos}-${l.nome}`} className={`flex items-center gap-2.5 ${l.eu ? 'rounded-lg px-2 py-1 -mx-2 bg-[#FF1E56]/[0.08] border border-[#FF1E56]/35' : ''}`}>
-                    <span className={`w-[22px] h-[22px] rounded-full grid place-items-center al-display text-[10.5px] font-extrabold shrink-0 bg-gradient-to-br ${l.ring} ${l.eu ? 'text-white shadow-[0_0_10px_rgba(255,30,86,0.5)]' : 'text-[#141414]'}`}>{l.pos}</span>
+                    {l.eu ? (
+                      <span className="w-[22px] h-[22px] grid place-items-center shrink-0"><span className="w-2.5 h-2.5 rounded-full bg-[#FF1E56] shadow-[0_0_10px_#FF1E56] animate-pulse" /></span>
+                    ) : (
+                      <span className={`w-[22px] h-[22px] rounded-full grid place-items-center al-display text-[10.5px] font-extrabold shrink-0 bg-gradient-to-br ${l.ring} text-[#141414]`}>{l.pos}</span>
+                    )}
                     <span className={`w-16 shrink-0 truncate text-[11px] font-bold ${l.eu ? 'text-[#FF9EB5]' : 'text-white'}`} title={l.nome}>{l.nome}</span>
                     <div className="flex-1 h-[13px] rounded-full bg-white/[0.05] border border-white/[0.06] overflow-hidden min-w-0">
                       <i className="block h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(6, Math.round((l.qtd / podioMeetsMock[0].qtd) * 100))}%`, background: l.bar, boxShadow: `0 0 12px ${l.glow}` }} />
