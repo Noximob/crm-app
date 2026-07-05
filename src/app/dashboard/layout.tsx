@@ -217,7 +217,7 @@ export default function DashboardLayout({
     ...((isAdminUser || isDevUser) ? [{
       titulo: 'Gestão', itens: [
         ...(isAdminUser ? [{ href: '/dashboard/admin', icon: KeyIcon, label: 'Área administrador' }] : []),
-        ...(isDevUser ? [{ href: '/dashboard/developer', icon: CodeIcon, label: 'Área do Desenvolvedor' }] : []),
+        ...(isDevUser ? [{ href: '/dashboard/developer', icon: CodeIcon, label: 'Desenvolvedor' }] : []),
       ] as NavItem[],
     }] : []),
   ];
@@ -228,9 +228,9 @@ export default function DashboardLayout({
     <PipelineStagesProvider imobiliariaId={userData?.imobiliariaId}>
     <div className="flex h-screen min-h-screen bg-particles">
       {/* Sidebar — rail GX: fina com ícones, expande no hover */}
-      <div className="group/side fixed left-0 top-0 bottom-0 z-50 w-[74px] hover:w-[238px] transition-[width] duration-200 text-xs">
+      <div className="group/side fixed left-0 top-0 bottom-0 z-50 w-[60px] hover:w-[196px] transition-[width] duration-200 text-xs">
         <div className="h-full flex flex-col min-h-0 bg-[#0d0d12]/95 backdrop-blur-md border-r border-white/[0.06] overflow-hidden">
-          <div className="h-16 flex items-center gap-2.5 px-[21px] shrink-0">
+          <div className="h-14 flex items-center gap-2.5 px-[16px] shrink-0">
             <button
               onClick={() => router.push('/dashboard')}
               className="flex items-center gap-2.5 hover:opacity-90 transition-opacity cursor-pointer [filter:drop-shadow(0_0_10px_rgba(255,30,86,0.35))]"
@@ -246,12 +246,12 @@ export default function DashboardLayout({
             {navGroups.map((grupo, gi) => (
               <div key={grupo.titulo ?? gi} className={gi > 0 ? 'mt-3' : ''}>
                 {grupo.titulo && (
-                  <p className="pl-[15px] h-4 mb-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/25 opacity-0 group-hover/side:opacity-100 transition-opacity whitespace-nowrap">{grupo.titulo}</p>
+                  <p className="pl-[10px] h-3.5 mb-1 text-[9px] font-extrabold uppercase tracking-[0.2em] text-white/25 opacity-0 group-hover/side:opacity-100 transition-opacity whitespace-nowrap">{grupo.titulo}</p>
                 )}
                 <ul className="space-y-0.5">
                   {grupo.itens.map((item) => {
                     const ativo = pathname === item.href;
-                    const cls = `relative flex items-center gap-3 pl-[15px] pr-2 py-[9px] rounded-xl text-[13px] font-semibold transition-all ${
+                    const cls = `relative flex items-center gap-3 pl-[10px] pr-2 py-2 rounded-lg text-[12.5px] font-semibold transition-all ${
                       ativo ? 'bg-white/[0.05] text-white' : 'text-text-secondary hover:bg-white/[0.04] hover:text-white'
                     }`;
                     const icone = <item.icon className={`h-[19px] w-[19px] shrink-0 transition-colors ${ativo ? 'text-[#FF3364] [filter:drop-shadow(0_0_6px_rgba(255,30,86,0.6))]' : ''}`} />;
@@ -284,7 +284,7 @@ export default function DashboardLayout({
           <div className="shrink-0 p-2.5 border-t border-white/[0.06]">
             <button
               onClick={handleLogout}
-              className="flex items-center gap-3 pl-[15px] pr-2 w-full py-[9px] rounded-xl text-[13px] font-semibold text-text-secondary hover:bg-[#FF1E56]/10 hover:text-[#FF6B93] transition-all"
+              className="flex items-center gap-3 pl-[10px] pr-2 w-full py-2 rounded-lg text-[12.5px] font-semibold text-text-secondary hover:bg-[#FF1E56]/10 hover:text-[#FF6B93] transition-all"
               title="Desconectar"
             >
               <LogOutIcon className="h-[19px] w-[19px] shrink-0" />
@@ -294,7 +294,7 @@ export default function DashboardLayout({
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden ml-[74px]">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden ml-[60px]">
         {/* Header: saudação + data | convites de eventos (1 por vez) | avatar */}
         <header className="h-16 px-5 shrink-0 flex items-center justify-between gap-3">
           <div className="shrink-0 min-w-0 flex items-baseline gap-2.5">

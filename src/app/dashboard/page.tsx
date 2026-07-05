@@ -17,6 +17,12 @@ import AgendaImobiliariaModal from './_components/AgendaImobiliariaModal';
 import PlantoesModal from './_components/PlantoesModal';
 import { GamificacaoMetasRow, type MetaPessoalData } from './_components/GamificacaoMetasRow';
 
+/** Figuinha 3D (Fluent Emoji da Microsoft via CDN) — visual de game de verdade */
+const Fig = ({ n, s = 24, className = '' }: { n: string; s?: number; className?: string }) => (
+  // eslint-disable-next-line @next/next/no-img-element
+  <img src={`https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/${n}`} alt="" width={s} height={s} className={className} loading="lazy" draggable={false} />
+);
+
 // Ícones
 const TrendingUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -461,7 +467,6 @@ export default function DashboardPage() {
   const [metaPessoalValorAlmejado, setMetaPessoalValorAlmejado] = useState<number>(0);
   const [contribuicoesMeta, setContribuicoesMeta] = useState<{ corretorId: string; valor: number; dataVenda?: string }[]>([]);
   const [corretoresRanking, setCorretoresRanking] = useState<{ id: string; nome: string }[]>([]);
-  const pontosExemplo = 2150;
 
   const metaPessoal: MetaPessoalData | null = useMemo(() => {
     const inicio = meta?.inicio ? String(meta.inicio).split('T')[0] : undefined;
@@ -1510,33 +1515,33 @@ export default function DashboardPage() {
     : tarefaDiaCount > 0
       ? `${tarefaDiaCount} tarefa${tarefaDiaCount > 1 ? 's' : ''} pra fechar hoje. Foco total!`
       : 'Nenhuma pendência. Dia livre pra caçar negócio novo.';
-  // Gamificação da home (XP mock por enquanto; rank vem do tamanho da carteira)
-  const xpPts = pontosExemplo;
-  const nivelJogador = Math.floor(xpPts / 500) + 1;
-  const xpNoNivel = xpPts % 500;
-  const xpPct = Math.round((xpNoNivel / 500) * 100);
-  const rankHome = totalFunilHome >= 50 ? { label: 'LÍDER', emoji: '🏆' }
-    : totalFunilHome >= 25 ? { label: 'ELITE', emoji: '⭐' }
-    : totalFunilHome >= 10 ? { label: 'EM ALTA', emoji: '🔥' }
-    : totalFunilHome >= 5 ? { label: 'SUBINDO', emoji: '📈' }
-    : { label: 'EM JOGO', emoji: '🎯' };
+  // Gamificação com DADOS REAIS: rank pelo tamanho da carteira; progresso = meta pessoal do trimestre
+  const rankHome = totalFunilHome >= 50 ? { label: 'LÍDER', fig: 'Crown/3D/crown_3d.png' }
+    : totalFunilHome >= 25 ? { label: 'ELITE', fig: 'Star/3D/star_3d.png' }
+    : totalFunilHome >= 10 ? { label: 'EM ALTA', fig: 'Fire/3D/fire_3d.png' }
+    : totalFunilHome >= 5 ? { label: 'SUBINDO', fig: 'Chart%20increasing/3D/chart_increasing_3d.png' }
+    : { label: 'EM JOGO', fig: 'Joystick/3D/joystick_3d.png' };
+  const metaAlvo = metaPessoal?.valorAlmejado ?? 0;
+  const metaFeito = metaPessoal?.alcancadoPessoal ?? 0;
+  const metaPctHome = metaAlvo > 0 ? Math.min(100, Math.round((metaFeito / metaAlvo) * 100)) : 0;
+  const brlCompact = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', maximumFractionDigits: 1 }).format(v || 0);
   const missoesHome = [
     ...(tarefaAtrasadaCount > 0 ? [{
-      emoji: '👹', tipo: 'BOSS FIGHT', titulo: 'Zerar atrasadas',
+      fig: 'Ogre/3D/ogre_3d.png', tipo: 'BOSS FIGHT', titulo: 'Zerar atrasadas',
       desc: `${tarefaAtrasadaCount} lead${tarefaAtrasadaCount > 1 ? 's' : ''} esperando retorno`,
       href: '/dashboard/crm?tarefa=atraso',
       cls: 'border-[#FF1E56]/35 bg-gradient-to-r from-[#FF1E56]/[0.10] to-transparent hover:border-[#FF1E56]/60',
       tag: 'text-[#FF5C7E]', btn: 'border-[#FF1E56]/50 text-[#FF6B93]',
     }] : []),
     ...(tarefaDiaCount > 0 ? [{
-      emoji: '⚡', tipo: 'MISSÃO DIÁRIA', titulo: 'Fechar o dia',
+      fig: 'High%20voltage/3D/high_voltage_3d.png', tipo: 'MISSÃO DIÁRIA', titulo: 'Fechar o dia',
       desc: `${tarefaDiaCount} tarefa${tarefaDiaCount > 1 ? 's' : ''} pra hoje`,
       href: '/dashboard/crm?tarefa=hoje',
       cls: 'border-[#E8C547]/35 bg-gradient-to-r from-[#E8C547]/[0.08] to-transparent hover:border-[#E8C547]/60',
       tag: 'text-[#E8C547]', btn: 'border-[#E8C547]/50 text-[#E8C547]',
     }] : []),
     ...(semTarefaCount > 0 ? [{
-      emoji: '🧭', tipo: 'SIDE QUEST', titulo: 'Resgatar esquecidos',
+      fig: 'Compass/3D/compass_3d.png', tipo: 'SIDE QUEST', titulo: 'Resgatar esquecidos',
       desc: `${semTarefaCount} lead${semTarefaCount > 1 ? 's' : ''} sem próxima tarefa`,
       href: '/dashboard/crm?tarefa=sem',
       cls: 'border-emerald-400/30 bg-gradient-to-r from-emerald-500/[0.07] to-transparent hover:border-emerald-400/60',
@@ -1562,8 +1567,9 @@ export default function DashboardPage() {
             <div className="min-w-0">
               <h1 className="al-display text-[26px] font-bold text-white uppercase tracking-wide leading-none truncate">{primeiroNomeHome}</h1>
               <div className="flex items-center gap-2 mt-2">
-                <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold tracking-[0.14em] bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#E8C547]">{rankHome.emoji} {rankHome.label}</span>
-                <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold tracking-[0.14em] bg-white/[0.05] border border-white/10 text-text-secondary">LVL {nivelJogador}</span>
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-extrabold tracking-[0.14em] bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#E8C547]">
+                  <Fig n={rankHome.fig} s={14} /> {rankHome.label}
+                </span>
               </div>
             </div>
             <div className="ml-auto text-right shrink-0">
@@ -1572,11 +1578,19 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="relative mt-5">
-            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.18em] text-text-secondary mb-1.5">
-              <span>Experiência</span>
-              <span className="tabular-nums">{xpNoNivel} / 500 XP</span>
-            </div>
-            <div className="gx-bar"><i style={{ width: `${Math.max(xpPct, 4)}%` }} /></div>
+            {metaAlvo > 0 ? (
+              <>
+                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.18em] text-text-secondary mb-1.5">
+                  <span>Meta do trimestre</span>
+                  <span className="tabular-nums">{brlCompact(metaFeito)} / {brlCompact(metaAlvo)} · <b className="text-[#E8C547]">{metaPctHome}%</b></span>
+                </div>
+                <div className="gx-bar gold"><i style={{ width: `${Math.max(metaPctHome, 3)}%` }} /></div>
+              </>
+            ) : (
+              <div className="rounded-lg border border-white/[0.07] bg-white/[0.03] px-3 py-2 text-[11px] text-text-secondary">
+                🎯 Sua meta do trimestre ainda não foi definida — fale com o gestor pra entrar no jogo.
+              </div>
+            )}
             <p className="text-[11px] text-text-secondary mt-2.5">{focoMsg}</p>
           </div>
         </div>
@@ -1585,12 +1599,12 @@ export default function DashboardPage() {
         <div className="al-card relative overflow-hidden p-5 al-rise al-d2">
           <div className="absolute inset-x-0 top-0 gx-line-gold" />
           <div className="flex items-center justify-between mb-3.5">
-            <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">🎮 Missões de hoje</h2>
+            <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Fig n="Video%20game/3D/video_game_3d.png" s={20} /> Missões de hoje</h2>
             <Link href="/dashboard/crm" className="text-[11px] font-bold text-[#FF5C7E] hover:underline shrink-0">abrir CRM ▸</Link>
           </div>
           {missoesHome.length === 0 ? (
             <div className="rounded-xl border border-emerald-400/30 bg-emerald-500/[0.08] p-6 text-center">
-              <p className="text-3xl mb-1.5">🏆</p>
+              <Fig n="Trophy/3D/trophy_3d.png" s={44} className="mx-auto mb-2" />
               <p className="al-display text-sm font-bold text-emerald-300 uppercase tracking-[0.2em]">Missões concluídas!</p>
               <p className="text-[11px] text-text-secondary mt-1">Nada pendente — hora de caçar leads novos.</p>
             </div>
@@ -1598,7 +1612,7 @@ export default function DashboardPage() {
             <div className="space-y-2">
               {missoesHome.map((m) => (
                 <Link key={m.href} href={m.href} className={`group flex items-center gap-3 rounded-xl border p-3 transition-all hover:translate-x-1 ${m.cls}`}>
-                  <span className="text-xl shrink-0">{m.emoji}</span>
+                  <Fig n={m.fig} s={30} className="shrink-0 group-hover:scale-110 transition-transform" />
                   <span className="min-w-0 flex-1">
                     <span className={`block text-[9px] font-extrabold tracking-[0.24em] ${m.tag}`}>{m.tipo}</span>
                     <span className="al-display block text-[15px] font-bold text-white uppercase tracking-wide leading-tight">{m.titulo}</span>
@@ -1615,20 +1629,20 @@ export default function DashboardPage() {
       {/* ===== ARSENAL (atalhos) ===== */}
       <section className="mb-4">
         <div className="flex items-center gap-3 mb-2.5">
-          <p className="al-eyebrow">🛠 Arsenal</p>
+          <p className="al-eyebrow flex items-center gap-1.5"><Fig n="Rocket/3D/rocket_3d.png" s={15} /> Arsenal</p>
           <div className="flex-1 gx-line opacity-25" />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
           {[
-            { href: '/dashboard/crm', emoji: '➕', t: 'Novo cliente', d: 'cadastre um lead' },
-            { href: '/dashboard/ligacao-ativa', emoji: '📞', t: 'Ligação Ativa', d: 'roteiro da ligação' },
-            { href: '/dashboard/fluxo-pagamento', emoji: '🧾', t: 'Fluxo de Pagto', d: 'proposta em PDF' },
-            { href: '/dashboard/materiais', emoji: '📂', t: 'Materiais', d: 'apresente no Meet' },
-            { href: '/dashboard/comissoes', emoji: '💵', t: 'Comissões', d: 'seus ganhos' },
-            { href: '/dashboard/treinamentos', emoji: '🎓', t: 'Academia', d: 'aprenda e evolua' },
+            { href: '/dashboard/crm', fig: 'Handshake/3D/handshake_3d.png', t: 'Novo cliente', d: 'cadastre um lead' },
+            { href: '/dashboard/ligacao-ativa', fig: 'Telephone/3D/telephone_3d.png', t: 'Ligação Ativa', d: 'roteiro da ligação' },
+            { href: '/dashboard/fluxo-pagamento', fig: 'Receipt/3D/receipt_3d.png', t: 'Fluxo de Pagto', d: 'proposta em PDF' },
+            { href: '/dashboard/materiais', fig: 'Open%20file%20folder/3D/open_file_folder_3d.png', t: 'Materiais', d: 'apresente no Meet' },
+            { href: '/dashboard/comissoes', fig: 'Money%20bag/3D/money_bag_3d.png', t: 'Comissões', d: 'seus ganhos' },
+            { href: '/dashboard/treinamentos', fig: 'Graduation%20cap/3D/graduation_cap_3d.png', t: 'Academia', d: 'aprenda e evolua' },
           ].map((a, i) => (
             <Link key={a.href} href={a.href} className={`gx-tile al-rise al-d${Math.min(i + 1, 6)} p-4 flex flex-col group`}>
-              <span className="text-[22px] leading-none">{a.emoji}</span>
+              <Fig n={a.fig} s={30} className="group-hover:scale-110 transition-transform" />
               <span className="al-display text-[13px] font-bold text-white uppercase tracking-wide leading-tight mt-2.5 flex items-center gap-1.5">
                 {a.t}
                 <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[#FF3364]">▸</span>
@@ -1645,7 +1659,7 @@ export default function DashboardPage() {
           {/* Sua agenda agora */}
           <div className="al-card p-4 relative overflow-hidden">
             <div className="flex items-center justify-between gap-3 mb-3">
-              <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">📡 Radar de eventos</h2>
+              <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Fig n="Satellite%20antenna/3D/satellite_antenna_3d.png" s={20} /> Radar de eventos</h2>
               <Link href="/dashboard/agenda" className="text-[11px] font-bold text-[#FF5C7E] hover:underline shrink-0">agenda completa ▸</Link>
             </div>
             <div>
@@ -2031,7 +2045,6 @@ export default function DashboardPage() {
           <div className="al-card p-3 relative overflow-hidden animate-fade-in">
             <MetaIndividualCard metaPessoal={metaPessoal} meta={meta} />
             <GamificacaoMetasRow
-              pontos={pontosExemplo}
               meta={meta}
               nomeImobiliaria={nomeImobiliaria}
               corretores={corretoresRanking}
