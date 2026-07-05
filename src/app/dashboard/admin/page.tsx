@@ -16,13 +16,21 @@ interface UsuarioPendente {
   metodoCadastro: 'email' | 'google';
 }
 
-// Componente para título com barra colorida (padrão do sistema)
+// Componente para título de seção (padrão GX)
 const SectionTitle = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
   <div className={`relative ${className}`}>
-    <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white relative z-10">{children}</h2>
-    <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-[#D4A017] to-[#E8C547] rounded-r-full opacity-60"></div>
+    <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] relative z-10">{children}</h2>
   </div>
 );
+
+// Paleta GX rotativa para os tiles de atalho
+const gxTilePalette = [
+  { b: 'border-[#FF1E56]/35 hover:border-[#FF1E56]/70', bg: 'bg-[#FF1E56]/[0.05] hover:bg-[#FF1E56]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(255,30,86,0.5)]', chip: 'from-[#FF1E56]/25 to-[#FF1E56]/[0.03] border-[#FF1E56]/30', accent: 'text-[#FF7A97]' },
+  { b: 'border-[#E8C547]/35 hover:border-[#E8C547]/70', bg: 'bg-[#E8C547]/[0.05] hover:bg-[#E8C547]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(232,197,71,0.45)]', chip: 'from-[#E8C547]/25 to-[#E8C547]/[0.03] border-[#E8C547]/40', accent: 'text-[#FFE9A6]' },
+  { b: 'border-[#34D399]/35 hover:border-[#34D399]/70', bg: 'bg-[#34D399]/[0.05] hover:bg-[#34D399]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(52,211,153,0.45)]', chip: 'from-[#34D399]/25 to-[#34D399]/[0.03] border-[#34D399]/30', accent: 'text-emerald-300' },
+  { b: 'border-[#9F6BFF]/35 hover:border-[#9F6BFF]/70', bg: 'bg-[#9F6BFF]/[0.05] hover:bg-[#9F6BFF]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(159,107,255,0.45)]', chip: 'from-[#9F6BFF]/25 to-[#9F6BFF]/[0.03] border-[#9F6BFF]/30', accent: 'text-[#C4A6FF]' },
+  { b: 'border-[#7DD3FC]/35 hover:border-[#7DD3FC]/70', bg: 'bg-[#7DD3FC]/[0.05] hover:bg-[#7DD3FC]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(125,211,252,0.45)]', chip: 'from-[#7DD3FC]/25 to-[#7DD3FC]/[0.03] border-[#7DD3FC]/30', accent: 'text-[#7DD3FC]' },
+];
 
 // Categorias organizadas para melhor UX
 const adminCategories = [
@@ -30,7 +38,7 @@ const adminCategories = [
     title: 'Equipe',
     description: 'Corretores, acessos e leads',
     icon: '👥',
-    color: 'from-primary-400 to-primary-600',
+    color: 'from-[#FF1E56]/25 to-[#FF1E56]/[0.03] border-[#FF1E56]/30',
     items: [
       { title: 'Gestão de Corretores', icon: '🧑‍💼', description: 'Administre leads e desempenho dos corretores', href: '/dashboard/admin/gestao-corretores' },
       { title: 'Agenda dos Usuários', icon: '📅', description: 'Visualize a agenda de todos os usuários', href: '/dashboard/admin/agenda-usuarios' },
@@ -41,7 +49,7 @@ const adminCategories = [
     title: 'Imobiliária',
     description: 'Rotina, captações e conteúdo',
     icon: '🏢',
-    color: 'from-green-500 to-green-600',
+    color: 'from-[#34D399]/25 to-[#34D399]/[0.03] border-[#34D399]/30',
     items: [
       { title: 'Agenda Imobiliária', icon: '📆', description: 'Gerencie agenda e plantões da imobiliária', href: '/dashboard/admin/agenda-imobiliaria' },
       { title: 'Materiais Construtora', icon: '🏗️', description: 'Materiais das construtoras', href: '/dashboard/admin/materiais-construtora' },
@@ -53,7 +61,7 @@ const adminCategories = [
     title: 'Financeiro e Metas',
     description: 'Comissões, caixa e objetivos',
     icon: '💰',
-    color: 'from-purple-500 to-purple-600',
+    color: 'from-[#E8C547]/25 to-[#E8C547]/[0.03] border-[#E8C547]/40',
     items: [
       { title: 'Comissões', icon: '💵', description: 'Imposto, meta, política de comissão e lançamento de vendas por equipe', href: '/dashboard/admin/comissoes' },
       { title: 'Metas', icon: '🎯', description: 'Meta da imobiliária e soma das metas dos corretores', href: '/dashboard/admin/metas' },
@@ -64,7 +72,7 @@ const adminCategories = [
     title: 'Configurações',
     description: 'Estrutura do CRM',
     icon: '⚙️',
-    color: 'from-orange-500 to-orange-600',
+    color: 'from-[#9F6BFF]/25 to-[#9F6BFF]/[0.03] border-[#9F6BFF]/30',
     items: [
       { title: 'Funil de Vendas', icon: '📊', description: 'Adicionar, editar ou remover etapas do funil (CRM)', href: '/dashboard/admin/funil-vendas' },
     ]
@@ -171,46 +179,50 @@ export default function AdminPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#D4A017] mb-1.5">Painel de controle</p>
-          <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white">Área do Administrador</h1>
-          <p className="text-[#6B6F76] dark:text-gray-300 mt-1">Tudo da sua imobiliária, organizado por setor.</p>
+          <span className="gx-tag mb-2 inline-flex"><span>Painel de controle</span></span>
+          <h1 className="al-display text-3xl font-bold text-white uppercase tracking-wide">Área do Administrador</h1>
+          <p className="text-text-secondary mt-1">Tudo da sua imobiliária, organizado por setor.</p>
         </div>
 
         {/* Setores */}
         <div className="space-y-9">
-          {adminCategories.map((category) => (
+          {adminCategories.map((category, ci) => (
             <section key={category.title}>
               {/* Cabeçalho do setor */}
               <div className="flex items-center gap-3 mb-4">
-                <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${category.color} flex items-center justify-center text-xl shadow-lg shrink-0`}>
+                <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br border ${category.color} flex items-center justify-center text-xl shrink-0`}>
                   {category.icon}
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white leading-tight">{category.title}</h2>
-                  <p className="text-xs text-[#6B6F76] dark:text-gray-400">{category.description}</p>
+                  <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] leading-tight">{category.title}</h2>
+                  <p className="text-xs text-text-secondary">{category.description}</p>
                 </div>
-                <div className="flex-1 h-px bg-gradient-to-r from-[#E8E9F1] dark:from-white/10 to-transparent ml-1" />
-                <span className="shrink-0 text-[11px] font-semibold text-[#9aa0a6] px-2 py-1 rounded-full bg-[#F0F1F5] dark:bg-white/[0.04]">{category.items.length}</span>
+                <div className="flex-1 gx-line opacity-30 ml-1" />
+                <span className="shrink-0 text-[11px] font-semibold text-text-secondary tabular-nums px-2 py-1 rounded-full bg-white/[0.06] border border-white/[0.08]">{category.items.length}</span>
               </div>
 
               {/* Itens do setor */}
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {category.items.map((item) => (
+                {category.items.map((item, ii) => {
+                  const gx = gxTilePalette[(ci + ii) % gxTilePalette.length];
+                  return (
                   <Link
                     key={item.title}
                     href={item.href}
-                    className="group relative flex items-center gap-3.5 p-4 rounded-2xl bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-white/[0.06] hover:border-[#D4A017]/60 dark:hover:border-[#D4A017]/45 hover:shadow-[0_10px_30px_-8px_rgba(212,160,23,0.30)] hover:-translate-y-0.5 transition-all duration-200"
+                    className={`group relative overflow-hidden flex items-center gap-3.5 p-4 rounded-2xl border ${gx.b} ${gx.bg} ${gx.glow} hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200`}
                   >
-                    <div className="shrink-0 w-12 h-12 rounded-xl bg-[#F8F9FB] dark:bg-white/[0.04] group-hover:bg-[#D4A017]/12 flex items-center justify-center text-2xl transition-colors">
+                    <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700" />
+                    <div className={`shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br border ${gx.chip} flex items-center justify-center text-2xl group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-200`}>
                       {item.icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-[#2E2F38] dark:text-white group-hover:text-[#D4A017] transition-colors truncate">{item.title}</h3>
-                      <p className="text-xs text-[#6B6F76] dark:text-gray-400 mt-0.5 line-clamp-2 leading-snug">{item.description}</p>
+                      <h3 className="font-semibold text-white transition-colors truncate">{item.title}</h3>
+                      <p className="text-xs text-text-secondary mt-0.5 line-clamp-2 leading-snug">{item.description}</p>
                     </div>
-                    <span className="shrink-0 text-[#c9ccd4] dark:text-gray-500 group-hover:text-[#D4A017] group-hover:translate-x-0.5 transition-all">→</span>
+                    <span className={`shrink-0 ${gx.accent} opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all`}>→</span>
                   </Link>
-                ))}
+                  );
+                })}
               </div>
             </section>
           ))}
@@ -218,10 +230,11 @@ export default function AdminPage() {
 
       {/* Modal Aprovação de Usuários */}
       {showAprovacao && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-lg w-full max-w-4xl p-6 relative animate-fade-in max-h-[90vh] overflow-y-auto">
-              <button 
-                className="absolute top-4 right-4 text-2xl text-[#6B6F76] dark:text-gray-300 hover:text-[#D4A017] transition-colors" 
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] w-full max-w-4xl p-6 relative overflow-hidden animate-fade-in max-h-[90vh] overflow-y-auto">
+              <div className="absolute inset-x-0 top-0 gx-line" />
+              <button
+                className="absolute top-4 right-4 text-2xl text-text-secondary hover:text-[#FF5C7E] transition-colors"
                 onClick={() => setShowAprovacao(false)}
               >
                 ×
@@ -233,39 +246,39 @@ export default function AdminPage() {
             
             {loading ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4A017]"></div>
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF1E56]"></div>
               </div>
             ) : usuariosPendentes.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="text-6xl mb-4">✅</div>
-                  <p className="text-lg text-[#6B6F76] dark:text-gray-300">Nenhum usuário pendente de aprovação</p>
-                  <p className="text-sm text-[#6B6F76] dark:text-gray-400 mt-2">Todos os cadastros foram processados</p>
+                  <p className="text-lg text-text-secondary">Nenhum usuário pendente de aprovação</p>
+                  <p className="text-sm text-text-secondary mt-2">Todos os cadastros foram processados</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {usuariosPendentes.map((usuario) => (
-                    <div key={usuario.id} className="bg-[#F8F9FB] dark:bg-[#181C23] rounded-xl p-6 border border-[#E8E9F1] dark:border-[#23283A]">
+                    <div key={usuario.id} className="bg-white/[0.03] border border-white/[0.08] rounded-xl p-6">
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-gradient-to-br from-[#D4A017] to-[#E8C547] rounded-full flex items-center justify-center text-white font-semibold">
+                          <div className="w-12 h-12 bg-gradient-to-br from-[#FF1E56] to-[#A50D38] rounded-full flex items-center justify-center text-white font-semibold shadow-[0_0_16px_rgba(255,30,86,0.35)]">
                             {usuario.nome.charAt(0).toUpperCase()}
                           </div>
                       <div>
-                            <h3 className="font-semibold text-[#2E2F38] dark:text-white text-lg">{usuario.nome}</h3>
-                            <p className="text-[#6B6F76] dark:text-gray-300">{usuario.email}</p>
+                            <h3 className="font-semibold text-white text-lg">{usuario.nome}</h3>
+                            <p className="text-text-secondary">{usuario.email}</p>
                           </div>
                       </div>
                         <div className="flex gap-3">
                         <button
                           onClick={() => aprovarUsuario(usuario.id)}
-                            className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                            className="px-6 py-2 border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 rounded-xl font-medium transition-colors flex items-center gap-2"
                         >
                             <span>✓</span>
                           Aprovar
                         </button>
                         <button
                           onClick={() => rejeitarUsuario(usuario.id)}
-                            className="px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                            className="px-6 py-2 border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-300 rounded-xl font-medium transition-colors flex items-center gap-2"
                         >
                             <span>✕</span>
                           Rejeitar
@@ -274,21 +287,21 @@ export default function AdminPage() {
                     </div>
                       
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div className="bg-white dark:bg-[#23283A] p-3 rounded-lg">
-                          <span className="text-[#6B6F76] dark:text-gray-300 text-xs uppercase tracking-wide">Tipo</span>
-                          <p className="font-medium text-[#2E2F38] dark:text-white mt-1">{getTipoContaLabel(usuario.tipoConta)}</p>
+                        <div className="bg-white/[0.03] border border-white/[0.08] p-3 rounded-lg">
+                          <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Tipo</span>
+                          <p className="font-medium text-white mt-1">{getTipoContaLabel(usuario.tipoConta)}</p>
                       </div>
-                        <div className="bg-white dark:bg-[#23283A] p-3 rounded-lg">
-                          <span className="text-[#6B6F76] dark:text-gray-300 text-xs uppercase tracking-wide">Imobiliária</span>
-                          <p className="font-medium text-[#2E2F38] dark:text-white mt-1">{getNomeImobiliaria(usuario.imobiliariaId)}</p>
+                        <div className="bg-white/[0.03] border border-white/[0.08] p-3 rounded-lg">
+                          <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Imobiliária</span>
+                          <p className="font-medium text-white mt-1">{getNomeImobiliaria(usuario.imobiliariaId)}</p>
                       </div>
-                        <div className="bg-white dark:bg-[#23283A] p-3 rounded-lg">
-                          <span className="text-[#6B6F76] dark:text-gray-300 text-xs uppercase tracking-wide">Cadastro</span>
-                          <p className="font-medium text-[#2E2F38] dark:text-white mt-1">{usuario.metodoCadastro === 'google' ? 'Google' : 'E-mail'}</p>
+                        <div className="bg-white/[0.03] border border-white/[0.08] p-3 rounded-lg">
+                          <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Cadastro</span>
+                          <p className="font-medium text-white mt-1">{usuario.metodoCadastro === 'google' ? 'Google' : 'E-mail'}</p>
                       </div>
-                        <div className="bg-white dark:bg-[#23283A] p-3 rounded-lg">
-                          <span className="text-[#6B6F76] dark:text-gray-300 text-xs uppercase tracking-wide">Data</span>
-                          <p className="font-medium text-[#2E2F38] dark:text-white mt-1">
+                        <div className="bg-white/[0.03] border border-white/[0.08] p-3 rounded-lg">
+                          <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Data</span>
+                          <p className="font-medium text-white mt-1">
                           {usuario.criadoEm?.toDate ? usuario.criadoEm.toDate().toLocaleDateString('pt-BR') : 'N/A'}
                         </p>
                       </div>

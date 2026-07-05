@@ -124,12 +124,12 @@ interface AgendaImobiliaria {
 }
 
 const tipoCores = {
-  agenda: 'bg-emerald-500',
-  crm: 'bg-amber-500',
-  nota: 'bg-yellow-500',
-  aviso: 'bg-red-600',
-  comunidade: 'bg-orange-500',
-  imobiliaria: 'bg-purple-500'
+  agenda: 'bg-emerald-500/10 border border-emerald-400/35 text-emerald-300',
+  crm: 'bg-amber-500/10 border border-amber-400/35 text-amber-300',
+  nota: 'bg-yellow-500/10 border border-yellow-400/35 text-yellow-200',
+  aviso: 'bg-red-600/10 border border-red-500/40 text-red-300',
+  comunidade: 'bg-orange-500/10 border border-orange-400/35 text-orange-300',
+  imobiliaria: 'bg-purple-500/10 border border-purple-400/35 text-purple-300'
 };
 
 const tipoLabels = {
@@ -763,32 +763,38 @@ export default function AgendaPage() {
       days.push(
         <div
           key={i}
-          className={`p-3 border-r border-b border-[#E8E9F1] dark:border-[#23283A] min-h-[120px] transition-all duration-200 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] cursor-pointer ${
-            date.getMonth() === currentMonth ? 'bg-white dark:bg-[#23283A]' : 'bg-gray-50 dark:bg-[#181C23]'
-          } ${date.toDateString() === today.toDateString() ? 'bg-gradient-to-br from-[#D4A017]/10 to-[#E8C547]/10 border-[#D4A017]/30' : ''}`}
+          className={`p-3 border-r border-b border-white/[0.06] min-h-[120px] transition-all duration-200 hover:bg-white/[0.05] cursor-pointer ${
+            date.getMonth() === currentMonth ? 'bg-white/[0.02]' : 'bg-black/20'
+          } ${date.toDateString() === today.toDateString() ? 'ring-1 ring-inset ring-[#FF1E56]/60 bg-[#FF1E56]/[0.06]' : ''}`}
           onClick={() => openDayAgendaModal(date)}
         >
-          <div className={`text-sm font-bold mb-2 ${
-            date.toDateString() === today.toDateString() 
-              ? 'text-[#D4A017]' 
-              : date.getMonth() === currentMonth 
-                ? 'text-[#2E2F38] dark:text-white' 
-                : 'text-[#6B6F76] dark:text-gray-400'
+          <div className={`al-display text-sm font-bold tabular-nums mb-2 flex items-center gap-1.5 ${
+            date.toDateString() === today.toDateString()
+              ? 'text-[#FF5C7E]'
+              : date.getMonth() === currentMonth
+                ? 'text-white'
+                : 'text-white/30'
           }`}>
             {date.getDate()}
+            {items.length > 0 && (
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ backgroundColor: items[0].cor, boxShadow: `0 0 6px ${items[0].cor}` }}
+              />
+            )}
           </div>
           <div className="space-y-1">
             {items.slice(0, 3).map((item: AgendaItem) => (
               <div
                 key={item.id}
-                className={`text-xs p-2 rounded-lg ${tipoCores[item.tipo]} text-white truncate cursor-pointer hover:opacity-80 transition-opacity duration-200 shadow-sm relative group/item`}
+                className={`text-xs p-2 rounded-lg ${tipoCores[item.tipo]} truncate cursor-pointer hover:brightness-125 transition-all duration-200 relative group/item`}
                 onClick={() => handleEdit(item)}
                 title={`${item.dataHora.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - ${item.titulo}`}
               >
-                <div className="font-bold">
+                <div className="al-display font-bold tabular-nums">
                   {item.dataHora.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                 </div>
-                <div className="truncate">{item.titulo}</div>
+                <div className="truncate text-white/90">{item.titulo}</div>
                 
                 {/* Botão de exclusão para itens da agenda */}
                 {item.source === 'agenda' && (
@@ -806,7 +812,7 @@ export default function AgendaPage() {
               </div>
             ))}
             {items.length > 3 && (
-              <div className="text-xs text-[#6B6F76] dark:text-gray-400 font-medium">
+              <div className="text-xs text-text-secondary font-medium">
                 +{items.length - 3} mais
               </div>
             )}
@@ -821,28 +827,28 @@ export default function AgendaPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#D4A017]"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF1E56]"></div>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#F5F6FA] dark:bg-[#181C23] min-h-screen p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#D4A017] via-[#E8C547] to-[#6B6F76] bg-clip-text text-transparent mb-2">
+            <h1 className="al-display text-2xl sm:text-3xl font-bold text-white uppercase tracking-[0.12em] mb-2">
               Agenda Completa
             </h1>
-            <p className="text-[#6B6F76] dark:text-gray-300">Organize seus compromissos pessoais e profissionais</p>
+            <p className="text-text-secondary">Organize seus compromissos pessoais e profissionais</p>
           </div>
           <button
             onClick={() => {
               resetForm();
               setShowModal(true);
             }}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#D4A017] to-[#E8C547] text-white rounded-xl hover:from-[#B8860B] hover:to-[#D4A017] transition-all duration-300 transform hover:scale-105 shadow-lg font-semibold"
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold rounded-xl shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all"
           >
             <PlusIcon className="h-5 w-5" />
             Novo Compromisso
@@ -850,14 +856,14 @@ export default function AgendaPage() {
         </div>
 
         {/* Filtros e Controles */}
-        <div className="bg-gradient-to-br from-[#E8C547]/30 to-[#D4A017]/10 border-2 border-[#D4A017]/20 rounded-2xl p-6 mb-8 relative overflow-hidden shadow-xl">
-          <div className="absolute top-0 left-0 w-1 h-full bg-[#D4A017]"></div>
+        <div className="al-card relative overflow-hidden p-6 mb-8">
+          <div className="absolute inset-x-0 top-0 gx-line" />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
               <select
                 value={filter}
                 onChange={(e) => setFilter(e.target.value as 'all' | 'crm' | 'nota' | 'agenda' | 'comunidade')}
-                className="px-4 py-2 bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent text-[#2E2F38] dark:text-white font-medium"
+                className="px-4 py-2 bg-white/[0.04] border border-white/10 rounded-lg text-white font-medium focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
               >
                 <option value="all">Todos os tipos</option>
                 <option value="crm">CRM</option>
@@ -876,13 +882,13 @@ export default function AgendaPage() {
                   newDate.setMonth(newDate.getMonth() - 1);
                   setSelectedDate(newDate);
                 }}
-                className="p-3 hover:bg-white/60 dark:hover:bg-[#23283A]/60 rounded-xl transition-colors"
+                className="p-3 hover:bg-white/[0.08] rounded-xl transition-colors"
               >
-                <svg className="w-5 h-5 text-[#D4A017]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-[#FF5C7E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              <span className="font-bold text-lg text-[#2E2F38] dark:text-white min-w-[200px] text-center">
+              <span className="al-display font-bold text-lg text-white uppercase tracking-[0.08em] min-w-[200px] text-center">
                 {selectedDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
               </span>
               <button
@@ -891,9 +897,9 @@ export default function AgendaPage() {
                   newDate.setMonth(newDate.getMonth() + 1);
                   setSelectedDate(newDate);
                 }}
-                className="p-3 hover:bg-white/60 dark:hover:bg-[#23283A]/60 rounded-xl transition-colors"
+                className="p-3 hover:bg-white/[0.08] rounded-xl transition-colors"
               >
-                <svg className="w-5 h-5 text-[#D4A017]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-[#FF5C7E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
@@ -902,11 +908,12 @@ export default function AgendaPage() {
         </div>
 
         {/* Calendário */}
-        <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] overflow-hidden mb-8">
+        <div className="al-card relative overflow-hidden mb-8">
+          <div className="absolute inset-x-0 top-0 gx-line" />
           {/* Dias da semana */}
-          <div className="grid grid-cols-7 bg-gradient-to-r from-[#D4A017]/10 to-[#E8C547]/10">
+          <div className="grid grid-cols-7 bg-white/[0.03]">
             {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day) => (
-              <div key={day} className="p-4 text-center font-bold text-[#2E2F38] dark:text-white border-b border-[#E8E9F1] dark:border-[#23283A]">
+              <div key={day} className="p-4 text-center text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary border-b border-white/[0.08]">
                 {day}
               </div>
             ))}
@@ -919,17 +926,15 @@ export default function AgendaPage() {
         </div>
 
         {/* Lista de Compromissos */}
-        <div className="bg-gradient-to-br from-[#E8C547]/30 to-[#D4A017]/10 border-2 border-[#D4A017]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl">
-          <div className="absolute top-0 left-0 w-1 h-full bg-[#D4A017]"></div>
+        <div className="al-card relative overflow-hidden p-6">
+          <div className="absolute inset-x-0 top-0 gx-line" />
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-r from-[#D4A017] to-[#E8C547] rounded-full flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
+            <svg className="w-5 h-5 text-[#FF5C7E] drop-shadow-[0_0_8px_rgba(255,30,86,0.5)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
             <div>
-              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Próximos Compromissos</h2>
-              <p className="text-[#6B6F76] dark:text-gray-300">Seus compromissos futuros</p>
+              <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">Próximos Compromissos</h2>
+              <p className="text-text-secondary text-sm">Seus compromissos futuros</p>
             </div>
           </div>
           
@@ -1042,26 +1047,28 @@ export default function AgendaPage() {
               return sortedItems.map((item) => (
                 <div
                   key={item.id}
-                  className={`group p-4 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] hover:bg-white/60 dark:hover:bg-[#23283A]/60 transition-all duration-300 ${
+                  className={`group p-4 rounded-xl border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.05] hover:translate-x-1 transition-all duration-300 ${
                     item.status === 'concluida' ? 'opacity-60' : ''
                   }`}
-                  style={{ borderLeftColor: item.cor, borderLeftWidth: '4px' }}
+                  style={{ borderLeftColor: item.cor, borderLeftWidth: '2px' }}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div
-                        className="w-4 h-4 rounded-full shadow-md"
-                        style={{ backgroundColor: item.cor }}
-                      ></div>
+                      <span className="al-display text-[15px] font-bold tabular-nums shrink-0 text-white/70">
+                        {item.dataHora.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                       <div>
-                        <div className="font-semibold text-[#2E2F38] dark:text-white group-hover:text-[#D4A017] transition-colors">
+                        <div className="font-semibold text-white group-hover:text-[#FF7A97] transition-colors">
                           {item.titulo}
                         </div>
-                        <div className="text-sm text-[#6B6F76] dark:text-gray-300">
-                          {item.dataHora.toDate().toLocaleString('pt-BR')} • {tipoLabels[item.tipo]}
+                        <div className="text-sm text-text-secondary tabular-nums flex items-center gap-2">
+                          {item.dataHora.toDate().toLocaleString('pt-BR')}
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${tipoCores[item.tipo]}`}>
+                            {tipoLabels[item.tipo]}
+                          </span>
                         </div>
                         {item.descricao && (
-                          <div className="text-sm text-[#6B6F76] dark:text-gray-400 mt-1 line-clamp-2">
+                          <div className="text-sm text-text-secondary mt-1 line-clamp-2">
                             {item.descricao}
                           </div>
                         )}
@@ -1073,15 +1080,15 @@ export default function AgendaPage() {
                       {item.source === 'agenda' && (
                         <button
                           onClick={() => handleDelete(item.id)}
-                          className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
                           title="Excluir compromisso"
                         >
                           <TrashIcon className="w-4 h-4" />
                         </button>
                       )}
-                      
+
                       {/* Próximos compromissos: apenas visualização */}
-                      <div className="text-xs text-[#6B6F76] dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">
+                      <div className="text-[10px] font-extrabold uppercase tracking-wider text-text-secondary px-2 py-1 bg-white/[0.06] rounded-full">
                         Próximos 5 dias
                       </div>
                     </div>
@@ -1095,75 +1102,74 @@ export default function AgendaPage() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => {
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => {
           setShowModal(false);
           setEditingItem(null);
           resetForm();
         }}>
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 w-full max-w-md shadow-xl border border-[#E8E9F1] dark:border-[#23283A]" onClick={e => e.stopPropagation()}>
+          <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="absolute inset-x-0 top-0 gx-line" />
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-r from-[#D4A017] to-[#E8C547] rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
+              <svg className="w-5 h-5 text-[#FF5C7E] drop-shadow-[0_0_8px_rgba(255,30,86,0.5)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
               <div>
-                <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">
+                <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">
                   {editingItem ? 'Editar Compromisso' : 'Novo Compromisso'}
                 </h2>
-                <p className="text-[#6B6F76] dark:text-gray-300 text-sm">Gerencie seus compromissos</p>
+                <p className="text-text-secondary text-sm">Gerencie seus compromissos</p>
               </div>
             </div>
             
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold mb-2 text-[#2E2F38] dark:text-white">
+                <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] mb-2 text-text-secondary">
                   Título
                 </label>
                 <input
                   type="text"
                   value={formData.titulo}
                   onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
-                  className="w-full px-4 py-3 bg-white dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400"
+                  className="w-full px-4 py-3 bg-white/[0.04] border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                   placeholder="Digite o título do compromisso"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold mb-2 text-[#2E2F38] dark:text-white">
+                <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] mb-2 text-text-secondary">
                   Descrição
                 </label>
                 <textarea
                   value={formData.descricao}
                   onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                  className="w-full px-4 py-3 bg-white dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400"
+                  className="w-full px-4 py-3 bg-white/[0.04] border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                   placeholder="Descrição opcional do compromisso"
                   rows={3}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold mb-2 text-[#2E2F38] dark:text-white">
+                <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] mb-2 text-text-secondary">
                   Data e Hora
                 </label>
                 <input
                   type="datetime-local"
                   value={formData.dataHora}
                   onChange={(e) => setFormData({ ...formData, dataHora: e.target.value })}
-                  className="w-full px-4 py-3 bg-white dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent text-[#2E2F38] dark:text-white"
+                  className="w-full px-4 py-3 bg-white/[0.04] border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold mb-2 text-[#2E2F38] dark:text-white">
+                <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] mb-2 text-text-secondary">
                   Tipo
                 </label>
                 <select
                   value={formData.tipo}
                   onChange={(e) => setFormData({ ...formData, tipo: e.target.value as 'agenda' })}
-                  className="w-full px-4 py-3 bg-white dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent text-[#2E2F38] dark:text-white"
+                  className="w-full px-4 py-3 bg-white/[0.04] border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                 >
                   <option value="agenda">Agenda</option>
                 </select>
@@ -1174,7 +1180,7 @@ export default function AgendaPage() {
               <div className="flex gap-3 pt-6">
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-[#D4A017] to-[#E8C547] text-white rounded-xl hover:from-[#B8860B] hover:to-[#D4A017] transition-all duration-300 font-semibold shadow-lg"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold rounded-xl shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all"
                 >
                   {editingItem ? 'Atualizar' : 'Criar'}
                 </button>
@@ -1185,7 +1191,7 @@ export default function AgendaPage() {
                     setEditingItem(null);
                     resetForm();
                   }}
-                  className="flex-1 px-6 py-3 bg-gray-200 dark:bg-[#181C23] text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-[#23283A] transition-colors font-semibold"
+                  className="flex-1 px-6 py-3 border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white rounded-xl transition-colors font-semibold"
                 >
                   Cancelar
                 </button>
@@ -1197,23 +1203,22 @@ export default function AgendaPage() {
 
       {/* Modal de Visualização */}
       {showViewModal && viewingItem && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => {
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => {
           setShowViewModal(false);
           setViewingItem(null);
         }}>
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 w-full max-w-md shadow-xl border border-[#E8E9F1] dark:border-[#23283A]" onClick={e => e.stopPropagation()}>
+          <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="absolute inset-x-0 top-0 gx-line" />
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-r from-[#D4A017] to-[#E8C547] rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-              </div>
+              <svg className="w-5 h-5 text-[#FF5C7E] drop-shadow-[0_0_8px_rgba(255,30,86,0.5)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
               <div>
-                <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">
+                <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">
                   Visualizar {viewingItem.source === 'crm' ? 'Tarefa CRM' : viewingItem.source === 'aviso' ? 'Aviso Importante' : viewingItem.source === 'comunidade' ? 'Evento Comunidade' : 'Nota'}
                 </h2>
-                <p className="text-[#6B6F76] dark:text-gray-300 text-sm">
+                <p className="text-text-secondary text-sm tabular-nums">
                   {viewingItem.dataHora.toDate().toLocaleString('pt-BR')}
                 </p>
               </div>
@@ -1221,39 +1226,39 @@ export default function AgendaPage() {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold mb-2 text-[#2E2F38] dark:text-white">
+                <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] mb-2 text-text-secondary">
                   Título
                 </label>
-                <div className="w-full px-4 py-3 bg-gray-50 dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl text-[#2E2F38] dark:text-white">
+                <div className="w-full px-4 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-white">
                   {viewingItem.titulo}
                 </div>
               </div>
 
               {viewingItem.descricao && (
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-[#2E2F38] dark:text-white">
+                  <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] mb-2 text-text-secondary">
                     Descrição
                   </label>
-                  <div className="w-full px-4 py-3 bg-gray-50 dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl text-[#2E2F38] dark:text-white">
+                  <div className="w-full px-4 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-white">
                     {viewingItem.descricao}
                   </div>
                 </div>
               )}
 
               <div>
-                <label className="block text-sm font-semibold mb-2 text-[#2E2F38] dark:text-white">
+                <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] mb-2 text-text-secondary">
                   Data e Hora
                 </label>
-                <div className="w-full px-4 py-3 bg-gray-50 dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl text-[#2E2F38] dark:text-white">
+                <div className="w-full px-4 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-white">
                   {viewingItem.dataHora.toDate().toLocaleString('pt-BR')}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold mb-2 text-[#2E2F38] dark:text-white">
+                <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] mb-2 text-text-secondary">
                   Tipo
                 </label>
-                <div className="w-full px-4 py-3 bg-gray-50 dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl text-[#2E2F38] dark:text-white">
+                <div className="w-full px-4 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-white">
                   {tipoLabels[viewingItem.tipo]}
                 </div>
               </div>
@@ -1265,7 +1270,7 @@ export default function AgendaPage() {
                     setShowViewModal(false);
                     setViewingItem(null);
                   }}
-                  className="flex-1 px-6 py-3 bg-[#D4A017] text-white rounded-xl hover:bg-[#B8860B] transition-colors font-semibold"
+                  className="flex-1 px-6 py-3 border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white rounded-xl transition-colors font-semibold"
                 >
                   Fechar
                 </button>

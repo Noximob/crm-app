@@ -25,14 +25,15 @@ export default function LogInteractionModal({ isOpen, onClose, onSave, interacti
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center">
-            <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg relative">
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex justify-center items-center">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] p-6 w-full max-w-lg relative overflow-hidden">
+                <div className="absolute inset-x-0 top-0 gx-line" />
+                <button onClick={onClose} className="absolute top-4 right-4 text-text-secondary hover:text-[#FF5C7E] transition-colors">
                     <XIcon className="h-6 w-6" />
                 </button>
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">Registrar Interação: {interactionType}</h2>
+                <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Registrar Interação: {interactionType}</h2>
                 <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="description" className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">
                         Descrição
                     </label>
                     <textarea
@@ -40,19 +41,19 @@ export default function LogInteractionModal({ isOpen, onClose, onSave, interacti
                         rows={4}
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-gray-800"
+                        className="mt-1 block w-full px-3 py-2 bg-white/[0.04] border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 text-white placeholder-white/30"
                         placeholder={`Descreva os detalhes da ${interactionType.toLowerCase()}...`}
                     />
                 </div>
                 <div className="flex justify-end gap-4 pt-6">
-                    <button type="button" onClick={onClose} disabled={isLoading} className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50">
+                    <button type="button" onClick={onClose} disabled={isLoading} className="px-4 py-2 text-sm font-semibold text-white bg-white/[0.04] border border-white/10 hover:bg-white/[0.08] rounded-xl transition-colors disabled:opacity-50">
                         Cancelar
                     </button>
                     <button
                         type="button"
                         onClick={handleSave}
                         disabled={isLoading || !description.trim()}
-                        className="px-4 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-sm disabled:opacity-50 disabled:bg-primary-400"
+                        className="px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 rounded-xl shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all disabled:opacity-50"
                     >
                         {isLoading ? 'Salvando...' : 'Salvar Interação'}
                     </button>

@@ -13,11 +13,13 @@ import LeadCard from './_components/LeadCard';
 
 type LeadsByStage = { [key: string]: Lead[] };
 
-// Componente para título com barra colorida (igual ao usado nas outras páginas)
+// Paleta do funil GX — cor por índice de etapa (repete com módulo)
+const FUNNEL_COLORS = ['#FFE9A6', '#E8C547', '#D4A017', '#F59E0B', '#FF7A45', '#FF1E56'];
+
+// Título de seção no padrão GX
 const SectionTitle = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
   <div className={`relative ${className}`}>
-    <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white relative z-10">{children}</h2>
-    <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-[#D4A017] to-[#E8C547] rounded-r-full opacity-60"></div>
+    <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">{children}</h2>
   </div>
 );
 
@@ -157,13 +159,14 @@ export default function AndamentoPage() {
         <div className="flex flex-col min-h-0 flex-1 min-w-0">
             <CrmHeader />
             <main className="flex flex-col flex-1 min-h-0 gap-4 mt-4 min-w-0">
-                <div className="flex flex-col flex-1 min-h-0 bg-white dark:bg-[#23283A] p-4 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] min-w-0 overflow-hidden">
+                <div className="flex flex-col flex-1 min-h-0 al-card relative p-4 min-w-0 overflow-hidden">
+                    <div className="absolute inset-x-0 top-0 gx-line" />
                     <div className="shrink-0 mb-4">
                         <SectionTitle>Andamento dos Leads</SectionTitle>
                     </div>
                     
                     {loading ? (
-                        <div className="text-center py-10">Carregando quadro...</div>
+                        <div className="text-center py-10 text-text-secondary">Carregando quadro...</div>
                     ) : (
                         <DndContext 
                             key={stages.join('|')}
@@ -173,17 +176,18 @@ export default function AndamentoPage() {
                             onDragEnd={handleDragEnd}
                         >
                             <div className="flex gap-6 flex-1 min-h-0 overflow-x-auto overflow-y-auto w-full max-w-full pb-4">
-                                {stages.map(stage => (
-                                    <KanbanColumn 
-                                        key={stage} 
-                                        id={stage} 
-                                        title={stage} 
-                                        leads={leads[stage] || []} 
+                                {stages.map((stage, index) => (
+                                    <KanbanColumn
+                                        key={stage}
+                                        id={stage}
+                                        title={stage}
+                                        leads={leads[stage] || []}
+                                        corEtapa={FUNNEL_COLORS[index % FUNNEL_COLORS.length]}
                                     />
                                 ))}
                             </div>
                             <DragOverlay>
-                                {activeLead ? <LeadCard lead={activeLead} /> : null}
+                                {activeLead ? <LeadCard lead={activeLead} corEtapa={FUNNEL_COLORS[Math.max(stages.indexOf(normalizeEtapa(activeLead.etapa)), 0) % FUNNEL_COLORS.length]} /> : null}
                             </DragOverlay>
                         </DndContext>
                     )}

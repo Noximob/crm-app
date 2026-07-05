@@ -129,10 +129,10 @@ export default function MateriaisPage() {
       <button
         key={a.key}
         onClick={() => setTab(a.key)}
-        className={`${compact ? 'px-3 py-1.5 text-[13px]' : 'px-3.5 py-2 text-sm'} rounded-lg font-bold whitespace-nowrap transition-colors ${tab === a.key ? 'bg-amber-500 text-black shadow-[0_0_14px_rgba(245,158,11,0.25)]' : 'bg-white/[0.05] text-text-secondary hover:text-white hover:bg-white/[0.09]'}`}
+        className={`${compact ? 'px-3 py-1.5 text-[13px]' : 'px-3.5 py-2 text-sm'} rounded-lg font-bold whitespace-nowrap transition-colors ${tab === a.key ? 'bg-gradient-to-r from-[#FF1E56] to-[#A50D38] text-white shadow-[0_0_14px_rgba(255,30,86,0.35)]' : 'bg-white/[0.05] text-text-secondary hover:text-white hover:bg-white/[0.09]'}`}
       >
         {a.label}
-        {a.count ? <span className={`ml-1.5 text-[10px] font-extrabold ${tab === a.key ? 'text-black/60' : 'text-text-secondary'}`}>{a.count}</span> : null}
+        {a.count ? <span className={`ml-1.5 text-[10px] font-extrabold ${tab === a.key ? 'text-white/70' : 'text-text-secondary'}`}>{a.count}</span> : null}
       </button>
     ));
 
@@ -142,7 +142,7 @@ export default function MateriaisPage() {
       <div className="relative shrink-0 mb-3 z-30">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
-            <h1 className="text-2xl font-bold text-white">Materiais de apoio</h1>
+            <h1 className="al-display text-2xl font-bold text-white uppercase tracking-[0.08em]">Materiais de apoio</h1>
             <p className="text-sm text-text-secondary">Abra, apresente no Meet e encaminhe pro cliente no WhatsApp.</p>
           </div>
           {temImoveis && (
@@ -167,19 +167,20 @@ export default function MateriaisPage() {
         {menuAberto && (
           <>
             <div className="fixed inset-0 z-20" onClick={() => setMenuAberto(false)} />
-            <div className="absolute right-0 mt-2 w-full sm:w-96 max-w-full z-30 rounded-xl border border-white/10 bg-[#15151a] shadow-2xl overflow-hidden">
+            <div className="absolute right-0 mt-2 w-full sm:w-96 max-w-full z-30 rounded-xl border border-white/10 bg-[#12101a] shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] overflow-hidden">
+              <div className="absolute inset-x-0 top-0 gx-line" />
               <div className="p-3 border-b border-white/10 space-y-2">
                 <input
                   value={busca}
                   onChange={(e) => setBusca(e.target.value)}
                   placeholder="Buscar empreendimento…"
                   autoFocus
-                  className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white placeholder:text-text-secondary focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                 />
                 <div className="flex flex-wrap gap-1">
                   <button
                     onClick={() => setFiltroCo('')}
-                    className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${!filtroCo ? 'bg-amber-500 text-black' : 'bg-white/[0.06] text-text-secondary'}`}
+                    className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${!filtroCo ? 'bg-[#FF1E56] text-white' : 'bg-white/[0.06] text-text-secondary'}`}
                   >
                     Todas
                   </button>
@@ -224,7 +225,8 @@ export default function MateriaisPage() {
       ) : imoveis.length === 0 ? (
         <div className="flex-1 flex items-center justify-center text-text-secondary">Nenhum imóvel cadastrado ainda.</div>
       ) : (
-        <section ref={secRef} className={`${fullscreen ? 'w-screen h-screen rounded-none' : 'flex-1 rounded-xl'} min-w-0 min-h-0 flex flex-col border border-white/10 bg-[#101015] overflow-hidden`}>
+        <section ref={secRef} className={`${fullscreen ? 'w-screen h-screen rounded-none' : 'flex-1 rounded-xl'} relative min-w-0 min-h-0 flex flex-col border border-white/10 bg-[#101015] overflow-hidden`}>
+          <div className="absolute inset-x-0 top-0 gx-line z-10" />
           {!sel ? (
             <div className="flex-1 flex items-center justify-center text-text-secondary">Selecione um empreendimento no seletor acima.</div>
           ) : (
@@ -250,12 +252,12 @@ export default function MateriaisPage() {
                   <div className="shrink-0 px-4 pt-3 pb-2.5 border-b border-white/10">
                     <div className="flex items-center gap-2.5 flex-wrap">
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-black shrink-0" style={{ background: corCo[sel.co] || '#D4A017' }}>{sel.co}</span>
-                      <h2 className="text-xl font-extrabold text-white leading-tight truncate">{sel.n}</h2>
+                      <h2 className="al-display text-xl font-extrabold text-white leading-tight truncate">{sel.n}</h2>
                       {sel.st && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-white/80 shrink-0">{sel.st}</span>}
                       {(sel.cid || sel.end) && <span className="text-xs text-text-secondary truncate">{[sel.end, sel.cid].filter(Boolean).join(' · ')}</span>}
                       <button
                         onClick={toggleFullscreen}
-                        className="ml-auto shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-amber-500 text-black hover:bg-amber-400"
+                        className="ml-auto shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all"
                         title="Tela cheia — ideal pra apresentar no Meet"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
@@ -309,7 +311,7 @@ function BtnWhats({ url, text, asFile }: { url: string; text: string; asFile: bo
 }
 function BtnDownload({ url }: { url: string }) {
   return (
-    <a href={url} target="_blank" rel="noopener noreferrer" download className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white/75 border border-white/15 hover:bg-white/5">
+    <a href={url} target="_blank" rel="noopener noreferrer" download className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] transition-colors">
       Baixar
     </a>
   );
@@ -327,11 +329,11 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
         {imovel.resumo && <p className="text-[15px] text-white/85 whitespace-pre-line leading-relaxed">{imovel.resumo}</p>}
         {tips.length > 0 && (
           <div>
-            <h3 className="text-sm font-bold text-white mb-2">Tipologias</h3>
+            <h3 className="al-display text-[13px] font-bold text-white uppercase tracking-[0.14em] mb-2">Tipologias</h3>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {tips.map((t, i) => (
-                <div key={i} className="rounded-lg bg-white/[0.04] border border-white/10 px-3 py-2.5 flex items-baseline gap-2">
-                  <span className="text-base font-bold text-amber-300">{t[0]} m²</span>
+                <div key={i} className="rounded-xl bg-white/[0.03] border border-white/[0.08] px-3 py-2.5 flex items-baseline gap-2">
+                  <span className="al-display text-base font-bold text-[#FFE9A6]">{t[0]} m²</span>
                   <span className="text-xs text-text-secondary">{t[1]}</span>
                 </div>
               ))}
@@ -340,7 +342,7 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
         )}
         {Array.isArray(imovel.dif) && imovel.dif.length > 0 && (
           <div>
-            <h3 className="text-sm font-bold text-white mb-2">Diferenciais</h3>
+            <h3 className="al-display text-[13px] font-bold text-white uppercase tracking-[0.14em] mb-2">Diferenciais</h3>
             <div className="flex flex-wrap gap-1.5">
               {imovel.dif.map((d, i) => (
                 <span key={i} className="px-2.5 py-1 rounded-full text-xs bg-white/[0.05] text-white/80 border border-white/10">{d}</span>
@@ -364,7 +366,7 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
         {!presenting && (
           <Toolbar>
             <span className="text-sm font-semibold text-white mr-auto">Localização</span>
-            {link && <a href={link} target="_blank" rel="noopener noreferrer" className="text-xs px-2.5 py-1.5 rounded-lg border border-white/15 text-white/75 hover:bg-white/5">Abrir no Google Maps</a>}
+            {link && <a href={link} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08] transition-colors">Abrir no Google Maps</a>}
             <BtnWhats url={link || ''} text={`${imovel.n} — Localização\n${link || [imovel.end, imovel.cid].filter(Boolean).join(', ')}`} asFile={false} />
           </Toolbar>
         )}
@@ -386,7 +388,7 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
       <div className="h-full flex flex-col">
         <Toolbar>
           <span className="text-sm font-semibold text-white mr-auto">{m.name || cat.label}</span>
-          <button onClick={pdfFullscreen} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-black hover:bg-amber-400 transition-colors" title="Só o PDF na tela inteira — role o mouse, clique ou use as setas pra passar as páginas">
+          <button onClick={pdfFullscreen} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all" title="Só o PDF na tela inteira — role o mouse, clique ou use as setas pra passar as páginas">
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
             Apresentar PDF
           </button>
@@ -436,7 +438,7 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
         {!presenting && <p className="text-xs text-text-secondary mb-2">{cat.label} · {imgs.length} {imgs.length === 1 ? 'item' : 'itens'} — clique para ampliar (use as setas do teclado pra navegar)</p>}
         <div className="grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2.5">
           {imgs.map((im, k) => (
-            <button key={k} onClick={() => onLightbox({ imgs, idx: k })} className="group relative aspect-[4/3] rounded-xl overflow-hidden border border-white/10 bg-white/[0.03] hover:border-amber-500/60 transition-colors">
+            <button key={k} onClick={() => onLightbox({ imgs, idx: k })} className="group relative aspect-[4/3] rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.03] hover:border-[#FF1E56]/40 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-10px_rgba(255,30,86,0.35)] transition-all duration-200">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={im.url} alt={im.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
               {im.label && (
@@ -453,11 +455,12 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
     const m = mats[0];
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="max-w-md w-full text-center rounded-2xl border border-white/10 bg-white/[0.03] p-8">
-          <div className="text-lg font-bold text-white mb-1">{m.name || cat.label}</div>
+        <div className="max-w-md w-full text-center al-card relative overflow-hidden p-8">
+          <div className="absolute inset-x-0 top-0 gx-line" />
+          <div className="al-display text-lg font-bold text-white uppercase tracking-[0.08em] mb-1">{m.name || cat.label}</div>
           <p className="text-sm text-text-secondary mb-5">Abre em nova aba para você apresentar valores e disponibilidade.</p>
           <div className="flex items-center justify-center gap-2 flex-wrap">
-            <a href={m.url.trim()} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 text-black font-bold text-sm hover:bg-amber-400">
+            <a href={m.url.trim()} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold text-sm shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all">
               Abrir {cat.label.toLowerCase()}
             </a>
             <BtnWhats url={m.url.trim()} text={`${imovel.n} — ${m.name || cat.label}\n${m.url.trim()}`} asFile={false} />
@@ -473,12 +476,12 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
         {mats.map((m, i) => {
           const url = m.url.trim();
           return (
-            <div key={i} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5">
+            <div key={i} className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-2.5 hover:bg-white/[0.04] transition-colors">
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold text-white truncate">{m.name || url}</div>
                 <div className="text-[11px] text-text-secondary truncate">{url}</div>
               </div>
-              <a href={url} target="_blank" rel="noopener noreferrer" className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white/75 border border-white/15 hover:bg-white/5">Abrir</a>
+              <a href={url} target="_blank" rel="noopener noreferrer" className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] transition-colors">Abrir</a>
               <a href={waLink(`${imovel.n} — ${m.name || 'link'}\n${url}`)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-[#25D366] hover:bg-[#1fbd5a]"><WAIcon className="w-3.5 h-3.5" />WhatsApp</a>
             </div>
           );

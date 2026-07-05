@@ -38,24 +38,25 @@ const toYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padSta
 const fmtData = (d: Date) => d.toLocaleDateString('pt-BR');
 
 // ---------- inputs (nível de módulo p/ não perder foco) ----------
-const inputCls = 'w-full px-3 py-2.5 rounded-xl border border-[#E8E9F1] dark:border-white/10 bg-white dark:bg-[#171b28] text-[15px] text-[#2E2F38] dark:text-white focus:outline-none focus:border-[#D4A017] focus:ring-2 focus:ring-[#D4A017]/20 transition';
+const inputCls = 'w-full px-3 py-2.5 rounded-xl border border-white/10 bg-white/[0.04] text-[15px] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 transition';
 const Campo = ({ label, hint, children }: { label: string; hint?: React.ReactNode; children: React.ReactNode }) => (
   <div>
-    <label className="block text-xs font-semibold text-[#6B6F76] dark:text-gray-300 mb-1.5">{label}</label>
+    <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1.5">{label}</label>
     {children}
-    {hint && <p className="text-[11px] text-[#9aa0a6] mt-1">{hint}</p>}
+    {hint && <p className="text-[11px] text-text-secondary mt-1">{hint}</p>}
   </div>
 );
 const Secao = ({ icon, titulo, children }: { icon: string; titulo: string; children: React.ReactNode }) => (
-  <div className="bg-white dark:bg-[#23283A] rounded-2xl border border-[#E8E9F1] dark:border-white/10 p-5">
-    <div className="flex items-center gap-2 mb-4">
-      <span className="text-lg">{icon}</span>
-      <h2 className="text-sm font-bold uppercase tracking-wide text-[#2E2F38] dark:text-white">{titulo}</h2>
+  <div className="al-card relative overflow-hidden rounded-2xl p-5">
+    <div className="absolute inset-x-0 top-0 gx-line" />
+    <div className="flex items-center gap-2.5 mb-4">
+      <span className="h-4 w-1 rounded-full bg-gradient-to-b from-[#FF1E56] to-[#A50D38] shadow-[0_0_8px_rgba(255,30,86,0.5)]" />
+      <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">{titulo}</h2>
     </div>
     <div className="space-y-3">{children}</div>
   </div>
 );
-const btnFechar = 'text-xs px-3 py-1.5 rounded-lg bg-[#D4A017]/15 text-[#8a6d10] dark:text-[#e8c547] font-semibold hover:bg-[#D4A017]/25 transition';
+const btnFechar = 'text-xs px-3 py-1.5 rounded-lg border border-[#FF3364]/40 bg-[#FF1E56]/[0.08] text-[#FF7A97] font-bold hover:bg-[#FF1E56]/[0.15] transition-colors';
 
 /** Campo de valor com raciocínio flexível: digite em R$ OU em % (do valor da proposta). Ao alternar, converte o número. */
 const ValorFlex = ({ label, mode, value, base, onMode, onValue, hint, ph }: {
@@ -71,10 +72,10 @@ const ValorFlex = ({ label, mode, value, base, onMode, onValue, hint, ph }: {
   return (
     <div>
       <div className="flex items-center justify-between gap-2 mb-1.5">
-        <label className="block text-xs font-semibold text-[#6B6F76] dark:text-gray-300 truncate">{label}</label>
-        <div className="flex rounded-md overflow-hidden border border-[#E8E9F1] dark:border-white/15 shrink-0">
+        <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary truncate">{label}</label>
+        <div className="flex rounded-md overflow-hidden border border-white/10 bg-white/[0.04] shrink-0">
           {(['rs', 'pct'] as const).map((m) => (
-            <button key={m} type="button" onClick={() => trocar(m)} className={`px-2 py-0.5 text-[10px] font-bold transition-colors ${mode === m ? 'bg-[#D4A017] text-black' : 'text-[#9aa0a6] hover:text-[#6B6F76] dark:hover:text-white'}`}>
+            <button key={m} type="button" onClick={() => trocar(m)} className={`px-2 py-0.5 text-[10px] font-extrabold transition-colors ${mode === m ? 'bg-gradient-to-r from-[#FF1E56] to-[#A50D38] text-white shadow-[0_0_10px_rgba(255,30,86,0.4)]' : 'text-text-secondary hover:text-white'}`}>
               {m === 'rs' ? 'R$' : '%'}
             </button>
           ))}
@@ -85,10 +86,10 @@ const ValorFlex = ({ label, mode, value, base, onMode, onValue, hint, ph }: {
       ) : (
         <div className="relative">
           <input type="number" step="any" min="0" value={value || ''} onChange={(e) => onValue(parseFloat(e.target.value) || 0)} placeholder={ph || '0'} className={inputCls + ' pr-8 tabular-nums'} />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[13px] text-[#9aa0a6] pointer-events-none">%</span>
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[13px] text-white/40 pointer-events-none">%</span>
         </div>
       )}
-      {hint && <p className="text-[11px] text-[#9aa0a6] mt-1">{hint}</p>}
+      {hint && <p className="text-[11px] text-text-secondary mt-1">{hint}</p>}
     </div>
   );
 };
@@ -250,14 +251,14 @@ export default function FluxoPagamentoPage() {
   };
 
   const status = c.ac <= 0 ? 'vazio' : c.fecha ? 'ok' : c.diferenca > 0 ? 'falta' : 'excedente';
-  const statusCor = { vazio: 'border-[#E8E9F1] dark:border-white/10 bg-[#f7f7f9] dark:bg-white/5', ok: 'border-emerald-400/50 bg-emerald-50 dark:bg-emerald-500/10', falta: 'border-amber-400/50 bg-amber-50 dark:bg-amber-500/10', excedente: 'border-rose-400/50 bg-rose-50 dark:bg-rose-500/10' }[status];
+  const statusCor = { vazio: 'border-white/10 bg-white/[0.04]', ok: 'border-emerald-400/40 bg-emerald-500/10', falta: 'border-amber-400/40 bg-amber-500/10', excedente: 'border-rose-400/40 bg-rose-500/10' }[status];
 
   return (
     <div className="min-h-full py-6 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="mb-5">
-          <h1 className="text-2xl font-bold text-[#2E2F38] dark:text-white">Fluxo de Pagamento</h1>
-          <p className="text-sm text-[#6B6F76] dark:text-gray-300">Monte a proposta em R$ ou em % — cada campo tem o seletor. Gere o PDF com a logo da Nox. Nada é salvo.</p>
+          <h1 className="al-display text-2xl font-bold text-white uppercase tracking-[0.08em]">Fluxo de Pagamento</h1>
+          <p className="text-sm text-text-secondary">Monte a proposta em R$ ou em % — cada campo tem o seletor. Gere o PDF com a logo da Nox. Nada é salvo.</p>
         </div>
 
         <div className="grid lg:grid-cols-[1fr_minmax(360px,420px)] gap-5 items-start">
@@ -278,7 +279,7 @@ export default function FluxoPagamentoPage() {
                 <Campo label="Permuta (o que entra)" hint="carro, casa, terreno… (opcional)"><input value={permutaDesc} onChange={(e) => setPermutaDesc(e.target.value)} placeholder="Ex: Honda Civic 2020" className={inputCls} /></Campo>
                 <Campo label="Valor da permuta" hint={permutaValor > 0
                   ? (c.ac > 0 && permutaValor > c.vp - c.ac
-                    ? <span className="text-rose-500 dark:text-rose-300">⚠ maior que o saldo da entrega ({brl(Math.max(0, c.vp - c.ac))})</span>
+                    ? <span className="text-rose-300">⚠ maior que o saldo da entrega ({brl(Math.max(0, c.vp - c.ac))})</span>
                     : 'abate do saldo financiado na entrega')
                   : 'opcional'}><MoneyInput value={permutaValor} onChange={setPermutaValor} placeholder="0,00" className={inputCls} /></Campo>
               </div>
@@ -300,15 +301,15 @@ export default function FluxoPagamentoPage() {
                 </Campo>
               </div>
               {c.entradaR > 0 && (
-                <div className="rounded-xl border border-[#E8E9F1] dark:border-white/10 p-3 space-y-2">
+                <div className="bg-white/[0.03] rounded-xl border border-white/[0.08] p-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-[#6B6F76] dark:text-gray-300">Vencimento da entrada {c.nEntr > 1 ? '(1ª no ato, demais sugeridas — pode alterar)' : '(sugerido hoje/ato — pode alterar)'}</span>
-                    {entradaDatas.length > 0 && <button onClick={() => setEntradaDatas([])} className="text-[11px] text-[#8a6d10] dark:text-[#e8c547] font-semibold hover:underline">usar sugeridas</button>}
+                    <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Vencimento da entrada {c.nEntr > 1 ? '(1ª no ato, demais sugeridas — pode alterar)' : '(sugerido hoje/ato — pode alterar)'}</span>
+                    {entradaDatas.length > 0 && <button onClick={() => setEntradaDatas([])} className="text-[11px] text-[#FF7A97] font-bold hover:underline">usar sugeridas</button>}
                   </div>
                   <div className="grid sm:grid-cols-2 gap-2">
                     {Array.from({ length: c.nEntr }, (_, j) => (
                       <div key={j} className="flex items-center gap-2">
-                        <span className="text-xs text-[#6B6F76] dark:text-gray-400 w-20 shrink-0">{c.nEntr > 1 ? `Entrada ${j + 1}` : 'Entrada'}</span>
+                        <span className="text-xs text-text-secondary w-20 shrink-0">{c.nEntr > 1 ? `Entrada ${j + 1}` : 'Entrada'}</span>
                         <input type="date" value={entradaDatas[j] || toYMD(c.entradaDateObjs[j])} onChange={(e) => setEntradaData(j, e.target.value)} className={inputCls + ' py-1.5 text-sm'} />
                       </div>
                     ))}
@@ -326,7 +327,7 @@ export default function FluxoPagamentoPage() {
                     ? <>{fmtPct(parcelaVal)} do valor ÷ {c.nParc} = <b>{brl(c.parcelaR)}</b> por parcela</>
                     : c.vp > 0 && c.totalParc > 0 ? <>total <b>{brl(c.totalParc)}</b> = <b>{fmtPct((c.totalParc / c.vp) * 100)}</b> do valor</> : undefined) : undefined} />
               </div>
-              {c.base && c.parcUltima && <p className="text-xs text-[#6B6F76] dark:text-gray-400">Vencimentos: <b>{fmtData(c.base)}</b> a <b>{fmtData(c.parcUltima)}</b> (mensal).</p>}
+              {c.base && c.parcUltima && <p className="text-xs text-text-secondary">Vencimentos: <b className="text-white">{fmtData(c.base)}</b> a <b className="text-white">{fmtData(c.parcUltima)}</b> (mensal).</p>}
               <button onClick={fecharPelaParcela} className={btnFechar}>↳ calcular a parcela que fecha</button>
             </Secao>
 
@@ -344,15 +345,15 @@ export default function FluxoPagamentoPage() {
                 </Campo>
               </div>
               {c.nRef > 0 && (
-                <div className="rounded-xl border border-[#E8E9F1] dark:border-white/10 p-3 space-y-2">
+                <div className="bg-white/[0.03] rounded-xl border border-white/[0.08] p-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-[#6B6F76] dark:text-gray-300">Vencimento de cada reforço (sugerido no fim de {periodicidade === 'anual' ? 'dezembro' : periodicidade === 'trimestral' ? 'mar/jun/set/dez' : 'junho e dezembro'} — pode alterar)</span>
-                    {refDatas.length > 0 && <button onClick={() => setRefDatas([])} className="text-[11px] text-[#8a6d10] dark:text-[#e8c547] font-semibold hover:underline">usar sugeridas</button>}
+                    <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Vencimento de cada reforço (sugerido no fim de {periodicidade === 'anual' ? 'dezembro' : periodicidade === 'trimestral' ? 'mar/jun/set/dez' : 'junho e dezembro'} — pode alterar)</span>
+                    {refDatas.length > 0 && <button onClick={() => setRefDatas([])} className="text-[11px] text-[#FF7A97] font-bold hover:underline">usar sugeridas</button>}
                   </div>
                   <div className="grid sm:grid-cols-2 gap-2">
                     {Array.from({ length: c.nRef }, (_, j) => (
                       <div key={j} className="flex items-center gap-2">
-                        <span className="text-xs text-[#6B6F76] dark:text-gray-400 w-20 shrink-0">Reforço {j + 1}</span>
+                        <span className="text-xs text-text-secondary w-20 shrink-0">Reforço {j + 1}</span>
                         <input type="date" value={refDatas[j] || suggestedYMD(j)} onChange={(e) => setRefData(j, e.target.value)} className={inputCls + ' py-1.5 text-sm'} />
                       </div>
                     ))}
@@ -367,22 +368,23 @@ export default function FluxoPagamentoPage() {
           <div className="space-y-4 lg:sticky lg:top-4">
             <div className={`rounded-2xl border p-5 ${statusCor}`}>
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-semibold text-[#2E2F38] dark:text-white">
+                <span className="text-sm font-semibold text-white">
                   {status === 'vazio' && 'Preencha o valor e o que vai até a chave'}
                   {status === 'ok' && '✓ O fluxo fecha certinho'}
                   {status === 'falta' && 'Falta pra fechar'}
                   {status === 'excedente' && 'Passou do necessário'}
                 </span>
                 {status !== 'vazio' && status !== 'ok' && (
-                  <span className={`text-lg font-bold tabular-nums ${status === 'falta' ? 'text-amber-600 dark:text-amber-300' : 'text-rose-600 dark:text-rose-300'}`}>{status === 'falta' ? '−' : '+'} {brl(Math.abs(c.diferenca))}</span>
+                  <span className={`al-display text-lg font-bold tabular-nums ${status === 'falta' ? 'text-amber-300' : 'text-rose-300'}`}>{status === 'falta' ? '−' : '+'} {brl(Math.abs(c.diferenca))}</span>
                 )}
               </div>
-              {c.ac > 0 && <p className="text-xs text-[#6B6F76] dark:text-gray-300 mt-1">Montado <b>{brl(c.montado)}</b> de <b>{brl(c.ac)}</b> a pagar até a chave.{c.refForaPrazo && <span className="text-rose-600 dark:text-rose-300"> ⚠ Reforço após a entrega.</span>}</p>}
+              {c.ac > 0 && <p className="text-xs text-text-secondary mt-1">Montado <b className="text-white">{brl(c.montado)}</b> de <b className="text-white">{brl(c.ac)}</b> a pagar até a chave.{c.refForaPrazo && <span className="text-rose-300"> ⚠ Reforço após a entrega.</span>}</p>}
             </div>
 
-            <div className="bg-white dark:bg-[#23283A] rounded-2xl border border-[#E8E9F1] dark:border-white/10 overflow-hidden">
-              <div className="px-5 py-3 border-b border-[#E8E9F1] dark:border-white/10 text-sm font-bold text-[#2E2F38] dark:text-white">Condições de pagamento</div>
-              <div className="divide-y divide-[#E8E9F1] dark:divide-white/10 text-sm">
+            <div className="al-card relative overflow-hidden rounded-2xl">
+              <div className="absolute inset-x-0 top-0 gx-line-gold" />
+              <div className="px-5 py-3 border-b border-white/10 al-display text-[13px] font-bold text-white uppercase tracking-[0.14em]">Condições de pagamento</div>
+              <div className="divide-y divide-white/[0.06] text-sm">
                 {c.entradaR > 0 && <Linha nome="Entrada" sub={c.entradaDateObjs.length ? (c.nEntr > 1 ? `${c.nEntr}× de ${brl(c.entradaParc)} · ${fmtData(c.entradaDateObjs[0])} a ${fmtData(c.entradaDateObjs[c.nEntr - 1])}` : fmtData(c.entradaDateObjs[0])) : 'no ato'} qtd={`${c.nEntr}×`} valor={brl(c.entradaParc)} total={brl(c.entradaR)} />}
                 <Linha nome="Parcelas mensais" sub={c.base && c.parcUltima ? `${fmtData(c.base)} a ${fmtData(c.parcUltima)}` : undefined} qtd={`${c.nParc}×`} valor={brl(c.parcelaR)} total={brl(c.totalParc)} />
                 <Linha nome={`Reforços ${PERIODOS[periodicidade].label.toLowerCase()}`} sub={c.refDateObjs.length ? c.refDateObjs.map((d) => fmtData(d)).join(' · ') : undefined} qtd={`${c.nRef}×`} valor={brl(c.reforcoR)} total={brl(c.totalRef)} />
@@ -395,8 +397,11 @@ export default function FluxoPagamentoPage() {
               </div>
             </div>
 
-            <button onClick={gerarPDF} disabled={c.vp <= 0} className="w-full px-4 py-3 rounded-xl bg-[#13212e] text-white font-bold text-[15px] hover:bg-[#1c2f40] disabled:opacity-40 transition">🧾 Gerar proposta em PDF (logo Nox)</button>
-            <p className="text-[11px] text-center text-[#9aa0a6]">Correção monetária (INCC / CUB / IGP-M) não inclusa nesta simulação.</p>
+            <button onClick={gerarPDF} disabled={c.vp <= 0} className="group relative overflow-hidden w-full px-4 py-3 rounded-xl bg-gradient-to-r from-[#E8C547] to-[#C89210] hover:brightness-110 text-[#181203] font-bold text-[15px] shadow-[0_8px_24px_-8px_rgba(232,197,71,0.5)] disabled:opacity-40 active:scale-[0.98] transition-all">
+              <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700" />
+              Gerar proposta em PDF (logo Nox)
+            </button>
+            <p className="text-[11px] text-center text-text-secondary">Correção monetária (INCC / CUB / IGP-M) não inclusa nesta simulação.</p>
           </div>
         </div>
       </div>
@@ -406,14 +411,14 @@ export default function FluxoPagamentoPage() {
 
 function Linha({ nome, sub, qtd, valor, total, destaque, forte }: { nome: string; sub?: string; qtd?: string; valor?: string; total: string; destaque?: boolean; forte?: boolean }) {
   return (
-    <div className={`flex items-center px-5 py-2.5 ${destaque ? 'bg-[#D4A017]/10' : ''} ${forte ? 'bg-[#13212e] text-white' : ''}`}>
+    <div className={`flex items-center px-5 py-2.5 ${destaque ? 'bg-[#E8C547]/[0.08]' : ''} ${forte ? 'bg-[#E8C547]/[0.06]' : ''}`}>
       <div className="flex-1 min-w-0">
-        <div className={`font-medium ${forte ? 'text-white' : 'text-[#2E2F38] dark:text-white'} ${destaque ? 'font-bold' : ''}`}>{nome}</div>
-        {sub && <div className={`text-[11px] ${forte ? 'text-white/70' : 'text-[#9aa0a6]'}`}>{sub}</div>}
+        <div className={`font-medium text-white ${destaque || forte ? 'font-bold' : ''}`}>{nome}</div>
+        {sub && <div className="text-[11px] text-text-secondary">{sub}</div>}
       </div>
-      {qtd && <div className={`w-12 text-center text-xs ${forte ? 'text-white/80' : 'text-[#6B6F76] dark:text-gray-300'}`}>{qtd}</div>}
-      {valor && <div className={`w-28 text-right text-xs tabular-nums ${forte ? 'text-white/80' : 'text-[#6B6F76] dark:text-gray-300'}`}>{valor}</div>}
-      <div className={`w-32 text-right font-semibold tabular-nums ${forte ? 'text-white' : 'text-[#2E2F38] dark:text-white'}`}>{total}</div>
+      {qtd && <div className="w-12 text-center text-xs text-text-secondary">{qtd}</div>}
+      {valor && <div className="w-28 text-right text-xs tabular-nums text-text-secondary">{valor}</div>}
+      <div className={`w-32 text-right font-semibold tabular-nums ${forte ? 'al-display al-grad-text text-[15px] font-bold' : destaque ? 'text-[#FFE9A6] font-bold' : 'text-white'}`}>{total}</div>
     </div>
   );
 }

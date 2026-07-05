@@ -59,8 +59,8 @@ interface GamificacaoMetasRowProps {
   corretores?: CorretorRanking[];
 }
 
-const CARD_BASE = 'rounded-xl border border-amber-500/25 flex flex-col relative overflow-hidden shadow-md';
-const GLOW = 'absolute left-0 top-0 w-0.5 h-full bg-[#D4A017]';
+const CARD_BASE = 'al-card flex flex-col relative overflow-hidden';
+const GLOW = 'absolute inset-x-0 top-0 gx-line-gold';
 
 export function GamificacaoMetasRow({ pontos = PONTOS_EXEMPLO, meta, nomeImobiliaria, corretores = [] }: GamificacaoMetasRowProps) {
   const top3 = corretores.slice(0, 3);
@@ -68,10 +68,10 @@ export function GamificacaoMetasRow({ pontos = PONTOS_EXEMPLO, meta, nomeImobili
   const progresso = meta?.percentual !== undefined ? meta.percentual : (meta?.valor > 0 ? Math.round(((meta?.alcancado ?? 0) / meta.valor) * 100) : 0);
   const progressoDisplay = progresso > 100 ? 100 : progresso;
   const getProgressColors = () => {
-    if (progresso >= 100) return { barra: 'from-[#3AC17C] to-[#2E8B57]', percentual: 'text-[#3AC17C]' };
-    if (progresso >= 75) return { barra: 'from-[#4CAF50] to-[#45A049]', percentual: 'text-[#4CAF50]' };
-    if (progresso >= 50) return { barra: 'from-[#FF9800] to-[#F57C00]', percentual: 'text-[#FF9800]' };
-    return { barra: 'from-[#E8C547] to-[#D4A017]', percentual: 'text-[#D4A017]' };
+    if (progresso >= 100) return { barra: 'from-[#34D399] to-[#059669]', percentual: 'text-[#34D399]' };
+    if (progresso >= 75) return { barra: 'from-[#34D399] to-[#10B981]', percentual: 'text-emerald-300' };
+    if (progresso >= 50) return { barra: 'from-[#F59E0B] to-[#D97706]', percentual: 'text-[#F59E0B]' };
+    return { barra: 'from-[#E8C547] to-[#C89210]', percentual: 'text-[#E8C547]' };
   };
   const colors = getProgressColors();
 
@@ -80,11 +80,10 @@ export function GamificacaoMetasRow({ pontos = PONTOS_EXEMPLO, meta, nomeImobili
       {/* Linha 1: Ranking (esquerda) | Meta Nox — só VGV total (direita) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 shrink-0">
         {/* 1. Ranking — 1º, 2º, 3º com nomes dos corretores */}
-        <div className={`${CARD_BASE} bg-[#23283A]/5 p-2`}>
+        <div className={`${CARD_BASE} p-2`}>
           <div className={GLOW} />
           <div className="flex items-center gap-1.5 mb-1.5">
-            <span className="text-amber-400 text-sm">🏆</span>
-            <span className="font-bold text-white text-xs">Ranking</span>
+            <span className="al-display font-bold text-white text-[11px] uppercase tracking-[0.14em]">Ranking</span>
           </div>
           <div className="space-y-1">
             {posicoes.map((pos, i) => {
@@ -96,11 +95,11 @@ export function GamificacaoMetasRow({ pontos = PONTOS_EXEMPLO, meta, nomeImobili
                 <div
                   key={c?.id || i}
                   className={`flex items-center gap-2 py-1.5 px-2 rounded-lg border ${
-                    isFirst ? 'bg-amber-500/10 border-amber-500/25' : 'bg-white/5 border-white/10'
+                    isFirst ? 'bg-[#E8C547]/10 border-[#E8C547]/35' : 'bg-white/[0.03] border-white/[0.08]'
                   }`}
                 >
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-white font-black text-[10px] shrink-0 ${
-                    isFirst ? 'bg-gradient-to-br from-amber-400 to-amber-600' : isSecond ? 'bg-gray-400/90' : 'bg-amber-700/90'
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] shrink-0 ${
+                    isFirst ? 'bg-gradient-to-br from-[#E8C547] to-[#C89210] text-[#181203]' : isSecond ? 'bg-gray-400/90 text-white' : 'bg-amber-700/90 text-white'
                   }`}>
                     {pos}
                   </span>
@@ -114,26 +113,26 @@ export function GamificacaoMetasRow({ pontos = PONTOS_EXEMPLO, meta, nomeImobili
         </div>
 
         {/* 2. Meta Nox — somente VGV total (percentual em cima já explica) */}
-        <div className={`${CARD_BASE} bg-[#23283A]/5 p-2`}>
+        <div className={`${CARD_BASE} p-2`}>
           <div className={GLOW} />
           <div className="flex items-center justify-between gap-1.5 mb-0.5">
-            <span className="font-bold text-white text-[11px] truncate">
+            <span className="al-display font-bold text-white text-[11px] uppercase tracking-[0.14em] truncate">
               Metas{nomeImobiliaria ? ` — ${nomeImobiliaria}` : ''}
             </span>
-            <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold ${colors.percentual} bg-white/10`}>
+            <span className={`shrink-0 px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums ${colors.percentual} bg-white/[0.06] border border-white/10`}>
               {progresso}%
             </span>
           </div>
-          <div className="text-[10px] font-bold text-amber-200/95 mb-1">
+          <div className="text-[10px] font-bold text-[#FFE9A6] mb-1">
             {formatMetaDate(meta?.inicio)} → {formatMetaDate(meta?.fim)}
           </div>
           <div className="flex-1 flex flex-col justify-center">
-            <p className="text-[9px] text-amber-200/90 uppercase tracking-wide mb-0.5">VGV total</p>
+            <p className="text-[9px] font-extrabold text-text-secondary uppercase tracking-[0.18em] mb-0.5">VGV total</p>
             <p className="text-base font-black text-[#E8C547] tabular-nums leading-tight">
               {meta?.valor != null ? meta.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}
             </p>
           </div>
-          <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden mt-1">
+          <div className="w-full h-1 bg-white/[0.08] rounded-full overflow-hidden mt-1">
             <div className={`h-full rounded-full transition-all duration-500 ease-out bg-gradient-to-r ${colors.barra}`} style={{ width: `${progressoDisplay}%` }} />
           </div>
         </div>

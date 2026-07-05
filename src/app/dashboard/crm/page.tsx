@@ -54,8 +54,8 @@ const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
 const FilterChip = ({ children, selected, onClick }: { children: React.ReactNode, selected?: boolean, onClick: () => void }) => (
     <button onClick={onClick} className={`px-2.5 py-1.5 text-xs font-semibold border rounded-lg transition-colors whitespace-nowrap ${
         selected
-            ? 'bg-[#D4A017] border-[#D4A017] text-white shadow-sm'
-            : 'border-white/10 bg-white/5 text-gray-200 hover:bg-white/10 hover:border-white/20'
+            ? 'bg-[#FF1E56]/15 border-[#FF3364]/60 text-[#FF9EB5] shadow-[0_0_12px_-2px_rgba(255,30,86,0.4)]'
+            : 'border-white/10 bg-white/[0.04] text-text-secondary hover:bg-white/[0.08] hover:border-white/20'
     }`}>
         {children}
     </button>
@@ -63,10 +63,10 @@ const FilterChip = ({ children, selected, onClick }: { children: React.ReactNode
 
 const StatusIndicator = ({ status }: { status: TaskStatus }) => {
     const statusInfo = {
-        'Tarefa em Atraso': { color: 'bg-red-500', text: 'Atrasada' },
-        'Tarefa do Dia': { color: 'bg-yellow-400', text: 'Para Hoje' },
-        'Tarefa Futura': { color: 'bg-sky-500', text: 'Futura' },
-        'Sem tarefa': { color: 'bg-gray-400', text: 'Sem Tarefa' },
+        'Tarefa em Atraso': { color: 'bg-[#FF1E56] shadow-[0_0_8px_rgba(255,30,86,0.6)]', text: 'Atrasada' },
+        'Tarefa do Dia': { color: 'bg-[#E8C547] shadow-[0_0_8px_rgba(232,197,71,0.5)]', text: 'Para Hoje' },
+        'Tarefa Futura': { color: 'bg-[#7DD3FC]', text: 'Futura' },
+        'Sem tarefa': { color: 'bg-white/25', text: 'Sem Tarefa' },
     };
     const { color, text } = statusInfo[status] || statusInfo['Sem tarefa'];
 
@@ -105,8 +105,7 @@ const getTaskStatusInfo = (tasks: Task[]): TaskStatus => {
 // Novo componente para título com barra colorida
 const SectionTitle = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
   <div className={`relative ${className}`}>
-    <h2 className="text-base font-bold text-white relative z-10">{children}</h2>
-    <div className="absolute -left-1.5 top-1/2 transform -translate-y-1/2 w-0.5 h-5 bg-gradient-to-b from-[#D4A017] to-[#E8C547] rounded-r-full opacity-60" />
+    <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] relative z-10">{children}</h2>
   </div>
 );
 
@@ -401,25 +400,26 @@ export default function CrmPage() {
             <CrmHeader />
             <main className="flex flex-col flex-1 min-h-0 gap-2 mt-2">
                 {/* Card principal — parte de cima fixa; compacta para sobrar mais espaço pros leads */}
-                <div className="flex flex-col flex-1 min-h-0 p-3 rounded-2xl border border-white/10">
+                <div className="al-card relative overflow-hidden flex flex-col flex-1 min-h-0 p-3 rounded-2xl">
+                    <div className="absolute inset-x-0 top-0 gx-line" />
                     {/* Uma linha (pode quebrar): título | busca | filtros | Filtro Completo + Limpar | contagem+setas — setas economizam espaço */}
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 flex-shrink-0 min-w-0">
                         <SectionTitle>Gestão de Leads</SectionTitle>
                         <div className="relative flex-shrink-0">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <SearchIcon className="h-4 w-4 text-gray-400" />
+                                <SearchIcon className="h-4 w-4 text-text-secondary" />
                             </div>
                             <input
                                 type="text"
                                 placeholder="Buscar lead por nome..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="block w-52 sm:w-60 pl-9 pr-3 py-1 border border-white/10 rounded-lg text-sm bg-white/5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#D4A017]/50 focus:border-transparent"
+                                className="block w-52 sm:w-60 pl-9 pr-3 py-1 border border-white/10 rounded-lg text-sm bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                             />
                             {searchTerm && (
                                 <button
                                     onClick={() => setSearchTerm('')}
-                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-secondary hover:text-[#FF5C7E]"
                                 >
                                     <XIcon className="h-4 w-4" />
                                 </button>
@@ -430,18 +430,18 @@ export default function CrmPage() {
                             <button
                                 type="button"
                                 onClick={() => setFiltroRapidoOpen((o) => !o)}
-                                className="relative flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white bg-[#D4A017] hover:bg-[#B8860B] rounded-lg transition-colors shadow-soft"
+                                className="relative flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 rounded-lg transition-all shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98]"
                             >
                                 <span>Filtro Rápido</span>
                                 {((activeFilter ? 1 : 0) + (activeTaskFilter ? 1 : 0)) > 0 && (
-                                    <span className="bg-white/90 text-[#D4A017] text-[10px] font-bold rounded-full min-w-[1.25rem] h-5 px-1.5 flex items-center justify-center">
+                                    <span className="bg-white/90 text-[#A50D38] text-[10px] font-bold rounded-full min-w-[1.25rem] h-5 px-1.5 flex items-center justify-center">
                                         {(activeFilter ? 1 : 0) + (activeTaskFilter ? 1 : 0)}
                                     </span>
                                 )}
                             </button>
                             {filtroRapidoOpen && (
-                                <div key={`filtro-etapas-${stages.join('-')}`} className="absolute left-0 top-full mt-1.5 z-50 w-[min(90vw,420px)] max-h-[70vh] overflow-y-auto rounded-xl border border-white/10 bg-[var(--bg-card)] shadow-xl py-3 px-3">
-                                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2 px-1">Etapa do funil</p>
+                                <div key={`filtro-etapas-${stages.join('-')}`} className="absolute left-0 top-full mt-1.5 z-50 w-[min(90vw,420px)] max-h-[70vh] overflow-y-auto rounded-xl border border-white/10 bg-[#12101a] shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] py-3 px-3">
+                                    <p className="text-[10px] font-extrabold text-text-secondary uppercase tracking-[0.18em] mb-2 px-1">Etapa do funil</p>
                                     <div className="flex flex-wrap gap-2 mb-3">
                                         {stages.map((stage) => (
                                             <FilterChip
@@ -458,7 +458,7 @@ export default function CrmPage() {
                                         ))}
                                     </div>
                                     <div className="w-full h-px bg-white/10 my-2" />
-                                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2 px-1">Status da tarefa</p>
+                                    <p className="text-[10px] font-extrabold text-text-secondary uppercase tracking-[0.18em] mb-2 px-1">Status da tarefa</p>
                                     <div className="flex flex-wrap gap-2">
                                         {taskStatusFilters.map((taskStatus) => (
                                             <FilterChip
@@ -482,11 +482,11 @@ export default function CrmPage() {
                             <button
                                 type="button"
                                 onClick={() => setFilterModalOpen(true)}
-                                className="relative flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white bg-[#D4A017] hover:bg-[#B8860B] rounded-lg transition-colors shadow-soft"
+                                className="relative flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 rounded-lg transition-all shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98]"
                             >
                                 <span>Filtro Completo</span>
                                 {activeAdvancedFilterCount > 0 && (
-                                    <span className="bg-[#3AC17C] text-white text-[10px] font-bold rounded-full px-2 py-0.5 ml-1 animate-pulse-slow">
+                                    <span className="bg-[#34D399] text-[#052e1b] text-[10px] font-bold rounded-full px-2 py-0.5 ml-1 animate-pulse-slow">
                                         {activeAdvancedFilterCount}
                                     </span>
                                 )}
@@ -494,7 +494,7 @@ export default function CrmPage() {
                             {(searchTerm.trim() || activeFilter || activeTaskFilter || activeAdvancedFilterCount > 0) && (
                                 <button
                                     onClick={handleClearFilters}
-                                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-[#F45B69] bg-[#F45B69]/10 hover:bg-[#F45B69]/20 rounded-lg transition-colors"
+                                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-300 border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition-colors"
                                 >
                                     <XIcon className="h-4 w-4" /> Limpar filtros
                                 </button>
@@ -504,7 +504,7 @@ export default function CrmPage() {
                         <div className="ml-auto flex items-center gap-1.5 flex-nowrap shrink-0 w-full sm:w-auto justify-end sm:justify-start">
                             {totalFiltered > 0 ? (
                                 <>
-                                    <span className="text-xs text-gray-400 whitespace-nowrap tabular-nums shrink-0">
+                                    <span className="text-xs text-text-secondary whitespace-nowrap tabular-nums shrink-0">
                                         {((currentPage - 1) * PAGE_SIZE) + 1}–{Math.min(currentPage * PAGE_SIZE, totalFiltered)} de {totalFiltered} {totalFiltered === 1 ? 'lead' : 'leads'}
                                     </span>
                                     <div className="flex items-center gap-0.5 shrink-0" role="navigation" aria-label="Paginação">
@@ -513,7 +513,7 @@ export default function CrmPage() {
                                             onClick={() => goToPage(currentPage - 1)}
                                             disabled={currentPage <= 1}
                                             title="Anterior"
-                                            className="w-7 h-7 flex items-center justify-center text-xs font-bold rounded-lg border border-white/10 bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+                                            className="w-7 h-7 flex items-center justify-center text-xs font-bold rounded-lg border border-white/10 bg-white/[0.04] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/[0.08] transition-colors"
                                         >
                                             {'<'}
                                         </button>
@@ -521,14 +521,14 @@ export default function CrmPage() {
                                             .filter(p => p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2))
                                             .map((p, idx, arr) => (
                                                 <React.Fragment key={p}>
-                                                    {idx > 0 && arr[idx - 1] !== p - 1 && <span className="px-0.5 text-gray-400">…</span>}
+                                                    {idx > 0 && arr[idx - 1] !== p - 1 && <span className="px-0.5 text-text-secondary">…</span>}
                                                     <button
                                                         type="button"
                                                         onClick={() => goToPage(p)}
                                                         className={`min-w-[1.75rem] w-7 h-7 flex items-center justify-center text-xs font-semibold rounded-lg border transition-colors ${
                                                             p === currentPage
-                                                                ? 'bg-[#D4A017] border-[#D4A017] text-white'
-                                                                : 'border-white/10 bg-white/5 hover:bg-white/10'
+                                                                ? 'bg-[#FF1E56] border-[#FF1E56] text-white shadow-[0_0_12px_-2px_rgba(255,30,86,0.5)]'
+                                                                : 'border-white/10 bg-white/[0.04] hover:bg-white/[0.08]'
                                                         }`}
                                                     >
                                                         {p}
@@ -540,20 +540,20 @@ export default function CrmPage() {
                                             onClick={() => goToPage(currentPage + 1)}
                                             disabled={currentPage >= totalPages}
                                             title="Próximo"
-                                            className="w-7 h-7 flex items-center justify-center text-xs font-bold rounded-lg border border-white/10 bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+                                            className="w-7 h-7 flex items-center justify-center text-xs font-bold rounded-lg border border-white/10 bg-white/[0.04] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/[0.08] transition-colors"
                                         >
                                             {'>'}
                                         </button>
                                     </div>
                                 </>
-                            ) : <span className="text-xs text-gray-500">—</span>}
+                            ) : <span className="text-xs text-text-secondary">—</span>}
                         </div>
                     </div>
                     {/* Só esta parte rola: corpo da tabela (leads). Cabeçalho da tabela fica fixo no topo desta área. */}
                     <div className="flex-1 min-h-0 overflow-auto rounded-xl border border-white/10">
                         <table className="min-w-full table-fixed">
                             <thead className="sticky top-0 z-10">
-                                <tr className="border-b border-white/10 bg-[var(--bg-card)]/95 backdrop-blur-sm text-gray-200 text-xs shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
+                                <tr className="border-b border-white/10 bg-[#12101a]/95 backdrop-blur-sm text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
                                     <th className="px-3 py-2 font-semibold text-left w-1/5 rounded-tl-xl">Nome</th>
                                     <th className="px-3 py-2 font-semibold text-left w-1/6">Telefone</th>
                                     <th className="px-3 py-2 font-semibold text-center w-1/12">WhatsApp</th>
@@ -564,27 +564,27 @@ export default function CrmPage() {
                             </thead>
                             <tbody>
                                 {loading && (
-                                    <tr><td colSpan={6} className="text-center py-8 text-gray-400">Carregando...</td></tr>
+                                    <tr><td colSpan={6} className="text-center py-8 text-text-secondary">Carregando...</td></tr>
                                 )}
                                 {!loading && leads.length === 0 && (
                                     <tr>
-                                        <td colSpan={6} className="text-center text-gray-400 py-8">Nenhum lead encontrado.</td>
+                                        <td colSpan={6} className="text-center text-text-secondary py-8">Nenhum lead encontrado.</td>
                                     </tr>
                                 )}
                                 {!loading && leads.length > 0 && totalFiltered === 0 && (
                                     <tr>
-                                        <td colSpan={6} className="text-center text-gray-400 py-8">Nenhum lead corresponde aos filtros. Limpe os filtros ou altere a busca.</td>
+                                        <td colSpan={6} className="text-center text-text-secondary py-8">Nenhum lead corresponde aos filtros. Limpe os filtros ou altere a busca.</td>
                                     </tr>
                                 )}
                                 {!loading && totalFiltered > 0 && paginatedLeads.length === 0 && (
                                     <tr>
-                                        <td colSpan={6} className="text-center text-gray-400 py-8">Nenhum lead nesta página.</td>
+                                        <td colSpan={6} className="text-center text-text-secondary py-8">Nenhum lead nesta página.</td>
                                     </tr>
                                 )}
                                 {!loading && paginatedLeads.map((lead) => (
-                                    <tr key={lead.id} className="border-b border-white/10 last:border-b-0 hover:bg-white/5 transition-colors">
+                                    <tr key={lead.id} className="border-b border-white/[0.05] last:border-b-0 hover:bg-white/[0.04] transition-colors">
                                         <td className="px-3 py-1.5 text-sm font-medium text-white w-1/5 truncate max-w-[180px]">{lead.nome}</td>
-                                        <td className="px-3 py-1.5 text-xs text-gray-200 w-1/6 truncate max-w-[140px]">{lead.telefone}</td>
+                                        <td className="px-3 py-1.5 text-xs text-text-secondary w-1/6 truncate max-w-[140px]">{lead.telefone}</td>
                                         <td className="px-3 py-1.5 text-center w-1/12">
                                             <a
                                                 href={`https://wa.me/${lead.telefone.replace(/\D/g, '')}`}
@@ -597,7 +597,7 @@ export default function CrmPage() {
                                             </a>
                                         </td>
                                         <td className="px-3 py-1.5 text-xs w-1/5">
-                                            <span className="inline-block px-2 py-0.5 rounded bg-white/10 border border-white/10 text-[#E8C547] font-semibold text-[11px] truncate max-w-[120px]">{normalizeEtapa(lead.etapa)}</span>
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#FFE9A6] truncate max-w-[120px]">{normalizeEtapa(lead.etapa)}</span>
                                         </td>
                                         <td className="px-3 py-1.5 text-xs w-1/5">
                                             <span className="text-white">
@@ -608,7 +608,7 @@ export default function CrmPage() {
                                             <div className="flex justify-center">
                                                 <Link
                                                     href={`/dashboard/crm/${lead.id}`}
-                                                    className="px-2 py-1 text-xs font-semibold bg-[#D4A017] hover:bg-[#B8860B] text-white rounded-lg shadow-soft transition-colors"
+                                                    className="px-2 py-1 text-xs font-bold bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white rounded-lg shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] transition-all active:scale-[0.98]"
                                                 >
                                                     Ver
                                                 </Link>
@@ -619,7 +619,7 @@ export default function CrmPage() {
                             </tbody>
                         </table>
                         {!loading && leads.length >= MAX_LEADS_LOAD && (
-                            <p className="text-xs text-gray-400 mt-2 text-center">
+                            <p className="text-xs text-text-secondary mt-2 text-center">
                                 Exibindo os {MAX_LEADS_LOAD} leads mais recentes. Use os filtros para refinar.
                             </p>
                         )}

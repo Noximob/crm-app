@@ -153,7 +153,7 @@ export default function FunilVendasPage() {
           <div className="flex items-center gap-4 mb-4 sm:mb-0">
             <Link 
               href="/dashboard/treinamentos"
-              className="text-[#D4A017] hover:text-[#B8860B] transition-colors"
+              className="text-text-secondary hover:text-[#FF7A97] transition-colors"
             >
               ← Voltar aos Treinamentos
             </Link>
@@ -163,40 +163,39 @@ export default function FunilVendasPage() {
         {/* Título e Descrição */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-4 mb-4">
-            <span className="text-5xl">🔄</span>
-            <h1 className="text-4xl font-bold text-[#2E2F38] dark:text-white">Funil de Vendas</h1>
+            <h1 className="al-display text-2xl font-bold text-white uppercase tracking-[0.14em]">Funil de Vendas</h1>
           </div>
-          <p className="text-xl text-[#6B6F76] dark:text-gray-300 max-w-3xl mx-auto">
+          <p className="text-xl text-text-secondary max-w-3xl mx-auto">
             Entenda o processo de vendas e como conduzir leads desde a prospecção até o fechamento.
           </p>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] text-center">
+          <div className="al-card relative overflow-hidden p-6 text-center"><div className="absolute inset-x-0 top-0 gx-line" />
             <p className="text-3xl mb-2">🎥</p>
-            <p className="text-2xl font-bold text-[#2E2F38] dark:text-white">{materiais.filter(m => m.tipo === 'video').length}</p>
-            <p className="text-sm text-[#6B6F76] dark:text-gray-300">Vídeos</p>
+            <p className="text-2xl font-bold text-white">{materiais.filter(m => m.tipo === 'video').length}</p>
+            <p className="text-sm text-text-secondary">Vídeos</p>
           </div>
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] text-center">
+          <div className="al-card relative overflow-hidden p-6 text-center"><div className="absolute inset-x-0 top-0 gx-line" />
             <p className="text-3xl mb-2">📄</p>
-            <p className="text-2xl font-bold text-[#2E2F38] dark:text-white">{materiais.filter(m => m.tipo === 'pdf').length}</p>
-            <p className="text-sm text-[#6B6F76] dark:text-gray-300">PDFs</p>
+            <p className="text-2xl font-bold text-white">{materiais.filter(m => m.tipo === 'pdf').length}</p>
+            <p className="text-sm text-text-secondary">PDFs</p>
           </div>
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] text-center">
+          <div className="al-card relative overflow-hidden p-6 text-center"><div className="absolute inset-x-0 top-0 gx-line" />
             <p className="text-3xl mb-2">🔗</p>
-            <p className="text-2xl font-bold text-[#2E2F38] dark:text-white">{materiais.filter(m => m.tipo === 'link').length}</p>
-            <p className="text-sm text-[#6B6F76] dark:text-gray-300">Links</p>
+            <p className="text-2xl font-bold text-white">{materiais.filter(m => m.tipo === 'link').length}</p>
+            <p className="text-sm text-text-secondary">Links</p>
           </div>
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] text-center">
+          <div className="al-card relative overflow-hidden p-6 text-center"><div className="absolute inset-x-0 top-0 gx-line" />
             <p className="text-3xl mb-2">⭐</p>
-            <p className="text-2xl font-bold text-[#2E2F38] dark:text-white">4.7</p>
-            <p className="text-sm text-[#6B6F76] dark:text-gray-300">Avaliação Média</p>
+            <p className="text-2xl font-bold text-white">4.7</p>
+            <p className="text-sm text-text-secondary">Avaliação Média</p>
           </div>
         </div>
 
         {/* Filtros e Busca */}
-        <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-8">
+        <div className="al-card relative overflow-hidden p-6 mb-8"><div className="absolute inset-x-0 top-0 gx-line" />
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <input
@@ -204,7 +203,7 @@ export default function FunilVendasPage() {
                 placeholder="Buscar materiais..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-3 bg-[#F5F6FA] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#D4A017] transition-all"
+                className="w-full px-4 py-3 bg-white/[0.04] border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 transition-all"
               />
             </div>
             <div className="flex gap-2">
@@ -212,8 +211,8 @@ export default function FunilVendasPage() {
                 onClick={() => setFilterTipo('todos')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterTipo === 'todos' 
-                    ? 'bg-[#D4A017] text-white' 
-                    : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
+                    ? 'bg-[#FF1E56] border border-transparent text-white shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)]'
+                    : 'bg-white/[0.04] border border-white/10 text-text-secondary hover:bg-white/[0.08] hover:text-white'
                 }`}
               >
                 Todos
@@ -222,8 +221,8 @@ export default function FunilVendasPage() {
                 onClick={() => setFilterTipo('video')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterTipo === 'video' 
-                    ? 'bg-[#D4A017] text-white' 
-                    : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
+                    ? 'bg-[#FF1E56] border border-transparent text-white shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)]'
+                    : 'bg-white/[0.04] border border-white/10 text-text-secondary hover:bg-white/[0.08] hover:text-white'
                 }`}
               >
                 🎥 Vídeos
@@ -232,8 +231,8 @@ export default function FunilVendasPage() {
                 onClick={() => setFilterTipo('pdf')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterTipo === 'pdf' 
-                    ? 'bg-[#D4A017] text-white' 
-                    : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
+                    ? 'bg-[#FF1E56] border border-transparent text-white shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)]'
+                    : 'bg-white/[0.04] border border-white/10 text-text-secondary hover:bg-white/[0.08] hover:text-white'
                 }`}
               >
                 📄 PDFs
@@ -242,8 +241,8 @@ export default function FunilVendasPage() {
                 onClick={() => setFilterTipo('link')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterTipo === 'link' 
-                    ? 'bg-[#D4A017] text-white' 
-                    : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
+                    ? 'bg-[#FF1E56] border border-transparent text-white shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)]'
+                    : 'bg-white/[0.04] border border-white/10 text-text-secondary hover:bg-white/[0.08] hover:text-white'
                 }`}
               >
                 🔗 Links
@@ -255,20 +254,20 @@ export default function FunilVendasPage() {
         {/* Grid de Materiais */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {materiaisFiltrados.map((material) => (
-            <div key={material.id} className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] overflow-hidden hover:shadow-lg transition-all duration-200 group">
+            <div key={material.id} className="bg-white/[0.03] border border-white/[0.08] rounded-2xl overflow-hidden hover:border-[#E8C547]/40 hover:-translate-y-0.5 transition-all duration-200 group">
               {/* Thumbnail */}
-              <div className="relative h-48 bg-gradient-to-br from-[#FF6B6B] to-[#FF8E53] flex items-center justify-center">
+              <div className="relative h-48 bg-gradient-to-br from-[#E8C547]/25 to-[#12101a] flex items-center justify-center">
                 <span className="text-6xl">{material.thumbnail}</span>
-                <div className="absolute top-4 right-4 bg-black/20 backdrop-blur-sm rounded-lg px-3 py-1">
+                <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-sm rounded-lg px-3 py-1">
                   <span className="text-white text-sm font-medium">{getTipoLabel(material.tipo)}</span>
                 </div>
                 {material.tipo === 'video' && (
-                  <div className="absolute bottom-4 left-4 bg-black/20 backdrop-blur-sm rounded-lg px-3 py-1">
+                  <div className="absolute bottom-4 left-4 bg-black/40 backdrop-blur-sm rounded-lg px-3 py-1">
                     <span className="text-white text-sm font-medium">⏱️ {material.duracao}</span>
                   </div>
                 )}
                 {material.tipo === 'pdf' && (
-                  <div className="absolute bottom-4 left-4 bg-black/20 backdrop-blur-sm rounded-lg px-3 py-1">
+                  <div className="absolute bottom-4 left-4 bg-black/40 backdrop-blur-sm rounded-lg px-3 py-1">
                     <span className="text-white text-sm font-medium">📏 {material.tamanho}</span>
                   </div>
                 )}
@@ -276,10 +275,10 @@ export default function FunilVendasPage() {
 
               {/* Conteúdo */}
               <div className="p-6">
-                <h3 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-2 group-hover:text-[#FF6B6B] transition-colors">
+                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-[#FFE9A6] transition-colors">
                   {material.titulo}
                 </h3>
-                <p className="text-[#6B6F76] dark:text-gray-300 text-sm mb-4 line-clamp-2">
+                <p className="text-text-secondary text-sm mb-4 line-clamp-2">
                   {material.descricao}
                 </p>
 
@@ -288,18 +287,18 @@ export default function FunilVendasPage() {
                   {material.tags.map((tag, index) => (
                     <span
                       key={index}
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        tag === 'Obrigatório' 
-                          ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
+                        tag === 'Obrigatório'
+                          ? 'bg-[#FF1E56]/10 border border-[#FF1E56]/35 text-[#FF7A97]'
                           : tag === 'Básico'
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          ? 'bg-[#34D399]/10 border border-[#34D399]/35 text-emerald-300'
                           : tag === 'Intermediário'
-                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                          ? 'bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#FFE9A6]'
                           : tag === 'Avançado'
-                          ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                          ? 'bg-[#9F6BFF]/10 border border-[#9F6BFF]/35 text-[#C4A6FF]'
                           : tag === 'Prático'
-                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
-                          : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                          ? 'bg-[#34D399]/10 border border-[#34D399]/35 text-emerald-300'
+                          : 'bg-white/[0.06] border border-white/20 text-text-secondary'
                       }`}
                     >
                       {tag}
@@ -308,7 +307,7 @@ export default function FunilVendasPage() {
                 </div>
 
                 {/* Stats */}
-                <div className="flex items-center justify-between text-sm text-[#6B6F76] dark:text-gray-300 mb-4">
+                <div className="flex items-center justify-between text-sm text-text-secondary mb-4">
                   <div className="flex items-center gap-4">
                     {material.tipo === 'video' && (
                       <span>👁️ {material.visualizacoes} visualizações</span>
@@ -327,7 +326,7 @@ export default function FunilVendasPage() {
                 </div>
 
                 {/* Botão de Ação */}
-                <button className="w-full bg-[#FF6B6B] hover:bg-[#FF5252] text-white py-3 px-4 rounded-xl font-medium transition-colors duration-200 flex items-center justify-center gap-2">
+                <button className="w-full bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white py-3 px-4 rounded-xl font-bold shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2">
                   {material.tipo === 'video' && '▶️ Assistir'}
                   {material.tipo === 'pdf' && '📄 Baixar'}
                   {material.tipo === 'link' && '🔗 Acessar'}
@@ -341,8 +340,8 @@ export default function FunilVendasPage() {
         {materiaisFiltrados.length === 0 && (
           <div className="text-center py-12">
             <span className="text-6xl mb-4 block">🔍</span>
-            <h3 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-2">Nenhum material encontrado</h3>
-            <p className="text-[#6B6F76] dark:text-gray-300">Tente ajustar os filtros ou termos de busca.</p>
+            <h3 className="text-xl font-bold text-white mb-2">Nenhum material encontrado</h3>
+            <p className="text-text-secondary">Tente ajustar os filtros ou termos de busca.</p>
           </div>
         )}
       </div>

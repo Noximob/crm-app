@@ -37,29 +37,30 @@ export default function AvisosImportantesModal({ isOpen, onClose, avisos }: Avis
   });
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-2xl p-6 w-full max-w-4xl mx-4 shadow-xl border border-[#E8E9F1] max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-[#12101a] rounded-2xl p-6 w-full max-w-4xl mx-4 shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] border border-white/10 max-h-[90vh] overflow-hidden relative" onClick={e => e.stopPropagation()}>
+        <div className="absolute inset-x-0 top-0 gx-line" />
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-[#FF6B6B] to-[#FF8E8E] rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] rounded-full flex items-center justify-center shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)]">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-[#2E2F38]">
+              <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">
                 Avisos Importantes
               </h2>
-              <p className="text-[#6B6F76]">
+              <p className="text-text-secondary text-sm">
                 {avisos.length} aviso{avisos.length !== 1 ? 's' : ''} da imobiliária
               </p>
             </div>
           </div>
-          <button 
+          <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 text-text-secondary hover:text-[#FF5C7E] rounded-lg transition-colors"
           >
-            <svg className="w-6 h-6 text-[#6B6F76]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -67,15 +68,15 @@ export default function AvisosImportantesModal({ isOpen, onClose, avisos }: Avis
 
         {sortedAvisos.length === 0 ? (
           <div className="text-center py-12">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 bg-white/[0.04] border border-white/[0.08] rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-[#2E2F38] mb-2">
+            <h3 className="text-lg font-semibold text-white mb-2">
               Nenhum aviso importante
             </h3>
-            <p className="text-[#6B6F76]">
+            <p className="text-text-secondary">
               A imobiliária ainda não cadastrou avisos importantes
             </p>
           </div>
@@ -84,26 +85,26 @@ export default function AvisosImportantesModal({ isOpen, onClose, avisos }: Avis
             {sortedAvisos.map((aviso) => (
               <div
                 key={aviso.id}
-                className="p-4 rounded-xl border border-[#E8E9F1] hover:bg-[#F5F6FA] transition-all duration-200"
-                style={{ borderLeftColor: '#FF6B6B', borderLeftWidth: '4px' }}
+                className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.05] transition-all duration-200"
+                style={{ borderLeftColor: '#FF1E56', borderLeftWidth: '4px' }}
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-4 h-4 bg-[#FF6B6B] rounded-full shadow-md mt-1 flex-shrink-0"></div>
+                  <div className="w-4 h-4 bg-[#FF1E56] rounded-full shadow-[0_0_8px_rgba(255,30,86,0.6)] mt-1 flex-shrink-0"></div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-[#2E2F38] group-hover:text-[#FF6B6B] transition-colors">
+                      <h3 className="font-semibold text-white transition-colors">
                         {aviso.titulo}
                       </h3>
-                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-[#FF6B6B] text-white">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#FF1E56]/10 border border-[#FF1E56]/35 text-[#FF7A97]">
                         Aviso Importante
                       </span>
                     </div>
-                    
-                    <div className="text-sm text-[#6B6F76] leading-relaxed mb-3">
+
+                    <div className="text-sm text-text-secondary leading-relaxed mb-3">
                       {aviso.mensagem}
                     </div>
 
-                    <div className="flex flex-wrap gap-4 text-xs text-[#6B6F76]">
+                    <div className="flex flex-wrap gap-4 text-xs text-text-secondary">
                       <div className="flex items-center gap-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -157,14 +158,14 @@ export default function AvisosImportantesModal({ isOpen, onClose, avisos }: Avis
           </div>
         )}
 
-        <div className="mt-6 pt-4 border-t border-[#E8E9F1]">
+        <div className="mt-6 pt-4 border-t border-white/10">
           <div className="flex items-center justify-between">
-            <div className="text-sm text-[#6B6F76]">
+            <div className="text-sm text-text-secondary">
               Total: {sortedAvisos.length} aviso{sortedAvisos.length !== 1 ? 's' : ''}
             </div>
             <button
               onClick={onClose}
-              className="px-6 py-2 bg-[#FF6B6B] text-white rounded-lg hover:bg-[#FF5252] transition-colors font-semibold"
+              className="px-6 py-2 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white rounded-xl shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all font-bold"
             >
               Fechar
             </button>

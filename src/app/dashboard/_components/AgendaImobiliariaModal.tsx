@@ -55,15 +55,15 @@ export default function AgendaImobiliariaModal({ isOpen, onClose, agenda }: Agen
 
   const getTipoColor = (tipo: string) => {
     switch (tipo) {
-      case 'reuniao': return 'bg-amber-500';
-      case 'evento': return 'bg-purple-500';
-      case 'treinamento': return 'bg-green-500';
-      case 'revisar-crm': return 'bg-cyan-500';
-      case 'ligacao-ativa': return 'bg-emerald-500';
-      case 'acao-de-rua': return 'bg-amber-500';
-      case 'disparo-de-msg': return 'bg-indigo-500';
-      case 'plantao': return 'bg-violet-600';
-      default: return 'bg-gray-500';
+      case 'reuniao': return 'bg-[#E8C547]/10 border-[#E8C547]/35 text-[#FFE9A6]';
+      case 'evento': return 'bg-[#9F6BFF]/10 border-[#9F6BFF]/35 text-[#C4A6FF]';
+      case 'treinamento': return 'bg-[#34D399]/10 border-[#34D399]/35 text-emerald-200';
+      case 'revisar-crm': return 'bg-[#7DD3FC]/10 border-[#7DD3FC]/35 text-[#7DD3FC]';
+      case 'ligacao-ativa': return 'bg-[#34D399]/10 border-[#34D399]/35 text-emerald-300';
+      case 'acao-de-rua': return 'bg-[#E8C547]/10 border-[#E8C547]/35 text-[#FFE9A6]';
+      case 'disparo-de-msg': return 'bg-indigo-500/10 border-indigo-400/35 text-indigo-300';
+      case 'plantao': return 'bg-[#9F6BFF]/10 border-[#9F6BFF]/35 text-[#C4A6FF]';
+      default: return 'bg-white/[0.06] border-white/15 text-text-secondary';
     }
   };
 
@@ -82,29 +82,30 @@ export default function AgendaImobiliariaModal({ isOpen, onClose, agenda }: Agen
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-2xl p-6 w-full max-w-4xl mx-4 shadow-xl border border-[#E8E9F1] max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-[#12101a] rounded-2xl p-6 w-full max-w-4xl mx-4 shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] border border-white/10 max-h-[90vh] overflow-hidden relative" onClick={e => e.stopPropagation()}>
+        <div className="absolute inset-x-0 top-0 gx-line" />
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-r from-[#9F6BFF] to-[#6D3FD4] rounded-full flex items-center justify-center shadow-[0_8px_24px_-8px_rgba(159,107,255,0.5)]">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-[#2E2F38]">
+              <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">
                 Agenda Imobiliária
               </h2>
-              <p className="text-[#6B6F76]">
+              <p className="text-text-secondary text-sm">
                 {agenda.length} evento{agenda.length !== 1 ? 's' : ''} agendado{agenda.length !== 1 ? 's' : ''}
               </p>
             </div>
           </div>
-          <button 
+          <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 text-text-secondary hover:text-[#FF5C7E] rounded-lg transition-colors"
           >
-            <svg className="w-6 h-6 text-[#6B6F76]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -112,15 +113,15 @@ export default function AgendaImobiliariaModal({ isOpen, onClose, agenda }: Agen
 
         {sortedAgenda.length === 0 ? (
           <div className="text-center py-12">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 bg-white/[0.04] border border-white/[0.08] rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-[#2E2F38] mb-2">
+            <h3 className="text-lg font-semibold text-white mb-2">
               Nenhum evento agendado
             </h3>
-            <p className="text-[#6B6F76]">
+            <p className="text-text-secondary">
               A imobiliária ainda não agendou eventos
             </p>
           </div>
@@ -129,28 +130,28 @@ export default function AgendaImobiliariaModal({ isOpen, onClose, agenda }: Agen
             {sortedAgenda.map((evento) => (
               <div
                 key={evento.id}
-                className="p-4 rounded-xl border border-[#E8E9F1] hover:bg-[#F5F6FA] transition-all duration-200"
-                style={{ borderLeftColor: '#8B5CF6', borderLeftWidth: '4px' }}
+                className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.05] transition-all duration-200"
+                style={{ borderLeftColor: '#9F6BFF', borderLeftWidth: '4px' }}
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-4 h-4 bg-purple-500 rounded-full shadow-md mt-1 flex-shrink-0"></div>
+                  <div className="w-4 h-4 bg-[#9F6BFF] rounded-full shadow-[0_0_8px_rgba(159,107,255,0.6)] mt-1 flex-shrink-0"></div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-[#2E2F38] group-hover:text-purple-600 transition-colors">
+                      <h3 className="font-semibold text-white transition-colors">
                         {evento.titulo}
                       </h3>
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getTipoColor(evento.tipo)} text-white`}>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${getTipoColor(evento.tipo)}`}>
                         {getTipoIcon(evento.tipo)} {getTipoLabel(evento.tipo)}
                       </span>
                     </div>
-                    
+
                     {evento.descricao && (
-                      <div className="text-sm text-[#6B6F76] leading-relaxed mb-3">
+                      <div className="text-sm text-text-secondary leading-relaxed mb-3">
                         {evento.descricao}
                       </div>
                     )}
 
-                    <div className="flex flex-wrap gap-4 text-xs text-[#6B6F76]">
+                    <div className="flex flex-wrap gap-4 text-xs text-text-secondary">
                       <div className="flex items-center gap-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -225,14 +226,14 @@ export default function AgendaImobiliariaModal({ isOpen, onClose, agenda }: Agen
           </div>
         )}
 
-        <div className="mt-6 pt-4 border-t border-[#E8E9F1]">
+        <div className="mt-6 pt-4 border-t border-white/10">
           <div className="flex items-center justify-between">
-            <div className="text-sm text-[#6B6F76]">
+            <div className="text-sm text-text-secondary">
               Total: {sortedAgenda.length} evento{sortedAgenda.length !== 1 ? 's' : ''}
             </div>
             <button
               onClick={onClose}
-              className="px-6 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors font-semibold"
+              className="px-6 py-2 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white rounded-xl shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all font-bold"
             >
               Fechar
             </button>

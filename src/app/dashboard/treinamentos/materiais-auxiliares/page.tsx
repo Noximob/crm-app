@@ -199,7 +199,7 @@ export default function MateriaisAuxiliaresPage() {
           <div className="flex items-center gap-4 mb-4 sm:mb-0">
             <Link 
               href="/dashboard/treinamentos"
-              className="text-[#D4A017] hover:text-[#B8860B] transition-colors"
+              className="text-text-secondary hover:text-[#FF7A97] transition-colors"
             >
               ← Voltar aos Treinamentos
             </Link>
@@ -209,40 +209,39 @@ export default function MateriaisAuxiliaresPage() {
         {/* Título e Descrição */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-4 mb-4">
-            <span className="text-5xl">🗂️</span>
-            <h1 className="text-4xl font-bold text-[#2E2F38] dark:text-white">Materiais Auxiliares</h1>
+            <h1 className="al-display text-2xl font-bold text-white uppercase tracking-[0.14em]">Materiais Auxiliares</h1>
           </div>
-          <p className="text-xl text-[#6B6F76] dark:text-gray-300 max-w-3xl mx-auto">
+          <p className="text-xl text-text-secondary max-w-3xl mx-auto">
             Acesse roteiros, scripts, apresentações e outros recursos de apoio para seu trabalho.
           </p>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] text-center">
+          <div className="al-card relative overflow-hidden p-6 text-center"><div className="absolute inset-x-0 top-0 gx-line" />
             <p className="text-3xl mb-2">📄</p>
-            <p className="text-2xl font-bold text-[#2E2F38] dark:text-white">{materiais.filter(m => m.tipo === 'pdf').length}</p>
-            <p className="text-sm text-[#6B6F76] dark:text-gray-300">PDFs</p>
+            <p className="text-2xl font-bold text-white">{materiais.filter(m => m.tipo === 'pdf').length}</p>
+            <p className="text-sm text-text-secondary">PDFs</p>
           </div>
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] text-center">
+          <div className="al-card relative overflow-hidden p-6 text-center"><div className="absolute inset-x-0 top-0 gx-line" />
             <p className="text-3xl mb-2">🔗</p>
-            <p className="text-2xl font-bold text-[#2E2F38] dark:text-white">{materiais.filter(m => m.tipo === 'link').length}</p>
-            <p className="text-sm text-[#6B6F76] dark:text-gray-300">Links</p>
+            <p className="text-2xl font-bold text-white">{materiais.filter(m => m.tipo === 'link').length}</p>
+            <p className="text-sm text-text-secondary">Links</p>
           </div>
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] text-center">
+          <div className="al-card relative overflow-hidden p-6 text-center"><div className="absolute inset-x-0 top-0 gx-line" />
             <p className="text-3xl mb-2">⬇️</p>
-            <p className="text-2xl font-bold text-[#2E2F38] dark:text-white">{materiais.reduce((acc, m) => acc + (m.downloads || 0), 0)}</p>
-            <p className="text-sm text-[#6B6F76] dark:text-gray-300">Downloads</p>
+            <p className="text-2xl font-bold text-white">{materiais.reduce((acc, m) => acc + (m.downloads || 0), 0)}</p>
+            <p className="text-sm text-text-secondary">Downloads</p>
           </div>
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] text-center">
+          <div className="al-card relative overflow-hidden p-6 text-center"><div className="absolute inset-x-0 top-0 gx-line" />
             <p className="text-3xl mb-2">⭐</p>
-            <p className="text-2xl font-bold text-[#2E2F38] dark:text-white">4.6</p>
-            <p className="text-sm text-[#6B6F76] dark:text-gray-300">Avaliação Média</p>
+            <p className="text-2xl font-bold text-white">4.6</p>
+            <p className="text-sm text-text-secondary">Avaliação Média</p>
           </div>
         </div>
 
         {/* Filtros e Busca */}
-        <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-8">
+        <div className="al-card relative overflow-hidden p-6 mb-8"><div className="absolute inset-x-0 top-0 gx-line" />
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <input
@@ -250,7 +249,7 @@ export default function MateriaisAuxiliaresPage() {
                 placeholder="Buscar materiais..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-3 bg-[#F5F6FA] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#D4A017] transition-all"
+                className="w-full px-4 py-3 bg-white/[0.04] border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 transition-all"
               />
             </div>
             <div className="flex gap-2">
@@ -258,8 +257,8 @@ export default function MateriaisAuxiliaresPage() {
                 onClick={() => setFilterTipo('todos')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterTipo === 'todos' 
-                    ? 'bg-[#D4A017] text-white' 
-                    : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
+                    ? 'bg-[#FF1E56] border border-transparent text-white shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)]'
+                    : 'bg-white/[0.04] border border-white/10 text-text-secondary hover:bg-white/[0.08] hover:text-white'
                 }`}
               >
                 Todos
@@ -268,8 +267,8 @@ export default function MateriaisAuxiliaresPage() {
                 onClick={() => setFilterTipo('pdf')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterTipo === 'pdf' 
-                    ? 'bg-[#D4A017] text-white' 
-                    : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
+                    ? 'bg-[#FF1E56] border border-transparent text-white shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)]'
+                    : 'bg-white/[0.04] border border-white/10 text-text-secondary hover:bg-white/[0.08] hover:text-white'
                 }`}
               >
                 📄 PDFs
@@ -278,8 +277,8 @@ export default function MateriaisAuxiliaresPage() {
                 onClick={() => setFilterTipo('link')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterTipo === 'link' 
-                    ? 'bg-[#D4A017] text-white' 
-                    : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
+                    ? 'bg-[#FF1E56] border border-transparent text-white shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)]'
+                    : 'bg-white/[0.04] border border-white/10 text-text-secondary hover:bg-white/[0.08] hover:text-white'
                 }`}
               >
                 🔗 Links
@@ -291,15 +290,15 @@ export default function MateriaisAuxiliaresPage() {
         {/* Grid de Materiais */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {materiaisFiltrados.map((material) => (
-            <div key={material.id} className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] overflow-hidden hover:shadow-lg transition-all duration-200 group">
+            <div key={material.id} className="bg-white/[0.03] border border-white/[0.08] rounded-2xl overflow-hidden hover:border-[#34D399]/40 hover:-translate-y-0.5 transition-all duration-200 group">
               {/* Thumbnail */}
-              <div className="relative h-48 bg-gradient-to-br from-[#9C27B0] to-[#E91E63] flex items-center justify-center">
+              <div className="relative h-48 bg-gradient-to-br from-[#34D399]/25 to-[#12101a] flex items-center justify-center">
                 <span className="text-6xl">{material.thumbnail}</span>
-                <div className="absolute top-4 right-4 bg-black/20 backdrop-blur-sm rounded-lg px-3 py-1">
+                <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-sm rounded-lg px-3 py-1">
                   <span className="text-white text-sm font-medium">{getTipoLabel(material.tipo)}</span>
                 </div>
                 {material.tipo === 'pdf' && (
-                  <div className="absolute bottom-4 left-4 bg-black/20 backdrop-blur-sm rounded-lg px-3 py-1">
+                  <div className="absolute bottom-4 left-4 bg-black/40 backdrop-blur-sm rounded-lg px-3 py-1">
                     <span className="text-white text-sm font-medium">📏 {material.tamanho}</span>
                   </div>
                 )}
@@ -307,10 +306,10 @@ export default function MateriaisAuxiliaresPage() {
 
               {/* Conteúdo */}
               <div className="p-6">
-                <h3 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-2 group-hover:text-[#9C27B0] transition-colors">
+                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-emerald-300 transition-colors">
                   {material.titulo}
                 </h3>
-                <p className="text-[#6B6F76] dark:text-gray-300 text-sm mb-4 line-clamp-2">
+                <p className="text-text-secondary text-sm mb-4 line-clamp-2">
                   {material.descricao}
                 </p>
 
@@ -319,20 +318,20 @@ export default function MateriaisAuxiliaresPage() {
                   {material.tags.map((tag, index) => (
                     <span
                       key={index}
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        tag === 'Obrigatório' 
-                          ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
+                        tag === 'Obrigatório'
+                          ? 'bg-[#FF1E56]/10 border border-[#FF1E56]/35 text-[#FF7A97]'
                           : tag === 'Prático'
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          ? 'bg-[#34D399]/10 border border-[#34D399]/35 text-emerald-300'
                           : tag === 'Legal'
-                          ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
+                          ? 'bg-[#FF7A45]/10 border border-[#FF7A45]/35 text-[#FFB399]'
                           : tag === 'Marketing'
-                          ? 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200'
+                          ? 'bg-[#FF1E56]/10 border border-[#FF1E56]/35 text-[#FF9EB5]'
                           : tag === 'Ferramenta'
-                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
+                          ? 'bg-[#9F6BFF]/10 border border-[#9F6BFF]/35 text-[#C4A6FF]'
                           : tag === 'Referência'
-                          ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-                          : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                          ? 'bg-[#7DD3FC]/10 border border-[#7DD3FC]/35 text-[#7DD3FC]'
+                          : 'bg-white/[0.06] border border-white/20 text-text-secondary'
                       }`}
                     >
                       {tag}
@@ -341,7 +340,7 @@ export default function MateriaisAuxiliaresPage() {
                 </div>
 
                 {/* Stats */}
-                <div className="flex items-center justify-between text-sm text-[#6B6F76] dark:text-gray-300 mb-4">
+                <div className="flex items-center justify-between text-sm text-text-secondary mb-4">
                   <div className="flex items-center gap-4">
                     {material.tipo === 'pdf' && (
                       <span>⬇️ {material.downloads} downloads</span>
@@ -357,7 +356,7 @@ export default function MateriaisAuxiliaresPage() {
                 </div>
 
                 {/* Botão de Ação */}
-                <button className="w-full bg-[#9C27B0] hover:bg-[#7B1FA2] text-white py-3 px-4 rounded-xl font-medium transition-colors duration-200 flex items-center justify-center gap-2">
+                <button className="w-full bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white py-3 px-4 rounded-xl font-bold shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2">
                   {material.tipo === 'pdf' && '📄 Baixar'}
                   {material.tipo === 'link' && '🔗 Acessar'}
                 </button>
@@ -370,8 +369,8 @@ export default function MateriaisAuxiliaresPage() {
         {materiaisFiltrados.length === 0 && (
           <div className="text-center py-12">
             <span className="text-6xl mb-4 block">🔍</span>
-            <h3 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-2">Nenhum material encontrado</h3>
-            <p className="text-[#6B6F76] dark:text-gray-300">Tente ajustar os filtros ou termos de busca.</p>
+            <h3 className="text-xl font-bold text-white mb-2">Nenhum material encontrado</h3>
+            <p className="text-text-secondary">Tente ajustar os filtros ou termos de busca.</p>
           </div>
         )}
       </div>

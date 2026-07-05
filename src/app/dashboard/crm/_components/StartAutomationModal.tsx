@@ -32,21 +32,22 @@ export default function StartAutomationModal({ isOpen, onClose, onConfirm, leadN
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4" onMouseDown={onClose}>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md relative flex flex-col" onMouseDown={(e) => e.stopPropagation()}>
-                <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700">
-                    <h2 className="text-lg font-bold text-gray-800 dark:text-white">Iniciar Automação</h2>
-                    <button onClick={onClose} disabled={isLoading} className="p-1 rounded-full text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex justify-center items-center p-4" onMouseDown={onClose}>
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] w-full max-w-md relative overflow-hidden flex flex-col" onMouseDown={(e) => e.stopPropagation()}>
+                <div className="absolute inset-x-0 top-0 gx-line" />
+                <div className="flex items-center justify-between p-5 border-b border-white/10">
+                    <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">Iniciar Automação</h2>
+                    <button onClick={onClose} disabled={isLoading} className="p-1 rounded-full text-text-secondary hover:bg-white/10 hover:text-[#FF5C7E] transition-colors disabled:opacity-50">
                         <XIcon className="h-5 w-5" />
                     </button>
                 </div>
 
                 <div className="p-6 space-y-4">
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-text-secondary">
                         Confirme o nome que será usado para tratar o lead nas mensagens automáticas.
                     </p>
                     <div>
-                        <label htmlFor="treatmentName" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                        <label htmlFor="treatmentName" className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">
                             Nome de Tratamento
                         </label>
                         <input
@@ -54,18 +55,18 @@ export default function StartAutomationModal({ isOpen, onClose, onConfirm, leadN
                             type="text"
                             value={treatmentName}
                             onChange={(e) => setTreatmentName(e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                            className="mt-1 block w-full px-3 py-2 bg-white/[0.04] border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                             disabled={isLoading}
                         />
                     </div>
                 </div>
 
-                <div className="flex justify-end gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl">
+                <div className="flex justify-end gap-3 p-4 bg-white/[0.02] border-t border-white/10 rounded-b-2xl">
                     <button
                         type="button"
                         onClick={onClose}
                         disabled={isLoading}
-                        className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors dark:text-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 disabled:opacity-50"
+                        className="px-4 py-2 text-sm font-semibold text-white bg-white/[0.04] border border-white/10 hover:bg-white/[0.08] rounded-xl transition-colors disabled:opacity-50"
                     >
                         Cancelar
                     </button>
@@ -73,7 +74,7 @@ export default function StartAutomationModal({ isOpen, onClose, onConfirm, leadN
                         type="button"
                         onClick={handleConfirm}
                         disabled={isLoading || !treatmentName}
-                        className="px-5 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:bg-primary-400 disabled:cursor-not-allowed"
+                        className="px-5 py-2 text-sm font-bold text-white bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 rounded-xl transition-all shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isLoading ? 'Iniciando...' : 'Confirmar e Iniciar'}
                     </button>

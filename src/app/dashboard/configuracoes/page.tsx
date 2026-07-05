@@ -21,60 +21,61 @@ export default function ConfiguracoesPage() {
         <div className="text-center">
           {/* Ícone de construção */}
           <div className="flex justify-center mb-8">
-            <div className="p-8 bg-gradient-to-br from-[#FF6B6B]/10 to-[#FF8E8E]/5 rounded-full border border-[#FF6B6B]/20">
-              <ConstructionIcon className="text-[#FF6B6B] animate-pulse" />
+            <div className="p-8 bg-gradient-to-br from-[#FF1E56]/10 to-[#FF3364]/5 rounded-full border border-[#FF1E56]/25">
+              <ConstructionIcon className="text-[#FF5C7E] drop-shadow-[0_0_8px_rgba(255,30,86,0.5)] animate-pulse" />
             </div>
           </div>
-          
+
           {/* Título */}
-          <h1 className="text-4xl font-bold text-[#2E2F38] dark:text-white mb-4">
-            🚧 Em Construção 🚧
+          <h1 className="al-display text-4xl font-bold text-white uppercase tracking-[0.1em] mb-4">
+            Em Construção
           </h1>
-          
+
           {/* Subtítulo */}
-          <p className="text-xl text-[#6B6F76] dark:text-gray-300 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-text-secondary mb-8 max-w-2xl mx-auto">
             A área de configurações está sendo desenvolvida com muito carinho para oferecer a melhor experiência possível.
           </p>
           
           {/* Card informativo */}
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-lg border border-[#E8E9F1] dark:border-[#23283A] p-8 max-w-2xl mx-auto">
+          <div className="al-card relative overflow-hidden p-8 max-w-2xl mx-auto">
+            <div className="absolute inset-x-0 top-0 gx-line" />
             <div className="space-y-4">
-              <div className="flex items-center gap-3 text-[#D4A017]">
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <div className="flex items-center gap-3">
+                <svg className="h-6 w-6 text-[#FF5C7E] drop-shadow-[0_0_8px_rgba(255,30,86,0.5)]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                <h2 className="text-lg font-semibold">O que está por vir:</h2>
+                <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">O que está por vir:</h2>
               </div>
-              
+
               <ul className="space-y-3 text-left">
-                <li className="flex items-center gap-3 text-[#6B6F76] dark:text-gray-300">
-                  <span className="w-2 h-2 bg-[#3AC17C] rounded-full"></span>
+                <li className="flex items-center gap-3 text-text-secondary">
+                  <span className="w-2 h-2 bg-[#34D399] rounded-full shadow-[0_0_8px_rgba(52,211,153,0.6)]"></span>
                   Personalização de perfil e preferências
                 </li>
-                <li className="flex items-center gap-3 text-[#6B6F76] dark:text-gray-300">
-                  <span className="w-2 h-2 bg-[#3AC17C] rounded-full"></span>
+                <li className="flex items-center gap-3 text-text-secondary">
+                  <span className="w-2 h-2 bg-[#34D399] rounded-full shadow-[0_0_8px_rgba(52,211,153,0.6)]"></span>
                   Configurações de notificações
                 </li>
-                <li className="flex items-center gap-3 text-[#6B6F76] dark:text-gray-300">
-                  <span className="w-2 h-2 bg-[#3AC17C] rounded-full"></span>
+                <li className="flex items-center gap-3 text-text-secondary">
+                  <span className="w-2 h-2 bg-[#34D399] rounded-full shadow-[0_0_8px_rgba(52,211,153,0.6)]"></span>
                   Integrações com sistemas externos
                 </li>
-                <li className="flex items-center gap-3 text-[#6B6F76] dark:text-gray-300">
-                  <span className="w-2 h-2 bg-[#3AC17C] rounded-full"></span>
+                <li className="flex items-center gap-3 text-text-secondary">
+                  <span className="w-2 h-2 bg-[#34D399] rounded-full shadow-[0_0_8px_rgba(52,211,153,0.6)]"></span>
                   Configurações de segurança da conta
                 </li>
-                <li className="flex items-center gap-3 text-[#6B6F76] dark:text-gray-300">
-                  <span className="w-2 h-2 bg-[#3AC17C] rounded-full"></span>
+                <li className="flex items-center gap-3 text-text-secondary">
+                  <span className="w-2 h-2 bg-[#34D399] rounded-full shadow-[0_0_8px_rgba(52,211,153,0.6)]"></span>
                   Preferências de idioma e região
                 </li>
               </ul>
             </div>
           </div>
-          
+
           {/* Mensagem de agradecimento */}
-          <div className="mt-8 p-4 bg-gradient-to-r from-[#D4A017]/10 to-[#E8C547]/10 rounded-xl border border-[#D4A017]/20">
-            <p className="text-[#6B6F76] dark:text-gray-300">
-              <strong className="text-[#D4A017]">Obrigado pela paciência!</strong> Estamos trabalhando para trazer funcionalidades incríveis em breve.
+          <div className="mt-8 p-4 bg-white/[0.03] rounded-xl border border-white/[0.08]">
+            <p className="text-text-secondary">
+              <strong className="text-[#FF7A97]">Obrigado pela paciência!</strong> Estamos trabalhando para trazer funcionalidades incríveis em breve.
             </p>
           </div>
         </div>

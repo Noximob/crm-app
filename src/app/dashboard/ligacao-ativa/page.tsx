@@ -24,18 +24,30 @@ function textoDe(x: { mensagem?: string; mensagensPorProduto?: Record<string, st
   return x.mensagem || '';
 }
 
+/** Cor do chip de resultado pelo significado do rótulo (apenas visual) */
+function corEscolha(label: string): string {
+  const l = (label || '').toLowerCase();
+  if (/(topou|marcou|aceita|voltar a marcar|confirmad)/.test(l))
+    return 'border-[#34D399]/35 bg-[#34D399]/[0.06] hover:border-[#34D399]/60 hover:bg-[#34D399]/[0.12]';
+  if (/(não|nao\b|desconfi|encerrar)/.test(l))
+    return 'border-[#FF1E56]/35 bg-[#FF1E56]/[0.06] hover:border-[#FF1E56]/60 hover:bg-[#FF1E56]/[0.12]';
+  if (/(sem tempo|pensar|pesquisando|retorno|whatsapp)/.test(l))
+    return 'border-[#E8C547]/35 bg-[#E8C547]/[0.06] hover:border-[#E8C547]/60 hover:bg-[#E8C547]/[0.12]';
+  return 'border-white/[0.08] bg-white/[0.03] hover:border-[#FF1E56]/45 hover:bg-white/[0.07]';
+}
+
 function MensagemCard({ titulo, texto, audio }: { titulo?: string; texto: string; audio?: boolean }) {
   if (!texto) return null;
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#20202a] overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
+    <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] overflow-hidden">
       {titulo && (
-        <div className="px-4 py-2.5 bg-black/25 border-b border-white/10 flex items-center gap-2">
-          {audio && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/40 text-purple-100 shrink-0">🎙 ÁUDIO</span>}
-          <span className="text-[13px] font-semibold text-amber-200">{titulo}</span>
+        <div className="px-4 py-2.5 bg-white/[0.02] border-b border-white/[0.08] flex items-center gap-2">
+          {audio && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#9F6BFF]/10 border border-[#9F6BFF]/35 text-[#C4A6FF] shrink-0">🎙 ÁUDIO</span>}
+          <span className="text-[13px] font-semibold text-[#FF9EB5]">{titulo}</span>
         </div>
       )}
       <div className="p-4">
-        {!titulo && audio && <span className="inline-block mb-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/40 text-purple-100">🎙 grave lendo o texto</span>}
+        {!titulo && audio && <span className="inline-flex items-center mb-2 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#9F6BFF]/10 border border-[#9F6BFF]/35 text-[#C4A6FF]">🎙 grave lendo o texto</span>}
         <p className="text-[15.5px] text-white whitespace-pre-line leading-[1.8]">{texto}</p>
       </div>
     </div>
@@ -91,29 +103,30 @@ export default function LigacaoAtivaPage() {
 
   // ---------- SETUP ----------
   if (!iniciado || setupOpen) {
-    const optBtn = (ativo: boolean) => `px-4 py-2 rounded-xl text-sm font-semibold border transition-colors ${ativo ? 'bg-amber-500 text-black border-amber-500' : 'border-white/15 text-white/85 hover:bg-white/5'}`;
+    const optBtn = (ativo: boolean) => `px-4 py-2 rounded-xl text-sm font-semibold border transition-colors ${ativo ? 'bg-gradient-to-r from-[#FF1E56] to-[#A50D38] text-white border-transparent shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)]' : 'border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]'}`;
     return (
       <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-6">
+        <div className="w-full max-w-lg al-card relative overflow-hidden p-6 space-y-6">
+          <div className="absolute inset-x-0 top-0 gx-line" />
           <div>
-            <h1 className="text-2xl font-extrabold text-white">Ligação Ativa</h1>
+            <h1 className="al-display text-2xl font-extrabold text-white uppercase tracking-[0.08em]">Ligação Ativa</h1>
             <p className="text-[15px] text-text-secondary mt-1">Seu roteiro pra conduzir a ligação. Preencha o lead e siga o passo a passo.</p>
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-text-secondary mb-1.5">Nome do cliente</label>
-              <input value={client} onChange={(e) => setClient(e.target.value)} placeholder="Ex: João da Silva" className="w-full px-3 py-2.5 rounded-xl bg-white/[0.05] border border-white/10 text-[15px] text-white" />
+              <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1.5">Nome do cliente</label>
+              <input value={client} onChange={(e) => setClient(e.target.value)} placeholder="Ex: João da Silva" className="w-full px-3 py-2.5 rounded-lg bg-white/[0.04] border border-white/10 text-[15px] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-secondary mb-1.5">Seu nome</label>
-              <input value={corretor} onChange={(e) => setCorretor(e.target.value)} placeholder="Ex: Marcos" className="w-full px-3 py-2.5 rounded-xl bg-white/[0.05] border border-white/10 text-[15px] text-white" />
+              <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1.5">Seu nome</label>
+              <input value={corretor} onChange={(e) => setCorretor(e.target.value)} placeholder="Ex: Marcos" className="w-full px-3 py-2.5 rounded-lg bg-white/[0.04] border border-white/10 text-[15px] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50" />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-secondary mb-2">Sobre qual imóvel/empreendimento é a ligação?</label>
+            <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-2">Sobre qual imóvel/empreendimento é a ligação?</label>
             <div className="flex flex-wrap gap-2">{cfg.produtos.map((p) => <button key={p.key} onClick={() => setProduct(p.key)} className={optBtn(product === p.key)}>{p.label}</button>)}</div>
           </div>
-          <button onClick={iniciar} disabled={!product} className="w-full px-4 py-3 rounded-xl bg-amber-500 text-black font-bold text-[15px] hover:bg-amber-400 disabled:opacity-50">
+          <button onClick={iniciar} disabled={!product} className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold text-[15px] shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all disabled:opacity-50">
             {iniciado ? 'Salvar' : 'Começar atendimento →'}
           </button>
         </div>
@@ -128,27 +141,29 @@ export default function LigacaoAtivaPage() {
     <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-4">
       {/* Lead + ações */}
       <aside className="lg:w-60 shrink-0 flex flex-col gap-2 lg:sticky lg:top-0 self-start">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+        <div className="al-card relative overflow-hidden p-4">
+          <div className="absolute inset-x-0 top-0 gx-line" />
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-widest text-amber-300">Lead</span>
-            <button onClick={() => setSetupOpen(true)} className="text-[11px] text-text-secondary hover:text-white">editar ✎</button>
+            <span className="gx-tag"><span>Lead</span></span>
+            <button onClick={() => setSetupOpen(true)} className="text-[11px] text-text-secondary hover:text-[#FF5C7E] transition-colors">editar ✎</button>
           </div>
-          <p className="text-[15px] font-bold text-white leading-tight">{client || '(sem nome)'}</p>
+          <p className="al-display text-xl font-extrabold text-white leading-tight">{client || '(sem nome)'}</p>
           <p className="text-xs text-text-secondary mt-0.5">Corretor: {corretor || '—'}</p>
           <div className="mt-2.5 flex flex-wrap gap-1.5">
-            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-200">{produtoNome}</span>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#FF1E56]/10 border border-[#FF1E56]/35 text-[#FF9EB5]">{produtoNome}</span>
           </div>
         </div>
-        <button onClick={voltar} disabled={!history.length} className="px-3 py-2.5 rounded-xl text-sm font-semibold border border-white/15 text-white/85 hover:bg-white/5 disabled:opacity-40">← Voltar uma etapa</button>
-        <button onClick={recomecar} className="px-3 py-2.5 rounded-xl text-sm font-semibold border border-white/15 text-text-secondary hover:bg-white/5">↺ Recomeçar</button>
+        <button onClick={voltar} disabled={!history.length} className="px-3 py-2.5 rounded-xl text-sm font-semibold border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white transition-colors disabled:opacity-40">← Voltar uma etapa</button>
+        <button onClick={recomecar} className="px-3 py-2.5 rounded-xl text-sm font-semibold border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-text-secondary transition-colors">↺ Recomeçar</button>
       </aside>
 
       {/* Conteúdo */}
       <section className="flex-1 min-w-0">
-        <div className="max-w-2xl mx-auto space-y-5">
+        <div className="max-w-2xl mx-auto al-card relative overflow-hidden p-5 sm:p-6 space-y-5">
+          <div className="absolute inset-x-0 top-0 gx-line" />
           <div>
-            {node.eyebrow && <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-300 mb-1.5">{node.eyebrow}</p>}
-            <h2 className="text-[26px] font-extrabold text-white leading-tight">{node.titulo}</h2>
+            {node.eyebrow && <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#FF7A97] mb-1.5">{node.eyebrow}</p>}
+            <h2 className="al-display text-[26px] font-extrabold text-white leading-tight">{node.titulo}</h2>
             {node.descricao && <p className="text-[15px] text-text-secondary leading-relaxed mt-2">{node.descricao}</p>}
           </div>
 
@@ -169,12 +184,12 @@ export default function LigacaoAtivaPage() {
           )}
 
           {node.checklist && node.checklist.length > 0 && (
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-2.5">
+            <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4 space-y-2.5">
               {node.checklist.map((item, i) => {
                 const k = `${node.id}:${i}`;
                 return (
                   <label key={i} className="flex items-start gap-3 cursor-pointer">
-                    <input type="checkbox" checked={!!marcados[k]} onChange={(e) => setMarcados((m) => ({ ...m, [k]: e.target.checked }))} className="mt-0.5 w-5 h-5 rounded border-amber-500 text-amber-500 focus:ring-amber-500 shrink-0" />
+                    <input type="checkbox" checked={!!marcados[k]} onChange={(e) => setMarcados((m) => ({ ...m, [k]: e.target.checked }))} className="mt-0.5 w-5 h-5 rounded border-[#FF1E56] text-[#FF1E56] focus:ring-[#FF1E56] shrink-0" />
                     <span className={`text-[15px] ${marcados[k] ? 'text-text-secondary line-through' : 'text-white'}`}>{item}</span>
                   </label>
                 );
@@ -187,7 +202,7 @@ export default function LigacaoAtivaPage() {
               {node.pergunta && <p className="text-[15px] font-bold text-white mb-2.5">{node.pergunta}</p>}
               <div className="grid sm:grid-cols-2 gap-2.5">
                 {node.choices.map((c, i) => (
-                  <button key={i} onClick={() => navegar(c.target)} className="text-left px-4 py-3 rounded-xl border border-white/12 bg-white/[0.03] hover:bg-white/[0.08] hover:border-amber-500/50 transition-colors">
+                  <button key={i} onClick={() => navegar(c.target)} className={`text-left px-4 py-3 rounded-xl border transition-all hover:-translate-y-0.5 active:scale-[0.98] ${corEscolha(c.label)}`}>
                     <div className="text-[15px] font-semibold text-white">{c.icon ? `${c.icon}  ` : ''}{c.label}</div>
                     {c.desc && <div className="text-xs text-text-secondary mt-0.5">{c.desc}</div>}
                   </button>

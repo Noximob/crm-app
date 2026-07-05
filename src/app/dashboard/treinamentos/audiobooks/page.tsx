@@ -96,49 +96,49 @@ export default function AudioBooksPage() {
     <div className="min-h-full py-8 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">📚 Áudio Books</h1>
-          <p className="text-[#6B6F76] dark:text-gray-300">Desenvolva-se pessoal e profissionalmente com nossa biblioteca de áudio books</p>
+          <h1 className="al-display text-2xl font-bold text-white uppercase tracking-[0.14em] mb-2">Áudio Books</h1>
+          <p className="text-text-secondary">Desenvolva-se pessoal e profissionalmente com nossa biblioteca de áudio books</p>
         </div>
 
         {loading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4A017] mx-auto"></div>
-            <p className="mt-4 text-[#6B6F76] dark:text-gray-300">Carregando treinamentos...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF1E56] mx-auto"></div>
+            <p className="mt-4 text-text-secondary">Carregando treinamentos...</p>
           </div>
         ) : treinamentos.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📚</div>
-            <h2 className="text-xl font-semibold text-[#2E2F38] dark:text-white mb-2">Nenhum áudio book disponível</h2>
-            <p className="text-[#6B6F76] dark:text-gray-300">Os treinamentos serão adicionados em breve pela administração.</p>
+            <h2 className="text-xl font-semibold text-white mb-2">Nenhum áudio book disponível</h2>
+            <p className="text-text-secondary">Os treinamentos serão adicionados em breve pela administração.</p>
           </div>
         ) : (
           <div className="space-y-8">
             {/* PDFs */}
             {pdfs.length > 0 && (
               <div>
-                <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                  <FileIcon className="h-6 w-6 text-red-500" />
+                <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4 flex items-center gap-2">
+                  <FileIcon className="h-6 w-6 text-[#34D399] drop-shadow-[0_0_8px_rgba(52,211,153,0.45)]" />
                   Materiais em PDF
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {pdfs.map((treinamento) => (
                     <div
                       key={treinamento.id}
-                      className="bg-white dark:bg-[#23283A] rounded-xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-lg transition-shadow"
+                      className="bg-white/[0.03] border border-white/[0.08] rounded-xl p-6 hover:border-[#34D399]/40 hover:-translate-y-0.5 transition-all duration-200"
                     >
                       <div className="flex items-center gap-3 mb-4">
-                        <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
-                          <FileIcon className="h-6 w-6 text-red-500" />
+                        <div className="w-12 h-12 bg-[#34D399]/10 border border-[#34D399]/30 rounded-lg flex items-center justify-center">
+                          <FileIcon className="h-6 w-6 text-[#34D399] drop-shadow-[0_0_8px_rgba(52,211,153,0.45)]" />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-[#2E2F38] dark:text-white">
+                          <h3 className="font-semibold text-white">
                             {treinamento.titulo}
                           </h3>
                         </div>
                       </div>
                       
                       {treinamento.descricao && (
-                        <p className="text-sm text-[#6B6F76] dark:text-gray-300 mb-4">
+                        <p className="text-sm text-text-secondary mb-4">
                           {treinamento.descricao}
                         </p>
                       )}
@@ -147,7 +147,7 @@ export default function AudioBooksPage() {
                         href={treinamento.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold rounded-xl shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all"
                       >
                         <FileIcon className="h-4 w-4" />
                         Download PDF
@@ -161,8 +161,8 @@ export default function AudioBooksPage() {
             {/* Vídeos */}
             {videos.length > 0 && (
               <div>
-                <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white mb-4 flex items-center gap-2">
-                  <PlayIcon className="h-6 w-6 text-red-500" />
+                <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4 flex items-center gap-2">
+                  <PlayIcon className="h-6 w-6 text-[#34D399] drop-shadow-[0_0_8px_rgba(52,211,153,0.45)]" />
                   Vídeos
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -171,7 +171,7 @@ export default function AudioBooksPage() {
                     return (
                       <div
                         key={treinamento.id}
-                        className="bg-white dark:bg-[#23283A] rounded-xl overflow-hidden shadow-soft border border-[#E8E9F1] dark:border-[#23283A] hover:shadow-lg transition-shadow"
+                        className="bg-white/[0.03] border border-white/[0.08] rounded-xl overflow-hidden hover:border-[#34D399]/40 hover:-translate-y-0.5 transition-all duration-200"
                       >
                         {embedUrl ? (
                           <div className="relative">
@@ -192,18 +192,18 @@ export default function AudioBooksPage() {
                             </button>
                           </div>
                         ) : (
-                          <div className="w-full h-48 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                            <PlayIcon className="h-12 w-12 text-gray-400" />
+                          <div className="w-full h-48 bg-white/[0.04] flex items-center justify-center">
+                            <PlayIcon className="h-12 w-12 text-white/30" />
                           </div>
                         )}
                         
                         <div className="p-4">
-                          <h3 className="font-semibold text-[#2E2F38] dark:text-white mb-2">
+                          <h3 className="font-semibold text-white mb-2">
                             {treinamento.titulo}
                           </h3>
                           
                           {treinamento.descricao && (
-                            <p className="text-sm text-[#6B6F76] dark:text-gray-300 mb-3">
+                            <p className="text-sm text-text-secondary mb-3">
                               {treinamento.descricao}
                             </p>
                           )}
@@ -212,7 +212,7 @@ export default function AudioBooksPage() {
                             href={treinamento.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold rounded-xl shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all"
                           >
                             <PlayIcon className="h-4 w-4" />
                             Assistir no YouTube
@@ -229,15 +229,15 @@ export default function AudioBooksPage() {
 
         {/* Modal de vídeo maximizado */}
         {selectedVideo && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-[#23283A] rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto"><div className="absolute inset-x-0 top-0 gx-line" />
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-[#2E2F38] dark:text-white">
+                <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">
                   Vídeo em Tela Cheia
                 </h3>
                 <button
                   onClick={() => setSelectedVideo(null)}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  className="text-text-secondary hover:text-[#FF5C7E]"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -259,7 +259,7 @@ export default function AudioBooksPage() {
               <div className="mt-4 flex justify-end">
                 <button
                   onClick={() => setSelectedVideo(null)}
-                  className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
+                  className="px-4 py-2 border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white font-semibold rounded-xl transition-colors"
                 >
                   Fechar
                 </button>

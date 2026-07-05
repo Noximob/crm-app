@@ -35,6 +35,8 @@ interface BrelloBoard {
   imobiliariaId?: string;
 }
 
+const GX_COLUMN_COLORS = ['#FFE9A6', '#E8C547', '#D4A017', '#F59E0B', '#FF7A45', '#FF1E56'];
+
 const Brello = () => {
   const { currentUser, userData, isEspelhoDemo } = useAuth();
   const [boards, setBoards] = useState<BrelloBoard[]>([]);
@@ -865,7 +867,10 @@ const Brello = () => {
   if (loading) {
     return (
       <div className="min-h-full flex items-center justify-center">
-        <div className="text-white text-xl">Carregando Brello...</div>
+        <div className="flex items-center gap-3">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#FF1E56]" />
+          <div className="text-text-secondary text-sm font-bold uppercase tracking-[0.18em]">Carregando Brello...</div>
+        </div>
       </div>
     );
   }
@@ -875,32 +880,32 @@ const Brello = () => {
       <div className="w-full">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <h1 className="text-3xl font-bold text-white">Brello</h1>
+          <h1 className="al-display text-2xl font-bold text-white uppercase tracking-[0.14em]">Brello</h1>
           <button
             onClick={() => setShowNewBoardModal(true)}
-            className="bg-[#6366F1] hover:bg-[#5855EB] text-white px-4 py-2 rounded-lg transition-colors"
+            className="bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold rounded-xl px-4 py-2 shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all"
           >
             + Novo Board
           </button>
-          <p className="text-gray-400 ml-auto">Organize suas tarefas com estilo</p>
+          <p className="text-text-secondary ml-auto">Organize suas tarefas com estilo</p>
         </div>
 
         {/* Boards List */}
         {boards.length > 0 && (
           <div className="mb-6">
-            <h2 className="text-xl font-semibold text-white mb-4">Seus Boards</h2>
+            <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Seus Boards</h2>
             <div className="flex gap-4 flex-wrap">
               {boards.map((board) => (
                 <div
                   key={board.id}
-                  className={`p-4 rounded-lg cursor-pointer transition-colors relative ${
+                  className={`p-4 rounded-xl cursor-pointer transition-all hover:-translate-y-0.5 relative border ${
                     currentBoard?.id === board.id
-                      ? board.isShared 
-                        ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-black'
-                        : 'bg-[#6366F1] text-white'
+                      ? board.isShared
+                        ? 'bg-gradient-to-r from-[#E8C547] to-[#C89210] border-[#E8C547]/60 text-[#181203] shadow-[0_8px_24px_-8px_rgba(232,197,71,0.5)]'
+                        : 'bg-gradient-to-r from-[#FF1E56] to-[#A50D38] border-[#FF1E56]/60 text-white shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)]'
                       : board.isShared
-                        ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-black hover:from-yellow-300 hover:to-yellow-400'
-                        : 'bg-[#23283A] text-gray-300 hover:bg-[#2A2F42]'
+                        ? 'bg-[#E8C547]/10 border-[#E8C547]/35 text-[#FFE9A6] hover:bg-[#E8C547]/20'
+                        : 'bg-white/[0.03] border-white/[0.08] text-text-secondary hover:bg-white/[0.06] hover:text-white'
                   }`}
                   onClick={() => setCurrentBoard(board)}
                 >
@@ -911,10 +916,12 @@ const Brello = () => {
                         e.stopPropagation();
                         openBoardMenu(board);
                       }}
-                      className={`ml-2 p-1 ${
-                        board.isShared 
-                          ? 'text-yellow-800 hover:text-yellow-900' 
-                          : 'text-gray-400 hover:text-white'
+                      className={`ml-2 p-1 transition-colors ${
+                        board.isShared
+                          ? currentBoard?.id === board.id
+                            ? 'text-[#181203]/70 hover:text-[#181203]'
+                            : 'text-[#FFE9A6]/70 hover:text-[#FFE9A6]'
+                          : 'text-text-secondary hover:text-[#FF5C7E]'
                       }`}
                     >
                       ⋯
@@ -928,18 +935,18 @@ const Brello = () => {
 
         {/* Kanban Board — sem fundo preto, só colunas e cards; background do app aparece */}
         {currentBoard && (
-          <div className="rounded-xl p-6 border border-white/10">
+          <div className="rounded-xl p-6 border border-white/10 bg-white/[0.02]">
             <div className="flex items-center gap-4 mb-6">
-              <h2 className="text-2xl font-bold text-white">{currentBoard.title}</h2>
+              <h2 className="al-display text-lg font-bold text-white uppercase tracking-[0.14em]">{currentBoard.title}</h2>
               <button
                 onClick={() => setShowNewColumnModal(true)}
-                className="bg-[#10B981] hover:bg-[#059669] text-white px-4 py-2 rounded-lg transition-colors"
+                className="border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white rounded-xl px-4 py-2 transition-colors"
               >
                 + Nova Coluna
               </button>
               <button
                 onClick={() => setShowNewCardModal(true)}
-                className="bg-[#D4A017] hover:bg-[#B8860B] text-white px-4 py-2 rounded-lg transition-colors"
+                className="bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold rounded-xl px-4 py-2 shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all"
               >
                 + Novo Card
               </button>
@@ -957,6 +964,7 @@ const Brello = () => {
                       const columnCards = cards
                         .filter(card => card.columnId === column.id)
                         .sort((a, b) => a.order - b.order);
+                      const gxColor = GX_COLUMN_COLORS[columnIndex % GX_COLUMN_COLORS.length];
 
                       return (
                         <Draggable key={column.id} draggableId={column.id} index={columnIndex}>
@@ -968,16 +976,23 @@ const Brello = () => {
                             >
                               <div
                                 {...provided.dragHandleProps}
-                                className={`bg-[#23283A]/90 backdrop-blur-sm rounded-lg p-4 min-h-[500px] cursor-move transition-all border border-white/10 ${
-                                  snapshot.isDragging ? 'shadow-lg transform rotate-1' : 'hover:shadow-md'
+                                className={`al-card relative overflow-hidden rounded-xl p-4 min-h-[500px] cursor-move transition-all ${
+                                  snapshot.isDragging ? 'shadow-[0_24px_48px_-16px_rgba(0,0,0,0.8)] transform rotate-1' : ''
                                 }`}
                               >
+                                <div
+                                  className="absolute inset-x-0 top-0 h-[2px]"
+                                  style={{ backgroundColor: gxColor, boxShadow: `0 0 12px ${gxColor}` }}
+                                />
                                 <div className="flex justify-between items-center mb-4">
-                                  <h3 className="text-lg font-semibold text-white">{column.title}</h3>
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <h3 className="al-display text-[13px] font-bold text-white uppercase tracking-[0.14em] truncate">{column.title}</h3>
+                                    <span className="bg-white/[0.06] rounded-full px-2 text-[11px] tabular-nums text-text-secondary flex-shrink-0">{columnCards.length}</span>
+                                  </div>
                                   <div className="relative">
                                     <button
                                       onClick={() => openColumnMenu(column)}
-                                      className="text-gray-400 hover:text-white text-xl font-bold"
+                                      className="text-text-secondary hover:text-[#FF5C7E] text-xl font-bold transition-colors"
                                     >
                                       ⋯
                                     </button>
@@ -990,7 +1005,7 @@ const Brello = () => {
                                       ref={provided.innerRef}
                                       {...provided.droppableProps}
                                       className={`space-y-3 min-h-[400px] ${
-                                        snapshot.isDraggingOver ? 'bg-white/5 rounded-lg' : ''
+                                        snapshot.isDraggingOver ? 'bg-[#FF1E56]/[0.05] rounded-xl' : ''
                                       }`}
                                     >
                                       {columnCards.map((card, index) => (
@@ -1000,11 +1015,15 @@ const Brello = () => {
                                               ref={provided.innerRef}
                                               {...provided.draggableProps}
                                               {...provided.dragHandleProps}
-                                              className={`bg-white/10 rounded-lg p-4 cursor-move transition-all border border-white/10 ${
-                                                snapshot.isDragging ? 'shadow-lg transform rotate-2' : 'hover:shadow-md hover:bg-white/15'
+                                              className={`relative overflow-hidden bg-white/[0.04] border border-white/[0.08] rounded-xl p-3 pl-4 cursor-grab transition-all ${
+                                                snapshot.isDragging ? 'shadow-[0_16px_32px_-12px_rgba(255,30,86,0.35)] transform rotate-2 border-[#FF1E56]/40' : 'hover:border-[#FF1E56]/40 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-10px_rgba(255,30,86,0.35)]'
                                               }`}
                                             >
-                                              <div 
+                                              <span
+                                                className="pointer-events-none absolute inset-y-0 left-0 w-[2px]"
+                                                style={{ backgroundColor: gxColor }}
+                                              />
+                                              <div
                                                 className="flex justify-between items-start cursor-pointer"
                                                 onClick={() => openCardModal(card)}
                                               >
@@ -1014,7 +1033,7 @@ const Brello = () => {
                                                     e.stopPropagation();
                                                     confirmDelete('card', card.id, card.title);
                                                   }}
-                                                  className="text-red-400 hover:text-red-300 text-sm flex-shrink-0 ml-2"
+                                                  className="text-text-secondary hover:text-[#FF5C7E] text-sm flex-shrink-0 ml-2 transition-colors"
                                                 >
                                                   ×
                                                 </button>
@@ -1029,7 +1048,7 @@ const Brello = () => {
                                           setSelectedColumnId(column.id);
                                           setShowNewCardModal(true);
                                         }}
-                                        className="w-full mt-3 p-3 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg transition-colors flex items-center justify-center gap-2 border border-dashed border-white/20"
+                                        className="w-full mt-3 p-3 bg-white/[0.02] hover:bg-[#FF1E56]/[0.07] text-text-secondary hover:text-[#FF7A97] rounded-xl transition-colors flex items-center justify-center gap-2 border border-dashed border-white/15 hover:border-[#FF1E56]/40"
                                       >
                                         <span className="text-xl">+</span>
                                         <span>Adicionar card</span>
@@ -1055,27 +1074,28 @@ const Brello = () => {
 
         {/* Modals */}
         {showNewBoardModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-[#23283A] rounded-lg p-6 w-96">
-              <h3 className="text-xl font-semibold text-white mb-4">Novo Board</h3>
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-96">
+              <div className="absolute inset-x-0 top-0 gx-line" />
+              <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Novo Board</h3>
               <input
                 type="text"
                 placeholder="Nome do board"
                 value={newBoardTitle}
                 onChange={(e) => setNewBoardTitle(e.target.value)}
-                className="w-full p-3 bg-[#181C23] text-white rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-[#6366F1]"
+                className="w-full p-3 bg-white/[0.04] border border-white/10 rounded-lg text-white placeholder-white/30 mb-4 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                 autoFocus
               />
               <div className="flex gap-3">
                 <button
                   onClick={createBoard}
-                  className="flex-1 bg-[#6366F1] hover:bg-[#5855EB] text-white py-2 rounded-lg transition-colors"
+                  className="flex-1 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold py-2 rounded-xl shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all"
                 >
                   Criar
                 </button>
                 <button
                   onClick={() => setShowNewBoardModal(false)}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
+                  className="flex-1 border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white py-2 rounded-xl transition-colors"
                 >
                   Cancelar
                 </button>
@@ -1085,27 +1105,28 @@ const Brello = () => {
         )}
 
         {showNewColumnModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-[#23283A] rounded-lg p-6 w-96">
-              <h3 className="text-xl font-semibold text-white mb-4">Nova Coluna</h3>
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-96">
+              <div className="absolute inset-x-0 top-0 gx-line" />
+              <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Nova Coluna</h3>
               <input
                 type="text"
                 placeholder="Nome da coluna"
                 value={newColumnTitle}
                 onChange={(e) => setNewColumnTitle(e.target.value)}
-                className="w-full p-3 bg-[#181C23] text-white rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                className="w-full p-3 bg-white/[0.04] border border-white/10 rounded-lg text-white placeholder-white/30 mb-4 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                 autoFocus
               />
               <div className="flex gap-3">
                 <button
                   onClick={createColumn}
-                  className="flex-1 bg-[#10B981] hover:bg-[#059669] text-white py-2 rounded-lg transition-colors"
+                  className="flex-1 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold py-2 rounded-xl shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all"
                 >
                   Criar
                 </button>
                 <button
                   onClick={() => setShowNewColumnModal(false)}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
+                  className="flex-1 border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white py-2 rounded-xl transition-colors"
                 >
                   Cancelar
                 </button>
@@ -1115,13 +1136,14 @@ const Brello = () => {
         )}
 
         {showNewCardModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-[#23283A] rounded-lg p-6 w-96">
-              <h3 className="text-xl font-semibold text-white mb-4">Novo Card</h3>
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-96">
+              <div className="absolute inset-x-0 top-0 gx-line" />
+              <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Novo Card</h3>
               <select
                 value={selectedColumnId}
                 onChange={(e) => setSelectedColumnId(e.target.value)}
-                className="w-full p-3 bg-[#181C23] text-white rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-[#D4A017]"
+                className="w-full p-3 bg-white/[0.04] border border-white/10 rounded-lg text-white placeholder-white/30 mb-4 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
               >
                 <option value="">Selecione uma coluna</option>
                 {columns.map(column => (
@@ -1133,24 +1155,24 @@ const Brello = () => {
                 placeholder="Título do card"
                 value={newCardTitle}
                 onChange={(e) => setNewCardTitle(e.target.value)}
-                className="w-full p-3 bg-[#181C23] text-white rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-[#D4A017]"
+                className="w-full p-3 bg-white/[0.04] border border-white/10 rounded-lg text-white placeholder-white/30 mb-4 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
               />
               <textarea
                 placeholder="Descrição (opcional)"
                 value={newCardDescription}
                 onChange={(e) => setNewCardDescription(e.target.value)}
-                className="w-full p-3 bg-[#181C23] text-white rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-[#D4A017] h-20 resize-none"
+                className="w-full p-3 bg-white/[0.04] border border-white/10 rounded-lg text-white placeholder-white/30 mb-4 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 h-20 resize-none"
               />
               <div className="flex gap-3">
                 <button
                   onClick={createCard}
-                  className="flex-1 bg-[#D4A017] hover:bg-[#B8860B] text-white py-2 rounded-lg transition-colors"
+                  className="flex-1 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold py-2 rounded-xl shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all"
                 >
                   Criar
                 </button>
                 <button
                   onClick={() => setShowNewCardModal(false)}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
+                  className="flex-1 border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white py-2 rounded-xl transition-colors"
                 >
                   Cancelar
                 </button>
@@ -1161,10 +1183,11 @@ const Brello = () => {
 
         {/* Menu da Coluna */}
         {showColumnMenu && selectedColumn && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-[#23283A] rounded-lg p-6 w-80">
-              <h3 className="text-xl font-semibold text-white mb-4">Opções da Coluna</h3>
-              <p className="text-gray-300 mb-6">"{selectedColumn.title}"</p>
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-80">
+              <div className="absolute inset-x-0 top-0 gx-line" />
+              <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Opções da Coluna</h3>
+              <p className="text-text-secondary mb-6">"{selectedColumn.title}"</p>
               
               <div className="space-y-3">
                 <button
@@ -1172,27 +1195,27 @@ const Brello = () => {
                     setShowColumnMenu(false);
                     setShowCopyModal(true);
                   }}
-                  className="w-full bg-[#6366F1] hover:bg-[#5855EB] text-white py-3 rounded-lg transition-colors text-left px-4"
+                  className="w-full border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white py-3 rounded-xl transition-colors text-left px-4"
                 >
-                  📋 Copiar para outro Board
+                  Copiar para outro Board
                 </button>
                 <button
                   onClick={() => {
                     setShowColumnMenu(false);
                     setShowMoveModal(true);
                   }}
-                  className="w-full bg-[#10B981] hover:bg-[#059669] text-white py-3 rounded-lg transition-colors text-left px-4"
+                  className="w-full border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white py-3 rounded-xl transition-colors text-left px-4"
                 >
-                  📦 Mover para outro Board
+                  Mover para outro Board
                 </button>
                 <button
                   onClick={() => {
                     setShowColumnMenu(false);
                     confirmDelete('column', selectedColumn.id, selectedColumn.title);
                   }}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg transition-colors text-left px-4"
+                  className="w-full border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-300 py-3 rounded-xl transition-colors text-left px-4"
                 >
-                  🗑️ Excluir Coluna
+                  Excluir Coluna
                 </button>
               </div>
               
@@ -1202,7 +1225,7 @@ const Brello = () => {
                     setShowColumnMenu(false);
                     setSelectedColumn(null);
                   }}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
+                  className="flex-1 border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white py-2 rounded-xl transition-colors"
                 >
                   Cancelar
                 </button>
@@ -1213,10 +1236,11 @@ const Brello = () => {
 
         {/* Menu do Board */}
         {showBoardMenu && selectedBoard && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-[#23283A] rounded-lg p-6 w-80">
-              <h3 className="text-xl font-semibold text-white mb-4">Opções do Board</h3>
-              <p className="text-gray-300 mb-6">"{selectedBoard.title}"</p>
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-80">
+              <div className="absolute inset-x-0 top-0 gx-line" />
+              <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Opções do Board</h3>
+              <p className="text-text-secondary mb-6">"{selectedBoard.title}"</p>
               
               <div className="space-y-3">
                 {selectedBoard.userId === currentUser?.uid && (
@@ -1225,9 +1249,9 @@ const Brello = () => {
                       setShowBoardMenu(false);
                       openShareModal(selectedBoard);
                     }}
-                    className="w-full bg-[#6366F1] hover:bg-[#5855EB] text-white py-3 rounded-lg transition-colors text-left px-4"
+                    className="w-full border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white py-3 rounded-xl transition-colors text-left px-4"
                   >
-                    👥 Compartilhar Board
+                    Compartilhar Board
                   </button>
                 )}
                 {selectedBoard.userId === currentUser?.uid && (
@@ -1236,9 +1260,9 @@ const Brello = () => {
                       setShowBoardMenu(false);
                       confirmDelete('board', selectedBoard.id, selectedBoard.title);
                     }}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg transition-colors text-left px-4"
+                    className="w-full border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-300 py-3 rounded-xl transition-colors text-left px-4"
                   >
-                    🗑️ Excluir Board
+                    Excluir Board
                   </button>
                 )}
               </div>
@@ -1249,7 +1273,7 @@ const Brello = () => {
                     setShowBoardMenu(false);
                     setSelectedBoard(null);
                   }}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
+                  className="flex-1 border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white py-2 rounded-xl transition-colors"
                 >
                   Cancelar
                 </button>
@@ -1260,15 +1284,16 @@ const Brello = () => {
 
         {/* Modal Copiar Coluna */}
         {showCopyModal && selectedColumn && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-[#23283A] rounded-lg p-6 w-96">
-              <h3 className="text-xl font-semibold text-white mb-4">Copiar Coluna</h3>
-              <p className="text-gray-300 mb-4">Copiar "{selectedColumn.title}" para qual board?</p>
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-96">
+              <div className="absolute inset-x-0 top-0 gx-line" />
+              <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Copiar Coluna</h3>
+              <p className="text-text-secondary mb-4">Copiar "{selectedColumn.title}" para qual board?</p>
               
               <select
                 value={targetBoardId}
                 onChange={(e) => setTargetBoardId(e.target.value)}
-                className="w-full p-3 bg-[#181C23] text-white rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-[#6366F1]"
+                className="w-full p-3 bg-white/[0.04] border border-white/10 rounded-lg text-white placeholder-white/30 mb-4 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
               >
                 <option value="">Selecione um board</option>
                 {boards.filter(board => board.id !== currentBoard?.id).map(board => (
@@ -1280,7 +1305,7 @@ const Brello = () => {
                 <button
                   onClick={copyColumnToBoard}
                   disabled={!targetBoardId}
-                  className="flex-1 bg-[#6366F1] hover:bg-[#5855EB] disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-2 rounded-lg transition-colors"
+                  className="flex-1 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed text-white font-bold py-2 rounded-xl shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all"
                 >
                   Copiar
                 </button>
@@ -1289,7 +1314,7 @@ const Brello = () => {
                     setShowCopyModal(false);
                     setTargetBoardId('');
                   }}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
+                  className="flex-1 border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white py-2 rounded-xl transition-colors"
                 >
                   Cancelar
                 </button>
@@ -1300,10 +1325,11 @@ const Brello = () => {
 
         {/* Modal Compartilhar Board */}
         {showShareModal && selectedBoard && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-[#23283A] rounded-lg p-6 w-96">
-              <h3 className="text-xl font-semibold text-white mb-4">Compartilhar Board</h3>
-              <p className="text-gray-300 mb-4">Selecione os membros da equipe para compartilhar "{selectedBoard.title}"</p>
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-96">
+              <div className="absolute inset-x-0 top-0 gx-line" />
+              <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Compartilhar Board</h3>
+              <p className="text-text-secondary mb-4">Selecione os membros da equipe para compartilhar "{selectedBoard.title}"</p>
               
               <div className="space-y-3 mb-6 max-h-60 overflow-y-auto">
                 {teamMembers.length > 0 ? (
@@ -1319,18 +1345,18 @@ const Brello = () => {
                             setSelectedMembers(selectedMembers.filter(id => id !== member.id));
                           }
                         }}
-                        className="w-4 h-4 text-[#6366F1] bg-gray-700 border-gray-600 rounded focus:ring-[#6366F1] focus:ring-2"
+                        className="w-4 h-4 accent-[#FF1E56] bg-white/[0.06] border-white/10 rounded focus:ring-[#FF1E56]/50 focus:ring-2"
                       />
                       <div>
                         <div className="text-white font-medium">{member.name}</div>
-                        <div className="text-gray-400 text-sm">{member.email}</div>
+                        <div className="text-text-secondary text-sm">{member.email}</div>
                       </div>
                     </label>
                   ))
                 ) : (
                   <div className="text-center py-8">
-                    <div className="text-gray-400 mb-2">Nenhum membro da equipe encontrado</div>
-                    <div className="text-gray-500 text-sm">
+                    <div className="text-text-secondary mb-2">Nenhum membro da equipe encontrado</div>
+                    <div className="text-white/40 text-sm">
                       Verifique se você está vinculado a uma imobiliária
                     </div>
                   </div>
@@ -1340,7 +1366,7 @@ const Brello = () => {
               <div className="flex gap-3">
                 <button
                   onClick={shareBoard}
-                  className="flex-1 bg-[#6366F1] hover:bg-[#5855EB] text-white py-2 rounded-lg transition-colors"
+                  className="flex-1 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold py-2 rounded-xl shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all"
                 >
                   {selectedMembers.length === 0 ? 'Remover Compartilhamento' : `Compartilhar (${selectedMembers.length})`}
                 </button>
@@ -1349,7 +1375,7 @@ const Brello = () => {
                     setShowShareModal(false);
                     setSelectedMembers([]);
                   }}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
+                  className="flex-1 border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white py-2 rounded-xl transition-colors"
                 >
                   Cancelar
                 </button>
@@ -1360,15 +1386,16 @@ const Brello = () => {
 
         {/* Modal Mover Coluna */}
         {showMoveModal && selectedColumn && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-[#23283A] rounded-lg p-6 w-96">
-              <h3 className="text-xl font-semibold text-white mb-4">Mover Coluna</h3>
-              <p className="text-gray-300 mb-4">Mover "{selectedColumn.title}" para qual board?</p>
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-96">
+              <div className="absolute inset-x-0 top-0 gx-line" />
+              <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Mover Coluna</h3>
+              <p className="text-text-secondary mb-4">Mover "{selectedColumn.title}" para qual board?</p>
               
               <select
                 value={targetBoardId}
                 onChange={(e) => setTargetBoardId(e.target.value)}
-                className="w-full p-3 bg-[#181C23] text-white rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                className="w-full p-3 bg-white/[0.04] border border-white/10 rounded-lg text-white placeholder-white/30 mb-4 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
               >
                 <option value="">Selecione um board</option>
                 {boards.filter(board => board.id !== currentBoard?.id).map(board => (
@@ -1380,7 +1407,7 @@ const Brello = () => {
                 <button
                   onClick={moveColumnToBoard}
                   disabled={!targetBoardId}
-                  className="flex-1 bg-[#10B981] hover:bg-[#059669] disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-2 rounded-lg transition-colors"
+                  className="flex-1 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed text-white font-bold py-2 rounded-xl shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all"
                 >
                   Mover
                 </button>
@@ -1389,7 +1416,7 @@ const Brello = () => {
                     setShowMoveModal(false);
                     setTargetBoardId('');
                   }}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
+                  className="flex-1 border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white py-2 rounded-xl transition-colors"
                 >
                   Cancelar
                 </button>
@@ -1400,26 +1427,25 @@ const Brello = () => {
 
         {/* Modal do Card - Layout Trello */}
         {showCardModal && selectedCard && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-[#23283A] rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="absolute inset-x-0 top-0 gx-line" />
               {/* Header */}
-              <div className="flex justify-between items-center p-6 border-b border-gray-600">
+              <div className="flex justify-between items-center p-6 border-b border-white/10">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-[#6366F1] rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">📋</span>
-                  </div>
+                  <span className="w-1.5 h-8 rounded-full bg-gradient-to-b from-[#FF1E56] to-[#A50D38] shadow-[0_0_12px_rgba(255,30,86,0.5)]" />
                   {editingTitle ? (
                     <div className="flex items-center gap-2">
                       <input
                         type="text"
                         value={newTitle}
                         onChange={(e) => setNewTitle(e.target.value)}
-                        className="text-2xl font-bold bg-transparent text-white border-b-2 border-[#6366F1] focus:outline-none"
+                        className="text-2xl font-bold bg-transparent text-white border-b-2 border-[#FF1E56] focus:outline-none"
                         autoFocus
                       />
                       <button
                         onClick={saveTitle}
-                        className="text-green-400 hover:text-green-300 text-lg"
+                        className="text-[#34D399] hover:text-emerald-300 text-lg transition-colors"
                         title="Salvar"
                       >
                         ✓
@@ -1440,7 +1466,7 @@ const Brello = () => {
                       <h3 className="text-2xl font-bold text-white">{selectedCard.title}</h3>
                       <button
                         onClick={() => setEditingTitle(true)}
-                        className="text-gray-400 hover:text-white text-lg"
+                        className="text-text-secondary hover:text-[#FF5C7E] text-lg transition-colors"
                         title="Editar título"
                       >
                         ✏️
@@ -1450,7 +1476,7 @@ const Brello = () => {
                 </div>
                 <button
                   onClick={() => setShowCardModal(false)}
-                  className="text-gray-400 hover:text-white text-2xl"
+                  className="text-text-secondary hover:text-[#FF5C7E] text-2xl transition-colors"
                 >
                   ×
                 </button>
@@ -1459,13 +1485,13 @@ const Brello = () => {
               {/* Content */}
               <div className="flex flex-1 overflow-hidden">
                 {/* Left Panel - Card Details */}
-                <div className="w-1/2 p-6 overflow-y-auto border-r border-gray-600">
+                <div className="w-1/2 p-6 overflow-y-auto border-r border-white/10">
                   <div className="space-y-6">
                     {/* Descrição */}
                     <div>
                       <div className="flex justify-between items-center mb-3">
-                        <h4 className="text-lg font-semibold text-white flex items-center gap-2">
-                          <span>≡</span> Descrição
+                        <h4 className="al-display text-[13px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2">
+                          <span className="text-[#FF5C7E]">≡</span> Descrição
                         </h4>
                         <div className="flex items-center gap-3">
                           {!editingDescription && (
@@ -1479,16 +1505,16 @@ const Brello = () => {
                                 disabled={uploading}
                               />
                               <label htmlFor="file-upload" className="cursor-pointer">
-                                <span className="text-gray-400 hover:text-white text-lg">📎</span>
+                                <span className="text-text-secondary hover:text-white text-lg transition-colors">📎</span>
                               </label>
                               <label htmlFor="file-upload" className="cursor-pointer">
-                                <span className="text-gray-400 hover:text-white text-sm">
+                                <span className="text-text-secondary hover:text-white text-sm transition-colors">
                                   {uploading ? 'Enviando...' : 'Anexar'}
                                 </span>
                               </label>
                               <button
                                 onClick={() => setEditingDescription(true)}
-                                className="text-[#6366F1] hover:text-[#5855EB] text-sm font-medium"
+                                className="text-[#FF7A97] hover:text-[#FF9EB5] text-sm font-medium transition-colors"
                               >
                                 Editar
                               </button>
@@ -1502,14 +1528,14 @@ const Brello = () => {
                           <textarea
                             value={newDescription}
                             onChange={(e) => setNewDescription(e.target.value)}
-                            className="w-full p-3 bg-[#181C23] text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366F1] min-h-[100px] resize-none"
+                            className="w-full p-3 bg-white/[0.04] border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 min-h-[100px] resize-none"
                             placeholder="Adicione uma descrição mais detalhada..."
                             autoFocus
                           />
                           <div className="flex gap-2">
                             <button
                               onClick={saveDescription}
-                              className="bg-[#6366F1] hover:bg-[#5855EB] text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                              className="bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold px-4 py-2 rounded-xl text-sm shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all"
                             >
                               Salvar
                             </button>
@@ -1518,20 +1544,20 @@ const Brello = () => {
                                 setEditingDescription(false);
                                 setNewDescription(selectedCard.description || '');
                               }}
-                              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                              className="border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white px-4 py-2 rounded-xl text-sm transition-colors"
                             >
                               Cancelar
                             </button>
                           </div>
                         </div>
                       ) : (
-                        <div className="bg-[#181C23] p-4 rounded-lg">
+                        <div className="bg-white/[0.03] border border-white/[0.08] p-4 rounded-xl">
                           {selectedCard.description ? (
-                            <p className="text-gray-300 whitespace-pre-wrap break-words">
+                            <p className="text-text-secondary whitespace-pre-wrap break-words">
                               {selectedCard.description}
                             </p>
                           ) : (
-                            <p className="text-gray-500 italic">
+                            <p className="text-white/40 italic">
                               Nenhuma descrição adicionada
                             </p>
                           )}
@@ -1542,17 +1568,17 @@ const Brello = () => {
                     {/* Anexos */}
                     {attachments.length > 0 && (
                       <div>
-                        <h4 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-                          <span>📎</span> Anexos
+                        <h4 className="al-display text-[13px] font-bold text-white uppercase tracking-[0.14em] mb-3 flex items-center gap-2">
+                          <span className="text-[#FF5C7E]">📎</span> Anexos
                         </h4>
                         <div className="space-y-2">
                           {attachments.map((attachment) => (
-                            <div key={attachment.id} className="bg-[#181C23] p-3 rounded-lg flex items-center justify-between">
+                            <div key={attachment.id} className="bg-white/[0.03] border border-white/[0.08] p-3 rounded-xl flex items-center justify-between hover:bg-white/[0.05] transition-colors">
                               <div className="flex items-center gap-3">
                                 <span className="text-2xl">{getFileIcon(attachment.type)}</span>
                                 <div>
                                   <p className="text-white text-sm font-medium">{attachment.name}</p>
-                                  <p className="text-gray-400 text-xs">{formatFileSize(attachment.size)}</p>
+                                  <p className="text-text-secondary text-xs">{formatFileSize(attachment.size)}</p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
@@ -1560,13 +1586,13 @@ const Brello = () => {
                                   href={attachment.url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-[#6366F1] hover:text-[#5855EB] text-sm"
+                                  className="text-[#FF7A97] hover:text-[#FF9EB5] text-sm transition-colors"
                                 >
                                   Abrir
                                 </a>
                                 <button
                                   onClick={() => deleteAttachment(attachment.id, attachment.name)}
-                                  className="text-red-400 hover:text-red-300 text-sm"
+                                  className="text-red-400 hover:text-red-300 text-sm transition-colors"
                                 >
                                   ×
                                 </button>
@@ -1578,13 +1604,13 @@ const Brello = () => {
                     )}
 
                     {/* Ações */}
-                    <div className="flex gap-3 pt-4 border-t border-gray-600">
+                    <div className="flex gap-3 pt-4 border-t border-white/10">
                       <button
                         onClick={() => {
                           confirmDelete('card', selectedCard.id, selectedCard.title);
                           setShowCardModal(false);
                         }}
-                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+                        className="border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-300 px-4 py-2 rounded-xl transition-colors"
                       >
                         Excluir Card
                       </button>
@@ -1595,7 +1621,7 @@ const Brello = () => {
                 {/* Right Panel - Comments */}
                 <div className="w-1/2 p-6 overflow-y-auto">
                   <div className="mb-4">
-                    <h4 className="text-lg font-semibold text-white">Comentários e atividade</h4>
+                    <h4 className="al-display text-[13px] font-bold text-white uppercase tracking-[0.14em]">Comentários e atividade</h4>
                   </div>
 
                   {/* Comment Input */}
@@ -1604,12 +1630,12 @@ const Brello = () => {
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
                       placeholder="Escrever um comentário..."
-                      className="w-full p-3 bg-[#181C23] text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366F1] resize-none min-h-[80px]"
+                      className="w-full p-3 bg-white/[0.04] border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 resize-none min-h-[80px]"
                     />
                     <button
                       onClick={addComment}
                       disabled={!newComment.trim()}
-                      className="mt-2 bg-[#6366F1] hover:bg-[#5855EB] disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                      className="mt-2 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed text-white font-bold px-4 py-2 rounded-xl text-sm shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all"
                     >
                       Comentar
                     </button>
@@ -1618,22 +1644,22 @@ const Brello = () => {
                   {/* Comments List */}
                   <div className="space-y-4">
                     {comments.map((comment) => (
-                      <div key={comment.id} className="bg-[#181C23] p-4 rounded-lg">
+                      <div key={comment.id} className="bg-white/[0.03] border border-white/[0.08] p-4 rounded-xl">
                         <div className="flex items-start gap-3">
-                          <div className="w-8 h-8 bg-[#6366F1] rounded-full flex items-center justify-center text-white text-sm font-bold">
+                          <div className="w-8 h-8 bg-gradient-to-br from-[#FF1E56] to-[#A50D38] rounded-full flex items-center justify-center text-white text-sm font-bold shadow-[0_0_12px_rgba(255,30,86,0.35)]">
                             {comment.author.charAt(0).toUpperCase()}
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-white font-medium text-sm">{comment.author}</span>
-                              <span className="text-gray-400 text-xs">
+                              <span className="text-text-secondary text-xs">
                                 {comment.createdAt.toLocaleDateString('pt-BR')} {comment.createdAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             </div>
-                            <p className="text-gray-300 text-sm">{comment.text}</p>
-                            <button 
+                            <p className="text-text-secondary text-sm">{comment.text}</p>
+                            <button
                               onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                              className="text-[#6366F1] hover:text-[#5855EB] text-xs mt-2"
+                              className="text-[#FF7A97] hover:text-[#FF9EB5] text-xs mt-2 transition-colors"
                             >
                               Responder
                             </button>
@@ -1645,13 +1671,13 @@ const Brello = () => {
                                   value={replyText}
                                   onChange={(e) => setReplyText(e.target.value)}
                                   placeholder="Escrever uma resposta..."
-                                  className="w-full p-2 bg-[#0F0F23] text-white rounded text-sm resize-none min-h-[60px] focus:outline-none focus:ring-2 focus:ring-[#6366F1]"
+                                  className="w-full p-2 bg-white/[0.04] border border-white/10 text-white placeholder-white/30 rounded-lg text-sm resize-none min-h-[60px] focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                                 />
                                 <div className="flex gap-2">
                                   <button
                                     onClick={() => addReply(comment.id)}
                                     disabled={!replyText.trim()}
-                                    className="bg-[#6366F1] hover:bg-[#5855EB] disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-3 py-1 rounded text-xs transition-colors"
+                                    className="bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-3 py-1 rounded-lg text-xs active:scale-[0.98] transition-all"
                                   >
                                     Responder
                                   </button>
@@ -1660,7 +1686,7 @@ const Brello = () => {
                                       setReplyingTo(null);
                                       setReplyText('');
                                     }}
-                                    className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-xs transition-colors"
+                                    className="border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white px-3 py-1 rounded-lg text-xs transition-colors"
                                   >
                                     Cancelar
                                   </button>
@@ -1672,19 +1698,19 @@ const Brello = () => {
                             {comment.replies && comment.replies.length > 0 && (
                               <div className="mt-3 space-y-2">
                                 {comment.replies.map((reply) => (
-                                  <div key={reply.id} className="bg-[#0F0F23] p-3 rounded-lg ml-4">
+                                  <div key={reply.id} className="bg-white/[0.03] border border-white/[0.08] p-3 rounded-xl ml-4">
                                     <div className="flex items-start gap-2">
-                                      <div className="w-6 h-6 bg-[#10B981] rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                      <div className="w-6 h-6 bg-gradient-to-br from-[#34D399] to-[#0B8457] rounded-full flex items-center justify-center text-white text-xs font-bold">
                                         {reply.author.charAt(0).toUpperCase()}
                                       </div>
                                       <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
                                           <span className="text-white font-medium text-xs">{reply.author}</span>
-                                          <span className="text-gray-400 text-xs">
+                                          <span className="text-text-secondary text-xs">
                                             {reply.createdAt.toLocaleDateString('pt-BR')} {reply.createdAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                           </span>
                                         </div>
-                                        <p className="text-gray-300 text-xs">{reply.text}</p>
+                                        <p className="text-text-secondary text-xs">{reply.text}</p>
                                       </div>
                                     </div>
                                   </div>
@@ -1704,12 +1730,13 @@ const Brello = () => {
 
         {/* Modal de Confirmação de Exclusão */}
         {showDeleteModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-[#23283A] rounded-lg p-6 w-96">
-              <h3 className="text-xl font-semibold text-white mb-4">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-96">
+              <div className="absolute inset-x-0 top-0 gx-line" />
+              <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">
                 Confirmar Exclusão
               </h3>
-              <p className="text-gray-300 mb-6">
+              <p className="text-text-secondary mb-6">
                 Tem certeza que deseja excluir{' '}
                 {deleteType === 'board' && 'o board'}
                 {deleteType === 'column' && 'a coluna'}
@@ -1721,7 +1748,7 @@ const Brello = () => {
               <div className="flex gap-3">
                 <button
                   onClick={executeDelete}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg transition-colors"
+                  className="flex-1 border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-300 py-2 rounded-xl transition-colors"
                 >
                   Excluir
                 </button>
@@ -1732,7 +1759,7 @@ const Brello = () => {
                     setDeleteId('');
                     setDeleteTitle('');
                   }}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
+                  className="flex-1 border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white py-2 rounded-xl transition-colors"
                 >
                   Cancelar
                 </button>

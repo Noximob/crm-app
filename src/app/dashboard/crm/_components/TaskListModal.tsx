@@ -27,17 +27,17 @@ const TAREFA_STATUS_ORDER: TaskStatus[] = ['Tarefa em Atraso', 'Tarefa do Dia', 
 // --- Componentes de UI ---
 const StatusIndicator = ({ status }: { status: TaskStatus }) => {
     const statusInfo = {
-        'Tarefa em Atraso': { color: 'bg-red-500', text: 'Atrasada' },
-        'Tarefa do Dia': { color: 'bg-yellow-400', text: 'Para Hoje' },
-        'Tarefa Futura': { color: 'bg-sky-500', text: 'Futura' },
-        'Sem tarefa': { color: 'bg-gray-400', text: 'Sem Tarefa' },
+        'Tarefa em Atraso': { color: 'bg-[#FF1E56] shadow-[0_0_8px_rgba(255,30,86,0.6)]', text: 'Atrasada' },
+        'Tarefa do Dia': { color: 'bg-[#E8C547] shadow-[0_0_8px_rgba(232,197,71,0.5)]', text: 'Para Hoje' },
+        'Tarefa Futura': { color: 'bg-[#7DD3FC]', text: 'Futura' },
+        'Sem tarefa': { color: 'bg-white/25', text: 'Sem Tarefa' },
     };
     const { color, text } = statusInfo[status] || statusInfo['Sem tarefa'];
 
     return (
         <div className="flex items-center gap-2 text-sm">
             <span className={`h-2.5 w-2.5 ${color} rounded-full`}></span>
-            <span className="text-gray-600 dark:text-gray-300">{text}</span>
+            <span className="text-text-secondary">{text}</span>
         </div>
     );
 };
@@ -133,21 +133,22 @@ export default function TaskListModal({ isOpen, onClose }: TaskListModalProps) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-start pt-16 sm:pt-24">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl relative">
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex justify-center items-start pt-16 sm:pt-24">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] p-6 w-full max-w-2xl relative overflow-hidden">
+                <div className="absolute inset-x-0 top-0 gx-line" />
+                <button onClick={onClose} className="absolute top-4 right-4 text-text-secondary hover:text-[#FF5C7E] transition-colors">
                     <XIcon className="h-6 w-6" />
                 </button>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Agenda de Tarefas</h2>
+                <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-6">Agenda de Tarefas</h2>
                 
                 <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
                     {loading ? (
-                        <p className="text-gray-600 dark:text-gray-300 text-center py-4">Carregando tarefas...</p>
+                        <p className="text-text-secondary text-center py-4">Carregando tarefas...</p>
                     ) : leadsWithTasks.length === 0 ? (
-                        <p className="text-gray-600 dark:text-gray-300 text-center py-4">Nenhuma tarefa encontrada.</p>
+                        <p className="text-text-secondary text-center py-4">Nenhuma tarefa encontrada.</p>
                     ) : (
                         <table className="w-full text-left">
-                            <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase">
+                            <thead className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">
                                 <tr>
                                     <th className="py-2 px-3">Lead</th>
                                     <th className="py-2 px-3">Status</th>
@@ -156,14 +157,14 @@ export default function TaskListModal({ isOpen, onClose }: TaskListModalProps) {
                             </thead>
                             <tbody>
                                 {leadsWithTasks.map(lead => (
-                                    <tr key={lead.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                        <td className="py-3 px-3 font-semibold text-gray-800 dark:text-white">{lead.nome}</td>
+                                    <tr key={lead.id} className="border-b border-white/[0.05] hover:bg-white/[0.04] transition-colors">
+                                        <td className="py-3 px-3 font-semibold text-white">{lead.nome}</td>
                                         <td className="py-3 px-3">
                                             <StatusIndicator status={lead.taskStatus} />
                                         </td>
                                         <td className="py-3 px-3">
                                             <Link href={`/dashboard/crm/${lead.id}`} onClick={onClose}>
-                                                <span className="px-3 py-1 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors cursor-pointer">
+                                                <span className="px-3 py-1 text-sm font-bold text-white bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 rounded-lg shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] transition-all cursor-pointer">
                                                     Abrir
                                                 </span>
                                             </Link>
@@ -175,8 +176,8 @@ export default function TaskListModal({ isOpen, onClose }: TaskListModalProps) {
                     )}
                 </div>
 
-                <div className="flex justify-end gap-4 pt-6 mt-4 border-t border-gray-200 dark:border-gray-700">
-                    <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors dark:text-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600">
+                <div className="flex justify-end gap-4 pt-6 mt-4 border-t border-white/10">
+                    <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-semibold text-white bg-white/[0.04] border border-white/10 hover:bg-white/[0.08] rounded-xl transition-colors">
                         Fechar
                     </button>
                 </div>

@@ -63,24 +63,25 @@ export default function PlantoesModal({ isOpen, onClose, plantoes }: PlantoesMod
   });
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] w-full max-w-4xl max-h-[90vh] overflow-hidden relative">
+        <div className="absolute inset-x-0 top-0 gx-line" />
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
+        <div className="flex items-center justify-between p-6 border-b border-white/10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#8B5CF6] to-[#A855F7] rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-[#9F6BFF] to-[#6D3FD4] rounded-xl flex items-center justify-center shadow-[0_8px_24px_-8px_rgba(159,107,255,0.5)]">
               <CalendarIcon className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Plantões da Imobiliária</h2>
-              <p className="text-sm text-[#6B6F76] dark:text-gray-300">Todos os plantões agendados</p>
+              <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">Plantões da Imobiliária</h2>
+              <p className="text-sm text-text-secondary">Todos os plantões agendados</p>
             </div>
           </div>
                       <button
               onClick={onClose}
-              className="p-2 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] rounded-lg transition-colors"
+              className="p-2 text-text-secondary hover:text-[#FF5C7E] rounded-lg transition-colors"
             >
-              <XIcon className="h-5 w-5 text-[#6B6F76] dark:text-gray-300" />
+              <XIcon className="h-5 w-5" />
             </button>
         </div>
 
@@ -88,23 +89,23 @@ export default function PlantoesModal({ isOpen, onClose, plantoes }: PlantoesMod
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
           {plantoesOrdenados.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gradient-to-br from-[#8B5CF6]/10 to-[#A855F7]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CalendarIcon className="h-8 w-8 text-[#8B5CF6]" />
+              <div className="w-16 h-16 bg-[#9F6BFF]/10 border border-[#9F6BFF]/25 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CalendarIcon className="h-8 w-8 text-[#9F6BFF]" />
               </div>
-              <h3 className="text-lg font-semibold text-[#2E2F38] dark:text-white mb-2">Nenhum plantão agendado</h3>
-              <p className="text-[#6B6F76] dark:text-gray-300">Os administradores ainda não agendaram plantões</p>
+              <h3 className="text-lg font-semibold text-white mb-2">Nenhum plantão agendado</h3>
+              <p className="text-text-secondary">Os administradores ainda não agendaram plantões</p>
             </div>
           ) : (
             <div className="space-y-4">
               {plantoesOrdenados.map((plantao) => (
                 <div
                   key={plantao.id}
-                  className="p-4 bg-gradient-to-r from-[#8B5CF6]/5 to-[#A855F7]/5 border border-[#8B5CF6]/20 rounded-xl hover:shadow-md transition-all duration-200"
+                  className="p-4 bg-white/[0.03] border border-white/[0.08] rounded-xl hover:border-[#9F6BFF]/40 transition-all duration-200"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-3">
-                        <div className="flex items-center gap-2 px-3 py-1 bg-[#8B5CF6]/10 text-[#8B5CF6] rounded-full">
+                        <div className="flex items-center gap-2 px-3 py-1 bg-[#9F6BFF]/10 border border-[#9F6BFF]/35 text-[#C4A6FF] rounded-full">
                           <CalendarIcon className="h-4 w-4" />
                           <span className="text-sm font-medium">
                             {new Date(plantao.dataInicio).toLocaleDateString('pt-BR', {
@@ -116,7 +117,7 @@ export default function PlantoesModal({ isOpen, onClose, plantoes }: PlantoesMod
                             })}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 px-3 py-1 bg-[#A855F7]/10 text-[#A855F7] rounded-full">
+                        <div className="flex items-center gap-2 px-3 py-1 bg-[#7DD3FC]/10 border border-[#7DD3FC]/35 text-[#7DD3FC] rounded-full">
                           <span className="text-sm font-medium">
                             {plantao.horario && plantao.horario.length >= 5 
                               ? plantao.horario.substring(0, 5) 
@@ -127,22 +128,22 @@ export default function PlantoesModal({ isOpen, onClose, plantoes }: PlantoesMod
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="flex items-center gap-2">
-                          <BuildingIcon className="h-4 w-4 text-[#8B5CF6]" />
-                          <span className="text-sm text-[#6B6F76] dark:text-gray-300">Construtora:</span>
-                          <span className="font-medium text-[#2E2F38] dark:text-white">{plantao.construtora}</span>
+                          <BuildingIcon className="h-4 w-4 text-[#9F6BFF]" />
+                          <span className="text-sm text-text-secondary">Construtora:</span>
+                          <span className="font-medium text-white">{plantao.construtora}</span>
                         </div>
-                        
+
                         <div className="flex items-center gap-2">
-                          <UserIcon className="h-4 w-4 text-[#8B5CF6]" />
-                          <span className="text-sm text-[#6B6F76] dark:text-gray-300">Corretor:</span>
-                          <span className="font-medium text-[#2E2F38] dark:text-white">{plantao.corretorResponsavel}</span>
+                          <UserIcon className="h-4 w-4 text-[#9F6BFF]" />
+                          <span className="text-sm text-text-secondary">Corretor:</span>
+                          <span className="font-medium text-white">{plantao.corretorResponsavel}</span>
                         </div>
                       </div>
-                      
+
                       {plantao.observacoes && (
-                        <div className="mt-3 p-3 bg-white/50 dark:bg-[#181C23]/50 rounded-lg border border-[#8B5CF6]/20">
-                          <p className="text-sm text-[#2E2F38] dark:text-white">
-                            <span className="font-medium text-[#8B5CF6]">Observações:</span> {plantao.observacoes}
+                        <div className="mt-3 p-3 bg-white/[0.03] rounded-lg border border-white/[0.08]">
+                          <p className="text-sm text-white">
+                            <span className="font-medium text-[#C4A6FF]">Observações:</span> {plantao.observacoes}
                           </p>
                         </div>
                       )}

@@ -30,22 +30,25 @@ interface Comment {
 }
 
 const categorias = [
-  { key: 'todos', label: 'Todos', icon: '🎬', color: 'bg-gray-500' },
-  { key: 'vendas', label: 'Vendas', icon: '📈', color: 'bg-amber-500' },
-  { key: 'audiobooks', label: 'Áudio Book', icon: '📚', color: 'bg-teal-500' },
-  { key: 'mercado', label: 'Mercado', icon: '🏢', color: 'bg-purple-500' },
-  { key: 'institucional', label: 'Institucional', icon: '🏛️', color: 'bg-red-500' },
-  { key: 'gestão', label: 'Gestão', icon: '👔', color: 'bg-indigo-500' },
-  { key: 'autoral', label: 'Autoral', icon: '✍️', color: 'bg-orange-500' },
+  { key: 'todos', label: 'Todos', icon: '🎬', color: 'bg-white/[0.12] border border-white/30 text-white' },
+  { key: 'vendas', label: 'Vendas', icon: '📈', color: 'bg-[#FF1E56]/15 border border-[#FF1E56]/50 text-[#FF7A97]' },
+  { key: 'audiobooks', label: 'Áudio Book', icon: '📚', color: 'bg-[#34D399]/15 border border-[#34D399]/50 text-emerald-300' },
+  { key: 'mercado', label: 'Mercado', icon: '🏢', color: 'bg-[#9F6BFF]/15 border border-[#9F6BFF]/50 text-[#C4A6FF]' },
+  { key: 'institucional', label: 'Institucional', icon: '🏛️', color: 'bg-[#7DD3FC]/15 border border-[#7DD3FC]/50 text-[#7DD3FC]' },
+  { key: 'gestão', label: 'Gestão', icon: '👔', color: 'bg-[#E8C547]/15 border border-[#E8C547]/50 text-[#FFE9A6]' },
+  { key: 'autoral', label: 'Autoral', icon: '✍️', color: 'bg-[#FF7A45]/15 border border-[#FF7A45]/50 text-[#FFB399]' },
 ];
 
 export default function TreinamentosPage() {
   return (
     <div className="flex-1 flex flex-col items-center justify-center text-center py-24">
-      <div className="text-6xl mb-4">🚧</div>
-      <h1 className="text-2xl font-bold text-white mb-1">Academia</h1>
-      <p className="text-lg font-semibold text-amber-400">Em Construção</p>
-      <p className="text-sm text-text-secondary mt-2">Novos treinamentos chegando em breve.</p>
+      <div className="al-card relative overflow-hidden px-12 py-10 flex flex-col items-center">
+        <div className="absolute inset-x-0 top-0 gx-line" />
+        <div className="text-6xl mb-4">🚧</div>
+        <h1 className="al-display text-2xl font-bold text-white uppercase tracking-[0.14em] mb-2">Academia</h1>
+        <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-[#FFE9A6]">Em Construção</p>
+        <p className="text-sm text-text-secondary mt-2">Novos treinamentos chegando em breve.</p>
+      </div>
     </div>
   );
 }
@@ -389,21 +392,21 @@ function AcademiaOriginal() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">Academia</h1>
-          <p className="text-[#6B6F76] dark:text-gray-300">Capacite-se com nossos treinamentos exclusivos</p>
+          <h1 className="al-display text-2xl font-bold text-white uppercase tracking-[0.14em] mb-2">Academia</h1>
+          <p className="text-text-secondary">Capacite-se com nossos treinamentos exclusivos</p>
         </div>
 
         {/* Sugestão Aleatória */}
         {selectedCategory === 'todos' && !searchTerm && (
-          <div className="mb-6 p-4 bg-gradient-to-r from-[#D4A017]/10 to-[#E8C547]/10 rounded-xl border border-[#D4A017]/20">
+          <div className="mb-6 p-4 bg-[#FF1E56]/[0.06] border border-[#FF3364]/25 rounded-xl">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="text-2xl">{getSuggestedCategoryIcon()}</span>
                 <div>
-                  <h3 className="font-semibold text-[#2E2F38] dark:text-white">
+                  <h3 className="font-semibold text-white">
                     Que tal explorar {getSuggestedCategoryLabel()}?
                   </h3>
-                  <p className="text-sm text-[#6B6F76] dark:text-gray-300">
+                  <p className="text-sm text-text-secondary">
                     Descubra novos conhecimentos nesta categoria
                   </p>
                 </div>
@@ -413,7 +416,7 @@ function AcademiaOriginal() {
                   setSelectedCategory(suggestedCategory);
                   generateSuggestion();
                 }}
-                className="px-4 py-2 bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold rounded-lg transition-colors"
+                className="px-4 py-2 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold rounded-xl shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all"
               >
                 Explorar
               </button>
@@ -429,9 +432,9 @@ function AcademiaOriginal() {
               placeholder="Buscar na Academia..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-3 pl-12 bg-white dark:bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#D4A017]"
+              className="w-full px-4 py-3 pl-12 bg-white/[0.04] border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
             />
-            <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#6B6F76] dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
@@ -446,8 +449,8 @@ function AcademiaOriginal() {
                 onClick={() => setSelectedCategory(categoria.key)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                   selectedCategory === categoria.key
-                    ? `${categoria.color} text-white shadow-lg`
-                    : 'bg-white dark:bg-[#23283A] text-[#6B6F76] dark:text-gray-300 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A]'
+                    ? `${categoria.color} shadow-lg`
+                    : 'bg-white/[0.04] border border-white/10 text-text-secondary hover:bg-white/[0.08] hover:text-white'
                 }`}
               >
                 <span>{categoria.icon}</span>
@@ -460,14 +463,14 @@ function AcademiaOriginal() {
         {/* Grid da Academia - Estilo YouTube */}
         {loading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4A017] mx-auto mb-4"></div>
-            <p className="text-[#6B6F76] dark:text-gray-300">Carregando Academia...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF1E56] mx-auto mb-4"></div>
+            <p className="text-text-secondary">Carregando Academia...</p>
           </div>
         ) : filteredTreinamentos.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">🎬</div>
-            <h3 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-2">Nenhum treinamento encontrado</h3>
-            <p className="text-[#6B6F76] dark:text-gray-300">
+            <h3 className="text-xl font-bold text-white mb-2">Nenhum treinamento encontrado</h3>
+            <p className="text-text-secondary">
               {searchTerm || selectedCategory !== 'todos' 
                 ? 'Tente ajustar sua busca ou filtros'
                 : 'Aguarde o administrador adicionar treinamentos'
@@ -479,11 +482,11 @@ function AcademiaOriginal() {
             {filteredTreinamentos.map((treinamento) => (
               <div
                 key={treinamento.id}
-                className="bg-white dark:bg-[#23283A] rounded-xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer group"
+                className="bg-white/[0.03] border border-white/[0.08] rounded-xl overflow-hidden hover:border-[#FF1E56]/40 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-10px_rgba(255,30,86,0.35)] transition-all duration-200 cursor-pointer group"
                 onClick={() => handleVideoClick(treinamento)}
               >
                 {/* Thumbnail/Player - Estilo YouTube */}
-                <div className="relative aspect-video bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                <div className="relative aspect-video bg-white/[0.04] overflow-hidden">
                   {treinamento.tipo === 'video' && playingVideo === treinamento.id ? (
                     // Player ativo
                     <div className="w-full h-full">
@@ -530,19 +533,19 @@ function AcademiaOriginal() {
                 {/* Informações do vídeo - Estilo YouTube */}
                 <div className="p-3">
                   {/* Título - Estilo YouTube */}
-                  <h3 className="font-semibold text-[#2E2F38] dark:text-white text-sm mb-2 line-clamp-2 group-hover:text-[#D4A017] transition-colors leading-tight">
+                  <h3 className="font-semibold text-white text-sm mb-2 line-clamp-2 group-hover:text-[#FF7A97] transition-colors leading-tight">
                     {treinamento.titulo}
                   </h3>
                   
                   {/* Descrição - Estilo YouTube (apenas se for diferente do título) */}
                   {treinamento.descricao && treinamento.descricao !== treinamento.titulo && (
-                    <p className="text-xs text-[#6B6F76] dark:text-gray-300 line-clamp-2 mb-2 leading-tight">
+                    <p className="text-xs text-text-secondary line-clamp-2 mb-2 leading-tight">
                       {treinamento.descricao}
                     </p>
                   )}
                   
                   {/* Metadados - Estilo YouTube */}
-                  <div className="flex items-center justify-between text-xs text-[#6B6F76] dark:text-gray-400 mb-2">
+                  <div className="flex items-center justify-between text-xs text-text-secondary mb-2">
                     <div className="flex items-center gap-1">
                       <span>{getCategoriaIcon(treinamento.categoria || 'vendas')}</span>
                       <span>•</span>
@@ -554,7 +557,7 @@ function AcademiaOriginal() {
                   </div>
 
                   {/* Botões de Interação - Estilo YouTube */}
-                  <div className="flex items-center justify-between pt-2 border-t border-[#E8E9F1] dark:border-[#23283A]">
+                  <div className="flex items-center justify-between pt-2 border-t border-white/[0.08]">
                     <div className="flex items-center gap-4">
                       {/* Botão Like */}
                       <button
@@ -562,10 +565,10 @@ function AcademiaOriginal() {
                           e.stopPropagation();
                           handleLike(treinamento.id);
                         }}
-                        className="flex items-center gap-1 text-xs text-[#6B6F76] dark:text-gray-400 hover:text-red-500 transition-colors"
+                        className="flex items-center gap-1 text-xs text-text-secondary hover:text-[#FF5C7E] transition-colors"
                       >
                         <svg 
-                          className={`w-4 h-4 ${userLikes.has(treinamento.id) ? 'text-red-500 fill-current' : 'text-gray-400'}`} 
+                          className={`w-4 h-4 ${userLikes.has(treinamento.id) ? 'text-[#FF1E56] fill-current' : 'text-white/40'}`}
                           fill="currentColor" 
                           viewBox="0 0 24 24"
                         >
@@ -581,7 +584,7 @@ function AcademiaOriginal() {
                           setSelectedTreinamento(treinamento.id);
                           setShowComments(true);
                         }}
-                        className="flex items-center gap-1 text-xs text-[#6B6F76] dark:text-gray-400 hover:text-[#D4A017] transition-colors"
+                        className="flex items-center gap-1 text-xs text-text-secondary hover:text-[#FF7A97] transition-colors"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -598,12 +601,12 @@ function AcademiaOriginal() {
 
         {/* Modal de Comentários */}
         {showComments && selectedTreinamento && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-[#23283A] rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden max-w-2xl w-full max-h-[80vh]"><div className="absolute inset-x-0 top-0 gx-line" />
               {/* Header do Modal */}
-              <div className="p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
+              <div className="p-6 border-b border-white/[0.08]">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-bold text-[#2E2F38] dark:text-white">
+                  <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">
                     Comentários
                   </h3>
                   <button
@@ -612,7 +615,7 @@ function AcademiaOriginal() {
                       setSelectedTreinamento(null);
                       setComments([]);
                     }}
-                    className="text-[#6B6F76] dark:text-gray-400 hover:text-[#2E2F38] dark:hover:text-white"
+                    className="text-text-secondary hover:text-[#FF5C7E]"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -626,7 +629,7 @@ function AcademiaOriginal() {
                 {comments.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="text-4xl mb-4">💬</div>
-                    <p className="text-[#6B6F76] dark:text-gray-300">
+                    <p className="text-text-secondary">
                       Seja o primeiro a comentar!
                     </p>
                   </div>
@@ -634,19 +637,19 @@ function AcademiaOriginal() {
                   <div className="space-y-4">
                     {comments.map((comment) => (
                       <div key={comment.id} className="flex gap-3">
-                        <div className="w-8 h-8 bg-[#D4A017] rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                        <div className="w-8 h-8 bg-[#FF1E56] rounded-full flex items-center justify-center text-white text-sm font-semibold">
                           {comment.userName.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-[#2E2F38] dark:text-white text-sm">
+                            <span className="font-semibold text-white text-sm">
                               {comment.userName}
                             </span>
-                            <span className="text-xs text-[#6B6F76] dark:text-gray-400">
+                            <span className="text-xs text-text-secondary">
                               {comment.createdAt.toDate().toLocaleDateString('pt-BR')}
                             </span>
                           </div>
-                          <p className="text-[#2E2F38] dark:text-white text-sm">
+                          <p className="text-white text-sm">
                             {comment.text}
                           </p>
                         </div>
@@ -657,9 +660,9 @@ function AcademiaOriginal() {
               </div>
 
               {/* Input de Novo Comentário */}
-              <div className="p-6 border-t border-[#E8E9F1] dark:border-[#23283A]">
+              <div className="p-6 border-t border-white/[0.08]">
                 <div className="flex gap-3">
-                  <div className="w-8 h-8 bg-[#D4A017] rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                  <div className="w-8 h-8 bg-[#FF1E56] rounded-full flex items-center justify-center text-white text-sm font-semibold">
                     {userData?.nome?.charAt(0).toUpperCase() || 'U'}
                   </div>
                   <div className="flex-1">
@@ -667,14 +670,14 @@ function AcademiaOriginal() {
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
                       placeholder="Adicione um comentário..."
-                      className="w-full px-3 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-400 resize-none"
+                      className="w-full px-3 py-2 bg-white/[0.04] border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 resize-none"
                       rows={3}
                     />
                     <div className="flex justify-end mt-2">
                       <button
                         onClick={() => handleComment(selectedTreinamento)}
                         disabled={!newComment.trim()}
-                        className="px-4 py-2 bg-[#D4A017] hover:bg-[#B8860B] text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white rounded-xl font-bold shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Comentar
                       </button>

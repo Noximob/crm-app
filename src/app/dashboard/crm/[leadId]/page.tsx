@@ -53,23 +53,36 @@ const getTaskStatusInfo = (tasks: Task[]): TaskStatus => {
 
 const getTaskStatusColor = (status: TaskStatus) => {
     switch (status) {
-        case 'Tarefa em Atraso': return 'bg-red-500';
-        case 'Tarefa do Dia': return 'bg-yellow-400';
-        case 'Tarefa Futura': return 'bg-sky-500';
-        case 'Sem tarefa': return 'bg-gray-400';
-        default: return 'bg-gray-400';
+        case 'Tarefa em Atraso': return 'bg-[#FF1E56] shadow-[0_0_8px_rgba(255,30,86,0.8)]';
+        case 'Tarefa do Dia': return 'bg-[#E8C547] shadow-[0_0_8px_rgba(232,197,71,0.8)]';
+        case 'Tarefa Futura': return 'bg-[#7DD3FC] shadow-[0_0_8px_rgba(125,211,252,0.7)]';
+        case 'Sem tarefa': return 'bg-white/30';
+        default: return 'bg-white/30';
     }
 };
 
 const getIconForInteraction = (type: string) => {
     switch (type) {
-        case 'Ligação': return <PhoneIcon className="h-5 w-5 text-primary-600" />;
-        case 'WhatsApp': return <WhatsAppIcon className="h-5 w-5 text-green-600" />;
-        case 'Visita': return <BuildingIcon className="h-5 w-5 text-indigo-600" />;
-        case 'Tarefa Agendada': return <TaskIcon className="h-5 w-5 text-sky-600" />;
-        case 'Tarefa Concluída': return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
-        case 'Tarefa Cancelada': return <XCircleIcon className="h-5 w-5 text-red-500" />;
-        default: return <div className="h-5 w-5 bg-gray-300 rounded-full" />; // Um ícone padrão
+        case 'Ligação': return <PhoneIcon className="h-5 w-5 text-[#7DD3FC] drop-shadow-[0_0_6px_rgba(125,211,252,0.5)]" />;
+        case 'WhatsApp': return <WhatsAppIcon className="h-5 w-5 text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.5)]" />;
+        case 'Visita': return <BuildingIcon className="h-5 w-5 text-[#C4A6FF] drop-shadow-[0_0_6px_rgba(159,107,255,0.5)]" />;
+        case 'Tarefa Agendada': return <TaskIcon className="h-5 w-5 text-[#7DD3FC] drop-shadow-[0_0_6px_rgba(125,211,252,0.5)]" />;
+        case 'Tarefa Concluída': return <CheckCircleIcon className="h-5 w-5 text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.5)]" />;
+        case 'Tarefa Cancelada': return <XCircleIcon className="h-5 w-5 text-red-400 drop-shadow-[0_0_6px_rgba(248,113,113,0.5)]" />;
+        default: return <div className="h-5 w-5 bg-white/20 rounded-full" />; // Um ícone padrão
+    }
+};
+
+// Cor da borda lateral do histórico (apenas visual)
+const getInteractionBorderClass = (type: string) => {
+    switch (type) {
+        case 'Ligação': return 'border-l-[#7DD3FC]/60';
+        case 'WhatsApp': return 'border-l-emerald-400/60';
+        case 'Visita': return 'border-l-[#9F6BFF]/60';
+        case 'Tarefa Agendada': return 'border-l-[#7DD3FC]/60';
+        case 'Tarefa Concluída': return 'border-l-emerald-400/60';
+        case 'Tarefa Cancelada': return 'border-l-red-400/60';
+        default: return 'border-l-white/20';
     }
 };
 
@@ -416,8 +429,8 @@ export default function LeadDetailPage() {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4A017] mx-auto mb-4"></div>
-                    <p className="text-[#6B6F76] dark:text-gray-300">Carregando dados do lead...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF1E56] mx-auto mb-4"></div>
+                    <p className="text-text-secondary">Carregando dados do lead...</p>
                 </div>
             </div>
         );
@@ -427,7 +440,7 @@ export default function LeadDetailPage() {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">
-                    <p className="text-[#6B6F76] dark:text-gray-300">Lead não encontrado.</p>
+                    <p className="text-text-secondary">Lead não encontrado.</p>
                 </div>
             </div>
         );
@@ -439,7 +452,7 @@ export default function LeadDetailPage() {
         <div className="min-h-full p-4 sm:p-6 lg:p-8">
             <CrmHeader />
             {readOnly && (
-              <div className="mb-4 px-4 py-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-800 dark:text-amber-200 text-sm font-medium flex items-center gap-2">
+              <div className="mb-4 px-4 py-3 rounded-xl bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#FFE9A6] text-sm font-medium flex items-center gap-2">
                 <span>👁️</span> Visualizando CRM do corretor — somente leitura. Você não pode editar etapas, tarefas, anotações ou qualificação.
               </div>
             )}
@@ -447,22 +460,23 @@ export default function LeadDetailPage() {
             <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* --- COLUNA DA ESQUERDA (20% a mais) --- */}
                 <div className="lg:col-span-5 flex flex-col gap-6">
-                    {/* Card de Informações do Lead — sem fundo escuro, só borda no dark */}
-                    <div className="bg-white/95 dark:bg-transparent p-5 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-white/10">
+                    {/* Card de Informações do Lead */}
+                    <div className="al-card relative overflow-hidden p-5">
+                        <div className="absolute inset-x-0 top-0 gx-line" />
                         <div className="flex flex-col gap-3">
                             <div className="flex items-center gap-3">
-                                <h2 className="text-base font-semibold text-[#2E2F38] dark:text-white tracking-tight">{lead.nome}</h2>
-                                <span className={`h-2 w-2 rounded-full ${getTaskStatusColor(taskStatus)}`}></span>
+                                <h2 className="al-display text-[22px] font-bold text-white uppercase tracking-wide leading-none truncate">{lead.nome}</h2>
+                                <span className={`h-2 w-2 rounded-full shrink-0 ${getTaskStatusColor(taskStatus)}`}></span>
                             </div>
                             <div className="flex items-center justify-between">
                                 {readOnly ? (
-                                  <span className="px-2 py-1 text-xs font-medium text-[#2E2F38] dark:text-white bg-[#E8E9F1] dark:bg-[#181C23] rounded-md">{normalizeEtapa(lead.etapa)}</span>
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#FF1E56]/10 border border-[#FF1E56]/35 text-[#FF7A97]">{normalizeEtapa(lead.etapa)}</span>
                                 ) : (
                                   <select 
                                     id="lead-situation" 
                                     value={normalizeEtapa(lead.etapa)} 
                                     onChange={handleStageChange} 
-                                    className="px-2 py-1 text-xs border border-[#E8C547] dark:border-[#D4A017] rounded-md bg-white dark:bg-[#23283A] text-[#2E2F38] dark:text-white focus:ring-1 focus:ring-[#D4A017] focus:outline-none"
+                                    className="px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider bg-[#FF1E56]/10 border border-[#FF1E56]/35 rounded-full text-[#FF7A97] focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 [&>option]:bg-[#12101a] [&>option]:text-white"
                                   >
                                     {stages.map(s => (<option key={s} value={s}>{s}</option>))}
                                   </select>
@@ -471,22 +485,23 @@ export default function LeadDetailPage() {
                                   <div className="flex flex-col items-center gap-1">
                                     <button 
                                         onClick={() => setIsAgendaModalOpen(true)} 
-                                        className="w-10 h-10 bg-[#D4A017] hover:bg-[#D4A017]/80 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 shadow-lg"
+                                        className="w-10 h-10 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white rounded-full flex items-center justify-center transition-all duration-200 active:scale-[0.98] shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)]"
                                         title="Agendar Tarefa"
                                     >
                                         <TaskIcon className="h-5 w-5"/>
                                     </button>
-                                    <span className="text-xs text-[#6B6F76] dark:text-gray-400">Tarefas</span>
+                                    <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Tarefas</span>
                                   </div>
                                 )}
                             </div>
-                                <div className="flex items-center gap-2">
-                                <p className="text-xs text-[#6B6F76] dark:text-gray-400">{lead.telefone}</p>
-                                    <a 
-                                        href={`https://wa.me/55${lead.telefone.replace(/\D/g, '')}`} 
-                                        target="_blank" 
+                                <div className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-2 w-fit">
+                                <PhoneIcon className="h-3.5 w-3.5 text-text-secondary shrink-0" />
+                                <p className="text-xs text-white tabular-nums">{lead.telefone}</p>
+                                    <a
+                                        href={`https://wa.me/55${lead.telefone.replace(/\D/g, '')}`}
+                                        target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-green-500 hover:text-green-600 transition-colors"
+                                        className="text-emerald-400 hover:text-emerald-300 transition-colors"
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                     <WhatsAppIcon className="h-3 w-3 fill-current"/>
@@ -495,9 +510,10 @@ export default function LeadDetailPage() {
                         </div>
                     </div>
 
-                    {/* Card de Próximos Passos — sem painel cinza no dark */}
-                    <div className="bg-white/95 dark:bg-transparent p-5 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-white/10">
-                        <h3 className="text-base font-semibold text-[#2E2F38] dark:text-white mb-4">Próximos Passos</h3>
+                    {/* Card de Próximos Passos */}
+                    <div className="al-card relative overflow-hidden p-5">
+                        <div className="absolute inset-x-0 top-0 gx-line" />
+                        <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Próximos Passos</h3>
                         <div className="h-48 overflow-y-auto pr-2">
                             {interactions.length > 0 ? (
                                 <ul className="space-y-3">
@@ -511,16 +527,16 @@ export default function LeadDetailPage() {
                                          const taskTag = relatedTask?.type ?? interaction.type;
 
                                          return (
-                                             <li key={interaction.id} className="flex items-start gap-3">
-                                                 <div className="bg-slate-100 dark:bg-gray-700 p-2 rounded-full">
+                                             <li key={interaction.id} className={`flex items-start gap-3 bg-white/[0.03] border border-white/[0.08] border-l-2 ${getInteractionBorderClass(taskTag)} rounded-xl p-3 hover:bg-white/[0.04] transition-colors`}>
+                                                 <div className="bg-white/[0.06] border border-white/[0.08] p-2 rounded-full">
                                                      {getIconForInteraction(taskTag)}
                                                  </div>
                                                  <div className="flex-1 min-w-0">
-                                                     <p className="font-semibold text-gray-700 dark:text-gray-200 text-sm">{taskTag}</p>
-                                                     <p className="text-xs text-gray-600 dark:text-gray-400">{interaction.notes}</p>
+                                                     <p className="al-display font-bold text-white text-[12px] uppercase tracking-wider">{taskTag}</p>
+                                                     <p className="text-xs text-text-secondary">{interaction.notes}</p>
                                                      
                                                      {interaction.type === 'Tarefa Cancelada' && interaction.cancellationNotes && (
-                                                         <p className="text-xs text-red-500 mt-1">
+                                                         <p className="text-xs text-red-300 mt-1">
                                                              <span className="font-semibold">Motivo:</span> {interaction.cancellationNotes}
                                                          </p>
                                                      )}
@@ -529,13 +545,13 @@ export default function LeadDetailPage() {
                                                         <div className="mt-2 flex items-center gap-2">
                                                             <button
                                                                  onClick={() => handleUpdateTaskStatus(interaction.id, interaction.taskId!, 'concluída')}
-                                                                 className="px-2 py-1 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors"
+                                                                 className="px-2 py-1 text-xs font-bold text-emerald-300 border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-md transition-colors"
                                                              >
                                                                  Concluída
                                                              </button>
                                                              <button
                                                                  onClick={() => openCancelModal(interaction.id, interaction.taskId!)}
-                                                                 className="px-2 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+                                                                 className="px-2 py-1 text-xs font-bold text-red-300 border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 rounded-md transition-colors"
                                                              >
                                                                  Cancelar
                                                              </button>
@@ -543,11 +559,11 @@ export default function LeadDetailPage() {
                                                      )}
 
                                                      <div className="mt-2 flex items-center gap-3 text-xs">
-                                                         <span className="text-gray-400 dark:text-gray-500">
+                                                         <span className="text-white/35 tabular-nums">
                                                              Criado: {interaction.timestamp ? new Date(interaction.timestamp.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}
                                                          </span>
                                                          {relatedTask && (
-                                                             <span className="text-[#D4A017] dark:text-[#E8C547] font-medium">
+                                                             <span className="text-[#FFE9A6] font-medium tabular-nums">
                                                                  Agendado: {relatedTask.dueDate ? new Date(relatedTask.dueDate.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}
                                                              </span>
                                                          )}
@@ -571,7 +587,7 @@ export default function LeadDetailPage() {
                                                          
                                                          alert(descricaoCompleta);
                                                      }}
-                                                     className="text-[#D4A017] dark:text-[#E8C547] hover:text-[#B8860B] dark:hover:text-[#E8C547] transition-colors p-1"
+                                                     className="text-text-secondary hover:text-[#FF5C7E] transition-colors p-1"
                                                      title="Ver descrição completa"
                                                  >
                                                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -585,7 +601,7 @@ export default function LeadDetailPage() {
                                  </ul>
                              ) : (
                                  <div className="h-full flex items-center justify-center">
-                                     <p className="text-center text-gray-500 dark:text-gray-400 text-sm">Nenhuma ação registrada ainda.</p>
+                                     <p className="text-center text-text-secondary text-sm">Nenhuma ação registrada ainda.</p>
                                  </div>
                              )}
                         </div>
@@ -596,16 +612,17 @@ export default function LeadDetailPage() {
 
                 {/* --- COLUNA DA DIREITA (20% a menos) --- */}
                 <div className="lg:col-span-7 flex flex-col gap-6">
-                    {/* Card de Qualificação do Lead — sem fundo cinza, mantém só a borda */}
-                    <div className="bg-white/95 dark:bg-transparent p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-white/10">
+                    {/* Card de Qualificação do Lead */}
+                    <div className="al-card relative overflow-hidden p-6">
+                        <div className="absolute inset-x-0 top-0 gx-line" />
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white">Qualificação do Lead</h3>
+                            <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">Qualificação do Lead</h3>
                                             {!readOnly && (
                                 <button
                                   onClick={() => setIsQualificationModalOpen(true)}
-                                  className="px-3 py-1.5 text-sm font-semibold text-[#D4A017] bg-[#E8E9F1] hover:bg-[#E8C547]/40 rounded-lg transition-colors dark:bg-[#23283A] dark:hover:bg-[#D4A017]/20"
+                                  className="px-3 py-1.5 text-xs font-bold text-white border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] rounded-xl transition-colors"
                                 >
-                                  ✏️ Editar Qualificação
+                                  Editar Qualificação
                                 </button>
                                             )}
                         </div>
@@ -626,21 +643,21 @@ export default function LeadDetailPage() {
                                                 {values.map((value, valueIndex) => (
                                                     <span 
                                                         key={`${key}-${valueIndex}`}
-                                                        className="px-2 py-1 text-xs font-medium bg-[#F0F4FF] dark:bg-[#23283A] text-[#D4A017] dark:text-[#E8C547] rounded-md border border-[#E8C547]/20"
+                                                        className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#9F6BFF]/10 border border-[#9F6BFF]/35 text-[#C4A6FF]"
                                                     >
                                                         {value}
                                                     </span>
                                                 ))}
                                                 {/* Separador simples entre categorias */}
                                                 {index < Object.keys(qualifications).length - 1 && (
-                                                    <span className="text-[#6B6F76] dark:text-gray-400 mx-1">—</span>
+                                                    <span className="text-white/20 mx-1">—</span>
                                                 )}
                                             </React.Fragment>
                                         );
                                     }).filter(Boolean)}
                                     </div>
                             ) : (
-                                <div className="text-center py-6 text-[#6B6F76] dark:text-gray-400">
+                                <div className="text-center py-6 text-text-secondary">
                                     <p className="text-sm">Nenhuma qualificação definida</p>
                                     <p className="text-xs mt-1">Clique em "Editar Qualificação" para começar</p>
                                 </div>
@@ -648,12 +665,13 @@ export default function LeadDetailPage() {
                         </div>
                     </div>
 
-                    {/* Card de Anotações — sem bloco escuro, só contorno no dark */}
-                    <div className="bg-white/95 dark:bg-transparent p-6 rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-white/10 flex flex-col h-56">
+                    {/* Card de Anotações */}
+                    <div className="al-card relative overflow-hidden p-6 flex flex-col h-56">
+                        <div className="absolute inset-x-0 top-0 gx-line" />
                         <div className="flex justify-between items-center mb-4 flex-shrink-0">
-                            <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white">Anotações</h3>
+                            <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">Anotações</h3>
                             {!readOnly && !isEditingAnnotations && (
-                                <button onClick={() => setIsEditingAnnotations(true)} className="text-sm font-semibold text-primary-600 hover:text-primary-800 transition-colors">Editar</button>
+                                <button onClick={() => setIsEditingAnnotations(true)} className="text-sm font-bold text-[#FF7A97] hover:text-[#FF9EB5] transition-colors">Editar</button>
                             )}
                         </div>
                         <div className="flex-grow min-h-0">
@@ -662,17 +680,17 @@ export default function LeadDetailPage() {
                                     <textarea
                                         value={tempAnnotations}
                                         onChange={(e) => setTempAnnotations(e.target.value)}
-                                        className="w-full flex-grow border border-gray-300 dark:border-gray-600 rounded-md p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+                                        className="w-full flex-grow bg-white/[0.04] border border-white/10 rounded-lg p-2 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 resize-none"
                                         placeholder="Adicione suas anotações aqui..."
                                     />
                                     <div className="flex justify-end gap-2 mt-4 flex-shrink-0">
-                                        <button onClick={() => { setIsEditingAnnotations(false); setTempAnnotations(lead.anotacoes || ''); }} className="px-3 py-1 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 rounded-lg transition-colors">Cancelar</button>
-                                        <button onClick={handleSaveAnnotations} className="px-3 py-1 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors">Confirmar</button>
+                                        <button onClick={() => { setIsEditingAnnotations(false); setTempAnnotations(lead.anotacoes || ''); }} className="px-3 py-1 text-sm font-semibold text-white border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] rounded-xl transition-colors">Cancelar</button>
+                                        <button onClick={handleSaveAnnotations} className="px-3 py-1 text-sm font-bold text-white bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 rounded-xl shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all">Confirmar</button>
                                     </div>
                                 </div>
                             ) : (
                                 <div className="prose prose-sm dark:prose-invert max-w-none overflow-y-auto h-full pr-2">
-                                    <p className="whitespace-pre-wrap text-gray-600 dark:text-gray-400">
+                                    <p className="whitespace-pre-wrap text-text-secondary">
                                         {lead.anotacoes || 'Nenhuma anotação registrada.'}
                                     </p>
                                 </div>
@@ -711,22 +729,23 @@ export default function LeadDetailPage() {
             />
 
             {/* Modal de Qualificação */}
-            <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 ${isQualificationModalOpen ? 'visible' : 'invisible'}`}>
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Editar Qualificação</h3>
+            <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm ${isQualificationModalOpen ? 'visible' : 'invisible'}`}>
+                <div className="bg-[#12101a] border border-white/10 p-6 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden max-w-md w-full mx-4">
+                    <div className="absolute inset-x-0 top-0 gx-line" />
+                    <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Editar Qualificação</h3>
                     <div className="space-y-4 max-h-96 overflow-y-auto">
                         {QUALIFICATION_QUESTIONS.map((group) => (
                             <div key={group.key}>
-                                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{group.title}</h4>
+                                <h4 className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-2">{group.title}</h4>
                                 <div className="flex flex-wrap gap-2">
                                     {group.options.map((option) => (
                                         <button
                                             key={option}
                                             onClick={() => handleQualificationChange(group.key, option)}
-                                            className={`px-3 py-2 text-sm font-medium border rounded-md transition-all duration-150 ${
+                                            className={`px-3 py-2 text-sm font-medium border rounded-lg transition-all duration-150 ${
                                                 Array.isArray(qualifications[group.key]) && qualifications[group.key].includes(option)
-                                                ? 'bg-[#D4A017] border-[#D4A017] text-white shadow'
-                                                : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-600 dark:bg-gray-900/50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'
+                                                ? 'bg-[#FF1E56]/15 border-[#FF1E56]/60 text-[#FF9EB5] shadow-[0_0_12px_-2px_rgba(255,30,86,0.4)]'
+                                                : 'bg-white/[0.04] border-white/10 text-text-secondary hover:bg-white/[0.08]'
                                             }`}
                                         >
                                             {option}
@@ -737,8 +756,8 @@ export default function LeadDetailPage() {
                         ))}
                     </div>
                     <div className="flex justify-end gap-2 mt-6">
-                        <button onClick={handleCloseQualificationModal} className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500">Cancelar</button>
-                        <button onClick={handleSaveQualifications} className="px-4 py-2 text-sm font-semibold text-white bg-[#D4A017] hover:bg-[#D4A017]/80 rounded-lg transition-colors">Salvar</button>
+                        <button onClick={handleCloseQualificationModal} className="px-4 py-2 text-sm font-semibold text-white border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] rounded-xl transition-colors">Cancelar</button>
+                        <button onClick={handleSaveQualifications} className="px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 rounded-xl shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all">Salvar</button>
                     </div>
                 </div>
             </div>
