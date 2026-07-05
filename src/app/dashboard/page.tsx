@@ -1628,30 +1628,29 @@ export default function DashboardPage() {
         <div className="col-span-6 lg:col-span-8 lg:row-span-1 flex flex-col al-rise al-d1 min-h-0">
           <div className="flex items-center gap-2.5 mb-1.5 shrink-0">
             <span className="gx-tag"><Ic k="zap" s={11} /><span>Plano de ação</span></span>
-            <span className="hidden md:block text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/45 whitespace-nowrap">o caminho do próximo meet — siga a ordem</span>
+            <span className="hidden md:block text-[9.5px] font-extrabold uppercase tracking-[0.16em] text-white/50 whitespace-nowrap">onde está seu próximo meet? siga a ordem</span>
             <div className="flex-1 gx-line opacity-25" />
           </div>
           <div className="flex-1 min-h-0 grid grid-cols-2 sm:flex sm:items-stretch gap-1.5">
             {[
-              { href: '/dashboard/crm?tarefa=atraso', n: 1, label: 'ATRASADAS', count: tarefaAtrasadaCount, ic: 'alert', icc: 'text-[#FF7A97] drop-shadow-[0_0_8px_rgba(255,30,86,0.6)]', lbl: 'text-[#FF9EB5]', box: 'border-[#FF1E56]/40 bg-[#FF1E56]/[0.06] hover:bg-[#FF1E56]/[0.13] hover:border-[#FF1E56]/80 hover:shadow-[0_10px_28px_-10px_rgba(255,30,86,0.55)]', num: 'border-[#FF1E56]/50 text-[#FF7A97] bg-[#FF1E56]/10', dash: '' },
-              { href: '/dashboard/crm?tarefa=hoje', n: 2, label: 'PARA HOJE', count: tarefaDiaCount, ic: 'zap', icc: 'text-[#E8C547] drop-shadow-[0_0_8px_rgba(232,197,71,0.6)]', lbl: 'text-[#FFE9A6]', box: 'border-[#E8C547]/40 bg-[#E8C547]/[0.06] hover:bg-[#E8C547]/[0.13] hover:border-[#E8C547]/80 hover:shadow-[0_10px_28px_-10px_rgba(232,197,71,0.5)]', num: 'border-[#E8C547]/50 text-[#E8C547] bg-[#E8C547]/10', dash: '' },
-              { href: '/dashboard/crm?tarefa=sem', n: 3, label: 'SEM TAREFA', count: semTarefaCount, ic: 'gem', icc: 'text-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]', lbl: 'text-emerald-200', box: 'border-[#34D399]/40 bg-[#34D399]/[0.06] hover:bg-[#34D399]/[0.13] hover:border-[#34D399]/80 hover:shadow-[0_10px_28px_-10px_rgba(52,211,153,0.5)]', num: 'border-[#34D399]/50 text-emerald-300 bg-[#34D399]/10', dash: '' },
-              { href: '/dashboard/ligacao-ativa', n: 4, label: 'LIGAÇÃO ATIVA', count: null, sub: 'fonte infinita ▸', ic: 'phone', icc: 'text-[#C4A6FF] drop-shadow-[0_0_8px_rgba(159,107,255,0.6)]', lbl: 'text-[#C4A6FF]', box: 'border-[#9F6BFF]/45 bg-[#9F6BFF]/[0.06] hover:bg-[#9F6BFF]/[0.14] hover:border-[#9F6BFF]/85 hover:shadow-[0_10px_28px_-10px_rgba(159,107,255,0.55)]', num: 'border-[#9F6BFF]/55 text-[#C4A6FF] bg-[#9F6BFF]/10', dash: 'border-dashed' },
+              { href: '/dashboard/crm?tarefa=atraso', n: 1, label: 'TAREFAS ATRASADAS', count: tarefaAtrasadaCount, acao: 'resolva já ▸', ic: 'alert', icc: 'text-[#FF7A97] drop-shadow-[0_0_8px_rgba(255,30,86,0.6)]', lbl: 'text-[#FF9EB5]', box: 'border-[#FF1E56]/40 bg-[#FF1E56]/[0.06] hover:bg-[#FF1E56]/[0.13] hover:border-[#FF1E56]/80 hover:shadow-[0_10px_28px_-10px_rgba(255,30,86,0.55)]', num: 'border-[#FF1E56]/50 text-[#FF7A97] bg-[#FF1E56]/10', dash: '' },
+              { href: '/dashboard/crm?tarefa=hoje', n: 2, label: 'TAREFAS DE HOJE', count: tarefaDiaCount, acao: 'não deixe passar ▸', ic: 'zap', icc: 'text-[#E8C547] drop-shadow-[0_0_8px_rgba(232,197,71,0.6)]', lbl: 'text-[#FFE9A6]', box: 'border-[#E8C547]/40 bg-[#E8C547]/[0.06] hover:bg-[#E8C547]/[0.13] hover:border-[#E8C547]/80 hover:shadow-[0_10px_28px_-10px_rgba(232,197,71,0.5)]', num: 'border-[#E8C547]/50 text-[#E8C547] bg-[#E8C547]/10', dash: '' },
+              { href: '/dashboard/crm?tarefa=sem', n: 3, label: 'LEADS ESQUECIDOS', count: semTarefaCount, acao: 'acorde eles ▸', ic: 'gem', icc: 'text-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]', lbl: 'text-emerald-200', box: 'border-[#34D399]/40 bg-[#34D399]/[0.06] hover:bg-[#34D399]/[0.13] hover:border-[#34D399]/80 hover:shadow-[0_10px_28px_-10px_rgba(52,211,153,0.5)]', num: 'border-[#34D399]/50 text-emerald-300 bg-[#34D399]/10', dash: '' },
+              { href: '/dashboard/ligacao-ativa', n: 4, label: 'LIGAÇÃO ATIVA', count: null, acao: 'gere contatos do zero ▸', ic: 'phone', icc: 'text-[#C4A6FF] drop-shadow-[0_0_8px_rgba(159,107,255,0.6)]', lbl: 'text-[#C4A6FF]', box: 'border-[#9F6BFF]/45 bg-[#9F6BFF]/[0.06] hover:bg-[#9F6BFF]/[0.14] hover:border-[#9F6BFF]/85 hover:shadow-[0_10px_28px_-10px_rgba(159,107,255,0.55)]', num: 'border-[#9F6BFF]/55 text-[#C4A6FF] bg-[#9F6BFF]/10', dash: 'border-dashed' },
             ].map((s, i) => [
-              <Link key={`passo-${s.n}`} href={s.href} className={`group relative sm:flex-1 min-w-0 overflow-hidden rounded-xl border ${s.dash} ${s.box} px-3 py-1.5 flex items-center gap-2.5 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200`}>
+              <Link key={`passo-${s.n}`} href={s.href} className={`group relative sm:flex-1 min-w-0 overflow-hidden rounded-xl border ${s.dash} ${s.box} px-3 py-2 flex flex-col justify-between gap-1 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200`}>
                 <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700" />
-                <span className={`w-5 h-5 rounded-full grid place-items-center al-display text-[10px] font-extrabold shrink-0 border ${s.num}`}>{s.n}</span>
-                <span className="flex flex-col min-w-0">
-                  <span className={`text-[8.5px] font-extrabold tracking-[0.16em] whitespace-nowrap ${s.lbl}`}>{s.label}</span>
-                  {s.count != null ? (
-                    <CountUp n={s.count} className="al-display text-[24px] font-bold text-white leading-none tabular-nums" />
-                  ) : (
-                    <span className="text-[12px] font-extrabold text-white leading-tight mt-1 whitespace-nowrap">{s.sub}</span>
-                  )}
+                <span className="relative flex items-center gap-1.5 min-w-0">
+                  <span className={`w-[18px] h-[18px] rounded-full grid place-items-center al-display text-[10px] font-extrabold shrink-0 border ${s.num}`}>{s.n}</span>
+                  <span className={`text-[9px] font-extrabold tracking-[0.1em] truncate ${s.lbl}`}>{s.label}</span>
+                  <Ic k={s.ic} s={15} className={`ml-auto shrink-0 ${s.icc} group-hover:scale-110 transition-transform duration-200`} />
                 </span>
-                <Ic k={s.ic} s={18} className={`ml-auto shrink-0 ${s.icc} group-hover:scale-110 transition-transform duration-200`} />
+                <span className="relative flex items-baseline gap-2 min-w-0">
+                  {s.count != null && <CountUp n={s.count} className="al-display text-[25px] font-bold text-white leading-none tabular-nums shrink-0" />}
+                  <span className={`text-[10.5px] font-extrabold whitespace-nowrap truncate ${s.lbl} ${s.count == null ? 'text-[12.5px] text-white mt-1' : ''}`}>{s.acao}</span>
+                </span>
               </Link>,
-              i < 3 ? <Ic key={`seta-${s.n}`} k="chev" s={14} className="hidden sm:block self-center shrink-0 text-white/25" /> : null,
+              i < 3 ? <Ic key={`seta-${s.n}`} k="chev" s={15} className="hidden sm:block self-center shrink-0 text-white/30" /> : null,
             ])}
           </div>
         </div>
