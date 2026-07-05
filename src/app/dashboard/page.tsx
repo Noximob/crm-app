@@ -34,6 +34,7 @@ const IC_PATHS: Record<string, JSX.Element> = {
   calendar: <><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><path d="m9 16 2 2 4-4" /></>,
   chart: <><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></>,
   clock: <><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></>,
+  hourglass: <><path d="M5 22h14" /><path d="M5 2h14" /><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" /><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" /></>,
 };
 const Ic = ({ k, s = 20, className = '' }: { k: string; s?: number; className?: string }) => (
   <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
@@ -1555,9 +1556,14 @@ export default function DashboardPage() {
   const meusMeetsMock = 5;
   const historicoMeetsMock = { semana: 8, mes: 23, tri: 61 };
   const minhaPosMock = podioMeetsMock.filter((p) => p.qtd > meusMeetsMock).length + 1;
-  // Dias até o fim da semana (domingo) — countdown real
-  const diasFimSemana = (7 - currentTime.getDay()) % 7;
-  const countdownSemana = diasFimSemana === 0 ? 'último dia da semana!' : diasFimSemana === 1 ? 'falta 1 dia' : `faltam ${diasFimSemana} dias`;
+  // Dias até o fim da semana, contando hoje (seg=7 ... dom=1) — a ampulheta esvaziando
+  const diasFimSemana = ((7 - currentTime.getDay()) % 7) + 1;
+  const countdownSemana = diasFimSemana === 1 ? 'falta 1 dia' : `faltam ${diasFimSemana} dias`;
+  const urgSemana = diasFimSemana <= 2
+    ? { bg: 'linear-gradient(135deg, #FF1E56, #A50D38)', glow: '0 0 22px rgba(255,30,86,0.75)', cls: 'text-white border-[#FF6B93]/60' }
+    : diasFimSemana <= 4
+      ? { bg: 'linear-gradient(135deg, #FB923C, #C2410C)', glow: '0 0 18px rgba(251,146,60,0.6)', cls: 'text-white border-[#FDBA74]/60' }
+      : { bg: 'linear-gradient(135deg, #FFD569, #C89210)', glow: '0 0 18px rgba(232,197,71,0.55)', cls: 'text-[#181203] border-[#FFE9A6]/70' };
 
   return (
     <div className="min-h-full lg:h-full flex flex-col pb-6 lg:pb-0 lg:overflow-hidden">
@@ -1571,8 +1577,8 @@ export default function DashboardPage() {
           <span className="pointer-events-none absolute bottom-2 right-2 w-3.5 h-3.5 border-b-2 border-r-2 border-[#E8C547]/45 rounded-br-sm" />
           <div className="relative flex items-center justify-between gap-2">
             <span className="gx-tag"><span>{saudacaoDia} · {nomeImobiliaria || 'Sua imobiliária'}</span></span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#FF1E56]/50 bg-[#FF1E56]/[0.10] text-[#FF7A97] text-[9px] font-extrabold tracking-[0.12em] uppercase animate-pulse shadow-[0_0_14px_rgba(255,30,86,0.35)] shrink-0 whitespace-nowrap">
-              <Ic k="clock" s={11} /> {countdownSemana}
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[9.5px] font-extrabold tracking-[0.12em] uppercase animate-pulse shrink-0 whitespace-nowrap ${urgSemana.cls}`} style={{ background: urgSemana.bg, boxShadow: urgSemana.glow }}>
+              <Ic k="hourglass" s={11} /> {countdownSemana}
             </span>
           </div>
           <div className="relative flex items-center gap-3 mt-3">
