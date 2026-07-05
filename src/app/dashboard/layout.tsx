@@ -103,19 +103,6 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
 
-  // Data e relógio vivos no header (client-side p/ evitar mismatch de hidratação)
-  const [hojeStr, setHojeStr] = useState('');
-  const [horaStr, setHoraStr] = useState('');
-  useEffect(() => {
-    const tick = () => {
-      const agora = new Date();
-      setHojeStr(agora.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' }));
-      setHoraStr(agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
-    };
-    tick();
-    const id = setInterval(tick, 20000);
-    return () => clearInterval(id);
-  }, []);
   const { theme } = useTheme();
   const { notifications, resetNotification } = useNotifications();
 
@@ -296,8 +283,20 @@ export default function DashboardLayout({
             ))}
           </nav>
 
-          {/* Rodapé fixo: sair */}
-          <div className="shrink-0 p-2.5 border-t border-white/[0.06]">
+          {/* Rodapé fixo: perfil + sair */}
+          <div className="shrink-0 p-2.5 border-t border-white/[0.06] space-y-0.5">
+            <div className="flex items-center gap-2.5 pl-[6px] pr-2 py-1.5" title={displayName}>
+              <div className="relative w-8 h-8 p-[2px] rounded-full bg-gradient-to-br from-[#FF6B93] via-[#FF1E56] to-[#8B0F31] shadow-[0_0_14px_rgba(255,30,86,0.35)] shrink-0">
+                <div className="w-full h-full rounded-full bg-[#16090e] flex items-center justify-center text-[#FF9EB5] font-bold text-[12px] al-display">
+                  {(displayName || 'U').charAt(0).toUpperCase()}
+                </div>
+                <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 rounded-full border-2 border-[#0d0d12]" title="Online" />
+              </div>
+              <div className="min-w-0 opacity-0 group-hover/side:opacity-100 transition-opacity">
+                <p className="text-[11.5px] font-bold text-white truncate leading-tight">{displayName}</p>
+                <p className="text-[8.5px] text-emerald-400 font-extrabold uppercase tracking-[0.16em] leading-tight">online</p>
+              </div>
+            </div>
             <button
               onClick={handleLogout}
               className="flex items-center gap-3 pl-[10px] pr-2 w-full py-2 rounded-lg text-[12.5px] font-semibold text-text-secondary hover:bg-[#FF1E56]/10 hover:text-[#FF6B93] transition-all"
@@ -311,68 +310,44 @@ export default function DashboardLayout({
       </div>
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden ml-[60px]">
-        {/* Header: command bar — saudação com cursor + relógio vivo | convites | avatar */}
-        <header className="h-14 px-5 shrink-0 flex items-center justify-between gap-3 bg-[#0b0b10]/80 backdrop-blur-md relative">
-          <div className="absolute inset-x-0 bottom-0 h-[2px] gx-line pointer-events-none opacity-70" />
-          <div className="shrink-0 min-w-0 flex items-baseline gap-2.5">
-            <h2 className="al-display text-[16px] font-bold text-white uppercase tracking-[0.08em] truncate leading-tight">
-              Olá, {displayName}<span className="gx-cursor">▍</span>
-            </h2>
-          </div>
-          {convitesPendentes.length > 0 && (
-            <div className="flex items-center gap-2 flex-1 min-w-0 justify-center overflow-hidden">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.06] border border-orange-500/25 max-w-full min-w-0">
-                <CalendarIcon className="w-4 h-4 text-amber-400 shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] text-text-secondary leading-tight">
-                    Você tem <span className="font-bold text-white">{convitesPendentes.length}</span> {convitesPendentes.length === 1 ? 'evento' : 'eventos'} a confirmar
-                  </p>
-                  <p className="text-xs font-semibold text-white truncate">{convitesPendentes[0].titulo}</p>
-                  <p className="text-[10px] text-text-secondary">{convitesPendentes[0].dataStr} · {convitesPendentes[0].horarioStr}</p>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    type="button"
-                    disabled={respondendoPresenca === `${convitesPendentes[0].tipo}-${convitesPendentes[0].id}`}
-                    onClick={() => responderPresenca(convitesPendentes[0].tipo, convitesPendentes[0].id, 'confirmado')}
-                    className="px-2 py-1 text-[10px] font-semibold text-white bg-emerald-500/90 hover:bg-emerald-500 rounded transition-colors disabled:opacity-50"
-                  >
-                    {respondendoPresenca === `${convitesPendentes[0].tipo}-${convitesPendentes[0].id}` ? '...' : 'Confirmar'}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={respondendoPresenca === `${convitesPendentes[0].tipo}-${convitesPendentes[0].id}`}
-                    onClick={() => responderPresenca(convitesPendentes[0].tipo, convitesPendentes[0].id, 'cancelado')}
-                    className="px-2 py-1 text-[10px] font-semibold text-red-200 bg-red-500/20 hover:bg-red-500/30 rounded transition-colors disabled:opacity-50"
-                  >
-                    Recusar
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-          <div className="flex items-center gap-3 shrink-0">
-            {horaStr && (
-              <div className="hidden sm:flex items-baseline gap-2 pr-3 border-r border-white/[0.07]">
-                <span className="al-display text-[19px] font-bold text-white tabular-nums leading-none">{horaStr}</span>
-                <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-secondary">{hojeStr}</span>
-              </div>
-            )}
-            <div className="pl-0.5">
-              <div className="relative w-9 h-9 p-[2px] rounded-full bg-gradient-to-br from-[#FF6B93] via-[#FF1E56] to-[#8B0F31] shadow-[0_0_16px_rgba(255,30,86,0.4)]">
-                <div className="w-full h-full rounded-full bg-[#16090e] flex items-center justify-center text-[#FF9EB5] font-bold text-sm al-display">
-                  {(displayName || 'U').charAt(0).toUpperCase()}
-                </div>
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[#0a0a0e]" title="Online" />
-              </div>
-            </div>
-          </div>
-        </header>
-
         <main className="flex flex-col flex-1 min-h-0 overflow-x-hidden overflow-y-auto p-2 md:p-3">
           {children}
         </main>
       </div>
+
+      {/* Convites de evento pendentes — card flutuante (o header saiu; saudação vive só na home) */}
+      {convitesPendentes.length > 0 && (
+        <div className="fixed bottom-4 right-4 z-40 max-w-sm animate-fade-in">
+          <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-[#15121a]/95 backdrop-blur-md border border-amber-500/30 shadow-[0_16px_48px_-12px_rgba(0,0,0,0.85),0_0_24px_-8px_rgba(245,158,11,0.35)]">
+            <CalendarIcon className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] text-text-secondary leading-tight">
+                Você tem <span className="font-bold text-white">{convitesPendentes.length}</span> {convitesPendentes.length === 1 ? 'evento' : 'eventos'} a confirmar
+              </p>
+              <p className="text-xs font-semibold text-white truncate">{convitesPendentes[0].titulo}</p>
+              <p className="text-[10px] text-text-secondary">{convitesPendentes[0].dataStr} · {convitesPendentes[0].horarioStr}</p>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                disabled={respondendoPresenca === `${convitesPendentes[0].tipo}-${convitesPendentes[0].id}`}
+                onClick={() => responderPresenca(convitesPendentes[0].tipo, convitesPendentes[0].id, 'confirmado')}
+                className="px-2 py-1 text-[10px] font-semibold text-white bg-emerald-500/90 hover:bg-emerald-500 rounded transition-colors disabled:opacity-50"
+              >
+                {respondendoPresenca === `${convitesPendentes[0].tipo}-${convitesPendentes[0].id}` ? '...' : 'Confirmar'}
+              </button>
+              <button
+                type="button"
+                disabled={respondendoPresenca === `${convitesPendentes[0].tipo}-${convitesPendentes[0].id}`}
+                onClick={() => responderPresenca(convitesPendentes[0].tipo, convitesPendentes[0].id, 'cancelado')}
+                className="px-2 py-1 text-[10px] font-semibold text-red-200 bg-red-500/20 hover:bg-red-500/30 rounded transition-colors disabled:opacity-50"
+              >
+                Recusar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
     </PipelineStagesProvider>
