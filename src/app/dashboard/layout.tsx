@@ -3,8 +3,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { db } from '@/lib/firebase';
-import { getDoc, doc, collection, getDocs, query, where, updateDoc } from 'firebase/firestore';
 import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
 import { useNotifications } from '@/context/NotificationContext';
@@ -18,15 +16,6 @@ const LayoutDashboardIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...p
 const ChatGPTIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142-.0852 4.783-2.7582a.7712.7712 0 0 0 .7806 0l5.8428 3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z" fill="currentColor"/>
-  </svg>
-);
-
-const CalendarIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
-    <line x1="16" x2="16" y1="2" y2="6"/>
-    <line x1="8" x2="8" y1="2" y2="6"/>
-    <line x1="3" x2="21" y1="10" y2="10"/>
   </svg>
 );
 
@@ -73,17 +62,6 @@ const GraduationCapIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...pro
 const GlobeIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>;
 const ShieldIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>;
 
-// Label do tipo de evento/agenda (igual dashboard)
-function getTipoAgendaLabel(tipo: string): string {
-  const map: Record<string, string> = {
-    reuniao: 'Reunião', evento: 'Evento', treinamento: 'Treinamento', 'revisar-crm': 'Revisar CRM',
-    'ligacao-ativa': 'Ligação Ativa', 'acao-de-rua': 'Ação de rua', 'disparo-de-msg': 'Disparo de Msg',
-    plantao: 'Plantão',
-    outro: 'Outro', meet: 'Google Meet', youtube: 'YouTube Live', instagram: 'Instagram Live', discord: 'Discord',
-  };
-  return map[tipo] || tipo;
-}
-
 const NavLink = ({ href, icon: Icon, children, collapsed, isActive }: any) => (
     <Link href={href} className={`flex items-center px-3 py-2.5 text-[#2E2F38] hover:bg-[#E8E9F1] rounded-lg transition-all duration-200 text-sm font-medium ${
         isActive ? 'bg-primary-500 text-white shadow-md' : 'hover:text-primary-600'
@@ -118,69 +96,6 @@ export default function DashboardLayout({
       resetNotification('comunidade');
     }
   }, [pathname, resetNotification]);
-
-  // Convites de eventos (plantoes + agenda) em que o usuário foi marcado e ainda não respondeu
-  const [agendaImobiliaria, setAgendaImobiliaria] = useState<any[]>([]);
-  const [respondendoPresenca, setRespondendoPresenca] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (isEspelhoDemo) return;
-    const fetchAgenda = async () => {
-      if (!userData?.imobiliariaId) return;
-      try {
-        const q = query(collection(db, 'agendaImobiliaria'), where('imobiliariaId', '==', userData.imobiliariaId));
-        const snapshot = await getDocs(q);
-        setAgendaImobiliaria(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-      } catch (e) {
-        setAgendaImobiliaria([]);
-      }
-    };
-    fetchAgenda();
-  }, [userData?.imobiliariaId, isEspelhoDemo]);
-
-  const convitesPendentes = React.useMemo(() => {
-    const uid = user?.uid;
-    if (!uid) return [];
-    const lista: { tipo: 'plantao' | 'agenda'; id: string; titulo: string; tipoLabel: string; dataStr: string; horarioStr: string; sortTime: number }[] = [];
-    agendaImobiliaria.forEach((a: any) => {
-      if (!Array.isArray(a.presentesIds) || !a.presentesIds.includes(uid)) return;
-      if (a.respostasPresenca?.[uid]) return;
-      const dt = a.dataInicio?.toDate ? a.dataInicio.toDate() : (a.dataInicio ? new Date(a.dataInicio) : null);
-      const sortTime = dt ? dt.getTime() : 0;
-      const dataStr = dt ? dt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-      const horarioStr = dt ? dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
-      lista.push({
-        tipo: 'agenda',
-        id: a.id,
-        titulo: a.titulo || 'Evento',
-        tipoLabel: getTipoAgendaLabel(a.tipo || 'outro'),
-        dataStr,
-        horarioStr,
-        sortTime,
-      });
-    });
-    lista.sort((a, b) => a.sortTime - b.sortTime);
-    return lista;
-  }, [user?.uid, agendaImobiliaria]);
-
-  const responderPresenca = async (tipo: 'plantao' | 'agenda', id: string, status: 'confirmado' | 'cancelado') => {
-    const uid = user?.uid;
-    if (!uid) return;
-    const key = `${tipo}-${id}`;
-    setRespondendoPresenca(key);
-    try {
-      // Plantões agora também são eventos da agenda imobiliária (coleção unificada)
-      const ref = doc(db, 'agendaImobiliaria', id);
-      const item = agendaImobiliaria.find((a: any) => a.id === id);
-      const atuais = (item?.respostasPresenca || {}) as Record<string, string>;
-      await updateDoc(ref, { respostasPresenca: { ...atuais, [uid]: status } });
-      setAgendaImobiliaria(prev => prev.map((a: any) => a.id === id ? { ...a, respostasPresenca: { ...atuais, [uid]: status } } : a));
-    } catch (e) {
-      console.error('Erro ao atualizar presença:', e);
-    } finally {
-      setRespondendoPresenca(null);
-    }
-  };
 
   const handleLogout = async () => {
     await logout();
@@ -316,40 +231,6 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
-
-      {/* Convites de evento pendentes — card flutuante (o header saiu; saudação vive só na home) */}
-      {convitesPendentes.length > 0 && (
-        <div className="fixed bottom-4 right-4 z-40 max-w-sm animate-fade-in">
-          <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-[#15121a]/95 backdrop-blur-md border border-amber-500/30 shadow-[0_16px_48px_-12px_rgba(0,0,0,0.85),0_0_24px_-8px_rgba(245,158,11,0.35)]">
-            <CalendarIcon className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] text-text-secondary leading-tight">
-                Você tem <span className="font-bold text-white">{convitesPendentes.length}</span> {convitesPendentes.length === 1 ? 'evento' : 'eventos'} a confirmar
-              </p>
-              <p className="text-xs font-semibold text-white truncate">{convitesPendentes[0].titulo}</p>
-              <p className="text-[10px] text-text-secondary">{convitesPendentes[0].dataStr} · {convitesPendentes[0].horarioStr}</p>
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                type="button"
-                disabled={respondendoPresenca === `${convitesPendentes[0].tipo}-${convitesPendentes[0].id}`}
-                onClick={() => responderPresenca(convitesPendentes[0].tipo, convitesPendentes[0].id, 'confirmado')}
-                className="px-2 py-1 text-[10px] font-semibold text-white bg-emerald-500/90 hover:bg-emerald-500 rounded transition-colors disabled:opacity-50"
-              >
-                {respondendoPresenca === `${convitesPendentes[0].tipo}-${convitesPendentes[0].id}` ? '...' : 'Confirmar'}
-              </button>
-              <button
-                type="button"
-                disabled={respondendoPresenca === `${convitesPendentes[0].tipo}-${convitesPendentes[0].id}`}
-                onClick={() => responderPresenca(convitesPendentes[0].tipo, convitesPendentes[0].id, 'cancelado')}
-                className="px-2 py-1 text-[10px] font-semibold text-red-200 bg-red-500/20 hover:bg-red-500/30 rounded transition-colors disabled:opacity-50"
-              >
-                Recusar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
     </PipelineStagesProvider>

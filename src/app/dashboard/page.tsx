@@ -748,7 +748,7 @@ export default function DashboardPage() {
     [agendaImobiliaria]
   );
 
-  // Próximas ações: eventos em que o usuário está CONFIRMADO — Agora + Em breve + próximos (até 4), igual TV Agenda do Dia
+  // Radar: todo evento em que o usuário está marcado (presentesIds) aparece — sem fluxo de convite/confirmação
   const proximosEventosConfirmados = useMemo(() => {
     const uid = currentUser?.uid;
     const now = currentTime.getTime();
@@ -757,7 +757,6 @@ export default function DashboardPage() {
     const lista: Item[] = [];
     agendaImobiliaria.forEach((a: any) => {
       if (!Array.isArray(a.presentesIds) || !a.presentesIds.includes(uid)) return;
-      if (a.respostasPresenca?.[uid] !== 'confirmado') return;
 
       // Intervalo de dias (modelo novo diaInicio/diaFim; fallback p/ Timestamps antigos)
       const diaIni = a.diaInicio || (a.dataInicio?.toDate ? ymd(a.dataInicio.toDate()) : (a.dataInicio ? ymd(new Date(a.dataInicio)) : ''));
@@ -803,7 +802,7 @@ export default function DashboardPage() {
       }
     });
     lista.sort((a, b) => a.startTime - b.startTime);
-    return lista.slice(0, 3);
+    return lista.slice(0, 6);
   }, [currentUser?.uid, agendaImobiliaria, currentTime]);
 
   const [respondendoPresenca, setRespondendoPresenca] = useState<string | null>(null);
