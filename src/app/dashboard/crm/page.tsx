@@ -164,14 +164,18 @@ export default function CrmPage() {
             return;
         }
         try {
+            // Se chegou com ?tarefa= na URL (botões do plano de ação da home), o filtro da URL manda:
+            // não restaurar o filtro de tarefa nem a página salvos, senão eles atropelam o clique do usuário.
+            const tarefaUrl = new URLSearchParams(window.location.search).get('tarefa');
+            const veioComFiltroUrl = !!(tarefaUrl && TAREFA_PARAM_MAP[tarefaUrl]);
             const raw = window.sessionStorage.getItem(CRM_LIST_STATE_KEY);
             if (raw) {
                 const saved = JSON.parse(raw);
                 if (saved.activeFilter !== undefined) setActiveFilter(saved.activeFilter);
-                if (saved.activeTaskFilter !== undefined) setActiveTaskFilter(saved.activeTaskFilter);
+                if (saved.activeTaskFilter !== undefined && !veioComFiltroUrl) setActiveTaskFilter(saved.activeTaskFilter);
                 if (saved.advancedFilters !== undefined) setAdvancedFilters(saved.advancedFilters);
                 if (saved.searchTerm !== undefined) setSearchTerm(saved.searchTerm);
-                if (saved.currentPage !== undefined) setCurrentPage(saved.currentPage);
+                if (saved.currentPage !== undefined && !veioComFiltroUrl) setCurrentPage(saved.currentPage);
             }
         } catch (err) {
             console.error('Erro ao restaurar estado da lista CRM:', err);

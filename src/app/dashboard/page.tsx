@@ -1447,6 +1447,15 @@ export default function DashboardPage() {
     });
   }, [userData?.imobiliariaId]);
 
+  // Períodos de Meets & Visitas — criados na Área do administrador (tempo real)
+  const [mvPeriodos, setMvPeriodos] = useState<any[]>([]);
+  useEffect(() => {
+    if (isEspelhoDemo || !userData?.imobiliariaId) return;
+    const qMv = query(collection(db, 'meetsVisitas'), where('imobiliariaId', '==', userData.imobiliariaId));
+    const unsub = onSnapshot(qMv, (snap) => setMvPeriodos(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
+    return () => unsub();
+  }, [userData?.imobiliariaId, isEspelhoDemo]);
+
   function calcularVariacao(atual: string, anterior: string) {
     const a = parseFloat((atual || '').replace(/[^\d,.-]/g, '').replace(',', '.'));
     const b = parseFloat((anterior || '').replace(/[^\d,.-]/g, '').replace(',', '.'));
@@ -1548,17 +1557,43 @@ export default function DashboardPage() {
   const saudacaoDia = horaAgora < 12 ? 'Bom dia' : horaAgora < 18 ? 'Boa tarde' : 'Boa noite';
   const primeiroNomeHome = (userData?.nome || currentUser?.email?.split('@')[0] || 'corretor').split(' ')[0];
   const totalFunilHome = Object.values(funilPessoal || {}).reduce((a, b) => a + (Number(b) || 0), 0);
-  // MOCKUP visual do pódio de meets & visitas — o período será definido na área do administrador quando integrar
-  const podioMeetsMock = [
-    { nome: 'Renan', qtd: 12 },
-    { nome: 'Toni', qtd: 9 },
-    { nome: 'Breno', qtd: 7 },
-  ];
-  const meusMeetsMock = 5;
-  const historicoMeetsMock = { semana: 8, mes: 23, tri: 61 };
-  const minhaPosMock = podioMeetsMock.filter((p) => p.qtd > meusMeetsMock).length + 1;
-  // Dias até o fim da semana, contando hoje (seg=7 ... dom=1) — a ampulheta esvaziando
-  const diasFimSemana = ((7 - currentTime.getDay()) % 7) + 1;
+  // Meets & Visitas — dados reais dos períodos criados na Área do administrador (demo usa exemplo)
+  const ymdHoje = `${currentTime.getFullYear()}-${String(currentTime.getMonth() + 1).padStart(2, '0')}-${String(currentTime.getDate()).padStart(2, '0')}`;
+  const nomesEquipe: Record<string, string> = Object.fromEntries(corretoresRanking.map((c) => [c.id, c.nome]));
+  const periodoMeets = mvPeriodos
+    .filter((p) => p.inicio && p.fim && p.inicio <= ymdHoje && ymdHoje <= p.fim)
+    .sort((a, b) => (b.inicio || '').localeCompare(a.inicio || ''))[0] || null;
+  const contadoresMeets: Record<string, number> = (periodoMeets?.contadores as Record<string, number>) || {};
+  const podioMeets: { nome: string; qtd: number }[] = isEspelhoDemo
+    ? [{ nome: 'Renan', qtd: 12 }, { nome: 'Toni', qtd: 9 }, { nome: 'Breno', qtd: 7 }]
+    : Object.entries(contadoresMeets)
+        .map(([id, q]) => ({ nome: nomesEquipe[id] || 'Corretor', qtd: Number(q) || 0 }))
+        .sort((a, b) => b.qtd - a.qtd)
+        .slice(0, 3);
+  const meusMeets = isEspelhoDemo ? 5 : Number(contadoresMeets[currentUser?.uid || ''] || 0);
+  const minhaPosMeets = isEspelhoDemo ? 4 : Object.values(contadoresMeets).filter((q) => Number(q) > meusMeets).length + 1;
+  const liderMeets = Math.max(podioMeets[0]?.qtd || 0, meusMeets, 1);
+  const qtdMinhaMeets = (p: any) => Number(p?.contadores?.[currentUser?.uid || ''] || 0);
+  const ymdAtras = (dias: number) => { const d = new Date(currentTime); d.setDate(d.getDate() - dias); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const encerradosMeets = mvPeriodos.filter((p) => p.fim && p.fim < ymdHoje).sort((a, b) => (b.fim || '').localeCompare(a.fim || ''));
+  const historicoMeets = isEspelhoDemo
+    ? { semana: 8, mes: 23, tri: 61 }
+    : {
+        semana: encerradosMeets[0] ? qtdMinhaMeets(encerradosMeets[0]) : 0,
+        mes: mvPeriodos.filter((p) => p.fim && p.inicio && p.fim >= ymdAtras(30) && p.inicio <= ymdHoje).reduce((s, p) => s + qtdMinhaMeets(p), 0),
+        tri: mvPeriodos.filter((p) => p.fim && p.inicio && p.fim >= ymdAtras(90) && p.inicio <= ymdHoje).reduce((s, p) => s + qtdMinhaMeets(p), 0),
+      };
+  const fmtDiaMes = (s?: string) => (s ? `${s.slice(8, 10)}/${s.slice(5, 7)}` : '');
+  const periodoTagMeets = isEspelhoDemo ? '01/07 → 07/07' : periodoMeets ? `${fmtDiaMes(periodoMeets.inicio)} → ${fmtDiaMes(periodoMeets.fim)}` : 'período não definido';
+  const temPeriodoMeets = isEspelhoDemo || !!periodoMeets;
+  // Countdown: até o fim do período ativo; sem período, até o fim da semana (dom) — a ampulheta esvaziando
+  const diasFimSemana = (() => {
+    if (!isEspelhoDemo && periodoMeets?.fim) {
+      const fimDt = new Date(periodoMeets.fim + 'T23:59:59');
+      return Math.max(1, Math.ceil((fimDt.getTime() - currentTime.getTime()) / 86400000));
+    }
+    return ((7 - currentTime.getDay()) % 7) + 1;
+  })();
   const countdownSemana = diasFimSemana === 1 ? 'falta 1 dia' : `faltam ${diasFimSemana} dias`;
   const urgSemana = diasFimSemana <= 2
     ? { bg: 'linear-gradient(135deg, #FF1E56, #A50D38)', glow: '0 0 22px rgba(255,30,86,0.75)', cls: 'text-white border-[#FF6B93]/60' }
@@ -1589,7 +1624,7 @@ export default function DashboardPage() {
                 <div className="min-w-0">
                   <h1 className="al-display text-[25px] font-bold text-white uppercase tracking-wide leading-none truncate">{primeiroNomeHome}</h1>
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 mt-1.5 rounded-full text-[10px] font-extrabold tracking-[0.14em] bg-[#E8C547]/10 border border-[#E8C547]/40 text-[#E8C547] shadow-[0_0_12px_rgba(232,197,71,0.25)]">
-                    <Ic k="trophy" s={12} /> {minhaPosMock}º NO RANKING
+                    <Ic k="trophy" s={12} /> {temPeriodoMeets ? `${minhaPosMeets}º NO RANKING` : 'SEM PERÍODO ATIVO'}
                   </span>
                 </div>
               </div>
@@ -1597,7 +1632,7 @@ export default function DashboardPage() {
             {/* Placar da semana — o número principal, emoldurado */}
             <div className="gx-placar gx-sheen relative shrink-0 rounded-2xl border-2 border-[#E8C547]/55 px-5 py-2.5 text-right overflow-hidden group" style={{ background: 'linear-gradient(160deg, rgba(232,197,71,0.16), rgba(20,13,5,0.55))' }}>
               <span className="pointer-events-none absolute inset-0 gx-stripes opacity-40" />
-              <CountUp n={meusMeetsMock} className="relative al-display block text-[56px] font-bold al-grad-text leading-[0.9] tabular-nums drop-shadow-[0_0_26px_rgba(232,197,71,0.65)]" />
+              <CountUp n={meusMeets} className="relative al-display block text-[56px] font-bold al-grad-text leading-[0.9] tabular-nums drop-shadow-[0_0_26px_rgba(232,197,71,0.65)]" />
               <span className="relative block text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#E8C547] mt-0.5">meets & visitas</span>
               <span className="relative block text-[8.5px] font-bold uppercase tracking-[0.2em] text-white/60">nesta semana</span>
             </div>
@@ -1681,11 +1716,9 @@ export default function DashboardPage() {
               {agendaLoading ? (
                 <p className="text-text-secondary text-sm">Carregando…</p>
               ) : proximosEventosConfirmados.length === 0 ? (
-                <div className="flex flex-col items-center justify-center gap-2 text-center">
-                  <p className="text-[12px] text-text-secondary">Nenhum sinal no radar — bom momento pra prospectar.</p>
-                  <Link href="/dashboard/agenda" className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-[#FF3364]/40 text-[#FF7A97] text-[11px] font-bold hover:bg-[#FF1E56]/[0.09] hover:border-[#FF3364]/70 hover:-translate-y-0.5 active:scale-[0.97] transition-all">
-                    <Ic k="calendar" s={14} /> agendar um evento ▸
-                  </Link>
+                <div className="flex flex-col items-center justify-center gap-1.5 text-center">
+                  <p className="text-[12.5px] text-text-secondary">Nenhum evento no radar por enquanto.</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/35">os eventos são publicados pela imobiliária — bom momento pra prospectar</p>
                 </div>
               ) : (
                 <div className="space-y-1.5">
@@ -2026,17 +2059,29 @@ export default function DashboardPage() {
                   <p className="text-[9px] text-[#E8C547]/90 font-extrabold uppercase tracking-[0.22em] mt-1">o número que converte</p>
                 </div>
               </div>
-              {/* MOCKUP: período definido futuramente na área do administrador */}
-              <span className="gx-tag shrink-0"><span>01/07 → 07/07</span></span>
+              {/* Período definido na Área do administrador → Meets & Visitas */}
+              <span className="gx-tag shrink-0"><span>{periodoTagMeets}</span></span>
             </div>
             <div className="relative flex items-center gap-3 flex-1 min-h-0 pt-5">
-              {/* Corrida da semana — raias com barra proporcional ao líder; a sua raia em carmesim */}
+              {/* Corrida do período — raias com barra proporcional ao líder; a sua raia em carmesim */}
+              {!temPeriodoMeets ? (
+                <div className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1 text-center py-4">
+                  <p className="text-[12.5px] text-text-secondary">O período de meets & visitas ainda não foi aberto pelo gestor.</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/35">Área do administrador → Meets & Visitas</p>
+                </div>
+              ) : (
               <div className="flex-1 min-w-0 flex flex-col justify-center gap-2">
                 {[
-                  { nome: podioMeetsMock[0].nome, qtd: podioMeetsMock[0].qtd, pos: 1, ring: 'from-[#FFE9A6] via-[#E8C547] to-[#8a6d13]', bar: 'linear-gradient(90deg, #FFE9A6, #E8C547)', glow: 'rgba(232,197,71,0.5)', eu: false },
-                  { nome: podioMeetsMock[1].nome, qtd: podioMeetsMock[1].qtd, pos: 2, ring: 'from-slate-200 via-slate-400 to-slate-600', bar: 'linear-gradient(90deg, #E2E8F0, #94A3B8)', glow: 'rgba(148,163,184,0.4)', eu: false },
-                  { nome: podioMeetsMock[2].nome, qtd: podioMeetsMock[2].qtd, pos: 3, ring: 'from-[#f0b27a] via-[#c47a3d] to-[#7a4319]', bar: 'linear-gradient(90deg, #F0B27A, #C47A3D)', glow: 'rgba(196,122,61,0.4)', eu: false },
-                  { nome: 'Você', qtd: meusMeetsMock, pos: minhaPosMock, ring: 'from-[#FF6B93] via-[#FF1E56] to-[#8B0F31]', bar: 'linear-gradient(90deg, #FF6B93, #FF1E56)', glow: 'rgba(255,30,86,0.55)', eu: true },
+                  ...podioMeets.map((p, i) => ({
+                    nome: p.nome,
+                    qtd: p.qtd,
+                    pos: i + 1,
+                    ring: ['from-[#FFE9A6] via-[#E8C547] to-[#8a6d13]', 'from-slate-200 via-slate-400 to-slate-600', 'from-[#f0b27a] via-[#c47a3d] to-[#7a4319]'][i],
+                    bar: ['linear-gradient(90deg, #FFE9A6, #E8C547)', 'linear-gradient(90deg, #E2E8F0, #94A3B8)', 'linear-gradient(90deg, #F0B27A, #C47A3D)'][i],
+                    glow: ['rgba(232,197,71,0.5)', 'rgba(148,163,184,0.4)', 'rgba(196,122,61,0.4)'][i],
+                    eu: false,
+                  })),
+                  { nome: 'Você', qtd: meusMeets, pos: minhaPosMeets, ring: 'from-[#FF6B93] via-[#FF1E56] to-[#8B0F31]', bar: 'linear-gradient(90deg, #FF6B93, #FF1E56)', glow: 'rgba(255,30,86,0.55)', eu: true },
                 ].map((l) => (
                   <div key={`${l.pos}-${l.nome}`} className={`flex items-center gap-2.5 ${l.eu ? 'rounded-lg px-2 py-1 -mx-2 bg-[#FF1E56]/[0.08] border border-[#FF1E56]/35' : ''}`}>
                     {l.eu ? (
@@ -2046,7 +2091,7 @@ export default function DashboardPage() {
                     )}
                     <span className={`w-16 shrink-0 truncate text-[11px] font-bold ${l.eu ? 'text-[#FF9EB5]' : 'text-white'}`} title={l.nome}>{l.nome}</span>
                     <div className="flex-1 h-[13px] rounded-full bg-white/[0.05] border border-white/[0.06] overflow-hidden min-w-0">
-                      <i className="block h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(6, Math.round((l.qtd / podioMeetsMock[0].qtd) * 100))}%`, background: l.bar, boxShadow: `0 0 12px ${l.glow}` }} />
+                      <i className="block h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(6, Math.round((l.qtd / liderMeets) * 100))}%`, background: l.bar, boxShadow: `0 0 12px ${l.glow}` }} />
                     </div>
                     <span className="w-8 shrink-0 text-right">
                       <CountUp n={l.qtd} className={`al-display text-[16px] font-bold tabular-nums ${l.eu ? 'text-[#FF7A97]' : l.pos === 1 ? 'al-grad-text' : 'text-white/85'}`} />
@@ -2054,10 +2099,11 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
+              )}
               <div className="hidden md:block w-px self-stretch bg-gradient-to-b from-transparent via-[#E8C547]/35 to-transparent shrink-0" />
               <div className="hidden md:flex w-[210px] shrink-0 flex-col justify-center gap-1">
                 <span className="text-[9px] font-extrabold uppercase tracking-[0.22em] text-[#E8C547] flex items-center gap-1.5 mb-0.5"><Ic k="history" s={11} /> Seu histórico</span>
-                {[{ l: 'Semana passada', v: historicoMeetsMock.semana }, { l: 'Último mês', v: historicoMeetsMock.mes }, { l: 'Trimestre', v: historicoMeetsMock.tri }].map((h) => (
+                {[{ l: 'Semana passada', v: historicoMeets.semana }, { l: 'Último mês', v: historicoMeets.mes }, { l: 'Trimestre', v: historicoMeets.tri }].map((h) => (
                   <div key={h.l} className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-1 bg-white/[0.03] border border-white/[0.07] hover:bg-white/[0.05] hover:border-[#E8C547]/25 transition-colors">
                     <span className="text-[10px] font-bold text-white/70">{h.l}</span>
                     <CountUp n={h.v} className="al-display text-[16px] font-bold al-grad-text leading-none tabular-nums" />
@@ -2066,7 +2112,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="relative md:hidden shrink-0 mt-2 grid grid-cols-3 gap-1.5">
-              {[{ l: 'Semana', v: historicoMeetsMock.semana }, { l: 'Mês', v: historicoMeetsMock.mes }, { l: 'Tri', v: historicoMeetsMock.tri }].map((h) => (
+              {[{ l: 'Semana', v: historicoMeets.semana }, { l: 'Mês', v: historicoMeets.mes }, { l: 'Tri', v: historicoMeets.tri }].map((h) => (
                 <div key={h.l} className="flex flex-col items-center rounded-lg px-2 py-1.5 bg-white/[0.03] border border-white/[0.07]">
                   <CountUp n={h.v} className="al-display text-[17px] font-bold al-grad-text leading-none tabular-nums" />
                   <span className="text-[8.5px] font-bold text-white/60 uppercase tracking-wider mt-0.5">{h.l}</span>
