@@ -748,15 +748,17 @@ export default function DashboardPage() {
     [agendaImobiliaria]
   );
 
-  // Radar: todo evento em que o usuário está marcado (presentesIds) aparece — sem fluxo de convite/confirmação
+  // Radar: corretor vê os eventos em que está marcado (presentesIds); a conta imobiliária/admin vê todos (é quem publica)
   const proximosEventosConfirmados = useMemo(() => {
     const uid = currentUser?.uid;
     const now = currentTime.getTime();
     if (!uid) return [];
+    const ehAdminImob = (userData as any)?.tipoConta === 'imobiliaria' || (userData as any)?.permissoes?.admin;
     type Item = { tipo: 'plantao' | 'agenda'; id: string; titulo: string; tipoLabel: string; tipoChave?: string; dataStr: string; horarioStr: string; horarioFimStr: string; startTime: number; fimTime: number };
     const lista: Item[] = [];
     agendaImobiliaria.forEach((a: any) => {
-      if (!Array.isArray(a.presentesIds) || !a.presentesIds.includes(uid)) return;
+      const marcado = Array.isArray(a.presentesIds) && a.presentesIds.includes(uid);
+      if (!marcado && !ehAdminImob) return;
 
       // Intervalo de dias (modelo novo diaInicio/diaFim; fallback p/ Timestamps antigos)
       const diaIni = a.diaInicio || (a.dataInicio?.toDate ? ymd(a.dataInicio.toDate()) : (a.dataInicio ? ymd(new Date(a.dataInicio)) : ''));
@@ -803,7 +805,7 @@ export default function DashboardPage() {
     });
     lista.sort((a, b) => a.startTime - b.startTime);
     return lista.slice(0, 6);
-  }, [currentUser?.uid, agendaImobiliaria, currentTime]);
+  }, [currentUser?.uid, userData, agendaImobiliaria, currentTime]);
 
   const [respondendoPresenca, setRespondendoPresenca] = useState<string | null>(null);
   const responderPresenca = async (tipo: 'plantao' | 'agenda', id: string, status: 'confirmado' | 'cancelado') => {
