@@ -336,15 +336,23 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
               <h3 className="al-display text-[11px] font-bold text-text-secondary uppercase tracking-[0.24em] mb-2">Tipologias</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {tips.map((t, i) => (
-                  <div key={i} className="rounded-xl bg-white/[0.03] border border-white/[0.08] px-3 py-1.5 hover:border-[#E8C547]/35 transition-colors">
-                    <div className="flex items-baseline gap-1.5 min-w-0">
-                      <span className="al-display text-[15px] font-bold text-white leading-none tabular-nums shrink-0">{t[0]}<span className="text-[9px] text-text-secondary font-normal"> m²</span></span>
-                      {t[1] && <span className="text-[11px] font-semibold text-white/75 truncate" title={t[1]}>{t[1]}</span>}
+                  <div key={i} className="rounded-xl bg-white/[0.03] border border-white/[0.08] px-3 py-1.5 hover:border-[#E8C547]/35 transition-colors flex items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline gap-1.5 min-w-0">
+                        <span className="al-display text-[15px] font-bold text-white leading-none tabular-nums shrink-0">{t[0]}<span className="text-[9px] text-text-secondary font-normal"> m²</span></span>
+                        {t[1] && <span className="text-[11px] font-semibold text-white/75 truncate" title={t[1]}>{t[1]}</span>}
+                      </div>
+                      {t[2] && (
+                        <div className="mt-0.5 leading-tight truncate">
+                          <span className="text-[8.5px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">a partir de </span>
+                          <span className="al-display text-[12.5px] font-bold text-[#FFE9A6] tabular-nums">R$ {fmtMoneyBR(t[2])}</span>
+                        </div>
+                      )}
                     </div>
-                    {t[2] && (
-                      <div className="mt-0.5 leading-tight truncate">
-                        <span className="text-[8.5px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">a partir de </span>
-                        <span className="al-display text-[12.5px] font-bold text-[#FFE9A6] tabular-nums">R$ {fmtMoneyBR(t[2])}</span>
+                    {(t[3] || t[4]) && (
+                      <div className="shrink-0 text-right leading-tight max-w-[45%]">
+                        {t[3] && <div className="text-[8.5px] font-extrabold uppercase tracking-[0.12em] text-[#7DD3FC] truncate" title={t[3]}>{t[3]}</div>}
+                        {t[4] && <div className="text-[8.5px] text-text-secondary mt-0.5 truncate" title={`Finais ${t[4]}`}>finais {t[4]}</div>}
                       </div>
                     )}
                   </div>
