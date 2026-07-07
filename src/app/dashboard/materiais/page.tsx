@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { apoioDb } from '@/lib/apoioFirebase';
-import { CATEGORIES, catByKey, parseTip, fmtMoneyBR, type Construtora, type Imovel, type Material } from '@/lib/materiais/types';
+import { CATEGORIES, catByKey, parseTip, fmtMoneyBR, type Construtora, type Imovel, type Material, type TipRow } from '@/lib/materiais/types';
 import { toCdn, youtubeId, waLink, encaminharWhatsApp } from '@/lib/materiais/toCdn';
 import PdfPager from '@/components/PdfPager';
 
@@ -17,6 +17,8 @@ function matsOf(p: Imovel, key: string): Material[] {
 interface LightboxState {
   imgs: { url: string; name: string; label?: string }[];
   idx: number;
+  /** abre já em tela cheia (modo apresentação de plantas/fotos) */
+  fs?: boolean;
 }
 
 const WAIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -107,6 +109,8 @@ export default function MateriaisPage() {
       const n = matsOf(sel, c.key).length;
       if (n) arr.push({ key: c.key, label: c.label, count: c.kind === 'image' ? n : undefined });
     });
+    // Defesa da região: aba de texto preenchida na área do administrador
+    if (sel.defesa && sel.defesa.trim()) arr.push({ key: 'defesa', label: 'Defesa da região' });
     // Localização: mostra se houver material de localização OU endereço cadastrado
     if (!arr.some((x) => x.key === 'localizacao') && (sel.end || sel.cid)) arr.push({ key: 'localizacao', label: 'Localização' });
     return arr;
@@ -331,35 +335,71 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
       <div className={`grid gap-6 ${temLateral ? 'lg:grid-cols-[minmax(0,1fr),380px]' : 'max-w-4xl'} ${presenting ? 'pt-4' : ''}`}>
         {/* Coluna principal: tipologias (com "a partir de") + resumo */}
         <div className="space-y-5 min-w-0">
-          {tips.length > 0 && (
-            <div>
-              <h3 className="al-display text-[11px] font-bold text-text-secondary uppercase tracking-[0.24em] mb-2">Tipologias</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {tips.map((t, i) => (
-                  <div key={i} className="rounded-xl bg-white/[0.03] border border-white/[0.08] px-3 py-1.5 hover:border-[#E8C547]/35 transition-colors flex items-center gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline gap-1.5 min-w-0">
-                        <span className="al-display text-[15px] font-bold text-white leading-none tabular-nums shrink-0">{t[0]}<span className="text-[9px] text-text-secondary font-normal"> m²</span></span>
-                        {t[1] && <span className="text-[11px] font-semibold text-white/75 truncate" title={t[1]}>{t[1]}</span>}
-                      </div>
-                      {t[2] && (
-                        <div className="mt-0.5 leading-tight truncate">
-                          <span className="text-[8.5px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">a partir de </span>
-                          <span className="al-display text-[12.5px] font-bold text-[#FFE9A6] tabular-nums">R$ {fmtMoneyBR(t[2])}</span>
-                        </div>
-                      )}
-                    </div>
-                    {(t[3] || t[4]) && (
-                      <div className="shrink-0 text-right leading-tight max-w-[45%]">
-                        {t[3] && <div className="text-[8.5px] font-extrabold uppercase tracking-[0.12em] text-[#7DD3FC] truncate" title={t[3]}>{t[3]}</div>}
-                        {t[4] && <div className="text-[8.5px] text-text-secondary mt-0.5 truncate" title={`Finais ${t[4]}`}>finais {t[4]}</div>}
-                      </div>
-                    )}
+          {tips.length > 0 && (() => {
+            const numDe = (s: string) => { const m = (s || '').match(/\d+/); return m ? parseInt(m[0], 10) : Number.POSITIVE_INFINITY; };
+            const ordFinais = (a: TipRow, b: TipRow) => numDe(a[4]) - numDe(b[4]) || numDe(a[0]) - numDe(b[0]);
+            const normais = tips.filter((t) => t[5] !== '1');
+            const diferenciadas = tips.filter((t) => t[5] === '1');
+            const porTorre = new Map<string, TipRow[]>();
+            normais.forEach((t) => { const k = (t[3] || '').trim() || 'Torre única'; if (!porTorre.has(k)) porTorre.set(k, []); porTorre.get(k)!.push(t); });
+            const torres = Array.from(porTorre.keys()).sort((a, b) => (a === 'Torre única' ? -1 : b === 'Torre única' ? 1 : numDe(a) - numDe(b) || a.localeCompare(b)));
+            const CardTip = ({ t }: { t: TipRow }) => (
+              <div className="rounded-xl bg-white/[0.03] border border-white/[0.08] hover:border-[#E8C547]/35 transition-colors flex items-stretch overflow-hidden">
+                <div className="min-w-0 flex-1 px-3 py-1.5">
+                  <div className="flex items-baseline gap-1.5 min-w-0">
+                    <span className="al-display text-[15px] font-bold text-white leading-none tabular-nums shrink-0">{t[0]}<span className="text-[9px] text-text-secondary font-normal"> m²</span></span>
+                    {t[1] && <span className="text-[11px] font-semibold text-white/75 truncate" title={t[1]}>{t[1]}</span>}
                   </div>
-                ))}
+                  {t[2] && (
+                    <div className="mt-0.5 leading-tight truncate">
+                      <span className="text-[8.5px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">a partir de </span>
+                      <span className="al-display text-[12.5px] font-bold text-[#FFE9A6] tabular-nums">R$ {fmtMoneyBR(t[2])}</span>
+                    </div>
+                  )}
+                </div>
+                {t[4] && (
+                  <div className="shrink-0 max-w-[46%] flex flex-col items-center justify-center px-2.5 bg-[#7DD3FC]/[0.07] border-l border-[#7DD3FC]/25 text-center" title={`Finais ${t[4]}`}>
+                    <span className="text-[7.5px] font-extrabold uppercase tracking-[0.18em] text-[#7DD3FC]/80 leading-none">{(t[4].match(/\d+/g) || []).length > 1 ? 'finais' : 'final'}</span>
+                    <span className="al-display text-[14px] font-bold text-[#7DD3FC] leading-tight tabular-nums break-words">{t[4]}</span>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            );
+            return (
+              <div>
+                <h3 className="al-display text-[11px] font-bold text-text-secondary uppercase tracking-[0.24em] mb-2">Tipologias</h3>
+                <div className="space-y-3">
+                  {torres.map((torre) => (
+                    <div key={torre}>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#7DD3FC]">{torre}</span>
+                        <div className="flex-1 gx-line opacity-20" />
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {[...porTorre.get(torre)!].sort(ordFinais).map((t, i) => <CardTip key={i} t={t} />)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {diferenciadas.length > 0 && (
+                  <details className="mt-3 group">
+                    <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-[12px] font-bold text-white transition-colors select-none">
+                      Unidades diferenciadas — gardens, coberturas... ({diferenciadas.length})
+                      <svg className="w-3.5 h-3.5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                    </summary>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                      {[...diferenciadas].sort(ordFinais).map((t, i) => (
+                        <div key={i}>
+                          {t[3] && <div className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#7DD3FC]/80 mb-0.5">{t[3]}</div>}
+                          <CardTip t={t} />
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </div>
+            );
+          })()}
           {imovel.resumo && (
             <div>
               <h3 className="al-display text-[11px] font-bold text-text-secondary uppercase tracking-[0.24em] mb-2">Resumo</h3>
@@ -414,6 +454,18 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
         )}
         <div className="flex-1 min-h-[380px] rounded-xl overflow-hidden border border-white/10">
           <iframe title="Mapa" className="w-full h-full" src={`https://www.google.com/maps?q=${q}&output=embed`} />
+        </div>
+      </div>
+    );
+  }
+
+  if (tab === 'defesa') {
+    return (
+      <div className={`max-w-3xl ${presenting ? 'mx-auto pt-4' : ''}`}>
+        <div className="al-card relative overflow-hidden p-5">
+          <div className="absolute inset-x-0 top-0 gx-line" />
+          <h3 className="al-display text-[13px] font-bold text-white uppercase tracking-[0.14em] mb-2.5">Defesa da região</h3>
+          <p className="text-[15px] text-white/85 whitespace-pre-line leading-relaxed">{imovel.defesa}</p>
         </div>
       </div>
     );
@@ -487,7 +539,17 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
     const imgs = mats.map((m) => ({ url: toCdn(m.url), name: imovel.n + (m.name ? ` — ${m.name}` : ''), label: m.name || '' }));
     return (
       <div>
-        {!presenting && <p className="text-xs text-text-secondary mb-2">{cat.label} · {imgs.length} {imgs.length === 1 ? 'item' : 'itens'} — clique para ampliar (use as setas do teclado pra navegar)</p>}
+        <div className="flex items-center gap-2 mb-2">
+          {!presenting && <p className="text-xs text-text-secondary mr-auto">{cat.label} · {imgs.length} {imgs.length === 1 ? 'item' : 'itens'} — clique para ampliar (setas navegam)</p>}
+          <button
+            onClick={() => onLightbox({ imgs, idx: 0, fs: true })}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all ${presenting ? 'ml-auto' : ''}`}
+            title="Tela cheia — passe as fotos com as setas ou clicando nas laterais"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+            Apresentar {cat.key === 'plantas' ? 'plantas' : 'fotos'}
+          </button>
+        </div>
         <div className="grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2.5">
           {imgs.map((im, k) => (
             <button key={k} onClick={() => onLightbox({ imgs, idx: k })} className="group relative aspect-[4/3] rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.03] hover:border-[#FF1E56]/40 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-10px_rgba(255,30,86,0.35)] transition-all duration-200">
@@ -548,13 +610,28 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
 function Lightbox({ state, onClose, onNav }: { state: LightboxState; onClose: () => void; onNav: (i: number) => void }) {
   const { imgs, idx } = state;
   const cur = imgs[idx];
+  const boxRef = useRef<HTMLDivElement>(null);
   const prev = () => onNav((idx - 1 + imgs.length) % imgs.length);
   const next = () => onNav((idx + 1) % imgs.length);
+  const fechar = () => {
+    if (document.fullscreenElement && document.fullscreenElement === boxRef.current) document.exitFullscreen?.();
+    onClose();
+  };
+  const toggleFs = () => {
+    if (document.fullscreenElement === boxRef.current) document.exitFullscreen?.();
+    else boxRef.current?.requestFullscreen?.();
+  };
+
+  // Modo apresentação: abre já em tela cheia quando pedido
+  useEffect(() => {
+    if (state.fs) boxRef.current?.requestFullscreen?.()?.catch?.(() => { /* navegador bloqueou: segue no overlay */ });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Navegação por teclado — apresentação fluida (setas e Esc)
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') fechar();
       else if (e.key === 'ArrowLeft') prev();
       else if (e.key === 'ArrowRight') next();
     };
@@ -564,15 +641,19 @@ function Lightbox({ state, onClose, onNav }: { state: LightboxState; onClose: ()
   }, [idx, imgs.length]);
 
   return (
-    <div className="fixed inset-0 z-[80] bg-black/95 flex flex-col items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute top-4 right-4 flex gap-2 z-10" onClick={(e) => e.stopPropagation()}>
-        <button onClick={() => encaminharWhatsApp(cur.url, cur.name, true)} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-bold text-white bg-[#25D366] hover:bg-[#1fbd5a]"><WAIcon className="w-4 h-4" />Enviar no WhatsApp</button>
-        <a href={cur.url} target="_blank" rel="noopener noreferrer" download className="px-3.5 py-2 rounded-lg text-sm font-semibold text-white/85 border border-white/25 bg-black/40 hover:bg-white/10">Baixar</a>
-        <button onClick={onClose} className="px-3.5 py-2 rounded-lg text-sm font-semibold text-white border border-white/25 bg-black/40 hover:bg-white/10">✕</button>
+    <div ref={boxRef} className="fixed inset-0 z-[80] bg-black/95 flex flex-col items-center justify-center p-3" onClick={fechar}>
+      {/* Controles compactos — a foto é a protagonista */}
+      <div className="absolute top-2.5 right-2.5 flex gap-1.5 z-10" onClick={(e) => e.stopPropagation()}>
+        <button onClick={() => encaminharWhatsApp(cur.url, cur.name, true)} className="p-2 rounded-lg text-white bg-[#25D366]/90 hover:bg-[#1fbd5a]" title="Enviar no WhatsApp"><WAIcon className="w-4 h-4" /></button>
+        <a href={cur.url} target="_blank" rel="noopener noreferrer" download className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white/85 border border-white/25 bg-black/40 hover:bg-white/10 flex items-center" title="Baixar imagem">Baixar</a>
+        <button onClick={toggleFs} className="p-2 rounded-lg text-white/85 border border-white/25 bg-black/40 hover:bg-white/10" title="Tela cheia (modo apresentação)">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+        </button>
+        <button onClick={fechar} className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white border border-white/25 bg-black/40 hover:bg-white/10" title="Fechar (Esc)">✕</button>
       </div>
-      {cur.label && <div className="absolute top-5 left-5 text-sm font-semibold text-white/85 bg-black/40 px-3 py-1.5 rounded-lg" onClick={(e) => e.stopPropagation()}>{cur.label}</div>}
+      {cur.label && <div className="absolute top-2.5 left-2.5 text-xs font-semibold text-white/85 bg-black/45 px-2.5 py-1 rounded-lg" onClick={(e) => e.stopPropagation()}>{cur.label}</div>}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={cur.url} alt={cur.name} className="max-w-full max-h-[86vh] object-contain rounded-lg select-none" onClick={(e) => e.stopPropagation()} />
+      <img src={cur.url} alt={cur.name} className="max-w-full max-h-[94vh] object-contain rounded-lg select-none" onClick={(e) => e.stopPropagation()} />
       {imgs.length > 1 && (
         <>
           <button onClick={(e) => { e.stopPropagation(); prev(); }} className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full text-2xl text-white bg-white/10 hover:bg-white/20 flex items-center justify-center">‹</button>

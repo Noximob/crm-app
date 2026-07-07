@@ -163,7 +163,8 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
   const [e, setE] = useState(initial.e || '');
   const [resumo, setResumo] = useState(initial.resumo || '');
   const [capa, setCapa] = useState(initial.capa || '');
-  const TIP_VAZIA: TipRow = ['', '', '', '', ''];
+  const [defesa, setDefesa] = useState(initial.defesa || '');
+  const TIP_VAZIA: TipRow = ['', '', '', '', '', ''];
   const [tip, setTip] = useState<TipRow[]>(() => { const p = parseTip(initial.tip); return p.length ? p : [TIP_VAZIA]; });
   const setTipField = (i: number, idx: number, v: string) =>
     setTip((p) => p.map((r, k) => (k === i ? (r.map((c, j) => (j === idx ? v : c)) as TipRow) : r)));
@@ -219,6 +220,7 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
         co, n: n.trim(), l: l.trim(), st, cid: cid.trim(), end: end.trim(),
         pr: pr.trim(), m2: m2.trim(), t: t.trim(), a: a.trim(), ap: ap.trim(), e: e.trim(),
         resumo, capa,
+        defesa: defesa.trim(),
         // tip vai como JSON string (Firestore não aceita array-dentro-de-array)
         tip: JSON.stringify(tip.map((r) => r.map((c) => (c || '').trim())).filter((x) => x.some(Boolean))),
         dif: dif.map((x) => x.trim()).filter(Boolean),
@@ -293,6 +295,11 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
           </div>
 
           <div>
+            <label className="block text-xs text-text-secondary mb-1">Defesa da região</label>
+            <textarea value={defesa} onChange={(ev) => setDefesa(ev.target.value)} rows={3} className={INP} placeholder="Argumentos da região (valorização, obras, turismo...). Vira a aba 'Defesa da região' no material de apoio." />
+          </div>
+
+          <div>
             <p className="text-xs font-bold uppercase tracking-wide text-text-secondary mb-2">Tipologias (área m² · descrição · a partir de R$ · torre · finais)</p>
             <div className="space-y-1.5">
               {tip.map((row, i) => (
@@ -302,6 +309,10 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
                   <input value={row[2]} onChange={(ev) => setTipField(i, 2, maskMoneyBR(ev.target.value))} placeholder="A partir de (ex: 895.239,00)" inputMode="numeric" className="w-44 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white" />
                   <input value={row[3]} onChange={(ev) => setTipField(i, 3, ev.target.value)} placeholder="Torre (ex: Torre B)" className="w-28 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white" />
                   <input value={row[4]} onChange={(ev) => setTipField(i, 4, ev.target.value)} placeholder="Finais (ex: 02, 06 e 05)" className="w-36 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white" />
+                  <label className="flex items-center gap-1.5 px-1 text-[10px] text-[#FFE9A6] cursor-pointer select-none shrink-0" title="Unidade diferenciada (garden, cobertura...) — no material de apoio vai pro dropdown 'Unidades diferenciadas' em vez da grade principal">
+                    <input type="checkbox" checked={row[5] === '1'} onChange={(ev) => setTipField(i, 5, ev.target.checked ? '1' : '')} className="accent-[#E8C547]" />
+                    diferenciada
+                  </label>
                   <button onClick={() => setTip((p) => { const nx = p.filter((_, k) => k !== i); return nx.length ? nx : [TIP_VAZIA]; })} className="px-2 rounded-lg text-red-400 hover:bg-red-500/10">✕</button>
                 </div>
               ))}

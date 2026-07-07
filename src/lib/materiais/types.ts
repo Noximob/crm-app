@@ -47,6 +47,7 @@ export interface Imovel {
   dif?: string[]; // diferenciais
   lazer?: string[]; // lazer & convívio
   resumo?: string;
+  defesa?: string; // defesa da região (texto livre — vira aba no material de apoio)
   capa?: string; // foto de capa (url)
   materiais?: Material[];
   ordem?: number;
@@ -88,12 +89,12 @@ export function fmtMoneyBR(v?: string): string {
   return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-/** Linha de tipologia: [área, descrição, aPartirDe, torre, finais]. */
-export type TipRow = [string, string, string, string, string];
+/** Linha de tipologia: [área, descrição, aPartirDe, torre, finais, diferenciada ('1' = garden/cobertura → dropdown)]. */
+export type TipRow = [string, string, string, string, string, string];
 
-/** Tipologias: no Firestore vêm como JSON string; aceita também array (seed/legado, com 2 a 5 campos). */
+/** Tipologias: no Firestore vêm como JSON string; aceita também array (seed/legado, com 2 a 6 campos). */
 export function parseTip(v: unknown): TipRow[] {
-  const norm = (arr: any[]): TipRow[] => arr.map((t) => [String(t?.[0] ?? ''), String(t?.[1] ?? ''), String(t?.[2] ?? ''), String(t?.[3] ?? ''), String(t?.[4] ?? '')] as TipRow);
+  const norm = (arr: any[]): TipRow[] => arr.map((t) => [String(t?.[0] ?? ''), String(t?.[1] ?? ''), String(t?.[2] ?? ''), String(t?.[3] ?? ''), String(t?.[4] ?? ''), String(t?.[5] ?? '')] as TipRow);
   if (Array.isArray(v)) return norm(v);
   if (typeof v === 'string' && v.trim()) {
     try { const a = JSON.parse(v); return Array.isArray(a) ? norm(a) : []; } catch { return []; }

@@ -107,13 +107,17 @@ export default function PdfPager({ url, innerRef }: { url: string; innerRef?: Re
   const [carregando, setCarregando] = useState(true);
   const [prog, setProg] = useState<{ loaded: number; total: number } | null>(null);
   const lastNav = useRef(0);
+  // Zoom (1 = ajustado à tela). Com zoom, a rolagem vira navegação na página (pan) em vez de trocar de página.
+  const [zoom, setZoom] = useState(1);
+  const zoomRef = useRef(1);
+  useEffect(() => { zoomRef.current = zoom; }, [zoom]);
 
   // Carrega o documento
   useEffect(() => {
     let vivo = true;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let loadTask: any = null;
-    setErro(false); setCarregando(true); setPage(1); setNumPages(0); setProg(null);
+    setErro(false); setCarregando(true); setPage(1); setNumPages(0); setProg(null); setZoom(1);
     (async () => {
       try {
         const pdfjs = await import('pdfjs-dist');
@@ -151,7 +155,7 @@ export default function PdfPager({ url, innerRef }: { url: string; innerRef?: Re
       const cw = wrap.clientWidth, ch = wrap.clientHeight - 0;
       if (!cw || !ch) return;
       const v1 = p.getViewport({ scale: 1 });
-      const scale = Math.min(cw / v1.width, ch / v1.height);
+      const scale = Math.min(cw / v1.width, ch / v1.height) * zoom;
       const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
       const vp = p.getViewport({ scale: scale * dpr });
       canvas.width = vp.width; canvas.height = vp.height;
@@ -162,7 +166,7 @@ export default function PdfPager({ url, innerRef }: { url: string; innerRef?: Re
       renderTaskRef.current = task;
       await task.promise.catch(() => { /* cancelado no meio: ok */ });
     } catch { /* doc destruído ou página trocada */ }
-  }, [page, wrapRef]);
+  }, [page, wrapRef, zoom]);
 
   useEffect(() => { if (!carregando && !erro) render(); }, [render, carregando, erro, numPages]);
 
@@ -181,10 +185,15 @@ export default function PdfPager({ url, innerRef }: { url: string; innerRef?: Re
     setPage((p) => Math.min(Math.max(1, p + delta), numPages || 1));
   }, [numPages]);
 
-  // Scroll do mouse vira passar de página (listener nativo: precisa de passive:false)
+  // Scroll do mouse vira passar de página (listener nativo: precisa de passive:false).
+  // Com zoom aplicado, a rolagem volta a ser rolagem normal (navegar pela página ampliada).
   useEffect(() => {
     const wrap = wrapRef.current; if (!wrap) return;
-    const h = (e: WheelEvent) => { e.preventDefault(); if (e.deltaY > 0) ir(1); else if (e.deltaY < 0) ir(-1); };
+    const h = (e: WheelEvent) => {
+      if (zoomRef.current > 1) return; // deixa o scroll nativo panear a página ampliada
+      e.preventDefault();
+      if (e.deltaY > 0) ir(1); else if (e.deltaY < 0) ir(-1);
+    };
     wrap.addEventListener('wheel', h, { passive: false });
     return () => wrap.removeEventListener('wheel', h);
   }, [ir, wrapRef]);
@@ -204,26 +213,30 @@ export default function PdfPager({ url, innerRef }: { url: string; innerRef?: Re
       ref={wrapRef}
       tabIndex={0}
       onKeyDown={onKey}
-      onClick={(e) => { (e.currentTarget as HTMLDivElement).focus(); ir(1); }}
-      className="relative w-full h-full bg-[#0d0d11] flex items-center justify-center outline-none select-none cursor-pointer"
-      title="Role o mouse, clique ou use as setas pra passar as páginas"
+      onClick={(e) => { (e.currentTarget as HTMLDivElement).focus(); if (zoom === 1) ir(1); }}
+      className={`relative w-full h-full bg-[#0d0d11] outline-none select-none ${zoom > 1 ? 'cursor-default' : 'cursor-pointer'}`}
+      title={zoom > 1 ? 'Role para navegar pela página ampliada; use as setas pra trocar de página' : 'Role o mouse, clique ou use as setas pra passar as páginas'}
     >
       {carregando ? (
-        <div className="flex flex-col items-center gap-3 px-6 w-full max-w-sm">
-          <span className="text-sm text-white/65 tabular-nums">
-            {prog && prog.total > 0
-              ? `Baixando… ${fmtMB(prog.loaded)} de ${fmtMB(prog.total)} (${Math.min(100, Math.round((prog.loaded / prog.total) * 100))}%)`
-              : prog ? `Baixando… ${fmtMB(prog.loaded)}` : 'Carregando PDF…'}
-          </span>
-          {prog && prog.total > 0 && (
-            <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div className="h-full bg-amber-500 transition-all duration-300" style={{ width: `${Math.min(100, (prog.loaded / prog.total) * 100)}%` }} />
-            </div>
-          )}
-          <span className="text-[11px] text-white/35 text-center">Só na primeira vez — depois este material abre na hora.</span>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3 px-6 w-full max-w-sm">
+            <span className="text-sm text-white/65 tabular-nums">
+              {prog && prog.total > 0
+                ? `Baixando… ${fmtMB(prog.loaded)} de ${fmtMB(prog.total)} (${Math.min(100, Math.round((prog.loaded / prog.total) * 100))}%)`
+                : prog ? `Baixando… ${fmtMB(prog.loaded)}` : 'Carregando PDF…'}
+            </span>
+            {prog && prog.total > 0 && (
+              <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+                <div className="h-full bg-amber-500 transition-all duration-300" style={{ width: `${Math.min(100, (prog.loaded / prog.total) * 100)}%` }} />
+              </div>
+            )}
+            <span className="text-[11px] text-white/35 text-center">Só na primeira vez — depois este material abre na hora.</span>
+          </div>
         </div>
       ) : (
-        <canvas ref={canvasRef} className="max-w-full max-h-full shadow-[0_8px_40px_rgba(0,0,0,0.6)]" />
+        <div className={`absolute inset-0 flex ${zoom > 1 ? 'overflow-auto scrollbar-thin' : 'items-center justify-center overflow-hidden'}`}>
+          <canvas ref={canvasRef} className={`m-auto shadow-[0_8px_40px_rgba(0,0,0,0.6)] ${zoom > 1 ? '' : 'max-w-full max-h-full'}`} />
+        </div>
       )}
 
       {!carregando && numPages > 0 && (
@@ -245,6 +258,12 @@ export default function PdfPager({ url, innerRef }: { url: string; innerRef?: Re
           <span className="absolute bottom-2.5 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full text-[11px] font-bold text-white/85 bg-black/55 border border-white/10 tabular-nums pointer-events-none">
             {page} / {numPages}
           </span>
+          {/* Zoom — ideal pra tabela pequena no modo apresentação */}
+          <div className="absolute top-2 right-2 flex items-center gap-0.5 rounded-full bg-black/55 border border-white/10 px-1 py-0.5" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setZoom((z) => Math.max(1, +(z - 0.5).toFixed(1)))} disabled={zoom <= 1} className="w-7 h-7 rounded-full text-white/85 hover:bg-white/15 disabled:opacity-30 text-base leading-none" title="Diminuir zoom">−</button>
+            <span className="text-[10px] font-bold text-white/70 tabular-nums w-9 text-center">{Math.round(zoom * 100)}%</span>
+            <button onClick={() => setZoom((z) => Math.min(4, +(z + 0.5).toFixed(1)))} disabled={zoom >= 4} className="w-7 h-7 rounded-full text-white/85 hover:bg-white/15 disabled:opacity-30 text-base leading-none" title="Aumentar zoom">+</button>
+          </div>
         </>
       )}
     </div>
