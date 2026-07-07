@@ -163,8 +163,9 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
   const [e, setE] = useState(initial.e || '');
   const [resumo, setResumo] = useState(initial.resumo || '');
   const [capa, setCapa] = useState(initial.capa || '');
-  const [tip, setTip] = useState<[string, string][]>(() => { const p = parseTip(initial.tip); return p.length ? p : [['', '']]; });
+  const [tip, setTip] = useState<[string, string, string][]>(() => { const p = parseTip(initial.tip); return p.length ? p : [['', '', '']]; });
   const [dif, setDif] = useState<string[]>(Array.isArray(initial.dif) && initial.dif.length ? [...initial.dif] : ['']);
+  const [lazer, setLazer] = useState<string[]>(Array.isArray(initial.lazer) && initial.lazer.length ? [...initial.lazer] : ['']);
   const [materiais, setMateriais] = useState<Material[]>(Array.isArray(initial.materiais) ? initial.materiais : []);
 
   const [mCat, setMCat] = useState<string>(CATEGORIES[0].key);
@@ -216,8 +217,9 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
         pr: pr.trim(), m2: m2.trim(), t: t.trim(), a: a.trim(), ap: ap.trim(), e: e.trim(),
         resumo, capa,
         // tip vai como JSON string (Firestore não aceita array-dentro-de-array)
-        tip: JSON.stringify(tip.map(([ar, de]) => [ar.trim(), de.trim()]).filter((x) => x[0] || x[1])),
+        tip: JSON.stringify(tip.map(([ar, de, pa]) => [ar.trim(), de.trim(), (pa || '').trim()]).filter((x) => x[0] || x[1] || x[2])),
         dif: dif.map((x) => x.trim()).filter(Boolean),
+        lazer: lazer.map((x) => x.trim()).filter(Boolean),
         materiais,
       };
       if (initial.id) await updateDoc(doc(apoioDb, 'imoveis', initial.id), data);
@@ -274,17 +276,18 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
           </div>
 
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-text-secondary mb-2">Tipologias (área m² · descrição)</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-text-secondary mb-2">Tipologias (área m² · descrição · a partir de R$)</p>
             <div className="space-y-1.5">
               {tip.map((row, i) => (
                 <div key={i} className="flex gap-2">
-                  <input value={row[0]} onChange={(ev) => setTip((p) => p.map((r, k) => k === i ? [ev.target.value, r[1]] : r))} placeholder="Área (ex: 68,72)" className="w-32 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white" />
-                  <input value={row[1]} onChange={(ev) => setTip((p) => p.map((r, k) => k === i ? [r[0], ev.target.value] : r))} placeholder="Descrição (ex: Suíte + 1 dorm)" className="flex-1 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white" />
-                  <button onClick={() => setTip((p) => { const nx = p.filter((_, k) => k !== i); return nx.length ? nx : [['', '']]; })} className="px-2 rounded-lg text-red-400 hover:bg-red-500/10">✕</button>
+                  <input value={row[0]} onChange={(ev) => setTip((p) => p.map((r, k) => k === i ? [ev.target.value, r[1], r[2]] : r))} placeholder="Área (ex: 68,72)" className="w-32 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white" />
+                  <input value={row[1]} onChange={(ev) => setTip((p) => p.map((r, k) => k === i ? [r[0], ev.target.value, r[2]] : r))} placeholder="Descrição (ex: Suíte + 1 dorm)" className="flex-1 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white" />
+                  <input value={row[2]} onChange={(ev) => setTip((p) => p.map((r, k) => k === i ? [r[0], r[1], ev.target.value] : r))} placeholder="A partir de (ex: 895.239)" className="w-44 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white" />
+                  <button onClick={() => setTip((p) => { const nx = p.filter((_, k) => k !== i); return nx.length ? nx : [['', '', '']]; })} className="px-2 rounded-lg text-red-400 hover:bg-red-500/10">✕</button>
                 </div>
               ))}
             </div>
-            <button onClick={() => setTip((p) => [...p, ['', '']])} className="mt-1.5 text-xs px-2 py-1 rounded-md bg-white/10 text-white hover:bg-white/15">+ tipologia</button>
+            <button onClick={() => setTip((p) => [...p, ['', '', '']])} className="mt-1.5 text-xs px-2 py-1 rounded-md bg-white/10 text-white hover:bg-white/15">+ tipologia</button>
           </div>
 
           <div>
@@ -298,6 +301,19 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
               ))}
             </div>
             <button onClick={() => setDif((p) => [...p, ''])} className="mt-1.5 text-xs px-2 py-1 rounded-md bg-white/10 text-white hover:bg-white/15">+ diferencial</button>
+          </div>
+
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-text-secondary mb-2">Lazer & Convívio</p>
+            <div className="space-y-1.5">
+              {lazer.map((val, i) => (
+                <div key={i} className="flex gap-2">
+                  <input value={val} onChange={(ev) => setLazer((p) => p.map((r, k) => k === i ? ev.target.value : r))} placeholder="Ex: Piscina borda infinita" className="flex-1 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white" />
+                  <button onClick={() => setLazer((p) => { const nx = p.filter((_, k) => k !== i); return nx.length ? nx : ['']; })} className="px-2 rounded-lg text-red-400 hover:bg-red-500/10">✕</button>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => setLazer((p) => [...p, ''])} className="mt-1.5 text-xs px-2 py-1 rounded-md bg-white/10 text-white hover:bg-white/15">+ item de lazer</button>
           </div>
 
           {/* Materiais */}

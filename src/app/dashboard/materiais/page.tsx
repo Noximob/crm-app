@@ -324,34 +324,69 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
 
   if (tab === 'resumo') {
     const tips = parseTip(imovel.tip);
+    const lazer = Array.isArray(imovel.lazer) ? imovel.lazer.filter(Boolean) : [];
+    const temDif = Array.isArray(imovel.dif) && imovel.dif.length > 0;
+    const temLateral = temDif || lazer.length > 0;
     return (
-      <div className={`space-y-5 max-w-4xl ${presenting ? 'mx-auto pt-4' : ''}`}>
-        {imovel.resumo && <p className="text-[15px] text-white/85 whitespace-pre-line leading-relaxed">{imovel.resumo}</p>}
-        {tips.length > 0 && (
-          <div>
-            <h3 className="al-display text-[13px] font-bold text-white uppercase tracking-[0.14em] mb-2">Tipologias</h3>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {tips.map((t, i) => (
-                <div key={i} className="rounded-xl bg-white/[0.03] border border-white/[0.08] px-3 py-2.5 flex items-baseline gap-2">
-                  <span className="al-display text-base font-bold text-[#FFE9A6]">{t[0]} m²</span>
-                  <span className="text-xs text-text-secondary">{t[1]}</span>
+      <div className={`grid gap-6 ${temLateral ? 'lg:grid-cols-[minmax(0,1fr),380px]' : 'max-w-4xl'} ${presenting ? 'pt-4' : ''}`}>
+        {/* Coluna principal: tipologias (com "a partir de") + resumo */}
+        <div className="space-y-5 min-w-0">
+          {tips.length > 0 && (
+            <div>
+              <h3 className="al-display text-[11px] font-bold text-text-secondary uppercase tracking-[0.24em] mb-2">Tipologias</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {tips.map((t, i) => (
+                  <div key={i} className="rounded-xl bg-white/[0.03] border border-white/[0.08] px-3 py-2 hover:border-[#E8C547]/35 transition-colors">
+                    <div className="flex items-baseline gap-1">
+                      <span className="al-display text-[17px] font-bold text-white leading-none tabular-nums">{t[0]}</span>
+                      <span className="text-[9px] text-text-secondary">m²</span>
+                    </div>
+                    {t[1] && <div className="text-[11px] font-semibold text-white/80 mt-0.5 truncate" title={t[1]}>{t[1]}</div>}
+                    {t[2] && (
+                      <div className="mt-1 leading-tight">
+                        <span className="block text-[8.5px] font-extrabold uppercase tracking-[0.16em] text-text-secondary">a partir de</span>
+                        <span className="al-display text-[13.5px] font-bold text-[#FFE9A6] tabular-nums">R$ {t[2]}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {imovel.resumo && (
+            <div>
+              <h3 className="al-display text-[11px] font-bold text-text-secondary uppercase tracking-[0.24em] mb-2">Resumo</h3>
+              <p className="text-[14.5px] text-white/85 whitespace-pre-line leading-relaxed">{imovel.resumo}</p>
+            </div>
+          )}
+          {!imovel.resumo && !tips.length && !temLateral && (
+            <p className="text-sm text-text-secondary">Sem descrição cadastrada. Veja os materiais nas abas acima.</p>
+          )}
+        </div>
+        {/* Lateral: diferenciais + lazer & convívio (sem emojis) */}
+        {temLateral && (
+          <div className="space-y-5 min-w-0">
+            {temDif && (
+              <div>
+                <h3 className="al-display text-[11px] font-bold text-text-secondary uppercase tracking-[0.24em] mb-2">Diferenciais</h3>
+                <div className="space-y-1.5">
+                  {imovel.dif!.map((d, i) => (
+                    <div key={i} className="rounded-lg bg-white/[0.03] border border-white/[0.07] border-l-2 border-l-[#FF1E56]/60 px-3 py-2 text-[12.5px] text-white/85">{d}</div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+            {lazer.length > 0 && (
+              <div>
+                <h3 className="al-display text-[11px] font-bold text-text-secondary uppercase tracking-[0.24em] mb-2">Lazer & Convívio</h3>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {lazer.map((d, i) => (
+                    <div key={i} className="rounded-lg bg-white/[0.03] border border-white/[0.07] px-3 py-2 text-[12px] text-white/80">{d}</div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        )}
-        {Array.isArray(imovel.dif) && imovel.dif.length > 0 && (
-          <div>
-            <h3 className="al-display text-[13px] font-bold text-white uppercase tracking-[0.14em] mb-2">Diferenciais</h3>
-            <div className="flex flex-wrap gap-1.5">
-              {imovel.dif.map((d, i) => (
-                <span key={i} className="px-2.5 py-1 rounded-full text-xs bg-white/[0.05] text-white/80 border border-white/10">{d}</span>
-              ))}
-            </div>
-          </div>
-        )}
-        {!imovel.resumo && !tips.length && !(Array.isArray(imovel.dif) && imovel.dif.length) && (
-          <p className="text-sm text-text-secondary">Sem descrição cadastrada. Veja os materiais nas abas acima.</p>
         )}
       </div>
     );
