@@ -358,9 +358,9 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
                   )}
                 </div>
                 {t[4] && (
-                  <div className="shrink-0 max-w-[46%] flex flex-col items-center justify-center px-2.5 bg-[#7DD3FC]/[0.07] border-l border-[#7DD3FC]/25 text-center" title={`Finais ${t[4]}`}>
+                  <div className="shrink-0 min-w-[58px] max-w-[52%] flex flex-col items-center justify-center px-2 py-1 bg-[#7DD3FC]/[0.07] border-l border-[#7DD3FC]/25 text-center" title={`Finais ${t[4]}`}>
                     <span className="text-[7.5px] font-extrabold uppercase tracking-[0.18em] text-[#7DD3FC]/80 leading-none">{(t[4].match(/\d+/g) || []).length > 1 ? 'finais' : 'final'}</span>
-                    <span className="al-display text-[14px] font-bold text-[#7DD3FC] leading-tight tabular-nums break-words">{t[4]}</span>
+                    <span className={`al-display font-bold text-[#7DD3FC] leading-tight tabular-nums break-words ${t[4].length > 14 ? 'text-[11px]' : t[4].length > 7 ? 'text-[12.5px]' : 'text-[14px]'}`}>{t[4]}</span>
                   </div>
                 )}
               </div>
