@@ -75,6 +75,17 @@ export const CATEGORIES: CategoriaMaterial[] = [
 
 export const catByKey = (k: string) => CATEGORIES.find((c) => c.key === k);
 
+/** Formata valor monetário em padrão BR "5.000.000,00" a partir de texto livre ("895239", "895.239", "895239,50"). */
+export function fmtMoneyBR(v?: string): string {
+  const s = String(v ?? '').trim();
+  if (!s) return '';
+  const clean = s.replace(/[^\d.,]/g, '');
+  if (!clean) return s;
+  const num = parseFloat(clean.replace(/\./g, '').replace(',', '.'));
+  if (isNaN(num)) return s;
+  return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 /** Tipologias [área, descrição, aPartirDe]: no Firestore vêm como JSON string; aceita também array (seed/legado, com ou sem o 3º campo). */
 export function parseTip(v: unknown): [string, string, string][] {
   const norm = (arr: any[]): [string, string, string][] => arr.map((t) => [String(t?.[0] ?? ''), String(t?.[1] ?? ''), String(t?.[2] ?? '')] as [string, string, string]);

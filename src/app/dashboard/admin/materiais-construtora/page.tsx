@@ -229,6 +229,20 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
     finally { setSalvando(false); }
   };
 
+  // Máscara de dinheiro BR: dígitos viram centavos → "5.000.000,00"
+  const maskMoneyBR = (raw: string) => {
+    const dig = raw.replace(/\D/g, '');
+    if (!dig) return '';
+    return (Number(dig) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  const campoMoney = (label: string, val: string, setter: (v: string) => void, ph?: string) => (
+    <div>
+      <label className="block text-xs text-text-secondary mb-1">{label}</label>
+      <input value={val} onChange={(ev) => setter(maskMoneyBR(ev.target.value))} placeholder={ph} inputMode="numeric" className={INP} />
+    </div>
+  );
+
   const campo = (label: string, val: string, setter: (v: string) => void, ph?: string) => (
     <div>
       <label className="block text-xs text-text-secondary mb-1">{label}</label>
@@ -262,8 +276,8 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
             </div>
             {campo('Cidade *', cid, setCid, 'Ex: Barra Velha, SC')}
             {campo('Endereço', end, setEnd, 'Rua, número')}
-            {campo('Preço a partir de (R$)', pr, setPr, '853.007')}
-            {campo('Valor do m² (R$)', m2, setM2, '13.028')}
+            {campoMoney('Preço a partir de (R$)', pr, setPr, '853.007,00')}
+            {campoMoney('Valor do m² (R$)', m2, setM2, '13.028,00')}
             {campo('Torres', t, setT, '2')}
             {campo('Andares', a, setA, '30+')}
             {campo('Apartamentos', ap, setAp, '88')}
@@ -282,7 +296,7 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
                 <div key={i} className="flex gap-2">
                   <input value={row[0]} onChange={(ev) => setTip((p) => p.map((r, k) => k === i ? [ev.target.value, r[1], r[2]] : r))} placeholder="Área (ex: 68,72)" className="w-32 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white" />
                   <input value={row[1]} onChange={(ev) => setTip((p) => p.map((r, k) => k === i ? [r[0], ev.target.value, r[2]] : r))} placeholder="Descrição (ex: Suíte + 1 dorm)" className="flex-1 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white" />
-                  <input value={row[2]} onChange={(ev) => setTip((p) => p.map((r, k) => k === i ? [r[0], r[1], ev.target.value] : r))} placeholder="A partir de (ex: 895.239)" className="w-44 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white" />
+                  <input value={row[2]} onChange={(ev) => { const v = maskMoneyBR(ev.target.value); setTip((p) => p.map((r, k) => k === i ? [r[0], r[1], v] : r)); }} placeholder="A partir de (ex: 895.239,00)" inputMode="numeric" className="w-44 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white" />
                   <button onClick={() => setTip((p) => { const nx = p.filter((_, k) => k !== i); return nx.length ? nx : [['', '', '']]; })} className="px-2 rounded-lg text-red-400 hover:bg-red-500/10">✕</button>
                 </div>
               ))}

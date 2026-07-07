@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { apoioDb } from '@/lib/apoioFirebase';
-import { CATEGORIES, catByKey, parseTip, type Construtora, type Imovel, type Material } from '@/lib/materiais/types';
+import { CATEGORIES, catByKey, parseTip, fmtMoneyBR, type Construtora, type Imovel, type Material } from '@/lib/materiais/types';
 import { toCdn, youtubeId, waLink, encaminharWhatsApp } from '@/lib/materiais/toCdn';
 import PdfPager from '@/components/PdfPager';
 
@@ -119,7 +119,7 @@ export default function MateriaisPage() {
   const temImoveis = !loading && !erro && imoveis.length > 0;
 
   const stats: [string, string][] = sel
-    ? ([['Torres', sel.t], ['Andares', sel.a], ['Aptos', sel.ap], ['Entrega', sel.e], ['A partir de', sel.pr ? `R$ ${sel.pr}` : undefined], ['m²', sel.m2 ? `R$ ${sel.m2}` : undefined]] as [string, string | undefined][])
+    ? ([['Torres', sel.t], ['Andares', sel.a], ['Aptos', sel.ap], ['Entrega', sel.e], ['A partir de', sel.pr ? `R$ ${fmtMoneyBR(sel.pr)}` : undefined], ['m²', sel.m2 ? `R$ ${fmtMoneyBR(sel.m2)}` : undefined]] as [string, string | undefined][])
         .filter((x): x is [string, string] => Boolean(x[1]))
     : [];
 
@@ -336,16 +336,15 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
               <h3 className="al-display text-[11px] font-bold text-text-secondary uppercase tracking-[0.24em] mb-2">Tipologias</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {tips.map((t, i) => (
-                  <div key={i} className="rounded-xl bg-white/[0.03] border border-white/[0.08] px-3 py-2 hover:border-[#E8C547]/35 transition-colors">
-                    <div className="flex items-baseline gap-1">
-                      <span className="al-display text-[17px] font-bold text-white leading-none tabular-nums">{t[0]}</span>
-                      <span className="text-[9px] text-text-secondary">m²</span>
+                  <div key={i} className="rounded-xl bg-white/[0.03] border border-white/[0.08] px-3 py-1.5 hover:border-[#E8C547]/35 transition-colors">
+                    <div className="flex items-baseline gap-1.5 min-w-0">
+                      <span className="al-display text-[15px] font-bold text-white leading-none tabular-nums shrink-0">{t[0]}<span className="text-[9px] text-text-secondary font-normal"> m²</span></span>
+                      {t[1] && <span className="text-[11px] font-semibold text-white/75 truncate" title={t[1]}>{t[1]}</span>}
                     </div>
-                    {t[1] && <div className="text-[11px] font-semibold text-white/80 mt-0.5 truncate" title={t[1]}>{t[1]}</div>}
                     {t[2] && (
-                      <div className="mt-1 leading-tight">
-                        <span className="block text-[8.5px] font-extrabold uppercase tracking-[0.16em] text-text-secondary">a partir de</span>
-                        <span className="al-display text-[13.5px] font-bold text-[#FFE9A6] tabular-nums">R$ {t[2]}</span>
+                      <div className="mt-0.5 leading-tight truncate">
+                        <span className="text-[8.5px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">a partir de </span>
+                        <span className="al-display text-[12.5px] font-bold text-[#FFE9A6] tabular-nums">R$ {fmtMoneyBR(t[2])}</span>
                       </div>
                     )}
                   </div>
