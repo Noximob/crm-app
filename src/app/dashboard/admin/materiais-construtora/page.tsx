@@ -175,7 +175,8 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
   const [err, setErr] = useState('');
 
   const kind = catByKey(mCat)?.kind;
-  // upload de arquivo p/ pdf/imagem/vídeo e p/ Capa; link p/ Tabela/Links/Localização
+  // upload de arquivo p/ pdf/imagem/vídeo e p/ Capa; link p/ Links/Localização; Tabela aceita os DOIS (link ou PDF)
+  const aceitaAmbos = mCat === 'tabela';
   const isArquivo = mCat === 'capa' || kind === 'pdf' || kind === 'image' || kind === 'video';
 
   const addLink = () => {
@@ -302,7 +303,7 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
           {/* Materiais */}
           <div className="rounded-xl border border-white/10 p-3">
             <p className="text-xs font-bold uppercase tracking-wide text-text-secondary mb-1">Materiais</p>
-            <p className="text-[11px] text-text-secondary mb-3">Escolha o <b>Tipo</b>, dê um <b>Nome</b> e <b>envie o arquivo</b> — sobe pro Storage e abre direto aqui pro corretor. (<b>Tabela</b>, <b>Links</b> e <b>Localização</b> usam link; <b>Capa</b> define a foto do topo.)</p>
+            <p className="text-[11px] text-text-secondary mb-3">Escolha o <b>Tipo</b>, dê um <b>Nome</b> e <b>envie o arquivo</b> — sobe pro Storage e abre direto aqui pro corretor. (<b>Tabela</b> aceita PDF <i>ou</i> link; <b>Links</b> e <b>Localização</b> usam link; <b>Capa</b> define a foto do topo.)</p>
 
             <div className="space-y-1 mb-3">
               {materiais.map((m, i) => (
@@ -330,15 +331,17 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
                 </div>
               </div>
 
-              {isArquivo ? (
+              {(isArquivo || aceitaAmbos) && (
                 <div className="flex items-center gap-3">
                   <label className={`px-4 py-2 rounded-lg font-semibold text-sm cursor-pointer ${prog !== null ? 'bg-white/10 text-white/60' : 'bg-amber-500 text-black hover:bg-amber-400'}`}>
-                    📎 Enviar arquivo
-                    <input type="file" className="hidden" disabled={prog !== null} onChange={(ev) => { const f = ev.target.files?.[0]; if (f) upload(f); ev.currentTarget.value = ''; }} />
+                    📎 Enviar arquivo{aceitaAmbos ? ' (PDF)' : ''}
+                    <input type="file" className="hidden" accept={aceitaAmbos ? 'application/pdf' : undefined} disabled={prog !== null} onChange={(ev) => { const f = ev.target.files?.[0]; if (f) upload(f); ev.currentTarget.value = ''; }} />
                   </label>
                   {prog !== null && <span className="text-xs text-amber-300">Enviando… {prog}%</span>}
                 </div>
-              ) : (
+              )}
+              {aceitaAmbos && <p className="text-[11px] text-text-secondary">— ou, se a construtora mandou só o link, cole abaixo —</p>}
+              {(!isArquivo || aceitaAmbos) && (
                 <div className="flex gap-2">
                   <input value={mUrl} onChange={(ev) => setMUrl(ev.target.value)} placeholder={mCat === 'localizacao' ? 'link do Google Maps' : mCat === 'tabela' ? 'link da tabela de valores' : 'colar o link'} className={INP} />
                   <button onClick={addLink} className="px-4 py-2 rounded-lg bg-amber-500 text-black font-semibold text-sm hover:bg-amber-400 whitespace-nowrap">Adicionar</button>

@@ -381,7 +381,11 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
   const mats = matsOf(imovel, tab);
   if (!cat || mats.length === 0) return <p className="text-sm text-text-secondary">Nenhum material em “{cat?.label || tab}”.</p>;
 
-  if (cat.kind === 'pdf') {
+  // Tabela aceita link OU PDF enviado: quando a URL é de PDF, abre no mesmo visualizador da Apresentação
+  const ehPdfUrl = (u: string) => { try { return /\.pdf(\?|#|$)/i.test(decodeURIComponent(u || '')); } catch { return /\.pdf(\?|#|$)/i.test(u || ''); } };
+  const kindEfetivo = cat.kind === 'link' && ehPdfUrl(mats[0]?.url || '') ? 'pdf' : cat.kind;
+
+  if (kindEfetivo === 'pdf') {
     const m = mats[0];
     const url = toCdn(m.url);
     return (
