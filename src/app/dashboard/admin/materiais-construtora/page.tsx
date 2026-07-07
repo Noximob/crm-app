@@ -345,6 +345,12 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
                 <div key={i} className="flex items-center gap-2 text-xs bg-white/[0.03] rounded-md px-2 py-1.5">
                   <span className="px-1.5 py-0.5 rounded bg-white/10 text-white/80 shrink-0">{catByKey(m.cat)?.label || m.cat}</span>
                   <span className="text-white truncate flex-1">{m.name || m.url}</span>
+                  {(m.cat === 'decorado' || m.cat === 'maquete') && (
+                    <label className="flex items-center gap-1.5 text-[10px] text-[#FFE9A6] shrink-0 cursor-pointer select-none" title="Ligue quando o vídeo NÃO é deste empreendimento — é material de outro imóvel pronto da construtora. O corretor vê um aviso em cima do vídeo.">
+                      <input type="checkbox" checked={!!m.outroImovel} onChange={(ev) => setMateriais((p) => p.map((x, k) => k === i ? { ...x, outroImovel: ev.target.checked } : x))} className="accent-[#E8C547]" />
+                      vídeo de outro imóvel
+                    </label>
+                  )}
                   <button onClick={() => setMateriais((p) => p.filter((_, k) => k !== i))} className="text-red-400 hover:text-red-300 shrink-0">remover</button>
                 </div>
               ))}

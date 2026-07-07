@@ -25,6 +25,8 @@ export interface Material {
   url: string;
   /** link de download opcional (ex.: vídeo do YouTube + MP4) */
   dl?: string;
+  /** true = vídeo não é deste empreendimento (material de outro imóvel pronto da construtora) — mostra aviso no player */
+  outroImovel?: boolean;
 }
 
 export interface Imovel {

@@ -466,6 +466,12 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
             {fileUrl ? <BtnWhats url={fileUrl} text={`${imovel.n} — ${m.name || cat.label}`} asFile /> : yt ? <BtnWhats url={`https://youtu.be/${yt}`} text={`${imovel.n} — ${m.name || cat.label}\nhttps://youtu.be/${yt}`} asFile={false} /> : null}
           </Toolbar>
         )}
+        {m.outroImovel && (
+          <div className="mb-2 flex items-center gap-2.5 rounded-lg border border-[#E8C547]/40 bg-[#E8C547]/[0.08] px-3 py-2">
+            <span className="w-2 h-2 rounded-full bg-[#E8C547] shadow-[0_0_8px_rgba(232,197,71,0.7)] animate-pulse shrink-0" />
+            <p className="text-[12px] font-semibold text-[#FFE9A6] leading-snug">Este vídeo é de outro empreendimento pronto da mesma construtora — use como referência do padrão de entrega.</p>
+          </div>
+        )}
         <div className="flex-1 min-h-[380px] rounded-xl overflow-hidden border border-white/10 bg-black">
           {yt ? (
             <iframe className="w-full h-full" src={`https://www.youtube-nocookie.com/embed/${yt}?rel=0&modestbranding=1&playsinline=1`} allow="autoplay; fullscreen; encrypted-media" allowFullScreen title="Vídeo" />
