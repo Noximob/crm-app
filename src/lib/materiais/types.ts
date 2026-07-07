@@ -9,6 +9,7 @@ export interface Construtora {
 
 export type MaterialCat =
   | 'apresentacao'
+  | 'ficha'
   | 'tabela'
   | 'plantas'
   | 'maquete'
@@ -61,6 +62,7 @@ export interface CategoriaMaterial {
 /** Categorias de material (ordem, rótulo e como renderiza) — igual ao app original. */
 export const CATEGORIES: CategoriaMaterial[] = [
   { key: 'apresentacao', label: 'Apresentação', kind: 'pdf', single: true },
+  { key: 'ficha', label: 'Ficha Técnica', kind: 'pdf', single: true },
   { key: 'tabela', label: 'Tabela', kind: 'link', single: true },
   { key: 'plantas', label: 'Plantas', kind: 'image' },
   { key: 'maquete', label: 'Maquete', kind: 'video', single: true },
