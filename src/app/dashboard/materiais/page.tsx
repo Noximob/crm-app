@@ -185,18 +185,26 @@ export default function MateriaisPage() {
     abas.flatMap((a) => {
       const ativo = tab === a.key;
       const ehFluxo = a.key === 'fluxo';
-      const cls = ehFluxo
-        ? ativo
-          ? 'bg-gradient-to-r from-[#9F6BFF] to-[#6B34D8] text-white shadow-[0_0_14px_rgba(159,107,255,0.4)]'
-          : 'bg-[#9F6BFF]/[0.08] text-[#C4A6FF] border border-[#9F6BFF]/35 hover:bg-[#9F6BFF]/[0.14]'
-        : ativo
-          ? 'bg-gradient-to-r from-[#FF1E56] to-[#A50D38] text-white shadow-[0_0_14px_rgba(255,30,86,0.35)]'
-          : 'bg-white/[0.05] text-text-secondary hover:text-white hover:bg-white/[0.09]';
-      const btn = (
+      const btn = ehFluxo ? (
+        /* Calculadora de Fluxo — só o ícone neon, pra caber tudo sem rolagem */
         <button
           key={a.key}
           onClick={() => setTab(a.key)}
-          className={`${compact ? 'px-3 py-1.5 text-[13px]' : 'px-3.5 py-2 text-sm'} rounded-lg font-bold whitespace-nowrap transition-colors ${cls}`}
+          title="Fluxo de Pagamento — monte a proposta sem sair da apresentação"
+          className={`${compact ? 'p-1.5' : 'p-2'} rounded-lg transition-colors shrink-0 ${ativo ? 'bg-gradient-to-r from-[#9F6BFF] to-[#6B34D8] text-white shadow-[0_0_14px_rgba(159,107,255,0.45)]' : 'bg-[#9F6BFF]/[0.08] text-[#C4A6FF] border border-[#9F6BFF]/35 hover:bg-[#9F6BFF]/[0.16]'}`}
+        >
+          <svg className={`${compact ? 'w-[18px] h-[18px]' : 'w-5 h-5'} ${ativo ? '' : 'drop-shadow-[0_0_6px_rgba(159,107,255,0.65)]'}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+            <rect x="4" y="2" width="16" height="20" rx="2" />
+            <line x1="8" x2="16" y1="6" y2="6" />
+            <line x1="16" x2="16" y1="14" y2="18" />
+            <path d="M16 10h.01" /><path d="M12 10h.01" /><path d="M8 10h.01" /><path d="M12 14h.01" /><path d="M8 14h.01" /><path d="M12 18h.01" /><path d="M8 18h.01" />
+          </svg>
+        </button>
+      ) : (
+        <button
+          key={a.key}
+          onClick={() => setTab(a.key)}
+          className={`${compact ? 'px-3 py-1.5 text-[13px]' : 'px-3.5 py-2 text-sm'} rounded-lg font-bold whitespace-nowrap transition-colors ${ativo ? 'bg-gradient-to-r from-[#FF1E56] to-[#A50D38] text-white shadow-[0_0_14px_rgba(255,30,86,0.35)]' : 'bg-white/[0.05] text-text-secondary hover:text-white hover:bg-white/[0.09]'}`}
         >
           {a.label}
           {a.count ? <span className={`ml-1.5 text-[10px] font-extrabold ${ativo ? 'text-white/70' : 'text-text-secondary'}`}>{a.count}</span> : null}
