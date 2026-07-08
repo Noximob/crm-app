@@ -198,6 +198,11 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
     setTip((p) => p.map((r, k) => (k === i ? (r.map((c, j) => (j === idx ? v : c)) as TipRow) : r)));
   const [dif, setDif] = useState<string[]>(Array.isArray(initial.dif) && initial.dif.length ? [...initial.dif] : ['']);
   const [lazer, setLazer] = useState<string[]>(Array.isArray(initial.lazer) && initial.lazer.length ? [...initial.lazer] : ['']);
+  const [sugeridas, setSugeridas] = useState<{ unidade: string; motivo: string }[]>(
+    Array.isArray(initial.sugeridas) && initial.sugeridas.length
+      ? initial.sugeridas.map((s) => ({ unidade: s?.unidade || '', motivo: s?.motivo || '' }))
+      : [{ unidade: '', motivo: '' }]
+  );
   const [materiais, setMateriais] = useState<Material[]>(Array.isArray(initial.materiais) ? initial.materiais : []);
 
   const [mCat, setMCat] = useState<string>(CATEGORIES[0].key);
@@ -253,6 +258,7 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
         tip: JSON.stringify(tip.map((r) => r.map((c) => (c || '').trim())).filter((x) => x.some(Boolean))),
         dif: dif.map((x) => x.trim()).filter(Boolean),
         lazer: lazer.map((x) => x.trim()).filter(Boolean),
+        sugeridas: sugeridas.map((s) => ({ unidade: s.unidade.trim(), motivo: s.motivo.trim() })).filter((s) => s.unidade || s.motivo),
         materiais,
       };
       if (initial.id) await updateDoc(doc(apoioDb, 'imoveis', initial.id), data);
@@ -372,6 +378,23 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
               ))}
             </div>
             <button onClick={() => setLazer((p) => [...p, ''])} className="mt-1.5 text-xs px-2 py-1 rounded-md bg-white/10 text-white hover:bg-white/15">+ item de lazer</button>
+          </div>
+
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-text-secondary mb-1">Unidades sugeridas</p>
+            <p className="text-[11px] text-text-secondary mb-2">As unidades que a casa recomenda — viram a aba &ldquo;Unidades sugeridas&rdquo; no material de apoio, com o porquê de cada uma (custo-benefício, preço baixo pelo que entrega, alta qualidade...).</p>
+            <div className="space-y-2">
+              {sugeridas.map((s, i) => (
+                <div key={i} className="rounded-lg bg-white/[0.03] border border-white/[0.08] p-2 space-y-1.5">
+                  <div className="flex gap-2">
+                    <input value={s.unidade} onChange={(ev) => setSugeridas((p) => p.map((x, k) => k === i ? { ...x, unidade: ev.target.value } : x))} placeholder="Unidade (ex: Final 02 · Torre B · 82m²)" className="flex-1 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white" />
+                    <button onClick={() => setSugeridas((p) => { const nx = p.filter((_, k) => k !== i); return nx.length ? nx : [{ unidade: '', motivo: '' }]; })} className="px-2 rounded-lg text-red-400 hover:bg-red-500/10">✕</button>
+                  </div>
+                  <textarea value={s.motivo} onChange={(ev) => setSugeridas((p) => p.map((x, k) => k === i ? { ...x, motivo: ev.target.value } : x))} rows={2} placeholder="Por que ela é sugerida? (custo-benefício, preço baixo pelo que entrega, mais alta qualidade do produto...)" className={INP} />
+                </div>
+              ))}
+            </div>
+            <button onClick={() => setSugeridas((p) => [...p, { unidade: '', motivo: '' }])} className="mt-1.5 text-xs px-2 py-1 rounded-md bg-white/10 text-white hover:bg-white/15">+ unidade sugerida</button>
           </div>
 
           {/* Materiais */}

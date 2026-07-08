@@ -42,7 +42,14 @@ export default function MateriaisPage() {
   const secRef = useRef<HTMLElement>(null);
   const [fullscreen, setFullscreen] = useState(false);
   useEffect(() => {
-    const h = () => setFullscreen(!!document.fullscreenElement);
+    const h = () => {
+      setFullscreen(!!document.fullscreenElement);
+      // Keyboard Lock (Chrome/Edge): segura o ESC pra gente controlar as camadas —
+      // 1º ESC fecha só o PDF/fotos e mantém o modo apresentação; 2º ESC sai da apresentação.
+      const kb = (navigator as { keyboard?: { lock?: (k: string[]) => Promise<void>; unlock?: () => void } }).keyboard;
+      if (document.fullscreenElement) kb?.lock?.(['Escape'])?.catch?.(() => { /* sem suporte: ESC segue o padrão do navegador */ });
+      else kb?.unlock?.();
+    };
     document.addEventListener('fullscreenchange', h);
     return () => document.removeEventListener('fullscreenchange', h);
   }, []);
@@ -50,6 +57,32 @@ export default function MateriaisPage() {
     if (document.fullscreenElement) document.exitFullscreen?.();
     else secRef.current?.requestFullscreen?.();
   };
+
+  // ESC em camadas (com o lock acima): fecha primeiro a camada de cima (lightbox/PDF), depois a apresentação
+  const lightboxRef = useRef<LightboxState | null>(null);
+  useEffect(() => { lightboxRef.current = lightbox; }, [lightbox]);
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || !document.fullscreenElement) return;
+      e.preventDefault();
+      e.stopPropagation();
+      // Camada 1: fotos abertas → fecha só as fotos
+      if (lightboxRef.current) {
+        setLightbox(null);
+        if (secRef.current && document.fullscreenElement !== secRef.current) document.exitFullscreen?.().catch?.(() => { /* ok */ });
+        return;
+      }
+      // Camada 2: PDF (ou outro elemento) em tela cheia por cima da apresentação → volta pra apresentação
+      if (secRef.current && document.fullscreenElement !== secRef.current) {
+        document.exitFullscreen?.().catch?.(() => { /* ok */ });
+        return;
+      }
+      // Camada 3: sai do modo apresentação
+      document.exitFullscreen?.().catch?.(() => { /* ok */ });
+    };
+    window.addEventListener('keydown', h, true);
+    return () => window.removeEventListener('keydown', h, true);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -116,10 +149,19 @@ export default function MateriaisPage() {
       const n = matsOf(sel, c.key).length;
       if (n) arr.push({ key: c.key, label: c.label, count: c.kind === 'image' ? n : undefined });
     });
+    // Unidades sugeridas: preenchidas na área do administrador (unidade + porquê)
+    const sugeridas = Array.isArray(sel.sugeridas) ? sel.sugeridas.filter((s) => s && (s.unidade || s.motivo)) : [];
+    if (sugeridas.length) arr.push({ key: 'sugeridas', label: 'Unidades sugeridas' });
     // Defesa da região: aba de texto preenchida na área do administrador
     if (sel.defesa && sel.defesa.trim()) arr.push({ key: 'defesa', label: 'Defesa da região' });
     // Localização: mostra se houver material de localização OU endereço cadastrado
     if (!arr.some((x) => x.key === 'localizacao') && (sel.end || sel.cid)) arr.push({ key: 'localizacao', label: 'Localização' });
+    // Ordem canônica das abas
+    const ORDEM = ['resumo', 'apresentacao', 'ficha', 'maquete', 'decorado', 'imagens', 'plantas', 'localizacao', 'sugeridas', 'tabela', 'construtora', 'regiao', 'defesa', 'links'];
+    arr.sort((a, b) => {
+      const ia = ORDEM.indexOf(a.key); const ib = ORDEM.indexOf(b.key);
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    });
     return arr;
   }, [sel]);
 
@@ -507,6 +549,29 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
     );
   }
 
+  if (tab === 'sugeridas') {
+    const sugeridas = Array.isArray(imovel.sugeridas) ? imovel.sugeridas.filter((s) => s && (s.unidade || s.motivo)) : [];
+    return (
+      <div className={`max-w-4xl ${presenting ? 'mx-auto pt-4' : ''}`}>
+        <p className="text-xs text-text-secondary mb-3">As unidades que a casa recomenda — e o porquê de cada uma.</p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          {sugeridas.map((s, i) => (
+            <div key={i} className="al-card relative overflow-hidden p-4 hover:border-[#E8C547]/35 transition-colors">
+              <div className="absolute inset-x-0 top-0 gx-line-gold" />
+              <div className="al-display text-[16px] font-bold text-[#FFE9A6] leading-tight">{s.unidade || 'Unidade'}</div>
+              {s.motivo && (
+                <>
+                  <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-text-secondary mt-2">por que essa</p>
+                  <p className="text-[13px] text-white/85 mt-0.5 whitespace-pre-line leading-relaxed">{s.motivo}</p>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   if (tab === 'defesa') {
     return (
       <div className={`max-w-3xl ${presenting ? 'mx-auto pt-4' : ''}`}>
@@ -590,7 +655,7 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
         <div className="flex items-center gap-2 mb-2">
           {!presenting && <p className="text-xs text-text-secondary mr-auto">{cat.label} · {imgs.length} {imgs.length === 1 ? 'item' : 'itens'} — clique para ampliar (setas navegam)</p>}
           <button
-            onClick={() => onLightbox({ imgs, idx: 0, fs: true })}
+            onClick={() => onLightbox({ imgs, idx: 0, fs: !presenting })}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all ${presenting ? 'ml-auto' : ''}`}
             title="Tela cheia — passe as fotos com as setas ou clicando nas laterais"
           >

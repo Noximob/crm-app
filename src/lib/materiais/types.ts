@@ -19,7 +19,9 @@ export type MaterialCat =
   | 'imagens'
   | 'video'
   | 'links'
-  | 'localizacao';
+  | 'localizacao'
+  | 'construtora'
+  | 'regiao';
 
 export interface Material {
   cat: MaterialCat | string;
@@ -48,6 +50,8 @@ export interface Imovel {
   tip?: string | string[][]; // tipologias [área, descrição, aPartirDe?, torre?, finais?]: guardado como JSON string no Firestore (nested array não é suportado)
   dif?: string[]; // diferenciais
   lazer?: string[]; // lazer & convívio
+  /** unidades que a imobiliária sugere, com o porquê (custo-benefício, preço, qualidade) — vira aba própria */
+  sugeridas?: { unidade: string; motivo: string }[];
   resumo?: string;
   defesa?: string; // defesa da região (texto livre — vira aba no material de apoio)
   capa?: string; // foto de capa (url)
@@ -65,17 +69,19 @@ export interface CategoriaMaterial {
   single?: boolean;
 }
 
-/** Categorias de material (ordem, rótulo e como renderiza) — igual ao app original. */
+/** Categorias de material — a ordem aqui define a ordem das abas no material de apoio. */
 export const CATEGORIES: CategoriaMaterial[] = [
   { key: 'apresentacao', label: 'Apresentação', kind: 'pdf', single: true },
   { key: 'ficha', label: 'Ficha Técnica', kind: 'pdf', single: true },
-  { key: 'tabela', label: 'Tabela', kind: 'link', single: true },
-  { key: 'plantas', label: 'Plantas', kind: 'image' },
   { key: 'maquete', label: 'Maquete', kind: 'video', single: true },
   { key: 'decorado', label: 'Decorado', kind: 'video', single: true },
   { key: 'imagens', label: 'Imagens', kind: 'image' },
-  { key: 'links', label: 'Links', kind: 'linklist' },
+  { key: 'plantas', label: 'Plantas', kind: 'image' },
   { key: 'localizacao', label: 'Localização', kind: 'link', single: true },
+  { key: 'tabela', label: 'Tabela', kind: 'link', single: true },
+  { key: 'construtora', label: 'Construtora', kind: 'pdf', single: true },
+  { key: 'regiao', label: 'Região', kind: 'pdf', single: true },
+  { key: 'links', label: 'Links', kind: 'linklist' },
 ];
 
 export const catByKey = (k: string) => CATEGORIES.find((c) => c.key === k);
