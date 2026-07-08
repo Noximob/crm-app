@@ -326,6 +326,11 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
   const pdfRef = useRef<HTMLDivElement>(null);
   const pdfFullscreen = () => { pdfRef.current?.requestFullscreen?.(); pdfRef.current?.focus?.(); };
 
+  // Tipologias: torre selecionada no dropdown + dropdown das unidades diferenciadas
+  const [torreSel, setTorreSel] = useState('');
+  const [difAberto, setDifAberto] = useState(false);
+  useEffect(() => { setTorreSel(''); setDifAberto(false); }, [imovel.id]);
+
   if (tab === 'resumo') {
     const tips = parseTip(imovel.tip);
     const lazer = Array.isArray(imovel.lazer) ? imovel.lazer.filter(Boolean) : [];
@@ -343,8 +348,16 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
             const porTorre = new Map<string, TipRow[]>();
             normais.forEach((t) => { const k = (t[3] || '').trim() || 'Torre única'; if (!porTorre.has(k)) porTorre.set(k, []); porTorre.get(k)!.push(t); });
             const torres = Array.from(porTorre.keys()).sort((a, b) => (a === 'Torre única' ? -1 : b === 'Torre única' ? 1 : numDe(a) - numDe(b) || a.localeCompare(b)));
+            const torreAtiva = torres.includes(torreSel) ? torreSel : torres[0];
             const CardTip = ({ t }: { t: TipRow }) => (
               <div className="rounded-xl bg-white/[0.03] border border-white/[0.08] hover:border-[#E8C547]/35 transition-colors flex items-stretch overflow-hidden">
+                {/* FINAL à esquerda — o dado mais importante do card */}
+                {t[4] && (
+                  <div className="shrink-0 min-w-[58px] max-w-[52%] flex flex-col items-center justify-center px-2 py-1 bg-[#7DD3FC]/[0.09] border-r border-[#7DD3FC]/25 text-center" title={`Finais ${t[4]}`}>
+                    <span className="text-[7.5px] font-extrabold uppercase tracking-[0.18em] text-[#7DD3FC]/80 leading-none">{(t[4].match(/\d+/g) || []).length > 1 ? 'finais' : 'final'}</span>
+                    <span className={`al-display font-bold text-[#7DD3FC] leading-tight tabular-nums break-words ${t[4].length > 14 ? 'text-[11px]' : t[4].length > 7 ? 'text-[12.5px]' : 'text-[15px]'}`}>{t[4]}</span>
+                  </div>
+                )}
                 <div className="min-w-0 flex-1 px-3 py-1.5">
                   <div className="flex items-baseline gap-1.5 min-w-0">
                     <span className="al-display text-[15px] font-bold text-white leading-none tabular-nums shrink-0">{t[0]}<span className="text-[9px] text-text-secondary font-normal"> m²</span></span>
@@ -357,45 +370,57 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
                     </div>
                   )}
                 </div>
-                {t[4] && (
-                  <div className="shrink-0 min-w-[58px] max-w-[52%] flex flex-col items-center justify-center px-2 py-1 bg-[#7DD3FC]/[0.07] border-l border-[#7DD3FC]/25 text-center" title={`Finais ${t[4]}`}>
-                    <span className="text-[7.5px] font-extrabold uppercase tracking-[0.18em] text-[#7DD3FC]/80 leading-none">{(t[4].match(/\d+/g) || []).length > 1 ? 'finais' : 'final'}</span>
-                    <span className={`al-display font-bold text-[#7DD3FC] leading-tight tabular-nums break-words ${t[4].length > 14 ? 'text-[11px]' : t[4].length > 7 ? 'text-[12.5px]' : 'text-[14px]'}`}>{t[4]}</span>
-                  </div>
-                )}
               </div>
             );
             return (
               <div>
-                <h3 className="al-display text-[11px] font-bold text-text-secondary uppercase tracking-[0.24em] mb-2">Tipologias</h3>
-                <div className="space-y-3">
-                  {torres.map((torre) => (
-                    <div key={torre}>
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#7DD3FC]">{torre}</span>
-                        <div className="flex-1 gx-line opacity-20" />
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {[...porTorre.get(torre)!].sort(ordFinais).map((t, i) => <CardTip key={i} t={t} />)}
-                      </div>
+                {/* Cabeçalho: título + dropdown de torre + dropdown das diferenciadas */}
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <h3 className="al-display text-[11px] font-bold text-text-secondary uppercase tracking-[0.24em] mr-auto">Tipologias</h3>
+                  <select
+                    value={torreAtiva}
+                    onChange={(e) => setTorreSel(e.target.value)}
+                    className="px-2.5 py-1.5 rounded-lg bg-[#7DD3FC]/[0.08] border border-[#7DD3FC]/35 text-[11.5px] font-bold text-[#7DD3FC] focus:outline-none focus:ring-2 focus:ring-[#7DD3FC]/40 cursor-pointer"
+                    title="Escolha a torre pra ver as tipologias dela"
+                  >
+                    {torres.map((tr) => <option key={tr} value={tr} className="bg-[#12101a] text-white">{tr}</option>)}
+                  </select>
+                  {diferenciadas.length > 0 && (
+                    <div className="relative">
+                      <button
+                        onClick={() => setDifAberto((v) => !v)}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11.5px] font-bold transition-colors ${difAberto ? 'border-[#E8C547]/60 bg-[#E8C547]/[0.12] text-[#FFE9A6]' : 'border-[#E8C547]/35 bg-[#E8C547]/[0.06] text-[#E8C547] hover:bg-[#E8C547]/[0.1]'}`}
+                        title="Gardens, coberturas, térreos e outras unidades fora do padrão"
+                      >
+                        Diferenciadas ({diferenciadas.length})
+                        <svg className={`w-3 h-3 transition-transform ${difAberto ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                      </button>
+                      {difAberto && (
+                        <>
+                          <div className="fixed inset-0 z-20" onClick={() => setDifAberto(false)} />
+                          <div className="absolute right-0 top-full mt-2 w-[440px] max-w-[86vw] z-30 rounded-xl border border-[#E8C547]/25 bg-[#12101a] p-3 shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)]">
+                            <div className="absolute inset-x-0 top-0 gx-line-gold" />
+                            <p className="text-[9.5px] font-extrabold uppercase tracking-[0.2em] text-[#E8C547] mb-2">Unidades diferenciadas</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[46vh] overflow-y-auto scrollbar-thin">
+                              {[...diferenciadas].sort(ordFinais).map((t, i) => (
+                                <div key={i}>
+                                  {t[3] && <div className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#7DD3FC]/80 mb-0.5">{t[3]}</div>}
+                                  <CardTip t={t} />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
-                  ))}
+                  )}
                 </div>
-                {diferenciadas.length > 0 && (
-                  <details className="mt-3 group">
-                    <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-[12px] font-bold text-white transition-colors select-none">
-                      Unidades diferenciadas — gardens, coberturas... ({diferenciadas.length})
-                      <svg className="w-3.5 h-3.5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                    </summary>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-                      {[...diferenciadas].sort(ordFinais).map((t, i) => (
-                        <div key={i}>
-                          {t[3] && <div className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#7DD3FC]/80 mb-0.5">{t[3]}</div>}
-                          <CardTip t={t} />
-                        </div>
-                      ))}
-                    </div>
-                  </details>
+                {/* Só as tipologias padrão da torre escolhida */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {torreAtiva && [...(porTorre.get(torreAtiva) || [])].sort(ordFinais).map((t, i) => <CardTip key={i} t={t} />)}
+                </div>
+                {torres.length === 0 && diferenciadas.length > 0 && (
+                  <p className="text-[11.5px] text-text-secondary">Este produto só tem unidades diferenciadas — abra o dropdown acima.</p>
                 )}
               </div>
             );
