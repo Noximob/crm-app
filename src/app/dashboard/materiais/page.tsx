@@ -372,7 +372,7 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
             normais.forEach((t) => { const k = (t[3] || '').trim() || 'Torre única'; if (!porTorre.has(k)) porTorre.set(k, []); porTorre.get(k)!.push(t); });
             const torres = Array.from(porTorre.keys()).sort((a, b) => (a === 'Torre única' ? -1 : b === 'Torre única' ? 1 : numDe(a) - numDe(b) || a.localeCompare(b)));
             const torreAtiva = torres.includes(torreSel) ? torreSel : torres[0];
-            const CardTip = ({ t }: { t: TipRow }) => (
+            const CardTip = ({ t, semCorte }: { t: TipRow; semCorte?: boolean }) => (
               <div className="rounded-xl bg-white/[0.03] border border-white/[0.08] hover:border-[#E8C547]/35 transition-colors flex items-stretch overflow-hidden">
                 {/* FINAL à esquerda — o dado mais importante do card */}
                 {t[4] && (
@@ -382,14 +382,14 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
                   </div>
                 )}
                 <div className="min-w-0 flex-1 px-3 py-1.5">
-                  <div className="flex items-baseline gap-1.5 min-w-0">
+                  <div className={`flex items-baseline gap-1.5 min-w-0 ${semCorte ? 'flex-wrap' : ''}`}>
                     <span className="al-display text-[15px] font-bold text-white leading-none tabular-nums shrink-0">{t[0]}<span className="text-[9px] text-text-secondary font-normal"> m²</span></span>
-                    {t[1] && <span className="text-[11px] font-semibold text-white/75 truncate" title={t[1]}>{t[1]}</span>}
+                    {t[1] && <span className={`text-[11px] font-semibold text-white/75 ${semCorte ? 'break-words' : 'truncate'}`} title={t[1]}>{t[1]}</span>}
                   </div>
                   {t[2] && (
-                    <div className="mt-0.5 leading-tight truncate">
+                    <div className={`mt-0.5 leading-tight ${semCorte ? 'break-words' : 'truncate'}`}>
                       <span className="text-[8.5px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">a partir de </span>
-                      <span className="al-display text-[12.5px] font-bold text-[#FFE9A6] tabular-nums">R$ {fmtMoneyBR(t[2])}</span>
+                      <span className="al-display text-[12.5px] font-bold text-[#FFE9A6] tabular-nums whitespace-nowrap">R$ {fmtMoneyBR(t[2])}</span>
                     </div>
                   )}
                 </div>
@@ -424,11 +424,11 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
                           <div className="absolute right-0 top-full mt-2 w-[540px] max-w-[92vw] z-30 rounded-xl border border-[#E8C547]/25 bg-[#12101a] p-3 shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)]">
                             <div className="absolute inset-x-0 top-0 gx-line-gold" />
                             <p className="text-[9.5px] font-extrabold uppercase tracking-[0.2em] text-[#E8C547] mb-2">Unidades diferenciadas</p>
-                            <div className="grid grid-cols-1 gap-2 max-h-[52vh] overflow-y-auto scrollbar-thin pr-1">
+                            <div className="grid grid-cols-2 gap-2 max-h-[52vh] overflow-y-auto scrollbar-thin pr-1">
                               {[...diferenciadas].sort(ordFinais).map((t, i) => (
                                 <div key={i}>
                                   {t[3] && <div className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#7DD3FC]/80 mb-0.5">{t[3]}</div>}
-                                  <CardTip t={t} />
+                                  <CardTip t={t} semCorte />
                                 </div>
                               ))}
                             </div>
