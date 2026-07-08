@@ -6,6 +6,7 @@ import { apoioDb } from '@/lib/apoioFirebase';
 import { CATEGORIES, catByKey, parseTip, fmtMoneyBR, type Construtora, type Imovel, type Material, type TipRow } from '@/lib/materiais/types';
 import { toCdn, youtubeId, waLink, encaminharWhatsApp } from '@/lib/materiais/toCdn';
 import PdfPager from '@/components/PdfPager';
+import FluxoPagamentoPage from '../fluxo-pagamento/page';
 
 function matsArr(p: Imovel): Material[] {
   return Array.isArray(p.materiais) ? p.materiais : [];
@@ -162,6 +163,8 @@ export default function MateriaisPage() {
       const ia = ORDEM.indexOf(a.key); const ib = ORDEM.indexOf(b.key);
       return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
     });
+    // Calculadora de Fluxo de Pagamento embutida — sempre no fim, funciona dentro do modo apresentação
+    arr.push({ key: 'fluxo', label: 'Fluxo de Pagamento' });
     return arr;
   }, [sel]);
 
@@ -176,18 +179,35 @@ export default function MateriaisPage() {
         .filter((x): x is [string, string] => Boolean(x[1]))
     : [];
 
-  // Pílulas de abas (compact = barra única do modo apresentação)
+  // Pílulas de abas (compact = barra única do modo apresentação).
+  // Divisória fina antes da Tabela separa o dia a dia do material esporádico; o Fluxo (violeta) fecha a fila à direita.
   const pills = (compact: boolean) =>
-    abas.map((a) => (
-      <button
-        key={a.key}
-        onClick={() => setTab(a.key)}
-        className={`${compact ? 'px-3 py-1.5 text-[13px]' : 'px-3.5 py-2 text-sm'} rounded-lg font-bold whitespace-nowrap transition-colors ${tab === a.key ? 'bg-gradient-to-r from-[#FF1E56] to-[#A50D38] text-white shadow-[0_0_14px_rgba(255,30,86,0.35)]' : 'bg-white/[0.05] text-text-secondary hover:text-white hover:bg-white/[0.09]'}`}
-      >
-        {a.label}
-        {a.count ? <span className={`ml-1.5 text-[10px] font-extrabold ${tab === a.key ? 'text-white/70' : 'text-text-secondary'}`}>{a.count}</span> : null}
-      </button>
-    ));
+    abas.flatMap((a) => {
+      const ativo = tab === a.key;
+      const ehFluxo = a.key === 'fluxo';
+      const cls = ehFluxo
+        ? ativo
+          ? 'bg-gradient-to-r from-[#9F6BFF] to-[#6B34D8] text-white shadow-[0_0_14px_rgba(159,107,255,0.4)]'
+          : 'bg-[#9F6BFF]/[0.08] text-[#C4A6FF] border border-[#9F6BFF]/35 hover:bg-[#9F6BFF]/[0.14]'
+        : ativo
+          ? 'bg-gradient-to-r from-[#FF1E56] to-[#A50D38] text-white shadow-[0_0_14px_rgba(255,30,86,0.35)]'
+          : 'bg-white/[0.05] text-text-secondary hover:text-white hover:bg-white/[0.09]';
+      const btn = (
+        <button
+          key={a.key}
+          onClick={() => setTab(a.key)}
+          className={`${compact ? 'px-3 py-1.5 text-[13px]' : 'px-3.5 py-2 text-sm'} rounded-lg font-bold whitespace-nowrap transition-colors ${cls}`}
+        >
+          {a.label}
+          {a.count ? <span className={`ml-1.5 text-[10px] font-extrabold ${ativo ? 'text-white/70' : 'text-text-secondary'}`}>{a.count}</span> : null}
+        </button>
+      );
+      const els: React.ReactNode[] = [];
+      if (a.key === 'tabela') els.push(<span key="sep-esporadico" aria-hidden className="self-stretch my-1 w-px bg-white/15 shrink-0" />);
+      if (ehFluxo) els.push(<span key="sep-fluxo" aria-hidden className="flex-1 min-w-1" />);
+      els.push(btn);
+      return els;
+    });
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
@@ -545,6 +565,15 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
         <div className="flex-1 min-h-[380px] rounded-xl overflow-hidden border border-white/10">
           <iframe title="Mapa" className="w-full h-full" src={`https://www.google.com/maps?q=${q}&output=embed`} />
         </div>
+      </div>
+    );
+  }
+
+  if (tab === 'fluxo') {
+    // Calculadora completa embutida — roda aqui dentro (inclusive no modo apresentação), sem sair do material
+    return (
+      <div className="max-w-6xl mx-auto">
+        <FluxoPagamentoPage />
       </div>
     );
   }
