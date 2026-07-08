@@ -175,7 +175,7 @@ export default function MateriaisPage() {
   const temImoveis = !loading && !erro && imoveis.length > 0;
 
   const stats: [string, string][] = sel
-    ? ([['Torres', sel.t], ['Andares', sel.a], ['Aptos', sel.ap], ['Entrega', sel.e], ['A partir de', sel.pr ? `R$ ${fmtMoneyBR(sel.pr)}` : undefined], ['m²', sel.m2 ? `R$ ${fmtMoneyBR(sel.m2)}` : undefined]] as [string, string | undefined][])
+    ? ([['Torres', sel.t], ['Andares', sel.a], ['Aptos', sel.ap], ['Entrega', sel.e], ['m²', sel.m2 ? `R$ ${fmtMoneyBR(sel.m2)}` : undefined]] as [string, string | undefined][])
         .filter((x): x is [string, string] => Boolean(x[1]))
     : [];
 
