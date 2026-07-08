@@ -571,7 +571,8 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
           </Toolbar>
         )}
         <div className="flex-1 min-h-[380px] rounded-xl overflow-hidden border border-white/10">
-          <iframe title="Mapa" className="w-full h-full" src={`https://www.google.com/maps?q=${q}&output=embed`} />
+          {/* t=h abre direto no satélite (híbrido, com nomes de ruas); t=k seria satélite puro */}
+          <iframe title="Mapa" className="w-full h-full" src={`https://www.google.com/maps?q=${q}&t=h&output=embed`} />
         </div>
       </div>
     );
