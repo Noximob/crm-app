@@ -76,6 +76,13 @@ export default function MateriaisPage() {
     return map;
   }, [construtoras]);
 
+  // Logo da construtora (subida na área do administrador) — aparece ao lado do nome do empreendimento
+  const logoCo = useMemo(() => {
+    const map: Record<string, string> = {};
+    construtoras.forEach((c) => { if (c.logo) map[c.name] = c.logo; });
+    return map;
+  }, [construtoras]);
+
   // Construtoras sem duplicatas (a base pode ter nomes repetidos)
   const construtorasView = useMemo(() => {
     const seen = new Set<string>();
@@ -147,7 +154,6 @@ export default function MateriaisPage() {
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
             <h1 className="al-display text-2xl font-bold text-white uppercase tracking-[0.08em]">Materiais de apoio</h1>
-            <p className="text-sm text-text-secondary">Abra, apresente no Meet e encaminhe pro cliente no WhatsApp.</p>
           </div>
           {temImoveis && (
             <button
@@ -238,7 +244,12 @@ export default function MateriaisPage() {
               {fullscreen ? (
                 /* Modo apresentação: UMA barra fina (nome + abas + sair) — o conteúdo fica com o resto da tela */
                 <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-b border-white/10">
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-black shrink-0" style={{ background: corCo[sel.co] || '#D4A017' }}>{sel.co}</span>
+                  {logoCo[sel.co] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={toCdn(logoCo[sel.co])} alt={sel.co} className="h-7 w-auto max-w-[110px] object-contain rounded bg-white/[0.06] px-1.5 py-0.5 shrink-0" />
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-black shrink-0" style={{ background: corCo[sel.co] || '#D4A017' }}>{sel.co}</span>
+                  )}
                   <span className="text-sm font-extrabold text-white truncate max-w-[220px] shrink-0">{sel.n}</span>
                   <div className="flex gap-1.5 overflow-x-auto scrollbar-thin flex-1 min-w-0 px-1">{pills(true)}</div>
                   <button
@@ -252,13 +263,25 @@ export default function MateriaisPage() {
                 </div>
               ) : (
                 <>
-                  {/* Cabeçalho fino: nome + dados + apresentar (sem capa — o conteúdo é o protagonista) */}
-                  <div className="shrink-0 px-4 pt-3 pb-2.5 border-b border-white/10">
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-black shrink-0" style={{ background: corCo[sel.co] || '#D4A017' }}>{sel.co}</span>
-                      <h2 className="al-display text-xl font-extrabold text-white leading-tight truncate">{sel.n}</h2>
-                      {sel.st && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-white/80 shrink-0">{sel.st}</span>}
-                      {(sel.cid || sel.end) && <span className="text-xs text-text-secondary truncate">{[sel.end, sel.cid].filter(Boolean).join(' · ')}</span>}
+                  {/* Cabeçalho alto: logo/marca da construtora + nome do empreendimento em destaque */}
+                  <div className="shrink-0 px-5 pt-4 pb-3.5 border-b border-white/10">
+                    <div className="flex items-center gap-4 flex-wrap">
+                      {logoCo[sel.co] ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={toCdn(logoCo[sel.co])} alt={sel.co} className="h-14 w-auto max-w-[170px] object-contain rounded-xl bg-white/[0.05] border border-white/10 px-2.5 py-1.5 shrink-0" />
+                      ) : (
+                        <span className="px-3.5 py-2 rounded-xl text-[15px] font-extrabold text-black shrink-0" style={{ background: corCo[sel.co] || '#D4A017' }}>{sel.co}</span>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <h2 className="al-display text-[30px] font-extrabold text-white leading-tight truncate">{sel.n}</h2>
+                          {sel.st && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-white/80 shrink-0">{sel.st}</span>}
+                        </div>
+                        <div className="text-[12.5px] text-text-secondary truncate mt-0.5">
+                          <span className="font-extrabold" style={{ color: corCo[sel.co] || '#D4A017' }}>{sel.co}</span>
+                          {(sel.cid || sel.end) && <> · {[sel.end, sel.cid].filter(Boolean).join(' · ')}</>}
+                        </div>
+                      </div>
                       <button
                         onClick={toggleFullscreen}
                         className="ml-auto shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all"
@@ -269,7 +292,7 @@ export default function MateriaisPage() {
                       </button>
                     </div>
                     {stats.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-2">
+                      <div className="flex flex-wrap gap-1.5 mt-3">
                         {stats.map(([k, v]) => (
                           <span key={k} className="px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/10 text-[11px] text-text-secondary">
                             {k}: <b className="text-white font-semibold">{v}</b>
@@ -398,10 +421,10 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
                       {difAberto && (
                         <>
                           <div className="fixed inset-0 z-20" onClick={() => setDifAberto(false)} />
-                          <div className="absolute right-0 top-full mt-2 w-[440px] max-w-[86vw] z-30 rounded-xl border border-[#E8C547]/25 bg-[#12101a] p-3 shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)]">
+                          <div className="absolute right-0 top-full mt-2 w-[540px] max-w-[92vw] z-30 rounded-xl border border-[#E8C547]/25 bg-[#12101a] p-3 shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)]">
                             <div className="absolute inset-x-0 top-0 gx-line-gold" />
                             <p className="text-[9.5px] font-extrabold uppercase tracking-[0.2em] text-[#E8C547] mb-2">Unidades diferenciadas</p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[46vh] overflow-y-auto scrollbar-thin">
+                            <div className="grid grid-cols-1 gap-2 max-h-[52vh] overflow-y-auto scrollbar-thin pr-1">
                               {[...diferenciadas].sort(ordFinais).map((t, i) => (
                                 <div key={i}>
                                   {t[3] && <div className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#7DD3FC]/80 mb-0.5">{t[3]}</div>}

@@ -4,6 +4,8 @@ export interface Construtora {
   id: string;
   name: string;
   color: string;
+  /** logo da construtora (url) — aparece ao lado do empreendimento no material de apoio */
+  logo?: string;
   ordem?: number;
 }
 

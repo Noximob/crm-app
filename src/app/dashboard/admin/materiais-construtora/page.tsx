@@ -57,6 +57,25 @@ export default function AdminMateriaisPage() {
     try { await updateDoc(doc(apoioDb, 'construtoras', c.id), { color }); setConstrutoras((prev) => prev.map((x) => x.id === c.id ? { ...x, color } : x)); }
     catch { flash('Erro ao mudar cor.'); }
   };
+  const enviarLogo = (c: Construtora, file: File) => {
+    const safe = file.name.replace(/[^\w.\-]+/g, '_');
+    const path = `construtoras/${c.id}/logo_${Date.now()}_${safe}`;
+    const task = uploadBytesResumable(ref(apoioStorage, path), file, { cacheControl: 'public, max-age=31536000, immutable' });
+    task.on('state_changed', undefined,
+      () => flash('Erro no upload da logo.'),
+      async () => {
+        try {
+          const url = await getDownloadURL(task.snapshot.ref);
+          await updateDoc(doc(apoioDb, 'construtoras', c.id), { logo: url });
+          setConstrutoras((prev) => prev.map((x) => x.id === c.id ? { ...x, logo: url } : x));
+          flash('Logo atualizada.');
+        } catch { flash('Erro ao salvar a logo.'); }
+      });
+  };
+  const removerLogo = async (c: Construtora) => {
+    try { await updateDoc(doc(apoioDb, 'construtoras', c.id), { logo: '' }); setConstrutoras((prev) => prev.map((x) => x.id === c.id ? { ...x, logo: '' } : x)); }
+    catch { flash('Erro ao remover a logo.'); }
+  };
   const excluirImovel = async (p: Imovel) => {
     if (!window.confirm(`Excluir o empreendimento "${p.n}"?`)) return;
     try { await deleteDoc(doc(apoioDb, 'imoveis', p.id)); flash('Excluído.'); carregar(); }
@@ -90,6 +109,15 @@ export default function AdminMateriaisPage() {
             <div key={c.id} className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5">
               <span className="w-3 h-3 rounded-full" style={{ background: c.color || '#D4A017' }} />
               <span className="text-sm font-semibold text-white">{c.name}</span>
+              {c.logo && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={c.logo} alt={`Logo ${c.name}`} className="h-6 w-auto max-w-[80px] object-contain rounded bg-white/10 px-1" />
+              )}
+              <label className="text-[10px] font-bold text-[#7DD3FC] cursor-pointer hover:underline" title="Logo da construtora — aparece ao lado do nome do empreendimento no material de apoio">
+                {c.logo ? 'trocar logo' : '+ logo'}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) enviarLogo(c, f); e.currentTarget.value = ''; }} />
+              </label>
+              {c.logo && <button onClick={() => removerLogo(c)} className="text-[10px] text-white/40 hover:text-red-300" title="Remover a logo">tirar</button>}
               <div className="flex items-center gap-0.5">{CORES.map((col) => <button key={col} onClick={() => mudarCor(c, col)} title="mudar cor" className="w-3 h-3 rounded-full opacity-50 hover:opacity-100" style={{ background: col }} />)}</div>
               <button onClick={() => excluirConstrutora(c)} className="text-red-400 hover:text-red-300 text-xs ml-1">excluir</button>
             </div>
