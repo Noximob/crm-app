@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { showToast } from '@/components/ui/toast';
 
 interface CancelTaskModalProps {
@@ -18,6 +18,11 @@ const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export default function CancelTaskModal({ isOpen, onClose, onConfirm, isLoading }: CancelTaskModalProps) {
     const [reason, setReason] = useState('');
+
+    // Limpa o motivo a cada abertura, para não vazar o texto da tarefa anterior
+    useEffect(() => {
+        if (isOpen) setReason('');
+    }, [isOpen]);
 
     const handleConfirm = () => {
         if (!reason.trim()) {

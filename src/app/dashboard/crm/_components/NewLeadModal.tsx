@@ -21,7 +21,7 @@ const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
-    const { currentUser, userData } = useContext(AuthContext);
+    const { currentUser, userData, isEspelhoDemo } = useContext(AuthContext);
     const { stages } = usePipelineStages();
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
@@ -74,6 +74,10 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isEspelhoDemo) {
+            setError('Modo demonstração — lead não é salvo.');
+            return;
+        }
         if (!name || !phone) {
             setError('Nome e Telefone são obrigatórios.');
             return;

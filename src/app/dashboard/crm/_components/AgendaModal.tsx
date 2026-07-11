@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 // --- Tipos e Ícones ---
 export interface TaskPayload {
     description: string;
-    type: 'Ligação' | 'WhatsApp' | 'Visita';
+    type: 'Ligação' | 'WhatsApp' | 'Visita' | 'Outros';
     date: string;
     time: string;
 }
@@ -25,7 +25,7 @@ interface AgendaModalProps {
 export default function AgendaModal({ isOpen, onClose, onSave, isLoading }: AgendaModalProps) {
     // --- Estados Internos ---
     const [description, setDescription] = useState('');
-    const [type, setType] = useState<'Ligação' | 'WhatsApp' | 'Visita'>('Ligação');
+    const [type, setType] = useState<TaskPayload['type']>('Ligação');
     const [date, setDate] = useState('');
     const [time, setTime] = useState('');
 

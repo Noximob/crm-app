@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { auth, db, googleProvider } from '@/lib/firebase'; // Importando nossa config
 import { createUserWithEmailAndPassword, signInWithPopup, signOut } from 'firebase/auth'; // Função de criar usuário
-import { setDoc, doc, collection, addDoc, getDocs, serverTimestamp } from 'firebase/firestore'; // Funções do banco de dados
+import { setDoc, doc, getDoc, collection, addDoc, getDocs, serverTimestamp } from 'firebase/firestore'; // Funções do banco de dados
 
 // Função utilitária para timeout de promessas
 function timeoutPromise<T>(promise: Promise<T>, ms: number): Promise<T> {
@@ -101,7 +101,6 @@ export default function CadastroPage() {
             <option value="">Selecione...</option>
             <option value="imobiliaria">Imobiliária</option>
             <option value="corretor-vinculado">Corretor vinculado</option>
-            <option value="corretor-autonomo">Corretor autônomo</option>
           </select>
           <button disabled={!perfil} onClick={() => setStep(2)} className="w-full bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed">Avançar</button>
         </div>
@@ -217,7 +216,7 @@ export default function CadastroPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       let imobiliariaId = '';
-      if (perfil === 'imobiliaria' || perfil === 'corretor-autonomo') {
+      if (perfil === 'imobiliaria') {
         const dadosImobiliaria = {
           nome: nomeImobiliaria || nome,
           tipo: 'imobiliaria', // Força o campo tipo SEMPRE
@@ -241,6 +240,8 @@ export default function CadastroPage() {
         metodoCadastro: 'email',
         photoURL: user.photoURL || null,
       });
+      // Encerra a sessão do usuário recém-criado (ainda não aprovado) — consistente com o fluxo Google
+      await signOut(auth);
       setSuccess('Cadastro realizado com sucesso! Aguarde aprovação.');
       setEmail(''); setPassword(''); setNome('');
     } catch (error: any) {
@@ -275,8 +276,16 @@ export default function CadastroPage() {
         setIsGoogleLoading(false);
         return;
       }
+      // Se a conta já existe no Firestore, não sobrescrever (evita perda de aprovado/permissoes)
+      const usuarioExistente = await getDoc(doc(db, 'usuarios', user.uid));
+      if (usuarioExistente.exists()) {
+        await signOut(auth);
+        setError('Esta conta já está cadastrada — use a página Entrar.');
+        setIsGoogleLoading(false);
+        return;
+      }
       let imobiliariaId = '';
-      if (perfil === 'imobiliaria' || perfil === 'corretor-autonomo') {
+      if (perfil === 'imobiliaria') {
         try {
           const dadosImobiliaria = {
             nome: nomeImobiliaria || user.displayName || 'Imobiliária',

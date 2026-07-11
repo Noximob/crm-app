@@ -25,7 +25,7 @@ const SectionTitle = ({ children, className = '' }: { children: React.ReactNode,
 );
 
 export default function AndamentoPage() {
-    const { currentUser } = useAuth();
+    const { currentUser, isEspelhoDemo } = useAuth();
     const { stages, normalizeEtapa } = usePipelineStages();
     const [leads, setLeads] = useState<LeadsByStage>({});
     const [activeLead, setActiveLead] = useState<Lead | null>(null);
@@ -104,8 +104,8 @@ export default function AndamentoPage() {
             return;
         }
 
-        // Atualizar Firestore
-        if (currentUser) {
+        // Atualizar Firestore (não grava em modo demonstração)
+        if (currentUser && !isEspelhoDemo) {
             const leadRef = doc(db, 'leads', active.id.toString());
             try {
                 await updateDoc(leadRef, { etapa: targetColumn });

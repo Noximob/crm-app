@@ -46,7 +46,7 @@ export default function ComissoesEmbed({ mode }: { mode: 'admin' | 'view' }) {
       __noxCRM: 1,
       users,
       me: currentUser ? { uid: currentUser.uid, nome: userData?.nome || '', email: currentUser.email || userData?.email || '' } : null,
-    }, '*');
+    }, window.location.origin);
   }, [users, currentUser, userData]);
 
   // Reenvia sempre que os dados mudam e responde ao "pronto" do iframe.

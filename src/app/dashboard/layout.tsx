@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { useTheme } from '@/context/ThemeContext';
 import { PipelineStagesProvider } from '@/context/PipelineStagesContext';
 import { ConfirmDialogHost } from '@/components/ui/ConfirmDialog';
 import { ToastHost } from '@/components/ui/toast';
@@ -76,17 +75,20 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { currentUser: user, userData, loading, isEspelhoDemo, logout } = useAuth();
+  const { currentUser: user, userData, loading, isApproved, isEspelhoDemo, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-
-  const { theme } = useTheme();
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/');
+      return;
     }
-  }, [user, loading, router]);
+    // Usuário autenticado mas não aprovado: manda para /entrar (tela "Aguardando Aprovação")
+    if (!loading && user && userData && !isApproved && !isEspelhoDemo) {
+      router.replace('/entrar');
+    }
+  }, [user, userData, loading, isApproved, isEspelhoDemo, router]);
 
   const handleLogout = async () => {
     await logout();
@@ -94,6 +96,7 @@ export default function DashboardLayout({
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-particles"><LoadingState label="Carregando..." /></div>;
   if (!user) return null;
+  if (userData && !isApproved && !isEspelhoDemo) return <div className="min-h-screen flex items-center justify-center bg-particles"><LoadingState label="Carregando..." /></div>;
 
   // Adicionar uma tipagem local para userData que inclua permissoes opcional
   // (isso é só para evitar erro de linter, pois o campo pode existir no Firestore)

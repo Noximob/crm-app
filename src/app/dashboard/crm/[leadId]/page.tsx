@@ -117,7 +117,7 @@ interface QualificationData {
 interface Task {
     id: string;
     description: string;
-    type: 'Ligação' | 'WhatsApp' | 'Visita';
+    type: 'Ligação' | 'WhatsApp' | 'Visita' | 'Outros';
     dueDate: any; // Firestore timestamp
     status: 'pendente' | 'concluída' | 'cancelada';
 }
@@ -147,6 +147,7 @@ export default function LeadDetailPage() {
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const [taskToCancel, setTaskToCancel] = useState<{ interactionId: string; taskId: string } | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
+    const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
     const [qualifications, setQualifications] = useState<QualificationData>({});
     const [isQualificationModalOpen, setIsQualificationModalOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -350,6 +351,9 @@ export default function LeadDetailPage() {
 
     const handleUpdateTaskStatus = async (interactionId: string, taskId: string, status: 'concluída' | 'cancelada', reason?: string) => {
         if (!currentUser || !leadId || isEspelhoDemo) return;
+        if (updatingTaskId) return; // evita duplo clique / dupla submissão
+        setUpdatingTaskId(taskId);
+        if (status === 'cancelada') setIsCancelling(true);
 
         const batch = writeBatch(db);
 
@@ -378,6 +382,9 @@ export default function LeadDetailPage() {
             setTaskToCancel(null);
         } catch (error) {
             console.error("Erro ao atualizar status da tarefa:", error);
+        } finally {
+            setUpdatingTaskId(null);
+            if (status === 'cancelada') setIsCancelling(false);
         }
     };
 
@@ -413,7 +420,7 @@ export default function LeadDetailPage() {
     };
 
     const handleSaveQualifications = async () => {
-        if (!currentUser || !lead) return;
+        if (!currentUser || !lead || isEspelhoDemo) return;
         const leadRef = doc(db, 'leads', lead.id);
         try {
             await updateDoc(leadRef, { qualificacao: qualifications });
@@ -541,7 +548,8 @@ export default function LeadDetailPage() {
                                                         <div className="mt-2 flex items-center gap-2">
                                                             <button
                                                                  onClick={() => handleUpdateTaskStatus(interaction.id, interaction.taskId!, 'concluída')}
-                                                                 className="px-2 py-1 text-xs font-bold text-emerald-300 border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-md transition-colors"
+                                                                 disabled={updatingTaskId === interaction.taskId}
+                                                                 className="px-2 py-1 text-xs font-bold text-emerald-300 border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                              >
                                                                  Concluída
                                                              </button>

@@ -28,6 +28,13 @@ interface Contribuicao {
   createdAt: any;
 }
 
+// Se a meta tem período (inicio/fim), só conta contribuições com dataVenda dentro dele
+// (comparação de string funciona para YYYY-MM-DD)
+function filtraContribuicoesPeriodo(lista: Contribuicao[], inicio: string, fim: string): Contribuicao[] {
+  if (!inicio || !fim) return lista;
+  return lista.filter(c => c.dataVenda && c.dataVenda >= inicio && c.dataVenda <= fim);
+}
+
 export default function AdminMetasPage() {
   const { userData, currentUser, isEspelhoDemo } = useAuth();
   const [inicio, setInicio] = useState('');
@@ -52,7 +59,7 @@ export default function AdminMetasPage() {
   const [valorAlmejadoInputs, setValorAlmejadoInputs] = useState<Record<string, number>>({});
   const [savingPessoal, setSavingPessoal] = useState<string | null>(null);
 
-  const totalRealizado = contribuicoes.reduce((s, c) => s + c.valor, 0);
+  const totalRealizado = filtraContribuicoesPeriodo(contribuicoes, inicio, fim).reduce((s, c) => s + c.valor, 0);
   const percentualCalculado = vgv > 0 && totalRealizado >= 0 ? Math.round((totalRealizado / vgv) * 100) : 0;
   // Soma das metas pessoais dos corretores (interliga com o que cada corretor tem definido)
   const somaMetasPessoais = Object.values(metasPessoais).reduce((s, v) => s + (Number(v) || 0), 0);
@@ -145,8 +152,10 @@ export default function AdminMetasPage() {
         createdAt: d.data().createdAt,
       }));
       setContribuicoes(lista);
-      // Sincronizar documento da meta com a soma das contribuições (primeira página do dashboard lê esse doc)
-      const totalContribuicoes = lista.reduce((s, c) => s + c.valor, 0);
+      // Sincronizar documento da meta com a soma das contribuições DO PERÍODO (primeira página do dashboard lê esse doc)
+      const metaInicio = snap.exists() && snap.data()?.inicio ? String(snap.data()!.inicio).split('T')[0] : '';
+      const metaFim = snap.exists() && snap.data()?.fim ? String(snap.data()!.fim).split('T')[0] : '';
+      const totalContribuicoes = filtraContribuicoesPeriodo(lista, metaInicio, metaFim).reduce((s, c) => s + c.valor, 0);
       const valorMeta = snap.exists() ? Number(snap.data()?.valor) : 0;
       const percentual = valorMeta > 0 ? Math.round((totalContribuicoes / valorMeta) * 100) : 0;
       await setDoc(metaRef, {
@@ -197,8 +206,7 @@ export default function AdminMetasPage() {
         createdAt: Timestamp.now(),
       });
       setValorContribuicao(0);
-      await fetchMeta();
-      await updateMetaAlcancado(totalRealizado + valor);
+      await fetchMeta(); // fetchMeta já recalcula e persiste o total atualizado
       setUltimaAtualizacaoPor(userData?.nome ?? null);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2000);
@@ -219,7 +227,7 @@ export default function AdminMetasPage() {
       await deleteDoc(doc(db, 'metas', userData.imobiliariaId, 'contribuicoes', id));
       const novaLista = contribuicoes.filter(c => c.id !== id);
       setContribuicoes(novaLista);
-      await updateMetaAlcancado(novaLista.reduce((s, c) => s + c.valor, 0));
+      await updateMetaAlcancado(filtraContribuicoesPeriodo(novaLista, inicio, fim).reduce((s, c) => s + c.valor, 0));
     } catch (err) {
       console.error('Erro ao remover contribuição:', err);
     }

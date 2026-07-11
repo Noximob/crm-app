@@ -398,7 +398,9 @@ export default function CrmPage() {
         if (filteredLeads.length === 0) return;
 
         const escapeCsv = (value: string) => {
-            const v = value ?? '';
+            let v = value ?? '';
+            // Proteção contra injeção de fórmula em planilhas (=, +, -, @ no início)
+            if (/^[=+\-@]/.test(v)) v = `'${v}`;
             return /[";\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
         };
 
@@ -652,7 +654,7 @@ export default function CrmPage() {
                                         <td className="px-3 py-1.5 text-xs text-text-secondary w-1/6 truncate max-w-[140px]">{lead.telefone}</td>
                                         <td className="px-3 py-1.5 text-center w-1/12">
                                             <a
-                                                href={`https://wa.me/${lead.telefone.replace(/\D/g, '')}`}
+                                                href={`https://wa.me/55${lead.telefone.replace(/\D/g, '')}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="inline-flex items-center justify-center text-[#25D366] hover:text-[#128C7E]"

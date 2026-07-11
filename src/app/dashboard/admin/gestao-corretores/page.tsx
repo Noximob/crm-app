@@ -157,20 +157,39 @@ export default function GestaoCorretoresPage() {
     if (!(await confirmDialog({ message: `Tem certeza que deseja excluir ${selectedLeads.length} lead(s)?`, danger: true, confirmLabel: 'Excluir' }))) return;
 
     try {
-      // Reunir também os docs das subcoleções (tarefas e interactions) para não deixar órfãos
-      const refs: DocumentReference[] = [];
+      // Reunir também os docs das subcoleções (tarefas e interactions) para não deixar órfãos.
+      // Agrupa por lead (subdocs + doc do lead) para um lead nunca ficar dividido entre lotes.
+      const grupos: DocumentReference[][] = [];
       for (const leadId of selectedLeads) {
+        const grupo: DocumentReference[] = [];
         for (const sub of ['tarefas', 'interactions']) {
           const snap = await getDocs(collection(db, 'leads', leadId, sub));
-          snap.forEach(d => refs.push(d.ref));
+          snap.forEach(d => grupo.push(d.ref));
         }
-        refs.push(doc(db, 'leads', leadId));
+        grupo.push(doc(db, 'leads', leadId));
+        grupos.push(grupo);
       }
 
-      // Apagar em lotes de até 400 operações (limite do Firestore é 500 por batch)
-      for (let i = 0; i < refs.length; i += 400) {
+      // Empacotar grupos inteiros em lotes de até 400 operações (limite do Firestore é 500 por batch).
+      // Um grupo sozinho maior que 400 ainda pode ser dividido (caso raro).
+      const lotes: DocumentReference[][] = [];
+      let lote: DocumentReference[] = [];
+      for (const grupo of grupos) {
+        if (lote.length > 0 && lote.length + grupo.length > 400) {
+          lotes.push(lote);
+          lote = [];
+        }
+        if (grupo.length > 400) {
+          for (let i = 0; i < grupo.length; i += 400) lotes.push(grupo.slice(i, i + 400));
+        } else {
+          lote.push(...grupo);
+        }
+      }
+      if (lote.length > 0) lotes.push(lote);
+
+      for (const refs of lotes) {
         const batch = writeBatch(db);
-        refs.slice(i, i + 400).forEach(r => batch.delete(r));
+        refs.forEach(r => batch.delete(r));
         await batch.commit();
       }
 

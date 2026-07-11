@@ -22,7 +22,9 @@ interface Lead {
   email?: string;
 }
 
-// Apaga o lead junto com suas subcoleções (tarefas e interactions), em lotes de até 400 operações
+// Apaga o lead junto com suas subcoleções (tarefas e interactions). Como a função trata UM lead
+// por vez, os refs formam um único grupo (subdocs + doc do lead) — só é dividido em mais de um
+// lote se o próprio grupo passar de 400 operações (caso raro, limite do Firestore é 500 por batch)
 async function deleteLeadComSubcolecoes(leadId: string) {
   const refs: DocumentReference[] = [];
   for (const sub of ['tarefas', 'interactions']) {

@@ -89,8 +89,16 @@ export default function ImportarLeadsPage() {
       });
     // Rejeita linhas cujo telefone tenha menos de 8 dígitos (inclui telefone vazio)
     const validos = leads.filter(l => l.telefone.replace(/\D/g, '').length >= 8);
-    setLeadsPreview(validos);
-    setLinhasIgnoradas(leads.length - validos.length);
+    // Remove duplicados dentro da própria colagem (mesmo telefone, comparando só os dígitos)
+    const telefonesVistos = new Set<string>();
+    const unicos = validos.filter(l => {
+      const digitos = l.telefone.replace(/\D/g, '');
+      if (telefonesVistos.has(digitos)) return false;
+      telefonesVistos.add(digitos);
+      return true;
+    });
+    setLeadsPreview(unicos);
+    setLinhasIgnoradas(leads.length - unicos.length);
   }, [input]);
 
   const handleImportar = async () => {
@@ -147,7 +155,7 @@ export default function ImportarLeadsPage() {
         </div>
         {linhasIgnoradas > 0 && (
           <div className="mb-4 p-3 rounded-xl border text-sm font-semibold bg-amber-500/10 border-amber-500/40 text-amber-200">
-            {linhasIgnoradas} linha{linhasIgnoradas > 1 ? 's' : ''} ignorada{linhasIgnoradas > 1 ? 's' : ''} (telefone inválido)
+            {linhasIgnoradas} linha{linhasIgnoradas > 1 ? 's' : ''} ignorada{linhasIgnoradas > 1 ? 's' : ''} (telefone inválido ou duplicado na colagem)
           </div>
         )}
         {leadsPreview.length > 0 && (

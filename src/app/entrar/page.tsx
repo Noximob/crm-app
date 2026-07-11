@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { auth, googleProvider } from '@/lib/firebase';
+import { auth, db, googleProvider } from '@/lib/firebase';
 import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import { ESPELHO_LOGIN, ESPELHO_PASSWORD } from '@/lib/constants';
 import LoadingState from '@/components/ui/LoadingState';
 
@@ -93,7 +94,12 @@ export default function EntrarPage() {
     setIsGoogleLoading(true);
     setError(null);
     try {
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      // Usuário Google sem cadastro: não existe doc em usuarios/{uid} — AuthContext fará signOut
+      const usuarioDoc = await getDoc(doc(db, 'usuarios', result.user.uid));
+      if (!usuarioDoc.exists()) {
+        setError('Conta não encontrada. Faça seu cadastro primeiro.');
+      }
     } catch (err: unknown) {
       const error = err as { code?: string };
       if (error.code === 'auth/popup-closed-by-user') setError('Login cancelado.');

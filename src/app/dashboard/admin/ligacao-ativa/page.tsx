@@ -57,9 +57,11 @@ export default function AdminLigacaoAtivaPage() {
   const excluirPasso = async (id: string) => {
     if (config.nodes.length <= 1) { flash('Precisa ter pelo menos um passo.'); return; }
     const apontam = config.nodes.filter((n) => n.id !== id && (n.choices || []).some((c) => c.target === id)).length;
-    if (!(await confirmDialog({ message: `Excluir este passo?${apontam ? ` ${apontam} botão(ões) de outros passos apontam pra ele e vão parar de funcionar.` : ''}`, danger: true, confirmLabel: 'Excluir' }))) return;
+    if (!(await confirmDialog({ message: `Excluir este passo?${apontam ? ` ${apontam} botão(ões) de outros passos apontam pra ele e serão removidos também.` : ''}`, danger: true, confirmLabel: 'Excluir' }))) return;
     setConfig((c) => {
-      const nodes = c.nodes.filter((n) => n.id !== id);
+      const nodes = c.nodes
+        .filter((n) => n.id !== id)
+        .map((n) => ({ ...n, choices: (n.choices || []).filter((ch) => ch.target !== id) }));
       return { ...c, nodes, startNode: c.startNode === id ? nodes[0].id : c.startNode };
     });
     setSelId((cur) => (cur === id ? config.nodes.find((n) => n.id !== id)?.id || '' : cur));
@@ -82,8 +84,21 @@ export default function AdminLigacaoAtivaPage() {
 
   const salvar = async () => {
     if (!imobiliariaId) { flash('Sem imobiliária.'); return; }
-    // normaliza keys de produto a partir do label
-    const cfg: FunilConfig = { ...config, produtos: config.produtos.map((p) => ({ key: p.key.startsWith('p_') ? slug(p.label) : p.key, label: p.label })) };
+    // normaliza keys de produto a partir do label (com dedupe: colisão ganha sufixo -2, -3, …)
+    const keysUsadas = new Set<string>();
+    const cfg: FunilConfig = {
+      ...config,
+      produtos: config.produtos.map((p) => {
+        let key = p.key.startsWith('p_') ? slug(p.label) : p.key;
+        if (keysUsadas.has(key)) {
+          let n = 2;
+          while (keysUsadas.has(`${key}-${n}`)) n++;
+          key = `${key}-${n}`;
+        }
+        keysUsadas.add(key);
+        return { key, label: p.label };
+      }),
+    };
     setSalvando(true);
     try {
       await setDoc(doc(db, 'configLigacaoAtiva', imobiliariaId), { config: cfg, updatedAt: serverTimestamp() });

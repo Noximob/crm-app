@@ -131,12 +131,17 @@ export default function DashboardsTvPage() {
         if (Array.isArray(data.slides)) {
         const raw = data.slides as SlideConfig[];
         const migrated = raw.map(s => s.id === 'unidades-selecao' ? { ...s, id: 'unidades-selecao-0' as const, name: 'Seleção Nox 1 - Unidades' } : s);
-        // Sempre exibir os 3 slides de Unidades separados: merge com a lista padrão para não faltar nenhum
+        // Sempre exibir os 3 slides de Unidades separados: merge com a lista padrão para não faltar nenhum,
+        // preservando a ORDEM salva (a lista salva vem primeiro; defaults que faltam entram no final)
         const defaultSlides = SLIDES_DISPONIVEIS.map(s => ({ ...s, enabled: false, durationSeconds: 60 }));
-        const merged = defaultSlides.map(def => {
-          const found = migrated.find(m => m.id === def.id);
-          return found ? { ...def, ...found } : def;
-        });
+        const merged: SlideConfig[] = [];
+        for (const m of migrated) {
+          const def = defaultSlides.find(d => d.id === m.id);
+          if (def) merged.push({ ...def, ...m });
+        }
+        for (const def of defaultSlides) {
+          if (!migrated.some(m => m.id === def.id)) merged.push(def);
+        }
         setSlides(merged);
         }
       }

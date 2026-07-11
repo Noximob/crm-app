@@ -50,7 +50,7 @@ export default function LeadCard({ lead, corEtapa }: { lead: Lead; corEtapa?: st
       <div className="text-[11px] text-text-secondary mb-1 truncate">{lead.telefone}</div>
       <div className="flex flex-col gap-1 mt-1">
         <a 
-          href={`https://wa.me/${lead.telefone.replace(/\D/g, '')}`} 
+          href={`https://wa.me/55${lead.telefone.replace(/\D/g, '')}`}
           target="_blank" 
           rel="noopener noreferrer"
           onClick={e => e.stopPropagation()}

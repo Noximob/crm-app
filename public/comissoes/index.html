@@ -2327,6 +2327,7 @@ function applyCRM(){
   else if(currentMode==='view'){ refreshView(); }
 }
 window.addEventListener('message', e=>{
+  if(e.origin !== window.location.origin) return; // só aceita o CRM pai (mesmo domínio)
   const d=e.data; if(!d || !d.__noxCRM) return;
   if(Array.isArray(d.users)) CRM.users=d.users;
   if(d.me) CRM.me=d.me;
@@ -2356,7 +2357,7 @@ document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState=
     const first=tabs.find(t=>t.dataset.tab==='admin'); if(first) first.click();
   }
   // avisa o CRM que o iframe está pronto pra receber os dados
-  try{ if(parent && parent!==window) parent.postMessage({__noxCommReady:1},'*'); }catch(e){}
+  try{ if(parent && parent!==window) parent.postMessage({__noxCommReady:1},window.location.origin); }catch(e){}
 })();
 
 // init
