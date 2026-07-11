@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, updateDoc, doc, writeBatch, type DocumentReference } from 'firebase/firestore';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { useRouter } from 'next/navigation';
 import { getDemoLeads, DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
@@ -20,6 +20,21 @@ interface Lead {
   telefone: string;
   etapa: string;
   email?: string;
+}
+
+// Apaga o lead junto com suas subcoleções (tarefas e interactions), em lotes de até 400 operações
+async function deleteLeadComSubcolecoes(leadId: string) {
+  const refs: DocumentReference[] = [];
+  for (const sub of ['tarefas', 'interactions']) {
+    const snap = await getDocs(collection(db, 'leads', leadId, sub));
+    snap.forEach(d => refs.push(d.ref));
+  }
+  refs.push(doc(db, 'leads', leadId));
+  for (let i = 0; i < refs.length; i += 400) {
+    const batch = writeBatch(db);
+    refs.slice(i, i + 400).forEach(r => batch.delete(r));
+    await batch.commit();
+  }
 }
 
 export default function GestaoLeadsPage() {
@@ -125,7 +140,7 @@ export default function GestaoLeadsPage() {
       return;
     }
     try {
-      await deleteDoc(doc(db, 'leads', leadId));
+      await deleteLeadComSubcolecoes(leadId);
       setLeads(leads.filter(lead => lead.id !== leadId));
       setLeadsSelecionados(leadsSelecionados.filter(id => id !== leadId));
       setMensagem('Lead apagado com sucesso!');

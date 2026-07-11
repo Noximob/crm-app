@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, doc, getDocs, setDoc, addDoc, deleteDoc, Timestamp, query, where } from 'firebase/firestore';
+import { collection, doc, getDocs, setDoc, addDoc, deleteDoc, serverTimestamp, query, where } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 import { DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
@@ -250,7 +250,7 @@ export default function AdminMeetsVisitasPage() {
         fim: novoFim,
         contadores: {},
         automatico: false,
-        createdAt: Timestamp.now(),
+        createdAt: serverTimestamp(),
       });
       setNovoInicio('');
       setNovoFim('');

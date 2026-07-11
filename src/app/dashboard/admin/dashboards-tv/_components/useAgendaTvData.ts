@@ -68,6 +68,11 @@ function startOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
 }
 
+/** YYYY-MM-DD no fuso local (toISOString usa UTC e erra o dia após 21h no Brasil) */
+function ymd(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 /** Fim do dia (23:59:59.999) */
 function endOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
@@ -262,15 +267,15 @@ export function useAgendaTvData(
   }, [imobiliariaId, corretoresVisiveisIds?.join(','), JSON.stringify(corretoresStatusManuais ?? {})]);
 
   const agendaCorporativaItems = useMemo(() => {
-    const hojeStr = new Date().toISOString().slice(0, 10);
+    const hojeStr = ymd(new Date());
     const amanha = new Date();
     amanha.setDate(amanha.getDate() + 1);
-    const amanhaStr = amanha.toISOString().slice(0, 10);
+    const amanhaStr = ymd(amanha);
     const mapCorretor = (uid: string) => corretoresList.find((c) => c.id === uid);
     const items: AgendaCorporativaItemTv[] = [];
 
     plantoes.forEach((p) => {
-      const d = p.dataInicio.toISOString().slice(0, 10);
+      const d = ymd(p.dataInicio);
       if (d !== hojeStr && d !== amanhaStr) return;
       const [hh = 9, mm = 0] = (p.horario || '09:00').toString().trim().split(':').map(Number);
       const inicio = new Date(p.dataInicio.getFullYear(), p.dataInicio.getMonth(), p.dataInicio.getDate(), hh, mm, 0, 0);
@@ -285,7 +290,7 @@ export function useAgendaTvData(
         id: p.id,
         titulo: p.construtora ? `Plantão — ${p.construtora}` : 'Plantão',
         tipoLabel: 'Plantão',
-        dataStr: new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+        dataStr: `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`,
         horarioStr: horario,
         startTime,
         fimTime,
@@ -296,7 +301,7 @@ export function useAgendaTvData(
 
     events.forEach((ev) => {
       const dt = ev.dataInicio.toDate();
-      const dStr = dt.toISOString().slice(0, 10);
+      const dStr = ymd(dt);
       if (dStr !== hojeStr && dStr !== amanhaStr) return;
       const startTime = dt.getTime();
       const fimEv = ev.dataFim?.toDate();

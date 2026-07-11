@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, doc, deleteDoc, query, where, onSnapshot, writeBatch } from 'firebase/firestore';
+import { collection, doc, getDocs, query, where, onSnapshot, writeBatch, type DocumentReference } from 'firebase/firestore';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { useRouter } from 'next/navigation';
 import { getDemoLeads, DEMO_USUARIOS } from '@/lib/espelho/demoData';
@@ -157,15 +157,23 @@ export default function GestaoCorretoresPage() {
     if (!(await confirmDialog({ message: `Tem certeza que deseja excluir ${selectedLeads.length} lead(s)?`, danger: true, confirmLabel: 'Excluir' }))) return;
 
     try {
-      const batch = writeBatch(db);
-      
-      selectedLeads.forEach(leadId => {
-        const leadRef = doc(db, 'leads', leadId);
-        batch.delete(leadRef);
-      });
+      // Reunir também os docs das subcoleções (tarefas e interactions) para não deixar órfãos
+      const refs: DocumentReference[] = [];
+      for (const leadId of selectedLeads) {
+        for (const sub of ['tarefas', 'interactions']) {
+          const snap = await getDocs(collection(db, 'leads', leadId, sub));
+          snap.forEach(d => refs.push(d.ref));
+        }
+        refs.push(doc(db, 'leads', leadId));
+      }
 
-      await batch.commit();
-      
+      // Apagar em lotes de até 400 operações (limite do Firestore é 500 por batch)
+      for (let i = 0; i < refs.length; i += 400) {
+        const batch = writeBatch(db);
+        refs.slice(i, i + 400).forEach(r => batch.delete(r));
+        await batch.commit();
+      }
+
       setSelectedLeads([]);
       showToast(`${selectedLeads.length} lead(s) excluído(s) com sucesso!`, 'success');
     } catch (error) {

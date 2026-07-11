@@ -23,6 +23,7 @@ export default function ImportarLeadsPage() {
   const [corretorDestino, setCorretorDestino] = useState('');
   const [input, setInput] = useState('');
   const [leadsPreview, setLeadsPreview] = useState<LeadPreview[]>([]);
+  const [linhasIgnoradas, setLinhasIgnoradas] = useState(0);
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -46,6 +47,7 @@ export default function ImportarLeadsPage() {
   useEffect(() => {
     if (!input) {
       setLeadsPreview([]);
+      setLinhasIgnoradas(0);
       return;
     }
     // Aceita tabulação, vírgula ou ponto e vírgula como separador
@@ -84,9 +86,11 @@ export default function ImportarLeadsPage() {
           nome: nome?.trim() || '',
           telefone: telefone?.trim() || '',
         };
-      })
-      .filter(l => l.telefone);
-    setLeadsPreview(leads);
+      });
+    // Rejeita linhas cujo telefone tenha menos de 8 dígitos (inclui telefone vazio)
+    const validos = leads.filter(l => l.telefone.replace(/\D/g, '').length >= 8);
+    setLeadsPreview(validos);
+    setLinhasIgnoradas(leads.length - validos.length);
   }, [input]);
 
   const handleImportar = async () => {
@@ -141,6 +145,11 @@ export default function ImportarLeadsPage() {
             {corretores.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
           </select>
         </div>
+        {linhasIgnoradas > 0 && (
+          <div className="mb-4 p-3 rounded-xl border text-sm font-semibold bg-amber-500/10 border-amber-500/40 text-amber-200">
+            {linhasIgnoradas} linha{linhasIgnoradas > 1 ? 's' : ''} ignorada{linhasIgnoradas > 1 ? 's' : ''} (telefone inválido)
+          </div>
+        )}
         {leadsPreview.length > 0 && (
           <div className="mb-4 bg-white/[0.03] rounded-xl p-4 border border-white/[0.08]">
             <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-2">Prévia dos Leads:</div>

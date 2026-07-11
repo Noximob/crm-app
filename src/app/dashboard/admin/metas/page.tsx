@@ -13,6 +13,12 @@ interface Corretor {
   nome: string;
 }
 
+// Data de hoje no fuso local em formato YYYY-MM-DD (sem deslocamento UTC)
+function localYmd(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 interface Contribuicao {
   id: string;
   corretorId: string;
@@ -39,10 +45,7 @@ export default function AdminMetasPage() {
   const [contribuicoes, setContribuicoes] = useState<Contribuicao[]>([]);
   const [corretorSelecionado, setCorretorSelecionado] = useState('');
   const [valorContribuicao, setValorContribuicao] = useState<number>(0);
-  const [dataVendaContribuicao, setDataVendaContribuicao] = useState(() => {
-    const d = new Date();
-    return d.toISOString().slice(0, 10);
-  });
+  const [dataVendaContribuicao, setDataVendaContribuicao] = useState(() => localYmd());
   const [adding, setAdding] = useState(false);
 
   const [metasPessoais, setMetasPessoais] = useState<Record<string, number>>({});
@@ -190,7 +193,7 @@ export default function AdminMetasPage() {
         corretorId: corretorSelecionado,
         corretorNome: corretor?.nome ?? '',
         valor,
-        dataVenda: dataVendaContribuicao || new Date().toISOString().slice(0, 10),
+        dataVenda: dataVendaContribuicao || localYmd(),
         createdAt: Timestamp.now(),
       });
       setValorContribuicao(0);

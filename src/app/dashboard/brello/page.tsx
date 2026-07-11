@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
@@ -273,13 +273,14 @@ const Brello = () => {
   }, [currentBoard?.id, columns.length]);
 
   const createBoard = async () => {
+    if (isEspelhoDemo) { showToast('Modo demonstração — alterações não são salvas.', 'info'); return; }
     if (!currentUser || !newBoardTitle.trim()) return;
 
     try {
       const boardData = {
         title: newBoardTitle.trim(),
         userId: currentUser.uid,
-        createdAt: new Date()
+        createdAt: serverTimestamp()
       };
 
       const docRef = await addDoc(collection(db, 'brelloBoards'), boardData);
@@ -289,7 +290,7 @@ const Brello = () => {
         title: 'To Do',
         boardId: docRef.id,
         order: 0,
-        createdAt: new Date()
+        createdAt: serverTimestamp()
       });
 
       setNewBoardTitle('');
@@ -300,6 +301,7 @@ const Brello = () => {
   };
 
   const createColumn = async () => {
+    if (isEspelhoDemo) { showToast('Modo demonstração — alterações não são salvas.', 'info'); return; }
     if (!currentBoard || !newColumnTitle.trim()) return;
 
     try {
@@ -307,7 +309,7 @@ const Brello = () => {
         title: newColumnTitle.trim(),
         boardId: currentBoard.id,
         order: columns.length,
-        createdAt: new Date()
+        createdAt: serverTimestamp()
       };
 
       await addDoc(collection(db, 'brelloColumns'), columnData);
@@ -320,6 +322,7 @@ const Brello = () => {
   };
 
   const createCard = async () => {
+    if (isEspelhoDemo) { showToast('Modo demonstração — alterações não são salvas.', 'info'); return; }
     if (!selectedColumnId || !newCardTitle.trim()) return;
 
     try {
@@ -328,7 +331,7 @@ const Brello = () => {
         description: newCardDescription.trim(),
         columnId: selectedColumnId,
         order: cards.filter(card => card.columnId === selectedColumnId).length,
-        createdAt: new Date()
+        createdAt: serverTimestamp()
       };
 
       await addDoc(collection(db, 'brelloCards'), cardData);
@@ -343,6 +346,7 @@ const Brello = () => {
   };
 
   const handleDragEnd = async (result: any) => {
+    if (isEspelhoDemo) { showToast('Modo demonstração — alterações não são salvas.', 'info'); return; }
     if (!result.destination) return;
 
     const { source, destination, draggableId } = result;
@@ -444,6 +448,7 @@ const Brello = () => {
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (isEspelhoDemo) { showToast('Modo demonstração — alterações não são salvas.', 'info'); return; }
     const file = event.target.files?.[0];
     if (!file || !selectedCard || !currentUser) return;
 
@@ -466,7 +471,7 @@ const Brello = () => {
         size: file.size,
         cardId: selectedCard.id,
         uploadedBy: currentUser.uid,
-        uploadedAt: new Date()
+        uploadedAt: serverTimestamp()
       };
 
       await addDoc(collection(db, 'brelloAttachments'), attachmentData);
@@ -488,6 +493,7 @@ const Brello = () => {
   };
 
   const deleteAttachment = async (attachmentId: string, fileName: string) => {
+    if (isEspelhoDemo) { showToast('Modo demonstração — alterações não são salvas.', 'info'); return; }
     if (!(await confirmDialog({ message: `Tem certeza que deseja excluir o anexo "${fileName}"? Esta ação não pode ser desfeita.`, danger: true, confirmLabel: 'Excluir' }))) return;
     try {
       // Deletar do Firestore
@@ -524,6 +530,7 @@ const Brello = () => {
   };
 
   const saveDescription = async () => {
+    if (isEspelhoDemo) { showToast('Modo demonstração — alterações não são salvas.', 'info'); return; }
     if (!selectedCard) return;
 
     try {
@@ -539,6 +546,7 @@ const Brello = () => {
   };
 
   const saveTitle = async () => {
+    if (isEspelhoDemo) { showToast('Modo demonstração — alterações não são salvas.', 'info'); return; }
     if (!selectedCard) return;
 
     try {
@@ -554,13 +562,14 @@ const Brello = () => {
   };
 
   const addComment = async () => {
+    if (isEspelhoDemo) { showToast('Modo demonstração — alterações não são salvas.', 'info'); return; }
     if (!selectedCard || !newComment.trim() || !currentUser) return;
 
     try {
       const commentData = {
         text: newComment.trim(),
         author: currentUser.email?.split('@')[0] || 'Usuário',
-        createdAt: new Date(),
+        createdAt: serverTimestamp(),
         cardId: selectedCard.id
       };
 
@@ -581,13 +590,14 @@ const Brello = () => {
   };
 
   const addReply = async (commentId: string) => {
+    if (isEspelhoDemo) { showToast('Modo demonstração — alterações não são salvas.', 'info'); return; }
     if (!replyText.trim() || !currentUser) return;
 
     try {
       const replyData = {
         text: replyText.trim(),
         author: currentUser.email?.split('@')[0] || 'Usuário',
-        createdAt: new Date(),
+        createdAt: serverTimestamp(),
         commentId: commentId
       };
 
@@ -634,6 +644,7 @@ const Brello = () => {
   };
 
   const shareBoard = async () => {
+    if (isEspelhoDemo) { showToast('Modo demonstração — alterações não são salvas.', 'info'); return; }
     if (!selectedBoard || !currentUser) return;
 
     try {
@@ -696,6 +707,7 @@ const Brello = () => {
   };
 
   const copyColumnToBoard = async () => {
+    if (isEspelhoDemo) { showToast('Modo demonstração — alterações não são salvas.', 'info'); return; }
     if (!selectedColumn || !targetBoardId) return;
 
     try {
@@ -704,7 +716,7 @@ const Brello = () => {
         title: selectedColumn.title,
         boardId: targetBoardId,
         order: 0,
-        createdAt: new Date()
+        createdAt: serverTimestamp()
       };
 
       const newColumnRef = await addDoc(collection(db, 'brelloColumns'), newColumnData);
@@ -717,7 +729,7 @@ const Brello = () => {
           description: card.description,
           columnId: newColumnRef.id,
           order: card.order,
-          createdAt: new Date()
+          createdAt: serverTimestamp()
         });
       }
 
@@ -731,6 +743,7 @@ const Brello = () => {
   };
 
   const moveColumnToBoard = async () => {
+    if (isEspelhoDemo) { showToast('Modo demonstração — alterações não são salvas.', 'info'); return; }
     if (!selectedColumn || !targetBoardId) return;
 
     try {
@@ -757,6 +770,7 @@ const Brello = () => {
   };
 
   const executeDelete = async () => {
+    if (isEspelhoDemo) { showToast('Modo demonstração — alterações não são salvas.', 'info'); return; }
     if (!deleteType || !deleteId) return;
 
     try {

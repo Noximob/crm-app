@@ -63,8 +63,8 @@ const GlobeIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmln
 const ShieldIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>;
 
 const NavLink = ({ href, icon: Icon, children, collapsed, isActive }: any) => (
-    <Link href={href} className={`flex items-center px-3 py-2.5 text-[#2E2F38] hover:bg-[#E8E9F1] rounded-lg transition-all duration-200 text-sm font-medium ${
-        isActive ? 'bg-primary-500 text-white shadow-md' : 'hover:text-primary-600'
+    <Link href={href} className={`flex items-center px-3 py-2.5 text-text-secondary hover:bg-white/[0.06] rounded-lg transition-all duration-200 text-sm font-medium ${
+        isActive ? 'bg-primary-500 text-white shadow-md' : 'hover:text-white'
     }`}>
         <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-primary-500'}`} />
         {!collapsed && <span className="ml-3">{children}</span>}

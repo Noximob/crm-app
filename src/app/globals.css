@@ -19,13 +19,13 @@
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(212, 160, 23, 0.25);
+  background: rgba(255, 30, 86, 0.25);
   border-radius: 3px;
   transition: background 0.2s ease;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(212, 160, 23, 0.45);
+  background: rgba(255, 30, 86, 0.4);
 }
 
 /* Animação: moedas escorrendo (Minhas Moedas) */
@@ -105,22 +105,8 @@
   animation: fade-in 0.5s ease-out;
 }
 
+/* Tema único (escuro — html sempre tem class="dark"; design system Alumma) */
 :root {
-  --foreground-rgb: 46, 47, 56;
-  --background-start-rgb: 245, 246, 250;
-  --background-end-rgb: 255, 255, 255;
-  --bg-primary: #F5F6FA;
-  --bg-card: #ffffff;
-  --bg-card-hover: #E8E9F1;
-  --text-primary: #2E2F38;
-  --text-secondary: #6B6F76;
-  --surface-hover: #F5F6FA;
-  --border-subtle: #E8E9F1;
-  --accent-glow: rgba(255, 140, 0, 0.5);
-}
-
-/* Tema escuro (design system Alumma) */
-.dark {
   --foreground-rgb: 245, 245, 245;
   --bg-primary: #0b0c11;
   --bg-card: #14161d;
@@ -129,7 +115,6 @@
   --text-secondary: #9ca3b0;
   --surface-hover: #1e212b;
   --border-subtle: rgba(255, 255, 255, 0.07);
-  --accent-glow: rgba(212, 160, 23, 0.5);
 }
 
 /* Fundo GX: preto profundo + brilho carmesim/violeta nos cantos */
@@ -181,7 +166,7 @@ body {
 input:focus {
   outline: none;
   ring: 2px;
-  ring-color: #D4A017;
+  ring-color: #FF1E56;
 }
 
 /* Transições suaves */
@@ -204,7 +189,7 @@ input:focus {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 140, 0, 0.4);
+  background: rgba(255, 30, 86, 0.4);
 }
 
 .dark ::-webkit-scrollbar-track {
@@ -275,10 +260,6 @@ input:focus {
 }
 
 /* Gradientes personalizados */
-.gradient-primary {
-  background: linear-gradient(135deg, #D4A017 0%, #B8860B 100%);
-}
-
 .gradient-success {
   background: linear-gradient(135deg, #3AC17C 0%, #2d9d63 100%);
 }
@@ -311,14 +292,6 @@ input:focus {
 
 .hover-lift:hover {
   transform: translateY(-2px);
-}
-
-/* Cards com bordas suaves */
-.card-soft {
-  background: var(--bg-card);
-  border-radius: 16px;
-  border: 1px solid var(--border-subtle);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 /* Card padrão do sistema (usado nas telas existentes): mesmo vidro premium */
@@ -493,22 +466,6 @@ input:focus {
 }
 
 /* Botões personalizados */
-.btn-primary {
-  background: linear-gradient(135deg, #D4A017 0%, #B8860B 100%);
-  color: white;
-  padding: 12px 24px;
-  border-radius: 12px;
-  font-weight: 600;
-  transition: all 0.2s ease-in-out;
-  border: none;
-  cursor: pointer;
-}
-
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(212, 160, 23, 0.18);
-}
-
 .btn-secondary {
   background: var(--surface-hover);
   color: var(--text-primary);

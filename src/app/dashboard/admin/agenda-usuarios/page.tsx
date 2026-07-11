@@ -258,6 +258,7 @@ export default function AgendaUsuariosPage() {
         .map(doc => ({ id: doc.id, ...doc.data() } as any));
       setAgendaImobiliaria(agendaData);
     } catch (err) {
+      console.error('Erro ao buscar agenda da imobiliária:', err);
       setAgendaImobiliaria([]);
     }
   };

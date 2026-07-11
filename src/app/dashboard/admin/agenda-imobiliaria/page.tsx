@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where, orderBy, Timestamp, serverTimestamp } from 'firebase/firestore';
 import { DEMO_AGENDA_IMOBILIARIA, DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
+import { showToast } from '@/components/ui/toast';
 import LoadingState from '@/components/ui/LoadingState';
 
 interface Corretor {
@@ -121,6 +122,15 @@ export default function AgendaImobiliariaAdminPage() {
       const horaInicio = formData.horaInicio || '00:00';
       const horaFim = formData.horaFim || horaInicio;
 
+      if (diaInicio && diaFim) {
+        const dataInicioCheck = new Date(`${diaInicio}T${horaInicio}`);
+        const dataFimCheck = new Date(`${diaFim}T${horaFim}`);
+        if (dataFimCheck < dataInicioCheck) {
+          showToast('A data/hora final não pode ser anterior à inicial.', 'error');
+          return;
+        }
+      }
+
       const eventData: Partial<AgendaImobiliaria> & { data: Timestamp; imobiliariaId: string } = {
         titulo: formData.titulo,
         descricao: formData.descricao,
@@ -141,12 +151,13 @@ export default function AgendaImobiliariaAdminPage() {
       };
 
       if (editingEvent) {
-        await updateDoc(doc(db, 'agendaImobiliaria', editingEvent.id), eventData);
+        // Firestore recebe serverTimestamp(); o estado local mantém o Timestamp.now() do eventData
+        await updateDoc(doc(db, 'agendaImobiliaria', editingEvent.id), { ...eventData, data: serverTimestamp() });
         setAgenda(prev => prev.map(event =>
           event.id === editingEvent.id ? { ...event, ...eventData } as AgendaImobiliaria : event
         ));
       } else {
-        const docRef = await addDoc(collection(db, 'agendaImobiliaria'), eventData);
+        const docRef = await addDoc(collection(db, 'agendaImobiliaria'), { ...eventData, data: serverTimestamp() });
         const newEvent = { id: docRef.id, ...eventData } as AgendaImobiliaria;
         setAgenda(prev => [newEvent, ...prev]);
       }
@@ -548,8 +559,9 @@ export default function AgendaImobiliariaAdminPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    const hojeIso = new Date().toISOString().slice(0, 10);
-                    setFiltroData(hojeIso);
+                    const d = new Date();
+                    const hojeLocal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    setFiltroData(hojeLocal);
                   }}
                   className="px-2 py-1 rounded-lg border border-purple-500/50 text-purple-300 text-xs md:text-sm hover:bg-purple-900/20"
                 >

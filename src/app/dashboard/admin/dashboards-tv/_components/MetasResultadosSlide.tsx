@@ -152,7 +152,7 @@ export function MetasResultadosSlide({
             <h1 className="text-xl md:text-3xl font-bold bg-gradient-to-r from-white via-slate-200 to-white bg-clip-text text-transparent">
               Metas & Resultados
             </h1>
-            <p className="text-slate-400 text-sm">Trimestral e mensal · ao vivo</p>
+            <p className="text-text-secondary text-sm">Trimestral e mensal · ao vivo</p>
           </div>
         </div>
 
@@ -163,7 +163,7 @@ export function MetasResultadosSlide({
               <div className="text-2xl md:text-3xl font-mono font-bold tabular-nums text-cyan-300">
                 {now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </div>
-              <div className="text-sm text-slate-400">
+              <div className="text-sm text-text-secondary">
                 {now.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
               </div>
             </div>
@@ -174,7 +174,7 @@ export function MetasResultadosSlide({
               <span className="text-3xl">{weatherStyle.emoji}</span>
               <div>
                 <div className="text-xl font-bold text-white">{weather.temp}°C</div>
-                <div className="text-xs text-slate-300">{weatherStyle.label}{weather.city ? ` · ${weather.city}` : ''}</div>
+                <div className="text-xs text-text-secondary">{weatherStyle.label}{weather.city ? ` · ${weather.city}` : ''}</div>
               </div>
             </div>
           )}
@@ -183,7 +183,7 @@ export function MetasResultadosSlide({
 
       <div className="relative flex-1 min-h-0 p-4 md:p-6 overflow-hidden flex flex-col">
         {!temMeta ? (
-          <div className="h-full flex items-center justify-center text-slate-500">
+          <div className="h-full flex items-center justify-center text-text-secondary">
             <p className="text-center">Configure as metas em Admin → Metas.</p>
           </div>
         ) : (
@@ -196,7 +196,7 @@ export function MetasResultadosSlide({
                 </div>
                 <div>
                   <p className="text-lg md:text-xl font-semibold text-white">Meta trimestral</p>
-                  <p className="text-sm md:text-base text-slate-300 mt-0.5">{frase}</p>
+                  <p className="text-sm md:text-base text-text-secondary mt-0.5">{frase}</p>
                 </div>
               </div>
               <div className="flex items-center gap-4 md:gap-6 flex-wrap">
@@ -214,18 +214,18 @@ export function MetasResultadosSlide({
                   </div>
                 )}
                 <div className="rounded-xl bg-white/10 border border-white/20 px-4 py-3">
-                  <p className="text-xs text-slate-400 uppercase tracking-wide">Corretores no jogo</p>
+                  <p className="text-xs text-text-secondary uppercase tracking-wide">Corretores no jogo</p>
                   <p className="text-2xl md:text-3xl font-bold text-white">{numCorretores}</p>
                 </div>
                 {diasRestantesTrim > 0 && (
                   <div className="rounded-xl bg-white/10 border border-white/20 px-4 py-3">
-                    <p className="text-xs text-slate-400 uppercase tracking-wide">Dias no trimestre</p>
+                    <p className="text-xs text-text-secondary uppercase tracking-wide">Dias no trimestre</p>
                     <p className="text-2xl md:text-3xl font-bold text-white">{diasRestantesTrim}</p>
                   </div>
                 )}
                 {metaMensal && (
                   <div className="rounded-xl bg-white/10 border border-white/20 px-4 py-3">
-                    <p className="text-xs text-slate-400 uppercase tracking-wide">Dias no mês</p>
+                    <p className="text-xs text-text-secondary uppercase tracking-wide">Dias no mês</p>
                     <p className="text-2xl md:text-3xl font-bold text-white">{diasRestantesMensal}</p>
                   </div>
                 )}
@@ -237,27 +237,27 @@ export function MetasResultadosSlide({
             <div className="lg:col-span-4 flex flex-col rounded-2xl border border-[#D4A017]/30 bg-gradient-to-b from-[#D4A017]/10 to-transparent backdrop-blur-sm p-5 overflow-hidden shadow-xl shadow-[#D4A017]/5">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-2xl">📅</span>
-                <h2 className="text-lg font-bold text-slate-300">Meta trimestral</h2>
+                <h2 className="text-lg font-bold text-white">Meta trimestral</h2>
               </div>
               {(metaTrimestral.inicio || metaTrimestral.fim) && (
-                <p className="text-xs text-slate-500 mb-1">{fmtDateSafe(metaTrimestral.inicio)} a {fmtDateSafe(metaTrimestral.fim)}</p>
+                <p className="text-xs text-text-secondary mb-1">{fmtDateSafe(metaTrimestral.inicio)} a {fmtDateSafe(metaTrimestral.fim)}</p>
               )}
               {diasRestantesTrim > 0 && (
                 <p className="text-xs text-cyan-400/90 mb-3">{diasRestantesTrim} dias restantes · {porSemanaTrim > 0 ? `${fmt(porSemanaTrim)}/semana para bater` : '—'}</p>
               )}
               <div className="flex justify-between items-baseline mb-2">
-                <span className="text-sm text-slate-400">Meta</span>
+                <span className="text-sm text-text-secondary">Meta</span>
                 <span className="text-xl font-black text-white">{fmt(metaTrimestral.valor)}</span>
               </div>
               <div className="flex justify-between items-baseline mb-2">
-                <span className="text-sm text-slate-400">Realizado</span>
+                <span className="text-sm text-text-secondary">Realizado</span>
                 <span className={`text-xl font-bold ${metaTrimestral.percentual >= 100 ? 'text-emerald-400' : 'text-cyan-400'}`}>
                   {fmt(metaTrimestral.alcancado)}
                 </span>
               </div>
               <div className="flex-1 min-h-0 flex flex-col justify-end">
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-400">Progresso</span>
+                  <span className="text-text-secondary">Progresso</span>
                   <span className={`font-bold tabular-nums ${metaTrimestral.percentual >= 100 ? 'text-emerald-400' : 'text-cyan-400'}`}>
                     {Math.min(metaTrimestral.percentual, 100)}%
                   </span>
@@ -287,25 +287,25 @@ export function MetasResultadosSlide({
               <div className="lg:col-span-4 flex flex-col rounded-2xl border border-primary-400/25 bg-gradient-to-b from-primary-500/8 to-transparent backdrop-blur-sm p-5 overflow-hidden shadow-xl shadow-primary-500/5">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-2xl">📆</span>
-                  <h2 className="text-lg font-bold text-slate-300">Meta mensal</h2>
+                  <h2 className="text-lg font-bold text-white">Meta mensal</h2>
                 </div>
-                <p className="text-xs text-slate-500 mb-1">{fmtDateSafe(metaMensal.inicio)} a {fmtDateSafe(metaMensal.fim)}</p>
+                <p className="text-xs text-text-secondary mb-1">{fmtDateSafe(metaMensal.inicio)} a {fmtDateSafe(metaMensal.fim)}</p>
                 {diasRestantesMensal > 0 && (
                   <p className="text-xs text-primary-400/90 mb-3">{diasRestantesMensal} dias no mês · {porSemanaMensal > 0 ? `${fmt(porSemanaMensal)}/semana para bater` : '—'}</p>
                 )}
                 <div className="flex justify-between items-baseline mb-2">
-                  <span className="text-sm text-slate-400">Meta</span>
+                  <span className="text-sm text-text-secondary">Meta</span>
                   <span className="text-xl font-black text-white">{fmt(metaMensal.valor)}</span>
                 </div>
                 <div className="flex justify-between items-baseline mb-2">
-                  <span className="text-sm text-slate-400">Realizado</span>
+                  <span className="text-sm text-text-secondary">Realizado</span>
                   <span className={`text-xl font-bold ${metaMensal.percentual >= 100 ? 'text-emerald-400' : 'text-primary-400'}`}>
                     {fmt(metaMensal.alcancado)}
                   </span>
                 </div>
                 <div className="flex-1 min-h-0 flex flex-col justify-end">
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-slate-400">Progresso</span>
+                    <span className="text-text-secondary">Progresso</span>
                     <span className={`font-bold tabular-nums ${metaMensal.percentual >= 100 ? 'text-emerald-400' : 'text-primary-400'}`}>
                       {Math.min(metaMensal.percentual, 100)}%
                     </span>
@@ -336,13 +336,13 @@ export function MetasResultadosSlide({
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-2xl">🏆</span>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-300">Quem vendeu</h2>
-                  <p className="text-xs text-slate-500">{numCorretores} corretores contribuíram</p>
+                  <h2 className="text-lg font-bold text-white">Quem vendeu</h2>
+                  <p className="text-xs text-text-secondary">{numCorretores} corretores contribuíram</p>
                 </div>
               </div>
               <div className="flex-1 min-h-0 overflow-auto space-y-2">
                 {contribuicoesPorCorretor.length === 0 ? (
-                  <p className="text-sm text-slate-500">Nenhuma contribuição lançada ainda.</p>
+                  <p className="text-sm text-text-secondary">Nenhuma contribuição lançada ainda.</p>
                 ) : (
                   contribuicoesPorCorretor.slice(0, 12).map((c, i) => {
                     const pos = i + 1;
@@ -358,7 +358,7 @@ export function MetasResultadosSlide({
                         }`}
                       >
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-slate-500 font-mono text-sm w-6 shrink-0">{medal ?? `${pos}º`}</span>
+                          <span className="text-text-secondary font-mono text-sm w-6 shrink-0">{medal ?? `${pos}º`}</span>
                           <span className="font-medium text-white truncate">{c.corretorNome}</span>
                         </div>
                         <span className={`font-bold tabular-nums shrink-0 ${isTop3 ? 'text-primary-400' : 'text-emerald-400'}`}>

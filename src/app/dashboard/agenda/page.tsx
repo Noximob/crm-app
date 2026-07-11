@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, Timestamp, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, Timestamp, orderBy, serverTimestamp } from 'firebase/firestore';
 import DayAgendaModal from './_components/DayAgendaModal';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import {
@@ -128,6 +128,12 @@ function getAgendaImobiliariaTipoLabel(tipo: string): string {
   return labels[tipo] ?? tipo;
 }
 
+// Formata uma Date local como valor de input datetime-local (YYYY-MM-DDTHH:mm), sem conversão para UTC
+function toDatetimeLocalValue(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function AgendaPage() {
   const { currentUser, userData, isEspelhoDemo } = useAuth();
   const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([]);
@@ -190,6 +196,7 @@ export default function AgendaPage() {
         .map(doc => ({ id: doc.id, ...doc.data() } as any));
       setAgendaImobiliaria(agendaData);
     } catch (err) {
+      console.error('Erro ao buscar agenda da imobiliária:', err);
       setAgendaImobiliaria([]);
     }
   };
@@ -313,7 +320,7 @@ export default function AgendaPage() {
         ...formData,
         dataHora: Timestamp.fromDate(new Date(formData.dataHora)),
         status: 'pendente' as const,
-        createdAt: Timestamp.now(),
+        createdAt: serverTimestamp(),
         userId: currentUser.uid,
         source: 'agenda' // Adicionar source para identificar origem
       };
@@ -350,7 +357,7 @@ export default function AgendaPage() {
     setFormData({
       titulo: item.titulo,
       descricao: item.descricao || '',
-      dataHora: new Date(item.dataHora.toDate()).toISOString().slice(0, 16),
+      dataHora: toDatetimeLocalValue(item.dataHora.toDate()),
       tipo: item.tipo as 'agenda',
       cor: item.cor
     });
@@ -366,15 +373,6 @@ export default function AgendaPage() {
       } catch (error) {
         console.error('Erro ao excluir item:', error);
       }
-    }
-  };
-
-  const handleStatusChange = async (id: string, status: AgendaItem['status']) => {
-    try {
-      await updateDoc(doc(db, 'agenda', id), { status });
-      fetchAgendaItems();
-    } catch (error) {
-      console.error('Erro ao atualizar status:', error);
     }
   };
 

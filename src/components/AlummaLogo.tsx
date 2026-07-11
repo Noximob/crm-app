@@ -2,91 +2,36 @@
 
 import React from 'react';
 
-/**
- * Onde usar cada formato:
- * - full + dark  → Sidebar (expandida), TV canto, Login (fundo escuro)
- * - full + light → Esqueci-senha, cabeçalho do Relatório individual
- * - a + dark     → Sidebar recolhida, ícone em áreas escuras
- * - a + light    → Rodapé do relatório, ícone em fundo claro
- * - alumma + dark  → Só nome "ALUMMA" em fundo escuro
- * - alumma + light → Só nome "ALUMMA" em fundo claro
- */
-// Legado (PNGs antigos) — mantido só como fallback.
-const LOGOS = {
-  a:      { dark: '/logo/logo-a-dark.png', light: '/logo/logo-a-white.png' },
-  alumma: { dark: '/logo/logo-alumma-dark.png', light: '/logo/logo-alumma-white.png' },
-  full:   { dark: '/logo/logo-full-dark.png', light: '/logo/logo-full-white.png' },
-} as const;
-
-type Variant = keyof typeof LOGOS;
-type Theme = 'dark' | 'light';
-
 interface AlummaLogoProps {
-  variant?: Variant;
-  theme?: Theme;
+  variant?: 'full' | 'a';
+  theme?: 'dark' | 'light';
   className?: string;
   width?: number;
   height?: number;
 }
 
+/** Logo Nox Imóveis (SVG inline). variant 'a' mostra só o ícone. */
 export function AlummaLogo({ variant = 'full', theme = 'dark', className = '', width, height }: AlummaLogoProps) {
-  // Altura base aproximada para manter proporção parecida com os PNGs antigos
-  const effectiveHeight =
-    height ?? (width ? Math.round(width * 0.3) : 32);
-
-  // Novo padrão: usar sempre o SVG inline que é o mesmo do frame do dashboard
-  if (variant === 'full') {
-    return (
-      <AlummaLogoFullInline
-        theme={theme}
-        height={effectiveHeight}
-        className={className}
-      />
-    );
-  }
-
-  // Variante só com o ícone "A"
-  if (variant === 'a') {
-    return (
-      <AlummaLogoFullInline
-        theme={theme}
-        height={effectiveHeight}
-        className={className}
-        iconOnly
-      />
-    );
-  }
-
-  // Fallback para variantes antigas (ex.: "alumma") — usa PNG legado
-  const table = LOGOS[variant] ?? LOGOS.full;
-  const src = table[theme];
+  const effectiveHeight = height ?? (width ? Math.round(width * 0.3) : 32);
   return (
-    <img
-      src={src}
-      alt="Nox Imóveis"
-      width={width}
-      height={height}
+    <AlummaLogoFullInline
+      theme={theme}
+      height={effectiveHeight}
       className={className}
-      style={{ objectFit: 'contain' }}
+      iconOnly={variant === 'a'}
     />
   );
 }
 
-/** Mesmo componente; nome alternativo para uso em relatórios/impressão. */
-export function AlummaLogoImg(props: AlummaLogoProps) {
-  return <AlummaLogo {...props} />;
-}
-
 /**
- * Logo completa (A + ALUMMA) em SVG — fundo transparente.
- * Usar no header/sidebar e no relatório individual (único lugar da logo inicialmente).
+ * Logo completa (ícone + NOX IMÓVEIS) em SVG — fundo transparente.
  */
 export function AlummaLogoFullInline({
   className = '',
   height = 32,
-  /** 'dark' = laranja/âmbar para fundo escuro; 'light' = para fundo claro (ex.: relatório) */
+  /** 'dark' = para fundo escuro; 'light' = para fundo claro (ex.: relatório impresso) */
   theme = 'dark',
-  /** Se true, mostra só o ícone A (ex.: sidebar recolhida) */
+  /** Se true, mostra só o ícone (ex.: sidebar recolhida) */
   iconOnly = false,
 }: {
   className?: string;

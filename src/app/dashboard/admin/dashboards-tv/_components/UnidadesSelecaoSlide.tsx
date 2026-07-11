@@ -44,7 +44,7 @@ export function UnidadesSelecaoSlide({ tituloSelecao, unidades }: UnidadesSeleca
               key={idx}
               className="group bg-white/5 rounded-2xl border border-white/10 overflow-hidden shadow-2xl hover:border-[#D4A017]/40 hover:shadow-[0_0_40px_-10px_rgba(52,120,246,0.4)] transition-all duration-500"
             >
-              <div className="aspect-[4/3] relative overflow-hidden bg-[#23283A]">
+              <div className="aspect-[4/3] relative overflow-hidden bg-white/[0.04]">
                 {unidad?.imageUrl ? (
                   <img
                     src={unidad.imageUrl}
@@ -52,7 +52,7 @@ export function UnidadesSelecaoSlide({ tituloSelecao, unidades }: UnidadesSeleca
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[#6B6F76]">
+                  <div className="w-full h-full flex items-center justify-center text-text-secondary">
                     <span className="text-4xl">🏠</span>
                   </div>
                 )}

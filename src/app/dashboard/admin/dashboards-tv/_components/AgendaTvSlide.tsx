@@ -295,14 +295,14 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
             <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-white to-slate-200 bg-clip-text text-transparent">
               {titulo}
             </h1>
-            <p className="text-slate-400 text-xs md:text-sm mt-0.5">{subtitulo}</p>
+            <p className="text-text-secondary text-xs md:text-sm mt-0.5">{subtitulo}</p>
           </div>
         </div>
         <div className="text-right flex flex-col items-end gap-0.5">
           <div className="text-2xl md:text-3xl font-mono font-black tabular-nums text-cyan-400">
             {now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </div>
-          <div className="text-xs md:text-sm text-slate-400">
+          <div className="text-xs md:text-sm text-text-secondary">
             {now.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
           </div>
           {mode === 'day' && plantoesHoje.length > 0 && (
@@ -341,7 +341,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
           <div className="h-full w-full flex flex-col gap-3 min-h-0">
             {/* Parte 1: Eventos do dia em quadrados — só agenda (sem plantão) */}
             <section className="shrink-0">
-              <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Eventos do dia</h2>
+              <h2 className="text-xs font-bold text-text-secondary uppercase tracking-widest mb-2">Eventos do dia</h2>
               {(() => {
                 const nowTime = now.getTime();
                 const hojeInicio = startOfDay(now).getTime();
@@ -351,7 +351,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                 );
                 if (itensFuturos.length === 0) {
                   return (
-                    <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-slate-400">
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-text-secondary">
                       Nenhum evento restante hoje.
                     </div>
                   );
@@ -408,7 +408,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                             </span>
                           </div>
                           {item.local && (
-                            <p className="text-[10px] text-slate-300 truncate mt-0.5">
+                            <p className="text-[10px] text-text-secondary truncate mt-0.5">
                               Local: {item.local}
                             </p>
                           )}
@@ -421,10 +421,10 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                                   ) : (
                                     <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-bold">{c.nome?.charAt(0) ?? '?'}</span>
                                   )}
-                                  <span className="text-[10px] text-slate-300 truncate max-w-[70px]">{(c.nome || '').split(' ')[0]}</span>
+                                  <span className="text-[10px] text-text-secondary truncate max-w-[70px]">{(c.nome || '').split(' ')[0]}</span>
                                 </div>
                               ))}
-                              {item.confirmados.length > 5 && <span className="text-[10px] text-slate-500">+{item.confirmados.length - 5}</span>}
+                              {item.confirmados.length > 5 && <span className="text-[10px] text-text-secondary">+{item.confirmados.length - 5}</span>}
                             </div>
                           )}
                         </div>
@@ -437,7 +437,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
 
             {/* Parte 2: Cards dos corretores — ordem: atraso, tarefa dia, sem tarefa, +24h sem CRM */}
             <section className="flex-1 min-h-0 flex flex-col">
-              <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 shrink-0">Corretores</h2>
+              <h2 className="text-xs font-bold text-text-secondary uppercase tracking-widest mb-2 shrink-0">Corretores</h2>
               {corretoresStatusLoading ? (
                 <div className="flex-1 flex items-center justify-center"><LoadingState label="Carregando..." /></div>
               ) : (() => {
@@ -458,7 +458,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                 const ordenados = [...corretoresStatus]
                   .sort((a, b) => pesoStatus(a.status) - pesoStatus(b.status));
                 if (ordenados.length === 0) {
-                  return <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-slate-400 text-sm">Nenhum corretor com pendência.</div>;
+                  return <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-text-secondary text-sm">Nenhum corretor com pendência.</div>;
                 }
                 const visiveis = ordenados.slice(0, 10);
                 return (
@@ -474,7 +474,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                           ? 'border-2 border-amber-400/80 bg-amber-500/10'
                           : isSemTarefa
                             ? 'border-2 border-emerald-400/80 bg-emerald-500/10'
-                            : 'border-2 border-slate-500/70 bg-slate-600/40 text-slate-300';
+                            : 'border-2 border-white/15 bg-white/[0.05] text-text-secondary';
                       return (
                         <div
                           key={c.id}
@@ -489,7 +489,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                           {isAtrasado && <span className="text-[10px] text-red-300 font-medium">Tarefa atrasada</span>}
                           {isTarefaDia && <span className="text-[10px] text-amber-300 font-medium">Tarefa do dia</span>}
                           {isSemTarefa && <span className="text-[10px] text-emerald-200 font-medium">Sem tarefa</span>}
-                          {isSemUso24h && <span className="text-[10px] text-slate-400 font-medium">+24h sem usar CRM</span>}
+                          {isSemUso24h && <span className="text-[10px] text-text-secondary font-medium">+24h sem usar CRM</span>}
                         </div>
                       );
                     })}
@@ -514,24 +514,24 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
                     }`}
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <span className={`font-bold ${isHoje ? 'text-cyan-400' : 'text-slate-300'}`}>
+                      <span className={`font-bold ${isHoje ? 'text-cyan-400' : 'text-white'}`}>
                         {fmtDiaCurto(data)}
                       </span>
                       {isHoje && <span className="text-xs bg-cyan-500/30 text-cyan-300 px-2 py-0.5 rounded-full">Hoje</span>}
                     </div>
                     {totalDia === 0 ? (
-                      <p className="text-sm text-slate-500 flex-1">Sem compromissos</p>
+                      <p className="text-sm text-text-secondary flex-1">Sem compromissos</p>
                     ) : totalDia > 0 ? (
                       <ul className="space-y-2 flex-1">
                         {slots.slice(0, 5).map((s) => (
                           <li key={s.id} className="flex items-center gap-2 text-sm">
                             <span className="shrink-0">{TIPO_ICON[s.tipo] ?? '📅'}</span>
                             <span className="font-mono text-cyan-400/90 shrink-0">{fmtHora(s.inicio)}</span>
-                            <span className="truncate text-slate-200">{s.titulo}</span>
+                            <span className="truncate text-white">{s.titulo}</span>
                           </li>
                         ))}
                         {slots.length > 5 && (
-                          <li className="text-xs text-slate-500">+{slots.length - 5} mais</li>
+                          <li className="text-xs text-text-secondary">+{slots.length - 5} mais</li>
                         )}
                       </ul>
                     ) : null}

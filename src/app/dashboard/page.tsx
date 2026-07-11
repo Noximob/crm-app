@@ -191,7 +191,7 @@ const MetricCard = ({ title, value, change, icon: Icon, trend = 'up' }: {
 // Substituir EconomicIndicator por um componente mais simples, sem variação
 const SimpleIndicator = ({ title, value }: { title: string; value: string }) => (
   <div className="flex flex-col items-center justify-center p-3 bg-gradient-to-r from-[#D4A017]/5 to-[#E8C547]/5 rounded-lg border border-[#E8C547]/20 min-w-[120px] animate-slide-in">
-    <div className="text-xs text-gray-300 mb-1">{title}</div>
+    <div className="text-xs text-text-secondary mb-1">{title}</div>
     <div className="text-lg font-bold text-white">{value}</div>
   </div>
 );
@@ -210,7 +210,7 @@ const TaskItem = ({ time, title, status = 'pending' }: {
   const config = statusConfig[status];
   
   return (
-    <div className="flex items-center gap-3 p-3 hover:bg-[#F5F6FA] rounded-xl transition-colors">
+    <div className="flex items-center gap-3 p-3 hover:bg-white/[0.06] rounded-xl transition-colors">
       <div className={`w-2 h-2 rounded-full ${config.color}`}></div>
       <div className="flex-1">
         <div className="text-sm font-medium text-white">{title}</div>
@@ -234,14 +234,14 @@ const RankingItem = ({ position, name, sales, avatar, rating }: {
   const getPositionColor = (pos: number) => {
     switch (pos) {
       case 1: return 'bg-yellow-400 text-white';
-      case 2: return 'bg-gray-300 text-white';
+      case 2: return 'bg-white/20 text-white';
       case 3: return 'bg-orange-400 text-white';
-      default: return 'bg-[#E8E9F1] text-[#6B6F76]';
+      default: return 'bg-white/[0.06] text-text-secondary';
     }
   };
 
   return (
-    <div className="flex items-center gap-3 p-3 hover:bg-[#F5F6FA] rounded-xl transition-colors">
+    <div className="flex items-center gap-3 p-3 hover:bg-white/[0.06] rounded-xl transition-colors">
       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${getPositionColor(position)}`}>
         {position}
       </div>
@@ -285,7 +285,7 @@ const getPriorityColor = (priority: string) => {
     case 'Urgente': return 'bg-red-500 text-white';
     case 'Importante': return 'bg-orange-500 text-white';
     case 'Circunstancial': return 'bg-amber-500 text-white';
-    default: return 'bg-gray-500 text-white';
+    default: return 'bg-white/20 text-white';
   }
 };
 
@@ -308,7 +308,7 @@ const TAREFA_STATUS_ORDER = ['Tarefa em Atraso', 'Tarefa do Dia', 'Sem tarefa', 
 const statusInfo = {
   'Tarefa em Atraso': { color: 'bg-red-500', text: 'Em Atraso' },
   'Tarefa do Dia': { color: 'bg-yellow-500', text: 'Para Hoje' },
-  'Sem tarefa': { color: 'bg-gray-500', text: 'Sem Tarefa' },
+  'Sem tarefa': { color: 'bg-white/20', text: 'Sem Tarefa' },
   'Tarefa Futura': { color: 'bg-amber-500', text: 'Futura' }
 };
 function getTaskStatusInfo(tasks: Task[]): TaskStatus {
@@ -366,7 +366,7 @@ const MetaIndividualCard = ({ metaPessoal, meta }: { metaPessoal: { valorAlmejad
   };
   const colors = getProgressColors();
   return (
-    <div className="flex flex-col gap-1.5 p-3 rounded-xl shadow-lg bg-[#23283A]/5 border border-[#D4A017]/20 relative overflow-hidden">
+    <div className="flex flex-col gap-1.5 p-3 rounded-xl shadow-lg bg-white/[0.03] border border-[#D4A017]/20 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-0.5 h-full bg-[#D4A017]" />
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
@@ -403,7 +403,7 @@ const MetaIndividualCard = ({ metaPessoal, meta }: { metaPessoal: { valorAlmejad
           {alcancado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
         </span>
       </div>
-      <div className="w-full h-1.5 bg-[#23283A] rounded-full overflow-hidden">
+      <div className="w-full h-1.5 bg-white/[0.08] rounded-full overflow-hidden">
         <div className={`h-full rounded-full transition-all duration-500 ease-out bg-gradient-to-r ${colors.barra}`} style={{ width: `${progressoDisplay}%` }} />
       </div>
     </div>
@@ -481,7 +481,7 @@ const MetasCard = ({ meta, nomeImobiliaria }: { meta: any, nomeImobiliaria: stri
           <span className={`text-sm font-bold ${progresso >= 100 ? 'text-[#3AC17C]' : 'text-[#D4A017]'}`}>{typeof meta?.alcancado === 'number' ? meta.alcancado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--'}</span>
         </div>
       </div>
-      <div className="w-full h-2 bg-[#23283A] rounded-full overflow-hidden relative">
+      <div className="w-full h-2 bg-white/[0.08] rounded-full overflow-hidden relative">
         <div className={`h-2 rounded-full transition-all duration-1000 ease-out bg-gradient-to-r ${colors.barra} shadow-lg`} style={{ width: `${progressoDisplay}%` }} />
       </div>
     </div>
@@ -917,7 +917,7 @@ export default function DashboardPage() {
       case 'meet': return 'bg-amber-500';
       case 'youtube': return 'bg-red-500';
       case 'instagram': return 'bg-pink-500';
-      default: return 'bg-gray-500';
+      default: return 'bg-white/20';
     }
   };
 
@@ -937,9 +937,9 @@ export default function DashboardPage() {
       {/* Borda superior que aparece no hover */}
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#D4A017] to-[#E8C547] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
       
-      <div className="text-xs text-gray-300 mb-1 group-hover:text-[#D4A017] transition-colors duration-300">{title}</div>
+      <div className="text-xs text-text-secondary mb-1 group-hover:text-[#D4A017] transition-colors duration-300">{title}</div>
       <div className="text-lg font-bold text-white group-hover:text-[#D4A017] transition-colors duration-300">{value}</div>
-      <div className="text-[10px] text-gray-400 mb-1 group-hover:text-[#E8C547] transition-colors duration-300">({subtitulo})</div>
+      <div className="text-[10px] text-text-secondary mb-1 group-hover:text-[#E8C547] transition-colors duration-300">({subtitulo})</div>
       {variacao !== null && (
         <div className={`flex items-center text-xs font-medium ${variacao >= 0 ? 'text-[#3AC17C]' : 'text-[#F45B69]'} group-hover:scale-110 transition-transform duration-300`}> 
           {variacao >= 0 ? (
@@ -1310,15 +1310,15 @@ export default function DashboardPage() {
       {/* Modal de Notas */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={() => setIsModalOpen(false)}>
-          <div className="relative max-w-3xl w-full mx-4 bg-[#23283A] rounded-2xl shadow-xl p-0" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-gray-300 text-2xl z-10 hover:text-[#F45B69]">✕</button>
+          <div className="relative max-w-3xl w-full mx-4 bg-[#12101a] border border-white/10 rounded-2xl shadow-xl p-0" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-text-secondary text-2xl z-10 hover:text-[#F45B69]">✕</button>
             
             <div className="p-6">
               <div className="flex items-center gap-3 mb-6">
                 <NotesIcon className="h-8 w-8 text-[#D4A017]" />
                 <div>
                   <h2 className="text-2xl font-bold text-white">Todas as Notas</h2>
-                  <p className="text-gray-300">Suas notas e lembretes</p>
+                  <p className="text-text-secondary">Suas notas e lembretes</p>
                 </div>
               </div>
               
@@ -1326,13 +1326,13 @@ export default function DashboardPage() {
                 {notes.length === 0 ? (
                   <div className="text-center py-8">
                     <NotesIcon className="h-12 w-12 text-[#D4A017] mx-auto mb-3 opacity-50" />
-                    <p className="text-gray-300">Nenhuma nota criada ainda</p>
+                    <p className="text-text-secondary">Nenhuma nota criada ainda</p>
                   </div>
                 ) : (
                   notes.map((note) => (
                     <div
                       key={note.id}
-                      className="p-4 rounded-lg border border-[#23283A] hover:bg-[#181C23] transition-colors"
+                      className="p-4 rounded-lg border border-white/[0.08] hover:bg-white/[0.04] transition-colors"
                     >
                       <div className="flex items-start gap-3">
                         <span className="text-lg mt-0.5">{getPriorityIcon(note.prioridade)}</span>
@@ -1341,7 +1341,7 @@ export default function DashboardPage() {
                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(note.prioridade)}`}>
                               {note.prioridade}
                             </span>
-                            <span className="text-xs text-gray-300">
+                            <span className="text-xs text-text-secondary">
                               {note.criadoEm.toDate().toLocaleDateString('pt-BR')}
                             </span>
                           </div>
@@ -1351,7 +1351,7 @@ export default function DashboardPage() {
                           {note.dataHora && (
                             <div className="flex items-center gap-2">
                               <CalendarIcon className="h-4 w-4 text-[#D4A017]" />
-                              <span className="text-xs text-gray-300">
+                              <span className="text-xs text-text-secondary">
                                 Agendado: {new Date(note.dataHora).toLocaleDateString('pt-BR')}
                               </span>
                             </div>

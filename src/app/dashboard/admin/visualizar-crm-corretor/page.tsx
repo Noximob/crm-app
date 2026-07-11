@@ -90,7 +90,7 @@ const StatusIndicator = ({ status }: { status: TaskStatus }) => {
     'Tarefa em Atraso': { color: 'bg-red-500', text: 'Atrasada' },
     'Tarefa do Dia': { color: 'bg-yellow-400', text: 'Para Hoje' },
     'Tarefa Futura': { color: 'bg-sky-500', text: 'Futura' },
-    'Sem tarefa': { color: 'bg-gray-400', text: 'Sem Tarefa' },
+    'Sem tarefa': { color: 'bg-white/20', text: 'Sem Tarefa' },
   };
   const { color, text } = statusInfo[status] || statusInfo['Sem tarefa'];
   return (
@@ -308,7 +308,7 @@ export default function VisualizarCrmCorretorPage() {
             >
               <option value="">Selecione um corretor</option>
               {corretores.map(c => (
-                <option key={c.id} value={c.id} className="bg-[#23283A] text-white">{c.nome || c.email}</option>
+                <option key={c.id} value={c.id} className="bg-[#12101a] text-white">{c.nome || c.email}</option>
               ))}
             </select>
           </div>

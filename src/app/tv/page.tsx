@@ -42,7 +42,7 @@ const TvIcon = (p: React.SVGProps<SVGSVGElement>) => (
 function TvPageFallback() {
   return (
     <div className="min-h-screen bg-particles flex items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-2 border-amber-500 border-t-transparent" />
+      <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#FF1E56] border-t-transparent" />
     </div>
   );
 }
@@ -175,7 +175,7 @@ function TvPageContent({ imobiliariaId: imobiliariaIdProp }: { imobiliariaId?: s
   if (loading) {
     return (
       <div className="min-h-screen bg-particles flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-2 border-amber-500 border-t-transparent" />
+        <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#FF1E56] border-t-transparent" />
       </div>
     );
   }
@@ -183,7 +183,7 @@ function TvPageContent({ imobiliariaId: imobiliariaIdProp }: { imobiliariaId?: s
   if (config.length === 0) {
     return (
       <div className="min-h-screen bg-particles flex flex-col items-center justify-center text-white p-8">
-        <TvIcon className="w-16 h-16 text-amber-500 mb-4" />
+        <TvIcon className="w-16 h-16 text-[#FF5C7E] drop-shadow-[0_0_8px_rgba(255,30,86,0.5)] mb-4" />
         <p className="text-xl font-semibold mb-2">Nenhuma tela ativa</p>
         <p className="text-text-secondary text-center max-w-md">
           Configure as telas em Admin → Dashboards TV e ative pelo menos uma.
@@ -198,7 +198,7 @@ function TvPageContent({ imobiliariaId: imobiliariaIdProp }: { imobiliariaId?: s
       <div className="min-h-screen flex flex-col">
         {agendaTvData.loading ? (
           <div className="min-h-screen flex items-center justify-center bg-particles">
-            <div className="animate-spin rounded-full h-14 w-14 border-2 border-amber-500 border-t-transparent" />
+            <div className="animate-spin rounded-full h-14 w-14 border-2 border-[#FF1E56] border-t-transparent" />
           </div>
         ) : (
           <AgendaTvSlide
@@ -220,7 +220,7 @@ function TvPageContent({ imobiliariaId: imobiliariaIdProp }: { imobiliariaId?: s
       <div className="min-h-screen flex flex-col">
         {agendaTvData.loading ? (
           <div className="min-h-screen flex items-center justify-center bg-particles">
-            <div className="animate-spin rounded-full h-14 w-14 border-2 border-amber-500 border-t-transparent" />
+            <div className="animate-spin rounded-full h-14 w-14 border-2 border-[#FF1E56] border-t-transparent" />
           </div>
         ) : (
           <AgendaTvSlide
@@ -277,7 +277,7 @@ function TvPageContent({ imobiliariaId: imobiliariaIdProp }: { imobiliariaId?: s
             </div>
           ) : (
             <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden">
-              <div className="text-center text-[#6B6F76] px-4">Sem imagem</div>
+              <div className="text-center text-text-secondary px-4">Sem imagem</div>
             </div>
           )}
           <div className="shrink-0 px-6 py-4 bg-[var(--bg-primary)]/95 border-t border-white/10 overflow-hidden">
@@ -287,7 +287,7 @@ function TvPageContent({ imobiliariaId: imobiliariaIdProp }: { imobiliariaId?: s
           </div>
         </div>
         {!temConteudo && (
-          <p className="shrink-0 text-center text-[#6B6F76] text-sm py-2">Configure em Admin → Dashboards TV → Editar Notícia da Semana</p>
+          <p className="shrink-0 text-center text-text-secondary text-sm py-2">Configure em Admin → Dashboards TV → Editar Notícia da Semana</p>
         )}
       </div>
     );
@@ -299,7 +299,7 @@ function TvPageContent({ imobiliariaId: imobiliariaIdProp }: { imobiliariaId?: s
       <div className="min-h-screen flex flex-col">
         {funilData.loading ? (
           <div className="min-h-screen flex items-center justify-center bg-particles">
-            <div className="animate-spin rounded-full h-14 w-14 border-2 border-amber-500 border-t-transparent" />
+            <div className="animate-spin rounded-full h-14 w-14 border-2 border-[#FF1E56] border-t-transparent" />
           </div>
         ) : (
           <FunilVendasSlide
@@ -319,7 +319,7 @@ function TvPageContent({ imobiliariaId: imobiliariaIdProp }: { imobiliariaId?: s
       <div className="min-h-screen flex flex-col">
         {funilData.loading ? (
           <div className="min-h-screen flex items-center justify-center bg-particles">
-            <div className="animate-spin rounded-full h-14 w-14 border-2 border-amber-500 border-t-transparent" />
+            <div className="animate-spin rounded-full h-14 w-14 border-2 border-[#FF1E56] border-t-transparent" />
           </div>
         ) : (
           <FunilVendasIndividualSlide funilPorCorretor={funilData.funilPorCorretor} />
@@ -334,7 +334,7 @@ function TvPageContent({ imobiliariaId: imobiliariaIdProp }: { imobiliariaId?: s
       <div className="min-h-screen flex flex-col">
         {metasData.loading ? (
           <div className="min-h-screen flex items-center justify-center bg-particles">
-            <div className="animate-spin rounded-full h-14 w-14 border-2 border-amber-500 border-t-transparent" />
+            <div className="animate-spin rounded-full h-14 w-14 border-2 border-[#FF1E56] border-t-transparent" />
           </div>
         ) : (
           <MetasResultadosSlide
@@ -352,7 +352,7 @@ function TvPageContent({ imobiliariaId: imobiliariaIdProp }: { imobiliariaId?: s
     <div className="min-h-screen bg-particles text-white overflow-hidden flex flex-col">
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-500/20 text-amber-500 mb-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#FF1E56]/15 border border-[#FF1E56]/35 text-[#FF7A97] mb-6">
             <TvIcon className="w-8 h-8" />
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-2">{currentSlide?.name}</h1>

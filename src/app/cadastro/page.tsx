@@ -138,22 +138,11 @@ export default function CadastroPage() {
             <p className="text-sm text-text-secondary mb-4 text-center">
               Selecione uma imobiliária aprovada para se vincular. Apenas imobiliárias aprovadas aparecem na lista.
               {imobiliarias.length === 0 && (
-                <span className="block mt-2 text-[#FFE9A6] font-medium">
+                <span className="block mt-2 text-text-secondary font-medium">
                   ⚠️ Carregando imobiliárias disponíveis...
                 </span>
               )}
             </p>
-            
-            {/* Botão de debug temporário */}
-            <button
-              type="button"
-              onClick={() => {
-                alert(`Imobiliárias carregadas: ${imobiliarias.length}\n${imobiliarias.map(i => `${i.nome} (${i.id})`).join('\n')}`);
-              }}
-              className="mb-4 w-full border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-text-secondary font-medium py-2 px-4 rounded-xl transition-colors duration-200"
-            >
-              🔍 Debug: Verificar Imobiliárias
-            </button>
             <div className="mb-4 relative">
               <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1.5">Imobiliária</label>
               <input
@@ -237,14 +226,11 @@ export default function CadastroPage() {
           status: 'pendente', // Agora exige aprovação manual
           metodoCadastro: isGoogleLoading ? 'google' : 'email',
         };
-        console.log('Dados enviados para imobiliaria:', dadosImobiliaria);
         const imobiliariaDoc = await addDoc(collection(db, 'imobiliarias'), dadosImobiliaria);
         imobiliariaId = imobiliariaDoc.id;
-        console.log('Imobiliária/corretor autônomo criado com ID:', imobiliariaId);
       } else if (perfil === 'corretor-vinculado') {
         imobiliariaId = imobiliariaSelecionada!.id;
         }
-      console.log('Criando documento do usuário no Firestore...');
       await setDoc(doc(db, 'usuarios', user.uid), {
         nome,
         email,
@@ -255,11 +241,9 @@ export default function CadastroPage() {
         metodoCadastro: 'email',
         photoURL: user.photoURL || null,
       });
-      console.log('Usuário criado no Firestore!');
       setSuccess('Cadastro realizado com sucesso! Aguarde aprovação.');
       setEmail(''); setPassword(''); setNome('');
     } catch (error: any) {
-      console.error('Erro no cadastro:', error);
       if (error.code === 'auth/email-already-in-use') setError('E-mail já em uso.');
       else if (error.code === 'auth/weak-password') setError('Senha fraca.');
       else setError(error.message || 'Erro ao cadastrar. Tente novamente.');
@@ -274,10 +258,8 @@ export default function CadastroPage() {
     setSuccess(null);
     let cadastroFinalizado = false;
     try {
-      console.log('Iniciando cadastro com Google...');
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
-      console.log('Usuário autenticado com Google:', user.uid);
       await user.getIdToken(true);
       await new Promise(resolve => {
         const unsubscribe = auth.onAuthStateChanged(firebaseUser => {
@@ -304,18 +286,14 @@ export default function CadastroPage() {
             status: 'pendente',
             metodoCadastro: 'google',
           };
-          console.log('Criando imobiliária:', dadosImobiliaria);
           const imobiliariaDoc = await addDoc(collection(db, 'imobiliarias'), dadosImobiliaria);
         imobiliariaId = imobiliariaDoc.id;
-        console.log('Imobiliária criada com ID:', imobiliariaId);
         } catch (err) {
-          console.error('Erro ao criar imobiliária:', err);
           setError('Erro ao criar imobiliária. Tente novamente.');
           setIsGoogleLoading(false);
           return;
         }
       } else if (perfil === 'corretor-vinculado') {
-        console.log('Perfil corretor-vinculado, verificando imobiliariaSelecionada:', imobiliariaSelecionada);
         if (!imobiliariaSelecionada) {
           setError('Selecione uma imobiliária para se vincular.');
           setIsGoogleLoading(false);
@@ -325,7 +303,6 @@ export default function CadastroPage() {
       }
       // Criação do usuário
       try {
-      console.log('Criando documento do usuário no Firestore...');
           await setDoc(doc(db, 'usuarios', user.uid), {
             nome: user.displayName || user.email?.split("@")[0] || 'Usuário',
             email: user.email,
@@ -336,9 +313,7 @@ export default function CadastroPage() {
             metodoCadastro: 'google',
             photoURL: user.photoURL || null,
           });
-        console.log('Usuário criado no Firestore!');
       } catch (err) {
-        console.error('Erro ao criar documento do usuário no Firestore:', err);
         setError('Erro ao criar usuário no Firestore. Tente novamente.');
         setIsGoogleLoading(false);
         return;
@@ -348,7 +323,6 @@ export default function CadastroPage() {
       cadastroFinalizado = true;
       await signOut(auth);
     } catch (error: any) {
-      console.error('Erro no cadastro com Google:', error);
       setError(error.message || 'Erro ao cadastrar com Google. Tente novamente.');
         await signOut(auth);
     } finally {
