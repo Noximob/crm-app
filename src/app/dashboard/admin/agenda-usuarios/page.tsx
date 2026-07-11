@@ -49,15 +49,6 @@ interface CrmTask {
   leadNome?: string;
 }
 
-interface AvisoImportante {
-  id: string;
-  titulo: string;
-  mensagem: string;
-  data: Timestamp;
-  dataInicio?: Timestamp;
-  dataFim?: Timestamp;
-}
-
 interface EventoComunidade {
   id: string;
   titulo: string;
@@ -129,7 +120,6 @@ export default function AgendaUsuariosPage() {
   const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [crmTasks, setCrmTasks] = useState<CrmTask[]>([]);
-  const [avisos, setAvisos] = useState<AvisoImportante[]>([]);
   const [eventosComunidade, setEventosComunidade] = useState<EventoComunidade[]>([]);
   const [agendaImobiliaria, setAgendaImobiliaria] = useState<AgendaImobiliaria[]>([]);
   const [loading, setLoading] = useState(true);
@@ -178,7 +168,6 @@ export default function AgendaUsuariosPage() {
         fetchAgendaItems(),
         fetchNotes(),
         fetchCrmTasks(),
-        fetchAvisosImportantes(),
         fetchEventosComunidade(),
         fetchAgendaImobiliaria()
       ]);
@@ -277,22 +266,6 @@ export default function AgendaUsuariosPage() {
     }
   };
 
-  const fetchAvisosImportantes = async () => {
-    if (!userData?.imobiliariaId) return;
-    try {
-      const q = query(
-        collection(db, 'avisosImportantes'),
-        where('imobiliariaId', '==', userData.imobiliariaId)
-      );
-      const snapshot = await getDocs(q);
-      const avisosData = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as any));
-      setAvisos(avisosData);
-    } catch (err) {
-      setAvisos([]);
-    }
-  };
-
   const fetchEventosComunidade = async () => {
     if (!userData?.imobiliariaId) return;
     try {
@@ -383,92 +356,6 @@ export default function AgendaUsuariosPage() {
           leadId: task.leadId,
           leadNome: task.leadNome
         });
-      }
-    });
-    
-    // Adicionar avisos importantes
-    avisos.forEach(aviso => {
-      // Se o aviso tem dataInicio e dataFim
-      if (aviso.dataInicio && aviso.dataFim) {
-        const inicioDate = aviso.dataInicio.toDate();
-        const fimDate = aviso.dataFim.toDate();
-        const currentDate = new Date(date);
-        
-        // Verificar se é evento de 1 dia ou múltiplos dias
-        const inicioDateOnly = new Date(inicioDate.getFullYear(), inicioDate.getMonth(), inicioDate.getDate());
-        const fimDateOnly = new Date(fimDate.getFullYear(), fimDate.getMonth(), fimDate.getDate());
-        const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-        
-        // Se início e fim são no mesmo dia = evento de 1 dia
-        if (inicioDateOnly.getTime() === fimDateOnly.getTime()) {
-          // Evento de 1 dia - verificar se é o dia correto
-          if (currentDateOnly.getTime() === inicioDateOnly.getTime()) {
-            allItems.push({
-              id: `aviso_${aviso.id}`,
-              titulo: aviso.titulo,
-              descricao: aviso.mensagem,
-              dataHora: aviso.dataInicio, // Usar horário de início
-              tipo: 'aviso',
-              status: 'pendente',
-              cor: '#DC2626',
-              createdAt: aviso.data,
-              userId: '',
-              source: 'aviso',
-              originalId: aviso.id
-            });
-          }
-        } else {
-          // Evento de múltiplos dias - verificar se está no período
-          if (currentDateOnly >= inicioDateOnly && currentDateOnly <= fimDateOnly) {
-            // Extrair horário diário do início
-            const horaInicio = inicioDate.getHours();
-            const minutoInicio = inicioDate.getMinutes();
-            const horaFim = fimDate.getHours();
-            const minutoFim = fimDate.getMinutes();
-            
-            // Criar data/hora para este dia específico
-            const dataHoraDia = new Date(currentDate);
-            dataHoraDia.setHours(horaInicio, minutoInicio, 0, 0);
-            
-            // Criar descrição com informações do período
-            let descricao = aviso.mensagem;
-            descricao += '\n\n';
-            descricao += `Período: ${inicioDateOnly.toLocaleDateString('pt-BR')} a ${fimDateOnly.toLocaleDateString('pt-BR')}\n`;
-            descricao += `Horário diário: ${horaInicio.toString().padStart(2, '0')}:${minutoInicio.toString().padStart(2, '0')} - ${horaFim.toString().padStart(2, '0')}:${minutoFim.toString().padStart(2, '0')}`;
-            
-            allItems.push({
-              id: `aviso_${aviso.id}`,
-              titulo: aviso.titulo,
-              descricao: descricao,
-              dataHora: Timestamp.fromDate(dataHoraDia),
-              tipo: 'aviso',
-              status: 'pendente',
-              cor: '#DC2626',
-              createdAt: aviso.data,
-              userId: '',
-              source: 'aviso',
-              originalId: aviso.id
-            });
-          }
-        }
-      } else {
-        // Fallback para avisos antigos que não têm dataInicio/dataFim
-        const avisoDate = aviso.data.toDate();
-        if (avisoDate.toDateString() === date.toDateString()) {
-          allItems.push({
-            id: `aviso_${aviso.id}`,
-            titulo: aviso.titulo,
-            descricao: aviso.mensagem,
-            dataHora: aviso.data,
-            tipo: 'aviso',
-            status: 'pendente',
-            cor: '#DC2626',
-            createdAt: aviso.data,
-            userId: '',
-            source: 'aviso',
-            originalId: aviso.id
-          });
-        }
       }
     });
     
@@ -823,83 +710,6 @@ export default function AgendaUsuariosPage() {
                     }
                   });
                   
-                                     // Adicionar avisos importantes
-                   avisos.forEach(aviso => {
-                     if (aviso.dataInicio && aviso.dataFim) {
-                       const inicioDate = aviso.dataInicio.toDate();
-                       const fimDate = aviso.dataFim.toDate();
-                       const currentDate = new Date();
-                       
-                       const inicioDateOnly = new Date(inicioDate.getFullYear(), inicioDate.getMonth(), inicioDate.getDate());
-                       const fimDateOnly = new Date(fimDate.getFullYear(), fimDate.getMonth(), fimDate.getDate());
-                       const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-                       
-                       if (inicioDateOnly.getTime() === fimDateOnly.getTime()) {
-                         if (currentDateOnly.getTime() === inicioDateOnly.getTime()) {
-                           allItems.push({
-                             id: `aviso_${aviso.id}`,
-                             titulo: aviso.titulo,
-                             descricao: aviso.mensagem,
-                             dataHora: aviso.dataInicio,
-                             tipo: 'aviso',
-                             status: 'pendente',
-                             cor: '#DC2626',
-                             createdAt: aviso.data,
-                             userId: '',
-                             source: 'aviso',
-                             originalId: aviso.id
-                           });
-                         }
-                       } else {
-                         if (currentDateOnly >= inicioDateOnly && currentDateOnly <= fimDateOnly) {
-                           const horaInicio = inicioDate.getHours();
-                           const minutoInicio = inicioDate.getMinutes();
-                           const horaFim = fimDate.getHours();
-                           const minutoFim = fimDate.getMinutes();
-                           
-                           const dataHoraDia = new Date(currentDate);
-                           dataHoraDia.setHours(horaInicio, minutoInicio, 0, 0);
-                           
-                           let descricao = aviso.mensagem;
-                           descricao += '\n\n';
-                           descricao += `Período: ${inicioDateOnly.toLocaleDateString('pt-BR')} a ${fimDateOnly.toLocaleDateString('pt-BR')}\n`;
-                           descricao += `Horário diário: ${horaInicio.toString().padStart(2, '0')}:${minutoInicio.toString().padStart(2, '0')} - ${horaFim.toString().padStart(2, '0')}:${minutoFim.toString().padStart(2, '0')}`;
-                           
-                           allItems.push({
-                             id: `aviso_${aviso.id}`,
-                             titulo: aviso.titulo,
-                             descricao: descricao,
-                             dataHora: Timestamp.fromDate(dataHoraDia),
-                             tipo: 'aviso',
-                             status: 'pendente',
-                             cor: '#DC2626',
-                             createdAt: aviso.data,
-                             userId: '',
-                             source: 'aviso',
-                             originalId: aviso.id
-                           });
-                         }
-                       }
-                     } else {
-                       const avisoDate = aviso.data.toDate();
-                       if (avisoDate.toDateString() === new Date().toDateString()) {
-                         allItems.push({
-                           id: `aviso_${aviso.id}`,
-                           titulo: aviso.titulo,
-                           descricao: aviso.mensagem,
-                           dataHora: aviso.data,
-                           tipo: 'aviso',
-                           status: 'pendente',
-                           cor: '#DC2626',
-                           createdAt: aviso.data,
-                           userId: '',
-                           source: 'aviso',
-                           originalId: aviso.id
-                         });
-                       }
-                     }
-                   });
-
                   // Adicionar eventos da comunidade
                   eventosComunidade.forEach(evento => {
                     if (evento.eventoData.toDate() >= new Date()) {

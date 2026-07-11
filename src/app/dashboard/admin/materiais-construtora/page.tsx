@@ -183,7 +183,6 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
   const [st, setSt] = useState(initial.st || STATUS[1]);
   const [cid, setCid] = useState(initial.cid || '');
   const [end, setEnd] = useState(initial.end || '');
-  const [pr, setPr] = useState(initial.pr || '');
   const [m2, setM2] = useState(initial.m2 || '');
   const [t, setT] = useState(initial.t || '');
   const [a, setA] = useState(initial.a || '');
@@ -251,7 +250,7 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
     try {
       const data: Record<string, any> = {
         co, n: n.trim(), l: l.trim(), st, cid: cid.trim(), end: end.trim(),
-        pr: pr.trim(), m2: m2.trim(), t: t.trim(), a: a.trim(), ap: ap.trim(), e: e.trim(),
+        m2: m2.trim(), t: t.trim(), a: a.trim(), ap: ap.trim(), e: e.trim(),
         resumo, capa,
         defesa: defesa.trim(),
         // tip vai como JSON string (Firestore não aceita array-dentro-de-array)

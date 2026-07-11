@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, setDoc, addDoc, deleteDoc, Timestamp, query, where } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
@@ -17,6 +17,7 @@ interface PeriodoMeets {
   inicio: string; // YYYY-MM-DD
   fim: string; // YYYY-MM-DD
   contadores: Record<string, number>;
+  automatico?: boolean; // true = contadores recalculados das tarefas de Visita do CRM
   createdAt?: any;
 }
 
@@ -26,6 +27,9 @@ const hojeYmd = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
+
+const dateToYmd = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 export default function AdminMeetsVisitasPage() {
   const { userData, isEspelhoDemo } = useAuth();
@@ -42,6 +46,22 @@ export default function AdminMeetsVisitasPage() {
   const [drafts, setDrafts] = useState<Record<string, Record<string, number>>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
   const [okId, setOkId] = useState<string | null>(null);
+
+  // Modo automático
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [recalcId, setRecalcId] = useState<string | null>(null);
+  const [recalcOk, setRecalcOk] = useState<Record<string, number>>({}); // periodoId -> total recalculado
+  const autoRecalcFeito = useRef(false);
+
+  // Erros visíveis por card ('novo' = formulário de criação)
+  const [erros, setErros] = useState<Record<string, string>>({});
+  const setErro = (k: string, msg: string) => setErros((prev) => ({ ...prev, [k]: msg }));
+  const limpaErro = (k: string) =>
+    setErros((prev) => {
+      const n = { ...prev };
+      delete n[k];
+      return n;
+    });
 
   // Corretores aprovados da imobiliária (mesmo padrão da página de Metas)
   useEffect(() => {
@@ -69,8 +89,7 @@ export default function AdminMeetsVisitasPage() {
       const dow = (hoje.getDay() + 6) % 7;
       const seg = new Date(hoje); seg.setDate(hoje.getDate() - dow);
       const dom = new Date(seg); dom.setDate(seg.getDate() + 6);
-      const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      setPeriodos([{ id: 'demo', imobiliariaId: 'demo', inicio: ymd(seg), fim: ymd(dom), contadores: Object.fromEntries(DEMO_REPORT_CORRETORES.map((c: any, i: number) => [c.uid, [12, 9, 7, 5][i] ?? 3])) }]);
+      setPeriodos([{ id: 'demo', imobiliariaId: 'demo', inicio: dateToYmd(seg), fim: dateToYmd(dom), contadores: Object.fromEntries(DEMO_REPORT_CORRETORES.map((c: any, i: number) => [c.uid, [12, 9, 7, 5][i] ?? 3])) }]);
       setFetching(false);
       return;
     }
@@ -85,6 +104,7 @@ export default function AdminMeetsVisitasPage() {
       setPeriodos(lista);
     } catch (e) {
       console.error('Erro ao buscar períodos de meets & visitas:', e);
+      setErro('novo', 'Não foi possível carregar os períodos — recarregue a página.');
     } finally {
       setFetching(false);
     }
@@ -105,10 +125,121 @@ export default function AdminMeetsVisitasPage() {
     setDrafts((prev) => ({ ...prev, [periodoId]: { ...(prev[periodoId] ?? base), [corretorId]: Math.max(0, valor) } }));
   };
 
+  // ---------------------------------------------------------------------------
+  // MODO AUTOMÁTICO — contagem a partir das tarefas de Visita do CRM
+  //
+  // Abordagem escolhida: buscamos os leads da imobiliária (where imobiliariaId ==,
+  // índice simples automático) e depois lemos a subcoleção leads/{id}/tarefas de
+  // cada lead com where('type', '==', 'Visita') (índice automático de campo único).
+  // NÃO usamos collectionGroup('tarefas') porque os docs de tarefa não têm
+  // imobiliariaId/userId: um collectionGroup filtrando type + intervalo de dueDate
+  // exigiria índice composto no console E varreria tarefas de todas as imobiliárias
+  // (as regras/custos não permitem isolar o tenant). Aqui tudo funciona sem criar
+  // índice nenhum. O intervalo de data é filtrado no cliente: dueDate (Timestamp)
+  // vira YYYY-MM-DD local e é comparado com [inicio, fim] do período.
+  // Tarefas com status 'cancelada' não contam.
+  // ---------------------------------------------------------------------------
+  const contarVisitasDoCrm = async (p: PeriodoMeets): Promise<Record<string, number>> => {
+    const leadsSnap = await getDocs(
+      query(collection(db, 'leads'), where('imobiliariaId', '==', userData!.imobiliariaId))
+    );
+    // mapa leadId -> userId (corretor dono do lead)
+    const leads = leadsSnap.docs
+      .map((d) => ({ id: d.id, userId: (d.data() as any).userId as string | undefined }))
+      .filter((l): l is { id: string; userId: string } => !!l.userId);
+
+    const contadores: Record<string, number> = {};
+    const CHUNK = 25; // lê as subcoleções em lotes paralelos p/ não estourar conexões
+    for (let i = 0; i < leads.length; i += CHUNK) {
+      const lote = leads.slice(i, i + CHUNK);
+      await Promise.all(
+        lote.map(async (lead) => {
+          const snap = await getDocs(
+            query(collection(db, 'leads', lead.id, 'tarefas'), where('type', '==', 'Visita'))
+          );
+          let n = 0;
+          snap.forEach((t) => {
+            const d = t.data() as any;
+            if (d.status === 'cancelada') return;
+            const due = d.dueDate;
+            const dt: Date | null = due?.toDate ? due.toDate() : (due?.seconds ? new Date(due.seconds * 1000) : null);
+            if (!dt) return;
+            const ymd = dateToYmd(dt);
+            if (ymd >= p.inicio && ymd <= p.fim) n++;
+          });
+          if (n > 0) contadores[lead.userId] = (contadores[lead.userId] || 0) + n;
+        })
+      );
+    }
+    return contadores;
+  };
+
+  const handleRecalcular = async (p: PeriodoMeets) => {
+    if (isEspelhoDemo) return; // demo: botão aparece mas não grava
+    if (!userData?.imobiliariaId) return;
+    setRecalcId(p.id);
+    limpaErro(p.id);
+    try {
+      const contadores = await contarVisitasDoCrm(p);
+      await setDoc(doc(db, 'meetsVisitas', p.id), { contadores }, { merge: true });
+      setPeriodos((prev) => prev.map((x) => (x.id === p.id ? { ...x, contadores } : x)));
+      // descarta rascunho manual antigo desse período — o valor da verdade agora é o CRM
+      setDrafts((prev) => { const n = { ...prev }; delete n[p.id]; return n; });
+      const total = Object.values(contadores).reduce((s, v) => s + v, 0);
+      setRecalcOk((prev) => ({ ...prev, [p.id]: total }));
+      setTimeout(() => setRecalcOk((prev) => { const n = { ...prev }; delete n[p.id]; return n; }), 5000);
+    } catch (err) {
+      console.error('Erro ao recalcular do CRM:', err);
+      setErro(p.id, 'Não foi possível recalcular do CRM — tente de novo.');
+    } finally {
+      setRecalcId(null);
+    }
+  };
+
+  const handleToggleAutomatico = async (p: PeriodoMeets) => {
+    if (isEspelhoDemo) return; // demo: chip aparece mas não grava
+    const novo = !p.automatico;
+    setTogglingId(p.id);
+    limpaErro(p.id);
+    try {
+      await setDoc(doc(db, 'meetsVisitas', p.id), { automatico: novo }, { merge: true });
+      setPeriodos((prev) => prev.map((x) => (x.id === p.id ? { ...x, automatico: novo } : x)));
+      if (novo) await handleRecalcular({ ...p, automatico: true }); // ao ligar, já puxa do CRM
+    } catch (err) {
+      console.error('Erro ao alterar modo automático:', err);
+      setErro(p.id, 'Não foi possível salvar — tente de novo.');
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
+  // Recalcula sozinho ao abrir a página: períodos automáticos e ATIVOS se
+  // retroalimentam do CRM sempre que o admin visita a tela.
+  useEffect(() => {
+    if (fetching || isEspelhoDemo || autoRecalcFeito.current || !userData?.imobiliariaId) return;
+    const ativos = periodos.filter((p) => p.automatico && statusPeriodo(p).label === 'ATIVO');
+    if (ativos.length === 0) return;
+    autoRecalcFeito.current = true;
+    (async () => {
+      for (const p of ativos) await handleRecalcular(p);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetching, periodos, isEspelhoDemo, userData?.imobiliariaId]);
+
   const handleCriar = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isEspelhoDemo || !userData?.imobiliariaId || !novoInicio || !novoFim) return;
-    if (novoFim < novoInicio) { alert('A data final não pode ser antes da inicial.'); return; }
+    limpaErro('novo');
+    if (novoFim < novoInicio) {
+      setErro('novo', 'A data final não pode ser antes da inicial.');
+      return;
+    }
+    // Impede sobreposição: dois intervalos [a1,a2] e [b1,b2] se cruzam quando a1 <= b2 e b1 <= a2
+    const conflito = periodos.find((pp) => novoInicio <= pp.fim && pp.inicio <= novoFim);
+    if (conflito) {
+      setErro('novo', `Esse intervalo sobrepõe o período ${fmtBr(conflito.inicio)} → ${fmtBr(conflito.fim)}. Ajuste as datas.`);
+      return;
+    }
     setCriando(true);
     try {
       await addDoc(collection(db, 'meetsVisitas'), {
@@ -116,6 +247,7 @@ export default function AdminMeetsVisitasPage() {
         inicio: novoInicio,
         fim: novoFim,
         contadores: {},
+        automatico: false,
         createdAt: Timestamp.now(),
       });
       setNovoInicio('');
@@ -123,6 +255,7 @@ export default function AdminMeetsVisitasPage() {
       await fetchPeriodos();
     } catch (err) {
       console.error('Erro ao criar período:', err);
+      setErro('novo', 'Não foi possível criar o período — tente de novo.');
     } finally {
       setCriando(false);
     }
@@ -131,6 +264,7 @@ export default function AdminMeetsVisitasPage() {
   const handleSalvar = async (p: PeriodoMeets) => {
     if (isEspelhoDemo) return;
     setSavingId(p.id);
+    limpaErro(p.id);
     try {
       const contadores = getDraft(p);
       await setDoc(doc(db, 'meetsVisitas', p.id), { contadores }, { merge: true });
@@ -139,6 +273,7 @@ export default function AdminMeetsVisitasPage() {
       setTimeout(() => setOkId(null), 1800);
     } catch (err) {
       console.error('Erro ao salvar contadores:', err);
+      setErro(p.id, 'Não foi possível salvar — tente de novo.');
     } finally {
       setSavingId(null);
     }
@@ -147,11 +282,13 @@ export default function AdminMeetsVisitasPage() {
   const handleExcluir = async (p: PeriodoMeets) => {
     if (isEspelhoDemo) { setPeriodos((prev) => prev.filter((x) => x.id !== p.id)); return; }
     if (!window.confirm(`Excluir o período ${fmtBr(p.inicio)} → ${fmtBr(p.fim)}? Os contadores dele somem do histórico dos corretores.`)) return;
+    limpaErro(p.id);
     try {
       await deleteDoc(doc(db, 'meetsVisitas', p.id));
       setPeriodos((prev) => prev.filter((x) => x.id !== p.id));
     } catch (err) {
       console.error('Erro ao excluir período:', err);
+      setErro(p.id, 'Não foi possível excluir — tente de novo.');
     }
   };
 
@@ -163,7 +300,8 @@ export default function AdminMeetsVisitasPage() {
         <span className="gx-tag"><span>Área do administrador</span></span>
         <h1 className="al-display text-[22px] font-bold text-white uppercase tracking-[0.1em] mt-2">Meets & Visitas</h1>
         <p className="text-[12px] text-text-secondary mt-1">
-          Defina o período que está sendo contado e lance manualmente os agendamentos de cada corretor.
+          Defina o período que está sendo contado e lance manualmente os agendamentos de cada corretor —
+          ou ligue o modo automático para contar as tarefas de Visita agendadas no CRM.
           O pódio e o placar da home leem daqui; períodos encerrados viram o histórico do corretor.
         </p>
       </div>
@@ -185,7 +323,8 @@ export default function AdminMeetsVisitasPage() {
             {criando ? 'Criando...' : 'Criar período'}
           </button>
         </div>
-        <p className="text-[10.5px] text-text-secondary mt-2">Dica: crie um período por semana (seg → dom). Só um período deve cobrir a data de hoje.</p>
+        {erros['novo'] && <p className="text-red-300 text-[11.5px] font-bold mt-2">{erros['novo']}</p>}
+        <p className="text-[10.5px] text-text-secondary mt-2">Dica: crie um período por semana (seg → dom). Períodos não podem se sobrepor.</p>
       </form>
 
       {/* Períodos */}
@@ -201,8 +340,10 @@ export default function AdminMeetsVisitasPage() {
       ) : (
         periodos.map((p) => {
           const st = statusPeriodo(p);
-          const draft = getDraft(p);
+          const auto = !!p.automatico;
+          const draft = auto ? (p.contadores ?? {}) : getDraft(p);
           const total = corretores.reduce((s, c) => s + (Number(draft[c.id]) || 0), 0);
+          const recalculando = recalcId === p.id;
           // Contadores de corretores que saíram da imobiliária (ids sem cadastro) continuam visíveis p/ auditoria
           const orfaos = Object.keys(p.contadores || {}).filter((id) => !nomeDoCorretor(id));
           return (
@@ -211,8 +352,30 @@ export default function AdminMeetsVisitasPage() {
               <div className="flex flex-wrap items-center gap-2.5 mb-3">
                 <h3 className="al-display text-[15px] font-bold text-white tabular-nums">{fmtBr(p.inicio)} → {fmtBr(p.fim)}</h3>
                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9.5px] font-extrabold uppercase tracking-wider border ${st.cls}`}>{st.label}</span>
+                <button
+                  type="button"
+                  onClick={() => handleToggleAutomatico(p)}
+                  disabled={togglingId === p.id || recalculando}
+                  title={auto
+                    ? 'Modo automático ligado: os contadores vêm das tarefas de Visita agendadas no CRM. Clique para voltar ao lançamento manual.'
+                    : 'Ligar modo automático: contar as tarefas de Visita agendadas no CRM dentro do período.'}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9.5px] font-extrabold uppercase tracking-wider border transition-colors disabled:opacity-50 ${
+                    auto
+                      ? 'bg-gradient-to-r from-[#E8C547]/15 to-[#34D399]/10 border-[#E8C547]/50 text-[#FFE9A6]'
+                      : 'bg-white/[0.04] border-white/15 text-text-secondary hover:border-white/30 hover:text-white'
+                  }`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${auto ? 'bg-[#34D399] shadow-[0_0_6px_rgba(52,211,153,0.8)]' : 'bg-white/25'}`} />
+                  Automático
+                </button>
                 <span className="ml-auto text-[11px] text-text-secondary">total do período: <b className="text-[#FFE9A6] al-display text-[14px] tabular-nums">{total}</b></span>
               </div>
+              {auto && recalculando && (
+                <p className="text-[10.5px] text-text-secondary mb-2 flex items-center gap-1.5">
+                  <span className="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-[#E8C547]" />
+                  Recalculando visitas do CRM...
+                </p>
+              )}
               <div className="space-y-1.5">
                 {corretores.map((c) => (
                   <div key={c.id} className="flex items-center gap-3 rounded-lg px-3 py-1.5 bg-white/[0.03] border border-white/[0.07]">
@@ -221,8 +384,10 @@ export default function AdminMeetsVisitasPage() {
                       type="number"
                       min={0}
                       value={draft[c.id] ?? 0}
+                      disabled={auto}
+                      title={auto ? 'Contador automático: vem das tarefas de Visita do CRM. Desligue o modo automático para editar à mão.' : undefined}
                       onChange={(e) => setContador(p.id, c.id, parseInt(e.target.value || '0', 10) || 0, p.contadores || {})}
-                      className="w-20 text-center bg-white/[0.04] border border-white/10 rounded-lg px-2 py-1.5 text-white al-display text-[15px] tabular-nums focus:outline-none focus:ring-2 focus:ring-[#E8C547]/50 focus:border-[#E8C547]/50"
+                      className="w-20 text-center bg-white/[0.04] border border-white/10 rounded-lg px-2 py-1.5 text-white al-display text-[15px] tabular-nums focus:outline-none focus:ring-2 focus:ring-[#E8C547]/50 focus:border-[#E8C547]/50 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <span className="text-[9.5px] uppercase tracking-wider text-text-secondary w-14">agend.</span>
                   </div>
@@ -235,14 +400,24 @@ export default function AdminMeetsVisitasPage() {
                 )}
               </div>
               <div className="flex items-center gap-2 mt-3">
-                <button type="button" onClick={() => handleSalvar(p)} disabled={savingId === p.id || isEspelhoDemo} className="bg-gradient-to-r from-[#E8C547] to-[#C89210] hover:brightness-110 text-[#181203] font-bold rounded-xl px-4 py-2 shadow-[0_8px_24px_-8px_rgba(232,197,71,0.5)] active:scale-[0.98] transition-all disabled:opacity-50">
-                  {savingId === p.id ? 'Salvando...' : 'Salvar contadores'}
-                </button>
+                {auto ? (
+                  <button type="button" onClick={() => handleRecalcular(p)} disabled={recalculando || isEspelhoDemo} className="bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold rounded-xl px-4 py-2 shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all disabled:opacity-50">
+                    {recalculando ? 'Recalculando...' : 'Recalcular do CRM'}
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => handleSalvar(p)} disabled={savingId === p.id || isEspelhoDemo} className="bg-gradient-to-r from-[#E8C547] to-[#C89210] hover:brightness-110 text-[#181203] font-bold rounded-xl px-4 py-2 shadow-[0_8px_24px_-8px_rgba(232,197,71,0.5)] active:scale-[0.98] transition-all disabled:opacity-50">
+                    {savingId === p.id ? 'Salvando...' : 'Salvar contadores'}
+                  </button>
+                )}
                 {okId === p.id && <span className="text-emerald-300 text-[12px] font-bold">✓ salvo</span>}
+                {recalcOk[p.id] !== undefined && (
+                  <span className="text-emerald-300 text-[12px] font-bold">✓ recalculado · total {recalcOk[p.id]}</span>
+                )}
                 <button type="button" onClick={() => handleExcluir(p)} className="ml-auto border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-300 font-bold rounded-xl px-4 py-2 transition-colors">
                   Excluir período
                 </button>
               </div>
+              {erros[p.id] && <p className="text-red-300 text-[11.5px] font-bold mt-2">{erros[p.id]}</p>}
             </div>
           );
         })

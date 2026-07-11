@@ -8,7 +8,6 @@ import DayAgendaModal from './_components/DayAgendaModal';
 import {
   DEMO_AGENDA_ITEMS,
   DEMO_AGENDA_IMOBILIARIA,
-  DEMO_AVISOS,
   DEMO_NOTES,
   getDemoCrmTasksForAgenda,
 } from '@/lib/espelho/demoData';
@@ -77,15 +76,6 @@ interface CrmTask {
   status: 'pendente' | 'concluída' | 'cancelada';
   leadId: string;
   leadNome?: string;
-}
-
-interface AvisoImportante {
-  id: string;
-  titulo: string;
-  mensagem: string;
-  data: Timestamp;
-  dataInicio?: Timestamp;
-  dataFim?: Timestamp;
 }
 
 interface EventoComunidade {
@@ -163,7 +153,6 @@ export default function AgendaPage() {
   const [crmTasks, setCrmTasks] = useState<CrmTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [avisos, setAvisos] = useState<AvisoImportante[]>([]);
   const [eventosComunidade, setEventosComunidade] = useState<EventoComunidade[]>([]);
   const [agendaImobiliaria, setAgendaImobiliaria] = useState<AgendaImobiliaria[]>([]);
 
@@ -192,7 +181,6 @@ export default function AgendaPage() {
       setAgendaItems(DEMO_AGENDA_ITEMS as AgendaItem[]);
       setNotes(DEMO_NOTES as Note[]);
       setCrmTasks(getDemoCrmTasksForAgenda());
-      setAvisos(DEMO_AVISOS as AvisoImportante[]);
       setAgendaImobiliaria(DEMO_AGENDA_IMOBILIARIA as AgendaImobiliaria[]);
       setEventosComunidade([]);
       setLoading(false);
@@ -206,26 +194,9 @@ export default function AgendaPage() {
   useEffect(() => {
     if (isEspelhoDemo) return;
     if (userData?.imobiliariaId) {
-      fetchAvisosImportantes();
       fetchAgendaImobiliaria();
     }
   }, [userData, isEspelhoDemo]);
-
-  const fetchAvisosImportantes = async () => {
-    if (!userData?.imobiliariaId) return;
-    try {
-      const q = query(
-        collection(db, 'avisosImportantes'),
-        where('imobiliariaId', '==', userData.imobiliariaId)
-      );
-      const snapshot = await getDocs(q);
-      const avisosData = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as any));
-      setAvisos(avisosData);
-    } catch (err) {
-      setAvisos([]);
-    }
-  };
 
   const fetchAgendaImobiliaria = async () => {
     if (!userData?.imobiliariaId) return;
@@ -252,7 +223,6 @@ export default function AgendaPage() {
         fetchAgendaItems(),
         fetchNotes(),
         fetchCrmTasks(),
-        fetchAvisosImportantes(),
         fetchEventosComunidade(),
         fetchAgendaImobiliaria()
       ]);
@@ -528,92 +498,6 @@ export default function AgendaPage() {
           leadId: task.leadId,
           leadNome: task.leadNome
         });
-      }
-    });
-    
-    // Adicionar avisos importantes
-    avisos.forEach(aviso => {
-      // Se o aviso tem dataInicio e dataFim
-      if (aviso.dataInicio && aviso.dataFim) {
-        const inicioDate = aviso.dataInicio.toDate();
-        const fimDate = aviso.dataFim.toDate();
-        const currentDate = new Date(date);
-        
-        // Verificar se é evento de 1 dia ou múltiplos dias
-        const inicioDateOnly = new Date(inicioDate.getFullYear(), inicioDate.getMonth(), inicioDate.getDate());
-        const fimDateOnly = new Date(fimDate.getFullYear(), fimDate.getMonth(), fimDate.getDate());
-        const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-        
-        // Se início e fim são no mesmo dia = evento de 1 dia
-        if (inicioDateOnly.getTime() === fimDateOnly.getTime()) {
-          // Evento de 1 dia - verificar se é o dia correto
-          if (currentDateOnly.getTime() === inicioDateOnly.getTime()) {
-            allItems.push({
-              id: `aviso_${aviso.id}`,
-              titulo: aviso.titulo,
-              descricao: aviso.mensagem,
-              dataHora: aviso.dataInicio, // Usar horário de início
-              tipo: 'aviso',
-              status: 'pendente',
-              cor: '#DC2626',
-              createdAt: aviso.data,
-              userId: '',
-              source: 'aviso',
-              originalId: aviso.id
-            });
-          }
-        } else {
-          // Evento de múltiplos dias - verificar se está no período
-          if (currentDateOnly >= inicioDateOnly && currentDateOnly <= fimDateOnly) {
-            // Extrair horário diário do início
-            const horaInicio = inicioDate.getHours();
-            const minutoInicio = inicioDate.getMinutes();
-            const horaFim = fimDate.getHours();
-            const minutoFim = fimDate.getMinutes();
-            
-            // Criar data/hora para este dia específico
-            const dataHoraDia = new Date(currentDate);
-            dataHoraDia.setHours(horaInicio, minutoInicio, 0, 0);
-            
-            // Criar descrição com informações do período
-            let descricao = aviso.mensagem;
-            descricao += '\n\n';
-            descricao += `Período: ${inicioDateOnly.toLocaleDateString('pt-BR')} a ${fimDateOnly.toLocaleDateString('pt-BR')}\n`;
-            descricao += `Horário diário: ${horaInicio.toString().padStart(2, '0')}:${minutoInicio.toString().padStart(2, '0')} - ${horaFim.toString().padStart(2, '0')}:${minutoFim.toString().padStart(2, '0')}`;
-            
-            allItems.push({
-              id: `aviso_${aviso.id}`,
-              titulo: aviso.titulo,
-              descricao: descricao,
-              dataHora: Timestamp.fromDate(dataHoraDia),
-              tipo: 'aviso',
-              status: 'pendente',
-              cor: '#DC2626',
-              createdAt: aviso.data,
-              userId: '',
-              source: 'aviso',
-              originalId: aviso.id
-            });
-          }
-        }
-      } else {
-        // Fallback para avisos antigos que não têm dataInicio/dataFim
-        const avisoDate = aviso.data.toDate();
-        if (avisoDate.toDateString() === date.toDateString()) {
-          allItems.push({
-            id: `aviso_${aviso.id}`,
-            titulo: aviso.titulo,
-            descricao: aviso.mensagem,
-            dataHora: aviso.data,
-            tipo: 'aviso',
-            status: 'pendente',
-            cor: '#DC2626',
-            createdAt: aviso.data,
-            userId: '',
-            source: 'aviso',
-            originalId: aviso.id
-          });
-        }
       }
     });
     
@@ -991,26 +875,6 @@ export default function AgendaPage() {
                     originalId: task.id,
                     leadId: task.leadId,
                     leadNome: task.leadNome
-                  });
-                }
-              });
-              
-              // Adicionar avisos importantes
-              avisos.forEach(aviso => {
-                // Para próximos compromissos, usar a data de criação do aviso
-                if (aviso.data.toDate() >= new Date()) {
-                  allItems.push({
-                    id: `aviso_${aviso.id}`,
-                    titulo: aviso.titulo,
-                    descricao: aviso.mensagem,
-                    dataHora: aviso.data,
-                    tipo: 'aviso',
-                    status: 'pendente',
-                    cor: '#DC2626', // vermelho
-                    createdAt: aviso.data,
-                    userId: '',
-                    source: 'aviso',
-                    originalId: aviso.id
                   });
                 }
               });

@@ -532,6 +532,7 @@ const Brello = () => {
   };
 
   const deleteAttachment = async (attachmentId: string, fileName: string) => {
+    if (!window.confirm(`Tem certeza que deseja excluir o anexo "${fileName}"? Esta ação não pode ser desfeita.`)) return;
     try {
       // Deletar do Firestore
       await deleteDoc(doc(db, 'brelloAttachments', attachmentId));

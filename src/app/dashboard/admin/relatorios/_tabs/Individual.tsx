@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
-import type { PeriodKey } from './_lib/configTypes';
-import RelatorioMockup from './_components/RelatorioMockup';
+import type { PeriodKey } from '../_lib/configTypes';
+import RelatorioMockup from '../_components/RelatorioMockup';
 import { DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
 
 interface Corretor {
@@ -14,18 +13,11 @@ interface Corretor {
   nome: string;
 }
 
-const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-    <path d="m12 19-7-7 7-7" />
-    <path d="M19 12H5" />
-  </svg>
-);
-
 function formatCurrency(n: number): string {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(n);
 }
 
-export default function RelatorioIndividualPage() {
+export default function IndividualTab() {
   const { userData, isEspelhoDemo } = useAuth();
   const imobiliariaId = userData?.imobiliariaId;
 
@@ -111,19 +103,7 @@ export default function RelatorioIndividualPage() {
   }
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 max-w-4xl mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <Link
-          href="/dashboard/admin"
-          className="flex items-center gap-2 text-sm font-semibold text-gray-400 hover:text-[#D4A017] transition-colors"
-        >
-          <ArrowLeftIcon className="h-5 w-5" />
-          Voltar
-        </Link>
-        <span className="text-gray-500">|</span>
-        <h1 className="text-base font-bold text-white">Relatório individual do corretor</h1>
-      </div>
-
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
       <header className="rounded-2xl border border-white/10 bg-white/5 p-4 mb-6">
         {/* Meta do Ano do Corretor (indicada nas metas) — valor fixo para métricas */}
         <div className="mb-4 pb-4 border-b border-white/10">

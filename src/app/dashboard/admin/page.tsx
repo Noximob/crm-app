@@ -1,27 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { collection, getDocs, doc, updateDoc, query, where, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { useAuth } from '@/context/AuthContext';
-
-interface UsuarioPendente {
-  id: string;
-  nome: string;
-  email: string;
-  tipoConta: 'imobiliaria' | 'corretor-vinculado' | 'corretor-autonomo';
-  imobiliariaId?: string;
-  criadoEm: any;
-  metodoCadastro: 'email' | 'google';
-}
-
-// Componente para título de seção (padrão GX)
-const SectionTitle = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
-  <div className={`relative ${className}`}>
-    <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] relative z-10">{children}</h2>
-  </div>
-);
 
 // Paleta GX rotativa para os tiles de atalho
 const gxTilePalette = [
@@ -32,7 +12,7 @@ const gxTilePalette = [
   { b: 'border-[#7DD3FC]/35 hover:border-[#7DD3FC]/70', bg: 'bg-[#7DD3FC]/[0.05] hover:bg-[#7DD3FC]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(125,211,252,0.45)]', chip: 'from-[#7DD3FC]/25 to-[#7DD3FC]/[0.03] border-[#7DD3FC]/30', accent: 'text-[#7DD3FC]' },
 ];
 
-// Categorias organizadas para melhor UX
+// Categorias organizadas para melhor UX (aprovação de corretores fica na área do Desenvolvedor)
 const adminCategories = [
   {
     title: 'Equipe',
@@ -41,6 +21,8 @@ const adminCategories = [
     color: 'from-[#FF1E56]/25 to-[#FF1E56]/[0.03] border-[#FF1E56]/30',
     items: [
       { title: 'Gestão de Corretores', icon: '🧑‍💼', description: 'Administre leads e desempenho dos corretores', href: '/dashboard/admin/gestao-corretores' },
+      { title: 'Gestão de Leads', icon: '🔀', description: 'Redistribua leads entre corretores', href: '/dashboard/admin/gestao-leads' },
+      { title: 'Visualizar CRM do corretor', icon: '🔎', description: 'Veja os leads e tarefas de um corretor específico', href: '/dashboard/admin/visualizar-crm-corretor' },
       { title: 'Agenda dos Usuários', icon: '📅', description: 'Visualize a agenda de todos os usuários', href: '/dashboard/admin/agenda-usuarios' },
       { title: 'Importar Leads', icon: '⬆️', description: 'Importe leads em massa', href: '/dashboard/admin/importar-leads' },
     ]
@@ -59,13 +41,14 @@ const adminCategories = [
   },
   {
     title: 'Financeiro e Metas',
-    description: 'Comissões, caixa e objetivos',
+    description: 'Comissões, metas e relatórios',
     icon: '💰',
     color: 'from-[#E8C547]/25 to-[#E8C547]/[0.03] border-[#E8C547]/40',
     items: [
       { title: 'Comissões', icon: '💵', description: 'Imposto, meta, política de comissão e lançamento de vendas por equipe', href: '/dashboard/admin/comissoes' },
       { title: 'Metas', icon: '🎯', description: 'Meta da imobiliária e soma das metas dos corretores', href: '/dashboard/admin/metas' },
       { title: 'Meets & Visitas', icon: '🔥', description: 'Período contado, contadores por corretor e histórico do pódio da home', href: '/dashboard/admin/meets-visitas' },
+      { title: 'Relatórios', icon: '📈', description: 'Consolidado, individual, diário e valorização pro cliente — tudo num lugar', href: '/dashboard/admin/relatorios' },
       { title: 'Dashboards TV', icon: '📺', description: 'Telas para TV da imobiliária', href: '/dashboard/admin/dashboards-tv' },
     ]
   },
@@ -81,100 +64,6 @@ const adminCategories = [
 ];
 
 export default function AdminPage() {
-  const [showAprovacao, setShowAprovacao] = useState(false);
-  const [usuariosPendentes, setUsuariosPendentes] = useState<UsuarioPendente[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [imobiliarias, setImobiliarias] = useState<{ id: string, nome: string }[]>([]);
-  const { userData } = useAuth();
-
-  // Buscar usuários pendentes
-  useEffect(() => {
-    if (showAprovacao) {
-      fetchUsuariosPendentes();
-      fetchImobiliarias();
-    }
-  }, [showAprovacao]);
-
-  const fetchUsuariosPendentes = async () => {
-    setLoading(true);
-    try {
-      let q;
-      if (userData?.tipoConta === 'imobiliaria') {
-        q = query(
-          collection(db, 'usuarios'),
-          where('imobiliariaId', '==', userData.imobiliariaId),
-          where('tipoConta', 'in', ['corretor-vinculado', 'corretor-autonomo']),
-          where('aprovado', '==', false)
-        );
-      } else {
-        q = query(
-        collection(db, 'usuarios'),
-        where('aprovado', '==', false),
-        orderBy('criadoEm', 'desc')
-      );
-      }
-      const snapshot = await getDocs(q);
-      const usuarios = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as UsuarioPendente[];
-      setUsuariosPendentes(usuarios);
-    } catch (error) {
-      console.error('Erro ao buscar usuários pendentes:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchImobiliarias = async () => {
-    try {
-      const snapshot = await getDocs(collection(db, 'imobiliarias'));
-      setImobiliarias(snapshot.docs.map(doc => ({ id: doc.id, nome: doc.data().nome })));
-    } catch (error) {
-      console.error('Erro ao buscar imobiliárias:', error);
-    }
-  };
-
-  const aprovarUsuario = async (userId: string) => {
-    try {
-      await updateDoc(doc(db, 'usuarios', userId), {
-        aprovado: true,
-        aprovadoEm: new Date()
-      });
-      await fetchUsuariosPendentes();
-    } catch (error) {
-      console.error('Erro ao aprovar usuário:', error);
-    }
-  };
-
-  const rejeitarUsuario = async (userId: string) => {
-    try {
-      await updateDoc(doc(db, 'usuarios', userId), {
-        aprovado: false,
-        rejeitadoEm: new Date(),
-        rejeitado: true
-      });
-      await fetchUsuariosPendentes();
-    } catch (error) {
-      console.error('Erro ao rejeitar usuário:', error);
-    }
-  };
-
-  const getNomeImobiliaria = (imobiliariaId?: string) => {
-    if (!imobiliariaId) return 'N/A';
-    const imobiliaria = imobiliarias.find(i => i.id === imobiliariaId);
-    return imobiliaria ? imobiliaria.nome : 'Imobiliária não encontrada';
-  };
-
-  const getTipoContaLabel = (tipo: string) => {
-    switch (tipo) {
-      case 'imobiliaria': return 'Imobiliária';
-      case 'corretor-vinculado': return 'Corretor Vinculado';
-      case 'corretor-autonomo': return 'Corretor Autônomo';
-      default: return tipo;
-    }
-  };
-
   return (
     <div className="min-h-full p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
@@ -182,7 +71,7 @@ export default function AdminPage() {
         <div className="mb-8">
           <span className="gx-tag mb-2 inline-flex"><span>Painel de controle</span></span>
           <h1 className="al-display text-3xl font-bold text-white uppercase tracking-wide">Área do Administrador</h1>
-          <p className="text-text-secondary mt-1">Tudo da sua imobiliária, organizado por setor.</p>
+          <p className="text-text-secondary mt-1">Tudo da sua imobiliária, organizado por setor. Aprovação de novos corretores fica na área do Desenvolvedor.</p>
         </div>
 
         {/* Setores */}
@@ -228,93 +117,7 @@ export default function AdminPage() {
             </section>
           ))}
         </div>
-
-      {/* Modal Aprovação de Usuários */}
-      {showAprovacao && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] w-full max-w-4xl p-6 relative overflow-hidden animate-fade-in max-h-[90vh] overflow-y-auto">
-              <div className="absolute inset-x-0 top-0 gx-line" />
-              <button
-                className="absolute top-4 right-4 text-2xl text-text-secondary hover:text-[#FF5C7E] transition-colors"
-                onClick={() => setShowAprovacao(false)}
-              >
-                ×
-              </button>
-              
-              <div className="mb-6">
-                <SectionTitle>Aprovação de Usuários</SectionTitle>
-              </div>
-            
-            {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF1E56]"></div>
-              </div>
-            ) : usuariosPendentes.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="text-6xl mb-4">✅</div>
-                  <p className="text-lg text-text-secondary">Nenhum usuário pendente de aprovação</p>
-                  <p className="text-sm text-text-secondary mt-2">Todos os cadastros foram processados</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {usuariosPendentes.map((usuario) => (
-                    <div key={usuario.id} className="bg-white/[0.03] border border-white/[0.08] rounded-xl p-6">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-gradient-to-br from-[#FF1E56] to-[#A50D38] rounded-full flex items-center justify-center text-white font-semibold shadow-[0_0_16px_rgba(255,30,86,0.35)]">
-                            {usuario.nome.charAt(0).toUpperCase()}
-                          </div>
-                      <div>
-                            <h3 className="font-semibold text-white text-lg">{usuario.nome}</h3>
-                            <p className="text-text-secondary">{usuario.email}</p>
-                          </div>
-                      </div>
-                        <div className="flex gap-3">
-                        <button
-                          onClick={() => aprovarUsuario(usuario.id)}
-                            className="px-6 py-2 border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 rounded-xl font-medium transition-colors flex items-center gap-2"
-                        >
-                            <span>✓</span>
-                          Aprovar
-                        </button>
-                        <button
-                          onClick={() => rejeitarUsuario(usuario.id)}
-                            className="px-6 py-2 border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-300 rounded-xl font-medium transition-colors flex items-center gap-2"
-                        >
-                            <span>✕</span>
-                          Rejeitar
-                        </button>
-                      </div>
-                    </div>
-                      
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div className="bg-white/[0.03] border border-white/[0.08] p-3 rounded-lg">
-                          <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Tipo</span>
-                          <p className="font-medium text-white mt-1">{getTipoContaLabel(usuario.tipoConta)}</p>
-                      </div>
-                        <div className="bg-white/[0.03] border border-white/[0.08] p-3 rounded-lg">
-                          <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Imobiliária</span>
-                          <p className="font-medium text-white mt-1">{getNomeImobiliaria(usuario.imobiliariaId)}</p>
-                      </div>
-                        <div className="bg-white/[0.03] border border-white/[0.08] p-3 rounded-lg">
-                          <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Cadastro</span>
-                          <p className="font-medium text-white mt-1">{usuario.metodoCadastro === 'google' ? 'Google' : 'E-mail'}</p>
-                      </div>
-                        <div className="bg-white/[0.03] border border-white/[0.08] p-3 rounded-lg">
-                          <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Data</span>
-                          <p className="font-medium text-white mt-1">
-                          {usuario.criadoEm?.toDate ? usuario.criadoEm.toDate().toLocaleDateString('pt-BR') : 'N/A'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-        </div>
+      </div>
     </div>
   );
-} 
+}

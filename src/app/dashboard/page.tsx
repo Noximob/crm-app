@@ -4,12 +4,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, getDoc, Timestamp, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, getDoc, Timestamp, orderBy } from 'firebase/firestore';
 import Link from 'next/link';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { getDemoLeads } from '@/lib/espelho/demoData';
-import { DEMO_AGENDA_IMOBILIARIA, DEMO_AVISOS } from '@/lib/espelho/demoData';
-import AvisosImportantesModal from './_components/AvisosImportantesModal';
+import { DEMO_AGENDA_IMOBILIARIA } from '@/lib/espelho/demoData';
 import AgendaImobiliariaModal from './_components/AgendaImobiliariaModal';
 import PlantoesModal from './_components/PlantoesModal';
 
@@ -499,7 +498,6 @@ export default function DashboardPage() {
   const [tarefaAtrasadaCount, setTarefaAtrasadaCount] = useState(0);
   const [tarefaDiaCount, setTarefaDiaCount] = useState(0);
   const [semTarefaCount, setSemTarefaCount] = useState(0);
-  const [avisosImportantes, setAvisosImportantes] = useState<any[]>([]);
   const [agendaImobiliaria, setAgendaImobiliaria] = useState<any[]>([]);
   const [meta, setMeta] = useState<any>(null);
   const [nomeImobiliaria, setNomeImobiliaria] = useState('Imobiliária');
@@ -527,9 +525,6 @@ export default function DashboardPage() {
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notes, setNotes] = useState<any[]>([]);
-  
-  // Estado para o modal de avisos importantes
-  const [showAvisosModal, setShowAvisosModal] = useState(false);
   
   // Estado para o modal de agenda imobiliária
   const [showAgendaModal, setShowAgendaModal] = useState(false);
@@ -630,21 +625,6 @@ export default function DashboardPage() {
     };
     fetchAgenda();
   }, [currentUser, stages, normalizeEtapa, isEspelhoDemo]);
-
-  // Buscar avisos importantes
-  useEffect(() => {
-    if (isEspelhoDemo) {
-      setAvisosImportantes(DEMO_AVISOS);
-      return;
-    }
-    const fetchAvisos = async () => {
-      if (!userData?.imobiliariaId) return;
-      const q = query(collection(db, 'avisosImportantes'), where('imobiliariaId', '==', userData.imobiliariaId));
-      const snapshot = await getDocs(q);
-      setAvisosImportantes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    };
-    fetchAvisos();
-  }, [userData, isEspelhoDemo]);
 
   // Buscar agenda imobiliária
   useEffect(() => {
@@ -781,33 +761,6 @@ export default function DashboardPage() {
     return lista.slice(0, 6);
   }, [currentUser?.uid, userData, agendaImobiliaria, currentTime]);
 
-  const [respondendoPresenca, setRespondendoPresenca] = useState<string | null>(null);
-  const responderPresenca = async (tipo: 'plantao' | 'agenda', id: string, status: 'confirmado' | 'cancelado') => {
-    const uid = currentUser?.uid;
-    if (!uid) return;
-    const key = `${tipo}-${id}`;
-    setRespondendoPresenca(key);
-    if (isEspelhoDemo) {
-      if (tipo === 'agenda') {
-        setAgendaImobiliaria(prev => prev.map((a: any) => a.id === id ? { ...a, respostasPresenca: { ...(a.respostasPresenca || {}), [uid]: status } } : a));
-      }
-      setRespondendoPresenca(null);
-      return;
-    }
-    try {
-      // Plantões agora também vivem em 'agendaImobiliaria' (coleção unificada)
-      const ref = doc(db, 'agendaImobiliaria', id);
-      const item = agendaImobiliaria.find((a: any) => a.id === id);
-      const atuais = (item?.respostasPresenca || {}) as Record<string, string>;
-      await updateDoc(ref, { respostasPresenca: { ...atuais, [uid]: status } });
-      setAgendaImobiliaria(prev => prev.map((a: any) => a.id === id ? { ...a, respostasPresenca: { ...atuais, [uid]: status } } : a));
-    } catch (e) {
-      console.error('Erro ao atualizar presença:', e);
-    } finally {
-      setRespondendoPresenca(null);
-    }
-  };
-
   const openLeadModal = async (lead: any) => {
     // Redirecionar para a página de detalhes do lead
     router.push(`/dashboard/crm/${lead.id}`);
@@ -815,26 +768,20 @@ export default function DashboardPage() {
 
   // Buscar dados da meta e nome da imobiliária
   useEffect(() => {
-    console.log('useEffect metas chamado, userData:', userData);
     if (!userData?.imobiliariaId) {
-      console.log('userData ou imobiliariaId não encontrado para metas');
       return;
     }
-    console.log('Buscando metas para imobiliariaId:', userData.imobiliariaId);
     let unsubscribe: (() => void) | undefined;
 
     // Buscar nome da imobiliária
     const fetchNomeImobiliaria = async () => {
       try {
-        console.log('Buscando nome da imobiliária...');
         const imobiliariaRef = firestoreDoc(db, 'imobiliarias', userData.imobiliariaId!);
         const imobiliariaSnap = await getDoc(imobiliariaRef);
         if (imobiliariaSnap.exists()) {
           const nome = imobiliariaSnap.data().nome || 'Imobiliária';
-          console.log('Nome da imobiliária encontrado:', nome);
           setNomeImobiliaria(nome);
         } else {
-          console.log('Imobiliária não encontrada no Firestore');
           setNomeImobiliaria('Imobiliária');
         }
       } catch (error) {
@@ -846,14 +793,11 @@ export default function DashboardPage() {
     fetchNomeImobiliaria();
 
     // Buscar meta
-    console.log('Configurando listener para metas...');
     const metaRef = firestoreDoc(db, 'metas', userData.imobiliariaId);
     unsubscribe = onSnapshot(metaRef, (snap) => {
       if (snap.exists()) {
-        console.log('Meta encontrada:', snap.data());
         setMeta(snap.data());
       } else {
-        console.log('Meta não encontrada');
         setMeta(null);
       }
     });
@@ -878,7 +822,6 @@ export default function DashboardPage() {
 
       return () => {
         if (unsubscribe) {
-          console.log('Desconectando listener de metas');
           unsubscribe();
         }
         notesUnsubscribe();
@@ -887,7 +830,6 @@ export default function DashboardPage() {
 
     return () => {
       if (unsubscribe) {
-        console.log('Desconectando listener de metas');
         unsubscribe();
       }
     };
@@ -1435,13 +1377,6 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
-
-      {/* Modal de Avisos Importantes */}
-      <AvisosImportantesModal
-        isOpen={showAvisosModal}
-        onClose={() => setShowAvisosModal(false)}
-        avisos={avisosImportantes}
-      />
 
       {/* Modal de Agenda Imobiliária */}
       <AgendaImobiliariaModal

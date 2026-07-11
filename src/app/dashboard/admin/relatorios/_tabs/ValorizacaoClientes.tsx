@@ -1,15 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import Link from 'next/link';
 import { AlummaLogoFullInline } from '@/components/AlummaLogo';
-
-const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-    <path d="m12 19-7-7 7-7" />
-    <path d="M19 12H5" />
-  </svg>
-);
 
 const PdfIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
@@ -40,7 +32,7 @@ const DEFAULTS = {
   dataFim: '2029-12-10',
 };
 
-export default function RelatorioValorizacaoClientesPage() {
+export default function ValorizacaoClientesTab() {
   const [nomeCliente, setNomeCliente] = useState(DEFAULTS.nomeCliente);
   const [produto, setProduto] = useState(DEFAULTS.produto);
   const [unidade, setUnidade] = useState(DEFAULTS.unidade);
@@ -125,7 +117,7 @@ export default function RelatorioValorizacaoClientesPage() {
   };
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
       <style jsx global>{`
         @media print {
           body * { visibility: hidden; }
@@ -134,18 +126,6 @@ export default function RelatorioValorizacaoClientesPage() {
           .no-print { display: none !important; }
         }
       `}</style>
-
-      <div className="no-print flex items-center gap-3 mb-6">
-        <Link
-          href="/dashboard/admin"
-          className="flex items-center gap-2 text-sm font-semibold text-gray-400 hover:text-[#D4A017] transition-colors"
-        >
-          <ArrowLeftIcon className="h-5 w-5" />
-          Voltar
-        </Link>
-        <span className="text-gray-500">|</span>
-        <h1 className="text-base font-bold text-white">Relatório de Valorização dos Clientes</h1>
-      </div>
 
       {/* Formulário — não imprime */}
       <header className="no-print rounded-2xl border border-white/10 bg-white/5 p-4 mb-6">

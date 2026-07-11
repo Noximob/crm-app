@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 
 interface Corretor {
@@ -103,7 +103,7 @@ export default function ImportarLeadsPage() {
           whatsapp: lead.telefone.replace(/\D/g, ''),
           etapa: stages[0] ?? '',
           origem: 'Importação em massa',
-          createdAt: new Date(),
+          createdAt: serverTimestamp(),
         });
       }));
       setMensagem('Leads importados com sucesso!');

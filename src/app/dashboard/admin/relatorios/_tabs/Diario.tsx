@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import {
@@ -73,12 +72,6 @@ function buildMockLeads(): LeadRow[] {
     };
   });
 }
-const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-    <path d="m12 19-7-7 7-7" /><path d="M19 12H5" />
-  </svg>
-);
-
 interface Task {
   id: string;
   description?: string;
@@ -196,7 +189,7 @@ function NoxLogo({ className = '' }: { className?: string }) {
   );
 }
 
-export default function RelatorioDiarioPage() {
+export default function DiarioTab() {
   const { userData, currentUser, isEspelhoDemo } = useAuth();
   const { stages, normalizeEtapa } = usePipelineStages();
   const imobiliariaId = userData?.imobiliariaId ?? (userData?.tipoConta === 'imobiliaria' ? currentUser?.uid : undefined);
@@ -376,10 +369,6 @@ export default function RelatorioDiarioPage() {
         }
       `}</style>
       <div className="max-w-5xl mx-auto py-6 px-4 sm:px-6 print:py-4 print:px-0">
-        <Link href="/dashboard/admin" className="no-print inline-flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400 hover:underline mb-6">
-          <ArrowLeftIcon className="h-4 w-4" /> Voltar ao administrador
-        </Link>
-
         {/* Cabeçalho — só logo Alumma dourada */}
         <header className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-200 dark:border-white/10 print:border-gray-200 print:pb-3">
           <AlummaLogoFullInline theme="dark" height={32} />
