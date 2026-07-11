@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, doc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
 import Link from 'next/link';
+import LoadingState from '@/components/ui/LoadingState';
 
 interface Imobiliaria {
   id: string;
@@ -106,10 +107,10 @@ export default function AdminImobiliariasPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'ativo': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'inativo': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case 'pendente': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+      case 'ativo': return 'bg-[#34D399]/10 border border-[#34D399]/35 text-emerald-300';
+      case 'inativo': return 'bg-[#FF1E56]/10 border border-[#FF1E56]/35 text-[#FF9EB5]';
+      case 'pendente': return 'bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#FFE9A6]';
+      default: return 'bg-white/[0.05] border border-white/15 text-text-secondary';
     }
   };
 
@@ -124,10 +125,10 @@ export default function AdminImobiliariasPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
+      <div className="min-h-screen py-8 px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center">
-            <p>Carregando imobiliárias...</p>
+          <div className="al-card p-6">
+            <LoadingState label="Carregando imobiliárias..." />
           </div>
         </div>
       </div>
@@ -135,14 +136,14 @@ export default function AdminImobiliariasPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
+    <div className="min-h-screen py-8 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
           <div className="flex items-center gap-4 mb-4 sm:mb-0">
-            <Link 
+            <Link
               href="/dashboard/developer"
-              className="text-[#D4A017] hover:text-[#B8860B] transition-colors"
+              className="text-text-secondary hover:text-[#FF7A97] text-sm font-bold transition-colors"
             >
               ← Voltar à Área do Desenvolvedor
             </Link>
@@ -151,46 +152,48 @@ export default function AdminImobiliariasPage() {
 
         {/* Título */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-[#2E2F38] dark:text-white mb-4">
+          <span className="gx-tag"><span>Área do desenvolvedor</span></span>
+          <h1 className="al-display text-[26px] font-bold text-white uppercase tracking-[0.1em] mt-2 mb-2">
             Gestão de Imobiliárias
           </h1>
-          <p className="text-xl text-[#6B6F76] dark:text-gray-300">
+          <p className="text-[13px] text-text-secondary">
             Administre imobiliárias, permissões e acessos
           </p>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] text-center">
-            <p className="text-3xl mb-2">🏢</p>
-            <p className="text-2xl font-bold text-[#2E2F38] dark:text-white">{imobiliarias.length}</p>
-            <p className="text-sm text-[#6B6F76] dark:text-gray-300">Total</p>
+          <div className="al-card relative overflow-hidden p-6 text-center">
+            <div className="absolute inset-x-0 top-0 gx-line" />
+            <p className="text-2xl font-bold text-white al-display tabular-nums">{imobiliarias.length}</p>
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mt-1">Total</p>
           </div>
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] text-center">
-            <p className="text-3xl mb-2">✅</p>
-            <p className="text-2xl font-bold text-[#2E2F38] dark:text-white">
+          <div className="al-card relative overflow-hidden p-6 text-center">
+            <div className="absolute inset-x-0 top-0 gx-line" />
+            <p className="text-2xl font-bold text-emerald-300 al-display tabular-nums">
               {imobiliarias.filter(i => i.status === 'ativo').length}
             </p>
-            <p className="text-sm text-[#6B6F76] dark:text-gray-300">Ativas</p>
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mt-1">Ativas</p>
           </div>
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] text-center">
-            <p className="text-3xl mb-2">⏳</p>
-            <p className="text-2xl font-bold text-[#2E2F38] dark:text-white">
+          <div className="al-card relative overflow-hidden p-6 text-center">
+            <div className="absolute inset-x-0 top-0 gx-line" />
+            <p className="text-2xl font-bold text-[#FFE9A6] al-display tabular-nums">
               {imobiliarias.filter(i => i.status === 'pendente').length}
             </p>
-            <p className="text-sm text-[#6B6F76] dark:text-gray-300">Pendentes</p>
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mt-1">Pendentes</p>
           </div>
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] text-center">
-            <p className="text-3xl mb-2">❌</p>
-            <p className="text-2xl font-bold text-[#2E2F38] dark:text-white">
+          <div className="al-card relative overflow-hidden p-6 text-center">
+            <div className="absolute inset-x-0 top-0 gx-line" />
+            <p className="text-2xl font-bold text-[#FF9EB5] al-display tabular-nums">
               {imobiliarias.filter(i => i.status === 'inativo').length}
             </p>
-            <p className="text-sm text-[#6B6F76] dark:text-gray-300">Inativas</p>
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mt-1">Inativas</p>
           </div>
         </div>
 
         {/* Filtros */}
-        <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-8">
+        <div className="al-card relative overflow-hidden p-6 mb-8">
+          <div className="absolute inset-x-0 top-0 gx-line" />
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <input
@@ -198,7 +201,7 @@ export default function AdminImobiliariasPage() {
                 placeholder="Buscar por nome, email ou CNPJ..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-3 bg-[#F5F6FA] dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl text-[#2E2F38] dark:text-white placeholder-[#6B6F76] dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#D4A017] transition-all"
+                className="w-full px-4 py-3 bg-white/[0.04] border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 transition-all"
               />
             </div>
             <div className="flex gap-2">
@@ -206,8 +209,8 @@ export default function AdminImobiliariasPage() {
                 onClick={() => setFilterStatus('todos')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterStatus === 'todos' 
-                    ? 'bg-[#D4A017] text-white' 
-                    : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
+                    ? 'bg-gradient-to-r from-[#FF1E56] to-[#A50D38] text-white shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)]'
+                    : 'bg-white/[0.04] border border-white/10 text-text-secondary hover:bg-white/[0.08] hover:text-white'
                 }`}
               >
                 Todos
@@ -216,8 +219,8 @@ export default function AdminImobiliariasPage() {
                 onClick={() => setFilterStatus('ativo')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterStatus === 'ativo' 
-                    ? 'bg-[#D4A017] text-white' 
-                    : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
+                    ? 'bg-gradient-to-r from-[#FF1E56] to-[#A50D38] text-white shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)]'
+                    : 'bg-white/[0.04] border border-white/10 text-text-secondary hover:bg-white/[0.08] hover:text-white'
                 }`}
               >
                 Ativas
@@ -226,8 +229,8 @@ export default function AdminImobiliariasPage() {
                 onClick={() => setFilterStatus('pendente')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterStatus === 'pendente' 
-                    ? 'bg-[#D4A017] text-white' 
-                    : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
+                    ? 'bg-gradient-to-r from-[#FF1E56] to-[#A50D38] text-white shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)]'
+                    : 'bg-white/[0.04] border border-white/10 text-text-secondary hover:bg-white/[0.08] hover:text-white'
                 }`}
               >
                 Pendentes
@@ -236,8 +239,8 @@ export default function AdminImobiliariasPage() {
                 onClick={() => setFilterStatus('inativo')}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   filterStatus === 'inativo' 
-                    ? 'bg-[#D4A017] text-white' 
-                    : 'bg-[#F5F6FA] dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-300 hover:bg-[#E8E9F1] dark:hover:bg-[#2E2F38]'
+                    ? 'bg-gradient-to-r from-[#FF1E56] to-[#A50D38] text-white shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)]'
+                    : 'bg-white/[0.04] border border-white/10 text-text-secondary hover:bg-white/[0.08] hover:text-white'
                 }`}
               >
                 Inativas
@@ -247,43 +250,44 @@ export default function AdminImobiliariasPage() {
         </div>
 
         {/* Lista de Imobiliárias */}
-        <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] overflow-hidden">
+        <div className="al-card relative overflow-hidden">
+          <div className="absolute inset-x-0 top-0 gx-line" />
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-[#F5F6FA] dark:bg-[#181C23]">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-[#2E2F38] dark:text-white">Imobiliária</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-[#2E2F38] dark:text-white">Contato</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-[#2E2F38] dark:text-white">CNPJ</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-[#2E2F38] dark:text-white">Status</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-[#2E2F38] dark:text-white">Data Cadastro</th>
-                  <th className="px-6 py-4 text-center text-sm font-medium text-[#2E2F38] dark:text-white">Ações</th>
+              <thead>
+                <tr className="border-b border-white/[0.08]">
+                  <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Imobiliária</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Contato</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">CNPJ</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Status</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Data Cadastro</th>
+                  <th className="px-6 py-4 text-center text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E8E9F1] dark:divide-[#23283A]">
+              <tbody className="divide-y divide-white/[0.05]">
                 {filteredImobiliarias.map((imobiliaria) => (
-                  <tr key={imobiliaria.id} className="hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
+                  <tr key={imobiliaria.id} className="hover:bg-white/[0.04] transition-colors">
                     <td className="px-6 py-4">
                       <div>
-                        <div className="text-sm font-medium text-[#2E2F38] dark:text-white">{imobiliaria.nome}</div>
-                        <div className="text-sm text-[#6B6F76] dark:text-gray-300">{imobiliaria.endereco}</div>
+                        <div className="text-sm font-medium text-white">{imobiliaria.nome}</div>
+                        <div className="text-sm text-text-secondary">{imobiliaria.endereco}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div>
-                        <div className="text-sm text-[#2E2F38] dark:text-white">{imobiliaria.email}</div>
-                        <div className="text-sm text-[#6B6F76] dark:text-gray-300">{imobiliaria.telefone}</div>
+                        <div className="text-sm text-white">{imobiliaria.email}</div>
+                        <div className="text-sm text-text-secondary">{imobiliaria.telefone}</div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-[#6B6F76] dark:text-gray-300">
+                    <td className="px-6 py-4 text-sm text-text-secondary">
                       {imobiliaria.cnpj}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(imobiliaria.status)}`}>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${getStatusColor(imobiliaria.status)}`}>
                         {getStatusLabel(imobiliaria.status)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-[#6B6F76] dark:text-gray-300">
+                    <td className="px-6 py-4 text-sm text-text-secondary">
                       {imobiliaria.dataCadastro?.toDate?.()?.toLocaleDateString('pt-BR') || 'N/A'}
                     </td>
                     <td className="px-6 py-4">
@@ -291,7 +295,7 @@ export default function AdminImobiliariasPage() {
                         {imobiliaria.status === 'pendente' && (
                           <button
                             onClick={() => handleAction('approve', imobiliaria)}
-                            className="px-3 py-1 bg-green-500 text-white rounded-lg text-xs hover:bg-green-600 transition-colors"
+                            className="px-3 py-1 border border-[#34D399]/40 bg-[#34D399]/10 hover:bg-[#34D399]/20 text-emerald-300 font-bold rounded-lg text-xs transition-colors"
                           >
                             Aprovar
                           </button>
@@ -299,20 +303,20 @@ export default function AdminImobiliariasPage() {
                         {imobiliaria.status === 'ativo' && (
                           <button
                             onClick={() => handleAction('disable', imobiliaria)}
-                            className="px-3 py-1 bg-yellow-500 text-white rounded-lg text-xs hover:bg-yellow-600 transition-colors"
+                            className="px-3 py-1 border border-[#E8C547]/40 bg-[#E8C547]/10 hover:bg-[#E8C547]/20 text-[#FFE9A6] font-bold rounded-lg text-xs transition-colors"
                           >
                             Desativar
                           </button>
                         )}
                         <button
                           onClick={() => handleAction('edit', imobiliaria)}
-                          className="px-3 py-1 bg-amber-500 text-white rounded-lg text-xs hover:bg-amber-600 transition-colors"
+                          className="px-3 py-1 border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white font-bold rounded-lg text-xs transition-colors"
                         >
                           Editar
                         </button>
                         <button
                           onClick={() => handleAction('delete', imobiliaria)}
-                          className="px-3 py-1 bg-red-500 text-white rounded-lg text-xs hover:bg-red-600 transition-colors"
+                          className="px-3 py-1 border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-300 font-bold rounded-lg text-xs transition-colors"
                         >
                           Excluir
                         </button>
@@ -327,15 +331,16 @@ export default function AdminImobiliariasPage() {
 
         {/* Modal de Confirmação */}
         {showModal && selectedImobiliaria && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 max-w-md w-full mx-4">
-              <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-4">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 max-w-md w-full mx-4">
+              <div className="absolute inset-x-0 top-0 gx-line" />
+              <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">
                 {modalAction === 'approve' && 'Aprovar Imobiliária'}
                 {modalAction === 'disable' && 'Desativar Imobiliária'}
                 {modalAction === 'delete' && 'Excluir Imobiliária'}
                 {modalAction === 'edit' && 'Editar Imobiliária'}
               </h3>
-              <p className="text-[#6B6F76] dark:text-gray-300 mb-6">
+              <p className="text-text-secondary mb-6">
                 {modalAction === 'approve' && `Tem certeza que deseja aprovar "${selectedImobiliaria.nome}"?`}
                 {modalAction === 'disable' && `Tem certeza que deseja desativar "${selectedImobiliaria.nome}"?`}
                 {modalAction === 'delete' && `Tem certeza que deseja excluir "${selectedImobiliaria.nome}"? Esta ação não pode ser desfeita.`}
@@ -344,17 +349,17 @@ export default function AdminImobiliariasPage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg text-[#6B6F76] dark:text-gray-300 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors"
+                  className="flex-1 px-4 py-2 border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] rounded-xl text-white transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={confirmAction}
-                  className={`flex-1 px-4 py-2 rounded-lg text-white transition-colors ${
-                    modalAction === 'approve' ? 'bg-green-500 hover:bg-green-600' :
-                    modalAction === 'disable' ? 'bg-yellow-500 hover:bg-yellow-600' :
-                    modalAction === 'delete' ? 'bg-red-500 hover:bg-red-600' :
-                    'bg-amber-500 hover:bg-amber-600'
+                  className={`flex-1 px-4 py-2 rounded-xl font-bold transition-all active:scale-[0.98] ${
+                    modalAction === 'approve' ? 'border border-[#34D399]/40 bg-[#34D399]/10 hover:bg-[#34D399]/20 text-emerald-300' :
+                    modalAction === 'disable' ? 'border border-[#E8C547]/40 bg-[#E8C547]/10 hover:bg-[#E8C547]/20 text-[#FFE9A6]' :
+                    modalAction === 'delete' ? 'border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-300' :
+                    'bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)]'
                   }`}
                 >
                   Confirmar

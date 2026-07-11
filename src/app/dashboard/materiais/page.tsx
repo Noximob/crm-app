@@ -7,6 +7,7 @@ import { CATEGORIES, catByKey, parseTip, fmtMoneyBR, type Construtora, type Imov
 import { toCdn, youtubeId, waLink, encaminharWhatsApp } from '@/lib/materiais/toCdn';
 import PdfPager from '@/components/PdfPager';
 import FluxoPagamentoPage from '../fluxo-pagamento/page';
+import LoadingState from '@/components/ui/LoadingState';
 
 function matsArr(p: Imovel): Material[] {
   return Array.isArray(p.materiais) ? p.materiais : [];
@@ -299,7 +300,7 @@ export default function MateriaisPage() {
 
       {/* Corpo (largura total) */}
       {loading ? (
-        <div className="flex-1 flex items-center justify-center text-text-secondary">Carregando materiais…</div>
+        <div className="flex-1 flex items-center justify-center"><LoadingState label="Carregando materiais…" /></div>
       ) : erro ? (
         <div className="flex-1 flex items-center justify-center text-red-400">{erro}</div>
       ) : imoveis.length === 0 ? (

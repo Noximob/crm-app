@@ -10,6 +10,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEn
 import KanbanColumn from './_components/KanbanColumn';
 import { Lead } from '@/types';
 import LeadCard from './_components/LeadCard';
+import LoadingState from '@/components/ui/LoadingState';
 
 type LeadsByStage = { [key: string]: Lead[] };
 
@@ -74,10 +75,7 @@ export default function AndamentoPage() {
         setActiveLead(null);
         const { active, over } = event;
 
-        console.log('DragEnd:', { active: active.id, over: over?.id });
-
         if (!over) {
-            console.log('No drop target detected');
             return;
         }
 
@@ -96,18 +94,13 @@ export default function AndamentoPage() {
             targetColumn = findContainer(overIdStr);
         }
 
-        console.log('Target column:', targetColumn);
-
         if (!targetColumn || !stages.includes(targetColumn)) {
-            console.log('Invalid target column:', targetColumn);
             return;
         }
 
         const sourceColumn = findContainer(active.id);
-        console.log('Source column:', sourceColumn);
 
         if (!sourceColumn || sourceColumn === targetColumn) {
-            console.log('Same column or invalid source, returning');
             return;
         }
 
@@ -116,7 +109,6 @@ export default function AndamentoPage() {
             const leadRef = doc(db, 'leads', active.id.toString());
             try {
                 await updateDoc(leadRef, { etapa: targetColumn });
-                console.log('Firestore updated successfully');
             } catch (error) {
                 console.error("Failed to update lead stage: ", error);
                 return;
@@ -138,8 +130,6 @@ export default function AndamentoPage() {
                     newLeads[targetColumn] = [];
                 }
                 newLeads[targetColumn].push({ ...movedItem, etapa: targetColumn });
-                
-                console.log('Lead moved successfully:', movedItem.id);
             }
             
             return newLeads;
@@ -166,7 +156,7 @@ export default function AndamentoPage() {
                     </div>
                     
                     {loading ? (
-                        <div className="text-center py-10 text-text-secondary">Carregando quadro...</div>
+                        <LoadingState label="Carregando quadro..." className="py-10" />
                     ) : (
                         <DndContext 
                             key={stages.join('|')}

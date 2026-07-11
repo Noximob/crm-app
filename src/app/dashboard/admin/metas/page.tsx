@@ -6,6 +6,7 @@ import { collection, doc, getDoc, getDocs, setDoc, addDoc, deleteDoc, Timestamp,
 import { useAuth } from '@/context/AuthContext';
 import MoneyInput from '@/components/MoneyInput';
 import { DEMO_REPORT_CORRETORES, DEMO_CONTRIBUICOES, DEMO_METAS_VGV, DEMO_METAS_VGV_MENSAL, DEMO_METAS_PESSOAIS } from '@/lib/espelho/demoData';
+import LoadingState from '@/components/ui/LoadingState';
 
 interface Corretor {
   id: string;
@@ -286,10 +287,7 @@ export default function AdminMetasPage() {
     return (
       <div className="max-w-xl mx-auto mt-10 al-card relative overflow-hidden p-8">
         <div className="absolute inset-x-0 top-0 gx-line-gold" />
-        <div className="flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF1E56]"></div>
-          <span className="ml-2 text-text-secondary">Carregando...</span>
-        </div>
+        <LoadingState label="Carregando..." />
       </div>
     );
   }

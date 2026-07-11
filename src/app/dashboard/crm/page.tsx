@@ -10,6 +10,7 @@ import { collection, getDocs, query, where, Timestamp, orderBy, limit, onSnapsho
 import Link from 'next/link';
 import FilterModal, { Filters } from './_components/FilterModal';
 import { getDemoLeads } from '@/lib/espelho/demoData';
+import LoadingState from '@/components/ui/LoadingState';
 
 // --- Tipos ---
 interface Task {
@@ -628,7 +629,7 @@ export default function CrmPage() {
                             </thead>
                             <tbody>
                                 {loading && (
-                                    <tr><td colSpan={6} className="text-center py-8 text-text-secondary">Carregando...</td></tr>
+                                    <tr><td colSpan={6} className="py-8"><LoadingState label="Carregando..." /></td></tr>
                                 )}
                                 {!loading && leads.length === 0 && (
                                     <tr>

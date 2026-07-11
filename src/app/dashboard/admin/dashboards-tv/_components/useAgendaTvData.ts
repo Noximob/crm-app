@@ -194,33 +194,6 @@ export function useAgendaTvData(
           });
         });
 
-        // Eventos da comunidade (Comunidade → agenda TV)
-        const refComunidade = collection(db, 'comunidadePosts');
-        const qComunidade = query(
-          refComunidade,
-          where('imobiliariaId', '==', imobiliariaId),
-          where('isEvento', '==', true),
-          where('eventoStatus', '==', 'agendado')
-        );
-        const snapComunidade = await getDocs(qComunidade);
-        if (cancelled) return;
-        snapComunidade.docs.forEach((docSnap) => {
-            const d = docSnap.data();
-            const eventoData = d.eventoData as Timestamp | undefined;
-            if (!eventoData) return;
-            const inicioDate = eventoData.toDate();
-            if (inicioDate > end || inicioDate < start) return;
-            const dataFimComunidade = Timestamp.fromMillis(eventoData.toMillis() + 60 * 60 * 1000);
-            list.push({
-              id: `comunidade_${docSnap.id}`,
-              titulo: d.titulo ?? 'Evento Comunidade',
-              tipo: (d.eventoTipo as string) || 'outro',
-              local: d.eventoLink ? 'Link no post' : undefined,
-              dataInicio: eventoData,
-              dataFim: dataFimComunidade,
-            });
-          });
-
         list.sort((a, b) => a.dataInicio.toMillis() - b.dataInicio.toMillis());
         setEvents(list);
 

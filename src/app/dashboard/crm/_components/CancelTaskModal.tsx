@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { showToast } from '@/components/ui/toast';
 
 interface CancelTaskModalProps {
     isOpen: boolean;
@@ -20,8 +21,7 @@ export default function CancelTaskModal({ isOpen, onClose, onConfirm, isLoading 
 
     const handleConfirm = () => {
         if (!reason.trim()) {
-            // Opcional: Adicionar feedback para o usuário
-            alert('Por favor, insira um motivo para o cancelamento.');
+            showToast('Por favor, insira um motivo para o cancelamento.', 'error');
             return;
         }
         onConfirm(reason);

@@ -36,12 +36,12 @@ const tipoLabels = {
 };
 
 const tipoCores = {
-  agenda: 'bg-emerald-500',
-  crm: 'bg-amber-500',
-  nota: 'bg-yellow-500',
-  aviso: 'bg-red-600',
-  comunidade: 'bg-orange-500',
-  imobiliaria: 'bg-purple-500'
+  agenda: 'bg-[#34D399]/15 border border-[#34D399]/40 text-emerald-300',
+  crm: 'bg-[#F59E0B]/15 border border-[#F59E0B]/40 text-amber-300',
+  nota: 'bg-yellow-500/15 border border-yellow-500/40 text-yellow-300',
+  aviso: 'bg-[#FF1E56]/15 border border-[#FF1E56]/40 text-[#FF9EB5]',
+  comunidade: 'bg-orange-500/15 border border-orange-500/40 text-orange-300',
+  imobiliaria: 'bg-[#9F6BFF]/15 border border-[#9F6BFF]/40 text-[#C4A6FF]'
 };
 
 // Função para extrair informações essenciais de forma compacta
@@ -105,35 +105,36 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
   const sortedItems = items.sort((a, b) => a.dataHora.toDate().getTime() - b.dataHora.toDate().getTime());
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white dark:bg-[#23283A] rounded-2xl p-4 w-full max-w-5xl mx-4 shadow-xl border border-[#E8E9F1] dark:border-[#23283A]" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-4 w-full max-w-5xl mx-4" onClick={e => e.stopPropagation()}>
+        <div className="absolute inset-x-0 top-0 gx-line" />
         {/* Header mais compacto */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-[#D4A017] to-[#E8C547] rounded-full flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-8 h-8 bg-[#FF1E56]/10 border border-[#FF1E56]/35 rounded-full flex items-center justify-center">
+              <svg className="w-4 h-4 text-[#FF5C7E] drop-shadow-[0_0_8px_rgba(255,30,86,0.5)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">
+              <h2 className="al-display text-[16px] font-bold text-white uppercase tracking-[0.14em]">
                 Agenda do Dia
               </h2>
-              <p className="text-sm text-[#6B6F76] dark:text-gray-300">
-                {date.toLocaleDateString('pt-BR', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
+              <p className="text-sm text-text-secondary">
+                {date.toLocaleDateString('pt-BR', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
                 })}
               </p>
             </div>
           </div>
-          <button 
+          <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-[#181C23] rounded-lg transition-colors"
+            className="p-2 text-text-secondary hover:text-[#FF5C7E] hover:bg-white/[0.06] rounded-lg transition-colors"
           >
-            <svg className="w-5 h-5 text-[#6B6F76] dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -141,15 +142,15 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
 
         {sortedItems.length === 0 ? (
           <div className="text-center py-8">
-            <div className="w-12 h-12 bg-gray-100 dark:bg-[#181C23] rounded-full flex items-center justify-center mx-auto mb-3">
-              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-12 h-12 bg-white/[0.04] border border-white/[0.08] rounded-full flex items-center justify-center mx-auto mb-3">
+              <svg className="w-6 h-6 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className="text-base font-semibold text-[#2E2F38] dark:text-white mb-1">
+            <h3 className="text-base font-semibold text-white mb-1">
               Nenhuma atividade agendada
             </h3>
-            <p className="text-sm text-[#6B6F76] dark:text-gray-300">
+            <p className="text-sm text-text-secondary">
               Este dia está livre de compromissos
             </p>
           </div>
@@ -158,7 +159,7 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-96 overflow-y-auto pr-2">
             {/* Coluna Esquerda: Tudo exceto CRM */}
             <div className="space-y-2">
-              <div className="text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-3 px-2">
+              <div className="al-display text-[11px] font-bold text-white uppercase tracking-[0.14em] mb-3 px-2">
                 Outros Compromissos
               </div>
               {sortedItems
@@ -170,7 +171,7 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
                   return (
                     <div
                       key={item.id}
-                      className={`p-3 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-all duration-200 ${
+                      className={`p-3 rounded-lg bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.05] transition-all duration-200 ${
                         item.status === 'concluida' ? 'opacity-60' : ''
                       }`}
                       style={{ borderLeftColor: item.cor, borderLeftWidth: '3px' }}
@@ -185,21 +186,21 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
                         <div className="flex-1 min-w-0">
                           {/* Primeira linha: título e tags */}
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-medium text-[#2E2F38] dark:text-white text-sm truncate flex-1">
+                            <h3 className="font-medium text-white text-sm truncate flex-1">
                               {item.titulo}
                             </h3>
-                            <span className={`px-1.5 py-0.5 text-xs font-medium rounded-full ${tipoCores[item.tipo]} text-white flex-shrink-0`}>
+                            <span className={`px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-full ${tipoCores[item.tipo]} flex-shrink-0`}>
                               {tipoLabels[item.tipo]}
                             </span>
                             {item.status === 'concluida' && (
-                              <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-green-500 text-white flex-shrink-0">
+                              <span className="px-1.5 py-0.5 text-xs font-bold rounded-full bg-[#34D399]/15 border border-[#34D399]/40 text-emerald-300 flex-shrink-0">
                                 ✓
                               </span>
                             )}
                           </div>
                           
                           {/* Segunda linha: horário e informações compactas */}
-                          <div className="flex items-center gap-3 text-xs text-[#6B6F76] dark:text-gray-400">
+                          <div className="flex items-center gap-3 text-xs text-text-secondary">
                             <div className="flex items-center gap-1 font-medium">
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -211,7 +212,7 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
                             </div>
                             
                             {item.leadNome && (
-                              <div className="flex items-center gap-1 text-[#D4A017] dark:text-[#E8C547]">
+                              <div className="flex items-center gap-1 text-emerald-300">
                                 <span className="text-xs">📞</span>
                                 <span className="truncate max-w-24">{item.leadNome}</span>
                               </div>
@@ -220,7 +221,7 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
                           
                           {/* Terceira linha: informações compactas */}
                           {compactInfo && (
-                            <div className="mt-1 text-xs text-[#6B6F76] dark:text-gray-400 truncate">
+                            <div className="mt-1 text-xs text-text-secondary truncate">
                               {compactInfo}
                             </div>
                           )}
@@ -233,7 +234,7 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
 
             {/* Coluna Direita: Apenas CRM */}
             <div className="space-y-2">
-              <div className="text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-3 px-2">
+              <div className="al-display text-[11px] font-bold text-white uppercase tracking-[0.14em] mb-3 px-2">
                 Tarefas CRM
               </div>
               {(() => {
@@ -243,9 +244,9 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
                 
                 if (crmItems.length === 0) {
                   return (
-                    <div className="text-center py-8 text-sm text-[#6B6F76] dark:text-gray-400">
-                      <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                        <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="text-center py-8 text-sm text-text-secondary">
+                      <div className="w-8 h-8 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <svg className="w-4 h-4 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                       </div>
@@ -260,7 +261,7 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
                   return (
                     <div
                       key={item.id}
-                      className={`p-3 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-all duration-200 ${
+                      className={`p-3 rounded-lg bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.05] transition-all duration-200 ${
                         item.status === 'concluida' ? 'opacity-60' : ''
                       }`}
                       style={{ borderLeftColor: item.cor, borderLeftWidth: '3px' }}
@@ -275,21 +276,21 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
                         <div className="flex-1 min-w-0">
                           {/* Primeira linha: título e tags */}
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-medium text-[#2E2F38] dark:text-white text-sm truncate flex-1">
+                            <h3 className="font-medium text-white text-sm truncate flex-1">
                               {item.titulo}
                             </h3>
-                            <span className={`px-1.5 py-0.5 text-xs font-medium rounded-full ${tipoCores[item.tipo]} text-white flex-shrink-0`}>
+                            <span className={`px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-full ${tipoCores[item.tipo]} flex-shrink-0`}>
                               {tipoLabels[item.tipo]}
                             </span>
                             {item.status === 'concluida' && (
-                              <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-green-500 text-white flex-shrink-0">
+                              <span className="px-1.5 py-0.5 text-xs font-bold rounded-full bg-[#34D399]/15 border border-[#34D399]/40 text-emerald-300 flex-shrink-0">
                                 ✓
                               </span>
                             )}
                           </div>
                           
                           {/* Segunda linha: horário e lead */}
-                          <div className="flex items-center gap-3 text-xs text-[#6B6F76] dark:text-gray-400">
+                          <div className="flex items-center gap-3 text-xs text-text-secondary">
                             <div className="flex items-center gap-1 font-medium">
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -301,7 +302,7 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
                             </div>
                             
                             {item.leadNome && (
-                              <div className="flex items-center gap-1 text-[#D4A017] dark:text-[#E8C547]">
+                              <div className="flex items-center gap-1 text-emerald-300">
                                 <span className="text-xs">📞</span>
                                 <span className="truncate max-w-24">{item.leadNome}</span>
                               </div>
@@ -310,7 +311,7 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
                           
                           {/* Terceira linha: informações compactas */}
                           {compactInfo && (
-                            <div className="mt-1 text-xs text-[#6B6F76] dark:text-gray-400 truncate">
+                            <div className="mt-1 text-xs text-text-secondary truncate">
                               {compactInfo}
                             </div>
                           )}
@@ -325,14 +326,14 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
         )}
 
         {/* Footer mais compacto */}
-        <div className="mt-4 pt-3 border-t border-[#E8E9F1] dark:border-[#23283A]">
+        <div className="mt-4 pt-3 border-t border-white/[0.08]">
           <div className="flex items-center justify-between">
-            <div className="text-sm text-[#6B6F76] dark:text-gray-300">
+            <div className="text-sm text-text-secondary">
               Total: {sortedItems.length} atividade{sortedItems.length !== 1 ? 's' : ''}
             </div>
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-[#D4A017] text-white rounded-lg hover:bg-[#B8860B] transition-colors font-medium text-sm"
+              className="px-4 py-2 border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white rounded-xl transition-colors font-bold text-sm"
             >
               Fechar
             </button>

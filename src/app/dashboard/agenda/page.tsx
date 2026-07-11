@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, Timestamp, orderBy } from 'firebase/firestore';
 import DayAgendaModal from './_components/DayAgendaModal';
+import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   DEMO_AGENDA_ITEMS,
   DEMO_AGENDA_IMOBILIARIA,
@@ -48,14 +49,14 @@ interface AgendaItem {
   titulo: string;
   descricao?: string;
   dataHora: Timestamp;
-  tipo: 'agenda' | 'crm' | 'nota' | 'aviso' | 'comunidade' | 'imobiliaria';
+  tipo: 'agenda' | 'crm' | 'nota' | 'aviso' | 'imobiliaria';
   status: 'pendente' | 'concluida' | 'cancelada';
   cor: string;
   leadId?: string;
   leadNome?: string;
   createdAt: Timestamp;
   userId: string;
-  source?: 'agenda' | 'notas' | 'crm' | 'aviso' | 'comunidade' | 'imobiliaria';
+  source?: 'agenda' | 'notas' | 'crm' | 'aviso' | 'imobiliaria';
   originalId?: string; // ID original da nota ou tarefa
 }
 
@@ -76,23 +77,6 @@ interface CrmTask {
   status: 'pendente' | 'concluída' | 'cancelada';
   leadId: string;
   leadNome?: string;
-}
-
-interface EventoComunidade {
-  id: string;
-  titulo: string;
-  texto: string;
-  eventoTipo: string;
-  eventoLink: string;
-  eventoData: Timestamp;
-  eventoStatus: string;
-  userId: string;
-  nome: string;
-  handle: string;
-  avatar: string;
-  imobiliariaId: string;
-  createdAt: Timestamp;
-  isEvento: boolean;
 }
 
 interface AgendaImobiliaria {
@@ -118,7 +102,6 @@ const tipoCores = {
   crm: 'bg-amber-500/10 border border-amber-400/35 text-amber-300',
   nota: 'bg-yellow-500/10 border border-yellow-400/35 text-yellow-200',
   aviso: 'bg-red-600/10 border border-red-500/40 text-red-300',
-  comunidade: 'bg-orange-500/10 border border-orange-400/35 text-orange-300',
   imobiliaria: 'bg-purple-500/10 border border-purple-400/35 text-purple-300'
 };
 
@@ -127,7 +110,6 @@ const tipoLabels = {
   crm: 'CRM',
   nota: 'Nota',
   aviso: 'Aviso Importante',
-  comunidade: 'Evento Comunidade',
   imobiliaria: 'Agenda Imobiliária'
 };
 
@@ -153,14 +135,13 @@ export default function AgendaPage() {
   const [crmTasks, setCrmTasks] = useState<CrmTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [eventosComunidade, setEventosComunidade] = useState<EventoComunidade[]>([]);
   const [agendaImobiliaria, setAgendaImobiliaria] = useState<AgendaImobiliaria[]>([]);
 
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingItem, setViewingItem] = useState<AgendaItem | null>(null);
   const [editingItem, setEditingItem] = useState<AgendaItem | null>(null);
-  const [filter, setFilter] = useState<'all' | 'crm' | 'nota' | 'agenda' | 'comunidade' | 'imobiliaria'>('all');
+  const [filter, setFilter] = useState<'all' | 'crm' | 'nota' | 'agenda' | 'imobiliaria'>('all');
 
   // Estado para o modal de agenda do dia
   const [showDayAgendaModal, setShowDayAgendaModal] = useState(false);
@@ -182,7 +163,6 @@ export default function AgendaPage() {
       setNotes(DEMO_NOTES as Note[]);
       setCrmTasks(getDemoCrmTasksForAgenda());
       setAgendaImobiliaria(DEMO_AGENDA_IMOBILIARIA as AgendaImobiliaria[]);
-      setEventosComunidade([]);
       setLoading(false);
       return;
     }
@@ -223,7 +203,6 @@ export default function AgendaPage() {
         fetchAgendaItems(),
         fetchNotes(),
         fetchCrmTasks(),
-        fetchEventosComunidade(),
         fetchAgendaImobiliaria()
       ]);
     } catch (error) {
@@ -325,39 +304,11 @@ export default function AgendaPage() {
     }
   };
 
-  const fetchEventosComunidade = async () => {
-    if (!currentUser || !userData?.imobiliariaId) return;
-
-    try {
-      const eventosRef = collection(db, 'comunidadePosts');
-      const eventosQuery = query(
-        eventosRef,
-        where('imobiliariaId', '==', userData.imobiliariaId),
-        where('isEvento', '==', true),
-        where('eventoStatus', '==', 'agendado')
-      );
-      
-      const eventosSnapshot = await getDocs(eventosQuery);
-      const eventosData: EventoComunidade[] = [];
-      
-      eventosSnapshot.forEach((doc) => {
-        const eventoData = { id: doc.id, ...doc.data() } as EventoComunidade;
-        eventosData.push(eventoData);
-      });
-
-      setEventosComunidade(eventosData);
-    } catch (error) {
-      console.error('Erro ao buscar eventos da comunidade:', error);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser || isEspelhoDemo) return;
 
     try {
-      console.log('Salvando compromisso:', formData);
-      
       const agendaData = {
         ...formData,
         dataHora: Timestamp.fromDate(new Date(formData.dataHora)),
@@ -367,29 +318,24 @@ export default function AgendaPage() {
         source: 'agenda' // Adicionar source para identificar origem
       };
 
-      console.log('Dados para salvar:', agendaData);
-
       if (editingItem) {
         await updateDoc(doc(db, 'agenda', editingItem.id), agendaData);
-        console.log('Compromisso atualizado');
       } else {
-        const docRef = await addDoc(collection(db, 'agenda'), agendaData);
-        console.log('Compromisso criado com ID:', docRef.id);
+        await addDoc(collection(db, 'agenda'), agendaData);
       }
 
       setShowModal(false);
       setEditingItem(null);
       resetForm();
       await fetchAllData(); // Recarregar todos os dados
-      console.log('Dados recarregados');
     } catch (error) {
       console.error('Erro ao salvar agenda:', error);
     }
   };
 
   const handleEdit = (item: AgendaItem) => {
-    // Para CRM, Notas, Avisos e Eventos da Comunidade, abrir modal de visualização
-    if (item.source === 'crm' || item.source === 'notas' || item.source === 'aviso' || item.source === 'comunidade') {
+    // Para CRM, Notas e Avisos, abrir modal de visualização
+    if (item.source === 'crm' || item.source === 'notas' || item.source === 'aviso') {
       setViewingItem(item);
       setShowViewModal(true);
       return;
@@ -397,7 +343,6 @@ export default function AgendaPage() {
     
     // Só permitir editar itens criados na agenda (source: 'agenda')
     if (item.source !== 'agenda') {
-      console.log('Este item não pode ser editado - apenas visualização');
       return;
     }
     
@@ -414,7 +359,7 @@ export default function AgendaPage() {
 
   const handleDelete = async (id: string) => {
     if (isEspelhoDemo) return;
-    if (confirm('Tem certeza que deseja excluir este item?')) {
+    if (await confirmDialog({ message: 'Tem certeza que deseja excluir este item?', danger: true, confirmLabel: 'Excluir' })) {
       try {
         await deleteDoc(doc(db, 'agenda', id));
         fetchAgendaItems();
@@ -501,26 +446,6 @@ export default function AgendaPage() {
       }
     });
     
-    // Adicionar eventos da comunidade
-    eventosComunidade.forEach(evento => {
-      const eventoDate = evento.eventoData.toDate();
-      if (eventoDate.toDateString() === date.toDateString()) {
-        allItems.push({
-          id: `evento_${evento.id}`,
-          titulo: evento.titulo,
-          descricao: `${evento.texto}\n\nTipo: ${evento.eventoTipo}\nLink: ${evento.eventoLink}\nOrganizador: ${evento.nome}`,
-          dataHora: evento.eventoData,
-          tipo: 'comunidade',
-          status: 'pendente',
-          cor: '#F97316', // Cor laranja para eventos da comunidade
-          createdAt: evento.createdAt,
-          userId: evento.userId,
-          source: 'comunidade',
-          originalId: evento.id
-        });
-      }
-    });
-
     // Adicionar agenda imobiliária (inclui plantões, que agora são eventos tipo 'plantao')
     agendaImobiliaria.forEach(agenda => {
       const tituloAgenda = agenda.tipo === 'plantao' && (agenda as any).construtora
@@ -746,14 +671,13 @@ export default function AgendaPage() {
             <div className="flex items-center gap-6">
               <select
                 value={filter}
-                onChange={(e) => setFilter(e.target.value as 'all' | 'crm' | 'nota' | 'agenda' | 'comunidade')}
+                onChange={(e) => setFilter(e.target.value as 'all' | 'crm' | 'nota' | 'agenda')}
                 className="px-4 py-2 bg-white/[0.04] border border-white/10 rounded-lg text-white font-medium focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
               >
                 <option value="all">Todos os tipos</option>
                 <option value="crm">CRM</option>
                 <option value="nota">Notas</option>
                 <option value="agenda">Agenda</option>
-                <option value="comunidade">Eventos Comunidade</option>
               </select>
 
 
@@ -875,25 +799,6 @@ export default function AgendaPage() {
                     originalId: task.id,
                     leadId: task.leadId,
                     leadNome: task.leadNome
-                  });
-                }
-              });
-              
-              // Adicionar eventos da comunidade
-              eventosComunidade.forEach(evento => {
-                if (evento.eventoData.toDate() >= new Date()) {
-                  allItems.push({
-                    id: `evento_${evento.id}`,
-                    titulo: evento.titulo,
-                    descricao: `${evento.texto}\n\nTipo: ${evento.eventoTipo}\nLink: ${evento.eventoLink}\nOrganizador: ${evento.nome}`,
-                    dataHora: evento.eventoData,
-                    tipo: 'comunidade',
-                    status: 'pendente',
-                    cor: '#F97316', // Cor laranja para eventos da comunidade
-                    createdAt: evento.createdAt,
-                    userId: evento.userId,
-                    source: 'comunidade',
-                    originalId: evento.id
                   });
                 }
               });
@@ -1080,7 +985,7 @@ export default function AgendaPage() {
               </svg>
               <div>
                 <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">
-                  Visualizar {viewingItem.source === 'crm' ? 'Tarefa CRM' : viewingItem.source === 'aviso' ? 'Aviso Importante' : viewingItem.source === 'comunidade' ? 'Evento Comunidade' : 'Nota'}
+                  Visualizar {viewingItem.source === 'crm' ? 'Tarefa CRM' : viewingItem.source === 'aviso' ? 'Aviso Importante' : 'Nota'}
                 </h2>
                 <p className="text-text-secondary text-sm tabular-nums">
                   {viewingItem.dataHora.toDate().toLocaleString('pt-BR')}

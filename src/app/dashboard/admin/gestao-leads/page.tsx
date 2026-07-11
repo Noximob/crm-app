@@ -7,6 +7,7 @@ import { collection, query, where, getDocs, updateDoc, doc, deleteDoc } from 'fi
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { useRouter } from 'next/navigation';
 import { getDemoLeads, DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
+import LoadingState from '@/components/ui/LoadingState';
 
 interface Corretor {
   id: string;
@@ -138,17 +139,19 @@ export default function GestaoLeadsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
+    <div className="min-h-screen py-8 px-4">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2 text-left">Gestão de Leads dos Corretores</h1>
-        <p className="text-[#6B6F76] dark:text-gray-300 mb-8 text-left text-base">Transfira, filtre e organize os leads entre os corretores da sua imobiliária.</p>
-        {mensagem && <div className="mb-4 p-3 rounded bg-yellow-100 text-yellow-800">{mensagem}</div>}
-        <div className="mb-6 flex flex-col gap-4">
+        <span className="gx-tag"><span>Área do administrador</span></span>
+        <h1 className="al-display text-[22px] font-bold text-white uppercase tracking-[0.1em] mt-2 mb-2 text-left">Gestão de Leads dos Corretores</h1>
+        <p className="text-text-secondary mb-8 text-left text-[13px]">Transfira, filtre e organize os leads entre os corretores da sua imobiliária.</p>
+        {mensagem && <div className="mb-4 p-3 rounded-xl bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#FFE9A6] text-sm font-bold">{mensagem}</div>}
+        <div className="al-card relative overflow-hidden p-4 mb-6 flex flex-col gap-4">
+          <div className="absolute inset-x-0 top-0 gx-line" />
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex-1">
-              <label className="font-medium text-[#6B6F76] dark:text-gray-300 block mb-1">Corretor de origem:</label>
+              <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">Corretor de origem:</label>
               <select
-                className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/[0.04] text-white focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                 value={corretorOrigem}
                 onChange={e => { setCorretorOrigem(e.target.value); setLeadsSelecionados([]); }}
                 disabled={loadingCorretores}
@@ -159,9 +162,9 @@ export default function GestaoLeadsPage() {
             </div>
             <div className="flex-1 flex items-end gap-2 justify-end">
               <div className="w-full">
-                <label className="font-medium text-[#6B6F76] dark:text-gray-300 block mb-1">Corretor de destino:</label>
+                <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">Corretor de destino:</label>
                 <select
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                  className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/[0.04] text-white focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                   value={corretorDestino}
                   onChange={e => setCorretorDestino(e.target.value)}
                   disabled={loadingCorretores || !corretorOrigem}
@@ -171,7 +174,7 @@ export default function GestaoLeadsPage() {
                 </select>
               </div>
               <button
-                className="h-11 px-6 py-2 bg-[#D4A017] hover:bg-[#B8860B] text-white rounded-lg font-semibold transition-colors disabled:opacity-50 mt-6"
+                className="h-11 px-6 py-2 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white rounded-xl font-bold shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all disabled:opacity-50 mt-6"
                 onClick={handleTransferir}
                 disabled={!corretorDestino || leadsSelecionados.length === 0}
               >
@@ -180,9 +183,9 @@ export default function GestaoLeadsPage() {
             </div>
           </div>
           <div className="flex-1 mt-2 max-w-xs">
-            <label className="font-medium text-[#6B6F76] dark:text-gray-300 block mb-1">Filtrar por etapa:</label>
+            <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">Filtrar por etapa:</label>
             <select
-              className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+              className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/[0.04] text-white focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
               value={stages.includes(filtroEtapa) ? filtroEtapa : ''}
               onChange={e => setFiltroEtapa(e.target.value || '')}
               disabled={loadingLeads}
@@ -198,9 +201,9 @@ export default function GestaoLeadsPage() {
         </div>
         <div className="mb-6">
           {loadingLeads ? (
-            <div className="text-center py-8 text-[#6B6F76] dark:text-gray-300">Carregando leads...</div>
+            <LoadingState label="Carregando leads..." className="py-8" />
           ) : corretorOrigem && leads.length === 0 ? (
-            <div className="text-center py-8 text-[#6B6F76] dark:text-gray-300">Nenhum lead encontrado para este corretor.</div>
+            <div className="text-center py-8 text-text-secondary">Nenhum lead encontrado para este corretor.</div>
           ) : (
             <ul className="space-y-2">
               {leads.length > 0 && (
@@ -209,36 +212,36 @@ export default function GestaoLeadsPage() {
                     type="checkbox"
                     checked={leadsSelecionados.length === leads.length}
                     onChange={e => setLeadsSelecionados(e.target.checked ? leads.map(l => l.id) : [])}
-                    className="mr-2 accent-[#D4A017]"
+                    className="mr-2 accent-[#FF1E56]"
                   />
-                  <span className="text-sm text-[#2E2F38] dark:text-white cursor-pointer select-none" onClick={() => setLeadsSelecionados(leadsSelecionados.length === leads.length ? [] : leads.map(l => l.id))}>
+                  <span className="text-sm text-white cursor-pointer select-none" onClick={() => setLeadsSelecionados(leadsSelecionados.length === leads.length ? [] : leads.map(l => l.id))}>
                     Selecionar Tudo
                   </span>
                 </div>
               )}
               {leads.map(lead => (
-                <li key={lead.id} className="flex items-center gap-4 bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl p-3 border border-[#E8E9F1] dark:border-[#23283A]">
+                <li key={lead.id} className="flex items-center gap-4 bg-white/[0.03] rounded-xl p-3 border border-white/[0.08] hover:bg-white/[0.04] transition-colors">
                   <input
                     type="checkbox"
                     checked={leadsSelecionados.includes(lead.id)}
                     onChange={() => handleSelectLead(lead.id)}
-                    className="accent-[#D4A017] h-5 w-5"
+                    className="accent-[#FF1E56] h-5 w-5"
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-[#2E2F38] dark:text-white truncate">{lead.nome}</div>
-                    <div className="text-sm text-[#6B6F76] dark:text-gray-300">{formatPhone(lead.telefone)}</div>
+                    <div className="font-bold text-white truncate">{lead.nome}</div>
+                    <div className="text-sm text-text-secondary">{formatPhone(lead.telefone)}</div>
                   </div>
-                  <span className="inline-block px-2 py-1 rounded bg-[#E8E9F1] dark:bg-[#181C23] text-[#D4A017] dark:text-primary-200 font-semibold text-xs truncate max-w-[120px]">{lead.etapa}</span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#FFE9A6] font-extrabold uppercase tracking-wider text-[10px] truncate max-w-[120px]">{lead.etapa}</span>
                   <div className="flex items-center gap-2">
-                    <button 
-                      className="text-[#D4A017] hover:text-[#B8860B] text-xs px-2 py-1 rounded hover:bg-[#D4A017]/10 transition-colors" 
+                    <button
+                      className="text-[#FF7A97] hover:text-[#FF9EB5] text-xs px-2 py-1 rounded hover:bg-[#FF1E56]/10 transition-colors"
                       onClick={() => handleVerDetalhes(lead.id)}
                       title="Ver detalhes do lead"
                     >
                       Detalhes
                     </button>
-                    <button 
-                      className="text-red-500 hover:text-red-700 text-xs px-2 py-1 rounded hover:bg-red-500/10 transition-colors" 
+                    <button
+                      className="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded hover:bg-red-500/10 transition-colors"
                       onClick={() => handleApagar(lead.id)}
                       title="Apagar lead"
                     >

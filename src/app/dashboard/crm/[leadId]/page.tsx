@@ -13,6 +13,8 @@ import CrmHeader from '../_components/CrmHeader';
 import AgendaModal, { TaskPayload } from '../_components/AgendaModal';
 import CancelTaskModal from '../_components/CancelTaskModal';
 import { getDemoLeadById, getDemoInteractions } from '@/lib/espelho/demoData';
+import { showToast } from '@/components/ui/toast';
+import LoadingState from '@/components/ui/LoadingState';
 
 
 // --- Ícones ---
@@ -222,14 +224,11 @@ export default function LeadDetailPage() {
                     } else if (typeof value === 'string') {
                         // Se for string, converter para array (compatibilidade com dados antigos)
                         safeQualificacao[key] = [value];
-                    } else {
-                        console.warn(`Qualificação ${key} com tipo inválido:`, value);
                     }
                 });
                 
                 setQualifications(safeQualificacao);
             } else {
-                console.log("No such document!");
                 setLead(null);
             }
             setLoading(false);
@@ -428,10 +427,7 @@ export default function LeadDetailPage() {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF1E56] mx-auto mb-4"></div>
-                    <p className="text-text-secondary">Carregando dados do lead...</p>
-                </div>
+                <LoadingState label="Carregando dados do lead..." />
             </div>
         );
     }
@@ -585,7 +581,7 @@ export default function LeadDetailPage() {
                                                              descricaoCompleta += `\n\nHorário agendado: ${horarioAgendado}`;
                                                          }
                                                          
-                                                         alert(descricaoCompleta);
+                                                         showToast(descricaoCompleta, 'info');
                                                      }}
                                                      className="text-text-secondary hover:text-[#FF5C7E] transition-colors p-1"
                                                      title="Ver descrição completa"
@@ -634,7 +630,6 @@ export default function LeadDetailPage() {
                                     {Object.entries(qualifications).map(([key, values], index) => {
                                         // Verificação de segurança para garantir que values é um array
                                         if (!Array.isArray(values)) {
-                                            console.warn(`Qualificação ${key} não é um array:`, values);
                                             return null;
                                         }
                                         
@@ -689,7 +684,7 @@ export default function LeadDetailPage() {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="prose prose-sm dark:prose-invert max-w-none overflow-y-auto h-full pr-2">
+                                <div className="prose prose-sm prose-invert max-w-none overflow-y-auto h-full pr-2">
                                     <p className="whitespace-pre-wrap text-text-secondary">
                                         {lead.anotacoes || 'Nenhuma anotação registrada.'}
                                     </p>

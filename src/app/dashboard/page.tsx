@@ -11,6 +11,7 @@ import { getDemoLeads } from '@/lib/espelho/demoData';
 import { DEMO_AGENDA_IMOBILIARIA } from '@/lib/espelho/demoData';
 import AgendaImobiliariaModal from './_components/AgendaImobiliariaModal';
 import PlantoesModal from './_components/PlantoesModal';
+import LoadingState from '@/components/ui/LoadingState';
 
 interface MetaPessoalData {
   valorAlmejado: number;
@@ -190,8 +191,8 @@ const MetricCard = ({ title, value, change, icon: Icon, trend = 'up' }: {
 // Substituir EconomicIndicator por um componente mais simples, sem variação
 const SimpleIndicator = ({ title, value }: { title: string; value: string }) => (
   <div className="flex flex-col items-center justify-center p-3 bg-gradient-to-r from-[#D4A017]/5 to-[#E8C547]/5 rounded-lg border border-[#E8C547]/20 min-w-[120px] animate-slide-in">
-    <div className="text-xs text-[#6B6F76] dark:text-gray-300 mb-1">{title}</div>
-    <div className="text-lg font-bold text-[#2E2F38] dark:text-white">{value}</div>
+    <div className="text-xs text-gray-300 mb-1">{title}</div>
+    <div className="text-lg font-bold text-white">{value}</div>
   </div>
 );
 
@@ -212,13 +213,13 @@ const TaskItem = ({ time, title, status = 'pending' }: {
     <div className="flex items-center gap-3 p-3 hover:bg-[#F5F6FA] rounded-xl transition-colors">
       <div className={`w-2 h-2 rounded-full ${config.color}`}></div>
       <div className="flex-1">
-        <div className="text-sm font-medium text-[#2E2F38] dark:text-white">{title}</div>
-        <div className="text-xs text-[#6B6F76] dark:text-gray-100 flex items-center gap-1">
+        <div className="text-sm font-medium text-white">{title}</div>
+        <div className="text-xs text-gray-100 flex items-center gap-1">
           <ClockIcon className="h-3 w-3" />
           {time}
         </div>
       </div>
-      <div className="text-xs text-[#6B6F76] dark:text-gray-100">{config.text}</div>
+      <div className="text-xs text-gray-100">{config.text}</div>
     </div>
   );
 };
@@ -246,8 +247,8 @@ const RankingItem = ({ position, name, sales, avatar, rating }: {
       </div>
       <img src={avatar} alt={name} className="w-10 h-10 rounded-full" />
       <div className="flex-1">
-        <div className="text-sm font-medium text-[#2E2F38] dark:text-white">{name}</div>
-        <div className="text-xs text-[#6B6F76] dark:text-gray-100 flex items-center gap-2">
+        <div className="text-sm font-medium text-white">{name}</div>
+        <div className="text-xs text-gray-100 flex items-center gap-2">
           <span>{sales} vendas</span>
           {rating && (
             <div className="flex items-center gap-1">
@@ -264,7 +265,7 @@ const RankingItem = ({ position, name, sales, avatar, rating }: {
 
 const SectionTitle = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
   <div className={`relative ${className}`}>
-    <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white relative z-10">{children}</h2>
+    <h2 className="text-lg font-bold text-white relative z-10">{children}</h2>
     <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-[#D4A017] to-[#E8C547] rounded-r-full opacity-60"></div>
   </div>
 );
@@ -936,9 +937,9 @@ export default function DashboardPage() {
       {/* Borda superior que aparece no hover */}
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#D4A017] to-[#E8C547] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
       
-      <div className="text-xs text-[#6B6F76] dark:text-gray-300 mb-1 group-hover:text-[#D4A017] transition-colors duration-300">{title}</div>
-      <div className="text-lg font-bold text-[#2E2F38] dark:text-white group-hover:text-[#D4A017] transition-colors duration-300">{value}</div>
-      <div className="text-[10px] text-[#6B6F76] dark:text-gray-400 mb-1 group-hover:text-[#E8C547] transition-colors duration-300">({subtitulo})</div>
+      <div className="text-xs text-gray-300 mb-1 group-hover:text-[#D4A017] transition-colors duration-300">{title}</div>
+      <div className="text-lg font-bold text-white group-hover:text-[#D4A017] transition-colors duration-300">{value}</div>
+      <div className="text-[10px] text-gray-400 mb-1 group-hover:text-[#E8C547] transition-colors duration-300">({subtitulo})</div>
       {variacao !== null && (
         <div className={`flex items-center text-xs font-medium ${variacao >= 0 ? 'text-[#3AC17C]' : 'text-[#F45B69]'} group-hover:scale-110 transition-transform duration-300`}> 
           {variacao >= 0 ? (
@@ -951,18 +952,6 @@ export default function DashboardPage() {
       )}
     </div>
   );
-
-  const todayTasks = [
-    { time: '09:00', title: 'Follow-up com João Silva', status: 'pending' as const },
-    { time: '14:30', title: 'Enviar proposta para Maria', status: 'pending' as const },
-    { time: '16:00', title: 'Agendar visita com Pedro', status: 'overdue' as const },
-  ];
-
-  const topCorretores = [
-    { position: 1, name: 'Ana Silva', sales: '12', avatar: 'https://randomuser.me/api/portraits/women/1.jpg', rating: 4.9 },
-    { position: 2, name: 'Carlos Santos', sales: '10', avatar: 'https://randomuser.me/api/portraits/men/2.jpg', rating: 4.7 },
-    { position: 3, name: 'Mariana Costa', sales: '8', avatar: 'https://randomuser.me/api/portraits/women/3.jpg', rating: 4.5 },
-  ];
 
   const currentDate = new Date().toLocaleDateString('pt-BR', {
     weekday: 'long',
@@ -1029,7 +1018,7 @@ export default function DashboardPage() {
       {/* ===== WAR ROOM — bento grid que preenche exatamente a altura da tela (sem rolagem no desktop) ===== */}
       <div id="trending-section" className="grid grid-cols-6 lg:grid-cols-12 auto-rows-[minmax(84px,auto)] lg:grid-rows-[repeat(6,minmax(72px,1fr))] gap-3 [grid-auto-flow:dense] mt-1 lg:mt-0 lg:flex-1 lg:min-h-0">
 
-        {/* Identidade do corretor — o card herói: fundo calmo e escuro pra atenção ir toda pro placar (MOCKUP até integrar) */}
+        {/* Identidade do corretor — o card herói: fundo calmo e escuro pra atenção ir toda pro placar */}
         <div className="col-span-6 lg:col-span-4 lg:row-span-2 !rounded-[24px] border border-[#E8C547]/20 relative overflow-hidden p-4 al-rise flex flex-col" style={{ background: 'linear-gradient(150deg, #16121d 0%, #0d0b12 52%, #120e08 100%)', boxShadow: '0 0 40px -18px rgba(232,197,71,0.35), inset 0 1px 0 rgba(255,255,255,0.05)' }}>
           <div className="absolute -top-24 -right-14 w-64 h-64 rounded-full bg-[#E8C547]/[0.09] blur-3xl pointer-events-none" />
           <div className="absolute -bottom-28 -left-20 w-56 h-56 rounded-full bg-[#FF1E56]/[0.05] blur-3xl pointer-events-none" />
@@ -1137,7 +1126,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex-1 min-w-0 w-full self-stretch flex flex-col justify-center">
               {agendaLoading ? (
-                <p className="text-text-secondary text-sm">Carregando…</p>
+                <LoadingState label="Carregando…" className="py-2" />
               ) : proximosEventosConfirmados.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-1.5 text-center">
                   <p className="text-[12.5px] text-text-secondary">Nenhum evento no radar por enquanto.</p>
@@ -1184,7 +1173,7 @@ export default function DashboardPage() {
               <Link href="/dashboard/crm/andamento" className="text-[11px] font-bold text-[#FF5C7E] hover:underline shrink-0">kanban ▸</Link>
             </div>
             {agendaLoading ? (
-              <p className="text-gray-400 text-sm">Carregando...</p>
+              <LoadingState label="Carregando..." className="py-4" />
             ) : (() => {
               const porEtapa = funilPessoal;
               const etapasVisiveis = stages.slice(0, 6);
@@ -1238,7 +1227,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* PÓDIO MEETS & VISITAS — vitrine da produção (MOCKUP; datas de início/fim virão da área do administrador) */}
+          {/* PÓDIO MEETS & VISITAS — vitrine da produção */}
           <div className="col-span-6 lg:col-span-8 lg:row-span-2 lg:col-start-5 lg:row-start-2 al-card relative overflow-hidden p-4 al-rise al-d3 flex flex-col">
             <div className="absolute inset-x-0 top-0 gx-line-gold" />
             <div className="relative flex items-center justify-between gap-3 shrink-0">
@@ -1321,15 +1310,15 @@ export default function DashboardPage() {
       {/* Modal de Notas */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={() => setIsModalOpen(false)}>
-          <div className="relative max-w-3xl w-full mx-4 bg-white dark:bg-[#23283A] rounded-2xl shadow-xl p-0" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-[#6B6F76] dark:text-gray-300 text-2xl z-10 hover:text-[#F45B69]">✕</button>
+          <div className="relative max-w-3xl w-full mx-4 bg-[#23283A] rounded-2xl shadow-xl p-0" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-gray-300 text-2xl z-10 hover:text-[#F45B69]">✕</button>
             
             <div className="p-6">
               <div className="flex items-center gap-3 mb-6">
                 <NotesIcon className="h-8 w-8 text-[#D4A017]" />
                 <div>
-                  <h2 className="text-2xl font-bold text-[#2E2F38] dark:text-white">Todas as Notas</h2>
-                  <p className="text-[#6B6F76] dark:text-gray-300">Suas notas e lembretes</p>
+                  <h2 className="text-2xl font-bold text-white">Todas as Notas</h2>
+                  <p className="text-gray-300">Suas notas e lembretes</p>
                 </div>
               </div>
               
@@ -1337,13 +1326,13 @@ export default function DashboardPage() {
                 {notes.length === 0 ? (
                   <div className="text-center py-8">
                     <NotesIcon className="h-12 w-12 text-[#D4A017] mx-auto mb-3 opacity-50" />
-                    <p className="text-[#6B6F76] dark:text-gray-300">Nenhuma nota criada ainda</p>
+                    <p className="text-gray-300">Nenhuma nota criada ainda</p>
                   </div>
                 ) : (
                   notes.map((note) => (
                     <div
                       key={note.id}
-                      className="p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors"
+                      className="p-4 rounded-lg border border-[#23283A] hover:bg-[#181C23] transition-colors"
                     >
                       <div className="flex items-start gap-3">
                         <span className="text-lg mt-0.5">{getPriorityIcon(note.prioridade)}</span>
@@ -1352,17 +1341,17 @@ export default function DashboardPage() {
                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(note.prioridade)}`}>
                               {note.prioridade}
                             </span>
-                            <span className="text-xs text-[#6B6F76] dark:text-gray-300">
+                            <span className="text-xs text-gray-300">
                               {note.criadoEm.toDate().toLocaleDateString('pt-BR')}
                             </span>
                           </div>
-                          <div className="text-sm text-[#2E2F38] dark:text-white leading-relaxed mb-2">
+                          <div className="text-sm text-white leading-relaxed mb-2">
                             {note.texto}
                           </div>
                           {note.dataHora && (
                             <div className="flex items-center gap-2">
                               <CalendarIcon className="h-4 w-4 text-[#D4A017]" />
-                              <span className="text-xs text-[#6B6F76] dark:text-gray-300">
+                              <span className="text-xs text-gray-300">
                                 Agendado: {new Date(note.dataHora).toLocaleDateString('pt-BR')}
                               </span>
                             </div>

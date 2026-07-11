@@ -63,7 +63,7 @@ export function AlummaLogo({ variant = 'full', theme = 'dark', className = '', w
   return (
     <img
       src={src}
-      alt="Alumma"
+      alt="Nox Imóveis"
       width={width}
       height={height}
       className={className}
@@ -95,7 +95,7 @@ export function AlummaLogoFullInline({
   iconOnly?: boolean;
 }) {
   const isLight = theme === 'light';
-  const viewBox = iconOnly ? '0 0 32 32' : '0 0 140 32';
+  const viewBox = iconOnly ? '0 0 32 32' : '0 0 160 32';
   const textColor = isLight ? '#1a1a1a' : '#f5f5f5';
   const gradientStart = isLight ? '#B8860B' : '#f0b429';
   const gradientEnd = isLight ? '#D4A017' : '#ff9f2e';
@@ -107,7 +107,7 @@ export function AlummaLogoFullInline({
       height={height}
       className={className}
       style={{ display: 'block' }}
-      aria-label="Alumma"
+      aria-label="Nox Imóveis"
     >
       <defs>
         <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
@@ -129,14 +129,14 @@ export function AlummaLogoFullInline({
           />
           <text
             x="34"
-            y="22"
+            y="21"
             fill={textColor}
             fontFamily="system-ui, -apple-system, sans-serif"
             fontWeight="700"
-            fontSize="18"
+            fontSize="15"
             letterSpacing="0.02em"
           >
-            ALUMMA
+            NOX IMÓVEIS
           </text>
         </>
       )}

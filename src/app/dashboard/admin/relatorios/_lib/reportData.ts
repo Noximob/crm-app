@@ -223,11 +223,10 @@ export async function fetchRelatorioIndividual(
     });
   }
 
-  // Eventos e plantões em que participou (presentesIds ou respostasPresenca confirmado)
+  // Eventos e plantões em que participou (presentesIds ou respostasPresenca confirmado).
+  // Plantões agora são eventos de agendaImobiliaria com tipo === 'plantao' (não há mais coleção 'plantoes').
   const agendaRef = collection(db, 'agendaImobiliaria');
   const agendaSnap = await getDocs(query(agendaRef, where('imobiliariaId', '==', imobiliariaId)));
-  const plantoesRef = collection(db, 'plantoes');
-  const plantoesSnap = await getDocs(query(plantoesRef, where('imobiliariaId', '==', imobiliariaId)));
 
   const eventosParticipados: { titulo: string; data: string; horas: number; tipo: string }[] = [];
   let totalHorasPeriodo = 0;
@@ -241,7 +240,10 @@ export async function fetchRelatorioIndividual(
     if (!participou) return;
     const dataInicio = toDate(d.dataInicio);
     const dataFim = toDate(d.dataFim);
-    if (!dataInicio || !isInPeriod(dataInicio, start, end)) return;
+    if (!dataInicio) return;
+    const noPeriodo = isInPeriod(dataInicio, start, end);
+    const noAnterior = isInPeriod(dataInicio, startAnt, endAnt);
+    if (!noPeriodo && !noAnterior) return;
     // Horas: eventos com faixa de horário diária contam (horaFim-horaInicio) por dia do intervalo,
     // para que um evento/plantão de vários dias não some o intervalo contínuo inteiro.
     const horaIni = (d.horaInicio as string) || '';
@@ -261,6 +263,8 @@ export async function fetchRelatorioIndividual(
     } else {
       horas = dataFim ? (dataFim.getTime() - dataInicio.getTime()) / (60 * 60 * 1000) : 1;
     }
+    if (noAnterior) totalHorasAnterior += horas;
+    if (!noPeriodo) return;
     totalHorasPeriodo += horas;
     const tipoChave = (d.tipo as string) || 'outro';
     const tipoLabel = TIPO_EVENTO_LABEL[tipoChave] || 'Evento';
@@ -273,33 +277,6 @@ export async function fetchRelatorioIndividual(
       horas: Math.round(horas * 10) / 10,
       tipo: tipoLabel,
     });
-  });
-
-  plantoesSnap.docs.forEach((docSnap) => {
-    const d = docSnap.data();
-    const presentesIds = (d.presentesIds as string[]) || [];
-    const respostas = (d.respostasPresenca as Record<string, string>) || {};
-    const participou = presentesIds.includes(corretorId) || respostas[corretorId] === 'confirmado';
-    if (!participou) return;
-    const dataInicio = toDate(d.dataInicio);
-    if (!dataInicio) return;
-    const dataStr = formatDate(dataInicio);
-    const startStr = formatDate(start);
-    const endStr = formatDate(end);
-    const startAntStr = formatDate(startAnt);
-    const endAntStr = formatDate(endAnt);
-    const noPeriodo = dataStr >= startStr && dataStr <= endStr;
-    const noAnterior = dataStr >= startAntStr && dataStr <= endAntStr;
-    const horas = 2; // padrão plantão 2h
-    if (noPeriodo) totalHorasPeriodo += horas;
-    if (noAnterior) totalHorasAnterior += horas;
-    if (noPeriodo)
-      eventosParticipados.push({
-        titulo: (d.construtora as string) ? `Plantão — ${d.construtora}` : 'Plantão',
-        data: dataInicio.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-        horas,
-        tipo: 'Plantão',
-      });
   });
 
   // Metas e contribuições (precisamos antes para desempenhoPorSemana)
@@ -370,16 +347,6 @@ export async function fetchRelatorioIndividual(
         horasS += dataFim
           ? (dataFim.getTime() - dataInicio.getTime()) / (60 * 60 * 1000)
           : 1;
-      });
-      plantoesSnap.docs.forEach((docSnap) => {
-        const d = docSnap.data();
-        const presentesIds = (d.presentesIds as string[]) || [];
-        const respostas = (d.respostasPresenca as Record<string, string>) || {};
-        if (!presentesIds.includes(corretorId) && respostas[corretorId] !== 'confirmado') return;
-        const dataInicio = toDate(d.dataInicio);
-        if (!dataInicio) return;
-        const dataStr = formatDate(dataInicio);
-        if (dataStr >= formatDate(si) && dataStr <= formatDate(sf)) horasS += 2;
       });
       desempenhoPorSemana.push({
         semana: i + 1,

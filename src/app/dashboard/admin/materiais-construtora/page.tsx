@@ -6,6 +6,8 @@ import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { apoioDb, apoioStorage } from '@/lib/apoioFirebase';
 import { useAuth } from '@/context/AuthContext';
 import { CATEGORIES, catByKey, parseTip, type Construtora, type Imovel, type Material, type TipRow } from '@/lib/materiais/types';
+import { confirmDialog } from '@/components/ui/ConfirmDialog';
+import LoadingState from '@/components/ui/LoadingState';
 
 const CORES = ['#D4A017', '#b39af0', '#5dc2a5', '#e0777b', '#7aa2f7', '#f0a35e', '#9d83b8', '#4fb0c6'];
 const STATUS = ['Em construção', 'Lançamento', 'Pronto para morar'];
@@ -49,7 +51,7 @@ export default function AdminMateriaisPage() {
     catch { flash('Erro ao criar construtora.'); }
   };
   const excluirConstrutora = async (c: Construtora) => {
-    if (!window.confirm(`Excluir a construtora "${c.name}"? Os imóveis dela não são apagados.`)) return;
+    if (!(await confirmDialog({ message: `Excluir a construtora "${c.name}"? Os imóveis dela não são apagados.`, danger: true, confirmLabel: 'Excluir' }))) return;
     try { await deleteDoc(doc(apoioDb, 'construtoras', c.id)); flash('Construtora excluída.'); carregar(); }
     catch { flash('Erro ao excluir.'); }
   };
@@ -77,7 +79,7 @@ export default function AdminMateriaisPage() {
     catch { flash('Erro ao remover a logo.'); }
   };
   const excluirImovel = async (p: Imovel) => {
-    if (!window.confirm(`Excluir o empreendimento "${p.n}"?`)) return;
+    if (!(await confirmDialog({ message: `Excluir o empreendimento "${p.n}"?`, danger: true, confirmLabel: 'Excluir' }))) return;
     try { await deleteDoc(doc(apoioDb, 'imoveis', p.id)); flash('Excluído.'); carregar(); }
     catch { flash('Erro ao excluir.'); }
   };
@@ -138,7 +140,7 @@ export default function AdminMateriaisPage() {
           </div>
         </div>
         {loading ? (
-          <p className="text-sm text-text-secondary py-6 text-center">Carregando…</p>
+          <LoadingState label="Carregando…" className="py-6" />
         ) : (
           <div className="divide-y divide-white/10">
             {imoveisFiltrados.map((p) => (

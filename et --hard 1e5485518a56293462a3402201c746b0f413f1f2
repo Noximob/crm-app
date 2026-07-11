@@ -1,5 +1,0 @@
-[33m420fa32[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Adicionar logs de debug para investigar problema na funcionalidade de likes
-[33mb53da01[m Corrigir funcionalidade de likes para mostrar corretamente quem curtiu os posts com nomes e avatares
-[33m1e54855[m Corrigir label dos plantões de 'Evento' para 'Plantão' no modal da agenda
-[33mfc78226[m Organizar modal da agenda em duas colunas: CRM na direita e outros compromissos na esquerda, ambos ordenados por horário
-[33mee520a1[m Corrigir erro de variável duplicada horarioMatch no modal da agenda

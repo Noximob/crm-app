@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { Lead } from '@/types';
+import LoadingState from '@/components/ui/LoadingState';
 
 // --- Tipos e Constantes ---
 interface Task {
@@ -143,7 +144,7 @@ export default function TaskListModal({ isOpen, onClose }: TaskListModalProps) {
                 
                 <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
                     {loading ? (
-                        <p className="text-text-secondary text-center py-4">Carregando tarefas...</p>
+                        <LoadingState label="Carregando tarefas..." className="py-4" />
                     ) : leadsWithTasks.length === 0 ? (
                         <p className="text-text-secondary text-center py-4">Nenhuma tarefa encontrada.</p>
                     ) : (

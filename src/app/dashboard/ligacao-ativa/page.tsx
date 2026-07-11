@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { FUNIL_DEFAULT } from '@/lib/funil/default';
 import type { FunilConfig, FunilNode, FunilPasso } from '@/lib/funil/types';
+import LoadingState from '@/components/ui/LoadingState';
 
 interface Sessao { client: string; corretor: string; product: string; goal: string; }
 
@@ -99,7 +100,7 @@ export default function LigacaoAtivaPage() {
 
   const produtoNome = cfg.produtos.find((p) => p.key === product)?.label || '—';
 
-  if (loading) return <div className="flex-1 flex items-center justify-center text-text-secondary">Carregando…</div>;
+  if (loading) return <div className="flex-1 flex items-center justify-center"><LoadingState label="Carregando…" /></div>;
 
   // ---------- SETUP ----------
   if (!iniciado || setupOpen) {

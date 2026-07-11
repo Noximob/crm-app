@@ -5,6 +5,8 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where, orderBy, Timestamp } from 'firebase/firestore';
 import { DEMO_AGENDA_IMOBILIARIA, DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
+import { confirmDialog } from '@/components/ui/ConfirmDialog';
+import LoadingState from '@/components/ui/LoadingState';
 
 interface Corretor {
   id: string;
@@ -188,7 +190,7 @@ export default function AgendaImobiliariaAdminPage() {
       setAgenda(prev => prev.filter(e => e.id !== eventId));
       return;
     }
-    if (!confirm('Tem certeza que deseja excluir este evento?')) return;
+    if (!(await confirmDialog({ message: 'Tem certeza que deseja excluir este evento?', danger: true, confirmLabel: 'Excluir' }))) return;
     try {
       await deleteDoc(doc(db, 'agendaImobiliaria', eventId));
       setAgenda(prev => prev.filter(event => event.id !== eventId));
@@ -549,14 +551,14 @@ export default function AgendaImobiliariaAdminPage() {
                     const hojeIso = new Date().toISOString().slice(0, 10);
                     setFiltroData(hojeIso);
                   }}
-                  className="px-2 py-1 rounded-lg border border-purple-500 text-purple-600 text-xs md:text-sm hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                  className="px-2 py-1 rounded-lg border border-purple-500/50 text-purple-300 text-xs md:text-sm hover:bg-purple-900/20"
                 >
                   Hoje
                 </button>
                 <button
                   type="button"
                   onClick={() => setFiltroData('')}
-                  className="px-2 py-1 rounded-lg border border-gray-400 text-gray-600 dark:text-gray-300 text-xs md:text-sm hover:bg-gray-50 dark:hover:bg-gray-800/40"
+                  className="px-2 py-1 rounded-lg border border-white/15 text-text-secondary text-xs md:text-sm hover:bg-white/[0.06]"
                 >
                   Limpar filtro
                 </button>
@@ -565,13 +567,12 @@ export default function AgendaImobiliariaAdminPage() {
           </div>
 
           {loading ? (
-            <div className="p-12 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-              <p className="text-text-secondary">Carregando eventos...</p>
+            <div className="p-12">
+              <LoadingState label="Carregando eventos..." />
             </div>
           ) : agendaFiltrada.length === 0 ? (
             <div className="p-12 text-center">
-              <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-purple-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
@@ -584,7 +585,7 @@ export default function AgendaImobiliariaAdminPage() {
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-[#E8E9F1] dark:divide-[#23283A]">
+            <div className="divide-y divide-white/[0.05]">
               {agendaFiltrada.map((event) => (
                 <div key={event.id} className="p-6 hover:bg-white/[0.04] transition-colors">
                   <div className="flex items-start justify-between">
@@ -663,7 +664,7 @@ export default function AgendaImobiliariaAdminPage() {
                           </div>
                         )}
                       </div>
-                      <div className="mt-4 pt-4 border-t border-[#E8E9F1] dark:border-[#23283A]">
+                      <div className="mt-4 pt-4 border-t border-white/[0.08]">
                         <p className="text-sm font-medium text-white mb-2">Corretores presentes (quem participou)</p>
                         {corretores.length === 0 ? (
                           <p className="text-xs text-text-secondary">Nenhum corretor cadastrado na imobiliária.</p>
@@ -688,7 +689,7 @@ export default function AgendaImobiliariaAdminPage() {
                     <div className="flex gap-2 ml-4">
                       <button
                         onClick={() => handleEdit(event)}
-                        className="p-2 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
+                        className="p-2 text-amber-300 hover:bg-amber-900/20 rounded-lg transition-colors"
                         title="Editar evento"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -697,7 +698,7 @@ export default function AgendaImobiliariaAdminPage() {
                       </button>
                       <button
                         onClick={() => handleDelete(event.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        className="p-2 text-red-400 hover:bg-red-900/20 rounded-lg transition-colors"
                         title="Excluir evento"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

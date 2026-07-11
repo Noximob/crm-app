@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, doc, updateDoc, query, where } from 'firebase/firestore';
 import Link from 'next/link';
+import LoadingState from '@/components/ui/LoadingState';
 
 interface Imobiliaria {
   id: string;
@@ -100,17 +101,17 @@ export default function AdminEntidadesPage() {
     const hasAprovado = typeof imobiliaria.aprovado === 'boolean';
     
     if (hasTipo && hasStatus && hasAprovado) {
-      return { status: 'complete', text: '✅ Completa', color: 'text-green-600' };
+      return { status: 'complete', text: '✅ Completa', color: 'text-emerald-300' };
     } else {
       const missing = [];
       if (!hasTipo) missing.push('tipo');
       if (!hasStatus) missing.push('status');
       if (!hasAprovado) missing.push('aprovado');
-      
-      return { 
-        status: 'incomplete', 
-        text: `⚠️ Incompleta (faltam: ${missing.join(', ')})`, 
-        color: 'text-yellow-600' 
+
+      return {
+        status: 'incomplete',
+        text: `⚠️ Incompleta (faltam: ${missing.join(', ')})`,
+        color: 'text-[#FFE9A6]'
       };
     }
   };
@@ -119,8 +120,8 @@ export default function AdminEntidadesPage() {
     return (
       <div className="min-h-full py-8 px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center">
-            <p>Carregando imobiliárias...</p>
+          <div className="al-card p-6">
+            <LoadingState label="Carregando imobiliárias..." />
         </div>
       </div>
     </div>
@@ -133,9 +134,9 @@ export default function AdminEntidadesPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
           <div className="flex items-center gap-4 mb-4 sm:mb-0">
-            <Link 
+            <Link
               href="/dashboard/developer"
-              className="text-[#D4A017] hover:text-[#B8860B] transition-colors"
+              className="text-text-secondary hover:text-[#FF7A97] text-sm font-bold transition-colors"
             >
               ← Voltar à Área do Desenvolvedor
             </Link>
@@ -144,38 +145,40 @@ export default function AdminEntidadesPage() {
 
         {/* Título */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-[#2E2F38] dark:text-white mb-4">
+          <span className="gx-tag"><span>Área do desenvolvedor</span></span>
+          <h1 className="al-display text-[26px] font-bold text-white uppercase tracking-[0.1em] mt-2 mb-2">
             Administração de Entidades
           </h1>
-          <p className="text-xl text-[#6B6F76] dark:text-gray-300">
+          <p className="text-[13px] text-text-secondary">
             Corrija dados inconsistentes e atualize entidades existentes
           </p>
         </div>
 
         {/* Mensagem */}
         {message && (
-          <div className={`mb-6 p-4 rounded-lg text-center font-medium ${
-            message.includes('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          <div className={`mb-6 p-4 rounded-xl text-center font-bold text-sm border ${
+            message.includes('✅') ? 'bg-[#34D399]/10 border-[#34D399]/35 text-emerald-300' : 'bg-red-500/10 border-red-500/40 text-red-300'
           }`}>
             {message}
       </div>
         )}
 
         {/* Botão de Atualização */}
-        <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-8">
+        <div className="al-card relative overflow-hidden p-6 mb-8">
+          <div className="absolute inset-x-0 top-0 gx-line" />
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-bold text-[#2E2F38] dark:text-white mb-2">
+              <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-2">
                 Atualizar Imobiliárias
               </h3>
-              <p className="text-sm text-[#6B6F76] dark:text-gray-300">
+              <p className="text-sm text-text-secondary">
                 Adiciona campos obrigatórios (tipo, status, aprovado) às imobiliárias existentes
               </p>
       </div>
             <button
               onClick={updateImobiliarias}
               disabled={updating}
-              className="bg-[#D4A017] hover:bg-[#B8860B] disabled:bg-[#6B6F76] text-white font-medium px-6 py-3 rounded-lg transition-colors"
+              className="bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 disabled:opacity-50 text-white font-bold px-6 py-3 rounded-xl shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all"
             >
               {updating ? 'Atualizando...' : 'Atualizar Todas'}
         </button>
@@ -183,33 +186,34 @@ export default function AdminEntidadesPage() {
         </div>
 
         {/* Lista de Imobiliárias */}
-        <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] overflow-hidden">
+        <div className="al-card relative overflow-hidden">
+          <div className="absolute inset-x-0 top-0 gx-line" />
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-[#F5F6FA] dark:bg-[#181C23]">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-[#2E2F38] dark:text-white">Nome</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-[#2E2F38] dark:text-white">Tipo</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-[#2E2F38] dark:text-white">Status</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-[#2E2F38] dark:text-white">Aprovado</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-[#2E2F38] dark:text-white">Estado</th>
+              <thead>
+                <tr className="border-b border-white/[0.08]">
+                  <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Nome</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Tipo</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Status</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Aprovado</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Estado</th>
             </tr>
           </thead>
-              <tbody className="divide-y divide-[#E8E9F1] dark:divide-[#23283A]">
+              <tbody className="divide-y divide-white/[0.05]">
                 {imobiliarias.map((imobiliaria) => {
                   const statusInfo = getStatusInfo(imobiliaria);
                   return (
-                    <tr key={imobiliaria.id} className="hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
+                    <tr key={imobiliaria.id} className="hover:bg-white/[0.04] transition-colors">
                       <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-[#2E2F38] dark:text-white">{imobiliaria.nome}</div>
+                        <div className="text-sm font-medium text-white">{imobiliaria.nome}</div>
                 </td>
-                      <td className="px-6 py-4 text-sm text-[#6B6F76] dark:text-gray-300">
+                      <td className="px-6 py-4 text-sm text-text-secondary">
                         {imobiliaria.tipo || 'Não definido'}
                 </td>
-                      <td className="px-6 py-4 text-sm text-[#6B6F76] dark:text-gray-300">
+                      <td className="px-6 py-4 text-sm text-text-secondary">
                         {imobiliaria.status || 'Não definido'}
                 </td>
-                      <td className="px-6 py-4 text-sm text-[#6B6F76] dark:text-gray-300">
+                      <td className="px-6 py-4 text-sm text-text-secondary">
                         {typeof imobiliaria.aprovado === 'boolean' ? (imobiliaria.aprovado ? 'Sim' : 'Não') : 'Não definido'}
                 </td>
                       <td className="px-6 py-4">
@@ -226,7 +230,7 @@ export default function AdminEntidadesPage() {
     </div>
 
         {imobiliarias.length === 0 && (
-          <div className="text-center py-8 text-[#6B6F76] dark:text-gray-300">
+          <div className="text-center py-8 text-text-secondary">
             <p>Nenhuma imobiliária encontrada.</p>
           </div>
         )}

@@ -7,6 +7,9 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import { db, storage } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { DEMO_BRELLO_BOARDS, DEMO_BRELLO_BOARD_ID, DEMO_BRELLO_COLUMNS, DEMO_BRELLO_CARDS } from '@/lib/espelho/demoData';
+import { confirmDialog } from '@/components/ui/ConfirmDialog';
+import { showToast } from '@/components/ui/toast';
+import LoadingState from '@/components/ui/LoadingState';
 
 interface BrelloCard {
   id: string;
@@ -144,12 +147,10 @@ const Brello = () => {
           return bDate.getTime() - aDate.getTime();
         });
         
-        console.log('Boards carregados:', uniqueBoards);
         setBoards(uniqueBoards);
-        
+
         // Selecionar o primeiro board se não houver nenhum selecionado
         if (uniqueBoards.length > 0 && !currentBoard) {
-          console.log('Selecionando primeiro board:', uniqueBoards[0]);
           setCurrentBoard(uniqueBoards[0]);
         }
       } catch (error) {
@@ -164,52 +165,23 @@ const Brello = () => {
 
   // Carregar membros da equipe
   useEffect(() => {
-    console.log('useEffect membros - currentUser:', currentUser);
-    console.log('useEffect membros - userData:', userData);
-    console.log('userData?.imobiliariaId:', userData?.imobiliariaId);
-    
     // Aguardar o userData ser carregado
-    if (!currentUser) {
-      console.log('currentUser não está disponível');
-      return;
-    }
-    
-    if (!userData) {
-      console.log('userData ainda não foi carregado');
-      return;
-    }
-    
-    if (!userData.imobiliariaId) {
-      console.log('userData não tem imobiliariaId:', userData);
+    if (!currentUser || !userData || !userData.imobiliariaId) {
       return;
     }
 
     const loadTeamMembers = async () => {
       try {
-        console.log('Carregando membros da imobiliária:', userData.imobiliariaId);
-        
-        // Primeiro, vamos ver todos os usuários para debug
-        const allUsersQuery = query(collection(db, 'usuarios'));
-        const allUsersSnapshot = await getDocs(allUsersQuery);
-        console.log('Total de usuários na coleção:', allUsersSnapshot.docs.length);
-        
-        allUsersSnapshot.docs.forEach(doc => {
-          const data = doc.data();
-          console.log(`Usuário ${doc.id}:`, data);
-        });
-        
         // Buscar usuários da mesma imobiliária
         const usersQuery = query(
           collection(db, 'usuarios'),
           where('imobiliariaId', '==', userData.imobiliariaId)
         );
-        
+
         const usersSnapshot = await getDocs(usersQuery);
-        console.log('Snapshot de usuários com imobiliariaId:', usersSnapshot.docs.length);
-        
+
         const members = usersSnapshot.docs.map(doc => {
           const data = doc.data();
-          console.log('Dados do usuário:', data);
           return {
             id: doc.id,
             name: data.nome || data.name || 'Sem nome',
@@ -218,9 +190,7 @@ const Brello = () => {
           };
         });
 
-        console.log('Membros encontrados:', members);
         const filteredMembers = members.filter(member => member.id !== currentUser.uid);
-        console.log('Membros filtrados:', filteredMembers);
         setTeamMembers(filteredMembers);
       } catch (error) {
         console.error('Erro ao carregar membros da equipe:', error);
@@ -249,16 +219,14 @@ const Brello = () => {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log('onSnapshot colunas - dados recebidos:', snapshot.docs.length);
       const columnsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as BrelloColumn[];
-      
+
       // Ordenar localmente por ordem
       columnsData.sort((a, b) => (a.order || 0) - (b.order || 0));
-      
-      console.log('Colunas carregadas:', columnsData);
+
       setColumns(columnsData);
     }, (error) => {
       console.error('Erro ao carregar colunas:', error);
@@ -288,16 +256,14 @@ const Brello = () => {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log('onSnapshot cards - dados recebidos:', snapshot.docs.length);
       const cardsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as BrelloCard[];
-      
+
       // Ordenar localmente por ordem
       cardsData.sort((a, b) => (a.order || 0) - (b.order || 0));
-      
-      console.log('Cards carregados:', cardsData);
+
       setCards(cardsData);
     }, (error) => {
       console.error('Erro ao carregar cards:', error);
@@ -310,8 +276,6 @@ const Brello = () => {
     if (!currentUser || !newBoardTitle.trim()) return;
 
     try {
-      console.log('Criando board:', newBoardTitle);
-      
       const boardData = {
         title: newBoardTitle.trim(),
         userId: currentUser.uid,
@@ -319,8 +283,7 @@ const Brello = () => {
       };
 
       const docRef = await addDoc(collection(db, 'brelloBoards'), boardData);
-      console.log('Board criado com ID:', docRef.id);
-      
+
       // Criar coluna padrão "To Do"
       await addDoc(collection(db, 'brelloColumns'), {
         title: 'To Do',
@@ -328,7 +291,6 @@ const Brello = () => {
         order: 0,
         createdAt: new Date()
       });
-      console.log('Coluna padrão criada');
 
       setNewBoardTitle('');
       setShowNewBoardModal(false);
@@ -341,8 +303,6 @@ const Brello = () => {
     if (!currentBoard || !newColumnTitle.trim()) return;
 
     try {
-      console.log('Criando coluna:', newColumnTitle, 'para board:', currentBoard.id);
-      
       const columnData = {
         title: newColumnTitle.trim(),
         boardId: currentBoard.id,
@@ -350,9 +310,8 @@ const Brello = () => {
         createdAt: new Date()
       };
 
-      const docRef = await addDoc(collection(db, 'brelloColumns'), columnData);
-      console.log('Coluna criada com ID:', docRef.id);
-      
+      await addDoc(collection(db, 'brelloColumns'), columnData);
+
       setNewColumnTitle('');
       setShowNewColumnModal(false);
     } catch (error) {
@@ -364,8 +323,6 @@ const Brello = () => {
     if (!selectedColumnId || !newCardTitle.trim()) return;
 
     try {
-      console.log('Criando card:', newCardTitle, 'para coluna:', selectedColumnId);
-      
       const cardData = {
         title: newCardTitle.trim(),
         description: newCardDescription.trim(),
@@ -374,9 +331,8 @@ const Brello = () => {
         createdAt: new Date()
       };
 
-      const docRef = await addDoc(collection(db, 'brelloCards'), cardData);
-      console.log('Card criado com ID:', docRef.id);
-      
+      await addDoc(collection(db, 'brelloCards'), cardData);
+
       setNewCardTitle('');
       setNewCardDescription('');
       setSelectedColumnId('');
@@ -532,7 +488,7 @@ const Brello = () => {
   };
 
   const deleteAttachment = async (attachmentId: string, fileName: string) => {
-    if (!window.confirm(`Tem certeza que deseja excluir o anexo "${fileName}"? Esta ação não pode ser desfeita.`)) return;
+    if (!(await confirmDialog({ message: `Tem certeza que deseja excluir o anexo "${fileName}"? Esta ação não pode ser desfeita.`, danger: true, confirmLabel: 'Excluir' }))) return;
     try {
       // Deletar do Firestore
       await deleteDoc(doc(db, 'brelloAttachments', attachmentId));
@@ -705,7 +661,7 @@ const Brello = () => {
           setCurrentBoard(prev => prev ? { ...prev, isShared: false, sharedWith: [] } : null);
         }
         
-        alert('Compartilhamento removido!');
+        showToast('Compartilhamento removido!', 'success');
       } else {
         // Se há membros selecionados, atualizar compartilhamento
         await updateDoc(boardRef, {
@@ -728,14 +684,14 @@ const Brello = () => {
           setCurrentBoard(prev => prev ? { ...prev, isShared: true, sharedWith: selectedMembers } : null);
         }
         
-        alert('Board compartilhado com sucesso!');
+        showToast('Board compartilhado com sucesso!', 'success');
       }
 
       setShowShareModal(false);
       setSelectedMembers([]);
     } catch (error) {
       console.error('Erro ao compartilhar board:', error);
-      alert('Erro ao compartilhar board');
+      showToast('Erro ao compartilhar board', 'error');
     }
   };
 
@@ -868,10 +824,7 @@ const Brello = () => {
   if (loading) {
     return (
       <div className="min-h-full flex items-center justify-center">
-        <div className="flex items-center gap-3">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#FF1E56]" />
-          <div className="text-text-secondary text-sm font-bold uppercase tracking-[0.18em]">Carregando Brello...</div>
-        </div>
+        <LoadingState label="Carregando Brello..." />
       </div>
     );
   }

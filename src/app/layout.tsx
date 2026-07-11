@@ -3,16 +3,15 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
-import { NotificationProvider } from "@/context/NotificationContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Alumma — Soluções para imobiliárias de alta performance",
-  description: "CRM que une corretores, metas, dashboards para TV e relatórios. Para imobiliárias que não param.",
-  keywords: "CRM, imobiliária, corretores, leads, metas, dashboards TV, Alumma",
-  authors: [{ name: "Alumma" }],
-  robots: "index, follow",
+  title: "Nox Imóveis — CRM",
+  description: "CRM interno da Nox Imóveis.",
+  keywords: "CRM, imobiliária, corretores, leads, metas, dashboards TV, Nox Imóveis",
+  authors: [{ name: "Nox Imóveis" }],
+  robots: "noindex, nofollow",
 };
 
 export const viewport: Viewport = {
@@ -30,9 +29,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider>
           <AuthProvider>
-            <NotificationProvider>
-              {children}
-            </NotificationProvider>
+            {children}
           </AuthProvider>
         </ThemeProvider>
       </body>

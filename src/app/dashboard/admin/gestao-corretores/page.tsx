@@ -7,6 +7,9 @@ import { collection, doc, deleteDoc, query, where, onSnapshot, writeBatch } from
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { useRouter } from 'next/navigation';
 import { getDemoLeads, DEMO_USUARIOS } from '@/lib/espelho/demoData';
+import { confirmDialog } from '@/components/ui/ConfirmDialog';
+import { showToast } from '@/components/ui/toast';
+import LoadingState from '@/components/ui/LoadingState';
 
 interface User {
   id: string;
@@ -110,30 +113,19 @@ export default function GestaoCorretoresPage() {
   const filteredLeads = leads.filter(lead => {
     const userMatch = selectedOriginUser ? lead.userId === selectedOriginUser : false;
     const stageMatch = selectedStage ? lead.etapa === selectedStage : true;
-    
-    console.log('Filtro - Lead:', lead.nome, 'userId:', lead.userId, 'selectedOriginUser:', selectedOriginUser, 'etapa:', lead.etapa, 'selectedStage:', selectedStage);
-    console.log('Filtro - userMatch:', userMatch, 'stageMatch:', stageMatch);
-    
     return userMatch && stageMatch;
   });
-
-  console.log('Leads filtrados:', filteredLeads);
-  console.log('Usuários:', users);
-  console.log('Corretores filtrados:', corretores);
-  console.log('Usuário origem selecionado:', selectedOriginUser);
-  console.log('Etapa selecionada:', selectedStage);
-  console.log('Total de leads:', leads.length);
 
   // Transferir leads
   const handleTransferLeads = async () => {
     if (!selectedDestUser || selectedLeads.length === 0) {
-      alert('Selecione um corretor de destino e pelo menos um lead.');
+      showToast('Selecione um corretor de destino e pelo menos um lead.', 'error');
       return;
     }
 
     if (isEspelhoDemo) {
       setSelectedLeads([]);
-      alert(`Modo demonstração: ${selectedLeads.length} lead(s) transferido(s) com sucesso (simulado).`);
+      showToast(`Modo demonstração: ${selectedLeads.length} lead(s) transferido(s) com sucesso (simulado).`, 'success');
       return;
     }
 
@@ -148,21 +140,21 @@ export default function GestaoCorretoresPage() {
       });
       await batch.commit();
       setSelectedLeads([]);
-      alert(`${selectedLeads.length} lead(s) transferido(s) com sucesso!`);
+      showToast(`${selectedLeads.length} lead(s) transferido(s) com sucesso!`, 'success');
     } catch (error) {
       console.error('Erro ao transferir leads:', error);
-      alert('Erro ao transferir leads. Tente novamente.');
+      showToast('Erro ao transferir leads. Tente novamente.', 'error');
     }
   };
 
   // Excluir leads
   const handleDeleteLeads = async () => {
     if (selectedLeads.length === 0) {
-      alert('Selecione pelo menos um lead para excluir.');
+      showToast('Selecione pelo menos um lead para excluir.', 'error');
       return;
     }
 
-    if (!confirm(`Tem certeza que deseja excluir ${selectedLeads.length} lead(s)?`)) return;
+    if (!(await confirmDialog({ message: `Tem certeza que deseja excluir ${selectedLeads.length} lead(s)?`, danger: true, confirmLabel: 'Excluir' }))) return;
 
     try {
       const batch = writeBatch(db);
@@ -175,10 +167,10 @@ export default function GestaoCorretoresPage() {
       await batch.commit();
       
       setSelectedLeads([]);
-      alert(`${selectedLeads.length} lead(s) excluído(s) com sucesso!`);
+      showToast(`${selectedLeads.length} lead(s) excluído(s) com sucesso!`, 'success');
     } catch (error) {
       console.error('Erro ao excluir leads:', error);
-      alert('Erro ao excluir leads. Tente novamente.');
+      showToast('Erro ao excluir leads. Tente novamente.', 'error');
     }
   };
 
@@ -213,10 +205,7 @@ export default function GestaoCorretoresPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF1E56] mx-auto mb-4"></div>
-          <p className="text-text-secondary">Carregando...</p>
-        </div>
+        <LoadingState label="Carregando..." />
       </div>
     );
   }

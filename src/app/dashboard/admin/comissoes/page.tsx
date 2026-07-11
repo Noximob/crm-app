@@ -13,7 +13,7 @@ export default function AdminComissoesPage() {
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="px-4 pt-4 pb-2">
-        <h1 className="text-2xl font-bold text-white">Comissões — Administrativo</h1>
+        <h1 className="al-display text-[20px] font-bold text-white uppercase tracking-[0.1em]">Comissões — Administrativo</h1>
         <p className="text-sm text-text-secondary">Configure imposto, meta, métricas da calculadora e política; lance as vendas e vincule cada pessoa ao usuário do CRM (gerente, corretor, SDR ou autônomo).</p>
       </div>
       <div className="flex-1 min-h-0 px-2 pb-2">

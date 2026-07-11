@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import type { AgendaEventoTv, PlantaoTv, AgendaCorporativaItemTv, CorretorStatusTv } from './useAgendaTvData';
 import { startOfDay, endOfDay } from './useAgendaTvData';
+import LoadingState from '@/components/ui/LoadingState';
 
 const TIPOS_ACOES_VENDA = ['revisar-crm', 'ligacao-ativa', 'acao-de-rua', 'disparo-de-msg'];
 
@@ -438,7 +439,7 @@ export function AgendaTvSlide({ events, plantoes = [], fraseSemana, mode, agenda
             <section className="flex-1 min-h-0 flex flex-col">
               <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 shrink-0">Corretores</h2>
               {corretoresStatusLoading ? (
-                <div className="flex-1 flex items-center justify-center text-slate-400">Carregando...</div>
+                <div className="flex-1 flex items-center justify-center"><LoadingState label="Carregando..." /></div>
               ) : (() => {
                 const pesoStatus = (s: CorretorStatusTv['status']) => {
                   switch (s) {

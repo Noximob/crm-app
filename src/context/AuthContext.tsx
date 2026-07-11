@@ -27,12 +27,12 @@ export type AuthUser = User | { uid: string; email: string | null };
 
 const ESPELHO_USER: AuthUser = {
   uid: ESPELHO_DEMO_UID,
-  email: 'espelho@demo.alumma.com',
+  email: 'espelho@demo.noximoveis.com',
 } as AuthUser;
 
 const ESPELHO_USER_DATA: UserData = {
   nome: 'Espelho',
-  email: 'espelho@demo.alumma.com',
+  email: 'espelho@demo.noximoveis.com',
   tipoConta: 'imobiliaria',
   imobiliariaId: 'espelho-demo',
   aprovado: true,

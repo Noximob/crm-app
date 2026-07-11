@@ -46,46 +46,31 @@ export default function CadastroPage() {
       const imobiliariasRef = collection(db, 'imobiliarias');
       
       try {
-        console.log('🔍 Iniciando busca de imobiliárias...');
-        
-        // Primeiro, buscar todas as imobiliárias para debug
         const allSnapshot = await getDocs(imobiliariasRef);
-        const todasImobiliarias = allSnapshot.docs.map(doc => ({ 
-          id: doc.id, 
+        const todasImobiliarias = allSnapshot.docs.map(doc => ({
+          id: doc.id,
           nome: doc.data().nome,
           tipo: doc.data().tipo,
           aprovado: doc.data().aprovado,
           status: doc.data().status
         }));
-        
-        console.log('📊 Todas as imobiliárias no banco:', todasImobiliarias);
-        
+
         // Filtrar imobiliárias aprovadas (lógica mais simples e robusta)
         const imobiliariasAprovadas = todasImobiliarias.filter(imob => {
           // Verificar se está aprovada (aceita true, 1, ou qualquer valor truthy)
-          const aprovada = Boolean(imob.aprovado);
-          
-          console.log(`🔍 Verificando ${imob.nome}: aprovada=${aprovada}, aprovado=${imob.aprovado}, tipo=${imob.tipo}, status=${imob.status}`);
-          
-          return aprovada;
+          return Boolean(imob.aprovado);
         });
-        
-        console.log('📊 Imobiliárias aprovadas filtradas:', imobiliariasAprovadas);
-        
+
         if (imobiliariasAprovadas.length > 0) {
-          console.log('✅ Usando imobiliárias aprovadas filtradas');
           setImobiliarias(imobiliariasAprovadas.map(imob => ({ id: imob.id, nome: imob.nome })));
         } else {
-          console.log('⚠️ Nenhuma imobiliária aprovada encontrada, mostrando todas as imobiliárias');
           setImobiliarias(todasImobiliarias.map(imob => ({ id: imob.id, nome: imob.nome })));
         }
       } catch (error) {
         console.error('❌ Erro ao buscar imobiliárias:', error);
         // Em caso de erro, busca todas as imobiliárias
-        console.log('🔄 Tentando buscar todas as imobiliárias sem filtros...');
         const allSnapshot = await getDocs(imobiliariasRef);
         const todasImobiliarias = allSnapshot.docs.map(doc => ({ id: doc.id, nome: doc.data().nome }));
-        console.log('📊 Todas as imobiliárias encontradas:', todasImobiliarias);
         setImobiliarias(todasImobiliarias);
       }
     }
@@ -163,7 +148,6 @@ export default function CadastroPage() {
             <button
               type="button"
               onClick={() => {
-                console.log('🔍 DEBUG: Imobiliárias carregadas:', imobiliarias);
                 alert(`Imobiliárias carregadas: ${imobiliarias.length}\n${imobiliarias.map(i => `${i.nome} (${i.id})`).join('\n')}`);
               }}
               className="mb-4 w-full border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-text-secondary font-medium py-2 px-4 rounded-xl transition-colors duration-200"
@@ -241,10 +225,8 @@ export default function CadastroPage() {
     if (!email) { setError('Preencha o e-mail.'); setIsLoading(false); return; }
     if (!password) { setError('Preencha a senha.'); setIsLoading(false); return; }
     try {
-      console.log('Iniciando cadastro...');
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      console.log('Usuário criado no Auth:', user.uid);
       let imobiliariaId = '';
       if (perfil === 'imobiliaria' || perfil === 'corretor-autonomo') {
         const dadosImobiliaria = {

@@ -6,6 +6,8 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { FUNIL_DEFAULT } from '@/lib/funil/default';
 import type { FunilConfig, FunilNode, FunilChoice } from '@/lib/funil/types';
+import { confirmDialog } from '@/components/ui/ConfirmDialog';
+import LoadingState from '@/components/ui/LoadingState';
 
 const INP = 'w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-sm text-white';
 const SEL = 'px-2 py-1.5 rounded-lg bg-[#1e1e24] border border-white/10 text-sm text-white';
@@ -52,10 +54,10 @@ export default function AdminLigacaoAtivaPage() {
     setConfig((c) => ({ ...c, nodes: [...c.nodes, novo] }));
     setSelId(id);
   };
-  const excluirPasso = (id: string) => {
+  const excluirPasso = async (id: string) => {
     if (config.nodes.length <= 1) { flash('Precisa ter pelo menos um passo.'); return; }
     const apontam = config.nodes.filter((n) => n.id !== id && (n.choices || []).some((c) => c.target === id)).length;
-    if (!window.confirm(`Excluir este passo?${apontam ? ` ${apontam} botão(ões) de outros passos apontam pra ele e vão parar de funcionar.` : ''}`)) return;
+    if (!(await confirmDialog({ message: `Excluir este passo?${apontam ? ` ${apontam} botão(ões) de outros passos apontam pra ele e vão parar de funcionar.` : ''}`, danger: true, confirmLabel: 'Excluir' }))) return;
     setConfig((c) => {
       const nodes = c.nodes.filter((n) => n.id !== id);
       return { ...c, nodes, startNode: c.startNode === id ? nodes[0].id : c.startNode };
@@ -89,10 +91,10 @@ export default function AdminLigacaoAtivaPage() {
     } catch (e: any) { flash('Erro ao salvar: ' + (e?.message || e)); }
     finally { setSalvando(false); }
   };
-  const restaurar = () => { if (window.confirm('Restaurar o roteiro padrão? Você perde as edições não salvas.')) { setConfig(clone(FUNIL_DEFAULT)); setSelId(FUNIL_DEFAULT.startNode); } };
+  const restaurar = async () => { if (await confirmDialog({ message: 'Restaurar o roteiro padrão? Você perde as edições não salvas.', confirmLabel: 'Restaurar' })) { setConfig(clone(FUNIL_DEFAULT)); setSelId(FUNIL_DEFAULT.startNode); } };
 
   if (!isAdmin) return <div className="p-8 text-center text-text-secondary">Você não tem permissão para acessar esta página.</div>;
-  if (loading) return <div className="flex-1 flex items-center justify-center text-text-secondary">Carregando…</div>;
+  if (loading) return <div className="flex-1 flex items-center justify-center"><LoadingState label="Carregando…" /></div>;
 
   return (
     <div className="max-w-6xl mx-auto p-4 flex flex-col h-full">

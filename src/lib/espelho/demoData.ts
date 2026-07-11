@@ -284,61 +284,6 @@ function buildAgendaImobiliaria() {
 }
 export const DEMO_AGENDA_IMOBILIARIA = buildAgendaImobiliaria();
 
-// --- Avisos importantes (admin) — com dataInicio/dataFim para exibição ---
-const avisoInicio = new Date(now);
-avisoInicio.setDate(avisoInicio.getDate() - 2);
-const avisoFim = new Date(now);
-avisoFim.setDate(avisoFim.getDate() + 7);
-export const DEMO_AVISOS = [
-  { id: 'aviso-1', titulo: 'Novo lançamento', mensagem: 'Lançamento Torre Sul disponível para visita a partir de segunda.', imobiliariaId: 'espelho-demo', data: ts(now), dataInicio: ts(avisoInicio), dataFim: ts(avisoFim) },
-  { id: 'aviso-2', titulo: 'Treinamento', mensagem: 'Treinamento de precificação na quinta às 14h.', imobiliariaId: 'espelho-demo', data: ts(now), dataInicio: ts(avisoInicio), dataFim: ts(avisoFim) },
-  { id: 'aviso-3', titulo: 'Meta do mês', mensagem: 'Meta do mês: 8 fechamentos. Estamos em 5.', imobiliariaId: 'espelho-demo', data: ts(now), dataInicio: ts(avisoInicio), dataFim: ts(avisoFim) },
-  { id: 'aviso-4', titulo: 'Reunião geral', mensagem: 'Segunda às 9h — reunião de alinhamento da equipe.', imobiliariaId: 'espelho-demo', data: ts(now), dataInicio: ts(avisoInicio), dataFim: ts(avisoFim) },
-  { id: 'aviso-5', titulo: 'Documentação', mensagem: 'Enviar documentação pendente até sexta.', imobiliariaId: 'espelho-demo', data: ts(now), dataInicio: ts(avisoInicio), dataFim: ts(avisoFim) },
-];
-
-// --- Comunidade: posts com comentários e likes ---
-const POST_TEXTS = [
-  'Dica de ouro: sempre feche a visita com um próximo passo definido.',
-  'Alguém já usou o novo material da construtora X? Está muito bom.',
-  'Parabéns ao time que bateu a meta em setembro! 🎉',
-  'Evento de lançamento na próxima semana. Quem vai?',
-  'Compartilhando resultado do último treinamento de negociação.',
-  'Novo vídeo no canal: como lidar com objeção de preço.',
-  'Reunião de alinhamento amanhã às 9h. Confirmem presença.',
-  'Indicação de imóvel em condomínio fechado — 3 quartos, zona sul.',
-  'Workshop de vendas com foco em alto padrão. Inscrições abertas.',
-  'Dúvida: qual a melhor forma de seguir com lead que não retorna ligação?',
-  'Conteúdo novo no drive: apresentação comercial atualizada.',
-  'Plantão no stand no sábado. Quem pode cobrir?',
-];
-const NOMES_COMUNIDADE = ['Ana Silva', 'Bruno M.', 'Carla O.', 'Diego F.', 'Elena C.', 'Fernando L.', 'Gabriela S.', 'Henrique A.', 'Espelho'];
-function buildComunidadePosts() {
-  const posts: any[] = [];
-  for (let i = 0; i < 30; i++) {
-    const authorId = i % 3 === 0 ? ESPELHO_DEMO_UID : `user-${(i % 6) + 1}`;
-    const nome = authorId === ESPELHO_DEMO_UID ? 'Espelho' : NOMES_COMUNIDADE[(i % (NOMES_COMUNIDADE.length - 1)) + 1];
-    const created = new Date(now);
-    created.setDate(created.getDate() - Math.floor(i / 2));
-    created.setHours(10 + (i % 8), (i * 17) % 60, 0, 0);
-    posts.push({
-      id: `post-demo-${i}`,
-      texto: POST_TEXTS[i % POST_TEXTS.length],
-      userId: authorId,
-      nome,
-      handle: `@${nome.toLowerCase().replace(/\s+/g, '')}${i}`,
-      imobiliariaId: 'espelho-demo',
-      createdAt: ts(created),
-      likes: Math.floor(Math.random() * 50),
-      likesIds: [] as string[],
-      isEvento: false,
-      comentarios: Math.floor(Math.random() * 15),
-    });
-  }
-  return posts;
-}
-export const DEMO_COMUNIDADE_POSTS = buildComunidadePosts();
-
 // --- Agenda pessoal (itens da coleção agenda) + notas + tarefas CRM unificadas para a página Agenda ---
 function buildAgendaItems() {
   const items: any[] = [];
@@ -431,7 +376,7 @@ export function getDemoInteractions(leadId: string): { id: string; type: string;
 
 // --- Relatórios (admin): corretores e dados resumidos — vários para relatórios e TV ---
 export const DEMO_REPORT_CORRETORES = [
-  { uid: ESPELHO_DEMO_UID, nome: 'Espelho', email: 'espelho@demo.alumma.com' },
+  { uid: ESPELHO_DEMO_UID, nome: 'Espelho', email: 'espelho@demo.noximoveis.com' },
   { uid: 'demo-u2', nome: 'Ana Silva', email: 'ana.silva@demo.com' },
   { uid: 'demo-u3', nome: 'Bruno Mendes', email: 'bruno.mendes@demo.com' },
   { uid: 'demo-u4', nome: 'Carla Oliveira', email: 'carla.oliveira@demo.com' },
@@ -456,30 +401,6 @@ export const DEMO_USUARIOS = DEMO_REPORT_CORRETORES.map((c, i) => ({
   imobiliariaId: 'espelho-demo',
 }));
 
-// --- Plantões (admin) ---
-const CONSTRUTORAS = ['Construtora Alpha', 'Empreendimentos Beta', 'Incorporadora Gamma', 'Loteamento Delta', 'Obras Epsilon'];
-export const DEMO_PLANTOES = (() => {
-  const list: { id: string; dataInicio: string; dataFim: string; construtora: string; corretorResponsavel: string; horario: string; observacoes?: string; criadoEm: Timestamp; imobiliariaId: string }[] = [];
-  for (let i = 0; i < 12; i++) {
-    const d = new Date(today);
-    d.setDate(d.getDate() + (i % 14));
-    const dataStr = d.toISOString().slice(0, 10);
-    const corretor = DEMO_REPORT_CORRETORES[(i % DEMO_REPORT_CORRETORES.length)];
-    list.push({
-      id: `demo-plantao-${i}`,
-      dataInicio: dataStr,
-      dataFim: dataStr,
-      construtora: CONSTRUTORAS[i % CONSTRUTORAS.length],
-      corretorResponsavel: corretor.nome,
-      horario: `${9 + (i % 8)}:00`,
-      observacoes: i % 3 === 0 ? 'Plantão de demonstração. Confirmar chaves.' : undefined,
-      criadoEm: ts(d),
-      imobiliariaId: 'espelho-demo',
-    });
-  }
-  return list;
-})();
-
 // --- Metas (admin): VGV e contribuições por corretor ---
 export const DEMO_METAS_VGV = 5_000_000;
 export const DEMO_METAS_VGV_MENSAL = 420_000;
@@ -502,30 +423,6 @@ export const DEMO_CONTRIBUICOES = (() => {
 export const DEMO_METAS_PESSOAIS: Record<string, number> = Object.fromEntries(
   DEMO_REPORT_CORRETORES.slice(0, 8).map((c, i) => [c.uid, 300_000 + i * 50_000])
 );
-
-// --- Treinamentos / Academia — bem sortido por categoria ---
-export const DEMO_TREINAMENTOS = [
-  { id: 't1', titulo: 'Vendas de alto padrão', categoria: 'vendas', descricao: 'Técnicas para negociação em imóveis de alto valor.', link: '#', duracao: '45 min' },
-  { id: 't2', titulo: 'Funil de vendas', categoria: 'vendas', descricao: 'Organize seu pipeline e feche mais.', link: '#', duracao: '30 min' },
-  { id: 't3', titulo: 'Objeção de preço', categoria: 'vendas', descricao: 'Como responder às objeções mais comuns.', link: '#', duracao: '25 min' },
-  { id: 't4', titulo: 'Proposta comercial', categoria: 'vendas', descricao: 'Montando propostas que fecham.', link: '#', duracao: '35 min' },
-  { id: 't5', titulo: 'Pós-venda e indicações', categoria: 'vendas', descricao: 'Fidelização e rede de indicações.', link: '#', duracao: '40 min' },
-  { id: 't6', titulo: 'Comunicação não violenta', categoria: 'mercado', descricao: 'Melhore a comunicação com clientes.', link: '#', duracao: '1h' },
-  { id: 't7', titulo: 'Indicadores econômicos', categoria: 'mercado', descricao: 'CUB, SELIC e impacto no mercado.', link: '#', duracao: '40 min' },
-  { id: 't8', titulo: 'Mercado imobiliário 2025', categoria: 'mercado', descricao: 'Tendências e oportunidades.', link: '#', duracao: '50 min' },
-  { id: 't9', titulo: 'LGPD no dia a dia', categoria: 'institucional', descricao: 'Boas práticas de proteção de dados.', link: '#', duracao: '20 min' },
-  { id: 't10', titulo: 'Código de ética', categoria: 'institucional', descricao: 'CRECI e boas práticas.', link: '#', duracao: '30 min' },
-  { id: 't11', titulo: 'Audiobook: Mindset', categoria: 'audiobooks', descricao: 'Resumo do livro Mindset.', link: '#', duracao: '1h 15min' },
-  { id: 't12', titulo: 'Audiobook: Hábitos atômicos', categoria: 'audiobooks', descricao: 'Pequenos hábitos, grandes resultados.', link: '#', duracao: '1h 20min' },
-  { id: 't13', titulo: 'Audiobook: Vendas sem esforço', categoria: 'audiobooks', descricao: 'Técnicas de vendas consultivas.', link: '#', duracao: '55 min' },
-  { id: 't14', titulo: 'Gestão de tempo', categoria: 'gestão', descricao: 'Priorize e entregue mais.', link: '#', duracao: '35 min' },
-  { id: 't15', titulo: 'Liderança de equipe', categoria: 'gestão', descricao: 'Como motivar e coordenar o time.', link: '#', duracao: '45 min' },
-  { id: 't16', titulo: 'Conteúdo autoral', categoria: 'autoral', descricao: 'Crie posts e materiais que convertem.', link: '#', duracao: '40 min' },
-  { id: 't17', titulo: 'Materiais de apoio', categoria: 'materiais', descricao: 'Templates e apresentações.', link: '#', duracao: '-' },
-  { id: 't18', titulo: 'Sistema Alumma', categoria: 'sistema', descricao: 'Tour pelo CRM e agenda.', link: '#', duracao: '25 min' },
-  { id: 't19', titulo: 'Relatórios e metas', categoria: 'sistema', descricao: 'Acompanhando resultados no painel.', link: '#', duracao: '20 min' },
-  { id: 't20', titulo: 'Atendimento ao cliente', categoria: 'vendas', descricao: 'Do primeiro contato ao fechamento.', link: '#', duracao: '38 min' },
-];
 
 // --- Brello (quadros/colunas/cards) para modo Espelho ---
 export const DEMO_BRELLO_BOARD_ID = 'demo-brello-1';

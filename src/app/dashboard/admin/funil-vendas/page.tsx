@@ -13,6 +13,8 @@ import {
   doc,
 } from 'firebase/firestore';
 import { setPipelineStagesConfig } from '@/lib/pipelineStagesFirestore';
+import { confirmDialog } from '@/components/ui/ConfirmDialog';
+import LoadingState from '@/components/ui/LoadingState';
 import {
   REPORT_FUNIL_ETAPAS,
   DEFAULT_PIPELINE_STAGES_WITH_META,
@@ -48,13 +50,13 @@ function EtapaRow({
   leadsCount: number;
 }) {
   return (
-    <div className="flex items-center gap-3 py-2 px-3 rounded-lg bg-[var(--bg-card)] dark:bg-white/5 border border-[var(--border-subtle)] dark:border-white/10">
+    <div className="flex items-center gap-3 py-2 px-3 rounded-lg bg-white/[0.03] border border-white/[0.08]">
       <div className="flex flex-col gap-0.5">
         <button
           type="button"
           onClick={onMoveUp}
           disabled={index === 0}
-          className="p-1 rounded hover:bg-[var(--surface-hover)] disabled:opacity-30 disabled:cursor-not-allowed"
+          className="p-1 rounded text-text-secondary hover:text-white hover:bg-white/[0.06] disabled:opacity-30 disabled:cursor-not-allowed"
           title="Subir"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
@@ -63,31 +65,31 @@ function EtapaRow({
           type="button"
           onClick={onMoveDown}
           disabled={index === total - 1}
-          className="p-1 rounded hover:bg-[var(--surface-hover)] disabled:opacity-30 disabled:cursor-not-allowed"
+          className="p-1 rounded text-text-secondary hover:text-white hover:bg-white/[0.06] disabled:opacity-30 disabled:cursor-not-allowed"
           title="Descer"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
         </button>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-[var(--text-primary)] dark:text-white truncate">{stage.label}</p>
-        <p className="text-xs text-[var(--text-secondary)]">{stage.reportCategory}</p>
+        <p className="font-medium text-white truncate">{stage.label}</p>
+        <p className="text-xs text-text-secondary">{stage.reportCategory}</p>
       </div>
-      <span className="text-sm text-[var(--text-secondary)] tabular-nums shrink-0">
+      <span className="text-sm text-text-secondary tabular-nums shrink-0">
         {leadsCount} lead{leadsCount !== 1 ? 's' : ''}
       </span>
       <div className="flex gap-1 shrink-0">
         <button
           type="button"
           onClick={onEdit}
-          className="px-2 py-1.5 text-xs font-medium rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300 hover:bg-amber-500/30 border border-amber-500/40"
+          className="px-2 py-1.5 text-xs font-bold rounded-lg bg-white/[0.04] text-white hover:bg-white/[0.08] border border-white/10 transition-colors"
         >
           Editar
         </button>
         <button
           type="button"
           onClick={onRemove}
-          className="px-2 py-1.5 text-xs font-medium rounded-lg bg-red-500/20 text-red-700 dark:text-red-300 hover:bg-red-500/30 border border-red-500/40"
+          className="px-2 py-1.5 text-xs font-bold rounded-lg bg-red-500/10 text-red-300 hover:bg-red-500/20 border border-red-500/40 transition-colors"
         >
           Remover
         </button>
@@ -247,8 +249,8 @@ export default function FunilVendasPage() {
     setNewCategory('Topo de Funil');
   };
 
-  const resetToDefault = () => {
-    if (confirm('Usar o funil padrão do sistema? Sua configuração atual será substituída.')) {
+  const resetToDefault = async () => {
+    if (await confirmDialog({ message: 'Usar o funil padrão do sistema? Sua configuração atual será substituída.', confirmLabel: 'Usar padrão' })) {
       setLocalStages([...DEFAULT_PIPELINE_STAGES_WITH_META]);
     }
   };
@@ -263,8 +265,8 @@ export default function FunilVendasPage() {
   if (!imobiliariaId) {
     return (
       <div className="p-4">
-        <p className="text-[var(--text-secondary)]">Acesso restrito à imobiliária.</p>
-        <Link href="/dashboard/admin" className="text-amber-500 hover:underline mt-2 inline-block">Voltar ao admin</Link>
+        <p className="text-text-secondary">Acesso restrito à imobiliária.</p>
+        <Link href="/dashboard/admin" className="text-[#FF7A97] hover:text-[#FF9EB5] hover:underline mt-2 inline-block">Voltar ao admin</Link>
       </div>
     );
   }
@@ -272,19 +274,19 @@ export default function FunilVendasPage() {
   return (
     <div className="p-4 max-w-4xl mx-auto">
       <div className="flex items-center gap-2 mb-4">
-        <Link href="/dashboard/admin" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] dark:hover:text-white">
+        <Link href="/dashboard/admin" className="text-text-secondary hover:text-white transition-colors">
           ← Admin
         </Link>
       </div>
       <SectionTitle className="mb-4">Funil de Vendas</SectionTitle>
-      <p className="text-sm text-[var(--text-secondary)] dark:text-gray-400 mb-4">
+      <p className="text-sm text-text-secondary mb-4">
         As etapas abaixo são usadas no CRM (Clientes), relatórios e Dashboards TV. Você pode adicionar, editar, remover e reordenar. Ao renomear, os leads nessa etapa são atualizados. Ao remover uma etapa que tem leads, escolha para qual etapa migrá-los.
       </p>
 
       {message && (
         <div
           className={`mb-4 px-4 py-2 rounded-lg text-sm ${
-            message.type === 'ok' ? 'bg-green-500/20 text-green-800 dark:text-green-200 border border-green-500/40' : 'bg-red-500/20 text-red-800 dark:text-red-200 border border-red-500/40'
+            message.type === 'ok' ? 'bg-[#34D399]/10 text-emerald-300 border border-[#34D399]/40' : 'bg-red-500/10 text-red-300 border border-red-500/40'
           }`}
         >
           {message.text}
@@ -292,7 +294,7 @@ export default function FunilVendasPage() {
       )}
 
       {contextLoading ? (
-        <p className="text-[var(--text-secondary)]">Carregando funil...</p>
+        <LoadingState label="Carregando funil..." className="py-6" />
       ) : (
         <>
           <div className="space-y-2 mb-4">
@@ -312,84 +314,87 @@ export default function FunilVendasPage() {
           </div>
 
           {editIndex !== null && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-              <div className="bg-[var(--bg-card)] dark:bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-xl p-6 max-w-md w-full shadow-xl">
-                <h3 className="text-lg font-bold text-[var(--text-primary)] dark:text-white mb-4">Editar etapa</h3>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Nome da etapa</label>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+              <div className="bg-[#12101a] border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden">
+                <div className="absolute inset-x-0 top-0 gx-line" />
+                <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Editar etapa</h3>
+                <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">Nome da etapa</label>
                 <input
                   type="text"
                   value={editLabel}
                   onChange={(e) => setEditLabel(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-primary)] text-[var(--text-primary)] mb-3"
+                  className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 mb-3"
                 />
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Categoria no relatório</label>
+                <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">Categoria no relatório</label>
                 <select
                   value={editCategory}
                   onChange={(e) => setEditCategory(e.target.value as ReportCategory)}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-primary)] text-[var(--text-primary)] mb-3"
+                  className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 mb-3"
                 >
                   {REPORT_FUNIL_ETAPAS.map((cat) => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
                 <div className="flex gap-2 justify-end mt-4">
-                  <button type="button" onClick={() => setEditIndex(null)} className="px-3 py-1.5 rounded-lg border border-[var(--border-subtle)] text-[var(--text-primary)]">Cancelar</button>
-                  <button type="button" onClick={applyEdit} className="px-3 py-1.5 rounded-lg bg-amber-500 text-white font-medium">Aplicar</button>
+                  <button type="button" onClick={() => setEditIndex(null)} className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white transition-colors">Cancelar</button>
+                  <button type="button" onClick={applyEdit} className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all">Aplicar</button>
                 </div>
               </div>
             </div>
           )}
 
           {removeIndex !== null && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-              <div className="bg-[var(--bg-card)] dark:bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-xl p-6 max-w-md w-full shadow-xl">
-                <h3 className="text-lg font-bold text-[var(--text-primary)] dark:text-white mb-2">Remover etapa</h3>
-                <p className="text-sm text-[var(--text-secondary)] mb-4">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+              <div className="bg-[#12101a] border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden">
+                <div className="absolute inset-x-0 top-0 gx-line" />
+                <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-2">Remover etapa</h3>
+                <p className="text-sm text-text-secondary mb-4">
                   A etapa &quot;{localStages[removeIndex]?.label}&quot; tem {leadsCountByStage[localStages[removeIndex]?.label || ''] || 0} lead(s). Escolha para qual etapa migrá-los antes de remover.
                 </p>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Migrar leads para</label>
+                <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">Migrar leads para</label>
                 <select
                   value={migrateToStage}
                   onChange={(e) => setMigrateToStage(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-primary)] text-[var(--text-primary)] mb-4"
+                  className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 mb-4"
                 >
                   {localStages.filter((_, i) => i !== removeIndex).map((s) => (
                     <option key={s.label} value={s.label}>{s.label}</option>
                   ))}
                 </select>
                 <div className="flex gap-2 justify-end">
-                  <button type="button" onClick={cancelRemove} className="px-3 py-1.5 rounded-lg border border-[var(--border-subtle)] text-[var(--text-primary)]">Cancelar</button>
-                  <button type="button" onClick={applyRemove} className="px-3 py-1.5 rounded-lg bg-red-500 text-white font-medium">Remover e migrar</button>
+                  <button type="button" onClick={cancelRemove} className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white transition-colors">Cancelar</button>
+                  <button type="button" onClick={applyRemove} className="px-3 py-1.5 rounded-lg border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-300 font-bold transition-colors">Remover e migrar</button>
                 </div>
               </div>
             </div>
           )}
 
           {adding && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-              <div className="bg-[var(--bg-card)] dark:bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-xl p-6 max-w-md w-full shadow-xl">
-                <h3 className="text-lg font-bold text-[var(--text-primary)] dark:text-white mb-4">Nova etapa</h3>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Nome da etapa</label>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+              <div className="bg-[#12101a] border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden">
+                <div className="absolute inset-x-0 top-0 gx-line" />
+                <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Nova etapa</h3>
+                <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">Nome da etapa</label>
                 <input
                   type="text"
                   value={newLabel}
                   onChange={(e) => setNewLabel(e.target.value)}
                   placeholder="Ex: Proposta enviada"
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-primary)] text-[var(--text-primary)] mb-3"
+                  className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 mb-3"
                 />
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Categoria no relatório</label>
+                <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">Categoria no relatório</label>
                 <select
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value as ReportCategory)}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-primary)] text-[var(--text-primary)] mb-3"
+                  className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 mb-3"
                 >
                   {REPORT_FUNIL_ETAPAS.map((cat) => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
                 <div className="flex gap-2 justify-end mt-4">
-                  <button type="button" onClick={() => setAdding(false)} className="px-3 py-1.5 rounded-lg border border-[var(--border-subtle)] text-[var(--text-primary)]">Cancelar</button>
-                  <button type="button" onClick={addStage} className="px-3 py-1.5 rounded-lg bg-amber-500 text-white font-medium">Adicionar</button>
+                  <button type="button" onClick={() => setAdding(false)} className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white transition-colors">Cancelar</button>
+                  <button type="button" onClick={addStage} className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all">Adicionar</button>
                 </div>
               </div>
             </div>
@@ -399,7 +404,7 @@ export default function FunilVendasPage() {
             <button
               type="button"
               onClick={() => setAdding(true)}
-              className="px-4 py-2 rounded-lg bg-amber-500 text-white font-medium hover:bg-amber-600"
+              className="px-4 py-2 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white font-bold transition-colors"
             >
               + Adicionar etapa
             </button>
@@ -408,7 +413,7 @@ export default function FunilVendasPage() {
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="px-4 py-2 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 disabled:opacity-50"
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all disabled:opacity-50"
               >
                 {saving ? 'Salvando...' : 'Salvar alterações'}
               </button>
@@ -416,7 +421,7 @@ export default function FunilVendasPage() {
             <button
               type="button"
               onClick={resetToDefault}
-              className="px-4 py-2 rounded-lg border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
+              className="px-4 py-2 rounded-xl border border-white/10 bg-white/[0.04] text-text-secondary hover:bg-white/[0.08] hover:text-white transition-colors"
             >
               Restaurar funil padrão
             </button>

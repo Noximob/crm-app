@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import MoneyInput, { formatBRL } from '@/components/MoneyInput';
+import { showToast } from '@/components/ui/toast';
 
 const PERIODOS: Record<string, { label: string; meses: number }> = {
   trimestral: { label: 'Trimestrais', meses: 3 },
@@ -245,7 +246,7 @@ export default function FluxoPagamentoPage() {
   <div class="foot">Proposta gerada pela Nox Imóveis para fins de simulação. Valores sujeitos à confirmação e às condições da construtora. As parcelas e reforços sofrem correção monetária (INCC / CUB / IGP-M) conforme contrato — <b>não inclusa</b> nesta simulação.</div>
 </body></html>`;
     const w = window.open('', '_blank', 'width=900,height=1000');
-    if (!w) { alert('Libere os pop-ups para gerar o PDF.'); return; }
+    if (!w) { showToast('Libere os pop-ups para gerar o PDF.', 'error'); return; }
     w.document.write(html); w.document.close(); w.focus();
     setTimeout(() => w.print(), 400);
   };

@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, doc, updateDoc, deleteDoc, writeBatch, query, where, Timestamp, setDoc, doc as firestoreDoc, getDoc } from 'firebase/firestore';
 import { PIPELINE_STAGES } from '@/lib/constants';
+import { confirmDialog } from '@/components/ui/ConfirmDialog';
+import LoadingState from '@/components/ui/LoadingState';
 
 interface Imobiliaria {
   id: string;
@@ -112,9 +114,11 @@ export default function DeveloperPage() {
       setMessage('Não é possível excluir a conta da imobiliária.');
       return;
     }
-    const ok = window.confirm(
-      `Excluir o corretor "${user.nome || user.email}"?\n\nOs leads dele serão enviados para o topo do funil da imobiliária. Esta ação não pode ser desfeita.`
-    );
+    const ok = await confirmDialog({
+      message: `Excluir o corretor "${user.nome || user.email}"?\n\nOs leads dele serão enviados para o topo do funil da imobiliária. Esta ação não pode ser desfeita.`,
+      danger: true,
+      confirmLabel: 'Excluir',
+    });
     if (!ok) return;
     setMessage(null);
     try {
@@ -196,7 +200,6 @@ export default function DeveloperPage() {
   const abrirModalIndicadores = async () => {
     await carregarIndicadores();
     setShowIndicadoresModal(true);
-    console.log('Abrindo modal de indicadores externos');
   };
 
   const salvarIndicadores = async () => {
@@ -228,7 +231,7 @@ export default function DeveloperPage() {
       <div className="al-card relative overflow-hidden p-6 mb-8">
         <div className="absolute inset-x-0 top-0 gx-line" />
         <h2 className="al-display text-[15px] font-bold mb-4 text-white uppercase tracking-[0.14em]">Imobiliárias</h2>
-        {loading ? <p className="text-text-secondary">Carregando...</p> : (
+        {loading ? <LoadingState label="Carregando..." className="py-4" /> : (
           <table className="w-full text-left">
             <thead>
               <tr className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">
@@ -269,7 +272,7 @@ export default function DeveloperPage() {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
-          {loadingCorretores ? <p className="text-text-secondary">Carregando corretores...</p> : (
+          {loadingCorretores ? <LoadingState label="Carregando corretores..." className="py-4" /> : (
             <table className="w-full text-left">
               <thead>
                 <tr className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">
@@ -291,9 +294,9 @@ export default function DeveloperPage() {
                     <td className="px-4 py-3 font-medium text-white">{corretor.nome}</td>
                     <td className="px-4 py-3 text-text-secondary">{corretor.email}</td>
                     <td className="px-4 py-3 text-text-secondary">{corretor.tipoConta}</td>
-                    <td className="px-4 py-3 text-center"><input type="checkbox" checked={!!corretor.aprovado} onChange={e => handleAprovarCheckbox(corretor, e.target.checked)} /></td>
-                    <td className="px-4 py-3 text-center"><input type="checkbox" checked={!!corretor.permissoes?.admin} onChange={e => handlePermissao(corretor, 'admin', e.target.checked)} /></td>
-                    <td className="px-4 py-3 text-center"><input type="checkbox" checked={!!corretor.permissoes?.developer} onChange={e => handlePermissao(corretor, 'developer', e.target.checked)} /></td>
+                    <td className="px-4 py-3 text-center"><input type="checkbox" className="accent-[#FF1E56]" checked={!!corretor.aprovado} onChange={e => handleAprovarCheckbox(corretor, e.target.checked)} /></td>
+                    <td className="px-4 py-3 text-center"><input type="checkbox" className="accent-[#FF1E56]" checked={!!corretor.permissoes?.admin} onChange={e => handlePermissao(corretor, 'admin', e.target.checked)} /></td>
+                    <td className="px-4 py-3 text-center"><input type="checkbox" className="accent-[#FF1E56]" checked={!!corretor.permissoes?.developer} onChange={e => handlePermissao(corretor, 'developer', e.target.checked)} /></td>
                     <td className="px-4 py-3 text-center">
                       {corretor.tipoConta !== 'imobiliaria' && (
                         <button

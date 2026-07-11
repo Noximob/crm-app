@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { auth, googleProvider } from '@/lib/firebase';
 import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { ESPELHO_LOGIN, ESPELHO_PASSWORD } from '@/lib/constants';
+import LoadingState from '@/components/ui/LoadingState';
 
 export default function EntrarPage() {
   const { currentUser, userData, loading, isApproved, enterEspelhoDemo } = useAuth();
@@ -18,17 +19,20 @@ export default function EntrarPage() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const router = useRouter();
 
-  if (loading) {
+  const shouldRedirect = !loading && !!currentUser && isApproved;
+
+  useEffect(() => {
+    if (shouldRedirect) {
+      router.push('/dashboard');
+    }
+  }, [shouldRedirect, router]);
+
+  if (loading || shouldRedirect) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-particles">
-        <p className="text-text-primary">Carregando...</p>
+        <LoadingState label="Carregando..." />
       </div>
     );
-  }
-
-  if (currentUser && isApproved) {
-    router.push('/dashboard');
-    return null;
   }
 
   if (currentUser && !isApproved) {
@@ -168,7 +172,7 @@ export default function EntrarPage() {
             <p className="text-sm text-text-secondary">Não tem uma conta? <Link href="/cadastro" className="font-medium text-[#FF7A97] hover:text-[#FF9EB5]">Cadastre-se</Link></p>
           </div>
         </div>
-        <p className="text-center text-xs text-text-secondary">© Alumma. Todos os direitos reservados.</p>
+        <p className="text-center text-xs text-text-secondary">© Nox Imóveis. Todos os direitos reservados.</p>
       </div>
     </div>
   );

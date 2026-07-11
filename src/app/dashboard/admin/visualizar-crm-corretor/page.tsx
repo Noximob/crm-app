@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, orderBy, limit, Timestamp } from 'firebase/firestore';
 import FilterModal, { Filters } from '@/app/dashboard/crm/_components/FilterModal';
 import { getDemoLeads, DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
+import LoadingState from '@/components/ui/LoadingState';
 
 interface Task {
   id: string;
@@ -77,7 +78,7 @@ const FilterChip = ({ children, selected, onClick }: { children: React.ReactNode
   <button
     onClick={onClick}
     className={`px-2.5 py-1.5 text-xs font-semibold border rounded-lg transition-colors whitespace-nowrap ${
-      selected ? 'bg-[#D4A017] border-[#D4A017] text-white shadow-sm' : 'border-white/10 bg-white/5 text-gray-200 hover:bg-white/10 hover:border-white/20'
+      selected ? 'bg-gradient-to-r from-[#FF1E56] to-[#A50D38] border-[#FF1E56]/60 text-white shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)]' : 'border-white/10 bg-white/5 text-text-secondary hover:bg-white/10 hover:border-white/20 hover:text-white'
     }`}
   >
     {children}
@@ -102,8 +103,7 @@ const StatusIndicator = ({ status }: { status: TaskStatus }) => {
 
 const SectionTitle = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
   <div className={`relative ${className}`}>
-    <h2 className="text-base font-bold text-white relative z-10">{children}</h2>
-    <div className="absolute -left-1.5 top-1/2 transform -translate-y-1/2 w-0.5 h-5 bg-gradient-to-b from-[#D4A017] to-[#E8C547] rounded-r-full opacity-60" />
+    <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] relative z-10">{children}</h2>
   </div>
 );
 
@@ -286,24 +286,25 @@ export default function VisualizarCrmCorretorPage() {
     <>
       <div className="flex flex-col h-[calc(100vh-5rem)] min-h-0 p-3 sm:p-4 overflow-hidden">
         {/* Header no estilo do CRM atual: voltar + título + seletor de corretor */}
-        <header className="card-glow p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3 mb-4 flex-shrink-0">
+        <header className="al-card relative overflow-hidden p-4 flex flex-wrap items-center justify-between gap-3 mb-4 flex-shrink-0">
+          <div className="absolute inset-x-0 top-0 gx-line" />
           <div className="flex items-center gap-4 flex-wrap min-w-0">
             <Link
               href="/dashboard/admin"
-              className="flex items-center gap-2 text-sm font-semibold text-text-secondary hover:text-orange-400 transition-colors shrink-0"
+              className="flex items-center gap-2 text-sm font-semibold text-text-secondary hover:text-[#FF7A97] transition-colors shrink-0"
             >
               <ArrowLeftIcon className="h-5 w-5" />
               Voltar ao administrador
             </Link>
-            <span className="text-gray-500 hidden sm:inline">|</span>
+            <span className="text-text-secondary hidden sm:inline">|</span>
             <span className="text-sm font-semibold text-white shrink-0">Visualizar CRM do Corretor (somente leitura)</span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <label className="text-sm text-gray-300 whitespace-nowrap">Corretor:</label>
+            <label className="text-sm text-text-secondary whitespace-nowrap">Corretor:</label>
             <select
               value={selectedCorretorId}
               onChange={e => setSelectedCorretorId(e.target.value)}
-              className="px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-white text-sm min-w-[180px] focus:outline-none focus:ring-2 focus:ring-[#D4A017]/50"
+              className="px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-white text-sm min-w-[180px] focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50"
             >
               <option value="">Selecione um corretor</option>
               {corretores.map(c => (
@@ -314,28 +315,28 @@ export default function VisualizarCrmCorretorPage() {
         </header>
 
         {!selectedCorretorId ? (
-          <div className="flex-1 flex items-center justify-center rounded-2xl border border-white/10 bg-[var(--bg-card)] p-8">
-            <p className="text-gray-400 text-center">Selecione um corretor para ver o CRM dele (leads, filtros e detalhes em somente leitura).</p>
+          <div className="flex-1 flex items-center justify-center al-card p-8">
+            <p className="text-text-secondary text-center">Selecione um corretor para ver o CRM dele (leads, filtros e detalhes em somente leitura).</p>
           </div>
         ) : (
           <>
             <main className="flex flex-col flex-1 min-h-0 gap-2 mt-0">
-              <div className="flex flex-col flex-1 min-h-0 p-3 rounded-2xl border border-white/10">
+              <div className="al-card flex flex-col flex-1 min-h-0 p-3">
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 flex-shrink-0 min-w-0">
                   <SectionTitle>Gestão de Leads</SectionTitle>
                   <div className="relative flex-shrink-0">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <SearchIcon className="h-4 w-4 text-gray-400" />
+                      <SearchIcon className="h-4 w-4 text-text-secondary" />
                     </div>
                     <input
                       type="text"
                       placeholder="Buscar lead por nome..."
                       value={searchTerm}
                       onChange={e => setSearchTerm(e.target.value)}
-                      className="block w-52 sm:w-60 pl-9 pr-3 py-1 border border-white/10 rounded-lg text-sm bg-white/5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#D4A017]/50 focus:border-transparent"
+                      className="block w-52 sm:w-60 pl-9 pr-3 py-1 border border-white/10 rounded-lg text-sm bg-white/5 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-transparent"
                     />
                     {searchTerm && (
-                      <button onClick={() => setSearchTerm('')} className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white">
+                      <button onClick={() => setSearchTerm('')} className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-secondary hover:text-white">
                         <XIcon className="h-4 w-4" />
                       </button>
                     )}
@@ -344,18 +345,18 @@ export default function VisualizarCrmCorretorPage() {
                     <button
                       type="button"
                       onClick={() => setFiltroRapidoOpen(o => !o)}
-                      className="relative flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white bg-[#D4A017] hover:bg-[#B8860B] rounded-lg transition-colors shadow-soft"
+                      className="relative flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 rounded-lg shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all"
                     >
                       <span>Filtro Rápido</span>
                       {((activeFilter ? 1 : 0) + (activeTaskFilter ? 1 : 0)) > 0 && (
-                        <span className="bg-white/90 text-[#D4A017] text-[10px] font-bold rounded-full min-w-[1.25rem] h-5 px-1.5 flex items-center justify-center">
+                        <span className="bg-white/90 text-[#A50D38] text-[10px] font-bold rounded-full min-w-[1.25rem] h-5 px-1.5 flex items-center justify-center">
                           {(activeFilter ? 1 : 0) + (activeTaskFilter ? 1 : 0)}
                         </span>
                       )}
                     </button>
                     {filtroRapidoOpen && (
                       <div className="absolute left-0 top-full mt-1.5 z-50 w-[min(90vw,420px)] max-h-[70vh] overflow-y-auto rounded-xl border border-white/10 bg-[var(--bg-card)] shadow-xl py-3 px-3">
-                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2 px-1">Etapa do funil</p>
+                        <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-wide mb-2 px-1">Etapa do funil</p>
                         <div className="flex flex-wrap gap-2 mb-3">
                           {stages.map(stage => (
                             <FilterChip
@@ -368,7 +369,7 @@ export default function VisualizarCrmCorretorPage() {
                           ))}
                         </div>
                         <div className="w-full h-px bg-white/10 my-2" />
-                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2 px-1">Status da tarefa</p>
+                        <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-wide mb-2 px-1">Status da tarefa</p>
                         <div className="flex flex-wrap gap-2">
                           {taskStatusFilters.map(ts => (
                             <FilterChip
@@ -387,7 +388,7 @@ export default function VisualizarCrmCorretorPage() {
                     <button
                       type="button"
                       onClick={() => setFilterModalOpen(true)}
-                      className="relative flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white bg-[#D4A017] hover:bg-[#B8860B] rounded-lg transition-colors shadow-soft"
+                      className="relative flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 rounded-lg shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all"
                     >
                       <span>Filtro Completo</span>
                       {activeAdvancedFilterCount > 0 && (
@@ -406,7 +407,7 @@ export default function VisualizarCrmCorretorPage() {
                   <div className="ml-auto flex items-center gap-1.5 flex-nowrap shrink-0 w-full sm:w-auto justify-end sm:justify-start">
                     {totalFiltered > 0 ? (
                       <>
-                        <span className="text-xs text-gray-400 whitespace-nowrap tabular-nums shrink-0">
+                        <span className="text-xs text-text-secondary whitespace-nowrap tabular-nums shrink-0">
                           {((currentPage - 1) * PAGE_SIZE) + 1}–{Math.min(currentPage * PAGE_SIZE, totalFiltered)} de {totalFiltered} {totalFiltered === 1 ? 'lead' : 'leads'}
                         </span>
                         <div className="flex items-center gap-0.5 shrink-0" role="navigation" aria-label="Paginação">
@@ -423,12 +424,12 @@ export default function VisualizarCrmCorretorPage() {
                             .filter(p => p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2))
                             .map((p, idx, arr) => (
                               <React.Fragment key={p}>
-                                {idx > 0 && arr[idx - 1] !== p - 1 && <span className="px-0.5 text-gray-400">…</span>}
+                                {idx > 0 && arr[idx - 1] !== p - 1 && <span className="px-0.5 text-text-secondary">…</span>}
                                 <button
                                   type="button"
                                   onClick={() => goToPage(p)}
                                   className={`min-w-[1.75rem] w-7 h-7 flex items-center justify-center text-xs font-semibold rounded-lg border transition-colors ${
-                                    p === currentPage ? 'bg-[#D4A017] border-[#D4A017] text-white' : 'border-white/10 bg-white/5 hover:bg-white/10'
+                                    p === currentPage ? 'bg-gradient-to-r from-[#FF1E56] to-[#A50D38] border-[#FF1E56]/60 text-white' : 'border-white/10 bg-white/5 hover:bg-white/10'
                                   }`}
                                 >
                                   {p}
@@ -446,14 +447,14 @@ export default function VisualizarCrmCorretorPage() {
                           </button>
                         </div>
                       </>
-                    ) : <span className="text-xs text-gray-500">—</span>}
+                    ) : <span className="text-xs text-text-secondary">—</span>}
                   </div>
                 </div>
 
                 <div className="flex-1 min-h-0 overflow-auto rounded-xl border border-white/10">
                   <table className="min-w-full table-fixed">
                     <thead className="sticky top-0 z-10">
-                      <tr className="border-b border-white/10 bg-[var(--bg-card)]/95 backdrop-blur-sm text-gray-200 text-xs shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
+                      <tr className="border-b border-white/10 bg-[var(--bg-card)]/95 backdrop-blur-sm text-text-secondary text-xs shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
                         <th className="px-3 py-2 font-semibold text-left w-1/5 rounded-tl-xl">Nome</th>
                         <th className="px-3 py-2 font-semibold text-left w-1/6">Telefone</th>
                         <th className="px-3 py-2 font-semibold text-center w-1/12">WhatsApp</th>
@@ -464,18 +465,18 @@ export default function VisualizarCrmCorretorPage() {
                     </thead>
                     <tbody>
                       {loading && (
-                        <tr><td colSpan={6} className="text-center py-8 text-gray-400">Carregando...</td></tr>
+                        <tr><td colSpan={6} className="py-8"><LoadingState label="Carregando..." /></td></tr>
                       )}
                       {!loading && leads.length === 0 && (
-                        <tr><td colSpan={6} className="text-center text-gray-400 py-8">Nenhum lead encontrado.</td></tr>
+                        <tr><td colSpan={6} className="text-center text-text-secondary py-8">Nenhum lead encontrado.</td></tr>
                       )}
                       {!loading && leads.length > 0 && totalFiltered === 0 && (
-                        <tr><td colSpan={6} className="text-center text-gray-400 py-8">Nenhum lead corresponde aos filtros. Limpe os filtros ou altere a busca.</td></tr>
+                        <tr><td colSpan={6} className="text-center text-text-secondary py-8">Nenhum lead corresponde aos filtros. Limpe os filtros ou altere a busca.</td></tr>
                       )}
                       {!loading && totalFiltered > 0 && paginatedLeads.map(lead => (
                         <tr key={lead.id} className="border-b border-white/10 last:border-b-0 hover:bg-white/5 transition-colors">
                           <td className="px-3 py-1.5 text-sm font-medium text-white w-1/5 truncate max-w-[180px]">{lead.nome}</td>
-                          <td className="px-3 py-1.5 text-xs text-gray-200 w-1/6 truncate max-w-[140px]">{lead.telefone}</td>
+                          <td className="px-3 py-1.5 text-xs text-text-secondary w-1/6 truncate max-w-[140px]">{lead.telefone}</td>
                           <td className="px-3 py-1.5 text-center w-1/12">
                             <a
                               href={`https://wa.me/${String(lead.telefone || '').replace(/\D/g, '')}`}
@@ -497,7 +498,7 @@ export default function VisualizarCrmCorretorPage() {
                             <div className="flex justify-center">
                               <Link
                                 href={`/dashboard/crm/${lead.id}?viewAs=1`}
-                                className="inline-flex items-center justify-center px-2 py-1 text-xs font-semibold bg-[#D4A017] hover:bg-[#B8860B] text-white rounded-lg shadow-soft transition-colors whitespace-nowrap"
+                                className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white rounded-lg shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] transition-all whitespace-nowrap"
                               >
                                 Ver (somente leitura)
                               </Link>
@@ -508,7 +509,7 @@ export default function VisualizarCrmCorretorPage() {
                     </tbody>
                   </table>
                   {!loading && leads.length >= MAX_LEADS_LOAD && (
-                    <p className="text-xs text-gray-400 mt-2 text-center">Exibindo os {MAX_LEADS_LOAD} leads mais recentes. Use os filtros para refinar.</p>
+                    <p className="text-xs text-text-secondary mt-2 text-center">Exibindo os {MAX_LEADS_LOAD} leads mais recentes. Use os filtros para refinar.</p>
                   )}
                 </div>
               </div>

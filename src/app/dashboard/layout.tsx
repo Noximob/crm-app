@@ -6,6 +6,9 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
 import { PipelineStagesProvider } from '@/context/PipelineStagesContext';
+import { ConfirmDialogHost } from '@/components/ui/ConfirmDialog';
+import { ToastHost } from '@/components/ui/toast';
+import LoadingState from '@/components/ui/LoadingState';
 
 // Ícones
 const AlertTriangleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>;
@@ -89,7 +92,7 @@ export default function DashboardLayout({
     await logout();
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-particles"><p className="text-text-primary">Carregando...</p></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-particles"><LoadingState label="Carregando..." /></div>;
   if (!user) return null;
 
   // Adicionar uma tipagem local para userData que inclua permissoes opcional
@@ -220,6 +223,8 @@ export default function DashboardLayout({
         </main>
       </div>
 
+      <ConfirmDialogHost />
+      <ToastHost />
     </div>
     </PipelineStagesProvider>
   );

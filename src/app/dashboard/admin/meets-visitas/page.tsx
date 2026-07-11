@@ -5,6 +5,8 @@ import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, setDoc, addDoc, deleteDoc, Timestamp, query, where } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 import { DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
+import { confirmDialog } from '@/components/ui/ConfirmDialog';
+import LoadingState from '@/components/ui/LoadingState';
 
 interface Corretor {
   id: string;
@@ -281,7 +283,7 @@ export default function AdminMeetsVisitasPage() {
 
   const handleExcluir = async (p: PeriodoMeets) => {
     if (isEspelhoDemo) { setPeriodos((prev) => prev.filter((x) => x.id !== p.id)); return; }
-    if (!window.confirm(`Excluir o período ${fmtBr(p.inicio)} → ${fmtBr(p.fim)}? Os contadores dele somem do histórico dos corretores.`)) return;
+    if (!(await confirmDialog({ message: `Excluir o período ${fmtBr(p.inicio)} → ${fmtBr(p.fim)}? Os contadores dele somem do histórico dos corretores.`, danger: true, confirmLabel: 'Excluir' }))) return;
     limpaErro(p.id);
     try {
       await deleteDoc(doc(db, 'meetsVisitas', p.id));
@@ -329,9 +331,8 @@ export default function AdminMeetsVisitasPage() {
 
       {/* Períodos */}
       {fetching ? (
-        <div className="al-card p-6 flex items-center justify-center gap-2">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#FF1E56]" />
-          <span className="text-text-secondary text-sm">Carregando períodos...</span>
+        <div className="al-card p-6">
+          <LoadingState label="Carregando períodos..." />
         </div>
       ) : periodos.length === 0 ? (
         <div className="al-card p-6 text-center">

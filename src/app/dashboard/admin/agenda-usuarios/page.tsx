@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, onSnapshot, Timestamp } from 'firebase/firestore';
+import LoadingState from '@/components/ui/LoadingState';
 
 interface User {
   id: string;
@@ -19,14 +20,14 @@ interface AgendaItem {
   titulo: string;
   descricao?: string;
   dataHora: Timestamp;
-  tipo: 'agenda' | 'crm' | 'nota' | 'aviso' | 'comunidade' | 'imobiliaria';
+  tipo: 'agenda' | 'crm' | 'nota' | 'aviso' | 'imobiliaria';
   status: 'pendente' | 'concluida' | 'cancelada';
   cor: string;
   leadId?: string;
   leadNome?: string;
   createdAt: Timestamp;
   userId: string;
-  source?: 'agenda' | 'notas' | 'crm' | 'aviso' | 'comunidade' | 'imobiliaria';
+  source?: 'agenda' | 'notas' | 'crm' | 'aviso' | 'imobiliaria';
   originalId?: string;
 }
 
@@ -49,23 +50,6 @@ interface CrmTask {
   leadNome?: string;
 }
 
-interface EventoComunidade {
-  id: string;
-  titulo: string;
-  texto: string;
-  eventoTipo: string;
-  eventoLink: string;
-  eventoData: Timestamp;
-  eventoStatus: string;
-  userId: string;
-  nome: string;
-  handle: string;
-  avatar: string;
-  imobiliariaId: string;
-  createdAt: Timestamp;
-  isEvento: boolean;
-}
-
 interface AgendaImobiliaria {
   id: string;
   titulo: string;
@@ -85,7 +69,6 @@ const tipoCores = {
   crm: 'bg-amber-500',
   nota: 'bg-yellow-500',
   aviso: 'bg-red-600',
-  comunidade: 'bg-orange-500',
   imobiliaria: 'bg-purple-500'
 };
 
@@ -94,7 +77,6 @@ const tipoLabels = {
   crm: 'CRM',
   nota: 'Nota',
   aviso: 'Aviso Importante',
-  comunidade: 'Evento Comunidade',
   imobiliaria: 'Agenda Imobiliária'
 };
 
@@ -120,11 +102,10 @@ export default function AgendaUsuariosPage() {
   const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [crmTasks, setCrmTasks] = useState<CrmTask[]>([]);
-  const [eventosComunidade, setEventosComunidade] = useState<EventoComunidade[]>([]);
   const [agendaImobiliaria, setAgendaImobiliaria] = useState<AgendaImobiliaria[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [filter, setFilter] = useState<'all' | 'crm' | 'nota' | 'agenda' | 'comunidade' | 'imobiliaria'>('all');
+  const [filter, setFilter] = useState<'all' | 'crm' | 'nota' | 'agenda' | 'imobiliaria'>('all');
 
   // Buscar usuários da imobiliária
   useEffect(() => {
@@ -168,7 +149,6 @@ export default function AgendaUsuariosPage() {
         fetchAgendaItems(),
         fetchNotes(),
         fetchCrmTasks(),
-        fetchEventosComunidade(),
         fetchAgendaImobiliaria()
       ]);
     } catch (error) {
@@ -266,28 +246,6 @@ export default function AgendaUsuariosPage() {
     }
   };
 
-  const fetchEventosComunidade = async () => {
-    if (!userData?.imobiliariaId) return;
-    try {
-      const eventosRef = collection(db, 'comunidadePosts');
-      const eventosQuery = query(
-        eventosRef,
-        where('imobiliariaId', '==', userData.imobiliariaId),
-        where('isEvento', '==', true),
-        where('eventoStatus', '==', 'agendado')
-      );
-      const eventosSnapshot = await getDocs(eventosQuery);
-      const eventosData: EventoComunidade[] = [];
-      eventosSnapshot.forEach((doc) => {
-        const eventoData = { id: doc.id, ...doc.data() } as EventoComunidade;
-        eventosData.push(eventoData);
-      });
-      setEventosComunidade(eventosData);
-    } catch (error) {
-      console.error('Erro ao buscar eventos da comunidade:', error);
-    }
-  };
-
   const fetchAgendaImobiliaria = async () => {
     if (!userData?.imobiliariaId) return;
     try {
@@ -359,26 +317,6 @@ export default function AgendaUsuariosPage() {
       }
     });
     
-    // Adicionar eventos da comunidade
-    eventosComunidade.forEach(evento => {
-      const eventoDate = evento.eventoData.toDate();
-      if (eventoDate.toDateString() === date.toDateString()) {
-        allItems.push({
-          id: `evento_${evento.id}`,
-          titulo: evento.titulo,
-          descricao: `${evento.texto}\n\nTipo: ${evento.eventoTipo}\nLink: ${evento.eventoLink}\nOrganizador: ${evento.nome}`,
-          dataHora: evento.eventoData,
-          tipo: 'comunidade',
-          status: 'pendente',
-          cor: '#F97316', // Cor laranja para eventos da comunidade
-          createdAt: evento.createdAt,
-          userId: evento.userId,
-          source: 'comunidade',
-          originalId: evento.id
-        });
-      }
-    });
-
     // Adicionar agenda imobiliária
     agendaImobiliaria.forEach(agenda => {
       // Se a agenda tem dataInicio e dataFim
@@ -572,14 +510,13 @@ export default function AgendaUsuariosPage() {
               </label>
               <select
                 value={filter}
-                onChange={(e) => setFilter(e.target.value as 'all' | 'crm' | 'nota' | 'agenda' | 'comunidade')}
+                onChange={(e) => setFilter(e.target.value as 'all' | 'crm' | 'nota' | 'agenda')}
                 className="px-4 py-3 bg-white/[0.04] border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
               >
                 <option value="all">Todos os tipos</option>
                 <option value="crm">CRM</option>
                 <option value="nota">Notas</option>
                 <option value="agenda">Agenda</option>
-                <option value="comunidade">Eventos Comunidade</option>
               </select>
             </div>
           </div>
@@ -710,25 +647,6 @@ export default function AgendaUsuariosPage() {
                     }
                   });
                   
-                  // Adicionar eventos da comunidade
-                  eventosComunidade.forEach(evento => {
-                    if (evento.eventoData.toDate() >= new Date()) {
-                      allItems.push({
-                        id: `evento_${evento.id}`,
-                        titulo: evento.titulo,
-                        descricao: `${evento.texto}\n\nTipo: ${evento.eventoTipo}\nLink: ${evento.eventoLink}\nOrganizador: ${evento.nome}`,
-                        dataHora: evento.eventoData,
-                        tipo: 'comunidade',
-                        status: 'pendente',
-                        cor: '#F97316',
-                        createdAt: evento.createdAt,
-                        userId: evento.userId,
-                        source: 'comunidade',
-                        originalId: evento.id
-                      });
-                    }
-                  });
-                  
                   // Aplicar filtro e ordenar
                   let filteredItems = allItems;
                   if (filter !== 'all') {
@@ -782,9 +700,7 @@ export default function AgendaUsuariosPage() {
         )}
 
         {loading && (
-          <div className="text-center py-8">
-            <div className="text-text-secondary">Carregando agenda...</div>
-          </div>
+          <LoadingState label="Carregando agenda..." className="py-8" />
         )}
       </div>
     </div>
