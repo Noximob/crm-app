@@ -354,7 +354,7 @@ export default function AgendaUsuariosPage() {
             dataHora: Timestamp.fromDate(noteDate),
             tipo: 'nota',
             status: 'pendente',
-            cor: '#D4A017',
+            cor: '#E8C547',
             createdAt: note.criadoEm,
             userId: note.userId,
             source: 'notas',
@@ -606,16 +606,16 @@ export default function AgendaUsuariosPage() {
       days.push(
         <div
           key={i}
-          className={`p-3 border-r border-b border-[#E8E9F1] dark:border-[#23283A] min-h-[120px] transition-all duration-200 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] ${
-            date.getMonth() === currentMonth ? 'bg-white dark:bg-[#23283A]' : 'bg-gray-50 dark:bg-[#181C23]'
-          } ${date.toDateString() === today.toDateString() ? 'bg-gradient-to-br from-[#D4A017]/10 to-[#E8C547]/10 border-[#D4A017]/30' : ''}`}
+          className={`p-3 border-r border-b border-white/[0.06] min-h-[120px] transition-all duration-200 hover:bg-white/[0.04] ${
+            date.getMonth() === currentMonth ? 'bg-white/[0.02]' : 'bg-transparent'
+          } ${date.toDateString() === today.toDateString() ? 'bg-[#E8C547]/[0.08] border-[#E8C547]/30' : ''}`}
         >
-          <div className={`text-sm font-bold mb-2 ${
-            date.toDateString() === today.toDateString() 
-              ? 'text-[#D4A017]' 
-              : date.getMonth() === currentMonth 
-                ? 'text-[#2E2F38] dark:text-white' 
-                : 'text-[#6B6F76] dark:text-gray-400'
+          <div className={`text-sm font-bold mb-2 tabular-nums ${
+            date.toDateString() === today.toDateString()
+              ? 'text-[#FFE9A6]'
+              : date.getMonth() === currentMonth
+                ? 'text-white'
+                : 'text-white/30'
           }`}>
             {date.getDate()}
           </div>
@@ -633,7 +633,7 @@ export default function AgendaUsuariosPage() {
               </div>
             ))}
             {items.length > 3 && (
-              <div className="text-xs text-[#6B6F76] dark:text-gray-400 font-medium">
+              <div className="text-xs text-text-secondary font-medium">
                 +{items.length - 3} mais
               </div>
             )}
@@ -648,27 +648,28 @@ export default function AgendaUsuariosPage() {
   const selectedUserName = users.find(u => u.id === selectedUser)?.nome || '';
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
+    <div className="min-h-screen py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">Agenda dos Usuários</h1>
-            <p className="text-[#6B6F76] dark:text-gray-300">Visualize a agenda de todos os usuários da imobiliária</p>
+            <h1 className="al-display text-[22px] font-bold text-white uppercase tracking-[0.1em] mb-2">Agenda dos Usuários</h1>
+            <p className="text-text-secondary text-sm">Visualize a agenda de todos os usuários da imobiliária</p>
           </div>
         </div>
 
         {/* Seletor de Usuário */}
-        <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-6">
+        <div className="al-card relative overflow-hidden p-6 mb-6">
+          <div className="absolute inset-x-0 top-0 gx-line" />
           <div className="flex items-center gap-4">
             <div className="flex-1">
-              <label className="block text-sm font-semibold mb-2 text-[#2E2F38] dark:text-white">
+              <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-2">
                 Selecionar Usuário
               </label>
               <select
                 value={selectedUser}
                 onChange={(e) => setSelectedUser(e.target.value)}
-                className="w-full px-4 py-3 bg-white dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent text-[#2E2F38] dark:text-white"
+                className="w-full px-4 py-3 bg-white/[0.04] border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
               >
                 {users.map(user => (
                   <option key={user.id} value={user.id}>
@@ -679,13 +680,13 @@ export default function AgendaUsuariosPage() {
             </div>
             
             <div>
-              <label className="block text-sm font-semibold mb-2 text-[#2E2F38] dark:text-white">
+              <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-2">
                 Filtrar por Tipo
               </label>
               <select
                 value={filter}
                 onChange={(e) => setFilter(e.target.value as 'all' | 'crm' | 'nota' | 'agenda' | 'comunidade')}
-                className="px-4 py-3 bg-white dark:bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] rounded-xl focus:ring-2 focus:ring-[#D4A017] focus:border-transparent text-[#2E2F38] dark:text-white"
+                className="px-4 py-3 bg-white/[0.04] border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
               >
                 <option value="all">Todos os tipos</option>
                 <option value="crm">CRM</option>
@@ -700,7 +701,8 @@ export default function AgendaUsuariosPage() {
         {selectedUser && (
           <>
             {/* Navegação do Mês */}
-            <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A] mb-6">
+            <div className="al-card relative overflow-hidden p-6 mb-6">
+              <div className="absolute inset-x-0 top-0 gx-line" />
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <button
@@ -709,13 +711,13 @@ export default function AgendaUsuariosPage() {
                       newDate.setMonth(newDate.getMonth() - 1);
                       setSelectedDate(newDate);
                     }}
-                    className="p-3 hover:bg-white/60 dark:hover:bg-[#23283A]/60 rounded-xl transition-colors"
+                    className="p-3 hover:bg-white/[0.06] rounded-xl transition-colors"
                   >
-                    <svg className="w-5 h-5 text-[#D4A017]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-[#FF5C7E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
-                  <span className="font-bold text-lg text-[#2E2F38] dark:text-white min-w-[200px] text-center">
+                  <span className="al-display font-bold text-lg text-white min-w-[200px] text-center">
                     {selectedDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })} - {selectedUserName}
                   </span>
                   <button
@@ -724,9 +726,9 @@ export default function AgendaUsuariosPage() {
                       newDate.setMonth(newDate.getMonth() + 1);
                       setSelectedDate(newDate);
                     }}
-                    className="p-3 hover:bg-white/60 dark:hover:bg-[#23283A]/60 rounded-xl transition-colors"
+                    className="p-3 hover:bg-white/[0.06] rounded-xl transition-colors"
                   >
-                    <svg className="w-5 h-5 text-[#D4A017]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-[#FF5C7E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
@@ -735,11 +737,12 @@ export default function AgendaUsuariosPage() {
             </div>
 
             {/* Calendário */}
-            <div className="bg-white dark:bg-[#23283A] rounded-2xl shadow-soft border border-[#E8E9F1] dark:border-[#23283A] overflow-hidden mb-8">
+            <div className="al-card relative overflow-hidden mb-8">
+              <div className="absolute inset-x-0 top-0 gx-line" />
               {/* Dias da semana */}
-              <div className="grid grid-cols-7 bg-gradient-to-r from-[#D4A017]/10 to-[#E8C547]/10">
+              <div className="grid grid-cols-7 bg-white/[0.03]">
                 {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day) => (
-                  <div key={day} className="p-4 text-center font-bold text-[#2E2F38] dark:text-white border-b border-[#E8E9F1] dark:border-[#23283A]">
+                  <div key={day} className="p-4 text-center text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary border-b border-white/[0.06]">
                     {day}
                   </div>
                 ))}
@@ -752,17 +755,17 @@ export default function AgendaUsuariosPage() {
             </div>
 
             {/* Próximos Compromissos */}
-            <div className="bg-gradient-to-br from-[#E8C547]/30 to-[#D4A017]/10 border-2 border-[#D4A017]/20 rounded-2xl p-6 relative overflow-hidden shadow-xl">
-              <div className="absolute top-0 left-0 w-1 h-full bg-[#D4A017]"></div>
+            <div className="al-card relative overflow-hidden p-6">
+              <div className="absolute inset-x-0 top-0 gx-line" />
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-r from-[#D4A017] to-[#E8C547] rounded-full flex items-center justify-center">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-10 h-10 bg-[#FF1E56]/15 border border-[#FF3364]/40 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5 text-[#FF5C7E] drop-shadow-[0_0_8px_rgba(255,30,86,0.5)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Próximos Compromissos - {selectedUserName}</h2>
-                  <p className="text-[#6B6F76] dark:text-gray-300">Próximos 5 compromissos do usuário</p>
+                  <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">Próximos Compromissos - {selectedUserName}</h2>
+                  <p className="text-text-secondary text-sm">Próximos 5 compromissos do usuário</p>
                 </div>
               </div>
               
@@ -789,7 +792,7 @@ export default function AgendaUsuariosPage() {
                           dataHora: Timestamp.fromDate(noteDate),
                           tipo: 'nota',
                           status: 'pendente',
-                          cor: '#D4A017',
+                          cor: '#E8C547',
                           createdAt: note.criadoEm,
                           userId: note.userId,
                           source: 'notas',
@@ -929,7 +932,7 @@ export default function AgendaUsuariosPage() {
                   return sortedItems.map((item) => (
                     <div
                       key={item.id}
-                      className={`group p-4 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] hover:bg-white/60 dark:hover:bg-[#23283A]/60 transition-all duration-300 ${
+                      className={`group p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.05] transition-all duration-300 ${
                         item.status === 'concluida' ? 'opacity-60' : ''
                       }`}
                       style={{ borderLeftColor: item.cor, borderLeftWidth: '4px' }}
@@ -941,14 +944,14 @@ export default function AgendaUsuariosPage() {
                             style={{ backgroundColor: item.cor }}
                           ></div>
                           <div>
-                            <div className="font-semibold text-[#2E2F38] dark:text-white group-hover:text-[#D4A017] transition-colors">
+                            <div className="font-semibold text-white group-hover:text-[#FF7A97] transition-colors">
                               {item.titulo}
                             </div>
-                            <div className="text-sm text-[#6B6F76] dark:text-gray-300">
+                            <div className="text-sm text-text-secondary">
                               {item.dataHora.toDate().toLocaleString('pt-BR')} • {tipoLabels[item.tipo]}
                             </div>
                             {item.descricao && (
-                              <div className="text-sm text-[#6B6F76] dark:text-gray-400 mt-1 line-clamp-2">
+                              <div className="text-sm text-text-secondary mt-1 line-clamp-2">
                                 {item.descricao}
                               </div>
                             )}
@@ -956,7 +959,7 @@ export default function AgendaUsuariosPage() {
                         </div>
 
                         {/* Apenas visualização */}
-                        <div className="text-xs text-[#6B6F76] dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">
+                        <div className="text-[10px] font-extrabold uppercase tracking-wider text-text-secondary px-2 py-1 bg-white/[0.06] border border-white/10 rounded-full">
                           Visualização
                         </div>
                       </div>
@@ -970,7 +973,7 @@ export default function AgendaUsuariosPage() {
 
         {loading && (
           <div className="text-center py-8">
-            <div className="text-[#6B6F76] dark:text-gray-300">Carregando agenda...</div>
+            <div className="text-text-secondary">Carregando agenda...</div>
           </div>
         )}
       </div>

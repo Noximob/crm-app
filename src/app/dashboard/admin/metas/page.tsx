@@ -284,65 +284,67 @@ export default function AdminMetasPage() {
 
   if (fetching) {
     return (
-      <div className="max-w-xl mx-auto mt-10 bg-gradient-to-br from-[#E8C547]/30 to-[#D4A017]/10 border-2 border-[#D4A017]/20 rounded-2xl p-8 shadow-xl">
+      <div className="max-w-xl mx-auto mt-10 al-card relative overflow-hidden p-8">
+        <div className="absolute inset-x-0 top-0 gx-line-gold" />
         <div className="flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#D4A017]"></div>
-          <span className="ml-2 text-white">Carregando...</span>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF1E56]"></div>
+          <span className="ml-2 text-text-secondary">Carregando...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-xl mx-auto mt-10 bg-gradient-to-br from-[#E8C547]/30 to-[#D4A017]/10 border-2 border-[#D4A017]/20 rounded-2xl p-8 shadow-xl">
-      <h1 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-        <svg className="h-7 w-7 text-[#D4A017]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    <div className="max-w-xl mx-auto mt-10 al-card relative overflow-hidden p-8">
+      <div className="absolute inset-x-0 top-0 gx-line-gold" />
+      <h1 className="al-display text-[20px] font-bold text-white uppercase tracking-[0.1em] mb-6 flex items-center gap-2">
+        <svg className="h-6 w-6 text-[#E8C547] drop-shadow-[0_0_8px_rgba(232,197,71,0.5)]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
         Gerenciar Meta da Imobiliária
       </h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex gap-4">
           <div className="flex-1">
-            <label className="block text-sm font-medium mb-1 text-white">Início</label>
-            <input type="date" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30" value={inicio} onChange={e => setInicio(e.target.value)} required />
+            <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">Início</label>
+            <input type="date" className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50" value={inicio} onChange={e => setInicio(e.target.value)} required />
           </div>
           <div className="flex-1">
-            <label className="block text-sm font-medium mb-1 text-white">Fim</label>
-            <input type="date" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30" value={fim} onChange={e => setFim(e.target.value)} required />
+            <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">Fim</label>
+            <input type="date" className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50" value={fim} onChange={e => setFim(e.target.value)} required />
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1 text-white">VGV Meta Trimestral (R$)</label>
-          <MoneyInput value={vgv} onChange={setVgv} className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30" />
+          <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">VGV Meta Trimestral (R$)</label>
+          <MoneyInput value={vgv} onChange={setVgv} className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50" />
         </div>
 
-        <div className="border-t border-[#D4A017]/20 pt-4 mt-4">
-          <h3 className="text-base font-semibold text-white mb-3">Meta mensal</h3>
+        <div className="border-t border-white/[0.08] pt-4 mt-4">
+          <h3 className="al-display text-[14px] font-bold text-white uppercase tracking-[0.14em] mb-3">Meta mensal</h3>
           <div className="flex gap-4 mb-3">
             <div className="flex-1">
-              <label className="block text-sm font-medium mb-1 text-white/80">Início do mês</label>
-              <input type="date" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30" value={inicioMensal} onChange={e => setInicioMensal(e.target.value)} />
+              <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">Início do mês</label>
+              <input type="date" className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50" value={inicioMensal} onChange={e => setInicioMensal(e.target.value)} />
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium mb-1 text-white/80">Fim do mês</label>
-              <input type="date" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30" value={fimMensal} onChange={e => setFimMensal(e.target.value)} />
+              <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">Fim do mês</label>
+              <input type="date" className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50" value={fimMensal} onChange={e => setFimMensal(e.target.value)} />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1 text-white/80">VGV Meta Mensal (R$)</label>
-            <MoneyInput value={vgvMensal} onChange={setVgvMensal} className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30" />
+            <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">VGV Meta Mensal (R$)</label>
+            <MoneyInput value={vgvMensal} onChange={setVgvMensal} className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50" />
           </div>
         </div>
 
         {/* Contribuições por corretor — soma vira o VGV realizado (bloco fora do form principal para o botão Adicionar funcionar) */}
-        <div className="rounded-xl border border-[#D4A017]/30 bg-[#23283A]/40 p-4 space-y-4">
-          <h3 className="text-base font-semibold text-white">Contribuições por corretor</h3>
+        <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4 space-y-4">
+          <h3 className="al-display text-[14px] font-bold text-white uppercase tracking-[0.14em]">Contribuições por corretor</h3>
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex-1 min-w-[140px]">
-              <label className="block text-xs font-medium mb-1 text-white/80">Corretor</label>
+              <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">Corretor</label>
               <select
                 value={corretorSelecionado}
                 onChange={e => setCorretorSelecionado(e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30"
+                className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
               >
                 <option value="">Selecione</option>
                 {corretores.map(c => (
@@ -351,30 +353,30 @@ export default function AdminMetasPage() {
               </select>
             </div>
             <div className="flex-1 min-w-[120px]">
-              <label className="block text-xs font-medium mb-1 text-white/80">Data da venda</label>
+              <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">Data da venda</label>
               <input
                 type="date"
                 value={dataVendaContribuicao}
                 onChange={e => setDataVendaContribuicao(e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30"
+                className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
               />
             </div>
             <div className="flex-1 min-w-[140px]">
-              <label className="block text-xs font-medium mb-1 text-white/80">Valor (R$)</label>
-              <MoneyInput value={valorContribuicao} onChange={setValorContribuicao} placeholder="0,00" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/50 border-[#D4A017]/30" />
+              <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">Valor (R$)</label>
+              <MoneyInput value={valorContribuicao} onChange={setValorContribuicao} placeholder="0,00" className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50" />
             </div>
             <button
               type="button"
               onClick={() => handleAddContribuicao()}
               disabled={adding || !corretorSelecionado || !valorContribuicao}
-              className="bg-[#3AC17C] hover:bg-[#2fa86a] text-white font-semibold py-2 px-4 rounded-lg disabled:opacity-50"
+              className="bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold py-2 px-4 rounded-xl shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all disabled:opacity-50"
             >
               {adding ? '...' : 'Adicionar'}
             </button>
           </div>
           {contribuicoes.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-medium text-white/80">Lançamentos:</p>
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Lançamentos:</p>
               <ul className="space-y-1 max-h-40 overflow-y-auto">
                 {contribuicoes.map(c => {
                 const dataExib = c.dataVenda ? (() => {
@@ -382,10 +384,10 @@ export default function AdminMetasPage() {
                   return new Date(y, m - 1, d).toLocaleDateString('pt-BR');
                 })() : '–';
                 return (
-                  <li key={c.id} className="flex items-center justify-between text-sm text-white bg-[#23283A]/50 rounded-lg px-3 py-2">
+                  <li key={c.id} className="flex items-center justify-between text-sm text-white bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2">
                     <span className="flex flex-wrap items-center gap-x-2 gap-y-0">
                       <span>{c.corretorNome}</span>
-                      <span className="text-white/70 text-xs">{dataExib}</span>
+                      <span className="text-text-secondary text-xs">{dataExib}</span>
                     </span>
                     <span className="flex items-center gap-2">
                       <span>R$ {c.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
@@ -402,64 +404,64 @@ export default function AdminMetasPage() {
                 );
               })}
               </ul>
-              <p className="text-base font-bold text-[#D4A017] pt-2 border-t border-[#D4A017]/20">
+              <p className="text-base font-bold text-[#FFE9A6] al-display tabular-nums pt-2 border-t border-white/[0.08]">
                 Total realizado: R$ {totalRealizado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
             </div>
           )}
           {contribuicoes.length === 0 && (
-            <p className="text-sm text-white/70">Adicione valores por corretor; o total será o VGV realizado.</p>
+            <p className="text-sm text-text-secondary">Adicione valores por corretor; o total será o VGV realizado.</p>
           )}
         </div>
 
         {ultimaAtualizacaoPor && (
-          <p className="text-sm text-white/70">Última atualização: <span className="font-medium text-white">{ultimaAtualizacaoPor}</span></p>
+          <p className="text-sm text-text-secondary">Última atualização: <span className="font-medium text-white">{ultimaAtualizacaoPor}</span></p>
         )}
-        <div className="bg-[#23283A]/30 border border-[#D4A017]/20 rounded-lg p-4">
+        <div className="bg-white/[0.03] border border-white/[0.08] rounded-xl p-4">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-white">% Alcançado (calculado automaticamente)</span>
-            <span className="text-lg font-bold text-[#D4A017]">{percentualCalculado}%</span>
+            <span className="text-lg font-bold text-[#FFE9A6] al-display tabular-nums">{percentualCalculado}%</span>
           </div>
-          <div className="w-full h-2 bg-[#23283A] rounded-full mt-2">
-            <div 
-              className={`h-2 rounded-full transition-all duration-300 ${percentualCalculado >= 100 ? 'bg-[#3AC17C]' : 'bg-[#D4A017]'}`} 
+          <div className="w-full h-2 bg-white/[0.06] rounded-full mt-2">
+            <div
+              className={`h-2 rounded-full transition-all duration-300 ${percentualCalculado >= 100 ? 'bg-[#34D399] shadow-[0_0_10px_rgba(52,211,153,0.5)]' : 'bg-[#E8C547] shadow-[0_0_10px_rgba(232,197,71,0.5)]'}`}
               style={{ width: `${Math.min(percentualCalculado, 100)}%` }}
             ></div>
           </div>
         </div>
-        <button type="submit" className="mt-4 bg-[#D4A017] hover:bg-[#B8860B] text-white font-bold py-2 px-6 rounded-lg transition-all disabled:opacity-60" disabled={loading}>
+        <button type="submit" className="mt-4 bg-gradient-to-r from-[#E8C547] to-[#C89210] hover:brightness-110 text-[#181203] font-bold py-2 px-6 rounded-xl shadow-[0_8px_24px_-8px_rgba(232,197,71,0.5)] active:scale-[0.98] transition-all disabled:opacity-60" disabled={loading}>
           {loading ? 'Salvando...' : 'Salvar Meta'}
         </button>
-        {success && <div className="text-green-400 font-semibold mt-2">Meta salva com sucesso!</div>}
+        {success && <div className="text-emerald-300 font-semibold mt-2">Meta salva com sucesso!</div>}
       </form>
 
       {/* Metas pessoais dos corretores — fora do form para não dar submit/reload ao pressionar Enter */}
-      <div className="rounded-xl border border-amber-500/40 bg-[#23283A]/50 p-4 space-y-4 mt-6">
-        <h3 className="text-base font-semibold text-white flex items-center gap-2">
-          <span className="text-amber-400">🎯</span> Metas pessoais dos corretores
+      <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4 space-y-4 mt-6">
+        <h3 className="al-display text-[14px] font-bold text-white uppercase tracking-[0.14em]">
+          Metas pessoais dos corretores
         </h3>
-        <p className="text-sm text-white/80">
+        <p className="text-sm text-text-secondary">
           O período é o mesmo da meta da imobiliária (acima). Defina o valor almejado de cada corretor para acompanhar a meta.
         </p>
         {inicio && fim && (
-          <p className="text-xs text-amber-200/90 font-medium">
+          <p className="text-xs text-[#FFE9A6]/90 font-medium">
             Período (somente leitura): {new Date(inicio + 'T12:00:00').toLocaleDateString('pt-BR')} a {new Date(fim + 'T12:00:00').toLocaleDateString('pt-BR')}
           </p>
         )}
         <div className="space-y-3 max-h-60 overflow-y-auto">
           {corretores.map((c) => (
-            <div key={c.id} className="flex flex-wrap items-center gap-3 py-2 border-b border-white/10 last:border-0">
+            <div key={c.id} className="flex flex-wrap items-center gap-3 py-2 border-b border-white/[0.05] last:border-0">
               <span className="font-medium text-white min-w-[140px] truncate">{c.nome}</span>
               <div className="flex-1 min-w-[160px] flex items-center gap-2">
-                <label className="text-xs text-white/70 shrink-0">Valor almejado (R$)</label>
+                <label className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary shrink-0">Valor almejado (R$)</label>
                 <div className="flex-1 max-w-[180px]">
-                  <MoneyInput value={valorAlmejadoInputs[c.id] ?? 0} onChange={(n) => setValorAlmejadoInputs((prev) => ({ ...prev, [c.id]: n }))} placeholder="0,00" className="w-full rounded-lg border px-3 py-2 text-white bg-[#23283A]/70 border-amber-500/30" />
+                  <MoneyInput value={valorAlmejadoInputs[c.id] ?? 0} onChange={(n) => setValorAlmejadoInputs((prev) => ({ ...prev, [c.id]: n }))} placeholder="0,00" className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50" />
                 </div>
                 <button
                   type="button"
                   onClick={() => handleSaveMetaPessoal(c.id)}
                   disabled={savingPessoal === c.id}
-                  className="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-3 rounded-lg text-sm disabled:opacity-50"
+                  className="bg-gradient-to-r from-[#E8C547] to-[#C89210] hover:brightness-110 text-[#181203] font-bold py-2 px-3 rounded-xl text-sm shadow-[0_8px_24px_-8px_rgba(232,197,71,0.5)] active:scale-[0.98] transition-all disabled:opacity-50"
                 >
                   {savingPessoal === c.id ? '...' : 'Salvar'}
                 </button>
@@ -468,21 +470,21 @@ export default function AdminMetasPage() {
           ))}
         </div>
         {corretores.length === 0 && (
-          <p className="text-sm text-white/60">Nenhum corretor aprovado na imobiliária.</p>
+          <p className="text-sm text-text-secondary">Nenhum corretor aprovado na imobiliária.</p>
         )}
 
         {/* Soma das metas pessoais + comparação com a meta da imobiliária */}
-        <div className="pt-3 mt-1 border-t border-amber-500/20 space-y-1.5">
+        <div className="pt-3 mt-1 border-t border-white/[0.08] space-y-1.5">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-white">Soma das metas pessoais</span>
-            <span className="text-lg font-bold text-amber-300">R$ {somaMetasPessoais.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+            <span className="text-lg font-bold text-[#FFE9A6] al-display tabular-nums">R$ {somaMetasPessoais.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
           </div>
           {metaImobValor > 0 && (
-            <p className="text-xs text-white/70">
+            <p className="text-xs text-text-secondary">
               Meta da imobiliária: <span className="text-white font-medium">R$ {metaImobValor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span> ·{' '}
               {somaMetasPessoais >= metaImobValor
                 ? <span className="text-emerald-300">✓ as metas pessoais já cobrem a meta da imobiliária</span>
-                : <>faltam <span className="text-amber-300 font-medium">R$ {(metaImobValor - somaMetasPessoais).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span> para cobrir a meta da imobiliária</>}
+                : <>faltam <span className="text-[#FFE9A6] font-medium">R$ {(metaImobValor - somaMetasPessoais).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span> para cobrir a meta da imobiliária</>}
             </p>
           )}
         </div>

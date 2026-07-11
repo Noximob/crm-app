@@ -306,33 +306,34 @@ export default function TreinamentosAdminPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
+    <div className="min-h-screen py-8 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">Gestão de Treinamentos</h1>
-          <p className="text-[#6B6F76] dark:text-gray-300">Adicione e gerencie treinamentos para sua equipe</p>
+          <h1 className="al-display text-[22px] font-bold text-white uppercase tracking-[0.1em] mb-2">Gestão de Treinamentos</h1>
+          <p className="text-text-secondary text-sm">Adicione e gerencie treinamentos para sua equipe</p>
         </div>
 
         {/* Mensagem */}
         {msg && (
-          <div className={`p-4 rounded-lg mb-6 ${msg.includes('Erro') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+          <div className={`p-4 rounded-xl border mb-6 text-sm font-semibold ${msg.includes('Erro') ? 'bg-red-500/10 border-red-500/40 text-red-300' : 'bg-[#34D399]/10 border-[#34D399]/35 text-emerald-200'}`}>
             {msg}
           </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Formulário */}
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
-            <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-6 flex items-center gap-2">
-              <PlayIcon className="h-6 w-6 text-[#D4A017]" />
+          <div className="al-card relative overflow-hidden p-6">
+            <div className="absolute inset-x-0 top-0 gx-line" />
+            <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-6 flex items-center gap-2">
+              <PlayIcon className="h-5 w-5 text-[#FF5C7E] drop-shadow-[0_0_8px_rgba(255,30,86,0.5)]" />
               {editingTreinamento ? 'Editar Treinamento' : 'Novo Treinamento'}
             </h2>
             
             <form onSubmit={editingTreinamento ? handleUpdateTreinamento : handleAddTreinamento} className="space-y-4">
               {/* Categorias */}
               <div>
-                <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Categorias</label>
+                <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-2">Categorias</label>
                 <div className="flex flex-wrap gap-2">
                   {categorias.map((cat) => (
                     <button
@@ -341,8 +342,8 @@ export default function TreinamentosAdminPage() {
                       onClick={() => handleFormCategoriaToggle(cat.key)}
                       className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         formTreinamento.categorias.includes(cat.key)
-                          ? 'bg-[#D4A017] text-white'
-                          : 'bg-gray-100 dark:bg-gray-700 text-[#6B6F76] dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          ? 'bg-[#FF1E56]/15 border border-[#FF3364]/50 text-[#FF9EB5]'
+                          : 'bg-white/[0.04] border border-white/10 text-text-secondary hover:bg-white/[0.08]'
                       }`}
                     >
                       <span>{cat.icon}</span>
@@ -357,34 +358,34 @@ export default function TreinamentosAdminPage() {
 
               {/* Link do YouTube */}
               <div>
-                <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Link do YouTube</label>
+                <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-2">Link do YouTube</label>
                 <input
                   type="url"
                   value={formTreinamento.url}
                   onChange={(e) => handleUrlChange(e.target.value)}
                   placeholder="https://www.youtube.com/watch?v=..."
-                  className="w-full rounded-lg border px-3 py-2 bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                  className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                   required
                 />
                 {fetchingYoutube && (
-                  <p className="text-sm text-[#D4A017] mt-1">Buscando informações do vídeo...</p>
+                  <p className="text-sm text-[#FF7A97] mt-1">Buscando informações do vídeo...</p>
                 )}
               </div>
 
               {/* Preview do YouTube */}
               {youtubeInfo && (
-                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="p-4 bg-white/[0.03] border border-white/[0.08] rounded-xl">
                   <div className="flex items-center gap-3 mb-3">
-                    <img 
-                      src={youtubeInfo.thumbnail} 
-                      alt="Thumbnail" 
+                    <img
+                      src={youtubeInfo.thumbnail}
+                      alt="Thumbnail"
                       className="w-16 h-12 object-cover rounded"
                     />
                     <div>
-                      <p className="text-sm font-semibold text-[#2E2F38] dark:text-white">
+                      <p className="text-sm font-semibold text-white">
                         {youtubeInfo.title}
                       </p>
-                      <p className="text-xs text-[#6B6F76] dark:text-gray-300">
+                      <p className="text-xs text-text-secondary">
                         Título original do YouTube
                       </p>
                     </div>
@@ -394,26 +395,26 @@ export default function TreinamentosAdminPage() {
 
               {/* Título */}
               <div>
-                <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Título</label>
+                <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-2">Título</label>
                 <input
                   type="text"
                   value={formTreinamento.titulo}
                   onChange={(e) => setFormTreinamento({ ...formTreinamento, titulo: e.target.value })}
                   placeholder="Título do treinamento"
-                  className="w-full rounded-lg border px-3 py-2 bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                  className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                   required
                 />
               </div>
 
               {/* Descrição */}
               <div>
-                <label className="block text-sm font-semibold text-[#6B6F76] dark:text-gray-300 mb-2">Descrição (opcional)</label>
+                <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-2">Descrição (opcional)</label>
                 <textarea
                   value={formTreinamento.descricao}
                   onChange={(e) => setFormTreinamento({ ...formTreinamento, descricao: e.target.value })}
                   placeholder="Descrição do treinamento..."
                   rows={3}
-                  className="w-full rounded-lg border px-3 py-2 bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                  className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                 />
               </div>
 
@@ -422,7 +423,7 @@ export default function TreinamentosAdminPage() {
                 <button
                   type="submit"
                   disabled={uploading}
-                  className="flex-1 bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                  className="flex-1 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold py-2 px-4 rounded-xl shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all disabled:opacity-50"
                 >
                   {uploading ? 'Salvando...' : (editingTreinamento ? 'Atualizar' : 'Adicionar')}
                 </button>
@@ -430,7 +431,7 @@ export default function TreinamentosAdminPage() {
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
+                    className="px-4 py-2 border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white font-semibold rounded-xl transition-colors"
                   >
                     Cancelar
                   </button>
@@ -440,9 +441,10 @@ export default function TreinamentosAdminPage() {
           </div>
 
           {/* Lista de Treinamentos */}
-          <div className="bg-white dark:bg-[#23283A] rounded-2xl p-6 shadow-soft border border-[#E8E9F1] dark:border-[#23283A]">
+          <div className="al-card relative overflow-hidden p-6">
+            <div className="absolute inset-x-0 top-0 gx-line" />
             <div className="mb-6">
-              <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white mb-4">Treinamentos</h2>
+              <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Treinamentos</h2>
               
               {/* Filtro de Categoria */}
               <div className="flex flex-wrap gap-2">
@@ -452,8 +454,8 @@ export default function TreinamentosAdminPage() {
                     onClick={() => handleCategoriaToggle(categoria.key)}
                     className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                       selectedCategorias.includes(categoria.key)
-                        ? 'bg-[#D4A017] text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-[#6B6F76] dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        ? 'bg-[#FF1E56]/15 border border-[#FF3364]/50 text-[#FF9EB5]'
+                        : 'bg-white/[0.04] border border-white/10 text-text-secondary hover:bg-white/[0.08]'
                     }`}
                   >
                     <span>{categoria.icon}</span>
@@ -464,9 +466,9 @@ export default function TreinamentosAdminPage() {
             </div>
 
             {loading ? (
-              <div className="text-center py-8">Carregando...</div>
+              <div className="text-center py-8 text-text-secondary">Carregando...</div>
             ) : treinamentos.length === 0 ? (
-              <div className="text-center py-8 text-[#6B6F76] dark:text-gray-300">
+              <div className="text-center py-8 text-text-secondary">
                 Nenhum treinamento encontrado
               </div>
             ) : (
@@ -474,7 +476,7 @@ export default function TreinamentosAdminPage() {
                 {treinamentos.map((treinamento) => (
                   <div
                     key={treinamento.id}
-                    className="p-4 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors"
+                    className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.05] transition-colors"
                   >
                     <div className="flex items-start gap-4">
                       {/* Thumbnail */}
@@ -488,11 +490,11 @@ export default function TreinamentosAdminPage() {
                       
                       {/* Informações */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-[#2E2F38] dark:text-white text-sm mb-1 line-clamp-2">
+                        <h3 className="font-semibold text-white text-sm mb-1 line-clamp-2">
                           {treinamento.titulo}
                         </h3>
                         {treinamento.descricao && (
-                          <p className="text-xs text-[#6B6F76] dark:text-gray-300 mb-2 line-clamp-2">
+                          <p className="text-xs text-text-secondary mb-2 line-clamp-2">
                             {treinamento.descricao}
                           </p>
                         )}
@@ -504,7 +506,7 @@ export default function TreinamentosAdminPage() {
                             return categoria ? (
                               <span
                                 key={cat}
-                                className="px-2 py-1 bg-[#D4A017]/10 text-[#D4A017] text-xs rounded-full"
+                                className="inline-flex items-center px-2 py-0.5 bg-[#9F6BFF]/10 border border-[#9F6BFF]/35 text-[#C4A6FF] text-[10px] font-extrabold uppercase tracking-wider rounded-full"
                               >
                                 {categoria.icon} {categoria.label}
                               </span>
@@ -513,13 +515,13 @@ export default function TreinamentosAdminPage() {
                         </div>
                         
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-[#6B6F76] dark:text-gray-400">
+                          <span className="text-xs text-text-secondary">
                             {treinamento.criadoEm.toLocaleDateString('pt-BR')}
                           </span>
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleEditTreinamento(treinamento)}
-                              className="p-1 text-[#D4A017] hover:bg-[#D4A017]/10 rounded transition-colors"
+                              className="p-1 text-[#FF7A97] hover:bg-[#FF1E56]/10 rounded transition-colors"
                             >
                               <EditIcon className="h-4 w-4" />
                             </button>

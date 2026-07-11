@@ -293,13 +293,13 @@ export default function AgendaImobiliariaAdminPage() {
 
   if (!userData?.permissoes?.admin) {
     return (
-      <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] p-6">
+      <div className="min-h-screen p-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center py-12">
-            <h1 className="text-2xl font-bold text-[#2E2F38] dark:text-white mb-4">
+            <h1 className="text-2xl font-bold text-white mb-4">
               Acesso Negado
             </h1>
-            <p className="text-[#6B6F76] dark:text-gray-300">
+            <p className="text-text-secondary">
               Você não tem permissão para acessar esta página.
             </p>
           </div>
@@ -309,16 +309,16 @@ export default function AgendaImobiliariaAdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] p-6">
+    <div className="min-h-screen p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2">
+              <h1 className="text-3xl font-bold text-white mb-2">
                 Agenda Imobiliária
               </h1>
-              <p className="text-[#6B6F76] dark:text-gray-300">
+              <p className="text-text-secondary">
                 Gerencie os eventos e compromissos da imobiliária
               </p>
             </div>
@@ -339,9 +339,10 @@ export default function AgendaImobiliariaAdminPage() {
 
         {/* Formulário */}
         {showForm && (
-          <div className="bg-white dark:bg-[#23283A] rounded-xl p-6 mb-8 border border-[#E8E9F1] dark:border-[#23283A] shadow-sm">
+          <div className="al-card relative overflow-hidden p-6 mb-8">
+            <div className="absolute inset-x-0 top-0 gx-line" />
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-[#2E2F38] dark:text-white">
+              <h2 className="text-xl font-semibold text-white">
                 {editingEvent ? 'Editar Evento' : 'Novo Evento'}
               </h2>
               <button
@@ -349,7 +350,7 @@ export default function AgendaImobiliariaAdminPage() {
                   setShowForm(false);
                   resetForm();
                 }}
-                className="text-[#6B6F76] dark:text-gray-300 hover:text-[#2E2F38] dark:hover:text-white"
+                className="text-text-secondary hover:text-[#FF5C7E]"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -360,7 +361,7 @@ export default function AgendaImobiliariaAdminPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                  <label className="block text-sm font-medium text-white mb-2">
                     Título *
                   </label>
                   <input
@@ -368,20 +369,20 @@ export default function AgendaImobiliariaAdminPage() {
                     required
                     value={formData.titulo}
                     onChange={(e) => setFormData(prev => ({ ...prev, titulo: e.target.value }))}
-                    className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 border border-white/10 rounded-lg bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                     placeholder="Título do evento"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                  <label className="block text-sm font-medium text-white mb-2">
                     Tipo *
                   </label>
                   <select
                     required
                     value={formData.tipo}
                     onChange={(e) => setFormData(prev => ({ ...prev, tipo: e.target.value as any }))}
-                    className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 border border-white/10 rounded-lg bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                   >
                     <option value="reuniao">👥 Reunião</option>
                     <option value="evento">🎉 Evento</option>
@@ -396,7 +397,7 @@ export default function AgendaImobiliariaAdminPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                  <label className="block text-sm font-medium text-white mb-2">
                     Data de Início *
                   </label>
                   <input
@@ -404,12 +405,12 @@ export default function AgendaImobiliariaAdminPage() {
                     required
                     value={formData.diaInicio}
                     onChange={(e) => setFormData(prev => ({ ...prev, diaInicio: e.target.value }))}
-                    className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 border border-white/10 rounded-lg bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                  <label className="block text-sm font-medium text-white mb-2">
                     Data de Fim
                   </label>
                   <input
@@ -417,87 +418,87 @@ export default function AgendaImobiliariaAdminPage() {
                     value={formData.diaFim}
                     min={formData.diaInicio || undefined}
                     onChange={(e) => setFormData(prev => ({ ...prev, diaFim: e.target.value }))}
-                    className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 border border-white/10 rounded-lg bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                   />
-                  <p className="text-xs text-[#6B6F76] dark:text-gray-400 mt-1">Deixe vazio para evento de um dia só.</p>
+                  <p className="text-xs text-text-secondary mt-1">Deixe vazio para evento de um dia só.</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                  <label className="block text-sm font-medium text-white mb-2">
                     Horário de Início
                   </label>
                   <input
                     type="time"
                     value={formData.horaInicio}
                     onChange={(e) => setFormData(prev => ({ ...prev, horaInicio: e.target.value }))}
-                    className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 border border-white/10 rounded-lg bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                  <label className="block text-sm font-medium text-white mb-2">
                     Horário de Fim
                   </label>
                   <input
                     type="time"
                     value={formData.horaFim}
                     onChange={(e) => setFormData(prev => ({ ...prev, horaFim: e.target.value }))}
-                    className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 border border-white/10 rounded-lg bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                   />
-                  <p className="text-xs text-[#6B6F76] dark:text-gray-400 mt-1">A faixa de horário vale para cada dia do intervalo.</p>
+                  <p className="text-xs text-text-secondary mt-1">A faixa de horário vale para cada dia do intervalo.</p>
                 </div>
 
                 {formData.tipo === 'plantao' && (
                   <div>
-                    <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                    <label className="block text-sm font-medium text-white mb-2">
                       Construtora
                     </label>
                     <input
                       type="text"
                       value={formData.construtora}
                       onChange={(e) => setFormData(prev => ({ ...prev, construtora: e.target.value }))}
-                      className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-4 py-3 border border-white/10 rounded-lg bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                       placeholder="Nome da construtora"
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                  <label className="block text-sm font-medium text-white mb-2">
                     Local
                   </label>
                   <input
                     type="text"
                     value={formData.local}
                     onChange={(e) => setFormData(prev => ({ ...prev, local: e.target.value }))}
-                    className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 border border-white/10 rounded-lg bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                     placeholder="Local do evento"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                  <label className="block text-sm font-medium text-white mb-2">
                     Responsável
                   </label>
                   <input
                     type="text"
                     value={formData.responsavel}
                     onChange={(e) => setFormData(prev => ({ ...prev, responsavel: e.target.value }))}
-                    className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 border border-white/10 rounded-lg bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                     placeholder="Responsável pelo evento"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">
+                <label className="block text-sm font-medium text-white mb-2">
                   Descrição
                 </label>
                 <textarea
                   value={formData.descricao}
                   onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
                   rows={4}
-                  className="w-full px-4 py-3 border border-[#E8E9F1] dark:border-[#23283A] rounded-lg bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-3 border border-white/10 rounded-lg bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                   placeholder="Descrição detalhada do evento"
                 />
               </div>
@@ -525,20 +526,21 @@ export default function AgendaImobiliariaAdminPage() {
         )}
 
         {/* Lista de Eventos */}
-        <div className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] shadow-sm">
-          <div className="p-6 border-b border-[#E8E9F1] dark:border-[#23283A]">
+        <div className="al-card relative overflow-hidden">
+          <div className="absolute inset-x-0 top-0 gx-line" />
+          <div className="p-6 border-b border-white/[0.08]">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <h2 className="text-xl font-semibold text-[#2E2F38] dark:text-white">
+              <h2 className="text-xl font-semibold text-white">
                 Eventos Agendados ({agendaFiltrada.length})
               </h2>
               <div className="flex flex-wrap items-center gap-2 text-sm">
-                <label className="flex items-center gap-2 text-[#6B6F76] dark:text-gray-300">
+                <label className="flex items-center gap-2 text-text-secondary">
                   <span>Filtrar por dia:</span>
                   <input
                     type="date"
                     value={filtroData}
                     onChange={(e) => setFiltroData(e.target.value)}
-                    className="px-2 py-1 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-xs md:text-sm text-[#2E2F38] dark:text-white"
+                    className="px-2 py-1 rounded-lg border border-white/10 bg-white/[0.04] text-xs md:text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                   />
                 </label>
                 <button
@@ -565,7 +567,7 @@ export default function AgendaImobiliariaAdminPage() {
           {loading ? (
             <div className="p-12 text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-              <p className="text-[#6B6F76] dark:text-gray-300">Carregando eventos...</p>
+              <p className="text-text-secondary">Carregando eventos...</p>
             </div>
           ) : agendaFiltrada.length === 0 ? (
             <div className="p-12 text-center">
@@ -574,21 +576,21 @@ export default function AgendaImobiliariaAdminPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-[#2E2F38] dark:text-white mb-2">
+              <h3 className="text-lg font-semibold text-white mb-2">
                 Nenhum evento agendado
               </h3>
-              <p className="text-[#6B6F76] dark:text-gray-300">
+              <p className="text-text-secondary">
                 Comece criando o primeiro evento da imobiliária
               </p>
             </div>
           ) : (
             <div className="divide-y divide-[#E8E9F1] dark:divide-[#23283A]">
               {agendaFiltrada.map((event) => (
-                <div key={event.id} className="p-6 hover:bg-[#F5F6FA] dark:hover:bg-[#181C23] transition-colors">
+                <div key={event.id} className="p-6 hover:bg-white/[0.04] transition-colors">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-[#2E2F38] dark:text-white">
+                        <h3 className="text-lg font-semibold text-white">
                           {event.titulo}
                         </h3>
                         <span className={`px-3 py-1 text-sm font-semibold rounded-full ${getTipoColor(event.tipo)} text-white`}>
@@ -597,7 +599,7 @@ export default function AgendaImobiliariaAdminPage() {
                       </div>
                       
                       {event.descricao && (
-                        <p className="text-[#6B6F76] dark:text-gray-300 mb-3">
+                        <p className="text-text-secondary mb-3">
                           {event.descricao}
                         </p>
                       )}
@@ -620,7 +622,7 @@ export default function AgendaImobiliariaAdminPage() {
                               <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
-                              <span className="text-[#6B6F76] dark:text-gray-300">
+                              <span className="text-text-secondary">
                                 <strong>Quando:</strong> {periodoStr}{horaStr ? ` · ${horaStr}` : ''}
                               </span>
                             </div>
@@ -632,7 +634,7 @@ export default function AgendaImobiliariaAdminPage() {
                             <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
-                            <span className="text-[#6B6F76] dark:text-gray-300">
+                            <span className="text-text-secondary">
                               <strong>Construtora:</strong> {event.construtora}
                             </span>
                           </div>
@@ -644,7 +646,7 @@ export default function AgendaImobiliariaAdminPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
-                            <span className="text-[#6B6F76] dark:text-gray-300">
+                            <span className="text-text-secondary">
                               <strong>Local:</strong> {event.local}
                             </span>
                           </div>
@@ -655,16 +657,16 @@ export default function AgendaImobiliariaAdminPage() {
                             <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
-                            <span className="text-[#6B6F76] dark:text-gray-300">
+                            <span className="text-text-secondary">
                               <strong>Responsável:</strong> {event.responsavel}
                             </span>
                           </div>
                         )}
                       </div>
                       <div className="mt-4 pt-4 border-t border-[#E8E9F1] dark:border-[#23283A]">
-                        <p className="text-sm font-medium text-[#2E2F38] dark:text-white mb-2">Corretores presentes (quem participou)</p>
+                        <p className="text-sm font-medium text-white mb-2">Corretores presentes (quem participou)</p>
                         {corretores.length === 0 ? (
-                          <p className="text-xs text-[#6B6F76] dark:text-gray-400">Nenhum corretor cadastrado na imobiliária.</p>
+                          <p className="text-xs text-text-secondary">Nenhum corretor cadastrado na imobiliária.</p>
                         ) : (
                           <div className="flex flex-wrap gap-3">
                             {corretores.map(c => (
@@ -675,7 +677,7 @@ export default function AgendaImobiliariaAdminPage() {
                                   onChange={() => togglePresenteEvento(event, c.id)}
                                   className="w-4 h-4 rounded border-purple-500 text-purple-600 focus:ring-purple-500"
                                 />
-                                <span className="text-sm text-[#2E2F38] dark:text-white">{c.nome || c.email}</span>
+                                <span className="text-sm text-white">{c.nome || c.email}</span>
                               </label>
                             ))}
                           </div>

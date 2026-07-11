@@ -359,7 +359,7 @@ export default function DashboardsTvPage() {
   if (!imobiliariaId) {
     return (
       <div className="min-h-full py-8 px-4 flex items-center justify-center">
-        <p className="text-[#6B6F76] dark:text-gray-300">Acesso restrito.</p>
+        <p className="text-text-secondary">Acesso restrito.</p>
       </div>
     );
   }
@@ -369,11 +369,11 @@ export default function DashboardsTvPage() {
       <div className="max-w-3xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-[#2E2F38] dark:text-white flex items-center gap-2">
-              <TvIcon className="w-8 h-8 text-[#D4A017]" />
+            <h1 className="al-display text-[22px] font-bold text-white uppercase tracking-[0.1em] flex items-center gap-2">
+              <TvIcon className="w-7 h-7 text-[#FF5C7E] drop-shadow-[0_0_8px_rgba(255,30,86,0.5)]" />
               Dashboards TV
             </h1>
-            <p className="text-[#6B6F76] dark:text-gray-300 mt-1">
+            <p className="text-text-secondary mt-1">
               Escolha as telas que rodam na TV e o tempo de cada uma
             </p>
           </div>
@@ -382,7 +382,7 @@ export default function DashboardsTvPage() {
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="px-4 py-2 rounded-lg bg-[#D4A017] text-white font-semibold hover:bg-[#B8860B] disabled:opacity-50"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all disabled:opacity-50"
             >
               {saving ? 'Salvando...' : 'Salvar'}
             </button>
@@ -408,22 +408,22 @@ export default function DashboardsTvPage() {
 
         {loading ? (
           <div className="flex justify-center py-16">
-            <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#D4A017] border-t-transparent" />
+            <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#FF1E56] border-t-transparent" />
           </div>
         ) : (
           <div className="space-y-4">
-            <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-2">Use as setas para definir a ordem em que os slides aparecem na TV. Depois clique em Salvar.</p>
+            <p className="text-sm text-text-secondary mb-2">Use as setas para definir a ordem em que os slides aparecem na TV. Depois clique em Salvar.</p>
             {slides.map((slide, index) => (
               <div
                 key={slide.id}
-                className="bg-white dark:bg-[#23283A] rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-4 shadow-sm flex flex-col sm:flex-row sm:items-center gap-4"
+                className="al-card p-4 flex flex-col sm:flex-row sm:items-center gap-4"
               >
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     type="button"
                     onClick={() => moveSlide(index, 'up')}
                     disabled={index === 0}
-                    className="p-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-400 hover:bg-[#E8E9F1] dark:hover:bg-[#23283A] disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="p-2 rounded-lg border border-white/10 bg-white/[0.04] text-text-secondary hover:bg-white/[0.08] disabled:opacity-40 disabled:cursor-not-allowed"
                     title="Subir na ordem"
                     aria-label="Subir"
                   >
@@ -433,7 +433,7 @@ export default function DashboardsTvPage() {
                     type="button"
                     onClick={() => moveSlide(index, 'down')}
                     disabled={index === slides.length - 1}
-                    className="p-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#6B6F76] dark:text-gray-400 hover:bg-[#E8E9F1] dark:hover:bg-[#23283A] disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="p-2 rounded-lg border border-white/10 bg-white/[0.04] text-text-secondary hover:bg-white/[0.08] disabled:opacity-40 disabled:cursor-not-allowed"
                     title="Descer na ordem"
                     aria-label="Descer"
                   >
@@ -445,16 +445,16 @@ export default function DashboardsTvPage() {
                     type="checkbox"
                     checked={slide.enabled}
                     onChange={e => updateSlide(slide.id, { enabled: e.target.checked })}
-                    className="w-5 h-5 rounded border-[#D4A017] text-[#D4A017] focus:ring-[#D4A017]"
+                    className="w-5 h-5 rounded border-white/20 accent-[#FF1E56] text-[#FF1E56] focus:ring-[#FF1E56]"
                   />
-                  <span className="font-medium text-[#2E2F38] dark:text-white">{slide.name}</span>
+                  <span className="font-medium text-white">{slide.name}</span>
                 </label>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-[#6B6F76] dark:text-gray-400">Tempo:</span>
+                  <span className="text-sm text-text-secondary">Tempo:</span>
                   <select
                     value={slide.durationSeconds}
                     onChange={e => updateSlide(slide.id, { durationSeconds: Number(e.target.value) })}
-                    className="px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white text-sm"
+                    className="px-3 py-2 rounded-lg border border-white/10 bg-white/[0.04] text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                   >
                     {DURACAO_PRESETS.map(p => (
                       <option key={p.value} value={p.value}>{p.label}</option>
@@ -464,7 +464,7 @@ export default function DashboardsTvPage() {
                     <button
                       type="button"
                       onClick={() => setPreviewFunil(slide.id === 'funil-vendas' ? 'corporativo' : 'individual')}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#D4A017]/10 text-[#D4A017] hover:bg-[#D4A017]/20"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#FF1E56]/10 text-[#FF7A97] hover:bg-[#FF1E56]/20"
                       title="Ver como ficará na TV"
                     >
                       <TvIcon className="w-4 h-4" />
@@ -475,7 +475,7 @@ export default function DashboardsTvPage() {
                     <button
                       type="button"
                       onClick={() => setPreviewMetas(true)}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#D4A017]/10 text-[#D4A017] hover:bg-[#D4A017]/20"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#FF1E56]/10 text-[#FF7A97] hover:bg-[#FF1E56]/20"
                       title="Ver como ficará na TV"
                     >
                       <TvIcon className="w-4 h-4" />
@@ -486,7 +486,7 @@ export default function DashboardsTvPage() {
                     <button
                       type="button"
                       onClick={() => setPreviewAgenda(slide.id === 'agenda-dia' ? 'day' : 'week')}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#D4A017]/10 text-[#D4A017] hover:bg-[#D4A017]/20"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-[#FF1E56]/10 text-[#FF7A97] hover:bg-[#FF1E56]/20"
                       title="Ver como ficará na TV"
                     >
                       <TvIcon className="w-4 h-4" />
@@ -498,8 +498,8 @@ export default function DashboardsTvPage() {
                     onClick={() => setEditingSlideId(slide.id === editingSlideId ? null : slide.id)}
                     className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       slide.id === 'top3-selecao-nox' || slide.id.startsWith('unidades-selecao-') || slide.id === 'noticia-semana'
-                        ? 'bg-[#D4A017]/10 text-[#D4A017] hover:bg-[#D4A017]/20'
-                        : 'bg-[#E8E9F1] dark:bg-[#23283A] text-[#6B6F76] dark:text-gray-400 cursor-not-allowed'
+                        ? 'bg-[#FF1E56]/10 text-[#FF7A97] hover:bg-[#FF1E56]/20'
+                        : 'bg-white/[0.06] text-text-secondary cursor-not-allowed'
                     }`}
                     title={slide.id === 'top3-selecao-nox' || slide.id.startsWith('unidades-selecao-') || slide.id === 'noticia-semana' ? 'Editar conteúdo desta tela' : 'Em breve'}
                     disabled={slide.id !== 'top3-selecao-nox' && !slide.id.startsWith('unidades-selecao-') && slide.id !== 'noticia-semana'}
@@ -512,9 +512,9 @@ export default function DashboardsTvPage() {
             ))}
 
             {/* Corretores visíveis na TV — Agenda do Dia (cards) e Funil de Vendas */}
-            <div className="p-4 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#23283A]">
-              <h3 className="font-semibold text-[#2E2F38] dark:text-white mb-1">Corretores visíveis na TV</h3>
-              <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-3">
+            <div className="al-card p-4">
+              <h3 className="font-semibold text-white mb-1">Corretores visíveis na TV</h3>
+              <p className="text-sm text-text-secondary mb-3">
                 Quem aparece nos cards da Agenda do Dia e no Funil de Vendas. Deixe todos desmarcados para mostrar todos; marque só quem usa CRM/leads.
               </p>
               <div className="flex flex-wrap gap-3">
@@ -530,27 +530,27 @@ export default function DashboardsTvPage() {
                             prev.includes(c.id) ? prev.filter((id) => id !== c.id) : [...prev, c.id]
                           );
                         }}
-                        className="w-4 h-4 rounded border-[#D4A017] text-[#D4A017] focus:ring-[#D4A017]"
+                        className="w-4 h-4 rounded border-white/20 accent-[#FF1E56] text-[#FF1E56] focus:ring-[#FF1E56]"
                       />
-                      <span className="text-sm text-[#2E2F38] dark:text-white">{c.nome}</span>
+                      <span className="text-sm text-white">{c.nome}</span>
                     </label>
                   );
                 })}
               </div>
-              {listaCorretores.length === 0 && <p className="text-sm text-[#6B6F76] dark:text-gray-400">Nenhum usuário encontrado.</p>}
+              {listaCorretores.length === 0 && <p className="text-sm text-text-secondary">Nenhum usuário encontrado.</p>}
             </div>
 
             {/* Status manual dos corretores na TV */}
-            <div className="p-4 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#23283A]">
-              <h3 className="font-semibold text-[#2E2F38] dark:text-white mb-1">Status dos corretores na TV</h3>
-              <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-3">
+            <div className="al-card p-4">
+              <h3 className="font-semibold text-white mb-1">Status dos corretores na TV</h3>
+              <p className="text-sm text-text-secondary mb-3">
                 Defina manualmente se cada corretor está com tarefa atrasada, tarefa do dia ou sem tarefa. O status de <strong>+24h sem usar CRM</strong> é calculado automaticamente.
               </p>
               <div className="space-y-2 max-h-80 overflow-auto pr-1">
                 {(corretoresVisiveisIds.length ? listaCorretores.filter((c) => corretoresVisiveisIds.includes(c.id)) : listaCorretores).map(
                   (c) => (
                     <div key={c.id} className="flex items-center justify-between gap-3">
-                      <span className="text-sm text-[#2E2F38] dark:text-white truncate">{c.nome}</span>
+                      <span className="text-sm text-white truncate">{c.nome}</span>
                       <select
                         value={corretoresStatusTv[c.id] ?? 'sem_tarefa'}
                         onChange={(e) =>
@@ -559,7 +559,7 @@ export default function DashboardsTvPage() {
                             [c.id]: e.target.value as 'tarefa_atrasada' | 'tarefa_dia' | 'sem_tarefa',
                           }))
                         }
-                        className="text-xs px-2 py-1 rounded-md border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                        className="text-xs px-2 py-1 rounded-md border border-white/10 bg-white/[0.04] text-white focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                       >
                         <option value="tarefa_atrasada">Tarefa atrasada</option>
                         <option value="tarefa_dia">Tarefa do dia</option>
@@ -572,9 +572,9 @@ export default function DashboardsTvPage() {
             </div>
 
             {/* Frase da semana — 8º quadrado da Agenda da Semana na TV */}
-            <div className="p-4 rounded-xl border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#23283A]">
-              <h3 className="font-semibold text-[#2E2F38] dark:text-white mb-2">Frase da semana (Agenda da Semana na TV)</h3>
-              <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-3">
+            <div className="al-card p-4">
+              <h3 className="font-semibold text-white mb-2">Frase da semana (Agenda da Semana na TV)</h3>
+              <p className="text-sm text-text-secondary mb-3">
                 Aparece no 8º quadrado. Se vazio, usa a frase do dia: domingo &quot;Começamos a semana&quot;, sexta &quot;Quase acabando&quot;, sábado &quot;Estamos acabando&quot;, etc.
               </p>
               <input
@@ -582,33 +582,33 @@ export default function DashboardsTvPage() {
                 value={agendaFraseSemana}
                 onChange={e => setAgendaFraseSemana(e.target.value)}
                 placeholder="Ex: Foco total essa semana!"
-                className="w-full px-4 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+                className="w-full px-4 py-2 rounded-lg border border-white/10 bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
               />
-              <p className="text-xs text-slate-500 mt-1">Salve a configuração (botão Salvar no topo) para gravar a frase.</p>
+              <p className="text-xs text-text-secondary mt-1">Salve a configuração (botão Salvar no topo) para gravar a frase.</p>
             </div>
 
             {/* Configurar Seleção Nox — só quando clicar em Editar */}
             {editingSlideId === 'top3-selecao-nox' && (
-              <div className="mt-4 p-6 rounded-2xl bg-white dark:bg-[#23283A] border-2 border-[#D4A017]/20 shadow-lg">
+              <div className="mt-4 al-card p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Configurar Top 3 Seleção Nox</h2>
+                  <h2 className="text-xl font-bold text-white">Configurar Top 3 Seleção Nox</h2>
                   <button
                     type="button"
                     onClick={() => setEditingSlideId(null)}
-                    className="text-sm text-[#6B6F76] dark:text-gray-400 hover:text-[#2E2F38] dark:hover:text-white"
+                    className="text-sm text-text-secondary hover:text-[#FF5C7E]"
                   >
                     Fechar
                   </button>
                 </div>
-                <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-6">Três espaços para foto e texto (como na TV). Embaixo, a frase que passa na faixa rolante.</p>
+                <p className="text-sm text-text-secondary mb-6">Três espaços para foto e texto (como na TV). Embaixo, a frase que passa na faixa rolante.</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                   {[0, 1, 2].map((idx) => (
-                    <div key={idx} className="rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-4 bg-[#F5F6FA] dark:bg-[#181C23]">
-                      <h3 className="font-semibold text-[#D4A017] mb-3">Imóvel {idx + 1}</h3>
+                    <div key={idx} className="rounded-xl border border-white/[0.08] p-4 bg-white/[0.03]">
+                      <h3 className="font-semibold text-[#FF7A97] mb-3">Imóvel {idx + 1}</h3>
                       <div className="space-y-3">
                         <div>
-                          <label className="block text-xs font-medium text-[#6B6F76] dark:text-gray-400 mb-1">Foto do imóvel</label>
-                          <div className="h-28 rounded-lg overflow-hidden bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] relative">
+                          <label className="block text-xs font-medium text-text-secondary mb-1">Foto do imóvel</label>
+                          <div className="h-28 rounded-lg overflow-hidden bg-black/40 border border-white/10 relative">
                             {selecaoNox.imoveis[idx]?.imageUrl ? (
                               <img
                                 src={selecaoNox.imoveis[idx].imageUrl}
@@ -616,7 +616,7 @@ export default function DashboardsTvPage() {
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-[#6B6F76] dark:text-gray-500 text-xs">
+                              <div className="w-full h-full flex items-center justify-center text-text-secondary text-xs">
                                 Nenhuma foto
                               </div>
                             )}
@@ -636,40 +636,40 @@ export default function DashboardsTvPage() {
                               type="button"
                               onClick={() => fileInputRefs.current[idx]?.click()}
                               disabled={uploadingPhoto !== null}
-                              className="absolute bottom-1 right-1 px-2 py-1 rounded text-xs font-medium bg-[#D4A017] text-white hover:bg-[#B8860B] disabled:opacity-50"
+                              className="absolute bottom-1 right-1 px-2 py-1 rounded text-xs font-medium bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white disabled:opacity-50"
                             >
                               {uploadingPhoto === idx ? 'Enviando...' : selecaoNox.imoveis[idx]?.imageUrl ? 'Trocar' : 'Enviar foto'}
                             </button>
                           </div>
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-[#6B6F76] dark:text-gray-400 mb-1">Título</label>
+                          <label className="block text-xs font-medium text-text-secondary mb-1">Título</label>
                           <input
                             type="text"
                             value={selecaoNox.imoveis[idx]?.titulo ?? ''}
                             onChange={e => updateSelecaoImovel(idx, { titulo: e.target.value })}
                             placeholder="Ex: Apartamento frente mar na planta..."
-                            className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm text-[#2E2F38] dark:text-white bg-white dark:bg-[#23283A]"
+                            className="w-full rounded-lg border border-white/10 px-3 py-2 text-sm text-white bg-white/[0.04] placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-[#6B6F76] dark:text-gray-400 mb-1">Local</label>
+                          <label className="block text-xs font-medium text-text-secondary mb-1">Local</label>
                           <input
                             type="text"
                             value={selecaoNox.imoveis[idx]?.local ?? ''}
                             onChange={e => updateSelecaoImovel(idx, { local: e.target.value })}
                             placeholder="Ex: Tabuleiro, Barra Velha"
-                            className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm text-[#2E2F38] dark:text-white bg-white dark:bg-[#23283A]"
+                            className="w-full rounded-lg border border-white/10 px-3 py-2 text-sm text-white bg-white/[0.04] placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-[#6B6F76] dark:text-gray-400 mb-1">Preço (R$)</label>
+                          <label className="block text-xs font-medium text-text-secondary mb-1">Preço (R$)</label>
                           <input
                             type="text"
                             value={selecaoNox.imoveis[idx]?.preco ?? ''}
                             onChange={e => updateSelecaoImovel(idx, { preco: e.target.value })}
                             placeholder="Ex: 936.408,50"
-                            className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm text-[#2E2F38] dark:text-white bg-white dark:bg-[#23283A]"
+                            className="w-full rounded-lg border border-white/10 px-3 py-2 text-sm text-white bg-white/[0.04] placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                           />
                         </div>
                       </div>
@@ -677,13 +677,13 @@ export default function DashboardsTvPage() {
                   ))}
                 </div>
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">Frase da faixa rolante (passa embaixo dos 3 imóveis)</label>
+                  <label className="block text-sm font-medium text-white mb-2">Frase da faixa rolante (passa embaixo dos 3 imóveis)</label>
                   <input
                     type="text"
                     value={selecaoNox.fraseRolante}
                     onChange={e => setSelecaoNox(prev => ({ ...prev, fraseRolante: e.target.value }))}
                     placeholder="Ex: Seleção Nox — os melhores imóveis para você. Consulte-nos!"
-                    className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-4 py-3 text-[#2E2F38] dark:text-white bg-white dark:bg-[#23283A]"
+                    className="w-full rounded-lg border border-white/10 px-4 py-3 text-white bg-white/[0.04] placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                   />
                 </div>
                 <button
@@ -702,18 +702,18 @@ export default function DashboardsTvPage() {
               const selecaoIdx = editingSlideId === 'unidades-selecao-0' ? 0 : editingSlideId === 'unidades-selecao-1' ? 1 : 2;
               const tituloSelecao = selecaoNox.imoveis[selecaoIdx]?.titulo || `Seleção Nox ${selecaoIdx + 1}`;
               return (
-                <div className="mt-4 p-6 rounded-2xl bg-white dark:bg-[#23283A] border-2 border-[#D4A017]/20 shadow-lg">
+                <div className="mt-4 al-card p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Unidades — {tituloSelecao}</h2>
+                    <h2 className="text-xl font-bold text-white">Unidades — {tituloSelecao}</h2>
                     <button
                       type="button"
                       onClick={() => setEditingSlideId(null)}
-                      className="text-sm text-[#6B6F76] dark:text-gray-400 hover:text-[#2E2F38] dark:hover:text-white"
+                      className="text-sm text-text-secondary hover:text-[#FF5C7E]"
                     >
                       Fechar
                     </button>
                   </div>
-                  <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-6">
+                  <p className="text-sm text-text-secondary mb-6">
                     As 3 unidades que aparecem no slide &quot;Seleção Nox {selecaoIdx + 1} - Unidades&quot; na TV. Cada uma: foto, título, valor e descritivo (por que a unidade é boa).
                   </p>
                   <div className="space-y-5 mb-6">
@@ -722,16 +722,16 @@ export default function DashboardsTvPage() {
                       const flatIdx = selecaoIdx * 3 + unidadIdx;
                       const u = unidadesSelecao.selecoes[selecaoIdx]?.unidades[unidadIdx] ?? UNIDADE_VAZIA;
                       return (
-                        <div key={unidadIdx} className="rounded-xl border border-[#E8E9F1] dark:border-[#23283A] p-4 bg-[#F5F6FA] dark:bg-[#181C23]">
-                          <p className="text-sm font-semibold text-[#D4A017] mb-3">Unidade {unidadIdx + 1}</p>
+                        <div key={unidadIdx} className="rounded-xl border border-white/[0.08] p-4 bg-white/[0.03]">
+                          <p className="text-sm font-semibold text-[#FF7A97] mb-3">Unidade {unidadIdx + 1}</p>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <label className="block text-xs font-medium text-[#6B6F76] dark:text-gray-400 mb-1">Foto</label>
-                              <div className="h-28 rounded-lg overflow-hidden bg-[#23283A] border border-[#E8E9F1] dark:border-[#23283A] relative">
+                              <label className="block text-xs font-medium text-text-secondary mb-1">Foto</label>
+                              <div className="h-28 rounded-lg overflow-hidden bg-black/40 border border-white/10 relative">
                                 {u.imageUrl ? (
                                   <img src={u.imageUrl} alt="" className="w-full h-full object-cover" />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-[#6B6F76] text-xs">Sem foto</div>
+                                  <div className="w-full h-full flex items-center justify-center text-text-secondary text-xs">Sem foto</div>
                                 )}
                                 <input
                                   ref={el => { fileInputRefsUnidades.current[flatIdx] = el; }}
@@ -748,7 +748,7 @@ export default function DashboardsTvPage() {
                                   type="button"
                                   onClick={() => fileInputRefsUnidades.current[flatIdx]?.click()}
                                   disabled={uploadingPhotoUnidad !== null}
-                                  className="absolute bottom-1 right-1 px-2 py-1 rounded text-xs font-medium bg-[#D4A017] text-white disabled:opacity-50"
+                                  className="absolute bottom-1 right-1 px-2 py-1 rounded text-xs font-medium bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white disabled:opacity-50"
                                 >
                                   {uploadingPhotoUnidad === key ? 'Enviando...' : u.imageUrl ? 'Trocar' : 'Enviar foto'}
                                 </button>
@@ -756,33 +756,33 @@ export default function DashboardsTvPage() {
                             </div>
                             <div className="space-y-3">
                               <div>
-                                <label className="block text-xs font-medium text-[#6B6F76] dark:text-gray-400 mb-1">Título</label>
+                                <label className="block text-xs font-medium text-text-secondary mb-1">Título</label>
                                 <input
                                   type="text"
                                   value={u.titulo}
                                   onChange={e => updateUnidad(selecaoIdx, unidadIdx, { titulo: e.target.value })}
                                   placeholder="Título da unidade"
-                                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm text-[#2E2F38] dark:text-white bg-white dark:bg-[#23283A]"
+                                  className="w-full rounded-lg border border-white/10 px-3 py-2 text-sm text-white bg-white/[0.04] placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                                 />
                               </div>
                               <div>
-                                <label className="block text-xs font-medium text-[#6B6F76] dark:text-gray-400 mb-1">Valor (R$)</label>
+                                <label className="block text-xs font-medium text-text-secondary mb-1">Valor (R$)</label>
                                 <input
                                   type="text"
                                   value={u.valor}
                                   onChange={e => updateUnidad(selecaoIdx, unidadIdx, { valor: e.target.value })}
                                   placeholder="Ex: 936.408,50"
-                                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm text-[#2E2F38] dark:text-white bg-white dark:bg-[#23283A]"
+                                  className="w-full rounded-lg border border-white/10 px-3 py-2 text-sm text-white bg-white/[0.04] placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                                 />
                               </div>
                               <div>
-                                <label className="block text-xs font-medium text-[#6B6F76] dark:text-gray-400 mb-1">Descritivo (por que essa unidade é boa)</label>
+                                <label className="block text-xs font-medium text-text-secondary mb-1">Descritivo (por que essa unidade é boa)</label>
                                 <textarea
                                   value={u.descritivo}
                                   onChange={e => updateUnidad(selecaoIdx, unidadIdx, { descritivo: e.target.value })}
                                   placeholder="Explicação..."
                                   rows={3}
-                                  className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-3 py-2 text-sm text-[#2E2F38] dark:text-white bg-white dark:bg-[#23283A] resize-none"
+                                  className="w-full rounded-lg border border-white/10 px-3 py-2 text-sm text-white bg-white/[0.04] placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 resize-none"
                                 />
                               </div>
                             </div>
@@ -805,38 +805,38 @@ export default function DashboardsTvPage() {
 
             {/* Configurar Notícia da Semana — 1 título + 1 foto para a TV */}
             {editingSlideId === 'noticia-semana' && (
-              <div className="mt-4 p-6 rounded-2xl bg-white dark:bg-[#23283A] border-2 border-[#D4A017]/20 shadow-lg">
+              <div className="mt-4 al-card p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold text-[#2E2F38] dark:text-white">Notícia da Semana</h2>
+                  <h2 className="text-xl font-bold text-white">Notícia da Semana</h2>
                   <button
                     type="button"
                     onClick={() => setEditingSlideId(null)}
-                    className="text-sm text-[#6B6F76] dark:text-gray-400 hover:text-[#2E2F38] dark:hover:text-white"
+                    className="text-sm text-text-secondary hover:text-[#FF5C7E]"
                   >
                     Fechar
                   </button>
                 </div>
-                <p className="text-sm text-[#6B6F76] dark:text-gray-400 mb-6">
+                <p className="text-sm text-text-secondary mb-6">
                   Um título e uma foto que aparecem em uma tela na TV (ex.: destaque do blog, atualização de mercado). Você escreve o texto para chamar atenção da equipe.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
-                    <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">Título (chamada da notícia)</label>
+                    <label className="block text-sm font-medium text-white mb-2">Título (chamada da notícia)</label>
                     <input
                       type="text"
                       value={noticiaSemana.titulo}
                       onChange={e => setNoticiaSemana(prev => ({ ...prev, titulo: e.target.value }))}
                       placeholder="Ex: Balneário Piçarras entre as 10 mais desejadas do Brasil"
-                      className="w-full rounded-lg border border-[#E8E9F1] dark:border-[#23283A] px-4 py-3 text-[#2E2F38] dark:text-white bg-white dark:bg-[#23283A]"
+                      className="w-full rounded-lg border border-white/10 px-4 py-3 text-white bg-white/[0.04] placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[#2E2F38] dark:text-white mb-2">Foto</label>
-                    <div className="h-40 rounded-xl overflow-hidden bg-[#181C23] border border-[#E8E9F1] dark:border-[#23283A] relative">
+                    <label className="block text-sm font-medium text-white mb-2">Foto</label>
+                    <div className="h-40 rounded-xl overflow-hidden bg-black/40 border border-white/10 relative">
                       {noticiaSemana.imageUrl ? (
                         <img src={noticiaSemana.imageUrl} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[#6B6F76] text-sm">Nenhuma foto</div>
+                        <div className="w-full h-full flex items-center justify-center text-text-secondary text-sm">Nenhuma foto</div>
                       )}
                       <input
                         ref={fileInputRefNoticia}
@@ -853,7 +853,7 @@ export default function DashboardsTvPage() {
                         type="button"
                         onClick={() => fileInputRefNoticia.current?.click()}
                         disabled={uploadingPhotoNoticia}
-                        className="absolute bottom-2 right-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-[#D4A017] text-white hover:bg-[#B8860B] disabled:opacity-50"
+                        className="absolute bottom-2 right-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white disabled:opacity-50"
                       >
                         {uploadingPhotoNoticia ? 'Enviando...' : noticiaSemana.imageUrl ? 'Trocar' : 'Enviar foto'}
                       </button>
@@ -871,8 +871,8 @@ export default function DashboardsTvPage() {
               </div>
             )}
 
-            <div className="mt-6 p-4 rounded-xl bg-[#D4A017]/10 border border-[#D4A017]/20">
-              <p className="text-sm text-[#2E2F38] dark:text-gray-200">
+            <div className="mt-6 p-4 rounded-xl bg-white/[0.04] border border-white/10">
+              <p className="text-sm text-text-secondary">
                 <strong>Como usar:</strong> marque as telas que deseja exibir e defina o tempo de cada uma. 
                 Clique em <strong>Abrir na TV</strong> para abrir em nova aba <strong>sem menu lateral</strong> — coloque em tela cheia na TV. As telas habilitadas rodarão em loop.
               </p>
@@ -890,7 +890,7 @@ export default function DashboardsTvPage() {
               <button
                 type="button"
                 onClick={() => setPreviewFunil(null)}
-                className="px-4 py-2 rounded-lg bg-[#D4A017] text-white font-medium hover:bg-[#B8860B]"
+                className="px-4 py-2 rounded-lg border border-white/10 bg-white/[0.06] hover:bg-white/[0.1] text-white font-medium transition-colors"
               >
                 Fechar
               </button>
@@ -898,7 +898,7 @@ export default function DashboardsTvPage() {
             <div className="flex-1 min-h-0 overflow-auto">
               {funilData.loading ? (
                 <div className="flex items-center justify-center min-h-[50vh]">
-                  <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#D4A017] border-t-transparent" />
+                  <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#FF1E56] border-t-transparent" />
                 </div>
               ) : previewFunil === 'corporativo' ? (
                 <FunilVendasSlide
@@ -923,7 +923,7 @@ export default function DashboardsTvPage() {
               <button
                 type="button"
                 onClick={() => setPreviewMetas(false)}
-                className="px-4 py-2 rounded-lg bg-[#D4A017] text-white font-medium hover:bg-[#B8860B]"
+                className="px-4 py-2 rounded-lg border border-white/10 bg-white/[0.06] hover:bg-white/[0.1] text-white font-medium transition-colors"
               >
                 Fechar
               </button>
@@ -931,7 +931,7 @@ export default function DashboardsTvPage() {
             <div className="flex-1 min-h-0 overflow-auto">
               {metasData.loading ? (
                 <div className="flex items-center justify-center min-h-[50vh]">
-                  <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#D4A017] border-t-transparent" />
+                  <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#FF1E56] border-t-transparent" />
                 </div>
               ) : (
                 <MetasResultadosSlide
@@ -952,7 +952,7 @@ export default function DashboardsTvPage() {
               <button
                 type="button"
                 onClick={() => setPreviewAgenda(null)}
-                className="px-4 py-2 rounded-lg bg-[#D4A017] text-white font-medium hover:bg-[#B8860B]"
+                className="px-4 py-2 rounded-lg border border-white/10 bg-white/[0.06] hover:bg-white/[0.1] text-white font-medium transition-colors"
               >
                 Fechar
               </button>
@@ -960,7 +960,7 @@ export default function DashboardsTvPage() {
             <div className="flex-1 min-h-0 overflow-auto">
               {agendaTvData.loading ? (
                 <div className="flex items-center justify-center min-h-[50vh]">
-                  <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#D4A017] border-t-transparent" />
+                  <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#FF1E56] border-t-transparent" />
                 </div>
               ) : (
                 <AgendaTvSlide

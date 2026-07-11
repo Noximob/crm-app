@@ -315,7 +315,6 @@ function ImovelForm({ initial, construtoras, imoveisCount, onSaved, onClose }: {
             </div>
             {campo('Cidade *', cid, setCid, 'Ex: Barra Velha, SC')}
             {campo('Endereço', end, setEnd, 'Rua, número')}
-            {campoMoney('Preço a partir de (R$)', pr, setPr, '853.007,00')}
             {campoMoney('Valor do m² (R$)', m2, setM2, '13.028,00')}
             {campo('Torres', t, setT, '2')}
             {campo('Andares', a, setA, '30+')}

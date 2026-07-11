@@ -117,21 +117,22 @@ export default function ImportarLeadsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#181C23] py-8 px-4">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold text-[#2E2F38] dark:text-white mb-2 text-left">Importar Leads em Massa</h1>
-        <p className="text-[#6B6F76] dark:text-gray-300 mb-8 text-left text-base">Cole abaixo nomes e telefones (copie direto do Excel ou Google Sheets). Cada linha deve conter Nome e Telefone, separados por tabulação, vírgula ou ponto e vírgula.</p>
-        {mensagem && <div className="mb-4 p-3 rounded bg-yellow-100 text-yellow-800">{mensagem}</div>}
+    <div className="min-h-screen py-8 px-4">
+      <div className="max-w-2xl mx-auto al-card relative overflow-hidden p-6">
+        <div className="absolute inset-x-0 top-0 gx-line" />
+        <h1 className="al-display text-[20px] font-bold text-white uppercase tracking-[0.1em] mb-2 text-left">Importar Leads em Massa</h1>
+        <p className="text-text-secondary mb-8 text-left text-sm">Cole abaixo nomes e telefones (copie direto do Excel ou Google Sheets). Cada linha deve conter Nome e Telefone, separados por tabulação, vírgula ou ponto e vírgula.</p>
+        {mensagem && <div className={`mb-4 p-3 rounded-xl border text-sm font-semibold ${mensagem.includes('Erro') ? 'bg-red-500/10 border-red-500/40 text-red-300' : 'bg-[#34D399]/10 border-[#34D399]/35 text-emerald-200'}`}>{mensagem}</div>}
         <textarea
-          className="w-full h-40 p-3 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white mb-4"
+          className="w-full h-40 p-3 rounded-lg border border-white/10 bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 mb-4"
           placeholder="Exemplo:\nJoão Silva, (47) 99999-8888\nMaria Souza\t(47) 98888-7777\n(47) 97777-6666"
           value={input}
           onChange={e => setInput(e.target.value)}
         />
         <div className="mb-4">
-          <label className="font-medium text-[#6B6F76] dark:text-gray-300 block mb-1">Corretor de destino:</label>
+          <label className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary block mb-1">Corretor de destino:</label>
           <select
-            className="w-full px-3 py-2 rounded-lg border border-[#E8E9F1] dark:border-[#23283A] bg-white dark:bg-[#181C23] text-[#2E2F38] dark:text-white"
+            className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/[0.04] text-white focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
             value={corretorDestino}
             onChange={e => setCorretorDestino(e.target.value)}
             disabled={corretores.length === 0}
@@ -141,20 +142,20 @@ export default function ImportarLeadsPage() {
           </select>
         </div>
         {leadsPreview.length > 0 && (
-          <div className="mb-4 bg-[#F5F6FA] dark:bg-[#181C23] rounded-xl p-4 border border-[#E8E9F1] dark:border-[#23283A]">
-            <div className="font-semibold mb-2 text-[#2E2F38] dark:text-white">Prévia dos Leads:</div>
+          <div className="mb-4 bg-white/[0.03] rounded-xl p-4 border border-white/[0.08]">
+            <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-2">Prévia dos Leads:</div>
             <ul className="space-y-1">
               {leadsPreview.map((lead, idx) => (
                 <li key={idx} className="flex gap-2 items-center text-sm">
-                  <span className="font-bold text-[#2E2F38] dark:text-white">{lead.nome || 'Sem nome'}</span>
-                  <span className="text-[#6B6F76] dark:text-gray-300">{lead.telefone}</span>
+                  <span className="font-bold text-white">{lead.nome || 'Sem nome'}</span>
+                  <span className="text-text-secondary">{lead.telefone}</span>
                 </li>
               ))}
             </ul>
           </div>
         )}
         <button
-          className="w-full px-6 py-3 bg-[#D4A017] hover:bg-[#B8860B] text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+          className="w-full px-6 py-3 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white rounded-xl font-bold shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all disabled:opacity-50"
           onClick={handleImportar}
           disabled={leadsPreview.length === 0 || !corretorDestino || loading}
         >

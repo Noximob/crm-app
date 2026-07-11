@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { auth } from '@/lib/firebase';
 import { sendPasswordResetEmail } from 'firebase/auth';
-import { AlummaLogo } from '@/components/AlummaLogo';
 
 export default function EsqueciSenhaPage() {
   const [email, setEmail] = useState('');
@@ -37,13 +36,15 @@ export default function EsqueciSenhaPage() {
   return (
     <div className="min-h-screen bg-particles flex items-center justify-center p-4">
       <div className="max-w-md w-full space-y-6">
-        <div className="card-glow rounded-2xl p-6 md:p-8 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-1 h-full bg-amber-500 rounded-r" />
+        <div className="al-card p-6 md:p-8 relative overflow-hidden">
+          <div className="absolute inset-x-0 top-0 gx-line" />
           <div className="text-center mb-6">
             <div className="flex justify-center mb-4">
-              <AlummaLogo variant="full" theme="dark" width={140} height={40} />
+              <span className="relative grid place-items-center w-14 h-14 rounded-full border-2 border-[#FF3364] shadow-[0_0_20px_rgba(255,30,86,0.6),inset_0_0_12px_rgba(255,30,86,0.25)]">
+                <span className="al-display text-[24px] font-bold text-[#FF3364] leading-none [text-shadow:0_0_12px_rgba(255,30,86,0.85)]">N</span>
+              </span>
             </div>
-            <h1 className="text-2xl font-bold text-white mb-2">Esqueceu sua senha?</h1>
+            <h1 className="al-display text-2xl font-bold text-white mb-2">Esqueceu sua senha?</h1>
             <p className="text-text-secondary text-sm">
               Digite seu email e enviaremos um link para redefinir sua senha
             </p>
@@ -52,7 +53,7 @@ export default function EsqueciSenhaPage() {
           {!success ? (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-text-secondary mb-1">Email</label>
+                <label htmlFor="email" className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1.5">Email</label>
                 <input
                   id="email"
                   name="email"
@@ -60,7 +61,7 @@ export default function EsqueciSenhaPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 border border-white/10 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white/5 text-white placeholder-text-secondary transition-colors"
+                  className="w-full px-4 py-3 bg-white/[0.04] border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 transition-colors"
                   placeholder="Seu email"
                 />
               </div>
@@ -68,7 +69,7 @@ export default function EsqueciSenhaPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 focus:ring-offset-[var(--bg-card)] disabled:opacity-60 disabled:cursor-not-allowed shadow-[0_0_14px_rgba(255,140,0,0.25)]"
+                className="w-full bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold py-3 px-4 rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:ring-offset-2 focus:ring-offset-[#12101a] disabled:opacity-60 disabled:cursor-not-allowed shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98]"
               >
                 {isLoading ? 'Enviando...' : 'Enviar link de redefinição'}
               </button>
@@ -80,7 +81,7 @@ export default function EsqueciSenhaPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-xl font-semibold text-white">Email enviado!</h2>
+              <h2 className="al-display text-xl font-semibold text-white">Email enviado!</h2>
               <p className="text-text-secondary text-sm">
                 Verifique sua caixa de entrada e clique no link para redefinir sua senha.
               </p>
@@ -88,7 +89,7 @@ export default function EsqueciSenhaPage() {
           )}
 
           <div className="text-center mt-6">
-            <Link href="/entrar" className="text-sm font-medium text-orange-400 hover:text-orange-300 transition-colors">
+            <Link href="/entrar" className="text-sm font-medium text-[#FF7A97] hover:text-[#FF9EB5] transition-colors">
               ← Voltar ao login
             </Link>
           </div>

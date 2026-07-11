@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { AlummaLogoFullInline } from '@/components/AlummaLogo';
 
 const WHATSAPP_LINK = 'https://wa.me/5547992577075';
 const WHATSAPP_DISPLAY = '47 99257-7075';
@@ -20,13 +19,16 @@ export default function LandingPage() {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-[#0a0a0c]/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 [filter:drop-shadow(0_0_8px_rgba(255,140,0,0.3))]">
-            <AlummaLogoFullInline theme="dark" height={32} />
+          <Link href="/" className="flex items-center gap-2.5">
+            <span className="relative grid place-items-center w-9 h-9 rounded-full border-2 border-[#FF3364] shadow-[0_0_14px_rgba(255,30,86,0.55),inset_0_0_10px_rgba(255,30,86,0.22)] shrink-0">
+              <span className="al-display text-[16px] font-bold text-[#FF3364] leading-none [text-shadow:0_0_10px_rgba(255,30,86,0.85)]">N</span>
+            </span>
+            <span className="al-display text-[15px] font-bold text-white uppercase tracking-[0.18em] whitespace-nowrap">Nox Imóveis</span>
           </Link>
           <nav className="flex items-center gap-5">
-            <Link href="#solucoes" className="text-sm font-medium text-text-secondary hover:text-orange-400 transition-colors">Soluções</Link>
-            <Link href="#diferencial" className="text-sm font-medium text-text-secondary hover:text-orange-400 transition-colors">Diferencial</Link>
-            <Link href="#contato" className="text-sm font-medium text-text-secondary hover:text-orange-400 transition-colors">Contato</Link>
+            <Link href="#solucoes" className="text-sm font-medium text-text-secondary hover:text-[#FF7A97] transition-colors">Soluções</Link>
+            <Link href="#diferencial" className="text-sm font-medium text-text-secondary hover:text-[#FF7A97] transition-colors">Diferencial</Link>
+            <Link href="#contato" className="text-sm font-medium text-text-secondary hover:text-[#FF7A97] transition-colors">Contato</Link>
             <div className="flex items-center gap-3">
               <a href={`https://instagram.com/${INSTAGRAM_HANDLE.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg text-text-secondary hover:text-pink-400 hover:bg-white/5 transition-colors" aria-label="Instagram">
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
@@ -35,7 +37,7 @@ export default function LandingPage() {
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
               </a>
             </div>
-            <Link href={platformHref} className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold text-sm hover:from-amber-600 hover:to-orange-700 transition-all shadow-[0_0_14px_rgba(255,140,0,0.25)]">
+            <Link href={platformHref} className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FF1E56] to-[#A50D38] text-white font-bold text-sm hover:brightness-110 transition-all shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98]">
               Acessar plataforma
             </Link>
           </nav>
@@ -45,12 +47,12 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="pt-32 pb-24 px-4 relative overflow-hidden">
         <div className="max-w-4xl mx-auto text-center">
-          <p className="text-orange-400 font-semibold text-sm uppercase tracking-widest mb-4 animate-fade-in">
-            Soluções para imobiliárias de alta performance
-          </p>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black leading-tight mb-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+          <div className="mb-5 animate-fade-in">
+            <span className="gx-tag"><span>Soluções para imobiliárias de alta performance</span></span>
+          </div>
+          <h1 className="al-display text-4xl sm:text-5xl md:text-6xl font-black leading-tight mb-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
             Facilidade para o corretor,
-            <span className="block bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 bg-clip-text text-transparent mt-1">
+            <span className="block bg-gradient-to-r from-[#FF7A97] via-[#FF1E56] to-[#FF3364] bg-clip-text text-transparent mt-1 drop-shadow-[0_0_18px_rgba(255,30,86,0.35)]">
               informação para a imobiliária.
             </span>
           </h1>
@@ -77,15 +79,15 @@ export default function LandingPage() {
       {/* Soluções */}
       <section id="solucoes" className="py-24 px-4">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-4">Tudo que sua imobiliária precisa</h2>
+          <h2 className="al-display text-3xl font-bold text-white text-center mb-4">Tudo que sua imobiliária precisa</h2>
           <p className="text-text-secondary text-center max-w-xl mx-auto mb-16">
             Da captação ao relatório final: um ecossistema completo pensado para corretores, coordenadores e diretoria.
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Site focado em SEO */}
-            <div className="card-glow rounded-2xl p-6 relative overflow-hidden group hover:border-orange-500/40 transition-colors">
-              <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-orange-500 rounded-r opacity-80 group-hover:opacity-100" />
-              <div className="mb-4 inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 shadow-[0_0_24px_rgba(255,140,0,0.45)]">
+            <div className="al-card p-6 relative overflow-hidden group hover:border-[#FF1E56]/40 transition-colors">
+              <div className="absolute inset-x-0 top-0 gx-line opacity-80 group-hover:opacity-100" />
+              <div className="mb-4 inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FF3364] to-[#A50D38] shadow-[0_0_24px_rgba(255,30,86,0.45)]">
                 <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
                   <path d="M3 5h18M3 12h18M3 19h18" />
                   <path d="M7 5v14M17 5v14" />
@@ -98,8 +100,8 @@ export default function LandingPage() {
             </div>
 
             {/* Sistema gamificado */}
-            <div className="card-glow rounded-2xl p-6 relative overflow-hidden group hover:border-emerald-500/40 transition-colors">
-              <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-emerald-400 to-sky-500 rounded-r opacity-80 group-hover:opacity-100" />
+            <div className="al-card p-6 relative overflow-hidden group hover:border-emerald-500/40 transition-colors">
+              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-emerald-400 to-transparent opacity-80 group-hover:opacity-100" />
               <div className="mb-4 inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-sky-500 shadow-[0_0_24px_rgba(45,212,191,0.45)]">
                 <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
                   <path d="M9 3H5a2 2 0 0 0-2 2v4h6z" />
@@ -115,8 +117,8 @@ export default function LandingPage() {
             </div>
 
             {/* Dashboards para TV */}
-            <div className="card-glow rounded-2xl p-6 relative overflow-hidden group hover:border-sky-500/40 transition-colors">
-              <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-sky-400 to-indigo-500 rounded-r opacity-80 group-hover:opacity-100" />
+            <div className="al-card p-6 relative overflow-hidden group hover:border-sky-500/40 transition-colors">
+              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-sky-400 to-transparent opacity-80 group-hover:opacity-100" />
               <div className="mb-4 inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-400 to-indigo-500 shadow-[0_0_24px_rgba(56,189,248,0.45)]">
                 <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
                   <rect x="3" y="5" width="18" height="12" rx="2" />
@@ -130,9 +132,9 @@ export default function LandingPage() {
             </div>
 
             {/* Relatórios detalhados */}
-            <div className="card-glow rounded-2xl p-6 relative overflow-hidden group hover:border-amber-500/40 transition-colors">
-              <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-orange-500 rounded-r opacity-80 group-hover:opacity-100" />
-              <div className="mb-4 inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 shadow-[0_0_24px_rgba(251,191,36,0.45)]">
+            <div className="al-card p-6 relative overflow-hidden group hover:border-[#9F6BFF]/40 transition-colors">
+              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#9F6BFF] to-transparent opacity-80 group-hover:opacity-100" />
+              <div className="mb-4 inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-[#9F6BFF] to-[#6D28D9] shadow-[0_0_24px_rgba(159,107,255,0.45)]">
                 <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
                   <path d="M4 19V5a2 2 0 0 1 2-2h8l6 6v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" />
                   <path d="M14 3v6h6" />
@@ -148,8 +150,8 @@ export default function LandingPage() {
             </div>
 
             {/* Performance individual */}
-            <div className="card-glow rounded-2xl p-6 relative overflow-hidden group hover:border-purple-500/40 transition-colors">
-              <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-purple-400 to-fuchsia-500 rounded-r opacity-80 group-hover:opacity-100" />
+            <div className="al-card p-6 relative overflow-hidden group hover:border-purple-500/40 transition-colors">
+              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-purple-400 to-transparent opacity-80 group-hover:opacity-100" />
               <div className="mb-4 inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-400 to-fuchsia-500 shadow-[0_0_24px_rgba(168,85,247,0.45)]">
                 <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
                   <path d="M8 21h8" />
@@ -165,8 +167,8 @@ export default function LandingPage() {
             </div>
 
             {/* Sempre atualizado */}
-            <div className="card-glow rounded-2xl p-6 relative overflow-hidden group hover:border-cyan-400/40 transition-colors">
-              <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-cyan-400 to-emerald-400 rounded-r opacity-80 group-hover:opacity-100" />
+            <div className="al-card p-6 relative overflow-hidden group hover:border-cyan-400/40 transition-colors">
+              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-cyan-400 to-transparent opacity-80 group-hover:opacity-100" />
               <div className="mb-4 inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-400 to-emerald-400 shadow-[0_0_24px_rgba(34,211,238,0.45)]">
                 <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
                   <path d="M3 12a9 9 0 0 1 9-9 9.5 9.5 0 0 1 6.36 2.36" />
@@ -187,7 +189,7 @@ export default function LandingPage() {
       {/* Diferencial */}
       <section id="diferencial" className="py-24 px-4 border-t border-white/[0.06]">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-4">Por que Alumma?</h2>
+          <h2 className="al-display text-3xl font-bold text-white mb-4">Por que Alumma?</h2>
           <p className="text-text-secondary mb-12">
             Não é só um CRM: é a base de dados, processos e comunicação da sua imobiliária em um só lugar.
           </p>
@@ -199,7 +201,7 @@ export default function LandingPage() {
               'Relatórios prontos para gerente, diretoria e análise de performance.',
             ].map((line, i) => (
               <li key={i} className="flex items-center gap-3 text-text-primary">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400 font-bold text-sm">✓</span>
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#FF1E56]/15 border border-[#FF3364]/35 flex items-center justify-center text-[#FF7A97] font-bold text-sm">✓</span>
                 {line}
               </li>
             ))}
@@ -210,9 +212,9 @@ export default function LandingPage() {
       {/* CTA final */}
       <section className="py-24 px-4">
         <div className="max-w-3xl mx-auto text-center">
-          <div className="card-glow rounded-3xl p-12 relative overflow-hidden border-emerald-500/30">
-            <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-emerald-400 to-teal-500 rounded-r" />
-            <h2 className="text-2xl sm:text-3xl font-bold mb-3">Pronto para vender mais?</h2>
+          <div className="al-card p-12 relative overflow-hidden">
+            <div className="absolute inset-x-0 top-0 gx-line" />
+            <h2 className="al-display text-2xl sm:text-3xl font-bold text-white mb-3">Pronto para vender mais?</h2>
             <p className="text-text-secondary mb-8">
               Fale com a gente pelo WhatsApp e entenda se a Alumma faz sentido para sua operação.
             </p>
@@ -236,7 +238,7 @@ export default function LandingPage() {
       {/* Contato — minimalista */}
       <section id="contato" className="py-12 px-4 border-t border-white/[0.06]">
         <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-xl font-bold mb-2">Fale com a gente</h2>
+          <h2 className="al-display text-xl font-bold text-white mb-2">Fale com a gente</h2>
           <p className="text-text-secondary text-sm mb-6">Instagram, e-mail ou WhatsApp. Respondemos rápido.</p>
           <div className="flex items-center justify-center gap-6">
             <a href={`https://instagram.com/${INSTAGRAM_HANDLE.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="p-3 rounded-xl bg-white/5 border border-white/10 hover:border-pink-500/40 hover:bg-pink-500/10 transition-all" aria-label="Instagram" title={INSTAGRAM_HANDLE}>
@@ -255,7 +257,12 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="py-8 px-4 border-t border-white/[0.06]">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <AlummaLogoFullInline theme="dark" height={24} />
+          <div className="flex items-center gap-2">
+            <span className="relative grid place-items-center w-7 h-7 rounded-full border-2 border-[#FF3364] shadow-[0_0_10px_rgba(255,30,86,0.5),inset_0_0_8px_rgba(255,30,86,0.2)] shrink-0">
+              <span className="al-display text-[12px] font-bold text-[#FF3364] leading-none [text-shadow:0_0_8px_rgba(255,30,86,0.85)]">N</span>
+            </span>
+            <span className="al-display text-[12px] font-bold text-white uppercase tracking-[0.18em]">Nox Imóveis</span>
+          </div>
           <p className="text-xs text-text-secondary">© Alumma. Soluções para imobiliárias de alta performance.</p>
         </div>
       </footer>

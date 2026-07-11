@@ -24,8 +24,7 @@ import { getDemoLeads } from '@/lib/espelho/demoData';
 
 const SectionTitle = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
   <div className={`relative ${className}`}>
-    <h2 className="text-lg font-bold text-[#2E2F38] dark:text-white relative z-10">{children}</h2>
-    <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-[#D4A017] to-[#E8C547] rounded-r-full opacity-60" />
+    <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] relative z-10">{children}</h2>
   </div>
 );
 
