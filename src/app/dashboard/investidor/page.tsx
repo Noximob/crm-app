@@ -18,6 +18,15 @@ const fmtPct2 = (n: number) => fmtNum2(n) + '%';
 const parseLocal = (s: string) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, (m || 1) - 1, d || 1); };
 const toYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const fmtData = (d: Date) => d.toLocaleDateString('pt-BR');
+/** Soma meses preservando o dia (trava no último dia do mês quando não existe, ex.: 31/jan + 1m = 28/fev). */
+const addMonths = (d: Date, n: number) => {
+  const x = new Date(d.getFullYear(), d.getMonth() + n, 1);
+  const ultimo = new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate();
+  x.setDate(Math.min(d.getDate(), ultimo));
+  return x;
+};
+/** Meses inteiros entre duas datas (diferença de calendário, pode ser negativo). */
+const mesesEntre = (a: Date, b: Date) => (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
 
 /** TIR mensal por bisseção robusta sobre NPV(r) = Σ cf_t / (1+r)^t. Devolve null se não convergir. */
 function irrMensal(cf: number[]): number | null {
@@ -36,6 +45,8 @@ function irrMensal(cf: number[]): number | null {
 
 // ---------- blocos de UI (nível de módulo p/ não perder foco) ----------
 const inputCls = 'w-full px-3 py-2.5 rounded-xl border border-white/10 bg-white/[0.04] text-[15px] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 transition';
+// variação compacta p/ as linhas de reforço (data + valor lado a lado em 375px)
+const refInputCls = 'w-full px-2 py-2 rounded-xl border border-white/10 bg-white/[0.04] text-[13px] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 transition tabular-nums';
 const Campo = ({ label, hint, children }: { label: string; hint?: React.ReactNode; children: React.ReactNode }) => (
   <div>
     <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1.5">{label}</label>
@@ -106,8 +117,11 @@ export default function InvestidorPage() {
   const [nParcelas, setNParcelas] = useState('');
   const [valorParcela, setValorParcela] = useState(0);
   const [nReforcos, setNReforcos] = useState('');
-  const [valorReforco, setValorReforco] = useState(0);
   const [periodicidade, setPeriodicidade] = useState('anual');
+  // datas dos reforços: '' = usa a sugerida (1ª parcela + j×periodicidade) — mesma ideia do refDatas do fluxo
+  const [refDatas, setRefDatas] = useState<string[]>([]);
+  // valores dos reforços: null = intocado → espelha o primeiro valor digitado; editado mantém o seu
+  const [refValores, setRefValores] = useState<(number | null)[]>([]);
   // Seção 4 — índices
   const [cubOn, setCubOn] = useState(false);
   const [cubAA, setCubAA] = useState('');
@@ -118,15 +132,14 @@ export default function InvestidorPage() {
     const nParc = Math.max(0, Math.round(numI(nParcelas)));
     const nRef = Math.max(0, Math.round(numI(nReforcos)));
     const perMeses = PERIODOS[periodicidade].meses;
+    const base = dataPrimeiraParcela ? parseLocal(dataPrimeiraParcela) : new Date();
 
     // prazo em meses inteiros entre a 1ª parcela e a entrega (mín 1)
     let M = 0;
     let semEntrega = true;
     if (dataEntrega) {
       semEntrega = false;
-      const a = dataPrimeiraParcela ? parseLocal(dataPrimeiraParcela) : new Date();
-      const b = parseLocal(dataEntrega);
-      M = Math.max(1, (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth()));
+      M = Math.max(1, mesesEntre(base, parseLocal(dataEntrega)));
     }
 
     // venda antecipada (opcional): V meses entre a 1ª parcela e a venda pretendida
@@ -134,17 +147,26 @@ export default function InvestidorPage() {
     let vendaAtiva = false;
     let vendaIgnorada = false;
     if (dataVenda && !semEntrega) {
-      const a = dataPrimeiraParcela ? parseLocal(dataPrimeiraParcela) : new Date();
-      const b = parseLocal(dataVenda);
-      V = Math.max(1, (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth()));
+      V = Math.max(1, mesesEntre(base, parseLocal(dataVenda)));
       if (V < M) vendaAtiva = true; else { vendaIgnorada = true; V = 0; }
     }
     // horizonte da projeção: até a venda antecipada (V) ou até as chaves (M)
     const H = vendaAtiva ? V : M;
 
+    // reforços individuais: data sugerida = 1ª parcela + j×periodicidade (override em refDatas);
+    // valor intocado espelha o primeiro valor digitado (override em refValores)
+    const valorPadraoRef = refValores.find((v) => v !== null && v !== undefined) ?? 0;
+    const refs = Array.from({ length: nRef }, (_, i) => {
+      const ymdSugerida = toYMD(addMonths(base, (i + 1) * perMeses));
+      const ymd = refDatas[i] || ymdSugerida;
+      const mBruto = mesesEntre(base, parseLocal(ymd));
+      const valorRef = refValores[i] ?? valorPadraoRef;
+      return { ymd, ymdSugerida, m: Math.max(0, mBruto), antesBase: mBruto < 0, valor: valorRef, aposH: false, pago: valorRef };
+    });
+
     // resumo nominal (independe de datas/índices)
     const totalParcNom = nParc * valorParcela;
-    const totalRefNom = nRef * valorReforco;
+    const totalRefNom = refs.reduce((acc, r) => acc + r.valor, 0);
     // saldo que o plano de pagamento nunca cobre (nominal)
     const saldoResidualNominal = Math.max(0, valor - entrada - totalParcNom - totalRefNom);
 
@@ -160,7 +182,7 @@ export default function InvestidorPage() {
     // mês a mês — é quitado na venda (mês H), pelo valor nominal (corrigido
     // pelo acumulado do CUB até H quando o toggle está ligado).
     let parcAposH = 0, refAposH = 0, restParcNom = 0, restRefNom = 0;
-    let investido = 0, totalParcCorr = 0, totalRefCorr = 0;
+    let investido = 0, totalParcCorr = 0, totalRefCorr = 0, totalRefPagoNom = 0;
     let valorVenda = 0, equity = 0, lucro = 0, roi = 0;
     let tirMes: number | null = null, tirAno: number | null = null;
     const cf = new Array<number>(Math.max(1, H) + 1).fill(0);
@@ -177,18 +199,20 @@ export default function InvestidorPage() {
           cf[m] -= pago;
         } else { parcAposH++; restParcNom += valorParcela; }
       }
-      for (let j = 1; j <= nRef; j++) {
-        const m = j * perMeses;
-        if (m <= H) {
-          const pago = cubOn ? valorReforco * Math.pow(1 + icub, m) : valorReforco;
-          totalRefCorr += pago;
-          cf[m] -= pago;
-        } else { refAposH++; restRefNom += valorReforco; }
+      // cada reforço cai no mês da SUA data efetiva (m já vem clampado em ≥ 0);
+      // depois do horizonte H ele vai, nominal, para a quitação na venda
+      for (const r of refs) {
+        if (r.m <= H) {
+          r.pago = cubOn ? r.valor * Math.pow(1 + icub, r.m) : r.valor;
+          totalRefCorr += r.pago;
+          totalRefPagoNom += r.valor;
+          cf[r.m] -= r.pago;
+        } else { r.aposH = true; refAposH++; restRefNom += r.valor; }
       }
     }
     // quitação na venda = parcelas/reforços restantes + saldo residual
     const quitacaoNominal = restParcNom + restRefNom + saldoResidualNominal;
-    const quitacaoComCub = quitacaoNominal * Math.pow(1 + icub, Math.max(1, H));
+    const quitacaoComCub = quitacaoNominal * Math.pow(1 + icub, H);
     const quitacao = cubOn ? quitacaoComCub : quitacaoNominal;
     const temAposH = parcAposH + refAposH > 0;
 
@@ -206,13 +230,16 @@ export default function InvestidorPage() {
     }
 
     return {
-      valor, M, V, H, vendaAtiva, vendaIgnorada, semEntrega, nParc, nRef, perMeses,
+      valor, M, V, H, vendaAtiva, vendaIgnorada, semEntrega, nParc, nRef, perMeses, refs,
       totalParcNom, totalRefNom, saldoResidualNominal, quitacaoNominal, quitacaoComCub,
       quitacao, parcAposH, refAposH, temAposH, bloqueado, cubPct, valPct,
-      investido, totalParcCorr, totalRefCorr,
+      investido, totalParcCorr, totalRefCorr, totalRefPagoNom,
       valorVenda, equity, lucro, roi, tirMes, tirAno,
     };
-  }, [valorImovel, dataPrimeiraParcela, dataEntrega, dataVenda, entrada, nParcelas, valorParcela, nReforcos, valorReforco, periodicidade, cubOn, cubAA, valAA]);
+  }, [valorImovel, dataPrimeiraParcela, dataEntrega, dataVenda, entrada, nParcelas, valorParcela, nReforcos, refDatas, refValores, periodicidade, cubOn, cubAA, valAA]);
+
+  const setRefData = (j: number, v: string) => setRefDatas((prev) => { const n = [...prev]; n[j] = v; return n; });
+  const setRefValor = (j: number, v: number) => setRefValores((prev) => { const n = [...prev]; n[j] = v; return n; });
 
   const parcPagas = c.nParc - c.parcAposH;
   const refPagos = c.nRef - c.refAposH;
@@ -236,7 +263,11 @@ export default function InvestidorPage() {
     const invLinhas: string[] = [];
     if (entrada > 0) invLinhas.push(`<tr><td>Entrada <span class="mut">· no ato (não corrige)</span></td><td class="c">1×</td><td class="r">${brl(entrada)}</td><td class="r">${brl(entrada)}</td></tr>`);
     if (parcPagas > 0 && valorParcela > 0) invLinhas.push(`<tr><td>Parcelas mensais pagas até a venda${cubOn ? ' <span class="mut">· corrigidas pelo CUB</span>' : ''}${c.parcAposH > 0 ? ` <span class="mut">· ${c.parcAposH} restantes quitadas na venda</span>` : ''}</td><td class="c">${parcPagas}×</td><td class="r">${brl(valorParcela)}</td><td class="r">${brl(cubOn ? c.totalParcCorr : parcPagas * valorParcela)}</td></tr>`);
-    if (refPagos > 0 && valorReforco > 0) invLinhas.push(`<tr><td>Reforços ${PERIODOS[periodicidade].label.toLowerCase()} pagos até a venda${cubOn ? ' <span class="mut">· corrigidos pelo CUB</span>' : ''}${c.refAposH > 0 ? ` <span class="mut">· ${c.refAposH} restantes quitados na venda</span>` : ''}</td><td class="c">${refPagos}×</td><td class="r">${brl(valorReforco)}</td><td class="r">${brl(cubOn ? c.totalRefCorr : refPagos * valorReforco)}</td></tr>`);
+    c.refs.forEach((r, j) => {
+      if (!r.aposH && r.valor > 0) invLinhas.push(`<tr><td>Reforço ${j + 1} <span class="mut">· ${fmtData(parseLocal(r.ymd))}${cubOn ? ' · corrigido pelo CUB' : ''}</span></td><td class="c">1×</td><td class="r">${brl(r.valor)}</td><td class="r">${brl(cubOn ? r.pago : r.valor)}</td></tr>`);
+    });
+    const refsAposH = c.refs.map((r, j) => ({ ...r, n: j + 1 })).filter((r) => r.aposH && r.valor > 0);
+    if (refsAposH.length > 0) invLinhas.push(`<tr><td colspan="4"><span class="mut">Reforços após a venda — quitados na venda: ${refsAposH.map((r) => `Reforço ${r.n} (${brl(r.valor)} em ${fmtData(parseLocal(r.ymd))})`).join(', ')}</span></td></tr>`);
     invLinhas.push(`<tr class="sub"><td colspan="3">Total investido</td><td class="r">${brl(c.investido)}</td></tr>`);
 
     const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Análise do Investidor — Nox Imóveis</title>
@@ -377,17 +408,38 @@ export default function InvestidorPage() {
                 </Campo>
                 <Campo label="Valor de cada parcela"><MoneyInput value={valorParcela} onChange={setValorParcela} placeholder="3.000,00" className={inputCls} /></Campo>
               </div>
-              <div className="grid sm:grid-cols-3 gap-3">
-                <Campo label="Qtde de reforços" hint={periodicidade === 'anual' ? 'caem nos meses 12, 24, 36…' : 'caem nos meses 6, 12, 18…'}>
+              <div className="grid grid-cols-2 gap-3">
+                <Campo label="Qtde de reforços" hint="data e valor editáveis abaixo">
                   <input type="number" min="0" value={nReforcos} onChange={(e) => setNReforcos(e.target.value)} placeholder="3" className={inputCls + ' tabular-nums'} />
                 </Campo>
-                <Campo label="Valor de cada reforço"><MoneyInput value={valorReforco} onChange={setValorReforco} placeholder="20.000,00" className={inputCls} /></Campo>
-                <Campo label="Periodicidade dos reforços">
+                <Campo label="Periodicidade dos reforços" hint={periodicidade === 'anual' ? 'sugere os meses 12, 24, 36…' : 'sugere os meses 6, 12, 18…'}>
                   <select value={periodicidade} onChange={(e) => setPeriodicidade(e.target.value)} className={inputCls}>
                     <option value="semestral">Semestrais</option><option value="anual">Anuais</option>
                   </select>
                 </Campo>
               </div>
+              {c.nRef > 0 && (
+                <div className="bg-white/[0.03] rounded-xl border border-white/[0.08] p-3 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Data e valor de cada reforço (sugeridos — pode alterar)</span>
+                    {refDatas.some(Boolean) && <button onClick={() => setRefDatas([])} className="text-[11px] text-[#FF7A97] font-bold hover:underline whitespace-nowrap shrink-0">usar sugeridas</button>}
+                  </div>
+                  {c.refs.map((r, j) => (
+                    <div key={j}>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-text-secondary">
+                          Reforço {j + 1} <span className="normal-case font-semibold text-white/40 tracking-normal">· mês {r.m}</span>
+                        </span>
+                        {r.antesBase && <span className="text-[10px] text-amber-300 text-right">reforço antes da 1ª parcela — considerado no mês 0</span>}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input type="date" value={refDatas[j] || r.ymdSugerida} onChange={(e) => setRefData(j, e.target.value)} className={refInputCls} />
+                        <MoneyInput value={r.valor} onChange={(v) => setRefValor(j, v)} placeholder="20.000,00" prefix={false} className={refInputCls} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
               {c.temAposH && (
                 <p className="text-[11px] text-text-secondary">
                   {[c.parcAposH > 0 ? `${c.parcAposH} parcela${c.parcAposH > 1 ? 's' : ''}` : '', c.refAposH > 0 ? `${c.refAposH} reforço${c.refAposH > 1 ? 's' : ''}` : ''].filter(Boolean).join(' e ')} venceriam depois d{c.vendaAtiva ? 'a venda pretendida' : 'a entrega'} — na projeção, são quitad{c.parcAposH > 0 ? 'as' : 'os'} na venda (mês {c.H}).
@@ -524,8 +576,12 @@ export default function InvestidorPage() {
                   {parcPagas > 0 && valorParcela > 0 && (
                     <Linha l={`Parcelas pagas · ${parcPagas}× de ${brl(valorParcela)}`} v={brl(cubOn ? c.totalParcCorr : parcPagas * valorParcela)} sub={cubOn ? 'corrigidas pelo CUB, mês a mês' : undefined} />
                   )}
-                  {refPagos > 0 && valorReforco > 0 && (
-                    <Linha l={`Reforços pagos · ${refPagos}× de ${brl(valorReforco)}`} v={brl(cubOn ? c.totalRefCorr : refPagos * valorReforco)} sub={cubOn ? 'corrigidos pelo CUB, mês a mês' : undefined} />
+                  {refPagos > 0 && c.totalRefPagoNom > 0 && (
+                    <Linha
+                      l={`Reforços pagos · ${refPagos}×`}
+                      v={brl(cubOn ? c.totalRefCorr : c.totalRefPagoNom)}
+                      sub={c.refs.filter((r) => !r.aposH && r.valor > 0).map((r) => `${brl(r.valor)} em ${fmtData(parseLocal(r.ymd))}`).join(' · ') + (cubOn ? ' — corrigidos pelo CUB, mês a mês' : '')}
+                    />
                   )}
                   <Linha l="Total investido" v={brl(c.investido)} destaque />
                   <Linha l={`Valor do imóvel ${quandoVenda}`} v={brl(c.valorVenda)} sub={`valorização de ${c.valPct.toLocaleString('pt-BR')}% a.a. em ${c.H} meses`} />
