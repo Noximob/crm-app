@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import MoneyInput, { formatBRL } from '@/components/MoneyInput';
 import { showToast } from '@/components/ui/toast';
 
@@ -12,7 +12,8 @@ const PERIODOS: Record<string, { label: string; meses: number }> = {
 const brl = (n: number) => 'R$ ' + formatBRL(n);
 const numI = (s: string) => { const v = parseFloat(s); return isNaN(v) ? 0 : v; };
 const numF = (s: string) => { const v = parseFloat(String(s).replace(',', '.')); return isNaN(v) ? 0 : v; };
-const fmtPct2 = (n: number) => n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+const fmtNum2 = (n: number) => n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtPct2 = (n: number) => fmtNum2(n) + '%';
 
 const parseLocal = (s: string) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, (m || 1) - 1, d || 1); };
 const toYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -52,13 +53,42 @@ const Secao = ({ icon, titulo, children }: { icon: string; titulo: string; child
     <div className="space-y-3">{children}</div>
   </div>
 );
-const CardResultado = ({ titulo, children, gold }: { titulo: string; children: React.ReactNode; gold?: boolean }) => (
-  <div className="al-card relative overflow-hidden rounded-2xl p-4">
-    <div className={`absolute inset-x-0 top-0 ${gold ? 'gx-line-gold' : 'gx-line'}`} />
-    <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">{titulo}</div>
-    {children}
+
+/** Número animado: conta do valor anterior até o novo com easing (adaptado do placar da home). */
+const CountUp = ({ n, fmt, className = '' }: { n: number; fmt: (v: number) => string; className?: string }) => {
+  const [v, setV] = useState(0);
+  const fmtRef = useRef(fmt); fmtRef.current = fmt;
+  const fromRef = useRef(0);
+  useEffect(() => {
+    const from = fromRef.current;
+    let raf = 0;
+    const t0 = performance.now();
+    const dur = 900;
+    const step = (t: number) => {
+      const p = Math.min((t - t0) / dur, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      const val = from + (n - from) * eased;
+      setV(val);
+      fromRef.current = val;
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [n]);
+  return <span className={className}>{fmtRef.current(v)}</span>;
+};
+
+const Linha = ({ l, v, sub, destaque }: { l: React.ReactNode; v: React.ReactNode; sub?: React.ReactNode; destaque?: boolean }) => (
+  <div className="py-1.5 border-b border-white/[0.05] last:border-0">
+    <div className="flex items-baseline justify-between gap-3">
+      <span className={`text-[12px] ${destaque ? 'font-extrabold text-white uppercase tracking-wide' : 'text-text-secondary'}`}>{l}</span>
+      <span className={`tabular-nums font-bold whitespace-nowrap ${destaque ? 'al-display text-[15px] text-[#FFE9A6]' : 'text-[13px] text-white'}`}>{v}</span>
+    </div>
+    {sub && <div className="text-[10.5px] text-text-secondary mt-0.5">{sub}</div>}
   </div>
 );
+
+const chipCls = 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[10px] font-extrabold uppercase tracking-wider whitespace-nowrap';
 
 export default function InvestidorPage() {
   // Seção 1 — identificação
@@ -70,6 +100,7 @@ export default function InvestidorPage() {
   // Seção 2 — prazo
   const [dataPrimeiraParcela, setDataPrimeiraParcela] = useState(() => toYMD(new Date()));
   const [dataEntrega, setDataEntrega] = useState('');
+  const [dataVenda, setDataVenda] = useState('');
   // Seção 3 — pagamentos até as chaves
   const [entrada, setEntrada] = useState(0);
   const [nParcelas, setNParcelas] = useState('');
@@ -98,6 +129,19 @@ export default function InvestidorPage() {
       M = Math.max(1, (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth()));
     }
 
+    // venda antecipada (opcional): V meses entre a 1ª parcela e a venda pretendida
+    let V = 0;
+    let vendaAtiva = false;
+    let vendaIgnorada = false;
+    if (dataVenda && !semEntrega) {
+      const a = dataPrimeiraParcela ? parseLocal(dataPrimeiraParcela) : new Date();
+      const b = parseLocal(dataVenda);
+      V = Math.max(1, (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth()));
+      if (V < M) vendaAtiva = true; else { vendaIgnorada = true; V = 0; }
+    }
+    // horizonte da projeção: até a venda antecipada (V) ou até as chaves (M)
+    const H = vendaAtiva ? V : M;
+
     // resumo nominal (independe de datas/índices)
     const totalParcNom = nParc * valorParcela;
     const totalRefNom = nRef * valorReforco;
@@ -112,14 +156,14 @@ export default function InvestidorPage() {
     const icub = cubOn ? Math.pow(1 + cubPct / 100, 1 / 12) - 1 : 0;
     const ival = Math.pow(1 + valPct / 100, 1 / 12) - 1;
 
-    // projeção de venda na entrega: o que vence depois do mês M não é pago
-    // mês a mês — é quitado na venda (mês M), pelo valor nominal (corrigido
-    // pelo acumulado do CUB até M quando o toggle está ligado).
-    let parcAposM = 0, refAposM = 0, restParcNom = 0, restRefNom = 0;
+    // projeção de venda no mês H: o que vence depois do mês H não é pago
+    // mês a mês — é quitado na venda (mês H), pelo valor nominal (corrigido
+    // pelo acumulado do CUB até H quando o toggle está ligado).
+    let parcAposH = 0, refAposH = 0, restParcNom = 0, restRefNom = 0;
     let investido = 0, totalParcCorr = 0, totalRefCorr = 0;
-    let valorEntrega = 0, equity = 0, lucro = 0, roi = 0;
+    let valorVenda = 0, equity = 0, lucro = 0, roi = 0;
     let tirMes: number | null = null, tirAno: number | null = null;
-    const cf = new Array<number>(Math.max(1, M) + 1).fill(0);
+    const cf = new Array<number>(Math.max(1, H) + 1).fill(0);
 
     if (!semEntrega) {
       cf[0] = -entrada;
@@ -127,94 +171,152 @@ export default function InvestidorPage() {
       // própria data-base, sem correção; a 2ª um mês depois, e assim por diante)
       for (let k = 1; k <= nParc; k++) {
         const m = k - 1;
-        if (m <= M) {
+        if (m <= H) {
           const pago = cubOn ? valorParcela * Math.pow(1 + icub, m) : valorParcela;
           totalParcCorr += pago;
           cf[m] -= pago;
-        } else { parcAposM++; restParcNom += valorParcela; }
+        } else { parcAposH++; restParcNom += valorParcela; }
       }
       for (let j = 1; j <= nRef; j++) {
         const m = j * perMeses;
-        if (m <= M) {
+        if (m <= H) {
           const pago = cubOn ? valorReforco * Math.pow(1 + icub, m) : valorReforco;
           totalRefCorr += pago;
           cf[m] -= pago;
-        } else { refAposM++; restRefNom += valorReforco; }
+        } else { refAposH++; restRefNom += valorReforco; }
       }
     }
-    // quitação na entrega = parcelas/reforços restantes + saldo residual
+    // quitação na venda = parcelas/reforços restantes + saldo residual
     const quitacaoNominal = restParcNom + restRefNom + saldoResidualNominal;
-    const quitacaoComCub = quitacaoNominal * Math.pow(1 + icub, Math.max(1, M));
+    const quitacaoComCub = quitacaoNominal * Math.pow(1 + icub, Math.max(1, H));
     const quitacao = cubOn ? quitacaoComCub : quitacaoNominal;
-    const temAposM = parcAposM + refAposM > 0;
+    const temAposH = parcAposH + refAposH > 0;
 
     if (!bloqueado) {
       investido = entrada + totalParcCorr + totalRefCorr;
-      valorEntrega = valor * Math.pow(1 + ival, M);
-      equity = valorEntrega - quitacao;
+      valorVenda = valor * Math.pow(1 + ival, H);
+      equity = valorVenda - quitacao;
       lucro = equity - investido;
       roi = investido > 0 ? lucro / investido : 0;
       if (investido > 0) {
-        cf[M] += equity;
+        cf[H] += equity;
         tirMes = irrMensal(cf);
         tirAno = tirMes !== null ? Math.pow(1 + tirMes, 12) - 1 : null;
       }
     }
 
     return {
-      valor, M, semEntrega, nParc, nRef, perMeses, totalParcNom, totalRefNom,
-      saldoResidualNominal, quitacaoNominal, quitacaoComCub, quitacao,
-      parcAposM, refAposM, temAposM, bloqueado, cubPct, valPct,
+      valor, M, V, H, vendaAtiva, vendaIgnorada, semEntrega, nParc, nRef, perMeses,
+      totalParcNom, totalRefNom, saldoResidualNominal, quitacaoNominal, quitacaoComCub,
+      quitacao, parcAposH, refAposH, temAposH, bloqueado, cubPct, valPct,
       investido, totalParcCorr, totalRefCorr,
-      valorEntrega, equity, lucro, roi, tirMes, tirAno,
+      valorVenda, equity, lucro, roi, tirMes, tirAno,
     };
-  }, [valorImovel, dataPrimeiraParcela, dataEntrega, entrada, nParcelas, valorParcela, nReforcos, valorReforco, periodicidade, cubOn, cubAA, valAA]);
+  }, [valorImovel, dataPrimeiraParcela, dataEntrega, dataVenda, entrada, nParcelas, valorParcela, nReforcos, valorReforco, periodicidade, cubOn, cubAA, valAA]);
+
+  const parcPagas = c.nParc - c.parcAposH;
+  const refPagos = c.nRef - c.refAposH;
+  const quandoVenda = c.vendaAtiva ? 'na venda' : 'nas chaves';
+  // barras da jornada (mesma escala; negativo trava em 0)
+  const maxJornada = Math.max(c.investido, c.equity, 1);
+  const wInveste = Math.max(0, Math.min(1, c.investido / maxJornada)) * 100;
+  const wVira = Math.max(0, Math.min(1, c.equity / maxJornada)) * 100;
+  const wRoi = Math.max(0, Math.min(c.roi / 2, 1)) * 100; // barra do ROI limitada a 200%
 
   const gerarProposta = () => {
     const hoje = new Date().toLocaleDateString('pt-BR');
     const primeiraParcela = dataPrimeiraParcela ? fmtData(parseLocal(dataPrimeiraParcela)) : '—';
     const entrega = dataEntrega ? fmtData(parseLocal(dataEntrega)) : '—';
-    const linhas: string[] = [];
-    if (entrada > 0) linhas.push(`<tr><td>Entrada <span class="mut">· no ato (não corrige)</span></td><td class="c">1×</td><td class="r">${brl(entrada)}</td><td class="r">${brl(entrada)}</td></tr>`);
-    const parcPagas = c.nParc - c.parcAposM;
-    const refPagos = c.nRef - c.refAposM;
-    if (parcPagas > 0 && valorParcela > 0) linhas.push(`<tr><td>Parcelas mensais pagas até a entrega${cubOn ? ' <span class="mut">· corrigidas pelo CUB</span>' : ''}${c.parcAposM > 0 ? ` <span class="mut">· ${c.parcAposM} restantes quitadas na venda</span>` : ''}</td><td class="c">${parcPagas}×</td><td class="r">${brl(valorParcela)}</td><td class="r">${brl(cubOn ? c.totalParcCorr : parcPagas * valorParcela)}</td></tr>`);
-    if (refPagos > 0 && valorReforco > 0) linhas.push(`<tr><td>Reforços ${PERIODOS[periodicidade].label.toLowerCase()} pagos até a entrega${cubOn ? ' <span class="mut">· corrigidos pelo CUB</span>' : ''}${c.refAposM > 0 ? ` <span class="mut">· ${c.refAposM} restantes quitados na venda</span>` : ''}</td><td class="c">${refPagos}×</td><td class="r">${brl(valorReforco)}</td><td class="r">${brl(cubOn ? c.totalRefCorr : refPagos * valorReforco)}</td></tr>`);
-    linhas.push(`<tr class="sub"><td colspan="3">Total investido até as chaves</td><td class="r">${brl(c.investido)}</td></tr>`);
-    linhas.push(`<tr><td>${c.temAposM ? 'Quitação nas chaves <span class="mut">· parcelas restantes + saldo, na venda</span>' : 'Saldo nas chaves'}${cubOn ? ` <span class="mut">· ${brl(c.quitacaoNominal)} sem CUB → corrigido</span>` : ''}</td><td class="c">—</td><td class="r">—</td><td class="r">${brl(c.quitacao)}</td></tr>`);
-    linhas.push(`<tr><td>Valor do imóvel na entrega <span class="mut">· valorização de ${c.valPct.toLocaleString('pt-BR')}% a.a. em ${c.M} meses</span></td><td class="c">—</td><td class="r">—</td><td class="r">${brl(c.valorEntrega)}</td></tr>`);
-    linhas.push(`<tr><td>Patrimônio nas chaves <span class="mut">· valor na entrega − saldo devedor</span></td><td class="c">—</td><td class="r">—</td><td class="r">${brl(c.equity)}</td></tr>`);
-    linhas.push(`<tr class="sub"><td colspan="3">Lucro projetado</td><td class="r">${brl(c.lucro)}</td></tr>`);
-    linhas.push(`<tr class="tot"><td colspan="3">ROI ${fmtPct2(c.roi * 100)} · TIR ${c.tirMes !== null ? fmtPct2(c.tirMes * 100) + ' a.m. / ' + fmtPct2((c.tirAno || 0) * 100) + ' a.a.' : '—'}</td><td class="r">&nbsp;</td></tr>`);
+    const vendaStr = c.vendaAtiva && dataVenda ? fmtData(parseLocal(dataVenda)) : entrega;
+    const tirMesStr = c.tirMes !== null ? fmtPct2(c.tirMes * 100) : '—';
+    const tirAnoStr = c.tirAno !== null ? fmtPct2(c.tirAno * 100) : '—';
+    const wInv = Math.round(wInveste);
+    const wVi = Math.round(wVira);
+
+    const invLinhas: string[] = [];
+    if (entrada > 0) invLinhas.push(`<tr><td>Entrada <span class="mut">· no ato (não corrige)</span></td><td class="c">1×</td><td class="r">${brl(entrada)}</td><td class="r">${brl(entrada)}</td></tr>`);
+    if (parcPagas > 0 && valorParcela > 0) invLinhas.push(`<tr><td>Parcelas mensais pagas até a venda${cubOn ? ' <span class="mut">· corrigidas pelo CUB</span>' : ''}${c.parcAposH > 0 ? ` <span class="mut">· ${c.parcAposH} restantes quitadas na venda</span>` : ''}</td><td class="c">${parcPagas}×</td><td class="r">${brl(valorParcela)}</td><td class="r">${brl(cubOn ? c.totalParcCorr : parcPagas * valorParcela)}</td></tr>`);
+    if (refPagos > 0 && valorReforco > 0) invLinhas.push(`<tr><td>Reforços ${PERIODOS[periodicidade].label.toLowerCase()} pagos até a venda${cubOn ? ' <span class="mut">· corrigidos pelo CUB</span>' : ''}${c.refAposH > 0 ? ` <span class="mut">· ${c.refAposH} restantes quitados na venda</span>` : ''}</td><td class="c">${refPagos}×</td><td class="r">${brl(valorReforco)}</td><td class="r">${brl(cubOn ? c.totalRefCorr : refPagos * valorReforco)}</td></tr>`);
+    invLinhas.push(`<tr class="sub"><td colspan="3">Total investido</td><td class="r">${brl(c.investido)}</td></tr>`);
+
     const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Análise do Investidor — Nox Imóveis</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:Georgia,'Times New Roman',serif;color:#13212e;padding:44px 40px;background:#fff}
-  .brand{font-family:Georgia,serif;font-size:27px;font-weight:700;letter-spacing:.02em}.brand span{color:#b9852b}
-  .brandsub{font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:#b9852b;margin-top:2px}
-  .head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #b9852b;padding-bottom:16px;margin-bottom:22px}
-  .doc{font-size:12px;color:#6c7480;text-align:right;line-height:1.7}
-  .imovel{background:#f7f5f0;border:1px solid #e6e1d6;border-radius:10px;padding:16px 18px;margin-bottom:22px}
-  .imovel .row{display:flex;justify-content:space-between;font-size:14px;padding:3px 0}.imovel .lab{color:#6c7480}
-  table{width:100%;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;font-size:13px}
-  th{background:#13212e;color:#fff;text-align:left;padding:9px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+  body{font-family:Arial,Helvetica,sans-serif;color:#13212e;padding:36px 40px;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .brand{font-family:Georgia,'Times New Roman',serif;font-size:26px;font-weight:700;letter-spacing:.02em}.brand span{color:#b9852b}
+  .brandsub{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:#b9852b;margin-top:2px}
+  .head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #b9852b;padding-bottom:12px;margin-bottom:16px}
+  .doc{font-size:11px;color:#6c7480;text-align:right;line-height:1.6}
+  .band{display:flex;gap:10px;margin-bottom:14px}
+  .box{flex:1;border:1px solid #e6e1d6;border-radius:10px;padding:12px 10px;text-align:center;background:#faf8f3}
+  .box.hero{background:#13212e;border-color:#13212e}
+  .box .k{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:#8a8f96;margin-bottom:4px;font-weight:700}
+  .box.hero .k{color:#e8c547}
+  .box .n{font-size:25px;font-weight:800;letter-spacing:-.01em}
+  .box.hero .n{color:#e8c547}
+  .box.roi .n{color:#0f7a4d}
+  .box .s{font-size:9.5px;color:#9aa0a6;margin-top:3px}
+  .box.hero .s{color:#9fb0c0}
+  .imovel{background:#f7f5f0;border:1px solid #e6e1d6;border-radius:10px;padding:11px 16px;margin-bottom:14px}
+  .imovel .row{display:flex;justify-content:space-between;font-size:12.5px;padding:2.5px 0}.imovel .lab{color:#6c7480}
+  .sec{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#b9852b;margin:0 0 6px}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px}
+  th{background:#13212e;color:#fff;text-align:left;padding:7px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
   th.r,td.r{text-align:right}th.c,td.c{text-align:center}
-  td{padding:9px 12px;border-bottom:1px solid #eee}.mut{color:#9aa0a6;font-size:11px}
-  tr.sub td{background:#f3e6c9;font-weight:700}tr.tot td{background:#13212e;color:#fff;font-weight:700;font-size:14px}
-  .foot{margin-top:26px;font-size:11px;color:#9aa0a6;border-top:1px solid #e6e1d6;padding-top:12px;line-height:1.6}
-  @media print{body{padding:24px}}
+  td{padding:7px 10px;border-bottom:1px solid #eee}.mut{color:#9aa0a6;font-size:10px}
+  tr.sub td{background:#f3e6c9;font-weight:700}
+  .venda{border:1px solid #e6e1d6;border-radius:10px;padding:11px 16px;margin-bottom:14px}
+  .venda .row{display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0}.venda .lab{color:#6c7480}
+  .res{border:2px solid #b9852b;border-radius:10px;padding:13px 16px}
+  .res .top{display:flex;justify-content:space-between;align-items:baseline}
+  .res .lab{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#6c7480}
+  .lucro{font-size:23px;font-weight:800;color:#0f7a4d}.lucro.neg{color:#b3261e}
+  .barrow{display:flex;align-items:center;gap:8px;margin-top:7px;font-size:10.5px}
+  .barlab{width:64px;color:#6c7480;font-weight:700}
+  .bartrack{flex:1;background:#efece4;border-radius:6px;height:13px;overflow:hidden}
+  .barfill{height:100%;border-radius:6px}
+  .barfill.inv{background:#7c5cd6}.barfill.vira{background:#0f9d63}
+  .barval{width:112px;text-align:right;font-weight:700;font-size:11px}
+  .foot{margin-top:14px;font-size:10px;color:#9aa0a6;border-top:1px solid #e6e1d6;padding-top:10px;line-height:1.5}
+  @media print{body{padding:20px 26px}}
 </style></head><body>
   <div class="head"><div><div class="brand">NOX <span>IMÓVEIS</span></div><div class="brandsub">Análise do Investidor</div></div>
     <div class="doc"><b>Valorização e alavancagem</b><br>${hoje}${cliente ? `<br>Cliente: ${cliente}` : ''}</div></div>
+
+  <div class="band">
+    <div class="box hero"><div class="k">TIR ao mês</div><div class="n">${tirMesStr}</div><div class="s">rendimento mensal do dinheiro investido</div></div>
+    <div class="box hero"><div class="k">TIR ao ano</div><div class="n">${tirAnoStr}</div><div class="s">taxa anual equivalente</div></div>
+    <div class="box roi"><div class="k">ROI</div><div class="n">${fmtPct2(c.roi * 100)}</div><div class="s">lucro sobre o total investido</div></div>
+  </div>
+
   <div class="imovel">
     <div class="row"><span class="lab">Empreendimento</span><b>${empreendimento || '—'}</b></div>
     <div class="row"><span class="lab">Unidade / Torre</span><b>${[unidade, torre].filter(Boolean).join(' - ') || '—'}</b></div>
     <div class="row"><span class="lab">Valor do imóvel</span><b>${brl(c.valor)}</b></div>
-    <div class="row"><span class="lab">1ª parcela → entrega das chaves</span><b>${primeiraParcela} → ${entrega} (${c.M} meses)</b></div>
+    <div class="row"><span class="lab">1ª parcela → venda projetada</span><b>${primeiraParcela} → ${vendaStr} (${c.H} meses)</b></div>
+    ${c.vendaAtiva ? `<div class="row"><span class="lab">Cenário</span><b>Venda antecipada — mês ${c.V} de ${c.M} (chaves em ${entrega})</b></div>` : `<div class="row"><span class="lab">Cenário</span><b>Venda na entrega das chaves (mês ${c.M})</b></div>`}
     ${cubOn ? `<div class="row"><span class="lab">Correção aplicada</span><b>CUB ${c.cubPct.toLocaleString('pt-BR')}% a.a.</b></div>` : ''}
   </div>
-  <table><thead><tr><th>Item</th><th class="c">Qtde</th><th class="r">Valor unit.</th><th class="r">Total</th></tr></thead><tbody>${linhas.join('')}</tbody></table>
-  <div class="foot">Análise gerada pela Nox Imóveis para fins de simulação. TIR = taxa interna de retorno mensal do fluxo de caixa do investidor até a entrega das chaves. Valorização projetada de ${c.valPct.toLocaleString('pt-BR')}% ao ano${cubOn ? ` e correção pelo CUB de ${c.cubPct.toLocaleString('pt-BR')}% ao ano` : ' (correção monetária não inclusa)'}. Valores sujeitos à confirmação e às condições da construtora.</div>
+
+  <div class="sec">Investimento</div>
+  <table><thead><tr><th>Item</th><th class="c">Qtde</th><th class="r">Valor unit.</th><th class="r">Total</th></tr></thead><tbody>${invLinhas.join('')}</tbody></table>
+
+  <div class="sec">Venda projetada</div>
+  <div class="venda">
+    <div class="row"><span class="lab">Data da venda</span><b>${vendaStr}${c.vendaAtiva ? ` — antes das chaves (mês ${c.V} de ${c.M})` : ' — na entrega das chaves'}</b></div>
+    <div class="row"><span class="lab">Valor projetado do imóvel <span class="mut">· valorização de ${c.valPct.toLocaleString('pt-BR')}% a.a. em ${c.H} meses</span></span><b>${brl(c.valorVenda)}</b></div>
+    <div class="row"><span class="lab">${c.temAposH ? 'Quitação na venda <span class="mut">· parcelas restantes + saldo</span>' : 'Saldo quitado na venda'}${cubOn ? ` <span class="mut">· ${brl(c.quitacaoNominal)} sem CUB → corrigido</span>` : ''}</span><b>${brl(c.quitacao)}</b></div>
+    <div class="row"><span class="lab">Patrimônio na venda <span class="mut">· valor projetado − quitação</span></span><b>${brl(c.equity)}</b></div>
+  </div>
+
+  <div class="sec">Resultado</div>
+  <div class="res">
+    <div class="top"><span class="lab">Lucro projetado</span><span class="lucro${c.lucro < 0 ? ' neg' : ''}">${brl(c.lucro)}</span></div>
+    <div class="barrow"><span class="barlab">Ele investe</span><span class="bartrack"><span class="barfill inv" style="display:block;width:${wInv}%"></span></span><span class="barval">${brl(c.investido)}</span></div>
+    <div class="barrow"><span class="barlab">Vira</span><span class="bartrack"><span class="barfill vira" style="display:block;width:${wVi}%"></span></span><span class="barval">${brl(c.equity)}</span></div>
+  </div>
+
+  <div class="foot">Análise gerada pela Nox Imóveis para fins de simulação. TIR = taxa interna de retorno mensal do fluxo de caixa do investidor até a venda projetada (${c.vendaAtiva ? `venda antecipada no mês ${c.V}, antes da entrega das chaves no mês ${c.M}` : 'venda na entrega das chaves'}). Premissas: valorização de ${c.valPct.toLocaleString('pt-BR')}% ao ano${cubOn ? ` e correção pelo CUB de ${c.cubPct.toLocaleString('pt-BR')}% ao ano` : ' (correção monetária não inclusa)'}. Valores sujeitos à confirmação e às condições da construtora.</div>
 </body></html>`;
     const w = window.open('', '_blank', 'width=900,height=1000');
     if (!w) { showToast('Libere os pop-ups para gerar a proposta.', 'error'); return; }
@@ -227,7 +329,7 @@ export default function InvestidorPage() {
       <div className="max-w-6xl mx-auto">
         <div className="mb-5">
           <h1 className="al-display text-2xl font-bold text-white uppercase tracking-[0.08em]">Calculadora do Investidor</h1>
-          <p className="text-sm text-text-secondary">Valorização e alavancagem até a entrega das chaves: quanto o investidor coloca, quanto vira patrimônio e a TIR do dinheiro. Nada é salvo.</p>
+          <p className="text-sm text-text-secondary">Valorização e alavancagem até a venda: quanto o investidor coloca, quanto vira patrimônio e a TIR do dinheiro. Nada é salvo.</p>
         </div>
 
         <div className="grid lg:grid-cols-[1fr_minmax(360px,420px)] gap-5 items-start">
@@ -246,15 +348,23 @@ export default function InvestidorPage() {
             </Secao>
 
             <Secao icon="📅" titulo="Prazo">
-              <div className="grid sm:grid-cols-2 gap-3">
+              <div className="grid sm:grid-cols-3 gap-3">
                 <Campo label="Data da 1ª parcela" hint="o cronograma conta a partir dela"><input type="date" value={dataPrimeiraParcela} onChange={(e) => setDataPrimeiraParcela(e.target.value)} className={inputCls} /></Campo>
                 <Campo label="Entrega das chaves" hint={!c.semEntrega ? <>prazo de <b className="text-white">{c.M} meses</b> até as chaves</> : undefined}>
                   <input type="date" value={dataEntrega} onChange={(e) => setDataEntrega(e.target.value)} className={inputCls} />
+                </Campo>
+                <Campo label="Venda pretendida (opcional)" hint={c.vendaAtiva ? <>venda no <b className="text-white">mês {c.V} de {c.M}</b>, antes das chaves</> : 'se o investidor quer vender antes das chaves'}>
+                  <input type="date" value={dataVenda} onChange={(e) => setDataVenda(e.target.value)} className={inputCls} />
                 </Campo>
               </div>
               {c.semEntrega && (
                 <div className="rounded-xl border border-amber-400/40 bg-amber-500/10 px-3.5 py-2.5 text-[13px] text-amber-200">
                   Escolha a data de entrega das chaves para eu calcular a valorização e a TIR.
+                </div>
+              )}
+              {c.vendaIgnorada && (
+                <div className="rounded-xl border border-amber-400/40 bg-amber-500/10 px-3.5 py-2.5 text-[13px] text-amber-200">
+                  venda após a entrega — usando a data das chaves
                 </div>
               )}
             </Secao>
@@ -278,13 +388,13 @@ export default function InvestidorPage() {
                   </select>
                 </Campo>
               </div>
-              {c.temAposM && (
+              {c.temAposH && (
                 <p className="text-[11px] text-text-secondary">
-                  {[c.parcAposM > 0 ? `${c.parcAposM} parcela${c.parcAposM > 1 ? 's' : ''}` : '', c.refAposM > 0 ? `${c.refAposM} reforço${c.refAposM > 1 ? 's' : ''}` : ''].filter(Boolean).join(' e ')} venceriam após a entrega — na projeção, são quitad{c.parcAposM > 0 ? 'as' : 'os'} na venda (mês {c.M}).
+                  {[c.parcAposH > 0 ? `${c.parcAposH} parcela${c.parcAposH > 1 ? 's' : ''}` : '', c.refAposH > 0 ? `${c.refAposH} reforço${c.refAposH > 1 ? 's' : ''}` : ''].filter(Boolean).join(' e ')} venceriam depois d{c.vendaAtiva ? 'a venda pretendida' : 'a entrega'} — na projeção, são quitad{c.parcAposH > 0 ? 'as' : 'os'} na venda (mês {c.H}).
                 </p>
               )}
               <div className="bg-white/[0.03] rounded-xl border border-white/[0.08] px-3.5 py-2.5 flex items-center justify-between gap-3">
-                <span className="text-[13px] text-text-secondary">{c.temAposM ? 'Quitação nas chaves (sem CUB)' : 'Fica para as chaves (sem CUB)'}</span>
+                <span className="text-[13px] text-text-secondary">{c.temAposH ? `Quitação ${quandoVenda} (sem CUB)` : `Fica para ${c.vendaAtiva ? 'a venda' : 'as chaves'} (sem CUB)`}</span>
                 <span className="al-display text-[15px] font-bold tabular-nums text-[#FFE9A6]">{brl(c.semEntrega ? c.saldoResidualNominal : c.quitacaoNominal)}</span>
               </div>
             </Secao>
@@ -310,7 +420,7 @@ export default function InvestidorPage() {
                   </Campo>
                 )}
               </div>
-              <Campo label="Valorização do imóvel % ao ano" hint="quanto o imóvel valoriza por ano até a entrega">
+              <Campo label="Valorização do imóvel % ao ano" hint="quanto o imóvel valoriza por ano até a venda">
                 <div className="relative">
                   <input type="number" step="any" min="0" value={valAA} onChange={(e) => setValAA(e.target.value)} placeholder="12" className={inputCls + ' pr-8 tabular-nums'} />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[13px] text-white/40 pointer-events-none">%</span>
@@ -330,52 +440,109 @@ export default function InvestidorPage() {
               </div>
             ) : (
               <>
-                <div className="al-card relative overflow-hidden rounded-2xl p-5 text-center">
-                  <div className="absolute inset-x-0 top-0 gx-line-gold" />
-                  <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">TIR ao mês</div>
-                  <div className="al-display text-4xl font-bold tabular-nums text-[#E8C547] drop-shadow-[0_0_18px_rgba(232,197,71,0.45)] mt-1">
-                    {c.tirMes !== null ? fmtPct2(c.tirMes * 100) : '—'}
-                  </div>
-                  <div className="text-[13px] text-text-secondary mt-2">
-                    {c.tirAno !== null ? <>= <b className="text-[#FFE9A6]">{fmtPct2(c.tirAno * 100)}</b> ao ano</> : 'sem TIR para este fluxo'}
-                    <span className="mx-2 text-white/20">|</span>
-                    ROI <b className="text-white">{fmtPct2(c.roi * 100)}</b>
-                  </div>
-                  <p className="text-[11px] text-text-secondary mt-3">TIR = quanto o dinheiro investido rendeu por mês, já considerando quando cada real saiu do bolso.</p>
+                {/* chips de cenário — os pressupostos de relance */}
+                <div className="flex flex-wrap gap-1.5">
+                  {c.vendaAtiva ? (
+                    <span className={`${chipCls} bg-[#E8C547]/10 border-[#E8C547]/45 text-[#FFE9A6]`}>Venda antecipada · mês {c.V} de {c.M}</span>
+                  ) : (
+                    <span className={`${chipCls} bg-[#7DD3FC]/10 border-[#7DD3FC]/35 text-[#7DD3FC]`}>Venda na entrega · mês {c.M}</span>
+                  )}
+                  {cubOn ? (
+                    <span className={`${chipCls} bg-[#E8C547]/10 border-[#E8C547]/35 text-[#FFE9A6]`}>CUB {c.cubPct.toLocaleString('pt-BR')}% a.a.</span>
+                  ) : (
+                    <span className={`${chipCls} bg-white/[0.04] border-white/10 text-text-secondary`}>sem CUB</span>
+                  )}
+                  <span className={`${chipCls} bg-emerald-400/10 border-emerald-400/35 text-emerald-300`}>valorização {c.valPct.toLocaleString('pt-BR')}% a.a.</span>
                 </div>
 
-                <CardResultado titulo="Total investido até as chaves">
-                  <div className="al-display text-xl font-bold tabular-nums text-white">{brl(c.investido)}</div>
-                  {cubOn && <p className="text-[11px] text-text-secondary mt-0.5">já com correção do CUB de {c.cubPct.toLocaleString('pt-BR')}% a.a.</p>}
-                </CardResultado>
-
-                <CardResultado titulo={c.temAposM ? 'Quitação nas chaves' : 'Saldo nas chaves'}>
-                  {cubOn ? (
-                    <div className="text-[15px] text-white tabular-nums">
-                      <span className="text-text-secondary">{brl(c.quitacaoNominal)} (sem CUB)</span>
-                      <span className="mx-2 text-[#E8C547]">→</span>
-                      <b className="al-display text-xl">{brl(c.quitacaoComCub)}</b> <span className="text-[11px] text-text-secondary">(com CUB)</span>
-                    </div>
+                {/* 1) HERO — TIR + ROI */}
+                <div className="relative overflow-hidden rounded-2xl border-2 border-[#E8C547]/55 p-5 text-center"
+                  style={{ background: 'linear-gradient(160deg, rgba(232,197,71,0.15), rgba(20,13,5,0.6))', boxShadow: '0 0 36px -10px rgba(232,197,71,0.5), inset 0 1px 0 rgba(232,197,71,0.3)' }}>
+                  <div className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#E8C547]">TIR — rentabilidade mensal</div>
+                  {c.tirMes !== null ? (
+                    <>
+                      <div className="mt-1.5 leading-none whitespace-nowrap">
+                        <CountUp n={c.tirMes * 100} fmt={fmtNum2} className="al-display align-baseline text-[52px] sm:text-[64px] font-bold al-grad-text tabular-nums leading-[0.95] drop-shadow-[0_0_24px_rgba(232,197,71,0.55)]" />
+                        <span className="al-display align-baseline text-[19px] sm:text-[23px] font-bold text-[#E8C547] ml-1.5">% a.m.</span>
+                      </div>
+                      <div className="text-[13px] text-text-secondary mt-2">= <b className="text-[#FFE9A6]">{fmtPct2((c.tirAno || 0) * 100)}</b> ao ano</div>
+                    </>
                   ) : (
-                    <div className="al-display text-xl font-bold tabular-nums text-white">{brl(c.quitacaoNominal)}</div>
+                    <>
+                      <div className="al-display text-[52px] sm:text-[64px] font-bold text-white/30 leading-[0.95] mt-1.5">—</div>
+                      <div className="text-[13px] text-text-secondary mt-2">sem TIR para este fluxo</div>
+                    </>
                   )}
-                  {c.temAposM && <p className="text-[11px] text-text-secondary mt-0.5">parcelas restantes + saldo, quitados na venda (mês {c.M})</p>}
-                </CardResultado>
+                  <div className="mt-4 pt-3.5 border-t border-[#E8C547]/20">
+                    <div className="flex items-baseline justify-center gap-2.5 whitespace-nowrap">
+                      <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-emerald-300">ROI</span>
+                      <CountUp n={c.roi * 100} fmt={(v) => fmtNum2(v) + '%'} className="al-display text-[30px] sm:text-[36px] font-bold text-emerald-300 tabular-nums leading-none drop-shadow-[0_0_16px_rgba(52,211,153,0.45)]" />
+                    </div>
+                    <div className="h-2.5 rounded-full bg-white/10 overflow-hidden mt-2.5">
+                      <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-300 transition-all duration-700" style={{ width: `${wRoi}%` }} />
+                    </div>
+                    <div className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/40 mt-1 text-right">escala até 200%</div>
+                  </div>
+                  <p className="text-[11px] text-text-secondary mt-3">rendimento do dinheiro investido, mês a mês, do bolso à venda</p>
+                </div>
 
-                <CardResultado titulo="Valor do imóvel na entrega" gold>
-                  <div className="al-display text-xl font-bold tabular-nums text-[#FFE9A6]">{brl(c.valorEntrega)}</div>
-                  <p className="text-[11px] text-text-secondary mt-0.5">valorização de {c.valPct.toLocaleString('pt-BR')}% a.a. em {c.M} meses</p>
-                </CardResultado>
+                {/* 2) A JORNADA DO DINHEIRO */}
+                <div className="al-card relative overflow-hidden rounded-2xl p-4">
+                  <div className="absolute inset-x-0 top-0 gx-line" />
+                  <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-3">A jornada do dinheiro</div>
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex items-baseline justify-between gap-3 mb-1">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#C4A6FF]">Ele investe</span>
+                        <span className="text-[13px] font-bold tabular-nums text-white">{brl(c.investido)}</span>
+                      </div>
+                      <div className="h-3 rounded-full bg-white/[0.06] overflow-hidden">
+                        <div className="h-full rounded-full bg-gradient-to-r from-[#9F6BFF] to-[#7DD3FC] transition-all duration-700" style={{ width: `${wInveste}%` }} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex items-baseline justify-between gap-3 mb-1">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-300">Vira</span>
+                        <span className="text-[13px] font-bold tabular-nums text-white">{brl(c.equity)}</span>
+                      </div>
+                      <div className="h-3 rounded-full bg-white/[0.06] overflow-hidden">
+                        <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-300 transition-all duration-700" style={{ width: `${wVira}%` }} />
+                      </div>
+                    </div>
+                    <div className="pt-2.5 border-t border-white/[0.06] flex items-baseline justify-between gap-3">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-text-secondary">Lucro</span>
+                      <span className={`al-display text-2xl font-bold tabular-nums ${c.lucro >= 0 ? 'text-emerald-300 drop-shadow-[0_0_14px_rgba(52,211,153,0.4)]' : 'text-rose-300'}`}>{brl(c.lucro)}</span>
+                    </div>
+                  </div>
+                </div>
 
-                <CardResultado titulo="Patrimônio nas chaves">
-                  <div className="al-display text-xl font-bold tabular-nums text-white">{brl(c.equity)}</div>
-                  <p className="text-[11px] text-text-secondary mt-0.5">valor na entrega − saldo devedor</p>
-                </CardResultado>
-
-                <CardResultado titulo="Lucro">
-                  <div className={`al-display text-xl font-bold tabular-nums ${c.lucro > 0 ? 'text-emerald-300' : c.lucro < 0 ? 'text-rose-300' : 'text-white'}`}>{brl(c.lucro)}</div>
-                  <p className="text-[11px] text-text-secondary mt-0.5">patrimônio − total investido</p>
-                </CardResultado>
+                {/* 3) COMO CHEGA LÁ */}
+                <div className="al-card relative overflow-hidden rounded-2xl p-4">
+                  <div className="absolute inset-x-0 top-0 gx-line-gold" />
+                  <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-2">Como chega lá</div>
+                  {entrada > 0 && <Linha l="Entrada" v={brl(entrada)} />}
+                  {parcPagas > 0 && valorParcela > 0 && (
+                    <Linha l={`Parcelas pagas · ${parcPagas}× de ${brl(valorParcela)}`} v={brl(cubOn ? c.totalParcCorr : parcPagas * valorParcela)} sub={cubOn ? 'corrigidas pelo CUB, mês a mês' : undefined} />
+                  )}
+                  {refPagos > 0 && valorReforco > 0 && (
+                    <Linha l={`Reforços pagos · ${refPagos}× de ${brl(valorReforco)}`} v={brl(cubOn ? c.totalRefCorr : refPagos * valorReforco)} sub={cubOn ? 'corrigidos pelo CUB, mês a mês' : undefined} />
+                  )}
+                  <Linha l="Total investido" v={brl(c.investido)} destaque />
+                  <Linha l={`Valor do imóvel ${quandoVenda}`} v={brl(c.valorVenda)} sub={`valorização de ${c.valPct.toLocaleString('pt-BR')}% a.a. em ${c.H} meses`} />
+                  <Linha
+                    l={`Quitação ${quandoVenda}`}
+                    v={brl(c.quitacao)}
+                    sub={<>
+                      {cubOn && <><span className="tabular-nums">{brl(c.quitacaoNominal)}</span> sem CUB <span className="text-[#E8C547]">→</span> com CUB · </>}
+                      {c.temAposH ? `parcelas/reforços restantes + saldo, quitados na venda (mês ${c.H})` : 'saldo devedor no dia da venda'}
+                    </>}
+                  />
+                  {c.temAposH && (
+                    <p className="text-[10.5px] text-amber-200/80 mt-2">
+                      {[c.parcAposH > 0 ? `${c.parcAposH} parcela${c.parcAposH > 1 ? 's' : ''}` : '', c.refAposH > 0 ? `${c.refAposH} reforço${c.refAposH > 1 ? 's' : ''}` : ''].filter(Boolean).join(' e ')} vence{c.parcAposH + c.refAposH > 1 ? 'm' : ''} depois da venda — já somados na quitação acima.
+                    </p>
+                  )}
+                </div>
               </>
             )}
 
