@@ -585,7 +585,7 @@ export default function CrmPage() {
                     </div>
                     {/* Só esta parte rola: corpo da tabela (leads). Cabeçalho da tabela fica fixo no topo desta área. */}
                     <div className="flex-1 min-h-0 overflow-auto rounded-xl border border-white/10">
-                        <table className="min-w-full table-fixed">
+                        <table className="w-full min-w-[760px] table-fixed">
                             <thead className="sticky top-0 z-10">
                                 <tr className="border-b border-white/10 bg-[#12101a]/95 backdrop-blur-sm text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
                                     <th className="px-3 py-2 font-semibold text-left w-1/5 rounded-tl-xl">Nome</th>

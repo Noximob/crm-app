@@ -51,6 +51,10 @@ const ShopIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 const ChevronLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15,18 9,12 15,6"/></svg>;
 
+const MenuIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>;
+
+const XIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>;
+
 const PhoneIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>;
 
 // Ícones novos — mais fiéis à função de cada item do menu
@@ -78,6 +82,22 @@ export default function DashboardLayout({
   const { currentUser: user, userData, loading, isApproved, isEspelhoDemo, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Fecha o drawer mobile ao navegar
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  // Trava o scroll do body enquanto o drawer mobile está aberto
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -138,8 +158,8 @@ export default function DashboardLayout({
   return (
     <PipelineStagesProvider imobiliariaId={userData?.imobiliariaId}>
     <div className="flex h-screen min-h-screen bg-particles">
-      {/* Sidebar — rail GX: fina com ícones, expande no hover */}
-      <div className="group/side fixed left-0 top-0 bottom-0 z-50 w-[60px] hover:w-[196px] transition-[width] duration-200 text-xs">
+      {/* Sidebar — rail GX: fina com ícones, expande no hover (só desktop) */}
+      <div className="hidden lg:block group/side fixed left-0 top-0 bottom-0 z-50 w-[60px] hover:w-[196px] transition-[width] duration-200 text-xs">
         <div className="h-full flex flex-col min-h-0 bg-[#0d0d12]/95 backdrop-blur-md border-r border-white/[0.06] overflow-hidden">
           <div className="h-14 flex items-center gap-2.5 px-[16px] shrink-0">
             <button
@@ -220,7 +240,127 @@ export default function DashboardLayout({
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden ml-[60px]">
+      {/* Top bar mobile (<lg) */}
+      <header className="lg:hidden fixed top-0 inset-x-0 z-50 h-14 flex items-center gap-2 pl-1 pr-3 bg-[#12101a]/95 backdrop-blur border-b border-white/[0.08]">
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="grid place-items-center w-11 h-11 rounded-lg text-text-secondary hover:text-white hover:bg-white/[0.06] active:scale-[0.96] transition-all shrink-0"
+          aria-label="Abrir menu"
+        >
+          <MenuIcon className="w-6 h-6" />
+        </button>
+        <button
+          onClick={() => router.push('/dashboard')}
+          className="flex items-center gap-2.5 min-w-0 hover:opacity-90 transition-opacity"
+          title="Voltar ao Início"
+        >
+          <span className="relative grid place-items-center w-8 h-8 rounded-full border-2 border-[#FF3364] shadow-[0_0_14px_rgba(255,30,86,0.55),inset_0_0_10px_rgba(255,30,86,0.22)] shrink-0">
+            <span className="al-display text-[14px] font-bold text-[#FF3364] leading-none [text-shadow:0_0_10px_rgba(255,30,86,0.85)]">N</span>
+          </span>
+          <span className="al-display text-[14px] font-bold text-white uppercase tracking-[0.18em] whitespace-nowrap truncate">Nox Imóveis</span>
+        </button>
+        <div className="flex-1" />
+        <div className="relative w-9 h-9 p-[2px] rounded-full bg-gradient-to-br from-[#FF6B93] via-[#FF1E56] to-[#8B0F31] shadow-[0_0_14px_rgba(255,30,86,0.35)] shrink-0" title={displayName}>
+          <div className="w-full h-full rounded-full bg-[#16090e] flex items-center justify-center text-[#FF9EB5] font-bold text-[13px] al-display">
+            {(displayName || 'U').charAt(0).toUpperCase()}
+          </div>
+          <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 rounded-full border-2 border-[#12101a]" title="Online" />
+        </div>
+      </header>
+
+      {/* Drawer mobile (<lg) */}
+      {mobileOpen && (
+        <div className="lg:hidden fixed inset-0 z-[60]">
+          {/* Overlay */}
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setMobileOpen(false)}
+            aria-hidden="true"
+          />
+          {/* Painel */}
+          <div className="absolute left-0 top-0 bottom-0 w-[280px] bg-[#12101a] flex flex-col min-h-0 shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)]">
+            <div className="absolute right-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-[#FF1E56] to-transparent pointer-events-none" />
+            <div className="h-14 flex items-center gap-2.5 pl-4 pr-2 shrink-0">
+              <span className="relative grid place-items-center w-8 h-8 rounded-full border-2 border-[#FF3364] shadow-[0_0_14px_rgba(255,30,86,0.55),inset_0_0_10px_rgba(255,30,86,0.22)] shrink-0">
+                <span className="al-display text-[14px] font-bold text-[#FF3364] leading-none [text-shadow:0_0_10px_rgba(255,30,86,0.85)]">N</span>
+              </span>
+              <span className="al-display text-[14px] font-bold text-white uppercase tracking-[0.18em] whitespace-nowrap flex-1">Nox Imóveis</span>
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="grid place-items-center w-11 h-11 rounded-lg text-text-secondary hover:text-[#FF5C7E] hover:bg-white/[0.06] active:scale-[0.96] transition-all shrink-0"
+                aria-label="Fechar menu"
+              >
+                <XIcon className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="mx-4 gx-line opacity-30 shrink-0" />
+
+            <nav className="flex-1 px-3 pt-3 pb-3 overflow-y-auto scrollbar-thin min-h-0">
+              {navGroups.map((grupo, gi) => (
+                <div key={grupo.titulo ?? gi} className={gi > 0 ? 'mt-4' : ''}>
+                  {grupo.titulo && (
+                    <p className="pl-3 mb-1.5 text-[9px] font-extrabold uppercase tracking-[0.2em] text-white/25">{grupo.titulo}</p>
+                  )}
+                  <ul className="space-y-0.5">
+                    {grupo.itens.map((item) => {
+                      const ativo = pathname === item.href;
+                      const cls = `group relative flex items-center gap-3 px-3 py-3 rounded-lg text-[13.5px] font-semibold transition-all ${
+                        ativo ? 'bg-white/[0.05] text-white' : 'text-text-secondary hover:bg-white/[0.04] hover:text-white'
+                      }`;
+                      const icone = <item.icon className={`h-[20px] w-[20px] shrink-0 transition-all ${item.cor || 'text-current'} ${ativo ? '[filter:drop-shadow(0_0_7px_currentColor)] brightness-125' : 'opacity-70'}`} />;
+                      const indicador = ativo && <span className="absolute left-[-12px] top-1/2 -translate-y-1/2 h-6 w-[3px] rounded-r bg-[#FF1E56] shadow-[0_0_12px_#FF1E56]" />;
+                      return (
+                        <li key={item.href}>
+                          {item.isExternal ? (
+                            <a href={item.href} target="_blank" rel="noopener noreferrer" className={cls} onClick={() => setMobileOpen(false)} title={`Abrir ${item.label} em nova aba`}>
+                              {indicador}
+                              {icone}
+                              <span className="truncate flex-1">{item.label}</span>
+                              <svg className="w-3 h-3 opacity-40 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3" /></svg>
+                            </a>
+                          ) : (
+                            <Link href={item.href} className={cls} onClick={() => setMobileOpen(false)} title={item.label}>
+                              {indicador}
+                              {icone}
+                              <span className="truncate">{item.label}</span>
+                            </Link>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </nav>
+
+            {/* Rodapé: perfil + sair */}
+            <div className="shrink-0 p-3 border-t border-white/[0.06] space-y-1">
+              <div className="flex items-center gap-2.5 px-2 py-1.5" title={displayName}>
+                <div className="relative w-8 h-8 p-[2px] rounded-full bg-gradient-to-br from-[#FF6B93] via-[#FF1E56] to-[#8B0F31] shadow-[0_0_14px_rgba(255,30,86,0.35)] shrink-0">
+                  <div className="w-full h-full rounded-full bg-[#16090e] flex items-center justify-center text-[#FF9EB5] font-bold text-[12px] al-display">
+                    {(displayName || 'U').charAt(0).toUpperCase()}
+                  </div>
+                  <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 rounded-full border-2 border-[#12101a]" title="Online" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[12px] font-bold text-white truncate leading-tight">{displayName}</p>
+                  <p className="text-[8.5px] text-emerald-400 font-extrabold uppercase tracking-[0.16em] leading-tight">online</p>
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-3 px-3 w-full py-3 rounded-lg text-[13.5px] font-semibold text-text-secondary hover:bg-[#FF1E56]/10 hover:text-[#FF6B93] transition-all"
+                title="Desconectar"
+              >
+                <LogOutIcon className="h-[20px] w-[20px] shrink-0" />
+                <span>Desconectar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden ml-0 lg:ml-[60px] pt-14 lg:pt-0">
         <main className="flex flex-col flex-1 min-h-0 overflow-x-hidden overflow-y-auto p-2 md:p-3">
           {children}
         </main>

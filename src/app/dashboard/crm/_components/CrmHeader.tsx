@@ -40,18 +40,18 @@ export const CrmHeader = () => {
 
     return (
         <>
-            <header className="al-card relative overflow-hidden p-4 rounded-2xl flex items-center justify-between mb-4">
+            <header className="al-card relative overflow-hidden p-4 rounded-2xl flex flex-wrap items-center justify-between gap-y-3 mb-4">
                 <div className="absolute inset-x-0 top-0 gx-line" />
-                <div className="flex items-center gap-6">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 min-w-0">
                     <Link href="/dashboard/crm" className="flex items-center gap-2 text-sm font-semibold text-text-secondary hover:text-[#FF5C7E] transition-colors">
                         <ArrowLeftIcon className="h-5 w-5" />
                         Voltar
                     </Link>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         {links.map(link => (
                             <Link key={link.href} href={link.href}>
-                                <span className={`block px-4 py-2 text-sm font-bold rounded-lg transition-all border ${pathname === link.href
+                                <span className={`block px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all border whitespace-nowrap ${pathname === link.href
                                     ? 'bg-gradient-to-r from-[#FF1E56] to-[#A50D38] text-white border-transparent shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)]'
                                     : 'bg-white/[0.04] text-text-secondary border-white/10 hover:border-[#FF1E56]/40 hover:text-white'}
                                 `}>
@@ -62,24 +62,24 @@ export const CrmHeader = () => {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <button 
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                    <button
                         onClick={() => setAgendaModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[#FF7A97] bg-white/[0.04] rounded-lg hover:bg-[#FF1E56]/[0.09] transition-colors border border-white/10 hover:border-[#FF3364]/40"
+                        className="flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-[#FF7A97] bg-white/[0.04] rounded-lg hover:bg-[#FF1E56]/[0.09] transition-colors border border-white/10 hover:border-[#FF3364]/40 whitespace-nowrap"
                     >
                         <CalendarIcon className="h-4 w-4" />
                         Agenda
                     </button>
-                    <Link 
+                    <Link
                         href="/dashboard/agenda"
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-emerald-300 bg-[#34D399]/10 rounded-lg hover:bg-[#34D399]/20 transition-colors border border-[#34D399]/35"
+                        className="flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-emerald-300 bg-[#34D399]/10 rounded-lg hover:bg-[#34D399]/20 transition-colors border border-[#34D399]/35 whitespace-nowrap"
                     >
                         <CalendarIcon className="h-4 w-4" />
                         Agenda Completa
                     </Link>
-                    <button 
-                        onClick={() => setNewLeadModalOpen(true)} 
-                        className="flex items-center gap-2.5 px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-[#FF1E56] to-[#A50D38] rounded-lg shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] hover:brightness-110 active:scale-[0.98] transition-all focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50"
+                    <button
+                        onClick={() => setNewLeadModalOpen(true)}
+                        className="flex items-center gap-2.5 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-[#FF1E56] to-[#A50D38] rounded-lg shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] hover:brightness-110 active:scale-[0.98] transition-all focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 whitespace-nowrap"
                     >
                         <PlusIcon className="h-4 w-4" />
                         Novo Lead

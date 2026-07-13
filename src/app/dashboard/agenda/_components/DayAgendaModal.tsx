@@ -106,7 +106,7 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-4 w-full max-w-5xl mx-4" onClick={e => e.stopPropagation()}>
+      <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-4 w-full max-w-5xl mx-4 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="absolute inset-x-0 top-0 gx-line" />
         {/* Header mais compacto */}
         <div className="flex items-center justify-between mb-4">

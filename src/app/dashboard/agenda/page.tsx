@@ -643,7 +643,7 @@ export default function AgendaPage() {
     <div className="min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="al-display text-2xl sm:text-3xl font-bold text-white uppercase tracking-[0.12em] mb-2">
               Agenda Completa
@@ -665,7 +665,7 @@ export default function AgendaPage() {
         {/* Filtros e Controles */}
         <div className="al-card relative overflow-hidden p-6 mb-8">
           <div className="absolute inset-x-0 top-0 gx-line" />
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-6">
               <select
                 value={filter}
@@ -716,18 +716,23 @@ export default function AgendaPage() {
         {/* Calendário */}
         <div className="al-card relative overflow-hidden mb-8">
           <div className="absolute inset-x-0 top-0 gx-line" />
-          {/* Dias da semana */}
-          <div className="grid grid-cols-7 bg-white/[0.03]">
-            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day) => (
-              <div key={day} className="p-4 text-center text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary border-b border-white/[0.08]">
-                {day}
+          {/* Rolagem horizontal no mobile; no desktop o conteúdo cabe e nada muda */}
+          <div className="overflow-x-auto">
+            <div className="min-w-[700px]">
+              {/* Dias da semana */}
+              <div className="grid grid-cols-7 bg-white/[0.03]">
+                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day) => (
+                  <div key={day} className="p-4 text-center text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary border-b border-white/[0.08]">
+                    {day}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {/* Dias do mês */}
-          <div className="grid grid-cols-7">
-            {renderCalendar()}
+              {/* Dias do mês */}
+              <div className="grid grid-cols-7">
+                {renderCalendar()}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -869,12 +874,12 @@ export default function AgendaPage() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => {
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => {
           setShowModal(false);
           setEditingItem(null);
           resetForm();
         }}>
-          <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+          <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-full max-w-md max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="absolute inset-x-0 top-0 gx-line" />
             <div className="flex items-center gap-3 mb-6">
               <svg className="w-5 h-5 text-[#FF5C7E] drop-shadow-[0_0_8px_rgba(255,30,86,0.5)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -970,11 +975,11 @@ export default function AgendaPage() {
 
       {/* Modal de Visualização */}
       {showViewModal && viewingItem && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => {
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => {
           setShowViewModal(false);
           setViewingItem(null);
         }}>
-          <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+          <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-full max-w-md max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="absolute inset-x-0 top-0 gx-line" />
             <div className="flex items-center gap-3 mb-6">
               <svg className="w-5 h-5 text-[#FF5C7E] drop-shadow-[0_0_8px_rgba(255,30,86,0.5)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">

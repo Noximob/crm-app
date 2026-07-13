@@ -847,7 +847,7 @@ const Brello = () => {
     <div className="min-h-full p-4 sm:p-6 lg:p-8">
       <div className="w-full">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex flex-wrap items-center gap-4 mb-8">
           <h1 className="al-display text-2xl font-bold text-white uppercase tracking-[0.14em]">Brello</h1>
           <button
             onClick={() => setShowNewBoardModal(true)}
@@ -904,7 +904,7 @@ const Brello = () => {
         {/* Kanban Board — sem fundo preto, só colunas e cards; background do app aparece */}
         {currentBoard && (
           <div className="rounded-xl p-6 border border-white/10 bg-white/[0.02]">
-            <div className="flex items-center gap-4 mb-6">
+            <div className="flex flex-wrap items-center gap-4 mb-6">
               <h2 className="al-display text-lg font-bold text-white uppercase tracking-[0.14em]">{currentBoard.title}</h2>
               <button
                 onClick={() => setShowNewColumnModal(true)}
@@ -1043,7 +1043,7 @@ const Brello = () => {
         {/* Modals */}
         {showNewBoardModal && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-96">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-96 max-w-[calc(100vw-2rem)]">
               <div className="absolute inset-x-0 top-0 gx-line" />
               <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Novo Board</h3>
               <input
@@ -1074,7 +1074,7 @@ const Brello = () => {
 
         {showNewColumnModal && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-96">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-96 max-w-[calc(100vw-2rem)]">
               <div className="absolute inset-x-0 top-0 gx-line" />
               <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Nova Coluna</h3>
               <input
@@ -1105,7 +1105,7 @@ const Brello = () => {
 
         {showNewCardModal && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-96">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-96 max-w-[calc(100vw-2rem)]">
               <div className="absolute inset-x-0 top-0 gx-line" />
               <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Novo Card</h3>
               <select
@@ -1253,7 +1253,7 @@ const Brello = () => {
         {/* Modal Copiar Coluna */}
         {showCopyModal && selectedColumn && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-96">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-96 max-w-[calc(100vw-2rem)]">
               <div className="absolute inset-x-0 top-0 gx-line" />
               <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Copiar Coluna</h3>
               <p className="text-text-secondary mb-4">Copiar "{selectedColumn.title}" para qual board?</p>
@@ -1294,7 +1294,7 @@ const Brello = () => {
         {/* Modal Compartilhar Board */}
         {showShareModal && selectedBoard && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-96">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-96 max-w-[calc(100vw-2rem)]">
               <div className="absolute inset-x-0 top-0 gx-line" />
               <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Compartilhar Board</h3>
               <p className="text-text-secondary mb-4">Selecione os membros da equipe para compartilhar "{selectedBoard.title}"</p>
@@ -1355,7 +1355,7 @@ const Brello = () => {
         {/* Modal Mover Coluna */}
         {showMoveModal && selectedColumn && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-96">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-96 max-w-[calc(100vw-2rem)]">
               <div className="absolute inset-x-0 top-0 gx-line" />
               <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Mover Coluna</h3>
               <p className="text-text-secondary mb-4">Mover "{selectedColumn.title}" para qual board?</p>
@@ -1451,9 +1451,9 @@ const Brello = () => {
               </div>
 
               {/* Content */}
-              <div className="flex flex-1 overflow-hidden">
+              <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto lg:overflow-hidden">
                 {/* Left Panel - Card Details */}
-                <div className="w-1/2 p-6 overflow-y-auto border-r border-white/10">
+                <div className="w-full lg:w-1/2 p-6 lg:overflow-y-auto border-b lg:border-b-0 lg:border-r border-white/10">
                   <div className="space-y-6">
                     {/* Descrição */}
                     <div>
@@ -1587,7 +1587,7 @@ const Brello = () => {
                 </div>
 
                 {/* Right Panel - Comments */}
-                <div className="w-1/2 p-6 overflow-y-auto">
+                <div className="w-full lg:w-1/2 p-6 lg:overflow-y-auto">
                   <div className="mb-4">
                     <h4 className="al-display text-[13px] font-bold text-white uppercase tracking-[0.14em]">Comentários e atividade</h4>
                   </div>
@@ -1699,7 +1699,7 @@ const Brello = () => {
         {/* Modal de Confirmação de Exclusão */}
         {showDeleteModal && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-96">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-6 w-96 max-w-[calc(100vw-2rem)]">
               <div className="absolute inset-x-0 top-0 gx-line" />
               <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">
                 Confirmar Exclusão

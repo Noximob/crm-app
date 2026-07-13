@@ -803,7 +803,7 @@ export default function LeadDetailPage() {
 
             {/* Modal de Qualificação */}
             <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm ${isQualificationModalOpen ? 'visible' : 'invisible'}`}>
-                <div className="bg-[#12101a] border border-white/10 p-6 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden max-w-md w-full mx-4">
+                <div className="bg-[#12101a] border border-white/10 p-6 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden max-w-md w-full mx-4 max-h-[85vh] overflow-y-auto">
                     <div className="absolute inset-x-0 top-0 gx-line" />
                     <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Editar Qualificação</h3>
                     <div className="space-y-4 max-h-96 overflow-y-auto">

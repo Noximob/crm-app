@@ -35,8 +35,8 @@ export default function CancelTaskModal({ isOpen, onClose, onConfirm, isLoading 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex justify-center items-start pt-16 sm:pt-24">
-            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] p-6 w-full max-w-md relative overflow-hidden">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex justify-center items-start pt-16 sm:pt-24 px-4">
+            <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] p-6 w-full max-w-md relative overflow-hidden max-h-[85vh] overflow-y-auto">
                 <div className="absolute inset-x-0 top-0 gx-line" />
                 <button onClick={onClose} className="absolute top-4 right-4 text-text-secondary hover:text-[#FF5C7E] transition-colors disabled:opacity-50" disabled={isLoading}>
                     <XIcon className="h-6 w-6" />
