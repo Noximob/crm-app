@@ -66,6 +66,7 @@ const BanknoteIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} x
 const GraduationCapIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>;
 const GlobeIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>;
 const ShieldIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>;
+const TrendingUpIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>;
 
 const NavLink = ({ href, icon: Icon, children, collapsed, isActive }: any) => (
     <Link href={href} className={`flex items-center px-3 py-2.5 text-text-secondary hover:bg-white/[0.06] rounded-lg transition-all duration-200 text-sm font-medium ${
@@ -141,6 +142,7 @@ export default function DashboardLayout({
       { href: '/dashboard/materiais', icon: FolderIcon, label: 'Materiais de apoio', cor: 'text-[#34D399]' },
       { href: '/dashboard/fluxo-pagamento', icon: ReceiptIcon, label: 'Fluxo de Pagamento', cor: 'text-[#C4A6FF]' },
       { href: '/dashboard/comissoes', icon: BanknoteIcon, label: 'Comissões', cor: 'text-[#FFD569]' },
+      { href: '/dashboard/investidor', icon: TrendingUpIcon, label: 'Investidor (TIR)', cor: 'text-[#E8C547]' },
     ] },
     { titulo: 'Mais', itens: [
       { href: '/dashboard/treinamentos', icon: GraduationCapIcon, label: 'Academia', cor: 'text-[#FB923C]' },
