@@ -102,8 +102,6 @@ export default function FluxoPagamentoPage() {
   const [valorImovel, setValorImovel] = useState(0);
   const [descMode, setDescMode] = useState<Modo>('pct');
   const [descVal, setDescVal] = useState(0);
-  const [permutaDesc, setPermutaDesc] = useState('');
-  const [permutaValor, setPermutaValor] = useState(0);
   const [chaveMode, setChaveMode] = useState<Modo>('pct');
   const [chaveVal, setChaveVal] = useState(0);
   const [entradaMode, setEntradaMode] = useState<Modo>('rs');
@@ -143,8 +141,7 @@ export default function FluxoPagamentoPage() {
     const pctDesc = valor > 0 ? (descR / valor) * 100 : 0;
     const ac = chaveMode === 'pct' ? vp * (chaveVal / 100) : chaveVal; // total a pagar até a chave
     const pctChaveEff = vp > 0 ? (ac / vp) * 100 : 0;
-    // a permuta ABATE do saldo financiado na entrega (não do fluxo até a chave)
-    const saldo = Math.max(0, vp - ac - permutaValor);
+    const saldo = Math.max(0, vp - ac);
     const entradaR = entradaMode === 'pct' ? vp * (entradaVal / 100) : entradaVal;
     const nEntr = Math.max(1, Math.round(numI(nEntrada)) || 1);
     const entradaParc = nEntr > 0 ? entradaR / nEntr : entradaR;
@@ -157,7 +154,7 @@ export default function FluxoPagamentoPage() {
     const reforcoR = reforcoMode === 'pct' ? baseReforco * (reforcoVal / 100) : reforcoVal;
     const totalParc = nParc * parcelaR;
     const totalRef = nRef * reforcoR;
-    const montado = entradaR + totalParc + totalRef; // fluxo até a chave (a permuta fica no financiamento)
+    const montado = entradaR + totalParc + totalRef; // fluxo até a chave
     const diferenca = ac - montado;
     const tol = 0.01 * (nParc + nRef + nEntr) + 0.005;
     const fecha = ac > 0 && Math.abs(diferenca) <= tol;
@@ -171,7 +168,7 @@ export default function FluxoPagamentoPage() {
     // vencimentos da entrada: 1ª sugerida hoje (ato) e as demais nos meses seguintes — editáveis
     const entradaDateObjs = Array.from({ length: nEntr }, (_, j) => (entradaDatas[j] ? parseLocal(entradaDatas[j]) : addMonths(hoje, j)));
     return { valor, descR, pctDesc, vp, ac, pctChaveEff, saldo, entradaR, nEntr, entradaParc, entradaDateObjs, nParc, baseParcela, parcelaR, nRef, baseReforco, reforcoR, totalParc, totalRef, montado, diferenca, fecha, base, parcUltima, refSugeridas, refDateObjs, refForaPrazo };
-  }, [valorImovel, descMode, descVal, chaveMode, chaveVal, entradaMode, entradaVal, nEntrada, entradaDatas, permutaValor, dataBase, dataLimite, nParcelas, parcelaMode, parcelaVal, nReforcos, reforcoMode, reforcoVal, periodicidade, refDatas]);
+  }, [valorImovel, descMode, descVal, chaveMode, chaveVal, entradaMode, entradaVal, nEntrada, entradaDatas, dataBase, dataLimite, nParcelas, parcelaMode, parcelaVal, nReforcos, reforcoMode, reforcoVal, periodicidade, refDatas]);
 
   const suggestedYMD = (j: number) => (c.refSugeridas[j] ? toYMD(c.refSugeridas[j]) : '');
   const setRefData = (j: number, v: string) => setRefDatas((prev) => { const n = [...prev]; n[j] = v; return n; });
@@ -209,8 +206,7 @@ export default function FluxoPagamentoPage() {
       linhas.push(`<tr><td>Reforços ${PERIODOS[periodicidade].label.toLowerCase()}${datas ? ` <span class="mut">· ${datas}</span>` : ''}</td><td class="c">${c.nRef}×</td><td class="r">${brl(c.reforcoR)}</td><td class="r">${brl(c.totalRef)}</td></tr>`);
     }
     linhas.push(`<tr class="sub"><td colspan="3">Total até a entrega das chaves</td><td class="r">${brl(c.montado)}</td></tr>`);
-    if (permutaValor > 0) linhas.push(`<tr><td>Permuta${permutaDesc ? ` <span class="mut">· ${permutaDesc}</span>` : ''} <span class="mut">· abate do saldo financiado</span></td><td class="c">1×</td><td class="r">${brl(permutaValor)}</td><td class="r">${brl(permutaValor)}</td></tr>`);
-    linhas.push(`<tr><td>Saldo financiado na entrega <span class="mut">· banco / construtora${permutaValor > 0 ? ' · já com a permuta abatida' : ''}</span></td><td class="c">—</td><td class="r">—</td><td class="r">${brl(c.saldo)}</td></tr>`);
+    linhas.push(`<tr><td>Saldo financiado na entrega <span class="mut">· banco / construtora</span></td><td class="c">—</td><td class="r">—</td><td class="r">${brl(c.saldo)}</td></tr>`);
     linhas.push(`<tr class="tot"><td colspan="3">Valor total do imóvel</td><td class="r">${brl(c.vp)}</td></tr>`);
     const hoje = new Date().toLocaleDateString('pt-BR');
     const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Proposta de Pagamento — Nox Imóveis</title>
@@ -275,14 +271,6 @@ export default function FluxoPagamentoPage() {
                 <Campo label="Valor do imóvel"><MoneyInput value={valorImovel} onChange={setValorImovel} placeholder="500.000,00" className={inputCls} /></Campo>
                 <ValorFlex label="Desconto" mode={descMode} value={descVal} base={c.valor} onMode={setDescMode} onValue={setDescVal}
                   hint={c.descR > 0 ? <>{descMode === 'pct' ? <>= {brl(c.descR)}</> : <>= {fmtPct(c.pctDesc)}</>} · proposta <b>{brl(c.vp)}</b></> : 'opcional'} />
-              </div>
-              <div className="grid sm:grid-cols-2 gap-3">
-                <Campo label="Permuta (o que entra)" hint="carro, casa, terreno… (opcional)"><input value={permutaDesc} onChange={(e) => setPermutaDesc(e.target.value)} placeholder="Ex: Honda Civic 2020" className={inputCls} /></Campo>
-                <Campo label="Valor da permuta" hint={permutaValor > 0
-                  ? (c.ac > 0 && permutaValor > c.vp - c.ac
-                    ? <span className="text-rose-300">⚠ maior que o saldo da entrega ({brl(Math.max(0, c.vp - c.ac))})</span>
-                    : 'abate do saldo financiado na entrega')
-                  : 'opcional'}><MoneyInput value={permutaValor} onChange={setPermutaValor} placeholder="0,00" className={inputCls} /></Campo>
               </div>
             </Secao>
 
@@ -390,8 +378,7 @@ export default function FluxoPagamentoPage() {
                 <Linha nome="Parcelas mensais" sub={c.base && c.parcUltima ? `${fmtData(c.base)} a ${fmtData(c.parcUltima)}` : undefined} qtd={`${c.nParc}×`} valor={brl(c.parcelaR)} total={brl(c.totalParc)} />
                 <Linha nome={`Reforços ${PERIODOS[periodicidade].label.toLowerCase()}`} sub={c.refDateObjs.length ? c.refDateObjs.map((d) => fmtData(d)).join(' · ') : undefined} qtd={`${c.nRef}×`} valor={brl(c.reforcoR)} total={brl(c.totalRef)} />
                 <Linha nome="Total até a entrega das chaves" total={brl(c.montado)} destaque />
-                {permutaValor > 0 && <Linha nome="Permuta" sub={`${permutaDesc ? permutaDesc + ' · ' : ''}abate do financiamento`} qtd="1×" valor={brl(permutaValor)} total={brl(permutaValor)} />}
-                <Linha nome="Saldo financiado na entrega" sub={permutaValor > 0 ? 'banco / construtora · já com a permuta abatida' : 'banco / construtora'} total={brl(c.saldo)} />
+                <Linha nome="Saldo financiado na entrega" sub="banco / construtora" total={brl(c.saldo)} />
                 {c.descR > 0 && <Linha nome="Valor de tabela" total={brl(c.valor)} />}
                 {c.descR > 0 && <Linha nome={`Desconto (${fmtPct(c.pctDesc)})`} sub="negociado pra proposta" total={`− ${brl(c.descR)}`} />}
                 <Linha nome="Valor total do imóvel" sub={c.descR > 0 ? 'já com o desconto' : undefined} total={brl(c.vp)} forte />
