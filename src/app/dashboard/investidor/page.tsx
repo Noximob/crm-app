@@ -68,7 +68,7 @@ export default function InvestidorPage() {
   const [cliente, setCliente] = useState('');
   const [valorImovel, setValorImovel] = useState(0);
   // Seção 2 — prazo
-  const [dataAssinatura, setDataAssinatura] = useState(() => toYMD(new Date()));
+  const [dataPrimeiraParcela, setDataPrimeiraParcela] = useState(() => toYMD(new Date()));
   const [dataEntrega, setDataEntrega] = useState('');
   // Seção 3 — pagamentos até as chaves
   const [entrada, setEntrada] = useState(0);
@@ -88,12 +88,12 @@ export default function InvestidorPage() {
     const nRef = Math.max(0, Math.round(numI(nReforcos)));
     const perMeses = PERIODOS[periodicidade].meses;
 
-    // prazo em meses inteiros entre assinatura e entrega (mín 1)
+    // prazo em meses inteiros entre a 1ª parcela e a entrega (mín 1)
     let M = 0;
     let semEntrega = true;
     if (dataEntrega) {
       semEntrega = false;
-      const a = dataAssinatura ? parseLocal(dataAssinatura) : new Date();
+      const a = dataPrimeiraParcela ? parseLocal(dataPrimeiraParcela) : new Date();
       const b = parseLocal(dataEntrega);
       M = Math.max(1, (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth()));
     }
@@ -123,7 +123,10 @@ export default function InvestidorPage() {
 
     if (!semEntrega) {
       cf[0] = -entrada;
-      for (let m = 1; m <= nParc; m++) {
+      // a data-base é a da 1ª PARCELA: parcela k cai no mês k-1 (a 1ª cai na
+      // própria data-base, sem correção; a 2ª um mês depois, e assim por diante)
+      for (let k = 1; k <= nParc; k++) {
+        const m = k - 1;
         if (m <= M) {
           const pago = cubOn ? valorParcela * Math.pow(1 + icub, m) : valorParcela;
           totalParcCorr += pago;
@@ -165,11 +168,11 @@ export default function InvestidorPage() {
       investido, totalParcCorr, totalRefCorr,
       valorEntrega, equity, lucro, roi, tirMes, tirAno,
     };
-  }, [valorImovel, dataAssinatura, dataEntrega, entrada, nParcelas, valorParcela, nReforcos, valorReforco, periodicidade, cubOn, cubAA, valAA]);
+  }, [valorImovel, dataPrimeiraParcela, dataEntrega, entrada, nParcelas, valorParcela, nReforcos, valorReforco, periodicidade, cubOn, cubAA, valAA]);
 
   const gerarProposta = () => {
     const hoje = new Date().toLocaleDateString('pt-BR');
-    const assinatura = dataAssinatura ? fmtData(parseLocal(dataAssinatura)) : '—';
+    const primeiraParcela = dataPrimeiraParcela ? fmtData(parseLocal(dataPrimeiraParcela)) : '—';
     const entrega = dataEntrega ? fmtData(parseLocal(dataEntrega)) : '—';
     const linhas: string[] = [];
     if (entrada > 0) linhas.push(`<tr><td>Entrada <span class="mut">· no ato (não corrige)</span></td><td class="c">1×</td><td class="r">${brl(entrada)}</td><td class="r">${brl(entrada)}</td></tr>`);
@@ -207,7 +210,7 @@ export default function InvestidorPage() {
     <div class="row"><span class="lab">Empreendimento</span><b>${empreendimento || '—'}</b></div>
     <div class="row"><span class="lab">Unidade / Torre</span><b>${[unidade, torre].filter(Boolean).join(' - ') || '—'}</b></div>
     <div class="row"><span class="lab">Valor do imóvel</span><b>${brl(c.valor)}</b></div>
-    <div class="row"><span class="lab">Assinatura → entrega das chaves</span><b>${assinatura} → ${entrega} (${c.M} meses)</b></div>
+    <div class="row"><span class="lab">1ª parcela → entrega das chaves</span><b>${primeiraParcela} → ${entrega} (${c.M} meses)</b></div>
     ${cubOn ? `<div class="row"><span class="lab">Correção aplicada</span><b>CUB ${c.cubPct.toLocaleString('pt-BR')}% a.a.</b></div>` : ''}
   </div>
   <table><thead><tr><th>Item</th><th class="c">Qtde</th><th class="r">Valor unit.</th><th class="r">Total</th></tr></thead><tbody>${linhas.join('')}</tbody></table>
@@ -244,7 +247,7 @@ export default function InvestidorPage() {
 
             <Secao icon="📅" titulo="Prazo">
               <div className="grid sm:grid-cols-2 gap-3">
-                <Campo label="Data da assinatura"><input type="date" value={dataAssinatura} onChange={(e) => setDataAssinatura(e.target.value)} className={inputCls} /></Campo>
+                <Campo label="Data da 1ª parcela" hint="o cronograma conta a partir dela"><input type="date" value={dataPrimeiraParcela} onChange={(e) => setDataPrimeiraParcela(e.target.value)} className={inputCls} /></Campo>
                 <Campo label="Entrega das chaves" hint={!c.semEntrega ? <>prazo de <b className="text-white">{c.M} meses</b> até as chaves</> : undefined}>
                   <input type="date" value={dataEntrega} onChange={(e) => setDataEntrega(e.target.value)} className={inputCls} />
                 </Campo>
