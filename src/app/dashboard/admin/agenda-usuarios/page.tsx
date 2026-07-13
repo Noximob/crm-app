@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, onSnapshot, Timestamp } from 'firebase/firestore';
 import LoadingState from '@/components/ui/LoadingState';
+import { ensureTarefasPendentes, TarefaPendente } from '@/lib/leadTasks';
 
 interface User {
   id: string;
@@ -220,25 +221,24 @@ export default function AgendaUsuariosPage() {
       const leadsRef = collection(db, 'leads');
       const leadsQuery = query(leadsRef, where('userId', '==', selectedUser));
       const leadsSnapshot = await getDocs(leadsQuery);
-      
+
+      const allLeads = leadsSnapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Array<{ id: string; nome?: string; tarefasPendentes?: TarefaPendente[] }>;
+      const tarefasMap = await ensureTarefasPendentes(allLeads);
+
       const allTasks: CrmTask[] = [];
-      
-      // Para cada lead, buscar suas tarefas
-      for (const leadDoc of leadsSnapshot.docs) {
-        const leadData = leadDoc.data();
-        const tasksCol = collection(db, 'leads', leadDoc.id, 'tarefas');
-        const tasksQuery = query(tasksCol, where('status', '==', 'pendente'));
-        const tasksSnapshot = await getDocs(tasksQuery);
-        
-        tasksSnapshot.forEach((taskDoc) => {
+      allLeads.forEach((lead) => {
+        (tarefasMap.get(lead.id) || []).forEach((task) => {
           allTasks.push({
-            id: taskDoc.id,
-            ...taskDoc.data(),
-            leadId: leadDoc.id,
-            leadNome: leadData.nome
+            id: task.id,
+            description: task.description,
+            type: task.type,
+            dueDate: task.dueDate,
+            status: 'pendente',
+            leadId: lead.id,
+            leadNome: lead.nome
           } as CrmTask);
         });
-      }
+      });
 
       setCrmTasks(allTasks);
     } catch (error) {

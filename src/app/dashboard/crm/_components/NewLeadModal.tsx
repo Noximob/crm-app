@@ -111,6 +111,8 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
                 origemTipo: origem, // guarda a opção escolhida (ex: 'Outros') para relatórios
                 ...(origem === 'Outros' && { origemOutros: origemOutros.trim() }),
                 createdAt: serverTimestamp(),
+                // Espelho das tarefas pendentes (lead novo nasce sem tarefa)
+                tarefasPendentes: [],
                 // Adiciona o novo campo de automação com valores padrão
                 automacao: {
                     status: 'inativa',

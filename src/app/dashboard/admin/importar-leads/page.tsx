@@ -116,6 +116,8 @@ export default function ImportarLeadsPage() {
           etapa: stages[0] ?? '',
           origem: 'Importação em massa',
           createdAt: serverTimestamp(),
+          // Espelho das tarefas pendentes (lead novo nasce sem tarefa)
+          tarefasPendentes: [],
         });
       }));
       setMensagem('Leads importados com sucesso!');

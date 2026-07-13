@@ -4,21 +4,12 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { Lead } from '@/types';
 import LoadingState from '@/components/ui/LoadingState';
+import { ensureTarefasPendentes, getTaskStatusInfo, TaskStatus } from '@/lib/leadTasks';
 
 // --- Tipos e Constantes ---
-interface Task {
-    id: string;
-    description: string;
-    type: 'Ligação' | 'WhatsApp' | 'Visita';
-    dueDate: Timestamp;
-    status: 'pendente' | 'concluída' | 'cancelada';
-}
-
-type TaskStatus = 'Tarefa em Atraso' | 'Tarefa do Dia' | 'Tarefa Futura' | 'Sem tarefa';
-
 interface LeadWithTaskStatus extends Lead {
     taskStatus: TaskStatus;
 }
@@ -49,30 +40,6 @@ const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
-// --- Funções de Ajuda ---
-const getTaskStatusInfo = (tasks: Task[]): TaskStatus => {
-    if (tasks.length === 0) return 'Sem tarefa';
-
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-
-    const hasOverdue = tasks.some(task => {
-        const dueDate = task.dueDate.toDate();
-        dueDate.setHours(0, 0, 0, 0);
-        return dueDate < now;
-    });
-    if (hasOverdue) return 'Tarefa em Atraso';
-
-    const hasTodayTask = tasks.some(task => {
-        const dueDate = task.dueDate.toDate();
-        dueDate.setHours(0, 0, 0, 0);
-        return dueDate.getTime() === now.getTime();
-    });
-    if (hasTodayTask) return 'Tarefa do Dia';
-
-    return 'Tarefa Futura';
-};
-
 // --- Componente Principal ---
 interface TaskListModalProps {
     isOpen: boolean;
@@ -96,18 +63,11 @@ export default function TaskListModal({ isOpen, onClose }: TaskListModalProps) {
                 const leadsSnapshot = await getDocs(leadsQuery);
                 const allLeads: Lead[] = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
 
-                const leadsWithStatusPromises = allLeads.map(async (lead) => {
-                    // Buscar tarefas do lead na estrutura correta
-                    const tasksCol = collection(db, 'leads', lead.id, 'tarefas');
-                    const q = query(tasksCol, where('status', '==', 'pendente'));
-                    const tasksSnapshot = await getDocs(q);
-                    const tasks = tasksSnapshot.docs.map(doc => doc.data() as Task);
-
-                    const taskStatus = getTaskStatusInfo(tasks);
-                    return { ...lead, taskStatus };
-                });
-
-                const settledLeads = await Promise.all(leadsWithStatusPromises);
+                const tarefasMap = await ensureTarefasPendentes(allLeads);
+                const settledLeads = allLeads.map((lead) => ({
+                    ...lead,
+                    taskStatus: getTaskStatusInfo(tarefasMap.get(lead.id) || []),
+                }));
                 
                 // Filtra para não mostrar tarefas futuras
                 const leadsToShow = settledLeads.filter(

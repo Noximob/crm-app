@@ -6,21 +6,14 @@ import { usePipelineStages } from '@/context/PipelineStagesContext';
 import CrmHeader from './_components/CrmHeader';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, Timestamp, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import Link from 'next/link';
 import FilterModal, { Filters } from './_components/FilterModal';
 import { getDemoLeads } from '@/lib/espelho/demoData';
 import LoadingState from '@/components/ui/LoadingState';
+import { ensureTarefasPendentes, getTaskStatusInfo, TaskStatus } from '@/lib/leadTasks';
 
 // --- Tipos ---
-interface Task {
-    id: string;
-    dueDate: Timestamp;
-    status: 'pendente' | 'concluída' | 'cancelada';
-}
-
-type TaskStatus = 'Tarefa em Atraso' | 'Tarefa do Dia' | 'Tarefa Futura' | 'Sem tarefa';
-
 interface Lead {
   id: string;
   nome: string;
@@ -77,30 +70,6 @@ const StatusIndicator = ({ status }: { status: TaskStatus }) => {
             {text}
         </div>
     )
-};
-
-// --- Funções de Ajuda ---
-const getTaskStatusInfo = (tasks: Task[]): TaskStatus => {
-    if (tasks.length === 0) return 'Sem tarefa';
-
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-
-    const hasOverdue = tasks.some(task => {
-        const dueDate = task.dueDate.toDate();
-        dueDate.setHours(0, 0, 0, 0);
-        return dueDate < now;
-    });
-    if (hasOverdue) return 'Tarefa em Atraso';
-
-    const hasTodayTask = tasks.some(task => {
-        const dueDate = task.dueDate.toDate();
-        dueDate.setHours(0, 0, 0, 0);
-        return dueDate.getTime() === now.getTime();
-    });
-    if (hasTodayTask) return 'Tarefa do Dia';
-
-    return 'Tarefa Futura';
 };
 
 // Novo componente para título com barra colorida
@@ -244,11 +213,9 @@ export default function CrmPage() {
             if (snapshot.empty) return;
             const doc = snapshot.docs[0];
             const leadData = { id: doc.id, ...doc.data() } as Lead;
-            const tasksCol = collection(db, 'leads', doc.id, 'tarefas');
-            const tasksQuery = query(tasksCol, where('status', '==', 'pendente'));
-            const tasksSnapshot = await getDocs(tasksQuery);
-            const tasks = tasksSnapshot.docs.map(doc => doc.data() as Task);
-            leadData.taskStatus = getTaskStatusInfo(tasks);
+            // Lead novo já traz tarefasPendentes ([]); ensure cobre leads legados sem o campo
+            const tarefasMap = await ensureTarefasPendentes([leadData]);
+            leadData.taskStatus = getTaskStatusInfo(tarefasMap.get(leadData.id) || []);
             leadData.qualificacao = doc.data().qualificacao || {};
             // Só adiciona se não estiver na lista
             setLeads(prev => {
@@ -275,16 +242,16 @@ export default function CrmPage() {
                 limit(MAX_LEADS_LOAD)
             );
             const snapshot = await getDocs(q);
-            const newLeads = await Promise.all(snapshot.docs.map(async (leadDoc) => {
+            const rawLeads = snapshot.docs.map(leadDoc => {
                 const leadData = { id: leadDoc.id, ...leadDoc.data() } as Lead;
-                const tasksCol = collection(db, 'leads', leadDoc.id, 'tarefas');
-                const tasksQuery = query(tasksCol, where('status', '==', 'pendente'));
-                const tasksSnapshot = await getDocs(tasksQuery);
-                const tasks = tasksSnapshot.docs.map(d => d.data() as Task);
-                leadData.taskStatus = getTaskStatusInfo(tasks);
                 leadData.qualificacao = leadDoc.data().qualificacao || {};
                 return leadData;
-            }));
+            });
+            const tarefasMap = await ensureTarefasPendentes(rawLeads);
+            const newLeads = rawLeads.map(leadData => {
+                leadData.taskStatus = getTaskStatusInfo(tarefasMap.get(leadData.id) || []);
+                return leadData;
+            });
             setLeads(newLeads);
         } catch (error) {
             console.error("Erro ao buscar leads:", error);

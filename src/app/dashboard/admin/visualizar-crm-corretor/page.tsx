@@ -5,18 +5,11 @@ import Link from 'next/link';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, orderBy, limit, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import FilterModal, { Filters } from '@/app/dashboard/crm/_components/FilterModal';
 import { getDemoLeads, DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
 import LoadingState from '@/components/ui/LoadingState';
-
-interface Task {
-  id: string;
-  dueDate: Timestamp;
-  status: 'pendente' | 'concluída' | 'cancelada';
-}
-
-type TaskStatus = 'Tarefa em Atraso' | 'Tarefa do Dia' | 'Tarefa Futura' | 'Sem tarefa';
+import { ensureTarefasPendentes, getTaskStatusInfo, TarefaPendente, TaskStatus } from '@/lib/leadTasks';
 
 interface Lead {
   id: string;
@@ -34,25 +27,6 @@ interface Corretor {
   email: string;
   tipoConta: string;
 }
-
-const getTaskStatusInfo = (tasks: Task[]): TaskStatus => {
-  if (tasks.length === 0) return 'Sem tarefa';
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const hasOverdue = tasks.some(task => {
-    const dueDate = task.dueDate.toDate();
-    dueDate.setHours(0, 0, 0, 0);
-    return dueDate < now;
-  });
-  if (hasOverdue) return 'Tarefa em Atraso';
-  const hasTodayTask = tasks.some(task => {
-    const dueDate = task.dueDate.toDate();
-    dueDate.setHours(0, 0, 0, 0);
-    return dueDate.getTime() === now.getTime();
-  });
-  if (hasTodayTask) return 'Tarefa do Dia';
-  return 'Tarefa Futura';
-};
 
 const SearchIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -168,7 +142,7 @@ export default function VisualizarCrmCorretorPage() {
       setLoading(true);
       const demoLeads = getDemoLeads().filter(l => l.userId === selectedCorretorId);
       const newLeads: Lead[] = demoLeads.map(l => {
-        const tasks = (l.tasks || []).filter(t => t.status === 'pendente').map(t => ({ id: t.id, dueDate: t.dueDate, status: t.status } as Task));
+        const tasks: TarefaPendente[] = (l.tasks || []).filter(t => t.status === 'pendente').map(t => ({ id: t.id, description: (t as any).description ?? '', type: (t as any).type ?? '', dueDate: t.dueDate }));
         return {
           id: l.id,
           nome: l.nome,
@@ -192,18 +166,16 @@ export default function VisualizarCrmCorretorPage() {
         limit(MAX_LEADS_LOAD)
       );
       const snapshot = await getDocs(q);
-      const newLeads = await Promise.all(
-        snapshot.docs.map(async leadDoc => {
-          const leadData = { id: leadDoc.id, ...leadDoc.data() } as Lead;
-          const tasksCol = collection(db, 'leads', leadDoc.id, 'tarefas');
-          const tasksQuery = query(tasksCol, where('status', '==', 'pendente'));
-          const tasksSnapshot = await getDocs(tasksQuery);
-          const tasks = tasksSnapshot.docs.map(doc => doc.data() as Task);
-          leadData.taskStatus = getTaskStatusInfo(tasks);
-          leadData.qualificacao = leadDoc.data().qualificacao || {};
-          return leadData;
-        })
-      );
+      const rawLeads = snapshot.docs.map(leadDoc => {
+        const leadData = { id: leadDoc.id, ...leadDoc.data() } as Lead;
+        leadData.qualificacao = leadDoc.data().qualificacao || {};
+        return leadData;
+      });
+      const tarefasMap = await ensureTarefasPendentes(rawLeads);
+      const newLeads = rawLeads.map(leadData => {
+        leadData.taskStatus = getTaskStatusInfo(tarefasMap.get(leadData.id) || []);
+        return leadData;
+      });
       setLeads(newLeads);
     } catch (e) {
       console.error('Erro ao buscar leads:', e);

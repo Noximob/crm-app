@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, getDoc, Timestamp, orderBy } from 'firebase/firestore';
+import { ensureTarefasPendentes, getTaskStatusInfo, TarefaPendente } from '@/lib/leadTasks';
 import Link from 'next/link';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { getDemoLeads } from '@/lib/espelho/demoData';
@@ -291,18 +292,7 @@ const getPriorityColor = (priority: string) => {
 
 
 
-// --- Tipos para tarefas ---
-interface Task {
-  id: string;
-  description: string;
-  type: 'Ligação' | 'WhatsApp' | 'Visita';
-  dueDate: Timestamp;
-  status: 'pendente' | 'concluída' | 'cancelada';
-}
-
 // --- Status e cores ---
-type TaskStatus = 'Tarefa em Atraso' | 'Tarefa do Dia' | 'Sem tarefa' | 'Tarefa Futura';
-
 const TAREFA_STATUS_ORDER = ['Tarefa em Atraso', 'Tarefa do Dia', 'Sem tarefa', 'Tarefa Futura'];
 
 const statusInfo = {
@@ -311,24 +301,6 @@ const statusInfo = {
   'Sem tarefa': { color: 'bg-white/20', text: 'Sem Tarefa' },
   'Tarefa Futura': { color: 'bg-amber-500', text: 'Futura' }
 };
-function getTaskStatusInfo(tasks: Task[]): TaskStatus {
-  if (tasks.length === 0) return 'Sem tarefa';
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const hasOverdue = tasks.some(task => {
-    const dueDate = task.dueDate.toDate();
-    dueDate.setHours(0, 0, 0, 0);
-    return dueDate < now;
-  });
-  if (hasOverdue) return 'Tarefa em Atraso';
-  const hasTodayTask = tasks.some(task => {
-    const dueDate = task.dueDate.toDate();
-    dueDate.setHours(0, 0, 0, 0);
-    return dueDate.getTime() === now.getTime();
-  });
-  if (hasTodayTask) return 'Tarefa do Dia';
-  return 'Tarefa Futura';
-}
 
 // Formata data salva como YYYY-MM-DD para exibição em pt-BR (evita mudar de dia por UTC)
 const formatMetaDate = (value: string | undefined) => {
@@ -587,16 +559,13 @@ export default function DashboardPage() {
         const leadsRef = collection(db, 'leads');
         const leadsQuery = query(leadsRef, where('userId', '==', currentUser.uid));
         const leadsSnapshot = await getDocs(leadsQuery);
-        const allLeads = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const leadsWithTasksPromises = allLeads.map(async (lead) => {
-          const tasksCol = collection(db, 'leads', lead.id, 'tarefas');
-          const q = query(tasksCol, where('status', '==', 'pendente'));
-          const tasksSnapshot = await getDocs(q);
-          const tasks = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+        const allLeads = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Array<{ id: string; tarefasPendentes?: TarefaPendente[]; [key: string]: any }>;
+        const tarefasMap = await ensureTarefasPendentes(allLeads);
+        const settledLeads = allLeads.map((lead) => {
+          const tasks = tarefasMap.get(lead.id) || [];
           const taskStatus = getTaskStatusInfo(tasks);
           return { ...lead, taskStatus, tasks };
         });
-        const settledLeads = await Promise.all(leadsWithTasksPromises);
         // Funil pessoal: contagem por etapa
         const porEtapa: Record<string, number> = {};
         stages.forEach(e => { porEtapa[e] = 0; });

@@ -1,4 +1,5 @@
 import { DocumentData } from 'firebase/firestore';
+import type { TarefaPendente } from '@/lib/leadTasks';
 
 export interface Lead extends DocumentData {
     id: string;
@@ -8,6 +9,7 @@ export interface Lead extends DocumentData {
     etapa: string;
     anotacoes?: string;
     status?: string; // Tarefa em Atraso, Tarefa do Dia, etc.
+    tarefasPendentes?: TarefaPendente[]; // espelho das tarefas pendentes (subcoleção 'tarefas')
     [key: string]: any;
 }
 

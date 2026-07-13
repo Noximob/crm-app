@@ -10,6 +10,7 @@ import {
   limit,
   Timestamp,
 } from 'firebase/firestore';
+import { ensureTarefasPendentes, TarefaPendente } from '@/lib/leadTasks';
 
 function parseDueDate(v: unknown): Date {
   if (!v) return new Date(0);
@@ -127,24 +128,26 @@ export function useCrmAgendaTvData(imobiliariaId: string | undefined) {
         const ligacoesList: CrmTarefaTv[] = [];
         const visitasList: CrmTarefaTv[] = [];
 
+        // TV pode rodar em dispositivo de lobby sem autenticação: nunca gravar (backfill: false)
+        const tarefasMap = await ensureTarefasPendentes(
+          leadDocs.map(({ id, data }) => ({ id, tarefasPendentes: data.tarefasPendentes as TarefaPendente[] | undefined })),
+          { backfill: false }
+        );
+        if (cancelled) return;
+
         for (const { id: leadId, data: leadData } of leadDocs) {
           const leadNome = (leadData.nome as string) ?? 'Lead';
           const userId = (leadData.userId as string) ?? '';
           const responsavelNome = usuariosMap.get(userId) ?? '';
-          const tasksRef = collection(db, 'leads', leadId, 'tarefas');
-          const tasksSnapshot = await getDocs(
-            query(tasksRef, where('status', '==', 'pendente'))
-          );
-          if (cancelled) return;
 
-          tasksSnapshot.docs.forEach((taskDoc) => {
-            const d = taskDoc.data() as Record<string, unknown>;
+          (tarefasMap.get(leadId) || []).forEach((task) => {
+            const d = task as unknown as Record<string, unknown>;
             const typeRaw = String(d.type ?? d.tipo ?? '').trim();
             if (!isLigacao(typeRaw) && !isVisita(typeRaw)) return;
             const dueDate = parseDueDate(d.dueDate);
             if (!isHoje(dueDate, hojeStr, hojeStrUTC)) return;
             const item: CrmTarefaTv = {
-              id: taskDoc.id,
+              id: task.id,
               leadId,
               leadNome,
               responsavelNome,

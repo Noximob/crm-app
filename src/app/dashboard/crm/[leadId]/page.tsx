@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, onSnapshot, updateDoc, collection, query, orderBy, addDoc, serverTimestamp, where, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, getDocs, onSnapshot, updateDoc, collection, query, orderBy, addDoc, serverTimestamp, where, writeBatch, limit } from 'firebase/firestore';
+import { TarefaPendente, fetchPendentesDaSubcolecao } from '@/lib/leadTasks';
 import Link from 'next/link';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { Lead } from '@/types';
@@ -143,6 +144,7 @@ export default function LeadDetailPage() {
     const [isSavingTask, setIsSavingTask] = useState(false);
     const [isAgendaModalOpen, setIsAgendaModalOpen] = useState(false);
     const [tasks, setTasks] = useState<Task[]>([]);
+    const [tasksLoaded, setTasksLoaded] = useState(false);
     const [taskStatus, setTaskStatus] = useState<TaskStatus>('Sem tarefa');
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const [taskToCancel, setTaskToCancel] = useState<{ interactionId: string; taskId: string } | null>(null);
@@ -242,7 +244,7 @@ export default function LeadDetailPage() {
         if (!currentUser || !leadId || isEspelhoDemo) return;
         // Caminhos atualizados para as sub-coleções
         const interactionsCol = collection(db, 'leads', leadId, 'interactions');
-        const q = query(interactionsCol, orderBy('timestamp', 'desc'));
+        const q = query(interactionsCol, orderBy('timestamp', 'desc'), limit(200));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const fetchedInteractions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Interaction));
@@ -252,6 +254,53 @@ export default function LeadDetailPage() {
         return () => unsubscribe();
     }, [currentUser, leadId]);
 
+    // Garante que toda tarefa pendente tenha sua interação "Tarefa Agendada" na lista,
+    // mesmo que ela seja mais antiga que as 200 interações carregadas — senão os botões
+    // de concluir/cancelar não aparecem para tarefas antigas.
+    const [extraInteractions, setExtraInteractions] = useState<Interaction[]>([]);
+    const fetchedExtraTaskIds = React.useRef<Set<string>>(new Set());
+    useEffect(() => {
+        if (!currentUser || !leadId || isEspelhoDemo || tasks.length === 0) return;
+        const faltando = tasks.filter(t =>
+            !interactions.some(i => i.taskId === t.id) &&
+            !fetchedExtraTaskIds.current.has(t.id)
+        );
+        if (faltando.length === 0) return;
+        faltando.forEach(t => fetchedExtraTaskIds.current.add(t.id));
+        (async () => {
+            try {
+                const interactionsCol = collection(db, 'leads', leadId, 'interactions');
+                const resultados = await Promise.all(faltando.map(t =>
+                    getDocs(query(interactionsCol, where('taskId', '==', t.id)))
+                ));
+                const extras = resultados.flatMap(snap =>
+                    snap.docs.map(d => ({ id: d.id, ...d.data() } as Interaction))
+                );
+                if (extras.length > 0) {
+                    setExtraInteractions(prev => {
+                        const vistos = new Set(prev.map(i => i.id));
+                        return [...prev, ...extras.filter(i => !vistos.has(i.id))];
+                    });
+                }
+            } catch (err) {
+                console.error('Erro ao buscar interações de tarefas antigas:', err);
+            }
+        })();
+    }, [tasks, interactions, currentUser, leadId, isEspelhoDemo]);
+
+    // Lista final: 200 mais recentes + interações resgatadas de tarefas antigas (sem duplicar)
+    const interacoesVisiveis = React.useMemo(() => {
+        if (extraInteractions.length === 0) return interactions;
+        const ids = new Set(interactions.map(i => i.id));
+        const extras = extraInteractions.filter(i => !ids.has(i.id));
+        if (extras.length === 0) return interactions;
+        const ts = (i: Interaction) => {
+            const t: any = i.timestamp;
+            return t?.toDate ? t.toDate().getTime() : (t?.seconds ? t.seconds * 1000 : 0);
+        };
+        return [...interactions, ...extras].sort((a, b) => ts(b) - ts(a));
+    }, [interactions, extraInteractions]);
+
     useEffect(() => {
         if (!currentUser || !leadId || isEspelhoDemo) return;
         const tasksCol = collection(db, 'leads', leadId, 'tarefas');
@@ -260,6 +309,7 @@ export default function LeadDetailPage() {
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
             setTasks(fetchedTasks);
+            setTasksLoaded(true);
             // Calcular e atualizar o status da tarefa
             const newTaskStatus = getTaskStatusInfo(fetchedTasks);
             setTaskStatus(newTaskStatus);
@@ -323,24 +373,38 @@ export default function LeadDetailPage() {
         const dueDate = new Date(`${date}T${time}`);
 
         try {
-            // Adicionar a tarefa
+            // Base do espelho: usa o snapshot em memória; se ele ainda não hidratou,
+            // busca a subcoleção direto para não apagar tarefas existentes do espelho
+            const basePendentes: TarefaPendente[] = tasksLoaded
+                ? tasks.map(t => ({ id: t.id, description: t.description, type: t.type, dueDate: t.dueDate }))
+                : await fetchPendentesDaSubcolecao(leadId);
+
+            // Tarefa + espelho no lead + interação num único batch atômico
+            const batch = writeBatch(db);
             const tasksCol = collection(db, 'leads', leadId, 'tarefas');
-            const taskDoc = await addDoc(tasksCol, {
+            const taskRef = doc(tasksCol);
+            batch.set(taskRef, {
                 description,
                 type,
                 dueDate,
                 status: 'pendente'
             });
 
-            // Adicionar a interação
+            const tarefasPendentes: TarefaPendente[] = [
+                ...basePendentes,
+                { id: taskRef.id, description, type, dueDate },
+            ];
+            batch.update(doc(db, 'leads', leadId), { tarefasPendentes });
+
             const interactionsCol = collection(db, 'leads', leadId, 'interactions');
-            await addDoc(interactionsCol, {
+            batch.set(doc(interactionsCol), {
                 type: 'Tarefa Agendada',
                 notes: description,
                 timestamp: serverTimestamp(),
-                taskId: taskDoc.id
+                taskId: taskRef.id
             });
 
+            await batch.commit();
             setIsAgendaModalOpen(false);
         } catch (error) {
             console.error("Erro ao salvar tarefa:", error);
@@ -360,6 +424,12 @@ export default function LeadDetailPage() {
         // Atualizar o status da tarefa
         const taskRef = doc(db, 'leads', leadId, 'tarefas', taskId);
         batch.update(taskRef, { status });
+
+        // Manter o espelho de tarefas pendentes no doc do lead (remove a tarefa concluída/cancelada)
+        const tarefasPendentes: TarefaPendente[] = tasks
+            .filter(t => t.id !== taskId)
+            .map(t => ({ id: t.id, description: t.description, type: t.type, dueDate: t.dueDate }));
+        batch.update(doc(db, 'leads', leadId), { tarefasPendentes });
 
         // Adicionar interação de conclusão/cancelamento
         const interactionsCol = collection(db, 'leads', leadId, 'interactions');
@@ -518,9 +588,9 @@ export default function LeadDetailPage() {
                         <div className="absolute inset-x-0 top-0 gx-line" />
                         <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Próximos Passos</h3>
                         <div className="h-48 overflow-y-auto pr-2">
-                            {interactions.length > 0 ? (
+                            {interacoesVisiveis.length > 0 ? (
                                 <ul className="space-y-3">
-                                    {interactions.map(interaction => {
+                                    {interacoesVisiveis.map(interaction => {
                                         const isPendingTask = interaction.type === 'Tarefa Agendada' &&
                                             interaction.taskId &&
                                             tasks.some(task => task.id === interaction.taskId);
