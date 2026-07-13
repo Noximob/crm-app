@@ -1055,7 +1055,7 @@ export default function DashboardPage() {
               { href: '/dashboard/crm?tarefa=sem', n: 3, label: 'LEADS ESQUECIDOS', count: semTarefaCount, acao: 'acorde eles ▸', ic: 'gem', icc: 'text-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]', lbl: 'text-emerald-200', box: 'border-[#34D399]/40 bg-[#34D399]/[0.06] hover:bg-[#34D399]/[0.13] hover:border-[#34D399]/80 hover:shadow-[0_10px_28px_-10px_rgba(52,211,153,0.5)]', num: 'border-[#34D399]/50 text-emerald-300 bg-[#34D399]/10', dash: '' },
               { href: '/dashboard/ligacao-ativa', n: 4, label: 'LIGAÇÃO ATIVA', count: null, acao: 'gere contatos do zero ▸', ic: 'phone', icc: 'text-[#C4A6FF] drop-shadow-[0_0_8px_rgba(159,107,255,0.6)]', lbl: 'text-[#C4A6FF]', box: 'border-[#9F6BFF]/45 bg-[#9F6BFF]/[0.06] hover:bg-[#9F6BFF]/[0.14] hover:border-[#9F6BFF]/85 hover:shadow-[0_10px_28px_-10px_rgba(159,107,255,0.55)]', num: 'border-[#9F6BFF]/55 text-[#C4A6FF] bg-[#9F6BFF]/10', dash: 'border-dashed' },
             ].map((s, i) => [
-              <Link key={`passo-${s.n}`} href={s.href} className={`group relative sm:flex-1 min-w-0 overflow-hidden rounded-xl border ${s.dash} ${s.box} px-3 py-2 flex flex-col justify-between gap-1 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200`}>
+              <Link key={`passo-${s.n}`} href={s.href} className={`group relative sm:flex-1 min-w-0 min-h-[84px] lg:min-h-0 overflow-hidden rounded-xl border ${s.dash} ${s.box} px-3 py-2 flex flex-col justify-between gap-1 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200`}>
                 <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700" />
                 <span className="relative flex items-center gap-1.5 min-w-0">
                   <span className={`w-[18px] h-[18px] rounded-full grid place-items-center al-display text-[10px] font-extrabold shrink-0 border ${s.num}`}>{s.n}</span>
@@ -1114,7 +1114,7 @@ export default function DashboardPage() {
                         ? 'border-[#E8C547] bg-[#E8C547]/[0.06]'
                         : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.04]';
                     return (
-                      <Link href="/dashboard/agenda" key={`${item.tipo}-${item.id}-${item.startTime}`} className={`flex items-center gap-3 px-3 py-1.5 rounded-lg border-l-2 transition-all hover:translate-x-1 ${rowCls}`}>
+                      <Link href="/dashboard/agenda" key={`${item.tipo}-${item.id}-${item.startTime}`} className={`flex items-center gap-3 px-3 py-1.5 min-h-[52px] lg:min-h-0 rounded-lg border-l-2 transition-all hover:translate-x-1 ${rowCls}`}>
                         <span className={`al-display text-[15px] font-bold tabular-nums w-12 shrink-0 ${horaCls}`}>{item.horarioStr}</span>
                         <span className="flex-1 min-w-0 truncate text-[13px] font-semibold text-white" title={item.titulo}>{item.titulo}</span>
                         <span className="hidden md:inline text-[10px] text-text-secondary shrink-0">{item.tipoLabel}</span>
@@ -1155,7 +1155,7 @@ export default function DashboardPage() {
                     const w = qtd > 0 ? Math.max((qtd / maxLocal) * 100, 18) : 5;
                     const cor = coresFunil[ei % coresFunil.length];
                     return (
-                      <Link key={etapa} href="/dashboard/crm" className="group flex items-center gap-2 min-w-0" title={`${etapa}: ${qtd} lead${qtd === 1 ? '' : 's'}`}>
+                      <Link key={etapa} href="/dashboard/crm" className="group flex items-center gap-2 min-w-0 min-h-[44px] lg:min-h-0" title={`${etapa}: ${qtd} lead${qtd === 1 ? '' : 's'}`}>
                         <span className="w-[7.5rem] shrink-0 text-[10px] text-text-secondary truncate text-right group-hover:text-white transition-colors">{etapa}</span>
                         <span className="flex-1 flex justify-center min-w-0">
                           <span

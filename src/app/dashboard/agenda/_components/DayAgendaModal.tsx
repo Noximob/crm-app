@@ -105,9 +105,11 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
   const sortedItems = items.sort((a, b) => a.dataHora.toDate().getTime() - b.dataHora.toDate().getTime());
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-[#12101a] border border-white/10 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-4 w-full max-w-5xl mx-4 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end lg:items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-[#12101a] border border-white/10 rounded-t-3xl rounded-b-none lg:rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden p-4 w-full max-w-5xl mx-0 lg:mx-4 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="absolute inset-x-0 top-0 gx-line" />
+        {/* Alça de arrastar (só mobile, visual) */}
+        <div className="lg:hidden w-10 h-1 bg-white/20 rounded mx-auto mb-3" />
         {/* Header mais compacto */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">

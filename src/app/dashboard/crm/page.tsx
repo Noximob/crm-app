@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import CrmHeader from './_components/CrmHeader';
 import { useAuth } from '@/context/AuthContext';
@@ -92,6 +92,7 @@ export default function CrmPage() {
     const { currentUser, isEspelhoDemo } = useAuth();
     const { stages, normalizeEtapa } = usePipelineStages();
     const searchParams = useSearchParams();
+    const router = useRouter();
     const [leads, setLeads] = useState<Lead[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState<string | null>(null);
@@ -430,7 +431,7 @@ export default function CrmPage() {
                     {/* Uma linha (pode quebrar): título | busca | filtros | Filtro Completo + Limpar | contagem+setas — setas economizam espaço */}
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 flex-shrink-0 min-w-0">
                         <SectionTitle>Gestão de Leads</SectionTitle>
-                        <div className="relative flex-shrink-0">
+                        <div className="relative w-full sm:w-auto flex-shrink-0">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <SearchIcon className="h-4 w-4 text-text-secondary" />
                             </div>
@@ -439,7 +440,7 @@ export default function CrmPage() {
                                 placeholder="Buscar lead por nome..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="block w-52 sm:w-60 pl-9 pr-3 py-1 border border-white/10 rounded-lg text-sm bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
+                                className="block w-full sm:w-60 pl-9 pr-3 py-2 sm:py-1 border border-white/10 rounded-lg text-sm bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
                             />
                             {searchTerm && (
                                 <button
@@ -535,7 +536,7 @@ export default function CrmPage() {
                             )}
                         </div>
                         {/* Contagem e paginação — no canto; setas < > economizam espaço e evitam sumir quando Limpar aparece */}
-                        <div className="ml-auto flex items-center gap-1.5 flex-nowrap shrink-0 w-full sm:w-auto justify-end sm:justify-start">
+                        <div className="ml-auto flex items-center gap-1.5 flex-nowrap shrink-0 w-full sm:w-auto justify-center sm:justify-start">
                             {totalFiltered > 0 ? (
                                 <>
                                     <span className="text-xs text-text-secondary whitespace-nowrap tabular-nums shrink-0">
@@ -547,7 +548,7 @@ export default function CrmPage() {
                                             onClick={() => goToPage(currentPage - 1)}
                                             disabled={currentPage <= 1}
                                             title="Anterior"
-                                            className="w-7 h-7 flex items-center justify-center text-xs font-bold rounded-lg border border-white/10 bg-white/[0.04] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/[0.08] transition-colors"
+                                            className="w-10 h-10 sm:w-7 sm:h-7 flex items-center justify-center text-xs font-bold rounded-lg border border-white/10 bg-white/[0.04] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/[0.08] transition-colors"
                                         >
                                             {'<'}
                                         </button>
@@ -559,7 +560,7 @@ export default function CrmPage() {
                                                     <button
                                                         type="button"
                                                         onClick={() => goToPage(p)}
-                                                        className={`min-w-[1.75rem] w-7 h-7 flex items-center justify-center text-xs font-semibold rounded-lg border transition-colors ${
+                                                        className={`min-w-[2.5rem] w-10 h-10 sm:min-w-[1.75rem] sm:w-7 sm:h-7 flex items-center justify-center text-xs font-semibold rounded-lg border transition-colors ${
                                                             p === currentPage
                                                                 ? 'bg-[#FF1E56] border-[#FF1E56] text-white shadow-[0_0_12px_-2px_rgba(255,30,86,0.5)]'
                                                                 : 'border-white/10 bg-white/[0.04] hover:bg-white/[0.08]'
@@ -574,7 +575,7 @@ export default function CrmPage() {
                                             onClick={() => goToPage(currentPage + 1)}
                                             disabled={currentPage >= totalPages}
                                             title="Próximo"
-                                            className="w-7 h-7 flex items-center justify-center text-xs font-bold rounded-lg border border-white/10 bg-white/[0.04] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/[0.08] transition-colors"
+                                            className="w-10 h-10 sm:w-7 sm:h-7 flex items-center justify-center text-xs font-bold rounded-lg border border-white/10 bg-white/[0.04] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/[0.08] transition-colors"
                                         >
                                             {'>'}
                                         </button>
@@ -584,7 +585,7 @@ export default function CrmPage() {
                         </div>
                     </div>
                     {/* Só esta parte rola: corpo da tabela (leads). Cabeçalho da tabela fica fixo no topo desta área. */}
-                    <div className="flex-1 min-h-0 overflow-auto rounded-xl border border-white/10">
+                    <div className="hidden sm:block flex-1 min-h-0 overflow-auto rounded-xl border border-white/10">
                         <table className="w-full min-w-[760px] table-fixed">
                             <thead className="sticky top-0 z-10">
                                 <tr className="border-b border-white/10 bg-[#12101a]/95 backdrop-blur-sm text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
@@ -656,6 +657,65 @@ export default function CrmPage() {
                             <p className="text-xs text-text-secondary mt-2 text-center">
                                 Exibindo os {MAX_LEADS_LOAD} leads mais recentes. Use os filtros para refinar.
                             </p>
+                        )}
+                    </div>
+                    {/* Mobile (<sm): lista de cards estilo app nativo — mesmos paginatedLeads e handlers da tabela */}
+                    <div className="sm:hidden flex-1 min-h-0 overflow-y-auto">
+                        {loading && (
+                            <div className="py-8"><LoadingState label="Carregando..." /></div>
+                        )}
+                        {!loading && leads.length === 0 && (
+                            <p className="text-center text-text-secondary py-8">Nenhum lead encontrado.</p>
+                        )}
+                        {!loading && leads.length > 0 && totalFiltered === 0 && (
+                            <p className="text-center text-text-secondary py-8">Nenhum lead corresponde aos filtros. Limpe os filtros ou altere a busca.</p>
+                        )}
+                        {!loading && totalFiltered > 0 && paginatedLeads.length === 0 && (
+                            <p className="text-center text-text-secondary py-8">Nenhum lead nesta página.</p>
+                        )}
+                        {!loading && paginatedLeads.length > 0 && (
+                            <div className="flex flex-col gap-2 pb-1">
+                                {paginatedLeads.map((lead) => (
+                                    <div
+                                        key={lead.id}
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={() => router.push(`/dashboard/crm/${lead.id}`)}
+                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(`/dashboard/crm/${lead.id}`); } }}
+                                        className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-4 active:scale-[0.99] transition-transform cursor-pointer"
+                                    >
+                                        <div className="flex items-center justify-between gap-3 min-w-0">
+                                            <p className="font-semibold text-white truncate">{lead.nome}</p>
+                                            <span className="shrink-0 text-[11px] text-text-secondary">
+                                                <StatusIndicator status={lead.taskStatus} />
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-2 min-w-0">
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#FFE9A6] truncate max-w-[55%] shrink-0">{normalizeEtapa(lead.etapa)}</span>
+                                            <span className="text-text-secondary text-sm truncate">{lead.telefone}</span>
+                                        </div>
+                                        <div className="flex items-center justify-end gap-3 mt-1">
+                                            <a
+                                                href={`https://wa.me/55${lead.telefone.replace(/\D/g, '')}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={(e) => e.stopPropagation()}
+                                                title="Conversar no WhatsApp"
+                                                className="inline-flex items-center gap-2 min-h-[44px] px-4 rounded-full border border-[#34D399]/35 bg-[#34D399]/10 text-emerald-300 text-xs font-bold active:bg-[#34D399]/20 transition-colors"
+                                            >
+                                                <WhatsAppIcon className="h-4 w-4" />
+                                                WhatsApp
+                                            </a>
+                                            <span className="text-white/30 text-base" aria-hidden="true">▸</span>
+                                        </div>
+                                    </div>
+                                ))}
+                                {leads.length >= MAX_LEADS_LOAD && (
+                                    <p className="text-xs text-text-secondary mt-1 text-center">
+                                        Exibindo os {MAX_LEADS_LOAD} leads mais recentes. Use os filtros para refinar.
+                                    </p>
+                                )}
+                            </div>
                         )}
                     </div>
                 </div>

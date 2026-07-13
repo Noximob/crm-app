@@ -566,19 +566,49 @@ export default function AgendaPage() {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
       const items = getAllItemsForDate(date);
-      
+      const isToday = date.toDateString() === today.toDateString();
+      const isCurrentMonth = date.getMonth() === currentMonth;
+      const isSelectedDay = selectedDayDate !== null && date.toDateString() === selectedDayDate.toDateString();
+
       days.push(
         <div
           key={i}
-          className={`p-3 border-r border-b border-white/[0.06] min-h-[120px] transition-all duration-200 hover:bg-white/[0.05] cursor-pointer ${
-            date.getMonth() === currentMonth ? 'bg-white/[0.02]' : 'bg-black/20'
-          } ${date.toDateString() === today.toDateString() ? 'ring-1 ring-inset ring-[#FF1E56]/60 bg-[#FF1E56]/[0.06]' : ''}`}
+          className={`p-1 lg:p-3 border-r border-b border-white/[0.06] min-h-[46px] lg:min-h-[120px] transition-all duration-200 hover:bg-white/[0.05] cursor-pointer ${
+            isCurrentMonth ? 'bg-white/[0.02]' : 'bg-black/20'
+          } ${isToday ? 'ring-1 ring-inset ring-[#FF1E56]/60 bg-[#FF1E56]/[0.06]' : isSelectedDay ? 'max-lg:ring-1 max-lg:ring-inset max-lg:ring-[#E8C547]/70' : ''}`}
           onClick={() => openDayAgendaModal(date)}
         >
+          {/* Mobile (<lg): número compacto + bolinhas coloridas */}
+          <div className="lg:hidden h-full min-h-[38px] flex flex-col items-center justify-center gap-1">
+            <span className={`al-display text-[11px] font-bold tabular-nums leading-none ${
+              isToday ? 'text-[#FF5C7E]' : isCurrentMonth ? 'text-white' : 'text-white/30'
+            }`}>
+              {date.getDate()}
+            </span>
+            {items.length > 0 && (
+              <span className="flex items-center gap-0.5">
+                {items.slice(0, 3).map((item: AgendaItem) => (
+                  <span
+                    key={item.id}
+                    className="w-1.5 h-1.5 rounded-full shrink-0"
+                    style={{ backgroundColor: item.cor }}
+                  />
+                ))}
+                {items.length > 3 && (
+                  <span className="text-[9px] font-bold text-text-secondary leading-none">
+                    +{items.length - 3}
+                  </span>
+                )}
+              </span>
+            )}
+          </div>
+
+          {/* Desktop (lg+): render original com chips de título */}
+          <div className="hidden lg:block">
           <div className={`al-display text-sm font-bold tabular-nums mb-2 flex items-center gap-1.5 ${
-            date.toDateString() === today.toDateString()
+            isToday
               ? 'text-[#FF5C7E]'
-              : date.getMonth() === currentMonth
+              : isCurrentMonth
                 ? 'text-white'
                 : 'text-white/30'
           }`}>
@@ -624,6 +654,7 @@ export default function AgendaPage() {
               </div>
             )}
           </div>
+          </div>
         </div>
       );
     }
@@ -665,8 +696,8 @@ export default function AgendaPage() {
         {/* Filtros e Controles */}
         <div className="al-card relative overflow-hidden p-6 mb-8">
           <div className="absolute inset-x-0 top-0 gx-line" />
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-6">
+          <div className="flex flex-nowrap lg:flex-wrap items-center justify-between gap-4 overflow-x-auto lg:overflow-visible whitespace-nowrap dashboard-scroll-hide">
+            <div className="flex items-center gap-6 shrink-0">
               <select
                 value={filter}
                 onChange={(e) => setFilter(e.target.value as 'all' | 'crm' | 'nota' | 'agenda')}
@@ -681,7 +712,7 @@ export default function AgendaPage() {
 
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 shrink-0">
               <button
                 onClick={() => {
                   const newDate = new Date(selectedDate);
@@ -694,7 +725,7 @@ export default function AgendaPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              <span className="al-display font-bold text-lg text-white uppercase tracking-[0.08em] min-w-[200px] text-center">
+              <span className="al-display font-bold text-sm lg:text-lg text-white uppercase tracking-[0.08em] min-w-[140px] lg:min-w-[200px] text-center">
                 {selectedDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
               </span>
               <button
@@ -716,22 +747,21 @@ export default function AgendaPage() {
         {/* Calendário */}
         <div className="al-card relative overflow-hidden mb-8">
           <div className="absolute inset-x-0 top-0 gx-line" />
-          {/* Rolagem horizontal no mobile; no desktop o conteúdo cabe e nada muda */}
-          <div className="overflow-x-auto">
-            <div className="min-w-[700px]">
-              {/* Dias da semana */}
-              <div className="grid grid-cols-7 bg-white/[0.03]">
-                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day) => (
-                  <div key={day} className="p-4 text-center text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary border-b border-white/[0.08]">
-                    {day}
-                  </div>
-                ))}
-              </div>
+          {/* Grade fluida: cabe em qualquer largura, sem rolagem horizontal */}
+          <div>
+            {/* Dias da semana */}
+            <div className="grid grid-cols-7 bg-white/[0.03]">
+              {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day) => (
+                <div key={day} className="p-2 lg:p-4 text-center text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary border-b border-white/[0.08]">
+                  <span className="lg:hidden">{day.charAt(0)}</span>
+                  <span className="hidden lg:inline">{day}</span>
+                </div>
+              ))}
+            </div>
 
-              {/* Dias do mês */}
-              <div className="grid grid-cols-7">
-                {renderCalendar()}
-              </div>
+            {/* Dias do mês */}
+            <div className="grid grid-cols-7">
+              {renderCalendar()}
             </div>
           </div>
         </div>
@@ -819,14 +849,14 @@ export default function AgendaPage() {
               return sortedItems.map((item) => (
                 <div
                   key={item.id}
-                  className={`group p-4 rounded-xl border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.05] hover:translate-x-1 transition-all duration-300 ${
+                  className={`group w-full min-h-[56px] p-4 rounded-xl border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.05] hover:translate-x-1 transition-all duration-300 ${
                     item.status === 'concluida' ? 'opacity-60' : ''
                   }`}
                   style={{ borderLeftColor: item.cor, borderLeftWidth: '2px' }}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <span className="al-display text-[15px] font-bold tabular-nums shrink-0 text-white/70">
+                    <div className="flex items-center gap-3 lg:gap-4 min-w-0">
+                      <span className="al-display text-base lg:text-[15px] font-bold tabular-nums shrink-0 text-white lg:text-white/70">
                         {item.dataHora.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                       </span>
                       <div>
@@ -860,7 +890,7 @@ export default function AgendaPage() {
                       )}
 
                       {/* Próximos compromissos: apenas visualização */}
-                      <div className="text-[10px] font-extrabold uppercase tracking-wider text-text-secondary px-2 py-1 bg-white/[0.06] rounded-full">
+                      <div className="hidden lg:block text-[10px] font-extrabold uppercase tracking-wider text-text-secondary px-2 py-1 bg-white/[0.06] rounded-full">
                         Próximos 5 dias
                       </div>
                     </div>

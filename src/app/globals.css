@@ -156,6 +156,19 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* App feel: sem flash cinza no toque e sem bounce/pull-to-refresh vertical */
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+/* Mobile: fonte mínima de 16px em campos p/ o iOS não dar zoom no focus
+   (!important p/ vencer utilitários text-xs/text-sm do Tailwind; só <=640px) */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
 
 .dark body {

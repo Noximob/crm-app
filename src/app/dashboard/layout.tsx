@@ -53,6 +53,8 @@ const ChevronLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props
 
 const MenuIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>;
 
+const CalendarIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>;
+
 const XIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>;
 
 const PhoneIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>;
@@ -360,11 +362,52 @@ export default function DashboardLayout({
         </div>
       )}
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden ml-0 lg:ml-[60px] pt-14 lg:pt-0">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden ml-0 lg:ml-[60px] pt-14 lg:pt-0 pb-[calc(64px+env(safe-area-inset-bottom))] lg:pb-0">
         <main className="flex flex-col flex-1 min-h-0 overflow-x-hidden overflow-y-auto p-2 md:p-3">
           {children}
         </main>
       </div>
+
+      {/* Bottom tab bar mobile (<lg) — navegação estilo app */}
+      <nav
+        className="lg:hidden fixed bottom-0 inset-x-0 z-50 bg-[#12101a]/95 backdrop-blur-md border-t border-white/[0.08] pb-[env(safe-area-inset-bottom)]"
+        aria-label="Navegação principal"
+      >
+        <div className="flex h-16">
+          {([
+            { href: '/dashboard', icon: HomeIcon, label: 'Início', exact: true },
+            { href: '/dashboard/crm', icon: UsersIcon, label: 'Clientes' },
+            { href: '/dashboard/agenda', icon: CalendarIcon, label: 'Agenda' },
+            { href: '/dashboard/brello', icon: KanbanIcon, label: 'Brello' },
+          ] as { href: string; icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; label: string; exact?: boolean }[]).map((tab) => {
+            // Normaliza a barra final (trailingSlash) p/ o match de rota ativa
+            const path = (pathname || '').replace(/\/+$/, '') || '/';
+            const ativo = tab.exact ? path === tab.href : path.startsWith(tab.href);
+            return (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                className={`relative flex-1 flex flex-col items-center justify-center gap-1 transition-colors ${
+                  ativo ? 'text-[#FF1E56]' : 'text-text-secondary'
+                }`}
+                aria-current={ativo ? 'page' : undefined}
+              >
+                {ativo && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-b bg-[#FF1E56] shadow-[0_0_10px_#FF1E56]" />}
+                <tab.icon className={`h-[22px] w-[22px] ${ativo ? '[filter:drop-shadow(0_0_7px_rgba(255,30,86,0.8))]' : ''}`} />
+                <span className={`text-[10px] font-bold leading-none ${ativo ? '[text-shadow:0_0_8px_rgba(255,30,86,0.6)]' : ''}`}>{tab.label}</span>
+              </Link>
+            );
+          })}
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="relative flex-1 flex flex-col items-center justify-center gap-1 text-text-secondary transition-colors active:text-white"
+            aria-label="Abrir menu completo"
+          >
+            <MenuIcon className="h-[22px] w-[22px]" />
+            <span className="text-[10px] font-bold leading-none">Menu</span>
+          </button>
+        </div>
+      </nav>
 
       <ConfirmDialogHost />
       <ToastHost />

@@ -537,11 +537,27 @@ export default function LeadDetailPage() {
                     <div className="al-card relative overflow-hidden p-5">
                         <div className="absolute inset-x-0 top-0 gx-line" />
                         <div className="flex flex-col gap-3">
-                            <div className="flex items-center gap-3">
+                            <div className="order-1 flex items-center gap-3">
                                 <h2 className="al-display text-[22px] font-bold text-white uppercase tracking-wide leading-none truncate">{lead.nome}</h2>
                                 <span className={`h-2 w-2 rounded-full shrink-0 ${getTaskStatusColor(taskStatus)}`}></span>
                             </div>
-                            <div className="flex items-center justify-between">
+                            <div className="order-3 lg:hidden grid grid-cols-2 gap-3">
+                                <a
+                                    href={`tel:${lead.telefone.replace(/\D/g, '')}`}
+                                    className="h-12 flex items-center justify-center gap-2 rounded-xl border border-[#7DD3FC]/40 bg-[#7DD3FC]/[0.08] text-[#7DD3FC] text-sm font-bold active:scale-[0.98] transition-all"
+                                >
+                                    <PhoneIcon className="h-4 w-4 shrink-0" /> Ligar
+                                </a>
+                                <a
+                                    href={`https://wa.me/55${lead.telefone.replace(/\D/g, '')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="h-12 flex items-center justify-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-sm font-bold active:scale-[0.98] transition-all"
+                                >
+                                    <WhatsAppIcon className="h-4 w-4 fill-current shrink-0" /> WhatsApp
+                                </a>
+                            </div>
+                            <div className="order-4 lg:order-2 flex items-center justify-between gap-3">
                                 {readOnly ? (
                                   <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#FF1E56]/10 border border-[#FF1E56]/35 text-[#FF7A97]">{normalizeEtapa(lead.etapa)}</span>
                                 ) : (
@@ -549,7 +565,7 @@ export default function LeadDetailPage() {
                                     id="lead-situation" 
                                     value={normalizeEtapa(lead.etapa)} 
                                     onChange={handleStageChange} 
-                                    className="px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider bg-[#FF1E56]/10 border border-[#FF1E56]/35 rounded-full text-[#FF7A97] focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 [&>option]:bg-[#12101a] [&>option]:text-white"
+                                    className="flex-1 min-h-[44px] lg:flex-none lg:min-h-0 px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider bg-[#FF1E56]/10 border border-[#FF1E56]/35 rounded-full text-[#FF7A97] focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 [&>option]:bg-[#12101a] [&>option]:text-white"
                                   >
                                     {stages.map(s => (<option key={s} value={s}>{s}</option>))}
                                   </select>
@@ -567,14 +583,14 @@ export default function LeadDetailPage() {
                                   </div>
                                 )}
                             </div>
-                                <div className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-2 w-fit">
+                                <div className="order-2 lg:order-3 flex items-center gap-2 bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-2 w-fit">
                                 <PhoneIcon className="h-3.5 w-3.5 text-text-secondary shrink-0" />
                                 <p className="text-xs text-white tabular-nums">{lead.telefone}</p>
                                     <a
                                         href={`https://wa.me/55${lead.telefone.replace(/\D/g, '')}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                                        className="hidden lg:block text-emerald-400 hover:text-emerald-300 transition-colors"
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                     <WhatsAppIcon className="h-3 w-3 fill-current"/>
@@ -587,7 +603,7 @@ export default function LeadDetailPage() {
                     <div className="al-card relative overflow-hidden p-5">
                         <div className="absolute inset-x-0 top-0 gx-line" />
                         <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Próximos Passos</h3>
-                        <div className="h-48 overflow-y-auto pr-2">
+                        <div className="max-h-[50vh] lg:max-h-none lg:h-48 overflow-y-auto pr-2">
                             {interacoesVisiveis.length > 0 ? (
                                 <ul className="space-y-3">
                                     {interacoesVisiveis.map(interaction => {
@@ -674,7 +690,7 @@ export default function LeadDetailPage() {
                                      })}
                                  </ul>
                              ) : (
-                                 <div className="h-full flex items-center justify-center">
+                                 <div className="h-full min-h-[120px] flex items-center justify-center">
                                      <p className="text-center text-text-secondary text-sm">Nenhuma ação registrada ainda.</p>
                                  </div>
                              )}
