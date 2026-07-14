@@ -16,6 +16,14 @@ import axios from "axios";
 // Inicializa o Firebase Admin SDK
 admin.initializeApp();
 
+// Distribuição de leads de anúncios (Meta Lead Ads)
+export {
+    metaLeadsWebhook,
+    expirarAdsLeads,
+    redistribuirAdsLead,
+    testeCriarAdsLead,
+} from "./distribuicaoAds";
+
 // Define a estrutura esperada dos dados para clareza
 interface Automacao {
     status: "inativa" | "ativa" | "cancelada";

@@ -1,0 +1,571 @@
+/**
+ * Distribuição de leads de anúncios (Meta Lead Ads) com rodízio de corretores.
+ *
+ * Contrato de dados (compartilhado com a UI — NÃO alterar sem combinar):
+ *
+ * Doc `distribuicaoAds/config`:
+ *   { ativo: boolean, corretores: string[] (uids na ordem do rodízio),
+ *     proximoIndex: number, minutosExclusivo: number (default 5),
+ *     minutosGeral: number (default 30), atualizadoEm: Timestamp,
+ *     imobiliariaId?: string }
+ *
+ * Collection `adsLeads/{id}`:
+ *   { nome, telefone (só dígitos), origem: 'meta-form'|'meta-whatsapp'|'manual',
+ *     campanhaNome?, anuncioNome?, formNome?, metaLeadId?,
+ *     status: 'escalado'|'geral'|'aceito'|'nao-atendido',
+ *     corretorEscalado: string|null, escaladoEm, prazoAte,
+ *     abriuGeralEm?, aceitoPor?, aceitoPorNome?, aceitoEm?, tempoAceiteSeg?,
+ *     viaGeral?, leadId?, criadoEm, imobiliariaId }
+ *
+ * `usuarios/{uid}.fcmTokens: string[]`
+ */
+
+import {onRequest, onCall, HttpsError} from "firebase-functions/v2/https";
+import {onSchedule} from "firebase-functions/v2/scheduler";
+import {defineSecret} from "firebase-functions/params";
+import * as logger from "firebase-functions/logger";
+import * as admin from "firebase-admin";
+import axios from "axios";
+
+// ---------------------------------------------------------------------------
+// Secrets (configurar com: firebase functions:secrets:set NOME)
+// ---------------------------------------------------------------------------
+const META_PAGE_TOKEN = defineSecret("META_PAGE_TOKEN");
+const META_VERIFY_TOKEN = defineSecret("META_VERIFY_TOKEN");
+const TEST_SECRET = defineSecret("TEST_SECRET");
+
+const GRAPH_BASE = "https://graph.facebook.com/v21.0";
+
+const CONFIG_REF_PATH = "distribuicaoAds/config";
+
+type OrigemAdsLead = "meta-form" | "meta-whatsapp" | "manual";
+
+interface DistribuicaoConfig {
+    ativo: boolean;
+    corretores: string[];
+    proximoIndex: number;
+    minutosExclusivo: number;
+    minutosGeral: number;
+    atualizadoEm?: admin.firestore.Timestamp;
+    imobiliariaId?: string;
+}
+
+interface NovoAdsLead {
+    nome: string;
+    telefone: string;
+    origem: OrigemAdsLead;
+    campanhaNome?: string;
+    anuncioNome?: string;
+    formNome?: string;
+    metaLeadId?: string;
+}
+
+interface ResultadoDistribuicao {
+    adsLeadId: string;
+    status: "escalado" | "geral";
+    corretorEscalado: string | null;
+    corretores: string[];
+}
+
+const db = () => admin.firestore();
+
+/** Remove tudo que não for dígito do telefone. */
+function somenteDigitos(telefone: string): string {
+    return (telefone || "").replace(/\D/g, "");
+}
+
+/** Remove chaves com valor undefined (Firestore rejeita undefined). */
+function semUndefined<T extends Record<string, unknown>>(obj: T): T {
+    const limpo: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(obj)) {
+        if (v !== undefined) limpo[k] = v;
+    }
+    return limpo as T;
+}
+
+// ---------------------------------------------------------------------------
+// Push notifications
+// ---------------------------------------------------------------------------
+
+/**
+ * Envia push (FCM) para os uids informados usando usuarios/{uid}.fcmTokens.
+ * Tokens inválidos são removidos do documento do usuário.
+ */
+export async function enviarPush(
+    uids: string[],
+    title: string,
+    body: string,
+    data: Record<string, string> = {},
+): Promise<void> {
+    const uidsUnicos = Array.from(new Set(uids.filter(Boolean)));
+    if (uidsUnicos.length === 0) return;
+
+    try {
+        const docs = await Promise.all(
+            uidsUnicos.map((uid) => db().collection("usuarios").doc(uid).get()),
+        );
+
+        // token -> uid dono (para poder remover tokens inválidos depois)
+        const tokenDono = new Map<string, string>();
+        for (const doc of docs) {
+            if (!doc.exists) continue;
+            const tokens = (doc.data()?.fcmTokens || []) as string[];
+            for (const t of tokens) {
+                if (typeof t === "string" && t.length > 0) tokenDono.set(t, doc.id);
+            }
+        }
+
+        const tokens = Array.from(tokenDono.keys());
+        if (tokens.length === 0) {
+            logger.info("enviarPush: nenhum fcmToken encontrado", {uids: uidsUnicos});
+            return;
+        }
+
+        const resposta = await admin.messaging().sendEachForMulticast({
+            tokens,
+            notification: {title, body},
+            data,
+            webpush: {
+                notification: {title, body},
+                fcmOptions: {link: "/dashboard"},
+            },
+        });
+
+        // Remove tokens que o FCM diz não existirem mais
+        const remocoes: Promise<unknown>[] = [];
+        resposta.responses.forEach((res, i) => {
+            if (res.success) return;
+            const codigo = res.error?.code || "";
+            if (
+                codigo === "messaging/registration-token-not-registered" ||
+                codigo === "messaging/invalid-registration-token" ||
+                codigo === "messaging/invalid-argument"
+            ) {
+                const token = tokens[i];
+                const uid = tokenDono.get(token);
+                if (uid) {
+                    remocoes.push(
+                        db().collection("usuarios").doc(uid).update({
+                            fcmTokens: admin.firestore.FieldValue.arrayRemove(token),
+                        }).catch((e) => logger.warn("Falha ao remover token inválido", {uid, e})),
+                    );
+                }
+            }
+        });
+        await Promise.all(remocoes);
+
+        logger.info("enviarPush: concluído", {
+            enviados: resposta.successCount,
+            falhas: resposta.failureCount,
+        });
+    } catch (error) {
+        logger.error("enviarPush: erro inesperado (não interrompe o fluxo)", error);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Núcleo: criar adsLead e distribuir via rodízio
+// ---------------------------------------------------------------------------
+
+/**
+ * Cria o adsLead e escala o próximo corretor do rodízio (transação sobre
+ * distribuicaoAds/config). Se a distribuição estiver inativa ou sem
+ * corretores, cria o lead direto no status 'geral' (fallback) para que
+ * ninguém perca o lead. Depois do commit, dispara os pushes.
+ */
+export async function criarEDistribuir(novo: NovoAdsLead): Promise<ResultadoDistribuicao> {
+    const configRef = db().doc(CONFIG_REF_PATH);
+    const adsLeadRef = db().collection("adsLeads").doc();
+    const telefone = somenteDigitos(novo.telefone);
+
+    const resultado = await db().runTransaction(async (tx): Promise<ResultadoDistribuicao> => {
+        const configSnap = await tx.get(configRef);
+        const config = (configSnap.data() || {}) as Partial<DistribuicaoConfig>;
+
+        const ativo = config.ativo === true;
+        const corretores = Array.isArray(config.corretores) ? config.corretores : [];
+        const minutosExclusivo = typeof config.minutosExclusivo === "number" && config.minutosExclusivo > 0 ?
+            config.minutosExclusivo : 5;
+        const minutosGeral = typeof config.minutosGeral === "number" && config.minutosGeral > 0 ?
+            config.minutosGeral : 30;
+
+        // imobiliariaId: preferir o gravado na config; senão, ler do doc do 1º corretor
+        let imobiliariaId = config.imobiliariaId || "";
+        if (!imobiliariaId && corretores.length > 0) {
+            const usuarioSnap = await tx.get(db().collection("usuarios").doc(corretores[0]));
+            imobiliariaId = (usuarioSnap.data()?.imobiliariaId as string) || "";
+        }
+
+        const agora = admin.firestore.Timestamp.now();
+        const base = semUndefined({
+            nome: novo.nome || "Lead sem nome",
+            telefone,
+            origem: novo.origem,
+            campanhaNome: novo.campanhaNome,
+            anuncioNome: novo.anuncioNome,
+            formNome: novo.formNome,
+            metaLeadId: novo.metaLeadId,
+            criadoEm: agora,
+            imobiliariaId,
+        });
+
+        if (!ativo || corretores.length === 0) {
+            // Fallback: sem rodízio ativo → vai direto para o "geral"
+            const prazoAte = admin.firestore.Timestamp.fromMillis(
+                agora.toMillis() + minutosGeral * 60 * 1000,
+            );
+            tx.set(adsLeadRef, {
+                ...base,
+                status: "geral",
+                corretorEscalado: null,
+                escaladoEm: agora,
+                abriuGeralEm: agora,
+                prazoAte,
+            });
+            return {adsLeadId: adsLeadRef.id, status: "geral", corretorEscalado: null, corretores};
+        }
+
+        const proximoIndex = typeof config.proximoIndex === "number" ? config.proximoIndex : 0;
+        const corretorEscalado = corretores[proximoIndex % corretores.length];
+        const prazoAte = admin.firestore.Timestamp.fromMillis(
+            agora.toMillis() + minutosExclusivo * 60 * 1000,
+        );
+
+        tx.set(adsLeadRef, {
+            ...base,
+            status: "escalado",
+            corretorEscalado,
+            escaladoEm: agora,
+            prazoAte,
+        });
+        tx.update(configRef, {proximoIndex: (proximoIndex + 1) % corretores.length});
+
+        return {adsLeadId: adsLeadRef.id, status: "escalado", corretorEscalado, corretores};
+    });
+
+    // Pushes fora da transação (efeito colateral pós-commit)
+    const titulo = "🔥 Novo lead de anúncio!";
+    const corpo = `${novo.nome || "Novo lead"} — toque para aceitar`;
+    const dataPush = {tipo: "adsLead", adsLeadId: resultado.adsLeadId};
+
+    if (resultado.status === "escalado" && resultado.corretorEscalado) {
+        await enviarPush([resultado.corretorEscalado], titulo, corpo, dataPush);
+    } else {
+        await enviarPush(resultado.corretores, titulo, corpo, dataPush);
+    }
+
+    logger.info("criarEDistribuir: adsLead criado", resultado);
+    return resultado;
+}
+
+// ---------------------------------------------------------------------------
+// 1) Webhook do Meta (Lead Ads)
+// ---------------------------------------------------------------------------
+
+interface MetaFieldData {
+    name: string;
+    values: string[];
+}
+
+/** Busca detalhes do lead + anúncio na Graph API. */
+async function buscarLeadNaGraph(leadgenId: string, adId: string | undefined, pageToken: string): Promise<NovoAdsLead> {
+    const leadResp = await axios.get(`${GRAPH_BASE}/${leadgenId}`, {
+        params: {access_token: pageToken},
+    });
+    const fieldData = (leadResp.data?.field_data || []) as MetaFieldData[];
+
+    const pegarCampo = (...nomes: string[]): string => {
+        for (const nome of nomes) {
+            const campo = fieldData.find((f) =>
+                (f.name || "").toLowerCase().includes(nome),
+            );
+            if (campo?.values?.[0]) return campo.values[0];
+        }
+        return "";
+    };
+
+    const nome = pegarCampo("full_name", "nome", "name") || "Lead Meta";
+    const telefone = pegarCampo("phone", "telefone", "whatsapp", "celular");
+
+    let campanhaNome: string | undefined;
+    let anuncioNome: string | undefined;
+    const formNome: string | undefined = leadResp.data?.form?.name || undefined;
+
+    const efetivoAdId = adId || leadResp.data?.ad_id;
+    if (efetivoAdId) {
+        try {
+            const adResp = await axios.get(`${GRAPH_BASE}/${efetivoAdId}`, {
+                params: {access_token: pageToken, fields: "name,campaign{name}"},
+            });
+            anuncioNome = adResp.data?.name || undefined;
+            campanhaNome = adResp.data?.campaign?.name || undefined;
+        } catch (e) {
+            logger.warn("Não foi possível buscar detalhes do anúncio", {adId: efetivoAdId, e});
+        }
+    }
+
+    return {
+        nome,
+        telefone,
+        origem: "meta-form",
+        campanhaNome,
+        anuncioNome,
+        formNome,
+        metaLeadId: leadgenId,
+    };
+}
+
+/**
+ * Webhook do Meta:
+ * - GET: handshake de verificação (hub.mode/hub.verify_token/hub.challenge)
+ * - POST: eventos leadgen → busca detalhes na Graph API e distribui
+ *
+ * Sempre responde 200 no POST (o Meta reenvia em caso de erro); erros são
+ * logados e o evento bruto é guardado em `adsLeadsErros` para replay.
+ */
+export const metaLeadsWebhook = onRequest(
+    {secrets: [META_PAGE_TOKEN, META_VERIFY_TOKEN], invoker: "public"},
+    async (request, response) => {
+        // --- Verificação (GET) ---
+        if (request.method === "GET") {
+            const mode = request.query["hub.mode"];
+            const token = request.query["hub.verify_token"];
+            const challenge = request.query["hub.challenge"];
+            const esperado = META_VERIFY_TOKEN.value() || process.env.META_VERIFY_TOKEN || "";
+
+            if (mode === "subscribe" && esperado && token === esperado) {
+                logger.info("metaLeadsWebhook: verificação OK");
+                response.status(200).send(String(challenge || ""));
+            } else {
+                logger.warn("metaLeadsWebhook: verificação FALHOU", {mode, tokenRecebido: !!token});
+                response.status(403).send("Forbidden");
+            }
+            return;
+        }
+
+        if (request.method !== "POST") {
+            response.status(405).send("Method Not Allowed");
+            return;
+        }
+
+        // --- Eventos (POST): processa mas SEMPRE devolve 200 ---
+        try {
+            const body = request.body || {};
+            const entries = Array.isArray(body.entry) ? body.entry : [];
+            const pageToken = META_PAGE_TOKEN.value() || process.env.META_PAGE_TOKEN || "";
+
+            for (const entry of entries) {
+                const changes = Array.isArray(entry?.changes) ? entry.changes : [];
+                for (const change of changes) {
+                    if (change?.field !== "leadgen") continue;
+                    const valor = change.value || {};
+                    const leadgenId = valor.leadgen_id ? String(valor.leadgen_id) : "";
+                    const adId = valor.ad_id ? String(valor.ad_id) : undefined;
+                    if (!leadgenId) continue;
+
+                    if (!pageToken) {
+                        // Ainda não ligamos o token: guarda o evento bruto p/ replay
+                        logger.error("META_PAGE_TOKEN não configurado — evento salvo em adsLeadsErros", {leadgenId});
+                        await db().collection("adsLeadsErros").add({
+                            motivo: "META_PAGE_TOKEN ausente",
+                            evento: valor,
+                            recebidoEm: admin.firestore.Timestamp.now(),
+                        });
+                        continue;
+                    }
+
+                    try {
+                        const novo = await buscarLeadNaGraph(leadgenId, adId, pageToken);
+                        if (!somenteDigitos(novo.telefone)) {
+                            logger.warn("Lead do Meta sem telefone", {leadgenId});
+                        }
+                        await criarEDistribuir(novo);
+                    } catch (erroLead) {
+                        logger.error("Erro ao processar leadgen — evento salvo em adsLeadsErros", {leadgenId, erroLead});
+                        await db().collection("adsLeadsErros").add({
+                            motivo: "erro ao buscar/distribuir",
+                            erro: erroLead instanceof Error ? erroLead.message : String(erroLead),
+                            evento: valor,
+                            recebidoEm: admin.firestore.Timestamp.now(),
+                        }).catch(() => undefined);
+                    }
+                }
+            }
+        } catch (error) {
+            logger.error("metaLeadsWebhook: erro geral (respondendo 200 mesmo assim)", error);
+        }
+
+        response.status(200).send("EVENT_RECEIVED");
+    },
+);
+
+// ---------------------------------------------------------------------------
+// 3) Expiração de prazos (a cada 1 minuto)
+// ---------------------------------------------------------------------------
+
+/**
+ * A cada minuto:
+ * - 'escalado' vencido → vira 'geral' (abre para toda a escala) + push geral
+ * - 'geral' vencido → vira 'nao-atendido' (sem push)
+ */
+export const expirarAdsLeads = onSchedule("every 1 minutes", async () => {
+    const agora = admin.firestore.Timestamp.now();
+
+    // Escalados vencidos → geral
+    const escaladosVencidos = await db().collection("adsLeads")
+        .where("status", "==", "escalado")
+        .where("prazoAte", "<=", agora)
+        .get();
+
+    if (!escaladosVencidos.empty) {
+        const configSnap = await db().doc(CONFIG_REF_PATH).get();
+        const config = (configSnap.data() || {}) as Partial<DistribuicaoConfig>;
+        const corretores = Array.isArray(config.corretores) ? config.corretores : [];
+        const minutosGeral = typeof config.minutosGeral === "number" && config.minutosGeral > 0 ?
+            config.minutosGeral : 30;
+
+        for (const doc of escaladosVencidos.docs) {
+            const prazoAte = admin.firestore.Timestamp.fromMillis(
+                agora.toMillis() + minutosGeral * 60 * 1000,
+            );
+            await doc.ref.update({
+                status: "geral",
+                abriuGeralEm: agora,
+                prazoAte,
+            });
+            const dados = doc.data();
+            await enviarPush(
+                corretores,
+                "⚡ Lead liberado para todos!",
+                `${dados.nome || "Lead"} não foi aceito — quem chegar primeiro leva`,
+                {tipo: "adsLead", adsLeadId: doc.id},
+            );
+            logger.info("expirarAdsLeads: escalado → geral", {adsLeadId: doc.id});
+        }
+    }
+
+    // Gerais vencidos → não atendido (sem push)
+    const geraisVencidos = await db().collection("adsLeads")
+        .where("status", "==", "geral")
+        .where("prazoAte", "<=", agora)
+        .get();
+
+    for (const doc of geraisVencidos.docs) {
+        await doc.ref.update({status: "nao-atendido"});
+        logger.info("expirarAdsLeads: geral → nao-atendido", {adsLeadId: doc.id});
+    }
+});
+
+// ---------------------------------------------------------------------------
+// 5) Re-disparo manual pelo admin
+// ---------------------------------------------------------------------------
+
+/**
+ * Callable: re-escala um adsLead para o próximo corretor do rodízio.
+ * Requer usuário autenticado e admin (tipoConta==='imobiliaria' ou
+ * permissoes.admin===true).
+ */
+export const redistribuirAdsLead = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError("unauthenticated", "É preciso estar logado.");
+    }
+
+    const chamadorSnap = await db().collection("usuarios").doc(request.auth.uid).get();
+    const chamador = chamadorSnap.data() || {};
+    const ehAdmin = chamador.tipoConta === "imobiliaria" || chamador.permissoes?.admin === true;
+    if (!ehAdmin) {
+        throw new HttpsError("permission-denied", "Apenas administradores podem redistribuir leads.");
+    }
+
+    const adsLeadId = String(request.data?.adsLeadId || "");
+    if (!adsLeadId) {
+        throw new HttpsError("invalid-argument", "Informe o adsLeadId.");
+    }
+
+    const configRef = db().doc(CONFIG_REF_PATH);
+    const adsLeadRef = db().collection("adsLeads").doc(adsLeadId);
+
+    const resultado = await db().runTransaction(async (tx) => {
+        const [configSnap, leadSnap] = await Promise.all([
+            tx.get(configRef),
+            tx.get(adsLeadRef),
+        ]);
+
+        if (!leadSnap.exists) {
+            throw new HttpsError("not-found", "adsLead não encontrado.");
+        }
+
+        const config = (configSnap.data() || {}) as Partial<DistribuicaoConfig>;
+        const corretores = Array.isArray(config.corretores) ? config.corretores : [];
+        if (corretores.length === 0) {
+            throw new HttpsError("failed-precondition", "Nenhum corretor na escala de distribuição.");
+        }
+        const minutosExclusivo = typeof config.minutosExclusivo === "number" && config.minutosExclusivo > 0 ?
+            config.minutosExclusivo : 5;
+        const proximoIndex = typeof config.proximoIndex === "number" ? config.proximoIndex : 0;
+        const corretorEscalado = corretores[proximoIndex % corretores.length];
+
+        const agora = admin.firestore.Timestamp.now();
+        const prazoAte = admin.firestore.Timestamp.fromMillis(
+            agora.toMillis() + minutosExclusivo * 60 * 1000,
+        );
+
+        tx.update(adsLeadRef, {
+            status: "escalado",
+            corretorEscalado,
+            escaladoEm: agora,
+            prazoAte,
+        });
+        tx.update(configRef, {proximoIndex: (proximoIndex + 1) % corretores.length});
+
+        return {corretorEscalado, nome: (leadSnap.data()?.nome as string) || "Lead"};
+    });
+
+    await enviarPush(
+        [resultado.corretorEscalado],
+        "🔥 Lead redirecionado para você!",
+        `${resultado.nome} — toque para aceitar`,
+        {tipo: "adsLead", adsLeadId},
+    );
+
+    return {ok: true, corretorEscalado: resultado.corretorEscalado};
+});
+
+// ---------------------------------------------------------------------------
+// 6) Criação de lead de teste (antes da ligação com o Meta)
+// ---------------------------------------------------------------------------
+
+/**
+ * HTTPS de teste: cria um lead falso passando por todo o fluxo de
+ * distribuição. Protegido por query param ?secret= (secret TEST_SECRET).
+ *
+ * Ex.: GET .../testeCriarAdsLead?secret=XXX&nome=Fulano&telefone=47999998888
+ */
+export const testeCriarAdsLead = onRequest(
+    {secrets: [TEST_SECRET], invoker: "public"},
+    async (request, response) => {
+        const esperado = TEST_SECRET.value() || process.env.TEST_SECRET || "";
+        const recebido = String(request.query.secret || "");
+        if (!esperado || recebido !== esperado) {
+            response.status(403).send("Forbidden");
+            return;
+        }
+
+        try {
+            const nome = String(request.query.nome || "Lead de Teste");
+            const telefone = String(request.query.telefone || "47999990000");
+            const resultado = await criarEDistribuir({
+                nome,
+                telefone,
+                origem: "manual",
+                campanhaNome: String(request.query.campanha || "Campanha Teste"),
+                anuncioNome: String(request.query.anuncio || "Anúncio Teste"),
+                formNome: "Teste manual",
+            });
+            response.status(200).json(resultado);
+        } catch (error) {
+            logger.error("testeCriarAdsLead: erro", error);
+            response.status(500).json({erro: error instanceof Error ? error.message : String(error)});
+        }
+    },
+);

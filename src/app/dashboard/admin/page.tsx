@@ -22,6 +22,7 @@ const adminCategories = [
     items: [
       { title: 'Gestão de Corretores', icon: '🧑‍💼', description: 'Administre leads e desempenho dos corretores', href: '/dashboard/admin/gestao-corretores' },
       { title: 'Gestão de Leads', icon: '🔀', description: 'Redistribua leads entre corretores', href: '/dashboard/admin/gestao-leads' },
+      { title: 'Distribuição de Anúncios', icon: '📣', description: 'Escala, rodízio e tempos dos leads de propaganda', href: '/dashboard/admin/distribuicao-ads' },
       { title: 'Visualizar CRM do corretor', icon: '🔎', description: 'Veja os leads e tarefas de um corretor específico', href: '/dashboard/admin/visualizar-crm-corretor' },
       { title: 'Agenda dos Usuários', icon: '📅', description: 'Visualize a agenda de todos os usuários', href: '/dashboard/admin/agenda-usuarios' },
       { title: 'Importar Leads', icon: '⬆️', description: 'Importe leads em massa', href: '/dashboard/admin/importar-leads' },

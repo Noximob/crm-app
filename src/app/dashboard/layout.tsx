@@ -6,8 +6,10 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { PipelineStagesProvider } from '@/context/PipelineStagesContext';
 import { ConfirmDialogHost } from '@/components/ui/ConfirmDialog';
-import { ToastHost } from '@/components/ui/toast';
+import { ToastHost, showToast } from '@/components/ui/toast';
 import LoadingState from '@/components/ui/LoadingState';
+import AdsLeadCard from '@/components/AdsLeadCard';
+import { ativarNotificacoes, initPushSilencioso, pushJaAtivado, pushSupported } from '@/lib/push';
 
 // Ícones
 const AlertTriangleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>;
@@ -40,6 +42,8 @@ const KeyIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns=
 const CodeIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16,18 22,12 16,6"/><polyline points="8,6 2,12 8,18"/></svg>;
 
 const LogOutIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>;
+
+const BellIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>;
 
 /** Ícone Shop — moeda amarela (único do menu com cor); gasto de moedas */
 const ShopIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -86,6 +90,27 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [notifAtivas, setNotifAtivas] = useState(false);
+
+  // Push (FCM): renova token silenciosamente se o usuário já ativou antes
+  useEffect(() => {
+    if (!user || isEspelhoDemo) return;
+    setNotifAtivas(pushJaAtivado());
+    initPushSilencioso(user.uid);
+  }, [user, isEspelhoDemo]);
+
+  const handleAtivarNotificacoes = async () => {
+    if (!user) return;
+    const resultado = await ativarNotificacoes(user.uid);
+    if (resultado === 'ok') {
+      setNotifAtivas(true);
+      showToast('Notificações ativadas!', 'success');
+    } else if (resultado === 'negado') {
+      showToast('Permissão negada pelo navegador.', 'error');
+    } else {
+      showToast(pushSupported() ? 'Notificações ainda não configuradas.' : 'Seu navegador não suporta notificações.', 'info');
+    }
+  };
 
   // Fecha o drawer mobile ao navegar
   useEffect(() => {
@@ -232,6 +257,16 @@ export default function DashboardLayout({
                 <p className="text-[8.5px] text-emerald-400 font-extrabold uppercase tracking-[0.16em] leading-tight">online</p>
               </div>
             </div>
+            {!notifAtivas && (
+              <button
+                onClick={handleAtivarNotificacoes}
+                className="flex items-center gap-3 pl-[10px] pr-2 w-full py-2 rounded-lg text-[12.5px] font-semibold text-text-secondary hover:bg-white/[0.06] hover:text-[#E8C547] transition-all"
+                title="Ativar notificações"
+              >
+                <BellIcon className="h-[19px] w-[19px] shrink-0" />
+                <span className="opacity-0 group-hover/side:opacity-100 transition-opacity whitespace-nowrap">Ativar notificações</span>
+              </button>
+            )}
             <button
               onClick={handleLogout}
               className="flex items-center gap-3 pl-[10px] pr-2 w-full py-2 rounded-lg text-[12.5px] font-semibold text-text-secondary hover:bg-[#FF1E56]/10 hover:text-[#FF6B93] transition-all"
@@ -351,6 +386,16 @@ export default function DashboardLayout({
                   <p className="text-[8.5px] text-emerald-400 font-extrabold uppercase tracking-[0.16em] leading-tight">online</p>
                 </div>
               </div>
+              {!notifAtivas && (
+                <button
+                  onClick={handleAtivarNotificacoes}
+                  className="flex items-center gap-3 px-3 w-full py-3 rounded-lg text-[13.5px] font-semibold text-text-secondary hover:bg-white/[0.06] hover:text-[#E8C547] transition-all"
+                  title="Ativar notificações"
+                >
+                  <BellIcon className="h-[20px] w-[20px] shrink-0" />
+                  <span>Ativar notificações</span>
+                </button>
+              )}
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-3 px-3 w-full py-3 rounded-lg text-[13.5px] font-semibold text-text-secondary hover:bg-[#FF1E56]/10 hover:text-[#FF6B93] transition-all"
@@ -411,6 +456,7 @@ export default function DashboardLayout({
         </div>
       </nav>
 
+      <AdsLeadCard />
       <ConfirmDialogHost />
       <ToastHost />
     </div>
