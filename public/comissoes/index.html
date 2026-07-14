@@ -490,6 +490,8 @@
   .rep-sec{margin-top:24px}
   .rep-sec h4{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink);font-weight:700;padding-left:10px;border-left:3px solid var(--brass);margin-bottom:12px}
   .rep-note{font-size:12.5px;color:var(--muted);margin-bottom:12px;line-height:1.55}
+  .ret-line{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:0 0 12px;color:var(--muted)}
+  .ret-line b{font-variant-numeric:tabular-nums;color:var(--danger);white-space:nowrap}
   .rep-subh{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--brass);font-weight:700;margin:14px 0 7px}
   .rules-tbl,.rep-tbl{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:4px}
   .rep-tbl{table-layout:fixed}
@@ -629,10 +631,12 @@
     <div class="eyebrow">Configuração do modelo</div>
     <div class="config">
       <div class="field"><label>Imposto na fonte (%)</label><input id="cfgTax" type="number" value="10" step="1"></div>
+      <div class="field"><label>Retenção extra (%)</label><input id="cfgRet" type="number" value="0" min="0" step="1"></div>
+      <div class="field"><label>Motivo da retenção</label><input id="cfgRetLabel" type="text" value="Propaganda" placeholder="Propaganda paga"></div>
       <div class="field"><label>Meta por pessoa (R$)</label><input id="cfgTarget" class="money" type="text" inputmode="numeric" value="1.200.000,00"></div>
       <div class="field"><label>Faixa progressiva (R$)</label><input id="cfgBand" class="money" type="text" inputmode="numeric" value="500.000,00"></div>
     </div>
-    <div class="cfg-hint">A <b>comissão (%)</b> agora é definida em cada venda no lançamento (padrão 5%). O imposto acima é fixo e incide sobre todas.</div>
+    <div class="cfg-hint">A <b>comissão (%)</b> agora é definida em cada venda no lançamento (padrão 5%). O imposto acima é fixo e incide sobre todas. A <b>retenção extra</b> (opcional, 0 = desligada) é descontada da líquida junto com o imposto e aparece discriminada nos relatórios com o motivo informado.</div>
 
     <div class="eyebrow">Política de comissão <span class="eyebrow-note">(% da comissão líquida — edite conforme a política do Renan)</span></div>
     <div id="policyBox"></div>
@@ -813,8 +817,11 @@ function dealProp(d){ return (d&&typeof d==='object'&&d.prop)||''; }
 function dealSched(d){ if(d&&typeof d==='object'){ if(!Array.isArray(d.schedule)) d.schedule=[{pct:100,month:''}]; return d.schedule; } return []; }
 function cfgGrossPct(){ return DEFAULT_GROSS; }
 function cfgTaxPct(){ return +document.getElementById('cfgTax').value||0; }
+function cfgRetPct(){ const el=document.getElementById('cfgRet'); return Math.min(100,Math.max(0,+(el&&el.value)||0)); } // retenção extra opcional (%)
+function cfgRetLabel(){ const el=document.getElementById('cfgRetLabel'); const s=el?String(el.value).trim():''; return s||'Propaganda'; }
+function retFactor(){ return 1-cfgRetPct()/100; } // fração que sobra após a retenção extra
 function dealGross(d){ return (d&&typeof d==='object'&&d.gross!=null&&d.gross!=='')?+d.gross:cfgGrossPct(); } // comissão bruta % da venda
-function dealNet(d){ return dealGross(d)/100*(1-cfgTaxPct()/100); } // fração líquida sobre o VGV
+function dealNet(d){ return dealGross(d)/100*(1-cfgTaxPct()/100)*retFactor(); } // fração líquida sobre o VGV
 function dealCaptPct(d){ return (d&&typeof d==='object'&&+d.capt)||0; } // % de captação sobre a líquida
 function dealCaptWho(d){ return (d&&typeof d==='object'&&d.captWho)||''; }
 function newTeam(){
@@ -832,7 +839,7 @@ function personFrom(ti, role, bi){ return role==='m' ? teams[ti].mgr : (role==='
 
 // ---------- config getters ----------
 const DEFAULT_GROSS = 5; // comissão bruta padrão por venda (%), ajustável em cada lançamento
-function netRate(){ return DEFAULT_GROSS/100*(1-(+document.getElementById('cfgTax').value||0)/100); }
+function netRate(){ return DEFAULT_GROSS/100*(1-(+document.getElementById('cfgTax').value||0)/100)*retFactor(); }
 function cfgTarget(){return parseMoney(document.getElementById('cfgTarget').value);}
 function cfgBand(){return parseMoney(document.getElementById('cfgBand').value)||1;}
 
@@ -1261,6 +1268,12 @@ function renderAdmin(){
 
 // ---------- relatórios (gerente / corretor) ----------
 function effPct(split){ return rate(netRate()*split); }
+// linha discriminada da retenção extra no relatório (só aparece quando retenção > 0)
+function retLine(totalNet){
+  const p=cfgRetPct(); if(!(p>0)) return '';
+  const rf=retFactor(); const amt = rf>0 ? totalNet/rf*(p/100) : 0; // valor retido sobre o que seria o total sem a retenção
+  return `<div class="ret-line"><span class="txt">${esc(cfgRetLabel())} (${rate(p)}):</span><b>− ${fmt(amt)}</b></div>`;
+}
 function repFaixa(t){ return t===0?'na base':(t===1?'na 1ª faixa':'na 2ª faixa'); }
 function roleRules(role){
   const T=cfgTarget(), B=cfgBand();
@@ -1333,7 +1346,8 @@ function gerHTML(ti){
     <div class="rep-hero"><span>Total a receber no período</span><b>${fmt(r.mgrTotal+capt.total)}</b></div>
 
     <div class="rep-sec"><h4>Como sua comissão é calculada</h4>
-      <p class="rep-note">A imobiliária recebe a comissão sobre o VGV e retém o imposto na fonte; sobre esse líquido incidem os percentuais abaixo. O ganho cresce em 2 faixas conforme o volume vendido no trimestre.</p>
+      <p class="rep-note">A imobiliária recebe a comissão sobre o VGV e retém o imposto na fonte${cfgRetPct()>0?` e a retenção de ${rate(cfgRetPct())} (${esc(cfgRetLabel())})`:''}; sobre esse líquido incidem os percentuais abaixo. O ganho cresce em 2 faixas conforme o volume vendido no trimestre.</p>
+      ${retLine(r.mgrTotal+capt.total)}
       <div class="rep-subh">Suas vendas próprias</div>
       ${roleRules('gerente')}
       <div class="rep-subh">Override — você também ganha sobre o que cada pessoa da sua equipe vende</div>
@@ -1376,7 +1390,8 @@ function corHTML(sel){
     <div class="rep-hero"><span>Total a receber no período</span><b>${fmt(c.brTot+capt.total)}</b></div>
 
     <div class="rep-sec"><h4>Como sua comissão é calculada</h4>
-      <p class="rep-note">A imobiliária recebe a comissão sobre o VGV e retém o imposto na fonte; sobre esse líquido você recebe os percentuais abaixo. Ao passar a meta do trimestre, a parte que excede ganha o bônus de faixa.</p>
+      <p class="rep-note">A imobiliária recebe a comissão sobre o VGV e retém o imposto na fonte${cfgRetPct()>0?` e a retenção de ${rate(cfgRetPct())} (${esc(cfgRetLabel())})`:''}; sobre esse líquido você recebe os percentuais abaixo. Ao passar a meta do trimestre, a parte que excede ganha o bônus de faixa.</p>
+      ${retLine(c.brTot+capt.total)}
       ${roleRules(type)}
     </div>
 
@@ -1557,7 +1572,7 @@ async function cloudBoot(){
 function v(id){ const el=document.getElementById(id); return el?el.value:''; }
 function stateBlob(){
   return JSON.stringify({
-    cfg:{tax:v('cfgTax'),target:cfgTarget(),band:cfgBand(),start:v('cfgStart'),end:v('cfgEnd'),pol:POL},
+    cfg:{tax:v('cfgTax'),ret:v('cfgRet'),retLabel:v('cfgRetLabel'),target:cfgTarget(),band:cfgBand(),start:v('cfgStart'),end:v('cfgEnd'),pol:POL},
     meta:{ticket:parseMoney(v('mTicket')),contatos:v('mContatos'),reunioes:v('mReunioes'),visitas:v('mVisitas'),propostas:v('mPropostas'),fechamentos:v('mFechamentos'),alvo:parseMoney(v('mAlvo')),mode:metaMode},
     goals,
     teams, solos, cashEntries, archives, events, seq
@@ -1593,7 +1608,7 @@ function loadState(rawOverride){
   })) : [];
   if(data.cfg && data.cfg.pol){ try{ ['corretor','sdr','solo','gerente'].forEach(role=>{ if(data.cfg.pol[role]){ if(data.cfg.pol[role].br) POL[role].br=data.cfg.pol[role].br.map(Number); if(data.cfg.pol[role].ov&&POL[role].ov) POL[role].ov=data.cfg.pol[role].ov.map(Number); } }); }catch(e){} }
   try{
-    if(data.cfg) [['tax','cfgTax'],['target','cfgTarget'],['band','cfgBand'],['start','cfgStart'],['end','cfgEnd']]
+    if(data.cfg) [['tax','cfgTax'],['ret','cfgRet'],['retLabel','cfgRetLabel'],['target','cfgTarget'],['band','cfgBand'],['start','cfgStart'],['end','cfgEnd']]
       .forEach(([k,id])=>{ const el=document.getElementById(id); if(data.cfg[k]!=null && el) el.value = MONEY_IDS[id] ? fmtMoneyOpt(normMoneyStored(data.cfg[k])) : data.cfg[k]; });
     if(data.meta){
       [['ticket','mTicket'],['contatos','mContatos'],['reunioes','mReunioes'],['visitas','mVisitas'],['propostas','mPropostas'],['fechamentos','mFechamentos'],['alvo','mAlvo']]
@@ -2190,7 +2205,7 @@ document.getElementById('tab-eventos').addEventListener('click',e=>{
   const sadd=e.target.closest('[data-ev-saleadd]'); if(sadd){ const ev=evCurrent(); if(ev){ ev.sales.push({seller:(ev.corretores&&ev.corretores.length?'c0':'g'),vgv:0,sat:''}); saveState(); renderEvents(); } return; }
   const sdel=e.target.closest('[data-ev-saledel]'); if(sdel){ const ev=evCurrent(); if(ev){ ev.sales.splice(+sdel.dataset.evSaledel,1); saveState(); renderEvents(); } return; }
 });
-['cfgTax','cfgTarget','cfgBand','cfgStart','cfgEnd'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{ renderAll(); renderMeta(); }));
+['cfgTax','cfgRet','cfgRetLabel','cfgTarget','cfgBand','cfgStart','cfgEnd'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{ renderAll(); renderMeta(); }));
 document.getElementById('addTeam').addEventListener('click',()=>{ teams.push(newTeam()); buildAll(); renderAll(); });
 document.getElementById('addSolo').addEventListener('click',()=>{ solos.push({name:'Corretor '+(solos.length+1), type:'solo', deals:[]}); buildAll(); renderAll(); });
 document.getElementById('zeroQuarter').addEventListener('click',()=>{
