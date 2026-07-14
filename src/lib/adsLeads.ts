@@ -95,9 +95,12 @@ export async function aceitarAdsLead({
         email: '',
         etapa: etapaInicial,
         origem: dados.campanhaNome
-          ? `Anúncio Meta · ${dados.campanhaNome}`
-          : 'Anúncio Meta',
-        origemTipo: 'anuncio-meta',
+          ? `Propaganda · ${dados.campanhaNome}${dados.anuncioNome ? ` (${dados.anuncioNome})` : ''}`
+          : 'Propaganda · Meta',
+        origemTipo: 'Propaganda',
+        origemPropaganda: dados.campanhaNome
+          ? `${dados.campanhaNome}${dados.anuncioNome ? ` (${dados.anuncioNome})` : ''}`
+          : 'Meta',
         createdAt: serverTimestamp(),
         tarefasPendentes: [],
         automacao: {

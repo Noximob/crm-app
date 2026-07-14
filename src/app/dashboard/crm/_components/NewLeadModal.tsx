@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 
-const ORIGEM_OPCOES = ['Networking', 'Ligação', 'Ação de rua', 'Disparo de msg', 'Outros'] as const;
+const ORIGEM_OPCOES = ['Networking', 'Ligação', 'Ação de rua', 'Disparo de msg', 'Propaganda', 'Outros'] as const;
 type OrigemLead = typeof ORIGEM_OPCOES[number];
 
 interface NewLeadModalProps {
@@ -86,6 +86,10 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
             setError('Informe a origem em "Outros".');
             return;
         }
+        if (origem === 'Propaganda' && !origemOutros.trim()) {
+            setError('Informe de qual propaganda o lead veio.');
+            return;
+        }
         if (!currentUser) {
             setError('Você precisa estar logado para criar um lead.');
             return;
@@ -94,7 +98,11 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
         setIsLoading(true);
         setError('');
 
-        const origemFinal = origem === 'Outros' ? origemOutros.trim() : origem;
+        const origemFinal = origem === 'Outros'
+            ? origemOutros.trim()
+            : origem === 'Propaganda'
+                ? `Propaganda · ${origemOutros.trim()}`
+                : origem;
 
         try {
             // Salva na coleção principal 'leads'
@@ -110,6 +118,7 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
                 origem: origemFinal,
                 origemTipo: origem, // guarda a opção escolhida (ex: 'Outros') para relatórios
                 ...(origem === 'Outros' && { origemOutros: origemOutros.trim() }),
+                ...(origem === 'Propaganda' && { origemPropaganda: origemOutros.trim() }),
                 createdAt: serverTimestamp(),
                 // Espelho das tarefas pendentes (lead novo nasce sem tarefa)
                 tarefasPendentes: [],
@@ -183,15 +192,17 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
                                 </label>
                             ))}
                         </div>
-                        {origem === 'Outros' && (
+                        {(origem === 'Outros' || origem === 'Propaganda') && (
                             <div className="mt-3 p-3 rounded-xl border border-white/[0.08] bg-white/[0.03]">
-                                <label htmlFor="origem-outros" className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">Especifique a origem</label>
+                                <label htmlFor="origem-outros" className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">
+                                    {origem === 'Propaganda' ? 'De qual propaganda veio?' : 'Especifique a origem'}
+                                </label>
                                 <input
                                     id="origem-outros"
                                     type="text"
                                     value={origemOutros}
                                     onChange={(e) => setOrigemOutros(e.target.value)}
-                                    placeholder="Ex: Indicação do parceiro, Site..."
+                                    placeholder={origem === 'Propaganda' ? 'Ex: Campanha Barra Velha — Instagram' : 'Ex: Indicação do parceiro, Site...'}
                                     className="w-full px-3 py-2 bg-white/[0.04] border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 text-white placeholder-white/30"
                                 />
                             </div>
