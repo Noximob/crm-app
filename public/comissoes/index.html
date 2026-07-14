@@ -319,6 +319,10 @@
   .sx input:focus{outline:none;border-color:var(--brass)}
   .sx-who{flex:1;min-width:160px}
   .sx-who input{width:100%}
+  .sx-ret .ret-check{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:12px;text-transform:none;letter-spacing:0;color:var(--muted);font-weight:600;cursor:pointer;user-select:none;white-space:nowrap}
+  .sx-ret .ret-check input{width:auto;margin:0;accent-color:var(--brass);cursor:pointer}
+  .sx-ret .ret-check.on{border-color:var(--brass);color:var(--ink-text)}
+  .ret-mark{font-size:11px;color:var(--danger);font-weight:600;white-space:nowrap}
   .sale-val-input{width:100%;border:1px solid var(--line);border-radius:7px;padding:7px 9px;font-size:14px;font-variant-numeric:tabular-nums;font-weight:600}
   .sale-val-input:focus{outline:none;border-color:var(--brass);box-shadow:0 0 0 3px var(--brass-soft)}
   .sale-date-input{width:100%}
@@ -631,12 +635,12 @@
     <div class="eyebrow">Configuração do modelo</div>
     <div class="config">
       <div class="field"><label>Imposto na fonte (%)</label><input id="cfgTax" type="number" value="10" step="1"></div>
-      <div class="field"><label>Retenção extra (%)</label><input id="cfgRet" type="number" value="0" min="0" step="1"></div>
+      <div class="field"><label>Retenção propaganda (%)</label><input id="cfgRet" type="number" value="0" min="0" step="1"></div>
       <div class="field"><label>Motivo da retenção</label><input id="cfgRetLabel" type="text" value="Propaganda" placeholder="Propaganda paga"></div>
       <div class="field"><label>Meta por pessoa (R$)</label><input id="cfgTarget" class="money" type="text" inputmode="numeric" value="1.200.000,00"></div>
       <div class="field"><label>Faixa progressiva (R$)</label><input id="cfgBand" class="money" type="text" inputmode="numeric" value="500.000,00"></div>
     </div>
-    <div class="cfg-hint">A <b>comissão (%)</b> agora é definida em cada venda no lançamento (padrão 5%). O imposto acima é fixo e incide sobre todas. A <b>retenção extra</b> (opcional, 0 = desligada) é descontada da líquida junto com o imposto e aparece discriminada nos relatórios com o motivo informado.</div>
+    <div class="cfg-hint">A <b>comissão (%)</b> agora é definida em cada venda no lançamento (padrão 5%). O imposto acima é fixo e incide sobre todas. A <b>retenção propaganda</b> (opcional, 0 = desligada) é descontada da líquida <b>apenas das vendas marcadas como "Propaganda"</b> no lançamento — e aparece discriminada nos relatórios com o motivo informado.</div>
 
     <div class="eyebrow">Política de comissão <span class="eyebrow-note">(% da comissão líquida — edite conforme a política do Renan)</span></div>
     <div id="policyBox"></div>
@@ -809,7 +813,7 @@ function buildPolicy(){
 let seq=0, pendingFocus=null;
 // cada venda é um objeto { value, date, prop, schedule:[{pct,month}] }
 function uid(p){ return (p||'d')+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
-function newDeal(value){ return { id:uid('d'), value, date:'', prop:'', gross:null, capt:0, captWho:'', schedule:[{pct:100,month:'',done:false,paid:false}] }; }
+function newDeal(value){ return { id:uid('d'), value, date:'', prop:'', gross:null, capt:0, captWho:'', ret:false, schedule:[{pct:100,month:'',done:false,paid:false}] }; }
 function findDealById(id){ for(const tm of teams){ for(const d of tm.mgr.deals) if(d.id===id) return d; for(const b of tm.brokers) for(const d of b.deals) if(d.id===id) return d; } for(const s of solos) for(const d of s.deals) if(d.id===id) return d; return null; }
 function dealValue(d){ return typeof d==='number' ? d : (d&&d.value)||0; }
 function dealDate(d){ return (d&&typeof d==='object'&&d.date)||''; }
@@ -817,11 +821,13 @@ function dealProp(d){ return (d&&typeof d==='object'&&d.prop)||''; }
 function dealSched(d){ if(d&&typeof d==='object'){ if(!Array.isArray(d.schedule)) d.schedule=[{pct:100,month:''}]; return d.schedule; } return []; }
 function cfgGrossPct(){ return DEFAULT_GROSS; }
 function cfgTaxPct(){ return +document.getElementById('cfgTax').value||0; }
-function cfgRetPct(){ const el=document.getElementById('cfgRet'); return Math.min(100,Math.max(0,+(el&&el.value)||0)); } // retenção extra opcional (%)
+function cfgRetPct(){ const el=document.getElementById('cfgRet'); return Math.min(100,Math.max(0,+(el&&el.value)||0)); } // retenção de propaganda (%), aplicada só às vendas marcadas
 function cfgRetLabel(){ const el=document.getElementById('cfgRetLabel'); const s=el?String(el.value).trim():''; return s||'Propaganda'; }
-function retFactor(){ return 1-cfgRetPct()/100; } // fração que sobra após a retenção extra
+function dealRet(d){ return !!(d&&typeof d==='object'&&d.ret); } // venda veio de propaganda paga?
+let RET_OFF=false; // quando true, dealNet ignora a retenção (usado só p/ calcular o "seria sem retenção" nos relatórios)
+function withoutRet(fn){ RET_OFF=true; try{ return fn(); } finally{ RET_OFF=false; } }
 function dealGross(d){ return (d&&typeof d==='object'&&d.gross!=null&&d.gross!=='')?+d.gross:cfgGrossPct(); } // comissão bruta % da venda
-function dealNet(d){ return dealGross(d)/100*(1-cfgTaxPct()/100)*retFactor(); } // fração líquida sobre o VGV
+function dealNet(d){ return dealGross(d)/100*(1-cfgTaxPct()/100)*((!RET_OFF&&dealRet(d))?(1-cfgRetPct()/100):1); } // fração líquida sobre o VGV (retenção só nas vendas de propaganda)
 function dealCaptPct(d){ return (d&&typeof d==='object'&&+d.capt)||0; } // % de captação sobre a líquida
 function dealCaptWho(d){ return (d&&typeof d==='object'&&d.captWho)||''; }
 function newTeam(){
@@ -839,7 +845,7 @@ function personFrom(ti, role, bi){ return role==='m' ? teams[ti].mgr : (role==='
 
 // ---------- config getters ----------
 const DEFAULT_GROSS = 5; // comissão bruta padrão por venda (%), ajustável em cada lançamento
-function netRate(){ return DEFAULT_GROSS/100*(1-(+document.getElementById('cfgTax').value||0)/100)*retFactor(); }
+function netRate(){ return DEFAULT_GROSS/100*(1-(+document.getElementById('cfgTax').value||0)/100); } // taxa de referência (sem retenção — ela é por venda)
 function cfgTarget(){return parseMoney(document.getElementById('cfgTarget').value);}
 function cfgBand(){return parseMoney(document.getElementById('cfgBand').value)||1;}
 
@@ -911,7 +917,7 @@ function brokerDeals(deals, type){
       pos+=take; rem-=take;
     }
     const liquido=v*net, capt=liquido*captF;
-    out.push({value:v, date:dealDate(d), prop:dealProp(d), brEarn, ovEarn, capt, captWho:dealCaptWho(d), liquido, gross:dealGross(d), schedule:dealSched(d)}); cum+=v;
+    out.push({value:v, date:dealDate(d), prop:dealProp(d), brEarn, ovEarn, capt, captWho:dealCaptWho(d), liquido, gross:dealGross(d), ret:dealRet(d), schedule:dealSched(d)}); cum+=v;
   }
   return out;
 }
@@ -926,7 +932,7 @@ function mgrDeals(deals){
       earn+=take*net*splitF*mgrRate(tier)/100; pos+=take; rem-=take;
     }
     const liquido=v*net, capt=liquido*captF;
-    out.push({value:v, date:dealDate(d), prop:dealProp(d), earn, capt, captWho:dealCaptWho(d), liquido, gross:dealGross(d), schedule:dealSched(d)}); cum+=v;
+    out.push({value:v, date:dealDate(d), prop:dealProp(d), earn, capt, captWho:dealCaptWho(d), liquido, gross:dealGross(d), ret:dealRet(d), schedule:dealSched(d)}); cum+=v;
   }
   return out;
 }
@@ -1067,6 +1073,7 @@ function dealsHTML(ti, role, bi, deals){
         <div class="sx"><label>Comissão (%)</label><input class="sale-gross-input num" type="number" step="0.5" min="0" value="${d&&d.gross!=null&&d.gross!==''?d.gross:''}" ${ctx} data-idx="${idx}" data-dk="gross" placeholder="${cfgGrossPct()}"></div>
         <div class="sx"><label>Captação (%)</label><input class="sale-capt-input num" type="number" step="1" min="0" max="100" value="${d&&d.capt?d.capt:''}" ${ctx} data-idx="${idx}" data-dk="capt" placeholder="0"></div>
         <div class="sx sx-who"><label>Quem captou</label><input class="sale-captwho-input" type="text" list="peopleList" value="${esc(dealCaptWho(d))}" ${ctx} data-idx="${idx}" data-dk="captWho" placeholder="nome do corretor ou externo"></div>
+        <div class="sx sx-ret"><label>Propaganda</label><label class="ret-check${dealRet(d)?' on':''}"><input class="sale-ret-input" type="checkbox"${dealRet(d)?' checked':''} ${ctx} data-idx="${idx}" data-dk="ret"><span>venda de propaganda${cfgRetPct()>0?` (−${rate(cfgRetPct())})`:''}</span></label></div>
       </div>
       <button class="x-btn del-sale" data-act="deldeal" ${ctx} data-idx="${idx}" title="Remover venda">✕</button>
     </div>`;
@@ -1179,6 +1186,7 @@ function bindInputs(){
       else if(k==='gross'){ d.gross=e.target.value===''?null:(+e.target.value||0); }
       else if(k==='capt'){ d.capt=+e.target.value||0; }
       else if(k==='captWho'){ d.captWho=e.target.value; }
+      else if(k==='ret'){ d.ret=e.target.checked; e.target.closest('.ret-check').classList.toggle('on', d.ret); }
       else {
         const sch=dealSched(d), si=+e.target.dataset.si;
         if(k==='pct') sch[si].pct=+e.target.value||0; else sch[si].month=e.target.value;
@@ -1268,11 +1276,13 @@ function renderAdmin(){
 
 // ---------- relatórios (gerente / corretor) ----------
 function effPct(split){ return rate(netRate()*split); }
-// linha discriminada da retenção extra no relatório (só aparece quando retenção > 0)
-function retLine(totalNet){
+// linha discriminada da retenção de propaganda no relatório: diferença exata entre o total sem retenção
+// e o total real (só aparece quando a pessoa tem vendas marcadas como propaganda e a diferença é > 0)
+function retLine(realTotal, noRetTotal){
   const p=cfgRetPct(); if(!(p>0)) return '';
-  const rf=retFactor(); const amt = rf>0 ? totalNet/rf*(p/100) : 0; // valor retido sobre o que seria o total sem a retenção
-  return `<div class="ret-line"><span class="txt">${esc(cfgRetLabel())} (${rate(p)}):</span><b>− ${fmt(amt)}</b></div>`;
+  const amt=(noRetTotal||0)-(realTotal||0);
+  if(!(amt>0.005)) return '';
+  return `<div class="ret-line"><span class="txt">${esc(cfgRetLabel())} (${rate(p)}) — vendas de propaganda:</span><b>− ${fmt(amt)}</b></div>`;
 }
 function repFaixa(t){ return t===0?'na base':(t===1?'na 1ª faixa':'na 2ª faixa'); }
 function roleRules(role){
@@ -1298,7 +1308,8 @@ function salesRecvTable(items, valueLabel, withWho){
   items.forEach(it=>{
     subV+=it.value; subC+=it.commission;
     const recv=installments(it.commission,it.schedule).map(x=>`<span class="recv-cell"><b>${fmt(x.value)}</b><span class="recv-when">${monthLabel(x.month)}</span></span>`).join('');
-    h+=`<tr class="sale-main">${withWho?`<td class="txt">${esc(it.who)||'—'}</td>`:''}<td class="txt">${esc(it.prop)||'—'}</td><td class="txt">${it.date?fmtDate(it.date):'<span class="todo">a definir</span>'}</td><td>${fmt(it.value)}</td><td><b>${fmt(it.commission)}</b></td><td>${recv}</td></tr>`;
+    const retMark = (it.ret && cfgRetPct()>0) ? ` <span class="ret-mark">· propaganda −${rate(cfgRetPct())}</span>` : '';
+    h+=`<tr class="sale-main">${withWho?`<td class="txt">${esc(it.who)||'—'}</td>`:''}<td class="txt">${esc(it.prop)||'—'}${retMark}</td><td class="txt">${it.date?fmtDate(it.date):'<span class="todo">a definir</span>'}</td><td>${fmt(it.value)}</td><td><b>${fmt(it.commission)}</b></td><td>${recv}</td></tr>`;
     if(it.segs && it.segs.length>1){
       const parts=it.segs.map(s=>`<div class="seg-part"><b>${fmt(s.value)}</b> ${repFaixa(s.tier)} <span class="seg-rate">${(+s.eff.toFixed(2)).toLocaleString('pt-BR')}% do VGV</span> = <b class="seg-earn">${fmt(s.earn)}</b></div>`).join('');
       h+=`<tr class="seg-row"><td colspan="${cols}" class="seg-cell"><div class="seg-title">Esta venda cruzou a meta — comissão dividida por faixa</div>${parts}</td></tr>`;
@@ -1332,13 +1343,15 @@ function gerHTML(ti){
   const tm=teams[ti]; if(!tm) return '';
   const r=computeTeam(tm);
   const mgrPays=mgrDeals(tm.mgr.deals), mgrBrk=dealBreakdown(tm.mgr.deals, mgrRate);
-  const ownItems=mgrPays.map((d,i)=>({date:d.date,prop:d.prop,value:d.value,commission:d.earn,schedule:d.schedule,segs:mgrBrk[i].segs})).filter(d=>d.value>0);
+  const ownItems=mgrPays.map((d,i)=>({date:d.date,prop:d.prop,value:d.value,commission:d.earn,ret:d.ret,schedule:d.schedule,segs:mgrBrk[i].segs})).filter(d=>d.value>0);
   const ovItems=[];
   tm.brokers.forEach(b=>{
     const type=b.type||'corretor', pays=brokerDeals(b.deals,type), brk=dealBreakdown(b.deals, t=>ovRate(type,t));
-    pays.forEach((d,i)=>{ if(d.value>0 && d.ovEarn>0) ovItems.push({who:b.name||roleLabel(type),date:d.date,prop:d.prop,value:d.value,commission:d.ovEarn,schedule:d.schedule,segs:brk[i].segs}); });
+    pays.forEach((d,i)=>{ if(d.value>0 && d.ovEarn>0) ovItems.push({who:b.name||roleLabel(type),date:d.date,prop:d.prop,value:d.value,commission:d.ovEarn,ret:d.ret,schedule:d.schedule,segs:brk[i].segs}); });
   });
   const capt=captacaoFor(tm.mgr.name);
+  const noRetTotal=withoutRet(()=>{ const r2=computeTeam(tm), c2=captacaoFor(tm.mgr.name); return r2.mgrTotal+c2.total; });
+  const retInfo=retLine(r.mgrTotal+capt.total, noRetTotal);
   const recv=mgrReceivables(tm);
   capt.items.forEach(it=> installments(it.amount,it.schedule).forEach(x=>{ recv[x.month]=(recv[x.month]||0)+x.value; }));
   return `<div class="report">
@@ -1346,8 +1359,8 @@ function gerHTML(ti){
     <div class="rep-hero"><span>Total a receber no período</span><b>${fmt(r.mgrTotal+capt.total)}</b></div>
 
     <div class="rep-sec"><h4>Como sua comissão é calculada</h4>
-      <p class="rep-note">A imobiliária recebe a comissão sobre o VGV e retém o imposto na fonte${cfgRetPct()>0?` e a retenção de ${rate(cfgRetPct())} (${esc(cfgRetLabel())})`:''}; sobre esse líquido incidem os percentuais abaixo. O ganho cresce em 2 faixas conforme o volume vendido no trimestre.</p>
-      ${retLine(r.mgrTotal+capt.total)}
+      <p class="rep-note">A imobiliária recebe a comissão sobre o VGV e retém o imposto na fonte${retInfo?`; nas vendas de propaganda também é retida a retenção de ${rate(cfgRetPct())} (${esc(cfgRetLabel())})`:''}; sobre esse líquido incidem os percentuais abaixo. O ganho cresce em 2 faixas conforme o volume vendido no trimestre.</p>
+      ${retInfo}
       <div class="rep-subh">Suas vendas próprias</div>
       ${roleRules('gerente')}
       <div class="rep-subh">Override — você também ganha sobre o que cada pessoa da sua equipe vende</div>
@@ -1381,8 +1394,10 @@ function corHTML(sel){
   if(!b) return '';
   const type=sel.startsWith('s:')?'solo':(b.type||'corretor'), total=personTotal(b), c=brokerTotals(b.deals,type);
   const pays=brokerDeals(b.deals,type), brk=dealBreakdown(b.deals, t=>brRate(type,t));
-  const items=pays.map((d,i)=>({date:d.date,prop:d.prop,value:d.value,commission:d.brEarn,schedule:d.schedule,segs:brk[i].segs})).filter(d=>d.value>0);
+  const items=pays.map((d,i)=>({date:d.date,prop:d.prop,value:d.value,commission:d.brEarn,ret:d.ret,schedule:d.schedule,segs:brk[i].segs})).filter(d=>d.value>0);
   const capt=captacaoFor(b.name);
+  const noRetTotal=withoutRet(()=>{ const c2=brokerTotals(b.deals,type), cp2=captacaoFor(b.name); return c2.brTot+cp2.total; });
+  const retInfo=retLine(c.brTot+capt.total, noRetTotal);
   const recv=brokerReceivables(b);
   capt.items.forEach(it=> installments(it.amount,it.schedule).forEach(x=>{ recv[x.month]=(recv[x.month]||0)+x.value; }));
   return `<div class="report">
@@ -1390,8 +1405,8 @@ function corHTML(sel){
     <div class="rep-hero"><span>Total a receber no período</span><b>${fmt(c.brTot+capt.total)}</b></div>
 
     <div class="rep-sec"><h4>Como sua comissão é calculada</h4>
-      <p class="rep-note">A imobiliária recebe a comissão sobre o VGV e retém o imposto na fonte${cfgRetPct()>0?` e a retenção de ${rate(cfgRetPct())} (${esc(cfgRetLabel())})`:''}; sobre esse líquido você recebe os percentuais abaixo. Ao passar a meta do trimestre, a parte que excede ganha o bônus de faixa.</p>
-      ${retLine(c.brTot+capt.total)}
+      <p class="rep-note">A imobiliária recebe a comissão sobre o VGV e retém o imposto na fonte${retInfo?`; nas vendas de propaganda também é retida a retenção de ${rate(cfgRetPct())} (${esc(cfgRetLabel())})`:''}; sobre esse líquido você recebe os percentuais abaixo. Ao passar a meta do trimestre, a parte que excede ganha o bônus de faixa.</p>
+      ${retInfo}
       ${roleRules(type)}
     </div>
 
@@ -1622,7 +1637,7 @@ function loadState(rawOverride){
     if(Array.isArray(data.teams) && data.teams.length){
       teams=data.teams; seq=data.seq||teams.length;
       const normSch=arr=>{ let s=(Array.isArray(arr)&&arr.length)?arr.map(x=>({pct:+x.pct||0,month:x.month||'',done:!!x.done,paid:!!x.paid})):[{pct:100,month:'',done:false,paid:false}]; if(s.length>2){ s=[{pct:50,month:s[0].month,done:s[0].done,paid:s[0].paid},{pct:50,month:s[1].month,done:s[1].done,paid:s[1].paid}]; } return s; };
-      const normDeals=p=>{ p.deals=(p.deals||[]).map(d=> typeof d==='number' ? newDeal(d) : {id:(d&&d.id)||uid('d'), value:(d&&d.value)||0, date:(d&&d.date)||'', prop:(d&&d.prop)||'', gross:(d&&d.gross!=null&&d.gross!=='')?+d.gross:null, capt:(d&&+d.capt)||0, captWho:(d&&d.captWho)||'', schedule:normSch(d&&d.schedule)} ); };
+      const normDeals=p=>{ p.deals=(p.deals||[]).map(d=> typeof d==='number' ? newDeal(d) : {id:(d&&d.id)||uid('d'), value:(d&&d.value)||0, date:(d&&d.date)||'', prop:(d&&d.prop)||'', gross:(d&&d.gross!=null&&d.gross!=='')?+d.gross:null, capt:(d&&+d.capt)||0, captWho:(d&&d.captWho)||'', ret:!!(d&&d.ret), schedule:normSch(d&&d.schedule)} ); };
       teams.forEach(tm=>{ delete tm.mgr.schedule; normDeals(tm.mgr); tm.brokers.forEach(b=>{ delete b.schedule; if(!b.type) b.type='corretor'; normDeals(b); }); });
       solos=Array.isArray(data.solos)?data.solos:[];
       // migra quem ficou marcado como 'solo' dentro de uma equipe para a seção própria
