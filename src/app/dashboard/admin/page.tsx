@@ -49,7 +49,7 @@ const adminCategories = [
       { title: 'Comissões', icon: '💵', description: 'Imposto, meta, política de comissão e lançamento de vendas por equipe', href: '/dashboard/admin/comissoes' },
       { title: 'Metas', icon: '🎯', description: 'Meta da imobiliária e soma das metas dos corretores', href: '/dashboard/admin/metas' },
       { title: 'Meets & Visitas', icon: '🔥', description: 'Período contado, contadores por corretor e histórico do pódio da home', href: '/dashboard/admin/meets-visitas' },
-      { title: 'Relatórios', icon: '📈', description: 'Em construção — serão refeitos de um jeito novo', href: '/dashboard/admin/relatorios' },
+      { title: 'Relatórios', icon: '📈', description: 'Pulso do período, funil, ranking da equipe, individual × coletivo e origens de leads', href: '/dashboard/admin/relatorios' },
       { title: 'Dashboards TV', icon: '📺', description: 'Telas para TV da imobiliária', href: '/dashboard/admin/dashboards-tv' },
     ]
   },

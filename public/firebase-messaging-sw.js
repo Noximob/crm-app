@@ -16,22 +16,29 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// O backend envia payload DATA-ONLY (sem bloco `notification`), então o
+// navegador não exibe nada sozinho — este handler é o ÚNICO ponto que
+// chama showNotification em background (evita notificação duplicada).
 messaging.onBackgroundMessage((payload) => {
-  const notif = (payload && payload.notification) || {};
   const data = (payload && payload.data) || {};
-  const title = notif.title || data.title || 'Nox Imóveis';
-  const body = notif.body || data.body || '';
+  const title = data.title || 'Nox Imóveis';
+  const body = data.body || '';
 
   self.registration.showNotification(title, {
     body,
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
+    // tag: se dois eventos dispararem para o mesmo lead, o SO substitui
+    // a notificação em vez de mostrar duas.
+    tag: data.adsLeadId || 'nox-lead',
     data,
   });
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  const data = (event.notification && event.notification.data) || {};
+  const url = data.url || '/dashboard';
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((janelas) => {
       for (const janela of janelas) {
@@ -39,7 +46,7 @@ self.addEventListener('notificationclick', (event) => {
           return janela.focus();
         }
       }
-      return clients.openWindow('/dashboard');
+      return clients.openWindow(url);
     })
   );
 });

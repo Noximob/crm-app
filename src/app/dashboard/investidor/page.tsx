@@ -358,9 +358,135 @@ export default function InvestidorPage() {
   return (
     <div className="min-h-full py-6 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-5">
+        <div className="mb-4">
           <h1 className="al-display text-2xl font-bold text-white uppercase tracking-[0.08em]">Calculadora do Investidor</h1>
           <p className="text-sm text-text-secondary">Valorização e alavancagem até a venda: quanto o investidor coloca, quanto vira patrimônio e a TIR do dinheiro. Nada é salvo.</p>
+        </div>
+
+        {/* ---------- FAIXA DE DESTAQUES — as respostas, sempre à vista ----------
+            sticky no scroll do <main> (p-2 md:p-3): o top negativo compensa o padding
+            do container pra faixa colar no topo visível; o pt do wrapper vira a área clipada */}
+        <div className="sticky top-[-16px] md:top-[-24px] z-20 pt-2 md:pt-3 mb-5">
+          <div className="rounded-2xl border border-white/[0.08] bg-[#12101a]/95 backdrop-blur-md shadow-[0_18px_40px_-18px_rgba(0,0,0,0.9)] p-2.5 sm:p-3">
+            <div className="grid grid-cols-2 lg:grid-cols-[1.35fr_1fr_1fr_1.3fr] gap-2 lg:gap-2.5">
+              {/* TIR — o herói */}
+              <div className="relative overflow-hidden rounded-xl border border-[#E8C547]/50 px-3 py-2.5 text-center col-span-2 lg:col-span-1"
+                style={{ background: 'linear-gradient(160deg, rgba(232,197,71,0.15), rgba(20,13,5,0.6))', boxShadow: '0 0 30px -10px rgba(232,197,71,0.5), inset 0 1px 0 rgba(232,197,71,0.3)' }}>
+                <div className="text-[9.5px] font-extrabold uppercase tracking-[0.2em] text-[#E8C547]">TIR ao mês</div>
+                {!c.bloqueado && c.tirMes !== null ? (
+                  <>
+                    <div className="mt-0.5 leading-none whitespace-nowrap">
+                      <CountUp n={c.tirMes * 100} fmt={fmtNum2} className="al-display align-baseline text-[38px] lg:text-[44px] font-bold al-grad-text tabular-nums leading-[0.95] drop-shadow-[0_0_22px_rgba(232,197,71,0.55)]" />
+                      <span className="al-display align-baseline text-[16px] lg:text-[18px] font-bold text-[#E8C547] ml-1">% a.m.</span>
+                    </div>
+                    <div className="text-[11px] text-text-secondary mt-0.5">= <b className="text-[#FFE9A6] tabular-nums">{fmtPct2((c.tirAno || 0) * 100)}</b> ao ano</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="al-display text-[38px] lg:text-[44px] font-bold text-white/25 leading-[0.95] mt-0.5">—</div>
+                    <div className="text-[10.5px] text-text-secondary mt-0.5">{c.bloqueado ? 'rendimento mensal do dinheiro investido' : 'sem TIR para este fluxo'}</div>
+                  </>
+                )}
+              </div>
+
+              {/* ROI */}
+              <div className="al-card relative overflow-hidden rounded-xl px-3 py-2.5 text-center">
+                <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-emerald-400 to-transparent" />
+                <div className="text-[9.5px] font-extrabold uppercase tracking-[0.2em] text-emerald-300">ROI</div>
+                {!c.bloqueado ? (
+                  <>
+                    <CountUp n={c.roi * 100} fmt={(v) => fmtNum2(v) + '%'} className="al-display block text-[26px] lg:text-[30px] font-bold text-emerald-300 tabular-nums leading-tight mt-0.5 drop-shadow-[0_0_14px_rgba(52,211,153,0.45)]" />
+                    <div className="h-1.5 rounded-full bg-white/10 overflow-hidden mt-1.5">
+                      <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-300 transition-all duration-700" style={{ width: `${wRoi}%` }} />
+                    </div>
+                    <div className="text-[9.5px] text-text-secondary mt-1">lucro sobre o investido</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="al-display text-[26px] lg:text-[30px] font-bold text-white/25 leading-tight mt-0.5">—</div>
+                    <div className="text-[9.5px] text-text-secondary mt-1">lucro sobre o investido</div>
+                  </>
+                )}
+              </div>
+
+              {/* Lucro projetado */}
+              <div className="al-card relative overflow-hidden rounded-xl px-3 py-2.5 text-center">
+                <div className="absolute inset-x-0 top-0 gx-line-gold" />
+                <div className="text-[9.5px] font-extrabold uppercase tracking-[0.2em] text-text-secondary">Lucro projetado</div>
+                {!c.bloqueado ? (
+                  <>
+                    <CountUp n={c.lucro} fmt={brl} className={`al-display block text-[16px] sm:text-[19px] lg:text-[22px] font-bold tabular-nums leading-tight mt-1.5 whitespace-nowrap ${c.lucro >= 0 ? 'text-emerald-300 drop-shadow-[0_0_14px_rgba(52,211,153,0.4)]' : 'text-rose-300'}`} />
+                    <div className="text-[9.5px] text-text-secondary mt-1.5">patrimônio − investido</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="al-display text-[26px] lg:text-[30px] font-bold text-white/25 leading-tight mt-0.5">—</div>
+                    <div className="text-[9.5px] text-text-secondary mt-1">patrimônio − investido</div>
+                  </>
+                )}
+              </div>
+
+              {/* Investe → vira */}
+              <div className="al-card relative overflow-hidden rounded-xl px-3 py-2.5 col-span-2 lg:col-span-1">
+                <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#9F6BFF] to-transparent" />
+                <div className="text-[9.5px] font-extrabold uppercase tracking-[0.2em] text-text-secondary">A jornada do dinheiro</div>
+                {!c.bloqueado ? (
+                  <div className="space-y-1.5 mt-1.5">
+                    <div>
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-[9px] font-extrabold uppercase tracking-wider text-[#C4A6FF]">Ele investe</span>
+                        <CountUp n={c.investido} fmt={brl} className="text-[12px] font-bold tabular-nums text-white whitespace-nowrap" />
+                      </div>
+                      <div className="h-1.5 rounded-full bg-white/[0.07] overflow-hidden mt-0.5">
+                        <div className="h-full rounded-full bg-gradient-to-r from-[#9F6BFF] to-[#7DD3FC] transition-all duration-700" style={{ width: `${wInveste}%` }} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-300">Vira</span>
+                        <CountUp n={c.equity} fmt={brl} className="text-[12px] font-bold tabular-nums text-white whitespace-nowrap" />
+                      </div>
+                      <div className="h-1.5 rounded-full bg-white/[0.07] overflow-hidden mt-0.5">
+                        <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-300 transition-all duration-700" style={{ width: `${wVira}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="al-display text-[26px] lg:text-[30px] font-bold text-white/25 leading-tight mt-0.5 text-center">—</div>
+                    <div className="text-[9.5px] text-text-secondary mt-1 text-center">quanto coloca → quanto vira patrimônio</div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* chips de cenário + CTA */}
+            <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+              {c.bloqueado ? (
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full border border-amber-400/40 bg-amber-500/10 text-[11px] font-bold text-amber-200">
+                  {c.valor <= 0 ? 'Preencha o valor do imóvel' : 'Escolha a entrega das chaves'} — os números aparecem aqui na hora
+                </span>
+              ) : (
+                <>
+                  {c.vendaAtiva ? (
+                    <span className={`${chipCls} bg-[#E8C547]/10 border-[#E8C547]/45 text-[#FFE9A6]`}>Venda antecipada · mês {c.V} de {c.M}</span>
+                  ) : (
+                    <span className={`${chipCls} bg-[#7DD3FC]/10 border-[#7DD3FC]/35 text-[#7DD3FC]`}>Venda na entrega · mês {c.M}</span>
+                  )}
+                  {cubOn ? (
+                    <span className={`${chipCls} bg-[#E8C547]/10 border-[#E8C547]/35 text-[#FFE9A6]`}>CUB {c.cubPct.toLocaleString('pt-BR')}% a.a.</span>
+                  ) : (
+                    <span className={`${chipCls} bg-white/[0.04] border-white/10 text-text-secondary`}>sem CUB</span>
+                  )}
+                  <span className={`${chipCls} bg-emerald-400/10 border-emerald-400/35 text-emerald-300`}>valorização {c.valPct.toLocaleString('pt-BR')}% a.a.</span>
+                </>
+              )}
+              <button onClick={gerarProposta} disabled={c.bloqueado} className="group relative overflow-hidden ml-auto px-4 py-2 rounded-xl bg-gradient-to-r from-[#E8C547] to-[#C89210] hover:brightness-110 text-[#181203] font-bold text-[12.5px] shadow-[0_8px_24px_-8px_rgba(232,197,71,0.5)] disabled:opacity-40 active:scale-[0.98] transition-all whitespace-nowrap">
+                <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700" />
+                Gerar proposta
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-[1fr_minmax(360px,420px)] gap-5 items-start">
@@ -481,131 +607,71 @@ export default function InvestidorPage() {
             </Secao>
           </div>
 
-          {/* ---------- RESULTADO (sticky) ---------- */}
-          <div className="space-y-4 lg:sticky lg:top-4">
+          {/* ---------- DESCRITIVO — a história por trás dos números do topo ---------- */}
+          <div className="space-y-4">
             {c.bloqueado ? (
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                <span className="text-sm font-semibold text-white">
-                  {c.valor <= 0 ? 'Preencha o valor do imóvel' : 'Escolha a data de entrega das chaves'}
-                </span>
-                <p className="text-xs text-text-secondary mt-1">Os resultados aparecem aqui assim que os dados fecharem.</p>
+              <div className="al-card relative overflow-hidden rounded-2xl p-5">
+                <div className="absolute inset-x-0 top-0 gx-line-gold" />
+                <div className="flex items-center gap-2.5">
+                  <span className="h-4 w-1 rounded-full bg-gradient-to-b from-[#E8C547] to-[#C89210] shadow-[0_0_8px_rgba(232,197,71,0.5)]" />
+                  <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">Como chega lá</h2>
+                </div>
+                <p className="text-xs text-text-secondary mt-2">
+                  {c.valor <= 0 ? 'Preencha o valor do imóvel' : 'Escolha a data de entrega das chaves'} e o descritivo completo do cálculo aparece aqui — junto com os números lá em cima.
+                </p>
               </div>
             ) : (
-              <>
-                {/* chips de cenário — os pressupostos de relance */}
-                <div className="flex flex-wrap gap-1.5">
-                  {c.vendaAtiva ? (
-                    <span className={`${chipCls} bg-[#E8C547]/10 border-[#E8C547]/45 text-[#FFE9A6]`}>Venda antecipada · mês {c.V} de {c.M}</span>
-                  ) : (
-                    <span className={`${chipCls} bg-[#7DD3FC]/10 border-[#7DD3FC]/35 text-[#7DD3FC]`}>Venda na entrega · mês {c.M}</span>
-                  )}
-                  {cubOn ? (
-                    <span className={`${chipCls} bg-[#E8C547]/10 border-[#E8C547]/35 text-[#FFE9A6]`}>CUB {c.cubPct.toLocaleString('pt-BR')}% a.a.</span>
-                  ) : (
-                    <span className={`${chipCls} bg-white/[0.04] border-white/10 text-text-secondary`}>sem CUB</span>
-                  )}
-                  <span className={`${chipCls} bg-emerald-400/10 border-emerald-400/35 text-emerald-300`}>valorização {c.valPct.toLocaleString('pt-BR')}% a.a.</span>
+              <div className="al-card relative overflow-hidden rounded-2xl p-4">
+                <div className="absolute inset-x-0 top-0 gx-line-gold" />
+                <div className="flex items-center gap-2.5 mb-1">
+                  <span className="h-4 w-1 rounded-full bg-gradient-to-b from-[#E8C547] to-[#C89210] shadow-[0_0_8px_rgba(232,197,71,0.5)]" />
+                  <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">Como chega lá</h2>
                 </div>
+                <p className="text-[11px] text-text-secondary mb-3">o passo a passo por trás dos números do topo</p>
 
-                {/* 1) HERO — TIR + ROI */}
-                <div className="relative overflow-hidden rounded-2xl border-2 border-[#E8C547]/55 p-5 text-center"
-                  style={{ background: 'linear-gradient(160deg, rgba(232,197,71,0.15), rgba(20,13,5,0.6))', boxShadow: '0 0 36px -10px rgba(232,197,71,0.5), inset 0 1px 0 rgba(232,197,71,0.3)' }}>
-                  <div className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#E8C547]">TIR — rentabilidade mensal</div>
-                  {c.tirMes !== null ? (
-                    <>
-                      <div className="mt-1.5 leading-none whitespace-nowrap">
-                        <CountUp n={c.tirMes * 100} fmt={fmtNum2} className="al-display align-baseline text-[52px] sm:text-[64px] font-bold al-grad-text tabular-nums leading-[0.95] drop-shadow-[0_0_24px_rgba(232,197,71,0.55)]" />
-                        <span className="al-display align-baseline text-[19px] sm:text-[23px] font-bold text-[#E8C547] ml-1.5">% a.m.</span>
-                      </div>
-                      <div className="text-[13px] text-text-secondary mt-2">= <b className="text-[#FFE9A6]">{fmtPct2((c.tirAno || 0) * 100)}</b> ao ano</div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="al-display text-[52px] sm:text-[64px] font-bold text-white/30 leading-[0.95] mt-1.5">—</div>
-                      <div className="text-[13px] text-text-secondary mt-2">sem TIR para este fluxo</div>
-                    </>
-                  )}
-                  <div className="mt-4 pt-3.5 border-t border-[#E8C547]/20">
-                    <div className="flex items-baseline justify-center gap-2.5 whitespace-nowrap">
-                      <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-emerald-300">ROI</span>
-                      <CountUp n={c.roi * 100} fmt={(v) => fmtNum2(v) + '%'} className="al-display text-[30px] sm:text-[36px] font-bold text-emerald-300 tabular-nums leading-none drop-shadow-[0_0_16px_rgba(52,211,153,0.45)]" />
-                    </div>
-                    <div className="h-2.5 rounded-full bg-white/10 overflow-hidden mt-2.5">
-                      <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-300 transition-all duration-700" style={{ width: `${wRoi}%` }} />
-                    </div>
-                    <div className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/40 mt-1 text-right">escala até 200%</div>
-                  </div>
-                  <p className="text-[11px] text-text-secondary mt-3">rendimento do dinheiro investido, mês a mês, do bolso à venda</p>
-                </div>
-
-                {/* 2) A JORNADA DO DINHEIRO */}
-                <div className="al-card relative overflow-hidden rounded-2xl p-4">
-                  <div className="absolute inset-x-0 top-0 gx-line" />
-                  <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-3">A jornada do dinheiro</div>
-                  <div className="space-y-3">
-                    <div>
-                      <div className="flex items-baseline justify-between gap-3 mb-1">
-                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#C4A6FF]">Ele investe</span>
-                        <span className="text-[13px] font-bold tabular-nums text-white">{brl(c.investido)}</span>
-                      </div>
-                      <div className="h-3 rounded-full bg-white/[0.06] overflow-hidden">
-                        <div className="h-full rounded-full bg-gradient-to-r from-[#9F6BFF] to-[#7DD3FC] transition-all duration-700" style={{ width: `${wInveste}%` }} />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex items-baseline justify-between gap-3 mb-1">
-                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-300">Vira</span>
-                        <span className="text-[13px] font-bold tabular-nums text-white">{brl(c.equity)}</span>
-                      </div>
-                      <div className="h-3 rounded-full bg-white/[0.06] overflow-hidden">
-                        <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-300 transition-all duration-700" style={{ width: `${wVira}%` }} />
-                      </div>
-                    </div>
-                    <div className="pt-2.5 border-t border-white/[0.06] flex items-baseline justify-between gap-3">
-                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-text-secondary">Lucro</span>
-                      <span className={`al-display text-2xl font-bold tabular-nums ${c.lucro >= 0 ? 'text-emerald-300 drop-shadow-[0_0_14px_rgba(52,211,153,0.4)]' : 'text-rose-300'}`}>{brl(c.lucro)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 3) COMO CHEGA LÁ */}
-                <div className="al-card relative overflow-hidden rounded-2xl p-4">
-                  <div className="absolute inset-x-0 top-0 gx-line-gold" />
-                  <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-2">Como chega lá</div>
-                  {entrada > 0 && <Linha l="Entrada" v={brl(entrada)} />}
-                  {parcPagas > 0 && valorParcela > 0 && (
-                    <Linha l={`Parcelas pagas · ${parcPagas}× de ${brl(valorParcela)}`} v={brl(cubOn ? c.totalParcCorr : parcPagas * valorParcela)} sub={cubOn ? 'corrigidas pelo CUB, mês a mês' : undefined} />
-                  )}
-                  {refPagos > 0 && c.totalRefPagoNom > 0 && (
-                    <Linha
-                      l={`Reforços pagos · ${refPagos}×`}
-                      v={brl(cubOn ? c.totalRefCorr : c.totalRefPagoNom)}
-                      sub={c.refs.filter((r) => !r.aposH && r.valor > 0).map((r) => `${brl(r.valor)} em ${fmtData(parseLocal(r.ymd))}`).join(' · ') + (cubOn ? ' — corrigidos pelo CUB, mês a mês' : '')}
-                    />
-                  )}
-                  <Linha l="Total investido" v={brl(c.investido)} destaque />
-                  <Linha l={`Valor do imóvel ${quandoVenda}`} v={brl(c.valorVenda)} sub={`valorização de ${c.valPct.toLocaleString('pt-BR')}% a.a. em ${c.H} meses`} />
+                {/* 1) o que ele paga */}
+                <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#C4A6FF] mb-0.5">O que ele paga até a venda</div>
+                {entrada > 0 && <Linha l="Entrada" v={brl(entrada)} sub="no ato (mês 0) — não corrige" />}
+                {parcPagas > 0 && valorParcela > 0 && (
+                  <Linha l={`Parcelas pagas · ${parcPagas}× de ${brl(valorParcela)}`} v={brl(cubOn ? c.totalParcCorr : parcPagas * valorParcela)} sub={cubOn ? 'corrigidas pelo CUB, mês a mês' : undefined} />
+                )}
+                {refPagos > 0 && c.totalRefPagoNom > 0 && (
                   <Linha
-                    l={`Quitação ${quandoVenda}`}
-                    v={brl(c.quitacao)}
-                    sub={<>
-                      {cubOn && <><span className="tabular-nums">{brl(c.quitacaoNominal)}</span> sem CUB <span className="text-[#E8C547]">→</span> com CUB · </>}
-                      {c.temAposH ? `parcelas/reforços restantes + saldo, quitados na venda (mês ${c.H})` : 'saldo devedor no dia da venda'}
-                    </>}
+                    l={`Reforços pagos · ${refPagos}×`}
+                    v={brl(cubOn ? c.totalRefCorr : c.totalRefPagoNom)}
+                    sub={c.refs.filter((r) => !r.aposH && r.valor > 0).map((r) => `${brl(r.valor)} em ${fmtData(parseLocal(r.ymd))}`).join(' · ') + (cubOn ? ' — corrigidos pelo CUB, mês a mês' : '')}
                   />
-                  {c.temAposH && (
-                    <p className="text-[10.5px] text-amber-200/80 mt-2">
-                      {[c.parcAposH > 0 ? `${c.parcAposH} parcela${c.parcAposH > 1 ? 's' : ''}` : '', c.refAposH > 0 ? `${c.refAposH} reforço${c.refAposH > 1 ? 's' : ''}` : ''].filter(Boolean).join(' e ')} vence{c.parcAposH + c.refAposH > 1 ? 'm' : ''} depois da venda — já somados na quitação acima.
-                    </p>
-                  )}
-                </div>
-              </>
-            )}
+                )}
+                <Linha l="Total investido" v={brl(c.investido)} destaque />
 
-            <button onClick={gerarProposta} disabled={c.bloqueado} className="group relative overflow-hidden w-full px-4 py-3 rounded-xl bg-gradient-to-r from-[#E8C547] to-[#C89210] hover:brightness-110 text-[#181203] font-bold text-[15px] shadow-[0_8px_24px_-8px_rgba(232,197,71,0.5)] disabled:opacity-40 active:scale-[0.98] transition-all">
-              <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700" />
-              Gerar proposta
-            </button>
+                {/* 2) o imóvel na venda */}
+                <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-emerald-300 mt-4 mb-0.5">O imóvel na venda</div>
+                <Linha l={`Valor do imóvel ${quandoVenda}`} v={brl(c.valorVenda)} sub={`valorização de ${c.valPct.toLocaleString('pt-BR')}% a.a. em ${c.H} meses`} />
+                <Linha
+                  l={`Quitação ${quandoVenda}`}
+                  v={brl(c.quitacao)}
+                  sub={<>
+                    {cubOn && <><span className="tabular-nums">{brl(c.quitacaoNominal)}</span> sem CUB <span className="text-[#E8C547]">→</span> com CUB · </>}
+                    {c.temAposH ? `parcelas/reforços restantes + saldo, quitados na venda (mês ${c.H})` : 'saldo devedor no dia da venda'}
+                  </>}
+                />
+                <Linha l="Patrimônio na venda" v={brl(c.equity)} sub={`valor do imóvel ${quandoVenda} − quitação`} destaque />
+                {c.temAposH && (
+                  <p className="text-[10.5px] text-amber-200/80 mt-2">
+                    {[c.parcAposH > 0 ? `${c.parcAposH} parcela${c.parcAposH > 1 ? 's' : ''}` : '', c.refAposH > 0 ? `${c.refAposH} reforço${c.refAposH > 1 ? 's' : ''}` : ''].filter(Boolean).join(' e ')} vence{c.parcAposH + c.refAposH > 1 ? 'm' : ''} depois da venda — já somados na quitação acima.
+                  </p>
+                )}
+
+                {/* 3) o resultado */}
+                <div className="mt-4 pt-3 border-t border-white/[0.08]">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-[12px] font-extrabold text-white uppercase tracking-wide">Lucro projetado</span>
+                    <span className={`al-display text-xl font-bold tabular-nums whitespace-nowrap ${c.lucro >= 0 ? 'text-emerald-300 drop-shadow-[0_0_14px_rgba(52,211,153,0.4)]' : 'text-rose-300'}`}>{brl(c.lucro)}</span>
+                  </div>
+                  <p className="text-[10.5px] text-text-secondary mt-0.5">patrimônio na venda − total investido — é daqui que saem o ROI e a TIR do topo</p>
+                </div>
+              </div>
+            )}
             <p className="text-[11px] text-center text-text-secondary">Projeção para fins de simulação — nada é salvo.</p>
           </div>
         </div>

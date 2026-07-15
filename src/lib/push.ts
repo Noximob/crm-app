@@ -60,12 +60,14 @@ async function registrarEObterToken(uid: string): Promise<boolean> {
     { merge: true }
   );
 
-  // Mensagens em primeiro plano viram toast (o SW só cobre background)
+  // Mensagens em primeiro plano viram toast (o SW só cobre background).
+  // O backend envia payload DATA-ONLY: título/corpo vêm em payload.data.
+  // Em foreground mostramos APENAS o toast — nunca new Notification().
   if (!onMessageAttached) {
     onMessageAttached = true;
     messagingMod.onMessage(messaging, (payload) => {
-      const titulo = payload.notification?.title || payload.data?.title || 'Nova notificação';
-      const corpo = payload.notification?.body || payload.data?.body || '';
+      const titulo = payload.data?.title || 'Nova notificação';
+      const corpo = payload.data?.body || '';
       showToast(corpo ? `${titulo} — ${corpo}` : titulo, 'info');
     });
   }

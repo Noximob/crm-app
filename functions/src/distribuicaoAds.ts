@@ -121,14 +121,12 @@ export async function enviarPush(
             return;
         }
 
+        // Payload DATA-ONLY (sem bloco `notification`): assim o navegador/FCM
+        // NÃO exibe nada automaticamente e o service worker é o único
+        // responsável por chamar showNotification (evita notificação duplicada).
         const resposta = await admin.messaging().sendEachForMulticast({
             tokens,
-            notification: {title, body},
-            data,
-            webpush: {
-                notification: {title, body},
-                fcmOptions: {link: "/dashboard"},
-            },
+            data: {title, body, url: "/dashboard", ...data},
         });
 
         // Remove tokens que o FCM diz não existirem mais
