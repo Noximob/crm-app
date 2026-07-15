@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { db } from '@/lib/firebase';
 import {
   collection,
+  deleteDoc,
   doc,
   getDocs,
   onSnapshot,
@@ -473,6 +474,27 @@ export default function AdminDistribuicaoAdsPage() {
     }
   };
 
+  const handleExcluir = async (lead: AdsLead) => {
+    if (guardaDemo()) return;
+    const ok = await confirmDialog({
+      title: 'Excluir lead de anúncio',
+      message: `Excluir de vez o lead ${lead.nome || 'sem nome'}? Ele some desta tela e do histórico. ${lead.status === 'aceito' ? 'O lead que já foi criado no CRM do corretor NÃO é apagado.' : ''}`,
+      danger: true,
+      confirmLabel: 'Excluir',
+    });
+    if (!ok) return;
+    setAgindoId(lead.id);
+    try {
+      await deleteDoc(doc(db, 'adsLeads', lead.id));
+      showToast('Lead excluído.', 'success');
+    } catch (e) {
+      console.error('Erro ao excluir lead:', e);
+      showToast('Não foi possível excluir — tente de novo.', 'error');
+    } finally {
+      setAgindoId(null);
+    }
+  };
+
   const handleLancarManual = async (e: React.FormEvent) => {
     e.preventDefault();
     if (guardaDemo()) return;
@@ -731,16 +753,27 @@ export default function AdminDistribuicaoAdsPage() {
                             Aberto pra todos · <span className="tabular-nums">{cd.texto}</span>
                           </span>
                         )}
-                        {l.status === 'geral' && (
+                        <div className="ml-auto flex items-center gap-2">
+                          {l.status === 'geral' && (
+                            <button
+                              type="button"
+                              onClick={() => handleRedisparar(l)}
+                              disabled={agindoId === l.id}
+                              className="border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white text-[11px] font-bold rounded-xl px-3 py-1.5 transition-colors disabled:opacity-50"
+                            >
+                              {agindoId === l.id ? 'Disparando...' : 'Re-disparar'}
+                            </button>
+                          )}
                           <button
                             type="button"
-                            onClick={() => handleRedisparar(l)}
+                            onClick={() => handleExcluir(l)}
                             disabled={agindoId === l.id}
-                            className="ml-auto border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white text-[11px] font-bold rounded-xl px-3 py-1.5 transition-colors disabled:opacity-50"
+                            className="border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-300 text-[11px] font-bold rounded-xl px-3 py-1.5 transition-colors disabled:opacity-50"
+                            title="Excluir este lead de vez"
                           >
-                            {agindoId === l.id ? 'Disparando...' : 'Re-disparar'}
+                            Excluir
                           </button>
-                        )}
+                        </div>
                       </div>
                     </div>
                   );
@@ -788,9 +821,18 @@ export default function AdminDistribuicaoAdsPage() {
                           type="button"
                           onClick={() => handleDescartar(l)}
                           disabled={agindoId === l.id}
-                          className="border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-300 text-[11px] font-bold rounded-xl px-3 py-1.5 transition-colors disabled:opacity-50"
+                          className="border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-text-secondary text-[11px] font-bold rounded-xl px-3 py-1.5 transition-colors disabled:opacity-50"
                         >
                           Descartar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleExcluir(l)}
+                          disabled={agindoId === l.id}
+                          className="border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-300 text-[11px] font-bold rounded-xl px-3 py-1.5 transition-colors disabled:opacity-50"
+                          title="Excluir este lead de vez"
+                        >
+                          Excluir
                         </button>
                       </div>
                     </div>
@@ -828,6 +870,15 @@ export default function AdminDistribuicaoAdsPage() {
                         <span className="text-[10px] text-white/35 truncate max-w-[150px]">{l.campanhaNome}</span>
                       )}
                       <span className="ml-auto text-[10px] text-text-secondary tabular-nums">{fmtQuando(l.aceitoEm)}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleExcluir(l)}
+                        disabled={agindoId === l.id}
+                        className="border border-red-500/30 bg-red-500/[0.06] hover:bg-red-500/20 text-red-300/80 hover:text-red-300 text-[10px] font-bold rounded-lg px-2 py-1 transition-colors disabled:opacity-50"
+                        title="Excluir do histórico (o lead no CRM do corretor não é apagado)"
+                      >
+                        Excluir
+                      </button>
                     </div>
                   ))}
                 </div>
