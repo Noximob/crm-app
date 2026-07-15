@@ -117,6 +117,17 @@
   --border-subtle: rgba(255, 255, 255, 0.07);
 }
 
+/* Controles nativos (dropdowns, date pickers, scrollbars) renderizam no modo escuro
+   — sem isso, a LISTA de opções dos <select> abre branca com texto branco (invisível) */
+html {
+  color-scheme: dark;
+}
+select option,
+select optgroup {
+  background-color: #12101a;
+  color: #f4f5f7;
+}
+
 /* Fundo GX: preto profundo + brilho carmesim/violeta nos cantos */
 .bg-particles {
   position: relative;
