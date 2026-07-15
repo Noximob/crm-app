@@ -8,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import Link from 'next/link';
-import FilterModal, { Filters } from './_components/FilterModal';
+import FilterModal, { Filters, ORIGEM_FILTER_OPTIONS, getOrigemBucket, getCampanhaDoLead } from './_components/FilterModal';
 import { getDemoLeads } from '@/lib/espelho/demoData';
 import LoadingState from '@/components/ui/LoadingState';
 import { ensureTarefasPendentes, getTaskStatusInfo, TaskStatus } from '@/lib/leadTasks';
@@ -20,6 +20,9 @@ interface Lead {
   telefone: string;
   etapa: string;
   taskStatus: TaskStatus;
+  origem?: string;
+  origemTipo?: string;
+  origemPropaganda?: string;
   qualificacao?: { [key: string]: string | string[] };
   [key: string]: any; 
 }
@@ -45,12 +48,12 @@ const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 
 // --- Componentes ---
-const FilterChip = ({ children, selected, onClick }: { children: React.ReactNode, selected?: boolean, onClick: () => void }) => (
-    <button onClick={onClick} className={`px-2.5 py-1.5 text-xs font-semibold border rounded-lg transition-colors whitespace-nowrap ${
+const FilterChip = ({ children, selected, onClick, className = '', title }: { children: React.ReactNode, selected?: boolean, onClick: () => void, className?: string, title?: string }) => (
+    <button onClick={onClick} title={title} className={`px-2.5 py-1.5 text-xs font-semibold border rounded-lg transition-colors whitespace-nowrap ${
         selected
             ? 'bg-[#FF1E56]/15 border-[#FF3364]/60 text-[#FF9EB5] shadow-[0_0_12px_-2px_rgba(255,30,86,0.4)]'
             : 'border-white/10 bg-white/[0.04] text-text-secondary hover:bg-white/[0.08] hover:border-white/20'
-    }`}>
+    } ${className}`}>
         {children}
     </button>
 );
@@ -97,6 +100,8 @@ export default function CrmPage() {
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState<string | null>(null);
     const [activeTaskFilter, setActiveTaskFilter] = useState<TaskStatus | null>(null);
+    const [activeOrigemFilter, setActiveOrigemFilter] = useState<string | null>(null);
+    const [activePropagandaFilter, setActivePropagandaFilter] = useState<string | null>(null);
     const [isFilterModalOpen, setFilterModalOpen] = useState(false);
     const [advancedFilters, setAdvancedFilters] = useState<Filters>({});
     const [searchTerm, setSearchTerm] = useState('');
@@ -144,6 +149,8 @@ export default function CrmPage() {
                 const saved = JSON.parse(raw);
                 if (saved.activeFilter !== undefined) setActiveFilter(saved.activeFilter);
                 if (saved.activeTaskFilter !== undefined && !veioComFiltroUrl) setActiveTaskFilter(saved.activeTaskFilter);
+                if (saved.activeOrigemFilter !== undefined) setActiveOrigemFilter(saved.activeOrigemFilter);
+                if (saved.activePropagandaFilter !== undefined) setActivePropagandaFilter(saved.activePropagandaFilter);
                 if (saved.advancedFilters !== undefined) setAdvancedFilters(saved.advancedFilters);
                 if (saved.searchTerm !== undefined) setSearchTerm(saved.searchTerm);
                 if (saved.currentPage !== undefined && !veioComFiltroUrl) setCurrentPage(saved.currentPage);
@@ -175,6 +182,8 @@ export default function CrmPage() {
             const toSave = {
                 activeFilter,
                 activeTaskFilter,
+                activeOrigemFilter,
+                activePropagandaFilter,
                 advancedFilters,
                 searchTerm,
                 currentPage,
@@ -183,7 +192,7 @@ export default function CrmPage() {
         } catch (err) {
             console.error('Erro ao salvar estado da lista CRM:', err);
         }
-    }, [hasRestoredState, activeFilter, activeTaskFilter, advancedFilters, searchTerm, currentPage]);
+    }, [hasRestoredState, activeFilter, activeTaskFilter, activeOrigemFilter, activePropagandaFilter, advancedFilters, searchTerm, currentPage]);
 
     useEffect(() => {
         if (isEspelhoDemo) {
@@ -261,8 +270,11 @@ export default function CrmPage() {
         }
     };
 
-    const handleApplyFilters = (filters: Filters) => {
+    const handleApplyFilters = (filters: Filters, origem: string | null, campanha: string | null) => {
         setAdvancedFilters(filters);
+        setActiveOrigemFilter(origem);
+        setActivePropagandaFilter(origem === 'Propaganda' ? campanha : null);
+        setCurrentPage(1);
         setFilterModalOpen(false);
     };
 
@@ -270,6 +282,8 @@ export default function CrmPage() {
         setSearchTerm('');
         setActiveFilter(null);
         setActiveTaskFilter(null);
+        setActiveOrigemFilter(null);
+        setActivePropagandaFilter(null);
         setAdvancedFilters({});
         setCurrentPage(1);
     };
@@ -290,6 +304,15 @@ export default function CrmPage() {
 
         if (activeTaskFilter) {
             leadsToFilter = leadsToFilter.filter(lead => lead.taskStatus === activeTaskFilter);
+        }
+
+        // Filtro por origem do lead (derivada: legado sem origemTipo cai em "Outros")
+        if (activeOrigemFilter) {
+            leadsToFilter = leadsToFilter.filter(lead => getOrigemBucket(lead) === activeOrigemFilter);
+            // Dentro de Propaganda, filtrar por campanha específica
+            if (activeOrigemFilter === 'Propaganda' && activePropagandaFilter) {
+                leadsToFilter = leadsToFilter.filter(lead => getCampanhaDoLead(lead) === activePropagandaFilter);
+            }
         }
 
         const hasAdvancedFilters = Object.values(advancedFilters).some((options: string[]) => options.length > 0);
@@ -322,7 +345,19 @@ export default function CrmPage() {
         }
 
         return leadsToFilter;
-    }, [leads, searchTerm, activeFilter, activeTaskFilter, advancedFilters, normalizeEtapa]);
+    }, [leads, searchTerm, activeFilter, activeTaskFilter, activeOrigemFilter, activePropagandaFilter, advancedFilters, normalizeEtapa]);
+
+    // Campanhas (propagandas) distintas nos leads carregados, com contagem — para os chips "Qual propaganda?"
+    const campanhas = useMemo(() => {
+        const counts = new Map<string, number>();
+        for (const lead of leads) {
+            const campanha = getCampanhaDoLead(lead);
+            if (campanha) counts.set(campanha, (counts.get(campanha) || 0) + 1);
+        }
+        return Array.from(counts.entries())
+            .map(([nome, count]) => ({ nome, count }))
+            .sort((a, b) => b.count - a.count || a.nome.localeCompare(b.nome, 'pt-BR'));
+    }, [leads]);
 
     // Paginação em cima dos filtros (mesma lógica do dashboard: todos os leads carregados, filtrar e paginar)
     const totalFiltered = filteredLeads.length;
@@ -350,6 +385,8 @@ export default function CrmPage() {
                     ...saved,
                     activeFilter,
                     activeTaskFilter,
+                    activeOrigemFilter,
+                    activePropagandaFilter,
                     advancedFilters,
                     searchTerm,
                     currentPage: p,
@@ -419,6 +456,9 @@ export default function CrmPage() {
     // Status de tarefa para filtros rápidos (mesma ordem e lógica do dashboard)
     const taskStatusFilters: TaskStatus[] = ['Tarefa em Atraso', 'Tarefa do Dia', 'Tarefa Futura', 'Sem tarefa'];
 
+    // Quantos filtros rápidos estão ativos (etapa + tarefa + origem + campanha) — badge do botão
+    const quickFilterCount = (activeFilter ? 1 : 0) + (activeTaskFilter ? 1 : 0) + (activeOrigemFilter ? 1 : 0) + (activePropagandaFilter ? 1 : 0);
+
     return (
         <>
         {/* Altura fixa: só os leads rolam; título, busca, paginação, filtros e cabeçalho da tabela ficam fixos */}
@@ -459,9 +499,9 @@ export default function CrmPage() {
                                 className="relative flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 rounded-lg transition-all shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98]"
                             >
                                 <span>Filtro Rápido</span>
-                                {((activeFilter ? 1 : 0) + (activeTaskFilter ? 1 : 0)) > 0 && (
+                                {quickFilterCount > 0 && (
                                     <span className="bg-white/90 text-[#A50D38] text-[10px] font-bold rounded-full min-w-[1.25rem] h-5 px-1.5 flex items-center justify-center">
-                                        {(activeFilter ? 1 : 0) + (activeTaskFilter ? 1 : 0)}
+                                        {quickFilterCount}
                                     </span>
                                 )}
                             </button>
@@ -500,6 +540,73 @@ export default function CrmPage() {
                                             </FilterChip>
                                         ))}
                                     </div>
+                                    <div className="w-full h-px bg-white/10 my-2" />
+                                    <p className="text-[10px] font-extrabold text-text-secondary uppercase tracking-[0.18em] mb-2 px-1">Origem do lead</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        <FilterChip
+                                            selected={!activeOrigemFilter}
+                                            onClick={() => {
+                                                setActiveOrigemFilter(null);
+                                                setActivePropagandaFilter(null);
+                                                setCurrentPage(1);
+                                                setFiltroRapidoOpen(false);
+                                            }}
+                                        >
+                                            Todas
+                                        </FilterChip>
+                                        {ORIGEM_FILTER_OPTIONS.map((origem) => (
+                                            <FilterChip
+                                                key={origem}
+                                                selected={activeOrigemFilter === origem}
+                                                onClick={() => {
+                                                    const next = activeOrigemFilter === origem ? null : origem;
+                                                    setActiveOrigemFilter(next);
+                                                    if (next !== 'Propaganda') setActivePropagandaFilter(null);
+                                                    setCurrentPage(1);
+                                                    // Ao escolher Propaganda, mantém aberto para escolher a campanha logo abaixo
+                                                    if (next !== 'Propaganda') setFiltroRapidoOpen(false);
+                                                }}
+                                            >
+                                                {origem}
+                                            </FilterChip>
+                                        ))}
+                                    </div>
+                                    {activeOrigemFilter === 'Propaganda' && (
+                                        <div className="mt-3">
+                                            <p className="text-[10px] font-extrabold text-text-secondary uppercase tracking-[0.18em] mb-2 px-1">Qual propaganda?</p>
+                                            {campanhas.length === 0 ? (
+                                                <p className="text-xs text-text-secondary px-1">Nenhuma propaganda encontrada nos leads carregados.</p>
+                                            ) : (
+                                                <div className="flex flex-wrap gap-2">
+                                                    <FilterChip
+                                                        selected={!activePropagandaFilter}
+                                                        onClick={() => {
+                                                            setActivePropagandaFilter(null);
+                                                            setCurrentPage(1);
+                                                            setFiltroRapidoOpen(false);
+                                                        }}
+                                                    >
+                                                        Todas
+                                                    </FilterChip>
+                                                    {campanhas.map(({ nome, count }) => (
+                                                        <FilterChip
+                                                            key={nome}
+                                                            title={nome}
+                                                            className="max-w-full truncate"
+                                                            selected={activePropagandaFilter === nome}
+                                                            onClick={() => {
+                                                                setActivePropagandaFilter(activePropagandaFilter === nome ? null : nome);
+                                                                setCurrentPage(1);
+                                                                setFiltroRapidoOpen(false);
+                                                            }}
+                                                        >
+                                                            {nome} ({count})
+                                                        </FilterChip>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -526,7 +633,7 @@ export default function CrmPage() {
                             >
                                 Exportar CSV
                             </button>
-                            {(searchTerm.trim() || activeFilter || activeTaskFilter || activeAdvancedFilterCount > 0) && (
+                            {(searchTerm.trim() || activeFilter || activeTaskFilter || activeOrigemFilter || activeAdvancedFilterCount > 0) && (
                                 <button
                                     onClick={handleClearFilters}
                                     className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-300 border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition-colors"
@@ -727,6 +834,9 @@ export default function CrmPage() {
                     onClose={() => setFilterModalOpen(false)}
                     onApply={handleApplyFilters}
                     initialFilters={advancedFilters}
+                    initialOrigem={activeOrigemFilter}
+                    initialCampanha={activePropagandaFilter}
+                    campanhas={campanhas}
                     pipelineStages={stages}
                 />
             )}

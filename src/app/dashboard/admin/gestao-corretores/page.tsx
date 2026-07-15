@@ -33,6 +33,19 @@ interface Lead {
   [key: string]: any;
 }
 
+// Formata telefone para exibição: (XX) XXXXX-XXXX ou (XX) XXXX-XXXX
+function formatPhone(phone: string) {
+  if (!phone) return '';
+  const cleaned = phone.replace(/\D/g, '');
+  if (cleaned.length === 11) {
+    return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`;
+  }
+  if (cleaned.length === 10) {
+    return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 6)}-${cleaned.slice(6)}`;
+  }
+  return phone;
+}
+
 export default function GestaoCorretoresPage() {
   const { userData, isEspelhoDemo } = useAuth();
   const { stages } = usePipelineStages();
@@ -104,9 +117,9 @@ export default function GestaoCorretoresPage() {
     return () => unsubscribe();
   }, [userData, isEspelhoDemo]);
 
-  const corretores = users.filter(user => 
-    (user.tipoConta === 'corretor-vinculado' && user.aprovado) || 
-    (user.tipoConta === 'imobiliaria' && user.aprovado)
+  const corretores = users.filter(user =>
+    user.aprovado &&
+    (user.tipoConta === 'corretor-vinculado' || user.tipoConta === 'corretor-autonomo' || user.tipoConta === 'imobiliaria')
   );
 
   // Filtrar leads do corretor de origem por etapa
@@ -147,7 +160,45 @@ export default function GestaoCorretoresPage() {
     }
   };
 
-  // Excluir leads
+  // Apaga leads junto com suas subcoleções (tarefas e interactions) para não deixar órfãos.
+  // Agrupa por lead (subdocs + doc do lead) para um lead nunca ficar dividido entre lotes.
+  const deleteLeadsComSubcolecoes = async (leadIds: string[]) => {
+    const grupos: DocumentReference[][] = [];
+    for (const leadId of leadIds) {
+      const grupo: DocumentReference[] = [];
+      for (const sub of ['tarefas', 'interactions']) {
+        const snap = await getDocs(collection(db, 'leads', leadId, sub));
+        snap.forEach(d => grupo.push(d.ref));
+      }
+      grupo.push(doc(db, 'leads', leadId));
+      grupos.push(grupo);
+    }
+
+    // Empacotar grupos inteiros em lotes de até 400 operações (limite do Firestore é 500 por batch).
+    // Um grupo sozinho maior que 400 ainda pode ser dividido (caso raro).
+    const lotes: DocumentReference[][] = [];
+    let lote: DocumentReference[] = [];
+    for (const grupo of grupos) {
+      if (lote.length > 0 && lote.length + grupo.length > 400) {
+        lotes.push(lote);
+        lote = [];
+      }
+      if (grupo.length > 400) {
+        for (let i = 0; i < grupo.length; i += 400) lotes.push(grupo.slice(i, i + 400));
+      } else {
+        lote.push(...grupo);
+      }
+    }
+    if (lote.length > 0) lotes.push(lote);
+
+    for (const refs of lotes) {
+      const batch = writeBatch(db);
+      refs.forEach(r => batch.delete(r));
+      await batch.commit();
+    }
+  };
+
+  // Excluir leads selecionados (em massa)
   const handleDeleteLeads = async () => {
     if (selectedLeads.length === 0) {
       showToast('Selecione pelo menos um lead para excluir.', 'error');
@@ -156,48 +207,42 @@ export default function GestaoCorretoresPage() {
 
     if (!(await confirmDialog({ message: `Tem certeza que deseja excluir ${selectedLeads.length} lead(s)?`, danger: true, confirmLabel: 'Excluir' }))) return;
 
+    if (isEspelhoDemo) {
+      const count = selectedLeads.length;
+      setLeads(prev => prev.filter(lead => !selectedLeads.includes(lead.id)));
+      setSelectedLeads([]);
+      showToast(`Modo demonstração: ${count} lead(s) excluído(s) com sucesso (simulado).`, 'success');
+      return;
+    }
+
     try {
-      // Reunir também os docs das subcoleções (tarefas e interactions) para não deixar órfãos.
-      // Agrupa por lead (subdocs + doc do lead) para um lead nunca ficar dividido entre lotes.
-      const grupos: DocumentReference[][] = [];
-      for (const leadId of selectedLeads) {
-        const grupo: DocumentReference[] = [];
-        for (const sub of ['tarefas', 'interactions']) {
-          const snap = await getDocs(collection(db, 'leads', leadId, sub));
-          snap.forEach(d => grupo.push(d.ref));
-        }
-        grupo.push(doc(db, 'leads', leadId));
-        grupos.push(grupo);
-      }
-
-      // Empacotar grupos inteiros em lotes de até 400 operações (limite do Firestore é 500 por batch).
-      // Um grupo sozinho maior que 400 ainda pode ser dividido (caso raro).
-      const lotes: DocumentReference[][] = [];
-      let lote: DocumentReference[] = [];
-      for (const grupo of grupos) {
-        if (lote.length > 0 && lote.length + grupo.length > 400) {
-          lotes.push(lote);
-          lote = [];
-        }
-        if (grupo.length > 400) {
-          for (let i = 0; i < grupo.length; i += 400) lotes.push(grupo.slice(i, i + 400));
-        } else {
-          lote.push(...grupo);
-        }
-      }
-      if (lote.length > 0) lotes.push(lote);
-
-      for (const refs of lotes) {
-        const batch = writeBatch(db);
-        refs.forEach(r => batch.delete(r));
-        await batch.commit();
-      }
-
+      await deleteLeadsComSubcolecoes(selectedLeads);
       setSelectedLeads([]);
       showToast(`${selectedLeads.length} lead(s) excluído(s) com sucesso!`, 'success');
     } catch (error) {
       console.error('Erro ao excluir leads:', error);
       showToast('Erro ao excluir leads. Tente novamente.', 'error');
+    }
+  };
+
+  // Excluir um lead individual (botão da linha)
+  const handleDeleteLead = async (leadId: string) => {
+    if (!(await confirmDialog({ message: 'Tem certeza que deseja excluir este lead?', danger: true, confirmLabel: 'Excluir' }))) return;
+
+    if (isEspelhoDemo) {
+      setLeads(prev => prev.filter(lead => lead.id !== leadId));
+      setSelectedLeads(prev => prev.filter(id => id !== leadId));
+      showToast('Modo demonstração: lead excluído com sucesso (simulado).', 'success');
+      return;
+    }
+
+    try {
+      await deleteLeadsComSubcolecoes([leadId]);
+      setSelectedLeads(prev => prev.filter(id => id !== leadId));
+      showToast('Lead excluído com sucesso!', 'success');
+    } catch (error) {
+      console.error('Erro ao excluir lead:', error);
+      showToast('Erro ao excluir lead. Tente novamente.', 'error');
     }
   };
 
@@ -242,8 +287,8 @@ export default function GestaoCorretoresPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="al-display text-[22px] font-bold text-white uppercase tracking-[0.1em] mb-2">Gestão de Corretores</h1>
-          <p className="text-text-secondary text-sm">Transfira leads entre corretores</p>
+          <h1 className="al-display text-[22px] font-bold text-white uppercase tracking-[0.1em] mb-2">Gestão de Corretores e Leads</h1>
+          <p className="text-text-secondary text-sm">Transfira, redistribua e exclua leads entre os corretores da sua imobiliária</p>
         </div>
 
         {/* Seleção de Corretores */}
@@ -448,7 +493,7 @@ export default function GestaoCorretoresPage() {
                         {lead.nome}
                       </td>
                       <td className="px-6 py-4 text-sm text-text-secondary">
-                        {lead.telefone}
+                        {formatPhone(lead.telefone)}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#FFE9A6]">
@@ -459,13 +504,22 @@ export default function GestaoCorretoresPage() {
                         {lead.createdAt?.toDate ? lead.createdAt.toDate().toLocaleDateString('pt-BR') : 'N/A'}
                       </td>
                       <td className="px-6 py-4 text-sm">
-                        <button
-                          className="text-[#FF7A97] hover:text-[#FF9EB5] text-xs px-2 py-1 rounded hover:bg-[#FF1E56]/10 transition-colors"
-                          onClick={() => handleVerDetalhes(lead.id)}
-                          title="Ver detalhes do lead"
-                        >
-                          Detalhes
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            className="text-[#FF7A97] hover:text-[#FF9EB5] text-xs px-2 py-1 rounded hover:bg-[#FF1E56]/10 transition-colors"
+                            onClick={() => handleVerDetalhes(lead.id)}
+                            title="Ver detalhes do lead"
+                          >
+                            Detalhes
+                          </button>
+                          <button
+                            className="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded hover:bg-red-500/10 transition-colors"
+                            onClick={() => handleDeleteLead(lead.id)}
+                            title="Apagar lead"
+                          >
+                            Apagar
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

@@ -489,15 +489,17 @@ export default function LeadDetailPage() {
         setIsQualificationModalOpen(false);
     };
 
-    const handleSaveQualifications = async () => {
-        if (!currentUser || !lead || isEspelhoDemo) return;
+    const handleSaveQualifications = () => {
+        if (!currentUser || !lead) return;
+        // Fecha imediatamente (otimista) — salvar no Firestore acontece em background,
+        // sem travar a UI esperando a rede
+        handleCloseQualificationModal();
+        if (isEspelhoDemo) return;
         const leadRef = doc(db, 'leads', lead.id);
-        try {
-            await updateDoc(leadRef, { qualificacao: qualifications });
-            handleCloseQualificationModal();
-        } catch (error) {
+        updateDoc(leadRef, { qualificacao: qualifications }).catch((error) => {
             console.error("Erro ao salvar qualificações:", error);
-        }
+            showToast('Erro ao salvar qualificação. Tente novamente.', 'error');
+        });
     };
 
 
@@ -596,6 +598,12 @@ export default function LeadDetailPage() {
                                     <WhatsAppIcon className="h-3 w-3 fill-current"/>
                                     </a>
                                 </div>
+                                {lead.origem && (
+                                    <div className="order-2 lg:order-4 flex items-center gap-2 bg-[#7DD3FC]/10 border border-[#7DD3FC]/35 rounded-xl px-3 py-2 w-fit max-w-full">
+                                        <span className="text-[9px] font-extrabold uppercase tracking-[0.18em] text-[#7DD3FC]/70 shrink-0">Origem</span>
+                                        <p className="text-xs text-[#7DD3FC] font-medium truncate min-w-0" title={lead.origem}>{lead.origem}</p>
+                                    </div>
+                                )}
                         </div>
                     </div>
 

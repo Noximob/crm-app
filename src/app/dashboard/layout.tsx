@@ -91,6 +91,16 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifAtivas, setNotifAtivas] = useState(false);
+  const [standalone, setStandalone] = useState(false);
+
+  // Sino de notificações só aparece no app instalado (PWA standalone):
+  // no navegador o card flutuante de lead já é a notificação natural
+  useEffect(() => {
+    setStandalone(
+      window.matchMedia('(display-mode: standalone)').matches ||
+        (navigator as any).standalone === true
+    );
+  }, []);
 
   // Push (FCM): renova token silenciosamente se o usuário já ativou antes
   useEffect(() => {
@@ -159,7 +169,7 @@ export default function DashboardLayout({
       { href: '/dashboard', icon: HomeIcon, label: 'Início', cor: 'text-[#FF3364]' },
     ] },
     { titulo: 'Vendas', itens: [
-      { href: '/dashboard/crm', icon: UsersIcon, label: 'Clientes', cor: 'text-[#FF7A97]' },
+      { href: '/dashboard/crm', icon: UsersIcon, label: 'CRM', cor: 'text-[#FF7A97]' },
       { href: '/dashboard/brello', icon: KanbanIcon, label: 'Brello', cor: 'text-[#7DD3FC]' },
       { href: '/dashboard/ligacao-ativa', icon: PhoneIcon, label: 'Ligação Ativa', cor: 'text-[#E8C547]' },
     ] },
@@ -257,7 +267,7 @@ export default function DashboardLayout({
                 <p className="text-[8.5px] text-emerald-400 font-extrabold uppercase tracking-[0.16em] leading-tight">online</p>
               </div>
             </div>
-            {!notifAtivas && (
+            {standalone && !notifAtivas && (
               <button
                 onClick={handleAtivarNotificacoes}
                 className="flex items-center gap-3 pl-[10px] pr-2 w-full py-2 rounded-lg text-[12.5px] font-semibold text-text-secondary hover:bg-white/[0.06] hover:text-[#E8C547] transition-all"
@@ -386,7 +396,7 @@ export default function DashboardLayout({
                   <p className="text-[8.5px] text-emerald-400 font-extrabold uppercase tracking-[0.16em] leading-tight">online</p>
                 </div>
               </div>
-              {!notifAtivas && (
+              {standalone && !notifAtivas && (
                 <button
                   onClick={handleAtivarNotificacoes}
                   className="flex items-center gap-3 px-3 w-full py-3 rounded-lg text-[13.5px] font-semibold text-text-secondary hover:bg-white/[0.06] hover:text-[#E8C547] transition-all"
@@ -423,7 +433,7 @@ export default function DashboardLayout({
         <div className="flex h-16">
           {([
             { href: '/dashboard', icon: HomeIcon, label: 'Início', exact: true },
-            { href: '/dashboard/crm', icon: UsersIcon, label: 'Clientes' },
+            { href: '/dashboard/crm', icon: UsersIcon, label: 'CRM' },
             { href: '/dashboard/agenda', icon: CalendarIcon, label: 'Agenda' },
             { href: '/dashboard/brello', icon: KanbanIcon, label: 'Brello' },
           ] as { href: string; icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; label: string; exact?: boolean }[]).map((tab) => {

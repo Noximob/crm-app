@@ -16,10 +16,45 @@ const QUALIFICATION_QUESTIONS = [
 
 const TASK_STATUS_OPTIONS = [
     'Tarefa em Atraso',
-    'Tarefa do Dia', 
+    'Tarefa do Dia',
     'Tarefa Futura',
     'Criar Tarefa'
 ];
+
+// Origens conhecidas (mesmas opções do NewLeadModal). Leads legados sem origemTipo caem em "Outros".
+export const ORIGEM_FILTER_OPTIONS = ['Networking', 'Ligação', 'Ação de rua', 'Disparo de msg', 'Propaganda', 'Outros'] as const;
+
+/**
+ * Deriva a "origem" de um lead para fins de filtro:
+ * - origemTipo válido → usa direto;
+ * - senão, origem começando com "Propaganda" → Propaganda;
+ * - senão, origem igual a uma das opções conhecidas → essa opção;
+ * - qualquer outra coisa (legado, texto livre, sem origem) → "Outros".
+ */
+export function getOrigemBucket(lead: { origemTipo?: unknown; origem?: unknown }): string {
+    const conhecidas = ORIGEM_FILTER_OPTIONS as readonly string[];
+    const tipo = typeof lead.origemTipo === 'string' ? lead.origemTipo.trim() : '';
+    if (conhecidas.includes(tipo)) return tipo;
+    const origem = typeof lead.origem === 'string' ? lead.origem.trim() : '';
+    if (origem.toLowerCase().startsWith('propaganda')) return 'Propaganda';
+    if (conhecidas.includes(origem)) return origem;
+    return 'Outros';
+}
+
+/**
+ * Nome da campanha (propaganda) de um lead. Usa origemPropaganda quando existe;
+ * senão tenta extrair do texto "Propaganda · Nome da Campanha (Anúncio)".
+ * Retorna null para leads que não são de Propaganda.
+ */
+export function getCampanhaDoLead(lead: { origemTipo?: unknown; origem?: unknown; origemPropaganda?: unknown }): string | null {
+    if (getOrigemBucket(lead) !== 'Propaganda') return null;
+    if (typeof lead.origemPropaganda === 'string' && lead.origemPropaganda.trim()) {
+        return lead.origemPropaganda.trim();
+    }
+    const origem = typeof lead.origem === 'string' ? lead.origem.trim() : '';
+    const semPrefixo = origem.replace(/^propaganda\s*[·\-–—:]?\s*/i, '').trim();
+    return semPrefixo || 'Sem campanha';
+}
 
 export interface Filters {
     [key: string]: string[];
@@ -28,8 +63,14 @@ export interface Filters {
 interface FilterModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onApply: (filters: Filters) => void;
+    onApply: (filters: Filters, origem: string | null, campanha: string | null) => void;
     initialFilters: Filters;
+    /** Origem selecionada (single-select) — mesma fonte de verdade do Filtro Rápido */
+    initialOrigem?: string | null;
+    /** Campanha (propaganda) selecionada — só faz sentido quando origem = Propaganda */
+    initialCampanha?: string | null;
+    /** Campanhas distintas encontradas nos leads carregados (com contagem) */
+    campanhas?: { nome: string; count: number }[];
     /** @deprecated Etapas vêm do contexto (funil configurável) */
     pipelineStages?: string[];
 }
@@ -56,14 +97,21 @@ const FilterTag = ({ label, isSelected, onClick }: { label: string; isSelected: 
     </button>
 );
 
-export default function FilterModal({ isOpen, onClose, onApply, initialFilters }: FilterModalProps) {
+export default function FilterModal({ isOpen, onClose, onApply, initialFilters, initialOrigem = null, initialCampanha = null, campanhas = [] }: FilterModalProps) {
     const { stages: stagesFromContext } = usePipelineStages();
     const pipelineStages = stagesFromContext;
     const [selectedFilters, setSelectedFilters] = useState<Filters>(initialFilters);
+    const [origemSel, setOrigemSel] = useState<string | null>(initialOrigem);
+    const [campanhaSel, setCampanhaSel] = useState<string | null>(initialCampanha);
 
     useEffect(() => {
         setSelectedFilters(initialFilters);
     }, [initialFilters]);
+
+    useEffect(() => {
+        setOrigemSel(initialOrigem);
+        setCampanhaSel(initialCampanha);
+    }, [initialOrigem, initialCampanha]);
 
     useEffect(() => {
         if (!pipelineStages.length) return;
@@ -89,9 +137,17 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters }
     
     const handleClearFilters = () => {
         setSelectedFilters({});
+        setOrigemSel(null);
+        setCampanhaSel(null);
     }
 
-    const hasActiveFilters = Object.values(selectedFilters).some(arr => arr && arr.length > 0);
+    const handleOrigemClick = (option: string) => {
+        const next = origemSel === option ? null : option;
+        setOrigemSel(next);
+        if (next !== 'Propaganda') setCampanhaSel(null);
+    };
+
+    const hasActiveFilters = Object.values(selectedFilters).some(arr => arr && arr.length > 0) || origemSel !== null;
     const situationQuestion = { title: 'Situação do Cliente (Etapa do funil)', key: 'etapa', options: pipelineStages };
 
     if (!isOpen) return null;
@@ -125,6 +181,50 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters }
                         </div>
                     </div>
 
+                    {/* Origem do Lead (single-select) — mesma fonte de verdade do Filtro Rápido */}
+                    <div>
+                        <h4 className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-2.5">Origem do Lead</h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                            <FilterTag
+                                label="Todas"
+                                isSelected={origemSel === null}
+                                onClick={() => { setOrigemSel(null); setCampanhaSel(null); }}
+                            />
+                            {ORIGEM_FILTER_OPTIONS.map(option => (
+                                <FilterTag
+                                    key={option}
+                                    label={option}
+                                    isSelected={origemSel === option}
+                                    onClick={() => handleOrigemClick(option)}
+                                />
+                            ))}
+                        </div>
+                        {origemSel === 'Propaganda' && (
+                            <div className="mt-3">
+                                <h4 className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-2.5">Qual propaganda?</h4>
+                                {campanhas.length === 0 ? (
+                                    <p className="text-xs text-text-secondary">Nenhuma propaganda encontrada nos leads carregados.</p>
+                                ) : (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                                        <FilterTag
+                                            label="Todas"
+                                            isSelected={campanhaSel === null}
+                                            onClick={() => setCampanhaSel(null)}
+                                        />
+                                        {campanhas.map(({ nome, count }) => (
+                                            <FilterTag
+                                                key={nome}
+                                                label={`${nome} (${count})`}
+                                                isSelected={campanhaSel === nome}
+                                                onClick={() => setCampanhaSel(campanhaSel === nome ? null : nome)}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
                     {[situationQuestion, ...QUALIFICATION_QUESTIONS].map(group => (
                         <div key={group.key}>
                             <h4 className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-2.5">{group.title}</h4>
@@ -155,7 +255,7 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters }
                     <button
                         type="button"
                         onClick={() => {
-                            onApply(selectedFilters);
+                            onApply(selectedFilters, origemSel, origemSel === 'Propaganda' ? campanhaSel : null);
                             onClose();
                         }}
                         className="px-5 py-2 text-xs font-bold text-white bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 rounded-xl transition-all shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50"

@@ -20,8 +20,7 @@ const adminCategories = [
     icon: '👥',
     color: 'from-[#FF1E56]/25 to-[#FF1E56]/[0.03] border-[#FF1E56]/30',
     items: [
-      { title: 'Gestão de Corretores', icon: '🧑‍💼', description: 'Administre leads e desempenho dos corretores', href: '/dashboard/admin/gestao-corretores' },
-      { title: 'Gestão de Leads', icon: '🔀', description: 'Redistribua leads entre corretores', href: '/dashboard/admin/gestao-leads' },
+      { title: 'Gestão de Corretores e Leads', icon: '🧑‍💼', description: 'Transfira, redistribua e exclua leads; acompanhe cada corretor', href: '/dashboard/admin/gestao-corretores' },
       { title: 'Distribuição de Anúncios', icon: '📣', description: 'Escala, rodízio e tempos dos leads de propaganda', href: '/dashboard/admin/distribuicao-ads' },
       { title: 'Visualizar CRM do corretor', icon: '🔎', description: 'Veja os leads e tarefas de um corretor específico', href: '/dashboard/admin/visualizar-crm-corretor' },
       { title: 'Agenda dos Usuários', icon: '📅', description: 'Visualize a agenda de todos os usuários', href: '/dashboard/admin/agenda-usuarios' },
@@ -37,6 +36,7 @@ const adminCategories = [
       { title: 'Agenda Imobiliária', icon: '📆', description: 'Gerencie agenda e plantões da imobiliária', href: '/dashboard/admin/agenda-imobiliaria' },
       { title: 'Materiais Construtora', icon: '🏗️', description: 'Materiais das construtoras', href: '/dashboard/admin/materiais-construtora' },
       { title: 'Ligação Ativa (roteiro)', icon: '📞', description: 'Edite o mapa mental da ligação ativa: mensagens, passos e botões', href: '/dashboard/admin/ligacao-ativa' },
+      { title: 'Documentos da Imobiliária', icon: '📁', description: 'Treinamentos, slides de contratação e materiais internos — só do admin', href: '/dashboard/admin/documentos' },
       { title: 'Academia', icon: '🎓', description: 'Materiais educacionais', href: '/dashboard/admin/treinamentos' },
     ]
   },
