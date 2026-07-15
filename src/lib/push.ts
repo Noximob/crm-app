@@ -32,8 +32,12 @@ export function pushJaAtivado(): boolean {
 
 let onMessageAttached = false;
 
+// Chave PÚBLICA de push da web (VAPID) do projeto saas-nox — segura pra ficar no código.
+const VAPID_KEY = process.env.NEXT_PUBLIC_FCM_VAPID_KEY
+  || 'BGKrfIBj8_ZU_PkNugcVFerhvHGw68Snw8zFF8T7oqzBz2ie1nxOilcCrkwHOWTaKhx4bu2E6AOnE8ECFr65o6Y';
+
 async function registrarEObterToken(uid: string): Promise<boolean> {
-  const vapidKey = process.env.NEXT_PUBLIC_FCM_VAPID_KEY;
+  const vapidKey = VAPID_KEY;
   if (!vapidKey) return false; // chave VAPID ainda não configurada
 
   const registration = await navigator.serviceWorker.register(SW_PATH);
@@ -75,7 +79,7 @@ async function registrarEObterToken(uid: string): Promise<boolean> {
  */
 export async function ativarNotificacoes(uid: string): Promise<AtivarNotificacoesResultado> {
   if (!pushSupported()) return 'sem-suporte';
-  if (!process.env.NEXT_PUBLIC_FCM_VAPID_KEY) return 'sem-suporte'; // VAPID ainda não configurada
+  if (!VAPID_KEY) return 'sem-suporte'; // chave VAPID ausente
 
   try {
     const permissao = await Notification.requestPermission();
