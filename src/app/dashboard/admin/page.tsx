@@ -24,6 +24,7 @@ const adminCategories = [
       { title: 'Distribuição de Anúncios', icon: '📣', description: 'Escala, rodízio e tempos dos leads de propaganda', href: '/dashboard/admin/distribuicao-ads' },
       { title: 'Visualizar CRM do corretor', icon: '🔎', description: 'Veja os leads e tarefas de um corretor específico', href: '/dashboard/admin/visualizar-crm-corretor' },
       { title: 'Agenda dos Usuários', icon: '📅', description: 'Visualize a agenda de todos os usuários', href: '/dashboard/admin/agenda-usuarios' },
+      { title: 'Brello da Equipe', icon: '🗂️', description: 'Veja os quadros e cartões salvos por cada corretor', href: '/dashboard/admin/brello-equipe' },
       { title: 'Importar Leads', icon: '⬆️', description: 'Importe leads em massa', href: '/dashboard/admin/importar-leads' },
     ]
   },
@@ -37,7 +38,6 @@ const adminCategories = [
       { title: 'Materiais Construtora', icon: '🏗️', description: 'Materiais das construtoras', href: '/dashboard/admin/materiais-construtora' },
       { title: 'Ligação Ativa (roteiro)', icon: '📞', description: 'Edite o mapa mental da ligação ativa: mensagens, passos e botões', href: '/dashboard/admin/ligacao-ativa' },
       { title: 'Documentos da Imobiliária', icon: '📁', description: 'Treinamentos, slides de contratação e materiais internos — só do admin', href: '/dashboard/admin/documentos' },
-      { title: 'Academia', icon: '🎓', description: 'Materiais educacionais', href: '/dashboard/admin/treinamentos' },
     ]
   },
   {

@@ -24,6 +24,7 @@ export default function ImportarLeadsPage() {
   const [input, setInput] = useState('');
   const [leadsPreview, setLeadsPreview] = useState<LeadPreview[]>([]);
   const [linhasIgnoradas, setLinhasIgnoradas] = useState(0);
+  const [jaExistentes, setJaExistentes] = useState(0); // telefones que já eram leads no CRM (pulados na importação)
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -45,6 +46,7 @@ export default function ImportarLeadsPage() {
 
   // Parsing inteligente do input
   useEffect(() => {
+    setJaExistentes(0); // colagem mudou — contagem antiga de duplicados não vale mais
     if (!input) {
       setLeadsPreview([]);
       setLinhasIgnoradas(0);
@@ -106,7 +108,32 @@ export default function ImportarLeadsPage() {
     setLoading(true);
     setMensagem(null);
     try {
-      await Promise.all(leadsPreview.map(async (lead) => {
+      // Trava anti-duplicidade: busca UMA vez todos os telefones que já são
+      // leads da imobiliária e pula as linhas repetidas (evita dois corretores
+      // atendendo o mesmo cliente).
+      const existentesSnap = await getDocs(query(
+        collection(db, 'leads'),
+        where('imobiliariaId', '==', userData?.imobiliariaId || '')
+      ));
+      const telefonesExistentes = new Set<string>();
+      existentesSnap.docs.forEach((d) => {
+        const dados = d.data() as { whatsapp?: string; telefone?: string };
+        const w = String(dados.whatsapp || '').replace(/\D/g, '');
+        const t = String(dados.telefone || '').replace(/\D/g, '');
+        if (w) telefonesExistentes.add(w);
+        if (t) telefonesExistentes.add(t);
+      });
+
+      const novos = leadsPreview.filter(l => !telefonesExistentes.has(l.telefone.replace(/\D/g, '')));
+      const pulados = leadsPreview.length - novos.length;
+      setJaExistentes(pulados);
+
+      if (novos.length === 0) {
+        setMensagem(`Nenhum lead novo para importar — ${pulados === 1 ? 'esse telefone já existe' : `esses ${pulados} telefones já existem`} no CRM.`);
+        return;
+      }
+
+      await Promise.all(novos.map(async (lead) => {
         await addDoc(collection(db, 'leads'), {
           userId: corretorDestino,
           imobiliariaId: userData?.imobiliariaId || '', // Adiciona o ID da imobiliária
@@ -120,7 +147,11 @@ export default function ImportarLeadsPage() {
           tarefasPendentes: [],
         });
       }));
-      setMensagem('Leads importados com sucesso!');
+      setMensagem(
+        pulados > 0
+          ? `${novos.length} lead${novos.length > 1 ? 's' : ''} importado${novos.length > 1 ? 's' : ''} com sucesso! ${pulados} já existia${pulados > 1 ? 'm' : ''} no CRM (pulado${pulados > 1 ? 's' : ''}).`
+          : 'Leads importados com sucesso!'
+      );
       setInput('');
       setLeadsPreview([]);
     } catch (err) {
@@ -136,7 +167,7 @@ export default function ImportarLeadsPage() {
         <div className="absolute inset-x-0 top-0 gx-line" />
         <h1 className="al-display text-[20px] font-bold text-white uppercase tracking-[0.1em] mb-2 text-left">Importar Leads em Massa</h1>
         <p className="text-text-secondary mb-8 text-left text-sm">Cole abaixo nomes e telefones (copie direto do Excel ou Google Sheets). Cada linha deve conter Nome e Telefone, separados por tabulação, vírgula ou ponto e vírgula.</p>
-        {mensagem && <div className={`mb-4 p-3 rounded-xl border text-sm font-semibold ${mensagem.includes('Erro') ? 'bg-red-500/10 border-red-500/40 text-red-300' : 'bg-[#34D399]/10 border-[#34D399]/35 text-emerald-200'}`}>{mensagem}</div>}
+        {mensagem && <div className={`mb-4 p-3 rounded-xl border text-sm font-semibold ${mensagem.includes('Erro') ? 'bg-red-500/10 border-red-500/40 text-red-300' : mensagem.startsWith('Nenhum lead novo') ? 'bg-amber-500/10 border-amber-500/40 text-amber-200' : 'bg-[#34D399]/10 border-[#34D399]/35 text-emerald-200'}`}>{mensagem}</div>}
         <textarea
           className="w-full h-40 p-3 rounded-lg border border-white/10 bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 mb-4"
           placeholder="Exemplo:\nJoão Silva, (47) 99999-8888\nMaria Souza\t(47) 98888-7777\n(47) 97777-6666"
@@ -155,9 +186,12 @@ export default function ImportarLeadsPage() {
             {corretores.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
           </select>
         </div>
-        {linhasIgnoradas > 0 && (
+        {(linhasIgnoradas > 0 || jaExistentes > 0) && (
           <div className="mb-4 p-3 rounded-xl border text-sm font-semibold bg-amber-500/10 border-amber-500/40 text-amber-200">
-            {linhasIgnoradas} linha{linhasIgnoradas > 1 ? 's' : ''} ignorada{linhasIgnoradas > 1 ? 's' : ''} (telefone inválido ou duplicado na colagem)
+            {[
+              linhasIgnoradas > 0 ? `${linhasIgnoradas} linha${linhasIgnoradas > 1 ? 's' : ''} ignorada${linhasIgnoradas > 1 ? 's' : ''} (telefone inválido ou duplicado na colagem)` : null,
+              jaExistentes > 0 ? `${jaExistentes} já existe${jaExistentes > 1 ? 'm' : ''} no CRM (pulada${jaExistentes > 1 ? 's' : ''})` : null,
+            ].filter(Boolean).join(' · ')}
           </div>
         )}
         {leadsPreview.length > 0 && (

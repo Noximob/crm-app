@@ -15,7 +15,9 @@
  *     status: 'escalado'|'geral'|'aceito'|'nao-atendido',
  *     corretorEscalado: string|null, escaladoEm, prazoAte,
  *     abriuGeralEm?, aceitoPor?, aceitoPorNome?, aceitoEm?, tempoAceiteSeg?,
- *     viaGeral?, leadId?, criadoEm, imobiliariaId }
+ *     viaGeral?, leadId?, criadoEm, imobiliariaId,
+ *     duplicadoDe?: { leadId, userId, nomeCorretor } (aviso: telefone já é
+ *     lead desse corretor no CRM — a distribuição segue normal) }
  *
  * `usuarios/{uid}.fcmTokens: string[]`
  */
@@ -65,6 +67,12 @@ interface ResultadoDistribuicao {
     status: "escalado" | "geral";
     corretorEscalado: string | null;
     corretores: string[];
+}
+
+interface DuplicadoDe {
+    leadId: string;
+    userId: string;
+    nomeCorretor: string;
 }
 
 const db = () => admin.firestore();
@@ -166,6 +174,58 @@ export async function enviarPush(
 // ---------------------------------------------------------------------------
 
 /**
+ * Aviso de duplicidade: procura no CRM um lead da imobiliária com o mesmo
+ * telefone. Se achar, devolve quem é o dono (pra UI avisar "esse telefone já
+ * é lead do Fulano"). NUNCA lança — é só um aviso, a distribuição segue igual.
+ */
+async function buscarLeadDuplicado(telefone: string): Promise<DuplicadoDe | null> {
+    try {
+        if (!telefone || telefone.length < 8) return null;
+
+        // Resolve a imobiliária do mesmo jeito que criarEDistribuir
+        // (config.imobiliariaId → doc do 1º corretor da escala)
+        const configSnap = await db().doc(CONFIG_REF_PATH).get();
+        const config = (configSnap.data() || {}) as Partial<DistribuicaoConfig>;
+        const corretores = Array.isArray(config.corretores) ? config.corretores : [];
+        let imobiliariaId = config.imobiliariaId || "";
+        if (!imobiliariaId && corretores.length > 0) {
+            const usuarioSnap = await db().collection("usuarios").doc(corretores[0]).get();
+            imobiliariaId = (usuarioSnap.data()?.imobiliariaId as string) || "";
+        }
+        if (!imobiliariaId) return null;
+
+        // O Meta manda o telefone com 55 na frente; no CRM o whatsapp
+        // normalmente fica sem o 55 — checa as duas formas.
+        const candidatos = Array.from(new Set([
+            telefone,
+            telefone.startsWith("55") && telefone.length >= 12 ? telefone.slice(2) : "",
+        ])).filter((t) => t.length >= 8);
+
+        for (const cand of candidatos) {
+            const snap = await db().collection("leads")
+                .where("imobiliariaId", "==", imobiliariaId)
+                .where("whatsapp", "==", cand)
+                .limit(1)
+                .get();
+            if (snap.empty) continue;
+
+            const leadDoc = snap.docs[0];
+            const userId = (leadDoc.data().userId as string) || "";
+            let nomeCorretor = "outro corretor";
+            if (userId) {
+                const donoSnap = await db().collection("usuarios").doc(userId).get();
+                nomeCorretor = (donoSnap.data()?.nome as string) || nomeCorretor;
+            }
+            return {leadId: leadDoc.id, userId, nomeCorretor};
+        }
+        return null;
+    } catch (error) {
+        logger.warn("buscarLeadDuplicado: falha ao checar duplicidade (segue sem aviso)", error);
+        return null;
+    }
+}
+
+/**
  * Cria o adsLead e escala o próximo corretor do rodízio (transação sobre
  * distribuicaoAds/config). Se a distribuição estiver inativa ou sem
  * corretores, cria o lead direto no status 'geral' (fallback) para que
@@ -175,6 +235,9 @@ export async function criarEDistribuir(novo: NovoAdsLead): Promise<ResultadoDist
     const configRef = db().doc(CONFIG_REF_PATH);
     const adsLeadRef = db().collection("adsLeads").doc();
     const telefone = somenteDigitos(novo.telefone);
+
+    // Aviso (não bloqueia): esse telefone já é lead de algum corretor no CRM?
+    const duplicadoDe = await buscarLeadDuplicado(telefone);
 
     const resultado = await db().runTransaction(async (tx): Promise<ResultadoDistribuicao> => {
         const configSnap = await tx.get(configRef);
@@ -205,6 +268,7 @@ export async function criarEDistribuir(novo: NovoAdsLead): Promise<ResultadoDist
             metaLeadId: novo.metaLeadId,
             criadoEm: agora,
             imobiliariaId,
+            duplicadoDe: duplicadoDe ?? undefined,
         });
 
         if (!ativo || corretores.length === 0) {

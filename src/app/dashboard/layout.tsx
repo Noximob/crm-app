@@ -67,10 +67,8 @@ const PhoneIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmln
 const HomeIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>;
 const KanbanIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 7v7"/><path d="M12 7v4"/><path d="M16 7v9"/></svg>;
 const BanknoteIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01"/><path d="M18 12h.01"/></svg>;
-const GraduationCapIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>;
 const GlobeIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>;
 const ShieldIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>;
-const TrendingUpIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>;
 
 const NavLink = ({ href, icon: Icon, children, collapsed, isActive }: any) => (
     <Link href={href} className={`flex items-center px-3 py-2.5 text-text-secondary hover:bg-white/[0.06] rounded-lg transition-all duration-200 text-sm font-medium ${
@@ -175,12 +173,10 @@ export default function DashboardLayout({
     ] },
     { titulo: 'Ferramentas', itens: [
       { href: '/dashboard/materiais', icon: FolderIcon, label: 'Materiais de apoio', cor: 'text-[#34D399]' },
-      { href: '/dashboard/fluxo-pagamento', icon: ReceiptIcon, label: 'Fluxo de Pagamento', cor: 'text-[#C4A6FF]' },
+      { href: '/dashboard/calculadora', icon: ReceiptIcon, label: 'Calculadora', cor: 'text-[#C4A6FF]' },
       { href: '/dashboard/comissoes', icon: BanknoteIcon, label: 'Comissões', cor: 'text-[#FFD569]' },
-      { href: '/dashboard/investidor', icon: TrendingUpIcon, label: 'Investidor (TIR)', cor: 'text-[#E8C547]' },
     ] },
     { titulo: 'Mais', itens: [
-      { href: '/dashboard/treinamentos', icon: GraduationCapIcon, label: 'Academia', cor: 'text-[#FB923C]' },
       { href: 'https://chat.openai.com', icon: ChatGPTIcon, label: 'ChatGPT', isExternal: true, cor: 'text-white/75' },
       { href: 'https://noximobiliaria.com.br/', icon: GlobeIcon, label: 'Site', isExternal: true, cor: 'text-[#60A5FA]' },
     ] },

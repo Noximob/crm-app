@@ -26,6 +26,14 @@ const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+// Aviso gravado pelo backend quando o telefone já é lead de alguém no CRM.
+// O campo ainda não existe no tipo AdsLead de @/lib/adsLeads — lido defensivamente.
+interface DuplicadoDeInfo {
+  leadId?: string;
+  userId?: string;
+  nomeCorretor?: string;
+}
+
 function formatTelefone(digitos: string): string {
   const d = String(digitos || '').replace(/\D/g, '').slice(0, 11);
   if (d.length <= 2) return d;
@@ -205,6 +213,7 @@ export default function AdsLeadCard() {
 
   if (!lead) return null;
 
+  const duplicadoDe = (lead as AdsLead & { duplicadoDe?: DuplicadoDeInfo }).duplicadoDe;
   const prazoMs = tsToMillis(lead.prazoAte);
   const restanteSeg = Math.max(0, Math.floor((prazoMs - agora) / 1000));
   const mm = String(Math.floor(restanteSeg / 60)).padStart(2, '0');
@@ -267,6 +276,13 @@ export default function AdsLeadCard() {
             ? `Exclusivo pra você por ${minutosExclusivo} min`
             : '⚡ Aberto pra todos — quem clicar primeiro leva'}
         </p>
+
+        {duplicadoDe && (
+          <p className="mt-2 flex items-start gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-bold bg-amber-500/10 border border-amber-500/40 text-amber-200">
+            <span aria-hidden>⚠️</span>
+            <span>Esse telefone já é lead de {duplicadoDe.nomeCorretor || 'outro corretor'}</span>
+          </p>
+        )}
 
         <button
           onClick={handleAceitar}

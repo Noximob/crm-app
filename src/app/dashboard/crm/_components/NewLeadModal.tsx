@@ -3,7 +3,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, limit, getDocs, doc, getDoc } from 'firebase/firestore';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 
 const ORIGEM_OPCOES = ['Networking', 'Ligação', 'Ação de rua', 'Disparo de msg', 'Propaganda', 'Outros'] as const;
@@ -105,8 +105,60 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
                 : origem;
 
         try {
-            // Salva na coleção principal 'leads'
             const leadsCollectionRef = collection(db, 'leads');
+
+            // ── Trava anti-duplicidade ─────────────────────────────────────
+            // O mesmo telefone não pode virar lead duas vezes na imobiliária
+            // (dois corretores atendendo o mesmo cliente = briga).
+            const digits = phone.replace(/\D/g, '');
+            const imobiliariaId = userData?.imobiliariaId || '';
+            // Leads vindos de importação podem ter o whatsapp com o 55 na frente
+            const candidatosWhatsapp = digits.length >= 10 ? [digits, `55${digits}`] : [digits];
+
+            let dupData: { userId?: string; nome?: string } | null = null;
+            for (const cand of candidatosWhatsapp) {
+                const snap = await getDocs(query(
+                    leadsCollectionRef,
+                    where('imobiliariaId', '==', imobiliariaId),
+                    where('whatsapp', '==', cand),
+                    limit(1)
+                ));
+                if (!snap.empty) {
+                    dupData = snap.docs[0].data() as { userId?: string; nome?: string };
+                    break;
+                }
+            }
+            if (!dupData) {
+                // Leads antigos podem não ter o campo whatsapp — compara o telefone formatado
+                const snap = await getDocs(query(
+                    leadsCollectionRef,
+                    where('imobiliariaId', '==', imobiliariaId),
+                    where('telefone', '==', phone),
+                    limit(1)
+                ));
+                if (!snap.empty) {
+                    dupData = snap.docs[0].data() as { userId?: string; nome?: string };
+                }
+            }
+            if (dupData) {
+                if (dupData.userId === currentUser.uid) {
+                    setError(`Você já tem esse lead: ${dupData.nome || 'sem nome'}.`);
+                } else {
+                    let nomeDono = 'outro corretor';
+                    if (dupData.userId) {
+                        try {
+                            const donoSnap = await getDoc(doc(db, 'usuarios', dupData.userId));
+                            nomeDono = (donoSnap.data()?.nome as string) || nomeDono;
+                        } catch {
+                            // mantém o fallback "outro corretor"
+                        }
+                    }
+                    setError(`Esse telefone já é lead de ${nomeDono}.`);
+                }
+                return; // NÃO cria o lead duplicado
+            }
+
+            // Salva na coleção principal 'leads'
             await addDoc(leadsCollectionRef, {
                 userId: currentUser.uid, // Adiciona o ID do usuário ao lead
                 imobiliariaId: userData?.imobiliariaId || '', // Adiciona o ID da imobiliária

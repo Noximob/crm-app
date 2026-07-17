@@ -59,6 +59,8 @@ interface AdsLead {
   viaGeral?: boolean;
   criadoEm?: any;
   imobiliariaId?: string;
+  /** Aviso do backend: esse telefone já é lead desse corretor no CRM */
+  duplicadoDe?: { leadId?: string; userId?: string; nomeCorretor?: string };
 }
 
 // ---------------------------------------------------------------------------
@@ -147,6 +149,7 @@ const buildDemo = () => {
       id: 'demo-ads-2', nome: 'Patrícia Ramos', telefone: '47988884444', origem: 'meta-whatsapp',
       campanhaNome: 'Retargeting Julho', status: 'geral', corretorEscalado: null,
       abriuGeralEm: demoTs(-4 * 60000), prazoAte: demoTs(26 * 60000), criadoEm: demoTs(-9 * 60000),
+      duplicadoDe: { leadId: 'demo-lead-dup', userId: DEMO_REPORT_CORRETORES[3].uid, nomeCorretor: DEMO_REPORT_CORRETORES[3].nome },
     },
   ];
   const naoAtendidos: AdsLead[] = [
@@ -753,6 +756,11 @@ export default function AdminDistribuicaoAdsPage() {
                             Aberto pra todos · <span className="tabular-nums">{cd.texto}</span>
                           </span>
                         )}
+                        {l.duplicadoDe && (
+                          <span className={`${chipBase} bg-amber-500/10 border-amber-500/40 text-amber-200 normal-case tracking-normal`}>
+                            ⚠️ Já é lead de {l.duplicadoDe.nomeCorretor || 'outro corretor'}
+                          </span>
+                        )}
                         <div className="ml-auto flex items-center gap-2">
                           {l.status === 'geral' && (
                             <button
@@ -866,6 +874,11 @@ export default function AdminDistribuicaoAdsPage() {
                       <span className={`${chipBase} bg-[#34D399]/10 border-[#34D399]/35 text-emerald-300 normal-case tracking-normal`}>{l.aceitoPorNome || nomeDoCorretor(l.aceitoPor)}</span>
                       <span className="text-[11px] text-text-secondary tabular-nums">{fmtTempoSeg(l.tempoAceiteSeg)}</span>
                       {l.viaGeral && <span className={`${chipBase} bg-[#E8C547]/10 border-[#E8C547]/40 text-[#FFE9A6]`}>via geral</span>}
+                      {l.duplicadoDe && (
+                        <span className={`${chipBase} bg-amber-500/10 border-amber-500/40 text-amber-200 normal-case tracking-normal`}>
+                          ⚠️ Já é lead de {l.duplicadoDe.nomeCorretor || 'outro corretor'}
+                        </span>
+                      )}
                       {l.campanhaNome && (
                         <span className="text-[10px] text-white/35 truncate max-w-[150px]">{l.campanhaNome}</span>
                       )}

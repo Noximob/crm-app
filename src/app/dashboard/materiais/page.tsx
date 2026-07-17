@@ -6,7 +6,7 @@ import { apoioDb } from '@/lib/apoioFirebase';
 import { CATEGORIES, catByKey, parseTip, fmtMoneyBR, type Construtora, type Imovel, type Material, type TipRow } from '@/lib/materiais/types';
 import { toCdn, youtubeId, waLink, encaminharWhatsApp } from '@/lib/materiais/toCdn';
 import PdfPager from '@/components/PdfPager';
-import FluxoPagamentoPage from '../fluxo-pagamento/page';
+import CalculadoraPage from '../calculadora/page';
 import LoadingState from '@/components/ui/LoadingState';
 
 function matsArr(p: Imovel): Material[] {
@@ -583,7 +583,7 @@ function TabConteudo({ imovel, tab, presenting, onLightbox }: { imovel: Imovel; 
     // Calculadora completa embutida — roda aqui dentro (inclusive no modo apresentação), sem sair do material
     return (
       <div className="max-w-6xl mx-auto">
-        <FluxoPagamentoPage />
+        <CalculadoraPage />
       </div>
     );
   }

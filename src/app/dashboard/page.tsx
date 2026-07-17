@@ -13,6 +13,7 @@ import { DEMO_AGENDA_IMOBILIARIA } from '@/lib/espelho/demoData';
 import AgendaImobiliariaModal from './_components/AgendaImobiliariaModal';
 import PlantoesModal from './_components/PlantoesModal';
 import LoadingState from '@/components/ui/LoadingState';
+import TourInicial from '@/components/TourInicial';
 
 interface MetaPessoalData {
   valorAlmejado: number;
@@ -1182,7 +1183,7 @@ export default function DashboardPage() {
               {[
                 { href: '/dashboard/crm', ic: 'users', icc: 'text-[#FF7A97] drop-shadow-[0_0_8px_rgba(255,30,86,0.6)]', t: 'CRM', b: 'border-[#FF1E56]/35 hover:border-[#FF1E56]/70', bg: 'bg-[#FF1E56]/[0.05] hover:bg-[#FF1E56]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(255,30,86,0.5)]', chip: 'from-[#FF1E56]/25 to-[#FF1E56]/[0.03] border-[#FF1E56]/30', arrow: 'text-[#FF7A97]' },
                 { href: '/dashboard/materiais', ic: 'folder', icc: 'text-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]', t: 'Produtos', b: 'border-[#34D399]/35 hover:border-[#34D399]/70', bg: 'bg-[#34D399]/[0.05] hover:bg-[#34D399]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(52,211,153,0.45)]', chip: 'from-[#34D399]/25 to-[#34D399]/[0.03] border-[#34D399]/30', arrow: 'text-emerald-300' },
-                { href: '/dashboard/fluxo-pagamento', ic: 'receipt', icc: 'text-[#C4A6FF] drop-shadow-[0_0_8px_rgba(159,107,255,0.6)]', t: 'Fluxo de Pagamento', b: 'border-[#9F6BFF]/35 hover:border-[#9F6BFF]/70', bg: 'bg-[#9F6BFF]/[0.05] hover:bg-[#9F6BFF]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(159,107,255,0.45)]', chip: 'from-[#9F6BFF]/25 to-[#9F6BFF]/[0.03] border-[#9F6BFF]/30', arrow: 'text-[#C4A6FF]' },
+                { href: '/dashboard/calculadora', ic: 'receipt', icc: 'text-[#C4A6FF] drop-shadow-[0_0_8px_rgba(159,107,255,0.6)]', t: 'Calculadora', b: 'border-[#9F6BFF]/35 hover:border-[#9F6BFF]/70', bg: 'bg-[#9F6BFF]/[0.05] hover:bg-[#9F6BFF]/[0.12]', glow: 'hover:shadow-[0_10px_30px_-10px_rgba(159,107,255,0.45)]', chip: 'from-[#9F6BFF]/25 to-[#9F6BFF]/[0.03] border-[#9F6BFF]/30', arrow: 'text-[#C4A6FF]' },
               ].map((a) => (
                 <Link key={a.href} href={a.href} className={`group relative overflow-hidden rounded-2xl border ${a.b} ${a.bg} ${a.glow} flex items-center gap-2.5 px-3 py-2 hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200`}>
                   <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700" />
@@ -1364,6 +1365,8 @@ export default function DashboardPage() {
         </button>
       )}
 
+      {/* Tour de boas-vindas (3 passos) — só na primeira entrada */}
+      <TourInicial />
 
     </div>
   );
