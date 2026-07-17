@@ -72,10 +72,19 @@ export function mapEtapaCircuito(etapa: string | undefined | null): string {
 // ---------------------------------------------------------------------------
 export const MOTIVOS_DESCARTE = [
   'Não responde',
-  'Não quer comprar agora',
+  'Não quer mais',
   'Comprou com outro',
-  'Fora do perfil / orçamento',
-  'Número errado',
+  'Fora do perfil',
+  'Adiou a compra',
+  'Outro',
+] as const;
+
+/** Opções do pop-up de requalificação ("o que não encaixou?"). */
+export const REQUALIFICA_OPCOES = [
+  'Preço alto',
+  'Região errada',
+  'Tipo errado',
+  'Prazo de entrega',
   'Outro',
 ] as const;
 

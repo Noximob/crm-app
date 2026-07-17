@@ -1,19 +1,24 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, onSnapshot, updateDoc, collection, query, orderBy, serverTimestamp, where, writeBatch, limit } from 'firebase/firestore';
+import { doc, getDoc, getDocs, addDoc, onSnapshot, updateDoc, collection, query, orderBy, serverTimestamp, where, writeBatch, limit } from 'firebase/firestore';
 import { TarefaPendente, fetchPendentesDaSubcolecao, getTaskStatusInfo, toJsDate, type TaskStatus } from '@/lib/leadTasks';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { Lead } from '@/types';
 import CrmHeader from '../_components/CrmHeader';
 import AgendaModal, { TaskPayload } from '../_components/AgendaModal';
 import CancelTaskModal from '../_components/CancelTaskModal';
-import CircuitoCard, { type AcaoCircuito, fmtDataHora } from './_components/CircuitoCard';
+import CircuitoCard from './_components/CircuitoCard';
+import AtendimentoOverlay, { type AcaoCircuito, type EstadoFluxo, fmtDataHora } from './_components/AtendimentoOverlay';
 import { getDemoLeadById, getDemoInteractions } from '@/lib/espelho/demoData';
-import { CADENCIAS_PADRAO, carregarCadencias, ETAPAS_TERMINAIS, type CadenciasFunil } from '@/lib/circuito';
+import {
+  CADENCIAS_PADRAO, carregarCadencias, ETAPAS_TERMINAIS, type CadenciasFunil,
+  ETAPA_ENTRADA, ETAPA_FOLLOWUP, ETAPA_MEET, ETAPA_VISITA, ETAPA_NEGOCIACAO, ETAPA_BOLSAO, ETAPA_FECHADO,
+  TIPO_TAREFA_MEET, TIPO_TAREFA_VISITA, TIPOS_CONTATO,
+} from '@/lib/circuito';
 import { showToast } from '@/components/ui/toast';
 import LoadingState from '@/components/ui/LoadingState';
 
@@ -76,6 +81,7 @@ export default function LeadDetailPage() {
     const { currentUser, userData, isEspelhoDemo } = useAuth();
     const { stages, normalizeEtapa } = usePipelineStages();
     const params = useParams();
+    const router = useRouter();
     const searchParams = useSearchParams();
     const leadId = params.leadId as string;
     const viewAs = searchParams.get('viewAs') === '1';
@@ -97,6 +103,10 @@ export default function LeadDetailPage() {
     const [tempAnnotations, setTempAnnotations] = useState('');
     const [cadencias, setCadencias] = useState<CadenciasFunil>(CADENCIAS_PADRAO);
     const [executandoCircuito, setExecutandoCircuito] = useState(false);
+    const [atendimentoAberto, setAtendimentoAberto] = useState(false);
+    const [fechouNoX, setFechouNoX] = useState(false);
+    const autoAbriu = useRef(false);
+    const transferiuParaGestor = useRef(false);
     const [expandidas, setExpandidas] = useState<Set<string>>(new Set());
     const [saveQual, setSaveQual] = useState<'idle' | 'salvando' | 'salvo'>('idle');
     const [saveNotas, setSaveNotas] = useState<'idle' | 'salvando' | 'salvo'>('idle');
@@ -210,15 +220,85 @@ export default function LeadDetailPage() {
     const taskStatus = useMemo(() => getTaskStatusInfo(tasks as unknown as TarefaPendente[]), [tasks]);
 
     // ------------------------------------------------------------------
+    // Pergunta pendente do circuito: qual pop-up abre e se ele deve insistir
+    // ------------------------------------------------------------------
+    const circuitoInfo = useMemo((): { pendente: boolean; estado: EstadoFluxo } | null => {
+        if (!lead) return null;
+        const etapa = normalizeEtapa(lead.etapa);
+        const agora = Date.now();
+        const porData = (a: { dueDate: any }, b: { dueDate: any }) =>
+            (toJsDate(a.dueDate)?.getTime() ?? 0) - (toJsDate(b.dueDate)?.getTime() ?? 0);
+        const taskContato = tasks.filter(t => (TIPOS_CONTATO as unknown as string[]).includes(t.type)).sort(porData)[0];
+        const taskMeet = tasks.filter(t => t.type === TIPO_TAREFA_MEET).sort(porData)[0];
+        const taskVisita = tasks.filter(t => t.type === TIPO_TAREFA_VISITA).sort(porData)[0];
+        const venceu = (t: { dueDate: any } | undefined, horasExtra = 0) => {
+            const d = t ? toJsDate(t.dueDate) : null;
+            return d ? agora >= d.getTime() + horasExtra * 3600_000 : false;
+        };
+
+        switch (etapa) {
+            case ETAPA_ENTRADA:
+                return { pendente: true, estado: { t: 'entrada' } };
+            case ETAPA_FOLLOWUP:
+                if (!taskContato) return { pendente: true, estado: { t: 'proximaAcao' } };
+                return { pendente: venceu(taskContato), estado: { t: 'fu', taskId: taskContato.id } };
+            case ETAPA_MEET:
+                if (!taskMeet) return { pendente: true, estado: { t: 'agendarData', tipo: 'Meet' } };
+                return { pendente: venceu(taskMeet, cadencias.perguntarMeetHoras), estado: { t: 'meetQ', taskId: taskMeet.id } };
+            case ETAPA_VISITA:
+                if (!taskVisita) return { pendente: true, estado: { t: 'agendarData', tipo: 'Visita' } };
+                return { pendente: venceu(taskVisita, cadencias.perguntarVisitaHoras), estado: { t: 'visitaQ', taskId: taskVisita.id } };
+            case ETAPA_NEGOCIACAO:
+                if (!taskContato) return { pendente: true, estado: { t: 'negPrazo' } };
+                return { pendente: venceu(taskContato), estado: { t: 'negQ', taskId: taskContato.id } };
+            case ETAPA_BOLSAO:
+                return { pendente: false, estado: { t: 'quando' } };
+            case ETAPA_FECHADO:
+                return null;
+            default: // Descartado → reativar agenda um follow-up
+                return { pendente: false, estado: { t: 'quando' } };
+        }
+    }, [lead, tasks, cadencias, normalizeEtapa]);
+
+    // "Ao abrir o lead: entrou no lead que tem pergunta em aberto? Ela abre na hora, sobre a página."
+    useEffect(() => {
+        if (loading || readOnly || autoAbriu.current) return;
+        if (circuitoInfo?.pendente) {
+            autoAbriu.current = true;
+            const id = setTimeout(() => setAtendimentoAberto(true), 450);
+            return () => clearTimeout(id);
+        }
+    }, [loading, readOnly, circuitoInfo]);
+
+    const handleFecharX = () => {
+        setAtendimentoAberto(false);
+        setFechouNoX(true);
+        const primeiroNome = (lead?.nome || 'O lead').split(' ')[0];
+        showToast(`⚠️ ${primeiroNome} ficou sem encaminhamento. Resolva pra voltar a receber leads novos.`, 'info');
+    };
+
+    const handleConcluido = (msg?: string) => {
+        setAtendimentoAberto(false);
+        setFechouNoX(false);
+        if (msg) showToast(msg, 'success');
+        if (transferiuParaGestor.current) {
+            // O lead saiu do funil do corretor → volta pra lista
+            transferiuParaGestor.current = false;
+            setTimeout(() => router.push('/dashboard/crm'), 900);
+        }
+    };
+
+    // ------------------------------------------------------------------
     // Motor do circuito: uma ação composta = um batch atômico
     // ------------------------------------------------------------------
-    const executarCircuito = useCallback(async (acao: AcaoCircuito) => {
-        if (!currentUser || !lead) return;
+    const executarCircuito = useCallback(async (acao: AcaoCircuito): Promise<boolean> => {
+        if (!currentUser || !lead) return false;
         if (isEspelhoDemo) {
+            // No espelho o fluxo anda visualmente (pra demonstrar), mas nada é salvo.
             showToast('Modo demonstração — as ações do circuito não são salvas.', 'info');
-            return;
+            return true;
         }
-        if (readOnly || executandoCircuito) return;
+        if (readOnly || executandoCircuito) return false;
         setExecutandoCircuito(true);
         try {
             const leadRef = doc(db, 'leads', lead.id);
@@ -272,6 +352,29 @@ export default function LeadDetailPage() {
                 leadUpdate.descartadoMotivo = acao.descartadoMotivo;
                 leadUpdate.descartadoEm = serverTimestamp();
             }
+            if (acao.vendaValor) {
+                leadUpdate.vendaValor = acao.vendaValor;
+                leadUpdate.vendaEm = serverTimestamp();
+            }
+            if (acao.transferirParaGestor) {
+                // "O lead vai pro bolsão do gestor" — descarte transfere pra conta da imobiliária
+                try {
+                    const donoSnap = await getDocs(query(
+                        collection(db, 'usuarios'),
+                        where('imobiliariaId', '==', userData?.imobiliariaId || ''),
+                        where('tipoConta', '==', 'imobiliaria'),
+                        limit(1)
+                    ));
+                    const donoUid = donoSnap.docs[0]?.id;
+                    if (donoUid && donoUid !== lead.userId) {
+                        leadUpdate.userId = donoUid;
+                        leadUpdate.descartadoPor = currentUser.uid;
+                        if (donoUid !== currentUser.uid) transferiuParaGestor.current = true;
+                    }
+                } catch {
+                    // sem dono localizável, o lead fica com o corretor mesmo (etapa Descartado)
+                }
+            }
             batch.update(leadRef, leadUpdate);
 
             batch.set(doc(interCol), {
@@ -283,16 +386,15 @@ export default function LeadDetailPage() {
             });
 
             await batch.commit();
-            if (acao.novaEtapa === 'Fechado') {
-                showToast('🏆 VENDA FECHADA! Parabéns!', 'success');
-            }
+            return true;
         } catch (e) {
             console.error('Erro no circuito:', e);
             showToast('Erro ao registrar a ação. Tente de novo.', 'error');
+            return false;
         } finally {
             setExecutandoCircuito(false);
         }
-    }, [currentUser, lead, isEspelhoDemo, readOnly, executandoCircuito, tasks, tasksLoaded, normalizeEtapa]);
+    }, [currentUser, lead, isEspelhoDemo, readOnly, executandoCircuito, tasks, tasksLoaded, normalizeEtapa, userData?.imobiliariaId]);
 
     // Mudança manual de etapa (o circuito é o caminho principal; isso é o ajuste fino)
     const handleStageChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -302,6 +404,17 @@ export default function LeadDetailPage() {
             interacao: { type: 'Etapa', notes: `↷ Etapa alterada manualmente para ${novaEtapa}` },
         });
     };
+
+    // Registro avulso de tentativa de contato (botões "Liguei"/"Chamei no WhatsApp")
+    const registrarContato = useCallback((via: 'Ligação' | 'WhatsApp') => {
+        if (!currentUser || !lead || isEspelhoDemo || readOnly) return;
+        addDoc(collection(db, 'leads', lead.id, 'interactions'), {
+            type: via,
+            notes: `${via === 'Ligação' ? '📞' : '💬'} Tentativa de contato por ${via === 'Ligação' ? 'ligação' : 'WhatsApp'}`,
+            timestamp: serverTimestamp(),
+            circuito: true,
+        }).catch(() => {});
+    }, [currentUser, lead, isEspelhoDemo, readOnly]);
 
     // ------------------------------------------------------------------
     // Anotações — sempre abertas, salvam sozinhas
@@ -551,19 +664,17 @@ export default function LeadDetailPage() {
                         </div>
                     </div>
 
-                    {/* O CIRCUITO — conduz o atendimento */}
+                    {/* O CIRCUITO — resumo; o atendimento acontece nos pop-ups */}
                     <CircuitoCard
                         etapa={etapaAtual}
-                        nomeCliente={lead.nome}
-                        telefone={lead.telefone}
-                        tasks={tasks}
-                        cadencias={cadencias}
                         tentativas={lead.circuito?.tentativas || 0}
                         desde={lead.circuito?.desde}
                         descartadoMotivo={lead.descartadoMotivo}
+                        vendaValor={lead.vendaValor}
+                        pendente={!!circuitoInfo?.pendente}
+                        pendenteFechado={fechouNoX && !!circuitoInfo?.pendente}
                         readOnly={readOnly}
-                        executando={executandoCircuito}
-                        executar={executarCircuito}
+                        onAtender={() => { setAtendimentoAberto(true); setFechouNoX(false); }}
                     />
 
                     {/* Próximas tarefas (com horário) */}
@@ -762,6 +873,32 @@ export default function LeadDetailPage() {
                 }}
                 isLoading={isCancelling}
             />
+
+            {/* Os 2 pop-ups do atendimento: fluxo à esquerda, anotações & qualificação à direita */}
+            {circuitoInfo && !readOnly && (
+                <AtendimentoOverlay
+                    aberto={atendimentoAberto}
+                    estadoInicial={circuitoInfo.estado}
+                    nome={lead.nome}
+                    telefone={lead.telefone}
+                    origem={lead.origem}
+                    tasks={tasks}
+                    cadencias={cadencias}
+                    executando={executandoCircuito}
+                    isDemo={isEspelhoDemo}
+                    executar={executarCircuito}
+                    registrarContato={registrarContato}
+                    onFecharX={handleFecharX}
+                    onConcluido={handleConcluido}
+                    qualGroups={QUALIFICATION_QUESTIONS}
+                    qualifications={qualifications}
+                    onToggleQual={handleQualificationChange}
+                    saveQual={saveQual}
+                    anotacoes={tempAnnotations}
+                    onChangeAnotacoes={handleAnnotationsChange}
+                    saveNotas={saveNotas}
+                />
+            )}
         </div>
     );
 }
