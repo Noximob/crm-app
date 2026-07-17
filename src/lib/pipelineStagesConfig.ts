@@ -21,30 +21,29 @@ export interface PipelineStageWithMeta {
   isQuente: boolean;
 }
 
-/** Etapas padrão do funil com metadados (relatório e quente) */
+/**
+ * Etapas do circuito do lead com metadados (relatório e quente).
+ * As categorias antigas são mantidas como CHAVES internas (relatórios/TV
+ * dependem delas); o rótulo exibido vem de COMPACT_GROUP_LABELS.
+ */
 export const DEFAULT_PIPELINE_STAGES_WITH_META: PipelineStageWithMeta[] = [
-  { label: 'Pré Qualificação', reportCategory: 'Topo de Funil', isQuente: false },
-  { label: 'Qualificação', reportCategory: 'Qualificado', isQuente: false },
-  { label: 'Apresentação do imóvel', reportCategory: 'Apresentação do imóvel', isQuente: false },
-  { label: 'Ligação agendada', reportCategory: 'Reunião agendada', isQuente: false },
-  { label: 'Visita agendada', reportCategory: 'Reunião agendada', isQuente: false },
-  { label: 'Negociação e Proposta', reportCategory: 'Negociação e contrato', isQuente: true },
-  { label: 'Contrato e fechamento', reportCategory: 'Negociação e contrato', isQuente: true },
-  { label: 'Pós Venda e Fidelização', reportCategory: 'Follow up', isQuente: true },
-  { label: 'Interesse Futuro', reportCategory: 'Troca de Leads', isQuente: false },
-  { label: 'Carteira', reportCategory: 'Troca de Leads', isQuente: false },
-  { label: 'Geladeira', reportCategory: 'Troca de Leads', isQuente: false },
+  { label: 'Entrada', reportCategory: 'Topo de Funil', isQuente: false },
+  { label: 'Follow-up', reportCategory: 'Qualificado', isQuente: false },
+  { label: 'Meet', reportCategory: 'Reunião agendada', isQuente: false },
+  { label: 'Visita', reportCategory: 'Reunião agendada', isQuente: false },
+  { label: 'Negociação', reportCategory: 'Negociação e contrato', isQuente: true },
+  { label: 'Bolsão', reportCategory: 'Troca de Leads', isQuente: false },
 ];
 
 /** Labels curtos para exibição em TV / cards compactos (por categoria) */
 export const COMPACT_GROUP_LABELS: Record<ReportCategory, string> = {
-  'Topo de Funil': 'Topo',
-  'Qualificado': 'Qualif.',
-  'Apresentação do imóvel': 'Apres. imóvel',
-  'Reunião agendada': 'Lig. e visita',
-  'Negociação e contrato': 'Negoc. e prop.',
-  'Follow up': 'Pós Venda',
-  'Troca de Leads': 'Int. futuro',
+  'Topo de Funil': 'Entrada',
+  'Qualificado': 'Follow-up',
+  'Apresentação do imóvel': 'Follow-up',
+  'Reunião agendada': 'Meet & Visita',
+  'Negociação e contrato': 'Negociação',
+  'Follow up': 'Fechado',
+  'Troca de Leads': 'Bolsão',
 };
 
 /** Constrói mapa etapa (label) -> categoria do relatório */

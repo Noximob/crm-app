@@ -136,13 +136,8 @@ export default function DeveloperPage() {
         destinoUid = ownerSnap.docs[0]?.id ?? null;
       }
 
-      // 2. Primeira etapa do funil (topo) — usa config da imobiliária se existir
-      let primeiraEtapa = PIPELINE_STAGES[0];
-      if (imobiliariaId) {
-        const cfgSnap = await getDoc(firestoreDoc(db, 'configFunilVendas', imobiliariaId));
-        const stages = cfgSnap.exists() ? (cfgSnap.data().stages as Array<{ label?: string }>) : null;
-        if (Array.isArray(stages) && stages[0]?.label) primeiraEtapa = stages[0].label!;
-      }
+      // 2. Primeira etapa do circuito (Entrada) — as etapas agora são fixas
+      const primeiraEtapa = PIPELINE_STAGES[0];
 
       // 3. Reatribuir leads do corretor para a imobiliária (topo do funil)
       const leadsSnap = await getDocs(query(collection(db, 'leads'), where('userId', '==', user.id)));

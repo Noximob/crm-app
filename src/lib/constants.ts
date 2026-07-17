@@ -1,7 +1,6 @@
+/** Etapas do circuito do lead (ordem do quadro). Fonte única: src/lib/circuito.ts. */
 export const PIPELINE_STAGES = [
-    'Pré Qualificação', 'Qualificação', 'Apresentação do imóvel', 'Ligação agendada',
-    'Visita agendada', 'Negociação e Proposta', 'Contrato e fechamento',
-    'Pós Venda e Fidelização', 'Interesse Futuro', 'Carteira', 'Geladeira'
+    'Entrada', 'Follow-up', 'Meet', 'Visita', 'Negociação', 'Bolsão'
 ];
 
 /** Modo demonstração (Espelho): login/senha únicos; não usa Firestore. */

@@ -1,104 +1,51 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, getDocs, onSnapshot, updateDoc, collection, query, orderBy, addDoc, serverTimestamp, where, writeBatch, limit } from 'firebase/firestore';
-import { TarefaPendente, fetchPendentesDaSubcolecao } from '@/lib/leadTasks';
-import Link from 'next/link';
+import { doc, getDoc, onSnapshot, updateDoc, collection, query, orderBy, serverTimestamp, where, writeBatch, limit } from 'firebase/firestore';
+import { TarefaPendente, fetchPendentesDaSubcolecao, getTaskStatusInfo, toJsDate, type TaskStatus } from '@/lib/leadTasks';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { Lead } from '@/types';
-import LogInteractionModal from '../_components/LogInteractionModal';
 import CrmHeader from '../_components/CrmHeader';
 import AgendaModal, { TaskPayload } from '../_components/AgendaModal';
 import CancelTaskModal from '../_components/CancelTaskModal';
+import CircuitoCard, { type AcaoCircuito, fmtDataHora } from './_components/CircuitoCard';
 import { getDemoLeadById, getDemoInteractions } from '@/lib/espelho/demoData';
+import { CADENCIAS_PADRAO, carregarCadencias, ETAPAS_TERMINAIS, type CadenciasFunil } from '@/lib/circuito';
 import { showToast } from '@/components/ui/toast';
 import LoadingState from '@/components/ui/LoadingState';
 
-
 // --- Ícones ---
-const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>;
 const PhoneIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>;
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="currentColor" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>;
-const BuildingIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>;
 const TaskIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
-const CheckCircleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>;
-const XCircleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>;
 
-
-// --- Funções de Ajuda ---
-type TaskStatus = 'Tarefa em Atraso' | 'Tarefa do Dia' | 'Tarefa Futura' | 'Sem tarefa';
-
-const getTaskStatusInfo = (tasks: Task[]): TaskStatus => {
-    if (tasks.length === 0) return 'Sem tarefa';
-
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-
-    const hasOverdue = tasks.some(task => {
-        const dueDate = task.dueDate.toDate();
-        dueDate.setHours(0, 0, 0, 0);
-        return dueDate < now;
-    });
-    if (hasOverdue) return 'Tarefa em Atraso';
-
-    const hasTodayTask = tasks.some(task => {
-        const dueDate = task.dueDate.toDate();
-        dueDate.setHours(0, 0, 0, 0);
-        return dueDate.getTime() === now.getTime();
-    });
-    if (hasTodayTask) return 'Tarefa do Dia';
-
-    return 'Tarefa Futura';
+// --- Cores por tipo de tarefa/interação ---
+const TIPO_COR: Record<string, { chip: string; borda: string }> = {
+    'Ligação': { chip: 'bg-[#7DD3FC]/10 border-[#7DD3FC]/35 text-[#7DD3FC]', borda: 'border-l-[#7DD3FC]/60' },
+    'WhatsApp': { chip: 'bg-emerald-500/10 border-emerald-500/35 text-emerald-300', borda: 'border-l-emerald-400/60' },
+    'Visita': { chip: 'bg-[#E8C547]/10 border-[#E8C547]/40 text-[#FFE9A6]', borda: 'border-l-[#E8C547]/60' },
+    'Meet': { chip: 'bg-[#9F6BFF]/10 border-[#9F6BFF]/35 text-[#C4A6FF]', borda: 'border-l-[#9F6BFF]/60' },
+    'Follow-up': { chip: 'bg-[#FF1E56]/10 border-[#FF1E56]/35 text-[#FF7A97]', borda: 'border-l-[#FF1E56]/60' },
+    'Produto': { chip: 'bg-[#F59E0B]/10 border-[#F59E0B]/35 text-[#FBBF24]', borda: 'border-l-[#F59E0B]/60' },
+    'Outros': { chip: 'bg-white/[0.05] border-white/15 text-text-secondary', borda: 'border-l-white/25' },
+    'Etapa': { chip: 'bg-white/[0.05] border-white/15 text-white/70', borda: 'border-l-white/30' },
+    'Venda': { chip: 'bg-[#E8C547]/15 border-[#E8C547]/50 text-[#FFE9A6]', borda: 'border-l-[#E8C547]' },
+    'Descarte': { chip: 'bg-red-500/10 border-red-500/35 text-red-300', borda: 'border-l-red-400/60' },
+    'Tarefa Agendada': { chip: 'bg-[#7DD3FC]/10 border-[#7DD3FC]/35 text-[#7DD3FC]', borda: 'border-l-[#7DD3FC]/60' },
+    'Tarefa Concluída': { chip: 'bg-emerald-500/10 border-emerald-500/35 text-emerald-300', borda: 'border-l-emerald-400/60' },
+    'Tarefa Cancelada': { chip: 'bg-red-500/10 border-red-500/35 text-red-300', borda: 'border-l-red-400/60' },
 };
+const tipoCor = (t: string) => TIPO_COR[t] ?? TIPO_COR['Outros'];
 
 const getTaskStatusColor = (status: TaskStatus) => {
     switch (status) {
         case 'Tarefa em Atraso': return 'bg-[#FF1E56] shadow-[0_0_8px_rgba(255,30,86,0.8)]';
         case 'Tarefa do Dia': return 'bg-[#E8C547] shadow-[0_0_8px_rgba(232,197,71,0.8)]';
         case 'Tarefa Futura': return 'bg-[#7DD3FC] shadow-[0_0_8px_rgba(125,211,252,0.7)]';
-        case 'Sem tarefa': return 'bg-white/30';
         default: return 'bg-white/30';
-    }
-};
-
-const getIconForInteraction = (type: string) => {
-    switch (type) {
-        case 'Ligação': return <PhoneIcon className="h-5 w-5 text-[#7DD3FC] drop-shadow-[0_0_6px_rgba(125,211,252,0.5)]" />;
-        case 'WhatsApp': return <WhatsAppIcon className="h-5 w-5 text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.5)]" />;
-        case 'Visita': return <BuildingIcon className="h-5 w-5 text-[#C4A6FF] drop-shadow-[0_0_6px_rgba(159,107,255,0.5)]" />;
-        case 'Tarefa Agendada': return <TaskIcon className="h-5 w-5 text-[#7DD3FC] drop-shadow-[0_0_6px_rgba(125,211,252,0.5)]" />;
-        case 'Tarefa Concluída': return <CheckCircleIcon className="h-5 w-5 text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.5)]" />;
-        case 'Tarefa Cancelada': return <XCircleIcon className="h-5 w-5 text-red-400 drop-shadow-[0_0_6px_rgba(248,113,113,0.5)]" />;
-        default: return <div className="h-5 w-5 bg-white/20 rounded-full" />; // Um ícone padrão
-    }
-};
-
-// Cor da borda lateral do histórico (apenas visual)
-const getInteractionBorderClass = (type: string) => {
-    switch (type) {
-        case 'Ligação': return 'border-l-[#7DD3FC]/60';
-        case 'WhatsApp': return 'border-l-emerald-400/60';
-        case 'Visita': return 'border-l-[#9F6BFF]/60';
-        case 'Tarefa Agendada': return 'border-l-[#7DD3FC]/60';
-        case 'Tarefa Concluída': return 'border-l-emerald-400/60';
-        case 'Tarefa Cancelada': return 'border-l-red-400/60';
-        default: return 'border-l-white/20';
-    }
-};
-
-const getCategoryTitle = (key: string) => {
-    switch (key) {
-        case 'finalidade': return 'Finalidade';
-        case 'estagio': return 'Estágio do Imóvel';
-        case 'quartos': return 'Quartos';
-        case 'localizacao': return 'Localização';
-        case 'tipo': return 'Tipo do Imóvel';
-        case 'vagas': return 'Vagas de Garagem';
-        case 'valor': return 'Valor do Imóvel';
-        default: return key;
     }
 };
 
@@ -118,10 +65,12 @@ interface QualificationData {
 interface Task {
     id: string;
     description: string;
-    type: 'Ligação' | 'WhatsApp' | 'Visita' | 'Outros';
+    type: string;
     dueDate: any; // Firestore timestamp
     status: 'pendente' | 'concluída' | 'cancelada';
 }
+
+const p2 = (n: number) => String(n).padStart(2, '0');
 
 export default function LeadDetailPage() {
     const { currentUser, userData, isEspelhoDemo } = useAuth();
@@ -135,28 +84,39 @@ export default function LeadDetailPage() {
 
     const [lead, setLead] = useState<Lead | null>(null);
     const [loading, setLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [interactionType, setInteractionType] = useState('');
     const [interactions, setInteractions] = useState<Interaction[]>([]);
-    const [isSaving, setIsSaving] = useState(false);
-    const [isEditingAnnotations, setIsEditingAnnotations] = useState(false);
-    const [tempAnnotations, setTempAnnotations] = useState('');
     const [isSavingTask, setIsSavingTask] = useState(false);
     const [isAgendaModalOpen, setIsAgendaModalOpen] = useState(false);
     const [tasks, setTasks] = useState<Task[]>([]);
     const [tasksLoaded, setTasksLoaded] = useState(false);
-    const [taskStatus, setTaskStatus] = useState<TaskStatus>('Sem tarefa');
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-    const [taskToCancel, setTaskToCancel] = useState<{ interactionId: string; taskId: string } | null>(null);
+    const [taskToCancel, setTaskToCancel] = useState<string | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
     const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
     const [qualifications, setQualifications] = useState<QualificationData>({});
-    const [isQualificationModalOpen, setIsQualificationModalOpen] = useState(false);
-    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-    const [isTaskDetailModalOpen, setIsTaskDetailModalOpen] = useState(false);
+    const [tempAnnotations, setTempAnnotations] = useState('');
+    const [cadencias, setCadencias] = useState<CadenciasFunil>(CADENCIAS_PADRAO);
+    const [executandoCircuito, setExecutandoCircuito] = useState(false);
+    const [expandidas, setExpandidas] = useState<Set<string>>(new Set());
+    const [saveQual, setSaveQual] = useState<'idle' | 'salvando' | 'salvo'>('idle');
+    const [saveNotas, setSaveNotas] = useState<'idle' | 'salvando' | 'salvo'>('idle');
 
+    // Dirty-guards: não deixar o snapshot do lead atropelar edição em andamento
+    const qualDirty = useRef(false);
+    const notasDirty = useRef(false);
+    const qualTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const notasTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // --- Lógica para buscar os dados do lead ---
+    // --- Cadências da imobiliária (temporizadores do circuito) ---
+    useEffect(() => {
+        let ativo = true;
+        carregarCadencias(isEspelhoDemo ? undefined : userData?.imobiliariaId).then(c => {
+            if (ativo) setCadencias(c);
+        });
+        return () => { ativo = false; };
+    }, [userData?.imobiliariaId, isEspelhoDemo]);
+
+    // --- Lead ---
     useEffect(() => {
         if (isEspelhoDemo && leadId) {
             const demoLead = getDemoLeadById(leadId);
@@ -170,9 +130,9 @@ export default function LeadDetailPage() {
                     safe[k] = Array.isArray(v) ? v : [v as string];
                 });
                 setQualifications(safe);
-                setTasks(demoLead.tasks || []);
-                setTaskStatus(getTaskStatusInfo(demoLead.tasks || []));
+                setTasks((demoLead.tasks || []) as Task[]);
                 setInteractions(getDemoInteractions(leadId));
+                setTasksLoaded(true);
             } else {
                 setLead(null);
             }
@@ -180,57 +140,37 @@ export default function LeadDetailPage() {
             return;
         }
         if (!currentUser || !leadId) return;
-        // Busca o lead diretamente da coleção principal 'leads'
         const leadRef = doc(db, 'leads', leadId);
         const unsubscribe = onSnapshot(leadRef, async (docSnap) => {
             if (docSnap.exists()) {
                 const leadData = { id: docSnap.id, ...docSnap.data() } as Lead;
 
-                // Verificação de segurança: usuário só pode ver seus próprios leads OU ser administrador da imobiliária
+                // Segurança: só o dono ou admin da imobiliária
                 if (leadData.userId !== currentUser.uid) {
-                    // Verificar se o usuário atual é administrador da imobiliária
-                    const userRef = doc(db, 'usuarios', currentUser.uid);
-                    const userSnap = await getDoc(userRef);
-                    
-                    if (userSnap.exists()) {
-                        const userData = userSnap.data();
-                        const isAdmin = userData.permissoes?.admin || userData.tipoConta === 'imobiliaria';
-                        
-                        if (!isAdmin) {
-                            console.error("Acesso negado: Este lead não pertence a você e você não é administrador.");
-                            setLead(null);
-                            setLoading(false);
-                            return;
-                        }
-                    } else {
-                    console.error("Acesso negado: Este lead não pertence a você.");
-                    setLead(null);
-                    setLoading(false);
-                    return;
+                    const userSnap = await getDoc(doc(db, 'usuarios', currentUser.uid));
+                    const u = userSnap.exists() ? userSnap.data() : null;
+                    const admin = u && (u.permissoes?.admin || u.tipoConta === 'imobiliaria');
+                    if (!admin) {
+                        console.error('Acesso negado: este lead não pertence a você.');
+                        setLead(null);
+                        setLoading(false);
+                        return;
                     }
                 }
 
-                if (!leadData.automacao) {
-                    leadData.automacao = { status: 'inativa' };
-                }
+                if (!leadData.automacao) leadData.automacao = { status: 'inativa' };
                 setLead(leadData);
-                setTempAnnotations(leadData.anotacoes || '');
-                
-                // Verificação de segurança para qualificações
-                const qualificacao = leadData.qualificacao || {};
-                const safeQualificacao: QualificationData = {};
-                
-                // Garantir que todas as qualificações sejam arrays
-                Object.entries(qualificacao).forEach(([key, value]) => {
-                    if (Array.isArray(value)) {
-                        safeQualificacao[key] = value;
-                    } else if (typeof value === 'string') {
-                        // Se for string, converter para array (compatibilidade com dados antigos)
-                        safeQualificacao[key] = [value];
-                    }
-                });
-                
-                setQualifications(safeQualificacao);
+
+                if (!notasDirty.current) setTempAnnotations(leadData.anotacoes || '');
+                if (!qualDirty.current) {
+                    const qualificacao = leadData.qualificacao || {};
+                    const safe: QualificationData = {};
+                    Object.entries(qualificacao).forEach(([key, value]) => {
+                        if (Array.isArray(value)) safe[key] = value;
+                        else if (typeof value === 'string') safe[key] = [value];
+                    });
+                    setQualifications(safe);
+                }
             } else {
                 setLead(null);
             }
@@ -240,268 +180,297 @@ export default function LeadDetailPage() {
         return () => unsubscribe();
     }, [currentUser, leadId, isEspelhoDemo]);
 
+    // --- Interações (histórico) ---
     useEffect(() => {
         if (!currentUser || !leadId || isEspelhoDemo) return;
-        // Caminhos atualizados para as sub-coleções
         const interactionsCol = collection(db, 'leads', leadId, 'interactions');
         const q = query(interactionsCol, orderBy('timestamp', 'desc'), limit(200));
-
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const fetchedInteractions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Interaction));
-            setInteractions(fetchedInteractions);
+            setInteractions(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Interaction)));
         });
-
         return () => unsubscribe();
-    }, [currentUser, leadId]);
+    }, [currentUser, leadId, isEspelhoDemo]);
 
-    // Garante que toda tarefa pendente tenha sua interação "Tarefa Agendada" na lista,
-    // mesmo que ela seja mais antiga que as 200 interações carregadas — senão os botões
-    // de concluir/cancelar não aparecem para tarefas antigas.
-    const [extraInteractions, setExtraInteractions] = useState<Interaction[]>([]);
-    const fetchedExtraTaskIds = React.useRef<Set<string>>(new Set());
-    useEffect(() => {
-        if (!currentUser || !leadId || isEspelhoDemo || tasks.length === 0) return;
-        const faltando = tasks.filter(t =>
-            !interactions.some(i => i.taskId === t.id) &&
-            !fetchedExtraTaskIds.current.has(t.id)
-        );
-        if (faltando.length === 0) return;
-        faltando.forEach(t => fetchedExtraTaskIds.current.add(t.id));
-        (async () => {
-            try {
-                const interactionsCol = collection(db, 'leads', leadId, 'interactions');
-                const resultados = await Promise.all(faltando.map(t =>
-                    getDocs(query(interactionsCol, where('taskId', '==', t.id)))
-                ));
-                const extras = resultados.flatMap(snap =>
-                    snap.docs.map(d => ({ id: d.id, ...d.data() } as Interaction))
-                );
-                if (extras.length > 0) {
-                    setExtraInteractions(prev => {
-                        const vistos = new Set(prev.map(i => i.id));
-                        return [...prev, ...extras.filter(i => !vistos.has(i.id))];
-                    });
-                }
-            } catch (err) {
-                console.error('Erro ao buscar interações de tarefas antigas:', err);
-            }
-        })();
-    }, [tasks, interactions, currentUser, leadId, isEspelhoDemo]);
-
-    // Lista final: 200 mais recentes + interações resgatadas de tarefas antigas (sem duplicar)
-    const interacoesVisiveis = React.useMemo(() => {
-        if (extraInteractions.length === 0) return interactions;
-        const ids = new Set(interactions.map(i => i.id));
-        const extras = extraInteractions.filter(i => !ids.has(i.id));
-        if (extras.length === 0) return interactions;
-        const ts = (i: Interaction) => {
-            const t: any = i.timestamp;
-            return t?.toDate ? t.toDate().getTime() : (t?.seconds ? t.seconds * 1000 : 0);
-        };
-        return [...interactions, ...extras].sort((a, b) => ts(b) - ts(a));
-    }, [interactions, extraInteractions]);
-
+    // --- Tarefas pendentes ---
     useEffect(() => {
         if (!currentUser || !leadId || isEspelhoDemo) return;
         const tasksCol = collection(db, 'leads', leadId, 'tarefas');
         const q = query(tasksCol, where('status', '==', 'pendente'));
-
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
-            setTasks(fetchedTasks);
+            setTasks(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Task)));
             setTasksLoaded(true);
-            // Calcular e atualizar o status da tarefa
-            const newTaskStatus = getTaskStatusInfo(fetchedTasks);
-            setTaskStatus(newTaskStatus);
         });
-
         return () => unsubscribe();
-    }, [currentUser, leadId]);
+    }, [currentUser, leadId, isEspelhoDemo]);
 
-    const handleStageChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-        if (!currentUser || !lead || isEspelhoDemo) return;
-        const newEtapa = e.target.value;
-        const leadRef = doc(db, 'leads', lead.id);
-        try {
-            await updateDoc(leadRef, { etapa: newEtapa });
-        } catch (error) {
-            console.error("Erro ao atualizar etapa:", error);
+    const tarefasOrdenadas = useMemo(
+        () => [...tasks].sort((a, b) => (toJsDate(a.dueDate)?.getTime() ?? 0) - (toJsDate(b.dueDate)?.getTime() ?? 0)),
+        [tasks]
+    );
+    const taskStatus = useMemo(() => getTaskStatusInfo(tasks as unknown as TarefaPendente[]), [tasks]);
+
+    // ------------------------------------------------------------------
+    // Motor do circuito: uma ação composta = um batch atômico
+    // ------------------------------------------------------------------
+    const executarCircuito = useCallback(async (acao: AcaoCircuito) => {
+        if (!currentUser || !lead) return;
+        if (isEspelhoDemo) {
+            showToast('Modo demonstração — as ações do circuito não são salvas.', 'info');
+            return;
         }
-    };
-
-    const openInteractionModal = (type: string) => {
-        setInteractionType(type);
-        setIsModalOpen(true);
-    };
-
-    const handleLogInteraction = async (notes: string) => {
-        if (!currentUser || !leadId || isEspelhoDemo) return;
-        setIsSaving(true);
-        const interactionsCol = collection(db, 'leads', leadId, 'interactions');
+        if (readOnly || executandoCircuito) return;
+        setExecutandoCircuito(true);
         try {
-            await addDoc(interactionsCol, {
-                type: interactionType,
-                notes,
-                timestamp: serverTimestamp()
+            const leadRef = doc(db, 'leads', lead.id);
+            const tasksCol = collection(db, 'leads', lead.id, 'tarefas');
+            const interCol = collection(db, 'leads', lead.id, 'interactions');
+            const batch = writeBatch(db);
+
+            const base: TarefaPendente[] = tasksLoaded
+                ? tasks.map(t => ({ id: t.id, description: t.description, type: t.type, dueDate: t.dueDate }))
+                : await fetchPendentesDaSubcolecao(lead.id);
+            let pendentes = [...base];
+
+            if (acao.concluirTaskId) {
+                batch.update(doc(tasksCol, acao.concluirTaskId), { status: 'concluída' });
+                pendentes = pendentes.filter(t => t.id !== acao.concluirTaskId);
+            }
+            if (acao.cancelarTaskId) {
+                batch.update(doc(tasksCol, acao.cancelarTaskId), { status: 'cancelada' });
+                pendentes = pendentes.filter(t => t.id !== acao.cancelarTaskId);
+            }
+            if (acao.cancelarTodasPendentes) {
+                pendentes.forEach(t => batch.update(doc(tasksCol, t.id), { status: 'cancelada' }));
+                pendentes = [];
+            }
+            let novaTaskId: string | undefined;
+            if (acao.novaTarefa) {
+                const ref = doc(tasksCol);
+                novaTaskId = ref.id;
+                batch.set(ref, {
+                    description: acao.novaTarefa.description,
+                    type: acao.novaTarefa.type,
+                    dueDate: acao.novaTarefa.dueDate,
+                    status: 'pendente',
+                });
+                pendentes = [...pendentes, { id: ref.id, description: acao.novaTarefa.description, type: acao.novaTarefa.type, dueDate: acao.novaTarefa.dueDate }];
+            }
+
+            const leadUpdate: Record<string, any> = { tarefasPendentes: pendentes };
+            if (acao.novaEtapa) {
+                if (acao.novaEtapa !== normalizeEtapa(lead.etapa)) {
+                    leadUpdate.etapa = acao.novaEtapa;
+                    leadUpdate['circuito.desde'] = serverTimestamp();
+                } else if (lead.etapa !== acao.novaEtapa) {
+                    // etapa legada equivalente → persiste o nome novo sem resetar o "desde"
+                    leadUpdate.etapa = acao.novaEtapa;
+                }
+            }
+            if (acao.circuitoTentativas === 'inc') leadUpdate['circuito.tentativas'] = (lead.circuito?.tentativas || 0) + 1;
+            if (acao.circuitoTentativas === 'zero') leadUpdate['circuito.tentativas'] = 0;
+            if (acao.descartadoMotivo) {
+                leadUpdate.descartadoMotivo = acao.descartadoMotivo;
+                leadUpdate.descartadoEm = serverTimestamp();
+            }
+            batch.update(leadRef, leadUpdate);
+
+            batch.set(doc(interCol), {
+                type: acao.interacao.type,
+                notes: acao.interacao.notes,
+                timestamp: serverTimestamp(),
+                circuito: true,
+                ...(novaTaskId ? { taskId: novaTaskId } : {}),
             });
-            setIsModalOpen(false);
-        } catch (error) {
-            console.error("Erro ao salvar interação:", error);
+
+            await batch.commit();
+            if (acao.novaEtapa === 'Fechado') {
+                showToast('🏆 VENDA FECHADA! Parabéns!', 'success');
+            }
+        } catch (e) {
+            console.error('Erro no circuito:', e);
+            showToast('Erro ao registrar a ação. Tente de novo.', 'error');
         } finally {
-            setIsSaving(false);
+            setExecutandoCircuito(false);
         }
+    }, [currentUser, lead, isEspelhoDemo, readOnly, executandoCircuito, tasks, tasksLoaded, normalizeEtapa]);
+
+    // Mudança manual de etapa (o circuito é o caminho principal; isso é o ajuste fino)
+    const handleStageChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const novaEtapa = e.target.value;
+        await executarCircuito({
+            novaEtapa,
+            interacao: { type: 'Etapa', notes: `↷ Etapa alterada manualmente para ${novaEtapa}` },
+        });
     };
 
-    const handleSaveAnnotations = async () => {
-        if (!currentUser || !lead || isEspelhoDemo) return;
-        const leadRef = doc(db, 'leads', lead.id);
-        try {
-            await updateDoc(leadRef, { anotacoes: tempAnnotations });
-            setIsEditingAnnotations(false);
-        } catch (error) {
-            console.error("Erro ao salvar anotações:", error);
-        }
+    // ------------------------------------------------------------------
+    // Anotações — sempre abertas, salvam sozinhas
+    // ------------------------------------------------------------------
+    const handleAnnotationsChange = (valor: string) => {
+        setTempAnnotations(valor);
+        notasDirty.current = true;
+        setSaveNotas('salvando');
+        if (notasTimer.current) clearTimeout(notasTimer.current);
+        notasTimer.current = setTimeout(() => {
+            notasDirty.current = false;
+            if (isEspelhoDemo || readOnly || !lead) { setSaveNotas('idle'); return; }
+            updateDoc(doc(db, 'leads', lead.id), { anotacoes: valor })
+                .then(() => {
+                    setSaveNotas('salvo');
+                    setTimeout(() => setSaveNotas(s => (s === 'salvo' ? 'idle' : s)), 2000);
+                })
+                .catch(() => {
+                    setSaveNotas('idle');
+                    showToast('Erro ao salvar anotações.', 'error');
+                });
+        }, 800);
     };
 
+    // ------------------------------------------------------------------
+    // Qualificação — sempre aberta, salva a cada toque (com debounce)
+    // ------------------------------------------------------------------
+    const handleQualificationChange = (groupKey: string, value: string) => {
+        if (readOnly) return;
+        qualDirty.current = true;
+        setQualifications(prev => {
+            const currentValues = prev[groupKey] || [];
+            let next: QualificationData;
+            if (currentValues.includes(value)) {
+                const newValues = currentValues.filter(v => v !== value);
+                if (newValues.length === 0) {
+                    next = { ...prev };
+                    delete next[groupKey];
+                } else {
+                    next = { ...prev, [groupKey]: newValues };
+                }
+            } else {
+                next = { ...prev, [groupKey]: [...currentValues, value] };
+            }
+
+            setSaveQual('salvando');
+            if (qualTimer.current) clearTimeout(qualTimer.current);
+            qualTimer.current = setTimeout(() => {
+                qualDirty.current = false;
+                if (isEspelhoDemo || !lead) { setSaveQual('idle'); return; }
+                updateDoc(doc(db, 'leads', lead.id), { qualificacao: next })
+                    .then(() => {
+                        setSaveQual('salvo');
+                        setTimeout(() => setSaveQual(s => (s === 'salvo' ? 'idle' : s)), 2000);
+                    })
+                    .catch(() => {
+                        setSaveQual('idle');
+                        showToast('Erro ao salvar qualificação.', 'error');
+                    });
+            }, 600);
+
+            return next;
+        });
+    };
+
+    // ------------------------------------------------------------------
+    // Tarefas manuais (modal existente) + concluir/cancelar
+    // ------------------------------------------------------------------
     const handleSaveTask = async (task: TaskPayload) => {
         if (!currentUser || !leadId || isEspelhoDemo) return;
         setIsSavingTask(true);
-
         const { description, type, date, time } = task;
-        // Cria a data/hora exatamente como o corretor escolheu (horário local),
-        // sem aplicar ajustes manuais de fuso para evitar deslocar para 06:00 etc.
         const dueDate = new Date(`${date}T${time}`);
-
         try {
-            // Base do espelho: usa o snapshot em memória; se ele ainda não hidratou,
-            // busca a subcoleção direto para não apagar tarefas existentes do espelho
             const basePendentes: TarefaPendente[] = tasksLoaded
                 ? tasks.map(t => ({ id: t.id, description: t.description, type: t.type, dueDate: t.dueDate }))
                 : await fetchPendentesDaSubcolecao(leadId);
 
-            // Tarefa + espelho no lead + interação num único batch atômico
             const batch = writeBatch(db);
             const tasksCol = collection(db, 'leads', leadId, 'tarefas');
             const taskRef = doc(tasksCol);
-            batch.set(taskRef, {
-                description,
-                type,
-                dueDate,
-                status: 'pendente'
+            batch.set(taskRef, { description, type, dueDate, status: 'pendente' });
+            batch.update(doc(db, 'leads', leadId), {
+                tarefasPendentes: [...basePendentes, { id: taskRef.id, description, type, dueDate }],
             });
-
-            const tarefasPendentes: TarefaPendente[] = [
-                ...basePendentes,
-                { id: taskRef.id, description, type, dueDate },
-            ];
-            batch.update(doc(db, 'leads', leadId), { tarefasPendentes });
-
             const interactionsCol = collection(db, 'leads', leadId, 'interactions');
             batch.set(doc(interactionsCol), {
                 type: 'Tarefa Agendada',
                 notes: description,
                 timestamp: serverTimestamp(),
-                taskId: taskRef.id
+                taskId: taskRef.id,
             });
-
             await batch.commit();
             setIsAgendaModalOpen(false);
         } catch (error) {
-            console.error("Erro ao salvar tarefa:", error);
+            console.error('Erro ao salvar tarefa:', error);
         } finally {
             setIsSavingTask(false);
         }
     };
 
-    const handleUpdateTaskStatus = async (interactionId: string, taskId: string, status: 'concluída' | 'cancelada', reason?: string) => {
+    const handleUpdateTaskStatus = async (taskId: string, status: 'concluída' | 'cancelada', reason?: string) => {
         if (!currentUser || !leadId || isEspelhoDemo) return;
-        if (updatingTaskId) return; // evita duplo clique / dupla submissão
+        if (updatingTaskId) return;
         setUpdatingTaskId(taskId);
         if (status === 'cancelada') setIsCancelling(true);
 
         const batch = writeBatch(db);
-
-        // Atualizar o status da tarefa
-        const taskRef = doc(db, 'leads', leadId, 'tarefas', taskId);
-        batch.update(taskRef, { status });
-
-        // Manter o espelho de tarefas pendentes no doc do lead (remove a tarefa concluída/cancelada)
+        batch.update(doc(db, 'leads', leadId, 'tarefas', taskId), { status });
         const tarefasPendentes: TarefaPendente[] = tasks
             .filter(t => t.id !== taskId)
             .map(t => ({ id: t.id, description: t.description, type: t.type, dueDate: t.dueDate }));
         batch.update(doc(db, 'leads', leadId), { tarefasPendentes });
-
-        // Adicionar interação de conclusão/cancelamento
-        const interactionsCol = collection(db, 'leads', leadId, 'interactions');
         const interactionData: any = {
             type: status === 'concluída' ? 'Tarefa Concluída' : 'Tarefa Cancelada',
             notes: status === 'concluída' ? 'Tarefa marcada como concluída' : 'Tarefa cancelada',
             timestamp: serverTimestamp(),
-            taskId
+            taskId,
         };
-
-        if (reason) {
-            interactionData.cancellationNotes = reason;
-        }
-
-        batch.set(doc(interactionsCol), interactionData);
+        if (reason) interactionData.cancellationNotes = reason;
+        batch.set(doc(collection(db, 'leads', leadId, 'interactions')), interactionData);
 
         try {
             await batch.commit();
             setIsCancelModalOpen(false);
             setTaskToCancel(null);
         } catch (error) {
-            console.error("Erro ao atualizar status da tarefa:", error);
+            console.error('Erro ao atualizar status da tarefa:', error);
         } finally {
             setUpdatingTaskId(null);
             if (status === 'cancelada') setIsCancelling(false);
         }
     };
 
-    const openCancelModal = (interactionId: string, taskId: string) => {
-        setTaskToCancel({ interactionId, taskId });
-        setIsCancelModalOpen(true);
-    };
-
-    const handleQualificationChange = (groupKey: string, value: string) => {
-        setQualifications(prev => {
-            const currentValues = prev[groupKey] || [];
-            
-            if (currentValues.includes(value)) {
-                // Remove o valor se já estiver selecionado
-                const newValues = currentValues.filter(v => v !== value);
-                if (newValues.length === 0) {
-                    // Se não há mais valores, remove a categoria
-                    const newQuals = { ...prev };
-                    delete newQuals[groupKey];
-                    return newQuals;
-                } else {
-                    return { ...prev, [groupKey]: newValues };
-                }
+    // ------------------------------------------------------------------
+    // Linha do tempo agrupada por dia, com marcadores de cadência
+    // ------------------------------------------------------------------
+    const timeline = useMemo(() => {
+        const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+        const grupos: { chave: string; label: string; gapDias: number; itens: Interaction[] }[] = [];
+        for (const it of interactions) {
+            const d = toJsDate(it.timestamp) ?? new Date();
+            const dia = new Date(d); dia.setHours(0, 0, 0, 0);
+            const chave = `${dia.getFullYear()}-${p2(dia.getMonth() + 1)}-${p2(dia.getDate())}`;
+            const diffHoje = Math.round((hoje.getTime() - dia.getTime()) / 86_400_000);
+            const label = diffHoje === 0 ? 'Hoje' : diffHoje === 1 ? 'Ontem' : fmtDataHora(dia).split(' · ')[0];
+            const ultimo = grupos[grupos.length - 1];
+            if (ultimo && ultimo.chave === chave) {
+                ultimo.itens.push(it);
             } else {
-                // Adiciona o valor à lista
-                return { ...prev, [groupKey]: [...currentValues, value] };
+                let gapDias = 0;
+                if (ultimo) {
+                    const [ya, ma, da] = ultimo.chave.split('-').map(Number);
+                    const anterior = new Date(ya, ma - 1, da);
+                    gapDias = Math.round((anterior.getTime() - dia.getTime()) / 86_400_000);
+                }
+                grupos.push({ chave, label, gapDias, itens: [it] });
             }
+        }
+        return grupos;
+    }, [interactions]);
+
+    const toggleExpandida = (id: string) => {
+        setExpandidas(prev => {
+            const n = new Set(prev);
+            if (n.has(id)) n.delete(id); else n.add(id);
+            return n;
         });
     };
-
-    const handleCloseQualificationModal = () => {
-        setIsQualificationModalOpen(false);
-    };
-
-    const handleSaveQualifications = () => {
-        if (!currentUser || !lead) return;
-        // Fecha imediatamente (otimista) — salvar no Firestore acontece em background,
-        // sem travar a UI esperando a rede
-        handleCloseQualificationModal();
-        if (isEspelhoDemo) return;
-        const leadRef = doc(db, 'leads', lead.id);
-        updateDoc(leadRef, { qualificacao: qualifications }).catch((error) => {
-            console.error("Erro ao salvar qualificações:", error);
-            showToast('Erro ao salvar qualificação. Tente novamente.', 'error');
-        });
-    };
-
 
     if (loading) {
         return (
@@ -521,293 +490,264 @@ export default function LeadDetailPage() {
         );
     }
 
-    // Usar o status da tarefa calculado no useEffect
+    const etapaAtual = normalizeEtapa(lead.etapa);
+    const opcoesEtapa = [...stages, ...ETAPAS_TERMINAIS];
+    const agora = Date.now();
 
     return (
         <div className="min-h-full p-4 sm:p-6 lg:p-8">
             <CrmHeader />
             {readOnly && (
               <div className="mb-4 px-4 py-3 rounded-xl bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#FFE9A6] text-sm font-medium flex items-center gap-2">
-                <span>👁️</span> Visualizando CRM do corretor — somente leitura. Você não pode editar etapas, tarefas, anotações ou qualificação.
+                <span>👁️</span> Visualizando CRM do corretor — somente leitura.
               </div>
             )}
 
-            <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* --- COLUNA DA ESQUERDA (20% a mais) --- */}
-                <div className="lg:col-span-5 flex flex-col gap-6">
-                    {/* Card de Informações do Lead */}
+            <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+                {/* ================= COLUNA ESQUERDA — o caminho do atendimento ================= */}
+                <div className="lg:col-span-7 flex flex-col gap-5">
+                    {/* Cliente */}
                     <div className="al-card relative overflow-hidden p-5">
                         <div className="absolute inset-x-0 top-0 gx-line" />
-                        <div className="flex flex-col gap-3">
-                            <div className="order-1 flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+                            <div className="flex items-center gap-3 min-w-0">
                                 <h2 className="al-display text-[22px] font-bold text-white uppercase tracking-wide leading-none truncate">{lead.nome}</h2>
-                                <span className={`h-2 w-2 rounded-full shrink-0 ${getTaskStatusColor(taskStatus)}`}></span>
+                                <span className={`h-2 w-2 rounded-full shrink-0 ${getTaskStatusColor(taskStatus)}`} title={taskStatus}></span>
                             </div>
-                            <div className="order-3 lg:hidden grid grid-cols-2 gap-3">
-                                <a
-                                    href={`tel:${lead.telefone.replace(/\D/g, '')}`}
-                                    className="h-12 flex items-center justify-center gap-2 rounded-xl border border-[#7DD3FC]/40 bg-[#7DD3FC]/[0.08] text-[#7DD3FC] text-sm font-bold active:scale-[0.98] transition-all"
-                                >
-                                    <PhoneIcon className="h-4 w-4 shrink-0" /> Ligar
-                                </a>
-                                <a
-                                    href={`https://wa.me/55${lead.telefone.replace(/\D/g, '')}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="h-12 flex items-center justify-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-sm font-bold active:scale-[0.98] transition-all"
-                                >
-                                    <WhatsAppIcon className="h-4 w-4 fill-current shrink-0" /> WhatsApp
-                                </a>
-                            </div>
-                            <div className="order-4 lg:order-2 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 flex-wrap">
                                 {readOnly ? (
-                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#FF1E56]/10 border border-[#FF1E56]/35 text-[#FF7A97]">{normalizeEtapa(lead.etapa)}</span>
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#FF1E56]/10 border border-[#FF1E56]/35 text-[#FF7A97]">{etapaAtual}</span>
                                 ) : (
-                                  <select 
-                                    id="lead-situation" 
-                                    value={normalizeEtapa(lead.etapa)} 
-                                    onChange={handleStageChange} 
-                                    className="flex-1 min-h-[44px] lg:flex-none lg:min-h-0 px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider bg-[#FF1E56]/10 border border-[#FF1E56]/35 rounded-full text-[#FF7A97] focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 [&>option]:bg-[#12101a] [&>option]:text-white"
+                                  <select
+                                    id="lead-situation"
+                                    value={etapaAtual}
+                                    onChange={handleStageChange}
+                                    disabled={executandoCircuito}
+                                    className="px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider bg-[#FF1E56]/10 border border-[#FF1E56]/35 rounded-full text-[#FF7A97] focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 [&>option]:bg-[#12101a] [&>option]:text-white disabled:opacity-60"
+                                    title="Ajuste manual — o circuito move sozinho pelas respostas"
                                   >
-                                    {stages.map(s => (<option key={s} value={s}>{s}</option>))}
+                                    {opcoesEtapa.map(s => (<option key={s} value={s}>{s}</option>))}
                                   </select>
                                 )}
-                                {!readOnly && (
-                                  <div className="flex flex-col items-center gap-1">
-                                    <button 
-                                        onClick={() => setIsAgendaModalOpen(true)} 
-                                        className="w-10 h-10 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white rounded-full flex items-center justify-center transition-all duration-200 active:scale-[0.98] shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)]"
-                                        title="Agendar Tarefa"
-                                    >
-                                        <TaskIcon className="h-5 w-5"/>
-                                    </button>
-                                    <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Tarefas</span>
-                                  </div>
-                                )}
-                            </div>
-                                <div className="order-2 lg:order-3 flex items-center gap-2 bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-2 w-fit">
-                                <PhoneIcon className="h-3.5 w-3.5 text-text-secondary shrink-0" />
-                                <p className="text-xs text-white tabular-nums">{lead.telefone}</p>
+                                <div className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-1.5">
+                                    <PhoneIcon className="h-3.5 w-3.5 text-text-secondary shrink-0" />
+                                    <p className="text-xs text-white tabular-nums">{lead.telefone}</p>
                                     <a
                                         href={`https://wa.me/55${lead.telefone.replace(/\D/g, '')}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="hidden lg:block text-emerald-400 hover:text-emerald-300 transition-colors"
-                                        onClick={(e) => e.stopPropagation()}
+                                        className="text-emerald-400 hover:text-emerald-300 transition-colors"
                                     >
-                                    <WhatsAppIcon className="h-3 w-3 fill-current"/>
+                                        <WhatsAppIcon className="h-3 w-3 fill-current"/>
                                     </a>
                                 </div>
                                 {lead.origem && (
-                                    <div className="order-2 lg:order-4 flex items-center gap-2 bg-[#7DD3FC]/10 border border-[#7DD3FC]/35 rounded-xl px-3 py-2 w-fit max-w-full">
+                                    <div className="flex items-center gap-2 bg-[#7DD3FC]/10 border border-[#7DD3FC]/35 rounded-xl px-3 py-1.5 max-w-full">
                                         <span className="text-[9px] font-extrabold uppercase tracking-[0.18em] text-[#7DD3FC]/70 shrink-0">Origem</span>
                                         <p className="text-xs text-[#7DD3FC] font-medium truncate min-w-0" title={lead.origem}>{lead.origem}</p>
                                     </div>
                                 )}
+                            </div>
                         </div>
                     </div>
 
-                    {/* Card de Próximos Passos */}
+                    {/* O CIRCUITO — conduz o atendimento */}
+                    <CircuitoCard
+                        etapa={etapaAtual}
+                        nomeCliente={lead.nome}
+                        telefone={lead.telefone}
+                        tasks={tasks}
+                        cadencias={cadencias}
+                        tentativas={lead.circuito?.tentativas || 0}
+                        desde={lead.circuito?.desde}
+                        descartadoMotivo={lead.descartadoMotivo}
+                        readOnly={readOnly}
+                        executando={executandoCircuito}
+                        executar={executarCircuito}
+                    />
+
+                    {/* Próximas tarefas (com horário) */}
                     <div className="al-card relative overflow-hidden p-5">
                         <div className="absolute inset-x-0 top-0 gx-line" />
-                        <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Próximos Passos</h3>
-                        <div className="max-h-[50vh] lg:max-h-none lg:h-48 overflow-y-auto pr-2">
-                            {interacoesVisiveis.length > 0 ? (
-                                <ul className="space-y-3">
-                                    {interacoesVisiveis.map(interaction => {
-                                        const isPendingTask = interaction.type === 'Tarefa Agendada' &&
-                                            interaction.taskId &&
-                                            tasks.some(task => task.id === interaction.taskId);
-                                         
-                                         // Buscar a tarefa correspondente para obter horário e tag (Ligação/Visita/WhatsApp)
-                                         const relatedTask = tasks.find(task => task.id === interaction.taskId);
-                                         const taskTag = relatedTask?.type ?? interaction.type;
-
-                                         return (
-                                             <li key={interaction.id} className={`flex items-start gap-3 bg-white/[0.03] border border-white/[0.08] border-l-2 ${getInteractionBorderClass(taskTag)} rounded-xl p-3 hover:bg-white/[0.04] transition-colors`}>
-                                                 <div className="bg-white/[0.06] border border-white/[0.08] p-2 rounded-full">
-                                                     {getIconForInteraction(taskTag)}
-                                                 </div>
-                                                 <div className="flex-1 min-w-0">
-                                                     <p className="al-display font-bold text-white text-[12px] uppercase tracking-wider">{taskTag}</p>
-                                                     <p className="text-xs text-text-secondary">{interaction.notes}</p>
-                                                     
-                                                     {interaction.type === 'Tarefa Cancelada' && interaction.cancellationNotes && (
-                                                         <p className="text-xs text-red-300 mt-1">
-                                                             <span className="font-semibold">Motivo:</span> {interaction.cancellationNotes}
-                                                         </p>
-                                                     )}
-
-{isPendingTask && !readOnly && (
-                                                        <div className="mt-2 flex items-center gap-2">
-                                                            <button
-                                                                 onClick={() => handleUpdateTaskStatus(interaction.id, interaction.taskId!, 'concluída')}
-                                                                 disabled={updatingTaskId === interaction.taskId}
-                                                                 className="px-2 py-1 text-xs font-bold text-emerald-300 border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                             >
-                                                                 Concluída
-                                                             </button>
-                                                             <button
-                                                                 onClick={() => openCancelModal(interaction.id, interaction.taskId!)}
-                                                                 className="px-2 py-1 text-xs font-bold text-red-300 border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 rounded-md transition-colors"
-                                                             >
-                                                                 Cancelar
-                                                             </button>
-                                                         </div>
-                                                     )}
-
-                                                     <div className="mt-2 flex items-center gap-3 text-xs">
-                                                         <span className="text-white/35 tabular-nums">
-                                                             Criado: {interaction.timestamp ? new Date(interaction.timestamp.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}
-                                                         </span>
-                                                         {relatedTask && (
-                                                             <span className="text-[#FFE9A6] font-medium tabular-nums">
-                                                                 Agendado: {relatedTask.dueDate ? new Date(relatedTask.dueDate.seconds * 1000).toLocaleString('pt-BR') : 'Data indisponível'}
-                                                             </span>
-                                                         )}
-                                                     </div>
-                    </div>
-                                                 {/* Botão para ver descrição completa */}
-                                                <button
-                                                    onClick={() => {
-                                                        let descricaoCompleta = `Descrição completa da ${(taskTag || interaction.type).toString().toLowerCase()}:\n\n${interaction.notes}`;
-                                                         
-                                                         // Adicionar motivo de cancelamento se existir
-                                                         if (interaction.type === 'Tarefa Cancelada' && interaction.cancellationNotes) {
-                                                             descricaoCompleta += `\n\nMotivo do cancelamento:\n${interaction.cancellationNotes}`;
-                                                         }
-                                                         
-                                                         // Adicionar horário agendado se existir
-                                                         if (relatedTask && relatedTask.dueDate) {
-                                                             const horarioAgendado = new Date(relatedTask.dueDate.seconds * 1000).toLocaleString('pt-BR');
-                                                             descricaoCompleta += `\n\nHorário agendado: ${horarioAgendado}`;
-                                                         }
-                                                         
-                                                         showToast(descricaoCompleta, 'info');
-                                                     }}
-                                                     className="text-text-secondary hover:text-[#FF5C7E] transition-colors p-1"
-                                                     title="Ver descrição completa"
-                                                 >
-                                                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                     </svg>
-                                                 </button>
-                                             </li>
-                                         );
-                                     })}
-                                 </ul>
-                             ) : (
-                                 <div className="h-full min-h-[120px] flex items-center justify-center">
-                                     <p className="text-center text-text-secondary text-sm">Nenhuma ação registrada ainda.</p>
-                                 </div>
-                             )}
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">Próximas Tarefas</h3>
+                            {!readOnly && (
+                                <button
+                                    onClick={() => setIsAgendaModalOpen(true)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] rounded-xl transition-colors"
+                                >
+                                    <TaskIcon className="h-3.5 w-3.5" /> Nova tarefa
+                                </button>
+                            )}
                         </div>
+                        {tarefasOrdenadas.length === 0 ? (
+                            <p className="text-sm text-text-secondary py-2">Nenhuma tarefa pendente — o circuito acima cria a próxima ação.</p>
+                        ) : (
+                            <ul className="space-y-2">
+                                {tarefasOrdenadas.map(t => {
+                                    const due = toJsDate(t.dueDate);
+                                    const atrasada = due ? due.getTime() < agora : false;
+                                    const cor = tipoCor(t.type);
+                                    return (
+                                        <li key={t.id} className={`flex items-center gap-3 rounded-xl border bg-white/[0.03] px-3 py-2.5 ${atrasada ? 'border-[#FF1E56]/40' : 'border-white/[0.08]'}`}>
+                                            <span className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[9.5px] font-extrabold uppercase tracking-wider border ${cor.chip}`}>{t.type}</span>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[13px] text-white truncate">{t.description}</p>
+                                                <p className={`text-[11px] tabular-nums font-bold ${atrasada ? 'text-[#FF7A97]' : 'text-[#FFE9A6]'}`}>
+                                                    {due ? fmtDataHora(due) : 'sem data'}{atrasada ? ' · atrasada' : ''}
+                                                </p>
+                                            </div>
+                                            {!readOnly && (
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    <button
+                                                        onClick={() => handleUpdateTaskStatus(t.id, 'concluída')}
+                                                        disabled={updatingTaskId === t.id}
+                                                        className="px-2 py-1 text-[11px] font-bold text-emerald-300 border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-md transition-colors disabled:opacity-50"
+                                                    >
+                                                        Concluída
+                                                    </button>
+                                                    <button
+                                                        onClick={() => { setTaskToCancel(t.id); setIsCancelModalOpen(true); }}
+                                                        disabled={updatingTaskId === t.id}
+                                                        className="px-2 py-1 text-[11px] font-bold text-red-300 border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 rounded-md transition-colors disabled:opacity-50"
+                                                    >
+                                                        Cancelar
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        )}
                     </div>
 
-
+                    {/* Linha do tempo — a cadência do atendimento */}
+                    <div className="al-card relative overflow-hidden p-5">
+                        <div className="absolute inset-x-0 top-0 gx-line" />
+                        <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Linha do Tempo</h3>
+                        {timeline.length === 0 ? (
+                            <p className="text-sm text-text-secondary py-2">Nenhuma ação registrada ainda — começa pelo circuito ali em cima. 👆</p>
+                        ) : (
+                            <div className="max-h-[52vh] overflow-y-auto pr-2 space-y-3">
+                                {timeline.map((grupo, gi) => (
+                                    <div key={grupo.chave}>
+                                        {gi > 0 && grupo.gapDias >= 2 && (
+                                            <div className="flex items-center gap-2 my-3">
+                                                <span className="flex-1 border-t border-dashed border-white/10" />
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-200/70">{grupo.gapDias} dias de intervalo</span>
+                                                <span className="flex-1 border-t border-dashed border-white/10" />
+                                            </div>
+                                        )}
+                                        <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-2">{grupo.label}</p>
+                                        <ul className="space-y-2">
+                                            {grupo.itens.map(interaction => {
+                                                const relatedTask = tasks.find(task => task.id === interaction.taskId);
+                                                const tag = interaction.type.startsWith('Tarefa') && relatedTask ? relatedTask.type : interaction.type;
+                                                const cor = tipoCor(tag);
+                                                const d = toJsDate(interaction.timestamp);
+                                                const expandida = expandidas.has(interaction.id);
+                                                const longa = (interaction.notes || '').length > 90 || !!interaction.cancellationNotes;
+                                                return (
+                                                    <li
+                                                        key={interaction.id}
+                                                        onClick={() => longa && toggleExpandida(interaction.id)}
+                                                        className={`flex items-start gap-3 bg-white/[0.03] border border-white/[0.08] border-l-2 ${cor.borda} rounded-xl px-3 py-2.5 transition-colors ${longa ? 'cursor-pointer hover:bg-white/[0.05]' : ''}`}
+                                                    >
+                                                        <span className={`mt-0.5 shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider border ${cor.chip}`}>{tag}</span>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className={`text-xs text-white/85 ${expandida ? 'whitespace-pre-wrap' : 'line-clamp-2'}`}>{interaction.notes}</p>
+                                                            {expandida && interaction.cancellationNotes && (
+                                                                <p className="text-xs text-red-300 mt-1"><span className="font-semibold">Motivo:</span> {interaction.cancellationNotes}</p>
+                                                            )}
+                                                            <div className="mt-1 flex items-center gap-3 text-[10px] text-white/35 tabular-nums">
+                                                                <span>{d ? `${p2(d.getHours())}:${p2(d.getMinutes())}` : 'agora'}</span>
+                                                                {relatedTask && toJsDate(relatedTask.dueDate) && (
+                                                                    <span className="text-[#FFE9A6]/70">agendado: {fmtDataHora(toJsDate(relatedTask.dueDate)!)}</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {/* --- COLUNA DA DIREITA (20% a menos) --- */}
-                <div className="lg:col-span-7 flex flex-col gap-6">
-                    {/* Card de Qualificação do Lead */}
-                    <div className="al-card relative overflow-hidden p-6">
+                {/* ================= COLUNA DIREITA — sempre à mão ================= */}
+                <div className="lg:col-span-5 flex flex-col gap-5 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:pr-1">
+                    {/* Qualificação — sempre aberta */}
+                    <div className="al-card relative overflow-hidden p-5">
                         <div className="absolute inset-x-0 top-0 gx-line" />
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">Qualificação do Lead</h3>
-                                            {!readOnly && (
-                                <button
-                                  onClick={() => setIsQualificationModalOpen(true)}
-                                  className="px-3 py-1.5 text-xs font-bold text-white border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] rounded-xl transition-colors"
-                                >
-                                  Editar Qualificação
-                                </button>
-                                            )}
+                            <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">Qualificação</h3>
+                            <span className={`text-[10px] font-bold uppercase tracking-wider transition-opacity ${
+                                saveQual === 'idle' ? 'opacity-0' : 'opacity-100'
+                            } ${saveQual === 'salvo' ? 'text-emerald-300' : 'text-text-secondary'}`}>
+                                {saveQual === 'salvando' ? 'salvando…' : 'salvo ✓'}
+                            </span>
                         </div>
-                        
-                        {/* Exibição compacta em linha única com separadores simples */}
-                        <div className="space-y-3">
-                            {Object.keys(qualifications).length > 0 ? (
-                                <div className="flex flex-wrap items-center gap-1.5">
-                                    {Object.entries(qualifications).map(([key, values], index) => {
-                                        // Verificação de segurança para garantir que values é um array
-                                        if (!Array.isArray(values)) {
-                                            return null;
-                                        }
-                                        
-                                        return (
-                                            <React.Fragment key={key}>
-                                                {values.map((value, valueIndex) => (
-                                                    <span 
-                                                        key={`${key}-${valueIndex}`}
-                                                        className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#9F6BFF]/10 border border-[#9F6BFF]/35 text-[#C4A6FF]"
-                                                    >
-                                                        {value}
-                                                    </span>
-                                                ))}
-                                                {/* Separador simples entre categorias */}
-                                                {index < Object.keys(qualifications).length - 1 && (
-                                                    <span className="text-white/20 mx-1">—</span>
-                                                )}
-                                            </React.Fragment>
-                                        );
-                                    }).filter(Boolean)}
+                        <div className="space-y-3.5">
+                            {QUALIFICATION_QUESTIONS.map((group) => (
+                                <div key={group.key}>
+                                    <h4 className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1.5">{group.title}</h4>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {group.options.map((option) => {
+                                            const ativo = Array.isArray(qualifications[group.key]) && qualifications[group.key].includes(option);
+                                            return (
+                                                <button
+                                                    key={option}
+                                                    onClick={() => handleQualificationChange(group.key, option)}
+                                                    disabled={readOnly}
+                                                    className={`px-2.5 py-1.5 text-xs font-medium border rounded-lg transition-all duration-150 disabled:cursor-not-allowed ${
+                                                        ativo
+                                                        ? 'bg-[#9F6BFF]/15 border-[#9F6BFF]/60 text-[#C4A6FF] shadow-[0_0_12px_-2px_rgba(159,107,255,0.4)]'
+                                                        : 'bg-white/[0.04] border-white/10 text-text-secondary hover:bg-white/[0.08]'
+                                                    }`}
+                                                >
+                                                    {option}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
-                            ) : (
-                                <div className="text-center py-6 text-text-secondary">
-                                    <p className="text-sm">Nenhuma qualificação definida</p>
-                                    <p className="text-xs mt-1">Clique em "Editar Qualificação" para começar</p>
                                 </div>
-                            )}
+                            ))}
                         </div>
                     </div>
 
-                    {/* Card de Anotações */}
-                    <div className="al-card relative overflow-hidden p-6 flex flex-col h-56">
+                    {/* Anotações — sempre abertas */}
+                    <div className="al-card relative overflow-hidden p-5 flex flex-col">
                         <div className="absolute inset-x-0 top-0 gx-line" />
-                        <div className="flex justify-between items-center mb-4 flex-shrink-0">
+                        <div className="flex justify-between items-center mb-3">
                             <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">Anotações</h3>
-                            {!readOnly && !isEditingAnnotations && (
-                                <button onClick={() => setIsEditingAnnotations(true)} className="text-sm font-bold text-[#FF7A97] hover:text-[#FF9EB5] transition-colors">Editar</button>
-                            )}
+                            <span className={`text-[10px] font-bold uppercase tracking-wider transition-opacity ${
+                                saveNotas === 'idle' ? 'opacity-0' : 'opacity-100'
+                            } ${saveNotas === 'salvo' ? 'text-emerald-300' : 'text-text-secondary'}`}>
+                                {saveNotas === 'salvando' ? 'salvando…' : 'salvo ✓'}
+                            </span>
                         </div>
-                        <div className="flex-grow min-h-0">
-                            {isEditingAnnotations ? (
-                                <div className="flex flex-col h-full">
-                                    <textarea
-                                        value={tempAnnotations}
-                                        onChange={(e) => setTempAnnotations(e.target.value)}
-                                        className="w-full flex-grow bg-white/[0.04] border border-white/10 rounded-lg p-2 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 resize-none"
-                                        placeholder="Adicione suas anotações aqui..."
-                                    />
-                                    <div className="flex justify-end gap-2 mt-4 flex-shrink-0">
-                                        <button onClick={() => { setIsEditingAnnotations(false); setTempAnnotations(lead.anotacoes || ''); }} className="px-3 py-1 text-sm font-semibold text-white border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] rounded-xl transition-colors">Cancelar</button>
-                                        <button onClick={handleSaveAnnotations} className="px-3 py-1 text-sm font-bold text-white bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 rounded-xl shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all">Confirmar</button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="prose prose-sm prose-invert max-w-none overflow-y-auto h-full pr-2">
-                                    <p className="whitespace-pre-wrap text-text-secondary">
-                                        {lead.anotacoes || 'Nenhuma anotação registrada.'}
-                                    </p>
-                                </div>
-                            )}
-                        </div>
+                        {readOnly ? (
+                            <div className="prose prose-sm prose-invert max-w-none overflow-y-auto max-h-64 pr-2">
+                                <p className="whitespace-pre-wrap text-text-secondary">{lead.anotacoes || 'Nenhuma anotação registrada.'}</p>
+                            </div>
+                        ) : (
+                            <textarea
+                                value={tempAnnotations}
+                                onChange={(e) => handleAnnotationsChange(e.target.value)}
+                                rows={8}
+                                className="w-full bg-white/[0.04] border border-white/10 rounded-lg p-3 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 resize-y min-h-[10rem]"
+                                placeholder={isEspelhoDemo ? 'Modo demonstração — nada é salvo.' : 'Anota tudo aqui — salva sozinho enquanto você digita.'}
+                            />
+                        )}
                     </div>
-
-                    
                 </div>
             </div>
-            
-            <LogInteractionModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSave={handleLogInteraction}
-                interactionType={interactionType}
-                isLoading={isSaving}
-            />
 
-            <AgendaModal 
+            <AgendaModal
                 isOpen={isAgendaModalOpen}
                 onClose={() => setIsAgendaModalOpen(false)}
                 onSave={handleSaveTask}
@@ -816,50 +756,12 @@ export default function LeadDetailPage() {
 
             <CancelTaskModal
                 isOpen={isCancelModalOpen}
-                onClose={() => setIsCancelModalOpen(false)}
+                onClose={() => { setIsCancelModalOpen(false); setTaskToCancel(null); }}
                 onConfirm={(reason: string) => {
-                    if (taskToCancel) {
-                        handleUpdateTaskStatus(taskToCancel.interactionId, taskToCancel.taskId, 'cancelada', reason);
-                    }
+                    if (taskToCancel) handleUpdateTaskStatus(taskToCancel, 'cancelada', reason);
                 }}
                 isLoading={isCancelling}
             />
-
-            {/* Modal de Qualificação */}
-            <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm ${isQualificationModalOpen ? 'visible' : 'invisible'}`}>
-                <div className="bg-[#12101a] border border-white/10 p-6 rounded-2xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] relative overflow-hidden max-w-md w-full mx-4 max-h-[85vh] overflow-y-auto">
-                    <div className="absolute inset-x-0 top-0 gx-line" />
-                    <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] mb-4">Editar Qualificação</h3>
-                    <div className="space-y-4 max-h-96 overflow-y-auto">
-                        {QUALIFICATION_QUESTIONS.map((group) => (
-                            <div key={group.key}>
-                                <h4 className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-2">{group.title}</h4>
-                                <div className="flex flex-wrap gap-2">
-                                    {group.options.map((option) => (
-                                        <button
-                                            key={option}
-                                            onClick={() => handleQualificationChange(group.key, option)}
-                                            className={`px-3 py-2 text-sm font-medium border rounded-lg transition-all duration-150 ${
-                                                Array.isArray(qualifications[group.key]) && qualifications[group.key].includes(option)
-                                                ? 'bg-[#FF1E56]/15 border-[#FF1E56]/60 text-[#FF9EB5] shadow-[0_0_12px_-2px_rgba(255,30,86,0.4)]'
-                                                : 'bg-white/[0.04] border-white/10 text-text-secondary hover:bg-white/[0.08]'
-                                            }`}
-                                        >
-                                            {option}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="flex justify-end gap-2 mt-6">
-                        <button onClick={handleCloseQualificationModal} className="px-4 py-2 text-sm font-semibold text-white border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] rounded-xl transition-colors">Cancelar</button>
-                        <button onClick={handleSaveQualifications} className="px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 rounded-xl shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all">Salvar</button>
-                    </div>
-                </div>
-            </div>
-
-
         </div>
     );
 }
@@ -900,4 +802,4 @@ const QUALIFICATION_QUESTIONS = [
         key: 'valor',
         options: ['< 500k', '500k-800k', '800k-1.2M', '1.2M-2M', '> 2M'],
     },
-]; 
+];

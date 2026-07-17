@@ -541,7 +541,9 @@ export default function DashboardPage() {
       stages.forEach(e => { porEtapa[e] = 0; });
       demoLeads.forEach(lead => {
         const etapa = normalizeEtapa(lead.etapa);
-        porEtapa[etapa] = (porEtapa[etapa] || 0) + 1;
+        // Terminais (Fechado/Descartado) ficam fora do funil ativo
+        if (porEtapa[etapa] === undefined) return;
+        porEtapa[etapa] += 1;
       });
       setFunilPessoal(porEtapa);
       setTarefaAtrasadaCount(demoLeads.filter(l => l.taskStatus === 'Tarefa em Atraso').length);
@@ -572,7 +574,9 @@ export default function DashboardPage() {
         stages.forEach(e => { porEtapa[e] = 0; });
         allLeads.forEach((lead: any) => {
           const etapa = normalizeEtapa(lead.etapa);
-          porEtapa[etapa] = (porEtapa[etapa] || 0) + 1;
+          // Terminais (Fechado/Descartado) ficam fora do funil ativo
+          if (porEtapa[etapa] === undefined) return;
+          porEtapa[etapa] += 1;
         });
         setFunilPessoal(porEtapa);
         // Contagens: Tarefa em Atraso, Tarefa do Dia, Sem tarefa

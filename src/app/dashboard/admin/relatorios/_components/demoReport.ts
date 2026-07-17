@@ -75,8 +75,10 @@ export function buildDemoReportSource(): ReportSource {
     const idadeDias = Math.floor(Math.pow(rnd(), 1.35) * 200);
     const createdAtMs = hoje0 - idadeDias * DIA_MS + Math.floor(rnd() * 12 * 60 * 60 * 1000) + 8 * 60 * 60 * 1000;
 
-    // Etapa: quanto mais velho o lead, mais fundo no funil (ou estacionado)
-    const profundidade = Math.min(PIPELINE_STAGES.length - 1, Math.floor(rnd() * (2 + idadeDias / 18)));
+    // Etapa: quanto mais velho o lead, mais fundo no circuito (ou no Bolsão).
+    // Constantes calibradas para as 6 etapas: funil decrescente (~25/25/20/12/8/10)
+    // sem deixar o Bolsão virar a maior fatia.
+    const profundidade = Math.min(PIPELINE_STAGES.length - 1, Math.floor(rnd() * (1.5 + idadeDias / 30)));
     const etapa = PIPELINE_STAGES[profundidade];
 
     const origemDef = escolhePeso(rnd, ORIGENS);

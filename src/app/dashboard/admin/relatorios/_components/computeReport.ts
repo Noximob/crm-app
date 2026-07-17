@@ -6,6 +6,7 @@
  */
 
 import type { PipelineStageWithMeta } from '@/lib/pipelineStagesConfig';
+import { ETAPA_DESCARTADO, ETAPA_FECHADO, mapEtapaCircuito } from '@/lib/circuito';
 import {
   DIA_MS, InteracaoLite, LeadLite, Periodo, ReportSource, funilCor, inicioDoDia, ymdLocal,
 } from './reportShared';
@@ -68,7 +69,11 @@ export interface ReportComputed {
   timeline: { label: string; leads: number; atividade: number }[];
   timelineGranularidade: 'dia' | 'semana';
   funil: { etapa: string; cor: string; total: number; pctTotal: number; novosPeriodo: number }[];
+  /** Leads nas etapas do circuito (Fechado/Descartado ficam fora das linhas do funil) */
   totalLeadsBase: number;
+  /** Leads em estado terminal na base inteira */
+  fechadosTotal: number;
+  descartadosTotal: number;
   esquecidos: { b30: EsquecidoItem[]; b14: EsquecidoItem[]; b7: EsquecidoItem[] };
   corretorRows: CorretorRow[];
   equipeMedia: MetricasCorretor;
@@ -109,12 +114,14 @@ export function computeReport(
 
   const etapaIdx = new Map<string, number>();
   const etapaQuente = new Set<string>();
-  const etapaParada = new Set<string>(); // 'Troca de Leads' = estacionado de propósito
+  const etapaParada = new Set<string>(); // 'Troca de Leads' = Bolsão (estacionado de propósito)
   stagesWithMeta.forEach((s, i) => {
     etapaIdx.set(s.label, i);
     if (s.isQuente) etapaQuente.add(s.label);
     if (s.reportCategory === 'Troca de Leads') etapaParada.add(s.label);
   });
+  // Estados terminais gravados em lead.etapa — fora do funil e das métricas de carteira
+  const isTerminal = (etapa: string) => etapa === ETAPA_FECHADO || etapa === ETAPA_DESCARTADO;
 
   const nomeCorretor = new Map<string, string>();
   src.corretores.forEach((c) => nomeCorretor.set(c.id, c.nome));
@@ -223,18 +230,23 @@ export function computeReport(
 
   // ------------------------------------------------------------------
   // Funil (retrato atual + entradas novas do período por etapa)
+  // Etapa legada é mapeada para o circuito; Fechado/Descartado são terminais
+  // e ficam fora das linhas do funil (contados à parte).
   // ------------------------------------------------------------------
-  const totalLeadsBase = src.leads.length;
   const funilCount = new Map<string, { total: number; novos: number }>();
   stagesWithMeta.forEach((s) => funilCount.set(s.label, { total: 0, novos: 0 }));
-  const primeiraEtapa = stagesWithMeta[0]?.label ?? '';
+  let fechadosTotal = 0;
+  let descartadosTotal = 0;
   src.leads.forEach((l) => {
-    const label = funilCount.has(l.etapa) ? l.etapa : primeiraEtapa;
+    const label = funilCount.has(l.etapa) ? l.etapa : mapEtapaCircuito(l.etapa);
+    if (label === ETAPA_FECHADO) { fechadosTotal++; return; }
+    if (label === ETAPA_DESCARTADO) { descartadosTotal++; return; }
     const slot = funilCount.get(label);
     if (!slot) return;
     slot.total++;
     if (noPeriodo(l.createdAtMs)) slot.novos++;
   });
+  const totalLeadsBase = Array.from(funilCount.values()).reduce((s, v) => s + v.total, 0);
   const funil = stagesWithMeta.map((s, i) => {
     const slot = funilCount.get(s.label) || { total: 0, novos: 0 };
     return {
@@ -248,8 +260,8 @@ export function computeReport(
 
   // ------------------------------------------------------------------
   // Leads esquecidos (sem interação há 7/14/30 dias e sem tarefa pendente).
-  // Etapas de "Troca de Leads" (Interesse Futuro/Carteira/Geladeira) ficam de
-  // fora — estão estacionadas de propósito.
+  // Bolsão fica de fora (estacionado de propósito), assim como os estados
+  // terminais Fechado/Descartado.
   // ------------------------------------------------------------------
   const ultimaAtividade = new Map<string, number>();
   interacoes.forEach((i) => {
@@ -260,7 +272,8 @@ export function computeReport(
   const b14: EsquecidoItem[] = [];
   const b7: EsquecidoItem[] = [];
   src.leads.forEach((l) => {
-    if (etapaParada.has(l.etapa)) return;
+    const etapaCirc = mapEtapaCircuito(l.etapa);
+    if (etapaParada.has(etapaCirc) || isTerminal(etapaCirc)) return;
     if (l.pendentesMs.length > 0) return;
     const base = Math.max(l.createdAtMs ?? 0, ultimaAtividade.get(l.id) ?? 0);
     if (base <= 0) return;
@@ -269,8 +282,8 @@ export function computeReport(
     const item: EsquecidoItem = {
       leadId: l.id,
       nome: l.nome || 'Sem nome',
-      etapa: l.etapa,
-      etapaIdx: etapaIdx.get(l.etapa) ?? 0,
+      etapa: etapaCirc,
+      etapaIdx: etapaIdx.get(etapaCirc) ?? 0,
       corretorNome: nomeCorretor.get(l.userId) || '—',
       diasSem,
     };
@@ -293,9 +306,10 @@ export function computeReport(
     const m = metrica(l.userId);
     if (!m) return;
     if (noPeriodo(l.createdAtMs)) m.leadsNovos++;
-    if (!etapaParada.has(l.etapa)) {
+    const etapaCirc = mapEtapaCircuito(l.etapa);
+    if (!etapaParada.has(etapaCirc) && !isTerminal(etapaCirc)) {
       m.leadsAtivos++;
-      if (etapaQuente.has(l.etapa)) m.leadsQuentes++;
+      if (etapaQuente.has(etapaCirc)) m.leadsQuentes++;
     }
     m.pendentesTotal += l.pendentesMs.length;
     m.pendentesAtrasadas += l.pendentesMs.filter((ms) => ms < hoje0Ms).length;
@@ -459,9 +473,11 @@ export function computeReport(
   src.leads.forEach((l) => {
     const o = origemDe(l);
     const cur = convMap.get(o) || { total: 0, saiuTopo: 0, quente: 0 };
+    const etapaCirc = mapEtapaCircuito(l.etapa);
     cur.total++;
-    if ((etapaIdx.get(l.etapa) ?? 0) > 0) cur.saiuTopo++;
-    if (etapaQuente.has(l.etapa)) cur.quente++;
+    // Saiu do topo = qualquer etapa além de Entrada; Fechado/Descartado contam (já saíram)
+    if (etapaIdx.get(etapaCirc) !== 0) cur.saiuTopo++;
+    if (etapaQuente.has(etapaCirc)) cur.quente++;
     convMap.set(o, cur);
   });
   const conversaoOrigem = Array.from(convMap.entries())
@@ -481,6 +497,8 @@ export function computeReport(
     timelineGranularidade: porSemana ? 'semana' : 'dia',
     funil,
     totalLeadsBase,
+    fechadosTotal,
+    descartadosTotal,
     esquecidos: { b30, b14, b7 },
     corretorRows,
     equipeMedia,

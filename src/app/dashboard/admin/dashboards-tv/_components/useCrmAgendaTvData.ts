@@ -46,6 +46,10 @@ function isVisita(type: string): boolean {
   const t = normalizarTipo(type);
   return t === 'visita';
 }
+// Meet é compromisso marcado como a visita — na TV entra no mesmo balde de "visitas".
+function isMeet(type: string): boolean {
+  return normalizarTipo(type) === 'meet';
+}
 
 function isHoje(dueDate: Date, hojeStr: string, hojeStrUTC: string): boolean {
   const dueStr = dueDate.getFullYear() + '-' + String(dueDate.getMonth() + 1).padStart(2, '0') + '-' + String(dueDate.getDate()).padStart(2, '0');
@@ -58,7 +62,7 @@ export interface CrmTarefaTv {
   leadId: string;
   leadNome: string;
   responsavelNome: string;
-  type: 'Ligação' | 'Visita';
+  type: 'Ligação' | 'Visita' | 'Meet';
   description?: string;
   dueDate: Date;
 }
@@ -143,7 +147,7 @@ export function useCrmAgendaTvData(imobiliariaId: string | undefined) {
           (tarefasMap.get(leadId) || []).forEach((task) => {
             const d = task as unknown as Record<string, unknown>;
             const typeRaw = String(d.type ?? d.tipo ?? '').trim();
-            if (!isLigacao(typeRaw) && !isVisita(typeRaw)) return;
+            if (!isLigacao(typeRaw) && !isVisita(typeRaw) && !isMeet(typeRaw)) return;
             const dueDate = parseDueDate(d.dueDate);
             if (!isHoje(dueDate, hojeStr, hojeStrUTC)) return;
             const item: CrmTarefaTv = {
@@ -151,10 +155,11 @@ export function useCrmAgendaTvData(imobiliariaId: string | undefined) {
               leadId,
               leadNome,
               responsavelNome,
-              type: isLigacao(typeRaw) ? 'Ligação' : 'Visita',
+              type: isLigacao(typeRaw) ? 'Ligação' : isMeet(typeRaw) ? 'Meet' : 'Visita',
               description: d.description as string | undefined,
               dueDate,
             };
+            // Meets & Visitas dividem o mesmo balde: ambos são compromissos agendados.
             if (isLigacao(typeRaw)) ligacoesList.push(item);
             else visitasList.push(item);
           });

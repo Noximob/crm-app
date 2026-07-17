@@ -59,6 +59,7 @@ interface AgendaItem {
   userId: string;
   source?: 'agenda' | 'notas' | 'crm' | 'aviso' | 'imobiliaria';
   originalId?: string; // ID original da nota ou tarefa
+  crmTipo?: string; // tipo da tarefa do CRM (Ligação, WhatsApp, Visita, Meet, Follow-up, Produto...)
 }
 
 interface Note {
@@ -73,7 +74,8 @@ interface Note {
 interface CrmTask {
   id: string;
   description: string;
-  type: 'Ligação' | 'WhatsApp' | 'Visita';
+  // Qualquer tipo de tarefa do CRM (Ligação, WhatsApp, Visita, Meet, Follow-up, Produto, Outros...)
+  type: string;
   dueDate: Timestamp;
   status: 'pendente' | 'concluída' | 'cancelada';
   leadId: string;
@@ -113,6 +115,28 @@ const tipoLabels = {
   aviso: 'Aviso Importante',
   imobiliaria: 'Agenda Imobiliária'
 };
+
+// Acento por tipo de tarefa do CRM (circuito): cor da bolinha/borda e chip do calendário
+const CRM_TIPO_HEX: Record<string, string> = {
+  'Ligação': '#7DD3FC',
+  'WhatsApp': '#34D399',
+  'Visita': '#E8C547',
+  'Meet': '#9F6BFF',
+  'Follow-up': '#FF7A97',
+  'Produto': '#F59E0B',
+  'Outros': '#94A3B8',
+};
+const CRM_TIPO_CHIP: Record<string, string> = {
+  'Ligação': 'bg-[#7DD3FC]/10 border border-[#7DD3FC]/35 text-[#7DD3FC]',
+  'WhatsApp': 'bg-[#34D399]/10 border border-[#34D399]/35 text-emerald-300',
+  'Visita': 'bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#FFE9A6]',
+  'Meet': 'bg-[#9F6BFF]/10 border border-[#9F6BFF]/35 text-[#C4A6FF]',
+  'Follow-up': 'bg-[#FF7A97]/10 border border-[#FF7A97]/35 text-[#FF9EB5]',
+  'Produto': 'bg-[#F59E0B]/10 border border-[#F59E0B]/35 text-amber-300',
+  'Outros': 'bg-white/[0.06] border border-white/20 text-slate-300',
+};
+const crmTipoHex = (tipo?: string) => CRM_TIPO_HEX[tipo ?? ''] ?? CRM_TIPO_HEX['Outros'];
+const crmTipoChip = (tipo?: string) => CRM_TIPO_CHIP[tipo ?? ''] ?? CRM_TIPO_CHIP['Outros'];
 
 function getAgendaImobiliariaTipoLabel(tipo: string): string {
   const labels: Record<string, string> = {
@@ -433,13 +457,14 @@ export default function AgendaPage() {
           dataHora: task.dueDate,
           tipo: 'crm',
           status: task.status === 'concluída' ? 'concluida' : 'pendente',
-          cor: '#6366F1',
+          cor: crmTipoHex(task.type),
           createdAt: task.dueDate,
           userId: currentUser?.uid || '',
           source: 'crm',
           originalId: task.id,
           leadId: task.leadId,
-          leadNome: task.leadNome
+          leadNome: task.leadNome,
+          crmTipo: task.type
         });
       }
     });
@@ -624,7 +649,7 @@ export default function AgendaPage() {
             {items.slice(0, 3).map((item: AgendaItem) => (
               <div
                 key={item.id}
-                className={`text-xs p-2 rounded-lg ${tipoCores[item.tipo]} truncate cursor-pointer hover:brightness-125 transition-all duration-200 relative group/item`}
+                className={`text-xs p-2 rounded-lg ${item.tipo === 'crm' ? crmTipoChip(item.crmTipo) : tipoCores[item.tipo]} truncate cursor-pointer hover:brightness-125 transition-all duration-200 relative group/item`}
                 onClick={() => handleEdit(item)}
                 title={`${item.dataHora.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - ${item.titulo}`}
               >
@@ -825,13 +850,14 @@ export default function AgendaPage() {
                     dataHora: task.dueDate,
                     tipo: 'crm',
                     status: task.status === 'concluída' ? 'concluida' : 'pendente',
-                    cor: '#6366F1',
+                    cor: crmTipoHex(task.type),
                     createdAt: task.dueDate,
                     userId: currentUser?.uid || '',
                     source: 'crm',
                     originalId: task.id,
                     leadId: task.leadId,
-                    leadNome: task.leadNome
+                    leadNome: task.leadNome,
+                    crmTipo: task.type
                   });
                 }
               });

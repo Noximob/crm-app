@@ -12,6 +12,7 @@ import FilterModal, { Filters, ORIGEM_FILTER_OPTIONS, getOrigemBucket, getCampan
 import { getDemoLeads } from '@/lib/espelho/demoData';
 import LoadingState from '@/components/ui/LoadingState';
 import { ensureTarefasPendentes, getTaskStatusInfo, TaskStatus } from '@/lib/leadTasks';
+import { ETAPA_FECHADO, ETAPA_DESCARTADO, ETAPAS_TERMINAIS } from '@/lib/circuito';
 
 // --- Tipos ---
 interface Lead {
@@ -73,6 +74,13 @@ const StatusIndicator = ({ status }: { status: TaskStatus }) => {
             {text}
         </div>
     )
+};
+
+// Classes de cor do chip de etapa: dourado no circuito, verde para Fechado, cinza para Descartado
+const etapaChipClasses = (etapa: string) => {
+    if (etapa === ETAPA_FECHADO) return 'bg-[#34D399]/10 border-[#34D399]/35 text-[#34D399]';
+    if (etapa === ETAPA_DESCARTADO) return 'bg-white/[0.05] border-white/15 text-text-secondary';
+    return 'bg-[#E8C547]/10 border-[#E8C547]/35 text-[#FFE9A6]';
 };
 
 // Novo componente para título com barra colorida
@@ -166,8 +174,14 @@ export default function CrmPage() {
 
     // Quando o funil (etapas) muda, limpar filtro rápido se a etapa selecionada não existir mais
     // Só aplica quando stages já foi carregado (length > 0) para não resetar página ao voltar do detalhe
+    // Estados terminais (Fechado/Descartado) são válidos mesmo fora de stages
     useEffect(() => {
-        if (stages.length > 0 && activeFilter && !stages.includes(activeFilter)) {
+        if (
+            stages.length > 0 &&
+            activeFilter &&
+            !stages.includes(activeFilter) &&
+            !(ETAPAS_TERMINAIS as readonly string[]).includes(activeFilter)
+        ) {
             setActiveFilter(null);
             setCurrentPage(1);
         }
@@ -509,7 +523,7 @@ export default function CrmPage() {
                                 <div key={`filtro-etapas-${stages.join('-')}`} className="absolute left-0 top-full mt-1.5 z-50 w-[min(90vw,420px)] max-h-[70vh] overflow-y-auto rounded-xl border border-white/10 bg-[#12101a] shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] py-3 px-3">
                                     <p className="text-[10px] font-extrabold text-text-secondary uppercase tracking-[0.18em] mb-2 px-1">Etapa do funil</p>
                                     <div className="flex flex-wrap gap-2 mb-3">
-                                        {stages.map((stage) => (
+                                        {[...stages, ETAPA_FECHADO, ETAPA_DESCARTADO].map((stage) => (
                                             <FilterChip
                                                 key={stage}
                                                 selected={activeFilter === stage}
@@ -739,7 +753,7 @@ export default function CrmPage() {
                                             </a>
                                         </td>
                                         <td className="px-3 py-1.5 text-xs w-1/5">
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#FFE9A6] truncate max-w-[120px]">{normalizeEtapa(lead.etapa)}</span>
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border truncate max-w-[120px] ${etapaChipClasses(normalizeEtapa(lead.etapa))}`}>{normalizeEtapa(lead.etapa)}</span>
                                         </td>
                                         <td className="px-3 py-1.5 text-xs w-1/5">
                                             <span className="text-white">
@@ -798,7 +812,7 @@ export default function CrmPage() {
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-2 mt-2 min-w-0">
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#FFE9A6] truncate max-w-[55%] shrink-0">{normalizeEtapa(lead.etapa)}</span>
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border truncate max-w-[55%] shrink-0 ${etapaChipClasses(normalizeEtapa(lead.etapa))}`}>{normalizeEtapa(lead.etapa)}</span>
                                             <span className="text-text-secondary text-sm truncate">{lead.telefone}</span>
                                         </div>
                                         <div className="flex items-center justify-end gap-3 mt-1">

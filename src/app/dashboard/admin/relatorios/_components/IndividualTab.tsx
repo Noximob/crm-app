@@ -160,7 +160,7 @@ export default function IndividualTab({
                   <span className="al-display text-[22px] font-bold text-[#C4A6FF] tabular-nums">{sel.pctQuente !== null ? fmtPct(sel.pctQuente) : '—'}</span>
                   <span className="text-[11px] text-text-secondary tabular-nums">equipe: {equipeMedia.pctQuente !== null ? fmtPct(equipeMedia.pctQuente) : '—'}</span>
                 </div>
-                <p className="text-[10px] text-text-secondary mt-1">% dos leads ativos dele em Negociação, Contrato ou Pós Venda — conversão de funil aproximada.</p>
+                <p className="text-[10px] text-text-secondary mt-1">% dos leads ativos dele em Negociação — conversão de funil aproximada.</p>
               </div>
               <div className="bg-white/[0.03] border border-white/[0.08] rounded-xl p-3">
                 <span className="text-[9.5px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Tarefas em dia</span>

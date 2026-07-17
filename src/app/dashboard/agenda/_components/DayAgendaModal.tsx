@@ -17,6 +17,7 @@ interface AgendaItem {
   userId: string;
   source?: 'agenda' | 'notas' | 'crm' | 'aviso' | 'comunidade' | 'imobiliaria';
   originalId?: string;
+  crmTipo?: string; // tipo da tarefa do CRM (Ligação, WhatsApp, Visita, Meet, Follow-up, Produto...)
 }
 
 interface DayAgendaModalProps {
@@ -259,7 +260,9 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
 
                 return crmItems.map((item) => {
                   const compactInfo = getCompactInfo(item);
-                  
+                  // Acento por tipo de tarefa: item.cor já vem colorida por tipo (Meet, Visita...)
+                  const acento = /^#[0-9A-Fa-f]{6}$/.test(item.cor || '') ? item.cor : '#F59E0B';
+
                   return (
                     <div
                       key={item.id}
@@ -281,8 +284,11 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
                             <h3 className="font-medium text-white text-sm truncate flex-1">
                               {item.titulo}
                             </h3>
-                            <span className={`px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-full ${tipoCores[item.tipo]} flex-shrink-0`}>
-                              {tipoLabels[item.tipo]}
+                            <span
+                              className="px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-full border flex-shrink-0"
+                              style={{ backgroundColor: `${acento}1A`, borderColor: `${acento}59`, color: acento }}
+                            >
+                              {item.crmTipo || tipoLabels[item.tipo]}
                             </span>
                             {item.status === 'concluida' && (
                               <span className="px-1.5 py-0.5 text-xs font-bold rounded-full bg-[#34D399]/15 border border-[#34D399]/40 text-emerald-300 flex-shrink-0">
@@ -290,7 +296,7 @@ export default function DayAgendaModal({ isOpen, onClose, date, items }: DayAgen
                               </span>
                             )}
                           </div>
-                          
+
                           {/* Segunda linha: horário e lead */}
                           <div className="flex items-center gap-3 text-xs text-text-secondary">
                             <div className="flex items-center gap-1 font-medium">

@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, setDoc, addDoc, deleteDoc, serverTimestamp, query, where } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
+import { TIPO_TAREFA_MEET, TIPO_TAREFA_VISITA } from '@/lib/circuito';
 import { DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import LoadingState from '@/components/ui/LoadingState';
@@ -19,7 +20,7 @@ interface PeriodoMeets {
   inicio: string; // YYYY-MM-DD
   fim: string; // YYYY-MM-DD
   contadores: Record<string, number>;
-  automatico?: boolean; // true = contadores recalculados das tarefas de Visita do CRM
+  automatico?: boolean; // true = contadores recalculados das tarefas de Meet e Visita do CRM
   createdAt?: any;
 }
 
@@ -128,11 +129,12 @@ export default function AdminMeetsVisitasPage() {
   };
 
   // ---------------------------------------------------------------------------
-  // MODO AUTOMÁTICO — contagem a partir das tarefas de Visita do CRM
+  // MODO AUTOMÁTICO — contagem a partir das tarefas de Meet e Visita do CRM
   //
   // Abordagem escolhida: buscamos os leads da imobiliária (where imobiliariaId ==,
   // índice simples automático) e depois lemos a subcoleção leads/{id}/tarefas de
-  // cada lead com where('type', '==', 'Visita') (índice automático de campo único).
+  // cada lead com where('type', 'in', ['Visita', 'Meet']) (índice automático de
+  // campo único; uma query só cobre os dois tipos do circuito).
   // NÃO usamos collectionGroup('tarefas') porque os docs de tarefa não têm
   // imobiliariaId/userId: um collectionGroup filtrando type + intervalo de dueDate
   // exigiria índice composto no console E varreria tarefas de todas as imobiliárias
@@ -157,7 +159,7 @@ export default function AdminMeetsVisitasPage() {
       await Promise.all(
         lote.map(async (lead) => {
           const snap = await getDocs(
-            query(collection(db, 'leads', lead.id, 'tarefas'), where('type', '==', 'Visita'))
+            query(collection(db, 'leads', lead.id, 'tarefas'), where('type', 'in', [TIPO_TAREFA_VISITA, TIPO_TAREFA_MEET]))
           );
           let n = 0;
           snap.forEach((t) => {
@@ -303,7 +305,7 @@ export default function AdminMeetsVisitasPage() {
         <h1 className="al-display text-[22px] font-bold text-white uppercase tracking-[0.1em] mt-2">Meets & Visitas</h1>
         <p className="text-[12px] text-text-secondary mt-1">
           Defina o período que está sendo contado e lance manualmente os agendamentos de cada corretor —
-          ou ligue o modo automático para contar as tarefas de Visita agendadas no CRM.
+          ou ligue o modo automático para contar as tarefas de Meet e Visita agendadas no CRM.
           O pódio e o placar da home leem daqui; períodos encerrados viram o histórico do corretor.
         </p>
       </div>
@@ -358,8 +360,8 @@ export default function AdminMeetsVisitasPage() {
                   onClick={() => handleToggleAutomatico(p)}
                   disabled={togglingId === p.id || recalculando}
                   title={auto
-                    ? 'Modo automático ligado: os contadores vêm das tarefas de Visita agendadas no CRM. Clique para voltar ao lançamento manual.'
-                    : 'Ligar modo automático: contar as tarefas de Visita agendadas no CRM dentro do período.'}
+                    ? 'Modo automático ligado: os contadores vêm das tarefas de Meet e Visita agendadas no CRM. Clique para voltar ao lançamento manual.'
+                    : 'Ligar modo automático: contar as tarefas de Meet e Visita agendadas no CRM dentro do período.'}
                   className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9.5px] font-extrabold uppercase tracking-wider border transition-colors disabled:opacity-50 ${
                     auto
                       ? 'bg-gradient-to-r from-[#E8C547]/15 to-[#34D399]/10 border-[#E8C547]/50 text-[#FFE9A6]'
@@ -374,7 +376,7 @@ export default function AdminMeetsVisitasPage() {
               {auto && recalculando && (
                 <p className="text-[10.5px] text-text-secondary mb-2 flex items-center gap-1.5">
                   <span className="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-[#E8C547]" />
-                  Recalculando visitas do CRM...
+                  Recalculando meets e visitas do CRM...
                 </p>
               )}
               <div className="space-y-1.5">
@@ -386,7 +388,7 @@ export default function AdminMeetsVisitasPage() {
                       min={0}
                       value={draft[c.id] ?? 0}
                       disabled={auto}
-                      title={auto ? 'Contador automático: vem das tarefas de Visita do CRM. Desligue o modo automático para editar à mão.' : undefined}
+                      title={auto ? 'Contador automático: vem das tarefas de Meet e Visita do CRM. Desligue o modo automático para editar à mão.' : undefined}
                       onChange={(e) => setContador(p.id, c.id, parseInt(e.target.value || '0', 10) || 0, p.contadores || {})}
                       className="w-20 text-center bg-white/[0.04] border border-white/10 rounded-lg px-2 py-1.5 text-white al-display text-[15px] tabular-nums focus:outline-none focus:ring-2 focus:ring-[#E8C547]/50 focus:border-[#E8C547]/50 disabled:opacity-50 disabled:cursor-not-allowed"
                     />

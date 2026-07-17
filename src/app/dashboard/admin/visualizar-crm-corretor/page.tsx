@@ -10,6 +10,7 @@ import FilterModal, { Filters } from '@/app/dashboard/crm/_components/FilterModa
 import { getDemoLeads, DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
 import LoadingState from '@/components/ui/LoadingState';
 import { ensureTarefasPendentes, getTaskStatusInfo, TarefaPendente, TaskStatus } from '@/lib/leadTasks';
+import { ETAPA_FECHADO, ETAPA_DESCARTADO, ETAPAS_TERMINAIS } from '@/lib/circuito';
 
 interface Lead {
   id: string;
@@ -73,6 +74,13 @@ const StatusIndicator = ({ status }: { status: TaskStatus }) => {
       {text}
     </div>
   );
+};
+
+// Classes de cor do chip de etapa: dourado no circuito, verde para Fechado, cinza para Descartado
+const etapaChipClasses = (etapa: string) => {
+  if (etapa === ETAPA_FECHADO) return 'bg-[#34D399]/10 border-[#34D399]/35 text-[#34D399]';
+  if (etapa === ETAPA_DESCARTADO) return 'bg-white/[0.05] border-white/15 text-text-secondary';
+  return 'bg-white/10 border-white/10 text-[#E8C547]';
 };
 
 const SectionTitle = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
@@ -194,8 +202,9 @@ export default function VisualizarCrmCorretorPage() {
     }
   }, [selectedCorretorId]);
 
+  // Estados terminais (Fechado/Descartado) são válidos mesmo fora de stages
   useEffect(() => {
-    if (activeFilter && !stages.includes(activeFilter)) {
+    if (activeFilter && !stages.includes(activeFilter) && !(ETAPAS_TERMINAIS as readonly string[]).includes(activeFilter)) {
       setActiveFilter(null);
       setCurrentPage(1);
     }
@@ -330,7 +339,7 @@ export default function VisualizarCrmCorretorPage() {
                       <div className="absolute left-0 top-full mt-1.5 z-50 w-[min(90vw,420px)] max-h-[70vh] overflow-y-auto rounded-xl border border-white/10 bg-[var(--bg-card)] shadow-xl py-3 px-3">
                         <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-wide mb-2 px-1">Etapa do funil</p>
                         <div className="flex flex-wrap gap-2 mb-3">
-                          {stages.map(stage => (
+                          {[...stages, ETAPA_FECHADO, ETAPA_DESCARTADO].map(stage => (
                             <FilterChip
                               key={stage}
                               selected={activeFilter === stage}
@@ -461,7 +470,7 @@ export default function VisualizarCrmCorretorPage() {
                             </a>
                           </td>
                           <td className="px-3 py-1.5 text-xs w-1/5">
-                            <span className="inline-block px-2 py-0.5 rounded bg-white/10 border border-white/10 text-[#E8C547] font-semibold text-[11px] truncate max-w-[120px]">{normalizeEtapa(lead.etapa)}</span>
+                            <span className={`inline-block px-2 py-0.5 rounded border font-semibold text-[11px] truncate max-w-[120px] ${etapaChipClasses(normalizeEtapa(lead.etapa))}`}>{normalizeEtapa(lead.etapa)}</span>
                           </td>
                           <td className="px-3 py-1.5 text-xs w-1/5">
                             <span className="text-white"><StatusIndicator status={lead.taskStatus} /></span>

@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 // --- Tipos e Ícones ---
 export interface TaskPayload {
     description: string;
-    type: 'Ligação' | 'WhatsApp' | 'Visita' | 'Outros';
+    type: 'Ligação' | 'WhatsApp' | 'Visita' | 'Meet' | 'Follow-up' | 'Produto' | 'Outros';
     date: string;
     time: string;
 }
@@ -78,7 +78,10 @@ export default function AgendaModal({ isOpen, onClose, onSave, isLoading }: Agen
                             >
                                 <option>Ligação</option>
                                 <option>WhatsApp</option>
+                                <option>Meet</option>
                                 <option>Visita</option>
+                                <option>Follow-up</option>
+                                <option>Produto</option>
                                 <option>Outros</option>
                             </select>
                         </div>

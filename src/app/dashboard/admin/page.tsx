@@ -59,7 +59,7 @@ const adminCategories = [
     icon: '⚙️',
     color: 'from-[#9F6BFF]/25 to-[#9F6BFF]/[0.03] border-[#9F6BFF]/30',
     items: [
-      { title: 'Funil de Vendas', icon: '📊', description: 'Adicionar, editar ou remover etapas do funil (CRM)', href: '/dashboard/admin/funil-vendas' },
+      { title: 'Funil & Cadências', icon: '🔁', description: 'O circuito do lead e os temporizadores da cadência', href: '/dashboard/admin/funil-vendas' },
     ]
   }
 ];

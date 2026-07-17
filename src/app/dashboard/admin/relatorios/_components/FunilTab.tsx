@@ -120,7 +120,7 @@ export default function FunilTab({ report }: { report: ReportComputed }) {
       >
         <p className="text-[11px] text-text-secondary mb-3">
           Leads sem nenhuma interação registrada e sem tarefa pendente marcada — ninguém tem próximo passo com eles.
-          Etapas de estacionamento (Interesse Futuro, Carteira, Geladeira) ficam de fora. Clique pra abrir o lead.
+          Leads no Bolsão ficam de fora. Clique pra abrir o lead.
         </p>
         {totalEsquecidos === 0 ? (
           <EmptyMsg>Nenhum lead abandonado — todos têm atividade recente ou tarefa marcada.</EmptyMsg>

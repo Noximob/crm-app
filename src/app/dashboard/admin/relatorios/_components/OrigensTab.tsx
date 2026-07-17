@@ -143,7 +143,7 @@ export default function OrigensTab({ report }: { report: ReportComputed }) {
                 </div>
               </div>
             ))}
-            <p className="text-[9.5px] text-white/30">&quot;Saiu do topo&quot; = deixou a primeira etapa do funil. &quot;Etapa quente&quot; = Negociação, Contrato ou Pós Venda. Como conversão demora, esse quadro olha a base inteira.</p>
+            <p className="text-[9.5px] text-white/30">&quot;Saiu do topo&quot; = deixou a Entrada. &quot;Etapa quente&quot; = Negociação. Como conversão demora, esse quadro olha a base inteira.</p>
           </div>
         )}
       </SectionCard>

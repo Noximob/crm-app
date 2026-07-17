@@ -56,7 +56,8 @@ const QUAL_VALUES: Record<string, string[]> = {
 export interface DemoTask {
   id: string;
   description: string;
-  type: 'Ligação' | 'WhatsApp' | 'Visita';
+  /** Tipos antigos + tipos do circuito — ver TIPOS_TAREFA em src/lib/circuito.ts */
+  type: 'Ligação' | 'WhatsApp' | 'Visita' | 'Meet' | 'Follow-up' | 'Produto' | 'Outros';
   dueDate: Timestamp;
   status: 'pendente' | 'concluída' | 'cancelada';
 }
@@ -70,13 +71,55 @@ export interface DemoLead {
   createdAt: Timestamp;
   qualificacao?: Record<string, string | string[]>;
   tasks?: DemoTask[];
+  /** Motivo do descarte (apenas leads com etapa 'Descartado') */
+  descartadoMotivo?: string;
+  /** Estado do circuito: tentativas de contato e desde quando está na etapa atual */
+  circuito?: { tentativas: number; desde: Timestamp };
 }
+
+// Etapas do circuito (na ordem do quadro) + estados terminais gravados em lead.etapa
+const [ETAPA_ENTRADA, ETAPA_FOLLOWUP, ETAPA_MEET, ETAPA_VISITA, ETAPA_NEGOCIACAO, ETAPA_BOLSAO] = PIPELINE_STAGES;
+const ETAPA_FECHADO = 'Fechado';
+const ETAPA_DESCARTADO = 'Descartado';
+
+// Distribuição realista pelas etapas (os 5 primeiros índices casam com as tarefas fixas do builder)
+const ETAPA_PLAN: string[] = [
+  ETAPA_ENTRADA,    // 0 — tarefa atrasada (dashboard: Atraso)
+  ETAPA_VISITA,     // 1 — visita hoje (dashboard: Hoje)
+  ETAPA_NEGOCIACAO, // 2 — proposta amanhã (dashboard: Futuro)
+  ETAPA_MEET,       // 3 — meet amanhã às 10:00 (fluxo do circuito)
+  ETAPA_FOLLOWUP,   // 4 — follow-up marcado (fluxo do circuito)
+  ...Array(11).fill(ETAPA_ENTRADA),
+  ...Array(9).fill(ETAPA_FOLLOWUP),
+  ...Array(6).fill(ETAPA_MEET),
+  ...Array(5).fill(ETAPA_VISITA),
+  ...Array(4).fill(ETAPA_NEGOCIACAO),
+  ...Array(5).fill(ETAPA_BOLSAO),
+  ...Array(2).fill(ETAPA_FECHADO),
+  ...Array(2).fill(ETAPA_DESCARTADO),
+];
+
+function doisDiasAtras(hora: number, minuto = 0): Date {
+  const d = new Date(today);
+  d.setDate(d.getDate() - 2);
+  d.setHours(hora, minuto, 0, 0);
+  return d;
+}
+
+/** Estado do circuito em alguns leads (tentativas de contato + desde quando na etapa). */
+const CIRCUITO_DEMO: Record<number, { tentativas: number; desde: Timestamp }> = {
+  0: { tentativas: 1, desde: ts(doisDiasAtras(9, 0)) },
+  4: { tentativas: 2, desde: ts(doisDiasAtras(14, 30)) },
+  5: { tentativas: 1, desde: ts(doisDiasAtras(16, 0)) },
+};
 
 function buildDemoLeads(): DemoLead[] {
   const leads: DemoLead[] = [];
   const statuses: ('pendente' | 'concluída' | 'cancelada')[] = ['pendente', 'pendente', 'pendente', 'concluída', 'cancelada'];
+  let descartados = 0;
   for (let i = 0; i < NOMES.length; i++) {
-    const etapa = PIPELINE_STAGES[i % PIPELINE_STAGES.length];
+    const etapa = ETAPA_PLAN[i] ?? ETAPA_ENTRADA;
+    const terminal = etapa === ETAPA_FECHADO || etapa === ETAPA_DESCARTADO;
     const tasks: DemoTask[] = [];
 
     // Garantir 3 leads com estados bem definidos para o dashboard (Atraso, Hoje, Futuro)
@@ -110,7 +153,30 @@ function buildDemoLeads(): DemoLead[] {
         dueDate: ts(due),
         status: 'pendente',
       });
-    } else {
+    } else if (i === 3) {
+      // Lead em Meet com o meet marcado para amanhã às 10:00
+      const due = new Date(tomorrow);
+      due.setHours(10, 0, 0, 0);
+      tasks.push({
+        id: 'task-demo-meet',
+        description: 'Meet online com o cliente',
+        type: 'Meet',
+        dueDate: ts(due),
+        status: 'pendente',
+      });
+    } else if (i === 4) {
+      // Lead em Follow-up com o próximo contato marcado
+      const due = new Date(tomorrow);
+      due.setHours(9, 30, 0, 0);
+      tasks.push({
+        id: 'task-demo-followup',
+        description: 'Follow-up: retomar conversa com o cliente',
+        type: 'Follow-up',
+        dueDate: ts(due),
+        status: 'pendente',
+      });
+    } else if (!terminal && etapa !== ETAPA_BOLSAO) {
+      // Bolsão (estacionado) e terminais ficam sem tarefas — sem próximo passo marcado
       const numTasks = 1 + Math.floor(Math.random() * 3); // 1 a 3 tarefas por lead
       for (let t = 0; t < numTasks; t++) {
         const dayOffset = t === 0 ? -1 : (t === 1 ? 0 : 1);
@@ -150,7 +216,7 @@ function buildDemoLeads(): DemoLead[] {
     });
     const created = new Date(today);
     created.setDate(created.getDate() - Math.floor(Math.random() * 60));
-    leads.push({
+    const lead: DemoLead = {
       id: `demo-lead-${i + 1}`,
       nome: NOMES[i],
       telefone: tel(),
@@ -159,7 +225,13 @@ function buildDemoLeads(): DemoLead[] {
       createdAt: ts(created),
       qualificacao: Object.keys(qualificacao).length ? qualificacao : undefined,
       tasks,
-    });
+    };
+    if (etapa === ETAPA_DESCARTADO) {
+      lead.descartadoMotivo = descartados === 0 ? 'Não quer comprar agora' : 'Não responde';
+      descartados++;
+    }
+    if (CIRCUITO_DEMO[i]) lead.circuito = CIRCUITO_DEMO[i];
+    leads.push(lead);
   }
   return leads;
 }
@@ -350,7 +422,8 @@ export function getDemoCrmTasksForAgenda(): {
       tasks.push({
         id: t.id,
         description: t.description,
-        type: t.type,
+        // A página Agenda só usa o tipo como texto; tipos do circuito (Meet/Follow-up) passam direto
+        type: t.type as 'Ligação' | 'WhatsApp' | 'Visita',
         dueDate: t.dueDate,
         status: 'pendente',
         leadId: lead.id,

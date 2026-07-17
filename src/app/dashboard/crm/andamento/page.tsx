@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import CrmHeader from '../_components/CrmHeader';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, doc, updateDoc, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, doc, serverTimestamp, where, writeBatch } from 'firebase/firestore';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay } from '@dnd-kit/core';
 import KanbanColumn from './_components/KanbanColumn';
@@ -14,6 +14,7 @@ import LoadingState from '@/components/ui/LoadingState';
 import { ORIGEM_FILTER_OPTIONS, getOrigemBucket, getCampanhaDoLead } from '../_components/FilterModal';
 import { getTaskStatusInfo, TaskStatus } from '@/lib/leadTasks';
 import { getDemoLeads } from '@/lib/espelho/demoData';
+import { ETAPAS_TERMINAIS } from '@/lib/circuito';
 
 type LeadsByStage = { [key: string]: Lead[] };
 
@@ -129,6 +130,8 @@ export default function AndamentoPage() {
             const leadsByStage = stageList.reduce<LeadsByStage>((acc, stage) => ({ ...acc, [stage]: [] }), {});
             for (const lead of list) {
                 const stage = normalizeEtapa(lead.etapa);
+                // Estados terminais (Fechado/Descartado) ficam fora do quadro
+                if ((ETAPAS_TERMINAIS as readonly string[]).includes(stage)) continue;
                 if (leadsByStage[stage]) {
                     leadsByStage[stage].push(lead);
                 } else {
@@ -266,9 +269,20 @@ export default function AndamentoPage() {
 
         // Atualizar Firestore (não grava em modo demonstração)
         if (currentUser && !isEspelhoDemo) {
-            const leadRef = doc(db, 'leads', active.id.toString());
+            const leadId = active.id.toString();
             try {
-                await updateDoc(leadRef, { etapa: targetColumn });
+                // Batch: muda a etapa, reinicia o relógio do circuito e registra a interação
+                const batch = writeBatch(db);
+                batch.update(doc(db, 'leads', leadId), {
+                    etapa: targetColumn,
+                    'circuito.desde': serverTimestamp(),
+                });
+                batch.set(doc(collection(db, 'leads', leadId, 'interactions')), {
+                    type: 'Etapa',
+                    notes: `Movido para ${targetColumn} (kanban)`,
+                    timestamp: serverTimestamp(),
+                });
+                await batch.commit();
             } catch (error) {
                 console.error("Failed to update lead stage: ", error);
                 return;
