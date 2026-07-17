@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, getDocs, addDoc, onSnapshot, updateDoc, collection, query, orderBy, serverTimestamp, where, writeBatch, limit } from 'firebase/firestore';
+import { doc, getDoc, addDoc, onSnapshot, updateDoc, collection, query, orderBy, serverTimestamp, where, writeBatch, limit } from 'firebase/firestore';
 import { TarefaPendente, fetchPendentesDaSubcolecao, getTaskStatusInfo, toJsDate, type TaskStatus } from '@/lib/leadTasks';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { Lead } from '@/types';
@@ -12,13 +12,11 @@ import CrmHeader from '../_components/CrmHeader';
 import AgendaModal, { TaskPayload } from '../_components/AgendaModal';
 import CancelTaskModal from '../_components/CancelTaskModal';
 import CircuitoCard from './_components/CircuitoCard';
-import AtendimentoOverlay, { type AcaoCircuito, type EstadoFluxo, fmtDataHora } from './_components/AtendimentoOverlay';
+import AtendimentoOverlay, { perguntaDoLead, fmtDataHora, type AcaoCircuito } from '@/components/atendimento/AtendimentoOverlay';
+import { executarAcaoCircuito } from '@/lib/circuitoActions';
+import { QUALIFICATION_QUESTIONS } from '@/lib/qualificacao';
 import { getDemoLeadById, getDemoInteractions } from '@/lib/espelho/demoData';
-import {
-  CADENCIAS_PADRAO, carregarCadencias, ETAPAS_TERMINAIS, type CadenciasFunil,
-  ETAPA_ENTRADA, ETAPA_FOLLOWUP, ETAPA_MEET, ETAPA_VISITA, ETAPA_NEGOCIACAO, ETAPA_BOLSAO, ETAPA_FECHADO,
-  TIPO_TAREFA_MEET, TIPO_TAREFA_VISITA, TIPOS_CONTATO,
-} from '@/lib/circuito';
+import { CADENCIAS_PADRAO, carregarCadencias, ETAPAS_TERMINAIS, type CadenciasFunil } from '@/lib/circuito';
 import { showToast } from '@/components/ui/toast';
 import LoadingState from '@/components/ui/LoadingState';
 
@@ -222,42 +220,9 @@ export default function LeadDetailPage() {
     // ------------------------------------------------------------------
     // Pergunta pendente do circuito: qual pop-up abre e se ele deve insistir
     // ------------------------------------------------------------------
-    const circuitoInfo = useMemo((): { pendente: boolean; estado: EstadoFluxo } | null => {
+    const circuitoInfo = useMemo(() => {
         if (!lead) return null;
-        const etapa = normalizeEtapa(lead.etapa);
-        const agora = Date.now();
-        const porData = (a: { dueDate: any }, b: { dueDate: any }) =>
-            (toJsDate(a.dueDate)?.getTime() ?? 0) - (toJsDate(b.dueDate)?.getTime() ?? 0);
-        const taskContato = tasks.filter(t => (TIPOS_CONTATO as unknown as string[]).includes(t.type)).sort(porData)[0];
-        const taskMeet = tasks.filter(t => t.type === TIPO_TAREFA_MEET).sort(porData)[0];
-        const taskVisita = tasks.filter(t => t.type === TIPO_TAREFA_VISITA).sort(porData)[0];
-        const venceu = (t: { dueDate: any } | undefined, horasExtra = 0) => {
-            const d = t ? toJsDate(t.dueDate) : null;
-            return d ? agora >= d.getTime() + horasExtra * 3600_000 : false;
-        };
-
-        switch (etapa) {
-            case ETAPA_ENTRADA:
-                return { pendente: true, estado: { t: 'entrada' } };
-            case ETAPA_FOLLOWUP:
-                if (!taskContato) return { pendente: true, estado: { t: 'proximaAcao' } };
-                return { pendente: venceu(taskContato), estado: { t: 'fu', taskId: taskContato.id } };
-            case ETAPA_MEET:
-                if (!taskMeet) return { pendente: true, estado: { t: 'agendarData', tipo: 'Meet' } };
-                return { pendente: venceu(taskMeet, cadencias.perguntarMeetHoras), estado: { t: 'meetQ', taskId: taskMeet.id } };
-            case ETAPA_VISITA:
-                if (!taskVisita) return { pendente: true, estado: { t: 'agendarData', tipo: 'Visita' } };
-                return { pendente: venceu(taskVisita, cadencias.perguntarVisitaHoras), estado: { t: 'visitaQ', taskId: taskVisita.id } };
-            case ETAPA_NEGOCIACAO:
-                if (!taskContato) return { pendente: true, estado: { t: 'negPrazo' } };
-                return { pendente: venceu(taskContato), estado: { t: 'negQ', taskId: taskContato.id } };
-            case ETAPA_BOLSAO:
-                return { pendente: false, estado: { t: 'quando' } };
-            case ETAPA_FECHADO:
-                return null;
-            default: // Descartado → reativar agenda um follow-up
-                return { pendente: false, estado: { t: 'quando' } };
-        }
+        return perguntaDoLead(normalizeEtapa(lead.etapa), tasks, cadencias, Date.now());
     }, [lead, tasks, cadencias, normalizeEtapa]);
 
     // "Ao abrir o lead: entrou no lead que tem pergunta em aberto? Ela abre na hora, sobre a página."
@@ -300,101 +265,25 @@ export default function LeadDetailPage() {
         }
         if (readOnly || executandoCircuito) return false;
         setExecutandoCircuito(true);
-        try {
-            const leadRef = doc(db, 'leads', lead.id);
-            const tasksCol = collection(db, 'leads', lead.id, 'tarefas');
-            const interCol = collection(db, 'leads', lead.id, 'interactions');
-            const batch = writeBatch(db);
-
-            const base: TarefaPendente[] = tasksLoaded
+        const res = await executarAcaoCircuito({
+            lead,
+            acao,
+            pendentesAtuais: tasksLoaded
                 ? tasks.map(t => ({ id: t.id, description: t.description, type: t.type, dueDate: t.dueDate }))
-                : await fetchPendentesDaSubcolecao(lead.id);
-            let pendentes = [...base];
-
-            if (acao.concluirTaskId) {
-                batch.update(doc(tasksCol, acao.concluirTaskId), { status: 'concluída' });
-                pendentes = pendentes.filter(t => t.id !== acao.concluirTaskId);
-            }
-            if (acao.cancelarTaskId) {
-                batch.update(doc(tasksCol, acao.cancelarTaskId), { status: 'cancelada' });
-                pendentes = pendentes.filter(t => t.id !== acao.cancelarTaskId);
-            }
-            if (acao.cancelarTodasPendentes) {
-                pendentes.forEach(t => batch.update(doc(tasksCol, t.id), { status: 'cancelada' }));
-                pendentes = [];
-            }
-            let novaTaskId: string | undefined;
-            if (acao.novaTarefa) {
-                const ref = doc(tasksCol);
-                novaTaskId = ref.id;
-                batch.set(ref, {
-                    description: acao.novaTarefa.description,
-                    type: acao.novaTarefa.type,
-                    dueDate: acao.novaTarefa.dueDate,
-                    status: 'pendente',
-                });
-                pendentes = [...pendentes, { id: ref.id, description: acao.novaTarefa.description, type: acao.novaTarefa.type, dueDate: acao.novaTarefa.dueDate }];
-            }
-
-            const leadUpdate: Record<string, any> = { tarefasPendentes: pendentes };
-            if (acao.novaEtapa) {
-                if (acao.novaEtapa !== normalizeEtapa(lead.etapa)) {
-                    leadUpdate.etapa = acao.novaEtapa;
-                    leadUpdate['circuito.desde'] = serverTimestamp();
-                } else if (lead.etapa !== acao.novaEtapa) {
-                    // etapa legada equivalente → persiste o nome novo sem resetar o "desde"
-                    leadUpdate.etapa = acao.novaEtapa;
-                }
-            }
-            if (acao.circuitoTentativas === 'inc') leadUpdate['circuito.tentativas'] = (lead.circuito?.tentativas || 0) + 1;
-            if (acao.circuitoTentativas === 'zero') leadUpdate['circuito.tentativas'] = 0;
-            if (acao.descartadoMotivo) {
-                leadUpdate.descartadoMotivo = acao.descartadoMotivo;
-                leadUpdate.descartadoEm = serverTimestamp();
-            }
-            if (acao.vendaValor) {
-                leadUpdate.vendaValor = acao.vendaValor;
-                leadUpdate.vendaEm = serverTimestamp();
-            }
-            if (acao.transferirParaGestor) {
-                // "O lead vai pro bolsão do gestor" — descarte transfere pra conta da imobiliária
-                try {
-                    const donoSnap = await getDocs(query(
-                        collection(db, 'usuarios'),
-                        where('imobiliariaId', '==', userData?.imobiliariaId || ''),
-                        where('tipoConta', '==', 'imobiliaria'),
-                        limit(1)
-                    ));
-                    const donoUid = donoSnap.docs[0]?.id;
-                    if (donoUid && donoUid !== lead.userId) {
-                        leadUpdate.userId = donoUid;
-                        leadUpdate.descartadoPor = currentUser.uid;
-                        if (donoUid !== currentUser.uid) transferiuParaGestor.current = true;
-                    }
-                } catch {
-                    // sem dono localizável, o lead fica com o corretor mesmo (etapa Descartado)
-                }
-            }
-            batch.update(leadRef, leadUpdate);
-
-            batch.set(doc(interCol), {
-                type: acao.interacao.type,
-                notes: acao.interacao.notes,
-                timestamp: serverTimestamp(),
-                circuito: true,
-                ...(novaTaskId ? { taskId: novaTaskId } : {}),
-            });
-
-            await batch.commit();
-            return true;
-        } catch (e) {
-            console.error('Erro no circuito:', e);
+                : null,
+            imobiliariaId: userData?.imobiliariaId || '',
+            currentUid: currentUser.uid,
+        });
+        setExecutandoCircuito(false);
+        if (!res.ok) {
             showToast('Erro ao registrar a ação. Tente de novo.', 'error');
             return false;
-        } finally {
-            setExecutandoCircuito(false);
         }
-    }, [currentUser, lead, isEspelhoDemo, readOnly, executandoCircuito, tasks, tasksLoaded, normalizeEtapa, userData?.imobiliariaId]);
+        if (res.transferiuPara && res.transferiuPara !== currentUser.uid) {
+            transferiuParaGestor.current = true;
+        }
+        return true;
+    }, [currentUser, lead, isEspelhoDemo, readOnly, executandoCircuito, tasks, tasksLoaded, userData?.imobiliariaId]);
 
     // Mudança manual de etapa (o circuito é o caminho principal; isso é o ajuste fino)
     const handleStageChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -902,41 +791,3 @@ export default function LeadDetailPage() {
         </div>
     );
 }
-
-const QUALIFICATION_QUESTIONS = [
-    {
-        title: 'Finalidade',
-        key: 'finalidade',
-        options: ['Moradia', 'Veraneio', 'Investimento', 'Locação', 'Imóvel à Venda'],
-    },
-    {
-        title: 'Estágio do Imóvel',
-        key: 'estagio',
-        options: ['Lançamento', 'Em Construção', 'Pronto para Morar'],
-    },
-    {
-        title: 'Quartos',
-        key: 'quartos',
-        options: ['1 quarto', '2 quartos', '1 Suíte + 1 Quarto', '3 quartos', '4 quartos'],
-    },
-    {
-        title: 'Localização',
-        key: 'localizacao',
-        options: ['Penha', 'Piçarras', 'Barra Velha', 'Outros'],
-    },
-    {
-        title: 'Tipo do Imóvel',
-        key: 'tipo',
-        options: ['Apartamento', 'Casa', 'Terreno'],
-    },
-    {
-        title: 'Vagas de Garagem',
-        key: 'vagas',
-        options: ['1', '2', '3+'],
-    },
-    {
-        title: 'Valor do Imóvel',
-        key: 'valor',
-        options: ['< 500k', '500k-800k', '800k-1.2M', '1.2M-2M', '> 2M'],
-    },
-];

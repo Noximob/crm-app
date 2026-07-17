@@ -9,6 +9,7 @@ import { ConfirmDialogHost } from '@/components/ui/ConfirmDialog';
 import { ToastHost, showToast } from '@/components/ui/toast';
 import LoadingState from '@/components/ui/LoadingState';
 import AdsLeadCard from '@/components/AdsLeadCard';
+import AtendimentoWatcher from '@/components/atendimento/AtendimentoWatcher';
 import { ativarNotificacoes, initPushSilencioso, pushJaAtivado, pushSupported } from '@/lib/push';
 
 // Ícones
@@ -463,6 +464,7 @@ export default function DashboardLayout({
       </nav>
 
       <AdsLeadCard />
+      <AtendimentoWatcher />
       <ConfirmDialogHost />
       <ToastHost />
     </div>

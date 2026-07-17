@@ -1,0 +1,121 @@
+/**
+ * Motor de ações do circuito — compartilhado entre a página do lead e o
+ * vigia global de atendimento. Uma ação composta (concluir/cancelar/criar
+ * tarefa + etapa + interação + campos do circuito) vira UM writeBatch.
+ */
+import { collection, doc, getDocs, limit, query, serverTimestamp, where, writeBatch } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { TarefaPendente, fetchPendentesDaSubcolecao } from '@/lib/leadTasks';
+import { mapEtapaCircuito } from '@/lib/circuito';
+import type { AcaoCircuito } from '@/components/atendimento/AtendimentoOverlay';
+
+export interface LeadParaAcao {
+  id: string;
+  etapa?: string;
+  userId?: string;
+  circuito?: { tentativas?: number };
+}
+
+export type ResultadoAcao = { ok: true; transferiuPara?: string } | { ok: false; erro: unknown };
+
+export async function executarAcaoCircuito(params: {
+  lead: LeadParaAcao;
+  acao: AcaoCircuito;
+  /** Tarefas pendentes atuais (espelho/snapshot); null → busca a subcoleção. */
+  pendentesAtuais: TarefaPendente[] | null;
+  imobiliariaId: string;
+  currentUid: string;
+}): Promise<ResultadoAcao> {
+  const { lead, acao, imobiliariaId, currentUid } = params;
+  try {
+    const leadRef = doc(db, 'leads', lead.id);
+    const tasksCol = collection(db, 'leads', lead.id, 'tarefas');
+    const interCol = collection(db, 'leads', lead.id, 'interactions');
+    const batch = writeBatch(db);
+
+    const base: TarefaPendente[] = params.pendentesAtuais ?? await fetchPendentesDaSubcolecao(lead.id);
+    let pendentes = [...base];
+
+    if (acao.concluirTaskId) {
+      batch.update(doc(tasksCol, acao.concluirTaskId), { status: 'concluída' });
+      pendentes = pendentes.filter(t => t.id !== acao.concluirTaskId);
+    }
+    if (acao.cancelarTaskId) {
+      batch.update(doc(tasksCol, acao.cancelarTaskId), { status: 'cancelada' });
+      pendentes = pendentes.filter(t => t.id !== acao.cancelarTaskId);
+    }
+    if (acao.cancelarTodasPendentes) {
+      pendentes.forEach(t => batch.update(doc(tasksCol, t.id), { status: 'cancelada' }));
+      pendentes = [];
+    }
+    let novaTaskId: string | undefined;
+    if (acao.novaTarefa) {
+      const ref = doc(tasksCol);
+      novaTaskId = ref.id;
+      batch.set(ref, {
+        description: acao.novaTarefa.description,
+        type: acao.novaTarefa.type,
+        dueDate: acao.novaTarefa.dueDate,
+        status: 'pendente',
+      });
+      pendentes = [...pendentes, { id: ref.id, description: acao.novaTarefa.description, type: acao.novaTarefa.type, dueDate: acao.novaTarefa.dueDate }];
+    }
+
+    const leadUpdate: Record<string, any> = { tarefasPendentes: pendentes };
+    if (acao.novaEtapa) {
+      if (acao.novaEtapa !== mapEtapaCircuito(lead.etapa)) {
+        leadUpdate.etapa = acao.novaEtapa;
+        leadUpdate['circuito.desde'] = serverTimestamp();
+      } else if (lead.etapa !== acao.novaEtapa) {
+        // etapa legada equivalente → persiste o nome novo sem resetar o "desde"
+        leadUpdate.etapa = acao.novaEtapa;
+      }
+    }
+    if (acao.circuitoTentativas === 'inc') leadUpdate['circuito.tentativas'] = (lead.circuito?.tentativas || 0) + 1;
+    if (acao.circuitoTentativas === 'zero') leadUpdate['circuito.tentativas'] = 0;
+    if (acao.descartadoMotivo) {
+      leadUpdate.descartadoMotivo = acao.descartadoMotivo;
+      leadUpdate.descartadoEm = serverTimestamp();
+    }
+    if (acao.vendaValor) {
+      leadUpdate.vendaValor = acao.vendaValor;
+      leadUpdate.vendaEm = serverTimestamp();
+    }
+
+    let transferiuPara: string | undefined;
+    if (acao.transferirParaGestor) {
+      // "O lead vai pro bolsão do gestor" — descarte transfere pra conta da imobiliária
+      try {
+        const donoSnap = await getDocs(query(
+          collection(db, 'usuarios'),
+          where('imobiliariaId', '==', imobiliariaId),
+          where('tipoConta', '==', 'imobiliaria'),
+          limit(1)
+        ));
+        const donoUid = donoSnap.docs[0]?.id;
+        if (donoUid && donoUid !== lead.userId) {
+          leadUpdate.userId = donoUid;
+          leadUpdate.descartadoPor = currentUid;
+          transferiuPara = donoUid;
+        }
+      } catch {
+        // sem dono localizável, o lead fica com o corretor mesmo (etapa Descartado)
+      }
+    }
+    batch.update(leadRef, leadUpdate);
+
+    batch.set(doc(interCol), {
+      type: acao.interacao.type,
+      notes: acao.interacao.notes,
+      timestamp: serverTimestamp(),
+      circuito: true,
+      ...(novaTaskId ? { taskId: novaTaskId } : {}),
+    });
+
+    await batch.commit();
+    return { ok: true, transferiuPara };
+  } catch (erro) {
+    console.error('Erro no circuito:', erro);
+    return { ok: false, erro };
+  }
+}

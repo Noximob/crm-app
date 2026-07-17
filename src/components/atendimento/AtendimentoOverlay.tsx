@@ -13,9 +13,9 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ETAPA_FOLLOWUP, ETAPA_MEET, ETAPA_VISITA, ETAPA_NEGOCIACAO, ETAPA_FECHADO, ETAPA_DESCARTADO,
+  ETAPA_ENTRADA, ETAPA_FOLLOWUP, ETAPA_MEET, ETAPA_VISITA, ETAPA_NEGOCIACAO, ETAPA_BOLSAO, ETAPA_FECHADO, ETAPA_DESCARTADO,
   TIPO_TAREFA_MEET, TIPO_TAREFA_VISITA, TIPO_TAREFA_FOLLOWUP, TIPO_TAREFA_PRODUTO,
-  MOTIVOS_DESCARTE, REQUALIFICA_OPCOES,
+  TIPOS_CONTATO, MOTIVOS_DESCARTE, REQUALIFICA_OPCOES,
   type CadenciasFunil,
 } from '@/lib/circuito';
 import { toJsDate } from '@/lib/leadTasks';
@@ -52,7 +52,7 @@ export type EstadoFluxo =
   | { t: 'followQ' }
   | { t: 'proximaAcao'; concluirTaskId?: string }
   | { t: 'quando'; concluirTaskId?: string; cancelarTaskId?: string; tentativa?: boolean }
-  | { t: 'fu'; taskId?: string }
+  | { t: 'tarefaAgora'; taskId?: string }
   | { t: 'fuRetry'; taskId?: string }
   | { t: 'meetQ'; taskId?: string }
   | { t: 'meetGostou' }
@@ -69,6 +69,60 @@ export type EstadoFluxo =
   | { t: 'descarte'; volta: EstadoFluxo };
 
 interface QualGroup { title: string; key: string; options: string[] }
+
+// ---------------------------------------------------------------------------
+// Qual pergunta do circuito está pendente para um lead?
+// Usado pela página do lead E pelo vigia global (que dispara os pop-ups
+// na hora certa, em qualquer tela).
+// ---------------------------------------------------------------------------
+export interface PerguntaPendente {
+  /** true = o pop-up deve abrir sozinho agora */
+  pendente: boolean;
+  estado: EstadoFluxo;
+  /** urgência (ms) — quanto menor, mais urgente; usado pra ordenar */
+  urgencia: number;
+}
+
+export function perguntaDoLead(
+  etapaNormalizada: string,
+  pendentes: TaskLike[],
+  cadencias: CadenciasFunil,
+  agora: number
+): PerguntaPendente | null {
+  const porData = (a: TaskLike, b: TaskLike) =>
+    (toJsDate(a.dueDate)?.getTime() ?? 0) - (toJsDate(b.dueDate)?.getTime() ?? 0);
+  const contato = pendentes
+    .filter(t => (TIPOS_CONTATO as unknown as string[]).includes(t.type) || t.type === TIPO_TAREFA_PRODUTO)
+    .sort(porData)[0];
+  const meet = pendentes.filter(t => t.type === TIPO_TAREFA_MEET).sort(porData)[0];
+  const visita = pendentes.filter(t => t.type === TIPO_TAREFA_VISITA).sort(porData)[0];
+  const dueMs = (t?: TaskLike) => (t ? toJsDate(t.dueDate)?.getTime() ?? 0 : 0);
+  const venceu = (t: TaskLike | undefined, horasExtra = 0) =>
+    t ? agora >= dueMs(t) + horasExtra * 3600_000 : false;
+
+  switch (etapaNormalizada) {
+    case ETAPA_ENTRADA:
+      return { pendente: true, estado: { t: 'entrada' }, urgencia: 0 };
+    case ETAPA_FOLLOWUP:
+      if (!contato) return { pendente: true, estado: { t: 'proximaAcao' }, urgencia: agora };
+      return { pendente: venceu(contato), estado: { t: 'tarefaAgora', taskId: contato.id }, urgencia: dueMs(contato) };
+    case ETAPA_MEET:
+      if (!meet) return { pendente: true, estado: { t: 'agendarData', tipo: 'Meet' }, urgencia: agora };
+      return { pendente: venceu(meet, cadencias.perguntarMeetHoras), estado: { t: 'meetQ', taskId: meet.id }, urgencia: dueMs(meet) };
+    case ETAPA_VISITA:
+      if (!visita) return { pendente: true, estado: { t: 'agendarData', tipo: 'Visita' }, urgencia: agora };
+      return { pendente: venceu(visita, cadencias.perguntarVisitaHoras), estado: { t: 'visitaQ', taskId: visita.id }, urgencia: dueMs(visita) };
+    case ETAPA_NEGOCIACAO:
+      if (!contato) return { pendente: true, estado: { t: 'negPrazo' }, urgencia: agora };
+      return { pendente: venceu(contato), estado: { t: 'negQ', taskId: contato.id }, urgencia: dueMs(contato) };
+    case ETAPA_BOLSAO:
+      return { pendente: false, estado: { t: 'quando' }, urgencia: Infinity };
+    case ETAPA_FECHADO:
+      return null;
+    default: // Descartado → reativar agenda um follow-up
+      return { pendente: false, estado: { t: 'quando' }, urgencia: Infinity };
+  }
+}
 
 interface AtendimentoOverlayProps {
   aberto: boolean;
@@ -390,24 +444,39 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
         };
       }
 
-      case 'fu': {
+      case 'tarefaAgora': {
+        // "No horário abre o pop-up dizendo que ele tem aquilo pra fazer AGORA"
         const task = taskDe(estado.taskId);
         const due = task ? toJsDate(task.dueDate) : null;
-        const prefixo = (() => {
-          if (!due) return 'Você';
-          const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-          const dia = new Date(due); dia.setHours(0, 0, 0, 0);
-          const diff = Math.round((hoje.getTime() - dia.getTime()) / 86_400_000);
-          if (diff <= 0) return 'Hoje você';
-          if (diff === 1) return 'Ontem você';
-          return `No dia ${p2(due.getDate())}/${p2(due.getMonth() + 1)} você`;
-        })();
+        const atrasada = due ? due.getTime() < Date.now() - 60_000 : false;
+        const ehProduto = task?.type === TIPO_TAREFA_PRODUTO;
+        if (ehProduto) {
+          return {
+            bar: '⏰ Agora · Produto',
+            body: (
+              <>
+                🔎 Hora de {b(task?.description || `procurar produto para ${primeiroNome}`)}.
+                {due && <small>Combinado para {quandoLabel(due)}.</small>}
+              </>
+            ),
+            btns: [
+              { t: 'Achei! Falar com o cliente ✓', c: 'primary', f: () => setEstado({ t: 'proximaAcao', concluirTaskId: estado.taskId }) },
+              { t: '🕐 Remarcar', c: 'ghost', f: () => setEstado({ t: 'quando', cancelarTaskId: estado.taskId }) },
+            ],
+          };
+        }
         return {
-          bar: 'Follow-up · 24h',
-          body: <>{prefixo} fez um follow-up com {b(primeiroNome)}. Respondeu?</>,
+          bar: `⏰ Agora · ${task?.type || 'Contato'}`,
+          body: (
+            <>
+              Hora do próximo passo com {b(primeiroNome)}: {b(task?.description || 'fazer contato')}.
+              {due && <small>{atrasada ? 'Estava combinado' : 'Combinado'} para {quandoLabel(due)}. · <a className="text-[#7DD3FC] underline" href={`tel:${digits}`}>ligar</a> · <a className="text-emerald-300 underline" href={`https://wa.me/55${digits}`} target="_blank" rel="noopener noreferrer">WhatsApp</a></small>}
+            </>
+          ),
           btns: [
-            { t: 'Respondeu ✓', c: 'primary', f: () => setEstado({ t: 'proximaAcao', concluirTaskId: estado.taskId }) },
-            { t: 'Ainda nada', c: 'ghost', f: () => setEstado({ t: 'fuRetry', taskId: estado.taskId }) },
+            { t: `✅ Falei com ${primeiroNome}`, c: 'primary', f: () => setEstado({ t: 'proximaAcao', concluirTaskId: estado.taskId }) },
+            { t: '📵 Não atendeu', c: 'ghost', f: () => setEstado({ t: 'fuRetry', taskId: estado.taskId }) },
+            { t: '🕐 Remarcar', c: 'ghost', f: () => setEstado({ t: 'quando', cancelarTaskId: estado.taskId }) },
           ],
         };
       }

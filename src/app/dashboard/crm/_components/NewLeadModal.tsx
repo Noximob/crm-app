@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useContext, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { AuthContext } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, limit, getDocs, doc, getDoc } from 'firebase/firestore';
@@ -21,6 +22,7 @@ const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
+    const router = useRouter();
     const { currentUser, userData, isEspelhoDemo } = useContext(AuthContext);
     const { stages } = usePipelineStages();
     const [name, setName] = useState('');
@@ -159,7 +161,7 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
             }
 
             // Salva na coleção principal 'leads'
-            await addDoc(leadsCollectionRef, {
+            const novoRef = await addDoc(leadsCollectionRef, {
                 userId: currentUser.uid, // Adiciona o ID do usuário ao lead
                 imobiliariaId: userData?.imobiliariaId || '', // Adiciona o ID da imobiliária
                 nome: name,
@@ -188,6 +190,8 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
                 // sequenciaAtiva: false,
             });
             onClose(); // Fecha o modal após o sucesso
+            // Lead criado → abre direto o atendimento (os 2 pop-ups do circuito)
+            router.push(`/dashboard/crm/${novoRef.id}`);
         } catch (err) {
             console.error(err);
             setError('Falha ao criar o lead. Tente novamente.');
