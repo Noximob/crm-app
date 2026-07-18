@@ -16,7 +16,7 @@ import AtendimentoOverlay, { perguntaDoLead, fmtDataHora, type AcaoCircuito } fr
 import { executarAcaoCircuito } from '@/lib/circuitoActions';
 import { QUALIFICATION_QUESTIONS } from '@/lib/qualificacao';
 import { getDemoLeadById, getDemoInteractions } from '@/lib/espelho/demoData';
-import { CADENCIAS_PADRAO, carregarCadencias, ETAPAS_TERMINAIS, type CadenciasFunil } from '@/lib/circuito';
+import { CADENCIAS_PADRAO, carregarCadencias, type CadenciasFunil } from '@/lib/circuito';
 import { showToast } from '@/components/ui/toast';
 import LoadingState from '@/components/ui/LoadingState';
 
@@ -77,7 +77,7 @@ const p2 = (n: number) => String(n).padStart(2, '0');
 
 export default function LeadDetailPage() {
     const { currentUser, userData, isEspelhoDemo } = useAuth();
-    const { stages, normalizeEtapa } = usePipelineStages();
+    const { normalizeEtapa } = usePipelineStages();
     const params = useParams();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -103,7 +103,6 @@ export default function LeadDetailPage() {
     const [executandoCircuito, setExecutandoCircuito] = useState(false);
     const [atendimentoAberto, setAtendimentoAberto] = useState(false);
     const [fechouNoX, setFechouNoX] = useState(false);
-    const autoAbriu = useRef(false);
     const transferiuParaGestor = useRef(false);
     const [expandidas, setExpandidas] = useState<Set<string>>(new Set());
     const [saveQual, setSaveQual] = useState<'idle' | 'salvando' | 'salvo'>('idle');
@@ -226,14 +225,15 @@ export default function LeadDetailPage() {
     }, [lead, tasks, cadencias, normalizeEtapa]);
 
     // "Ao abrir o lead: entrou no lead que tem pergunta em aberto? Ela abre na hora, sobre a página."
+    // Reativo: virou pendente (ex.: concluiu a última tarefa) → o pop-up abre sozinho.
+    // Só não insiste na mesma visita depois de um ✕ (pendência fica avisando).
     useEffect(() => {
-        if (loading || readOnly || autoAbriu.current) return;
+        if (loading || readOnly || atendimentoAberto || fechouNoX) return;
         if (circuitoInfo?.pendente) {
-            autoAbriu.current = true;
             const id = setTimeout(() => setAtendimentoAberto(true), 450);
             return () => clearTimeout(id);
         }
-    }, [loading, readOnly, circuitoInfo]);
+    }, [loading, readOnly, atendimentoAberto, fechouNoX, circuitoInfo]);
 
     const handleFecharX = () => {
         setAtendimentoAberto(false);
@@ -284,15 +284,6 @@ export default function LeadDetailPage() {
         }
         return true;
     }, [currentUser, lead, isEspelhoDemo, readOnly, executandoCircuito, tasks, tasksLoaded, userData?.imobiliariaId]);
-
-    // Mudança manual de etapa (o circuito é o caminho principal; isso é o ajuste fino)
-    const handleStageChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const novaEtapa = e.target.value;
-        await executarCircuito({
-            novaEtapa,
-            interacao: { type: 'Etapa', notes: `↷ Etapa alterada manualmente para ${novaEtapa}` },
-        });
-    };
 
     // Registro avulso de tentativa de contato (botões "Liguei"/"Chamei no WhatsApp")
     const registrarContato = useCallback((via: 'Ligação' | 'WhatsApp') => {
@@ -493,7 +484,6 @@ export default function LeadDetailPage() {
     }
 
     const etapaAtual = normalizeEtapa(lead.etapa);
-    const opcoesEtapa = [...stages, ...ETAPAS_TERMINAIS];
     const agora = Date.now();
 
     return (
@@ -517,20 +507,13 @@ export default function LeadDetailPage() {
                                 <span className={`h-2 w-2 rounded-full shrink-0 ${getTaskStatusColor(taskStatus)}`} title={taskStatus}></span>
                             </div>
                             <div className="flex items-center gap-2 flex-wrap">
-                                {readOnly ? (
-                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#FF1E56]/10 border border-[#FF1E56]/35 text-[#FF7A97]">{etapaAtual}</span>
-                                ) : (
-                                  <select
-                                    id="lead-situation"
-                                    value={etapaAtual}
-                                    onChange={handleStageChange}
-                                    disabled={executandoCircuito}
-                                    className="px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider bg-[#FF1E56]/10 border border-[#FF1E56]/35 rounded-full text-[#FF7A97] focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 [&>option]:bg-[#12101a] [&>option]:text-white disabled:opacity-60"
-                                    title="Ajuste manual — o circuito move sozinho pelas respostas"
-                                  >
-                                    {opcoesEtapa.map(s => (<option key={s} value={s}>{s}</option>))}
-                                  </select>
-                                )}
+                                {/* Etapa é do SISTEMA: o circuito move o lead pelas respostas — ninguém arrasta na mão */}
+                                <span
+                                  className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#FF1E56]/10 border border-[#FF1E56]/35 text-[#FF7A97]"
+                                  title="A etapa muda sozinha conforme as respostas do atendimento"
+                                >
+                                  {etapaAtual}
+                                </span>
                                 <div className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-1.5">
                                     <PhoneIcon className="h-3.5 w-3.5 text-text-secondary shrink-0" />
                                     <p className="text-xs text-white tabular-nums">{lead.telefone}</p>

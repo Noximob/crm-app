@@ -39,13 +39,9 @@ export default function LeadCard({ lead, corEtapa }: { lead: Lead; corEtapa?: st
         className="pointer-events-none absolute left-0 top-0 bottom-0 w-[2px]"
         style={{ backgroundColor: corEtapa || '#FF1E56', boxShadow: `0 0 8px ${corEtapa || '#FF1E56'}` }}
       />
-      {/* Área de drag handle */}
-      <div 
-        {...listeners}
-        className="cursor-grab active:cursor-grabbing flex items-center justify-between mb-1"
-      >
+      {/* Sem drag: a etapa muda pelo circuito (respostas do atendimento) */}
+      <div className="flex items-center justify-between mb-1">
         <div className="font-semibold text-xs text-white truncate flex-1">{lead.nome}</div>
-        <div className="text-[10px] text-text-secondary ml-2">⋮⋮</div>
       </div>
       <div className="text-[11px] text-text-secondary mb-1 truncate">{lead.telefone}</div>
       <div className="flex flex-col gap-1 mt-1">

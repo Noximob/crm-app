@@ -221,9 +221,9 @@ export default function AndamentoPage() {
         if (next !== 'Propaganda') setCampanhaFilter(null);
     };
 
-    const sensors = useSensors(
-        useSensor(PointerSensor)
-    );
+    // Arrastar DESLIGADO de propósito: quem move o lead de etapa é o circuito
+    // (as respostas do atendimento) — o quadro é só visualização.
+    const sensors = useSensors();
 
     const handleDragStart = (event: DragStartEvent) => {
         const { active } = event;

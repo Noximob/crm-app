@@ -75,9 +75,16 @@ export default function CircuitoCard({ etapa, tentativas, desde, descartadoMotiv
     if (etapa === ETAPA_FECHADO) return `🏆 Vendido!${vendaValor && vendaValor !== '—' ? ` R$ ${vendaValor}` : ''} ${desdeTxt}`;
     if (etapa === ETAPA_DESCARTADO) return `Descartado${descartadoMotivo ? ` — ${descartadoMotivo}` : ''}`;
     if (etapa === ETAPA_BOLSAO) return `🧊 Estacionado no bolsão ${desdeTxt} — reative quando fizer sentido.`;
-    if (pendente) return '🔔 Tem pergunta do circuito esperando resposta.';
-    return `Em ${etapa} ${desdeTxt} — o sistema pergunta na hora certa.`;
+    if (pendente) return '🔔 Pergunta do circuito em aberto — o pop-up abre sozinho.';
+    return `Em ${etapa} ${desdeTxt} — o sistema te chama na hora certa.`;
   })();
+
+  // O único botão aqui é resolver pendência ou reativar lead parado:
+  // o atendimento normal acontece sozinho, em pop-up.
+  const acaoManual =
+    !readOnly && pendenteFechado ? 'Resolver agora →' :
+    !readOnly && (etapa === ETAPA_BOLSAO || etapa === ETAPA_DESCARTADO) ? '🔄 Reativar lead' :
+    null;
 
   return (
     <div className={`al-card relative overflow-hidden p-5 ${pendenteFechado ? 'border-amber-500/40' : ''}`}>
@@ -100,16 +107,16 @@ export default function CircuitoCard({ etapa, tentativas, desde, descartadoMotiv
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-[13px] text-text-secondary">{statusLinha}</p>
-        {!readOnly && etapa !== ETAPA_FECHADO && (
+        {acaoManual && (
           <button
             onClick={onAtender}
             className={`px-4 py-2.5 rounded-xl text-[13px] font-bold text-white transition-all active:scale-[0.98] ${
-              pendente || pendenteFechado
+              pendenteFechado
                 ? 'bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] animate-pulse'
-                : 'bg-white/[0.05] border border-white/15 hover:bg-white/[0.1]'
+                : 'bg-[#7DD3FC]/10 border border-[#7DD3FC]/40 text-[#7DD3FC] hover:bg-[#7DD3FC]/20'
             }`}
           >
-            {pendenteFechado ? 'Resolver agora →' : pendente ? '▶ Responder agora' : etapa === ETAPA_BOLSAO || etapa === ETAPA_DESCARTADO ? '🔄 Reativar lead' : '▶ Atender agora'}
+            {acaoManual}
           </button>
         )}
       </div>

@@ -223,12 +223,7 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
                         <label htmlFor="email" className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">E-mail</label>
                         <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white/[0.04] border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 text-white placeholder-white/30" placeholder="email@exemplo.com" />
                     </div>
-                    <div>
-                        <label htmlFor="situation" className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">Situação</label>
-                        <select id="situation" value={situation} onChange={(e) => setSituation(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white/[0.04] border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 text-white">
-                            {stages.map(stage => <option key={stage} value={stage} className="bg-[#12101a] text-white">{stage}</option>)}
-                        </select>
-                    </div>
+                    {/* Etapa não se escolhe: todo lead nasce em Entrada e o circuito conduz dali */}
                     <div>
                         <span className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-2">Origem do lead</span>
                         <div className="flex flex-wrap gap-2">
