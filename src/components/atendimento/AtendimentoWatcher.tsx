@@ -1,25 +1,23 @@
 'use client';
 
 /**
- * Vigia do circuito — dispara os pop-ups de atendimento NA HORA CERTA,
- * em qualquer tela do sistema ("Ao abrir o sistema: se existe pergunta
- * pendente, ela aparece antes de tudo — uma por vez, a mais urgente primeiro").
+ * Vigia do circuito — o sistema chama o corretor NA HORA CERTA, sem perseguir.
  *
- * Observa os leads do corretor em tempo real; quando uma pergunta vence
- * (lead novo em Entrada, tarefa no horário, meet/visita que passou — tudo
- * conforme as cadências do admin), abre os 2 pop-ups sobre a página atual.
+ * Comportamento:
+ *  - Coisas ATRASADAS (de antes) nunca abrem pop-up sozinhas ao navegar:
+ *    ficam no aviso fixo embaixo ("N atendimentos esperando — Resolver"),
+ *    sempre visível em todas as telas.
+ *  - Pop-up automático SÓ quando uma tarefa VENCE com o sistema aberto
+ *    ("no horário abre o pop-up dizendo que ele tem aquilo pra fazer agora").
+ *  - Clicou em "Resolver" → abre a fila UMA A UMA, na ordem de urgência.
+ *  - Nunca interrompe quem está dentro de uma página de lead (lá quem
+ *    conduz é a própria página); um pop-up por vez.
  *
- * Regras anti-avalanche:
- *  - só entram leads que JÁ estão no ritmo do circuito (têm lead.circuito)
- *    ou leads novos em Entrada criados nas últimas 72h — os antigos entram
- *    "manso", quando o corretor abrir o lead;
- *  - um pop-up por vez, o mais urgente primeiro;
- *  - fechou no ✕ = pendência: não insiste na sessão, mas fica o aviso fixo
- *    "N leads sem encaminhamento — Resolver agora".
- *  - pausa nas páginas de detalhe do lead (lá quem manda é a própria página).
+ * Anti-avalanche: só leads já no ritmo (lead.circuito) ou novos de Entrada
+ * (<72h). Leads antigos entram "manso", quando o corretor abrir o lead.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { collection, doc, onSnapshot, query, updateDoc, where, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
@@ -45,25 +43,34 @@ interface LeadDoc {
   anotacoes?: string;
 }
 
-const SNOOZE_KEY = 'nox-atend-snooze';
-
-const lerSnooze = (): Record<string, number> => {
-  try { return JSON.parse(sessionStorage.getItem(SNOOZE_KEY) || '{}'); } catch { return {}; }
-};
+interface Candidato {
+  lead: LeadDoc;
+  estado: EstadoFluxo;
+  urgencia: number;
+  /** chave única da pergunta (muda quando a tarefa muda) */
+  chave: string;
+  /** true = veio de tarefa com horário → pode abrir sozinho quando VENCE */
+  porHorario: boolean;
+}
 
 export default function AtendimentoWatcher() {
   const { currentUser, userData, isEspelhoDemo } = useAuth();
   const { normalizeEtapa } = usePipelineStages();
   const pathname = usePathname();
-  const router = useRouter();
 
   const [leads, setLeads] = useState<LeadDoc[]>([]);
+  const [snapshotChegou, setSnapshotChegou] = useState(false);
   const [cadencias, setCadencias] = useState<CadenciasFunil>(CADENCIAS_PADRAO);
   const [tick, setTick] = useState(0);
   const [abertoId, setAbertoId] = useState<string | null>(null);
   const [estadoInicial, setEstadoInicial] = useState<EstadoFluxo>({ t: 'entrada' });
   const [executando, setExecutando] = useState(false);
-  const [snooze, setSnooze] = useState<Record<string, number>>({});
+
+  // Perguntas já anunciadas nesta sessão (não re-abrem sozinhas; ficam no aviso)
+  const vistos = useRef<Set<string>>(new Set());
+  const inicializado = useRef(false);
+  // Modo fila: aberto pelo botão "Resolver" → encadeia um a um
+  const modoFila = useRef(false);
 
   // qualificação/anotações do lead aberto (o pop-up direito)
   const [qual, setQual] = useState<Record<string, string[]>>({});
@@ -75,8 +82,6 @@ export default function AtendimentoWatcher() {
 
   const ativo = !!currentUser && !isEspelhoDemo;
 
-  useEffect(() => { setSnooze(lerSnooze()); }, []);
-
   // Leads do corretor nas etapas ativas do circuito (em tempo real)
   useEffect(() => {
     if (!ativo) return;
@@ -87,6 +92,7 @@ export default function AtendimentoWatcher() {
     );
     const unsub = onSnapshot(q, snap => {
       setLeads(snap.docs.map(d => ({ id: d.id, ...d.data() } as LeadDoc)));
+      setSnapshotChegou(true);
     }, () => {});
     return () => unsub();
   }, [ativo, currentUser]);
@@ -96,23 +102,23 @@ export default function AtendimentoWatcher() {
     carregarCadencias(userData?.imobiliariaId).then(setCadencias);
   }, [ativo, userData?.imobiliariaId]);
 
-  // Relógio de 30s: perguntas vencem sem precisar de novo snapshot
+  // Relógio de 30s: é ele que percebe "a tarefa venceu AGORA"
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 30_000);
     return () => clearInterval(id);
   }, []);
 
-  // Página de detalhe do lead? Lá a própria página conduz — o vigia pausa.
+  // Página de detalhe do lead? Lá a própria página conduz — o vigia se recolhe.
   const emPaginaDeLead = useMemo(
     () => /^\/dashboard\/crm\/(?!andamento)[^/]+\/?$/.test(pathname || ''),
     [pathname]
   );
 
-  // Candidatos: pergunta vencida + elegível + sem snooze, mais urgente primeiro
-  const candidatos = useMemo(() => {
+  // Fila de atendimentos esperando (mais urgente primeiro)
+  const fila = useMemo((): Candidato[] => {
     const agora = Date.now();
     void tick;
-    const lista: { lead: LeadDoc; estado: EstadoFluxo; urgencia: number }[] = [];
+    const lista: Candidato[] = [];
     for (const lead of leads) {
       const etapa = normalizeEtapa(lead.etapa);
       const criadoMs = toJsDate(lead.createdAt)?.getTime() ?? 0;
@@ -121,59 +127,52 @@ export default function AtendimentoWatcher() {
       if (!noRitmo && !novoRecente) continue; // lead antigo entra "manso" pela página
       const p = perguntaDoLead(etapa, lead.tarefasPendentes || [], cadencias, agora);
       if (!p?.pendente) continue;
-      lista.push({ lead, estado: p.estado, urgencia: etapa === 'Entrada' ? criadoMs : p.urgencia });
+      const taskId = 'taskId' in p.estado ? p.estado.taskId : undefined;
+      lista.push({
+        lead,
+        estado: p.estado,
+        urgencia: etapa === 'Entrada' ? criadoMs : p.urgencia,
+        chave: `${lead.id}:${taskId || p.estado.t}`,
+        porHorario: !!taskId, // tem tarefa com horário marcado
+      });
     }
     return lista.sort((a, b) => a.urgencia - b.urgencia);
   }, [leads, cadencias, tick, normalizeEtapa]);
 
-  const pendencias = useMemo(
-    () => candidatos.filter(c => snooze[c.lead.id]),
-    [candidatos, snooze]
-  );
-  const naFila = useMemo(
-    () => candidatos.filter(c => !snooze[c.lead.id]),
-    [candidatos, snooze]
-  );
-
-  const abrir = useCallback((leadId: string, estado: EstadoFluxo) => {
-    const lead = leads.find(l => l.id === leadId);
-    if (!lead) return;
+  const abrir = useCallback((c: Candidato) => {
     const q0: Record<string, string[]> = {};
-    Object.entries(lead.qualificacao || {}).forEach(([k, v]) => {
+    Object.entries(c.lead.qualificacao || {}).forEach(([k, v]) => {
       q0[k] = Array.isArray(v) ? v : [v as string];
     });
     setQual(q0);
-    setAnot(lead.anotacoes || '');
-    setEstadoInicial(estado);
-    setAbertoId(leadId);
-  }, [leads]);
+    setAnot(c.lead.anotacoes || '');
+    setEstadoInicial(c.estado);
+    setAbertoId(c.lead.id);
+    vistos.current.add(c.chave);
+  }, []);
 
-  // Auto-abre a pergunta mais urgente (uma por vez, nunca sobre a página do lead)
+  // "No horário": pop-up automático SÓ quando a pergunta vence com o app aberto.
+  // O que já estava atrasado ao entrar vira aviso fixo — não persegue ninguém.
   useEffect(() => {
-    if (!ativo || abertoId || emPaginaDeLead) return;
-    const primeira = naFila[0];
-    if (!primeira) return;
-    const id = setTimeout(() => abrir(primeira.lead.id, primeira.estado), 1200);
-    return () => clearTimeout(id);
-  }, [ativo, abertoId, emPaginaDeLead, naFila, abrir]);
+    if (!ativo || !snapshotChegou) return;
+    if (!inicializado.current) {
+      // primeira leitura da sessão: tudo que já venceu vai pro aviso, sem pop-up
+      fila.forEach(c => vistos.current.add(c.chave));
+      inicializado.current = true;
+      return;
+    }
+    const novas = fila.filter(c => !vistos.current.has(c.chave));
+    if (novas.length === 0) return;
+    const abrivel = novas.find(c => c.porHorario);
+    // marca todas como anunciadas (as que não abrem sozinhas ficam no aviso)
+    novas.forEach(c => vistos.current.add(c.chave));
+    if (abrivel && !abertoId && !emPaginaDeLead) {
+      const id = setTimeout(() => abrir(abrivel), 800);
+      return () => clearTimeout(id);
+    }
+  }, [ativo, snapshotChegou, fila, abertoId, emPaginaDeLead, abrir]);
 
   const leadAberto = useMemo(() => leads.find(l => l.id === abertoId) || null, [leads, abertoId]);
-
-  const marcarSnooze = (leadId: string) => {
-    setSnooze(prev => {
-      const next = { ...prev, [leadId]: Date.now() };
-      try { sessionStorage.setItem(SNOOZE_KEY, JSON.stringify(next)); } catch {}
-      return next;
-    });
-  };
-  const limparSnooze = (leadId: string) => {
-    setSnooze(prev => {
-      const next = { ...prev };
-      delete next[leadId];
-      try { sessionStorage.setItem(SNOOZE_KEY, JSON.stringify(next)); } catch {}
-      return next;
-    });
-  };
 
   const executar = useCallback(async (acao: AcaoCircuito): Promise<boolean> => {
     if (!leadAberto || !currentUser || executando) return false;
@@ -238,18 +237,33 @@ export default function AtendimentoWatcher() {
     }, 800);
   };
 
+  const abrirFila = () => {
+    modoFila.current = true;
+    const primeiro = fila.find(c => c.lead.id !== abertoId);
+    if (primeiro) abrir(primeiro);
+  };
+
   if (!ativo) return null;
+
+  const esperando = fila.length;
 
   return (
     <>
-      {/* Aviso fixo de pendências ("fora do ritmo") */}
-      {pendencias.length > 0 && !abertoId && (
+      {/* Aviso fixo — sempre que houver atendimento esperando, em toda tela */}
+      {esperando > 0 && !abertoId && !emPaginaDeLead && (
         <button
-          onClick={() => { const p = pendencias[0]; limparSnooze(p.lead.id); abrir(p.lead.id, p.estado); }}
-          className="fixed z-[60] bottom-20 lg:bottom-6 right-4 lg:right-6 flex items-center gap-2 px-4 py-2.5 rounded-xl border border-amber-500/50 bg-[#201c2e] shadow-[0_14px_40px_-14px_rgba(0,0,0,0.8)] text-[12.5px] font-bold text-amber-200 hover:bg-amber-500/10 active:scale-[0.98] transition-all"
+          onClick={abrirFila}
+          className="fixed z-[60] bottom-20 lg:bottom-6 right-4 lg:right-6 flex items-center gap-2.5 pl-3.5 pr-4 py-2.5 rounded-2xl border border-[#FF1E56]/40 bg-[#201c2e]/95 backdrop-blur-sm shadow-[0_14px_40px_-14px_rgba(0,0,0,0.85)] hover:border-[#FF1E56]/70 hover:bg-[#FF1E56]/[0.08] active:scale-[0.98] transition-all"
+          title="Abre os atendimentos um a um, na ordem de urgência"
         >
-          🔒 {pendencias.length} lead{pendencias.length > 1 ? 's' : ''} sem encaminhamento
-          <span className="text-white">Resolver agora →</span>
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF1E56] opacity-60" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#FF1E56]" />
+          </span>
+          <span className="text-[12.5px] font-bold text-white">
+            {esperando} atendimento{esperando > 1 ? 's' : ''} esperando
+          </span>
+          <span className="text-[12px] font-extrabold text-[#FF7A97]">Resolver →</span>
         </button>
       )}
 
@@ -267,15 +281,22 @@ export default function AtendimentoWatcher() {
           executar={executar}
           registrarContato={registrarContato}
           onFecharX={() => {
-            const nome = (leadAberto.nome || 'O lead').split(' ')[0];
-            marcarSnooze(leadAberto.id);
+            modoFila.current = false;
             setAbertoId(null);
-            showToast(`⚠️ ${nome} ficou sem encaminhamento. Resolva pra voltar ao ritmo.`, 'info');
+            const nome = (leadAberto.nome || 'O lead').split(' ')[0];
+            showToast(`⚠️ ${nome} ficou sem encaminhamento — segue no aviso aí embaixo.`, 'info');
           }}
           onConcluido={(msg) => {
-            limparSnooze(leadAberto.id);
             setAbertoId(null);
             if (msg) showToast(msg, 'success');
+            // Modo fila: emenda no próximo da ordem (um a um, até zerar)
+            if (modoFila.current) {
+              setTimeout(() => {
+                const proximo = fila.find(c => c.lead.id !== leadAberto.id);
+                if (proximo) abrir(proximo);
+                else modoFila.current = false;
+              }, 700);
+            }
           }}
           qualGroups={QUALIFICATION_QUESTIONS}
           qualifications={qual}
