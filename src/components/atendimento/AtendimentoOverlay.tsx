@@ -94,6 +94,11 @@ export function perguntaDoLead(
   const contato = pendentes
     .filter(t => (TIPOS_CONTATO as unknown as string[]).includes(t.type) || t.type === TIPO_TAREFA_PRODUTO)
     .sort(porData)[0];
+  // Na Negociação a cobrança é sempre a resposta da proposta — tarefa de
+  // Produto NÃO pode virar a pergunta "Fechou?"
+  const cobranca = pendentes
+    .filter(t => (TIPOS_CONTATO as unknown as string[]).includes(t.type))
+    .sort(porData)[0];
   const meet = pendentes.filter(t => t.type === TIPO_TAREFA_MEET).sort(porData)[0];
   const visita = pendentes.filter(t => t.type === TIPO_TAREFA_VISITA).sort(porData)[0];
   const dueMs = (t?: TaskLike) => (t ? toJsDate(t.dueDate)?.getTime() ?? 0 : 0);
@@ -113,8 +118,8 @@ export function perguntaDoLead(
       if (!visita) return { pendente: true, estado: { t: 'agendarData', tipo: 'Visita' }, urgencia: agora };
       return { pendente: venceu(visita, cadencias.perguntarVisitaHoras), estado: { t: 'visitaQ', taskId: visita.id }, urgencia: dueMs(visita) };
     case ETAPA_NEGOCIACAO:
-      if (!contato) return { pendente: true, estado: { t: 'negPrazo' }, urgencia: agora };
-      return { pendente: venceu(contato), estado: { t: 'negQ', taskId: contato.id }, urgencia: dueMs(contato) };
+      if (!cobranca) return { pendente: true, estado: { t: 'negPrazo' }, urgencia: agora };
+      return { pendente: venceu(cobranca), estado: { t: 'negQ', taskId: cobranca.id }, urgencia: dueMs(cobranca) };
     case ETAPA_BOLSAO:
       return { pendente: false, estado: { t: 'quando' }, urgencia: Infinity };
     case ETAPA_FECHADO:
@@ -202,7 +207,7 @@ function Pbtn({ c, onClick, disabled, children }: { c: keyof typeof PBTN; onClic
   );
 }
 
-function Chips({ itens, sel, onSel, unico = true }: { itens: readonly string[]; sel: string[]; onSel: (v: string) => void; unico?: boolean }) {
+function Chips({ itens, sel, onSel }: { itens: readonly string[]; sel: string[]; onSel: (v: string) => void }) {
   return (
     <div className="flex flex-wrap gap-1.5 my-2">
       {itens.map(o => (
@@ -270,6 +275,17 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
     const [h, m] = horaStr.split(':').map(Number);
     base.setHours(h || 0, m || 0, 0, 0);
     return base;
+  };
+
+  /** Valida a escolha: precisa existir e ser no FUTURO (ex.: "Hoje" às 18h quando já são 20h). */
+  const dataValidada = (avisoVazio = '⚠️ Escolha quando.'): Date | null => {
+    const d = dataEscolhida();
+    if (!d) { setAviso(avisoVazio); return null; }
+    if (d.getTime() < Date.now() - 60_000) {
+      setAviso('⚠️ Esse horário já passou — escolhe um no futuro.');
+      return null;
+    }
+    return d;
   };
 
   const seletorQuando = (chips: readonly string[] = CHIPS_QUANDO) => (
@@ -364,11 +380,14 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
       case 'proximaAcao': {
         const m = estado;
         const executaAcao = async () => {
-          const d = dataEscolhida();
-          if (!acaoSel || (!d && acaoSel !== '🤝 Negociação')) {
+          if (!acaoSel) {
             setAviso('⚠️ O sistema não deixa concluir sem escolher ação + quando.');
             return;
           }
+          const d = acaoSel !== '🤝 Negociação'
+            ? dataValidada('⚠️ O sistema não deixa concluir sem escolher ação + quando.')
+            : null;
+          if (!d && acaoSel !== '🤝 Negociação') return;
           if (acaoSel === '🤝 Negociação') {
             const ok = await executar({
               novaEtapa: ETAPA_NEGOCIACAO,
@@ -428,8 +447,8 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           ),
           btns: [{
             t: executando ? 'Agendando…' : 'Agendar ✓', c: 'primary', f: async () => {
-              const d = dataEscolhida();
-              if (!d) { setAviso('⚠️ Escolha quando.'); return; }
+              const d = dataValidada();
+              if (!d) return;
               const ok = await executar({
                 novaEtapa: ETAPA_FOLLOWUP,
                 concluirTaskId: m.concluirTaskId,
@@ -622,8 +641,8 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           ),
           btns: [{
             t: executando ? 'Marcando…' : `Confirmar ${m.tipo.toLowerCase()} ✓`, c: 'primary', f: async () => {
-              const d = dataEscolhida();
-              if (!d) { setAviso('⚠️ Escolha quando.'); return; }
+              const d = dataValidada();
+              if (!d) return;
               const ehMeet = m.tipo === 'Meet';
               const ok = await executar({
                 novaEtapa: ehMeet ? ETAPA_MEET : ETAPA_VISITA,
@@ -644,7 +663,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           body: (
             <>
               O que {b('não encaixou')}? Atualiza aqui:
-              <Chips itens={REQUALIFICA_OPCOES} sel={requalSel} unico={false} onSel={v => setRequalSel(p => p.includes(v) ? p.filter(x => x !== v) : [...p, v])} />
+              <Chips itens={REQUALIFICA_OPCOES} sel={requalSel} onSel={v => setRequalSel(p => p.includes(v) ? p.filter(x => x !== v) : [...p, v])} />
               <small>O lead volta pro follow-up mais inteligente do que entrou. A qualificação completa fica no painel ao lado. →</small>
             </>
           ),
@@ -672,8 +691,8 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           ),
           btns: [{
             t: executando ? 'Definindo…' : 'Definir prazo ✓', c: 'primary', f: async () => {
-              const d = dataEscolhida();
-              if (!d) { setAviso('⚠️ Escolha o prazo.'); return; }
+              const d = dataValidada('⚠️ Escolha o prazo.');
+              if (!d) return;
               const ok = await executar({
                 novaEtapa: ETAPA_NEGOCIACAO,
                 cancelarTaskId: m.cancelarTaskId,
@@ -691,7 +710,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
         const due = task ? toJsDate(task.dueDate) : null;
         return {
           bar: 'Negociação · prazo venceu',
-          body: <>A proposta pra {b(primeiroNome)} tinha resposta prevista pra {due ? quandoLabel(due).replace('às', 'às') : 'ontem'}. Fechou?</>,
+          body: <>A proposta pra {b(primeiroNome)} tinha resposta prevista pra {due ? quandoLabel(due) : 'ontem'}. Fechou?</>,
           btns: [
             { t: 'FECHOU! 🎉', c: 'win', f: () => setEstado({ t: 'venda' }) },
             { t: 'Ainda negociando', c: 'ghost', f: () => setEstado({ t: 'negPrazo', cancelarTaskId: estado.taskId }) },
@@ -773,9 +792,9 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                   cancelarTodasPendentes: true,
                   descartadoMotivo: motivoFinal,
                   transferirParaGestor: true,
-                  interacao: { type: 'Descarte', notes: `🗑️ Descartado — motivo: ${motivoFinal} · lead foi pro bolsão do gestor` },
+                  interacao: { type: 'Descarte', notes: `🗑️ Descartado — motivo: ${motivoFinal}` },
                 });
-                if (ok) fecha(`${primeiroNome} descartado (${motivoFinal}) — foi pro bolsão do gestor.`);
+                if (ok) fecha(`${primeiroNome} descartado (${motivoFinal}).`);
               },
             },
           ],

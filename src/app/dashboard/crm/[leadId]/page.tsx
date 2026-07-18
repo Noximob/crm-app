@@ -219,10 +219,17 @@ export default function LeadDetailPage() {
     // ------------------------------------------------------------------
     // Pergunta pendente do circuito: qual pop-up abre e se ele deve insistir
     // ------------------------------------------------------------------
+    // Relógio de 30s: a pergunta vence com a página aberta, sem precisar recarregar
+    const [tickCircuito, setTickCircuito] = useState(0);
+    useEffect(() => {
+        const id = setInterval(() => setTickCircuito(t => t + 1), 30_000);
+        return () => clearInterval(id);
+    }, []);
     const circuitoInfo = useMemo(() => {
         if (!lead) return null;
+        void tickCircuito;
         return perguntaDoLead(normalizeEtapa(lead.etapa), tasks, cadencias, Date.now());
-    }, [lead, tasks, cadencias, normalizeEtapa]);
+    }, [lead, tasks, cadencias, normalizeEtapa, tickCircuito]);
 
     // "Ao abrir o lead: entrou no lead que tem pergunta em aberto? Ela abre na hora, sobre a página."
     // Reativo: virou pendente (ex.: concluiu a última tarefa) → o pop-up abre sozinho.
@@ -247,8 +254,9 @@ export default function LeadDetailPage() {
         setFechouNoX(false);
         if (msg) showToast(msg, 'success');
         if (transferiuParaGestor.current) {
-            // O lead saiu do funil do corretor → volta pra lista
+            // O lead saiu do funil do corretor → foi pro bolsão do gestor
             transferiuParaGestor.current = false;
+            showToast('O lead foi pro bolsão do gestor.', 'info');
             setTimeout(() => router.push('/dashboard/crm'), 900);
         }
     };

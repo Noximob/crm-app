@@ -24,11 +24,11 @@ const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
     const router = useRouter();
     const { currentUser, userData, isEspelhoDemo } = useContext(AuthContext);
+    // Etapa não se escolhe: todo lead nasce na primeira etapa do funil e o circuito conduz dali
     const { stages } = usePipelineStages();
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
-    const [situation, setSituation] = useState(stages[0] ?? '');
     const [origem, setOrigem] = useState<OrigemLead>('Networking');
     const [origemOutros, setOrigemOutros] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -40,12 +40,11 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
             setName('');
             setPhone('');
             setEmail('');
-            setSituation(stages[0] ?? '');
             setOrigem('Networking');
             setOrigemOutros('');
             setError('');
         }
-    }, [isOpen, stages]);
+    }, [isOpen]);
 
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         // 1. Limpa tudo que não for dígito
@@ -168,7 +167,7 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
                 telefone: phone,
                 whatsapp: phone.replace(/\D/g, ''),
                 email,
-                etapa: situation,
+                etapa: stages[0] ?? '',
                 origem: origemFinal,
                 origemTipo: origem, // guarda a opção escolhida (ex: 'Outros') para relatórios
                 ...(origem === 'Outros' && { origemOutros: origemOutros.trim() }),

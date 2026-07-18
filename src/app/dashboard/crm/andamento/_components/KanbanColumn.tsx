@@ -1,6 +1,4 @@
 import React from 'react';
-import { useDroppable } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import LeadCard from './LeadCard';
 import { Lead } from '@/types';
 
@@ -11,24 +9,8 @@ interface KanbanColumnProps {
   corEtapa?: string;
 }
 
-export default function KanbanColumn({ id, title, leads, corEtapa }: KanbanColumnProps) {
+export default function KanbanColumn({ title, leads, corEtapa }: KanbanColumnProps) {
   const cor = corEtapa || '#FF1E56';
-  const { setNodeRef, isOver } = useDroppable({ 
-    id: `column-${id}`,
-    data: {
-      type: 'column',
-      columnId: id
-    }
-  });
-
-  // Droppable específico para colunas vazias
-  const { setNodeRef: setEmptyRef, isOver: isOverEmpty } = useDroppable({
-    id: `empty-${id}`,
-    data: {
-      type: 'empty-column',
-      columnId: id
-    }
-  });
 
   return (
     <div className="kanban-col flex flex-col flex-shrink-0 w-40 al-card relative overflow-hidden transition-all duration-200 min-h-[340px] mx-1">
@@ -47,34 +29,20 @@ export default function KanbanColumn({ id, title, leads, corEtapa }: KanbanColum
         </span>
       </div>
 
-      {/* Área de conteúdo da coluna */}
+      {/* Área de conteúdo da coluna — sem drag: o circuito é quem move os leads */}
       <div className="flex-grow min-h-[100px] p-3 space-y-3 flex flex-col items-center relative">
         {leads.length > 0 ? (
-          // Se há leads, usar a área normal droppable
-          <div 
-            ref={setNodeRef}
-            className={`w-full space-y-3 ${
-              isOver ? 'ring-2 ring-[#FF1E56]/50 rounded-lg' : ''
-            }`}
-          >
-            <SortableContext id={`sortable-${id}`} items={leads.map(lead => lead.id)} strategy={verticalListSortingStrategy}>
-              {leads.map(lead => (
-                <LeadCard key={lead.id} lead={lead} corEtapa={cor} />
-              ))}
-            </SortableContext>
+          <div className="w-full space-y-3">
+            {leads.map(lead => (
+              <LeadCard key={lead.id} lead={lead} corEtapa={cor} />
+            ))}
           </div>
         ) : (
-          // Se não há leads, usar área de drop vazia específica
-          <div 
-            ref={setEmptyRef}
-            className={`w-full h-20 border-2 border-dashed border-white/10 rounded-lg flex items-center justify-center bg-white/[0.02] transition-all duration-200 ${
-              isOverEmpty ? 'ring-2 ring-[#FF1E56]/50 border-[#FF1E56]/60' : ''
-            }`}
-          >
-            <span className="text-xs text-text-secondary">Solte aqui</span>
+          <div className="w-full h-20 border-2 border-dashed border-white/10 rounded-lg flex items-center justify-center bg-white/[0.02]">
+            <span className="text-xs text-text-secondary">Sem leads aqui</span>
           </div>
         )}
       </div>
     </div>
   );
-} 
+}

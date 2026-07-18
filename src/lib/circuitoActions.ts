@@ -35,6 +35,10 @@ export async function executarAcaoCircuito(params: {
 
     const base: TarefaPendente[] = params.pendentesAtuais ?? await fetchPendentesDaSubcolecao(lead.id);
     let pendentes = [...base];
+    // Só reescreve o espelho tarefasPendentes quando a ação REALMENTE mexe em
+    // tarefa — senão uma base obsoleta (snapshot atrasado) poderia ressuscitar
+    // ou derrubar tarefas de outras gravações.
+    const mexeuEmTarefa = !!(acao.concluirTaskId || acao.cancelarTaskId || acao.cancelarTodasPendentes || acao.novaTarefa);
 
     if (acao.concluirTaskId) {
       batch.update(doc(tasksCol, acao.concluirTaskId), { status: 'concluída' });
@@ -61,7 +65,7 @@ export async function executarAcaoCircuito(params: {
       pendentes = [...pendentes, { id: ref.id, description: acao.novaTarefa.description, type: acao.novaTarefa.type, dueDate: acao.novaTarefa.dueDate }];
     }
 
-    const leadUpdate: Record<string, any> = { tarefasPendentes: pendentes };
+    const leadUpdate: Record<string, any> = mexeuEmTarefa ? { tarefasPendentes: pendentes } : {};
     if (acao.novaEtapa) {
       if (acao.novaEtapa !== mapEtapaCircuito(lead.etapa)) {
         leadUpdate.etapa = acao.novaEtapa;
@@ -102,7 +106,7 @@ export async function executarAcaoCircuito(params: {
         // sem dono localizável, o lead fica com o corretor mesmo (etapa Descartado)
       }
     }
-    batch.update(leadRef, leadUpdate);
+    if (Object.keys(leadUpdate).length > 0) batch.update(leadRef, leadUpdate);
 
     batch.set(doc(interCol), {
       type: acao.interacao.type,

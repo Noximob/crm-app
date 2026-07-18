@@ -6,6 +6,7 @@
 import { Timestamp } from 'firebase/firestore';
 import { PIPELINE_STAGES } from '@/lib/constants';
 import { ESPELHO_DEMO_UID } from '@/lib/constants';
+import { getTaskStatusInfo, type TarefaPendente } from '@/lib/leadTasks';
 
 const DEMO_CORRETOR_UIDS = [
   ESPELHO_DEMO_UID, 'demo-u2', 'demo-u3', 'demo-u4', 'demo-u5', 'demo-u6',
@@ -238,31 +239,13 @@ function buildDemoLeads(): DemoLead[] {
 
 const DEMO_LEADS = buildDemoLeads();
 
-/** Retorna leads mock com taskStatus calculado (igual ao CRM). */
+/** Retorna leads mock com taskStatus calculado (mesma régua do CRM: hora exata). */
 export function getDemoLeads(): (DemoLead & { taskStatus: string })[] {
-  const getTaskStatusInfo = (tasks: DemoTask[]): string => {
-    if (!tasks || tasks.length === 0) return 'Sem tarefa';
-    const pendentes = tasks.filter(t => t.status === 'pendente');
-    if (pendentes.length === 0) return 'Sem tarefa';
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const hasOverdue = pendentes.some(task => {
-      const d = task.dueDate.toDate();
-      d.setHours(0, 0, 0, 0);
-      return d < now;
-    });
-    if (hasOverdue) return 'Tarefa em Atraso';
-    const hasToday = pendentes.some(task => {
-      const d = task.dueDate.toDate();
-      d.setHours(0, 0, 0, 0);
-      return d.getTime() === now.getTime();
-    });
-    if (hasToday) return 'Tarefa do Dia';
-    return 'Tarefa Futura';
-  };
   return DEMO_LEADS.map(lead => ({
     ...lead,
-    taskStatus: getTaskStatusInfo(lead.tasks || []),
+    taskStatus: getTaskStatusInfo(
+      (lead.tasks || []).filter(t => t.status === 'pendente') as unknown as TarefaPendente[]
+    ),
   }));
 }
 

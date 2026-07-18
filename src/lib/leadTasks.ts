@@ -39,33 +39,31 @@ export function toJsDate(d: any): Date | null {
 }
 
 /**
- * Status calculado no cliente a partir das tarefas pendentes (mesma semântica
- * da função original do CRM: comparação por dia local, 00:00).
- * NUNCA armazenar este valor — ele muda à meia-noite.
+ * Status calculado no cliente a partir das tarefas pendentes.
+ * Com o circuito, a régua é a HORA EXATA (mesma dos pop-ups): passou o
+ * horário → Atraso; ainda hoje → Tarefa do Dia; depois → Futura.
+ * NUNCA armazenar este valor — ele muda com o relógio.
  */
 export function getTaskStatusInfo(tasks: TarefaPendente[] | undefined | null): TaskStatus {
     if (!tasks || tasks.length === 0) return 'Sem tarefa';
 
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
+    const agoraMs = Date.now();
+    const fimDeHoje = new Date();
+    fimDeHoje.setHours(23, 59, 59, 999);
+    const fimDeHojeMs = fimDeHoje.getTime();
 
-    const hasOverdue = tasks.some(task => {
-        const dueDate = toJsDate(task.dueDate);
-        if (!dueDate) return false;
-        dueDate.setHours(0, 0, 0, 0);
-        return dueDate < now;
-    });
-    if (hasOverdue) return 'Tarefa em Atraso';
-
-    const hasTodayTask = tasks.some(task => {
-        const dueDate = toJsDate(task.dueDate);
-        if (!dueDate) return false;
-        dueDate.setHours(0, 0, 0, 0);
-        return dueDate.getTime() === now.getTime();
-    });
-    if (hasTodayTask) return 'Tarefa do Dia';
-
-    return 'Tarefa Futura';
+    let temHoje = false;
+    let temValida = false;
+    for (const task of tasks) {
+        const due = toJsDate(task.dueDate);
+        if (!due) continue;
+        temValida = true;
+        const dueMs = due.getTime();
+        if (dueMs < agoraMs) return 'Tarefa em Atraso'; // o horário passou
+        if (dueMs <= fimDeHojeMs) temHoje = true;        // ainda hoje, por vir
+    }
+    if (!temValida) return 'Sem tarefa';
+    return temHoje ? 'Tarefa do Dia' : 'Tarefa Futura';
 }
 
 /** Busca as tarefas pendentes na subcoleção `leads/{id}/tarefas` (fallback para leads legados). */

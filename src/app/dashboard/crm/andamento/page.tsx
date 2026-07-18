@@ -4,12 +4,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import CrmHeader from '../_components/CrmHeader';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, doc, serverTimestamp, where, writeBatch } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay } from '@dnd-kit/core';
 import KanbanColumn from './_components/KanbanColumn';
 import { Lead } from '@/types';
-import LeadCard from './_components/LeadCard';
 import LoadingState from '@/components/ui/LoadingState';
 import { ORIGEM_FILTER_OPTIONS, getOrigemBucket, getCampanhaDoLead } from '../_components/FilterModal';
 import { getTaskStatusInfo, TaskStatus } from '@/lib/leadTasks';
@@ -78,7 +76,6 @@ export default function AndamentoPage() {
     const { currentUser, isEspelhoDemo } = useAuth();
     const { stages, normalizeEtapa } = usePipelineStages();
     const [leads, setLeads] = useState<LeadsByStage>({});
-    const [activeLead, setActiveLead] = useState<Lead | null>(null);
     const [loading, setLoading] = useState(true);
 
     // --- Filtros do kanban ---
@@ -221,104 +218,6 @@ export default function AndamentoPage() {
         if (next !== 'Propaganda') setCampanhaFilter(null);
     };
 
-    // Arrastar DESLIGADO de propósito: quem move o lead de etapa é o circuito
-    // (as respostas do atendimento) — o quadro é só visualização.
-    const sensors = useSensors();
-
-    const handleDragStart = (event: DragStartEvent) => {
-        const { active } = event;
-        const stage = findContainer(active.id);
-        if (stage) {
-            const lead = leads[stage].find(l => l.id === active.id);
-            setActiveLead(lead || null);
-        }
-    };
-
-    const handleDragEnd = async (event: DragEndEvent) => {
-        setActiveLead(null);
-        const { active, over } = event;
-
-        if (!over) {
-            return;
-        }
-
-        // Extrair o ID da coluna de destino
-        let targetColumn: string | null = null;
-        const overIdStr = over.id.toString();
-
-        if (overIdStr.startsWith('column-')) {
-            // Drop direto na coluna
-            targetColumn = overIdStr.replace('column-', '');
-        } else if (overIdStr.startsWith('empty-')) {
-            // Drop na área vazia da coluna
-            targetColumn = overIdStr.replace('empty-', '');
-        } else {
-            // Drop em cima de um card - encontrar a coluna desse card
-            targetColumn = findContainer(overIdStr);
-        }
-
-        if (!targetColumn || !stages.includes(targetColumn)) {
-            return;
-        }
-
-        const sourceColumn = findContainer(active.id);
-
-        if (!sourceColumn || sourceColumn === targetColumn) {
-            return;
-        }
-
-        // Atualizar Firestore (não grava em modo demonstração)
-        if (currentUser && !isEspelhoDemo) {
-            const leadId = active.id.toString();
-            try {
-                // Batch: muda a etapa, reinicia o relógio do circuito e registra a interação
-                const batch = writeBatch(db);
-                batch.update(doc(db, 'leads', leadId), {
-                    etapa: targetColumn,
-                    'circuito.desde': serverTimestamp(),
-                });
-                batch.set(doc(collection(db, 'leads', leadId, 'interactions')), {
-                    type: 'Etapa',
-                    notes: `Movido para ${targetColumn} (kanban)`,
-                    timestamp: serverTimestamp(),
-                });
-                await batch.commit();
-            } catch (error) {
-                console.error("Failed to update lead stage: ", error);
-                return;
-            }
-        }
-
-        // Atualizar estado local imediatamente
-        setLeads((prev) => {
-            const newLeads = { ...prev };
-
-            // Remover da coluna de origem
-            const sourceLeads = newLeads[sourceColumn];
-            const sourceIndex = sourceLeads.findIndex(item => item.id === active.id);
-            if (sourceIndex !== -1) {
-                const [movedItem] = sourceLeads.splice(sourceIndex, 1);
-
-                // Adicionar à coluna de destino
-                if (!newLeads[targetColumn]) {
-                    newLeads[targetColumn] = [];
-                }
-                newLeads[targetColumn].push({ ...movedItem, etapa: targetColumn });
-            }
-
-            return newLeads;
-        });
-    };
-
-    const findContainer = (itemId: string | number) => {
-        for (const stage of stages) {
-            if (leads[stage] && leads[stage].some(lead => lead.id === itemId)) {
-                return stage;
-            }
-        }
-        return null;
-    };
-
     return (
         <div className="flex flex-col min-h-0 flex-1 min-w-0">
             <CrmHeader />
@@ -327,6 +226,7 @@ export default function AndamentoPage() {
                     <div className="absolute inset-x-0 top-0 gx-line" />
                     <div className="shrink-0 mb-3">
                         <SectionTitle>Andamento dos Leads</SectionTitle>
+                        <p className="mt-1 text-xs text-text-secondary">Os leads andam sozinhos conforme as respostas do atendimento.</p>
                     </div>
 
                     {/* Barra de filtros do kanban — compacta, padrão GX */}
@@ -443,28 +343,17 @@ export default function AndamentoPage() {
                     {loading ? (
                         <LoadingState label="Carregando quadro..." className="py-10" />
                     ) : (
-                        <DndContext
-                            key={stages.join('|')}
-                            sensors={sensors}
-                            collisionDetection={closestCenter}
-                            onDragStart={handleDragStart}
-                            onDragEnd={handleDragEnd}
-                        >
-                            <div className="flex gap-6 flex-1 min-h-0 overflow-x-auto overflow-y-auto w-full max-w-full pb-4">
-                                {stages.map((stage, index) => (
-                                    <KanbanColumn
-                                        key={stage}
-                                        id={stage}
-                                        title={stage}
-                                        leads={filteredLeads[stage] || []}
-                                        corEtapa={FUNNEL_COLORS[index % FUNNEL_COLORS.length]}
-                                    />
-                                ))}
-                            </div>
-                            <DragOverlay>
-                                {activeLead ? <LeadCard lead={activeLead} corEtapa={FUNNEL_COLORS[Math.max(stages.indexOf(normalizeEtapa(activeLead.etapa)), 0) % FUNNEL_COLORS.length]} /> : null}
-                            </DragOverlay>
-                        </DndContext>
+                        <div className="flex gap-6 flex-1 min-h-0 overflow-x-auto overflow-y-auto w-full max-w-full pb-4">
+                            {stages.map((stage, index) => (
+                                <KanbanColumn
+                                    key={stage}
+                                    id={stage}
+                                    title={stage}
+                                    leads={filteredLeads[stage] || []}
+                                    corEtapa={FUNNEL_COLORS[index % FUNNEL_COLORS.length]}
+                                />
+                            ))}
+                        </div>
                     )}
                 </div>
             </main>

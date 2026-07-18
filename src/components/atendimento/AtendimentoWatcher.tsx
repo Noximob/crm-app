@@ -93,7 +93,10 @@ export default function AtendimentoWatcher() {
     const unsub = onSnapshot(q, snap => {
       setLeads(snap.docs.map(d => ({ id: d.id, ...d.data() } as LeadDoc)));
       setSnapshotChegou(true);
-    }, () => {});
+    }, (erro) => {
+      // NUNCA engolir: se faltar índice/permissão, o vigia morreria mudo
+      console.error('AtendimentoWatcher: erro no listener de leads', erro);
+    });
     return () => unsub();
   }, [ativo, currentUser]);
 
@@ -139,6 +142,11 @@ export default function AtendimentoWatcher() {
     return lista.sort((a, b) => a.urgencia - b.urgencia);
   }, [leads, cadencias, tick, normalizeEtapa]);
 
+  // Ref sempre atual da fila — o encadeamento "um a um" roda em setTimeout
+  // e precisa enxergar a fila DEPOIS da ação, não a do render antigo.
+  const filaRef = useRef<Candidato[]>([]);
+  filaRef.current = fila;
+
   const abrir = useCallback((c: Candidato) => {
     const q0: Record<string, string[]> = {};
     Object.entries(c.lead.qualificacao || {}).forEach(([k, v]) => {
@@ -180,7 +188,9 @@ export default function AtendimentoWatcher() {
     const res = await executarAcaoCircuito({
       lead: leadAberto,
       acao,
-      pendentesAtuais: leadAberto.tarefasPendentes ?? null,
+      // null → o motor busca a SUBCOLEÇÃO (verdade); o espelho do snapshot
+      // pode estar um passo atrás entre duas ações encadeadas.
+      pendentesAtuais: null,
       imobiliariaId: userData?.imobiliariaId || '',
       currentUid: currentUser.uid,
     });
@@ -188,6 +198,9 @@ export default function AtendimentoWatcher() {
     if (!res.ok) {
       showToast('Erro ao registrar a ação. Tente de novo.', 'error');
       return false;
+    }
+    if (res.transferiuPara && res.transferiuPara !== currentUser.uid) {
+      showToast('O lead foi pro bolsão do gestor.', 'info');
     }
     return true;
   }, [leadAberto, currentUser, executando, userData?.imobiliariaId]);
@@ -291,8 +304,9 @@ export default function AtendimentoWatcher() {
             if (msg) showToast(msg, 'success');
             // Modo fila: emenda no próximo da ordem (um a um, até zerar)
             if (modoFila.current) {
+              const resolvidoId = leadAberto.id;
               setTimeout(() => {
-                const proximo = fila.find(c => c.lead.id !== leadAberto.id);
+                const proximo = filaRef.current.find(c => c.lead.id !== resolvidoId);
                 if (proximo) abrir(proximo);
                 else modoFila.current = false;
               }, 700);

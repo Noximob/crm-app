@@ -170,22 +170,3 @@ export async function salvarCadencias(imobiliariaId: string, cadencias: Cadencia
   );
 }
 
-// ---------------------------------------------------------------------------
-// Helpers de data para os agendadores do circuito
-// ---------------------------------------------------------------------------
-/** Soma horas a partir de agora e arredonda para a meia hora seguinte. */
-export function sugestaoDaqui(horas: number): Date {
-  const d = new Date(Date.now() + horas * 3600_000);
-  d.setSeconds(0, 0);
-  const m = d.getMinutes();
-  if (m !== 0 && m !== 30) d.setMinutes(m < 30 ? 30 : 60);
-  return d;
-}
-
-/** Amanhã em um horário fixo (ex.: 10:00). */
-export function sugestaoAmanha(hora: number, minuto = 0): Date {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  d.setHours(hora, minuto, 0, 0);
-  return d;
-}
