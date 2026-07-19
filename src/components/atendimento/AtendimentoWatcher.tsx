@@ -117,6 +117,8 @@ export default function AtendimentoWatcher() {
     return m ? m[1] : null;
   }, [pathname]);
   const emPaginaDeLead = !!leadDaPagina;
+  // Telas de trabalho focado: o aviso flutuante atrapalha — fica de fora.
+  const semAviso = emPaginaDeLead || (pathname || '').startsWith('/dashboard/ligacao-ativa');
 
   // Fila de atendimentos esperando (mais urgente primeiro)
   const fila = useMemo((): Candidato[] => {
@@ -271,9 +273,9 @@ export default function AtendimentoWatcher() {
 
   return (
     <>
-      {/* Aviso fixo — CHAMATIVO: tem atendimento atrasado esperando, em TODA tela
-          (inclusive no detalhes do lead; só o auto-abrir é que pausa lá) */}
-      {esperando > 0 && !abertoId && (
+      {/* Aviso fixo — CHAMATIVO: tem atendimento atrasado esperando.
+          Fica de fora das telas de trabalho focado (detalhes do lead e Ligação Ativa). */}
+      {esperando > 0 && !abertoId && !semAviso && (
         <button
           onClick={abrirFila}
           className="fixed z-[60] bottom-20 lg:bottom-6 right-4 lg:right-6 flex items-center gap-3 pl-4 pr-5 py-3.5 rounded-2xl bg-gradient-to-r from-[#FF1E56] to-[#A50D38] border border-[#FF7A97]/60 shadow-[0_0_36px_-4px_rgba(255,30,86,0.75),0_18px_44px_-14px_rgba(0,0,0,0.9)] hover:brightness-110 hover:scale-[1.03] active:scale-[0.97] transition-all animate-[pulse_1.6s_ease-in-out_infinite]"
