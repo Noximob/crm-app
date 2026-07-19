@@ -143,6 +143,8 @@ interface AtendimentoOverlayProps {
   registrarContato: (via: 'Ligação' | 'WhatsApp') => void;
   onFecharX: () => void;   // ✕ → pendência
   onConcluido: (msg?: string) => void; // ação final ok → fecha
+  /** Histórico de interações do lead — aparece abaixo da pergunta pra ajudar a pensar */
+  historico?: { id: string; type: string; notes: string; timestamp: any }[];
   // pop-up direito (sempre aberto)
   qualGroups: QualGroup[];
   qualifications: Record<string, string[]>;
@@ -233,11 +235,22 @@ function Chips({ itens, sel, onSel }: { itens: readonly string[]; sel: string[];
 export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
   const {
     aberto, estadoInicial, nome, telefone, origem, tasks, cadencias, executando, isDemo,
-    executar, registrarContato, onFecharX, onConcluido,
+    executar, registrarContato, onFecharX, onConcluido, historico,
     qualGroups, qualifications, onToggleQual, saveQual, anotacoes, onChangeAnotacoes, saveNotas,
   } = props;
 
   const [estado, setEstado] = useState<EstadoFluxo>(estadoInicial);
+
+  // Pilha de navegação: todo passo tem "‹ voltar" — MENOS depois de algo já
+  // gravado no banco (aí a pilha é zerada; não dá pra desfazer voltando).
+  const pilha = useRef<EstadoFluxo[]>([]);
+  const irPara = (novo: EstadoFluxo) => { pilha.current = [...pilha.current, estado]; setEstado(novo); };
+  const irLimpo = (novo: EstadoFluxo) => { pilha.current = []; setEstado(novo); };
+  const voltarPasso = () => {
+    const copia = [...pilha.current];
+    const anterior = copia.pop();
+    if (anterior) { pilha.current = copia; setEstado(anterior); }
+  };
   // seleções dos chips / inputs (resetam a cada troca de estado)
   const [acaoSel, setAcaoSel] = useState('');
   const [quandoSel, setQuandoSel] = useState('');
@@ -252,7 +265,10 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
   // Reseta pro estado inicial só quando o overlay ABRE (não a cada render/snapshot)
   const prevAberto = useRef(false);
   useEffect(() => {
-    if (aberto && !prevAberto.current) setEstado(estadoInicial);
+    if (aberto && !prevAberto.current) {
+      pilha.current = [];
+      setEstado(estadoInicial);
+    }
     prevAberto.current = aberto;
   }, [aberto, estadoInicial]);
 
@@ -335,8 +351,8 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             </>
           ),
           btns: [
-            { t: `Já falei com ${primeiroNome}`, c: 'primary', f: () => setEstado({ t: 'proximaAcao' }) },
-            { t: 'Ainda não', c: 'ghost', f: () => setEstado({ t: 'ligar' }) },
+            { t: `Já falei com ${primeiroNome}`, c: 'primary', f: () => irPara({ t: 'proximaAcao' }) },
+            { t: 'Ainda não', c: 'ghost', f: () => irPara({ t: 'ligar' }) },
           ],
         };
 
@@ -352,8 +368,8 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             </>
           ),
           btns: [
-            { t: '📞 Liguei', c: 'gold', f: () => { registrarContato('Ligação'); setEstado({ t: 'atendeu' }); } },
-            { t: '💬 Chamei no WhatsApp', c: 'gold', f: () => { registrarContato('WhatsApp'); setEstado({ t: 'atendeu' }); } },
+            { t: '📞 Liguei', c: 'gold', f: () => { registrarContato('Ligação'); irPara({ t: 'atendeu' }); } },
+            { t: '💬 Chamei no WhatsApp', c: 'gold', f: () => { registrarContato('WhatsApp'); irPara({ t: 'atendeu' }); } },
           ],
         };
 
@@ -362,8 +378,8 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           bar: 'Primeiro contato',
           body: <>E aí, {b(primeiroNome)} atendeu?</>,
           btns: [
-            { t: 'Atendeu ✓', c: 'primary', f: () => setEstado({ t: 'proximaAcao' }) },
-            { t: 'Não atendeu', c: 'ghost', f: () => setEstado({ t: 'followQ' }) },
+            { t: 'Atendeu ✓', c: 'primary', f: () => irPara({ t: 'proximaAcao' }) },
+            { t: 'Não atendeu', c: 'ghost', f: () => irPara({ t: 'followQ' }) },
           ],
         };
 
@@ -372,8 +388,8 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           bar: 'Sem resposta',
           body: <>Quer programar um follow-up pra tentar de novo?</>,
           btns: [
-            { t: 'Sim, agendar', c: 'primary', f: () => setEstado({ t: 'quando', tentativa: true }) },
-            { t: 'Não, desistir', c: 'danger', f: () => setEstado({ t: 'descarte', volta: { t: 'followQ' } }) },
+            { t: 'Sim, agendar', c: 'primary', f: () => irPara({ t: 'quando', tentativa: true }) },
+            { t: 'Não, desistir', c: 'danger', f: () => irPara({ t: 'descarte', volta: { t: 'followQ' } }) },
           ],
         };
 
@@ -395,7 +411,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
               circuitoTentativas: 'zero',
               interacao: { type: 'Etapa', notes: `🤝 ${primeiroNome} pronto pra negociar — direto pra proposta` },
             });
-            if (ok) setEstado({ t: 'negPrazo' });
+            if (ok) irLimpo({ t: 'negPrazo' });
             return;
           }
           const mapa: Record<string, { tipo: string; etapa: string; desc: string; inter: string }> = {
@@ -479,8 +495,8 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
               </>
             ),
             btns: [
-              { t: 'Achei! Falar com o cliente ✓', c: 'primary', f: () => setEstado({ t: 'proximaAcao', concluirTaskId: estado.taskId }) },
-              { t: '🕐 Remarcar', c: 'ghost', f: () => setEstado({ t: 'quando', cancelarTaskId: estado.taskId }) },
+              { t: 'Achei! Falar com o cliente ✓', c: 'primary', f: () => irPara({ t: 'proximaAcao', concluirTaskId: estado.taskId }) },
+              { t: '🕐 Remarcar', c: 'ghost', f: () => irPara({ t: 'quando', cancelarTaskId: estado.taskId }) },
             ],
           };
         }
@@ -493,9 +509,9 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             </>
           ),
           btns: [
-            { t: `✅ Falei com ${primeiroNome}`, c: 'primary', f: () => setEstado({ t: 'proximaAcao', concluirTaskId: estado.taskId }) },
-            { t: '📵 Não atendeu', c: 'ghost', f: () => setEstado({ t: 'fuRetry', taskId: estado.taskId }) },
-            { t: '🕐 Remarcar', c: 'ghost', f: () => setEstado({ t: 'quando', cancelarTaskId: estado.taskId }) },
+            { t: `✅ Falei com ${primeiroNome}`, c: 'primary', f: () => irPara({ t: 'proximaAcao', concluirTaskId: estado.taskId }) },
+            { t: '📵 Não atendeu', c: 'ghost', f: () => irPara({ t: 'fuRetry', taskId: estado.taskId }) },
+            { t: '🕐 Remarcar', c: 'ghost', f: () => irPara({ t: 'quando', cancelarTaskId: estado.taskId }) },
           ],
         };
       }
@@ -505,8 +521,8 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           bar: 'Follow-up',
           body: <>Tentar de novo? Em imóveis, a venda média sai {b('depois do 5º contato')} — persistência fecha negócio.</>,
           btns: [
-            { t: 'Sim, novo follow-up', c: 'primary', f: () => setEstado({ t: 'quando', concluirTaskId: estado.taskId, tentativa: true }) },
-            { t: `Desistir de ${primeiroNome}`, c: 'danger', f: () => setEstado({ t: 'descarte', volta: { t: 'fuRetry', taskId: estado.taskId } }) },
+            { t: 'Sim, novo follow-up', c: 'primary', f: () => irPara({ t: 'quando', concluirTaskId: estado.taskId, tentativa: true }) },
+            { t: `Desistir de ${primeiroNome}`, c: 'danger', f: () => irPara({ t: 'descarte', volta: { t: 'fuRetry', taskId: estado.taskId } }) },
           ],
         };
 
@@ -526,10 +542,11 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                   concluirTaskId: estado.taskId,
                   interacao: { type: 'Meet', notes: '✅ Meet realizado' },
                 });
-                if (ok) setEstado({ t: 'meetGostou' });
+                if (ok) irLimpo({ t: 'meetGostou' });
               },
             },
-            { t: 'Não rolou', c: 'ghost', f: () => setEstado({ t: 'meetRemarca', cancelarTaskId: estado.taskId }) },
+            { t: 'Não rolou', c: 'ghost', f: () => irPara({ t: 'meetRemarca', cancelarTaskId: estado.taskId }) },
+            ...(futuro ? [{ t: '🕐 Remarcar', c: 'ghost' as const, f: () => irPara({ t: 'agendarData', tipo: 'Meet' as const, cancelarTaskId: estado.taskId, remarcando: true }) }] : []),
           ],
         };
       }
@@ -539,8 +556,8 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           bar: 'Meet · resultado',
           body: <>{b(primeiroNome)} gostou do {b('produto')} que você apresentou?</>,
           btns: [
-            { t: 'Gostou 😀', c: 'primary', f: () => setEstado({ t: 'meetNext' }) },
-            { t: 'Não gostou', c: 'ghost', f: () => setEstado({ t: 'requalifica' }) },
+            { t: 'Gostou 😀', c: 'primary', f: () => irPara({ t: 'meetNext' }) },
+            { t: 'Não gostou', c: 'ghost', f: () => irPara({ t: 'requalifica' }) },
           ],
         };
 
@@ -549,7 +566,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           bar: 'Próximo passo',
           body: <>Boa! Qual o próximo passo com {b(primeiroNome)}?</>,
           btns: [
-            { t: '📅 Marcar visita', c: 'primary', f: () => setEstado({ t: 'agendarData', tipo: 'Visita' }) },
+            { t: '📅 Marcar visita', c: 'primary', f: () => irPara({ t: 'agendarData', tipo: 'Visita' }) },
             {
               t: 'Direto pra proposta', c: 'gold', f: async () => {
                 const ok = await executar({
@@ -557,10 +574,10 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                   circuitoTentativas: 'zero',
                   interacao: { type: 'Etapa', notes: '🤝 Meet aprovado — direto pra proposta' },
                 });
-                if (ok) setEstado({ t: 'negPrazo' });
+                if (ok) irLimpo({ t: 'negPrazo' });
               },
             },
-            { t: 'Outra ação (follow)', c: 'ghost', f: () => setEstado({ t: 'quando' }) },
+            { t: 'Outra ação (follow)', c: 'ghost', f: () => irPara({ t: 'quando' }) },
           ],
         };
 
@@ -569,8 +586,8 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           bar: 'Meet desmarcado',
           body: <>Remarca com {b(primeiroNome)} {b('agora')} — cliente que remarca ainda tá quente.</>,
           btns: [
-            { t: '📅 Remarcar o meet', c: 'primary', f: () => setEstado({ t: 'agendarData', tipo: 'Meet', cancelarTaskId: estado.cancelarTaskId, remarcando: true }) },
-            { t: 'Não consegui falar', c: 'ghost', f: () => setEstado({ t: 'quando', cancelarTaskId: estado.cancelarTaskId, tentativa: true }) },
+            { t: '📅 Remarcar o meet', c: 'primary', f: () => irPara({ t: 'agendarData', tipo: 'Meet', cancelarTaskId: estado.cancelarTaskId, remarcando: true }) },
+            { t: 'Não consegui falar', c: 'ghost', f: () => irPara({ t: 'quando', cancelarTaskId: estado.cancelarTaskId, tentativa: true }) },
           ],
         };
 
@@ -590,10 +607,11 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                   concluirTaskId: estado.taskId,
                   interacao: { type: 'Visita', notes: '✅ Visita realizada' },
                 });
-                if (ok) setEstado({ t: 'visitaGostou' });
+                if (ok) irLimpo({ t: 'visitaGostou' });
               },
             },
-            { t: 'Não rolou', c: 'ghost', f: () => setEstado({ t: 'visitaRemarca', cancelarTaskId: estado.taskId }) },
+            { t: 'Não rolou', c: 'ghost', f: () => irPara({ t: 'visitaRemarca', cancelarTaskId: estado.taskId }) },
+            ...(futuro ? [{ t: '🕐 Remarcar', c: 'ghost' as const, f: () => irPara({ t: 'agendarData', tipo: 'Visita' as const, cancelarTaskId: estado.taskId, remarcando: true }) }] : []),
           ],
         };
       }
@@ -610,10 +628,10 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                   circuitoTentativas: 'zero',
                   interacao: { type: 'Etapa', notes: '🏠 Visita aprovada — hora da proposta' },
                 });
-                if (ok) setEstado({ t: 'negPrazo' });
+                if (ok) irLimpo({ t: 'negPrazo' });
               },
             },
-            { t: 'Não gostou', c: 'ghost', f: () => setEstado({ t: 'requalifica' }) },
+            { t: 'Não gostou', c: 'ghost', f: () => irPara({ t: 'requalifica' }) },
           ],
         };
 
@@ -622,8 +640,8 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           bar: 'Visita desmarcada',
           body: <>Remarca com {b(primeiroNome)} {b('agora')} — cliente que remarca ainda tá quente.</>,
           btns: [
-            { t: '📅 Remarcar a visita', c: 'primary', f: () => setEstado({ t: 'agendarData', tipo: 'Visita', cancelarTaskId: estado.cancelarTaskId, remarcando: true }) },
-            { t: 'Não consegui falar', c: 'ghost', f: () => setEstado({ t: 'quando', cancelarTaskId: estado.cancelarTaskId, tentativa: true }) },
+            { t: '📅 Remarcar a visita', c: 'primary', f: () => irPara({ t: 'agendarData', tipo: 'Visita', cancelarTaskId: estado.cancelarTaskId, remarcando: true }) },
+            { t: 'Não consegui falar', c: 'ghost', f: () => irPara({ t: 'quando', cancelarTaskId: estado.cancelarTaskId, tentativa: true }) },
           ],
         };
 
@@ -673,7 +691,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                 novaEtapa: ETAPA_FOLLOWUP,
                 interacao: { type: 'Etapa', notes: `🎯 Requalificação${requalSel.length ? `: ${requalSel.join(', ')}` : ' registrada'}` },
               });
-              if (ok) setEstado({ t: 'quando' });
+              if (ok) irLimpo({ t: 'quando' });
             },
           }],
         };
@@ -712,8 +730,8 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           bar: 'Negociação · prazo venceu',
           body: <>A proposta pra {b(primeiroNome)} tinha resposta prevista pra {due ? quandoLabel(due) : 'ontem'}. Fechou?</>,
           btns: [
-            { t: 'FECHOU! 🎉', c: 'win', f: () => setEstado({ t: 'venda' }) },
-            { t: 'Ainda negociando', c: 'ghost', f: () => setEstado({ t: 'negPrazo', cancelarTaskId: estado.taskId }) },
+            { t: 'FECHOU! 🎉', c: 'win', f: () => irPara({ t: 'venda' }) },
+            { t: 'Ainda negociando', c: 'ghost', f: () => irPara({ t: 'negPrazo', cancelarTaskId: estado.taskId }) },
             {
               t: 'Esfriou', c: 'ghost', f: async () => {
                 const ok = await executar({
@@ -721,10 +739,10 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                   concluirTaskId: estado.taskId,
                   interacao: { type: 'Etapa', notes: '🌡️ Negociação esfriou — voltando a nutrir' },
                 });
-                if (ok) setEstado({ t: 'quando' });
+                if (ok) irLimpo({ t: 'quando' });
               },
             },
-            { t: 'Morreu', c: 'danger', f: () => setEstado({ t: 'descarte', volta: { t: 'negQ', taskId: estado.taskId } }) },
+            { t: 'Morreu', c: 'danger', f: () => irPara({ t: 'descarte', volta: { t: 'negQ', taskId: estado.taskId } }) },
           ],
         };
       }
@@ -783,7 +801,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             </>
           ),
           btns: [
-            { t: '← Voltar (dar mais uma chance)', c: 'ghost', f: () => setEstado(volta) },
+            { t: '← Voltar (dar mais uma chance)', c: 'ghost', f: () => irPara(volta) },
             {
               t: executando ? 'Descartando…' : 'Confirmar descarte', c: 'danger', f: async () => {
                 if (!motivoFinal) { setAviso('⚠️ O sistema não deixa descartar sem motivo.'); return; }
@@ -811,29 +829,70 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
       <div className="min-h-full flex items-start justify-center p-3 sm:p-6">
         <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start pt-6 lg:pt-14">
 
-          {/* ============ POP-UP ESQUERDO — o fluxo ============ */}
-          <div className="bg-[#201c2e] border border-white/15 rounded-xl overflow-hidden shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] max-w-[520px] w-full mx-auto lg:mx-0">
-            <div className="flex items-center gap-2 px-3.5 py-2 bg-white/[0.03] border-b border-white/10 text-[11px] font-extrabold uppercase tracking-[0.12em] text-white/40">
-              <span className={`h-2 w-2 rounded-full ${d.red ? 'bg-[#FF6B6B]' : 'bg-[#E8C547]'}`} />
-              {d.bar}
-              {!d.noX && (
-                <button
-                  onClick={onFecharX}
-                  className="ml-auto px-2 py-0.5 rounded-md text-[13px] font-normal text-white/40 hover:text-[#FF6B6B] hover:bg-[#FF6B6B]/15 transition-colors"
-                  title="Fechar sem responder (vira pendência)"
-                >
-                  ✕
-                </button>
-              )}
+          {/* ============ COLUNA ESQUERDA — a AÇÃO (destaque dourado) + histórico ============ */}
+          <div className="max-w-[520px] w-full mx-auto lg:mx-0 space-y-3">
+            <div className={`bg-[#201c2e] rounded-xl overflow-hidden border ${
+              d.red
+                ? 'border-[#FF6B6B]/50 shadow-[0_0_44px_-10px_rgba(255,107,107,0.35),0_24px_80px_-24px_rgba(0,0,0,0.9)]'
+                : 'border-[#E8C547]/55 shadow-[0_0_44px_-10px_rgba(232,197,71,0.4),0_24px_80px_-24px_rgba(0,0,0,0.9)]'
+            }`}>
+              <div className={`h-[2px] w-full bg-gradient-to-r ${d.red ? 'from-[#FF6B6B] via-[#FF6B6B]/40' : 'from-[#E8C547] via-[#E8C547]/40'} to-transparent`} />
+              <div className="flex items-center gap-2 px-3.5 py-2 bg-white/[0.03] border-b border-white/10 text-[11px] font-extrabold uppercase tracking-[0.12em] text-white/50">
+                <span className={`h-2 w-2 rounded-full ${d.red ? 'bg-[#FF6B6B]' : 'bg-[#E8C547] shadow-[0_0_8px_rgba(232,197,71,0.8)]'}`} />
+                {d.bar}
+                <span className="ml-auto flex items-center gap-1">
+                  {pilha.current.length > 0 && (
+                    <button
+                      onClick={voltarPasso}
+                      className="px-2 py-0.5 rounded-md text-[11px] font-bold text-white/50 hover:text-white hover:bg-white/10 transition-colors normal-case tracking-normal"
+                      title="Voltar um passo"
+                    >
+                      ‹ voltar
+                    </button>
+                  )}
+                  {!d.noX && (
+                    <button
+                      onClick={onFecharX}
+                      className="px-2 py-0.5 rounded-md text-[13px] font-normal text-white/40 hover:text-[#FF6B6B] hover:bg-[#FF6B6B]/15 transition-colors"
+                      title="Fechar sem responder (vira pendência)"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </span>
+              </div>
+              <div className="px-4 pt-3.5 pb-1.5 text-[14.5px] text-white leading-relaxed [&_small]:block [&_small]:text-white/55 [&_small]:text-xs [&_small]:mt-1.5 [&_small]:leading-snug">
+                {d.body}
+              </div>
+              <div className="flex flex-wrap gap-2 px-4 pb-4 pt-3">
+                {d.btns.map((btn, i) => (
+                  <Pbtn key={`${estado.t}-${i}`} c={btn.c} onClick={btn.f} disabled={executando}>{btn.t}</Pbtn>
+                ))}
+              </div>
             </div>
-            <div className="px-4 pt-3.5 pb-1.5 text-[14.5px] text-white leading-relaxed [&_small]:block [&_small]:text-white/55 [&_small]:text-xs [&_small]:mt-1.5 [&_small]:leading-snug">
-              {d.body}
-            </div>
-            <div className="flex flex-wrap gap-2 px-4 pb-4 pt-3">
-              {d.btns.map((btn, i) => (
-                <Pbtn key={`${estado.t}-${i}`} c={btn.c} onClick={btn.f} disabled={executando}>{btn.t}</Pbtn>
-              ))}
-            </div>
+
+            {/* Histórico — o que já rolou, pra pensar antes de responder */}
+            {historico && historico.length > 0 && (
+              <div className="bg-[#201c2e]/95 border border-white/10 rounded-xl overflow-hidden shadow-[0_14px_40px_-18px_rgba(0,0,0,0.8)]">
+                <div className="flex items-center gap-2 px-3.5 py-2 bg-white/[0.03] border-b border-white/10 text-[10px] font-extrabold uppercase tracking-[0.14em] text-white/40">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#7DD3FC]/70" />
+                  O que já rolou com {primeiroNome}
+                </div>
+                <ul className="max-h-44 overflow-y-auto px-3.5 py-2.5 space-y-1.5">
+                  {historico.slice(0, 30).map(h => {
+                    const dh = toJsDate(h.timestamp);
+                    return (
+                      <li key={h.id} className="flex items-start gap-2 text-[12px] leading-snug">
+                        <span className="shrink-0 text-white/30 tabular-nums text-[11px] pt-px">
+                          {dh ? `${p2(dh.getDate())}/${p2(dh.getMonth() + 1)} ${p2(dh.getHours())}:${p2(dh.getMinutes())}` : 'agora'}
+                        </span>
+                        <span className="text-white/70 min-w-0">{h.notes}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
           </div>
 
           {/* ============ POP-UP DIREITO — anotações & qualificação (sempre abertos) ============ */}

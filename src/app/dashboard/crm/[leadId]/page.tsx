@@ -16,7 +16,7 @@ import AtendimentoOverlay, { perguntaDoLead, fmtDataHora, type AcaoCircuito } fr
 import { executarAcaoCircuito } from '@/lib/circuitoActions';
 import { QUALIFICATION_QUESTIONS } from '@/lib/qualificacao';
 import { getDemoLeadById, getDemoInteractions } from '@/lib/espelho/demoData';
-import { CADENCIAS_PADRAO, carregarCadencias, type CadenciasFunil } from '@/lib/circuito';
+import { CADENCIAS_PADRAO, carregarCadencias, ETAPAS_TERMINAIS, type CadenciasFunil } from '@/lib/circuito';
 import { showToast } from '@/components/ui/toast';
 import LoadingState from '@/components/ui/LoadingState';
 
@@ -77,7 +77,7 @@ const p2 = (n: number) => String(n).padStart(2, '0');
 
 export default function LeadDetailPage() {
     const { currentUser, userData, isEspelhoDemo } = useAuth();
-    const { normalizeEtapa } = usePipelineStages();
+    const { stages, normalizeEtapa } = usePipelineStages();
     const params = useParams();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -292,6 +292,15 @@ export default function LeadDetailPage() {
         }
         return true;
     }, [currentUser, lead, isEspelhoDemo, readOnly, executandoCircuito, tasks, tasksLoaded, userData?.imobiliariaId]);
+
+    // Ajuste manual de etapa — o circuito conduz sozinho, mas dá pra mover na mão se precisar
+    const handleStageChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const novaEtapa = e.target.value;
+        await executarCircuito({
+            novaEtapa,
+            interacao: { type: 'Etapa', notes: `↷ Etapa alterada manualmente para ${novaEtapa}` },
+        });
+    };
 
     // Registro avulso de tentativa de contato (botões "Liguei"/"Chamei no WhatsApp")
     const registrarContato = useCallback((via: 'Ligação' | 'WhatsApp') => {
@@ -515,13 +524,20 @@ export default function LeadDetailPage() {
                                 <span className={`h-2 w-2 rounded-full shrink-0 ${getTaskStatusColor(taskStatus)}`} title={taskStatus}></span>
                             </div>
                             <div className="flex items-center gap-2 flex-wrap">
-                                {/* Etapa é do SISTEMA: o circuito move o lead pelas respostas — ninguém arrasta na mão */}
-                                <span
-                                  className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#FF1E56]/10 border border-[#FF1E56]/35 text-[#FF7A97]"
-                                  title="A etapa muda sozinha conforme as respostas do atendimento"
-                                >
-                                  {etapaAtual}
-                                </span>
+                                {readOnly ? (
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#FF1E56]/10 border border-[#FF1E56]/35 text-[#FF7A97]">{etapaAtual}</span>
+                                ) : (
+                                  <select
+                                    id="lead-situation"
+                                    value={etapaAtual}
+                                    onChange={handleStageChange}
+                                    disabled={executandoCircuito}
+                                    className="px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider bg-[#FF1E56]/10 border border-[#FF1E56]/35 rounded-full text-[#FF7A97] focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 [&>option]:bg-[#12101a] [&>option]:text-white disabled:opacity-60"
+                                    title="O circuito move sozinho pelas respostas — aqui é o ajuste manual"
+                                  >
+                                    {[...stages, ...ETAPAS_TERMINAIS].map(s => (<option key={s} value={s}>{s}</option>))}
+                                  </select>
+                                )}
                                 <div className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-1.5">
                                     <PhoneIcon className="h-3.5 w-3.5 text-text-secondary shrink-0" />
                                     <p className="text-xs text-white tabular-nums">{lead.telefone}</p>
@@ -770,6 +786,7 @@ export default function LeadDetailPage() {
                     registrarContato={registrarContato}
                     onFecharX={handleFecharX}
                     onConcluido={handleConcluido}
+                    historico={interactions}
                     qualGroups={QUALIFICATION_QUESTIONS}
                     qualifications={qualifications}
                     onToggleQual={handleQualificationChange}

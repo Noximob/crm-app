@@ -18,7 +18,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { collection, doc, onSnapshot, query, updateDoc, where, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, getDocs, limit, onSnapshot, orderBy, query, updateDoc, where, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
@@ -147,6 +147,8 @@ export default function AtendimentoWatcher() {
   const filaRef = useRef<Candidato[]>([]);
   filaRef.current = fila;
 
+  const [historico, setHistorico] = useState<{ id: string; type: string; notes: string; timestamp: any }[]>([]);
+
   const abrir = useCallback((c: Candidato) => {
     const q0: Record<string, string[]> = {};
     Object.entries(c.lead.qualificacao || {}).forEach(([k, v]) => {
@@ -157,6 +159,11 @@ export default function AtendimentoWatcher() {
     setEstadoInicial(c.estado);
     setAbertoId(c.lead.id);
     vistos.current.add(c.chave);
+    // Histórico do lead (pra pensar antes de responder) — carrega em paralelo
+    setHistorico([]);
+    getDocs(query(collection(db, 'leads', c.lead.id, 'interactions'), orderBy('timestamp', 'desc'), limit(30)))
+      .then(snap => setHistorico(snap.docs.map(d => ({ id: d.id, ...d.data() } as any))))
+      .catch(() => {});
   }, []);
 
   // "No horário": pop-up automático SÓ quando a pergunta vence com o app aberto.
@@ -262,21 +269,25 @@ export default function AtendimentoWatcher() {
 
   return (
     <>
-      {/* Aviso fixo — sempre que houver atendimento esperando, em toda tela */}
+      {/* Aviso fixo — CHAMATIVO: tem atendimento atrasado esperando, em toda tela */}
       {esperando > 0 && !abertoId && !emPaginaDeLead && (
         <button
           onClick={abrirFila}
-          className="fixed z-[60] bottom-20 lg:bottom-6 right-4 lg:right-6 flex items-center gap-2.5 pl-3.5 pr-4 py-2.5 rounded-2xl border border-[#FF1E56]/40 bg-[#201c2e]/95 backdrop-blur-sm shadow-[0_14px_40px_-14px_rgba(0,0,0,0.85)] hover:border-[#FF1E56]/70 hover:bg-[#FF1E56]/[0.08] active:scale-[0.98] transition-all"
+          className="fixed z-[60] bottom-20 lg:bottom-6 right-4 lg:right-6 flex items-center gap-3 pl-4 pr-5 py-3.5 rounded-2xl bg-gradient-to-r from-[#FF1E56] to-[#A50D38] border border-[#FF7A97]/60 shadow-[0_0_36px_-4px_rgba(255,30,86,0.75),0_18px_44px_-14px_rgba(0,0,0,0.9)] hover:brightness-110 hover:scale-[1.03] active:scale-[0.97] transition-all animate-[pulse_1.6s_ease-in-out_infinite]"
           title="Abre os atendimentos um a um, na ordem de urgência"
         >
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF1E56] opacity-60" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#FF1E56]" />
+          <span className="relative grid place-items-center h-8 w-8 rounded-xl bg-white/15 border border-white/25 shrink-0">
+            <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full bg-[#E8C547] text-[#171203] text-[11px] font-black grid place-items-center shadow-[0_0_10px_rgba(232,197,71,0.8)]">
+              {esperando}
+            </span>
+            <span className="text-[16px]">🔔</span>
           </span>
-          <span className="text-[12.5px] font-bold text-white">
-            {esperando} atendimento{esperando > 1 ? 's' : ''} esperando
+          <span className="text-left leading-tight">
+            <span className="block text-[13px] font-extrabold text-white uppercase tracking-wide">
+              {esperando === 1 ? 'Atendimento esperando!' : `${esperando} atendimentos esperando!`}
+            </span>
+            <span className="block text-[11.5px] font-bold text-[#FFD3DE]">Resolver agora →</span>
           </span>
-          <span className="text-[12px] font-extrabold text-[#FF7A97]">Resolver →</span>
         </button>
       )}
 
@@ -293,6 +304,7 @@ export default function AtendimentoWatcher() {
           isDemo={false}
           executar={executar}
           registrarContato={registrarContato}
+          historico={historico}
           onFecharX={() => {
             modoFila.current = false;
             setAbertoId(null);
