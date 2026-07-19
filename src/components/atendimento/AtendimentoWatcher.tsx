@@ -112,10 +112,11 @@ export default function AtendimentoWatcher() {
   }, []);
 
   // Página de detalhe do lead? Lá a própria página conduz — o vigia se recolhe.
-  const emPaginaDeLead = useMemo(
-    () => /^\/dashboard\/crm\/(?!andamento)[^/]+\/?$/.test(pathname || ''),
-    [pathname]
-  );
+  const leadDaPagina = useMemo(() => {
+    const m = (pathname || '').match(/^\/dashboard\/crm\/(?!andamento)([^/]+)\/?$/);
+    return m ? m[1] : null;
+  }, [pathname]);
+  const emPaginaDeLead = !!leadDaPagina;
 
   // Fila de atendimentos esperando (mais urgente primeiro)
   const fila = useMemo((): Candidato[] => {
@@ -259,7 +260,8 @@ export default function AtendimentoWatcher() {
 
   const abrirFila = () => {
     modoFila.current = true;
-    const primeiro = fila.find(c => c.lead.id !== abertoId);
+    // Nunca abre o lead da própria página (lá quem conduz é a página)
+    const primeiro = fila.find(c => c.lead.id !== abertoId && c.lead.id !== leadDaPagina);
     if (primeiro) abrir(primeiro);
   };
 
@@ -269,8 +271,9 @@ export default function AtendimentoWatcher() {
 
   return (
     <>
-      {/* Aviso fixo — CHAMATIVO: tem atendimento atrasado esperando, em toda tela */}
-      {esperando > 0 && !abertoId && !emPaginaDeLead && (
+      {/* Aviso fixo — CHAMATIVO: tem atendimento atrasado esperando, em TODA tela
+          (inclusive no detalhes do lead; só o auto-abrir é que pausa lá) */}
+      {esperando > 0 && !abertoId && (
         <button
           onClick={abrirFila}
           className="fixed z-[60] bottom-20 lg:bottom-6 right-4 lg:right-6 flex items-center gap-3 pl-4 pr-5 py-3.5 rounded-2xl bg-gradient-to-r from-[#FF1E56] to-[#A50D38] border border-[#FF7A97]/60 shadow-[0_0_36px_-4px_rgba(255,30,86,0.75),0_18px_44px_-14px_rgba(0,0,0,0.9)] hover:brightness-110 hover:scale-[1.03] active:scale-[0.97] transition-all animate-[pulse_1.6s_ease-in-out_infinite]"
@@ -318,7 +321,7 @@ export default function AtendimentoWatcher() {
             if (modoFila.current) {
               const resolvidoId = leadAberto.id;
               setTimeout(() => {
-                const proximo = filaRef.current.find(c => c.lead.id !== resolvidoId);
+                const proximo = filaRef.current.find(c => c.lead.id !== resolvidoId && c.lead.id !== leadDaPagina);
                 if (proximo) abrir(proximo);
                 else modoFila.current = false;
               }, 700);

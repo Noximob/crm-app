@@ -349,23 +349,23 @@ export default function LigacaoAtivaPage() {
   const msgPrincipal = node ? interpolar(textoDe(node, product), sessao, prodLabel) : '';
 
   return (
-    <div className="min-h-full p-4 sm:p-6 lg:p-8 space-y-4">
-      {/* ===== Cabeçalho: a lista (de onde veio) ===== */}
-      <div className="al-card relative overflow-hidden p-4 sm:p-5">
+    <div className="flex-1 min-h-0 flex flex-col gap-2.5 p-1 sm:p-2">
+      {/* ===== Cabeçalho compacto: tudo numa faixa só, pra sobrar tela ===== */}
+      <div className="al-card relative overflow-hidden px-4 py-2.5 shrink-0">
         <div className="absolute inset-x-0 top-0 gx-line" />
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="min-w-0">
-            <span className="gx-tag"><span>Ligação ativa</span></span>
-            <h1 className="al-display text-[22px] font-extrabold text-white uppercase tracking-wide leading-tight mt-1 truncate">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="gx-tag shrink-0"><span>Ligação ativa</span></span>
+            <h1 className="al-display text-[17px] font-extrabold text-white uppercase tracking-wide leading-none truncate">
               {listaAtiva ? listaAtiva.nome : 'Sem lista fria por enquanto'}
             </h1>
           </div>
           <div className="ml-auto flex items-center gap-1.5 flex-wrap">
-            {listas.map(l => (
+            {listas.length > 1 && listas.map(l => (
               <button
                 key={l.id}
                 onClick={() => { setListaSel(l.id); setContatoSel(null); }}
-                className={`px-3 py-1.5 rounded-full text-[12px] font-bold border transition-colors ${
+                className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors ${
                   l.id === listaSel
                     ? 'bg-[#E8C547]/12 border-[#E8C547]/60 text-[#FFE9A6]'
                     : 'bg-white/[0.04] border-white/10 text-text-secondary hover:bg-white/[0.08]'
@@ -374,15 +374,11 @@ export default function LigacaoAtivaPage() {
                 {l.nome}
               </button>
             ))}
-          </div>
-        </div>
-        {listaAtiva && (
-          <div className="mt-3 flex items-center gap-1.5 flex-wrap">
-            {FILTROS.map(f => (
+            {listaAtiva && FILTROS.map(f => (
               <button
                 key={f.key}
                 onClick={() => { setFiltro(f.key); setContatoSel(null); }}
-                className={`px-2.5 py-1.5 text-xs font-semibold border rounded-lg transition-colors ${
+                className={`px-2.5 py-1 text-[11px] font-semibold border rounded-lg transition-colors ${
                   filtro === f.key
                     ? 'bg-[#FF1E56]/15 border-[#FF3364]/60 text-[#FF9EB5] shadow-[0_0_12px_-2px_rgba(255,30,86,0.4)]'
                     : 'border-white/10 bg-white/[0.04] text-text-secondary hover:bg-white/[0.08]'
@@ -392,13 +388,13 @@ export default function LigacaoAtivaPage() {
               </button>
             ))}
           </div>
-        )}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
-        {/* ===== ESQUERDA — o caminho da ligação (roteiro) ===== */}
-        <div className="xl:col-span-5">
-          <div className="al-card relative overflow-hidden p-4 sm:p-5">
+      <div className="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-12 gap-2.5">
+        {/* ===== ESQUERDA — o caminho da ligação (roteiro, rolagem própria) ===== */}
+        <div className="xl:col-span-5 min-h-0 flex flex-col">
+          <div className="al-card relative overflow-hidden p-4 flex-1 min-h-0 flex flex-col">
             <div className="absolute inset-x-0 top-0 gx-line" />
             <div className="flex items-center justify-between gap-2 mb-2">
               <span className="gx-tag"><span>O caminho da ligação</span></span>
@@ -427,7 +423,7 @@ export default function LigacaoAtivaPage() {
             </div>
 
             {roteiroAberto && node && (
-              <div className="space-y-3.5">
+              <div className="space-y-3.5 flex-1 min-h-0 xl:overflow-y-auto xl:pr-1.5">
                 <div>
                   {node.eyebrow && <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#FF7A97] mb-1">{node.eyebrow}</p>}
                   <h2 className="al-display text-[20px] font-extrabold text-white leading-tight">{node.titulo}</h2>
@@ -480,9 +476,9 @@ export default function LigacaoAtivaPage() {
           </div>
         </div>
 
-        {/* ===== DIREITA — o excelzão ===== */}
-        <div className="xl:col-span-7">
-          <div className="al-card relative overflow-hidden p-4 sm:p-5">
+        {/* ===== DIREITA — o excelzão (rolagem própria) ===== */}
+        <div className="xl:col-span-7 min-h-0 flex flex-col">
+          <div className="al-card relative overflow-hidden p-4 flex-1 min-h-0 xl:overflow-y-auto">
             <div className="absolute inset-x-0 top-0 gx-line" />
 
             {!listaAtiva ? (

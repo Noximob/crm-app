@@ -11,7 +11,6 @@ import { Lead } from '@/types';
 import CrmHeader from '../_components/CrmHeader';
 import AgendaModal, { TaskPayload } from '../_components/AgendaModal';
 import CancelTaskModal from '../_components/CancelTaskModal';
-import CircuitoCard from './_components/CircuitoCard';
 import AtendimentoOverlay, { perguntaDoLead, fmtDataHora, type AcaoCircuito } from '@/components/atendimento/AtendimentoOverlay';
 import { executarAcaoCircuito } from '@/lib/circuitoActions';
 import { QUALIFICATION_QUESTIONS } from '@/lib/qualificacao';
@@ -560,18 +559,27 @@ export default function LeadDetailPage() {
                         </div>
                     </div>
 
-                    {/* O CIRCUITO — resumo; o atendimento acontece nos pop-ups */}
-                    <CircuitoCard
-                        etapa={etapaAtual}
-                        tentativas={lead.circuito?.tentativas || 0}
-                        desde={lead.circuito?.desde}
-                        descartadoMotivo={lead.descartadoMotivo}
-                        vendaValor={lead.vendaValor}
-                        pendente={!!circuitoInfo?.pendente}
-                        pendenteFechado={fechouNoX && !!circuitoInfo?.pendente}
-                        readOnly={readOnly}
-                        onAtender={() => { setAtendimentoAberto(true); setFechouNoX(false); }}
-                    />
+                    {/* O circuito conduz por pop-up — aqui só faixas finas quando precisa agir */}
+                    {!readOnly && fechouNoX && !!circuitoInfo?.pendente && (
+                        <button
+                            onClick={() => { setAtendimentoAberto(true); setFechouNoX(false); }}
+                            className="flex items-center justify-between gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-left hover:bg-amber-500/15 transition-colors"
+                        >
+                            <span className="text-[13px] text-amber-200 font-medium">⚠️ Pendente de encaminhamento — o pop-up foi fechado sem resposta.</span>
+                            <span className="shrink-0 px-3 py-1.5 rounded-lg text-[12px] font-bold text-white bg-gradient-to-r from-[#FF1E56] to-[#A50D38] animate-pulse">Resolver agora →</span>
+                        </button>
+                    )}
+                    {!readOnly && (etapaAtual === 'Bolsão' || etapaAtual === 'Descartado') && (
+                        <button
+                            onClick={() => { setAtendimentoAberto(true); setFechouNoX(false); }}
+                            className="flex items-center justify-between gap-3 rounded-xl border border-[#7DD3FC]/40 bg-[#7DD3FC]/[0.07] px-4 py-3 text-left hover:bg-[#7DD3FC]/15 transition-colors"
+                        >
+                            <span className="text-[13px] text-[#7DD3FC] font-medium">
+                                {etapaAtual === 'Bolsão' ? '🧊 Estacionado no bolsão.' : `Descartado${lead.descartadoMotivo ? ` — ${lead.descartadoMotivo}` : ''}.`}
+                            </span>
+                            <span className="shrink-0 px-3 py-1.5 rounded-lg text-[12px] font-bold text-[#7DD3FC] border border-[#7DD3FC]/40 bg-[#7DD3FC]/10">🔄 Reativar lead</span>
+                        </button>
+                    )}
 
                     {/* Próximas tarefas (com horário) */}
                     <div className="al-card relative overflow-hidden p-5">
@@ -686,47 +694,8 @@ export default function LeadDetailPage() {
                 </div>
 
                 {/* ================= COLUNA DIREITA — sempre à mão ================= */}
-                <div className="lg:col-span-5 flex flex-col gap-5 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:pr-1">
-                    {/* Qualificação — sempre aberta */}
-                    <div className="al-card relative overflow-hidden p-5">
-                        <div className="absolute inset-x-0 top-0 gx-line" />
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">Qualificação</h3>
-                            <span className={`text-[10px] font-bold uppercase tracking-wider transition-opacity ${
-                                saveQual === 'idle' ? 'opacity-0' : 'opacity-100'
-                            } ${saveQual === 'salvo' ? 'text-emerald-300' : 'text-text-secondary'}`}>
-                                {saveQual === 'salvando' ? 'salvando…' : 'salvo ✓'}
-                            </span>
-                        </div>
-                        <div className="space-y-3.5">
-                            {QUALIFICATION_QUESTIONS.map((group) => (
-                                <div key={group.key}>
-                                    <h4 className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1.5">{group.title}</h4>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {group.options.map((option) => {
-                                            const ativo = Array.isArray(qualifications[group.key]) && qualifications[group.key].includes(option);
-                                            return (
-                                                <button
-                                                    key={option}
-                                                    onClick={() => handleQualificationChange(group.key, option)}
-                                                    disabled={readOnly}
-                                                    className={`px-2.5 py-1.5 text-xs font-medium border rounded-lg transition-all duration-150 disabled:cursor-not-allowed ${
-                                                        ativo
-                                                        ? 'bg-[#9F6BFF]/15 border-[#9F6BFF]/60 text-[#C4A6FF] shadow-[0_0_12px_-2px_rgba(159,107,255,0.4)]'
-                                                        : 'bg-white/[0.04] border-white/10 text-text-secondary hover:bg-white/[0.08]'
-                                                    }`}
-                                                >
-                                                    {option}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Anotações — sempre abertas */}
+                <div className="lg:col-span-5 flex flex-col gap-4 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:pr-1">
+                    {/* Anotações PRIMEIRO — é o que mais se usa durante a conversa */}
                     <div className="al-card relative overflow-hidden p-5 flex flex-col">
                         <div className="absolute inset-x-0 top-0 gx-line" />
                         <div className="flex justify-between items-center mb-3">
@@ -745,11 +714,50 @@ export default function LeadDetailPage() {
                             <textarea
                                 value={tempAnnotations}
                                 onChange={(e) => handleAnnotationsChange(e.target.value)}
-                                rows={8}
-                                className="w-full bg-white/[0.04] border border-white/10 rounded-lg p-3 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 resize-y min-h-[10rem]"
+                                rows={5}
+                                className="w-full bg-white/[0.04] border border-white/10 rounded-lg p-3 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 resize-y min-h-[7rem]"
                                 placeholder={isEspelhoDemo ? 'Modo demonstração — nada é salvo.' : 'Anota tudo aqui — salva sozinho enquanto você digita.'}
                             />
                         )}
+                    </div>
+
+                    {/* Qualificação — compacta, logo abaixo */}
+                    <div className="al-card relative overflow-hidden p-5">
+                        <div className="absolute inset-x-0 top-0 gx-line" />
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em]">Qualificação</h3>
+                            <span className={`text-[10px] font-bold uppercase tracking-wider transition-opacity ${
+                                saveQual === 'idle' ? 'opacity-0' : 'opacity-100'
+                            } ${saveQual === 'salvo' ? 'text-emerald-300' : 'text-text-secondary'}`}>
+                                {saveQual === 'salvando' ? 'salvando…' : 'salvo ✓'}
+                            </span>
+                        </div>
+                        <div className="space-y-2.5">
+                            {QUALIFICATION_QUESTIONS.map((group) => (
+                                <div key={group.key} className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                                    <h4 className="shrink-0 w-[86px] text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-text-secondary leading-tight">{group.title}</h4>
+                                    <div className="flex-1 min-w-[200px] flex flex-wrap gap-1">
+                                        {group.options.map((option) => {
+                                            const ativo = Array.isArray(qualifications[group.key]) && qualifications[group.key].includes(option);
+                                            return (
+                                                <button
+                                                    key={option}
+                                                    onClick={() => handleQualificationChange(group.key, option)}
+                                                    disabled={readOnly}
+                                                    className={`px-2 py-1 text-[11px] font-medium border rounded-md transition-all duration-150 disabled:cursor-not-allowed ${
+                                                        ativo
+                                                        ? 'bg-[#9F6BFF]/15 border-[#9F6BFF]/60 text-[#C4A6FF] shadow-[0_0_12px_-2px_rgba(159,107,255,0.4)]'
+                                                        : 'bg-white/[0.04] border-white/10 text-text-secondary hover:bg-white/[0.08]'
+                                                    }`}
+                                                >
+                                                    {option}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
