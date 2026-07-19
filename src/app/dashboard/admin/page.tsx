@@ -25,7 +25,7 @@ const adminCategories = [
       { title: 'Visualizar CRM do corretor', icon: '🔎', description: 'Veja os leads e tarefas de um corretor específico', href: '/dashboard/admin/visualizar-crm-corretor' },
       { title: 'Agenda dos Usuários', icon: '📅', description: 'Visualize a agenda de todos os usuários', href: '/dashboard/admin/agenda-usuarios' },
       { title: 'Brello da Equipe', icon: '🗂️', description: 'Veja os quadros e cartões salvos por cada corretor', href: '/dashboard/admin/brello-equipe' },
-      { title: 'Importar Leads', icon: '⬆️', description: 'Importe leads em massa', href: '/dashboard/admin/importar-leads' },
+      { title: 'Importar Lista de Ligação', icon: '⬆️', description: 'Suba listas frias (nome + telefone) que viram a tabela da Ligação Ativa do corretor', href: '/dashboard/admin/importar-leads' },
     ]
   },
   {
