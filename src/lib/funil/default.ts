@@ -1,18 +1,19 @@
 import type { FunilConfig } from './types';
 
 /**
- * Mapa mental de LIGAÇÃO ATIVA (Nox Imóveis) — papel de PRÉ-VENDAS / SDR.
- * Premissa: o cliente ATENDEU. O objetivo da ligação é gerar interesse e
- * MARCAR UM GOOGLE MEET. Depois, o FECHADOR assume a reunião. Sem follow-up de mensagem.
+ * Roteiro ÚNICO de LIGAÇÃO ATIVA (Nox Imóveis) — papel de PRÉ-VENDAS / SDR.
+ *
+ * Contexto: o corretor trabalha a LISTA FRIA do excelzão (importada pelo admin,
+ * ex.: "Feirão Barra Velha"). O objetivo da ligação é gerar interesse e MARCAR
+ * UM GOOGLE MEET — quem fechou meet vira lead ("✅ Incluir no CRM" ali do lado)
+ * e o circuito assume dali.
+ *
+ * Variáveis: [Nome] = contato selecionado · [Seu nome] = corretor ·
+ * [Lista] = nome da lista (de onde veio o contato) · [dia], [Horário] = fala livre.
  * Semente/fallback — o admin pode editar tudo depois.
  */
 export const FUNIL_DEFAULT: FunilConfig = {
-  produtos: [
-    { key: 'orla_da_barra', label: 'Orla da Barra' },
-    { key: 'barra_view', label: 'Barra View' },
-    { key: 'viverde', label: 'Viverde' },
-    { key: 'nao_sei', label: 'Prospecção geral' },
-  ],
+  produtos: [],
   objetivos: [],
   startNode: 'abertura',
   nodes: [
@@ -20,41 +21,47 @@ export const FUNIL_DEFAULT: FunilConfig = {
       id: 'abertura',
       eyebrow: 'Início da ligação',
       titulo: 'Abertura — o cliente atendeu',
-      descricao: 'Os primeiros segundos decidem a ligação. Sorria (dá pra ouvir no telefone 😊), diga quem é, o porquê da ligação e peça permissão. Leve e confiante.',
-      mensagem: 'Oi, [Nome], tudo bem? Aqui é [Seu nome], da Nox Imóveis. Vi que você demonstrou interesse em imóveis aqui no Litoral e te liguei rapidinho pra entender melhor o que você procura e já te ajudar a achar algo que faça sentido. Você tem uns minutinhos pra gente conversar agora?',
+      descricao: 'Os primeiros 10 segundos decidem a ligação. Sorria (dá pra ouvir no telefone 😊), diga quem é, DE ONDE veio o contato e peça permissão. Leve e confiante.',
+      mensagem: 'Oi, [Nome], tudo bem? Aqui é [Seu nome], da Nox Imóveis. Seu contato chegou até mim pelo [Lista], e te liguei rapidinho pra entender se você ainda tem interesse em imóveis aqui no Litoral — e já te ajudar a achar algo que faça sentido. Consegue falar uns minutinhos agora?',
+      infoNote: 'Não atendeu? Anota nas anotações aqui do lado ("não atendeu, tentar à tarde") e segue pro próximo da lista — volume é o jogo da lista fria.',
       pergunta: 'Como o cliente reagiu?',
       choices: [
         { label: 'Topou conversar', icon: '👍', desc: 'Seguir para a sondagem', target: 'sondagem' },
-        { label: 'Está sem tempo agora', icon: '⏰', desc: 'Agendar um retorno', target: 'agendar_retorno' },
+        { label: 'Está sem tempo agora', icon: '⏰', desc: 'Combinar um retorno', target: 'agendar_retorno' },
         { label: 'Não lembra / desconfiou', icon: '🤨', desc: 'Gerar confiança primeiro', target: 'contexto' },
+        { label: 'Não tem interesse', icon: '🙅', desc: 'Encerrar com leveza', target: 'encerrar_leve' },
       ],
     },
     {
       id: 'contexto',
       eyebrow: 'Confiança',
       titulo: 'Cliente não lembra ou desconfiou',
-      descricao: 'Relembre de onde veio o contato com naturalidade e deixe claro que a ligação é pra ajudar, não pra empurrar. Confiança primeiro.',
-      mensagem: 'Sem problema, [Nome]! Você demonstrou interesse no nosso anúncio do [Produto] aqui no Litoral, e por isso te liguei — pra entender o que você procura e não ficar te mandando informação à toa. Prometo ser rápido: consigo te fazer só umas perguntinhas?',
+      descricao: 'Relembre DE ONDE veio o contato com naturalidade e deixe claro que a ligação é pra ajudar, não pra empurrar. Confiança primeiro.',
+      mensagem: 'Sem problema, [Nome]! Seu contato veio do [Lista] — e eu te liguei justamente pra não ficar te mandando informação à toa: prefiro entender primeiro o que faz sentido pra você. Prometo ser rápido: consigo te fazer só umas perguntinhas?',
       pergunta: 'E agora?',
       choices: [
         { label: 'Agora topou', icon: '👍', target: 'sondagem' },
         { label: 'Segue sem tempo', icon: '⏰', target: 'agendar_retorno' },
+        { label: 'Não quer mesmo', icon: '🙅', target: 'encerrar_leve' },
       ],
     },
     {
       id: 'agendar_retorno',
       eyebrow: 'Retorno',
       titulo: 'Cliente sem tempo agora',
-      descricao: 'Não insista. Marque um horário específico e ligue pontualmente — pontualidade passa profissionalismo.',
-      mensagem: 'Tranquilo, [Nome]! Qual seria um melhor horário pra eu te ligar? Prometo ser rápido e objetivo, só pra te entender e já te adiantar o que faz sentido pra você.',
-      infoNote: 'Anote o horário combinado e ligue na hora certa. Quando ele atender, é só recomeçar do início.',
+      descricao: 'Não insista. Pergunte um horário ESPECÍFICO e ligue pontualmente — pontualidade passa profissionalismo.',
+      mensagem: 'Tranquilo, [Nome]! Qual o melhor horário pra eu te ligar de volta — mais pro fim da tarde ou amanhã de manhã? Prometo ser rápido e objetivo.',
+      infoNote: 'Anota o horário combinado nas ANOTAÇÕES aqui do lado (ex.: "ligar qui 17h") e deixa o contato na lista "Pra ligar". Na hora certa, é só recomeçar do início.',
+      choices: [
+        { label: 'Combinei o retorno — próximo da lista', icon: '📝', target: 'abertura' },
+      ],
     },
     {
       id: 'sondagem',
       eyebrow: 'Sondagem',
       titulo: 'Entenda o cliente antes de oferecer',
-      descricao: 'Quem pergunta conduz. Faça perguntas abertas e ESCUTE — só direcione depois de entender. Use as perguntas abaixo como guia (adapte, não leia robótico).',
-      mensagem: '• O que te fez procurar um imóvel aqui no Litoral agora?\n• Seria mais pra morar, curtir no verão ou investir?\n• Você já conhece a região? Já chegou a ver algum imóvel por aqui?\n• Tem um prazo em mente ou está começando a pesquisar?',
+      descricao: 'Quem pergunta conduz. Faça perguntas abertas e ESCUTE — só direcione depois de entender. Vá marcando a QUALIFICAÇÃO aqui do lado enquanto ele responde (finalidade, região, valor…).',
+      mensagem: '• O que te fez procurar um imóvel aqui no Litoral?\n• Seria mais pra morar, curtir no verão ou investir?\n• Você já conhece a região? Já chegou a ver algum imóvel por aqui?\n• Tem um prazo em mente ou está começando a pesquisar?',
       pergunta: 'Qual perfil apareceu?',
       choices: [
         { label: 'Quer morar', icon: '🏡', target: 'perfil_moradia' },
@@ -69,22 +76,18 @@ export const FUNIL_DEFAULT: FunilConfig = {
       titulo: 'Cliente quer morar',
       descricao: 'Conecte com o momento de vida dele. Gere curiosidade — quem mostra tudo é o especialista no Meet.',
       mensagem: 'Que bom, [Nome]! A gente tem boas opções pra morar aqui na região, tanto prontas quanto na planta com condições facilitadas. O melhor jeito de te mostrar é numa conversa rápida por Google Meet: nosso especialista te apresenta na tela a localização, as plantas e as condições, e você já sente se é a sua cara — sem sair de casa.',
-      pergunta: 'O que ele prefere?',
       choices: [
-        { label: 'Pronto pra morar', icon: '🔑', target: 'fechar_meet' },
-        { label: 'Aceita na planta', icon: '📐', target: 'fechar_meet' },
+        { label: 'Puxar pro Meet', icon: '🎯', target: 'fechar_meet' },
       ],
     },
     {
       id: 'perfil_veraneio',
       eyebrow: 'Perfil · Veraneio',
       titulo: 'Cliente quer veraneio',
-      descricao: 'Venda a experiência: praia, lazer, família. E, se fizer sentido, a renda de temporada como bônus. Puxe pro Meet pra mostrar tudo.',
+      descricao: 'Venda a experiência: praia, lazer, família. E, se fizer sentido, a renda de temporada como bônus.',
       mensagem: 'Perfeito, [Nome]! Temos opções com estrutura de lazer estilo resort e fácil acesso à praia — e, se quiser, algumas ainda geram renda de temporada quando você não estiver usando. Numa conversa rápida por Google Meet a gente te mostra tudo na tela e você vê qual combina mais com você.',
-      pergunta: 'Como é o uso?',
       choices: [
-        { label: 'Só pra curtir', icon: '🌴', target: 'fechar_meet' },
-        { label: 'Curtir + gerar renda', icon: '💰', target: 'fechar_meet' },
+        { label: 'Puxar pro Meet', icon: '🎯', target: 'fechar_meet' },
       ],
     },
     {
@@ -92,11 +95,9 @@ export const FUNIL_DEFAULT: FunilConfig = {
       eyebrow: 'Perfil · Investimento',
       titulo: 'Cliente quer investir',
       descricao: 'Fale a língua dele: números, valorização e rentabilidade. Quem abre os números é o especialista no Meet.',
-      mensagem: 'Ótimo, [Nome]! A gente trabalha com empreendimentos em regiões em crescimento, com bom potencial de valorização, e também opções voltadas pra renda com locação — algumas com gestoras que cuidam de tudo. Numa conversa rápida por Google Meet nosso especialista te mostra os números na tela e você vê qual estratégia rende mais pra você.',
-      pergunta: 'Qual o foco?',
+      mensagem: 'Ótimo, [Nome]! A gente trabalha com empreendimentos em regiões em crescimento, com bom potencial de valorização, e também opções voltadas pra renda com locação. Numa conversa rápida por Google Meet nosso especialista te mostra os números na tela e você vê qual estratégia rende mais pra você.',
       choices: [
-        { label: 'Valorização (revenda)', icon: '📊', target: 'fechar_meet' },
-        { label: 'Renda mensal (locação)', icon: '🏨', target: 'fechar_meet' },
+        { label: 'Puxar pro Meet', icon: '🎯', target: 'fechar_meet' },
       ],
     },
     {
@@ -116,11 +117,11 @@ export const FUNIL_DEFAULT: FunilConfig = {
       id: 'fechar_meet',
       eyebrow: 'Fechamento',
       titulo: 'Marque o Google Meet',
-      descricao: 'O objetivo da ligação é ESTE: marcar um Google Meet rápido (uns 20-30 min) com o nosso especialista, que vai mostrar tudo com calma e conduzir daí pra frente. Não pergunte "se" — pergunte "quando". Ofereça dois horários.',
-      mensagem: 'Olha, [Nome], pra não te tomar tempo agora e te mostrar tudo direitinho, o ideal é a gente marcar um Google Meet rápido, uns 20 minutinhos, onde nosso especialista te apresenta as opções na tela e tira todas as dúvidas — bem prático, você participa de onde estiver. Consigo encaixar [dia] ou [dia]: o que fica melhor pra você, de manhã ou à tarde?',
+      descricao: 'O objetivo da ligação é ESTE: marcar um Google Meet rápido (20-30 min) com o nosso especialista. Não pergunte "se" — pergunte "quando". Ofereça dois horários.',
+      mensagem: 'Olha, [Nome], pra não te tomar tempo agora e te mostrar tudo direitinho, o ideal é a gente marcar um Google Meet rápido, uns 20 minutinhos: nosso especialista te apresenta as opções na tela e tira todas as dúvidas — você participa de onde estiver. Consigo encaixar [dia] ou [dia]: o que fica melhor pra você, de manhã ou à tarde?',
       pergunta: 'Como o cliente reagiu?',
       choices: [
-        { label: 'Topou e marcou', icon: '✅', desc: 'Confirmar o Meet', target: 'meet_confirmado' },
+        { label: 'Topou e marcou! 🎉', icon: '✅', desc: 'Virar lead no CRM', target: 'meet_confirmado' },
         { label: 'Levantou uma objeção', icon: '🤔', desc: 'Contornar e voltar a fechar', target: 'objecoes' },
         { label: 'Prefere WhatsApp', icon: '💬', target: 'obj_whats' },
         { label: 'Não quer agora', icon: '🌙', desc: 'Encerrar com leveza', target: 'encerrar_leve' },
@@ -167,7 +168,7 @@ export const FUNIL_DEFAULT: FunilConfig = {
       titulo: '"Me manda por WhatsApp"',
       descricao: 'Aceite mandar algo, mas puxe pro Meet — e se insistir, combine o Meet com dia e hora.',
       mensagem: 'Mando sim, [Nome]! Mas te adianto: por WhatsApp vai só um pedacinho. Num Google Meet rápido nosso especialista te mostra tudo na tela e você já sai com as dúvidas resolvidas — bem mais prático. Que tal a gente já deixar marcado? Prefere [dia] ou [dia]?',
-      infoNote: 'Se insistir só no WhatsApp: mande um resumo e combine o Meet com dia e hora. Nunca deixe em aberto.',
+      infoNote: 'Se insistir só no WhatsApp: usa o botão 💬 aqui do lado, manda um resumo e combina o Meet com dia e hora. Nunca deixa em aberto.',
       choices: [{ label: 'Voltar a marcar o Meet', icon: '↩️', target: 'fechar_meet' }],
     },
     {
@@ -180,23 +181,27 @@ export const FUNIL_DEFAULT: FunilConfig = {
     {
       id: 'meet_confirmado',
       eyebrow: 'Meet marcado 🎉',
-      titulo: 'Confirme o Meet e passe pro fechador',
-      descricao: 'Fechou! Seu papel na ligação ativa termina aqui: confirme o Meet, mande o link e passe o lead com o resumo pro fechador conduzir a reunião.',
+      titulo: 'Fechou! Agora vira lead no CRM',
+      descricao: 'Seu papel na lista fria termina aqui — agora esse contato é LEAD. Clica em "✅ Incluir no CRM" aqui do lado: as anotações e a qualificação sobem junto, e o circuito já abre pra você agendar o meet com data e hora.',
       mensagem: 'Combinado, [Nome]! Então nosso Google Meet fica pra [dia] às [Horário]. Vou te mandar o link por aqui, é só clicar na hora — não precisa instalar nada. Qualquer imprevisto, me avisa. Até lá! 😊',
       checklist: [
         'Confirmar dia e horário com o cliente',
-        'Gerar e mandar o link do Google Meet',
-        'Colocar no calendário / criar o convite',
-        'Passar o lead pro fechador com o resumo (perfil, o que ele busca, objeções que apareceram)',
+        'Anotar o combinado nas anotações (dia, hora, o que ele busca)',
+        '✅ Incluir no CRM — o circuito abre pra agendar o meet certinho',
+        'Mandar o link do Google Meet no WhatsApp',
         'Confirmar com o cliente 1 dia antes (lembrete rápido)',
       ],
     },
     {
       id: 'encerrar_leve',
       eyebrow: 'Encerramento',
-      titulo: 'Cliente não quer agora',
-      descricao: 'Encerre com leveza e mantenha a porta aberta. Um "não agora" vira "sim" lá na frente.',
+      titulo: 'Cliente não quer — encerre com leveza',
+      descricao: 'Um "não agora" vira "sim" lá na frente. Encerre bem e registre o destino na lista: sem interesse de verdade → 🗑 Descartar; "quem sabe depois" → anota e deixa na lista.',
       mensagem: 'Sem problemas, [Nome]! Fico à disposição. Se em algum momento você quiser dar uma olhada nas oportunidades aqui do Litoral, é só me chamar que eu te ajudo com o maior prazer. Um abraço!',
+      infoNote: 'Número errado, "não liga mais" ou sem perfil → 🗑 Descartar aqui do lado. Educado mas frio ("agora não") → anota o motivo e deixa na lista pra uma nova tentativa em outra campanha.',
+      choices: [
+        { label: 'Encerrado — próximo da lista', icon: '⏭️', target: 'abertura' },
+      ],
     },
   ],
 };

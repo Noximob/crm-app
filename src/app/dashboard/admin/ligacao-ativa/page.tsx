@@ -77,28 +77,10 @@ export default function AdminLigacaoAtivaPage() {
   const setCheck = (i: number, v: string) => patchNode({ checklist: (sel?.checklist || []).map((x, k) => (k === i ? v : x)) });
   const delCheck = (i: number) => patchNode({ checklist: (sel?.checklist || []).filter((_, k) => k !== i) });
 
-  // produtos
-  const setProdLabel = (i: number, label: string) => setConfig((c) => ({ ...c, produtos: c.produtos.map((p, k) => (k === i ? { key: p.key, label } : p)) }));
-  const addProd = () => setConfig((c) => ({ ...c, produtos: [...c.produtos, { key: `p_${c.produtos.length + 1}`, label: 'Novo' }] }));
-  const delProd = (i: number) => setConfig((c) => ({ ...c, produtos: c.produtos.filter((_, k) => k !== i) }));
-
   const salvar = async () => {
     if (!imobiliariaId) { flash('Sem imobiliária.'); return; }
-    // normaliza keys de produto a partir do label (com dedupe: colisão ganha sufixo -2, -3, …)
-    const keysUsadas = new Set<string>();
-    const cfg: FunilConfig = {
-      ...config,
-      produtos: config.produtos.map((p) => {
-        let key = p.key.startsWith('p_') ? slug(p.label) : p.key;
-        if (keysUsadas.has(key)) {
-          let n = 2;
-          while (keysUsadas.has(`${key}-${n}`)) n++;
-          key = `${key}-${n}`;
-        }
-        keysUsadas.add(key);
-        return { key, label: p.label };
-      }),
-    };
+    // Roteiro é ÚNICO — sem variação por produto
+    const cfg: FunilConfig = { ...config, produtos: [] };
     setSalvando(true);
     try {
       await setDoc(doc(db, 'configLigacaoAtiva', imobiliariaId), { config: cfg, updatedAt: serverTimestamp() });
@@ -143,26 +125,12 @@ export default function AdminLigacaoAtivaPage() {
               </button>
             ))}
           </div>
-          {/* Produtos + início */}
-          <div className="p-3 border-t border-white/10 space-y-2">
-            <div>
-              <label className="block text-[11px] font-bold uppercase text-text-secondary mb-1">Passo inicial</label>
-              <select value={config.startNode} onChange={(e) => setConfig((c) => ({ ...c, startNode: e.target.value }))} className={`${SEL} w-full`}>
-                {nodeOpcoes.map((o) => <option key={o.id} value={o.id} className={OPT}>{o.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold uppercase text-text-secondary mb-1">Imóveis/produtos (setup)</label>
-              <div className="space-y-1">
-                {config.produtos.map((p, i) => (
-                  <div key={i} className="flex gap-1">
-                    <input value={p.label} onChange={(e) => setProdLabel(i, e.target.value)} className="flex-1 px-2 py-1 rounded-md bg-white/[0.04] border border-white/10 text-xs text-white" />
-                    <button onClick={() => delProd(i)} className="px-1.5 text-red-400 hover:text-red-300 text-xs">✕</button>
-                  </div>
-                ))}
-                <button onClick={addProd} className="text-[11px] px-2 py-1 rounded-md bg-white/10 text-white hover:bg-white/15">+ produto</button>
-              </div>
-            </div>
+          {/* Início do roteiro (o script é ÚNICO) */}
+          <div className="p-3 border-t border-white/10">
+            <label className="block text-[11px] font-bold uppercase text-text-secondary mb-1">Passo inicial</label>
+            <select value={config.startNode} onChange={(e) => setConfig((c) => ({ ...c, startNode: e.target.value }))} className={`${SEL} w-full`}>
+              {nodeOpcoes.map((o) => <option key={o.id} value={o.id} className={OPT}>{o.label}</option>)}
+            </select>
           </div>
         </aside>
 
@@ -189,7 +157,7 @@ export default function AdminLigacaoAtivaPage() {
               </div>
 
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Mensagem / roteiro <span className="opacity-60">(o que o corretor fala — use [Nome], [Seu nome], [Produto], [dia], [Horário])</span></label>
+                <label className="block text-xs text-text-secondary mb-1">Mensagem / roteiro <span className="opacity-60">(o que o corretor fala — use [Nome], [Seu nome], [Lista], [dia], [Horário])</span></label>
                 <textarea value={sel.mensagem || ''} onChange={(e) => patchNode({ mensagem: e.target.value })} rows={5} className={INP} />
               </div>
 
