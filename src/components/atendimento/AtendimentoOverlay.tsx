@@ -471,7 +471,11 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                 cancelarTaskId: m.cancelarTaskId,
                 novaTarefa: { description: `Follow-up com ${nome}`, type: TIPO_TAREFA_FOLLOWUP, dueDate: d },
                 circuitoTentativas: m.tentativa ? 'inc' : undefined,
-                interacao: { type: 'Follow-up', notes: `📌 Tarefa criada: follow-up · ${fmtDataHora(d)}` },
+                interacao: {
+                  type: 'Follow-up',
+                  // "tentativa" = veio de um "não atendeu" → registra nomeado (alimenta o relatório de atividade)
+                  notes: `${m.tentativa ? '📵 Não atendeu · ' : ''}📌 Tarefa criada: follow-up · ${fmtDataHora(d)}`,
+                },
               });
               if (ok) fecha(`✓ Follow-up com ${primeiroNome} agendado: ${quandoLabel(d)}.`);
             },

@@ -4,7 +4,8 @@
  * Carregamento dos dados dos relatórios — sem N+1.
  *
  * Base (1x por imobiliária): leads, usuários aprovados, contribuições da meta,
- * períodos de meets e adsLeads — 5 queries.
+ * períodos de meets, adsLeads e listas de ligação ativa (+ contatos por lista,
+ * listas são poucas) — 6 queries + 1 por lista.
  * Por período: collectionGroup('interactions') + collectionGroup('tarefas')
  * numa janela estendida (período anterior incluso) — 2 queries, com cache:
  * se a janela nova cabe na já carregada, não refaz o fetch (o recorte fino
@@ -19,8 +20,8 @@ import { db } from '@/lib/firebase';
 import { showToast } from '@/components/ui/toast';
 import { buildDemoReportSource } from './demoReport';
 import {
-  AdsLeadLite, ContribLite, CorretorLite, InteracaoLite, LeadLite, MeetsPeriodoLite,
-  Periodo, ReportSource, TarefaLite, anyToMs, janelaBusca,
+  AdsLeadLite, ContribLite, CorretorLite, InteracaoLite, LeadLite, LigAtivaContatoLite,
+  MeetsPeriodoLite, Periodo, ReportSource, TarefaLite, anyToMs, janelaBusca,
 } from './reportShared';
 
 interface BaseData {
@@ -29,6 +30,7 @@ interface BaseData {
   contribuicoes: ContribLite[];
   meets: MeetsPeriodoLite[];
   adsLeads: AdsLeadLite[];
+  ligacaoAtiva: LigAtivaContatoLite[];
 }
 
 interface JanelaData {
@@ -69,7 +71,7 @@ export function useRelatoriosData(
     const carregar = async () => {
       setProgresso('Carregando base do CRM...');
       try {
-        const [leadsSnap, usuariosSnap, metaSnap, contribSnap, meetsSnap, adsSnap] = await Promise.all([
+        const [leadsSnap, usuariosSnap, metaSnap, contribSnap, meetsSnap, adsSnap, listasSnap] = await Promise.all([
           getDocs(query(collection(db, 'leads'), where('imobiliariaId', '==', imobiliariaId))),
           getDocs(query(
             collection(db, 'usuarios'),
@@ -81,7 +83,29 @@ export function useRelatoriosData(
           getDocs(collection(db, 'metas', imobiliariaId, 'contribuicoes')),
           getDocs(query(collection(db, 'meetsVisitas'), where('imobiliariaId', '==', imobiliariaId))),
           getDocs(query(collection(db, 'adsLeads'), where('imobiliariaId', '==', imobiliariaId))),
+          getDocs(query(collection(db, 'ligacaoAtivaListas'), where('imobiliariaId', '==', imobiliariaId))),
         ]);
+        if (cancelado) return;
+
+        // Contatos das listas de ligação ativa — listas são poucas; um getDocs por lista
+        const ligacaoAtiva: LigAtivaContatoLite[] = [];
+        await Promise.all(listasSnap.docs.map(async (ld) => {
+          const corretorId = String((ld.data() as any).corretorId || '');
+          try {
+            const contSnap = await getDocs(collection(db, 'ligacaoAtivaListas', ld.id, 'contatos'));
+            contSnap.forEach((cd) => {
+              const cdata = cd.data() as any;
+              ligacaoAtiva.push({
+                corretorId,
+                status: String(cdata.status || 'pendente'),
+                incluidoEmMs: anyToMs(cdata.incluidoEm),
+                descartadoEmMs: anyToMs(cdata.descartadoEm),
+              });
+            });
+          } catch (e) {
+            console.error('Erro ao carregar contatos da lista de ligação ativa:', e);
+          }
+        }));
         if (cancelado) return;
         void metaSnap; // meta em si não entra nos números; as vendas vêm das contribuições
 
@@ -98,6 +122,9 @@ export function useRelatoriosData(
             origemPropaganda: data.origemPropaganda ? String(data.origemPropaganda) : undefined,
             createdAtMs: anyToMs(data.createdAt),
             pendentesMs: pendentes.map((t: any) => anyToMs(t?.dueDate)).filter((n: number | null): n is number => n !== null),
+            vendaValor: data.vendaValor ? String(data.vendaValor) : undefined,
+            descartadoMotivo: data.descartadoMotivo ? String(data.descartadoMotivo) : undefined,
+            descartadoPor: data.descartadoPor ? String(data.descartadoPor) : undefined,
           };
         });
 
@@ -140,7 +167,7 @@ export function useRelatoriosData(
           };
         });
 
-        setBase({ leads, corretores, contribuicoes, meets, adsLeads });
+        setBase({ leads, corretores, contribuicoes, meets, adsLeads, ligacaoAtiva });
       } catch (e) {
         console.error('Erro ao carregar base dos relatórios:', e);
         if (!cancelado) showToast('Não foi possível carregar os dados do CRM — recarregue a página.', 'error');
@@ -185,9 +212,16 @@ export function useRelatoriosData(
         const interacoes: InteracaoLite[] = [];
         intSnap.forEach((d) => {
           const leadId = d.ref.parent.parent?.id;
-          const tsMs = anyToMs((d.data() as any).timestamp);
+          const data = d.data() as any;
+          const tsMs = anyToMs(data.timestamp);
           if (!leadId || tsMs === null) return;
-          interacoes.push({ leadId, type: String((d.data() as any).type || ''), tsMs });
+          interacoes.push({
+            leadId,
+            type: String(data.type || ''),
+            notes: typeof data.notes === 'string' ? data.notes : '',
+            circuito: data.circuito === true || undefined,
+            tsMs,
+          });
         });
 
         const tarefas: TarefaLite[] = [];
@@ -226,6 +260,7 @@ export function useRelatoriosData(
       contribuicoes: base.contribuicoes,
       meets: base.meets,
       adsLeads: base.adsLeads,
+      ligacaoAtiva: base.ligacaoAtiva,
       interacoes: janela.interacoes,
       tarefas: janela.tarefas,
       janelaInicioMs: janela.inicioMs,

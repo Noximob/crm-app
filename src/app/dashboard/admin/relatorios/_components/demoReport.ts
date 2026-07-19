@@ -10,7 +10,7 @@ import { DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
 import { PIPELINE_STAGES } from '@/lib/constants';
 import {
   AdsLeadLite, ContribLite, CorretorLite, DIA_MS, InteracaoLite, LeadLite,
-  MeetsPeriodoLite, ReportSource, TarefaLite, fimDoDia, inicioDoDia, ymdLocal,
+  LigAtivaContatoLite, MeetsPeriodoLite, ReportSource, TarefaLite, fimDoDia, inicioDoDia, ymdLocal,
 } from './reportShared';
 
 // PRNG determinístico (mulberry32)
@@ -34,6 +34,14 @@ const NOMES_LEADS = [
 ];
 
 const CAMPANHAS = ['Lançamento Vista Mar', 'Retargeting Julho', 'Frente Mar Piçarras'];
+const MOTIVOS_DESCARTE: { motivo: string; peso: number }[] = [
+  { motivo: 'Não responde', peso: 34 },
+  { motivo: 'Adiou a compra', peso: 22 },
+  { motivo: 'Fora do perfil', peso: 16 },
+  { motivo: 'Comprou com outro', peso: 14 },
+  { motivo: 'Não quer mais', peso: 10 },
+  { motivo: 'Mudou de cidade', peso: 4 },
+];
 const ORIGENS: { tipo: string; peso: number }[] = [
   { tipo: 'Propaganda', peso: 34 },
   { tipo: 'Indicação', peso: 22 },
@@ -59,6 +67,8 @@ export function buildDemoReportSource(): ReportSource {
   const corretores: CorretorLite[] = DEMO_REPORT_CORRETORES.slice(0, 8).map((c) => ({ id: c.uid, nome: c.nome }));
   // "Perfil" de cada corretor: multiplicadores de volume p/ ranking ter história
   const perfil = [1.0, 1.6, 1.25, 0.8, 1.05, 0.45, 0.9, 0.65];
+  // Disciplina no circuito: probabilidade de movimento manual (inversa do perfil)
+  const pManual = [0.12, 0.04, 0.08, 0.3, 0.1, 0.5, 0.18, 0.38];
 
   const leads: LeadLite[] = [];
   const interacoes: InteracaoLite[] = [];
@@ -101,16 +111,60 @@ export function buildDemoReportSource(): ReportSource {
       pendentesMs,
     });
 
-    // Interações: volume segue o perfil do corretor; leads "esquecidos" ficam sem atividade recente
+    // Interações: volume segue o perfil do corretor; leads "esquecidos" ficam sem atividade recente.
+    // Tudo narrado com o vocabulário EXATO do circuito, pra aba Atividade ter história.
     const esquecido = rnd() < 0.22 && pendentesMs.length === 0;
-    const nInt = Math.round((1 + rnd() * 9) * perfil[ci]);
     const tetoAtividade = esquecido ? Math.max(createdAtMs, agoraMs - (8 + rnd() * 40) * DIA_MS) : agoraMs;
+    const tsAleatorio = () => createdAtMs + rnd() * Math.max(1, tetoAtividade - createdAtMs);
+    // Enviesado pro recente — os eventos de jornada aparecem em qualquer preset de período
+    const tsRecente = () => tetoAtividade - rnd() * rnd() * Math.max(1, tetoAtividade - createdAtMs);
+    const pushInt = (type: string, notes: string, circuito: boolean, tsMs: number) => {
+      if (tsMs > agoraMs || tsMs < createdAtMs) return;
+      interacoes.push({ leadId: id, type, notes, circuito: circuito || undefined, tsMs });
+    };
+
+    // Volume de contatos + follow-ups + tarefas manuais
+    const nInt = Math.round((1 + rnd() * 8) * perfil[ci]);
     for (let j = 0; j < nInt; j++) {
-      const tsMs = createdAtMs + rnd() * Math.max(1, tetoAtividade - createdAtMs);
-      if (tsMs > agoraMs) continue;
+      const tsMs = tsAleatorio();
       const r = rnd();
-      const type = r < 0.34 ? 'Ligação' : r < 0.62 ? 'WhatsApp' : r < 0.74 ? 'Visita' : r < 0.9 ? 'Tarefa Concluída' : 'Tarefa Cancelada';
-      interacoes.push({ leadId: id, type, tsMs });
+      if (r < 0.3) pushInt('Ligação', '📞 Tentativa de contato por ligação', true, tsMs);
+      else if (r < 0.55) pushInt('WhatsApp', '💬 Tentativa de contato por WhatsApp', true, tsMs);
+      else if (r < 0.7) pushInt('Follow-up', '📵 Não atendeu · 📌 Tarefa criada: follow-up · retomar em 2 dias', true, tsMs);
+      else if (r < 0.8) pushInt('Follow-up', '📌 Tarefa criada: follow-up · combinado novo contato', true, tsMs);
+      else if (r < 0.93) pushInt('Tarefa Concluída', 'Tarefa concluída', false, tsMs);
+      else pushInt('Tarefa Cancelada', 'Tarefa cancelada', false, tsMs);
+    }
+
+    // Jornada narrada conforme a profundidade no circuito (2=Meet, 3=Visita, 4=Negociação, 5=Bolsão)
+    const passouMeet = profundidade >= 2 && profundidade !== 5 ? true : profundidade === 5 && rnd() < 0.5;
+    const passouVisita = (profundidade === 3 || profundidade === 4) || (profundidade === 5 && rnd() < 0.25);
+    if (passouMeet) {
+      const t = tsRecente();
+      pushInt('Meet', rnd() < 0.82 ? '📌 Meet marcado — vídeo, quinta às 10h' : '📅 Meet marcado', true, t);
+      if (rnd() < 0.25) pushInt('Meet', '📌 Meet remarcado — cliente pediu outro horário', true, t + rnd() * DIA_MS);
+      if (profundidade >= 3 || rnd() < 0.55) pushInt('Meet', '✅ Meet realizado', true, Math.min(tetoAtividade, t + (1 + rnd() * 3) * DIA_MS));
+    }
+    if (passouVisita) {
+      const t = tsRecente();
+      pushInt('Visita', rnd() < 0.8 ? '📌 Visita marcada — sábado às 14h' : '🏠 Visita marcada', true, t);
+      if (profundidade >= 4 || rnd() < 0.6) pushInt('Visita', '✅ Visita realizada', true, Math.min(tetoAtividade, t + (1 + rnd() * 4) * DIA_MS));
+    }
+    if (profundidade === 4) {
+      const t = tsRecente();
+      pushInt('Etapa', '🚀 Visita boa — cliente pronto pra negociar, segue pra proposta', true, t);
+      if (rnd() < 0.65) pushInt('Follow-up', '📌 Cobrança agendada: resposta da proposta', true, Math.min(tetoAtividade, t + (1 + rnd() * 2) * DIA_MS));
+      if (rnd() < 0.45) pushInt('Venda', `🏆 VENDA LANÇADA: R$ ${(Math.round((280_000 + rnd() * 620_000) / 5_000) * 5_000).toLocaleString('pt-BR')}`, true, Math.min(tetoAtividade, t + (2 + rnd() * 6) * DIA_MS));
+    }
+    // Descartes (~13% dos leads) com motivo narrado
+    if (rnd() < 0.13) {
+      pushInt('Descarte', `🗑️ Descartado — motivo: ${escolhePeso(rnd, MOTIVOS_DESCARTE).motivo}`, true, tsRecente());
+    }
+    // Disciplina: quem trabalha fora do circuito move etapa na mão
+    if (rnd() < pManual[ci]) {
+      const alvo = PIPELINE_STAGES[Math.floor(rnd() * PIPELINE_STAGES.length)];
+      pushInt('Etapa', rnd() < 0.5 ? `↷ Etapa alterada manualmente para ${alvo}` : `Movido para ${alvo} (kanban)`, false, tsRecente());
+      if (rnd() < 0.4) pushInt('Etapa', `Movido para ${PIPELINE_STAGES[Math.floor(rnd() * PIPELINE_STAGES.length)]} (kanban)`, false, tsRecente());
     }
 
     // Tarefas com vencimento espalhado (agenda do período)
@@ -175,12 +229,30 @@ export function buildDemoReportSource(): ReportSource {
     });
   }
 
+  // Ligação ativa — 4 listas de contatos frios pra corretores variados
+  const ligacaoAtiva: LigAtivaContatoLite[] = [];
+  [1, 2, 4, 6].forEach((ci) => {
+    const n = 25 + Math.floor(rnd() * 30);
+    for (let k = 0; k < n; k++) {
+      const r = rnd();
+      const trabalhadoMs = agoraMs - Math.floor(rnd() * rnd() * 150) * DIA_MS - Math.floor(rnd() * 9 * 60 * 60 * 1000);
+      if (r < 0.4) {
+        ligacaoAtiva.push({ corretorId: corretores[ci].id, status: 'pendente', incluidoEmMs: null, descartadoEmMs: null });
+      } else if (r < 0.72) {
+        ligacaoAtiva.push({ corretorId: corretores[ci].id, status: 'descartado', incluidoEmMs: null, descartadoEmMs: trabalhadoMs });
+      } else {
+        ligacaoAtiva.push({ corretorId: corretores[ci].id, status: 'crm', incluidoEmMs: trabalhadoMs, descartadoEmMs: null });
+      }
+    }
+  });
+
   return {
     leads,
     corretores,
     contribuicoes,
     meets,
     adsLeads,
+    ligacaoAtiva,
     interacoes,
     tarefas,
     janelaInicioMs: hoje0 - 201 * DIA_MS,

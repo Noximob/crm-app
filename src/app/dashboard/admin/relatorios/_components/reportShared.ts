@@ -17,6 +17,12 @@ export interface LeadLite {
   createdAtMs: number | null;
   /** dueDates (ms) das tarefas pendentes espelhadas no doc do lead */
   pendentesMs: number[];
+  /** valor pt-BR da venda lançada (ex.: "750.000") — fallback quando a nota não traz o valor */
+  vendaValor?: string;
+  /** motivo do descarte gravado no lead — fallback quando a nota não traz o motivo */
+  descartadoMotivo?: string;
+  /** quem descartou — o userId pode migrar pra conta da imobiliária depois do descarte */
+  descartadoPor?: string;
 }
 
 export interface CorretorLite {
@@ -26,7 +32,11 @@ export interface CorretorLite {
 
 export interface InteracaoLite {
   leadId: string;
-  type: string; // 'Ligação' | 'WhatsApp' | 'Visita' | 'Tarefa Agendada' | 'Tarefa Concluída' | 'Tarefa Cancelada'
+  type: string; // 'Ligação' | 'WhatsApp' | 'Visita' | 'Meet' | 'Etapa' | 'Venda' | 'Descarte' | 'Follow-up' | 'Tarefa *'
+  /** texto narrado pelo circuito ('' quando ausente/legado) */
+  notes: string;
+  /** true quando a interação nasceu dos pop-ups do circuito guiado */
+  circuito?: boolean;
   tsMs: number;
 }
 
@@ -63,6 +73,14 @@ export interface AdsLeadLite {
   aceitoEmMs: number | null;
 }
 
+/** Contato de lista de ligação ativa (cold call), achatado com o corretor dono da lista. */
+export interface LigAtivaContatoLite {
+  corretorId: string;
+  status: string; // 'pendente' | 'descartado' | 'crm'
+  incluidoEmMs: number | null;
+  descartadoEmMs: number | null;
+}
+
 /** Conjunto completo de dados brutos que alimenta os relatórios. */
 export interface ReportSource {
   leads: LeadLite[];
@@ -70,6 +88,8 @@ export interface ReportSource {
   contribuicoes: ContribLite[];
   meets: MeetsPeriodoLite[];
   adsLeads: AdsLeadLite[];
+  /** Contatos das listas de ligação ativa da imobiliária */
+  ligacaoAtiva: LigAtivaContatoLite[];
   /** Interações dentro da janela estendida [janelaInicioMs, janelaFimMs] */
   interacoes: InteracaoLite[];
   /** Tarefas (subcoleção) com vencimento dentro da janela estendida */

@@ -6,7 +6,7 @@
  */
 
 import type { PipelineStageWithMeta } from '@/lib/pipelineStagesConfig';
-import { ETAPA_DESCARTADO, ETAPA_FECHADO, mapEtapaCircuito } from '@/lib/circuito';
+import { ETAPA_BOLSAO, ETAPA_DESCARTADO, ETAPA_FECHADO, ETAPA_NEGOCIACAO, mapEtapaCircuito } from '@/lib/circuito';
 import {
   DIA_MS, InteracaoLite, LeadLite, Periodo, ReportSource, funilCor, inicioDoDia, ymdLocal,
 } from './reportShared';
@@ -41,6 +41,130 @@ export interface MetricasCorretor {
 }
 
 export interface CorretorRow extends MetricasCorretor { id: string; nome: string }
+
+// ---------------------------------------------------------------------------
+// Atividade por corretor — o circuito narrado, traduzido em números
+// ---------------------------------------------------------------------------
+export interface MotivoCount { motivo: string; count: number }
+
+export interface AtividadeAgora {
+  /** tarefas pendentes com prazo estourado (dueDate < agora, hora real) */
+  atrasadas: number;
+  /** leads em etapa ativa do circuito (Entrada→Negociação) sem nenhuma tarefa pendente */
+  semAcao: number;
+  /** leads parados em Negociação (sem próxima ação agendada) */
+  negociacaoParada: number;
+}
+
+export interface AtividadeRow {
+  id: string;
+  nome: string;
+  contatos: number;
+  semResposta: number;
+  meetsMarcados: number;
+  meetsFeitos: number;
+  visitasMarcadas: number;
+  visitasFeitas: number;
+  negociacoes: number;
+  vendasQtd: number;
+  vendasValor: number;
+  descartes: number;
+  descartesMotivos: MotivoCount[];
+  ligAtivaTrabalhados: number;
+  ligAtivaCrm: number;
+  manuais: number;
+  /** interações do período nascidas do circuito (circuito: true) */
+  circuitoQtd: number;
+  /** todas as interações do período atribuídas a ele */
+  interacoesTotal: number;
+  aceites: number;
+  tempoAceiteMedioSeg: number | null;
+  /** retrato AGORA — não obedece ao período */
+  agora: AtividadeAgora;
+}
+
+export interface AtividadeMedia {
+  contatos: number;
+  semResposta: number;
+  meetsMarcados: number;
+  meetsFeitos: number;
+  visitasMarcadas: number;
+  visitasFeitas: number;
+  negociacoes: number;
+  vendasQtd: number;
+  vendasValor: number;
+  descartes: number;
+  ligAtivaTrabalhados: number;
+  ligAtivaCrm: number;
+  manuais: number;
+}
+
+type CircuitoEvento =
+  | 'contato' | 'semResposta' | 'meetMarcado' | 'meetFeito' | 'visitaMarcada'
+  | 'visitaFeita' | 'negociacao' | 'venda' | 'descarte' | 'manual' | null;
+
+/**
+ * Traduz uma interação narrada pelo circuito num evento contável.
+ * Defensivo: notes ausente/legado → a interação simplesmente não conta.
+ */
+export function classificaInteracao(type: string, notes: string | undefined | null): CircuitoEvento {
+  const n = typeof notes === 'string' ? notes : '';
+  switch (type) {
+    case 'Ligação':
+    case 'WhatsApp':
+      return 'contato'; // tentativa de contato (circuito ou manual, é contato do mesmo jeito)
+    case 'Follow-up':
+      if (n.startsWith('📵 Não atendeu')) return 'semResposta';
+      if (n.includes('📌 Cobrança agendada: resposta da proposta')) return 'negociacao'; // proposta apresentada
+      return null;
+    case 'Meet':
+      if (n.startsWith('✅ Meet realizado')) return 'meetFeito';
+      if (n.startsWith('📌 Meet marcad') || n.startsWith('📌 Meet remarcad') || n.startsWith('📅 Meet marcado')) return 'meetMarcado';
+      return null;
+    case 'Visita':
+      if (n.startsWith('✅ Visita realizada')) return 'visitaFeita';
+      if (n.startsWith('📌 Visita marcad') || n.startsWith('📌 Visita remarcad') || n.startsWith('🏠 Visita marcada')) return 'visitaMarcada';
+      return null;
+    case 'Etapa':
+      if (n.startsWith('↷ Etapa alterada manualmente') || (n.includes('Movido para') && n.includes('(kanban)'))) return 'manual';
+      if (n.includes('pra proposta') || n.includes('pronto pra negociar') || n.includes('pra negociação')) return 'negociacao';
+      return null;
+    case 'Venda':
+      return 'venda';
+    case 'Descarte':
+      return 'descarte';
+    default:
+      return null;
+  }
+}
+
+/** Valor pt-BR ("750.000" / "1.234.567,89") → número; 0 quando não dá pra ler. */
+function parseValorPtBR(raw: string): number {
+  const limpo = raw.replace(/\./g, '').replace(',', '.');
+  const n = parseFloat(limpo);
+  return isFinite(n) && n > 0 ? n : 0;
+}
+
+/** Extrai o valor da venda da nota '🏆 VENDA LANÇADA: R$ 750.000' (fallback: lead.vendaValor). */
+export function parseVendaValor(notes: string | undefined | null, leadVendaValor?: string): number {
+  const m = /R\$\s*([\d.,]+)/.exec(typeof notes === 'string' ? notes : '');
+  if (m) {
+    const v = parseValorPtBR(m[1]);
+    if (v > 0) return v;
+  }
+  return leadVendaValor ? parseValorPtBR(leadVendaValor) : 0;
+}
+
+/** Extrai o motivo da nota '🗑️ Descartado — motivo: X' (fallback: lead.descartadoMotivo). */
+export function parseMotivoDescarte(notes: string | undefined | null, leadMotivo?: string): string {
+  const n = typeof notes === 'string' ? notes : '';
+  const ix = n.indexOf('motivo:');
+  if (ix >= 0) {
+    const m = n.slice(ix + 'motivo:'.length).trim();
+    if (m) return m;
+  }
+  return (leadMotivo || '').trim() || 'Sem motivo';
+}
 
 export interface OrigemRow { origem: string; count: number; pct: number }
 
@@ -77,6 +201,13 @@ export interface ReportComputed {
   esquecidos: { b30: EsquecidoItem[]; b14: EsquecidoItem[]; b7: EsquecidoItem[] };
   corretorRows: CorretorRow[];
   equipeMedia: MetricasCorretor;
+  /** Aba Atividade: o circuito narrado por corretor + retrato AGORA + motivos de descarte */
+  atividade: {
+    rows: AtividadeRow[];
+    media: AtividadeMedia;
+    motivosGlobal: MotivoCount[];
+    descartesTotal: number;
+  };
   origens: OrigemRow[];
   origensTotal: number;
   campanhasCrm: { nome: string; count: number }[];
@@ -406,6 +537,133 @@ export function computeReport(
   equipeMedia.tempoAceiteMedioSeg = media(somaTempoEquipe, nTempoEquipe);
 
   // ------------------------------------------------------------------
+  // Atividade por corretor — parse do vocabulário narrado do circuito
+  // ------------------------------------------------------------------
+  const atvMap = new Map<string, AtividadeRow>();
+  const motivosPorCorretor = new Map<string, Map<string, number>>();
+  src.corretores.forEach((c) => {
+    atvMap.set(c.id, {
+      id: c.id,
+      nome: c.nome,
+      contatos: 0, semResposta: 0, meetsMarcados: 0, meetsFeitos: 0,
+      visitasMarcadas: 0, visitasFeitas: 0, negociacoes: 0,
+      vendasQtd: 0, vendasValor: 0, descartes: 0, descartesMotivos: [],
+      ligAtivaTrabalhados: 0, ligAtivaCrm: 0, manuais: 0,
+      circuitoQtd: 0, interacoesTotal: 0,
+      aceites: 0, tempoAceiteMedioSeg: null,
+      agora: { atrasadas: 0, semAcao: 0, negociacaoParada: 0 },
+    });
+    motivosPorCorretor.set(c.id, new Map());
+  });
+  const motivosGlobalMap = new Map<string, number>();
+  let descartesTotal = 0;
+
+  interacoes.forEach((i) => {
+    if (!noPeriodo(i.tsMs)) return;
+    const lead = leadMap.get(i.leadId);
+    if (!lead) return;
+    const evento = classificaInteracao(i.type, i.notes);
+    // Descarte pode transferir o lead pra conta da imobiliária — descartadoPor manda
+    const donoId = evento === 'descarte' ? (lead.descartadoPor || lead.userId) : lead.userId;
+    const a = atvMap.get(donoId);
+    if (!a) return;
+    a.interacoesTotal++;
+    if (i.circuito) a.circuitoQtd++;
+    switch (evento) {
+      case 'contato': a.contatos++; break;
+      case 'semResposta': a.semResposta++; break;
+      case 'meetMarcado': a.meetsMarcados++; break;
+      case 'meetFeito': a.meetsFeitos++; break;
+      case 'visitaMarcada': a.visitasMarcadas++; break;
+      case 'visitaFeita': a.visitasFeitas++; break;
+      case 'negociacao': a.negociacoes++; break;
+      case 'venda':
+        a.vendasQtd++;
+        a.vendasValor += parseVendaValor(i.notes, lead.vendaValor);
+        break;
+      case 'descarte': {
+        a.descartes++;
+        descartesTotal++;
+        const motivo = parseMotivoDescarte(i.notes, lead.descartadoMotivo);
+        const mm = motivosPorCorretor.get(donoId);
+        if (mm) mm.set(motivo, (mm.get(motivo) || 0) + 1);
+        motivosGlobalMap.set(motivo, (motivosGlobalMap.get(motivo) || 0) + 1);
+        break;
+      }
+      case 'manual': a.manuais++; break;
+      default: break; // desconhecida/legado — não conta
+    }
+  });
+
+  // Retrato AGORA (não obedece ao período): atrasos e leads sem próxima ação
+  src.leads.forEach((l) => {
+    const a = atvMap.get(l.userId);
+    if (!a) return;
+    a.agora.atrasadas += l.pendentesMs.filter((ms) => ms < agoraMs).length;
+    const etapaCirc = mapEtapaCircuito(l.etapa);
+    if (etapaCirc === ETAPA_BOLSAO || isTerminal(etapaCirc)) return; // Bolsão é estacionado de propósito
+    if (l.pendentesMs.length === 0) {
+      a.agora.semAcao++;
+      if (etapaCirc === ETAPA_NEGOCIACAO) a.agora.negociacaoParada++;
+    }
+  });
+
+  // Ligação ativa: contatos frios trabalhados no período → quantos viraram lead no CRM
+  src.ligacaoAtiva.forEach((c) => {
+    const a = atvMap.get(c.corretorId);
+    if (!a) return;
+    if (c.status === 'crm' && noPeriodo(c.incluidoEmMs)) {
+      a.ligAtivaTrabalhados++;
+      a.ligAtivaCrm++;
+    } else if (c.status === 'descartado' && noPeriodo(c.descartadoEmMs)) {
+      a.ligAtivaTrabalhados++;
+    }
+  });
+
+  // Aceite de anúncio: reusa o que o ranking já calculou
+  corretorRows.forEach((r) => {
+    const a = atvMap.get(r.id);
+    if (!a) return;
+    a.aceites = r.aceites;
+    a.tempoAceiteMedioSeg = r.tempoAceiteMedioSeg;
+  });
+
+  const atividadeRows: AtividadeRow[] = src.corretores.map((c) => {
+    const a = atvMap.get(c.id)!;
+    a.descartesMotivos = Array.from((motivosPorCorretor.get(c.id) || new Map<string, number>()).entries())
+      .map(([motivo, count]) => ({ motivo, count }))
+      .sort((x, y) => y.count - x.count);
+    return a;
+  });
+
+  const atvMedia: AtividadeMedia = {
+    contatos: 0, semResposta: 0, meetsMarcados: 0, meetsFeitos: 0,
+    visitasMarcadas: 0, visitasFeitas: 0, negociacoes: 0,
+    vendasQtd: 0, vendasValor: 0, descartes: 0,
+    ligAtivaTrabalhados: 0, ligAtivaCrm: 0, manuais: 0,
+  };
+  atividadeRows.forEach((a) => {
+    atvMedia.contatos += a.contatos;
+    atvMedia.semResposta += a.semResposta;
+    atvMedia.meetsMarcados += a.meetsMarcados;
+    atvMedia.meetsFeitos += a.meetsFeitos;
+    atvMedia.visitasMarcadas += a.visitasMarcadas;
+    atvMedia.visitasFeitas += a.visitasFeitas;
+    atvMedia.negociacoes += a.negociacoes;
+    atvMedia.vendasQtd += a.vendasQtd;
+    atvMedia.vendasValor += a.vendasValor;
+    atvMedia.descartes += a.descartes;
+    atvMedia.ligAtivaTrabalhados += a.ligAtivaTrabalhados;
+    atvMedia.ligAtivaCrm += a.ligAtivaCrm;
+    atvMedia.manuais += a.manuais;
+  });
+  (Object.keys(atvMedia) as (keyof AtividadeMedia)[]).forEach((k) => { atvMedia[k] /= nCor; });
+
+  const motivosGlobal: MotivoCount[] = Array.from(motivosGlobalMap.entries())
+    .map(([motivo, count]) => ({ motivo, count }))
+    .sort((x, y) => y.count - x.count);
+
+  // ------------------------------------------------------------------
   // Origens & campanhas
   // ------------------------------------------------------------------
   const origemDe = (l: LeadLite) => l.origemTipo || l.origem || 'Sem origem';
@@ -502,6 +760,7 @@ export function computeReport(
     esquecidos: { b30, b14, b7 },
     corretorRows,
     equipeMedia,
+    atividade: { rows: atividadeRows, media: atvMedia, motivosGlobal, descartesTotal },
     origens,
     origensTotal,
     campanhasCrm,

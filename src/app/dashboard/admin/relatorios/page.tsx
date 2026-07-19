@@ -15,15 +15,17 @@ import { PERIODO_PRESETS, PeriodoPreset, resolvePeriodo } from './_components/re
 import { useRelatoriosData } from './_components/useRelatoriosData';
 import { computeReport } from './_components/computeReport';
 import PulsoTab from './_components/PulsoTab';
+import AtividadeTab from './_components/AtividadeTab';
 import FunilTab from './_components/FunilTab';
 import CorretoresTab from './_components/CorretoresTab';
 import IndividualTab from './_components/IndividualTab';
 import OrigensTab from './_components/OrigensTab';
 
-type TabKey = 'pulso' | 'funil' | 'corretores' | 'individual' | 'origens';
+type TabKey = 'pulso' | 'atividade' | 'funil' | 'corretores' | 'individual' | 'origens';
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'pulso', label: 'Pulso' },
+  { key: 'atividade', label: 'Atividade' },
   { key: 'funil', label: 'Funil' },
   { key: 'corretores', label: 'Corretores' },
   { key: 'individual', label: 'Individual × Coletivo' },
@@ -152,6 +154,7 @@ export default function RelatoriosAdminPage() {
       ) : (
         <>
           {tab === 'pulso' && <PulsoTab report={report} periodo={periodo} />}
+          {tab === 'atividade' && <AtividadeTab report={report} />}
           {tab === 'funil' && <FunilTab report={report} />}
           {tab === 'corretores' && <CorretoresTab report={report} onComparar={compararCorretor} />}
           {tab === 'individual' && <IndividualTab report={report} corretorId={corretorSel} onSelecionar={setCorretorSel} />}
