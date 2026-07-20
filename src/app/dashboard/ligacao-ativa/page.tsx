@@ -13,7 +13,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  addDoc, arrayUnion, collection, doc, getDoc, getDocs, limit, onSnapshot, query, serverTimestamp, Timestamp, updateDoc, where,
+  addDoc, arrayUnion, collection, doc, getDoc, getDocs, limit, onSnapshot, query, serverTimestamp, Timestamp, updateDoc, where, writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
@@ -384,6 +384,32 @@ export default function LigacaoAtivaPage() {
         incluidoEm: serverTimestamp(),
         eventos: arrayUnion({ tipo: 'crm', em: Timestamp.now() }),
       });
+
+      // O REGISTRO viaja junto: cada evento da lista fria vira interação no
+      // lead (com a data original), entrando na linha do tempo do CRM.
+      try {
+        const interCol = collection(db, 'leads', novoLead.id, 'interactions');
+        const batchInter = writeBatch(db);
+        const evs = eventosDe(c).slice(-20);
+        evs.forEach(ev => {
+          const v = EVENTO_VISUAL[ev.tipo];
+          batchInter.set(doc(interCol), {
+            type: ev.tipo === 'tentativa' ? 'WhatsApp' : ev.tipo === 'descartado' ? 'Descarte' : 'Outros',
+            notes: `☎️ Lista fria · ${v ? v.rotulo(ev.detalhe) : ev.tipo}`,
+            timestamp: ev.em?.toDate ? ev.em : Timestamp.now(),
+            circuito: true,
+          });
+        });
+        const tent = tentativasDe(c);
+        batchInter.set(doc(interCol), {
+          type: 'Ligação',
+          notes: `☎️ Veio da Ligação Ativa · ${listaNome}${tent > 0 ? ` · atendeu na ${tent + 1}ª tentativa` : ''}`,
+          timestamp: serverTimestamp(),
+          circuito: true,
+        });
+        await batchInter.commit();
+      } catch { /* histórico é bônus — não trava a inclusão */ }
+
       showToast(`${c.nome || 'Contato'} agora é lead no CRM! 🎉`, 'success');
       router.push(`/dashboard/crm/${novoLead.id}`);
     } catch (e) {

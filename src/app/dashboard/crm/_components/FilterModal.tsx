@@ -16,10 +16,11 @@ const QUALIFICATION_QUESTIONS = [
 ];
 
 const TASK_STATUS_OPTIONS = [
+    'Ação agora',
     'Tarefa em Atraso',
     'Tarefa do Dia',
     'Tarefa Futura',
-    'Criar Tarefa'
+    'Sem tarefa',
 ];
 
 // Origens conhecidas (mesmas opções do NewLeadModal). Leads legados sem origemTipo caem em "Outros".

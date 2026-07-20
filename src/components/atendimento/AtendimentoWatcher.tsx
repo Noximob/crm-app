@@ -17,7 +17,7 @@
  * (<72h). Leads antigos entram "manso", quando o corretor abrir o lead.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { collection, doc, getDocs, limit, onSnapshot, orderBy, query, updateDoc, where, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
@@ -57,6 +57,7 @@ export default function AtendimentoWatcher() {
   const { currentUser, userData, isEspelhoDemo } = useAuth();
   const { normalizeEtapa } = usePipelineStages();
   const pathname = usePathname();
+  const router = useRouter();
 
   const [leads, setLeads] = useState<LeadDoc[]>([]);
   const [snapshotChegou, setSnapshotChegou] = useState(false);
@@ -104,6 +105,15 @@ export default function AtendimentoWatcher() {
     if (!ativo) return;
     carregarCadencias(userData?.imobiliariaId).then(setCadencias);
   }, [ativo, userData?.imobiliariaId]);
+
+  // Tem lista fria? (gate do convite "bora de ligação ativa" quando tudo em dia)
+  const [temListaFria, setTemListaFria] = useState(false);
+  useEffect(() => {
+    if (!ativo) return;
+    getDocs(query(collection(db, 'ligacaoAtivaListas'), where('corretorId', '==', currentUser!.uid), limit(1)))
+      .then(s => setTemListaFria(!s.empty))
+      .catch(() => {});
+  }, [ativo, currentUser]);
 
   // Relógio de 30s: é ele que percebe "a tarefa venceu AGORA"
   useEffect(() => {
@@ -273,6 +283,21 @@ export default function AtendimentoWatcher() {
 
   return (
     <>
+      {/* Tudo em dia + tem lista fria? Convite piscando pra ligação ativa 📞 */}
+      {esperando === 0 && snapshotChegou && temListaFria && !abertoId && !semAviso && (
+        <button
+          onClick={() => router.push('/dashboard/ligacao-ativa')}
+          className="fixed z-[60] bottom-20 lg:bottom-6 right-4 lg:right-6 flex items-center gap-2.5 pl-3.5 pr-4 py-3 rounded-2xl border border-[#E8C547]/50 bg-[#201c2e]/95 backdrop-blur-sm shadow-[0_0_30px_-6px_rgba(232,197,71,0.5),0_18px_44px_-14px_rgba(0,0,0,0.9)] hover:bg-[#E8C547]/[0.08] hover:scale-[1.03] active:scale-[0.97] transition-all animate-[pulse_2s_ease-in-out_infinite]"
+          title="Nenhum atendimento pendente — hora de gerar lead novo!"
+        >
+          <span className="text-[16px]">☎️</span>
+          <span className="text-left leading-tight">
+            <span className="block text-[12.5px] font-extrabold text-[#FFE9A6] uppercase tracking-wide">Tudo em dia!</span>
+            <span className="block text-[11.5px] font-bold text-white/80">Bora de ligação ativa →</span>
+          </span>
+        </button>
+      )}
+
       {/* Aviso fixo — CHAMATIVO: tem atendimento atrasado esperando.
           Fica de fora das telas de trabalho focado (detalhes do lead e Ligação Ativa). */}
       {esperando > 0 && !abertoId && !semAviso && (

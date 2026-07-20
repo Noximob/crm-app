@@ -11,8 +11,9 @@ import Link from 'next/link';
 import FilterModal, { Filters, ORIGEM_FILTER_OPTIONS, getOrigemBucket, getCampanhaDoLead } from './_components/FilterModal';
 import { getDemoLeads } from '@/lib/espelho/demoData';
 import LoadingState from '@/components/ui/LoadingState';
-import { ensureTarefasPendentes, getTaskStatusInfo, TaskStatus } from '@/lib/leadTasks';
+import { ensureTarefasPendentes } from '@/lib/leadTasks';
 import { ETAPA_FECHADO, ETAPA_DESCARTADO, ETAPAS_TERMINAIS } from '@/lib/circuito';
+import { statusDoLead, type StatusLead } from '@/lib/statusLead';
 
 // --- Tipos ---
 interface Lead {
@@ -20,12 +21,12 @@ interface Lead {
   nome: string;
   telefone: string;
   etapa: string;
-  taskStatus: TaskStatus;
+  taskStatus: StatusLead;
   origem?: string;
   origemTipo?: string;
   origemPropaganda?: string;
   qualificacao?: { [key: string]: string | string[] };
-  [key: string]: any; 
+  [key: string]: any;
 }
 
 // --- Ícones ---
@@ -59,17 +60,18 @@ const FilterChip = ({ children, selected, onClick, className = '', title }: { ch
     </button>
 );
 
-const StatusIndicator = ({ status }: { status: TaskStatus }) => {
-    const statusInfo = {
+const StatusIndicator = ({ status }: { status: StatusLead }) => {
+    const statusInfo: Record<string, { color: string; text: string; destaque?: boolean }> = {
+        'Ação agora': { color: 'bg-[#FF1E56] shadow-[0_0_10px_rgba(255,30,86,0.9)] animate-pulse', text: 'Ação agora', destaque: true },
         'Tarefa em Atraso': { color: 'bg-[#FF1E56] shadow-[0_0_8px_rgba(255,30,86,0.6)]', text: 'Atrasada' },
         'Tarefa do Dia': { color: 'bg-[#E8C547] shadow-[0_0_8px_rgba(232,197,71,0.5)]', text: 'Para Hoje' },
         'Tarefa Futura': { color: 'bg-[#7DD3FC]', text: 'Futura' },
         'Sem tarefa': { color: 'bg-white/25', text: 'Sem Tarefa' },
     };
-    const { color, text } = statusInfo[status] || statusInfo['Sem tarefa'];
+    const { color, text, destaque } = statusInfo[status] || statusInfo['Sem tarefa'];
 
     return (
-        <div className="flex items-center gap-2">
+        <div className={`flex items-center gap-2 ${destaque ? 'text-[#FF9EB5] font-bold' : ''}`}>
             <span className={`h-2.5 w-2.5 ${color} rounded-full`}></span>
             {text}
         </div>
@@ -90,7 +92,8 @@ const SectionTitle = ({ children, className = '' }: { children: React.ReactNode,
   </div>
 );
 
-const TAREFA_PARAM_MAP: Record<string, TaskStatus> = {
+const TAREFA_PARAM_MAP: Record<string, StatusLead> = {
+    acao: 'Ação agora',
     atraso: 'Tarefa em Atraso',
     hoje: 'Tarefa do Dia',
     sem: 'Sem tarefa',
@@ -107,7 +110,7 @@ export default function CrmPage() {
     const [leads, setLeads] = useState<Lead[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState<string | null>(null);
-    const [activeTaskFilter, setActiveTaskFilter] = useState<TaskStatus | null>(null);
+    const [activeTaskFilter, setActiveTaskFilter] = useState<StatusLead | null>(null);
     const [activeOrigemFilter, setActiveOrigemFilter] = useState<string | null>(null);
     const [activePropagandaFilter, setActivePropagandaFilter] = useState<string | null>(null);
     const [isFilterModalOpen, setFilterModalOpen] = useState(false);
@@ -210,7 +213,11 @@ export default function CrmPage() {
 
     useEffect(() => {
         if (isEspelhoDemo) {
-            setLeads(getDemoLeads() as Lead[]);
+            // Mesmo status do modo real: régua das tarefas + "Ação agora" do circuito
+            setLeads(getDemoLeads().map(l => ({
+                ...l,
+                taskStatus: statusDoLead((l as any).etapa, ((l as any).tasks || []).filter((t: any) => t.status === 'pendente')),
+            })) as unknown as Lead[]);
             setLoading(false);
             return;
         }
@@ -239,7 +246,7 @@ export default function CrmPage() {
             const leadData = { id: doc.id, ...doc.data() } as Lead;
             // Lead novo já traz tarefasPendentes ([]); ensure cobre leads legados sem o campo
             const tarefasMap = await ensureTarefasPendentes([leadData]);
-            leadData.taskStatus = getTaskStatusInfo(tarefasMap.get(leadData.id) || []);
+            leadData.taskStatus = statusDoLead(leadData.etapa, tarefasMap.get(leadData.id) || []);
             leadData.qualificacao = doc.data().qualificacao || {};
             // Só adiciona se não estiver na lista
             setLeads(prev => {
@@ -273,7 +280,7 @@ export default function CrmPage() {
             });
             const tarefasMap = await ensureTarefasPendentes(rawLeads);
             const newLeads = rawLeads.map(leadData => {
-                leadData.taskStatus = getTaskStatusInfo(tarefasMap.get(leadData.id) || []);
+                leadData.taskStatus = statusDoLead(leadData.etapa, tarefasMap.get(leadData.id) || []);
                 return leadData;
             });
             setLeads(newLeads);
@@ -468,7 +475,7 @@ export default function CrmPage() {
     const activeAdvancedFilterCount = Object.values(advancedFilters).reduce((count, options: string[]) => count + options.length, 0);
 
     // Status de tarefa para filtros rápidos (mesma ordem e lógica do dashboard)
-    const taskStatusFilters: TaskStatus[] = ['Tarefa em Atraso', 'Tarefa do Dia', 'Tarefa Futura', 'Sem tarefa'];
+    const taskStatusFilters: StatusLead[] = ['Ação agora', 'Tarefa em Atraso', 'Tarefa do Dia', 'Tarefa Futura', 'Sem tarefa'];
 
     // Quantos filtros rápidos estão ativos (etapa + tarefa + origem + campanha) — badge do botão
     const quickFilterCount = (activeFilter ? 1 : 0) + (activeTaskFilter ? 1 : 0) + (activeOrigemFilter ? 1 : 0) + (activePropagandaFilter ? 1 : 0);

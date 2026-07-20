@@ -9,15 +9,16 @@ import { collection, getDocs, query, where, orderBy, limit } from 'firebase/fire
 import FilterModal, { Filters } from '@/app/dashboard/crm/_components/FilterModal';
 import { getDemoLeads, DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
 import LoadingState from '@/components/ui/LoadingState';
-import { ensureTarefasPendentes, getTaskStatusInfo, TarefaPendente, TaskStatus } from '@/lib/leadTasks';
+import { ensureTarefasPendentes, TarefaPendente } from '@/lib/leadTasks';
 import { ETAPA_FECHADO, ETAPA_DESCARTADO, ETAPAS_TERMINAIS } from '@/lib/circuito';
+import { statusDoLead, type StatusLead } from '@/lib/statusLead';
 
 interface Lead {
   id: string;
   nome: string;
   telefone: string;
   etapa: string;
-  taskStatus: TaskStatus;
+  taskStatus: StatusLead;
   qualificacao?: { [key: string]: string | string[] };
   [key: string]: unknown;
 }
@@ -60,16 +61,17 @@ const FilterChip = ({ children, selected, onClick }: { children: React.ReactNode
   </button>
 );
 
-const StatusIndicator = ({ status }: { status: TaskStatus }) => {
-  const statusInfo: Record<TaskStatus, { color: string; text: string }> = {
+const StatusIndicator = ({ status }: { status: StatusLead }) => {
+  const statusInfo: Record<string, { color: string; text: string; destaque?: boolean }> = {
+    'Ação agora': { color: 'bg-[#FF1E56] shadow-[0_0_10px_rgba(255,30,86,0.9)] animate-pulse', text: 'Ação agora', destaque: true },
     'Tarefa em Atraso': { color: 'bg-red-500', text: 'Atrasada' },
     'Tarefa do Dia': { color: 'bg-yellow-400', text: 'Para Hoje' },
     'Tarefa Futura': { color: 'bg-sky-500', text: 'Futura' },
     'Sem tarefa': { color: 'bg-white/20', text: 'Sem Tarefa' },
   };
-  const { color, text } = statusInfo[status] || statusInfo['Sem tarefa'];
+  const { color, text, destaque } = statusInfo[status] || statusInfo['Sem tarefa'];
   return (
-    <div className="flex items-center gap-2">
+    <div className={`flex items-center gap-2 ${destaque ? 'text-[#FF9EB5] font-bold' : ''}`}>
       <span className={`h-2.5 w-2.5 ${color} rounded-full`} />
       {text}
     </div>
@@ -91,7 +93,7 @@ const SectionTitle = ({ children, className = '' }: { children: React.ReactNode;
 
 const MAX_LEADS_LOAD = 500;
 const PAGE_SIZE = 20;
-const taskStatusFilters: TaskStatus[] = ['Tarefa em Atraso', 'Tarefa do Dia', 'Tarefa Futura', 'Sem tarefa'];
+const taskStatusFilters: StatusLead[] = ['Ação agora', 'Tarefa em Atraso', 'Tarefa do Dia', 'Tarefa Futura', 'Sem tarefa'];
 
 export default function VisualizarCrmCorretorPage() {
   const { userData, isEspelhoDemo } = useAuth();
@@ -101,7 +103,7 @@ export default function VisualizarCrmCorretorPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
-  const [activeTaskFilter, setActiveTaskFilter] = useState<TaskStatus | null>(null);
+  const [activeTaskFilter, setActiveTaskFilter] = useState<StatusLead | null>(null);
   const [isFilterModalOpen, setFilterModalOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState<Filters>({});
   const [searchTerm, setSearchTerm] = useState('');
@@ -156,7 +158,7 @@ export default function VisualizarCrmCorretorPage() {
           nome: l.nome,
           telefone: l.telefone,
           etapa: l.etapa,
-          taskStatus: getTaskStatusInfo(tasks),
+          taskStatus: statusDoLead(l.etapa, tasks),
           qualificacao: l.qualificacao || {},
         };
       });
@@ -181,7 +183,7 @@ export default function VisualizarCrmCorretorPage() {
       });
       const tarefasMap = await ensureTarefasPendentes(rawLeads);
       const newLeads = rawLeads.map(leadData => {
-        leadData.taskStatus = getTaskStatusInfo(tarefasMap.get(leadData.id) || []);
+        leadData.taskStatus = statusDoLead(leadData.etapa, tarefasMap.get(leadData.id) || []);
         return leadData;
       });
       setLeads(newLeads);
