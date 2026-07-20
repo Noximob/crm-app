@@ -25,6 +25,7 @@ interface Corretor {
 interface ContatoPreview {
   nome: string;
   telefone: string;
+  anotacoes: string;
 }
 
 interface EventoBolsao { tipo: string; detalhe?: string; em: any; por?: string }
@@ -280,7 +281,17 @@ export default function ImportarLigacaoAtivaPage() {
     };
 
     const contatos: ContatoPreview[] = lines.map(line => {
-      const [rawA = '', rawB = ''] = line.split(/\t|,|;/);
+      // Tab (Excel/Sheets) e ";" separam colunas com segurança; vírgula só
+      // separa as 2 primeiras — o RESTO vira anotação inteira (endereços têm vírgula!)
+      let partes: string[];
+      if (line.includes('\t')) partes = line.split('\t');
+      else if (line.includes(';')) partes = line.split(';');
+      else partes = line.split(',');
+
+      const rawA = partes[0] ?? '';
+      const rawB = partes[1] ?? '';
+      const resto = partes.slice(2).join(line.includes('\t') || line.includes(';') ? ' · ' : ', ').trim();
+
       let nome = rawA;
       let telefone = rawB;
       if (!telefone) {
@@ -294,7 +305,7 @@ export default function ImportarLigacaoAtivaPage() {
           nome = rawB;
         }
       }
-      return { nome: nome?.trim() || '', telefone: telefone?.trim() || '' };
+      return { nome: nome?.trim() || '', telefone: telefone?.trim() || '', anotacoes: resto };
     });
 
     const validos = contatos.filter(l => l.telefone.replace(/\D/g, '').length >= 8);
@@ -361,7 +372,7 @@ export default function ImportarLigacaoAtivaPage() {
           telefone: c.telefone,
           whatsapp: c.telefone.replace(/\D/g, ''),
           status: 'pendente',
-          anotacoes: '',
+          anotacoes: c.anotacoes || '',
           qualificacao: {},
           ordem: i,
           criadoEm: serverTimestamp(),
@@ -399,7 +410,7 @@ export default function ImportarLigacaoAtivaPage() {
         <span className="gx-tag mb-2 inline-flex"><span>Ligação ativa</span></span>
         <h1 className="al-display text-[20px] font-bold text-white uppercase tracking-[0.1em] mb-2 text-left">Importar Lista de Ligação</h1>
         <p className="text-text-secondary mb-6 text-left text-sm">
-          Cole nomes e telefones (direto do Excel/Sheets). A lista vira a <b className="text-white">tabela da Ligação Ativa</b> do corretor —
+          Cole nome, telefone e, se tiver, uma <b className="text-white">anotação</b> na terceira coluna (endereço, condomínio, de onde veio…) — direto do Excel/Sheets. A lista vira a <b className="text-white">tabela da Ligação Ativa</b> do corretor —
           o contato só entra no CRM quando atender e o corretor clicar em &quot;Incluir no CRM&quot;.
         </p>
         {mensagem && <div className={`mb-4 p-3 rounded-xl border text-sm font-semibold ${mensagem.includes('Erro') ? 'bg-red-500/10 border-red-500/40 text-red-300' : mensagem.startsWith('Nenhum contato') ? 'bg-amber-500/10 border-amber-500/40 text-amber-200' : 'bg-[#34D399]/10 border-[#34D399]/35 text-emerald-200'}`}>{mensagem}</div>}
@@ -430,7 +441,7 @@ export default function ImportarLigacaoAtivaPage() {
 
         <textarea
           className="w-full h-40 p-3 rounded-lg border border-white/10 bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50 mb-4"
-          placeholder={'Exemplo:\nJoão Silva, (47) 99999-8888\nMaria Souza\t(47) 98888-7777\n(47) 97777-6666'}
+          placeholder={'Exemplo:\nJoão Silva, (47) 99999-8888, Rua das Gaivotas 120 - Barra Velha\nMaria Souza\t(47) 98888-7777\tEd. Orla da Barra, apto 302\n(47) 97777-6666'}
           value={input}
           onChange={e => setInput(e.target.value)}
         />
@@ -449,9 +460,10 @@ export default function ImportarLigacaoAtivaPage() {
             <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-2">Prévia — {preview.length} contato{preview.length > 1 ? 's' : ''}:</div>
             <ul className="space-y-1">
               {preview.map((c, idx) => (
-                <li key={idx} className="flex gap-2 items-center text-sm">
-                  <span className="font-bold text-white">{c.nome || 'Sem nome'}</span>
-                  <span className="text-text-secondary tabular-nums">{c.telefone}</span>
+                <li key={idx} className="flex gap-2 items-baseline text-sm min-w-0">
+                  <span className="font-bold text-white shrink-0">{c.nome || 'Sem nome'}</span>
+                  <span className="text-text-secondary tabular-nums shrink-0">{c.telefone}</span>
+                  {c.anotacoes && <span className="text-[12px] text-[#FFE9A6]/70 italic truncate" title={c.anotacoes}>📝 {c.anotacoes}</span>}
                 </li>
               ))}
             </ul>
