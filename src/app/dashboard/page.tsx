@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, getDoc, Timestamp, orderBy } from 'firebase/firestore';
 import { ensureTarefasPendentes, getTaskStatusInfo, TarefaPendente } from '@/lib/leadTasks';
+import { ETAPA_FECHADO, ETAPAS_DO_ADMIN } from '@/lib/circuito';
 import Link from 'next/link';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { getDemoLeads } from '@/lib/espelho/demoData';
@@ -541,15 +542,20 @@ export default function DashboardPage() {
       stages.forEach(e => { porEtapa[e] = 0; });
       demoLeads.forEach(lead => {
         const etapa = normalizeEtapa(lead.etapa);
-        // Terminais (Fechado/Descartado) ficam fora do funil ativo
+        // Bolsão/Descartado (área do admin) ficam fora do funil pessoal
         if (porEtapa[etapa] === undefined) return;
         porEtapa[etapa] += 1;
       });
       setFunilPessoal(porEtapa);
-      setTarefaAtrasadaCount(demoLeads.filter(l => l.taskStatus === 'Tarefa em Atraso').length);
-      setTarefaDiaCount(demoLeads.filter(l => l.taskStatus === 'Tarefa do Dia').length);
-      setSemTarefaCount(demoLeads.filter(l => l.taskStatus === 'Sem tarefa').length);
-      const leadsToShow = demoLeads.filter(lead => lead.taskStatus !== 'Tarefa Futura');
+      // Contadores de ação: leads do admin fora; Fechamento (venda feita) não pede tarefa
+      const demoAtivos = demoLeads.filter(l => {
+        const e = normalizeEtapa(l.etapa);
+        return !(ETAPAS_DO_ADMIN as readonly string[]).includes(e) && e !== ETAPA_FECHADO;
+      });
+      setTarefaAtrasadaCount(demoAtivos.filter(l => l.taskStatus === 'Tarefa em Atraso').length);
+      setTarefaDiaCount(demoAtivos.filter(l => l.taskStatus === 'Tarefa do Dia').length);
+      setSemTarefaCount(demoAtivos.filter(l => l.taskStatus === 'Sem tarefa').length);
+      const leadsToShow = demoAtivos.filter(lead => lead.taskStatus !== 'Tarefa Futura');
       leadsToShow.sort((a, b) => TAREFA_STATUS_ORDER.indexOf(a.taskStatus) - TAREFA_STATUS_ORDER.indexOf(b.taskStatus));
       setAgendaLeads(leadsToShow);
       setAgendaLoading(false);
@@ -574,17 +580,21 @@ export default function DashboardPage() {
         stages.forEach(e => { porEtapa[e] = 0; });
         allLeads.forEach((lead: any) => {
           const etapa = normalizeEtapa(lead.etapa);
-          // Terminais (Fechado/Descartado) ficam fora do funil ativo
+          // Bolsão/Descartado (área do admin) ficam fora do funil pessoal
           if (porEtapa[etapa] === undefined) return;
           porEtapa[etapa] += 1;
         });
         setFunilPessoal(porEtapa);
-        // Contagens: Tarefa em Atraso, Tarefa do Dia, Sem tarefa
-        setTarefaAtrasadaCount(settledLeads.filter(l => l.taskStatus === 'Tarefa em Atraso').length);
-        setTarefaDiaCount(settledLeads.filter(l => l.taskStatus === 'Tarefa do Dia').length);
-        setSemTarefaCount(settledLeads.filter(l => l.taskStatus === 'Sem tarefa').length);
+        // Contadores de ação: leads do admin fora; Fechamento (venda feita) não pede tarefa
+        const settledAtivos = settledLeads.filter((l: any) => {
+          const e = normalizeEtapa(l.etapa);
+          return !(ETAPAS_DO_ADMIN as readonly string[]).includes(e) && e !== ETAPA_FECHADO;
+        });
+        setTarefaAtrasadaCount(settledAtivos.filter(l => l.taskStatus === 'Tarefa em Atraso').length);
+        setTarefaDiaCount(settledAtivos.filter(l => l.taskStatus === 'Tarefa do Dia').length);
+        setSemTarefaCount(settledAtivos.filter(l => l.taskStatus === 'Sem tarefa').length);
         // Lista para compatibilidade (ex.: link Ver Completa)
-        const leadsToShow = settledLeads.filter(lead => lead.taskStatus !== 'Tarefa Futura');
+        const leadsToShow = settledAtivos.filter(lead => lead.taskStatus !== 'Tarefa Futura');
         leadsToShow.sort((a, b) => TAREFA_STATUS_ORDER.indexOf(a.taskStatus) - TAREFA_STATUS_ORDER.indexOf(b.taskStatus));
         setAgendaLeads(leadsToShow);
       } catch (error) {
@@ -1152,7 +1162,7 @@ export default function DashboardPage() {
               const porEtapa = funilPessoal;
               const etapasVisiveis = stages.slice(0, 6);
               const maxLocal = Math.max(...etapasVisiveis.map((e) => porEtapa[e] ?? 0), 1);
-              const coresFunil = ['#FFE9A6', '#E8C547', '#D4A017', '#F59E0B', '#FF7A45', '#FF1E56'];
+              const coresFunil = ['#FFE9A6', '#E8C547', '#D4A017', '#F59E0B', '#FF7A45', '#34D399'];
               return (
                 <div className="min-w-0 flex-1 min-h-0 flex flex-col justify-center gap-[5px]">
                   {etapasVisiveis.map((etapa, ei) => {

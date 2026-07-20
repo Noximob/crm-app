@@ -78,9 +78,9 @@ export interface DemoLead {
   circuito?: { tentativas: number; desde: Timestamp };
 }
 
-// Etapas do circuito (na ordem do quadro) + estados terminais gravados em lead.etapa
-const [ETAPA_ENTRADA, ETAPA_FOLLOWUP, ETAPA_MEET, ETAPA_VISITA, ETAPA_NEGOCIACAO, ETAPA_BOLSAO] = PIPELINE_STAGES;
-const ETAPA_FECHADO = 'Fechado';
+// Etapas do circuito (na ordem do quadro) + estados da área do admin gravados em lead.etapa
+const [ETAPA_ENTRADA, ETAPA_FOLLOWUP, ETAPA_MEET, ETAPA_VISITA, ETAPA_NEGOCIACAO, ETAPA_FECHADO] = PIPELINE_STAGES;
+const ETAPA_BOLSAO = 'Bolsão';
 const ETAPA_DESCARTADO = 'Descartado';
 
 // Distribuição realista pelas etapas (os 5 primeiros índices casam com as tarefas fixas do builder)

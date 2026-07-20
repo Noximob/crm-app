@@ -5,13 +5,16 @@
  * Senão vale a régua normal das tarefas (hora exata).
  */
 import { getTaskStatusInfo, type TarefaPendente, type TaskStatus } from '@/lib/leadTasks';
-import { CADENCIAS_PADRAO, mapEtapaCircuito } from '@/lib/circuito';
+import { CADENCIAS_PADRAO, ETAPA_FECHADO, mapEtapaCircuito } from '@/lib/circuito';
 import { perguntaDoLead } from '@/components/atendimento/AtendimentoOverlay';
 
-export type StatusLead = TaskStatus | 'Ação agora';
+export type StatusLead = TaskStatus | 'Ação agora' | 'Venda fechada';
 
 export function statusDoLead(etapa: string | undefined, pendentes: TarefaPendente[]): StatusLead {
-  const p = perguntaDoLead(mapEtapaCircuito(etapa), pendentes as any, CADENCIAS_PADRAO, Date.now());
+  const etapaCirc = mapEtapaCircuito(etapa);
+  // Fechamento = venda concluída — não é "sem tarefa", é missão cumprida
+  if (etapaCirc === ETAPA_FECHADO) return 'Venda fechada';
+  const p = perguntaDoLead(etapaCirc, pendentes as any, CADENCIAS_PADRAO, Date.now());
   if (p?.pendente) return 'Ação agora';
   return getTaskStatusInfo(pendentes);
 }

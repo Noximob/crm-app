@@ -193,7 +193,7 @@ export interface ReportComputed {
   timeline: { label: string; leads: number; atividade: number }[];
   timelineGranularidade: 'dia' | 'semana';
   funil: { etapa: string; cor: string; total: number; pctTotal: number; novosPeriodo: number }[];
-  /** Leads nas etapas do circuito (Fechado/Descartado ficam fora das linhas do funil) */
+  /** Leads nas etapas do circuito, incluindo Fechamento (Descartado/Bolsão ficam fora) */
   totalLeadsBase: number;
   /** Leads em estado terminal na base inteira */
   fechadosTotal: number;
@@ -371,7 +371,7 @@ export function computeReport(
   let descartadosTotal = 0;
   src.leads.forEach((l) => {
     const label = funilCount.has(l.etapa) ? l.etapa : mapEtapaCircuito(l.etapa);
-    if (label === ETAPA_FECHADO) { fechadosTotal++; return; }
+    if (label === ETAPA_FECHADO) fechadosTotal++; // Fechamento também é linha do funil (segue pro slot)
     if (label === ETAPA_DESCARTADO) { descartadosTotal++; return; }
     const slot = funilCount.get(label);
     if (!slot) return;

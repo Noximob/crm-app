@@ -863,6 +863,19 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                   <Pbtn key={`${estado.t}-${i}`} c={btn.c} onClick={btn.f} disabled={executando}>{btn.t}</Pbtn>
                 ))}
               </div>
+              {/* Descarte sempre à mão — de qualquer passo do circuito */}
+              {estado.t !== 'descarte' && estado.t !== 'venda' && (
+                <div className="px-4 pb-3 -mt-1.5 flex justify-end">
+                  <button
+                    onClick={() => irPara({ t: 'descarte', volta: estado })}
+                    disabled={executando}
+                    className="text-[11px] font-semibold text-white/35 hover:text-[#FF8F8F] transition-colors disabled:opacity-40"
+                    title="Descartar este cliente (vai pedir o motivo)"
+                  >
+                    🗑 Descartar {primeiroNome}
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Histórico — o que já rolou, pra pensar antes de responder */}

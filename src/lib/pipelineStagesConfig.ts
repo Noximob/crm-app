@@ -32,6 +32,7 @@ export const DEFAULT_PIPELINE_STAGES_WITH_META: PipelineStageWithMeta[] = [
   { label: 'Meet', reportCategory: 'Reunião agendada', isQuente: false },
   { label: 'Visita', reportCategory: 'Reunião agendada', isQuente: false },
   { label: 'Negociação', reportCategory: 'Negociação e contrato', isQuente: true },
+  { label: 'Fechamento', reportCategory: 'Follow up', isQuente: false },
 ];
 
 /** Labels curtos para exibição em TV / cards compactos (por categoria) */
@@ -41,7 +42,7 @@ export const COMPACT_GROUP_LABELS: Record<ReportCategory, string> = {
   'Apresentação do imóvel': 'Follow-up',
   'Reunião agendada': 'Meet & Visita',
   'Negociação e contrato': 'Negociação',
-  'Follow up': 'Fechado',
+  'Follow up': 'Fechamento',
   'Troca de Leads': 'Bolsão',
 };
 

@@ -258,5 +258,5 @@ export function delta(atual: number, anterior: number): number | null {
 }
 
 /** Paleta do funil por índice de etapa (repete com módulo). */
-export const FUNIL_PALETTE = ['#FFE9A6', '#E8C547', '#D4A017', '#F59E0B', '#FF7A45', '#FF1E56'];
+export const FUNIL_PALETTE = ['#FFE9A6', '#E8C547', '#D4A017', '#F59E0B', '#FF7A45', '#34D399'];
 export const funilCor = (i: number) => FUNIL_PALETTE[i % FUNIL_PALETTE.length];

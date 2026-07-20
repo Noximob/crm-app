@@ -20,6 +20,7 @@ const TASK_STATUS_OPTIONS = [
     'Tarefa do Dia',
     'Tarefa Futura',
     'Sem tarefa',
+    'Venda fechada',
 ];
 
 // Origens conhecidas (mesmas opções do NewLeadModal). Leads legados sem origemTipo caem em "Outros".
@@ -116,8 +117,7 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters, 
 
     useEffect(() => {
         if (!pipelineStages.length) return;
-        // Estados terminais (Fechado/Descartado) continuam válidos mesmo fora de stages
-        const etapasValidas = [...pipelineStages, 'Fechado'];
+        const etapasValidas = [...pipelineStages];
         setSelectedFilters((prev) => {
             const etapaSelected = prev['etapa'] || [];
             const valid = etapaSelected.filter((e) => etapasValidas.includes(e));
@@ -151,7 +151,7 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters, 
     };
 
     const hasActiveFilters = Object.values(selectedFilters).some(arr => arr && arr.length > 0) || origemSel !== null;
-    const situationQuestion = { title: 'Situação do Cliente (Etapa do funil)', key: 'etapa', options: [...pipelineStages, 'Fechado'] };
+    const situationQuestion = { title: 'Situação do Cliente (Etapa do funil)', key: 'etapa', options: [...pipelineStages] };
 
     if (!isOpen) return null;
 

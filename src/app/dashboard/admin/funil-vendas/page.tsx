@@ -27,7 +27,7 @@ import {
 // O circuito (visual) — etapas ativas, cores e descrições
 // ---------------------------------------------------------------------------
 /** Paleta do funil por posição (Entrada → Negociação). */
-const FUNIL_PALETA = ['#FFE9A6', '#E8C547', '#D4A017', '#F59E0B', '#FF7A45', '#FF1E56'];
+const FUNIL_PALETA = ['#FFE9A6', '#E8C547', '#D4A017', '#F59E0B', '#FF7A45', '#34D399'];
 
 /** Etapas ativas do quadro (Bolsão já não faz parte do circuito). */
 const ETAPAS_ATIVAS = ETAPAS_CIRCUITO;
@@ -38,6 +38,7 @@ const DESCRICAO_ETAPA: Record<string, string> = {
   'Meet': 'reunião marcada',
   'Visita': 'visita marcada',
   'Negociação': 'proposta na mesa',
+  'Fechamento': 'venda concluída 🏆 — lançar em Comissões',
 };
 
 const setEtapasValidas = new Set<string>(ETAPAS_TODAS);
@@ -331,7 +332,7 @@ export default function FunilCadenciasPage() {
               <span className="ml-auto text-[11px] text-text-secondary tabular-nums">{leads.length} lead{leads.length !== 1 ? 's' : ''} na imobiliária</span>
             </div>
             <p className="text-[10.5px] text-text-secondary mb-3">
-              Etapas fixas, iguais pra toda a equipe — o lead só anda pra frente e sai por Fechado ou Descartado (descartados caem no bolsão da área do admin, em Importar Leads).
+              Etapas fixas, iguais pra toda a equipe — o lead anda pra frente até o Fechamento (venda). Descartados e estacionados caem no bolsão da área do admin, em Importar Leads.
             </p>
 
             {/* Fluxo das 5 etapas ativas */}
@@ -369,10 +370,6 @@ export default function FunilCadenciasPage() {
                 📦 {ETAPA_BOLSAO}
                 <span className="tabular-nums">{contagemPorEtapa[ETAPA_BOLSAO] || 0}</span>
                 <span className="font-medium normal-case tracking-normal text-[#7DD3FC]/80">no bolsão do admin</span>
-              </span>
-              <span className={`${chipBase} bg-[#34D399]/10 border-[#34D399]/35 text-emerald-300`} title="Negócio fechado — fim de linha feliz.">
-                🏆 {ETAPA_FECHADO}
-                <span className="tabular-nums">{contagemPorEtapa[ETAPA_FECHADO] || 0}</span>
               </span>
               <span
                 className={`${chipBase} bg-white/[0.05] border-white/15 text-text-secondary`}

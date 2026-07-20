@@ -68,6 +68,7 @@ const StatusIndicator = ({ status }: { status: StatusLead }) => {
     'Tarefa do Dia': { color: 'bg-yellow-400', text: 'Para Hoje' },
     'Tarefa Futura': { color: 'bg-sky-500', text: 'Futura' },
     'Sem tarefa': { color: 'bg-white/20', text: 'Sem Tarefa' },
+    'Venda fechada': { color: 'bg-[#34D399] shadow-[0_0_8px_rgba(52,211,153,0.6)]', text: '🏆 Venda' },
   };
   const { color, text, destaque } = statusInfo[status] || statusInfo['Sem tarefa'];
   return (
@@ -93,7 +94,7 @@ const SectionTitle = ({ children, className = '' }: { children: React.ReactNode;
 
 const MAX_LEADS_LOAD = 500;
 const PAGE_SIZE = 20;
-const taskStatusFilters: StatusLead[] = ['Ação agora', 'Tarefa em Atraso', 'Tarefa do Dia', 'Tarefa Futura', 'Sem tarefa'];
+const taskStatusFilters: StatusLead[] = ['Ação agora', 'Tarefa em Atraso', 'Tarefa do Dia', 'Tarefa Futura', 'Sem tarefa', 'Venda fechada'];
 
 export default function VisualizarCrmCorretorPage() {
   const { userData, isEspelhoDemo } = useAuth();
@@ -206,9 +207,8 @@ export default function VisualizarCrmCorretorPage() {
     }
   }, [selectedCorretorId]);
 
-  // 'Fechado' é válido mesmo fora de stages (Bolsão/Descartado são só da área do admin)
   useEffect(() => {
-    if (activeFilter && !stages.includes(activeFilter) && activeFilter !== ETAPA_FECHADO) {
+    if (activeFilter && !stages.includes(activeFilter)) {
       setActiveFilter(null);
       setCurrentPage(1);
     }
@@ -343,7 +343,7 @@ export default function VisualizarCrmCorretorPage() {
                       <div className="absolute left-0 top-full mt-1.5 z-50 w-[min(90vw,420px)] max-h-[70vh] overflow-y-auto rounded-xl border border-white/10 bg-[var(--bg-card)] shadow-xl py-3 px-3">
                         <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-wide mb-2 px-1">Etapa do funil</p>
                         <div className="flex flex-wrap gap-2 mb-3">
-                          {[...stages, ETAPA_FECHADO].map(stage => (
+                          {stages.map(stage => (
                             <FilterChip
                               key={stage}
                               selected={activeFilter === stage}

@@ -14,12 +14,12 @@ import LoadingState from '@/components/ui/LoadingState';
 import { ORIGEM_FILTER_OPTIONS, getOrigemBucket, getCampanhaDoLead } from '../_components/FilterModal';
 import { getTaskStatusInfo, TaskStatus } from '@/lib/leadTasks';
 import { getDemoLeads } from '@/lib/espelho/demoData';
-import { ETAPAS_TERMINAIS } from '@/lib/circuito';
+import { ETAPAS_DO_ADMIN } from '@/lib/circuito';
 
 type LeadsByStage = { [key: string]: Lead[] };
 
 // Paleta do funil GX — cor por índice de etapa (repete com módulo)
-const FUNNEL_COLORS = ['#FFE9A6', '#E8C547', '#D4A017', '#F59E0B', '#FF7A45', '#FF1E56'];
+const FUNNEL_COLORS = ['#FFE9A6', '#E8C547', '#D4A017', '#F59E0B', '#FF7A45', '#34D399'];
 
 // Persistência dos filtros do kanban (própria — NÃO compartilhada com a lista)
 const KANBAN_FILTERS_KEY = 'crm-kanban-filtros-v1';
@@ -130,8 +130,8 @@ export default function AndamentoPage() {
             const leadsByStage = stageList.reduce<LeadsByStage>((acc, stage) => ({ ...acc, [stage]: [] }), {});
             for (const lead of list) {
                 const stage = normalizeEtapa(lead.etapa);
-                // Fechado/Descartado/Bolsão ficam fora do quadro (bolsa é do admin)
-                if ((ETAPAS_TERMINAIS as readonly string[]).includes(stage) || stage === 'Bolsão') continue;
+                // Descartado/Bolsão ficam fora do quadro (bolsa é do admin); Fechamento é coluna
+                if ((ETAPAS_DO_ADMIN as readonly string[]).includes(stage)) continue;
                 if (leadsByStage[stage]) {
                     leadsByStage[stage].push(lead);
                 } else {

@@ -67,6 +67,7 @@ const StatusIndicator = ({ status }: { status: StatusLead }) => {
         'Tarefa do Dia': { color: 'bg-[#E8C547] shadow-[0_0_8px_rgba(232,197,71,0.5)]', text: 'Para Hoje' },
         'Tarefa Futura': { color: 'bg-[#7DD3FC]', text: 'Futura' },
         'Sem tarefa': { color: 'bg-white/25', text: 'Sem Tarefa' },
+        'Venda fechada': { color: 'bg-[#34D399] shadow-[0_0_8px_rgba(52,211,153,0.6)]', text: '🏆 Venda' },
     };
     const { color, text, destaque } = statusInfo[status] || statusInfo['Sem tarefa'];
 
@@ -177,13 +178,11 @@ export default function CrmPage() {
 
     // Quando o funil (etapas) muda, limpar filtro rápido se a etapa selecionada não existir mais
     // Só aplica quando stages já foi carregado (length > 0) para não resetar página ao voltar do detalhe
-    // "Fechado" é válido mesmo fora de stages (Bolsão/Descartado são só da área do admin)
     useEffect(() => {
         if (
             stages.length > 0 &&
             activeFilter &&
-            !stages.includes(activeFilter) &&
-            activeFilter !== ETAPA_FECHADO
+            !stages.includes(activeFilter)
         ) {
             setActiveFilter(null);
             setCurrentPage(1);
@@ -481,7 +480,7 @@ export default function CrmPage() {
     const activeAdvancedFilterCount = Object.values(advancedFilters).reduce((count, options: string[]) => count + options.length, 0);
 
     // Status de tarefa para filtros rápidos (mesma ordem e lógica do dashboard)
-    const taskStatusFilters: StatusLead[] = ['Ação agora', 'Tarefa em Atraso', 'Tarefa do Dia', 'Tarefa Futura', 'Sem tarefa'];
+    const taskStatusFilters: StatusLead[] = ['Ação agora', 'Tarefa em Atraso', 'Tarefa do Dia', 'Tarefa Futura', 'Sem tarefa', 'Venda fechada'];
 
     // Quantos filtros rápidos estão ativos (etapa + tarefa + origem + campanha) — badge do botão
     const quickFilterCount = (activeFilter ? 1 : 0) + (activeTaskFilter ? 1 : 0) + (activeOrigemFilter ? 1 : 0) + (activePropagandaFilter ? 1 : 0);
@@ -536,7 +535,7 @@ export default function CrmPage() {
                                 <div key={`filtro-etapas-${stages.join('-')}`} className="absolute left-0 top-full mt-1.5 z-50 w-[min(90vw,420px)] max-h-[70vh] overflow-y-auto rounded-xl border border-white/10 bg-[#12101a] shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] py-3 px-3">
                                     <p className="text-[10px] font-extrabold text-text-secondary uppercase tracking-[0.18em] mb-2 px-1">Etapa do funil</p>
                                     <div className="flex flex-wrap gap-2 mb-3">
-                                        {[...stages, ETAPA_FECHADO].map((stage) => (
+                                        {stages.map((stage) => (
                                             <FilterChip
                                                 key={stage}
                                                 selected={activeFilter === stage}

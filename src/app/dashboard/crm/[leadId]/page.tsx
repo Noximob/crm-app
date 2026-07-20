@@ -11,11 +11,11 @@ import { Lead } from '@/types';
 import CrmHeader from '../_components/CrmHeader';
 import AgendaModal, { TaskPayload } from '../_components/AgendaModal';
 import CancelTaskModal from '../_components/CancelTaskModal';
-import AtendimentoOverlay, { perguntaDoLead, fmtDataHora, type AcaoCircuito } from '@/components/atendimento/AtendimentoOverlay';
+import AtendimentoOverlay, { perguntaDoLead, fmtDataHora, type AcaoCircuito, type EstadoFluxo } from '@/components/atendimento/AtendimentoOverlay';
 import { executarAcaoCircuito } from '@/lib/circuitoActions';
 import { QUALIFICATION_QUESTIONS } from '@/lib/qualificacao';
 import { getDemoLeadById, getDemoInteractions } from '@/lib/espelho/demoData';
-import { CADENCIAS_PADRAO, carregarCadencias, ETAPAS_TERMINAIS, ETAPA_DESCARTADO, type CadenciasFunil } from '@/lib/circuito';
+import { CADENCIAS_PADRAO, carregarCadencias, ETAPA_DESCARTADO, type CadenciasFunil } from '@/lib/circuito';
 import { showToast } from '@/components/ui/toast';
 import LoadingState from '@/components/ui/LoadingState';
 
@@ -42,11 +42,12 @@ const TIPO_COR: Record<string, { chip: string; borda: string }> = {
 };
 const tipoCor = (t: string) => TIPO_COR[t] ?? TIPO_COR['Outros'];
 
-const getTaskStatusColor = (status: TaskStatus) => {
+const getTaskStatusColor = (status: TaskStatus | 'Venda fechada') => {
     switch (status) {
         case 'Tarefa em Atraso': return 'bg-[#FF1E56] shadow-[0_0_8px_rgba(255,30,86,0.8)]';
         case 'Tarefa do Dia': return 'bg-[#E8C547] shadow-[0_0_8px_rgba(232,197,71,0.8)]';
         case 'Tarefa Futura': return 'bg-[#7DD3FC] shadow-[0_0_8px_rgba(125,211,252,0.7)]';
+        case 'Venda fechada': return 'bg-[#34D399] shadow-[0_0_8px_rgba(52,211,153,0.7)]';
         default: return 'bg-white/30';
     }
 };
@@ -104,6 +105,8 @@ export default function LeadDetailPage() {
     const [executandoCircuito, setExecutandoCircuito] = useState(false);
     const [atendimentoAberto, setAtendimentoAberto] = useState(false);
     const [fechouNoX, setFechouNoX] = useState(false);
+    // Botão "Descartar" da página: abre o overlay já no pop-up de descarte
+    const [estadoForcado, setEstadoForcado] = useState<EstadoFluxo | null>(null);
     const foiDescartado = useRef(false);
     const [expandidas, setExpandidas] = useState<Set<string>>(new Set());
     const [saveQual, setSaveQual] = useState<'idle' | 'salvando' | 'salvo'>('idle');
@@ -215,7 +218,12 @@ export default function LeadDetailPage() {
         () => [...tasks].sort((a, b) => (toJsDate(a.dueDate)?.getTime() ?? 0) - (toJsDate(b.dueDate)?.getTime() ?? 0)),
         [tasks]
     );
-    const taskStatus = useMemo(() => getTaskStatusInfo(tasks as unknown as TarefaPendente[]), [tasks]);
+    const taskStatus = useMemo(
+        () => (lead && normalizeEtapa(lead.etapa) === 'Fechamento'
+            ? ('Venda fechada' as const)
+            : getTaskStatusInfo(tasks as unknown as TarefaPendente[])),
+        [tasks, lead, normalizeEtapa]
+    );
 
     // ------------------------------------------------------------------
     // Pergunta pendente do circuito: qual pop-up abre e se ele deve insistir
@@ -245,6 +253,7 @@ export default function LeadDetailPage() {
 
     const handleFecharX = () => {
         setAtendimentoAberto(false);
+        setEstadoForcado(null);
         setFechouNoX(true);
         const primeiroNome = (lead?.nome || 'O lead').split(' ')[0];
         showToast(`⚠️ ${primeiroNome} ficou sem encaminhamento. Resolva pra voltar a receber leads novos.`, 'info');
@@ -252,6 +261,7 @@ export default function LeadDetailPage() {
 
     const handleConcluido = (msg?: string) => {
         setAtendimentoAberto(false);
+        setEstadoForcado(null);
         setFechouNoX(false);
         if (msg) showToast(msg, 'success');
         if (foiDescartado.current) {
@@ -540,8 +550,21 @@ export default function LeadDetailPage() {
                                     className="px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider bg-[#FF1E56]/10 border border-[#FF1E56]/35 rounded-full text-[#FF7A97] focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 [&>option]:bg-[#12101a] [&>option]:text-white disabled:opacity-60"
                                     title="O circuito move sozinho pelas respostas — aqui é o ajuste manual"
                                   >
-                                    {[...stages, ...ETAPAS_TERMINAIS].map(s => (<option key={s} value={s}>{s}</option>))}
+                                    {(stages.includes(etapaAtual) ? stages : [etapaAtual, ...stages]).map(s => (<option key={s} value={s}>{s}</option>))}
                                   </select>
+                                )}
+                                {!readOnly && circuitoInfo && etapaAtual !== ETAPA_DESCARTADO && (
+                                    <button
+                                        onClick={() => {
+                                            setEstadoForcado({ t: 'descarte', volta: circuitoInfo.estado });
+                                            setFechouNoX(false);
+                                            setAtendimentoAberto(true);
+                                        }}
+                                        className="px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full border border-[#FF6B6B]/35 bg-[#FF6B6B]/[0.07] text-[#FF8F8F] hover:bg-[#FF6B6B]/15 transition-colors"
+                                        title="Descartar este cliente (vai pedir o motivo)"
+                                    >
+                                        🗑 Descartar
+                                    </button>
                                 )}
                                 <div className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-1.5">
                                     <PhoneIcon className="h-3.5 w-3.5 text-text-secondary shrink-0" />
@@ -789,7 +812,7 @@ export default function LeadDetailPage() {
             {circuitoInfo && !readOnly && (
                 <AtendimentoOverlay
                     aberto={atendimentoAberto}
-                    estadoInicial={circuitoInfo.estado}
+                    estadoInicial={estadoForcado ?? circuitoInfo.estado}
                     nome={lead.nome}
                     telefone={lead.telefone}
                     origem={lead.origem}

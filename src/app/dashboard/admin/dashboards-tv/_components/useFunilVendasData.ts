@@ -5,6 +5,7 @@ import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { getDemoLeads, DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
+import { ETAPAS_DO_ADMIN } from '@/lib/circuito';
 
 export interface LeadFunil {
   id: string;
@@ -102,7 +103,9 @@ export function useFunilVendasData(imobiliariaId: string | undefined, corretores
 
   return useMemo(() => {
     const setVisiveis = corretoresVisiveisIds?.length ? new Set(corretoresVisiveisIds) : null;
-    const leadsFiltrados = setVisiveis ? leads.filter((l) => l.userId && setVisiveis.has(l.userId)) : leads;
+    // Bolsão/Descartado (área do admin) ficam fora do funil da TV
+    const leadsAtivos = leads.filter((l) => !(ETAPAS_DO_ADMIN as readonly string[]).includes(normalizeEtapa(l.etapa)));
+    const leadsFiltrados = setVisiveis ? leadsAtivos.filter((l) => l.userId && setVisiveis.has(l.userId)) : leadsAtivos;
     const corretoresFiltrados = setVisiveis ? corretores.filter((c) => setVisiveis.has(c.id)) : corretores;
 
     const funilCorporativo: FunilPorEtapa = {};
