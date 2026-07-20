@@ -13,7 +13,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, doc, writeBatch, serverTimestamp, deleteDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, writeBatch, serverTimestamp, deleteDoc, deleteField, Timestamp } from 'firebase/firestore';
 import { showToast } from '@/components/ui/toast';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
 
@@ -56,6 +56,23 @@ const DEMO_BOLSAO: DescartadoBolsao[] = [
   { listaId: 'demo-lista-2', listaNome: 'Portaria Condomínios — Penha', contatoId: 'dx1', nome: 'Osmar Teles', telefone: '(47) 91111-0000', motivo: 'Não quer', tentativas: 2, eventos: [
     { tipo: 'tentativa', em: demoTs(300) }, { tipo: 'tentativa', em: demoTs(260) }, { tipo: 'descartado', detalhe: 'Não quer', em: demoTs(255) },
   ] },
+];
+
+/** Lead do CRM descartado por um corretor (mora na conta do gestor, etapa Descartado). */
+interface LeadDescartado {
+  id: string;
+  nome: string;
+  telefone: string;
+  motivo?: string;
+  descartadoPor?: string; // uid de quem descartou
+  descartadoEm?: any;
+  origem?: string;
+}
+
+const DEMO_CRM_BOLSAO: LeadDescartado[] = [
+  { id: 'dl1', nome: 'Marcos Paulo', telefone: '(47) 98123-4567', motivo: 'Não responde', descartadoPor: 'demo-c2', descartadoEm: demoTs(30), origem: 'Propaganda · Lançamento Vista Mar' },
+  { id: 'dl2', nome: 'Luciana Freitas', telefone: '(47) 97234-5678', motivo: 'Adiou a compra', descartadoPor: 'demo-c2', descartadoEm: demoTs(52), origem: 'Networking' },
+  { id: 'dl3', nome: 'Edson Vargas', telefone: '(47) 96345-6789', motivo: 'Comprou com outro', descartadoPor: 'demo-c3', descartadoEm: demoTs(80), origem: 'Ligação Ativa · Feirão Litoral' },
 ];
 
 const p2 = (n: number) => String(n).padStart(2, '0');
@@ -247,6 +264,102 @@ export default function ImportarLigacaoAtivaPage() {
   }, [bolsao]);
 
   const bolsaoMotivos = useMemo(() => Array.from(new Set(bolsao.map(b => b.motivo || 'Sem motivo'))), [bolsao]);
+
+  // --- Bolsão do CRM: leads descartados pelos corretores, organizados POR CORRETOR ---
+  const [crmBolsao, setCrmBolsao] = useState<LeadDescartado[]>([]);
+  const [crmBolsaoCarregado, setCrmBolsaoCarregado] = useState(false);
+  const [selCrm, setSelCrm] = useState<Set<string>>(new Set());
+  const [crmDestino, setCrmDestino] = useState('');
+  const [redistribuindo, setRedistribuindo] = useState(false);
+
+  const carregarCrmBolsao = React.useCallback(async () => {
+    if (isEspelhoDemo) {
+      setCrmBolsao(DEMO_CRM_BOLSAO);
+      setCrmBolsaoCarregado(true);
+      return;
+    }
+    if (!userData?.imobiliariaId) return;
+    try {
+      const snap = await getDocs(query(
+        collection(db, 'leads'),
+        where('imobiliariaId', '==', userData.imobiliariaId),
+        where('etapa', '==', 'Descartado')
+      ));
+      setCrmBolsao(snap.docs.map(d => {
+        const l = d.data() as any;
+        return {
+          id: d.id,
+          nome: l.nome || '',
+          telefone: l.telefone || '',
+          motivo: l.descartadoMotivo,
+          descartadoPor: l.descartadoPor,
+          descartadoEm: l.descartadoEm,
+          origem: l.origem,
+        };
+      }));
+    } catch { /* silencioso */ }
+    setCrmBolsaoCarregado(true);
+  }, [isEspelhoDemo, userData?.imobiliariaId]);
+
+  useEffect(() => { carregarCrmBolsao(); }, [carregarCrmBolsao]);
+
+  const nomeCorretor = React.useCallback((uid?: string) => {
+    if (!uid) return 'Sem registro de quem descartou';
+    if (isEspelhoDemo) return uid === 'demo-c2' ? 'Bruno Mendes' : uid === 'demo-c3' ? 'Carla Oliveira' : 'Corretor';
+    return corretores.find(c => c.id === uid)?.nome || 'Corretor (saiu da equipe)';
+  }, [corretores, isEspelhoDemo]);
+
+  /** Redistribui leads descartados: o lead RENASCE em Entrada no CRM do novo corretor. */
+  const redistribuirCrm = async () => {
+    const escolhidos = crmBolsao.filter(l => selCrm.has(l.id));
+    if (!escolhidos.length || !crmDestino || !currentUser) return;
+    if (isEspelhoDemo) { showToast('Modo demonstração — nada é salvo.', 'info'); return; }
+    setRedistribuindo(true);
+    try {
+      const nomeDestino = corretores.find(c => c.id === crmDestino)?.nome || 'novo corretor';
+      const adminNome = (userData as any)?.nome || '';
+      let batch = writeBatch(db);
+      let ops = 0;
+      for (const l of escolhidos) {
+        batch.update(doc(db, 'leads', l.id), {
+          userId: crmDestino,
+          etapa: 'Entrada',
+          'circuito.tentativas': 0,
+          'circuito.desde': serverTimestamp(),
+          descartadoMotivo: deleteField(),
+          descartadoEm: deleteField(),
+          descartadoPor: deleteField(),
+        });
+        batch.set(doc(collection(db, 'leads', l.id, 'interactions')), {
+          type: 'Etapa',
+          notes: `🔄 Redistribuído do bolsão: descartado por ${nomeCorretor(l.descartadoPor).split(' ')[0]}${l.motivo ? ` (${l.motivo})` : ''}, agora com ${nomeDestino}`,
+          timestamp: serverTimestamp(),
+          circuito: true,
+          por: adminNome,
+        });
+        ops += 2;
+        if (ops >= 398) { await batch.commit(); batch = writeBatch(db); ops = 0; }
+      }
+      if (ops > 0) await batch.commit();
+      showToast(`${escolhidos.length} lead${escolhidos.length > 1 ? 's' : ''} redistribuído${escolhidos.length > 1 ? 's' : ''} pra ${nomeDestino}! Renascem em Entrada, com todo o histórico.`, 'success');
+      setSelCrm(new Set());
+      carregarCrmBolsao();
+    } catch (e) {
+      console.error(e);
+      showToast('Erro ao redistribuir os leads.', 'error');
+    } finally {
+      setRedistribuindo(false);
+    }
+  };
+
+  const crmGrupos = useMemo(() => {
+    const m = new Map<string, LeadDescartado[]>();
+    crmBolsao.forEach(l => {
+      const k = l.descartadoPor || '';
+      m.set(k, [...(m.get(k) || []), l]);
+    });
+    return Array.from(m.entries()).sort((a, b) => b[1].length - a[1].length);
+  }, [crmBolsao]);
 
   // Buscar corretores aprovados
   useEffect(() => {
@@ -483,13 +596,13 @@ export default function ImportarLigacaoAtivaPage() {
       <div className="max-w-2xl mx-auto al-card relative overflow-hidden p-6 mt-6">
         <div className="absolute inset-x-0 top-0 gx-line" />
         <div className="flex items-center justify-between gap-3 mb-1">
-          <h2 className="al-display text-[17px] font-bold text-white uppercase tracking-[0.1em]">🧊 Bolsão de descartados</h2>
+          <h2 className="al-display text-[17px] font-bold text-white uppercase tracking-[0.1em]">🧊 Bolsão da Ligação Ativa</h2>
           {bolsao.length > 0 && (
             <span className="text-[11px] font-bold text-text-secondary tabular-nums px-2 py-1 rounded-full bg-white/[0.06] border border-white/[0.08]">{bolsao.length} no bolsão</span>
           )}
         </div>
         <p className="text-text-secondary mb-4 text-sm">
-          O que os corretores descartaram, com motivo e histórico. Ache, selecione e: <b className="text-white">realoque</b> pra outro corretor tentar de novo, ou <b className="text-white">retire de vez</b>.
+          Contatos FRIOS descartados nas listas de ligação — organizados <b className="text-white">por lista</b>, com motivo e histórico. Ache, selecione e: <b className="text-white">realoque</b> pra outro corretor tentar de novo, ou <b className="text-white">retire de vez</b>.
         </p>
 
         {!bolsaoCarregado ? (
@@ -621,6 +734,86 @@ export default function ImportarLigacaoAtivaPage() {
                 className="sm:w-56 px-6 py-3 bg-red-500/10 border border-red-500/40 text-red-300 hover:bg-red-500/20 rounded-xl font-bold transition-colors disabled:opacity-40"
               >
                 {removendo ? 'Retirando…' : `🗑 Retirar de vez (${selBolsao.size})`}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ===== Bolsão do CRM — leads descartados, organizados POR CORRETOR ===== */}
+      <div className="max-w-2xl mx-auto al-card relative overflow-hidden p-6 mt-6">
+        <div className="absolute inset-x-0 top-0 gx-line" />
+        <div className="flex items-center justify-between gap-3 mb-1">
+          <h2 className="al-display text-[17px] font-bold text-white uppercase tracking-[0.1em]">🗑 Bolsão do CRM</h2>
+          {crmBolsao.length > 0 && (
+            <span className="text-[11px] font-bold text-text-secondary tabular-nums px-2 py-1 rounded-full bg-white/[0.06] border border-white/[0.08]">{crmBolsao.length} lead{crmBolsao.length > 1 ? 's' : ''}</span>
+          )}
+        </div>
+        <p className="text-text-secondary mb-4 text-sm">
+          LEADS que os corretores descartaram no circuito — organizados <b className="text-white">pelo corretor que descartou</b>, com o motivo.
+          Selecione (um grupo inteiro ou avulsos) e envie pra outro corretor: o lead <b className="text-white">renasce em Entrada</b> com todo o histórico na linha do tempo.
+        </p>
+
+        {!crmBolsaoCarregado ? (
+          <p className="text-sm text-text-secondary py-4">Carregando…</p>
+        ) : crmBolsao.length === 0 ? (
+          <p className="text-sm text-text-secondary py-4">Nenhum lead descartado no bolsão. 👌</p>
+        ) : (
+          <>
+            <div className="mb-4 max-h-80 overflow-y-auto rounded-xl border border-white/[0.08] bg-white/[0.02] divide-y divide-white/[0.05]">
+              {crmGrupos.map(([uid, doGrupo]) => {
+                const todos = doGrupo.every(l => selCrm.has(l.id));
+                return (
+                  <div key={uid || 'sem'}>
+                    <button
+                      onClick={() => {
+                        setSelCrm(prev => {
+                          const n = new Set(prev);
+                          doGrupo.forEach(l => { if (todos) n.delete(l.id); else n.add(l.id); });
+                          return n;
+                        });
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 bg-white/[0.03] text-left hover:bg-white/[0.05] transition-colors"
+                    >
+                      <span className={`h-3.5 w-3.5 rounded border grid place-items-center text-[9px] ${todos ? 'bg-[#E8C547]/20 border-[#E8C547]/60 text-[#FFE9A6]' : 'border-white/20 text-transparent'}`}>✓</span>
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#FF9EB5]">Descartados por {nomeCorretor(uid || undefined)}</span>
+                      <span className="text-[11px] text-text-secondary tabular-nums">({doGrupo.length})</span>
+                    </button>
+                    {doGrupo.map(l => {
+                      const marcado = selCrm.has(l.id);
+                      return (
+                        <button
+                          key={l.id}
+                          onClick={() => setSelCrm(prev => { const n = new Set(prev); if (n.has(l.id)) n.delete(l.id); else n.add(l.id); return n; })}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors ${marcado ? 'bg-[#E8C547]/[0.07]' : 'hover:bg-white/[0.03]'}`}
+                        >
+                          <span className={`h-3.5 w-3.5 rounded border grid place-items-center text-[9px] shrink-0 ${marcado ? 'bg-[#E8C547]/20 border-[#E8C547]/60 text-[#FFE9A6]' : 'border-white/20 text-transparent'}`}>✓</span>
+                          <span className="flex-1 min-w-0">
+                            <span className="block text-[13px] font-semibold text-white truncate">{l.nome || 'Sem nome'}</span>
+                            {l.origem && <span className="block text-[10px] text-[#7DD3FC]/60 truncate">{l.origem}</span>}
+                          </span>
+                          <span className="text-[12px] text-text-secondary tabular-nums shrink-0">{l.telefone}</span>
+                          {l.motivo && <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-white/[0.05] border border-white/15 text-text-secondary">{l.motivo}</span>}
+                          {l.descartadoEm && <span className="shrink-0 text-[10px] text-white/30 tabular-nums">{fmtEv(l.descartadoEm).split(' ')[0]}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              <select className={`${inputCls} flex-1`} value={crmDestino} onChange={e => setCrmDestino(e.target.value)}>
+                <option value="">Corretor que vai receber</option>
+                {corretores.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              </select>
+              <button
+                onClick={redistribuirCrm}
+                disabled={selCrm.size === 0 || !crmDestino || redistribuindo}
+                className="sm:w-72 px-6 py-3 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white rounded-xl font-bold shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all disabled:opacity-50"
+              >
+                {redistribuindo ? 'Enviando…' : `🔄 Enviar ${selCrm.size} lead${selCrm.size === 1 ? '' : 's'} pro corretor`}
               </button>
             </div>
           </>
