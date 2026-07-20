@@ -23,6 +23,10 @@ export interface LeadLite {
   descartadoMotivo?: string;
   /** quem descartou — o userId pode migrar pra conta da imobiliária depois do descarte */
   descartadoPor?: string;
+  /** true = ainda não teve conversa de verdade registrada (circuito.primeiroContatoEm ausente) */
+  semPrimeiroContato?: boolean;
+  /** tentativas de contato sem resposta acumuladas (circuito.tentativas) */
+  tentativasAtuais?: number;
 }
 
 export interface CorretorLite {

@@ -125,6 +125,8 @@ export function useRelatoriosData(
             vendaValor: data.vendaValor ? String(data.vendaValor) : undefined,
             descartadoMotivo: data.descartadoMotivo ? String(data.descartadoMotivo) : undefined,
             descartadoPor: data.descartadoPor ? String(data.descartadoPor) : undefined,
+            semPrimeiroContato: !data.circuito?.primeiroContatoEm,
+            tentativasAtuais: Number(data.circuito?.tentativas) || 0,
           };
         });
 

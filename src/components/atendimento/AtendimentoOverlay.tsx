@@ -39,6 +39,8 @@ export interface AcaoCircuito {
   novaTarefa?: { description: string; type: string; dueDate: Date };
   interacao: { type: string; notes: string };
   circuitoTentativas?: 'inc' | 'zero';
+  /** Conversa de verdade (atendeu/respondeu/falei) — marca o 1º contato e conta o rodízio */
+  contatoEfetivo?: boolean;
   descartadoMotivo?: string;
   vendaValor?: string;
   transferirParaGestor?: boolean;
@@ -50,7 +52,7 @@ export type EstadoFluxo =
   | { t: 'ligar' }
   | { t: 'atendeu' }
   | { t: 'followQ' }
-  | { t: 'proximaAcao'; concluirTaskId?: string }
+  | { t: 'proximaAcao'; concluirTaskId?: string; contato?: boolean }
   | { t: 'quando'; concluirTaskId?: string; cancelarTaskId?: string; tentativa?: boolean }
   | { t: 'tarefaAgora'; taskId?: string }
   | { t: 'fuRetry'; taskId?: string }
@@ -145,6 +147,12 @@ interface AtendimentoOverlayProps {
   onConcluido: (msg?: string) => void; // ação final ok → fecha
   /** Histórico de interações do lead — aparece abaixo da pergunta pra ajudar a pensar */
   historico?: { id: string; type: string; notes: string; timestamp: any }[];
+  /**
+   * Rodízio do 1º contato: informado quando o lead AINDA não teve conversa de
+   * verdade (Entrada/Follow-up sem circuito.primeiroContatoEm). `tentativas` =
+   * quantas já foram sem resposta; o selo mostra a tentativa atual (N+1).
+   */
+  rodizioPrimeiroContato?: { tentativas: number } | null;
   // pop-up direito (sempre aberto)
   qualGroups: QualGroup[];
   qualifications: Record<string, string[]>;
@@ -235,7 +243,7 @@ function Chips({ itens, sel, onSel }: { itens: readonly string[]; sel: string[];
 export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
   const {
     aberto, estadoInicial, nome, telefone, origem, tasks, cadencias, executando, isDemo,
-    executar, registrarContato, onFecharX, onConcluido, historico,
+    executar, registrarContato, onFecharX, onConcluido, historico, rodizioPrimeiroContato,
     qualGroups, qualifications, onToggleQual, saveQual, anotacoes, onChangeAnotacoes, saveNotas,
   } = props;
 
@@ -350,7 +358,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             </>
           ),
           btns: [
-            { t: `Já falei com ${primeiroNome}`, c: 'primary', f: () => irPara({ t: 'proximaAcao' }) },
+            { t: `Já falei com ${primeiroNome}`, c: 'primary', f: () => irPara({ t: 'proximaAcao', contato: true }) },
             { t: 'Ainda não', c: 'ghost', f: () => irPara({ t: 'ligar' }) },
           ],
         };
@@ -377,7 +385,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           bar: 'Primeiro contato',
           body: <>E aí, {b(primeiroNome)} atendeu?</>,
           btns: [
-            { t: 'Atendeu ✓', c: 'primary', f: () => irPara({ t: 'proximaAcao' }) },
+            { t: 'Atendeu ✓', c: 'primary', f: () => irPara({ t: 'proximaAcao', contato: true }) },
             { t: 'Não atendeu', c: 'ghost', f: () => irPara({ t: 'followQ' }) },
           ],
         };
@@ -408,6 +416,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
               novaEtapa: ETAPA_NEGOCIACAO,
               concluirTaskId: m.concluirTaskId,
               circuitoTentativas: 'zero',
+              contatoEfetivo: m.contato,
               interacao: { type: 'Etapa', notes: `🤝 ${primeiroNome} pronto pra negociar — direto pra proposta` },
             });
             if (ok) irLimpo({ t: 'negPrazo' });
@@ -426,6 +435,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             concluirTaskId: m.concluirTaskId,
             novaTarefa: { description: a.desc, type: a.tipo, dueDate: d! },
             circuitoTentativas: 'zero',
+            contatoEfetivo: m.contato,
             interacao: { type: a.tipo, notes: `${a.inter} · ${fmtDataHora(d!)}` },
           });
           if (ok) fecha(`✓ ${primeiroNome} registrado. Próxima ação: ${acaoSel.replace('🔎 ', '').toLowerCase()} ${quandoLabel(d!)}.`);
@@ -512,7 +522,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             </>
           ),
           btns: [
-            { t: `✅ Falei com ${primeiroNome}`, c: 'primary', f: () => irPara({ t: 'proximaAcao', concluirTaskId: estado.taskId }) },
+            { t: `✅ Falei com ${primeiroNome}`, c: 'primary', f: () => irPara({ t: 'proximaAcao', concluirTaskId: estado.taskId, contato: true }) },
             { t: '📵 Não atendeu', c: 'ghost', f: () => irPara({ t: 'fuRetry', taskId: estado.taskId }) },
             { t: '🕐 Remarcar', c: 'ghost', f: () => irPara({ t: 'quando', cancelarTaskId: estado.taskId }) },
           ],
@@ -855,6 +865,20 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                   )}
                 </span>
               </div>
+              {/* Rodízio do 1º contato — mostra em que tentativa o corretor está */}
+              {rodizioPrimeiroContato && estado.t !== 'descarte' && estado.t !== 'venda' && (
+                <div className="mx-4 mt-3 flex items-center gap-2 rounded-lg border border-[#7DD3FC]/30 bg-[#7DD3FC]/[0.07] px-3 py-1.5">
+                  <span className="text-[13px]">🎯</span>
+                  <span className="text-[11.5px] font-bold text-[#7DD3FC]">
+                    1º contato · {rodizioPrimeiroContato.tentativas + 1}ª tentativa
+                  </span>
+                  <span className="text-[10.5px] text-white/40">
+                    {rodizioPrimeiroContato.tentativas === 0
+                      ? 'ainda sem resposta registrada — bora abrir o placar'
+                      : `${rodizioPrimeiroContato.tentativas} sem resposta — a venda média sai depois do 5º contato`}
+                  </span>
+                </div>
+              )}
               <div className="px-4 pt-3.5 pb-1.5 text-[14.5px] text-white leading-relaxed [&_small]:block [&_small]:text-white/55 [&_small]:text-xs [&_small]:mt-1.5 [&_small]:leading-snug">
                 {d.body}
               </div>

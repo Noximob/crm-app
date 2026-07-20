@@ -54,6 +54,8 @@ export interface AtividadeAgora {
   semAcao: number;
   /** leads parados em Negociação (sem próxima ação agendada) */
   negociacaoParada: number;
+  /** leads em Entrada/Follow-up que ainda não tiveram conversa de verdade (rodízio do 1º contato) */
+  semPrimeiroContato: number;
 }
 
 export interface AtividadeRow {
@@ -70,6 +72,10 @@ export interface AtividadeRow {
   vendasValor: number;
   descartes: number;
   descartesMotivos: MotivoCount[];
+  /** 1ºs contatos conquistados no período (cliente atendeu/respondeu pela 1ª vez) */
+  primeirosContatos: number;
+  /** média de tentativas até o 1º contato (dos conquistados no período); null sem amostra */
+  tentativasMediaPrimeiroContato: number | null;
   ligAtivaTrabalhados: number;
   ligAtivaCrm: number;
   manuais: number;
@@ -94,13 +100,14 @@ export interface AtividadeMedia {
   vendasQtd: number;
   vendasValor: number;
   descartes: number;
+  primeirosContatos: number;
   ligAtivaTrabalhados: number;
   ligAtivaCrm: number;
   manuais: number;
 }
 
 type CircuitoEvento =
-  | 'contato' | 'semResposta' | 'meetMarcado' | 'meetFeito' | 'visitaMarcada'
+  | 'contato' | 'semResposta' | 'primeiroContato' | 'meetMarcado' | 'meetFeito' | 'visitaMarcada'
   | 'visitaFeita' | 'negociacao' | 'venda' | 'descarte' | 'manual' | null;
 
 /**
@@ -110,6 +117,10 @@ type CircuitoEvento =
 export function classificaInteracao(type: string, notes: string | undefined | null): CircuitoEvento {
   const n = typeof notes === 'string' ? notes : '';
   switch (type) {
+    case 'Contato':
+      // marco gravado pelo motor quando o cliente atende/responde pela 1ª vez
+      if (n.startsWith('🎯 1º contato')) return 'primeiroContato';
+      return null;
     case 'Ligação':
     case 'WhatsApp':
       return 'contato'; // tentativa de contato (circuito ou manual, é contato do mesmo jeito)
@@ -549,15 +560,18 @@ export function computeReport(
       contatos: 0, semResposta: 0, meetsMarcados: 0, meetsFeitos: 0,
       visitasMarcadas: 0, visitasFeitas: 0, negociacoes: 0,
       vendasQtd: 0, vendasValor: 0, descartes: 0, descartesMotivos: [],
+      primeirosContatos: 0, tentativasMediaPrimeiroContato: null,
       ligAtivaTrabalhados: 0, ligAtivaCrm: 0, manuais: 0,
       circuitoQtd: 0, interacoesTotal: 0,
       aceites: 0, tempoAceiteMedioSeg: null,
-      agora: { atrasadas: 0, semAcao: 0, negociacaoParada: 0 },
+      agora: { atrasadas: 0, semAcao: 0, negociacaoParada: 0, semPrimeiroContato: 0 },
     });
     motivosPorCorretor.set(c.id, new Map());
   });
   const motivosGlobalMap = new Map<string, number>();
   let descartesTotal = 0;
+  // tentativas até o 1º contato — soma/n por corretor pra tirar a média
+  const tent1oMap = new Map<string, { soma: number; n: number }>();
 
   interacoes.forEach((i) => {
     if (!noPeriodo(i.tsMs)) return;
@@ -573,6 +587,17 @@ export function computeReport(
     switch (evento) {
       case 'contato': a.contatos++; break;
       case 'semResposta': a.semResposta++; break;
+      case 'primeiroContato': {
+        a.primeirosContatos++;
+        const mTent = /na (\d+)ª tentativa/.exec(i.notes || '');
+        if (mTent) {
+          const cur = tent1oMap.get(donoId) || { soma: 0, n: 0 };
+          cur.soma += Number(mTent[1]);
+          cur.n++;
+          tent1oMap.set(donoId, cur);
+        }
+        break;
+      }
       case 'meetMarcado': a.meetsMarcados++; break;
       case 'meetFeito': a.meetsFeitos++; break;
       case 'visitaMarcada': a.visitasMarcadas++; break;
@@ -607,6 +632,10 @@ export function computeReport(
       a.agora.semAcao++;
       if (etapaCirc === ETAPA_NEGOCIACAO) a.agora.negociacaoParada++;
     }
+    // Rodízio do 1º contato: quem tá em Entrada/Follow-up sem conversa registrada
+    if (l.semPrimeiroContato && (etapaCirc === 'Entrada' || etapaCirc === 'Follow-up')) {
+      a.agora.semPrimeiroContato++;
+    }
   });
 
   // Ligação ativa: contatos frios trabalhados no período → quantos viraram lead no CRM
@@ -634,13 +663,15 @@ export function computeReport(
     a.descartesMotivos = Array.from((motivosPorCorretor.get(c.id) || new Map<string, number>()).entries())
       .map(([motivo, count]) => ({ motivo, count }))
       .sort((x, y) => y.count - x.count);
+    const t1 = tent1oMap.get(c.id);
+    a.tentativasMediaPrimeiroContato = t1 && t1.n > 0 ? t1.soma / t1.n : null;
     return a;
   });
 
   const atvMedia: AtividadeMedia = {
     contatos: 0, semResposta: 0, meetsMarcados: 0, meetsFeitos: 0,
     visitasMarcadas: 0, visitasFeitas: 0, negociacoes: 0,
-    vendasQtd: 0, vendasValor: 0, descartes: 0,
+    vendasQtd: 0, vendasValor: 0, descartes: 0, primeirosContatos: 0,
     ligAtivaTrabalhados: 0, ligAtivaCrm: 0, manuais: 0,
   };
   atividadeRows.forEach((a) => {
@@ -654,6 +685,7 @@ export function computeReport(
     atvMedia.vendasQtd += a.vendasQtd;
     atvMedia.vendasValor += a.vendasValor;
     atvMedia.descartes += a.descartes;
+    atvMedia.primeirosContatos += a.primeirosContatos;
     atvMedia.ligAtivaTrabalhados += a.ligAtivaTrabalhados;
     atvMedia.ligAtivaCrm += a.ligAtivaCrm;
     atvMedia.manuais += a.manuais;

@@ -99,11 +99,16 @@ export function buildDemoReportSource(): ReportSource {
     const pendentesMs: number[] = [];
     if (rnd() < 0.3) pendentesMs.push(hoje0 + (rnd() < 0.5 ? -Math.floor(rnd() * 6 + 1) : Math.floor(rnd() * 5 + 1)) * DIA_MS);
 
+    // Rodízio do 1º contato: quem avançou no circuito conversou; parte da Entrada ainda insiste
+    const teve1oContato = profundidade >= 1 || rnd() < 0.35;
+
     leads.push({
       id,
       userId: dono.id,
       nome: NOMES_LEADS[i % NOMES_LEADS.length],
       etapa,
+      semPrimeiroContato: !teve1oContato,
+      tentativasAtuais: teve1oContato ? 0 : Math.floor(rnd() * 4),
       origem: origemDef.tipo === 'Propaganda' && campanha ? `Propaganda · ${campanha}` : origemDef.tipo,
       origemTipo: origemDef.tipo,
       origemPropaganda: campanha,
@@ -134,6 +139,11 @@ export function buildDemoReportSource(): ReportSource {
       else if (r < 0.8) pushInt('Follow-up', '📌 Tarefa criada: follow-up · combinado novo contato', true, tsMs);
       else if (r < 0.93) pushInt('Tarefa Concluída', 'Tarefa concluída', false, tsMs);
       else pushInt('Tarefa Cancelada', 'Tarefa cancelada', false, tsMs);
+    }
+
+    // Marco do 1º contato (mesma narração que o motor grava quando o cliente atende)
+    if (teve1oContato) {
+      pushInt('Contato', `🎯 1º contato feito na ${1 + Math.floor(rnd() * 5)}ª tentativa`, true, tsRecente());
     }
 
     // Jornada narrada conforme a profundidade no circuito (2=Meet, 3=Visita, 4=Negociação, 5=Bolsão)

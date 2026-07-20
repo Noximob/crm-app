@@ -240,6 +240,15 @@ export default function LeadDetailPage() {
         return perguntaDoLead(normalizeEtapa(lead.etapa), tasks, cadencias, Date.now());
     }, [lead, tasks, cadencias, normalizeEtapa, tickCircuito]);
 
+    // Rodízio do 1º contato: lead em Entrada/Follow-up que ainda não teve conversa de verdade
+    const rodizioPrimeiroContato = useMemo(() => {
+        if (!lead) return null;
+        const e = normalizeEtapa(lead.etapa);
+        if (e !== 'Entrada' && e !== 'Follow-up') return null;
+        if (lead.circuito?.primeiroContatoEm) return null;
+        return { tentativas: lead.circuito?.tentativas || 0 };
+    }, [lead, normalizeEtapa]);
+
     // "Ao abrir o lead: entrou no lead que tem pergunta em aberto? Ela abre na hora, sobre a página."
     // Reativo: virou pendente (ex.: concluiu a última tarefa) → o pop-up abre sozinho.
     // Só não insiste na mesma visita depois de um ✕ (pendência fica avisando).
@@ -553,6 +562,14 @@ export default function LeadDetailPage() {
                                     {(stages.includes(etapaAtual) ? stages : [etapaAtual, ...stages]).map(s => (<option key={s} value={s}>{s}</option>))}
                                   </select>
                                 )}
+                                {rodizioPrimeiroContato && (
+                                    <span
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#7DD3FC]/10 border border-[#7DD3FC]/35 text-[#7DD3FC]"
+                                        title="Ainda sem conversa de verdade — o contador zera quando o cliente atender ou responder."
+                                    >
+                                        🎯 1º contato · {rodizioPrimeiroContato.tentativas + 1}ª tentativa
+                                    </span>
+                                )}
                                 {!readOnly && circuitoInfo && etapaAtual !== ETAPA_DESCARTADO && (
                                     <button
                                         onClick={() => {
@@ -825,6 +842,7 @@ export default function LeadDetailPage() {
                     onFecharX={handleFecharX}
                     onConcluido={handleConcluido}
                     historico={interactions}
+                    rodizioPrimeiroContato={rodizioPrimeiroContato}
                     qualGroups={QUALIFICATION_QUESTIONS}
                     qualifications={qualifications}
                     onToggleQual={handleQualificationChange}

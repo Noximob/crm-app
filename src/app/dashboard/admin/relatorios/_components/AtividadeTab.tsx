@@ -16,12 +16,13 @@ const VIOLETA = '#9F6BFF';
 const CEU = '#7DD3FC';
 
 type SortKey =
-  | 'contatos' | 'semResposta' | 'meetsMarcados' | 'meetsFeitos' | 'visitasMarcadas'
+  | 'contatos' | 'semResposta' | 'primeirosContatos' | 'meetsMarcados' | 'meetsFeitos' | 'visitasMarcadas'
   | 'visitasFeitas' | 'negociacoes' | 'vendas' | 'descartes' | 'ligAtiva' | 'manuais';
 
 const COLS: { key: SortKey; label: string; title: string }[] = [
   { key: 'contatos', label: '📞 Contatos', title: 'Tentativas de contato (ligação + WhatsApp)' },
   { key: 'semResposta', label: '📵 Sem resp.', title: 'Tentativas em que o cliente não atendeu' },
+  { key: 'primeirosContatos', label: '🎯 1º contatos', title: 'Clientes que atenderam/responderam pela 1ª vez no período — com a média de tentativas que precisou' },
   { key: 'meetsMarcados', label: '📅 Meets marc.', title: 'Meets marcados ou remarcados' },
   { key: 'meetsFeitos', label: '✅ Meets feitos', title: 'Meets realizados' },
   { key: 'visitasMarcadas', label: '🏠 Visitas marc.', title: 'Visitas marcadas ou remarcadas' },
@@ -37,6 +38,7 @@ function valorDe(a: AtividadeRow, k: SortKey): number {
   switch (k) {
     case 'contatos': return a.contatos;
     case 'semResposta': return a.semResposta;
+    case 'primeirosContatos': return a.primeirosContatos;
     case 'meetsMarcados': return a.meetsMarcados;
     case 'meetsFeitos': return a.meetsFeitos;
     case 'visitasMarcadas': return a.visitasMarcadas;
@@ -121,6 +123,7 @@ function DrillDown({ a, media }: { a: AtividadeRow; media: AtividadeMedia }) {
         </div>
         <div className="space-y-2.5">
           <LinhaComp label="Contatos" ele={a.contatos} media={media.contatos} fmt={(n) => fmtInt(Math.round(n))} />
+          <LinhaComp label="1ºs contatos" ele={a.primeirosContatos} media={media.primeirosContatos} fmt={(n) => fmtInt(Math.round(n))} />
           <LinhaComp label="Meets feitos" ele={a.meetsFeitos} media={media.meetsFeitos} fmt={(n) => fmtInt(Math.round(n))} />
           <LinhaComp label="Visitas feitas" ele={a.visitasFeitas} media={media.visitasFeitas} fmt={(n) => fmtInt(Math.round(n))} />
           <LinhaComp label="Negociações" ele={a.negociacoes} media={media.negociacoes} fmt={(n) => fmtInt(Math.round(n))} />
@@ -211,11 +214,11 @@ export default function AtividadeTab({ report }: { report: ReportComputed }) {
 
   const agoraOrdenado = useMemo(
     () => [...rows].sort((a, b) =>
-      (b.agora.atrasadas * 2 + b.agora.semAcao + b.agora.negociacaoParada)
-      - (a.agora.atrasadas * 2 + a.agora.semAcao + a.agora.negociacaoParada)),
+      (b.agora.atrasadas * 2 + b.agora.semAcao + b.agora.negociacaoParada + b.agora.semPrimeiroContato)
+      - (a.agora.atrasadas * 2 + a.agora.semAcao + a.agora.negociacaoParada + a.agora.semPrimeiroContato)),
     [rows]
   );
-  const temPendencia = rows.some((r) => r.agora.atrasadas > 0 || r.agora.semAcao > 0 || r.agora.negociacaoParada > 0);
+  const temPendencia = rows.some((r) => r.agora.atrasadas > 0 || r.agora.semAcao > 0 || r.agora.negociacaoParada > 0 || r.agora.semPrimeiroContato > 0);
 
   const thBase = 'px-2 py-2 text-[9.5px] font-extrabold uppercase tracking-[0.1em] whitespace-nowrap cursor-pointer select-none transition-colors';
 
@@ -230,7 +233,7 @@ export default function AtividadeTab({ report }: { report: ReportComputed }) {
           <EmptyMsg>Nenhum corretor aprovado na imobiliária.</EmptyMsg>
         ) : (
           <div className="overflow-x-auto -mx-1 px-1">
-            <table className="w-full min-w-[1060px] border-collapse">
+            <table className="w-full min-w-[1180px] border-collapse">
               <thead>
                 <tr className="border-b border-white/[0.08]">
                   <th className="px-2 py-2 text-left text-[9.5px] font-extrabold uppercase tracking-[0.1em] text-text-secondary">Corretor</th>
@@ -264,6 +267,18 @@ export default function AtividadeTab({ report }: { report: ReportComputed }) {
                         </td>
                         <td className="px-2 py-2.5 text-right al-display text-[12.5px] font-bold text-white tabular-nums">{fmtInt(a.contatos)}</td>
                         <td className={`px-2 py-2.5 text-right text-[12px] tabular-nums ${a.semResposta > 0 ? 'text-[#FFE9A6]' : 'text-text-secondary'}`}>{fmtInt(a.semResposta)}</td>
+                        <td className="px-2 py-2.5 text-right whitespace-nowrap">
+                          {a.primeirosContatos > 0 ? (
+                            <>
+                              <span className="al-display text-[12.5px] font-bold text-[#7DD3FC] tabular-nums">{fmtInt(a.primeirosContatos)}</span>
+                              {a.tentativasMediaPrimeiroContato !== null && (
+                                <span className="text-[10px] text-[#7DD3FC]/70 tabular-nums"> · {a.tentativasMediaPrimeiroContato.toFixed(1).replace('.', ',')} tent.</span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-[12px] text-text-secondary">—</span>
+                          )}
+                        </td>
                         <td className="px-2 py-2.5 text-right al-display text-[12.5px] font-bold text-white tabular-nums">{fmtInt(a.meetsMarcados)}</td>
                         <td className="px-2 py-2.5 text-right al-display text-[12.5px] font-bold text-emerald-300 tabular-nums">{fmtInt(a.meetsFeitos)}</td>
                         <td className="px-2 py-2.5 text-right al-display text-[12.5px] font-bold text-white tabular-nums">{fmtInt(a.visitasMarcadas)}</td>
@@ -331,11 +346,13 @@ export default function AtividadeTab({ report }: { report: ReportComputed }) {
                   <AgoraChip n={a.agora.atrasadas} label={`tarefa${a.agora.atrasadas === 1 ? '' : 's'} atrasada${a.agora.atrasadas === 1 ? '' : 's'}`} tone="red" />
                   <AgoraChip n={a.agora.semAcao} label="sem próxima ação" tone="amber" />
                   <AgoraChip n={a.agora.negociacaoParada} label={`parado${a.agora.negociacaoParada === 1 ? '' : 's'} em negociação`} tone="red" />
+                  <AgoraChip n={a.agora.semPrimeiroContato} label="esperando 1º contato" tone="amber" />
                 </div>
               </div>
             ))}
             <p className="text-[9.5px] text-white/30 pt-1">
               Tarefas atrasadas = prazo estourado (hora real). Sem próxima ação = lead em etapa ativa do circuito (Entrada → Negociação) sem nenhuma tarefa pendente — Bolsão fica de fora.
+              Esperando 1º contato = leads em Entrada/Follow-up cujo cliente ainda não atendeu nem respondeu (o rodízio de insistência tá rolando — ou parado).
             </p>
           </div>
         )}

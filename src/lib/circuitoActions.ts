@@ -13,7 +13,7 @@ export interface LeadParaAcao {
   id: string;
   etapa?: string;
   userId?: string;
-  circuito?: { tentativas?: number };
+  circuito?: { tentativas?: number; contatosFeitos?: number; primeiroContatoEm?: any };
 }
 
 export type ResultadoAcao = { ok: true; transferiuPara?: string } | { ok: false; erro: unknown };
@@ -79,9 +79,28 @@ export async function executarAcaoCircuito(params: {
     }
     if (acao.circuitoTentativas === 'inc') leadUpdate['circuito.tentativas'] = (lead.circuito?.tentativas || 0) + 1;
     if (acao.circuitoTentativas === 'zero') leadUpdate['circuito.tentativas'] = 0;
+    if (acao.contatoEfetivo) {
+      // Conversa de verdade (atendeu / respondeu / falei) — alimenta o rodízio
+      // do 1º contato e, no futuro, a régua dos 7 follow-ups.
+      leadUpdate['circuito.contatosFeitos'] = (lead.circuito?.contatosFeitos || 0) + 1;
+      if (!lead.circuito?.primeiroContatoEm) {
+        const tentativaQueDeuCerto = (lead.circuito?.tentativas || 0) + 1;
+        leadUpdate['circuito.primeiroContatoEm'] = serverTimestamp();
+        leadUpdate['circuito.tentativasAtePrimeiroContato'] = tentativaQueDeuCerto;
+        batch.set(doc(interCol), {
+          type: 'Contato',
+          notes: `🎯 1º contato feito na ${tentativaQueDeuCerto}ª tentativa`,
+          timestamp: serverTimestamp(),
+          circuito: true,
+          ...(autorNome ? { por: autorNome } : {}),
+        });
+      }
+    }
     if (acao.descartadoMotivo) {
       leadUpdate.descartadoMotivo = acao.descartadoMotivo;
       leadUpdate.descartadoEm = serverTimestamp();
+      // Quem descartou fica registrado no lead — é assim que o bolsão do admin agrupa
+      leadUpdate.descartadoPor = currentUid;
     }
     if (acao.vendaValor) {
       leadUpdate.vendaValor = acao.vendaValor;

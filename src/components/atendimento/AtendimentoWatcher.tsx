@@ -37,7 +37,7 @@ interface LeadDoc {
   etapa?: string;
   userId?: string;
   createdAt?: any;
-  circuito?: { tentativas?: number; desde?: any };
+  circuito?: { tentativas?: number; desde?: any; primeiroContatoEm?: any; contatosFeitos?: number };
   tarefasPendentes?: TarefaPendente[];
   qualificacao?: Record<string, any>;
   anotacoes?: string;
@@ -336,6 +336,11 @@ export default function AtendimentoWatcher() {
           executar={executar}
           registrarContato={registrarContato}
           historico={historico}
+          rodizioPrimeiroContato={(() => {
+            const e = normalizeEtapa(leadAberto.etapa);
+            if ((e !== 'Entrada' && e !== 'Follow-up') || leadAberto.circuito?.primeiroContatoEm) return null;
+            return { tentativas: leadAberto.circuito?.tentativas || 0 };
+          })()}
           onFecharX={() => {
             modoFila.current = false;
             setAbertoId(null);
