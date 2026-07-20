@@ -1,13 +1,13 @@
 'use client';
 
 /**
- * Ligação Ativa — o cockpit da lista fria.
+ * Ligação Ativa — o cockpit da lista fria (sem cabeçalho, espaço máximo).
  *
- * EXCELZÃO em cima (tabela protagonista, largura toda: nome, telefone e ações
- * na linha). Clicou num contato → abre a BANCADA embaixo: roteiro ÚNICO da
- * ligação à esquerda (com o nome do contato e a lista interpolados) e, à
- * direita, anotações + qualificação + ações grandes. "Incluir no CRM" sobe
- * tudo junto e o circuito assume (lead nasce em Entrada, pop-ups abrem).
+ * EXCELZÃO em cima (tabela largura toda; ação rápida = só WhatsApp, que conta
+ * as tentativas). Clicou num contato → a tabela vira uma FAIXA com só o nome
+ * dele (+ voltar / próximo) e a BANCADA abre embaixo: roteiro único à esquerda,
+ * ficha à direita (WhatsApp com contador, Incluir no CRM, Descartar COM motivo).
+ * Descartados vão pro bolsão do admin, que pode realocar pra outro corretor.
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -38,17 +38,22 @@ interface Contato {
   nome: string;
   telefone: string;
   whatsapp?: string;
-  status: 'pendente' | 'descartado' | 'crm';
+  status: 'pendente' | 'descartado' | 'crm' | 'realocado';
   anotacoes?: string;
   qualificacao?: Record<string, any>;
   ordem?: number;
   leadId?: string;
+  tentativas?: number;
+  descartadoMotivo?: string;
 }
 
 interface Sessao { client: string; corretor: string; lista: string; }
 
+/** Motivos de descarte da lista fria (vão pro bolsão do admin). */
+const MOTIVOS_FRIA = ['Não atende', 'Não quer', 'Número errado', 'Sem perfil', 'Outro'] as const;
+
 // ---------------------------------------------------------------------------
-// Helpers do roteiro (script ÚNICO — sem variação por produto)
+// Helpers do roteiro (script ÚNICO)
 // ---------------------------------------------------------------------------
 function interpolar(txt: string, s: Sessao): string {
   return (txt || '')
@@ -58,7 +63,6 @@ function interpolar(txt: string, s: Sessao): string {
     .replace(/\[Produto\]/g, 'imóveis aqui no Litoral'); // compat com roteiros antigos salvos
 }
 function textoDe(x: { mensagem?: string; mensagensPorProduto?: Record<string, string> }): string {
-  // roteiros antigos salvos podem ter variação por produto — usa o texto geral
   if (x.mensagem) return x.mensagem;
   if (x.mensagensPorProduto) return x.mensagensPorProduto['nao_sei'] || Object.values(x.mensagensPorProduto)[0] || '';
   return '';
@@ -97,14 +101,14 @@ function MensagemCard({ titulo, texto, audio }: { titulo?: string; texto: string
 // ---------------------------------------------------------------------------
 const DEMO_LISTA: Lista = { id: 'demo-lista', nome: 'Feirão Litoral — Stand Barra Velha', total: 8 };
 const DEMO_CONTATOS: Contato[] = [
-  { id: 'dc1', nome: 'Rafael Nogueira', telefone: '(47) 99911-2233', status: 'pendente', anotacoes: '', qualificacao: {} },
-  { id: 'dc2', nome: 'Camila Duarte', telefone: '(47) 98822-3344', status: 'pendente', anotacoes: 'Pediu pra ligar depois das 18h.', qualificacao: { finalidade: ['Investimento'] } },
-  { id: 'dc3', nome: '', telefone: '(47) 97733-4455', status: 'pendente', anotacoes: '', qualificacao: {} },
-  { id: 'dc4', nome: 'Sérgio Prado', telefone: '(47) 96644-5566', status: 'crm', leadId: 'demo-lead-1', anotacoes: 'Atendeu, quer 2 quartos na Barra.', qualificacao: { quartos: ['2 quartos'], localizacao: ['Barra Velha'] } },
-  { id: 'dc5', nome: 'Vera Lúcia', telefone: '(47) 95555-6677', status: 'descartado', anotacoes: 'Número errado.', qualificacao: {} },
-  { id: 'dc6', nome: 'Tiago Melo', telefone: '(47) 94466-7788', status: 'pendente', anotacoes: '', qualificacao: {} },
-  { id: 'dc7', nome: 'Patrícia Reis', telefone: '(47) 93377-8899', status: 'pendente', anotacoes: '', qualificacao: {} },
-  { id: 'dc8', nome: 'Gilmar Souza', telefone: '(47) 92288-9900', status: 'pendente', anotacoes: '', qualificacao: {} },
+  { id: 'dc1', nome: 'Rafael Nogueira', telefone: '(47) 99911-2233', status: 'pendente', anotacoes: '', qualificacao: {}, tentativas: 0 },
+  { id: 'dc2', nome: 'Camila Duarte', telefone: '(47) 98822-3344', status: 'pendente', anotacoes: 'Pediu pra ligar depois das 18h.', qualificacao: { finalidade: ['Investimento'] }, tentativas: 2 },
+  { id: 'dc3', nome: '', telefone: '(47) 97733-4455', status: 'pendente', anotacoes: '', qualificacao: {}, tentativas: 1 },
+  { id: 'dc4', nome: 'Sérgio Prado', telefone: '(47) 96644-5566', status: 'crm', leadId: 'demo-lead-1', anotacoes: 'Atendeu, quer 2 quartos na Barra.', qualificacao: { quartos: ['2 quartos'], localizacao: ['Barra Velha'] }, tentativas: 1 },
+  { id: 'dc5', nome: 'Vera Lúcia', telefone: '(47) 95555-6677', status: 'descartado', anotacoes: '', qualificacao: {}, tentativas: 3, descartadoMotivo: 'Número errado' },
+  { id: 'dc6', nome: 'Tiago Melo', telefone: '(47) 94466-7788', status: 'pendente', anotacoes: '', qualificacao: {}, tentativas: 0 },
+  { id: 'dc7', nome: 'Patrícia Reis', telefone: '(47) 93377-8899', status: 'pendente', anotacoes: '', qualificacao: {}, tentativas: 0 },
+  { id: 'dc8', nome: 'Gilmar Souza', telefone: '(47) 92288-9900', status: 'descartado', anotacoes: '', qualificacao: {}, tentativas: 4, descartadoMotivo: 'Não atende' },
 ];
 
 const FILTROS = [
@@ -136,13 +140,18 @@ export default function LigacaoAtivaPage() {
   const [filtro, setFiltro] = useState<(typeof FILTROS)[number]['key']>('pendente');
   const [contatoSel, setContatoSel] = useState<string | null>(null);
   const [incluindo, setIncluindo] = useState<string | null>(null);
+  const [descartando, setDescartando] = useState(false);
+  const [motivoSel, setMotivoSel] = useState('');
+  const [motivoOutro, setMotivoOutro] = useState('');
 
-  // Anotações/qualificação do contato selecionado (edição local + autosave)
+  // Anotações/qualificação do contato selecionado
   const [anot, setAnot] = useState('');
   const [qual, setQual] = useState<Record<string, string[]>>({});
   const [saveInfo, setSaveInfo] = useState<'idle' | 'salvando' | 'salvo'>('idle');
   const anotTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const qualTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Tentativas em demo (visual)
+  const [tentativasDemo, setTentativasDemo] = useState<Record<string, number>>({});
 
   // --- Carrega roteiro ---
   useEffect(() => {
@@ -194,7 +203,7 @@ export default function LigacaoAtivaPage() {
     return () => unsub();
   }, [listaSel, isEspelhoDemo]);
 
-  // --- Seleção de contato ---
+  // --- Seleção ---
   const selecionar = (c: Contato) => {
     setContatoSel(c.id);
     setAnot(c.anotacoes || '');
@@ -202,15 +211,19 @@ export default function LigacaoAtivaPage() {
     Object.entries(c.qualificacao || {}).forEach(([k, v]) => { q0[k] = Array.isArray(v) ? v : [v as string]; });
     setQual(q0);
     setSaveInfo('idle');
+    setDescartando(false);
+    setMotivoSel('');
+    setMotivoOutro('');
     // Cada cliente é uma ligação nova: roteiro volta pro início
     setCurrentNode(cfg.startNode);
     setHistory([]);
     setMarcados({});
   };
 
-  const salvarContato = (campos: Record<string, any>) => {
-    if (isEspelhoDemo || !listaSel || !contatoSel) { setSaveInfo('idle'); return; }
-    updateDoc(doc(db, 'ligacaoAtivaListas', listaSel, 'contatos', contatoSel), { ...campos, atualizadoEm: serverTimestamp() })
+  const salvarContato = (campos: Record<string, any>, alvoId?: string) => {
+    const id = alvoId || contatoSel;
+    if (isEspelhoDemo || !listaSel || !id) { setSaveInfo('idle'); return; }
+    updateDoc(doc(db, 'ligacaoAtivaListas', listaSel, 'contatos', id), { ...campos, atualizadoEm: serverTimestamp() })
       .then(() => { setSaveInfo('salvo'); setTimeout(() => setSaveInfo(s => s === 'salvo' ? 'idle' : s), 2000); })
       .catch(() => setSaveInfo('idle'));
   };
@@ -240,12 +253,35 @@ export default function LigacaoAtivaPage() {
     });
   };
 
-  // --- Ações por contato ---
-  const descartar = (c: Contato) => {
+  // --- Ações ---
+  const tentativasDe = (c: Contato) => (tentativasDemo[c.id] ?? c.tentativas ?? 0);
+
+  /** Clique no WhatsApp = mais uma tentativa registrada no contato. */
+  const registrarTentativa = (c: Contato) => {
+    if (isEspelhoDemo) {
+      setTentativasDemo(t => ({ ...t, [c.id]: (t[c.id] ?? c.tentativas ?? 0) + 1 }));
+      return;
+    }
+    if (!listaSel) return;
+    updateDoc(doc(db, 'ligacaoAtivaListas', listaSel, 'contatos', c.id), {
+      tentativas: (c.tentativas || 0) + 1,
+      ultimaTentativaEm: serverTimestamp(),
+    }).catch(() => {});
+  };
+
+  const confirmarDescarte = (c: Contato) => {
+    const motivo = motivoSel === 'Outro' ? motivoOutro.trim() : motivoSel;
+    if (!motivo) return;
     if (isEspelhoDemo) { showToast('Modo demonstração — nada é salvo.', 'info'); return; }
     if (!listaSel) return;
-    updateDoc(doc(db, 'ligacaoAtivaListas', listaSel, 'contatos', c.id), { status: 'descartado', descartadoEm: serverTimestamp() }).catch(() => {});
-    if (contatoSel === c.id) setContatoSel(null);
+    updateDoc(doc(db, 'ligacaoAtivaListas', listaSel, 'contatos', c.id), {
+      status: 'descartado',
+      descartadoMotivo: motivo,
+      descartadoEm: serverTimestamp(),
+    }).catch(() => {});
+    showToast(`${c.nome || 'Contato'} descartado (${motivo}) — foi pro bolsão do admin.`, 'info');
+    setContatoSel(null);
+    setDescartando(false);
   };
 
   const restaurar = (c: Contato) => {
@@ -341,74 +377,30 @@ export default function LigacaoAtivaPage() {
   }), [contatos]);
   const visiveis = contatos.filter(c => c.status === filtro);
 
+  const irProximo = () => {
+    if (!contatoAtivo) return;
+    const lista = visiveis.length ? visiveis : contatos.filter(c => c.status === 'pendente');
+    if (!lista.length) { setContatoSel(null); return; }
+    const i = lista.findIndex(c => c.id === contatoAtivo.id);
+    const prox = lista[(i + 1) % lista.length];
+    if (prox && prox.id !== contatoAtivo.id) selecionar(prox);
+  };
+
   if (loadingCfg || loadingListas) return <div className="flex-1 flex items-center justify-center"><LoadingState label="Carregando…" /></div>;
 
   const msgPrincipal = node ? interpolar(textoDe(node), sessao) : '';
   const bancadaAberta = !!contatoAtivo;
 
-  const acaoBtns = (c: Contato, compacto: boolean) => (
-    <>
-      <a
-        href={`https://wa.me/55${(c.whatsapp || c.telefone || '').replace(/\D/g, '')}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={e => e.stopPropagation()}
-        title="Chamar no WhatsApp"
-        className={`${compacto ? 'px-2 py-1 text-[11px]' : 'flex-1 min-w-[120px] text-center px-3 py-2.5 text-[13px]'} rounded-lg font-bold bg-emerald-500/10 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/20 transition-colors`}
-      >
-        💬{compacto ? '' : ' Ligar / WhatsApp'}
-      </a>
-      {c.status !== 'crm' ? (
-        <button
-          onClick={e => { e.stopPropagation(); incluirNoCrm(c); }}
-          disabled={incluindo === c.id}
-          title="Atendeu e evoluiu? Vira lead no CRM"
-          className={`${compacto ? 'px-2 py-1 text-[11px]' : 'flex-1 min-w-[140px] px-3 py-2.5 text-[13px]'} rounded-lg font-bold text-white bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all disabled:opacity-50`}
-        >
-          {incluindo === c.id ? '…' : compacto ? '✅' : '✅ Incluir no CRM'}
-        </button>
-      ) : c.leadId ? (
-        <button
-          onClick={e => { e.stopPropagation(); router.push(`/dashboard/crm/${c.leadId}`); }}
-          className={`${compacto ? 'px-2 py-1 text-[11px]' : 'flex-1 min-w-[120px] px-3 py-2.5 text-[13px]'} rounded-lg font-bold bg-[#34D399]/10 border border-[#34D399]/40 text-[#34D399] hover:bg-[#34D399]/20 transition-colors`}
-        >
-          {compacto ? '↗' : 'Abrir no CRM →'}
-        </button>
-      ) : null}
-      {c.status === 'descartado' ? (
-        <button
-          onClick={e => { e.stopPropagation(); restaurar(c); }}
-          title="Voltar pra lista"
-          className={`${compacto ? 'px-2 py-1 text-[11px]' : 'px-3 py-2.5 text-[13px]'} rounded-lg font-bold bg-[#7DD3FC]/10 border border-[#7DD3FC]/40 text-[#7DD3FC] hover:bg-[#7DD3FC]/20 transition-colors`}
-        >
-          ↩{compacto ? '' : ' Voltar pra lista'}
-        </button>
-      ) : c.status === 'pendente' ? (
-        <button
-          onClick={e => { e.stopPropagation(); descartar(c); }}
-          title="Descartar (sai da lista)"
-          className={`${compacto ? 'px-2 py-1 text-[11px]' : 'px-3 py-2.5 text-[13px]'} rounded-lg font-bold bg-red-500/10 border border-red-500/40 text-red-300 hover:bg-red-500/20 transition-colors`}
-        >
-          🗑{compacto ? '' : ' Descartar'}
-        </button>
-      ) : null}
-    </>
-  );
-
   return (
     <div className="flex-1 min-h-0 flex flex-col gap-2.5 p-1 sm:p-2">
-      {/* ===== Cabeçalho: a lista (de onde veio) + filtros ===== */}
-      <div className="al-card relative overflow-hidden px-4 py-2.5 shrink-0">
-        <div className="absolute inset-x-0 top-0 gx-line" />
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="gx-tag shrink-0"><span>Ligação ativa</span></span>
-            <h1 className="al-display text-[17px] font-extrabold text-white uppercase tracking-wide leading-none truncate">
-              {listaAtiva ? listaAtiva.nome : 'Sem lista fria por enquanto'}
-            </h1>
-          </div>
-          <div className="ml-auto flex items-center gap-1.5 flex-wrap">
-            {listas.length > 1 && listas.map(l => (
+
+      {/* ===== EXCELZÃO (fechado) ou FAIXA DO CONTATO (aberto) ===== */}
+      {!bancadaAberta ? (
+        <div className="al-card relative overflow-hidden flex-1 min-h-[150px] flex flex-col">
+          <div className="absolute inset-x-0 top-0 gx-line" />
+          {/* Barra fina: listas + filtros (sem cabeçalho gastando espaço) */}
+          <div className="shrink-0 flex flex-wrap items-center gap-1.5 px-3 py-2 border-b border-white/[0.06]">
+            {listas.length > 1 ? listas.map(l => (
               <button
                 key={l.id}
                 onClick={() => { setListaSel(l.id); setContatoSel(null); }}
@@ -420,78 +412,129 @@ export default function LigacaoAtivaPage() {
               >
                 {l.nome}
               </button>
-            ))}
-            {listaAtiva && FILTROS.map(f => (
-              <button
-                key={f.key}
-                onClick={() => { setFiltro(f.key); setContatoSel(null); }}
-                className={`px-2.5 py-1 text-[11px] font-semibold border rounded-lg transition-colors ${
-                  filtro === f.key
-                    ? 'bg-[#FF1E56]/15 border-[#FF3364]/60 text-[#FF9EB5] shadow-[0_0_12px_-2px_rgba(255,30,86,0.4)]'
-                    : 'border-white/10 bg-white/[0.04] text-text-secondary hover:bg-white/[0.08]'
-                }`}
-              >
-                {f.label} <span className="tabular-nums opacity-70">({contagens[f.key]})</span>
-              </button>
-            ))}
+            )) : listaAtiva ? (
+              <span className="al-display text-[13px] font-extrabold text-[#FFE9A6] uppercase tracking-wide truncate">{listaAtiva.nome}</span>
+            ) : null}
+            <span className="ml-auto flex items-center gap-1.5 flex-wrap">
+              {listaAtiva && FILTROS.map(f => (
+                <button
+                  key={f.key}
+                  onClick={() => { setFiltro(f.key); setContatoSel(null); }}
+                  className={`px-2.5 py-1 text-[11px] font-semibold border rounded-lg transition-colors ${
+                    filtro === f.key
+                      ? 'bg-[#FF1E56]/15 border-[#FF3364]/60 text-[#FF9EB5] shadow-[0_0_12px_-2px_rgba(255,30,86,0.4)]'
+                      : 'border-white/10 bg-white/[0.04] text-text-secondary hover:bg-white/[0.08]'
+                  }`}
+                >
+                  {f.label} <span className="tabular-nums opacity-70">({contagens[f.key]})</span>
+                </button>
+              ))}
+            </span>
           </div>
-        </div>
-      </div>
 
-      {/* ===== EXCELZÃO — protagonista, largura toda ===== */}
-      <div className={`al-card relative overflow-hidden shrink-0 flex flex-col min-h-[150px] ${bancadaAberta ? 'xl:h-[34%]' : 'xl:flex-1'}`}>
-        <div className="absolute inset-x-0 top-0 gx-line" />
-        {!listaAtiva ? (
-          <div className="flex-1 grid place-items-center p-8 text-center">
-            <div className="space-y-1.5">
-              <p className="text-[15px] text-white font-semibold">Nenhuma lista fria por aqui ainda.</p>
-              <p className="text-sm text-text-secondary">O admin sobe as listas em <b className="text-white">Área do Administrador → Importar Lista de Ligação</b>.</p>
+          {!listaAtiva ? (
+            <div className="flex-1 grid place-items-center p-8 text-center">
+              <div className="space-y-1.5">
+                <p className="text-[15px] text-white font-semibold">Nenhuma lista fria por aqui ainda.</p>
+                <p className="text-sm text-text-secondary">O admin sobe as listas em <b className="text-white">Área do Administrador → Importar Lista de Ligação</b>.</p>
+              </div>
+            </div>
+          ) : visiveis.length === 0 ? (
+            <div className="flex-1 grid place-items-center p-8">
+              <p className="text-sm text-text-secondary">
+                {filtro === 'pendente' ? '🏁 Lista zerada — todo mundo ligado! Escolhe outra lista ou pede mais uma pro admin.' : 'Nada por aqui.'}
+              </p>
+            </div>
+          ) : (
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <table className="w-full text-left">
+                <thead className="sticky top-0 bg-[#14121c] z-10">
+                  <tr className="text-[9.5px] font-extrabold uppercase tracking-[0.16em] text-text-secondary border-b border-white/[0.08]">
+                    <th className="px-3 py-2 w-10">#</th>
+                    <th className="px-3 py-2">Nome</th>
+                    <th className="px-3 py-2">Telefone</th>
+                    <th className="px-3 py-2 w-[110px]">Tentativas</th>
+                    <th className="px-3 py-2 text-right w-[70px]">Whats</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.05]">
+                  {visiveis.map((c, idx) => {
+                    const t = tentativasDe(c);
+                    return (
+                      <tr
+                        key={c.id}
+                        onClick={() => selecionar(c)}
+                        className="cursor-pointer transition-colors hover:bg-white/[0.03]"
+                      >
+                        <td className="px-3 py-2 text-[11px] tabular-nums text-white/30">{idx + 1}</td>
+                        <td className="px-3 py-2 text-[13.5px] font-semibold text-white">
+                          {c.nome || <span className="text-white/40 italic font-normal">Sem nome</span>}
+                          {c.status === 'descartado' && c.descartadoMotivo && (
+                            <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-white/[0.05] border border-white/15 text-text-secondary">{c.descartadoMotivo}</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-[13px] text-text-secondary tabular-nums">{c.telefone}</td>
+                        <td className="px-3 py-2">
+                          {t > 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#FFE9A6] tabular-nums">💬 {t}×</span>
+                          ) : (
+                            <span className="text-[11px] text-white/25">—</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          <a
+                            href={`https://wa.me/55${(c.whatsapp || c.telefone || '').replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={e => { e.stopPropagation(); registrarTentativa(c); }}
+                            title="Chamar no WhatsApp (conta como tentativa)"
+                            className="inline-flex px-2.5 py-1 rounded-lg text-[12px] font-bold bg-emerald-500/10 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/20 transition-colors"
+                          >
+                            💬
+                          </a>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Faixa do contato: SÓ o nome dele em cima — espaço máximo pra bancada */
+        <div className="al-card relative overflow-hidden px-3.5 py-2.5 shrink-0">
+          <div className="absolute inset-x-0 top-0 gx-line" />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setContatoSel(null)}
+              className="shrink-0 px-2.5 py-1.5 rounded-lg text-[12px] font-bold border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-white transition-colors"
+            >
+              ← Lista
+            </button>
+            <div className="min-w-0 flex items-baseline gap-3">
+              <p className="al-display text-[19px] font-extrabold text-white leading-none truncate">{contatoAtivo!.nome || 'Sem nome'}</p>
+              <p className="text-[13px] text-text-secondary tabular-nums shrink-0">{contatoAtivo!.telefone}</p>
+              {tentativasDe(contatoAtivo!) > 0 && (
+                <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#E8C547]/10 border border-[#E8C547]/35 text-[#FFE9A6] tabular-nums">💬 {tentativasDe(contatoAtivo!)}× tentativa{tentativasDe(contatoAtivo!) > 1 ? 's' : ''}</span>
+              )}
+            </div>
+            <div className="ml-auto flex items-center gap-2 shrink-0">
+              <span className={`text-[10px] font-bold uppercase tracking-wider transition-opacity ${saveInfo === 'idle' ? 'opacity-0' : 'opacity-100'} ${saveInfo === 'salvo' ? 'text-emerald-300' : 'text-text-secondary'}`}>
+                {saveInfo === 'salvando' ? 'salvando…' : 'salvo ✓'}
+              </span>
+              <button
+                onClick={irProximo}
+                className="px-2.5 py-1.5 rounded-lg text-[12px] font-bold border border-[#E8C547]/40 bg-[#E8C547]/10 text-[#FFE9A6] hover:bg-[#E8C547]/20 transition-colors"
+              >
+                Próximo →
+              </button>
             </div>
           </div>
-        ) : visiveis.length === 0 ? (
-          <div className="flex-1 grid place-items-center p-8">
-            <p className="text-sm text-text-secondary">
-              {filtro === 'pendente' ? '🏁 Lista zerada — todo mundo ligado! Escolhe outra lista ou pede mais uma pro admin.' : 'Nada por aqui.'}
-            </p>
-          </div>
-        ) : (
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            <table className="w-full text-left">
-              <thead className="sticky top-0 bg-[#14121c] z-10">
-                <tr className="text-[9.5px] font-extrabold uppercase tracking-[0.16em] text-text-secondary border-b border-white/[0.08]">
-                  <th className="px-3 py-2 w-10">#</th>
-                  <th className="px-3 py-2">Nome</th>
-                  <th className="px-3 py-2">Telefone</th>
-                  <th className="px-3 py-2 text-right w-[190px]">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/[0.05]">
-                {visiveis.map((c, idx) => {
-                  const ativo = contatoSel === c.id;
-                  return (
-                    <tr
-                      key={c.id}
-                      onClick={() => (ativo ? setContatoSel(null) : selecionar(c))}
-                      className={`cursor-pointer transition-colors ${ativo ? 'bg-[#E8C547]/[0.08]' : 'hover:bg-white/[0.03]'}`}
-                    >
-                      <td className={`px-3 py-2 text-[11px] tabular-nums ${ativo ? 'text-[#FFE9A6] font-bold' : 'text-white/30'}`}>{idx + 1}</td>
-                      <td className="px-3 py-2 text-[13.5px] font-semibold text-white">
-                        <span className={ativo ? 'text-[#FFE9A6]' : ''}>{c.nome || <span className="text-white/40 italic font-normal">Sem nome</span>}</span>
-                      </td>
-                      <td className="px-3 py-2 text-[13px] text-text-secondary tabular-nums">{c.telefone}</td>
-                      <td className="px-3 py-2">
-                        <div className="flex items-center justify-end gap-1.5">{acaoBtns(c, true)}</div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* ===== BANCADA — abre ao selecionar: roteiro + ficha do contato ===== */}
+      {/* ===== BANCADA — roteiro + ficha do contato ===== */}
       {bancadaAberta && contatoAtivo && (
         <div className="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-2 gap-2.5">
           {/* Roteiro único da ligação */}
@@ -555,21 +598,87 @@ export default function LigacaoAtivaPage() {
           {/* Ficha do contato: ações + anotações + qualificação */}
           <div className="al-card relative overflow-hidden p-4 min-h-0 flex flex-col">
             <div className="absolute inset-x-0 top-0 gx-line" />
-            <div className="flex items-center justify-between gap-3 mb-3 shrink-0">
-              <div className="min-w-0">
-                <p className="al-display text-[17px] font-extrabold text-white leading-tight truncate">{contatoAtivo.nome || 'Sem nome'}</p>
-                <p className="text-[12.5px] text-text-secondary tabular-nums">{contatoAtivo.telefone}</p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className={`text-[10px] font-bold uppercase tracking-wider transition-opacity ${saveInfo === 'idle' ? 'opacity-0' : 'opacity-100'} ${saveInfo === 'salvo' ? 'text-emerald-300' : 'text-text-secondary'}`}>
-                  {saveInfo === 'salvando' ? 'salvando…' : 'salvo ✓'}
-                </span>
-                <button onClick={() => setContatoSel(null)} className="px-2 py-1 rounded-md text-[13px] text-white/40 hover:text-[#FF6B6B] hover:bg-[#FF6B6B]/15 transition-colors" title="Fechar a ficha">✕</button>
-              </div>
-            </div>
-
             <div className="flex-1 min-h-0 xl:overflow-y-auto xl:pr-1.5 space-y-3.5">
-              <div className="flex flex-wrap gap-2">{acaoBtns(contatoAtivo, false)}</div>
+              {/* Ações */}
+              <div className="flex flex-wrap gap-2">
+                <a
+                  href={`https://wa.me/55${(contatoAtivo.whatsapp || contatoAtivo.telefone || '').replace(/\D/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => registrarTentativa(contatoAtivo)}
+                  className="flex-1 min-w-[150px] text-center px-3 py-2.5 rounded-xl text-[13px] font-bold bg-emerald-500/10 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/20 transition-colors"
+                >
+                  💬 Chamar no WhatsApp{tentativasDe(contatoAtivo) > 0 ? ` · ${tentativasDe(contatoAtivo)}×` : ''}
+                </a>
+                {contatoAtivo.status !== 'crm' ? (
+                  <button
+                    onClick={() => incluirNoCrm(contatoAtivo)}
+                    disabled={incluindo === contatoAtivo.id}
+                    className="flex-1 min-w-[150px] px-3 py-2.5 rounded-xl text-[13px] font-bold text-white bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all disabled:opacity-50"
+                  >
+                    {incluindo === contatoAtivo.id ? 'Incluindo…' : '✅ Incluir no CRM'}
+                  </button>
+                ) : contatoAtivo.leadId ? (
+                  <button
+                    onClick={() => router.push(`/dashboard/crm/${contatoAtivo.leadId}`)}
+                    className="flex-1 min-w-[130px] px-3 py-2.5 rounded-xl text-[13px] font-bold bg-[#34D399]/10 border border-[#34D399]/40 text-[#34D399] hover:bg-[#34D399]/20 transition-colors"
+                  >
+                    Abrir no CRM →
+                  </button>
+                ) : null}
+                {contatoAtivo.status === 'descartado' ? (
+                  <button
+                    onClick={() => restaurar(contatoAtivo)}
+                    className="px-3 py-2.5 rounded-xl text-[13px] font-bold bg-[#7DD3FC]/10 border border-[#7DD3FC]/40 text-[#7DD3FC] hover:bg-[#7DD3FC]/20 transition-colors"
+                  >
+                    ↩ Voltar pra lista
+                  </button>
+                ) : contatoAtivo.status === 'pendente' ? (
+                  <button
+                    onClick={() => setDescartando(d => !d)}
+                    className="px-3 py-2.5 rounded-xl text-[13px] font-bold bg-red-500/10 border border-red-500/40 text-red-300 hover:bg-red-500/20 transition-colors"
+                  >
+                    🗑 Descartar
+                  </button>
+                ) : null}
+              </div>
+
+              {/* Descarte COM MOTIVO (vai pro bolsão do admin) */}
+              {descartando && contatoAtivo.status === 'pendente' && (
+                <div className="rounded-xl border border-red-500/35 bg-red-500/[0.06] p-3 space-y-2">
+                  <p className="text-[12px] text-red-200 font-semibold">Por que descartar? (vai pro bolsão do admin, que pode repassar a outro corretor)</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {MOTIVOS_FRIA.map(m => (
+                      <button
+                        key={m}
+                        onClick={() => setMotivoSel(m)}
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors ${
+                          motivoSel === m
+                            ? 'bg-red-500/15 border-red-500/60 text-red-200'
+                            : 'bg-white/[0.04] border-white/10 text-text-secondary hover:bg-white/[0.08]'
+                        }`}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                  {motivoSel === 'Outro' && (
+                    <input
+                      value={motivoOutro}
+                      onChange={e => setMotivoOutro(e.target.value)}
+                      placeholder="Qual o motivo?"
+                      className="w-full px-3 py-1.5 bg-white/[0.04] border border-white/10 rounded-lg text-white text-[13px] placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-red-500/40"
+                    />
+                  )}
+                  <button
+                    onClick={() => confirmarDescarte(contatoAtivo)}
+                    disabled={!motivoSel || (motivoSel === 'Outro' && !motivoOutro.trim())}
+                    className="w-full px-3 py-2 rounded-lg text-[12.5px] font-bold bg-red-500/15 border border-red-500/50 text-red-200 hover:bg-red-500/25 transition-colors disabled:opacity-40"
+                  >
+                    Confirmar descarte
+                  </button>
+                </div>
+              )}
 
               <div>
                 <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">Anotações da ligação</p>
@@ -613,13 +722,6 @@ export default function LigacaoAtivaPage() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Sem contato selecionado: dica curta embaixo */}
-      {!bancadaAberta && listaAtiva && visiveis.length > 0 && (
-        <p className="shrink-0 text-center text-[12px] text-text-secondary py-1">
-          Clica num contato pra abrir o roteiro da ligação e a ficha dele aqui embaixo. 👇
-        </p>
       )}
     </div>
   );

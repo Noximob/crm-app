@@ -26,6 +26,25 @@ interface ContatoPreview {
   telefone: string;
 }
 
+interface DescartadoBolsao {
+  listaId: string;
+  listaNome: string;
+  contatoId: string;
+  nome: string;
+  telefone: string;
+  whatsapp?: string;
+  motivo?: string;
+  tentativas?: number;
+  anotacoes?: string;
+  qualificacao?: Record<string, any>;
+}
+
+const DEMO_BOLSAO: DescartadoBolsao[] = [
+  { listaId: 'demo-lista', listaNome: 'Feirão Litoral — Stand Barra Velha', contatoId: 'dc5', nome: 'Vera Lúcia', telefone: '(47) 95555-6677', motivo: 'Número errado', tentativas: 3 },
+  { listaId: 'demo-lista', listaNome: 'Feirão Litoral — Stand Barra Velha', contatoId: 'dc8', nome: 'Gilmar Souza', telefone: '(47) 92288-9900', motivo: 'Não atende', tentativas: 4 },
+  { listaId: 'demo-lista-2', listaNome: 'Portaria Condomínios — Penha', contatoId: 'dx1', nome: 'Osmar Teles', telefone: '(47) 91111-0000', motivo: 'Não quer', tentativas: 2 },
+];
+
 export default function ImportarLigacaoAtivaPage() {
   const { currentUser, userData, isEspelhoDemo } = useAuth();
   const [corretores, setCorretores] = useState<Corretor[]>([]);
@@ -37,6 +56,114 @@ export default function ImportarLigacaoAtivaPage() {
   const [jaExistentes, setJaExistentes] = useState(0); // telefones que já são leads do CRM (pulados)
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // --- Bolsão de descartados (realocar pra outro corretor) ---
+  const [bolsao, setBolsao] = useState<DescartadoBolsao[]>([]);
+  const [bolsaoCarregado, setBolsaoCarregado] = useState(false);
+  const [selBolsao, setSelBolsao] = useState<Set<string>>(new Set());
+  const [bolsaoCorretor, setBolsaoCorretor] = useState('');
+  const [bolsaoNome, setBolsaoNome] = useState('');
+  const [realocando, setRealocando] = useState(false);
+
+  const carregarBolsao = React.useCallback(async () => {
+    if (isEspelhoDemo) {
+      setBolsao(DEMO_BOLSAO);
+      setBolsaoCarregado(true);
+      return;
+    }
+    if (!userData?.imobiliariaId) return;
+    try {
+      const listasSnap = await getDocs(query(
+        collection(db, 'ligacaoAtivaListas'),
+        where('imobiliariaId', '==', userData.imobiliariaId)
+      ));
+      const itens: DescartadoBolsao[] = [];
+      for (const l of listasSnap.docs) {
+        const lNome = (l.data() as any).nome || 'Lista';
+        try {
+          const descSnap = await getDocs(query(collection(l.ref, 'contatos'), where('status', '==', 'descartado')));
+          descSnap.docs.forEach(d => {
+            const c = d.data() as any;
+            itens.push({
+              listaId: l.id, listaNome: lNome, contatoId: d.id,
+              nome: c.nome || '', telefone: c.telefone || '', whatsapp: c.whatsapp,
+              motivo: c.descartadoMotivo, tentativas: c.tentativas,
+              anotacoes: c.anotacoes, qualificacao: c.qualificacao,
+            });
+          });
+        } catch { /* lista sem acesso — segue */ }
+      }
+      setBolsao(itens);
+    } catch { /* silencioso */ }
+    setBolsaoCarregado(true);
+  }, [isEspelhoDemo, userData?.imobiliariaId]);
+
+  useEffect(() => { carregarBolsao(); }, [carregarBolsao]);
+
+  const toggleSelBolsao = (chave: string) => {
+    setSelBolsao(prev => {
+      const n = new Set(prev);
+      if (n.has(chave)) n.delete(chave); else n.add(chave);
+      return n;
+    });
+  };
+
+  const realocarSelecionados = async () => {
+    const escolhidos = bolsao.filter(b => selBolsao.has(`${b.listaId}:${b.contatoId}`));
+    if (!escolhidos.length || !bolsaoCorretor || !currentUser) return;
+    if (isEspelhoDemo) { showToast('Modo demonstração — nada é salvo.', 'info'); return; }
+    setRealocando(true);
+    try {
+      const nome = bolsaoNome.trim() || `Bolsão · ${new Date().toLocaleDateString('pt-BR')}`;
+      const listaRef = doc(collection(db, 'ligacaoAtivaListas'));
+      let batch = writeBatch(db);
+      batch.set(listaRef, {
+        nome,
+        imobiliariaId: userData?.imobiliariaId || '',
+        corretorId: bolsaoCorretor,
+        criadaPor: currentUser.uid,
+        criadaEm: serverTimestamp(),
+        total: escolhidos.length,
+        veioDoBolsao: true,
+      });
+      let ops = 1;
+      for (let i = 0; i < escolhidos.length; i++) {
+        const b = escolhidos[i];
+        // Cópia limpa pro novo corretor (mantém o histórico útil)
+        batch.set(doc(collection(listaRef, 'contatos')), {
+          nome: b.nome,
+          telefone: b.telefone,
+          whatsapp: b.whatsapp || b.telefone.replace(/\D/g, ''),
+          status: 'pendente',
+          anotacoes: b.anotacoes || '',
+          qualificacao: b.qualificacao || {},
+          tentativas: 0,
+          tentativasAnteriores: b.tentativas || 0,
+          motivoAnterior: b.motivo || '',
+          ordem: i,
+          criadoEm: serverTimestamp(),
+        });
+        // Original sai do bolsão (fica no histórico como realocado)
+        batch.update(doc(db, 'ligacaoAtivaListas', b.listaId, 'contatos', b.contatoId), {
+          status: 'realocado',
+          realocadoEm: serverTimestamp(),
+          realocadoPara: bolsaoCorretor,
+        });
+        ops += 2;
+        if (ops >= 398) { await batch.commit(); batch = writeBatch(db); ops = 0; }
+      }
+      if (ops > 0) await batch.commit();
+      showToast(`Lista "${nome}" criada com ${escolhidos.length} contato${escolhidos.length > 1 ? 's' : ''} pra ${corretores.find(c => c.id === bolsaoCorretor)?.nome || 'o corretor'}!`, 'success');
+      setSelBolsao(new Set());
+      setBolsaoNome('');
+      carregarBolsao();
+    } catch (e) {
+      console.error(e);
+      showToast('Erro ao realocar os contatos.', 'error');
+    } finally {
+      setRealocando(false);
+    }
+  };
 
   // Buscar corretores aprovados
   useEffect(() => {
@@ -256,6 +383,96 @@ export default function ImportarLigacaoAtivaPage() {
         >
           {loading ? 'Criando lista…' : `Criar lista da Ligação Ativa (${preview.length})`}
         </button>
+      </div>
+
+      {/* ===== Bolsão de descartados — realocar pra outro corretor ===== */}
+      <div className="max-w-2xl mx-auto al-card relative overflow-hidden p-6 mt-6">
+        <div className="absolute inset-x-0 top-0 gx-line" />
+        <h2 className="al-display text-[17px] font-bold text-white uppercase tracking-[0.1em] mb-1">🧊 Bolsão de descartados</h2>
+        <p className="text-text-secondary mb-4 text-sm">
+          Contatos que os corretores descartaram (com motivo). Selecione e crie uma nova lista pra outro corretor tentar de novo.
+        </p>
+
+        {!bolsaoCarregado ? (
+          <p className="text-sm text-text-secondary py-4">Carregando bolsão…</p>
+        ) : bolsao.length === 0 ? (
+          <p className="text-sm text-text-secondary py-4">Nenhum descartado no bolsão por enquanto. 👌</p>
+        ) : (
+          <>
+            <div className="mb-4 grid sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary block mb-1">Novo corretor</label>
+                <select
+                  className={inputCls}
+                  value={bolsaoCorretor}
+                  onChange={e => setBolsaoCorretor(e.target.value)}
+                >
+                  <option value="">Selecione o corretor</option>
+                  {corretores.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary block mb-1">Nome da nova lista (opcional)</label>
+                <input
+                  className={inputCls}
+                  placeholder={`Bolsão · ${new Date().toLocaleDateString('pt-BR')}`}
+                  value={bolsaoNome}
+                  onChange={e => setBolsaoNome(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="mb-4 max-h-72 overflow-y-auto rounded-xl border border-white/[0.08] bg-white/[0.02] divide-y divide-white/[0.05]">
+              {Array.from(new Set(bolsao.map(b => b.listaId))).map(listaId => {
+                const doGrupo = bolsao.filter(b => b.listaId === listaId);
+                const todos = doGrupo.every(b => selBolsao.has(`${b.listaId}:${b.contatoId}`));
+                return (
+                  <div key={listaId}>
+                    <button
+                      onClick={() => {
+                        setSelBolsao(prev => {
+                          const n = new Set(prev);
+                          doGrupo.forEach(b => { const k = `${b.listaId}:${b.contatoId}`; if (todos) n.delete(k); else n.add(k); });
+                          return n;
+                        });
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 bg-white/[0.03] text-left hover:bg-white/[0.05] transition-colors"
+                    >
+                      <span className={`h-3.5 w-3.5 rounded border grid place-items-center text-[9px] ${todos ? 'bg-[#E8C547]/20 border-[#E8C547]/60 text-[#FFE9A6]' : 'border-white/20 text-transparent'}`}>✓</span>
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#FFE9A6]">{doGrupo[0].listaNome}</span>
+                      <span className="text-[11px] text-text-secondary tabular-nums">({doGrupo.length})</span>
+                    </button>
+                    {doGrupo.map(b => {
+                      const chave = `${b.listaId}:${b.contatoId}`;
+                      const marcado = selBolsao.has(chave);
+                      return (
+                        <button
+                          key={chave}
+                          onClick={() => toggleSelBolsao(chave)}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors ${marcado ? 'bg-[#E8C547]/[0.07]' : 'hover:bg-white/[0.03]'}`}
+                        >
+                          <span className={`h-3.5 w-3.5 rounded border grid place-items-center text-[9px] shrink-0 ${marcado ? 'bg-[#E8C547]/20 border-[#E8C547]/60 text-[#FFE9A6]' : 'border-white/20 text-transparent'}`}>✓</span>
+                          <span className="flex-1 min-w-0 text-[13px] font-semibold text-white truncate">{b.nome || <span className="text-white/40 italic font-normal">Sem nome</span>}</span>
+                          <span className="text-[12px] text-text-secondary tabular-nums shrink-0">{b.telefone}</span>
+                          {b.motivo && <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-white/[0.05] border border-white/15 text-text-secondary">{b.motivo}</span>}
+                          {(b.tentativas || 0) > 0 && <span className="shrink-0 text-[10px] text-[#FFE9A6]/70 tabular-nums">💬 {b.tentativas}×</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={realocarSelecionados}
+              disabled={selBolsao.size === 0 || !bolsaoCorretor || realocando}
+              className="w-full px-6 py-3 bg-[#7DD3FC]/10 border border-[#7DD3FC]/40 text-[#7DD3FC] hover:bg-[#7DD3FC]/20 rounded-xl font-bold transition-colors disabled:opacity-40"
+            >
+              {realocando ? 'Realocando…' : `🔄 Criar lista com ${selBolsao.size} selecionado${selBolsao.size === 1 ? '' : 's'}`}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
