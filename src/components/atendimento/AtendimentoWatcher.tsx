@@ -22,7 +22,7 @@ import { collection, doc, getDocs, limit, onSnapshot, orderBy, query, updateDoc,
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
-import { CADENCIAS_PADRAO, carregarCadencias, ETAPAS_CIRCUITO, type CadenciasFunil } from '@/lib/circuito';
+import { CADENCIAS_PADRAO, carregarCadencias, type CadenciasFunil } from '@/lib/circuito';
 import { executarAcaoCircuito } from '@/lib/circuitoActions';
 import { toJsDate, type TarefaPendente } from '@/lib/leadTasks';
 import { showToast } from '@/components/ui/toast';
@@ -83,13 +83,13 @@ export default function AtendimentoWatcher() {
 
   const ativo = !!currentUser && !isEspelhoDemo;
 
-  // Leads do corretor nas etapas ativas do circuito (em tempo real)
+  // Leads do corretor (em tempo real). SEM filtro de etapa: leads ANTIGOS com
+  // etapa legada também contam — o mapeamento pro circuito é feito no cliente.
   useEffect(() => {
     if (!ativo) return;
     const q = query(
       collection(db, 'leads'),
-      where('userId', '==', currentUser!.uid),
-      where('etapa', 'in', [...ETAPAS_CIRCUITO])
+      where('userId', '==', currentUser!.uid)
     );
     const unsub = onSnapshot(q, snap => {
       setLeads(snap.docs.map(d => ({ id: d.id, ...d.data() } as LeadDoc)));
@@ -130,7 +130,9 @@ export default function AtendimentoWatcher() {
   // Telas de trabalho focado: o aviso flutuante atrapalha — fica de fora.
   const semAviso = emPaginaDeLead || (pathname || '').startsWith('/dashboard/ligacao-ativa');
 
-  // Fila de atendimentos esperando (mais urgente primeiro)
+  // Fila de atendimentos esperando (mais urgente primeiro).
+  // TODOS os leads contam — antigos sem tarefa ou com tarefa vencida ficam
+  // pendentes aqui também (o aviso só conta e abre um a um; nada persegue).
   const fila = useMemo((): Candidato[] => {
     const agora = Date.now();
     void tick;
@@ -138,9 +140,6 @@ export default function AtendimentoWatcher() {
     for (const lead of leads) {
       const etapa = normalizeEtapa(lead.etapa);
       const criadoMs = toJsDate(lead.createdAt)?.getTime() ?? 0;
-      const noRitmo = !!lead.circuito;
-      const novoRecente = etapa === 'Entrada' && agora - criadoMs < 72 * 3600_000;
-      if (!noRitmo && !novoRecente) continue; // lead antigo entra "manso" pela página
       const p = perguntaDoLead(etapa, lead.tarefasPendentes || [], cadencias, agora);
       if (!p?.pendente) continue;
       const taskId = 'taskId' in p.estado ? p.estado.taskId : undefined;
