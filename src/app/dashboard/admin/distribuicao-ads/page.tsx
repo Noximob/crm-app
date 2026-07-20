@@ -37,6 +37,8 @@ interface AdsConfig {
   minutosExclusivo: number;
   minutosGeral: number;
   imobiliariaId?: string;
+  /** true → corretor com tarefa atrasada no CRM é pulado no rodízio até resolver */
+  exigirCrmEmDia?: boolean;
 }
 
 interface AdsLead {
@@ -283,6 +285,7 @@ export default function AdminDistribuicaoAdsPage() {
               minutosExclusivo: Number(data.minutosExclusivo) > 0 ? Number(data.minutosExclusivo) : 5,
               minutosGeral: Number(data.minutosGeral) > 0 ? Number(data.minutosGeral) : 30,
               imobiliariaId: data.imobiliariaId,
+              exigirCrmEmDia: !!data.exigirCrmEmDia,
             }
           : null;
         setConfig(cfg);
@@ -363,6 +366,7 @@ export default function AdminDistribuicaoAdsPage() {
       minutosExclusivo: config?.minutosExclusivo ?? 5,
       minutosGeral: config?.minutosGeral ?? 30,
       imobiliariaId: userData.imobiliariaId,
+      exigirCrmEmDia: config?.exigirCrmEmDia ?? false,
     };
     await setDoc(doc(db, 'distribuicaoAds', 'config'), { ...base, ...patch, atualizadoEm: serverTimestamp() }, { merge: true });
   };
@@ -376,6 +380,24 @@ export default function AdminDistribuicaoAdsPage() {
       showToast(novo ? 'Distribuição ativada.' : 'Distribuição pausada.', 'success');
     } catch (e) {
       console.error('Erro ao alternar distribuição:', e);
+      showToast('Não foi possível salvar — tente de novo.', 'error');
+    }
+  };
+
+  const handleToggleCrmEmDia = async () => {
+    if (guardaDemo()) return;
+    if (!config && !userData?.imobiliariaId) return;
+    const novo = !(config?.exigirCrmEmDia ?? false);
+    try {
+      await persistConfig({ exigirCrmEmDia: novo });
+      showToast(
+        novo
+          ? 'Ligado: quem tiver tarefa atrasada no CRM é pulado no rodízio até resolver.'
+          : 'Desligado: o rodízio volta a valer pra todo mundo.',
+        'success'
+      );
+    } catch (e) {
+      console.error('Erro ao alternar exigirCrmEmDia:', e);
       showToast('Não foi possível salvar — tente de novo.', 'error');
     }
   };
@@ -612,8 +634,21 @@ export default function AdminDistribuicaoAdsPage() {
               <h2 className="al-display text-[14px] font-bold text-white uppercase tracking-[0.14em]">Configurações</h2>
               <button
                 type="button"
-                onClick={handleToggleAtivo}
+                onClick={handleToggleCrmEmDia}
+                title="Ligado: quem tiver tarefa atrasada no CRM é pulado no rodízio até resolver. Se a escala inteira estiver atrasada, o rodízio segue normal (nenhum lead se perde)."
                 className={`ml-auto inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider border transition-colors ${
+                  config?.exigirCrmEmDia
+                    ? 'bg-[#E8C547]/10 border-[#E8C547]/45 text-[#FFE9A6]'
+                    : 'bg-white/[0.04] border-white/15 text-text-secondary hover:border-white/30 hover:text-white'
+                }`}
+              >
+                <span className={`h-2 w-2 rounded-full ${config?.exigirCrmEmDia ? 'bg-[#E8C547] shadow-[0_0_6px_rgba(232,197,71,0.8)]' : 'bg-white/25'}`} />
+                {config?.exigirCrmEmDia ? '🏅 Só recebe quem tá com o CRM em dia' : 'CRM em dia: não exigido'}
+              </button>
+              <button
+                type="button"
+                onClick={handleToggleAtivo}
+                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider border transition-colors ${
                   config?.ativo
                     ? 'bg-[#34D399]/10 border-[#34D399]/40 text-emerald-300'
                     : 'bg-white/[0.04] border-white/15 text-text-secondary hover:border-white/30 hover:text-white'
@@ -647,6 +682,12 @@ export default function AdminDistribuicaoAdsPage() {
             </p>
             {!config?.ativo && (
               <p className="text-[11px] font-bold text-[#FFE9A6] mt-2">Distribuição pausada — leads novos de anúncio não serão escalados automaticamente.</p>
+            )}
+            {config?.exigirCrmEmDia && (
+              <p className="text-[10.5px] text-[#FFE9A6]/80 mt-2">
+                🏅 Premiação ligada: corretor com <b>tarefa atrasada</b> no CRM é pulado no rodízio até resolver.
+                Se a escala inteira estiver atrasada, o rodízio segue normal — nenhum lead se perde.
+              </p>
             )}
           </div>
 

@@ -7,7 +7,10 @@
  *   { ativo: boolean, corretores: string[] (uids na ordem do rodízio),
  *     proximoIndex: number, minutosExclusivo: number (default 5),
  *     minutosGeral: number (default 30), atualizadoEm: Timestamp,
- *     imobiliariaId?: string }
+ *     imobiliariaId?: string,
+ *     exigirCrmEmDia?: boolean (true → corretor com tarefa ATRASADA no CRM é
+ *       pulado no rodízio até resolver; se a escala inteira estiver atrasada,
+ *       o rodízio segue normal pra nenhum lead se perder) }
  *
  * Collection `adsLeads/{id}`:
  *   { nome, telefone (só dígitos), origem: 'meta-form'|'meta-whatsapp'|'manual',
@@ -50,6 +53,7 @@ interface DistribuicaoConfig {
     minutosGeral: number;
     atualizadoEm?: admin.firestore.Timestamp;
     imobiliariaId?: string;
+    exigirCrmEmDia?: boolean;
 }
 
 interface NovoAdsLead {
@@ -225,6 +229,66 @@ async function buscarLeadDuplicado(telefone: string): Promise<DuplicadoDe | null
     }
 }
 
+/** dueDate do espelho tarefasPendentes → ms (Timestamp, {seconds} ou string). */
+function dueDateMs(due: unknown): number {
+    const d = due as {toMillis?: () => number; seconds?: number} | string | null | undefined;
+    if (d && typeof d === "object" && typeof d.toMillis === "function") return d.toMillis();
+    if (d && typeof d === "object" && typeof d.seconds === "number") return d.seconds * 1000;
+    if (typeof d === "string") return Date.parse(d);
+    return NaN;
+}
+
+/**
+ * "CRM em dia" = nenhuma tarefa pendente com prazo estourado. Lê o espelho
+ * `tarefasPendentes` dos leads de cada corretor (field mask — barato) e devolve
+ * o conjunto dos que estão COM atraso (fora da fila). Falha na leitura de um
+ * corretor → ele é considerado em dia (o filtro nunca pode travar o rodízio).
+ */
+async function corretoresComAtraso(corretores: string[]): Promise<Set<string>> {
+    const agoraMs = Date.now();
+    const comAtraso = new Set<string>();
+    await Promise.all(corretores.map(async (uid) => {
+        try {
+            const snap = await db().collection("leads")
+                .where("userId", "==", uid)
+                .select("tarefasPendentes")
+                .get();
+            for (const doc of snap.docs) {
+                const pendentes = (doc.data().tarefasPendentes || []) as {dueDate?: unknown}[];
+                if (pendentes.some((t) => {
+                    const ms = dueDateMs(t?.dueDate);
+                    return isFinite(ms) && ms < agoraMs;
+                })) {
+                    comAtraso.add(uid);
+                    return;
+                }
+            }
+        } catch (e) {
+            logger.warn("corretoresComAtraso: falha ao checar (considera em dia)", {uid, e});
+        }
+    }));
+    return comAtraso;
+}
+
+/**
+ * Monta o conjunto de corretores fora da fila (exigirCrmEmDia ligado).
+ * Se TODOS estiverem atrasados, devolve vazio — melhor distribuir do que
+ * deixar o lead sem dono.
+ */
+async function foraDaFilaPorAtraso(config: Partial<DistribuicaoConfig>): Promise<Set<string>> {
+    const corretores = Array.isArray(config.corretores) ? config.corretores : [];
+    if (config.exigirCrmEmDia !== true || corretores.length === 0) return new Set();
+    const comAtraso = await corretoresComAtraso(corretores);
+    if (comAtraso.size >= corretores.length) {
+        logger.warn("exigirCrmEmDia: escala inteira com atraso — rodízio segue normal");
+        return new Set();
+    }
+    if (comAtraso.size > 0) {
+        logger.info("exigirCrmEmDia: corretores pulados por atraso no CRM", {pulados: Array.from(comAtraso)});
+    }
+    return comAtraso;
+}
+
 /**
  * Cria o adsLead e escala o próximo corretor do rodízio (transação sobre
  * distribuicaoAds/config). Se a distribuição estiver inativa ou sem
@@ -238,6 +302,11 @@ export async function criarEDistribuir(novo: NovoAdsLead): Promise<ResultadoDist
 
     // Aviso (não bloqueia): esse telefone já é lead de algum corretor no CRM?
     const duplicadoDe = await buscarLeadDuplicado(telefone);
+
+    // Filtro "só recebe quem está com o CRM em dia" — checado FORA da transação
+    // (as queries são caras; uma corrida rara só muda quem é pulado nesta rodada)
+    const configPre = ((await configRef.get()).data() || {}) as Partial<DistribuicaoConfig>;
+    const foraDaFila = configPre.ativo === true ? await foraDaFilaPorAtraso(configPre) : new Set<string>();
 
     const resultado = await db().runTransaction(async (tx): Promise<ResultadoDistribuicao> => {
         const configSnap = await tx.get(configRef);
@@ -288,7 +357,16 @@ export async function criarEDistribuir(novo: NovoAdsLead): Promise<ResultadoDist
         }
 
         const proximoIndex = typeof config.proximoIndex === "number" ? config.proximoIndex : 0;
-        const corretorEscalado = corretores[proximoIndex % corretores.length];
+        // Pula quem está fora da fila (CRM atrasado) — anda o rodízio até achar alguém em dia
+        let idxEscolhido = proximoIndex % corretores.length;
+        for (let k = 0; k < corretores.length; k++) {
+            const idx = (proximoIndex + k) % corretores.length;
+            if (!foraDaFila.has(corretores[idx])) {
+                idxEscolhido = idx;
+                break;
+            }
+        }
+        const corretorEscalado = corretores[idxEscolhido];
         const prazoAte = admin.firestore.Timestamp.fromMillis(
             agora.toMillis() + minutosExclusivo * 60 * 1000,
         );
@@ -300,7 +378,7 @@ export async function criarEDistribuir(novo: NovoAdsLead): Promise<ResultadoDist
             escaladoEm: agora,
             prazoAte,
         });
-        tx.update(configRef, {proximoIndex: (proximoIndex + 1) % corretores.length});
+        tx.update(configRef, {proximoIndex: (idxEscolhido + 1) % corretores.length});
 
         return {adsLeadId: adsLeadRef.id, status: "escalado", corretorEscalado, corretores};
     });
@@ -547,6 +625,10 @@ export const redistribuirAdsLead = onCall(async (request) => {
     const configRef = db().doc(CONFIG_REF_PATH);
     const adsLeadRef = db().collection("adsLeads").doc(adsLeadId);
 
+    // Mesmo filtro do rodízio automático: quem tá com o CRM atrasado é pulado
+    const configPre = ((await configRef.get()).data() || {}) as Partial<DistribuicaoConfig>;
+    const foraDaFila = await foraDaFilaPorAtraso(configPre);
+
     const resultado = await db().runTransaction(async (tx) => {
         const [configSnap, leadSnap] = await Promise.all([
             tx.get(configRef),
@@ -565,7 +647,15 @@ export const redistribuirAdsLead = onCall(async (request) => {
         const minutosExclusivo = typeof config.minutosExclusivo === "number" && config.minutosExclusivo > 0 ?
             config.minutosExclusivo : 5;
         const proximoIndex = typeof config.proximoIndex === "number" ? config.proximoIndex : 0;
-        const corretorEscalado = corretores[proximoIndex % corretores.length];
+        let idxEscolhido = proximoIndex % corretores.length;
+        for (let k = 0; k < corretores.length; k++) {
+            const idx = (proximoIndex + k) % corretores.length;
+            if (!foraDaFila.has(corretores[idx])) {
+                idxEscolhido = idx;
+                break;
+            }
+        }
+        const corretorEscalado = corretores[idxEscolhido];
 
         const agora = admin.firestore.Timestamp.now();
         const prazoAte = admin.firestore.Timestamp.fromMillis(
@@ -578,7 +668,7 @@ export const redistribuirAdsLead = onCall(async (request) => {
             escaladoEm: agora,
             prazoAte,
         });
-        tx.update(configRef, {proximoIndex: (proximoIndex + 1) % corretores.length});
+        tx.update(configRef, {proximoIndex: (idxEscolhido + 1) % corretores.length});
 
         return {corretorEscalado, nome: (leadSnap.data()?.nome as string) || "Lead"};
     });

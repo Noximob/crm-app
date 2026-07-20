@@ -285,7 +285,8 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
     setMotivoSel(''); setMotivoOutro(''); setRequalSel([]); setObsStr(''); setAviso('');
   }, [estado.t]);
 
-  const primeiroNome = (nome || 'o cliente').split(' ')[0];
+  // Nome COMPLETO nos pop-ups — pedido do usuário (só o primeiro nome confundia)
+  const nomeCliente = (nome || 'o cliente').trim();
   const digits = (telefone || '').replace(/\D/g, '');
   const taskDe = (id?: string) => tasks.find(t => t.id === id);
 
@@ -367,12 +368,12 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           bar: 'Lead novo · Entrada',
           body: (
             <>
-              Você já falou com {b(primeiroNome)}?
+              Você já falou com {b(nomeCliente)}?
               {origem && <small>Chegou por: {origem}.</small>}
             </>
           ),
           btns: [
-            { t: `Já falei com ${primeiroNome}`, c: 'primary', f: () => irPara({ t: 'proximaAcao', contato: true }) },
+            { t: `Já falei com ${nomeCliente}`, c: 'primary', f: () => irPara({ t: 'proximaAcao', contato: true }) },
             { t: 'Ainda não', c: 'ghost', f: () => irPara({ t: 'ligar' }) },
           ],
         };
@@ -382,7 +383,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           bar: 'Primeiro contato',
           body: (
             <>
-              Liga pra {b(primeiroNome)} agora — quanto antes, maior a chance de conversão.
+              Liga pra {b(nomeCliente)} agora — quanto antes, maior a chance de conversão.
               <small>
                 Telefone: {telefone} · <a className="text-[#7DD3FC] underline" href={`tel:${digits}`}>ligar</a> · <a className="text-emerald-300 underline" href={`https://wa.me/55${digits}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>
               </small>
@@ -397,7 +398,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
       case 'atendeu':
         return {
           bar: 'Primeiro contato',
-          body: <>E aí, {b(primeiroNome)} atendeu?</>,
+          body: <>E aí, {b(nomeCliente)} atendeu?</>,
           btns: [
             { t: 'Atendeu ✓', c: 'primary', f: () => irPara({ t: 'proximaAcao', contato: true }) },
             { t: 'Não atendeu', c: 'ghost', f: () => irPara({ t: 'followQ' }) },
@@ -432,7 +433,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
               cancelarTaskId: m.cancelarTaskId,
               circuitoTentativas: 'zero',
               contatoEfetivo: m.contato,
-              interacao: { type: 'Etapa', notes: `🤝 ${primeiroNome} pronto pra negociar — direto pra proposta` },
+              interacao: { type: 'Etapa', notes: `🤝 ${nomeCliente} pronto pra negociar — direto pra proposta` },
             });
             if (ok) irLimpo({ t: 'negPrazo' });
             return;
@@ -454,13 +455,13 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             contatoEfetivo: m.contato,
             interacao: { type: a.tipo, notes: notesComObs(`${a.inter} · ${fmtDataHora(d!)}`) },
           });
-          if (ok) fecha(`✓ ${primeiroNome} registrado. Próxima ação: ${acaoSel.replace('🔎 ', '').toLowerCase()} ${quandoLabel(d!)}.`);
+          if (ok) fecha(`✓ ${nomeCliente} registrado. Próxima ação: ${acaoSel.replace('🔎 ', '').toLowerCase()} ${quandoLabel(d!)}.`);
         };
         return {
           bar: 'Próxima ação',
           body: (
             <>
-              Qual o próximo passo com {b(primeiroNome)}?
+              Qual o próximo passo com {b(nomeCliente)}?
               <small>Anotações e qualificação ficam no painel ao lado — preenche lá enquanto conversa. →</small>
               <Chips
                 itens={['Ligar', 'WhatsApp', 'Marcar meet', 'Marcar visita', '🤝 Negociação', '🔎 Procurar produto']}
@@ -502,7 +503,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                   notes: notesComObs(`${m.tentativa ? '📵 Não atendeu · ' : ''}📌 Tarefa criada: follow-up · ${fmtDataHora(d)}`),
                 },
               });
-              if (ok) fecha(`✓ Follow-up com ${primeiroNome} agendado: ${quandoLabel(d)}.`);
+              if (ok) fecha(`✓ Follow-up com ${nomeCliente} agendado: ${quandoLabel(d)}.`);
             },
           }],
         };
@@ -519,7 +520,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             bar: '⏰ Agora · Produto',
             body: (
               <>
-                🔎 Hora de {b(task?.description || `procurar produto para ${primeiroNome}`)}.
+                🔎 Hora de {b(task?.description || `procurar produto para ${nomeCliente}`)}.
                 {due && <small>Combinado para {quandoLabel(due)}.</small>}
               </>
             ),
@@ -533,12 +534,12 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           bar: `⏰ Agora · ${task?.type || 'Contato'}`,
           body: (
             <>
-              Hora do próximo passo com {b(primeiroNome)}: {b(task?.description || 'fazer contato')}.
+              Hora do próximo passo com {b(nomeCliente)}: {b(task?.description || 'fazer contato')}.
               {due && <small>{atrasada ? 'Estava combinado' : 'Combinado'} para {quandoLabel(due)}. · <a className="text-[#7DD3FC] underline" href={`tel:${digits}`}>ligar</a> · <a className="text-emerald-300 underline" href={`https://wa.me/55${digits}`} target="_blank" rel="noopener noreferrer">WhatsApp</a></small>}
             </>
           ),
           btns: [
-            { t: `✅ Falei com ${primeiroNome}`, c: 'primary', f: () => irPara({ t: 'proximaAcao', concluirTaskId: estado.taskId, contato: true }) },
+            { t: `✅ Falei com ${nomeCliente}`, c: 'primary', f: () => irPara({ t: 'proximaAcao', concluirTaskId: estado.taskId, contato: true }) },
             { t: '📵 Não atendeu', c: 'ghost', f: () => irPara({ t: 'fuRetry', taskId: estado.taskId }) },
             { t: '🕐 Remarcar', c: 'ghost', f: () => irPara({ t: 'quando', cancelarTaskId: estado.taskId }) },
           ],
@@ -551,7 +552,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           body: <>Tentar de novo? Em imóveis, a venda média sai {b('depois do 5º contato')} — persistência fecha negócio.</>,
           btns: [
             { t: 'Sim, novo follow-up', c: 'primary', f: () => irPara({ t: 'quando', concluirTaskId: estado.taskId, tentativa: true }) },
-            { t: `Desistir de ${primeiroNome}`, c: 'danger', f: () => irPara({ t: 'descarte', volta: { t: 'fuRetry', taskId: estado.taskId } }) },
+            { t: `Desistir de ${nomeCliente}`, c: 'danger', f: () => irPara({ t: 'descarte', volta: { t: 'fuRetry', taskId: estado.taskId } }) },
           ],
         };
 
@@ -562,8 +563,8 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
         return {
           bar: due ? `Meet · ${quandoLabel(due)}` : 'Meet',
           body: futuro
-            ? <>Seu meet com {b(primeiroNome)} tá marcado pra {due ? quandoLabel(due) : 'breve'}. Já aconteceu?</>
-            : <>Seu meet com {b(primeiroNome)} era {due ? quandoLabel(due) : 'marcado'}. Aconteceu?</>,
+            ? <>Seu meet com {b(nomeCliente)} tá marcado pra {due ? quandoLabel(due) : 'breve'}. Já aconteceu?</>
+            : <>Seu meet com {b(nomeCliente)} era {due ? quandoLabel(due) : 'marcado'}. Aconteceu?</>,
           btns: [
             {
               t: 'Aconteceu ✓', c: 'primary', f: async () => {
@@ -583,7 +584,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
       case 'meetGostou':
         return {
           bar: 'Meet · resultado',
-          body: <>{b(primeiroNome)} gostou do {b('produto')} que você apresentou?</>,
+          body: <>{b(nomeCliente)} gostou do {b('produto')} que você apresentou?</>,
           btns: [
             { t: 'Gostou 😀', c: 'primary', f: () => irPara({ t: 'meetNext' }) },
             { t: 'Não gostou', c: 'ghost', f: () => irPara({ t: 'requalifica' }) },
@@ -593,7 +594,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
       case 'meetNext':
         return {
           bar: 'Próximo passo',
-          body: <>Boa! Qual o próximo passo com {b(primeiroNome)}?</>,
+          body: <>Boa! Qual o próximo passo com {b(nomeCliente)}?</>,
           btns: [
             { t: '📅 Marcar visita', c: 'primary', f: () => irPara({ t: 'agendarData', tipo: 'Visita' }) },
             {
@@ -615,7 +616,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           bar: 'Meet · não rolou',
           body: (
             <>
-              O meet com {b(primeiroNome)} não rolou — e agora?
+              O meet com {b(nomeCliente)} não rolou — e agora?
               <small>Falou com o cliente e dá pra remarcar já? Remarca. Senão, vira follow-up: liga, chama no WhatsApp, do jeito que fizer sentido.</small>
             </>
           ),
@@ -633,8 +634,8 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
         return {
           bar: due ? `Visita · ${quandoLabel(due)}` : 'Visita',
           body: futuro
-            ? <>A visita de {b(primeiroNome)} tá marcada pra {due ? quandoLabel(due) : 'breve'}. Já aconteceu?</>
-            : <>A visita de {b(primeiroNome)} era {due ? quandoLabel(due) : 'marcada'}. Aconteceu?</>,
+            ? <>A visita de {b(nomeCliente)} tá marcada pra {due ? quandoLabel(due) : 'breve'}. Já aconteceu?</>
+            : <>A visita de {b(nomeCliente)} era {due ? quandoLabel(due) : 'marcada'}. Aconteceu?</>,
           btns: [
             {
               t: 'Aconteceu ✓', c: 'primary', f: async () => {
@@ -654,7 +655,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
       case 'visitaGostou':
         return {
           bar: 'Visita · resultado',
-          body: <>{b(primeiroNome)} gostou do {b('imóvel')}?</>,
+          body: <>{b(nomeCliente)} gostou do {b('imóvel')}?</>,
           btns: [
             {
               t: 'Gostou 😀 — hora da proposta', c: 'primary', f: async () => {
@@ -675,7 +676,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           bar: 'Visita · não rolou',
           body: (
             <>
-              A visita de {b(primeiroNome)} não rolou — e agora?
+              A visita de {b(nomeCliente)} não rolou — e agora?
               <small>Falou com o cliente e dá pra remarcar já? Remarca. Senão, vira follow-up: liga, chama no WhatsApp, do jeito que fizer sentido.</small>
             </>
           ),
@@ -693,7 +694,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           bar: m.remarcando ? `${m.tipo} · remarcar` : `Agendar ${m.tipo.toLowerCase()}`,
           body: (
             <>
-              Quando vai ser {nomeEvento} com {b(primeiroNome)}?
+              Quando vai ser {nomeEvento} com {b(nomeCliente)}?
               {seletorQuando()}
               {aviso && <small className="!text-amber-300">{aviso}</small>}
             </>
@@ -710,7 +711,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                 circuitoTentativas: 'zero',
                 interacao: { type: m.tipo, notes: notesComObs(`📌 ${m.tipo} ${m.remarcando ? 'remarcad' : 'marcad'}${ehMeet ? 'o' : 'a'} · ${fmtDataHora(d)}`) },
               });
-              if (ok) fecha(`✓ ${m.tipo} com ${primeiroNome}: ${quandoLabel(d)}.`);
+              if (ok) fecha(`✓ ${m.tipo} com ${nomeCliente}: ${quandoLabel(d)}.`);
             },
           }],
         };
@@ -743,7 +744,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           bar: 'Negociação',
           body: (
             <>
-              Proposta apresentada! Quando sai a {b(`resposta de ${primeiroNome}`)}?
+              Proposta apresentada! Quando sai a {b(`resposta de ${nomeCliente}`)}?
               {seletorQuando(CHIPS_PRAZO)}
               {aviso && <small className="!text-amber-300">{aviso}</small>}
             </>
@@ -758,7 +759,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                 novaTarefa: { description: descComObs(`Resposta da proposta — ${nome}`), type: TIPO_TAREFA_FOLLOWUP, dueDate: d },
                 interacao: { type: 'Follow-up', notes: notesComObs(`📌 Cobrança agendada: resposta da proposta · ${fmtDataHora(d)}`) },
               });
-              if (ok) fecha(`✓ ${primeiroNome} em Negociação — o sistema cobra a resposta ${quandoLabel(d)}.`);
+              if (ok) fecha(`✓ ${nomeCliente} em Negociação — o sistema cobra a resposta ${quandoLabel(d)}.`);
             },
           }],
         };
@@ -769,7 +770,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
         const due = task ? toJsDate(task.dueDate) : null;
         return {
           bar: 'Negociação · prazo venceu',
-          body: <>A proposta pra {b(primeiroNome)} tinha resposta prevista pra {due ? quandoLabel(due) : 'ontem'}. Fechou?</>,
+          body: <>A proposta pra {b(nomeCliente)} tinha resposta prevista pra {due ? quandoLabel(due) : 'ontem'}. Fechou?</>,
           btns: [
             { t: 'FECHOU! 🎉', c: 'win', f: () => irPara({ t: 'venda' }) },
             { t: 'Ainda negociando', c: 'ghost', f: () => irPara({ t: 'negPrazo', cancelarTaskId: estado.taskId }) },
@@ -794,7 +795,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           noX: true,
           body: (
             <>
-              Fechou com {b(primeiroNome)}? 🎉
+              Fechou com {b(nomeCliente)}? 🎉
               <small>O lançamento oficial (valor, comissão, meta) é feito em <b className="text-white">Comissões</b>, na área do administrador — lá também se registra de onde veio a venda.</small>
             </>
           ),
@@ -806,7 +807,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                 circuitoTentativas: 'zero',
                 interacao: { type: 'Venda', notes: '🏆 VENDA FECHADA! (lançamento oficial em Comissões)' },
               });
-              if (ok) fecha(`🏆 VENDA de ${primeiroNome} fechada! Parabéns! 🎉 Avisa o admin pra lançar em Comissões.`);
+              if (ok) fecha(`🏆 VENDA de ${nomeCliente} fechada! Parabéns! 🎉 Avisa o admin pra lançar em Comissões.`);
             },
           }],
         };
@@ -819,7 +820,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           red: true,
           body: (
             <>
-              ⚠️ Sem um próximo passo, {b(primeiroNome)} sai do seu funil e vai pro descarte. Tem certeza?
+              ⚠️ Sem um próximo passo, {b(nomeCliente)} sai do seu funil e vai pro descarte. Tem certeza?
               <small>Escolha o motivo (obrigatório):</small>
               <Chips itens={MOTIVOS_DESCARTE} sel={motivoSel ? [motivoSel] : []} onSel={v => { setMotivoSel(v); setAviso(''); }} />
               {motivoSel === 'Outro' && (
@@ -844,7 +845,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                   descartadoMotivo: motivoFinal,
                   interacao: { type: 'Descarte', notes: `🗑️ Descartado — motivo: ${motivoFinal}` },
                 });
-                if (ok) fecha(`${primeiroNome} descartado (${motivoFinal}).`);
+                if (ok) fecha(`${nomeCliente} descartado (${motivoFinal}).`);
               },
             },
           ],
@@ -924,7 +925,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                     className="text-[11px] font-semibold text-white/35 hover:text-[#FF8F8F] transition-colors disabled:opacity-40"
                     title="Descartar este cliente (vai pedir o motivo)"
                   >
-                    🗑 Descartar {primeiroNome}
+                    🗑 Descartar {nomeCliente}
                   </button>
                 </div>
               )}
@@ -935,7 +936,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
               <div className="bg-[#201c2e]/95 border border-white/10 rounded-xl overflow-hidden shadow-[0_14px_40px_-18px_rgba(0,0,0,0.8)]">
                 <div className="flex items-center gap-2 px-3.5 py-2 bg-white/[0.03] border-b border-white/10 text-[10px] font-extrabold uppercase tracking-[0.14em] text-white/40">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#7DD3FC]/70" />
-                  O que já rolou com {primeiroNome}
+                  O que já rolou com {nomeCliente}
                 </div>
                 <ul className="max-h-44 overflow-y-auto px-3.5 py-2.5 space-y-1.5">
                   {historico.slice(0, 30).map(h => {
@@ -958,7 +959,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           <div className="bg-[#201c2e] border border-white/15 rounded-xl overflow-hidden shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] w-full">
             <div className="flex items-center gap-2 px-3.5 py-2 bg-white/[0.03] border-b border-white/10 text-[11px] font-extrabold uppercase tracking-[0.12em] text-white/40">
               <span className="h-2 w-2 rounded-full bg-[#7DD3FC]" />
-              {primeiroNome} · Anotações & Qualificação
+              {nomeCliente} · Anotações & Qualificação
             </div>
             <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
               <div>
