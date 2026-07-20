@@ -212,6 +212,7 @@ export default function AtendimentoWatcher() {
       pendentesAtuais: null,
       imobiliariaId: userData?.imobiliariaId || '',
       currentUid: currentUser.uid,
+      autorNome: userData?.nome || '',
     });
     setExecutando(false);
     if (!res.ok) {
@@ -231,6 +232,7 @@ export default function AtendimentoWatcher() {
       notes: `${via === 'Ligação' ? '📞' : '💬'} Tentativa de contato por ${via === 'Ligação' ? 'ligação' : 'WhatsApp'}`,
       timestamp: serverTimestamp(),
       circuito: true,
+      por: userData?.nome || '',
     }).catch(() => {});
   }, [leadAberto]);
 

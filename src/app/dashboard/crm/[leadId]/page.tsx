@@ -58,6 +58,8 @@ interface Interaction {
     timestamp: any;
     taskId?: string;
     cancellationNotes?: string;
+    /** Quem fez a ação — autoria no histórico real do cliente */
+    por?: string;
 }
 
 interface QualificationData {
@@ -280,6 +282,7 @@ export default function LeadDetailPage() {
                 : null,
             imobiliariaId: userData?.imobiliariaId || '',
             currentUid: currentUser.uid,
+            autorNome: userData?.nome || '',
         });
         setExecutandoCircuito(false);
         if (!res.ok) {
@@ -309,6 +312,7 @@ export default function LeadDetailPage() {
             notes: `${via === 'Ligação' ? '📞' : '💬'} Tentativa de contato por ${via === 'Ligação' ? 'ligação' : 'WhatsApp'}`,
             timestamp: serverTimestamp(),
             circuito: true,
+            por: userData?.nome || '',
         }).catch(() => {});
     }, [currentUser, lead, isEspelhoDemo, readOnly]);
 
@@ -402,6 +406,7 @@ export default function LeadDetailPage() {
                 notes: description,
                 timestamp: serverTimestamp(),
                 taskId: taskRef.id,
+                por: userData?.nome || '',
             });
             await batch.commit();
             setIsAgendaModalOpen(false);
@@ -429,6 +434,7 @@ export default function LeadDetailPage() {
             notes: status === 'concluída' ? 'Tarefa marcada como concluída' : 'Tarefa cancelada',
             timestamp: serverTimestamp(),
             taskId,
+            por: userData?.nome || '',
         };
         if (reason) interactionData.cancellationNotes = reason;
         batch.set(doc(collection(db, 'leads', leadId, 'interactions')), interactionData);
@@ -677,6 +683,7 @@ export default function LeadDetailPage() {
                                                             )}
                                                             <div className="mt-1 flex items-center gap-3 text-[10px] text-white/35 tabular-nums">
                                                                 <span>{d ? `${p2(d.getHours())}:${p2(d.getMinutes())}` : 'agora'}</span>
+                                                                {interaction.por && <span className="text-white/40">por {interaction.por.split(' ')[0]}</span>}
                                                                 {relatedTask && toJsDate(relatedTask.dueDate) && (
                                                                     <span className="text-[#FFE9A6]/70">agendado: {fmtDataHora(toJsDate(relatedTask.dueDate)!)}</span>
                                                                 )}

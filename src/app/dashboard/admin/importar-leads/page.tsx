@@ -27,7 +27,7 @@ interface ContatoPreview {
   telefone: string;
 }
 
-interface EventoBolsao { tipo: string; detalhe?: string; em: any }
+interface EventoBolsao { tipo: string; detalhe?: string; em: any; por?: string }
 
 interface DescartadoBolsao {
   listaId: string;
@@ -62,12 +62,12 @@ const fmtEv = (em: any) => {
   const d = em?.toDate ? em.toDate() : em?.seconds ? new Date(em.seconds * 1000) : null;
   return d ? `${p2(d.getDate())}/${p2(d.getMonth() + 1)} ${p2(d.getHours())}:${p2(d.getMinutes())}` : '—';
 };
-const EV_ROTULO: Record<string, (d?: string) => string> = {
-  tentativa: () => '💬 Tentativa de contato',
-  descartado: d => `🗑 Descartado${d ? ` — ${d}` : ''}`,
-  restaurado: () => '↩ Voltou pra lista',
-  crm: () => '✅ Virou lead no CRM',
-  realocado: d => `🔄 Realocado${d ? ` pra ${d}` : ''}`,
+const EV_ROTULO: Record<string, (d?: string, por?: string) => string> = {
+  tentativa: (_d, por) => `💬 Tentativa de contato${por ? ` (${por.split(' ')[0]})` : ''}`,
+  descartado: (d, por) => `🗑 Descartado${por ? ` por ${por.split(' ')[0]}` : ''}${d ? ` — ${d}` : ''}`,
+  restaurado: (_d, por) => `↩ Voltou pra lista${por ? ` (${por.split(' ')[0]})` : ''}`,
+  crm: (_d, por) => `✅ Virou lead no CRM${por ? ` por ${por.split(' ')[0]}` : ''}`,
+  realocado: (d, por) => `🔄 Realocado${d ? ` pra ${d}` : ''}${por ? ` (${por.split(' ')[0]})` : ''}`,
 };
 
 export default function ImportarLigacaoAtivaPage() {
@@ -157,10 +157,16 @@ export default function ImportarLigacaoAtivaPage() {
         total: escolhidos.length,
         veioDoBolsao: true,
       });
+      const corretorNome = corretores.find(c => c.id === bolsaoCorretor)?.nome || '';
+      const adminNome = (userData as any)?.nome || '';
       let ops = 1;
       for (let i = 0; i < escolhidos.length; i++) {
         const b = escolhidos[i];
-        // Cópia limpa pro novo corretor (mantém o histórico útil)
+        // O HISTÓRICO INTEIRO viaja com o cliente: eventos anteriores + o realocado
+        const eventosCompletos = [
+          ...(b.eventos || []),
+          { tipo: 'realocado', detalhe: corretorNome, em: Timestamp.now(), por: adminNome },
+        ];
         batch.set(doc(collection(listaRef, 'contatos')), {
           nome: b.nome,
           telefone: b.telefone,
@@ -171,6 +177,7 @@ export default function ImportarLigacaoAtivaPage() {
           tentativas: 0,
           tentativasAnteriores: b.tentativas || 0,
           motivoAnterior: b.motivo || '',
+          eventos: eventosCompletos,
           ordem: i,
           criadoEm: serverTimestamp(),
         });
@@ -179,7 +186,7 @@ export default function ImportarLigacaoAtivaPage() {
           status: 'realocado',
           realocadoEm: serverTimestamp(),
           realocadoPara: bolsaoCorretor,
-          eventos: [...(b.eventos || []), { tipo: 'realocado', detalhe: corretores.find(c => c.id === bolsaoCorretor)?.nome || '', em: Timestamp.now() }],
+          eventos: eventosCompletos,
         });
         ops += 2;
         if (ops >= 398) { await batch.commit(); batch = writeBatch(db); ops = 0; }
@@ -565,7 +572,7 @@ export default function ImportarLigacaoAtivaPage() {
                         ) : [...(b.eventos || [])].reverse().map((ev, i) => (
                           <p key={i} className="text-[11.5px] text-white/55">
                             <span className="text-white/30 tabular-nums mr-1.5">{fmtEv(ev.em)}</span>
-                            {(EV_ROTULO[ev.tipo] || (() => ev.tipo))(ev.detalhe)}
+                            {(EV_ROTULO[ev.tipo] || (() => ev.tipo))(ev.detalhe, ev.por)}
                           </p>
                         ))}
                       </div>

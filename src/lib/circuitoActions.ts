@@ -25,8 +25,10 @@ export async function executarAcaoCircuito(params: {
   pendentesAtuais: TarefaPendente[] | null;
   imobiliariaId: string;
   currentUid: string;
+  /** Nome de quem fez a ação — vira autoria na interação (histórico real do cliente). */
+  autorNome?: string;
 }): Promise<ResultadoAcao> {
-  const { lead, acao, imobiliariaId, currentUid } = params;
+  const { lead, acao, imobiliariaId, currentUid, autorNome } = params;
   try {
     const leadRef = doc(db, 'leads', lead.id);
     const tasksCol = collection(db, 'leads', lead.id, 'tarefas');
@@ -113,6 +115,7 @@ export async function executarAcaoCircuito(params: {
       notes: acao.interacao.notes,
       timestamp: serverTimestamp(),
       circuito: true,
+      ...(autorNome ? { por: autorNome } : {}),
       ...(novaTaskId ? { taskId: novaTaskId } : {}),
     });
 

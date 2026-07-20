@@ -38,6 +38,8 @@ export interface EventoContato {
   tipo: 'tentativa' | 'descartado' | 'restaurado' | 'crm' | 'realocado';
   detalhe?: string;
   em: any; // Timestamp
+  /** Quem fez — o histórico real do cliente carrega a autoria */
+  por?: string;
 }
 
 interface Contato {
@@ -60,12 +62,12 @@ interface Sessao { client: string; corretor: string; lista: string; }
 /** Motivos de descarte da lista fria (vão pro bolsão do admin). */
 const MOTIVOS_FRIA = ['Não atende', 'Não quer', 'Número errado', 'Sem perfil', 'Outro'] as const;
 
-const EVENTO_VISUAL: Record<EventoContato['tipo'], { icone: string; rotulo: (d?: string) => string; cor: string }> = {
-  tentativa: { icone: '💬', rotulo: () => 'Tentativa de contato', cor: 'text-[#FFE9A6]' },
-  descartado: { icone: '🗑', rotulo: d => `Descartado${d ? ` — ${d}` : ''}`, cor: 'text-red-300' },
-  restaurado: { icone: '↩', rotulo: () => 'Voltou pra lista', cor: 'text-[#7DD3FC]' },
-  crm: { icone: '✅', rotulo: () => 'Virou lead no CRM', cor: 'text-emerald-300' },
-  realocado: { icone: '🔄', rotulo: d => `Realocado${d ? ` pra ${d}` : ''}`, cor: 'text-[#C4A6FF]' },
+const EVENTO_VISUAL: Record<EventoContato['tipo'], { icone: string; rotulo: (d?: string, por?: string) => string; cor: string }> = {
+  tentativa: { icone: '💬', rotulo: (_d, por) => `Tentativa de contato${por ? ` (${por.split(' ')[0]})` : ''}`, cor: 'text-[#FFE9A6]' },
+  descartado: { icone: '🗑', rotulo: (d, por) => `Descartado${por ? ` por ${por.split(' ')[0]}` : ''}${d ? ` — ${d}` : ''}`, cor: 'text-red-300' },
+  restaurado: { icone: '↩', rotulo: (_d, por) => `Voltou pra lista${por ? ` (${por.split(' ')[0]})` : ''}`, cor: 'text-[#7DD3FC]' },
+  crm: { icone: '✅', rotulo: (_d, por) => `Virou lead no CRM${por ? ` por ${por.split(' ')[0]}` : ''}`, cor: 'text-emerald-300' },
+  realocado: { icone: '🔄', rotulo: (d, por) => `Realocado${d ? ` pra ${d}` : ''}${por ? ` (${por.split(' ')[0]})` : ''}`, cor: 'text-[#C4A6FF]' },
 };
 
 const p2 = (n: number) => String(n).padStart(2, '0');
@@ -294,7 +296,7 @@ export default function LigacaoAtivaPage() {
         ...t,
         [c.id]: {
           tentativas: (t[c.id]?.tentativas ?? c.tentativas ?? 0) + 1,
-          eventos: [...(t[c.id]?.eventos || []), { tipo: 'tentativa', em: Timestamp.now() }],
+          eventos: [...(t[c.id]?.eventos || []), { tipo: 'tentativa', em: Timestamp.now(), por: userData?.nome || '' }],
         },
       }));
       return;
@@ -303,7 +305,7 @@ export default function LigacaoAtivaPage() {
     updateDoc(doc(db, 'ligacaoAtivaListas', listaSel, 'contatos', c.id), {
       tentativas: (c.tentativas || 0) + 1,
       ultimaTentativaEm: serverTimestamp(),
-      eventos: arrayUnion({ tipo: 'tentativa', em: Timestamp.now() }),
+      eventos: arrayUnion({ tipo: 'tentativa', em: Timestamp.now(), por: userData?.nome || '' }),
     }).catch(() => {});
   };
 
@@ -316,7 +318,7 @@ export default function LigacaoAtivaPage() {
       status: 'descartado',
       descartadoMotivo: motivo,
       descartadoEm: serverTimestamp(),
-      eventos: arrayUnion({ tipo: 'descartado', detalhe: motivo, em: Timestamp.now() }),
+      eventos: arrayUnion({ tipo: 'descartado', detalhe: motivo, em: Timestamp.now(), por: userData?.nome || '' }),
     }).catch(() => {});
     showToast(`${c.nome || 'Contato'} descartado (${motivo}) — foi pro bolsão do admin.`, 'info');
     setContatoSel(null);
@@ -328,7 +330,7 @@ export default function LigacaoAtivaPage() {
     if (!listaSel) return;
     updateDoc(doc(db, 'ligacaoAtivaListas', listaSel, 'contatos', c.id), {
       status: 'pendente',
-      eventos: arrayUnion({ tipo: 'restaurado', em: Timestamp.now() }),
+      eventos: arrayUnion({ tipo: 'restaurado', em: Timestamp.now(), por: userData?.nome || '' }),
     }).catch(() => {});
   };
 
@@ -382,7 +384,7 @@ export default function LigacaoAtivaPage() {
         status: 'crm',
         leadId: novoLead.id,
         incluidoEm: serverTimestamp(),
-        eventos: arrayUnion({ tipo: 'crm', em: Timestamp.now() }),
+        eventos: arrayUnion({ tipo: 'crm', em: Timestamp.now(), por: userData?.nome || '' }),
       });
 
       // O REGISTRO viaja junto: cada evento da lista fria vira interação no
@@ -395,7 +397,7 @@ export default function LigacaoAtivaPage() {
           const v = EVENTO_VISUAL[ev.tipo];
           batchInter.set(doc(interCol), {
             type: ev.tipo === 'tentativa' ? 'WhatsApp' : ev.tipo === 'descartado' ? 'Descarte' : 'Outros',
-            notes: `☎️ Lista fria · ${v ? v.rotulo(ev.detalhe) : ev.tipo}`,
+            notes: `☎️ Lista fria · ${v ? v.rotulo(ev.detalhe, ev.por) : ev.tipo}`,
             timestamp: ev.em?.toDate ? ev.em : Timestamp.now(),
             circuito: true,
           });
@@ -721,7 +723,7 @@ export default function LigacaoAtivaPage() {
                         <li key={i} className="flex items-center gap-2 text-[12.5px]">
                           <span className="shrink-0 text-white/30 tabular-nums text-[11px] w-[86px]">{fmtEvento(ev.em)}</span>
                           <span className="shrink-0">{v.icone}</span>
-                          <span className={`min-w-0 truncate ${v.cor}`}>{v.rotulo(ev.detalhe)}</span>
+                          <span className={`min-w-0 truncate ${v.cor}`}>{v.rotulo(ev.detalhe, ev.por)}</span>
                         </li>
                       );
                     })}

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, doc, getDocs, query, where, onSnapshot, writeBatch, type DocumentReference } from 'firebase/firestore';
+import { collection, doc, getDocs, query, where, onSnapshot, serverTimestamp, writeBatch, type DocumentReference } from 'firebase/firestore';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { useRouter } from 'next/navigation';
 import { getDemoLeads, DEMO_USUARIOS } from '@/lib/espelho/demoData';
@@ -143,12 +143,22 @@ export default function GestaoCorretoresPage() {
     }
 
     try {
+      const nomeOrigem = users.find(u => u.id === selectedOriginUser)?.nome || 'corretor anterior';
+      const nomeDestino = users.find(u => u.id === selectedDestUser)?.nome || 'novo corretor';
       const batch = writeBatch(db);
       selectedLeads.forEach(leadId => {
         const leadRef = doc(db, 'leads', leadId);
         batch.update(leadRef, {
           userId: selectedDestUser,
           etapa: stages[0] ?? ''
+        });
+        // Histórico real do cliente: a transferência fica registrada na linha do tempo
+        batch.set(doc(collection(db, 'leads', leadId, 'interactions')), {
+          type: 'Etapa',
+          notes: `🔄 Lead transferido de ${nomeOrigem} pra ${nomeDestino}`,
+          timestamp: serverTimestamp(),
+          circuito: true,
+          por: (userData as any)?.nome || '',
         });
       });
       await batch.commit();
