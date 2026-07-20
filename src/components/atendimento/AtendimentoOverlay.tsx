@@ -417,16 +417,20 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
 
       case 'proximaAcao': {
         const m = estado;
+        // Rótulos claros: "buscar imóvel" = tarefa SUA de garimpar opções;
+        // "apresentar proposta" = cliente pronto → lead vai pra etapa Negociação.
+        const ACAO_PRODUTO = '🔎 Buscar imóvel pra oferecer';
+        const ACAO_PROPOSTA = '🤝 Apresentar proposta';
         const executaAcao = async () => {
           if (!acaoSel) {
             setAviso('⚠️ O sistema não deixa concluir sem escolher ação + quando.');
             return;
           }
-          const d = acaoSel !== '🤝 Negociação'
+          const d = acaoSel !== ACAO_PROPOSTA
             ? dataValidada('⚠️ O sistema não deixa concluir sem escolher ação + quando.')
             : null;
-          if (!d && acaoSel !== '🤝 Negociação') return;
-          if (acaoSel === '🤝 Negociação') {
+          if (!d && acaoSel !== ACAO_PROPOSTA) return;
+          if (acaoSel === ACAO_PROPOSTA) {
             const ok = await executar({
               novaEtapa: ETAPA_NEGOCIACAO,
               concluirTaskId: m.concluirTaskId,
@@ -438,12 +442,12 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             if (ok) irLimpo({ t: 'negPrazo' });
             return;
           }
-          const mapa: Record<string, { tipo: string; etapa: string; desc: string; inter: string }> = {
-            'Ligar': { tipo: 'Ligação', etapa: ETAPA_FOLLOWUP, desc: `Ligar para ${nome}`, inter: '📌 Tarefa criada: ligar' },
-            'WhatsApp': { tipo: 'WhatsApp', etapa: ETAPA_FOLLOWUP, desc: `Chamar ${nome} no WhatsApp`, inter: '📌 Tarefa criada: WhatsApp' },
-            'Marcar meet': { tipo: TIPO_TAREFA_MEET, etapa: ETAPA_MEET, desc: `Meet com ${nome}`, inter: '📅 Meet marcado' },
-            'Marcar visita': { tipo: TIPO_TAREFA_VISITA, etapa: ETAPA_VISITA, desc: `Visita com ${nome}`, inter: '🏠 Visita marcada' },
-            '🔎 Procurar produto': { tipo: TIPO_TAREFA_PRODUTO, etapa: ETAPA_FOLLOWUP, desc: `Procurar produto para ${nome}`, inter: '🔎 Vai procurar produto — tarefa' },
+          const mapa: Record<string, { tipo: string; etapa: string; desc: string; inter: string; toast: string }> = {
+            'Ligar': { tipo: 'Ligação', etapa: ETAPA_FOLLOWUP, desc: `Ligar para ${nome}`, inter: '📌 Tarefa criada: ligar', toast: 'ligar' },
+            'WhatsApp': { tipo: 'WhatsApp', etapa: ETAPA_FOLLOWUP, desc: `Chamar ${nome} no WhatsApp`, inter: '📌 Tarefa criada: WhatsApp', toast: 'WhatsApp' },
+            'Marcar meet': { tipo: TIPO_TAREFA_MEET, etapa: ETAPA_MEET, desc: `Meet com ${nome}`, inter: '📅 Meet marcado', toast: 'meet' },
+            'Marcar visita': { tipo: TIPO_TAREFA_VISITA, etapa: ETAPA_VISITA, desc: `Visita com ${nome}`, inter: '🏠 Visita marcada', toast: 'visita' },
+            [ACAO_PRODUTO]: { tipo: TIPO_TAREFA_PRODUTO, etapa: ETAPA_FOLLOWUP, desc: `Buscar imóvel pra oferecer a ${nome}`, inter: '🔎 Vai buscar imóvel pra oferecer — tarefa', toast: 'buscar imóvel' },
           };
           const a = mapa[acaoSel];
           const ok = await executar({
@@ -455,7 +459,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             contatoEfetivo: m.contato,
             interacao: { type: a.tipo, notes: notesComObs(`${a.inter} · ${fmtDataHora(d!)}`) },
           });
-          if (ok) fecha(`✓ ${nomeCliente} registrado. Próxima ação: ${acaoSel.replace('🔎 ', '').toLowerCase()} ${quandoLabel(d!)}.`);
+          if (ok) fecha(`✓ ${nomeCliente} registrado. Próxima ação: ${a.toast} ${quandoLabel(d!)}.`);
         };
         return {
           bar: 'Próxima ação',
@@ -464,11 +468,17 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
               Qual o próximo passo com {b(nomeCliente)}?
               <small>Anotações e qualificação ficam no painel ao lado — preenche lá enquanto conversa. →</small>
               <Chips
-                itens={['Ligar', 'WhatsApp', 'Marcar meet', 'Marcar visita', '🤝 Negociação', '🔎 Procurar produto']}
+                itens={['Ligar', 'WhatsApp', 'Marcar meet', 'Marcar visita', ACAO_PRODUTO, ACAO_PROPOSTA]}
                 sel={acaoSel ? [acaoSel] : []}
                 onSel={v => { setAcaoSel(v); setAviso(''); }}
               />
-              {acaoSel !== '🤝 Negociação' && (<>Quando?{seletorQuando()}</>)}
+              {acaoSel === ACAO_PRODUTO && (
+                <small>🔎 Cria uma tarefa <b className="text-white">sua</b>: garimpar opções e voltar pro cliente com imóvel na mão.</small>
+              )}
+              {acaoSel === ACAO_PROPOSTA && (
+                <small>🤝 O cliente já escolheu o imóvel: o lead vai pra <b className="text-white">Negociação</b> e o próximo passo é definir quando sai a resposta da proposta.</small>
+              )}
+              {acaoSel !== ACAO_PROPOSTA && (<>Quando?{seletorQuando()}</>)}
               {aviso && <small className="!text-amber-300">{aviso}</small>}
             </>
           ),
