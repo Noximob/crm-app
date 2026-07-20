@@ -130,8 +130,8 @@ export default function AndamentoPage() {
             const leadsByStage = stageList.reduce<LeadsByStage>((acc, stage) => ({ ...acc, [stage]: [] }), {});
             for (const lead of list) {
                 const stage = normalizeEtapa(lead.etapa);
-                // Estados terminais (Fechado/Descartado) ficam fora do quadro
-                if ((ETAPAS_TERMINAIS as readonly string[]).includes(stage)) continue;
+                // Fechado/Descartado/Bolsão ficam fora do quadro (bolsa é do admin)
+                if ((ETAPAS_TERMINAIS as readonly string[]).includes(stage) || stage === 'Bolsão') continue;
                 if (leadsByStage[stage]) {
                     leadsByStage[stage].push(lead);
                 } else {

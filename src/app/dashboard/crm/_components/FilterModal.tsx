@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
-import { ETAPAS_TERMINAIS } from '@/lib/circuito';
 
 // Definições movidas para cá para evitar dependências circulares e manter o componente contido.
 const QUALIFICATION_QUESTIONS = [
@@ -118,7 +117,7 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters, 
     useEffect(() => {
         if (!pipelineStages.length) return;
         // Estados terminais (Fechado/Descartado) continuam válidos mesmo fora de stages
-        const etapasValidas = [...pipelineStages, ...ETAPAS_TERMINAIS];
+        const etapasValidas = [...pipelineStages, 'Fechado'];
         setSelectedFilters((prev) => {
             const etapaSelected = prev['etapa'] || [];
             const valid = etapaSelected.filter((e) => etapasValidas.includes(e));
@@ -152,7 +151,7 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters, 
     };
 
     const hasActiveFilters = Object.values(selectedFilters).some(arr => arr && arr.length > 0) || origemSel !== null;
-    const situationQuestion = { title: 'Situação do Cliente (Etapa do funil)', key: 'etapa', options: [...pipelineStages, ...ETAPAS_TERMINAIS] };
+    const situationQuestion = { title: 'Situação do Cliente (Etapa do funil)', key: 'etapa', options: [...pipelineStages, 'Fechado'] };
 
     if (!isOpen) return null;
 

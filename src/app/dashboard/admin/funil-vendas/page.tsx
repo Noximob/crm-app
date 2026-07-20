@@ -29,8 +29,8 @@ import {
 /** Paleta do funil por posição (Entrada → Negociação). */
 const FUNIL_PALETA = ['#FFE9A6', '#E8C547', '#D4A017', '#F59E0B', '#FF7A45', '#FF1E56'];
 
-/** Etapas ativas do quadro (o circuito sem o Bolsão). */
-const ETAPAS_ATIVAS = ETAPAS_CIRCUITO.filter((e) => e !== ETAPA_BOLSAO);
+/** Etapas ativas do quadro (Bolsão já não faz parte do circuito). */
+const ETAPAS_ATIVAS = ETAPAS_CIRCUITO;
 
 const DESCRICAO_ETAPA: Record<string, string> = {
   'Entrada': 'lead novo — ligar agora',
@@ -91,7 +91,7 @@ const CAMPOS_CADENCIA: CampoCadencia[] = [
     key: 'tentativasAteDescarte',
     titulo: 'Tentativas até sugerir descarte',
     unidade: 'tentativas',
-    ajuda: 'Depois de X tentativas de contato sem resposta, o CRM sugere mandar o lead pro Bolsão ou descartar.',
+    ajuda: 'Depois de X tentativas de contato sem resposta, o CRM sugere descartar — o lead sai do CRM do corretor e cai no bolsão do administrador.',
     min: 2,
     max: 30,
   },
@@ -331,7 +331,7 @@ export default function FunilCadenciasPage() {
               <span className="ml-auto text-[11px] text-text-secondary tabular-nums">{leads.length} lead{leads.length !== 1 ? 's' : ''} na imobiliária</span>
             </div>
             <p className="text-[10.5px] text-text-secondary mb-3">
-              Etapas fixas, iguais pra toda a equipe — o lead só anda pra frente, estaciona no Bolsão ou sai por Fechado/Descartado.
+              Etapas fixas, iguais pra toda a equipe — o lead só anda pra frente e sai por Fechado ou Descartado (descartados caem no bolsão da área do admin, em Importar Leads).
             </p>
 
             {/* Fluxo das 5 etapas ativas */}
@@ -365,10 +365,10 @@ export default function FunilCadenciasPage() {
 
             {/* Bolsão + terminais */}
             <div className="flex flex-wrap items-center gap-2 mt-3">
-              <span className={`${chipBase} bg-[#7DD3FC]/10 border-[#7DD3FC]/35 text-[#7DD3FC]`} title="Leads estacionados — fora da cobrança do circuito, podem voltar a qualquer momento.">
+              <span className={`${chipBase} bg-[#7DD3FC]/10 border-[#7DD3FC]/35 text-[#7DD3FC]`} title="Leads estacionados (Bolsão antigo) — aparecem no bolsão do admin, em Importar Leads, prontos pra redistribuir.">
                 📦 {ETAPA_BOLSAO}
                 <span className="tabular-nums">{contagemPorEtapa[ETAPA_BOLSAO] || 0}</span>
-                <span className="font-medium normal-case tracking-normal text-[#7DD3FC]/80">estacionados, reativáveis</span>
+                <span className="font-medium normal-case tracking-normal text-[#7DD3FC]/80">no bolsão do admin</span>
               </span>
               <span className={`${chipBase} bg-[#34D399]/10 border-[#34D399]/35 text-emerald-300`} title="Negócio fechado — fim de linha feliz.">
                 🏆 {ETAPA_FECHADO}

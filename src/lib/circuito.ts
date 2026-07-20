@@ -23,21 +23,27 @@ export const ETAPA_BOLSAO = 'Bolsão';
 export const ETAPA_FECHADO = 'Fechado';
 export const ETAPA_DESCARTADO = 'Descartado';
 
-/** Etapas do quadro (kanban / funil pessoal / seletores) — na ordem do circuito. */
+/**
+ * Etapas do quadro (kanban / funil pessoal) — na ordem do circuito.
+ * Bolsão NÃO é etapa de funil: estacionados e descartados moram na
+ * bolsa do ADMIN (redistribuição), fora da visão do corretor.
+ */
 export const ETAPAS_CIRCUITO = [
   ETAPA_ENTRADA,
   ETAPA_FOLLOWUP,
   ETAPA_MEET,
   ETAPA_VISITA,
   ETAPA_NEGOCIACAO,
-  ETAPA_BOLSAO,
 ] as const;
 
 /** Estados terminais — guardados em lead.etapa mas fora do kanban. */
 export const ETAPAS_TERMINAIS = [ETAPA_FECHADO, ETAPA_DESCARTADO] as const;
 
-/** Todas as etapas válidas (quadro + terminais). */
-export const ETAPAS_TODAS = [...ETAPAS_CIRCUITO, ...ETAPAS_TERMINAIS] as string[];
+/** Etapas que ficam SÓ com o admin (bolsa de redistribuição). */
+export const ETAPAS_DO_ADMIN = [ETAPA_BOLSAO, ETAPA_DESCARTADO] as const;
+
+/** Todas as etapas válidas (quadro + bolsão + terminais). */
+export const ETAPAS_TODAS = [...ETAPAS_CIRCUITO, ETAPA_BOLSAO, ...ETAPAS_TERMINAIS] as string[];
 
 const setTodas = new Set<string>(ETAPAS_TODAS);
 

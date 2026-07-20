@@ -804,7 +804,6 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                   novaEtapa: ETAPA_DESCARTADO,
                   cancelarTodasPendentes: true,
                   descartadoMotivo: motivoFinal,
-                  transferirParaGestor: true,
                   interacao: { type: 'Descarte', notes: `🗑️ Descartado — motivo: ${motivoFinal}` },
                 });
                 if (ok) fecha(`${primeiroNome} descartado (${motivoFinal}).`);

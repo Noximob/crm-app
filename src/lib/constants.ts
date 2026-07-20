@@ -1,6 +1,6 @@
 /** Etapas do circuito do lead (ordem do quadro). Fonte única: src/lib/circuito.ts. */
 export const PIPELINE_STAGES = [
-    'Entrada', 'Follow-up', 'Meet', 'Visita', 'Negociação', 'Bolsão'
+    'Entrada', 'Follow-up', 'Meet', 'Visita', 'Negociação'
 ];
 
 /** Modo demonstração (Espelho): login/senha únicos; não usa Firestore. */

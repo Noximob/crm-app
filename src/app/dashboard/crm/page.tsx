@@ -12,7 +12,7 @@ import FilterModal, { Filters, ORIGEM_FILTER_OPTIONS, getOrigemBucket, getCampan
 import { getDemoLeads } from '@/lib/espelho/demoData';
 import LoadingState from '@/components/ui/LoadingState';
 import { ensureTarefasPendentes } from '@/lib/leadTasks';
-import { ETAPA_FECHADO, ETAPA_DESCARTADO, ETAPAS_TERMINAIS } from '@/lib/circuito';
+import { ETAPA_FECHADO, ETAPA_DESCARTADO, ETAPAS_DO_ADMIN } from '@/lib/circuito';
 import { statusDoLead, type StatusLead } from '@/lib/statusLead';
 
 // --- Tipos ---
@@ -177,13 +177,13 @@ export default function CrmPage() {
 
     // Quando o funil (etapas) muda, limpar filtro rápido se a etapa selecionada não existir mais
     // Só aplica quando stages já foi carregado (length > 0) para não resetar página ao voltar do detalhe
-    // Estados terminais (Fechado/Descartado) são válidos mesmo fora de stages
+    // "Fechado" é válido mesmo fora de stages (Bolsão/Descartado são só da área do admin)
     useEffect(() => {
         if (
             stages.length > 0 &&
             activeFilter &&
             !stages.includes(activeFilter) &&
-            !(ETAPAS_TERMINAIS as readonly string[]).includes(activeFilter)
+            activeFilter !== ETAPA_FECHADO
         ) {
             setActiveFilter(null);
             setCurrentPage(1);
@@ -214,10 +214,13 @@ export default function CrmPage() {
     useEffect(() => {
         if (isEspelhoDemo) {
             // Mesmo status do modo real: régua das tarefas + "Ação agora" do circuito
-            setLeads(getDemoLeads().map(l => ({
-                ...l,
-                taskStatus: statusDoLead((l as any).etapa, ((l as any).tasks || []).filter((t: any) => t.status === 'pendente')),
-            })) as unknown as Lead[]);
+            // Bolsão/Descartado ficam só na área do admin — não aparecem pro corretor
+            setLeads(getDemoLeads()
+                .filter(l => !(ETAPAS_DO_ADMIN as readonly string[]).includes(normalizeEtapa((l as any).etapa)))
+                .map(l => ({
+                    ...l,
+                    taskStatus: statusDoLead((l as any).etapa, ((l as any).tasks || []).filter((t: any) => t.status === 'pendente')),
+                })) as unknown as Lead[]);
             setLoading(false);
             return;
         }
@@ -244,6 +247,8 @@ export default function CrmPage() {
             if (snapshot.empty) return;
             const doc = snapshot.docs[0];
             const leadData = { id: doc.id, ...doc.data() } as Lead;
+            // Bolsão/Descartado são da área do admin — não entram na lista do corretor
+            if ((ETAPAS_DO_ADMIN as readonly string[]).includes(normalizeEtapa(leadData.etapa))) return;
             // Lead novo já traz tarefasPendentes ([]); ensure cobre leads legados sem o campo
             const tarefasMap = await ensureTarefasPendentes([leadData]);
             leadData.taskStatus = statusDoLead(leadData.etapa, tarefasMap.get(leadData.id) || []);
@@ -277,7 +282,8 @@ export default function CrmPage() {
                 const leadData = { id: leadDoc.id, ...leadDoc.data() } as Lead;
                 leadData.qualificacao = leadDoc.data().qualificacao || {};
                 return leadData;
-            });
+            // Bolsão/Descartado são da área do admin — não aparecem pro corretor
+            }).filter(lead => !(ETAPAS_DO_ADMIN as readonly string[]).includes(normalizeEtapa(lead.etapa)));
             const tarefasMap = await ensureTarefasPendentes(rawLeads);
             const newLeads = rawLeads.map(leadData => {
                 leadData.taskStatus = statusDoLead(leadData.etapa, tarefasMap.get(leadData.id) || []);
@@ -530,7 +536,7 @@ export default function CrmPage() {
                                 <div key={`filtro-etapas-${stages.join('-')}`} className="absolute left-0 top-full mt-1.5 z-50 w-[min(90vw,420px)] max-h-[70vh] overflow-y-auto rounded-xl border border-white/10 bg-[#12101a] shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] py-3 px-3">
                                     <p className="text-[10px] font-extrabold text-text-secondary uppercase tracking-[0.18em] mb-2 px-1">Etapa do funil</p>
                                     <div className="flex flex-wrap gap-2 mb-3">
-                                        {[...stages, ETAPA_FECHADO, ETAPA_DESCARTADO].map((stage) => (
+                                        {[...stages, ETAPA_FECHADO].map((stage) => (
                                             <FilterChip
                                                 key={stage}
                                                 selected={activeFilter === stage}

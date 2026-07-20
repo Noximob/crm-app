@@ -10,7 +10,7 @@ import FilterModal, { Filters } from '@/app/dashboard/crm/_components/FilterModa
 import { getDemoLeads, DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
 import LoadingState from '@/components/ui/LoadingState';
 import { ensureTarefasPendentes, TarefaPendente } from '@/lib/leadTasks';
-import { ETAPA_FECHADO, ETAPA_DESCARTADO, ETAPAS_TERMINAIS } from '@/lib/circuito';
+import { ETAPA_FECHADO, ETAPA_DESCARTADO, ETAPAS_DO_ADMIN } from '@/lib/circuito';
 import { statusDoLead, type StatusLead } from '@/lib/statusLead';
 
 interface Lead {
@@ -150,7 +150,8 @@ export default function VisualizarCrmCorretorPage() {
     }
     if (isEspelhoDemo) {
       setLoading(true);
-      const demoLeads = getDemoLeads().filter(l => l.userId === selectedCorretorId);
+      // Bolsão/Descartado ficam só no bolsão do admin (Importar Leads) — fora da visão do CRM
+      const demoLeads = getDemoLeads().filter(l => l.userId === selectedCorretorId && !(ETAPAS_DO_ADMIN as readonly string[]).includes(normalizeEtapa(l.etapa)));
       const newLeads: Lead[] = demoLeads.map(l => {
         const tasks: TarefaPendente[] = (l.tasks || []).filter(t => t.status === 'pendente').map(t => ({ id: t.id, description: (t as any).description ?? '', type: (t as any).type ?? '', dueDate: t.dueDate }));
         return {
@@ -180,7 +181,8 @@ export default function VisualizarCrmCorretorPage() {
         const leadData = { id: leadDoc.id, ...leadDoc.data() } as Lead;
         leadData.qualificacao = leadDoc.data().qualificacao || {};
         return leadData;
-      });
+      // Bolsão/Descartado ficam só no bolsão do admin (Importar Leads) — fora da visão do CRM
+      }).filter(lead => !(ETAPAS_DO_ADMIN as readonly string[]).includes(normalizeEtapa(lead.etapa)));
       const tarefasMap = await ensureTarefasPendentes(rawLeads);
       const newLeads = rawLeads.map(leadData => {
         leadData.taskStatus = statusDoLead(leadData.etapa, tarefasMap.get(leadData.id) || []);
@@ -204,9 +206,9 @@ export default function VisualizarCrmCorretorPage() {
     }
   }, [selectedCorretorId]);
 
-  // Estados terminais (Fechado/Descartado) são válidos mesmo fora de stages
+  // 'Fechado' é válido mesmo fora de stages (Bolsão/Descartado são só da área do admin)
   useEffect(() => {
-    if (activeFilter && !stages.includes(activeFilter) && !(ETAPAS_TERMINAIS as readonly string[]).includes(activeFilter)) {
+    if (activeFilter && !stages.includes(activeFilter) && activeFilter !== ETAPA_FECHADO) {
       setActiveFilter(null);
       setCurrentPage(1);
     }
@@ -341,7 +343,7 @@ export default function VisualizarCrmCorretorPage() {
                       <div className="absolute left-0 top-full mt-1.5 z-50 w-[min(90vw,420px)] max-h-[70vh] overflow-y-auto rounded-xl border border-white/10 bg-[var(--bg-card)] shadow-xl py-3 px-3">
                         <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-wide mb-2 px-1">Etapa do funil</p>
                         <div className="flex flex-wrap gap-2 mb-3">
-                          {[...stages, ETAPA_FECHADO, ETAPA_DESCARTADO].map(stage => (
+                          {[...stages, ETAPA_FECHADO].map(stage => (
                             <FilterChip
                               key={stage}
                               selected={activeFilter === stage}

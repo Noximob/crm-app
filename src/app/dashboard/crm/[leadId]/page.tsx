@@ -15,7 +15,7 @@ import AtendimentoOverlay, { perguntaDoLead, fmtDataHora, type AcaoCircuito } fr
 import { executarAcaoCircuito } from '@/lib/circuitoActions';
 import { QUALIFICATION_QUESTIONS } from '@/lib/qualificacao';
 import { getDemoLeadById, getDemoInteractions } from '@/lib/espelho/demoData';
-import { CADENCIAS_PADRAO, carregarCadencias, ETAPAS_TERMINAIS, type CadenciasFunil } from '@/lib/circuito';
+import { CADENCIAS_PADRAO, carregarCadencias, ETAPAS_TERMINAIS, ETAPA_DESCARTADO, type CadenciasFunil } from '@/lib/circuito';
 import { showToast } from '@/components/ui/toast';
 import LoadingState from '@/components/ui/LoadingState';
 
@@ -104,7 +104,7 @@ export default function LeadDetailPage() {
     const [executandoCircuito, setExecutandoCircuito] = useState(false);
     const [atendimentoAberto, setAtendimentoAberto] = useState(false);
     const [fechouNoX, setFechouNoX] = useState(false);
-    const transferiuParaGestor = useRef(false);
+    const foiDescartado = useRef(false);
     const [expandidas, setExpandidas] = useState<Set<string>>(new Set());
     const [saveQual, setSaveQual] = useState<'idle' | 'salvando' | 'salvo'>('idle');
     const [saveNotas, setSaveNotas] = useState<'idle' | 'salvando' | 'salvo'>('idle');
@@ -254,10 +254,10 @@ export default function LeadDetailPage() {
         setAtendimentoAberto(false);
         setFechouNoX(false);
         if (msg) showToast(msg, 'success');
-        if (transferiuParaGestor.current) {
-            // O lead saiu do funil do corretor → foi pro bolsão do gestor
-            transferiuParaGestor.current = false;
-            showToast('O lead foi pro bolsão do gestor.', 'info');
+        if (foiDescartado.current) {
+            // Descartado sai da visão do corretor → vai pro bolsão da área do admin
+            foiDescartado.current = false;
+            showToast('O lead saiu do seu CRM e foi pro bolsão do administrador.', 'info');
             setTimeout(() => router.push('/dashboard/crm'), 900);
         }
     };
@@ -289,8 +289,8 @@ export default function LeadDetailPage() {
             showToast('Erro ao registrar a ação. Tente de novo.', 'error');
             return false;
         }
-        if (res.transferiuPara && res.transferiuPara !== currentUser.uid) {
-            transferiuParaGestor.current = true;
+        if (acao.novaEtapa === ETAPA_DESCARTADO) {
+            foiDescartado.current = true;
         }
         return true;
     }, [currentUser, lead, isEspelhoDemo, readOnly, executandoCircuito, tasks, tasksLoaded, userData?.imobiliariaId]);

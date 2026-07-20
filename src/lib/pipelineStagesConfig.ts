@@ -32,7 +32,6 @@ export const DEFAULT_PIPELINE_STAGES_WITH_META: PipelineStageWithMeta[] = [
   { label: 'Meet', reportCategory: 'Reunião agendada', isQuente: false },
   { label: 'Visita', reportCategory: 'Reunião agendada', isQuente: false },
   { label: 'Negociação', reportCategory: 'Negociação e contrato', isQuente: true },
-  { label: 'Bolsão', reportCategory: 'Troca de Leads', isQuente: false },
 ];
 
 /** Labels curtos para exibição em TV / cards compactos (por categoria) */

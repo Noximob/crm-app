@@ -245,7 +245,8 @@ export function computeReport(
 
   const etapaIdx = new Map<string, number>();
   const etapaQuente = new Set<string>();
-  const etapaParada = new Set<string>(); // 'Troca de Leads' = Bolsão (estacionado de propósito)
+  // Bolsão não é mais etapa do funil — é o estacionamento da área do admin; fica fora da carteira
+  const etapaParada = new Set<string>([ETAPA_BOLSAO]);
   stagesWithMeta.forEach((s, i) => {
     etapaIdx.set(s.label, i);
     if (s.isQuente) etapaQuente.add(s.label);
