@@ -10,11 +10,12 @@
  * criadaPor, total} + subcoleção contatos/{cid} {nome, telefone, whatsapp,
  * status pendente|descartado|crm, anotacoes, qualificacao, ordem, leadId?}.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, doc, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, writeBatch, serverTimestamp, deleteDoc, Timestamp } from 'firebase/firestore';
 import { showToast } from '@/components/ui/toast';
+import { confirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface Corretor {
   id: string;
@@ -25,6 +26,8 @@ interface ContatoPreview {
   nome: string;
   telefone: string;
 }
+
+interface EventoBolsao { tipo: string; detalhe?: string; em: any }
 
 interface DescartadoBolsao {
   listaId: string;
@@ -37,13 +40,35 @@ interface DescartadoBolsao {
   tentativas?: number;
   anotacoes?: string;
   qualificacao?: Record<string, any>;
+  eventos?: EventoBolsao[];
+  descartadoEm?: any;
 }
 
+const demoTs = (hAtras: number) => Timestamp.fromMillis(Date.now() - hAtras * 3600_000);
 const DEMO_BOLSAO: DescartadoBolsao[] = [
-  { listaId: 'demo-lista', listaNome: 'Feirão Litoral — Stand Barra Velha', contatoId: 'dc5', nome: 'Vera Lúcia', telefone: '(47) 95555-6677', motivo: 'Número errado', tentativas: 3 },
-  { listaId: 'demo-lista', listaNome: 'Feirão Litoral — Stand Barra Velha', contatoId: 'dc8', nome: 'Gilmar Souza', telefone: '(47) 92288-9900', motivo: 'Não atende', tentativas: 4 },
-  { listaId: 'demo-lista-2', listaNome: 'Portaria Condomínios — Penha', contatoId: 'dx1', nome: 'Osmar Teles', telefone: '(47) 91111-0000', motivo: 'Não quer', tentativas: 2 },
+  { listaId: 'demo-lista', listaNome: 'Feirão Litoral — Stand Barra Velha', contatoId: 'dc5', nome: 'Vera Lúcia', telefone: '(47) 95555-6677', motivo: 'Número errado', tentativas: 3, anotacoes: 'Caixa postal direto.', eventos: [
+    { tipo: 'tentativa', em: demoTs(120) }, { tipo: 'tentativa', em: demoTs(96) }, { tipo: 'tentativa', em: demoTs(80) }, { tipo: 'descartado', detalhe: 'Número errado', em: demoTs(79) },
+  ] },
+  { listaId: 'demo-lista', listaNome: 'Feirão Litoral — Stand Barra Velha', contatoId: 'dc8', nome: 'Gilmar Souza', telefone: '(47) 92288-9900', motivo: 'Não atende', tentativas: 4, eventos: [
+    { tipo: 'tentativa', em: demoTs(200) }, { tipo: 'tentativa', em: demoTs(170) }, { tipo: 'tentativa', em: demoTs(150) }, { tipo: 'tentativa', em: demoTs(122) }, { tipo: 'descartado', detalhe: 'Não atende', em: demoTs(120) },
+  ] },
+  { listaId: 'demo-lista-2', listaNome: 'Portaria Condomínios — Penha', contatoId: 'dx1', nome: 'Osmar Teles', telefone: '(47) 91111-0000', motivo: 'Não quer', tentativas: 2, eventos: [
+    { tipo: 'tentativa', em: demoTs(300) }, { tipo: 'tentativa', em: demoTs(260) }, { tipo: 'descartado', detalhe: 'Não quer', em: demoTs(255) },
+  ] },
 ];
+
+const p2 = (n: number) => String(n).padStart(2, '0');
+const fmtEv = (em: any) => {
+  const d = em?.toDate ? em.toDate() : em?.seconds ? new Date(em.seconds * 1000) : null;
+  return d ? `${p2(d.getDate())}/${p2(d.getMonth() + 1)} ${p2(d.getHours())}:${p2(d.getMinutes())}` : '—';
+};
+const EV_ROTULO: Record<string, (d?: string) => string> = {
+  tentativa: () => '💬 Tentativa de contato',
+  descartado: d => `🗑 Descartado${d ? ` — ${d}` : ''}`,
+  restaurado: () => '↩ Voltou pra lista',
+  crm: () => '✅ Virou lead no CRM',
+  realocado: d => `🔄 Realocado${d ? ` pra ${d}` : ''}`,
+};
 
 export default function ImportarLigacaoAtivaPage() {
   const { currentUser, userData, isEspelhoDemo } = useAuth();
@@ -57,13 +82,18 @@ export default function ImportarLigacaoAtivaPage() {
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // --- Bolsão de descartados (realocar pra outro corretor) ---
+  // --- Bolsão de descartados (achar, retirar, realocar) ---
   const [bolsao, setBolsao] = useState<DescartadoBolsao[]>([]);
   const [bolsaoCarregado, setBolsaoCarregado] = useState(false);
   const [selBolsao, setSelBolsao] = useState<Set<string>>(new Set());
   const [bolsaoCorretor, setBolsaoCorretor] = useState('');
   const [bolsaoNome, setBolsaoNome] = useState('');
   const [realocando, setRealocando] = useState(false);
+  const [bolsaoBusca, setBolsaoBusca] = useState('');
+  const [bolsaoLista, setBolsaoLista] = useState<string>('todas');
+  const [bolsaoMotivo, setBolsaoMotivo] = useState<string>('todos');
+  const [bolsaoExpandido, setBolsaoExpandido] = useState<string | null>(null);
+  const [removendo, setRemovendo] = useState(false);
 
   const carregarBolsao = React.useCallback(async () => {
     if (isEspelhoDemo) {
@@ -89,6 +119,7 @@ export default function ImportarLigacaoAtivaPage() {
               nome: c.nome || '', telefone: c.telefone || '', whatsapp: c.whatsapp,
               motivo: c.descartadoMotivo, tentativas: c.tentativas,
               anotacoes: c.anotacoes, qualificacao: c.qualificacao,
+              eventos: c.eventos || [], descartadoEm: c.descartadoEm,
             });
           });
         } catch { /* lista sem acesso — segue */ }
@@ -148,6 +179,7 @@ export default function ImportarLigacaoAtivaPage() {
           status: 'realocado',
           realocadoEm: serverTimestamp(),
           realocadoPara: bolsaoCorretor,
+          eventos: [...(b.eventos || []), { tipo: 'realocado', detalhe: corretores.find(c => c.id === bolsaoCorretor)?.nome || '', em: Timestamp.now() }],
         });
         ops += 2;
         if (ops >= 398) { await batch.commit(); batch = writeBatch(db); ops = 0; }
@@ -164,6 +196,49 @@ export default function ImportarLigacaoAtivaPage() {
       setRealocando(false);
     }
   };
+
+  /** Retira DE VEZ os selecionados do bolsão (apaga os contatos descartados). */
+  const retirarSelecionados = async () => {
+    const escolhidos = bolsao.filter(b => selBolsao.has(`${b.listaId}:${b.contatoId}`));
+    if (!escolhidos.length) return;
+    if (isEspelhoDemo) { showToast('Modo demonstração — nada é salvo.', 'info'); return; }
+    const ok = await confirmDialog({
+      message: `Retirar ${escolhidos.length} contato${escolhidos.length > 1 ? 's' : ''} do bolsão DE VEZ? Eles são apagados e não voltam mais.`,
+      confirmLabel: 'Retirar de vez',
+    });
+    if (!ok) return;
+    setRemovendo(true);
+    try {
+      await Promise.all(escolhidos.map(b => deleteDoc(doc(db, 'ligacaoAtivaListas', b.listaId, 'contatos', b.contatoId))));
+      showToast(`${escolhidos.length} contato${escolhidos.length > 1 ? 's retirados' : ' retirado'} do bolsão.`, 'success');
+      setSelBolsao(new Set());
+      carregarBolsao();
+    } catch (e) {
+      console.error(e);
+      showToast('Erro ao retirar do bolsão.', 'error');
+    } finally {
+      setRemovendo(false);
+    }
+  };
+
+  // Filtros do bolsão (busca + lista + motivo)
+  const bolsaoFiltrado = useMemo(() => {
+    const termo = bolsaoBusca.trim().toLowerCase();
+    return bolsao.filter(b => {
+      if (bolsaoLista !== 'todas' && b.listaId !== bolsaoLista) return false;
+      if (bolsaoMotivo !== 'todos' && (b.motivo || 'Sem motivo') !== bolsaoMotivo) return false;
+      if (termo && !(`${b.nome} ${b.telefone}`.toLowerCase().includes(termo))) return false;
+      return true;
+    });
+  }, [bolsao, bolsaoBusca, bolsaoLista, bolsaoMotivo]);
+
+  const bolsaoListas = useMemo(() => {
+    const m = new Map<string, string>();
+    bolsao.forEach(b => m.set(b.listaId, b.listaNome));
+    return Array.from(m.entries());
+  }, [bolsao]);
+
+  const bolsaoMotivos = useMemo(() => Array.from(new Set(bolsao.map(b => b.motivo || 'Sem motivo'))), [bolsao]);
 
   // Buscar corretores aprovados
   useEffect(() => {
@@ -385,12 +460,17 @@ export default function ImportarLigacaoAtivaPage() {
         </button>
       </div>
 
-      {/* ===== Bolsão de descartados — realocar pra outro corretor ===== */}
+      {/* ===== Bolsão de descartados — achar, retirar, realocar ===== */}
       <div className="max-w-2xl mx-auto al-card relative overflow-hidden p-6 mt-6">
         <div className="absolute inset-x-0 top-0 gx-line" />
-        <h2 className="al-display text-[17px] font-bold text-white uppercase tracking-[0.1em] mb-1">🧊 Bolsão de descartados</h2>
+        <div className="flex items-center justify-between gap-3 mb-1">
+          <h2 className="al-display text-[17px] font-bold text-white uppercase tracking-[0.1em]">🧊 Bolsão de descartados</h2>
+          {bolsao.length > 0 && (
+            <span className="text-[11px] font-bold text-text-secondary tabular-nums px-2 py-1 rounded-full bg-white/[0.06] border border-white/[0.08]">{bolsao.length} no bolsão</span>
+          )}
+        </div>
         <p className="text-text-secondary mb-4 text-sm">
-          Contatos que os corretores descartaram (com motivo). Selecione e crie uma nova lista pra outro corretor tentar de novo.
+          O que os corretores descartaram, com motivo e histórico. Ache, selecione e: <b className="text-white">realoque</b> pra outro corretor tentar de novo, ou <b className="text-white">retire de vez</b>.
         </p>
 
         {!bolsaoCarregado ? (
@@ -399,78 +479,131 @@ export default function ImportarLigacaoAtivaPage() {
           <p className="text-sm text-text-secondary py-4">Nenhum descartado no bolsão por enquanto. 👌</p>
         ) : (
           <>
-            <div className="mb-4 grid sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary block mb-1">Novo corretor</label>
-                <select
-                  className={inputCls}
-                  value={bolsaoCorretor}
-                  onChange={e => setBolsaoCorretor(e.target.value)}
-                >
-                  <option value="">Selecione o corretor</option>
-                  {corretores.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary block mb-1">Nome da nova lista (opcional)</label>
+            {/* Achar: busca + lista + motivo */}
+            <div className="mb-3 space-y-2">
+              <div className="grid sm:grid-cols-2 gap-2">
                 <input
                   className={inputCls}
-                  placeholder={`Bolsão · ${new Date().toLocaleDateString('pt-BR')}`}
-                  value={bolsaoNome}
-                  onChange={e => setBolsaoNome(e.target.value)}
+                  placeholder="🔎 Buscar por nome ou telefone…"
+                  value={bolsaoBusca}
+                  onChange={e => setBolsaoBusca(e.target.value)}
                 />
+                <select className={inputCls} value={bolsaoLista} onChange={e => setBolsaoLista(e.target.value)}>
+                  <option value="todas">Todas as listas ({bolsao.length})</option>
+                  {bolsaoListas.map(([id, nome]) => (
+                    <option key={id} value={id}>{nome} ({bolsao.filter(b => b.listaId === id).length})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  onClick={() => setBolsaoMotivo('todos')}
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors ${bolsaoMotivo === 'todos' ? 'bg-[#FF1E56]/15 border-[#FF3364]/60 text-[#FF9EB5]' : 'bg-white/[0.04] border-white/10 text-text-secondary hover:bg-white/[0.08]'}`}
+                >
+                  Todos os motivos
+                </button>
+                {bolsaoMotivos.map(m => (
+                  <button
+                    key={m}
+                    onClick={() => setBolsaoMotivo(prev => prev === m ? 'todos' : m)}
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors ${bolsaoMotivo === m ? 'bg-[#FF1E56]/15 border-[#FF3364]/60 text-[#FF9EB5]' : 'bg-white/[0.04] border-white/10 text-text-secondary hover:bg-white/[0.08]'}`}
+                  >
+                    {m} ({bolsao.filter(b => (b.motivo || 'Sem motivo') === m).length})
+                  </button>
+                ))}
+                <button
+                  onClick={() => {
+                    const todosSel = bolsaoFiltrado.every(b => selBolsao.has(`${b.listaId}:${b.contatoId}`));
+                    setSelBolsao(prev => {
+                      const n = new Set(prev);
+                      bolsaoFiltrado.forEach(b => { const k = `${b.listaId}:${b.contatoId}`; if (todosSel) n.delete(k); else n.add(k); });
+                      return n;
+                    });
+                  }}
+                  className="ml-auto px-2.5 py-1 rounded-lg text-[11px] font-bold border border-[#E8C547]/40 bg-[#E8C547]/10 text-[#FFE9A6] hover:bg-[#E8C547]/20 transition-colors"
+                >
+                  {bolsaoFiltrado.length > 0 && bolsaoFiltrado.every(b => selBolsao.has(`${b.listaId}:${b.contatoId}`)) ? 'Desmarcar' : 'Selecionar'} os {bolsaoFiltrado.length} filtrados
+                </button>
               </div>
             </div>
 
-            <div className="mb-4 max-h-72 overflow-y-auto rounded-xl border border-white/[0.08] bg-white/[0.02] divide-y divide-white/[0.05]">
-              {Array.from(new Set(bolsao.map(b => b.listaId))).map(listaId => {
-                const doGrupo = bolsao.filter(b => b.listaId === listaId);
-                const todos = doGrupo.every(b => selBolsao.has(`${b.listaId}:${b.contatoId}`));
+            {/* Lista filtrada com histórico expandível */}
+            <div className="mb-4 max-h-80 overflow-y-auto rounded-xl border border-white/[0.08] bg-white/[0.02] divide-y divide-white/[0.05]">
+              {bolsaoFiltrado.length === 0 ? (
+                <p className="text-sm text-text-secondary p-4">Nada com esses filtros.</p>
+              ) : bolsaoFiltrado.map(b => {
+                const chave = `${b.listaId}:${b.contatoId}`;
+                const marcado = selBolsao.has(chave);
+                const expandido = bolsaoExpandido === chave;
                 return (
-                  <div key={listaId}>
-                    <button
-                      onClick={() => {
-                        setSelBolsao(prev => {
-                          const n = new Set(prev);
-                          doGrupo.forEach(b => { const k = `${b.listaId}:${b.contatoId}`; if (todos) n.delete(k); else n.add(k); });
-                          return n;
-                        });
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 bg-white/[0.03] text-left hover:bg-white/[0.05] transition-colors"
+                  <div key={chave}>
+                    <div
+                      onClick={() => toggleSelBolsao(chave)}
+                      className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors ${marcado ? 'bg-[#E8C547]/[0.07]' : 'hover:bg-white/[0.03]'}`}
                     >
-                      <span className={`h-3.5 w-3.5 rounded border grid place-items-center text-[9px] ${todos ? 'bg-[#E8C547]/20 border-[#E8C547]/60 text-[#FFE9A6]' : 'border-white/20 text-transparent'}`}>✓</span>
-                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#FFE9A6]">{doGrupo[0].listaNome}</span>
-                      <span className="text-[11px] text-text-secondary tabular-nums">({doGrupo.length})</span>
-                    </button>
-                    {doGrupo.map(b => {
-                      const chave = `${b.listaId}:${b.contatoId}`;
-                      const marcado = selBolsao.has(chave);
-                      return (
-                        <button
-                          key={chave}
-                          onClick={() => toggleSelBolsao(chave)}
-                          className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors ${marcado ? 'bg-[#E8C547]/[0.07]' : 'hover:bg-white/[0.03]'}`}
-                        >
-                          <span className={`h-3.5 w-3.5 rounded border grid place-items-center text-[9px] shrink-0 ${marcado ? 'bg-[#E8C547]/20 border-[#E8C547]/60 text-[#FFE9A6]' : 'border-white/20 text-transparent'}`}>✓</span>
-                          <span className="flex-1 min-w-0 text-[13px] font-semibold text-white truncate">{b.nome || <span className="text-white/40 italic font-normal">Sem nome</span>}</span>
-                          <span className="text-[12px] text-text-secondary tabular-nums shrink-0">{b.telefone}</span>
-                          {b.motivo && <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-white/[0.05] border border-white/15 text-text-secondary">{b.motivo}</span>}
-                          {(b.tentativas || 0) > 0 && <span className="shrink-0 text-[10px] text-[#FFE9A6]/70 tabular-nums">💬 {b.tentativas}×</span>}
-                        </button>
-                      );
-                    })}
+                      <span className={`h-3.5 w-3.5 rounded border grid place-items-center text-[9px] shrink-0 ${marcado ? 'bg-[#E8C547]/20 border-[#E8C547]/60 text-[#FFE9A6]' : 'border-white/20 text-transparent'}`}>✓</span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-[13px] font-semibold text-white truncate">{b.nome || <span className="text-white/40 italic font-normal">Sem nome</span>}</span>
+                        {bolsaoLista === 'todas' && <span className="block text-[10px] text-[#FFE9A6]/60 truncate">{b.listaNome}</span>}
+                      </span>
+                      <span className="text-[12px] text-text-secondary tabular-nums shrink-0">{b.telefone}</span>
+                      {b.motivo && <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-white/[0.05] border border-white/15 text-text-secondary">{b.motivo}</span>}
+                      {(b.tentativas || 0) > 0 && <span className="shrink-0 text-[10px] text-[#FFE9A6]/70 tabular-nums">💬 {b.tentativas}×</span>}
+                      <button
+                        onClick={e => { e.stopPropagation(); setBolsaoExpandido(expandido ? null : chave); }}
+                        className="shrink-0 px-1.5 py-0.5 rounded text-[11px] text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+                        title="Ver histórico"
+                      >
+                        {expandido ? '▲' : '▼'}
+                      </button>
+                    </div>
+                    {expandido && (
+                      <div className="px-9 pb-2.5 pt-0.5 space-y-1">
+                        {b.anotacoes && <p className="text-[12px] text-white/60 italic">“{b.anotacoes}”</p>}
+                        {(b.eventos || []).length === 0 ? (
+                          <p className="text-[11.5px] text-white/35">Sem registro de atividade.</p>
+                        ) : [...(b.eventos || [])].reverse().map((ev, i) => (
+                          <p key={i} className="text-[11.5px] text-white/55">
+                            <span className="text-white/30 tabular-nums mr-1.5">{fmtEv(ev.em)}</span>
+                            {(EV_ROTULO[ev.tipo] || (() => ev.tipo))(ev.detalhe)}
+                          </p>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
 
-            <button
-              onClick={realocarSelecionados}
-              disabled={selBolsao.size === 0 || !bolsaoCorretor || realocando}
-              className="w-full px-6 py-3 bg-[#7DD3FC]/10 border border-[#7DD3FC]/40 text-[#7DD3FC] hover:bg-[#7DD3FC]/20 rounded-xl font-bold transition-colors disabled:opacity-40"
-            >
-              {realocando ? 'Realocando…' : `🔄 Criar lista com ${selBolsao.size} selecionado${selBolsao.size === 1 ? '' : 's'}`}
-            </button>
+            {/* Realocar ou retirar */}
+            <div className="grid sm:grid-cols-2 gap-2 mb-2">
+              <select className={inputCls} value={bolsaoCorretor} onChange={e => setBolsaoCorretor(e.target.value)}>
+                <option value="">Corretor que vai receber</option>
+                {corretores.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              </select>
+              <input
+                className={inputCls}
+                placeholder={`Nome da nova lista (padrão: Bolsão · ${new Date().toLocaleDateString('pt-BR')})`}
+                value={bolsaoNome}
+                onChange={e => setBolsaoNome(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                onClick={realocarSelecionados}
+                disabled={selBolsao.size === 0 || !bolsaoCorretor || realocando}
+                className="flex-1 px-6 py-3 bg-[#7DD3FC]/10 border border-[#7DD3FC]/40 text-[#7DD3FC] hover:bg-[#7DD3FC]/20 rounded-xl font-bold transition-colors disabled:opacity-40"
+              >
+                {realocando ? 'Realocando…' : `🔄 Realocar ${selBolsao.size} selecionado${selBolsao.size === 1 ? '' : 's'}`}
+              </button>
+              <button
+                onClick={retirarSelecionados}
+                disabled={selBolsao.size === 0 || removendo}
+                className="sm:w-56 px-6 py-3 bg-red-500/10 border border-red-500/40 text-red-300 hover:bg-red-500/20 rounded-xl font-bold transition-colors disabled:opacity-40"
+              >
+                {removendo ? 'Retirando…' : `🗑 Retirar de vez (${selBolsao.size})`}
+              </button>
+            </div>
           </>
         )}
       </div>
