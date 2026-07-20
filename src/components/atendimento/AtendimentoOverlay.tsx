@@ -52,7 +52,7 @@ export type EstadoFluxo =
   | { t: 'ligar' }
   | { t: 'atendeu' }
   | { t: 'followQ' }
-  | { t: 'proximaAcao'; concluirTaskId?: string; contato?: boolean }
+  | { t: 'proximaAcao'; concluirTaskId?: string; cancelarTaskId?: string; contato?: boolean }
   | { t: 'quando'; concluirTaskId?: string; cancelarTaskId?: string; tentativa?: boolean }
   | { t: 'tarefaAgora'; taskId?: string }
   | { t: 'fuRetry'; taskId?: string }
@@ -267,6 +267,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
   const [motivoSel, setMotivoSel] = useState('');
   const [motivoOutro, setMotivoOutro] = useState('');
   const [requalSel, setRequalSel] = useState<string[]>([]);
+  const [obsStr, setObsStr] = useState('');
   const [aviso, setAviso] = useState('');
 
   // Reseta pro estado inicial só quando o overlay ABRE (não a cada render/snapshot)
@@ -281,7 +282,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
 
   useEffect(() => {
     setAcaoSel(''); setQuandoSel(''); setDataStr(''); setHoraStr('10:00');
-    setMotivoSel(''); setMotivoOutro(''); setRequalSel([]); setAviso('');
+    setMotivoSel(''); setMotivoOutro(''); setRequalSel([]); setObsStr(''); setAviso('');
   }, [estado.t]);
 
   const primeiroNome = (nome || 'o cliente').split(' ')[0];
@@ -333,8 +334,21 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           />
         </label>
       </div>
+      <input
+        type="text"
+        value={obsStr}
+        onChange={e => setObsStr(e.target.value)}
+        placeholder="📝 Observação (opcional) — ex.: mandar fotos do 302, cliente prefere à tarde…"
+        maxLength={140}
+        className="mt-2 w-full px-3 py-1.5 bg-white/[0.04] border border-white/15 rounded-lg text-white text-[12.5px] placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#E8C547]/40"
+      />
     </>
   );
+
+  /** Observação do agendamento: entra na descrição da tarefa e na linha do tempo. */
+  const obsFinal = () => obsStr.trim();
+  const descComObs = (desc: string) => (obsFinal() ? `${desc} — ${obsFinal()}` : desc);
+  const notesComObs = (notes: string) => (obsFinal() ? `${notes} · 📝 ${obsFinal()}` : notes);
 
   const fecha = (msg?: string) => onConcluido(msg);
 
@@ -415,6 +429,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             const ok = await executar({
               novaEtapa: ETAPA_NEGOCIACAO,
               concluirTaskId: m.concluirTaskId,
+              cancelarTaskId: m.cancelarTaskId,
               circuitoTentativas: 'zero',
               contatoEfetivo: m.contato,
               interacao: { type: 'Etapa', notes: `🤝 ${primeiroNome} pronto pra negociar — direto pra proposta` },
@@ -433,10 +448,11 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           const ok = await executar({
             novaEtapa: a.etapa,
             concluirTaskId: m.concluirTaskId,
-            novaTarefa: { description: a.desc, type: a.tipo, dueDate: d! },
+            cancelarTaskId: m.cancelarTaskId,
+            novaTarefa: { description: descComObs(a.desc), type: a.tipo, dueDate: d! },
             circuitoTentativas: 'zero',
             contatoEfetivo: m.contato,
-            interacao: { type: a.tipo, notes: `${a.inter} · ${fmtDataHora(d!)}` },
+            interacao: { type: a.tipo, notes: notesComObs(`${a.inter} · ${fmtDataHora(d!)}`) },
           });
           if (ok) fecha(`✓ ${primeiroNome} registrado. Próxima ação: ${acaoSel.replace('🔎 ', '').toLowerCase()} ${quandoLabel(d!)}.`);
         };
@@ -478,12 +494,12 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                 novaEtapa: ETAPA_FOLLOWUP,
                 concluirTaskId: m.concluirTaskId,
                 cancelarTaskId: m.cancelarTaskId,
-                novaTarefa: { description: `Follow-up com ${nome}`, type: TIPO_TAREFA_FOLLOWUP, dueDate: d },
+                novaTarefa: { description: descComObs(`Follow-up com ${nome}`), type: TIPO_TAREFA_FOLLOWUP, dueDate: d },
                 circuitoTentativas: m.tentativa ? 'inc' : undefined,
                 interacao: {
                   type: 'Follow-up',
                   // "tentativa" = veio de um "não atendeu" → registra nomeado (alimenta o relatório de atividade)
-                  notes: `${m.tentativa ? '📵 Não atendeu · ' : ''}📌 Tarefa criada: follow-up · ${fmtDataHora(d)}`,
+                  notes: notesComObs(`${m.tentativa ? '📵 Não atendeu · ' : ''}📌 Tarefa criada: follow-up · ${fmtDataHora(d)}`),
                 },
               });
               if (ok) fecha(`✓ Follow-up com ${primeiroNome} agendado: ${quandoLabel(d)}.`);
@@ -596,11 +612,17 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
 
       case 'meetRemarca':
         return {
-          bar: 'Meet desmarcado',
-          body: <>Remarca com {b(primeiroNome)} {b('agora')} — cliente que remarca ainda tá quente.</>,
+          bar: 'Meet · não rolou',
+          body: (
+            <>
+              O meet com {b(primeiroNome)} não rolou — e agora?
+              <small>Falou com o cliente e dá pra remarcar já? Remarca. Senão, vira follow-up: liga, chama no WhatsApp, do jeito que fizer sentido.</small>
+            </>
+          ),
           btns: [
             { t: '📅 Remarcar o meet', c: 'primary', f: () => irPara({ t: 'agendarData', tipo: 'Meet', cancelarTaskId: estado.cancelarTaskId, remarcando: true }) },
-            { t: 'Não consegui falar', c: 'ghost', f: () => irPara({ t: 'quando', cancelarTaskId: estado.cancelarTaskId, tentativa: true }) },
+            { t: '💬 Virar follow-up (ligar / WhatsApp…)', c: 'gold', f: () => irPara({ t: 'proximaAcao', cancelarTaskId: estado.cancelarTaskId }) },
+            { t: '📵 Sumiu — não consegui falar', c: 'ghost', f: () => irPara({ t: 'quando', cancelarTaskId: estado.cancelarTaskId, tentativa: true }) },
           ],
         };
 
@@ -650,11 +672,17 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
 
       case 'visitaRemarca':
         return {
-          bar: 'Visita desmarcada',
-          body: <>Remarca com {b(primeiroNome)} {b('agora')} — cliente que remarca ainda tá quente.</>,
+          bar: 'Visita · não rolou',
+          body: (
+            <>
+              A visita de {b(primeiroNome)} não rolou — e agora?
+              <small>Falou com o cliente e dá pra remarcar já? Remarca. Senão, vira follow-up: liga, chama no WhatsApp, do jeito que fizer sentido.</small>
+            </>
+          ),
           btns: [
             { t: '📅 Remarcar a visita', c: 'primary', f: () => irPara({ t: 'agendarData', tipo: 'Visita', cancelarTaskId: estado.cancelarTaskId, remarcando: true }) },
-            { t: 'Não consegui falar', c: 'ghost', f: () => irPara({ t: 'quando', cancelarTaskId: estado.cancelarTaskId, tentativa: true }) },
+            { t: '💬 Virar follow-up (ligar / WhatsApp…)', c: 'gold', f: () => irPara({ t: 'proximaAcao', cancelarTaskId: estado.cancelarTaskId }) },
+            { t: '📵 Sumiu — não consegui falar', c: 'ghost', f: () => irPara({ t: 'quando', cancelarTaskId: estado.cancelarTaskId, tentativa: true }) },
           ],
         };
 
@@ -678,9 +706,9 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
               const ok = await executar({
                 novaEtapa: ehMeet ? ETAPA_MEET : ETAPA_VISITA,
                 cancelarTaskId: m.cancelarTaskId,
-                novaTarefa: { description: `${m.tipo} com ${nome}`, type: ehMeet ? TIPO_TAREFA_MEET : TIPO_TAREFA_VISITA, dueDate: d },
+                novaTarefa: { description: descComObs(`${m.tipo} com ${nome}`), type: ehMeet ? TIPO_TAREFA_MEET : TIPO_TAREFA_VISITA, dueDate: d },
                 circuitoTentativas: 'zero',
-                interacao: { type: m.tipo, notes: `📌 ${m.tipo} ${m.remarcando ? 'remarcad' : 'marcad'}${ehMeet ? 'o' : 'a'} · ${fmtDataHora(d)}` },
+                interacao: { type: m.tipo, notes: notesComObs(`📌 ${m.tipo} ${m.remarcando ? 'remarcad' : 'marcad'}${ehMeet ? 'o' : 'a'} · ${fmtDataHora(d)}`) },
               });
               if (ok) fecha(`✓ ${m.tipo} com ${primeiroNome}: ${quandoLabel(d)}.`);
             },
@@ -727,8 +755,8 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
               const ok = await executar({
                 novaEtapa: ETAPA_NEGOCIACAO,
                 cancelarTaskId: m.cancelarTaskId,
-                novaTarefa: { description: `Resposta da proposta — ${nome}`, type: TIPO_TAREFA_FOLLOWUP, dueDate: d },
-                interacao: { type: 'Follow-up', notes: `📌 Cobrança agendada: resposta da proposta · ${fmtDataHora(d)}` },
+                novaTarefa: { description: descComObs(`Resposta da proposta — ${nome}`), type: TIPO_TAREFA_FOLLOWUP, dueDate: d },
+                interacao: { type: 'Follow-up', notes: notesComObs(`📌 Cobrança agendada: resposta da proposta · ${fmtDataHora(d)}`) },
               });
               if (ok) fecha(`✓ ${primeiroNome} em Negociação — o sistema cobra a resposta ${quandoLabel(d)}.`);
             },

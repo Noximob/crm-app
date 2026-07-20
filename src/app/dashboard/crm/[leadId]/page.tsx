@@ -448,9 +448,15 @@ export default function LeadDetailPage() {
             .filter(t => t.id !== taskId)
             .map(t => ({ id: t.id, description: t.description, type: t.type, dueDate: t.dueDate }));
         batch.update(doc(db, 'leads', leadId), { tarefasPendentes });
+        // Concluir um Meet/Visita = "aconteceu" — narra no vocabulário do circuito
+        // (o relatório conta '✅ ... realizado') e o pop-up de "aconteceu?" não precisa repetir a pergunta.
+        const tarefa = tasks.find(t => t.id === taskId);
+        const eventoFeito = status === 'concluída' && (tarefa?.type === 'Meet' || tarefa?.type === 'Visita') ? tarefa.type : null;
         const interactionData: any = {
-            type: status === 'concluída' ? 'Tarefa Concluída' : 'Tarefa Cancelada',
-            notes: status === 'concluída' ? 'Tarefa marcada como concluída' : 'Tarefa cancelada',
+            type: eventoFeito ?? (status === 'concluída' ? 'Tarefa Concluída' : 'Tarefa Cancelada'),
+            notes: eventoFeito
+                ? (eventoFeito === 'Meet' ? '✅ Meet realizado' : '✅ Visita realizada')
+                : (status === 'concluída' ? 'Tarefa marcada como concluída' : 'Tarefa cancelada'),
             timestamp: serverTimestamp(),
             taskId,
             por: userData?.nome || '',
@@ -462,6 +468,12 @@ export default function LeadDetailPage() {
             await batch.commit();
             setIsCancelModalOpen(false);
             setTaskToCancel(null);
+            // Meet/Visita concluído na mão → pula o "aconteceu?" e vai direto pro resultado
+            if (eventoFeito && !readOnly) {
+                setEstadoForcado({ t: eventoFeito === 'Meet' ? 'meetGostou' : 'visitaGostou' });
+                setFechouNoX(false);
+                setAtendimentoAberto(true);
+            }
         } catch (error) {
             console.error('Erro ao atualizar status da tarefa:', error);
         } finally {
