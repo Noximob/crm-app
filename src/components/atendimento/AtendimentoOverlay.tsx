@@ -259,7 +259,6 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
   const [motivoSel, setMotivoSel] = useState('');
   const [motivoOutro, setMotivoOutro] = useState('');
   const [requalSel, setRequalSel] = useState<string[]>([]);
-  const [valorVenda, setValorVenda] = useState('');
   const [aviso, setAviso] = useState('');
 
   // Reseta pro estado inicial só quando o overlay ABRE (não a cada render/snapshot)
@@ -753,31 +752,23 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
 
       case 'venda':
         return {
-          bar: '🎉 Lançar a venda',
+          bar: '🎉 Venda fechada',
           noX: true,
           body: (
             <>
-              Valor fechado com {b(primeiroNome)}:
-              <input
-                value={valorVenda}
-                onChange={e => setValorVenda(e.target.value)}
-                placeholder="Ex: 750.000"
-                inputMode="numeric"
-                className="mt-2 w-full px-3 py-2 bg-white/[0.04] border border-white/15 rounded-lg text-white text-sm placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-              />
+              Fechou com {b(primeiroNome)}? 🎉
+              <small>O lançamento oficial (valor, comissão, meta) é feito em <b className="text-white">Comissões</b>, na área do administrador — lá também se registra de onde veio a venda.</small>
             </>
           ),
           btns: [{
-            t: executando ? 'Lançando…' : 'Lançar venda 🏆', c: 'win', f: async () => {
-              const v = valorVenda.trim() || '—';
+            t: executando ? 'Registrando…' : '🏆 Confirmar — FECHOU!', c: 'win', f: async () => {
               const ok = await executar({
                 novaEtapa: ETAPA_FECHADO,
                 cancelarTodasPendentes: true,
                 circuitoTentativas: 'zero',
-                vendaValor: v,
-                interacao: { type: 'Venda', notes: `🏆 VENDA LANÇADA: R$ ${v}` },
+                interacao: { type: 'Venda', notes: '🏆 VENDA FECHADA! (lançamento oficial em Comissões)' },
               });
-              if (ok) fecha(`🏆 VENDA de ${primeiroNome} lançada! R$ ${v} · Parabéns! 🎉`);
+              if (ok) fecha(`🏆 VENDA de ${primeiroNome} fechada! Parabéns! 🎉 Avisa o admin pra lançar em Comissões.`);
             },
           }],
         };

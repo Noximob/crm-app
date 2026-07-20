@@ -813,7 +813,7 @@ function buildPolicy(){
 let seq=0, pendingFocus=null;
 // cada venda é um objeto { value, date, prop, schedule:[{pct,month}] }
 function uid(p){ return (p||'d')+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
-function newDeal(value){ return { id:uid('d'), value, date:'', prop:'', gross:null, capt:0, captWho:'', ret:false, schedule:[{pct:100,month:'',done:false,paid:false}] }; }
+function newDeal(value){ return { id:uid('d'), value, date:'', prop:'', origem:'', gross:null, capt:0, captWho:'', ret:false, schedule:[{pct:100,month:'',done:false,paid:false}] }; }
 function findDealById(id){ for(const tm of teams){ for(const d of tm.mgr.deals) if(d.id===id) return d; for(const b of tm.brokers) for(const d of b.deals) if(d.id===id) return d; } for(const s of solos) for(const d of s.deals) if(d.id===id) return d; return null; }
 function dealValue(d){ return typeof d==='number' ? d : (d&&d.value)||0; }
 function dealDate(d){ return (d&&typeof d==='object'&&d.date)||''; }
@@ -1073,6 +1073,7 @@ function dealsHTML(ti, role, bi, deals){
         <div class="sx"><label>Comissão (%)</label><input class="sale-gross-input num" type="number" step="0.5" min="0" value="${d&&d.gross!=null&&d.gross!==''?d.gross:''}" ${ctx} data-idx="${idx}" data-dk="gross" placeholder="${cfgGrossPct()}"></div>
         <div class="sx"><label>Captação (%)</label><input class="sale-capt-input num" type="number" step="1" min="0" max="100" value="${d&&d.capt?d.capt:''}" ${ctx} data-idx="${idx}" data-dk="capt" placeholder="0"></div>
         <div class="sx sx-who"><label>Quem captou</label><input class="sale-captwho-input" type="text" list="peopleList" value="${esc(dealCaptWho(d))}" ${ctx} data-idx="${idx}" data-dk="captWho" placeholder="nome do corretor ou externo"></div>
+        <div class="sx sx-orig"><label>De onde veio a venda</label><input class="sale-origem-input" type="text" value="${esc((d&&d.origem)||'')}" ${ctx} data-idx="${idx}" data-dk="origem" placeholder="Ex: Ligação ativa · Feirão, anúncio, indicação…"></div>
         <div class="sx sx-ret"><label>Propaganda</label><label class="ret-check${dealRet(d)?' on':''}"><input class="sale-ret-input" type="checkbox"${dealRet(d)?' checked':''} ${ctx} data-idx="${idx}" data-dk="ret"><span>venda de propaganda${cfgRetPct()>0?` (−${rate(cfgRetPct())})`:''}</span></label></div>
       </div>
       <button class="x-btn del-sale" data-act="deldeal" ${ctx} data-idx="${idx}" title="Remover venda">✕</button>
@@ -1183,6 +1184,7 @@ function bindInputs(){
         if(span) span.innerHTML=`<b>${fmt(personTotal(p))}</b> · ${p.deals.length} ${p.deals.length===1?'venda':'vendas'}`;
       } else if(k==='date'){ d.date=e.target.value; }
       else if(k==='prop'){ d.prop=e.target.value; }
+      else if(k==='origem'){ d.origem=e.target.value; }
       else if(k==='gross'){ d.gross=e.target.value===''?null:(+e.target.value||0); }
       else if(k==='capt'){ d.capt=+e.target.value||0; }
       else if(k==='captWho'){ d.captWho=e.target.value; }
@@ -1637,7 +1639,7 @@ function loadState(rawOverride){
     if(Array.isArray(data.teams) && data.teams.length){
       teams=data.teams; seq=data.seq||teams.length;
       const normSch=arr=>{ let s=(Array.isArray(arr)&&arr.length)?arr.map(x=>({pct:+x.pct||0,month:x.month||'',done:!!x.done,paid:!!x.paid})):[{pct:100,month:'',done:false,paid:false}]; if(s.length>2){ s=[{pct:50,month:s[0].month,done:s[0].done,paid:s[0].paid},{pct:50,month:s[1].month,done:s[1].done,paid:s[1].paid}]; } return s; };
-      const normDeals=p=>{ p.deals=(p.deals||[]).map(d=> typeof d==='number' ? newDeal(d) : {id:(d&&d.id)||uid('d'), value:(d&&d.value)||0, date:(d&&d.date)||'', prop:(d&&d.prop)||'', gross:(d&&d.gross!=null&&d.gross!=='')?+d.gross:null, capt:(d&&+d.capt)||0, captWho:(d&&d.captWho)||'', ret:!!(d&&d.ret), schedule:normSch(d&&d.schedule)} ); };
+      const normDeals=p=>{ p.deals=(p.deals||[]).map(d=> typeof d==='number' ? newDeal(d) : {id:(d&&d.id)||uid('d'), value:(d&&d.value)||0, date:(d&&d.date)||'', prop:(d&&d.prop)||'', origem:(d&&d.origem)||'', gross:(d&&d.gross!=null&&d.gross!=='')?+d.gross:null, capt:(d&&+d.capt)||0, captWho:(d&&d.captWho)||'', ret:!!(d&&d.ret), schedule:normSch(d&&d.schedule)} ); };
       teams.forEach(tm=>{ delete tm.mgr.schedule; normDeals(tm.mgr); tm.brokers.forEach(b=>{ delete b.schedule; if(!b.type) b.type='corretor'; normDeals(b); }); });
       solos=Array.isArray(data.solos)?data.solos:[];
       // migra quem ficou marcado como 'solo' dentro de uma equipe para a seção própria

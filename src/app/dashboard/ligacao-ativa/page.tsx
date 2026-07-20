@@ -144,10 +144,10 @@ const DEMO_CONTATOS: Contato[] = [
   ] },
 ];
 
+// Descartou, perdeu o acesso: descartados vivem SÓ no bolsão do admin.
 const FILTROS = [
   { key: 'pendente', label: 'Pra ligar' },
   { key: 'crm', label: 'No CRM' },
-  { key: 'descartado', label: 'Descartados' },
 ] as const;
 
 // ---------------------------------------------------------------------------
