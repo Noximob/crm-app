@@ -93,6 +93,10 @@ export interface AtividadeRow {
   buscasProduto: number;
   /** agendamentos do período em que o corretor escreveu observação (· 📝) */
   comObservacao: number;
+  /** tarefas agendadas na mão (modal da agenda) — trabalho fora do circuito que conta */
+  tarefasAgendadasMao: number;
+  /** tarefas concluídas na mão (fora dos pop-ups) */
+  tarefasConcluidasMao: number;
   /** leads novos do período gerados por esforço próprio (origem fora de Propaganda) */
   geracaoPropria: number;
   // ---- Capricho da carteira (retrato AGORA, não obedece ao período) ----
@@ -163,7 +167,7 @@ export interface AtividadeMedia {
 type CircuitoEvento =
   | 'contato' | 'semResposta' | 'primeiroContato' | 'meetMarcado' | 'meetFeito' | 'visitaMarcada'
   | 'visitaFeita' | 'negociacao' | 'venda' | 'descarte' | 'manual'
-  | 'requalificacao' | 'produto' | null;
+  | 'requalificacao' | 'produto' | 'tarefaAgendadaMao' | 'tarefaConcluidaMao' | null;
 
 /**
  * Traduz uma interação narrada pelo circuito num evento contável.
@@ -184,8 +188,14 @@ export function classificaInteracao(type: string, notes: string | undefined | nu
       return 'contato'; // tentativa de contato (circuito ou manual, é contato do mesmo jeito)
     case 'Follow-up':
       if (n.startsWith('📵 Não atendeu')) return 'semResposta';
-      if (n.includes('📌 Cobrança agendada: resposta da proposta')) return 'negociacao'; // proposta apresentada
+      // 'Cobrança agendada' NÃO conta mais como negociação: ela repete a cada
+      // re-prazo ("Ainda negociando") e duplicava a transição — auditoria 21/07.
       return null;
+    case 'Tarefa Agendada':
+      // Agendamento manual pelo modal da agenda — trabalho real que ficava invisível
+      return 'tarefaAgendadaMao';
+    case 'Tarefa Concluída':
+      return 'tarefaConcluidaMao';
     case 'Meet':
       if (n.startsWith('✅ Meet realizado')) return 'meetFeito';
       if (n.startsWith('📌 Meet marcad') || n.startsWith('📌 Meet remarcad') || n.startsWith('📅 Meet marcado')) return 'meetMarcado';
@@ -197,7 +207,8 @@ export function classificaInteracao(type: string, notes: string | undefined | nu
     case 'Etapa':
       if (n.startsWith('↷ Etapa alterada manualmente') || (n.includes('Movido para') && n.includes('(kanban)'))) return 'manual';
       if (n.startsWith('🎯 Requalificação')) return 'requalificacao';
-      if (n.includes('pra proposta') || n.includes('pronto pra negociar') || n.includes('pra negociação')) return 'negociacao';
+      // Negociação = TRANSIÇÕES pra etapa ('hora da proposta' cobre a visita aprovada — bug achado na auditoria)
+      if (n.includes('pra proposta') || n.includes('pronto pra negociar') || n.includes('pra negociação') || n.includes('hora da proposta')) return 'negociacao';
       return null;
     case 'Venda':
       return 'venda';
@@ -623,6 +634,7 @@ export function computeReport(
       primeirosContatos: 0, tentativasMediaPrimeiroContato: null,
       ligAtivaTrabalhados: 0, ligAtivaCrm: 0, manuais: 0,
       requalificacoes: 0, buscasProduto: 0, comObservacao: 0, geracaoPropria: 0,
+      tarefasAgendadasMao: 0, tarefasConcluidasMao: 0,
       carteiraAtiva: 0, qualificadosPct: null, qualMediaGrupos: null, anotadosPct: null, semRegistro: 0,
       diasAtivos: 0, periodoDias: 1, ultimaAtividadeMs: null, tempo1oContatoMedioHoras: null,
       leadsNovosPeriodo: 0, respostaLeadNovoHoras: null, novosSemResposta: 0,
@@ -700,6 +712,8 @@ export function computeReport(
       case 'manual': a.manuais++; break;
       case 'requalificacao': a.requalificacoes++; break;
       case 'produto': a.buscasProduto++; break;
+      case 'tarefaAgendadaMao': a.tarefasAgendadasMao++; break;
+      case 'tarefaConcluidaMao': a.tarefasConcluidasMao++; break;
       default: break; // desconhecida/legado — não conta
     }
   });

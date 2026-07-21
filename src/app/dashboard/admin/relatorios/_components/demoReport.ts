@@ -161,6 +161,7 @@ export function buildDemoReportSource(): ReportSource {
     }
 
     // Trabalho de bastidor: requalificação, busca de imóvel e observações nos agendamentos
+    if (rnd() < 0.2) pushInt('Tarefa Agendada', 'mandar msg de novidades da região', false, tsAleatorio());
     if (rnd() < 0.12) pushInt('Etapa', '🎯 Requalificação: Preço alto, Região errada', true, tsRecente());
     if (rnd() < 0.18 * capDono + 0.04) pushInt('Produto', '🔎 Vai buscar imóvel pra oferecer — tarefa · qua 16/07 · 10:00', true, tsRecente());
     if (rnd() < capDono * 0.5) pushInt('Follow-up', '📌 Tarefa criada: follow-up · seg 14/07 · 14:00 · 📝 cliente prefere à tarde', true, tsRecente());

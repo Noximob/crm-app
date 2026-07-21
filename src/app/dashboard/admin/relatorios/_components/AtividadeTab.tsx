@@ -345,6 +345,8 @@ function DrillDown({ a, media }: { a: AtividadeRow; media: AtividadeMedia }) {
               <p>Requalificações registradas: <b className="text-white tabular-nums">{fmtInt(a.requalificacoes)}</b></p>
               <p>Buscas de imóvel pra oferecer: <b className="text-white tabular-nums">{fmtInt(a.buscasProduto)}</b></p>
               <p>Agendamentos com observação 📝: <b className="text-white tabular-nums">{fmtInt(a.comObservacao)}</b></p>
+              <p>Tarefas agendadas na mão: <b className="text-white tabular-nums">{fmtInt(a.tarefasAgendadasMao)}</b></p>
+              <p>Tarefas concluídas na mão: <b className="text-white tabular-nums">{fmtInt(a.tarefasConcluidasMao)}</b></p>
             </div>
           </div>
         </div>
