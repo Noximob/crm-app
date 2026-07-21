@@ -12,7 +12,7 @@ import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, setDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 import { DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
-import { garantirPeriodoSemanaAtual, recalcularPeriodoMeets } from '@/lib/meetsVisitas';
+import { garantirPeriodoSemanaAtual, recalcularPeriodoMeets, listarAgendamentosDoCorretor, type AgendamentoContado } from '@/lib/meetsVisitas';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/components/ui/toast';
 import LoadingState from '@/components/ui/LoadingState';
@@ -62,6 +62,9 @@ export default function AdminMeetsVisitasPage() {
   const [fetching, setFetching] = useState(true);
   const [recalcId, setRecalcId] = useState<string | null>(null);
   const [expandido, setExpandido] = useState<string | null>(null);
+  // Auditoria do contador: corretor expandido no placar atual + agendamentos que contaram
+  const [provaAberta, setProvaAberta] = useState<string | null>(null);
+  const [provas, setProvas] = useState<Record<string, AgendamentoContado[] | 'carregando'>>({});
 
   // Edição das datas do período atual (opcional — o normal é deixar a semana automática)
   const [editIni, setEditIni] = useState('');
@@ -129,6 +132,37 @@ export default function AdminMeetsVisitasPage() {
   const atual = periodos.find((p) => p.inicio <= hoje && hoje <= p.fim) ?? null;
   const historico = periodos.filter((p) => p.id !== atual?.id);
 
+  // Números sempre FRESCOS pro admin: recalcula sozinho ao abrir se a última
+  // contagem passou de 10 min (remarcações pra fora da semana somem na hora).
+  const recontouAoAbrir = React.useRef(false);
+  useEffect(() => {
+    if (isEspelhoDemo || !userData?.imobiliariaId || !atual || recontouAoAbrir.current) return;
+    const r: any = atual.recalculadoEm;
+    const ms = r?.toMillis ? r.toMillis() : (typeof r?.seconds === 'number' ? r.seconds * 1000 : 0);
+    if (Date.now() - ms < 10 * 60 * 1000) { recontouAoAbrir.current = true; return; }
+    recontouAoAbrir.current = true;
+    recalcularPeriodoMeets(userData.imobiliariaId, atual)
+      .then((contadores) => setPeriodos((prev) => prev.map((x) => (x.id === atual.id ? { ...x, contadores, recalculadoEm: { toMillis: () => Date.now() } } : x))))
+      .catch((e) => console.error('Recontagem ao abrir falhou:', e));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [atual?.id, isEspelhoDemo, userData?.imobiliariaId]);
+
+  /** Abre/fecha a PROVA do contador de um corretor (lista o que entrou na conta). */
+  const toggleProva = async (corretorId: string) => {
+    if (provaAberta === corretorId) { setProvaAberta(null); return; }
+    setProvaAberta(corretorId);
+    if (!atual || provas[corretorId] || isEspelhoDemo || !userData?.imobiliariaId) return;
+    setProvas((prev) => ({ ...prev, [corretorId]: 'carregando' }));
+    try {
+      const itens = await listarAgendamentosDoCorretor(userData.imobiliariaId, corretorId, atual);
+      setProvas((prev) => ({ ...prev, [corretorId]: itens }));
+    } catch (e) {
+      console.error('Erro ao listar agendamentos do corretor:', e);
+      setProvas((prev) => { const n = { ...prev }; delete n[corretorId]; return n; });
+      showToast('Não foi possível listar os agendamentos — tente de novo.', 'error');
+    }
+  };
+
   // Sincroniza os inputs de data quando o período atual muda
   useEffect(() => {
     setEditIni(atual?.inicio ?? '');
@@ -154,6 +188,7 @@ export default function AdminMeetsVisitasPage() {
       await setDoc(doc(db, 'meetsVisitas', p.id), { automatico: true }, { merge: true });
       const contadores = await recalcularPeriodoMeets(userData.imobiliariaId, p);
       setPeriodos((prev) => prev.map((x) => (x.id === p.id ? { ...x, contadores, automatico: true, recalculadoEm: { toMillis: () => Date.now() } } : x)));
+      setProvas({}); // a lista de prova pode ter mudado junto
       const total = Object.values(contadores).reduce((s, v) => s + v, 0);
       showToast(`Contagem atualizada: ${total} agendamento${total === 1 ? '' : 's'} no período.`, 'success');
     } catch (e) {
@@ -286,21 +321,63 @@ export default function AdminMeetsVisitasPage() {
               <div className="space-y-1.5">
                 {linhasDe(atual).map((l, i) => {
                   const max = Math.max(1, ...linhasDe(atual).map((x) => x.n));
+                  const aberto = provaAberta === l.id;
+                  const prova = provas[l.id];
                   return (
-                    <div key={l.id} className="flex items-center gap-3 rounded-xl bg-white/[0.03] border border-white/[0.08] px-3 py-2">
-                      <span className="w-6 shrink-0 text-center text-[13px]">{l.n > 0 ? (MEDALHA[i] ?? '') : ''}</span>
-                      <span className="flex-1 min-w-0 truncate text-[13px] font-semibold text-white">{l.nome}</span>
-                      <div className="hidden sm:block w-40 h-1.5 rounded bg-white/[0.06] overflow-hidden">
-                        <div className="h-full rounded bg-gradient-to-r from-[#E8C547] to-[#F59E0B] transition-all duration-500" style={{ width: `${(l.n / max) * 100}%` }} />
-                      </div>
-                      <span className="al-display text-[20px] font-bold text-[#FFE9A6] tabular-nums w-10 text-right">{l.n}</span>
-                      <span className="text-[9px] font-extrabold uppercase tracking-wider text-text-secondary">agend.</span>
+                    <div key={l.id} className="rounded-xl bg-white/[0.03] border border-white/[0.08] overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => toggleProva(l.id)}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-white/[0.03] transition-colors"
+                        title="Clique pra ver exatamente quais agendamentos entraram na conta"
+                      >
+                        <span className="w-6 shrink-0 text-center text-[13px]">{l.n > 0 ? (MEDALHA[i] ?? '') : ''}</span>
+                        <span className="flex-1 min-w-0 truncate text-[13px] font-semibold text-white">{l.nome}</span>
+                        <div className="hidden sm:block w-40 h-1.5 rounded bg-white/[0.06] overflow-hidden">
+                          <div className="h-full rounded bg-gradient-to-r from-[#E8C547] to-[#F59E0B] transition-all duration-500" style={{ width: `${(l.n / max) * 100}%` }} />
+                        </div>
+                        <span className="al-display text-[20px] font-bold text-[#FFE9A6] tabular-nums w-10 text-right">{l.n}</span>
+                        <span className="text-[9px] font-extrabold uppercase tracking-wider text-text-secondary">agend.</span>
+                        <span className={`text-[9px] shrink-0 transition-transform ${aberto ? 'rotate-90 text-[#FF9EB5]' : 'text-white/25'}`}>▶</span>
+                      </button>
+                      {aberto && (
+                        <div className="px-3 pb-2.5 pt-2 border-t border-white/[0.05] space-y-1">
+                          {isEspelhoDemo ? (
+                            <p className="text-[10.5px] text-text-secondary">Modo demonstração — a lista real aparece na conta de verdade.</p>
+                          ) : prova === 'carregando' || prova === undefined ? (
+                            <p className="text-[10.5px] text-text-secondary">Conferindo os agendamentos…</p>
+                          ) : prova.length === 0 ? (
+                            <p className="text-[10.5px] text-text-secondary">Nenhum Meet/Visita com data dentro do período.</p>
+                          ) : (
+                            prova.map((ag, k) => {
+                              const d = new Date(ag.dueMs);
+                              const quando = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                              return (
+                                <div key={k} className="flex items-center gap-2 text-[11.5px]">
+                                  <span className={`shrink-0 px-1.5 py-0.5 rounded-full text-[8.5px] font-extrabold uppercase tracking-wider border ${ag.tipo === 'Meet' ? 'bg-[#9F6BFF]/10 border-[#9F6BFF]/35 text-[#C4A6FF]' : 'bg-[#7DD3FC]/10 border-[#7DD3FC]/35 text-[#7DD3FC]'}`}>{ag.tipo}</span>
+                                  <span className="shrink-0 text-white/60 tabular-nums">{quando}</span>
+                                  <span className="flex-1 min-w-0 truncate text-white/85" title={ag.descricao}>{ag.leadNome}</span>
+                                  <span className={`shrink-0 text-[9px] font-bold uppercase tracking-wider ${ag.status === 'concluída' ? 'text-emerald-300' : 'text-[#FFE9A6]/70'}`}>{ag.status === 'concluída' ? '✓ feito' : 'agendado'}</span>
+                                </div>
+                              );
+                            })
+                          )}
+                          {!isEspelhoDemo && Array.isArray(prova) && prova.length !== l.n && (
+                            <p className="text-[10px] font-bold text-[#FFE9A6] pt-1">
+                              ⚠️ A lista mostra {prova.length} e o contador {l.n} — houve remarcação depois da última contagem. Clique em &quot;↻ Atualizar agora&quot; que acerta.
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
               <p className="text-right text-[11px] text-text-secondary mt-2">
                 total do período: <b className="text-[#FFE9A6] tabular-nums">{totalDe(atual)}</b>
+              </p>
+              <p className="text-[10px] text-white/30 mt-1">
+                Conta agendamentos de Meet e Visita com data DENTRO do período — feitos e por vir. Remarcou pra fora da semana? Sai da conta na próxima atualização. Clique num corretor pra ver a lista exata.
               </p>
             </div>
           )}

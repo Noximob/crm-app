@@ -78,6 +78,62 @@ export async function recalcularPeriodoMeets(
   return contadores;
 }
 
+/** Um agendamento que ENTROU na conta do placar — pra auditoria do admin. */
+export interface AgendamentoContado {
+  leadId: string;
+  leadNome: string;
+  tipo: string; // 'Meet' | 'Visita'
+  dueMs: number;
+  status: string; // 'pendente' | 'concluída'
+  descricao: string;
+}
+
+/**
+ * Lista os agendamentos de UM corretor que contam no período — a prova real
+ * do contador (mesma regra do contarMeetsVisitasDoCrm: tipo Meet/Visita,
+ * data local dentro do período, cancelada não conta).
+ */
+export async function listarAgendamentosDoCorretor(
+  imobiliariaId: string,
+  corretorId: string,
+  periodo: { inicio: string; fim: string }
+): Promise<AgendamentoContado[]> {
+  const leadsSnap = await getDocs(query(
+    collection(db, 'leads'),
+    where('imobiliariaId', '==', imobiliariaId),
+    where('userId', '==', corretorId)
+  ));
+  const itens: AgendamentoContado[] = [];
+  const CHUNK = 25;
+  const docs = leadsSnap.docs;
+  for (let i = 0; i < docs.length; i += CHUNK) {
+    await Promise.all(docs.slice(i, i + CHUNK).map(async (leadDoc) => {
+      const leadNome = String((leadDoc.data() as any).nome || 'Sem nome');
+      const snap = await getDocs(
+        query(collection(db, 'leads', leadDoc.id, 'tarefas'), where('type', 'in', [TIPO_TAREFA_VISITA, TIPO_TAREFA_MEET]))
+      );
+      snap.forEach((t) => {
+        const d = t.data() as any;
+        if (d.status === 'cancelada') return;
+        const due = d.dueDate;
+        const dt: Date | null = due?.toDate ? due.toDate() : (due?.seconds ? new Date(due.seconds * 1000) : null);
+        if (!dt) return;
+        const ymd = dateToYmd(dt);
+        if (ymd < periodo.inicio || ymd > periodo.fim) return;
+        itens.push({
+          leadId: leadDoc.id,
+          leadNome,
+          tipo: String(d.type || ''),
+          dueMs: dt.getTime(),
+          status: String(d.status || 'pendente'),
+          descricao: String(d.description || ''),
+        });
+      });
+    }));
+  }
+  return itens.sort((a, b) => a.dueMs - b.dueMs);
+}
+
 const UMA_HORA_MS = 60 * 60 * 1000;
 
 /**
