@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, doc, getDocs, query, where, onSnapshot, serverTimestamp, writeBatch, type DocumentReference } from 'firebase/firestore';
+import { collection, doc, getDocs, query, where, onSnapshot, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { deleteLeadsComSubcolecoes } from '@/lib/leadDelete';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { useRouter } from 'next/navigation';
 import { getDemoLeads, DEMO_USUARIOS } from '@/lib/espelho/demoData';
@@ -172,41 +173,7 @@ export default function GestaoCorretoresPage() {
 
   // Apaga leads junto com suas subcoleções (tarefas e interactions) para não deixar órfãos.
   // Agrupa por lead (subdocs + doc do lead) para um lead nunca ficar dividido entre lotes.
-  const deleteLeadsComSubcolecoes = async (leadIds: string[]) => {
-    const grupos: DocumentReference[][] = [];
-    for (const leadId of leadIds) {
-      const grupo: DocumentReference[] = [];
-      for (const sub of ['tarefas', 'interactions']) {
-        const snap = await getDocs(collection(db, 'leads', leadId, sub));
-        snap.forEach(d => grupo.push(d.ref));
-      }
-      grupo.push(doc(db, 'leads', leadId));
-      grupos.push(grupo);
-    }
-
-    // Empacotar grupos inteiros em lotes de até 400 operações (limite do Firestore é 500 por batch).
-    // Um grupo sozinho maior que 400 ainda pode ser dividido (caso raro).
-    const lotes: DocumentReference[][] = [];
-    let lote: DocumentReference[] = [];
-    for (const grupo of grupos) {
-      if (lote.length > 0 && lote.length + grupo.length > 400) {
-        lotes.push(lote);
-        lote = [];
-      }
-      if (grupo.length > 400) {
-        for (let i = 0; i < grupo.length; i += 400) lotes.push(grupo.slice(i, i + 400));
-      } else {
-        lote.push(...grupo);
-      }
-    }
-    if (lote.length > 0) lotes.push(lote);
-
-    for (const refs of lotes) {
-      const batch = writeBatch(db);
-      refs.forEach(r => batch.delete(r));
-      await batch.commit();
-    }
-  };
+  // Exclusão em cascata compartilhada: src/lib/leadDelete.ts
 
   // Excluir leads selecionados (em massa)
   const handleDeleteLeads = async () => {

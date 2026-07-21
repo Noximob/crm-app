@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, setDoc, addDoc, deleteDoc, serverTimestamp, query, where } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
-import { TIPO_TAREFA_MEET, TIPO_TAREFA_VISITA } from '@/lib/circuito';
+import { contarMeetsVisitasDoCrm } from '@/lib/meetsVisitas';
 import { DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import LoadingState from '@/components/ui/LoadingState';
@@ -143,40 +143,9 @@ export default function AdminMeetsVisitasPage() {
   // vira YYYY-MM-DD local e é comparado com [inicio, fim] do período.
   // Tarefas com status 'cancelada' não contam.
   // ---------------------------------------------------------------------------
-  const contarVisitasDoCrm = async (p: PeriodoMeets): Promise<Record<string, number>> => {
-    const leadsSnap = await getDocs(
-      query(collection(db, 'leads'), where('imobiliariaId', '==', userData!.imobiliariaId))
-    );
-    // mapa leadId -> userId (corretor dono do lead)
-    const leads = leadsSnap.docs
-      .map((d) => ({ id: d.id, userId: (d.data() as any).userId as string | undefined }))
-      .filter((l): l is { id: string; userId: string } => !!l.userId);
-
-    const contadores: Record<string, number> = {};
-    const CHUNK = 25; // lê as subcoleções em lotes paralelos p/ não estourar conexões
-    for (let i = 0; i < leads.length; i += CHUNK) {
-      const lote = leads.slice(i, i + CHUNK);
-      await Promise.all(
-        lote.map(async (lead) => {
-          const snap = await getDocs(
-            query(collection(db, 'leads', lead.id, 'tarefas'), where('type', 'in', [TIPO_TAREFA_VISITA, TIPO_TAREFA_MEET]))
-          );
-          let n = 0;
-          snap.forEach((t) => {
-            const d = t.data() as any;
-            if (d.status === 'cancelada') return;
-            const due = d.dueDate;
-            const dt: Date | null = due?.toDate ? due.toDate() : (due?.seconds ? new Date(due.seconds * 1000) : null);
-            if (!dt) return;
-            const ymd = dateToYmd(dt);
-            if (ymd >= p.inicio && ymd <= p.fim) n++;
-          });
-          if (n > 0) contadores[lead.userId] = (contadores[lead.userId] || 0) + n;
-        })
-      );
-    }
-    return contadores;
-  };
+  // A contagem em si mora em src/lib/meetsVisitas.ts — a home usa a mesma função
+  // pro auto-refresh silencioso (períodos automáticos se atualizam sozinhos).
+  const contarVisitasDoCrm = (p: PeriodoMeets) => contarMeetsVisitasDoCrm(userData!.imobiliariaId!, p);
 
   const handleRecalcular = async (p: PeriodoMeets) => {
     if (isEspelhoDemo) return; // demo: botão aparece mas não grava
@@ -185,7 +154,7 @@ export default function AdminMeetsVisitasPage() {
     limpaErro(p.id);
     try {
       const contadores = await contarVisitasDoCrm(p);
-      await setDoc(doc(db, 'meetsVisitas', p.id), { contadores }, { merge: true });
+      await setDoc(doc(db, 'meetsVisitas', p.id), { contadores, recalculadoEm: serverTimestamp() }, { merge: true });
       setPeriodos((prev) => prev.map((x) => (x.id === p.id ? { ...x, contadores } : x)));
       // descarta rascunho manual antigo desse período — o valor da verdade agora é o CRM
       setDrafts((prev) => { const n = { ...prev }; delete n[p.id]; return n; });
@@ -246,17 +215,23 @@ export default function AdminMeetsVisitasPage() {
     }
     setCriando(true);
     try {
-      await addDoc(collection(db, 'meetsVisitas'), {
+      const ini = novoInicio;
+      const fim = novoFim;
+      const ref = await addDoc(collection(db, 'meetsVisitas'), {
         imobiliariaId: userData.imobiliariaId,
-        inicio: novoInicio,
-        fim: novoFim,
+        inicio: ini,
+        fim: fim,
         contadores: {},
-        automatico: false,
+        // Nasce AUTOMÁTICO: os contadores vêm das tarefas de Meet/Visita do CRM
+        // (o lançamento manual continua disponível desligando o chip).
+        automatico: true,
         createdAt: serverTimestamp(),
       });
       setNovoInicio('');
       setNovoFim('');
       await fetchPeriodos();
+      // Já nasce com os números do CRM — sem precisar lançar nada na mão
+      await handleRecalcular({ id: ref.id, imobiliariaId: userData.imobiliariaId, inicio: ini, fim: fim, contadores: {}, automatico: true });
     } catch (err) {
       console.error('Erro ao criar período:', err);
       setErro('novo', 'Não foi possível criar o período — tente de novo.');
@@ -304,9 +279,10 @@ export default function AdminMeetsVisitasPage() {
         <span className="gx-tag"><span>Área do administrador</span></span>
         <h1 className="al-display text-[22px] font-bold text-white uppercase tracking-[0.1em] mt-2">Meets & Visitas</h1>
         <p className="text-[12px] text-text-secondary mt-1">
-          Defina o período que está sendo contado e lance manualmente os agendamentos de cada corretor —
-          ou ligue o modo automático para contar as tarefas de Meet e Visita agendadas no CRM.
-          O pódio e o placar da home leem daqui; períodos encerrados viram o histórico do corretor.
+          Defina o período que está sendo contado — a contagem é <b className="text-white">automática</b>: as tarefas de Meet
+          e Visita agendadas no CRM viram o placar sozinhas (atualiza a cada hora, sem lançar nada na mão).
+          Quer lançar manualmente? Desliga o chip automático do período. O pódio e o placar da home leem daqui;
+          períodos encerrados viram o histórico do corretor.
         </p>
       </div>
 

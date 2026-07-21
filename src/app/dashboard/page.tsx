@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, getDoc, Timestamp, orderBy } from 'firebase/firestore';
-import { ensureTarefasPendentes, getTaskStatusInfo, TarefaPendente } from '@/lib/leadTasks';
+import { ensureTarefasPendentes, getTaskStatusInfo, toJsDate, TarefaPendente } from '@/lib/leadTasks';
 import { ETAPA_FECHADO, ETAPAS_DO_ADMIN } from '@/lib/circuito';
+import { autoRecalcularMeetsVisitas } from '@/lib/meetsVisitas';
 import Link from 'next/link';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { getDemoLeads } from '@/lib/espelho/demoData';
@@ -468,6 +469,8 @@ export default function DashboardPage() {
   const router = useRouter();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [agendaLeads, setAgendaLeads] = useState<any[]>([]);
+  // Tarefas pendentes do corretor pro Radar (agora / em breve / depois)
+  const [radarTarefas, setRadarTarefas] = useState<{ leadId: string; leadNome: string; tipo: string; descricao: string; dueMs: number }[]>([]);
   const [agendaLoading, setAgendaLoading] = useState(true);
   const [funilPessoal, setFunilPessoal] = useState<Record<string, number>>({});
   const [tarefaAtrasadaCount, setTarefaAtrasadaCount] = useState(0);
@@ -558,6 +561,13 @@ export default function DashboardPage() {
       const leadsToShow = demoAtivos.filter(lead => lead.taskStatus !== 'Tarefa Futura');
       leadsToShow.sort((a, b) => TAREFA_STATUS_ORDER.indexOf(a.taskStatus) - TAREFA_STATUS_ORDER.indexOf(b.taskStatus));
       setAgendaLeads(leadsToShow);
+      // Tarefas do corretor pro Radar (mesma régua do modo real)
+      setRadarTarefas(demoAtivos.flatMap((l: any) =>
+        ((l.tasks || []) as any[])
+          .filter(t => t.status === 'pendente')
+          .map(t => ({ leadId: l.id, leadNome: l.nome || '', tipo: t.type || 'Tarefa', descricao: t.description || '', dueMs: toJsDate(t.dueDate)?.getTime() ?? NaN }))
+          .filter(t => isFinite(t.dueMs))
+      ));
       setAgendaLoading(false);
       return;
     }
@@ -597,9 +607,16 @@ export default function DashboardPage() {
         const leadsToShow = settledAtivos.filter(lead => lead.taskStatus !== 'Tarefa Futura');
         leadsToShow.sort((a, b) => TAREFA_STATUS_ORDER.indexOf(a.taskStatus) - TAREFA_STATUS_ORDER.indexOf(b.taskStatus));
         setAgendaLeads(leadsToShow);
+        // Tarefas do corretor pro Radar: atrasadas → agora; hoje → em breve; resto na fila
+        setRadarTarefas(settledAtivos.flatMap((l: any) =>
+          ((l.tasks || []) as TarefaPendente[])
+            .map(t => ({ leadId: l.id, leadNome: l.nome || '', tipo: t.type || 'Tarefa', descricao: t.description || '', dueMs: toJsDate(t.dueDate)?.getTime() ?? NaN }))
+            .filter(t => isFinite(t.dueMs))
+        ));
       } catch (error) {
         console.error('Erro ao buscar agenda:', error);
         setAgendaLeads([]);
+        setRadarTarefas([]);
         setFunilPessoal({});
         setTarefaAtrasadaCount(0);
         setTarefaDiaCount(0);
@@ -687,14 +704,33 @@ export default function DashboardPage() {
     [agendaImobiliaria]
   );
 
-  // Radar: corretor vê os eventos em que está marcado (presentesIds); a conta imobiliária/admin vê todos (é quem publica)
+  // Radar: eventos da imobiliária (corretor vê os que está marcado; admin vê todos)
+  // + as TAREFAS do próprio corretor — tudo em ordem: agora → em breve → depois.
   const proximosEventosConfirmados = useMemo(() => {
     const uid = currentUser?.uid;
     const now = currentTime.getTime();
     if (!uid) return [];
     const ehAdminImob = (userData as any)?.tipoConta === 'imobiliaria' || (userData as any)?.permissoes?.admin;
-    type Item = { tipo: 'plantao' | 'agenda'; id: string; titulo: string; tipoLabel: string; tipoChave?: string; dataStr: string; horarioStr: string; horarioFimStr: string; startTime: number; fimTime: number };
+    type Item = { tipo: 'plantao' | 'agenda' | 'tarefa'; id: string; titulo: string; tipoLabel: string; tipoChave?: string; dataStr: string; horarioStr: string; horarioFimStr: string; startTime: number; fimTime: number; href: string; atrasada?: boolean };
     const lista: Item[] = [];
+
+    // Tarefas do corretor: atrasadas entram como "AGORA" (não somem do radar)
+    radarTarefas.forEach((t) => {
+      const d = new Date(t.dueMs);
+      lista.push({
+        tipo: 'tarefa',
+        id: `${t.leadId}-${t.dueMs}`,
+        titulo: `${t.leadNome}${t.descricao ? ` — ${t.descricao}` : ''}`,
+        tipoLabel: t.tipo,
+        dataStr: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        horarioStr: d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        horarioFimStr: '',
+        startTime: t.dueMs,
+        fimTime: t.dueMs + 30 * 60 * 1000,
+        href: `/dashboard/crm/${t.leadId}`,
+        atrasada: t.dueMs < now,
+      });
+    });
     agendaImobiliaria.forEach((a: any) => {
       const marcado = Array.isArray(a.presentesIds) && a.presentesIds.includes(uid);
       if (!marcado && !ehAdminImob) return;
@@ -739,12 +775,16 @@ export default function DashboardPage() {
           horarioFimStr,
           startTime,
           fimTime,
+          href: '/dashboard/agenda',
         });
       }
     });
-    lista.sort((a, b) => a.startTime - b.startTime);
-    return lista.slice(0, 6);
-  }, [currentUser?.uid, userData, agendaImobiliaria, currentTime]);
+    // Ordem do dia: até 2 atrasadas no topo (as mais antigas — o resto mora no
+    // plano de ação), depois o fluxo do dia (agora → em breve → depois).
+    const atrasadas = lista.filter(i => i.atrasada).sort((a, b) => a.startTime - b.startTime).slice(0, 2);
+    const fluxo = lista.filter(i => !i.atrasada).sort((a, b) => a.startTime - b.startTime);
+    return [...atrasadas, ...fluxo].slice(0, 8);
+  }, [currentUser?.uid, userData, agendaImobiliaria, currentTime, radarTarefas]);
 
   const openLeadModal = async (lead: any) => {
     // Redirecionar para a página de detalhes do lead
@@ -872,10 +912,21 @@ export default function DashboardPage() {
 
   // Períodos de Meets & Visitas — criados na Área do administrador (tempo real)
   const [mvPeriodos, setMvPeriodos] = useState<any[]>([]);
+  const mvAutoRecalcFeito = useRef(false);
   useEffect(() => {
     if (isEspelhoDemo || !userData?.imobiliariaId) return;
-    const qMv = query(collection(db, 'meetsVisitas'), where('imobiliariaId', '==', userData.imobiliariaId));
-    const unsub = onSnapshot(qMv, (snap) => setMvPeriodos(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
+    const imobId = userData.imobiliariaId;
+    const qMv = query(collection(db, 'meetsVisitas'), where('imobiliariaId', '==', imobId));
+    const unsub = onSnapshot(qMv, (snap) => {
+      const lista = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as any[];
+      setMvPeriodos(lista);
+      // Placar automático se atualiza sozinho: 1x por sessão, com trava de 1h
+      // no doc (recalculadoEm) — ninguém precisa abrir a tela do admin.
+      if (!mvAutoRecalcFeito.current && lista.length > 0) {
+        mvAutoRecalcFeito.current = true;
+        autoRecalcularMeetsVisitas(imobId, lista);
+      }
+    });
     return () => unsub();
   }, [userData?.imobiliariaId, isEspelhoDemo]);
 
@@ -1095,7 +1146,7 @@ export default function DashboardPage() {
           <span className="pointer-events-none absolute bottom-2 left-2 w-3.5 h-3.5 border-b-2 border-l-2 border-[#FF3364]/30 rounded-bl-sm" />
           <span className="pointer-events-none absolute bottom-2 right-2 w-3.5 h-3.5 border-b-2 border-r-2 border-[#FF3364]/30 rounded-br-sm" />
           <div className="flex items-center justify-between gap-3 mb-1.5">
-            <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Ic k="radar" s={18} className="text-[#FF5C7E] drop-shadow-[0_0_8px_rgba(255,30,86,0.5)]" /> Radar de eventos</h2>
+            <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.14em] flex items-center gap-2"><Ic k="radar" s={18} className="text-[#FF5C7E] drop-shadow-[0_0_8px_rgba(255,30,86,0.5)]" /> Radar do dia</h2>
             <Link href="/dashboard/agenda" className="text-[11px] font-bold text-[#FF5C7E] hover:underline shrink-0">agenda completa ▸</Link>
           </div>
           <div className="flex gap-4 items-center flex-1 min-h-0">
@@ -1113,14 +1164,14 @@ export default function DashboardPage() {
                 <LoadingState label="Carregando…" className="py-2" />
               ) : proximosEventosConfirmados.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-1.5 text-center">
-                  <p className="text-[12.5px] text-text-secondary">Nenhum evento no radar por enquanto.</p>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/35">os eventos são publicados pela imobiliária — bom momento pra prospectar</p>
+                  <p className="text-[12.5px] text-text-secondary">Nada no radar por enquanto — sem eventos e sem tarefas marcadas.</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/35">bom momento pra ligação ativa</p>
                 </div>
               ) : (
                 <div className="space-y-1.5">
                   {proximosEventosConfirmados.slice(0, 5).map((item) => {
                     const nowTime = currentTime.getTime();
-                    const isAgora = item.startTime <= nowTime && item.fimTime >= nowTime;
+                    const isAgora = item.atrasada || (item.startTime <= nowTime && item.fimTime >= nowTime);
                     const emBreve = !isAgora && item.startTime > nowTime && item.startTime - nowTime <= 45 * 60 * 1000;
                     const horaCls = isAgora ? 'text-[#FF5C7E]' : emBreve ? 'text-[#E8C547]' : 'text-white/70';
                     const rowCls = isAgora
@@ -1129,11 +1180,13 @@ export default function DashboardPage() {
                         ? 'border-[#E8C547] bg-[#E8C547]/[0.06]'
                         : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.04]';
                     return (
-                      <Link href="/dashboard/agenda" key={`${item.tipo}-${item.id}-${item.startTime}`} className={`flex items-center gap-3 px-3 py-1.5 min-h-[52px] lg:min-h-0 rounded-lg border-l-2 transition-all hover:translate-x-1 ${rowCls}`}>
+                      <Link href={item.href} key={`${item.tipo}-${item.id}-${item.startTime}`} className={`flex items-center gap-3 px-3 py-1.5 min-h-[52px] lg:min-h-0 rounded-lg border-l-2 transition-all hover:translate-x-1 ${rowCls}`}>
                         <span className={`al-display text-[15px] font-bold tabular-nums w-12 shrink-0 ${horaCls}`}>{item.horarioStr}</span>
-                        <span className="flex-1 min-w-0 truncate text-[13px] font-semibold text-white" title={item.titulo}>{item.titulo}</span>
+                        <span className="flex-1 min-w-0 truncate text-[13px] font-semibold text-white" title={item.titulo}>{item.tipo === 'tarefa' ? '📌 ' : ''}{item.titulo}</span>
                         <span className="hidden md:inline text-[10px] text-text-secondary shrink-0">{item.tipoLabel}</span>
-                        {isAgora ? (
+                        {item.atrasada ? (
+                          <span className="shrink-0 px-2 py-0.5 rounded-md bg-[#FF1E56] text-white text-[9px] font-extrabold tracking-[0.14em] animate-pulse">ATRASADA</span>
+                        ) : isAgora ? (
                           <span className="shrink-0 px-2 py-0.5 rounded-md bg-[#FF1E56] text-white text-[9px] font-extrabold tracking-[0.14em] animate-pulse">AGORA</span>
                         ) : emBreve ? (
                           <span className="shrink-0 px-2 py-0.5 rounded-md bg-[#E8C547] text-black text-[9px] font-extrabold tracking-[0.14em]">EM BREVE</span>

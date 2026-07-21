@@ -16,6 +16,8 @@ import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, writeBatch, serverTimestamp, deleteDoc, deleteField, Timestamp } from 'firebase/firestore';
 import { showToast } from '@/components/ui/toast';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
+import { QUALIFICATION_QUESTIONS } from '@/lib/qualificacao';
+import { deleteLeadsComSubcolecoes } from '@/lib/leadDelete';
 
 interface Corretor {
   id: string;
@@ -69,13 +71,15 @@ interface LeadDescartado {
   origem?: string;
   userId?: string; // dono atual do lead
   etapa?: string;  // Descartado | Bolsão (legado)
+  /** Perfil do cliente (qualificação do CRM) — usado nos filtros do bolsão */
+  qualificacao?: Record<string, string | string[]>;
 }
 
 const DEMO_CRM_BOLSAO: LeadDescartado[] = [
-  { id: 'dl1', nome: 'Marcos Paulo', telefone: '(47) 98123-4567', motivo: 'Não responde', descartadoPor: 'demo-c2', descartadoEm: demoTs(30), origem: 'Propaganda · Lançamento Vista Mar' },
-  { id: 'dl2', nome: 'Luciana Freitas', telefone: '(47) 97234-5678', motivo: 'Adiou a compra', descartadoPor: 'demo-c2', descartadoEm: demoTs(52), origem: 'Networking' },
-  { id: 'dl3', nome: 'Edson Vargas', telefone: '(47) 96345-6789', motivo: 'Comprou com outro', descartadoPor: 'demo-c3', descartadoEm: demoTs(80), origem: 'Ligação Ativa · Feirão Litoral' },
-  { id: 'dl4', nome: 'Renata Souza', telefone: '(47) 95456-7890', etapa: 'Bolsão', userId: 'demo-c2', origem: 'Networking' },
+  { id: 'dl1', nome: 'Marcos Paulo', telefone: '(47) 98123-4567', motivo: 'Não responde', descartadoPor: 'demo-c2', descartadoEm: demoTs(30), origem: 'Propaganda · Lançamento Vista Mar', qualificacao: { tipo: ['Apartamento'], valor: ['< 500k'], localizacao: ['Penha'], finalidade: ['Moradia'] } },
+  { id: 'dl2', nome: 'Luciana Freitas', telefone: '(47) 97234-5678', motivo: 'Adiou a compra', descartadoPor: 'demo-c2', descartadoEm: demoTs(52), origem: 'Networking', qualificacao: { tipo: ['Casa'], valor: ['800k-1.2M'], localizacao: ['Barra Velha'], finalidade: ['Veraneio'] } },
+  { id: 'dl3', nome: 'Edson Vargas', telefone: '(47) 96345-6789', motivo: 'Comprou com outro', descartadoPor: 'demo-c3', descartadoEm: demoTs(80), origem: 'Ligação Ativa · Feirão Litoral', qualificacao: { tipo: ['Apartamento'], valor: ['500k-800k'], localizacao: ['Piçarras'], finalidade: ['Investimento'] } },
+  { id: 'dl4', nome: 'Renata Souza', telefone: '(47) 95456-7890', etapa: 'Bolsão', userId: 'demo-c2', origem: 'Networking', qualificacao: { tipo: ['Apartamento'], valor: ['< 500k'], localizacao: ['Penha'] } },
 ];
 
 const p2 = (n: number) => String(n).padStart(2, '0');
@@ -274,6 +278,13 @@ export default function ImportarLigacaoAtivaPage() {
   const [selCrm, setSelCrm] = useState<Set<string>>(new Set());
   const [crmDestino, setCrmDestino] = useState('');
   const [redistribuindo, setRedistribuindo] = useState(false);
+  const [excluindoCrm, setExcluindoCrm] = useState(false);
+  // Filtros do bolsão: busca, motivo, corretor e PERFIL do cliente (qualificação)
+  const [crmBusca, setCrmBusca] = useState('');
+  const [crmMotivoF, setCrmMotivoF] = useState('');
+  const [crmCorretorF, setCrmCorretorF] = useState('');
+  const [crmQualF, setCrmQualF] = useState<Record<string, string>>({});
+  const [crmPerfilAberto, setCrmPerfilAberto] = useState(false);
 
   const carregarCrmBolsao = React.useCallback(async () => {
     if (isEspelhoDemo) {
@@ -300,6 +311,7 @@ export default function ImportarLigacaoAtivaPage() {
           origem: l.origem,
           userId: l.userId,
           etapa: l.etapa,
+          qualificacao: l.qualificacao || {},
         };
       }));
     } catch { /* silencioso */ }
@@ -359,15 +371,79 @@ export default function ImportarLigacaoAtivaPage() {
     }
   };
 
-  // Agrupa: descartados pelo corretor que descartou; etapa Bolsão (legado) pelo dono atual ("estacionados")
+  // Filtros aplicados: busca (nome/telefone), motivo, corretor e perfil (qualificação)
+  const crmFiltrado = useMemo(() => {
+    const busca = crmBusca.trim().toLowerCase();
+    const buscaDigitos = crmBusca.replace(/\D/g, '');
+    const qualAtivas = Object.entries(crmQualF).filter(([, v]) => !!v);
+    return crmBolsao.filter(l => {
+      if (busca) {
+        const nomeOk = (l.nome || '').toLowerCase().includes(busca);
+        const telOk = buscaDigitos.length >= 3 && (l.telefone || '').replace(/\D/g, '').includes(buscaDigitos);
+        if (!nomeOk && !telOk) return false;
+      }
+      if (crmMotivoF && (l.motivo || 'Sem motivo') !== crmMotivoF) return false;
+      if (crmCorretorF) {
+        const dono = l.etapa === 'Bolsão' ? (l.userId || '') : (l.descartadoPor || '');
+        if (dono !== crmCorretorF) return false;
+      }
+      for (const [key, valor] of qualAtivas) {
+        const v = l.qualificacao?.[key];
+        const lista = Array.isArray(v) ? v : (v ? [v] : []);
+        if (!lista.includes(valor)) return false;
+      }
+      return true;
+    });
+  }, [crmBolsao, crmBusca, crmMotivoF, crmCorretorF, crmQualF]);
+
+  // Chips de motivo (com contagem) e corretores presentes no bolsão
+  const crmMotivos = useMemo(() => {
+    const m = new Map<string, number>();
+    crmBolsao.forEach(l => { const k = l.motivo || 'Sem motivo'; m.set(k, (m.get(k) || 0) + 1); });
+    return Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
+  }, [crmBolsao]);
+  const crmCorretoresDoBolsao = useMemo(() => {
+    const uids = new Set<string>();
+    crmBolsao.forEach(l => uids.add(l.etapa === 'Bolsão' ? (l.userId || '') : (l.descartadoPor || '')));
+    return Array.from(uids);
+  }, [crmBolsao]);
+  const temFiltroCrm = !!(crmBusca.trim() || crmMotivoF || crmCorretorF || Object.values(crmQualF).some(Boolean));
+
+  // Agrupa (JÁ FILTRADO): descartados pelo corretor que descartou; etapa Bolsão (legado) pelo dono atual
   const crmGrupos = useMemo(() => {
     const m = new Map<string, LeadDescartado[]>();
-    crmBolsao.forEach(l => {
+    crmFiltrado.forEach(l => {
       const k = l.etapa === 'Bolsão' ? `est:${l.userId || ''}` : `desc:${l.descartadoPor || ''}`;
       m.set(k, [...(m.get(k) || []), l]);
     });
     return Array.from(m.entries()).sort((a, b) => b[1].length - a[1].length);
-  }, [crmBolsao]);
+  }, [crmFiltrado]);
+
+  /** Excluir DE VEZ os selecionados (lead + tarefas + interações — sem volta). */
+  const excluirCrmSelecionados = async () => {
+    const escolhidos = crmBolsao.filter(l => selCrm.has(l.id));
+    if (!escolhidos.length) return;
+    if (isEspelhoDemo) { showToast('Modo demonstração — nada é salvo.', 'info'); return; }
+    const ok = await confirmDialog({
+      title: `Excluir ${escolhidos.length} lead${escolhidos.length > 1 ? 's' : ''} de vez?`,
+      message: 'Apaga o lead com todo o histórico (tarefas e linha do tempo). Não tem como desfazer.',
+      confirmLabel: 'Excluir de vez',
+      danger: true,
+    });
+    if (!ok) return;
+    setExcluindoCrm(true);
+    try {
+      await deleteLeadsComSubcolecoes(escolhidos.map(l => l.id));
+      showToast(`${escolhidos.length} lead${escolhidos.length > 1 ? 's' : ''} excluído${escolhidos.length > 1 ? 's' : ''} de vez.`, 'success');
+      setSelCrm(new Set());
+      carregarCrmBolsao();
+    } catch (e) {
+      console.error(e);
+      showToast('Erro ao excluir os leads.', 'error');
+    } finally {
+      setExcluindoCrm(false);
+    }
+  };
 
   // Buscar corretores aprovados
   useEffect(() => {
@@ -754,7 +830,9 @@ export default function ImportarLigacaoAtivaPage() {
         <div className="flex items-center justify-between gap-3 mb-1">
           <h2 className="al-display text-[17px] font-bold text-white uppercase tracking-[0.1em]">🗑 Bolsão do CRM</h2>
           {crmBolsao.length > 0 && (
-            <span className="text-[11px] font-bold text-text-secondary tabular-nums px-2 py-1 rounded-full bg-white/[0.06] border border-white/[0.08]">{crmBolsao.length} lead{crmBolsao.length > 1 ? 's' : ''}</span>
+            <span className="text-[11px] font-bold text-text-secondary tabular-nums px-2 py-1 rounded-full bg-white/[0.06] border border-white/[0.08]">
+              {temFiltroCrm ? `${crmFiltrado.length} de ${crmBolsao.length}` : crmBolsao.length} lead{crmBolsao.length > 1 ? 's' : ''}
+            </span>
           )}
         </div>
         <p className="text-text-secondary mb-4 text-sm">
@@ -768,6 +846,93 @@ export default function ImportarLigacaoAtivaPage() {
           <p className="text-sm text-text-secondary py-4">Nenhum lead descartado no bolsão. 👌</p>
         ) : (
           <>
+            {/* Filtros: busca + motivo + corretor + perfil do cliente */}
+            <div className="mb-3 space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="text"
+                  value={crmBusca}
+                  onChange={e => setCrmBusca(e.target.value)}
+                  placeholder="🔍 Buscar por nome ou telefone…"
+                  className={`${inputCls} flex-1 min-w-[180px]`}
+                />
+                <select className={`${inputCls} w-44`} value={crmCorretorF} onChange={e => setCrmCorretorF(e.target.value)}>
+                  <option value="">Todos os corretores</option>
+                  {crmCorretoresDoBolsao.map(uid => <option key={uid || 'sem'} value={uid}>{nomeCorretor(uid || undefined)}</option>)}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setCrmPerfilAberto(v => !v)}
+                  className={`px-3 py-2 rounded-xl text-[11px] font-extrabold uppercase tracking-wider border transition-colors ${
+                    crmPerfilAberto || Object.values(crmQualF).some(Boolean)
+                      ? 'bg-[#9F6BFF]/15 border-[#9F6BFF]/50 text-[#C4A6FF]'
+                      : 'bg-white/[0.04] border-white/15 text-text-secondary hover:border-white/30'
+                  }`}
+                  title="Filtrar pelo perfil do cliente (qualificação) — ex.: apareceu um apê de 500k, quem procura isso?"
+                >
+                  🎯 Perfil do cliente
+                </button>
+                {temFiltroCrm && (
+                  <button
+                    type="button"
+                    onClick={() => { setCrmBusca(''); setCrmMotivoF(''); setCrmCorretorF(''); setCrmQualF({}); }}
+                    className="px-2.5 py-2 rounded-xl text-[11px] font-bold text-[#FF9EB5] border border-[#FF1E56]/30 bg-[#FF1E56]/[0.06] hover:bg-[#FF1E56]/15 transition-colors"
+                  >
+                    ✕ Limpar
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[9.5px] font-extrabold uppercase tracking-[0.16em] text-text-secondary shrink-0">Motivo</span>
+                {crmMotivos.map(([motivo, n]) => (
+                  <button
+                    key={motivo}
+                    type="button"
+                    onClick={() => setCrmMotivoF(prev => prev === motivo ? '' : motivo)}
+                    className={`px-2 py-1 rounded-full text-[10px] font-bold border transition-colors ${
+                      crmMotivoF === motivo
+                        ? 'bg-[#E8C547]/15 border-[#E8C547]/60 text-[#FFE9A6]'
+                        : 'bg-white/[0.04] border-white/12 text-text-secondary hover:border-white/30'
+                    }`}
+                  >
+                    {motivo} <span className="tabular-nums opacity-70">{n}</span>
+                  </button>
+                ))}
+              </div>
+              {crmPerfilAberto && (
+                <div className="rounded-xl border border-[#9F6BFF]/25 bg-[#9F6BFF]/[0.04] p-2.5">
+                  <p className="text-[10px] text-[#C4A6FF]/80 mb-2">Apareceu um produto? Filtra aqui quem procura esse perfil — ex.: Apartamento · &lt; 500k · Penha.</p>
+                  <div className="flex flex-wrap gap-2">
+                    {QUALIFICATION_QUESTIONS.map(g => (
+                      <label key={g.key} className="flex flex-col gap-0.5">
+                        <span className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-white/40">{g.title}</span>
+                        <select
+                          className={`${inputCls} !py-1.5 text-[12px] w-40`}
+                          value={crmQualF[g.key] || ''}
+                          onChange={e => setCrmQualF(prev => ({ ...prev, [g.key]: e.target.value }))}
+                        >
+                          <option value="">Todos</option>
+                          {g.options.map(op => <option key={op} value={op}>{op}</option>)}
+                        </select>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {temFiltroCrm && crmFiltrado.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelCrm(new Set(crmFiltrado.map(l => l.id)))}
+                  className="text-[11px] font-bold text-[#FFE9A6] hover:underline"
+                >
+                  ✓ Selecionar os {crmFiltrado.length} filtrados
+                </button>
+              )}
+            </div>
+
+            {crmFiltrado.length === 0 ? (
+              <p className="text-sm text-text-secondary py-4">Nenhum lead bate com esses filtros — limpa ou ajusta aí. 🔍</p>
+            ) : (
             <div className="mb-4 max-h-80 overflow-y-auto rounded-xl border border-white/[0.08] bg-white/[0.02] divide-y divide-white/[0.05]">
               {crmGrupos.map(([uid, doGrupo]) => {
                 const todos = doGrupo.every(l => selCrm.has(l.id));
@@ -799,6 +964,13 @@ export default function ImportarLigacaoAtivaPage() {
                           <span className="flex-1 min-w-0">
                             <span className="block text-[13px] font-semibold text-white truncate">{l.nome || 'Sem nome'}</span>
                             {l.origem && <span className="block text-[10px] text-[#7DD3FC]/60 truncate">{l.origem}</span>}
+                            {(() => {
+                              const partes = ['tipo', 'valor', 'localizacao', 'quartos']
+                                .flatMap(k => { const v = l.qualificacao?.[k]; return Array.isArray(v) ? v : (v ? [v] : []); });
+                              return partes.length > 0
+                                ? <span className="block text-[10px] text-[#C4A6FF]/70 truncate" title="Perfil do cliente (qualificação)">🎯 {partes.join(' · ')}</span>
+                                : null;
+                            })()}
                           </span>
                           <span className="text-[12px] text-text-secondary tabular-nums shrink-0">{l.telefone}</span>
                           {l.motivo && <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-white/[0.05] border border-white/15 text-text-secondary">{l.motivo}</span>}
@@ -810,6 +982,7 @@ export default function ImportarLigacaoAtivaPage() {
                 );
               })}
             </div>
+            )}
 
             <div className="flex flex-col sm:flex-row gap-2">
               <select className={`${inputCls} flex-1`} value={crmDestino} onChange={e => setCrmDestino(e.target.value)}>
@@ -822,6 +995,16 @@ export default function ImportarLigacaoAtivaPage() {
                 className="sm:w-72 px-6 py-3 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white rounded-xl font-bold shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all disabled:opacity-50"
               >
                 {redistribuindo ? 'Enviando…' : `🔄 Enviar ${selCrm.size} lead${selCrm.size === 1 ? '' : 's'} pro corretor`}
+              </button>
+            </div>
+            <div className="mt-2 flex justify-end">
+              <button
+                onClick={excluirCrmSelecionados}
+                disabled={selCrm.size === 0 || excluindoCrm}
+                className="px-4 py-2 rounded-xl text-[12px] font-bold border border-[#FF6B6B]/35 bg-[#FF6B6B]/[0.07] text-[#FF8F8F] hover:bg-[#FF6B6B]/15 transition-colors disabled:opacity-40"
+                title="Apaga de vez os selecionados (lead + histórico). Sem volta."
+              >
+                {excluindoCrm ? 'Excluindo…' : `🗑 Excluir ${selCrm.size || ''} de vez`}
               </button>
             </div>
           </>
