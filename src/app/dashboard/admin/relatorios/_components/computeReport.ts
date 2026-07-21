@@ -8,7 +8,7 @@
 import type { PipelineStageWithMeta } from '@/lib/pipelineStagesConfig';
 import { ETAPA_DESCARTADO, ETAPA_FECHADO, ETAPA_NEGOCIACAO, mapEtapaCircuito } from '@/lib/circuito';
 import {
-  DIA_MS, InteracaoLite, LeadLite, Periodo, ReportSource, funilCor, inicioDoDia, ymdLocal,
+  DIA_MS, InteracaoLite, LeadLite, Periodo, ReportSource, fmtInt, fmtPct, funilCor, inicioDoDia, ymdLocal,
 } from './reportShared';
 
 export interface KpiComp { atual: number; anterior: number }
@@ -46,6 +46,14 @@ export interface CorretorRow extends MetricasCorretor { id: string; nome: string
 // Atividade por corretor — o circuito narrado, traduzido em números
 // ---------------------------------------------------------------------------
 export interface MotivoCount { motivo: string; count: number }
+
+/** Um achado do diagnóstico automático do corretor. */
+export interface DiagItem {
+  nivel: 'critico' | 'atencao' | 'ok';
+  icone: string;
+  titulo: string;
+  frase: string;
+}
 
 export interface AtividadeAgora {
   /** tarefas pendentes com prazo estourado (dueDate < agora, hora real) */
@@ -107,6 +115,21 @@ export interface AtividadeRow {
   ultimaAtividadeMs: number | null;
   /** média de horas entre criar o lead e o 1º contato efetivo; null sem amostra */
   tempo1oContatoMedioHoras: number | null;
+  // ---- Corrente do funil & tempos de resposta ----
+  /** leads novos do período (todas as origens) — topo da corrente do funil */
+  leadsNovosPeriodo: number;
+  /** média de horas entre o lead nascer e a PRIMEIRA ação do corretor (leads do período) */
+  respostaLeadNovoHoras: number | null;
+  /** leads criados no período que ainda não receberam NENHUMA ação */
+  novosSemResposta: number;
+  /** contatos frios pendentes que nunca receberam uma tentativa */
+  friosSemTentativa: number;
+  /** média de horas entre a lista fria chegar e a primeira tentativa do corretor */
+  tempoAtacarFrioHoras: number | null;
+  /** leads ativos parados na MESMA etapa há 7+ dias */
+  paradosNaEtapa7d: number;
+  /** diagnóstico automático — os gargalos apontados em texto, do pior pro menor */
+  diagnostico: DiagItem[];
   // ---- Nota geral (0-100) ----
   nota: number;
   notaPartes: { ritmo: number; resultado: number; capricho: number | null; emDia: number | null };
@@ -602,6 +625,8 @@ export function computeReport(
       requalificacoes: 0, buscasProduto: 0, comObservacao: 0, geracaoPropria: 0,
       carteiraAtiva: 0, qualificadosPct: null, qualMediaGrupos: null, anotadosPct: null, semRegistro: 0,
       diasAtivos: 0, periodoDias: 1, ultimaAtividadeMs: null, tempo1oContatoMedioHoras: null,
+      leadsNovosPeriodo: 0, respostaLeadNovoHoras: null, novosSemResposta: 0,
+      friosSemTentativa: 0, tempoAtacarFrioHoras: null, paradosNaEtapa7d: 0, diagnostico: [],
       nota: 0, notaPartes: { ritmo: 0, resultado: 0, capricho: null, emDia: null },
       circuitoQtd: 0, interacoesTotal: 0,
       aceites: 0, tempoAceiteMedioSeg: null,
@@ -616,12 +641,15 @@ export function computeReport(
   // constância: dias distintos com interação no período + última atividade (janela toda)
   const diasAtivosMap = new Map<string, Set<string>>();
   const ultimaAtividadeMap = new Map<string, number>();
+  // primeira ação registrada em cada lead (janela toda) — mede o tempo de resposta
+  const primeiraInteracaoLead = new Map<string, number>();
 
   interacoes.forEach((i) => {
     const leadJanela = leadMap.get(i.leadId);
     if (leadJanela) {
       const dono = leadJanela.userId;
       if ((ultimaAtividadeMap.get(dono) ?? 0) < i.tsMs) ultimaAtividadeMap.set(dono, i.tsMs);
+      if ((primeiraInteracaoLead.get(i.leadId) ?? Infinity) > i.tsMs) primeiraInteracaoLead.set(i.leadId, i.tsMs);
     }
     if (!noPeriodo(i.tsMs)) return;
     const lead = leadMap.get(i.leadId);
@@ -680,11 +708,25 @@ export function computeReport(
   // CAPRICHO da carteira (qualificação + anotações), velocidade e geração própria
   const caprichoMap = new Map<string, { ativa: number; qualCom: number; qualSoma: number; anot: number; semReg: number }>();
   const tempo1oMap = new Map<string, { somaH: number; n: number }>();
+  const respostaMap = new Map<string, { somaH: number; n: number }>();
   src.leads.forEach((l) => {
     const a = atvMap.get(l.userId);
     if (!a) return;
     // Geração própria: lead criado no período por esforço do corretor (fora Propaganda)
     if (noPeriodo(l.createdAtMs) && l.origemTipo && l.origemTipo !== 'Propaganda') a.geracaoPropria++;
+    // Tempo de resposta: lead nasceu no período → quanto demorou a PRIMEIRA ação?
+    if (noPeriodo(l.createdAtMs)) {
+      a.leadsNovosPeriodo++;
+      const prim = primeiraInteracaoLead.get(l.id);
+      if (prim !== undefined && l.createdAtMs !== null && prim >= l.createdAtMs) {
+        const horas = Math.min(720, (prim - l.createdAtMs) / (60 * 60 * 1000));
+        const rMap = respostaMap.get(l.userId) || { somaH: 0, n: 0 };
+        rMap.somaH += horas; rMap.n++;
+        respostaMap.set(l.userId, rMap);
+      } else if (prim === undefined) {
+        a.novosSemResposta++;
+      }
+    }
     // Velocidade: horas entre criar o lead e o cliente atender pela 1ª vez
     if (l.primeiroContatoMs !== null && l.createdAtMs !== null && l.primeiroContatoMs > l.createdAtMs) {
       const horas = Math.min(720, (l.primeiroContatoMs - l.createdAtMs) / (60 * 60 * 1000));
@@ -703,6 +745,7 @@ export function computeReport(
     if (l.temAnotacoes) cap.anot++;
     if (l.qualGrupos === 0 && !l.temAnotacoes) cap.semReg++;
     caprichoMap.set(l.userId, cap);
+    if (l.etapaDesdeMs !== null && agoraMs - l.etapaDesdeMs > 7 * DIA_MS) a.paradosNaEtapa7d++;
     if (l.pendentesMs.length === 0) {
       a.agora.semAcao++;
       if (etapaCirc === ETAPA_NEGOCIACAO) a.agora.negociacaoParada++;
@@ -714,9 +757,18 @@ export function computeReport(
   });
 
   // Ligação ativa: contatos frios trabalhados no período → quantos viraram lead no CRM
+  // + agilidade na lista (frios sem tentativa e tempo até a 1ª tentativa)
+  const atacarMap = new Map<string, { somaH: number; n: number }>();
   src.ligacaoAtiva.forEach((c) => {
     const a = atvMap.get(c.corretorId);
     if (!a) return;
+    if (c.status === 'pendente' && c.tentativas === 0) a.friosSemTentativa++;
+    if (c.primeiraTentativaMs !== null && c.listaCriadaEmMs !== null && c.primeiraTentativaMs > c.listaCriadaEmMs) {
+      const horas = Math.min(720, (c.primeiraTentativaMs - c.listaCriadaEmMs) / (60 * 60 * 1000));
+      const at = atacarMap.get(c.corretorId) || { somaH: 0, n: 0 };
+      at.somaH += horas; at.n++;
+      atacarMap.set(c.corretorId, at);
+    }
     if (c.status === 'crm' && noPeriodo(c.incluidoEmMs)) {
       a.ligAtivaTrabalhados++;
       a.ligAtivaCrm++;
@@ -756,6 +808,10 @@ export function computeReport(
     a.ultimaAtividadeMs = ultimaAtividadeMap.get(c.id) ?? null;
     const v1 = tempo1oMap.get(c.id);
     a.tempo1oContatoMedioHoras = v1 && v1.n > 0 ? v1.somaH / v1.n : null;
+    const rp = respostaMap.get(c.id);
+    a.respostaLeadNovoHoras = rp && rp.n > 0 ? rp.somaH / rp.n : null;
+    const at = atacarMap.get(c.id);
+    a.tempoAtacarFrioHoras = at && at.n > 0 ? at.somaH / at.n : null;
     return a;
   });
 
@@ -784,6 +840,121 @@ export function computeReport(
     const partes = [ritmo, resultado, capricho, emDia].filter((p): p is number => p !== null);
     r.notaPartes = { ritmo, resultado, capricho, emDia };
     r.nota = partes.length > 0 ? Math.round((partes.reduce((s, p) => s + p, 0) / (partes.length * 25)) * 100) : 0;
+  });
+
+  // ------------------------------------------------------------------
+  // DIAGNÓSTICO AUTOMÁTICO — regras que apontam o GARGALO de cada corretor
+  // em texto claro, comparando com a equipe. Críticos primeiro, no máx. 4.
+  // ------------------------------------------------------------------
+  const fmtH = (h: number) => (h < 1 ? `${Math.max(1, Math.round(h * 60))} min` : h < 48 ? `${Math.round(h)} h` : `${(h / 24).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} dias`);
+  const mediaNaoNula = (vals: (number | null)[]) => {
+    const v = vals.filter((x): x is number => x !== null);
+    return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null;
+  };
+  const eqResposta = mediaNaoNula(atividadeRows.map((r) => r.respostaLeadNovoHoras));
+  const eqContatos1o = atividadeRows.reduce((s, r) => s + r.primeirosContatos, 0);
+  const eqMeetPorContato = eqContatos1o > 0 ? atividadeRows.reduce((s, r) => s + r.meetsMarcados, 0) / eqContatos1o : null;
+  const eqDescartes = atividadeRows.length ? atividadeRows.reduce((s, r) => s + r.descartes, 0) / atividadeRows.length : 0;
+
+  atividadeRows.forEach((r) => {
+    type Achado = DiagItem & { peso: number };
+    const achados: Achado[] = [];
+    const add = (nivel: DiagItem['nivel'], peso: number, icone: string, titulo: string, frase: string) =>
+      achados.push({ nivel, peso, icone, titulo, frase });
+
+    if (r.interacoesTotal === 0 && r.carteiraAtiva === 0 && r.leadsNovosPeriodo === 0) {
+      r.diagnostico = [{ nivel: 'atencao', icone: '💤', titulo: 'Sem movimento no período', frase: 'Nenhuma ação registrada e carteira vazia — sem dados pra diagnosticar.' }];
+      return;
+    }
+
+    // 1. Demora pra responder lead novo
+    if (r.respostaLeadNovoHoras !== null && r.respostaLeadNovoHoras > 24) {
+      add(r.respostaLeadNovoHoras > 48 ? 'critico' : 'atencao', 90 + r.respostaLeadNovoHoras / 24, '🐢',
+        'Demora pra responder lead novo',
+        `${fmtH(r.respostaLeadNovoHoras)} em média até a 1ª ação num lead novo${eqResposta !== null ? ` (equipe: ${fmtH(eqResposta)})` : ''}. Lead de imóvel esfria em horas.`);
+    }
+    // 2. Leads novos sem NENHUMA ação
+    if (r.novosSemResposta >= 3) {
+      add(r.novosSemResposta >= 5 ? 'critico' : 'atencao', 95 + r.novosSemResposta, '🧊',
+        'Leads novos sem nenhuma ação',
+        `${fmtInt(r.novosSemResposta)} lead${r.novosSemResposta > 1 ? 's' : ''} que chegaram no período seguem sem UM contato sequer.`);
+    }
+    // 3. Rodízio de 1º contato parado (carteira que nunca atendeu)
+    if (r.carteiraAtiva >= 5) {
+      const pctSem1o = (r.agora.semPrimeiroContato / r.carteiraAtiva) * 100;
+      if (pctSem1o > 35) {
+        add(pctSem1o > 55 ? 'critico' : 'atencao', 80 + pctSem1o, '📵',
+          'Carteira que nunca atendeu',
+          `${fmtPct(pctSem1o)} da carteira nunca teve conversa de verdade (${fmtInt(r.agora.semPrimeiroContato)} leads) — falta insistir no rodízio de 1º contato.`);
+      }
+    }
+    // 4. Conversa não vira meet (o gargalo do pitch)
+    if (r.primeirosContatos >= 4 && eqMeetPorContato !== null && eqMeetPorContato > 0) {
+      const dele = r.meetsMarcados / r.primeirosContatos;
+      if (dele < eqMeetPorContato * 0.5) {
+        add(dele < eqMeetPorContato * 0.35 ? 'critico' : 'atencao', 85, '🗣️',
+          'Conversa não vira meet',
+          `${fmtInt(r.primeirosContatos)} clientes atenderam mas só ${fmtInt(r.meetsMarcados)} viraram meet (${fmtPct(dele * 100)} · equipe ${fmtPct(eqMeetPorContato * 100)}). O gargalo é a ABORDAGEM, não o esforço.`);
+      }
+    }
+    // 5. Marca mas não acontece (no-show)
+    if (r.meetsMarcados >= 3 && r.meetsFeitos / r.meetsMarcados < 0.5) {
+      add('atencao', 70, '👻',
+        'Meets marcados que não acontecem',
+        `Só ${fmtInt(r.meetsFeitos)} de ${fmtInt(r.meetsMarcados)} meets aconteceram — confirmar na véspera e encurtar o intervalo entre marcar e realizar.`);
+    }
+    // 6. Negociações esfriando
+    if (r.agora.negociacaoParada >= 1) {
+      add(r.agora.negociacaoParada >= 3 ? 'critico' : 'atencao', 75 + r.agora.negociacaoParada * 5, '🥶',
+        'Proposta na mesa esfriando',
+        `${fmtInt(r.agora.negociacaoParada)} negociaç${r.agora.negociacaoParada > 1 ? 'ões' : 'ão'} sem próxima ação agendada — é o dinheiro mais perto do bolso.`);
+    }
+    // 7. CRM estourado
+    if (r.carteiraAtiva > 0 && r.agora.atrasadas / r.carteiraAtiva > 0.25) {
+      const pctAtr = (r.agora.atrasadas / r.carteiraAtiva) * 100;
+      add(pctAtr > 50 ? 'critico' : 'atencao', 78 + pctAtr / 2, '⏰',
+        'Tarefas estouradas',
+        `${fmtInt(r.agora.atrasadas)} tarefas com prazo vencido (${fmtPct(pctAtr)} da carteira) — o sistema cobra e ele não responde.`);
+    }
+    // 8. Trabalhando no escuro (não qualifica nem anota)
+    if (r.carteiraAtiva >= 5 && r.qualificadosPct !== null && r.anotadosPct !== null) {
+      const capPct = 0.6 * r.qualificadosPct + 0.4 * r.anotadosPct;
+      if (capPct < 40) {
+        add(capPct < 20 ? 'critico' : 'atencao', 60 + (40 - capPct), '🕶️',
+          'Trabalhando no escuro',
+          `Só ${fmtPct(r.qualificadosPct)} da carteira qualificada e ${fmtPct(r.anotadosPct)} com anotação — sem registro, ninguém cruza cliente × produto.`);
+      }
+    }
+    // 9. Lista fria intocada
+    if (r.friosSemTentativa >= 10) {
+      add(r.friosSemTentativa >= 25 ? 'critico' : 'atencao', 65 + r.friosSemTentativa / 5, '☎️',
+        'Lista fria esperando',
+        `${fmtInt(r.friosSemTentativa)} contatos frios sem a 1ª tentativa${r.tempoAtacarFrioHoras !== null ? ` — e quando ataca, demora ${fmtH(r.tempoAtacarFrioHoras)} pra começar a lista` : ''}.`);
+    }
+    // 10. Constância baixa
+    if (r.periodoDias >= 7 && r.diasAtivos / r.periodoDias < 0.35) {
+      add('atencao', 55, '📆',
+        'Pouca constância',
+        `Mexeu no CRM em só ${fmtInt(r.diasAtivos)} de ${fmtInt(r.periodoDias)} dias do período.`);
+    }
+    // 11. Leads mofando na etapa
+    if (r.paradosNaEtapa7d >= 5) {
+      add('atencao', 50 + r.paradosNaEtapa7d, '🪨',
+        'Leads parados na mesma etapa',
+        `${fmtInt(r.paradosNaEtapa7d)} leads há 7+ dias sem sair do lugar no funil.`);
+    }
+    // 12. Descarta acima da equipe
+    if (r.descartes >= 3 && r.descartes > 2 * Math.max(1, eqDescartes)) {
+      add('atencao', 45, '🗑️',
+        'Descartando acima da equipe',
+        `${fmtInt(r.descartes)} descartes no período (equipe: ~${fmtInt(Math.round(eqDescartes))}) — vale conferir os motivos no raio-x.`);
+    }
+
+    const ordem = { critico: 0, atencao: 1, ok: 2 } as const;
+    achados.sort((x, y) => ordem[x.nivel] - ordem[y.nivel] || y.peso - x.peso);
+    r.diagnostico = achados.length > 0
+      ? achados.slice(0, 4).map(({ nivel, icone, titulo, frase }) => ({ nivel, icone, titulo, frase }))
+      : [{ nivel: 'ok', icone: '✅', titulo: 'Sem gargalo crítico', frase: 'Resposta, ritmo e registro dentro do saudável — agora é cobrar consistência e resultado.' }];
   });
 
   const atvMedia: AtividadeMedia = {

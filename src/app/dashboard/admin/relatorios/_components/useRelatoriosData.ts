@@ -90,16 +90,27 @@ export function useRelatoriosData(
         // Contatos das listas de ligação ativa — listas são poucas; um getDocs por lista
         const ligacaoAtiva: LigAtivaContatoLite[] = [];
         await Promise.all(listasSnap.docs.map(async (ld) => {
-          const corretorId = String((ld.data() as any).corretorId || '');
+          const listaData = ld.data() as any;
+          const corretorId = String(listaData.corretorId || '');
+          const listaCriadaEmMs = anyToMs(listaData.criadaEm);
           try {
             const contSnap = await getDocs(collection(db, 'ligacaoAtivaListas', ld.id, 'contatos'));
             contSnap.forEach((cd) => {
               const cdata = cd.data() as any;
+              // primeira tentativa registrada nos eventos do contato (mede a agilidade na lista fria)
+              const eventos = Array.isArray(cdata.eventos) ? cdata.eventos : [];
+              const tentativasMs = eventos
+                .filter((e: any) => e?.tipo === 'tentativa')
+                .map((e: any) => anyToMs(e?.em))
+                .filter((n: number | null): n is number => n !== null);
               ligacaoAtiva.push({
                 corretorId,
                 status: String(cdata.status || 'pendente'),
                 incluidoEmMs: anyToMs(cdata.incluidoEm),
                 descartadoEmMs: anyToMs(cdata.descartadoEm),
+                tentativas: Number(cdata.tentativas) || 0,
+                primeiraTentativaMs: tentativasMs.length ? Math.min(...tentativasMs) : null,
+                listaCriadaEmMs,
               });
             });
           } catch (e) {
@@ -134,6 +145,7 @@ export function useRelatoriosData(
             qualGrupos,
             temAnotacoes: typeof data.anotacoes === 'string' && data.anotacoes.trim().length >= 5,
             primeiroContatoMs: anyToMs(data.circuito?.primeiroContatoEm),
+            etapaDesdeMs: anyToMs(data.circuito?.desde),
           };
         });
 

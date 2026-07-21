@@ -122,6 +122,7 @@ export function buildDemoReportSource(): ReportSource {
       qualGrupos,
       temAnotacoes,
       primeiroContatoMs,
+      etapaDesdeMs: createdAtMs + Math.floor(rnd() * Math.max(1, agoraMs - createdAtMs) * 0.7),
       origem: origemDef.tipo === 'Propaganda' && campanha ? `Propaganda · ${campanha}` : origemDef.tipo,
       origemTipo: origemDef.tipo,
       origemPropaganda: campanha,
@@ -258,18 +259,34 @@ export function buildDemoReportSource(): ReportSource {
   }
 
   // Ligação ativa — 4 listas de contatos frios pra corretores variados
+  // (com tentativas + tempo até atacar correlacionados ao perfil de cada um)
   const ligacaoAtiva: LigAtivaContatoLite[] = [];
   [1, 2, 4, 6].forEach((ci) => {
     const n = 25 + Math.floor(rnd() * 30);
+    const listaCriadaEmMs = agoraMs - Math.floor(20 + rnd() * 60) * DIA_MS;
+    const agilidade = perfil[ci]; // corretor rápido ataca a lista em horas; devagar, em dias
     for (let k = 0; k < n; k++) {
       const r = rnd();
       const trabalhadoMs = agoraMs - Math.floor(rnd() * rnd() * 150) * DIA_MS - Math.floor(rnd() * 9 * 60 * 60 * 1000);
+      const atacouEmMs = listaCriadaEmMs + Math.floor((rnd() * 96 / Math.max(0.3, agilidade)) * 60 * 60 * 1000);
       if (r < 0.4) {
-        ligacaoAtiva.push({ corretorId: corretores[ci].id, status: 'pendente', incluidoEmMs: null, descartadoEmMs: null });
+        const tocado = rnd() < 0.45 * agilidade;
+        ligacaoAtiva.push({
+          corretorId: corretores[ci].id, status: 'pendente', incluidoEmMs: null, descartadoEmMs: null,
+          tentativas: tocado ? 1 + Math.floor(rnd() * 3) : 0,
+          primeiraTentativaMs: tocado ? atacouEmMs : null,
+          listaCriadaEmMs,
+        });
       } else if (r < 0.72) {
-        ligacaoAtiva.push({ corretorId: corretores[ci].id, status: 'descartado', incluidoEmMs: null, descartadoEmMs: trabalhadoMs });
+        ligacaoAtiva.push({
+          corretorId: corretores[ci].id, status: 'descartado', incluidoEmMs: null, descartadoEmMs: trabalhadoMs,
+          tentativas: 1 + Math.floor(rnd() * 4), primeiraTentativaMs: atacouEmMs, listaCriadaEmMs,
+        });
       } else {
-        ligacaoAtiva.push({ corretorId: corretores[ci].id, status: 'crm', incluidoEmMs: trabalhadoMs, descartadoEmMs: null });
+        ligacaoAtiva.push({
+          corretorId: corretores[ci].id, status: 'crm', incluidoEmMs: trabalhadoMs, descartadoEmMs: null,
+          tentativas: 1 + Math.floor(rnd() * 3), primeiraTentativaMs: atacouEmMs, listaCriadaEmMs,
+        });
       }
     }
   });

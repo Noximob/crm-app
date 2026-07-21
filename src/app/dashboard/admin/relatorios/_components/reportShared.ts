@@ -33,6 +33,8 @@ export interface LeadLite {
   temAnotacoes: boolean;
   /** quando o cliente atendeu/respondeu pela 1ª vez (circuito.primeiroContatoEm) */
   primeiroContatoMs: number | null;
+  /** desde quando o lead está na etapa atual (circuito.desde) */
+  etapaDesdeMs: number | null;
 }
 
 export interface CorretorLite {
@@ -86,9 +88,15 @@ export interface AdsLeadLite {
 /** Contato de lista de ligação ativa (cold call), achatado com o corretor dono da lista. */
 export interface LigAtivaContatoLite {
   corretorId: string;
-  status: string; // 'pendente' | 'descartado' | 'crm'
+  status: string; // 'pendente' | 'descartado' | 'crm' | 'realocado'
   incluidoEmMs: number | null;
   descartadoEmMs: number | null;
+  /** tentativas de contato registradas (cliques no WhatsApp da lista) */
+  tentativas: number;
+  /** primeira tentativa registrada nos eventos do contato */
+  primeiraTentativaMs: number | null;
+  /** quando a lista desse contato foi criada (pra medir o tempo até atacar) */
+  listaCriadaEmMs: number | null;
 }
 
 /** Conjunto completo de dados brutos que alimenta os relatórios. */

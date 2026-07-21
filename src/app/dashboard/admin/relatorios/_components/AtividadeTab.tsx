@@ -87,6 +87,103 @@ function NotaBar({ label, valor }: { label: string; valor: number | null }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// FICHA DO CORRETOR — diagnóstico, corrente do funil e tempos de resposta
+// ---------------------------------------------------------------------------
+const NIVEL_CLS: Record<string, string> = {
+  critico: 'border-[#FF1E56]/45 bg-[#FF1E56]/[0.07]',
+  atencao: 'border-[#E8C547]/40 bg-[#E8C547]/[0.05]',
+  ok: 'border-[#34D399]/40 bg-[#34D399]/[0.05]',
+};
+const NIVEL_TXT: Record<string, string> = { critico: 'text-[#FF9EB5]', atencao: 'text-[#FFE9A6]', ok: 'text-emerald-300' };
+
+/** 🩺 O que o sistema diagnosticou — gargalos em texto claro, do pior pro menor. */
+function DiagnosticoLista({ a }: { a: AtividadeRow }) {
+  return (
+    <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
+      <span className="text-[9.5px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">🩺 Diagnóstico — onde está o gargalo</span>
+      <div className="mt-2 grid grid-cols-1 lg:grid-cols-2 gap-2">
+        {a.diagnostico.map((d, i) => (
+          <div key={i} className={`rounded-lg border px-3 py-2 ${NIVEL_CLS[d.nivel]}`}>
+            <p className={`text-[11.5px] font-extrabold ${NIVEL_TXT[d.nivel]}`}>
+              {d.icone} {d.titulo}
+              {d.nivel === 'critico' && <span className="ml-1.5 px-1.5 py-0.5 rounded text-[8px] font-extrabold tracking-[0.12em] bg-[#FF1E56] text-white animate-pulse">CRÍTICO</span>}
+            </p>
+            <p className="text-[10.5px] text-white/75 leading-snug mt-0.5">{d.frase}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** ⛓️ A corrente do funil — onde a conversão quebra (elo mais fraco marcado). */
+function CorrenteFunil({ a }: { a: AtividadeRow }) {
+  const elos = [
+    { label: 'Novos', n: a.leadsNovosPeriodo },
+    { label: 'Atenderam', n: a.primeirosContatos },
+    { label: 'Meet marc.', n: a.meetsMarcados },
+    { label: 'Meet feito', n: a.meetsFeitos },
+    { label: 'Visita feita', n: a.visitasFeitas },
+    { label: 'Negociação', n: a.negociacoes },
+    { label: 'Venda', n: a.vendasQtd },
+  ];
+  const pcts = elos.map((e, i) => (i === 0 ? null : elos[i - 1].n > 0 ? (e.n / elos[i - 1].n) * 100 : null));
+  let gargaloIdx = -1;
+  let menor = Infinity;
+  pcts.forEach((p, i) => {
+    if (p !== null && elos[i - 1].n >= 3 && p < menor) { menor = p; gargaloIdx = i; }
+  });
+  return (
+    <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
+      <span className="text-[9.5px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">⛓️ Corrente do período — onde quebra</span>
+      <div className="mt-2 flex items-stretch gap-1 overflow-x-auto pb-1">
+        {elos.map((e, i) => (
+          <React.Fragment key={e.label}>
+            {i > 0 && (
+              <div className="self-center shrink-0 flex flex-col items-center px-0.5">
+                <span className={`text-[9px] font-extrabold tabular-nums ${i === gargaloIdx ? 'text-[#FF5C7E]' : 'text-white/45'}`}>
+                  {pcts[i] !== null ? fmtPct(pcts[i]!) : '—'}
+                </span>
+                <span className={`text-[13px] leading-none ${i === gargaloIdx ? 'text-[#FF1E56]' : 'text-white/25'}`}>→</span>
+                {i === gargaloIdx && <span className="text-[7.5px] font-extrabold tracking-[0.1em] text-[#FF5C7E] animate-pulse">GARGALO</span>}
+              </div>
+            )}
+            <div className={`shrink-0 min-w-[74px] rounded-lg border px-2 py-1.5 text-center ${i === gargaloIdx ? 'border-[#FF1E56]/50 bg-[#FF1E56]/[0.07]' : 'border-white/10 bg-white/[0.03]'}`}>
+              <p className="al-display text-[16px] font-bold text-white tabular-nums leading-none">{fmtInt(e.n)}</p>
+              <p className="text-[8.5px] font-extrabold uppercase tracking-wider text-text-secondary mt-1">{e.label}</p>
+            </div>
+          </React.Fragment>
+        ))}
+      </div>
+      <p className="text-[9px] text-white/30 mt-1">% = quanto do elo anterior avançou no período. O elo vermelho é a pior passagem com amostra (≥3).</p>
+    </div>
+  );
+}
+
+/** ⏱️ Tempos de resposta — o quanto ele demora em cada frente. */
+function TemposResposta({ a }: { a: AtividadeRow }) {
+  const tempos: { label: string; valor: string; ruim: boolean }[] = [
+    { label: 'Responder lead novo', valor: fmtHoras(a.respostaLeadNovoHoras), ruim: (a.respostaLeadNovoHoras ?? 0) > 24 },
+    { label: 'Cliente atender (1º contato)', valor: fmtHoras(a.tempo1oContatoMedioHoras), ruim: false },
+    { label: 'Aceitar lead de anúncio', valor: a.aceites > 0 ? fmtSeg(a.tempoAceiteMedioSeg) : '—', ruim: (a.tempoAceiteMedioSeg ?? 0) > 600 },
+    { label: 'Atacar lista fria nova', valor: fmtHoras(a.tempoAtacarFrioHoras), ruim: (a.tempoAtacarFrioHoras ?? 0) > 48 },
+  ];
+  return (
+    <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
+      <span className="text-[9.5px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">⏱️ Tempos médios de resposta</span>
+      <div className="mt-2 grid grid-cols-2 lg:grid-cols-4 gap-2">
+        {tempos.map((t) => (
+          <div key={t.label} className="rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2">
+            <p className={`al-display text-[16px] font-bold tabular-nums leading-none ${t.ruim ? 'text-[#FF9EB5]' : 'text-white'}`}>{t.valor}</p>
+            <p className="text-[8.5px] font-extrabold uppercase tracking-wider text-text-secondary mt-1 leading-tight">{t.label}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** Barras Ele × Equipe (padrão do Individual × Coletivo). */
 function LinhaComp({ label, ele, media, fmt }: { label: string; ele: number; media: number; fmt: (n: number) => string }) {
   const max = Math.max(ele, media, 1);
@@ -351,6 +448,11 @@ export default function AtividadeTab({ report }: { report: ReportComputed }) {
                       <NotaBar label="Capricho" valor={a.notaPartes.capricho} />
                       <NotaBar label="Em dia" valor={a.notaPartes.emDia} />
                     </div>
+                    {a.diagnostico[0] && (
+                      <p className={`mt-2 text-[9.5px] font-bold truncate ${NIVEL_TXT[a.diagnostico[0].nivel]}`} title={a.diagnostico[0].frase}>
+                        {a.diagnostico[0].icone} {a.diagnostico[0].titulo}
+                      </p>
+                    )}
                   </button>
                 );
               })}
@@ -453,7 +555,12 @@ export default function AtividadeTab({ report }: { report: ReportComputed }) {
                       {expandido && (
                         <tr className="border-b border-white/[0.05] bg-white/[0.02]">
                           <td colSpan={COLS.length + 1} className="px-2 py-3">
-                            <DrillDown a={a} media={media} />
+                            <div className="space-y-3">
+                              <DiagnosticoLista a={a} />
+                              <CorrenteFunil a={a} />
+                              <TemposResposta a={a} />
+                              <DrillDown a={a} media={media} />
+                            </div>
                           </td>
                         </tr>
                       )}
