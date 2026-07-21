@@ -69,6 +69,9 @@ export function buildDemoReportSource(): ReportSource {
   const perfil = [1.0, 1.6, 1.25, 0.8, 1.05, 0.45, 0.9, 0.65];
   // Disciplina no circuito: probabilidade de movimento manual (inversa do perfil)
   const pManual = [0.12, 0.04, 0.08, 0.3, 0.1, 0.5, 0.18, 0.38];
+  // Capricho: probabilidade de qualificar/anotar os leads (independe do volume —
+  // tem corretor que faz muito e registra pouco, e vice-versa)
+  const capricho = [0.85, 0.9, 0.55, 0.35, 0.75, 0.15, 0.6, 0.4];
 
   const leads: LeadLite[] = [];
   const interacoes: InteracaoLite[] = [];
@@ -101,6 +104,13 @@ export function buildDemoReportSource(): ReportSource {
 
     // Rodízio do 1º contato: quem avançou no circuito conversou; parte da Entrada ainda insiste
     const teve1oContato = profundidade >= 1 || rnd() < 0.35;
+    // Capricho do dono: qualificação e anotações correlacionadas com o perfil dele
+    const capDono = capricho[ci];
+    const qualGrupos = rnd() < capDono ? 2 + Math.floor(rnd() * 6) : (rnd() < 0.35 ? 1 : 0);
+    const temAnotacoes = rnd() < capDono * 0.9 + 0.05;
+    const primeiroContatoMs = teve1oContato
+      ? Math.min(agoraMs, createdAtMs + Math.floor(rnd() * rnd() * 5 * DIA_MS) + 30 * 60 * 1000)
+      : null;
 
     leads.push({
       id,
@@ -109,6 +119,9 @@ export function buildDemoReportSource(): ReportSource {
       etapa,
       semPrimeiroContato: !teve1oContato,
       tentativasAtuais: teve1oContato ? 0 : Math.floor(rnd() * 4),
+      qualGrupos,
+      temAnotacoes,
+      primeiroContatoMs,
       origem: origemDef.tipo === 'Propaganda' && campanha ? `Propaganda · ${campanha}` : origemDef.tipo,
       origemTipo: origemDef.tipo,
       origemPropaganda: campanha,
@@ -145,6 +158,11 @@ export function buildDemoReportSource(): ReportSource {
     if (teve1oContato) {
       pushInt('Contato', `🎯 1º contato feito na ${1 + Math.floor(rnd() * 5)}ª tentativa`, true, tsRecente());
     }
+
+    // Trabalho de bastidor: requalificação, busca de imóvel e observações nos agendamentos
+    if (rnd() < 0.12) pushInt('Etapa', '🎯 Requalificação: Preço alto, Região errada', true, tsRecente());
+    if (rnd() < 0.18 * capDono + 0.04) pushInt('Produto', '🔎 Vai buscar imóvel pra oferecer — tarefa · qua 16/07 · 10:00', true, tsRecente());
+    if (rnd() < capDono * 0.5) pushInt('Follow-up', '📌 Tarefa criada: follow-up · seg 14/07 · 14:00 · 📝 cliente prefere à tarde', true, tsRecente());
 
     // Jornada narrada conforme a profundidade no circuito (2=Meet, 3=Visita, 4=Negociação, 5=Fechamento)
     const passouMeet = profundidade >= 2 && profundidade !== 5 ? true : profundidade === 5 && rnd() < 0.5;

@@ -112,6 +112,10 @@ export function useRelatoriosData(
         const leads: LeadLite[] = leadsSnap.docs.map((d) => {
           const data = d.data() as any;
           const pendentes = Array.isArray(data.tarefasPendentes) ? data.tarefasPendentes : [];
+          const qual = data.qualificacao && typeof data.qualificacao === 'object' ? data.qualificacao : {};
+          const qualGrupos = Object.values(qual).filter((v: any) =>
+            Array.isArray(v) ? v.length > 0 : (typeof v === 'string' && v.trim() !== '')
+          ).length;
           return {
             id: d.id,
             userId: String(data.userId || ''),
@@ -127,6 +131,9 @@ export function useRelatoriosData(
             descartadoPor: data.descartadoPor ? String(data.descartadoPor) : undefined,
             semPrimeiroContato: !data.circuito?.primeiroContatoEm,
             tentativasAtuais: Number(data.circuito?.tentativas) || 0,
+            qualGrupos,
+            temAnotacoes: typeof data.anotacoes === 'string' && data.anotacoes.trim().length >= 5,
+            primeiroContatoMs: anyToMs(data.circuito?.primeiroContatoEm),
           };
         });
 

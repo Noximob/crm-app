@@ -27,6 +27,12 @@ export interface LeadLite {
   semPrimeiroContato?: boolean;
   /** tentativas de contato sem resposta acumuladas (circuito.tentativas) */
   tentativasAtuais?: number;
+  /** grupos de qualificação preenchidos (0..7) — mede se o corretor está qualificando */
+  qualGrupos: number;
+  /** true = o corretor escreveu anotações no lead */
+  temAnotacoes: boolean;
+  /** quando o cliente atendeu/respondeu pela 1ª vez (circuito.primeiroContatoEm) */
+  primeiroContatoMs: number | null;
 }
 
 export interface CorretorLite {

@@ -2,9 +2,10 @@
 
 /**
  * Aba ATIVIDADE — o que cada corretor está fazendo, narrado pelo próprio circuito.
- * Ranking sortável do período + retrato AGORA (fora do período) + drill-down por
- * corretor (vs média da equipe, conversão pessoal, descartes, disciplina) +
- * "Por que perdemos" (descartes agregados por motivo).
+ * Placar de NOTAS (ritmo + resultado + capricho + em dia) + ranking sortável do
+ * período + retrato AGORA (fora do período) + drill-down por corretor (vs média
+ * da equipe, conversão, capricho da carteira, velocidade, trabalho de bastidor,
+ * descartes, disciplina) + "Por que perdemos".
  */
 
 import React, { useMemo, useState } from 'react';
@@ -49,6 +50,41 @@ function valorDe(a: AtividadeRow, k: SortKey): number {
     case 'ligAtiva': return a.ligAtivaTrabalhados;
     case 'manuais': return a.manuais;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Nota geral — cor por faixa + barrinha de componente + "ativo há X"
+// ---------------------------------------------------------------------------
+const notaCor = (n: number) => (n >= 80 ? '#34D399' : n >= 60 ? '#E8C547' : n >= 40 ? '#FF7A45' : '#FF1E56');
+
+function fmtRelativo(ms: number | null): { texto: string; alerta: boolean } {
+  if (ms === null) return { texto: 'sem atividade recente', alerta: true };
+  const h = Math.floor((Date.now() - ms) / 3_600_000);
+  if (h < 1) return { texto: 'ativo agora', alerta: false };
+  if (h < 24) return { texto: `ativo há ${h} h`, alerta: false };
+  const d = Math.floor(h / 24);
+  return { texto: `parado há ${d} dia${d > 1 ? 's' : ''}`, alerta: d >= 2 };
+}
+
+const fmtHoras = (h: number | null): string => {
+  if (h === null || !isFinite(h)) return '—';
+  if (h < 1) return `${Math.max(1, Math.round(h * 60))} min`;
+  if (h < 48) return `${Math.round(h)} h`;
+  return `${(h / 24).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} dias`;
+};
+
+function NotaBar({ label, valor }: { label: string; valor: number | null }) {
+  const pct = valor === null ? 0 : (valor / 25) * 100;
+  const cor = valor === null ? 'rgba(255,255,255,0.2)' : pct >= 70 ? '#34D399' : pct >= 40 ? '#E8C547' : '#FF1E56';
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="w-[62px] shrink-0 text-[8.5px] font-extrabold uppercase tracking-wider text-text-secondary">{label}</span>
+      <div className="flex-1 h-1.5 rounded bg-white/[0.06] overflow-hidden">
+        {valor !== null && <div className="h-full rounded transition-all duration-500" style={{ width: `${Math.max(4, pct)}%`, background: cor, boxShadow: `0 0 6px ${cor}55` }} />}
+      </div>
+      <span className="w-6 shrink-0 text-right text-[9.5px] font-bold tabular-nums" style={{ color: cor }}>{valor === null ? '—' : Math.round(valor)}</span>
+    </div>
+  );
 }
 
 /** Barras Ele × Equipe (padrão do Individual × Coletivo). */
@@ -129,6 +165,36 @@ function DrillDown({ a, media }: { a: AtividadeRow; media: AtividadeMedia }) {
           <LinhaComp label="Negociações" ele={a.negociacoes} media={media.negociacoes} fmt={(n) => fmtInt(Math.round(n))} />
           <LinhaComp label="Vendas (R$)" ele={a.vendasValor} media={media.vendasValor} fmt={fmtMoney} />
         </div>
+
+        {/* Capricho da carteira — o cara tá qualificando e anotando? */}
+        <div className="mt-3 pt-3 border-t border-white/[0.06]">
+          <span className="text-[9.5px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">
+            📋 Capricho da carteira <span className="normal-case tracking-normal">({fmtInt(a.carteiraAtiva)} leads ativos)</span>
+          </span>
+          {a.carteiraAtiva === 0 ? (
+            <p className="text-[10.5px] text-text-secondary mt-1.5">Sem carteira ativa no momento.</p>
+          ) : (
+            <div className="mt-2 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="w-28 shrink-0 text-[10px] font-bold text-white/80">Qualificados</span>
+                <div className="flex-1"><BarraH pct={a.qualificadosPct ?? 0} cor="#9F6BFF" /></div>
+                <span className="w-24 shrink-0 text-right text-[10.5px] font-bold text-[#C4A6FF] tabular-nums">
+                  {fmtPct(a.qualificadosPct ?? 0)} · {(a.qualMediaGrupos ?? 0).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}/7
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-28 shrink-0 text-[10px] font-bold text-white/80">Com anotações</span>
+                <div className="flex-1"><BarraH pct={a.anotadosPct ?? 0} cor="#7DD3FC" /></div>
+                <span className="w-24 shrink-0 text-right text-[10.5px] font-bold text-[#7DD3FC] tabular-nums">{fmtPct(a.anotadosPct ?? 0)}</span>
+              </div>
+              {a.semRegistro > 0 && (
+                <p className="text-[10px] font-bold text-[#FFE9A6]">
+                  ⚠️ {fmtInt(a.semRegistro)} lead{a.semRegistro > 1 ? 's' : ''} sem NENHUM registro — nem qualificação, nem anotação.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="space-y-3">
@@ -163,6 +229,26 @@ function DrillDown({ a, media }: { a: AtividadeRow; media: AtividadeMedia }) {
               </span>
             </div>
             <p className="text-[9.5px] text-text-secondary mt-1">% das interações dele nascidas dos pop-ups do circuito.</p>
+          </div>
+        </div>
+
+        {/* Velocidade & constância + trabalho de bastidor */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="bg-white/[0.03] border border-white/[0.08] rounded-xl p-3">
+            <span className="text-[9.5px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">⚡ Velocidade & constância</span>
+            <div className="mt-2 space-y-1 text-[10.5px] text-white/80">
+              <p>Criou o lead → cliente atendeu: <b className="text-white tabular-nums">{fmtHoras(a.tempo1oContatoMedioHoras)}</b> em média</p>
+              <p>Dias com atividade: <b className="text-white tabular-nums">{fmtInt(a.diasAtivos)} de {fmtInt(a.periodoDias)}</b> do período</p>
+              <p>Leads gerados por conta própria: <b className="text-white tabular-nums">{fmtInt(a.geracaoPropria)}</b> no período</p>
+            </div>
+          </div>
+          <div className="bg-white/[0.03] border border-white/[0.08] rounded-xl p-3">
+            <span className="text-[9.5px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">🔧 Trabalho de bastidor</span>
+            <div className="mt-2 space-y-1 text-[10.5px] text-white/80">
+              <p>Requalificações registradas: <b className="text-white tabular-nums">{fmtInt(a.requalificacoes)}</b></p>
+              <p>Buscas de imóvel pra oferecer: <b className="text-white tabular-nums">{fmtInt(a.buscasProduto)}</b></p>
+              <p>Agendamentos com observação 📝: <b className="text-white tabular-nums">{fmtInt(a.comObservacao)}</b></p>
+            </div>
           </div>
         </div>
 
@@ -212,6 +298,8 @@ export default function AtividadeTab({ report }: { report: ReportComputed }) {
     [rows, sortKey]
   );
 
+  const porNota = useMemo(() => [...rows].sort((a, b) => b.nota - a.nota || b.contatos - a.contatos), [rows]);
+
   const agoraOrdenado = useMemo(
     () => [...rows].sort((a, b) =>
       (b.agora.atrasadas * 2 + b.agora.semAcao + b.agora.negociacaoParada + b.agora.semPrimeiroContato)
@@ -224,6 +312,60 @@ export default function AtividadeTab({ report }: { report: ReportComputed }) {
 
   return (
     <div className="space-y-4">
+      {/* 0. Placar de notas — a visão de bater o olho */}
+      <SectionCard
+        title="Nota do período — quem tá jogando o jogo"
+        gold
+        right={<span className="text-[10px] text-text-secondary">clique no corretor pra abrir o raio-x completo lá embaixo</span>}
+      >
+        {porNota.length === 0 ? (
+          <EmptyMsg>Nenhum corretor aprovado na imobiliária.</EmptyMsg>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5">
+              {porNota.map((a, i) => {
+                const rel = fmtRelativo(a.ultimaAtividadeMs);
+                const expandido = aberto === a.id;
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => setAberto(expandido ? null : a.id)}
+                    className={`text-left rounded-xl border p-3 transition-colors ${
+                      expandido ? 'border-[#FF1E56]/50 bg-[#FF1E56]/[0.05]' : 'border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.05]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Medalha pos={i + 1} />
+                      <span className="flex-1 min-w-0 truncate text-[12.5px] font-bold text-white" title={a.nome}>{a.nome}</span>
+                      <span className="al-display text-[24px] font-bold tabular-nums leading-none" style={{ color: notaCor(a.nota) }}>{a.nota}</span>
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[9.5px] text-text-secondary">
+                      <span className="tabular-nums">{fmtInt(a.carteiraAtiva)} na carteira</span>
+                      <span className="text-white/20">·</span>
+                      <span className={rel.alerta ? 'font-bold text-[#FF9EB5]' : 'text-emerald-300/80'}>{rel.texto}</span>
+                    </div>
+                    <div className="mt-2 space-y-1">
+                      <NotaBar label="Ritmo" valor={a.notaPartes.ritmo} />
+                      <NotaBar label="Resultado" valor={a.notaPartes.resultado} />
+                      <NotaBar label="Capricho" valor={a.notaPartes.capricho} />
+                      <NotaBar label="Em dia" valor={a.notaPartes.emDia} />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[9.5px] text-white/30 mt-2.5">
+              Nota 0–100 com 4 pesos iguais: <b className="text-white/50">Ritmo</b> = volume de ações vs o melhor da equipe ·
+              <b className="text-white/50"> Resultado</b> = meets/visitas feitos, negociações, vendas e 1ºs contatos vs o melhor ·
+              <b className="text-white/50"> Capricho</b> = carteira qualificada (60%) + anotada (40%) ·
+              <b className="text-white/50"> Em dia</b> = desconta tarefa atrasada e lead sem próxima ação.
+              Componente sem amostra (ex.: carteira vazia) sai da conta — corretor novo não é punido.
+            </p>
+          </>
+        )}
+      </SectionCard>
+
       {/* 1. Ranking de atividade do período */}
       <SectionCard
         title="Ritmo por corretor"

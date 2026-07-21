@@ -79,6 +79,37 @@ export interface AtividadeRow {
   ligAtivaTrabalhados: number;
   ligAtivaCrm: number;
   manuais: number;
+  /** requalificações registradas no período ("o que não encaixou?") */
+  requalificacoes: number;
+  /** tarefas de buscar imóvel pra oferecer criadas no período */
+  buscasProduto: number;
+  /** agendamentos do período em que o corretor escreveu observação (· 📝) */
+  comObservacao: number;
+  /** leads novos do período gerados por esforço próprio (origem fora de Propaganda) */
+  geracaoPropria: number;
+  // ---- Capricho da carteira (retrato AGORA, não obedece ao período) ----
+  /** leads em etapa ativa (Entrada → Negociação) */
+  carteiraAtiva: number;
+  /** % da carteira ativa com pelo menos 1 grupo de qualificação preenchido */
+  qualificadosPct: number | null;
+  /** média de grupos de qualificação preenchidos na carteira ativa (0..7) */
+  qualMediaGrupos: number | null;
+  /** % da carteira ativa com anotações escritas */
+  anotadosPct: number | null;
+  /** leads ativos SEM nenhuma qualificação e SEM anotação — trabalhados no escuro */
+  semRegistro: number;
+  // ---- Velocidade & constância ----
+  /** dias distintos com pelo menos 1 interação no período */
+  diasAtivos: number;
+  /** tamanho do período em dias (denominador dos dias ativos) */
+  periodoDias: number;
+  /** última interação registrada (dentro da janela carregada); null = nada na janela */
+  ultimaAtividadeMs: number | null;
+  /** média de horas entre criar o lead e o 1º contato efetivo; null sem amostra */
+  tempo1oContatoMedioHoras: number | null;
+  // ---- Nota geral (0-100) ----
+  nota: number;
+  notaPartes: { ritmo: number; resultado: number; capricho: number | null; emDia: number | null };
   /** interações do período nascidas do circuito (circuito: true) */
   circuitoQtd: number;
   /** todas as interações do período atribuídas a ele */
@@ -108,7 +139,8 @@ export interface AtividadeMedia {
 
 type CircuitoEvento =
   | 'contato' | 'semResposta' | 'primeiroContato' | 'meetMarcado' | 'meetFeito' | 'visitaMarcada'
-  | 'visitaFeita' | 'negociacao' | 'venda' | 'descarte' | 'manual' | null;
+  | 'visitaFeita' | 'negociacao' | 'venda' | 'descarte' | 'manual'
+  | 'requalificacao' | 'produto' | null;
 
 /**
  * Traduz uma interação narrada pelo circuito num evento contável.
@@ -121,6 +153,9 @@ export function classificaInteracao(type: string, notes: string | undefined | nu
       // marco gravado pelo motor quando o cliente atende/responde pela 1ª vez
       if (n.startsWith('🎯 1º contato')) return 'primeiroContato';
       return null;
+    case 'Produto':
+      // "🔎 Vai buscar imóvel pra oferecer" — trabalho de bastidor que merece contar
+      return 'produto';
     case 'Ligação':
     case 'WhatsApp':
       return 'contato'; // tentativa de contato (circuito ou manual, é contato do mesmo jeito)
@@ -138,6 +173,7 @@ export function classificaInteracao(type: string, notes: string | undefined | nu
       return null;
     case 'Etapa':
       if (n.startsWith('↷ Etapa alterada manualmente') || (n.includes('Movido para') && n.includes('(kanban)'))) return 'manual';
+      if (n.startsWith('🎯 Requalificação')) return 'requalificacao';
       if (n.includes('pra proposta') || n.includes('pronto pra negociar') || n.includes('pra negociação')) return 'negociacao';
       return null;
     case 'Venda':
@@ -563,6 +599,10 @@ export function computeReport(
       vendasQtd: 0, vendasValor: 0, descartes: 0, descartesMotivos: [],
       primeirosContatos: 0, tentativasMediaPrimeiroContato: null,
       ligAtivaTrabalhados: 0, ligAtivaCrm: 0, manuais: 0,
+      requalificacoes: 0, buscasProduto: 0, comObservacao: 0, geracaoPropria: 0,
+      carteiraAtiva: 0, qualificadosPct: null, qualMediaGrupos: null, anotadosPct: null, semRegistro: 0,
+      diasAtivos: 0, periodoDias: 1, ultimaAtividadeMs: null, tempo1oContatoMedioHoras: null,
+      nota: 0, notaPartes: { ritmo: 0, resultado: 0, capricho: null, emDia: null },
       circuitoQtd: 0, interacoesTotal: 0,
       aceites: 0, tempoAceiteMedioSeg: null,
       agora: { atrasadas: 0, semAcao: 0, negociacaoParada: 0, semPrimeiroContato: 0 },
@@ -573,8 +613,16 @@ export function computeReport(
   let descartesTotal = 0;
   // tentativas até o 1º contato — soma/n por corretor pra tirar a média
   const tent1oMap = new Map<string, { soma: number; n: number }>();
+  // constância: dias distintos com interação no período + última atividade (janela toda)
+  const diasAtivosMap = new Map<string, Set<string>>();
+  const ultimaAtividadeMap = new Map<string, number>();
 
   interacoes.forEach((i) => {
+    const leadJanela = leadMap.get(i.leadId);
+    if (leadJanela) {
+      const dono = leadJanela.userId;
+      if ((ultimaAtividadeMap.get(dono) ?? 0) < i.tsMs) ultimaAtividadeMap.set(dono, i.tsMs);
+    }
     if (!noPeriodo(i.tsMs)) return;
     const lead = leadMap.get(i.leadId);
     if (!lead) return;
@@ -585,6 +633,10 @@ export function computeReport(
     if (!a) return;
     a.interacoesTotal++;
     if (i.circuito) a.circuitoQtd++;
+    if (i.notes.includes('· 📝')) a.comObservacao++;
+    const diasSet = diasAtivosMap.get(donoId) || new Set<string>();
+    diasSet.add(ymdLocal(i.tsMs));
+    diasAtivosMap.set(donoId, diasSet);
     switch (evento) {
       case 'contato': a.contatos++; break;
       case 'semResposta': a.semResposta++; break;
@@ -618,17 +670,39 @@ export function computeReport(
         break;
       }
       case 'manual': a.manuais++; break;
+      case 'requalificacao': a.requalificacoes++; break;
+      case 'produto': a.buscasProduto++; break;
       default: break; // desconhecida/legado — não conta
     }
   });
 
-  // Retrato AGORA (não obedece ao período): atrasos e leads sem próxima ação
+  // Retrato AGORA (não obedece ao período): atrasos, leads sem próxima ação e
+  // CAPRICHO da carteira (qualificação + anotações), velocidade e geração própria
+  const caprichoMap = new Map<string, { ativa: number; qualCom: number; qualSoma: number; anot: number; semReg: number }>();
+  const tempo1oMap = new Map<string, { somaH: number; n: number }>();
   src.leads.forEach((l) => {
     const a = atvMap.get(l.userId);
     if (!a) return;
+    // Geração própria: lead criado no período por esforço do corretor (fora Propaganda)
+    if (noPeriodo(l.createdAtMs) && l.origemTipo && l.origemTipo !== 'Propaganda') a.geracaoPropria++;
+    // Velocidade: horas entre criar o lead e o cliente atender pela 1ª vez
+    if (l.primeiroContatoMs !== null && l.createdAtMs !== null && l.primeiroContatoMs > l.createdAtMs) {
+      const horas = Math.min(720, (l.primeiroContatoMs - l.createdAtMs) / (60 * 60 * 1000));
+      const t = tempo1oMap.get(l.userId) || { somaH: 0, n: 0 };
+      t.somaH += horas; t.n++;
+      tempo1oMap.set(l.userId, t);
+    }
     a.agora.atrasadas += l.pendentesMs.filter((ms) => ms < agoraMs).length;
     const etapaCirc = mapEtapaCircuito(l.etapa);
     if (isTerminal(etapaCirc)) return;
+    // Capricho: só a carteira ATIVA conta (Entrada → Negociação)
+    const cap = caprichoMap.get(l.userId) || { ativa: 0, qualCom: 0, qualSoma: 0, anot: 0, semReg: 0 };
+    cap.ativa++;
+    if (l.qualGrupos > 0) cap.qualCom++;
+    cap.qualSoma += l.qualGrupos;
+    if (l.temAnotacoes) cap.anot++;
+    if (l.qualGrupos === 0 && !l.temAnotacoes) cap.semReg++;
+    caprichoMap.set(l.userId, cap);
     if (l.pendentesMs.length === 0) {
       a.agora.semAcao++;
       if (etapaCirc === ETAPA_NEGOCIACAO) a.agora.negociacaoParada++;
@@ -659,6 +733,7 @@ export function computeReport(
     a.tempoAceiteMedioSeg = r.tempoAceiteMedioSeg;
   });
 
+  const periodoDias = Math.max(1, Math.round((fimMs - inicioMs + 1) / DIA_MS));
   const atividadeRows: AtividadeRow[] = src.corretores.map((c) => {
     const a = atvMap.get(c.id)!;
     a.descartesMotivos = Array.from((motivosPorCorretor.get(c.id) || new Map<string, number>()).entries())
@@ -666,7 +741,49 @@ export function computeReport(
       .sort((x, y) => y.count - x.count);
     const t1 = tent1oMap.get(c.id);
     a.tentativasMediaPrimeiroContato = t1 && t1.n > 0 ? t1.soma / t1.n : null;
+    // Capricho da carteira
+    const cap = caprichoMap.get(c.id);
+    if (cap && cap.ativa > 0) {
+      a.carteiraAtiva = cap.ativa;
+      a.qualificadosPct = (cap.qualCom / cap.ativa) * 100;
+      a.qualMediaGrupos = cap.qualSoma / cap.ativa;
+      a.anotadosPct = (cap.anot / cap.ativa) * 100;
+      a.semRegistro = cap.semReg;
+    }
+    // Velocidade & constância
+    a.diasAtivos = diasAtivosMap.get(c.id)?.size ?? 0;
+    a.periodoDias = periodoDias;
+    a.ultimaAtividadeMs = ultimaAtividadeMap.get(c.id) ?? null;
+    const v1 = tempo1oMap.get(c.id);
+    a.tempo1oContatoMedioHoras = v1 && v1.n > 0 ? v1.somaH / v1.n : null;
     return a;
+  });
+
+  // ------------------------------------------------------------------
+  // NOTA GERAL (0-100) — 4 componentes de até 25 pts, transparentes:
+  //   Ritmo      = volume de interações vs o melhor da equipe no período
+  //   Resultado  = meets/visitas feitos + negociações + vendas + 1ºs contatos vs o melhor
+  //   Capricho   = qualificação (60%) + anotações (40%) da carteira ativa
+  //   Em dia     = desconta atrasadas e leads sem próxima ação da carteira
+  // Componente sem amostra (carteira vazia) sai do denominador — corretor novo
+  // não é punido pelo que ainda não teve como fazer.
+  // ------------------------------------------------------------------
+  const maxInteracoes = Math.max(1, ...atividadeRows.map((r) => r.interacoesTotal));
+  const pontosResultado = (r: AtividadeRow) =>
+    r.meetsFeitos * 2 + r.visitasFeitas * 3 + r.negociacoes * 2 + r.vendasQtd * 8 + r.primeirosContatos;
+  const maxPontos = Math.max(1, ...atividadeRows.map(pontosResultado));
+  atividadeRows.forEach((r) => {
+    const ritmo = 25 * Math.min(1, r.interacoesTotal / maxInteracoes);
+    const resultado = 25 * Math.min(1, pontosResultado(r) / maxPontos);
+    const capricho = r.carteiraAtiva > 0 && r.qualificadosPct !== null && r.anotadosPct !== null
+      ? 25 * (0.6 * (r.qualificadosPct / 100) + 0.4 * (r.anotadosPct / 100))
+      : null;
+    const emDia = r.carteiraAtiva > 0
+      ? 25 * Math.max(0, 1 - (r.agora.atrasadas + 0.5 * r.agora.semAcao) / r.carteiraAtiva)
+      : null;
+    const partes = [ritmo, resultado, capricho, emDia].filter((p): p is number => p !== null);
+    r.notaPartes = { ritmo, resultado, capricho, emDia };
+    r.nota = partes.length > 0 ? Math.round((partes.reduce((s, p) => s + p, 0) / (partes.length * 25)) * 100) : 0;
   });
 
   const atvMedia: AtividadeMedia = {
