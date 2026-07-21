@@ -1,12 +1,20 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
+/**
+ * Meets & Visitas — 100% AUTOMÁTICO.
+ * A contagem vem das tarefas de Meet e Visita agendadas no CRM; a semana atual
+ * (seg → dom) se cria sozinha e o placar se atualiza a cada hora pela home.
+ * Aqui o admin só ENXERGA: as datas do período (editáveis, se quiser um
+ * intervalo diferente) e o contador de cada corretor. Histórico embaixo.
+ */
+import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, doc, getDocs, setDoc, addDoc, deleteDoc, serverTimestamp, query, where } from 'firebase/firestore';
+import { collection, doc, getDocs, setDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
-import { contarMeetsVisitasDoCrm } from '@/lib/meetsVisitas';
 import { DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
+import { garantirPeriodoSemanaAtual, recalcularPeriodoMeets } from '@/lib/meetsVisitas';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
+import { showToast } from '@/components/ui/toast';
 import LoadingState from '@/components/ui/LoadingState';
 
 interface Corretor {
@@ -20,8 +28,8 @@ interface PeriodoMeets {
   inicio: string; // YYYY-MM-DD
   fim: string; // YYYY-MM-DD
   contadores: Record<string, number>;
-  automatico?: boolean; // true = contadores recalculados das tarefas de Meet e Visita do CRM
-  createdAt?: any;
+  automatico?: boolean;
+  recalculadoEm?: any;
 }
 
 const fmtBr = (ymd?: string) => (ymd ? `${ymd.slice(8, 10)}/${ymd.slice(5, 7)}/${ymd.slice(0, 4)}` : '—');
@@ -34,244 +42,184 @@ const hojeYmd = () => {
 const dateToYmd = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
+const fmtRecalculado = (r: any): string => {
+  const ms = r?.toMillis ? r.toMillis() : (typeof r?.seconds === 'number' ? r.seconds * 1000 : null);
+  if (ms === null) return 'ainda não contado';
+  const min = Math.floor((Date.now() - ms) / 60000);
+  if (min < 2) return 'atualizado agora';
+  if (min < 60) return `atualizado há ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `atualizado há ${h} h`;
+  return `atualizado há ${Math.floor(h / 24)} d`;
+};
+
+const MEDALHA = ['🥇', '🥈', '🥉'];
+
 export default function AdminMeetsVisitasPage() {
   const { userData, isEspelhoDemo } = useAuth();
   const [corretores, setCorretores] = useState<Corretor[]>([]);
   const [periodos, setPeriodos] = useState<PeriodoMeets[]>([]);
   const [fetching, setFetching] = useState(true);
-
-  // Novo período
-  const [novoInicio, setNovoInicio] = useState('');
-  const [novoFim, setNovoFim] = useState('');
-  const [criando, setCriando] = useState(false);
-
-  // Edição de contadores (rascunho local por período)
-  const [drafts, setDrafts] = useState<Record<string, Record<string, number>>>({});
-  const [savingId, setSavingId] = useState<string | null>(null);
-  const [okId, setOkId] = useState<string | null>(null);
-
-  // Modo automático
-  const [togglingId, setTogglingId] = useState<string | null>(null);
   const [recalcId, setRecalcId] = useState<string | null>(null);
-  const [recalcOk, setRecalcOk] = useState<Record<string, number>>({}); // periodoId -> total recalculado
-  const autoRecalcFeito = useRef(false);
+  const [expandido, setExpandido] = useState<string | null>(null);
 
-  // Erros visíveis por card ('novo' = formulário de criação)
-  const [erros, setErros] = useState<Record<string, string>>({});
-  const setErro = (k: string, msg: string) => setErros((prev) => ({ ...prev, [k]: msg }));
-  const limpaErro = (k: string) =>
-    setErros((prev) => {
-      const n = { ...prev };
-      delete n[k];
-      return n;
-    });
+  // Edição das datas do período atual (opcional — o normal é deixar a semana automática)
+  const [editIni, setEditIni] = useState('');
+  const [editFim, setEditFim] = useState('');
+  const [salvandoDatas, setSalvandoDatas] = useState(false);
+  const [erroDatas, setErroDatas] = useState('');
 
-  // Corretores aprovados da imobiliária (mesmo padrão da página de Metas)
+  // ------------------------------------------------------------------
+  // Carga: corretores + períodos (garantindo que a semana atual existe)
+  // ------------------------------------------------------------------
   useEffect(() => {
     if (!userData?.imobiliariaId && !isEspelhoDemo) return;
     if (isEspelhoDemo) {
       setCorretores(DEMO_REPORT_CORRETORES.map((c: any) => ({ id: c.uid, nome: c.nome })));
       return;
     }
-    const fetchCorretores = async () => {
-      const q = query(
-        collection(db, 'usuarios'),
-        where('imobiliariaId', '==', userData!.imobiliariaId),
-        where('tipoConta', 'in', ['corretor-vinculado', 'corretor-autonomo', 'imobiliaria']),
-        where('aprovado', '==', true)
-      );
-      const snapshot = await getDocs(q);
-      setCorretores(snapshot.docs.map((d) => ({ id: d.id, nome: d.data().nome })));
-    };
-    fetchCorretores();
+    getDocs(query(
+      collection(db, 'usuarios'),
+      where('imobiliariaId', '==', userData!.imobiliariaId),
+      where('tipoConta', 'in', ['corretor-vinculado', 'corretor-autonomo', 'imobiliaria']),
+      where('aprovado', '==', true)
+    )).then((snap) => setCorretores(snap.docs.map((d) => ({ id: d.id, nome: d.data().nome }))));
   }, [userData?.imobiliariaId, isEspelhoDemo]);
 
-  const fetchPeriodos = async () => {
+  const carregarPeriodos = async (garantir = false) => {
     if (isEspelhoDemo) {
       const hoje = new Date();
-      const dow = (hoje.getDay() + 6) % 7;
-      const seg = new Date(hoje); seg.setDate(hoje.getDate() - dow);
+      const seg = new Date(hoje); seg.setDate(hoje.getDate() - ((hoje.getDay() + 6) % 7));
       const dom = new Date(seg); dom.setDate(seg.getDate() + 6);
-      setPeriodos([{ id: 'demo', imobiliariaId: 'demo', inicio: dateToYmd(seg), fim: dateToYmd(dom), contadores: Object.fromEntries(DEMO_REPORT_CORRETORES.map((c: any, i: number) => [c.uid, [12, 9, 7, 5][i] ?? 3])) }]);
+      const segAnt = new Date(seg); segAnt.setDate(seg.getDate() - 7);
+      const domAnt = new Date(segAnt); domAnt.setDate(segAnt.getDate() + 6);
+      setPeriodos([
+        { id: 'demo-atual', imobiliariaId: 'demo', inicio: dateToYmd(seg), fim: dateToYmd(dom), automatico: true, contadores: Object.fromEntries(DEMO_REPORT_CORRETORES.map((c: any, i: number) => [c.uid, [12, 9, 7, 5, 4, 2][i] ?? 1])) },
+        { id: 'demo-ant', imobiliariaId: 'demo', inicio: dateToYmd(segAnt), fim: dateToYmd(domAnt), automatico: true, contadores: Object.fromEntries(DEMO_REPORT_CORRETORES.map((c: any, i: number) => [c.uid, [9, 11, 5, 6, 2, 3][i] ?? 1])) },
+      ]);
       setFetching(false);
       return;
     }
     if (!userData?.imobiliariaId) { setFetching(false); return; }
-    setFetching(true);
     try {
-      const q = query(collection(db, 'meetsVisitas'), where('imobiliariaId', '==', userData.imobiliariaId));
-      const snap = await getDocs(q);
-      const lista = snap.docs
-        .map((d) => ({ id: d.id, ...(d.data() as any) }) as PeriodoMeets)
-        .sort((a, b) => (b.inicio || '').localeCompare(a.inicio || ''));
+      const buscar = async () => {
+        const snap = await getDocs(query(collection(db, 'meetsVisitas'), where('imobiliariaId', '==', userData.imobiliariaId)));
+        return snap.docs
+          .map((d) => ({ id: d.id, ...(d.data() as any) }) as PeriodoMeets)
+          .sort((a, b) => (b.inicio || '').localeCompare(a.inicio || ''));
+      };
+      let lista = await buscar();
+      if (garantir) {
+        // Semana atual se cria sozinha (e já conta) se nenhum período cobre hoje
+        await garantirPeriodoSemanaAtual(userData.imobiliariaId, lista);
+        lista = await buscar();
+      }
       setPeriodos(lista);
     } catch (e) {
       console.error('Erro ao buscar períodos de meets & visitas:', e);
-      setErro('novo', 'Não foi possível carregar os períodos — recarregue a página.');
+      showToast('Não foi possível carregar — recarregue a página.', 'error');
     } finally {
       setFetching(false);
     }
   };
 
-  useEffect(() => { fetchPeriodos(); }, [userData?.imobiliariaId, isEspelhoDemo]);
+  useEffect(() => { carregarPeriodos(true); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [userData?.imobiliariaId, isEspelhoDemo]);
 
-  const statusPeriodo = (p: PeriodoMeets): { label: string; cls: string } => {
-    const hoje = hojeYmd();
-    if (p.inicio <= hoje && hoje <= p.fim) return { label: 'ATIVO', cls: 'bg-[#34D399]/10 border-[#34D399]/40 text-emerald-300' };
-    if (p.fim < hoje) return { label: 'ENCERRADO', cls: 'bg-white/[0.05] border-white/15 text-text-secondary' };
-    return { label: 'FUTURO', cls: 'bg-[#7DD3FC]/10 border-[#7DD3FC]/40 text-[#7DD3FC]' };
+  const hoje = hojeYmd();
+  const atual = periodos.find((p) => p.inicio <= hoje && hoje <= p.fim) ?? null;
+  const historico = periodos.filter((p) => p.id !== atual?.id);
+
+  // Sincroniza os inputs de data quando o período atual muda
+  useEffect(() => {
+    setEditIni(atual?.inicio ?? '');
+    setEditFim(atual?.fim ?? '');
+    setErroDatas('');
+  }, [atual?.id, atual?.inicio, atual?.fim]);
+
+  const datasMudaram = !!atual && (editIni !== atual.inicio || editFim !== atual.fim);
+
+  // ------------------------------------------------------------------
+  // Ações
+  // ------------------------------------------------------------------
+  const guardaDemo = (): boolean => {
+    if (isEspelhoDemo) { showToast('Modo demonstração — nada é salvo.', 'info'); return true; }
+    return false;
   };
 
-  const getDraft = (p: PeriodoMeets): Record<string, number> => drafts[p.id] ?? p.contadores ?? {};
-
-  const setContador = (periodoId: string, corretorId: string, valor: number, base: Record<string, number>) => {
-    setDrafts((prev) => ({ ...prev, [periodoId]: { ...(prev[periodoId] ?? base), [corretorId]: Math.max(0, valor) } }));
-  };
-
-  // ---------------------------------------------------------------------------
-  // MODO AUTOMÁTICO — contagem a partir das tarefas de Meet e Visita do CRM
-  //
-  // Abordagem escolhida: buscamos os leads da imobiliária (where imobiliariaId ==,
-  // índice simples automático) e depois lemos a subcoleção leads/{id}/tarefas de
-  // cada lead com where('type', 'in', ['Visita', 'Meet']) (índice automático de
-  // campo único; uma query só cobre os dois tipos do circuito).
-  // NÃO usamos collectionGroup('tarefas') porque os docs de tarefa não têm
-  // imobiliariaId/userId: um collectionGroup filtrando type + intervalo de dueDate
-  // exigiria índice composto no console E varreria tarefas de todas as imobiliárias
-  // (as regras/custos não permitem isolar o tenant). Aqui tudo funciona sem criar
-  // índice nenhum. O intervalo de data é filtrado no cliente: dueDate (Timestamp)
-  // vira YYYY-MM-DD local e é comparado com [inicio, fim] do período.
-  // Tarefas com status 'cancelada' não contam.
-  // ---------------------------------------------------------------------------
-  // A contagem em si mora em src/lib/meetsVisitas.ts — a home usa a mesma função
-  // pro auto-refresh silencioso (períodos automáticos se atualizam sozinhos).
-  const contarVisitasDoCrm = (p: PeriodoMeets) => contarMeetsVisitasDoCrm(userData!.imobiliariaId!, p);
-
-  const handleRecalcular = async (p: PeriodoMeets) => {
-    if (isEspelhoDemo) return; // demo: botão aparece mas não grava
-    if (!userData?.imobiliariaId) return;
+  const recalcular = async (p: PeriodoMeets) => {
+    if (guardaDemo() || !userData?.imobiliariaId) return;
     setRecalcId(p.id);
-    limpaErro(p.id);
     try {
-      const contadores = await contarVisitasDoCrm(p);
-      await setDoc(doc(db, 'meetsVisitas', p.id), { contadores, recalculadoEm: serverTimestamp() }, { merge: true });
-      setPeriodos((prev) => prev.map((x) => (x.id === p.id ? { ...x, contadores } : x)));
-      // descarta rascunho manual antigo desse período — o valor da verdade agora é o CRM
-      setDrafts((prev) => { const n = { ...prev }; delete n[p.id]; return n; });
+      // Recontar já torna o período automático (o modo manual não existe mais)
+      await setDoc(doc(db, 'meetsVisitas', p.id), { automatico: true }, { merge: true });
+      const contadores = await recalcularPeriodoMeets(userData.imobiliariaId, p);
+      setPeriodos((prev) => prev.map((x) => (x.id === p.id ? { ...x, contadores, automatico: true, recalculadoEm: { toMillis: () => Date.now() } } : x)));
       const total = Object.values(contadores).reduce((s, v) => s + v, 0);
-      setRecalcOk((prev) => ({ ...prev, [p.id]: total }));
-      setTimeout(() => setRecalcOk((prev) => { const n = { ...prev }; delete n[p.id]; return n; }), 5000);
-    } catch (err) {
-      console.error('Erro ao recalcular do CRM:', err);
-      setErro(p.id, 'Não foi possível recalcular do CRM — tente de novo.');
+      showToast(`Contagem atualizada: ${total} agendamento${total === 1 ? '' : 's'} no período.`, 'success');
+    } catch (e) {
+      console.error('Erro ao recalcular:', e);
+      showToast('Não foi possível recontar — tente de novo.', 'error');
     } finally {
       setRecalcId(null);
     }
   };
 
-  const handleToggleAutomatico = async (p: PeriodoMeets) => {
-    if (isEspelhoDemo) return; // demo: chip aparece mas não grava
-    const novo = !p.automatico;
-    setTogglingId(p.id);
-    limpaErro(p.id);
+  const salvarDatas = async () => {
+    if (!atual || guardaDemo() || !userData?.imobiliariaId) return;
+    if (!editIni || !editFim || editFim < editIni) { setErroDatas('A data final não pode ser antes da inicial.'); return; }
+    const conflito = periodos.find((pp) => pp.id !== atual.id && editIni <= pp.fim && pp.inicio <= editFim);
+    if (conflito) { setErroDatas(`Sobrepõe o período ${fmtBr(conflito.inicio)} → ${fmtBr(conflito.fim)}.`); return; }
+    setSalvandoDatas(true);
+    setErroDatas('');
     try {
-      await setDoc(doc(db, 'meetsVisitas', p.id), { automatico: novo }, { merge: true });
-      setPeriodos((prev) => prev.map((x) => (x.id === p.id ? { ...x, automatico: novo } : x)));
-      if (novo) await handleRecalcular({ ...p, automatico: true }); // ao ligar, já puxa do CRM
-    } catch (err) {
-      console.error('Erro ao alterar modo automático:', err);
-      setErro(p.id, 'Não foi possível salvar — tente de novo.');
+      await setDoc(doc(db, 'meetsVisitas', atual.id), { inicio: editIni, fim: editFim, automatico: true }, { merge: true });
+      await recalcularPeriodoMeets(userData.imobiliariaId, { ...atual, inicio: editIni, fim: editFim });
+      await carregarPeriodos();
+      showToast('Datas salvas e contagem refeita pro novo intervalo.', 'success');
+    } catch (e) {
+      console.error('Erro ao salvar datas:', e);
+      showToast('Não foi possível salvar as datas — tente de novo.', 'error');
     } finally {
-      setTogglingId(null);
+      setSalvandoDatas(false);
     }
   };
 
-  // Recalcula sozinho ao abrir a página: períodos automáticos e ATIVOS se
-  // retroalimentam do CRM sempre que o admin visita a tela.
-  useEffect(() => {
-    if (fetching || isEspelhoDemo || autoRecalcFeito.current || !userData?.imobiliariaId) return;
-    const ativos = periodos.filter((p) => p.automatico && statusPeriodo(p).label === 'ATIVO');
-    if (ativos.length === 0) return;
-    autoRecalcFeito.current = true;
-    (async () => {
-      for (const p of ativos) await handleRecalcular(p);
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetching, periodos, isEspelhoDemo, userData?.imobiliariaId]);
-
-  const handleCriar = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isEspelhoDemo || !userData?.imobiliariaId || !novoInicio || !novoFim) return;
-    limpaErro('novo');
-    if (novoFim < novoInicio) {
-      setErro('novo', 'A data final não pode ser antes da inicial.');
-      return;
-    }
-    // Impede sobreposição: dois intervalos [a1,a2] e [b1,b2] se cruzam quando a1 <= b2 e b1 <= a2
-    const conflito = periodos.find((pp) => novoInicio <= pp.fim && pp.inicio <= novoFim);
-    if (conflito) {
-      setErro('novo', `Esse intervalo sobrepõe o período ${fmtBr(conflito.inicio)} → ${fmtBr(conflito.fim)}. Ajuste as datas.`);
-      return;
-    }
-    setCriando(true);
-    try {
-      const ini = novoInicio;
-      const fim = novoFim;
-      const ref = await addDoc(collection(db, 'meetsVisitas'), {
-        imobiliariaId: userData.imobiliariaId,
-        inicio: ini,
-        fim: fim,
-        contadores: {},
-        // Nasce AUTOMÁTICO: os contadores vêm das tarefas de Meet/Visita do CRM
-        // (o lançamento manual continua disponível desligando o chip).
-        automatico: true,
-        createdAt: serverTimestamp(),
-      });
-      setNovoInicio('');
-      setNovoFim('');
-      await fetchPeriodos();
-      // Já nasce com os números do CRM — sem precisar lançar nada na mão
-      await handleRecalcular({ id: ref.id, imobiliariaId: userData.imobiliariaId, inicio: ini, fim: fim, contadores: {}, automatico: true });
-    } catch (err) {
-      console.error('Erro ao criar período:', err);
-      setErro('novo', 'Não foi possível criar o período — tente de novo.');
-    } finally {
-      setCriando(false);
-    }
-  };
-
-  const handleSalvar = async (p: PeriodoMeets) => {
-    if (isEspelhoDemo) return;
-    setSavingId(p.id);
-    limpaErro(p.id);
-    try {
-      const contadores = getDraft(p);
-      await setDoc(doc(db, 'meetsVisitas', p.id), { contadores }, { merge: true });
-      setPeriodos((prev) => prev.map((x) => (x.id === p.id ? { ...x, contadores } : x)));
-      setOkId(p.id);
-      setTimeout(() => setOkId(null), 1800);
-    } catch (err) {
-      console.error('Erro ao salvar contadores:', err);
-      setErro(p.id, 'Não foi possível salvar — tente de novo.');
-    } finally {
-      setSavingId(null);
-    }
-  };
-
-  const handleExcluir = async (p: PeriodoMeets) => {
-    if (isEspelhoDemo) { setPeriodos((prev) => prev.filter((x) => x.id !== p.id)); return; }
-    if (!(await confirmDialog({ message: `Excluir o período ${fmtBr(p.inicio)} → ${fmtBr(p.fim)}? Os contadores dele somem do histórico dos corretores.`, danger: true, confirmLabel: 'Excluir' }))) return;
-    limpaErro(p.id);
+  const excluir = async (p: PeriodoMeets) => {
+    if (guardaDemo()) return;
+    const ok = await confirmDialog({
+      title: 'Excluir período?',
+      message: `Apaga o placar de ${fmtBr(p.inicio)} → ${fmtBr(p.fim)}. O histórico dos corretores perde essa semana.`,
+      confirmLabel: 'Excluir',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await deleteDoc(doc(db, 'meetsVisitas', p.id));
       setPeriodos((prev) => prev.filter((x) => x.id !== p.id));
-    } catch (err) {
-      console.error('Erro ao excluir período:', err);
-      setErro(p.id, 'Não foi possível excluir — tente de novo.');
+      showToast('Período excluído.', 'success');
+    } catch (e) {
+      console.error('Erro ao excluir período:', e);
+      showToast('Não foi possível excluir — tente de novo.', 'error');
     }
   };
 
-  const nomeDoCorretor = (id: string) => corretores.find((c) => c.id === id)?.nome;
+  const nomeDe = (uid: string) => corretores.find((c) => c.id === uid)?.nome || 'Corretor';
+
+  /** Linhas do placar: todos os corretores (0 incluso), maiores primeiro. */
+  const linhasDe = (p: PeriodoMeets) => {
+    const cont = p.contadores || {};
+    const ids = new Set<string>([...corretores.map((c) => c.id), ...Object.keys(cont)]);
+    return Array.from(ids)
+      .map((id) => ({ id, nome: nomeDe(id), n: cont[id] || 0 }))
+      .sort((a, b) => b.n - a.n || a.nome.localeCompare(b.nome, 'pt-BR'));
+  };
+
+  const totalDe = (p: PeriodoMeets) => Object.values(p.contadores || {}).reduce((s, v) => s + v, 0);
+
+  // ------------------------------------------------------------------
+  // Render
+  // ------------------------------------------------------------------
+  const inputCls = 'px-3 py-2 bg-white/[0.04] border border-white/15 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50';
 
   return (
     <div className="max-w-3xl mx-auto mt-6 space-y-4 pb-10">
@@ -279,130 +227,136 @@ export default function AdminMeetsVisitasPage() {
         <span className="gx-tag"><span>Área do administrador</span></span>
         <h1 className="al-display text-[22px] font-bold text-white uppercase tracking-[0.1em] mt-2">Meets & Visitas</h1>
         <p className="text-[12px] text-text-secondary mt-1">
-          Defina o período que está sendo contado — a contagem é <b className="text-white">automática</b>: as tarefas de Meet
-          e Visita agendadas no CRM viram o placar sozinhas (atualiza a cada hora, sem lançar nada na mão).
-          Quer lançar manualmente? Desliga o chip automático do período. O pódio e o placar da home leem daqui;
-          períodos encerrados viram o histórico do corretor.
+          Tudo automático: a semana (seg → dom) se cria sozinha e o placar conta as tarefas de Meet e Visita
+          agendadas no CRM, atualizando a cada hora. Só mexa nas datas se quiser um intervalo diferente.
         </p>
       </div>
 
-      {/* Novo período */}
-      <form onSubmit={handleCriar} className="al-card relative overflow-hidden p-4">
-        <div className="absolute inset-x-0 top-0 gx-line" />
-        <h2 className="al-display text-[14px] font-bold text-white uppercase tracking-[0.14em] mb-3">Abrir novo período</h2>
-        <div className="flex flex-wrap items-end gap-3">
-          <div>
-            <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">Início</label>
-            <input type="date" value={novoInicio} onChange={(e) => setNovoInicio(e.target.value)} required className="bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50" />
-          </div>
-          <div>
-            <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1">Fim</label>
-            <input type="date" value={novoFim} onChange={(e) => setNovoFim(e.target.value)} required className="bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50" />
-          </div>
-          <button type="submit" disabled={criando || isEspelhoDemo} className="bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold rounded-xl px-5 py-2 shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all disabled:opacity-50">
-            {criando ? 'Criando...' : 'Criar período'}
-          </button>
-        </div>
-        {erros['novo'] && <p className="text-red-300 text-[11.5px] font-bold mt-2">{erros['novo']}</p>}
-        <p className="text-[10.5px] text-text-secondary mt-2">
-          A semana atual (seg → dom) <b className="text-white">se cria sozinha</b> no modo automático — só crie na mão se quiser
-          um intervalo diferente (períodos não podem se sobrepor).
-        </p>
-      </form>
-
-      {/* Períodos */}
       {fetching ? (
-        <div className="al-card p-6">
-          <LoadingState label="Carregando períodos..." />
-        </div>
-      ) : periodos.length === 0 ? (
-        <div className="al-card p-6 text-center">
-          <p className="text-text-secondary text-sm">Nenhum período criado ainda — abra o primeiro acima.</p>
-        </div>
+        <div className="al-card p-6"><LoadingState label="Carregando placar..." /></div>
       ) : (
-        periodos.map((p) => {
-          const st = statusPeriodo(p);
-          const auto = !!p.automatico;
-          const draft = auto ? (p.contadores ?? {}) : getDraft(p);
-          const total = corretores.reduce((s, c) => s + (Number(draft[c.id]) || 0), 0);
-          const recalculando = recalcId === p.id;
-          // Contadores de corretores que saíram da imobiliária (ids sem cadastro) continuam visíveis p/ auditoria
-          const orfaos = Object.keys(p.contadores || {}).filter((id) => !nomeDoCorretor(id));
-          return (
-            <div key={p.id} className="al-card relative overflow-hidden p-4">
-              <div className="absolute inset-x-0 top-0 gx-line-gold" />
-              <div className="flex flex-wrap items-center gap-2.5 mb-3">
-                <h3 className="al-display text-[15px] font-bold text-white tabular-nums">{fmtBr(p.inicio)} → {fmtBr(p.fim)}</h3>
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9.5px] font-extrabold uppercase tracking-wider border ${st.cls}`}>{st.label}</span>
-                <button
-                  type="button"
-                  onClick={() => handleToggleAutomatico(p)}
-                  disabled={togglingId === p.id || recalculando}
-                  title={auto
-                    ? 'Modo automático ligado: os contadores vêm das tarefas de Meet e Visita agendadas no CRM. Clique para voltar ao lançamento manual.'
-                    : 'Ligar modo automático: contar as tarefas de Meet e Visita agendadas no CRM dentro do período.'}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9.5px] font-extrabold uppercase tracking-wider border transition-colors disabled:opacity-50 ${
-                    auto
-                      ? 'bg-gradient-to-r from-[#E8C547]/15 to-[#34D399]/10 border-[#E8C547]/50 text-[#FFE9A6]'
-                      : 'bg-white/[0.04] border-white/15 text-text-secondary hover:border-white/30 hover:text-white'
-                  }`}
-                >
-                  <span className={`h-1.5 w-1.5 rounded-full ${auto ? 'bg-[#34D399] shadow-[0_0_6px_rgba(52,211,153,0.8)]' : 'bg-white/25'}`} />
-                  Automático
-                </button>
-                <span className="ml-auto text-[11px] text-text-secondary">total do período: <b className="text-[#FFE9A6] al-display text-[14px] tabular-nums">{total}</b></span>
-              </div>
-              {auto && recalculando && (
-                <p className="text-[10.5px] text-text-secondary mb-2 flex items-center gap-1.5">
-                  <span className="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-[#E8C547]" />
-                  Recalculando meets e visitas do CRM...
-                </p>
-              )}
-              <div className="space-y-1.5">
-                {corretores.map((c) => (
-                  <div key={c.id} className="flex items-center gap-3 rounded-lg px-3 py-1.5 bg-white/[0.03] border border-white/[0.07]">
-                    <span className="flex-1 min-w-0 truncate text-[12.5px] font-bold text-white">{c.nome}</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={draft[c.id] ?? 0}
-                      disabled={auto}
-                      title={auto ? 'Contador automático: vem das tarefas de Meet e Visita do CRM. Desligue o modo automático para editar à mão.' : undefined}
-                      onChange={(e) => setContador(p.id, c.id, parseInt(e.target.value || '0', 10) || 0, p.contadores || {})}
-                      className="w-20 text-center bg-white/[0.04] border border-white/10 rounded-lg px-2 py-1.5 text-white al-display text-[15px] tabular-nums focus:outline-none focus:ring-2 focus:ring-[#E8C547]/50 focus:border-[#E8C547]/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
-                    <span className="text-[9.5px] uppercase tracking-wider text-text-secondary w-14">agend.</span>
-                  </div>
-                ))}
-                {corretores.length === 0 && (
-                  <p className="text-[12px] text-text-secondary">Nenhum corretor aprovado na imobiliária.</p>
-                )}
-                {orfaos.length > 0 && (
-                  <p className="text-[10px] text-white/35">+{orfaos.length} contador(es) de corretor(es) que não está(ão) mais na equipe (preservados no histórico).</p>
-                )}
-              </div>
-              <div className="flex items-center gap-2 mt-3">
-                {auto ? (
-                  <button type="button" onClick={() => handleRecalcular(p)} disabled={recalculando || isEspelhoDemo} className="bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white font-bold rounded-xl px-4 py-2 shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all disabled:opacity-50">
-                    {recalculando ? 'Recalculando...' : 'Recalcular do CRM'}
-                  </button>
-                ) : (
-                  <button type="button" onClick={() => handleSalvar(p)} disabled={savingId === p.id || isEspelhoDemo} className="bg-gradient-to-r from-[#E8C547] to-[#C89210] hover:brightness-110 text-[#181203] font-bold rounded-xl px-4 py-2 shadow-[0_8px_24px_-8px_rgba(232,197,71,0.5)] active:scale-[0.98] transition-all disabled:opacity-50">
-                    {savingId === p.id ? 'Salvando...' : 'Salvar contadores'}
-                  </button>
-                )}
-                {okId === p.id && <span className="text-emerald-300 text-[12px] font-bold">✓ salvo</span>}
-                {recalcOk[p.id] !== undefined && (
-                  <span className="text-emerald-300 text-[12px] font-bold">✓ recalculado · total {recalcOk[p.id]}</span>
-                )}
-                <button type="button" onClick={() => handleExcluir(p)} className="ml-auto border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-300 font-bold rounded-xl px-4 py-2 transition-colors">
-                  Excluir período
-                </button>
-              </div>
-              {erros[p.id] && <p className="text-red-300 text-[11.5px] font-bold mt-2">{erros[p.id]}</p>}
+        <>
+          {/* Período atual — datas (editáveis) + contadores */}
+          {!atual ? (
+            <div className="al-card relative overflow-hidden p-5">
+              <div className="absolute inset-x-0 top-0 gx-line" />
+              <p className="text-sm text-text-secondary">
+                Nenhum período cobre hoje — a semana atual se cria sozinha assim que alguém abrir a home. Recarregue em instantes.
+              </p>
             </div>
-          );
-        })
+          ) : (
+            <div className="al-card relative overflow-hidden p-5">
+              <div className="absolute inset-x-0 top-0 gx-line-gold" />
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.12em]">Período atual</h2>
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider border bg-[#34D399]/10 border-[#34D399]/40 text-emerald-300">Ativo · automático</span>
+                <span className="ml-auto text-[10px] text-text-secondary">{fmtRecalculado(atual.recalculadoEm)}</span>
+              </div>
+
+              <div className="flex flex-wrap items-end gap-2 mb-4">
+                <label className="flex flex-col gap-1 text-[9.5px] font-extrabold uppercase tracking-[0.16em] text-text-secondary">
+                  Início
+                  <input type="date" value={editIni} onChange={(e) => setEditIni(e.target.value)} className={inputCls} />
+                </label>
+                <span className="pb-2.5 text-white/30">→</span>
+                <label className="flex flex-col gap-1 text-[9.5px] font-extrabold uppercase tracking-[0.16em] text-text-secondary">
+                  Fim
+                  <input type="date" value={editFim} onChange={(e) => setEditFim(e.target.value)} className={inputCls} />
+                </label>
+                {datasMudaram && (
+                  <button
+                    onClick={salvarDatas}
+                    disabled={salvandoDatas}
+                    className="px-4 py-2 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white rounded-xl font-bold shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all disabled:opacity-50"
+                  >
+                    {salvandoDatas ? 'Salvando…' : 'Salvar datas'}
+                  </button>
+                )}
+                <button
+                  onClick={() => recalcular(atual)}
+                  disabled={recalcId === atual.id}
+                  className="ml-auto px-3 py-2 rounded-xl text-[12px] font-bold border border-white/10 bg-white/[0.04] text-text-secondary hover:bg-white/[0.08] hover:text-white transition-colors disabled:opacity-50"
+                  title="A contagem se atualiza sozinha a cada hora — esse botão só adianta o relógio."
+                >
+                  {recalcId === atual.id ? 'Contando…' : '↻ Atualizar agora'}
+                </button>
+              </div>
+              {erroDatas && <p className="text-[11px] font-bold text-[#FF9EB5] -mt-2 mb-3">{erroDatas}</p>}
+
+              <div className="space-y-1.5">
+                {linhasDe(atual).map((l, i) => {
+                  const max = Math.max(1, ...linhasDe(atual).map((x) => x.n));
+                  return (
+                    <div key={l.id} className="flex items-center gap-3 rounded-xl bg-white/[0.03] border border-white/[0.08] px-3 py-2">
+                      <span className="w-6 shrink-0 text-center text-[13px]">{l.n > 0 ? (MEDALHA[i] ?? '') : ''}</span>
+                      <span className="flex-1 min-w-0 truncate text-[13px] font-semibold text-white">{l.nome}</span>
+                      <div className="hidden sm:block w-40 h-1.5 rounded bg-white/[0.06] overflow-hidden">
+                        <div className="h-full rounded bg-gradient-to-r from-[#E8C547] to-[#F59E0B] transition-all duration-500" style={{ width: `${(l.n / max) * 100}%` }} />
+                      </div>
+                      <span className="al-display text-[20px] font-bold text-[#FFE9A6] tabular-nums w-10 text-right">{l.n}</span>
+                      <span className="text-[9px] font-extrabold uppercase tracking-wider text-text-secondary">agend.</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-right text-[11px] text-text-secondary mt-2">
+                total do período: <b className="text-[#FFE9A6] tabular-nums">{totalDe(atual)}</b>
+              </p>
+            </div>
+          )}
+
+          {/* Histórico — semanas anteriores (e períodos futuros, se houver) */}
+          {historico.length > 0 && (
+            <div className="al-card relative overflow-hidden p-5">
+              <div className="absolute inset-x-0 top-0 gx-line" />
+              <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.12em] mb-3">Histórico</h2>
+              <div className="space-y-1.5">
+                {historico.map((p) => {
+                  const aberto = expandido === p.id;
+                  const futuro = p.inicio > hoje;
+                  return (
+                    <div key={p.id} className="rounded-xl border border-white/[0.08] bg-white/[0.02] overflow-hidden">
+                      <div className="flex items-center gap-2 px-3 py-2">
+                        <button onClick={() => setExpandido(aberto ? null : p.id)} className="flex-1 min-w-0 flex items-center gap-2 text-left">
+                          <span className={`text-[9px] shrink-0 transition-transform ${aberto ? 'rotate-90 text-[#FF9EB5]' : 'text-white/30'}`}>▶</span>
+                          <span className="text-[12.5px] font-bold text-white tabular-nums">{fmtBr(p.inicio)} → {fmtBr(p.fim)}</span>
+                          {futuro && <span className="px-1.5 py-0.5 rounded-full text-[8.5px] font-extrabold uppercase tracking-wider border bg-[#7DD3FC]/10 border-[#7DD3FC]/40 text-[#7DD3FC]">futuro</span>}
+                          <span className="ml-auto text-[11px] text-text-secondary tabular-nums shrink-0">total: <b className="text-white">{totalDe(p)}</b></span>
+                        </button>
+                        <button
+                          onClick={() => recalcular(p)}
+                          disabled={recalcId === p.id}
+                          className="shrink-0 px-2 py-1 rounded-lg text-[11px] font-bold text-text-secondary border border-white/10 bg-white/[0.03] hover:text-white hover:bg-white/[0.08] transition-colors disabled:opacity-50"
+                          title="Recontar do CRM as tarefas desse intervalo"
+                        >
+                          {recalcId === p.id ? '…' : '↻'}
+                        </button>
+                        <button
+                          onClick={() => excluir(p)}
+                          className="shrink-0 px-2 py-1 rounded-lg text-[11px] font-bold text-[#FF8F8F] border border-[#FF6B6B]/25 bg-[#FF6B6B]/[0.05] hover:bg-[#FF6B6B]/15 transition-colors"
+                          title="Excluir o período"
+                        >
+                          🗑
+                        </button>
+                      </div>
+                      {aberto && (
+                        <div className="px-3 pb-2.5 space-y-1 border-t border-white/[0.05] pt-2">
+                          {linhasDe(p).map((l, i) => (
+                            <div key={l.id} className="flex items-center gap-2 text-[12px]">
+                              <span className="w-5 text-center text-[11px]">{l.n > 0 ? (MEDALHA[i] ?? '') : ''}</span>
+                              <span className="flex-1 min-w-0 truncate text-white/80">{l.nome}</span>
+                              <span className="al-display text-[14px] font-bold text-[#FFE9A6] tabular-nums">{l.n}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
