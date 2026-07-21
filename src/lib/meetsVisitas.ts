@@ -89,21 +89,23 @@ export interface AgendamentoContado {
 }
 
 /**
- * Lista os agendamentos de UM corretor que contam no período — a prova real
- * do contador (mesma regra do contarMeetsVisitasDoCrm: tipo Meet/Visita,
- * data local dentro do período, cancelada não conta).
+ * Lista os agendamentos de UM corretor: os que CONTAM no período (mesma regra
+ * do contarMeetsVisitasDoCrm) e os FUTUROS fora do período — pra matar a dúvida
+ * "cadê o meet do fulano?" (ex.: lead na etapa Meet com data na semana que vem
+ * não conta nesta semana).
  */
 export async function listarAgendamentosDoCorretor(
   imobiliariaId: string,
   corretorId: string,
   periodo: { inicio: string; fim: string }
-): Promise<AgendamentoContado[]> {
+): Promise<{ dentro: AgendamentoContado[]; fora: AgendamentoContado[] }> {
   const leadsSnap = await getDocs(query(
     collection(db, 'leads'),
     where('imobiliariaId', '==', imobiliariaId),
     where('userId', '==', corretorId)
   ));
-  const itens: AgendamentoContado[] = [];
+  const dentro: AgendamentoContado[] = [];
+  const fora: AgendamentoContado[] = [];
   const CHUNK = 25;
   const docs = leadsSnap.docs;
   for (let i = 0; i < docs.length; i += CHUNK) {
@@ -119,19 +121,22 @@ export async function listarAgendamentosDoCorretor(
         const dt: Date | null = due?.toDate ? due.toDate() : (due?.seconds ? new Date(due.seconds * 1000) : null);
         if (!dt) return;
         const ymd = dateToYmd(dt);
-        if (ymd < periodo.inicio || ymd > periodo.fim) return;
-        itens.push({
+        const item: AgendamentoContado = {
           leadId: leadDoc.id,
           leadNome,
           tipo: String(d.type || ''),
           dueMs: dt.getTime(),
           status: String(d.status || 'pendente'),
           descricao: String(d.description || ''),
-        });
+        };
+        if (ymd >= periodo.inicio && ymd <= periodo.fim) dentro.push(item);
+        else if (ymd > periodo.fim) fora.push(item); // futuros — contam na semana deles
       });
     }));
   }
-  return itens.sort((a, b) => a.dueMs - b.dueMs);
+  dentro.sort((a, b) => a.dueMs - b.dueMs);
+  fora.sort((a, b) => a.dueMs - b.dueMs);
+  return { dentro, fora };
 }
 
 const UMA_HORA_MS = 60 * 60 * 1000;

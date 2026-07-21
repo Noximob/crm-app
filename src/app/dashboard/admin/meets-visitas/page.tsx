@@ -64,7 +64,7 @@ export default function AdminMeetsVisitasPage() {
   const [expandido, setExpandido] = useState<string | null>(null);
   // Auditoria do contador: corretor expandido no placar atual + agendamentos que contaram
   const [provaAberta, setProvaAberta] = useState<string | null>(null);
-  const [provas, setProvas] = useState<Record<string, AgendamentoContado[] | 'carregando'>>({});
+  const [provas, setProvas] = useState<Record<string, { dentro: AgendamentoContado[]; fora: AgendamentoContado[] } | 'carregando'>>({});
 
   // Edição das datas do período atual (opcional — o normal é deixar a semana automática)
   const [editIni, setEditIni] = useState('');
@@ -154,8 +154,8 @@ export default function AdminMeetsVisitasPage() {
     if (!atual || provas[corretorId] || isEspelhoDemo || !userData?.imobiliariaId) return;
     setProvas((prev) => ({ ...prev, [corretorId]: 'carregando' }));
     try {
-      const itens = await listarAgendamentosDoCorretor(userData.imobiliariaId, corretorId, atual);
-      setProvas((prev) => ({ ...prev, [corretorId]: itens }));
+      const resultado = await listarAgendamentosDoCorretor(userData.imobiliariaId, corretorId, atual);
+      setProvas((prev) => ({ ...prev, [corretorId]: resultado }));
     } catch (e) {
       console.error('Erro ao listar agendamentos do corretor:', e);
       setProvas((prev) => { const n = { ...prev }; delete n[corretorId]; return n; });
@@ -346,26 +346,47 @@ export default function AdminMeetsVisitasPage() {
                             <p className="text-[10.5px] text-text-secondary">Modo demonstração — a lista real aparece na conta de verdade.</p>
                           ) : prova === 'carregando' || prova === undefined ? (
                             <p className="text-[10.5px] text-text-secondary">Conferindo os agendamentos…</p>
-                          ) : prova.length === 0 ? (
-                            <p className="text-[10.5px] text-text-secondary">Nenhum Meet/Visita com data dentro do período.</p>
                           ) : (
-                            prova.map((ag, k) => {
-                              const d = new Date(ag.dueMs);
-                              const quando = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-                              return (
-                                <div key={k} className="flex items-center gap-2 text-[11.5px]">
-                                  <span className={`shrink-0 px-1.5 py-0.5 rounded-full text-[8.5px] font-extrabold uppercase tracking-wider border ${ag.tipo === 'Meet' ? 'bg-[#9F6BFF]/10 border-[#9F6BFF]/35 text-[#C4A6FF]' : 'bg-[#7DD3FC]/10 border-[#7DD3FC]/35 text-[#7DD3FC]'}`}>{ag.tipo}</span>
-                                  <span className="shrink-0 text-white/60 tabular-nums">{quando}</span>
-                                  <span className="flex-1 min-w-0 truncate text-white/85" title={ag.descricao}>{ag.leadNome}</span>
-                                  <span className={`shrink-0 text-[9px] font-bold uppercase tracking-wider ${ag.status === 'concluída' ? 'text-emerald-300' : 'text-[#FFE9A6]/70'}`}>{ag.status === 'concluída' ? '✓ feito' : 'agendado'}</span>
+                            <>
+                              {prova.dentro.length === 0 ? (
+                                <p className="text-[10.5px] text-text-secondary">Nenhum Meet/Visita com data dentro do período.</p>
+                              ) : (
+                                prova.dentro.map((ag, k) => {
+                                  const d = new Date(ag.dueMs);
+                                  const quando = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                                  return (
+                                    <div key={k} className="flex items-center gap-2 text-[11.5px]">
+                                      <span className={`shrink-0 px-1.5 py-0.5 rounded-full text-[8.5px] font-extrabold uppercase tracking-wider border ${ag.tipo === 'Meet' ? 'bg-[#9F6BFF]/10 border-[#9F6BFF]/35 text-[#C4A6FF]' : 'bg-[#7DD3FC]/10 border-[#7DD3FC]/35 text-[#7DD3FC]'}`}>{ag.tipo}</span>
+                                      <span className="shrink-0 text-white/60 tabular-nums">{quando}</span>
+                                      <span className="flex-1 min-w-0 truncate text-white/85" title={ag.descricao}>{ag.leadNome}</span>
+                                      <span className={`shrink-0 text-[9px] font-bold uppercase tracking-wider ${ag.status === 'concluída' ? 'text-emerald-300' : 'text-[#FFE9A6]/70'}`}>{ag.status === 'concluída' ? '✓ feito' : 'agendado'}</span>
+                                    </div>
+                                  );
+                                })
+                              )}
+                              {prova.fora.length > 0 && (
+                                <div className="pt-1.5 mt-1 border-t border-white/[0.05]">
+                                  <p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-white/35 mb-1">Marcados pra depois — contam na semana deles</p>
+                                  {prova.fora.map((ag, k) => {
+                                    const d = new Date(ag.dueMs);
+                                    const quando = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                                    return (
+                                      <div key={k} className="flex items-center gap-2 text-[11px] opacity-55">
+                                        <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[8.5px] font-extrabold uppercase tracking-wider border bg-white/[0.04] border-white/15 text-white/60">{ag.tipo}</span>
+                                        <span className="shrink-0 text-white/60 tabular-nums">{quando}</span>
+                                        <span className="flex-1 min-w-0 truncate text-white/70" title={ag.descricao}>{ag.leadNome}</span>
+                                        <span className="shrink-0 text-[9px] font-bold uppercase tracking-wider text-white/40">fora da semana</span>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
-                              );
-                            })
-                          )}
-                          {!isEspelhoDemo && Array.isArray(prova) && prova.length !== l.n && (
-                            <p className="text-[10px] font-bold text-[#FFE9A6] pt-1">
-                              ⚠️ A lista mostra {prova.length} e o contador {l.n} — houve remarcação depois da última contagem. Clique em &quot;↻ Atualizar agora&quot; que acerta.
-                            </p>
+                              )}
+                              {prova.dentro.length !== l.n && (
+                                <p className="text-[10px] font-bold text-[#FFE9A6] pt-1">
+                                  ⚠️ A lista mostra {prova.dentro.length} e o contador {l.n} — houve remarcação depois da última contagem. Clique em &quot;↻ Atualizar agora&quot; que acerta.
+                                </p>
+                              )}
+                            </>
                           )}
                         </div>
                       )}
