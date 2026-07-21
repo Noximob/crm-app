@@ -7,7 +7,7 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, onSnapshot, doc as firestoreDoc, getDoc, Timestamp, orderBy } from 'firebase/firestore';
 import { ensureTarefasPendentes, getTaskStatusInfo, toJsDate, TarefaPendente } from '@/lib/leadTasks';
 import { ETAPA_FECHADO, ETAPAS_DO_ADMIN } from '@/lib/circuito';
-import { autoRecalcularMeetsVisitas } from '@/lib/meetsVisitas';
+import { autoRecalcularMeetsVisitas, garantirPeriodoSemanaAtual } from '@/lib/meetsVisitas';
 import Link from 'next/link';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { getDemoLeads } from '@/lib/espelho/demoData';
@@ -922,11 +922,14 @@ export default function DashboardPage() {
     const unsub = onSnapshot(qMv, (snap) => {
       const lista = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as any[];
       setMvPeriodos(lista);
-      // Placar automático se atualiza sozinho: 1x por sessão, com trava de 1h
-      // no doc (recalculadoEm) — ninguém precisa abrir a tela do admin.
-      if (!mvAutoRecalcFeito.current && lista.length > 0) {
+      // Placar 100% automático, 1x por sessão: garante que a SEMANA ATUAL existe
+      // (cria seg→dom sozinha se precisar) e recalcula períodos automáticos com
+      // recálculo velho (trava de 1h no doc) — ninguém abre a tela do admin.
+      if (!mvAutoRecalcFeito.current) {
         mvAutoRecalcFeito.current = true;
-        autoRecalcularMeetsVisitas(imobId, lista);
+        garantirPeriodoSemanaAtual(imobId, lista)
+          .then(() => autoRecalcularMeetsVisitas(imobId, lista))
+          .catch(() => undefined);
       }
     });
     return () => unsub();

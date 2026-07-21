@@ -81,6 +81,43 @@ export async function recalcularPeriodoMeets(
 const UMA_HORA_MS = 60 * 60 * 1000;
 
 /**
+ * Garante que existe um período cobrindo HOJE: se não houver, cria a semana
+ * atual (segunda → domingo) já no modo automático e conta na hora.
+ * - ID determinístico ({imobiliariaId}_{inicio}) + setDoc merge → dois usuários
+ *   abrindo a home ao mesmo tempo não criam duplicata.
+ * - Se o admin criou um período custom que sobrepõe a semana, respeita e não cria.
+ */
+export async function garantirPeriodoSemanaAtual(
+  imobiliariaId: string,
+  periodos: PeriodoMeetsLite[]
+): Promise<void> {
+  const hoje = new Date();
+  const hojeYmd = dateToYmd(hoje);
+  if (periodos.some((p) => p.inicio && p.fim && p.inicio <= hojeYmd && hojeYmd <= p.fim)) return;
+
+  const seg = new Date(hoje);
+  seg.setDate(hoje.getDate() - ((hoje.getDay() + 6) % 7));
+  const dom = new Date(seg);
+  dom.setDate(seg.getDate() + 6);
+  const inicio = dateToYmd(seg);
+  const fim = dateToYmd(dom);
+  // Não sobrepor nenhum período existente (intervalos [a1,a2]/[b1,b2] cruzam se a1<=b2 && b1<=a2)
+  if (periodos.some((p) => p.inicio && p.fim && inicio <= p.fim && p.inicio <= fim)) return;
+
+  const id = `${imobiliariaId}_${inicio}`;
+  try {
+    await setDoc(
+      doc(db, 'meetsVisitas', id),
+      { imobiliariaId, inicio, fim, contadores: {}, automatico: true, autoCriado: true, createdAt: serverTimestamp() },
+      { merge: true }
+    );
+    await recalcularPeriodoMeets(imobiliariaId, { id, inicio, fim, automatico: true });
+  } catch (e) {
+    console.error('garantirPeriodoSemanaAtual: falha silenciosa', e);
+  }
+}
+
+/**
  * Auto-refresh silencioso do placar: recalcula períodos AUTOMÁTICOS e ATIVOS
  * cujo último recálculo passou de 1 hora. Qualquer tela pode chamar (a home
  * chama ao carregar); erros são engolidos — o placar só fica um pouco defasado.

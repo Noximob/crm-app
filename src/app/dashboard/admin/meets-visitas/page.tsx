@@ -304,7 +304,10 @@ export default function AdminMeetsVisitasPage() {
           </button>
         </div>
         {erros['novo'] && <p className="text-red-300 text-[11.5px] font-bold mt-2">{erros['novo']}</p>}
-        <p className="text-[10.5px] text-text-secondary mt-2">Dica: crie um período por semana (seg → dom). Períodos não podem se sobrepor.</p>
+        <p className="text-[10.5px] text-text-secondary mt-2">
+          A semana atual (seg → dom) <b className="text-white">se cria sozinha</b> no modo automático — só crie na mão se quiser
+          um intervalo diferente (períodos não podem se sobrepor).
+        </p>
       </form>
 
       {/* Períodos */}
