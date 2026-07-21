@@ -17,6 +17,7 @@ import { collection, query, where, getDocs, doc, writeBatch, serverTimestamp, de
 import { showToast } from '@/components/ui/toast';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import { QUALIFICATION_QUESTIONS } from '@/lib/qualificacao';
+import { ETAPAS_DO_ADMIN, mapEtapaCircuito } from '@/lib/circuito';
 import { deleteLeadsComSubcolecoes } from '@/lib/leadDelete';
 
 interface Corretor {
@@ -294,27 +295,32 @@ export default function ImportarLigacaoAtivaPage() {
     }
     if (!userData?.imobiliariaId) return;
     try {
+      // SEM filtro de etapa na query: etapas LEGADAS ("Interesse Futuro",
+      // "Troca de Leads", "Geladeira"…) normalizam pra Bolsão/Descartado só no
+      // cliente — uma query por etapa literal deixaria esses leads num limbo
+      // (invisíveis pro corretor E fora do bolsão do admin).
       const snap = await getDocs(query(
         collection(db, 'leads'),
-        where('imobiliariaId', '==', userData.imobiliariaId),
-        where('etapa', 'in', ['Descartado', 'Bolsão'])
+        where('imobiliariaId', '==', userData.imobiliariaId)
       ));
-      setCrmBolsao(snap.docs.map(d => {
-        const l = d.data() as any;
-        return {
-          id: d.id,
-          nome: l.nome || '',
-          telefone: l.telefone || '',
-          motivo: l.descartadoMotivo,
-          descartadoPor: l.descartadoPor,
-          descartadoEm: l.descartadoEm,
-          origem: l.origem,
-          userId: l.userId,
-          etapa: l.etapa,
-          qualificacao: l.qualificacao || {},
-        };
-      }));
-    } catch { /* silencioso */ }
+      setCrmBolsao(snap.docs
+        .filter(d => (ETAPAS_DO_ADMIN as readonly string[]).includes(mapEtapaCircuito((d.data() as any).etapa)))
+        .map(d => {
+          const l = d.data() as any;
+          return {
+            id: d.id,
+            nome: l.nome || '',
+            telefone: l.telefone || '',
+            motivo: l.descartadoMotivo,
+            descartadoPor: l.descartadoPor,
+            descartadoEm: l.descartadoEm,
+            origem: l.origem,
+            userId: l.userId,
+            etapa: mapEtapaCircuito(l.etapa),
+            qualificacao: l.qualificacao || {},
+          };
+        }));
+    } catch (e) { console.error('Erro ao carregar bolsão do CRM:', e); }
     setCrmBolsaoCarregado(true);
   }, [isEspelhoDemo, userData?.imobiliariaId]);
 

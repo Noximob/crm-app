@@ -229,7 +229,14 @@ export default function VisualizarCrmCorretorPage() {
 
   const filteredLeads = useMemo(() => {
     let list = [...leads];
-    if (searchTerm.trim()) list = list.filter(l => l.nome.toLowerCase().includes(searchTerm.toLowerCase().trim()));
+    if (searchTerm.trim()) {
+      const busca = searchTerm.toLowerCase().trim();
+      const buscaDigitos = searchTerm.replace(/\D/g, '');
+      list = list.filter(l =>
+        l.nome.toLowerCase().includes(busca) ||
+        (buscaDigitos.length >= 3 && (l.telefone || '').replace(/\D/g, '').includes(buscaDigitos))
+      );
+    }
     if (activeFilter) list = list.filter(l => normalizeEtapa(l.etapa) === activeFilter);
     if (activeTaskFilter) list = list.filter(l => l.taskStatus === activeTaskFilter);
     const hasAdvanced = Object.values(advancedFilters).some((opts: string[]) => opts.length > 0);
@@ -315,7 +322,7 @@ export default function VisualizarCrmCorretorPage() {
                     </div>
                     <input
                       type="text"
-                      placeholder="Buscar lead por nome..."
+                      placeholder="Buscar por nome ou telefone..."
                       value={searchTerm}
                       onChange={e => setSearchTerm(e.target.value)}
                       className="block w-52 sm:w-60 pl-9 pr-3 py-1 border border-white/10 rounded-lg text-sm bg-white/5 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-transparent"

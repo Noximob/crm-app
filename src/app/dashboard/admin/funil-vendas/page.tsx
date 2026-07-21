@@ -58,41 +58,41 @@ interface CampoCadencia {
 const CAMPOS_CADENCIA: CampoCadencia[] = [
   {
     key: 'naoAtendeuHoras',
-    titulo: 'Não atendeu → próximo contato',
+    titulo: 'Cliente não atendeu → quando tentar de novo',
     unidade: 'horas',
-    ajuda: 'Quando o corretor marca "não atendeu", o CRM sugere automaticamente o próximo follow-up daqui a X horas.',
+    ajuda: 'O corretor ligou e ninguém atendeu? O pop-up já vem com a próxima tentativa sugerida pra daqui a X horas. Exemplo com 24: ligou hoje às 10h sem resposta → o sistema propõe tentar amanhã às 10h (o corretor pode mudar o horário).',
     min: 1,
     max: 240,
   },
   {
     key: 'perguntarMeetHoras',
-    titulo: 'Perguntar se o meet aconteceu',
+    titulo: 'Cobrar o resultado do meet',
     unidade: 'horas depois',
-    ajuda: 'X horas depois do horário marcado do meet, o CRM pergunta ao corretor se a reunião aconteceu.',
+    ajuda: 'Passou o horário do meet + X horas → o sistema abre o pop-up perguntando "aconteceu?". Exemplo com 1: meet marcado pras 15h → às 16h o corretor é cobrado pela resposta (aconteceu / não rolou). Com 0, cobra na hora exata.',
     min: 0,
     max: 72,
   },
   {
     key: 'perguntarVisitaHoras',
-    titulo: 'Perguntar se a visita aconteceu',
+    titulo: 'Cobrar o resultado da visita',
     unidade: 'horas depois',
-    ajuda: 'X horas depois do horário marcado da visita, o CRM pergunta ao corretor se ela aconteceu.',
+    ajuda: 'Igual ao meet, mas pra visita: X horas depois do horário marcado, o pop-up cobra "a visita aconteceu?". Exemplo com 1: visita às 14h → cobrança às 15h.',
     min: 0,
     max: 72,
   },
   {
     key: 'negociacaoAlertaDias',
-    titulo: 'Alerta de Negociação parada',
+    titulo: 'Negociação parada — alerta',
     unidade: 'dias',
-    ajuda: 'Alerta quando o lead ficar X dias parado em Negociação sem nenhum movimento.',
+    ajuda: 'Proposta na mesa sem NENHUM movimento por X dias → o lead aparece como "parado em negociação" (relatórios e cobrança do corretor). Exemplo com 5: proposta apresentada segunda, nada até sábado → alerta aceso.',
     min: 1,
     max: 90,
   },
   {
     key: 'tentativasAteDescarte',
-    titulo: 'Tentativas até sugerir descarte',
+    titulo: 'Insistir quantas vezes antes de sugerir descarte',
     unidade: 'tentativas',
-    ajuda: 'Depois de X tentativas de contato sem resposta, o CRM sugere descartar — o lead sai do CRM do corretor e cai no bolsão do administrador.',
+    ajuda: 'É o tamanho do rodízio de insistência: a cada "não atendeu" conta 1 tentativa. Na tentativa X sem resposta, o pop-up passa a sugerir o descarte (o corretor ainda pode insistir; descartou → o lead cai no bolsão do administrador). Exemplo com 5: sugere descarte na 5ª ligação sem resposta.',
     min: 2,
     max: 30,
   },
@@ -387,9 +387,11 @@ export default function FunilCadenciasPage() {
           {/* 3. Cadências */}
           <div className="al-card relative overflow-hidden p-4">
             <div className="absolute inset-x-0 top-0 gx-line" />
-            <h2 className="al-display text-[14px] font-bold text-white uppercase tracking-[0.14em] mb-1">Cadências</h2>
+            <h2 className="al-display text-[14px] font-bold text-white uppercase tracking-[0.14em] mb-1">Cadências — os relógios do circuito</h2>
             <p className="text-[10.5px] text-text-secondary mb-3">
-              Os temporizadores do circuito — é com eles que o CRM cobra o corretor na hora certa. Padrão entre parênteses.
+              São esses tempos que decidem <b className="text-white">quando o sistema cobra o corretor</b>: o pop-up abre sozinho
+              no momento certo, sem ninguém precisar lembrar de nada. Mexeu e salvou → vale pra equipe inteira na hora.
+              O número entre parênteses é o padrão sugerido.
             </p>
             <div className="space-y-2.5">
               {CAMPOS_CADENCIA.map((campo) => (

@@ -1161,7 +1161,7 @@ export default function DashboardPage() {
               </div>
               <span className="al-display text-[9px] font-bold tracking-[0.26em] text-[#FF5C7E] mt-1.5">SCANNING</span>
             </div>
-            <div className="flex-1 min-w-0 w-full self-stretch flex flex-col justify-center">
+            <div className="flex-1 min-w-0 w-full self-stretch flex flex-col justify-start">
               {agendaLoading ? (
                 <LoadingState label="Carregando…" className="py-2" />
               ) : proximosEventosConfirmados.length === 0 ? (
@@ -1170,7 +1170,7 @@ export default function DashboardPage() {
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/35">bom momento pra ligação ativa</p>
                 </div>
               ) : (
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   {proximosEventosConfirmados.slice(0, 5).map((item) => {
                     const nowTime = currentTime.getTime();
                     const isAgora = item.atrasada || (item.startTime <= nowTime && item.fimTime >= nowTime);
@@ -1182,8 +1182,8 @@ export default function DashboardPage() {
                         ? 'border-[#E8C547] bg-[#E8C547]/[0.06]'
                         : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.04]';
                     return (
-                      <Link href={item.href} key={`${item.tipo}-${item.id}-${item.startTime}`} className={`flex items-center gap-3 px-3 py-1.5 min-h-[52px] lg:min-h-0 rounded-lg border-l-2 transition-all hover:translate-x-1 ${rowCls}`}>
-                        <span className={`al-display text-[15px] font-bold tabular-nums w-12 shrink-0 ${horaCls}`}>{item.horarioStr}</span>
+                      <Link href={item.href} key={`${item.tipo}-${item.id}-${item.startTime}`} className={`flex items-center gap-3 px-3 py-1 min-h-[44px] lg:min-h-0 rounded-lg border-l-2 transition-all hover:translate-x-1 ${rowCls}`}>
+                        <span className={`al-display text-[14px] font-bold tabular-nums w-11 shrink-0 ${horaCls}`}>{item.horarioStr}</span>
                         <span className="flex-1 min-w-0 truncate text-[13px] font-semibold text-white" title={item.titulo}>{item.tipo === 'tarefa' ? '📌 ' : ''}{item.titulo}</span>
                         <span className="hidden md:inline text-[10px] text-text-secondary shrink-0">{item.tipoLabel}</span>
                         {item.atrasada ? (

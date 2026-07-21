@@ -6,6 +6,7 @@ import { AuthContext } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, limit, getDocs, doc, getDoc } from 'firebase/firestore';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
+import { ETAPAS_DO_ADMIN, mapEtapaCircuito } from '@/lib/circuito';
 
 const ORIGEM_OPCOES = ['Networking', 'Ligação', 'Ação de rua', 'Disparo de msg', 'Propaganda', 'Outros'] as const;
 type OrigemLead = typeof ORIGEM_OPCOES[number];
@@ -116,7 +117,7 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
             // Leads vindos de importação podem ter o whatsapp com o 55 na frente
             const candidatosWhatsapp = digits.length >= 10 ? [digits, `55${digits}`] : [digits];
 
-            let dupData: { userId?: string; nome?: string } | null = null;
+            let dupData: { userId?: string; nome?: string; etapa?: string } | null = null;
             for (const cand of candidatosWhatsapp) {
                 const snap = await getDocs(query(
                     leadsCollectionRef,
@@ -125,7 +126,7 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
                     limit(1)
                 ));
                 if (!snap.empty) {
-                    dupData = snap.docs[0].data() as { userId?: string; nome?: string };
+                    dupData = snap.docs[0].data() as { userId?: string; nome?: string; etapa?: string };
                     break;
                 }
             }
@@ -138,11 +139,17 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
                     limit(1)
                 ));
                 if (!snap.empty) {
-                    dupData = snap.docs[0].data() as { userId?: string; nome?: string };
+                    dupData = snap.docs[0].data() as { userId?: string; nome?: string; etapa?: string };
                 }
             }
             if (dupData) {
-                if (dupData.userId === currentUser.uid) {
+                // Lead no bolsão do admin (descartado/estacionado, inclusive etapa
+                // legada) fica INVISÍVEL pro corretor — a mensagem precisa dizer
+                // onde ele está, senão vira mistério ("não acho, mas já existe?").
+                const noBolsaoDoAdmin = (ETAPAS_DO_ADMIN as readonly string[]).includes(mapEtapaCircuito(dupData.etapa));
+                if (noBolsaoDoAdmin) {
+                    setError(`${dupData.nome || 'Esse cliente'} está no bolsão do administrador (descartado/estacionado) — peça pro admin redistribuir em Importar Leads.`);
+                } else if (dupData.userId === currentUser.uid) {
                     setError(`Você já tem esse lead: ${dupData.nome || 'sem nome'}.`);
                 } else {
                     let nomeDono = 'outro corretor';

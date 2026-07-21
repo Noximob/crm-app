@@ -317,10 +317,13 @@ export default function CrmPage() {
     const filteredLeads = useMemo(() => {
         let leadsToFilter = [...leads];
         
-        // Filtro por busca de nome
+        // Busca por nome OU telefone (dígitos)
         if (searchTerm.trim()) {
-            leadsToFilter = leadsToFilter.filter(lead => 
-                lead.nome.toLowerCase().includes(searchTerm.toLowerCase().trim())
+            const busca = searchTerm.toLowerCase().trim();
+            const buscaDigitos = searchTerm.replace(/\D/g, '');
+            leadsToFilter = leadsToFilter.filter(lead =>
+                lead.nome.toLowerCase().includes(busca) ||
+                (buscaDigitos.length >= 3 && (lead.telefone || '').replace(/\D/g, '').includes(buscaDigitos))
             );
         }
         
@@ -503,7 +506,7 @@ export default function CrmPage() {
                             </div>
                             <input
                                 type="text"
-                                placeholder="Buscar lead por nome..."
+                                placeholder="Buscar por nome ou telefone..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="block w-full sm:w-60 pl-9 pr-3 py-2 sm:py-1 border border-white/10 rounded-lg text-sm bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"

@@ -185,8 +185,13 @@ export default function AndamentoPage() {
     // Leads visíveis por coluna após aplicar os filtros (colunas/etapas continuam todas visíveis)
     const filteredLeads = useMemo(() => {
         const search = searchTerm.trim().toLowerCase();
+        const searchDigitos = searchTerm.replace(/\D/g, '');
         const matches = (lead: Lead) => {
-            if (search && !(lead.nome || '').toLowerCase().includes(search)) return false;
+            if (search) {
+                const nomeOk = (lead.nome || '').toLowerCase().includes(search);
+                const telOk = searchDigitos.length >= 3 && ((lead as any).telefone || '').replace(/\D/g, '').includes(searchDigitos);
+                if (!nomeOk && !telOk) return false;
+            }
             if (origemFilter) {
                 if (origemDoLead(lead) !== origemFilter) return false;
                 if (origemFilter === 'Propaganda' && campanhaFilter && campanhaDoLead(lead) !== campanhaFilter) return false;
@@ -341,7 +346,7 @@ export default function AndamentoPage() {
                                 </div>
                                 <input
                                     type="text"
-                                    placeholder="Buscar lead por nome..."
+                                    placeholder="Buscar por nome ou telefone..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="block w-full pl-9 pr-8 py-2 sm:py-1.5 border border-white/10 rounded-lg text-sm bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50"
