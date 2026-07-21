@@ -714,8 +714,10 @@ export default function DashboardPage() {
     type Item = { tipo: 'plantao' | 'agenda' | 'tarefa'; id: string; titulo: string; tipoLabel: string; tipoChave?: string; dataStr: string; horarioStr: string; horarioFimStr: string; startTime: number; fimTime: number; href: string; atrasada?: boolean };
     const lista: Item[] = [];
 
-    // Tarefas do corretor: atrasadas entram como "AGORA" (não somem do radar)
-    radarTarefas.forEach((t) => {
+    // Tarefas do corretor: SÓ as importantes (Meet, Ligação, Visita) — follow-up
+    // comum e afins ficam no plano de ação, não no radar. Atrasadas não somem.
+    const TIPOS_RADAR = ['Meet', 'Visita', 'Ligação'];
+    radarTarefas.filter((t) => TIPOS_RADAR.includes(t.tipo)).forEach((t) => {
       const d = new Date(t.dueMs);
       lista.push({
         tipo: 'tarefa',
