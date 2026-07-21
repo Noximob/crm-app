@@ -881,9 +881,17 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             }`}>
               <div className={`h-[2px] w-full bg-gradient-to-r ${d.red ? 'from-[#FF6B6B] via-[#FF6B6B]/40' : 'from-[#E8C547] via-[#E8C547]/40'} to-transparent`} />
               <div className="flex items-center gap-2 px-3.5 py-2 bg-white/[0.03] border-b border-white/10 text-[11px] font-extrabold uppercase tracking-[0.12em] text-white/50">
-                <span className={`h-2 w-2 rounded-full ${d.red ? 'bg-[#FF6B6B]' : 'bg-[#E8C547] shadow-[0_0_8px_rgba(232,197,71,0.8)]'}`} />
-                {d.bar}
-                <span className="ml-auto flex items-center gap-1">
+                <span className={`h-2 w-2 rounded-full shrink-0 ${d.red ? 'bg-[#FF6B6B]' : 'bg-[#E8C547] shadow-[0_0_8px_rgba(232,197,71,0.8)]'}`} />
+                {/* Nome do cliente em DESTAQUE no cabeçalho — fácil de bater o olho */}
+                <span
+                  className={`min-w-0 truncate text-[13.5px] font-extrabold normal-case tracking-normal ${d.red ? 'text-[#FF8F8F]' : 'text-[#FFE9A6] drop-shadow-[0_0_6px_rgba(232,197,71,0.35)]'}`}
+                  title={nomeCliente}
+                >
+                  {nomeCliente}
+                </span>
+                <span className="shrink-0 text-white/25">·</span>
+                <span className="shrink-0 whitespace-nowrap">{d.bar}</span>
+                <span className="ml-auto flex items-center gap-1 shrink-0">
                   {pilha.current.length > 0 && (
                     <button
                       onClick={voltarPasso}
