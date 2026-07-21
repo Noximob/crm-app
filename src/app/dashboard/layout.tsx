@@ -169,7 +169,6 @@ export default function DashboardLayout({
     ] },
     { titulo: 'Vendas', itens: [
       { href: '/dashboard/crm', icon: UsersIcon, label: 'CRM', cor: 'text-[#FF7A97]' },
-      { href: '/dashboard/brello', icon: KanbanIcon, label: 'Brello', cor: 'text-[#7DD3FC]' },
       { href: '/dashboard/ligacao-ativa', icon: PhoneIcon, label: 'Ligação Ativa', cor: 'text-[#E8C547]' },
     ] },
     { titulo: 'Ferramentas', itens: [
@@ -432,7 +431,7 @@ export default function DashboardLayout({
             { href: '/dashboard', icon: HomeIcon, label: 'Início', exact: true },
             { href: '/dashboard/crm', icon: UsersIcon, label: 'CRM' },
             { href: '/dashboard/agenda', icon: CalendarIcon, label: 'Agenda' },
-            { href: '/dashboard/brello', icon: KanbanIcon, label: 'Brello' },
+            { href: '/dashboard/ligacao-ativa', icon: PhoneIcon, label: 'Ligação' },
           ] as { href: string; icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; label: string; exact?: boolean }[]).map((tab) => {
             // Normaliza a barra final (trailingSlash) p/ o match de rota ativa
             const path = (pathname || '').replace(/\/+$/, '') || '/';
