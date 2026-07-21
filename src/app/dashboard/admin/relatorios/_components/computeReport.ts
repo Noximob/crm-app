@@ -6,7 +6,7 @@
  */
 
 import type { PipelineStageWithMeta } from '@/lib/pipelineStagesConfig';
-import { ETAPA_BOLSAO, ETAPA_DESCARTADO, ETAPA_FECHADO, ETAPA_NEGOCIACAO, mapEtapaCircuito } from '@/lib/circuito';
+import { ETAPA_DESCARTADO, ETAPA_FECHADO, ETAPA_NEGOCIACAO, mapEtapaCircuito } from '@/lib/circuito';
 import {
   DIA_MS, InteracaoLite, LeadLite, Periodo, ReportSource, funilCor, inicioDoDia, ymdLocal,
 } from './reportShared';
@@ -204,7 +204,7 @@ export interface ReportComputed {
   timeline: { label: string; leads: number; atividade: number }[];
   timelineGranularidade: 'dia' | 'semana';
   funil: { etapa: string; cor: string; total: number; pctTotal: number; novosPeriodo: number }[];
-  /** Leads nas etapas do circuito, incluindo Fechamento (Descartado/Bolsão ficam fora) */
+  /** Leads nas etapas do circuito, incluindo Fechamento (Descartado fica fora) */
   totalLeadsBase: number;
   /** Leads em estado terminal na base inteira */
   fechadosTotal: number;
@@ -256,8 +256,9 @@ export function computeReport(
 
   const etapaIdx = new Map<string, number>();
   const etapaQuente = new Set<string>();
-  // Bolsão não é mais etapa do funil — é o estacionamento da área do admin; fica fora da carteira
-  const etapaParada = new Set<string>([ETAPA_BOLSAO]);
+  // 'Bolsão' deixou de existir como estado de lead (legados viram Follow-up);
+  // o set continua só pra etapas custom futuras marcadas como 'Troca de Leads'.
+  const etapaParada = new Set<string>();
   stagesWithMeta.forEach((s, i) => {
     etapaIdx.set(s.label, i);
     if (s.isQuente) etapaQuente.add(s.label);
@@ -403,7 +404,7 @@ export function computeReport(
 
   // ------------------------------------------------------------------
   // Leads esquecidos (sem interação há 7/14/30 dias e sem tarefa pendente).
-  // Bolsão fica de fora (estacionado de propósito), assim como os estados
+  // Ficam de fora os estados
   // terminais Fechado/Descartado.
   // ------------------------------------------------------------------
   const ultimaAtividade = new Map<string, number>();
@@ -627,7 +628,7 @@ export function computeReport(
     if (!a) return;
     a.agora.atrasadas += l.pendentesMs.filter((ms) => ms < agoraMs).length;
     const etapaCirc = mapEtapaCircuito(l.etapa);
-    if (etapaCirc === ETAPA_BOLSAO || isTerminal(etapaCirc)) return; // Bolsão é estacionado de propósito
+    if (isTerminal(etapaCirc)) return;
     if (l.pendentesMs.length === 0) {
       a.agora.semAcao++;
       if (etapaCirc === ETAPA_NEGOCIACAO) a.agora.negociacaoParada++;

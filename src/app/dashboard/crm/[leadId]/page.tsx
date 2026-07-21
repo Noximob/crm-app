@@ -627,13 +627,13 @@ export default function LeadDetailPage() {
                             <span className="shrink-0 px-3 py-1.5 rounded-lg text-[12px] font-bold text-white bg-gradient-to-r from-[#FF1E56] to-[#A50D38] animate-pulse">Resolver agora →</span>
                         </button>
                     )}
-                    {!readOnly && (etapaAtual === 'Bolsão' || etapaAtual === 'Descartado') && (
+                    {!readOnly && etapaAtual === 'Descartado' && (
                         <button
                             onClick={() => { setAtendimentoAberto(true); setFechouNoX(false); }}
                             className="flex items-center justify-between gap-3 rounded-xl border border-[#7DD3FC]/40 bg-[#7DD3FC]/[0.07] px-4 py-3 text-left hover:bg-[#7DD3FC]/15 transition-colors"
                         >
                             <span className="text-[13px] text-[#7DD3FC] font-medium">
-                                {etapaAtual === 'Bolsão' ? '🧊 Estacionado no bolsão.' : `Descartado${lead.descartadoMotivo ? ` — ${lead.descartadoMotivo}` : ''}.`}
+                                Descartado{lead.descartadoMotivo ? ` — ${lead.descartadoMotivo}` : ''}.
                             </span>
                             <span className="shrink-0 px-3 py-1.5 rounded-lg text-[12px] font-bold text-[#7DD3FC] border border-[#7DD3FC]/40 bg-[#7DD3FC]/10">🔄 Reativar lead</span>
                         </button>

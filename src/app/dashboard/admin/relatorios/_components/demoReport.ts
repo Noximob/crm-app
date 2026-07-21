@@ -85,9 +85,9 @@ export function buildDemoReportSource(): ReportSource {
     const idadeDias = Math.floor(Math.pow(rnd(), 1.35) * 200);
     const createdAtMs = hoje0 - idadeDias * DIA_MS + Math.floor(rnd() * 12 * 60 * 60 * 1000) + 8 * 60 * 60 * 1000;
 
-    // Etapa: quanto mais velho o lead, mais fundo no circuito (ou no Bolsão).
+    // Etapa: quanto mais velho o lead, mais fundo no circuito.
     // Constantes calibradas para as 6 etapas: funil decrescente (~25/25/20/12/8/10)
-    // sem deixar o Bolsão virar a maior fatia.
+    // com o Fechamento como fatia menor.
     const profundidade = Math.min(PIPELINE_STAGES.length - 1, Math.floor(rnd() * (1.5 + idadeDias / 30)));
     const etapa = PIPELINE_STAGES[profundidade];
 
@@ -146,7 +146,7 @@ export function buildDemoReportSource(): ReportSource {
       pushInt('Contato', `🎯 1º contato feito na ${1 + Math.floor(rnd() * 5)}ª tentativa`, true, tsRecente());
     }
 
-    // Jornada narrada conforme a profundidade no circuito (2=Meet, 3=Visita, 4=Negociação, 5=Bolsão)
+    // Jornada narrada conforme a profundidade no circuito (2=Meet, 3=Visita, 4=Negociação, 5=Fechamento)
     const passouMeet = profundidade >= 2 && profundidade !== 5 ? true : profundidade === 5 && rnd() < 0.5;
     const passouVisita = (profundidade === 3 || profundidade === 4) || (profundidade === 5 && rnd() < 0.25);
     if (passouMeet) {

@@ -61,7 +61,7 @@ const DEMO_BOLSAO: DescartadoBolsao[] = [
   ] },
 ];
 
-/** Lead do CRM no bolsão do admin: descartado por um corretor OU estacionado (etapa Bolsão legada). */
+/** Lead do CRM no bolsão do admin: DESCARTADO por um corretor (única porta de saída do funil). */
 interface LeadDescartado {
   id: string;
   nome: string;
@@ -80,7 +80,7 @@ const DEMO_CRM_BOLSAO: LeadDescartado[] = [
   { id: 'dl1', nome: 'Marcos Paulo', telefone: '(47) 98123-4567', motivo: 'Não responde', descartadoPor: 'demo-c2', descartadoEm: demoTs(30), origem: 'Propaganda · Lançamento Vista Mar', qualificacao: { tipo: ['Apartamento'], valor: ['< 500k'], localizacao: ['Penha'], finalidade: ['Moradia'] } },
   { id: 'dl2', nome: 'Luciana Freitas', telefone: '(47) 97234-5678', motivo: 'Adiou a compra', descartadoPor: 'demo-c2', descartadoEm: demoTs(52), origem: 'Networking', qualificacao: { tipo: ['Casa'], valor: ['800k-1.2M'], localizacao: ['Barra Velha'], finalidade: ['Veraneio'] } },
   { id: 'dl3', nome: 'Edson Vargas', telefone: '(47) 96345-6789', motivo: 'Comprou com outro', descartadoPor: 'demo-c3', descartadoEm: demoTs(80), origem: 'Ligação Ativa · Feirão Litoral', qualificacao: { tipo: ['Apartamento'], valor: ['500k-800k'], localizacao: ['Piçarras'], finalidade: ['Investimento'] } },
-  { id: 'dl4', nome: 'Renata Souza', telefone: '(47) 95456-7890', etapa: 'Bolsão', userId: 'demo-c2', origem: 'Networking', qualificacao: { tipo: ['Apartamento'], valor: ['< 500k'], localizacao: ['Penha'] } },
+  { id: 'dl4', nome: 'Renata Souza', telefone: '(47) 95456-7890', motivo: 'Não responde', descartadoPor: 'demo-c2', descartadoEm: demoTs(96), origem: 'Networking', qualificacao: { tipo: ['Apartamento'], valor: ['< 500k'], localizacao: ['Penha'] } },
 ];
 
 const p2 = (n: number) => String(n).padStart(2, '0');
@@ -295,10 +295,9 @@ export default function ImportarLigacaoAtivaPage() {
     }
     if (!userData?.imobiliariaId) return;
     try {
-      // SEM filtro de etapa na query: etapas LEGADAS ("Interesse Futuro",
-      // "Troca de Leads", "Geladeira"…) normalizam pra Bolsão/Descartado só no
-      // cliente — uma query por etapa literal deixaria esses leads num limbo
-      // (invisíveis pro corretor E fora do bolsão do admin).
+      // SEM filtro de etapa na query: etapas legadas com 'descart' no nome
+      // normalizam pra Descartado só no cliente — query por etapa literal
+      // deixaria esses leads num limbo.
       const snap = await getDocs(query(
         collection(db, 'leads'),
         where('imobiliariaId', '==', userData.imobiliariaId)
@@ -355,9 +354,7 @@ export default function ImportarLigacaoAtivaPage() {
         });
         batch.set(doc(collection(db, 'leads', l.id, 'interactions')), {
           type: 'Etapa',
-          notes: l.etapa === 'Bolsão'
-            ? `🔄 Redistribuído do bolsão: estava estacionado com ${nomeCorretor(l.userId).split(' ')[0]}, agora com ${nomeDestino}`
-            : `🔄 Redistribuído do bolsão: descartado por ${nomeCorretor(l.descartadoPor).split(' ')[0]}${l.motivo ? ` (${l.motivo})` : ''}, agora com ${nomeDestino}`,
+          notes: `🔄 Redistribuído do bolsão: descartado por ${nomeCorretor(l.descartadoPor).split(' ')[0]}${l.motivo ? ` (${l.motivo})` : ''}, agora com ${nomeDestino}`,
           timestamp: serverTimestamp(),
           circuito: true,
           por: adminNome,
@@ -389,10 +386,7 @@ export default function ImportarLigacaoAtivaPage() {
         if (!nomeOk && !telOk) return false;
       }
       if (crmMotivoF && (l.motivo || 'Sem motivo') !== crmMotivoF) return false;
-      if (crmCorretorF) {
-        const dono = l.etapa === 'Bolsão' ? (l.userId || '') : (l.descartadoPor || '');
-        if (dono !== crmCorretorF) return false;
-      }
+      if (crmCorretorF && (l.descartadoPor || '') !== crmCorretorF) return false;
       for (const [key, valor] of qualAtivas) {
         const v = l.qualificacao?.[key];
         const lista = Array.isArray(v) ? v : (v ? [v] : []);
@@ -410,16 +404,16 @@ export default function ImportarLigacaoAtivaPage() {
   }, [crmBolsao]);
   const crmCorretoresDoBolsao = useMemo(() => {
     const uids = new Set<string>();
-    crmBolsao.forEach(l => uids.add(l.etapa === 'Bolsão' ? (l.userId || '') : (l.descartadoPor || '')));
+    crmBolsao.forEach(l => uids.add(l.descartadoPor || ''));
     return Array.from(uids);
   }, [crmBolsao]);
   const temFiltroCrm = !!(crmBusca.trim() || crmMotivoF || crmCorretorF || Object.values(crmQualF).some(Boolean));
 
-  // Agrupa (JÁ FILTRADO): descartados pelo corretor que descartou; etapa Bolsão (legado) pelo dono atual
+  // Agrupa (JÁ FILTRADO) pelo corretor que descartou
   const crmGrupos = useMemo(() => {
     const m = new Map<string, LeadDescartado[]>();
     crmFiltrado.forEach(l => {
-      const k = l.etapa === 'Bolsão' ? `est:${l.userId || ''}` : `desc:${l.descartadoPor || ''}`;
+      const k = l.descartadoPor || '';
       m.set(k, [...(m.get(k) || []), l]);
     });
     return Array.from(m.entries()).sort((a, b) => b[1].length - a[1].length);
@@ -842,7 +836,7 @@ export default function ImportarLigacaoAtivaPage() {
           )}
         </div>
         <p className="text-text-secondary mb-4 text-sm">
-          LEADS que saíram do funil dos corretores (descartados no circuito ou estacionados no Bolsão antigo) — organizados <b className="text-white">pelo corretor</b>, com o motivo.
+          LEADS descartados pelos corretores no circuito — organizados <b className="text-white">por quem descartou</b>, com o motivo.
           Selecione (um grupo inteiro ou avulsos) e envie pra outro corretor: o lead <b className="text-white">renasce em Entrada</b> com todo o histórico na linha do tempo.
         </p>
 
@@ -955,7 +949,7 @@ export default function ImportarLigacaoAtivaPage() {
                       className="w-full flex items-center gap-2 px-3 py-2 bg-white/[0.03] text-left hover:bg-white/[0.05] transition-colors"
                     >
                       <span className={`h-3.5 w-3.5 rounded border grid place-items-center text-[9px] ${todos ? 'bg-[#E8C547]/20 border-[#E8C547]/60 text-[#FFE9A6]' : 'border-white/20 text-transparent'}`}>✓</span>
-                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#FF9EB5]">{uid.startsWith('est:') ? `Estacionados no Bolsão — ${nomeCorretor(uid.slice(4) || undefined)}` : `Descartados por ${nomeCorretor(uid.slice(5) || undefined)}`}</span>
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#FF9EB5]">Descartados por {nomeCorretor(uid || undefined)}</span>
                       <span className="text-[11px] text-text-secondary tabular-nums">({doGrupo.length})</span>
                     </button>
                     {doGrupo.map(l => {

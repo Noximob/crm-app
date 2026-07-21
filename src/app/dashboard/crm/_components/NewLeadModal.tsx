@@ -148,7 +148,7 @@ export default function NewLeadModal({ isOpen, onClose }: NewLeadModalProps) {
                 // onde ele está, senão vira mistério ("não acho, mas já existe?").
                 const noBolsaoDoAdmin = (ETAPAS_DO_ADMIN as readonly string[]).includes(mapEtapaCircuito(dupData.etapa));
                 if (noBolsaoDoAdmin) {
-                    setError(`${dupData.nome || 'Esse cliente'} está no bolsão do administrador (descartado/estacionado) — peça pro admin redistribuir em Importar Leads.`);
+                    setError(`${dupData.nome || 'Esse cliente'} foi descartado e está no bolsão do administrador — peça pro admin redistribuir em Importar Leads.`);
                 } else if (dupData.userId === currentUser.uid) {
                     setError(`Você já tem esse lead: ${dupData.nome || 'sem nome'}.`);
                 } else {

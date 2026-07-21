@@ -9,7 +9,6 @@ import { showToast } from '@/components/ui/toast';
 import LoadingState from '@/components/ui/LoadingState';
 import { getDemoLeads } from '@/lib/espelho/demoData';
 import {
-  ETAPA_BOLSAO,
   ETAPA_DESCARTADO,
   ETAPA_FECHADO,
   ETAPAS_CIRCUITO,
@@ -332,7 +331,7 @@ export default function FunilCadenciasPage() {
               <span className="ml-auto text-[11px] text-text-secondary tabular-nums">{leads.length} lead{leads.length !== 1 ? 's' : ''} na imobiliária</span>
             </div>
             <p className="text-[10.5px] text-text-secondary mb-3">
-              Etapas fixas, iguais pra toda a equipe — o lead anda pra frente até o Fechamento (venda). Descartados e estacionados caem no bolsão da área do admin, em Importar Leads.
+              Etapas fixas, iguais pra toda a equipe — o lead anda pra frente até o Fechamento (venda). Só o Descartado sai do funil: cai no bolsão da área do admin, em Importar Leads. Etapas antigas tipo &quot;Interesse Futuro&quot; viram Follow-up.
             </p>
 
             {/* Fluxo das 5 etapas ativas */}
@@ -364,13 +363,8 @@ export default function FunilCadenciasPage() {
               })}
             </div>
 
-            {/* Bolsão + terminais */}
+            {/* Terminais fora do quadro */}
             <div className="flex flex-wrap items-center gap-2 mt-3">
-              <span className={`${chipBase} bg-[#7DD3FC]/10 border-[#7DD3FC]/35 text-[#7DD3FC]`} title="Leads estacionados (Bolsão antigo) — aparecem no bolsão do admin, em Importar Leads, prontos pra redistribuir.">
-                📦 {ETAPA_BOLSAO}
-                <span className="tabular-nums">{contagemPorEtapa[ETAPA_BOLSAO] || 0}</span>
-                <span className="font-medium normal-case tracking-normal text-[#7DD3FC]/80">no bolsão do admin</span>
-              </span>
               <span
                 className={`${chipBase} bg-white/[0.05] border-white/15 text-text-secondary`}
                 title={`Motivos de descarte: ${MOTIVOS_DESCARTE.join(', ')}`}

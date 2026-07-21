@@ -13,7 +13,7 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ETAPA_ENTRADA, ETAPA_FOLLOWUP, ETAPA_MEET, ETAPA_VISITA, ETAPA_NEGOCIACAO, ETAPA_BOLSAO, ETAPA_FECHADO, ETAPA_DESCARTADO,
+  ETAPA_ENTRADA, ETAPA_FOLLOWUP, ETAPA_MEET, ETAPA_VISITA, ETAPA_NEGOCIACAO, ETAPA_FECHADO, ETAPA_DESCARTADO,
   TIPO_TAREFA_MEET, TIPO_TAREFA_VISITA, TIPO_TAREFA_FOLLOWUP, TIPO_TAREFA_PRODUTO,
   TIPOS_CONTATO, MOTIVOS_DESCARTE, REQUALIFICA_OPCOES,
   type CadenciasFunil,
@@ -122,8 +122,6 @@ export function perguntaDoLead(
     case ETAPA_NEGOCIACAO:
       if (!cobranca) return { pendente: true, estado: { t: 'negPrazo' }, urgencia: agora };
       return { pendente: venceu(cobranca), estado: { t: 'negQ', taskId: cobranca.id }, urgencia: dueMs(cobranca) };
-    case ETAPA_BOLSAO:
-      return { pendente: false, estado: { t: 'quando' }, urgencia: Infinity };
     case ETAPA_FECHADO:
       return null;
     default: // Descartado → reativar agenda um follow-up

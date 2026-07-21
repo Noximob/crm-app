@@ -351,7 +351,7 @@ export default function AtividadeTab({ report }: { report: ReportComputed }) {
               </div>
             ))}
             <p className="text-[9.5px] text-white/30 pt-1">
-              Tarefas atrasadas = prazo estourado (hora real). Sem próxima ação = lead em etapa ativa do circuito (Entrada → Negociação) sem nenhuma tarefa pendente — Bolsão fica de fora.
+              Tarefas atrasadas = prazo estourado (hora real). Sem próxima ação = lead em etapa ativa do circuito (Entrada → Negociação) sem nenhuma tarefa pendente.
               Esperando 1º contato = leads em Entrada/Follow-up cujo cliente ainda não atendeu nem respondeu (o rodízio de insistência tá rolando — ou parado).
             </p>
           </div>

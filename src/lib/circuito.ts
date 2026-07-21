@@ -3,7 +3,8 @@
  *
  * Etapas do quadro: Entrada → Follow-up → Meet → Visita → Negociação → Fechamento.
  * Fechamento = venda concluída (fim de linha feliz, visível no funil).
- * Bolsão / Descartado = área do ADMIN (redistribuição), fora da visão do corretor.
+ * Descartado = área do ADMIN (bolsa de redistribuição), fora da visão do corretor.
+ * "Bolsão" não é mais estado de lead — etapas legadas desse tipo viram Follow-up.
  *
  * Este módulo é a fonte única de: nomes de etapa, mapeamento de etapas legadas,
  * motivos de descarte e as cadências (temporizadores) configuráveis pelo admin.
@@ -41,11 +42,15 @@ export const ETAPAS_CIRCUITO = [
 /** Estados fora da cobrança do circuito (sem pergunta pendente / fora da carteira ativa). */
 export const ETAPAS_TERMINAIS = [ETAPA_FECHADO, ETAPA_DESCARTADO] as const;
 
-/** Etapas que ficam SÓ com o admin (bolsa de redistribuição). */
-export const ETAPAS_DO_ADMIN = [ETAPA_BOLSAO, ETAPA_DESCARTADO] as const;
+/**
+ * Etapas que ficam SÓ com o admin (bolsa de redistribuição) = DESCARTADO.
+ * "Bolsão" deixou de ser estado de lead: estacionados/interesse futuro voltam
+ * pro funil como Follow-up (a cobrança sai das tarefas de cada cliente).
+ */
+export const ETAPAS_DO_ADMIN = [ETAPA_DESCARTADO] as const;
 
-/** Todas as etapas válidas (quadro + bolsão + descartado). */
-export const ETAPAS_TODAS = [...ETAPAS_CIRCUITO, ETAPA_BOLSAO, ETAPA_DESCARTADO] as string[];
+/** Todas as etapas válidas (quadro + descartado). */
+export const ETAPAS_TODAS = [...ETAPAS_CIRCUITO, ETAPA_DESCARTADO] as string[];
 
 const setTodas = new Set<string>(ETAPAS_TODAS);
 
@@ -70,7 +75,10 @@ export function mapEtapaCircuito(etapa: string | undefined | null): string {
   if (e.includes('negocia') || e.includes('proposta') || e.includes('contrato')) return ETAPA_NEGOCIACAO;
   if (e.includes('visita')) return ETAPA_VISITA;
   if (e.includes('meet') || e.includes('reuni') || e.includes('ligacao agendada') || e.includes('atendimento agendado')) return ETAPA_MEET;
-  if (e.includes('carteira') || e.includes('geladeira') || e.includes('interesse futuro') || e.includes('troca') || e.includes('bolsao')) return ETAPA_BOLSAO;
+  // Estacionados de antigamente (Interesse Futuro, Carteira, Geladeira, Bolsão…)
+  // voltam pro FOLLOW-UP: são clientes de verdade — a régua de tarefas de cada um
+  // (atrasada / sem tarefa) decide a cobrança. Bolsão de lead não existe mais.
+  if (e.includes('carteira') || e.includes('geladeira') || e.includes('interesse futuro') || e.includes('troca') || e.includes('bolsao')) return ETAPA_FOLLOWUP;
   if (e.includes('pre qualifica') || e.includes('topo') || e.includes('entrada')) return ETAPA_ENTRADA;
   if (e.includes('qualifica') || e.includes('apresenta') || e.includes('follow') || e.includes('oferta')) return ETAPA_FOLLOWUP;
   return ETAPA_ENTRADA;
