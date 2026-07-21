@@ -39,6 +39,8 @@ interface AdsConfig {
   imobiliariaId?: string;
   /** true → corretor com tarefa atrasada no CRM é pulado no rodízio até resolver */
   exigirCrmEmDia?: boolean;
+  /** só sai da fila quem tem tarefa vencida há MAIS de X horas (default 48) */
+  crmEmDiaToleranciaHoras?: number;
 }
 
 interface AdsLead {
@@ -199,6 +201,7 @@ export default function AdminDistribuicaoAdsPage() {
   // Config (rascunho local dos tempos)
   const [minExc, setMinExc] = useState('5');
   const [minGer, setMinGer] = useState('30');
+  const [tolCrm, setTolCrm] = useState('48');
   const temposSincronizados = useRef(false);
   const [salvandoCfg, setSalvandoCfg] = useState(false);
 
@@ -286,12 +289,14 @@ export default function AdminDistribuicaoAdsPage() {
               minutosGeral: Number(data.minutosGeral) > 0 ? Number(data.minutosGeral) : 30,
               imobiliariaId: data.imobiliariaId,
               exigirCrmEmDia: !!data.exigirCrmEmDia,
+              crmEmDiaToleranciaHoras: Number(data.crmEmDiaToleranciaHoras) >= 0 ? Number(data.crmEmDiaToleranciaHoras) : 48,
             }
           : null;
         setConfig(cfg);
         if (!temposSincronizados.current) {
           setMinExc(String(cfg?.minutosExclusivo ?? 5));
           setMinGer(String(cfg?.minutosGeral ?? 30));
+          setTolCrm(String(cfg?.crmEmDiaToleranciaHoras ?? 48));
           temposSincronizados.current = true;
         }
         if (!escalaSincronizada.current) {
@@ -367,6 +372,7 @@ export default function AdminDistribuicaoAdsPage() {
       minutosGeral: config?.minutosGeral ?? 30,
       imobiliariaId: userData.imobiliariaId,
       exigirCrmEmDia: config?.exigirCrmEmDia ?? false,
+      crmEmDiaToleranciaHoras: config?.crmEmDiaToleranciaHoras ?? 48,
     };
     await setDoc(doc(db, 'distribuicaoAds', 'config'), { ...base, ...patch, atualizadoEm: serverTimestamp() }, { merge: true });
   };
@@ -406,11 +412,13 @@ export default function AdminDistribuicaoAdsPage() {
     if (guardaDemo()) return;
     const exc = Math.max(1, parseInt(minExc || '0', 10) || 5);
     const ger = Math.max(1, parseInt(minGer || '0', 10) || 30);
+    const tol = Math.max(0, parseInt(tolCrm || '0', 10) || 0);
     setSalvandoCfg(true);
     try {
-      await persistConfig({ minutosExclusivo: exc, minutosGeral: ger });
+      await persistConfig({ minutosExclusivo: exc, minutosGeral: ger, crmEmDiaToleranciaHoras: tol });
       setMinExc(String(exc));
       setMinGer(String(ger));
+      setTolCrm(String(tol));
       showToast('Tempos salvos.', 'success');
     } catch (e) {
       console.error('Erro ao salvar tempos:', e);
@@ -667,6 +675,12 @@ export default function AdminDistribuicaoAdsPage() {
                 <label className={labelCls}>Minutos na distribuição geral</label>
                 <input type="number" min={1} inputMode="numeric" value={minGer} onChange={(e) => setMinGer(e.target.value)} className={`${inputCls} w-28 text-center al-display tabular-nums`} />
               </div>
+              {config?.exigirCrmEmDia && (
+                <div>
+                  <label className={labelCls}>🏅 Tolerância do CRM em dia (horas)</label>
+                  <input type="number" min={0} inputMode="numeric" value={tolCrm} onChange={(e) => setTolCrm(e.target.value)} className={`${inputCls} w-28 text-center al-display tabular-nums`} title="Só sai da fila quem tem tarefa vencida há MAIS de X horas. 0 = qualquer atraso já tira da fila." />
+                </div>
+              )}
               <button
                 type="button"
                 onClick={handleSalvarTempos}
@@ -685,7 +699,8 @@ export default function AdminDistribuicaoAdsPage() {
             )}
             {config?.exigirCrmEmDia && (
               <p className="text-[10.5px] text-[#FFE9A6]/80 mt-2">
-                🏅 Premiação ligada: corretor com <b>tarefa atrasada</b> no CRM é pulado no rodízio até resolver.
+                🏅 Premiação ligada: corretor com tarefa vencida há <b>mais de {config?.crmEmDiaToleranciaHoras ?? 48}h</b> é pulado
+                no rodízio até resolver (atraso fresco não pune — ajuste a tolerância ali em cima e salve).
                 Se a escala inteira estiver atrasada, o rodízio segue normal — nenhum lead se perde.
               </p>
             )}

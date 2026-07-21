@@ -54,15 +54,9 @@ interface CampoCadencia {
   max: number;
 }
 
+// "Não atendeu" NÃO tem relógio próprio: o corretor agenda a próxima tentativa
+// na hora, e se o horário passar a tarefa fica atrasada e cobra sozinha.
 const CAMPOS_CADENCIA: CampoCadencia[] = [
-  {
-    key: 'naoAtendeuHoras',
-    titulo: 'Cliente não atendeu → quando tentar de novo',
-    unidade: 'horas',
-    ajuda: 'O corretor ligou e ninguém atendeu? O pop-up já vem com a próxima tentativa sugerida pra daqui a X horas. Exemplo com 24: ligou hoje às 10h sem resposta → o sistema propõe tentar amanhã às 10h (o corretor pode mudar o horário).',
-    min: 1,
-    max: 240,
-  },
   {
     key: 'perguntarMeetHoras',
     titulo: 'Cobrar o resultado do meet',

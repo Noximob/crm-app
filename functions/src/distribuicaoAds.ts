@@ -10,7 +10,9 @@
  *     imobiliariaId?: string,
  *     exigirCrmEmDia?: boolean (true → corretor com tarefa ATRASADA no CRM é
  *       pulado no rodízio até resolver; se a escala inteira estiver atrasada,
- *       o rodízio segue normal pra nenhum lead se perder) }
+ *       o rodízio segue normal pra nenhum lead se perder),
+ *     crmEmDiaToleranciaHoras?: number (default 48 — só sai da fila quem tem
+ *       tarefa vencida há MAIS de X horas; atraso fresco não pune) }
  *
  * Collection `adsLeads/{id}`:
  *   { nome, telefone (só dígitos), origem: 'meta-form'|'meta-whatsapp'|'manual',
@@ -54,6 +56,7 @@ interface DistribuicaoConfig {
     atualizadoEm?: admin.firestore.Timestamp;
     imobiliariaId?: string;
     exigirCrmEmDia?: boolean;
+    crmEmDiaToleranciaHoras?: number;
 }
 
 interface NovoAdsLead {
@@ -239,13 +242,15 @@ function dueDateMs(due: unknown): number {
 }
 
 /**
- * "CRM em dia" = nenhuma tarefa pendente com prazo estourado. Lê o espelho
- * `tarefasPendentes` dos leads de cada corretor (field mask — barato) e devolve
- * o conjunto dos que estão COM atraso (fora da fila). Falha na leitura de um
- * corretor → ele é considerado em dia (o filtro nunca pode travar o rodízio).
+ * "CRM em dia" = nenhuma tarefa pendente vencida há mais de `toleranciaMs`.
+ * Atraso fresco (dentro da tolerância) NÃO tira o corretor da fila — só quem
+ * deixou tarefa mofando. Lê o espelho `tarefasPendentes` dos leads de cada
+ * corretor (field mask — barato) e devolve o conjunto dos que estão fora da
+ * fila. Falha na leitura de um corretor → ele é considerado em dia (o filtro
+ * nunca pode travar o rodízio).
  */
-async function corretoresComAtraso(corretores: string[]): Promise<Set<string>> {
-    const agoraMs = Date.now();
+async function corretoresComAtraso(corretores: string[], toleranciaMs: number): Promise<Set<string>> {
+    const corteMs = Date.now() - Math.max(0, toleranciaMs);
     const comAtraso = new Set<string>();
     await Promise.all(corretores.map(async (uid) => {
         try {
@@ -257,7 +262,7 @@ async function corretoresComAtraso(corretores: string[]): Promise<Set<string>> {
                 const pendentes = (doc.data().tarefasPendentes || []) as {dueDate?: unknown}[];
                 if (pendentes.some((t) => {
                     const ms = dueDateMs(t?.dueDate);
-                    return isFinite(ms) && ms < agoraMs;
+                    return isFinite(ms) && ms < corteMs;
                 })) {
                     comAtraso.add(uid);
                     return;
@@ -278,7 +283,9 @@ async function corretoresComAtraso(corretores: string[]): Promise<Set<string>> {
 async function foraDaFilaPorAtraso(config: Partial<DistribuicaoConfig>): Promise<Set<string>> {
     const corretores = Array.isArray(config.corretores) ? config.corretores : [];
     if (config.exigirCrmEmDia !== true || corretores.length === 0) return new Set();
-    const comAtraso = await corretoresComAtraso(corretores);
+    const tolHoras = typeof config.crmEmDiaToleranciaHoras === "number" && config.crmEmDiaToleranciaHoras >= 0 ?
+        config.crmEmDiaToleranciaHoras : 48;
+    const comAtraso = await corretoresComAtraso(corretores, tolHoras * 60 * 60 * 1000);
     if (comAtraso.size >= corretores.length) {
         logger.warn("exigirCrmEmDia: escala inteira com atraso — rodízio segue normal");
         return new Set();
