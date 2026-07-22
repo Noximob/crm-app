@@ -230,6 +230,10 @@ export default function AdminDistribuicaoAdsPage() {
 
   // Filtro por campanha (clica no painel de campanhas e filtra as listas)
   const [filtroCampanha, setFiltroCampanha] = useState<string | null>(null);
+  // Painel de campanhas: busca por nome, paradas recolhidas, exclusão em andamento
+  const [buscaCampanha, setBuscaCampanha] = useState('');
+  const [mostrarParadas, setMostrarParadas] = useState(false);
+  const [excluindoCampanha, setExcluindoCampanha] = useState<string | null>(null);
 
   // Campanhas ATIVAS puxadas do Meta (mostra rodando mesmo sem lead ainda)
   const [campanhasMeta, setCampanhasMeta] = useState<{ nome: string; objetivo: string }[]>([]);
@@ -696,6 +700,99 @@ export default function AdminDistribuicaoAdsPage() {
   const naoAtendidosView = naoAtendidos.filter(bateCampanha);
   const aceitosView = aceitos.filter(bateCampanha);
 
+  // Painel de campanhas: busca + separa ativas de paradas (paradas ficam recolhidas)
+  const campanhasBusca = useMemo(() => {
+    const q = buscaCampanha.trim().toLowerCase();
+    return q ? campanhas.filter((c) => c.nome.toLowerCase().includes(q)) : campanhas;
+  }, [campanhas, buscaCampanha]);
+  const campAtivas = useMemo(() => campanhasBusca.filter((c) => c.ativa), [campanhasBusca]);
+  const campParadas = useMemo(() => campanhasBusca.filter((c) => !c.ativa), [campanhasBusca]);
+  const leadsParadas = useMemo(() => campParadas.reduce((s, c) => s + c.total, 0), [campParadas]);
+
+  // Excluir uma campanha do painel: apaga os registros de adsLeads dessa campanha
+  // (os leads que já viraram cliente no CRM do corretor NÃO são tocados).
+  const handleExcluirCampanha = async (nome: string) => {
+    if (guardaDemo()) return;
+    if (!userData?.imobiliariaId) return;
+    const ok = await confirmDialog({
+      title: 'Excluir campanha do painel',
+      message: `Apagar "${nome}" daqui? Some da tela de distribuição e das estatísticas. Os leads que já viraram cliente no CRM do corretor NÃO são apagados.`,
+      danger: true,
+      confirmLabel: 'Excluir campanha',
+    });
+    if (!ok) return;
+    setExcluindoCampanha(nome);
+    try {
+      const snap = await getDocs(
+        query(collection(db, 'adsLeads'), where('imobiliariaId', '==', userData.imobiliariaId), where('campanhaNome', '==', nome))
+      );
+      await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+      if (filtroCampanha === nome) setFiltroCampanha(null);
+      showToast(`Campanha "${nome}" removida do painel (${snap.size} registro${snap.size === 1 ? '' : 's'}).`, 'success');
+    } catch (e) {
+      console.error('Erro ao excluir campanha:', e);
+      showToast('Não foi possível excluir a campanha — tente de novo.', 'error');
+    } finally {
+      setExcluindoCampanha(null);
+    }
+  };
+
+  // Card de uma campanha (usado nas duas seções: ativas e paradas)
+  const renderCampanhaCard = (c: (typeof campanhas)[number]) => {
+    const sel = filtroCampanha === c.nome;
+    const rel = c.ultimoMs > 0 ? fmtQuando(Timestamp.fromMillis(c.ultimoMs)) : '—';
+    const podeExcluir = c.total > 0;
+    const excluindo = excluindoCampanha === c.nome;
+    return (
+      <div
+        key={c.nome}
+        role="button"
+        tabIndex={0}
+        onClick={() => setFiltroCampanha(sel ? null : c.nome)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setFiltroCampanha(sel ? null : c.nome); } }}
+        className={`group relative text-left rounded-xl border p-3 cursor-pointer transition-colors ${sel ? 'border-[#FF1E56]/50 bg-[#FF1E56]/[0.06]' : 'border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.05]'}`}
+      >
+        <div className="flex items-center gap-2 mb-1.5">
+          {c.ativa
+            ? <span className={`${chipBase} bg-[#34D399]/12 border-[#34D399]/45 text-emerald-300 shrink-0`}>🟢 Ativa</span>
+            : <span className={`${chipBase} bg-white/[0.04] border-white/12 text-white/40 shrink-0`}>Parada</span>}
+          <span className="flex-1 min-w-0 truncate text-[13px] font-bold text-white" title={c.nome}>{c.nome}</span>
+          <span className="al-display text-[18px] font-bold text-[#FFE9A6] tabular-nums shrink-0">{c.total}</span>
+          {podeExcluir && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); handleExcluirCampanha(c.nome); }}
+              disabled={excluindo}
+              title="Excluir esta campanha do painel"
+              aria-label={`Excluir campanha ${c.nome}`}
+              className="shrink-0 w-6 h-6 -mr-0.5 rounded-lg flex items-center justify-center text-red-300/70 hover:text-red-300 hover:bg-red-500/15 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all disabled:opacity-100"
+            >
+              {excluindo
+                ? <span className="w-3 h-3 rounded-full border-2 border-red-300/40 border-t-red-300 animate-spin" />
+                : <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m2 0v12a1 1 0 01-1 1H8a1 1 0 01-1-1V7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+            </button>
+          )}
+        </div>
+        {c.total === 0 ? (
+          <div className="text-[10.5px] text-emerald-300/80">
+            Rodando no Meta · <span className="text-white/50">nenhum lead ainda</span>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10.5px] text-text-secondary">
+            <span className={ORIGEM_CHIP[c.origem] ? 'text-white/60' : ''}>{ORIGEM_LABEL[c.origem] || c.origem}</span>
+            <span className="text-white/20">·</span>
+            <span>✅ {c.aceitos} aceito{c.aceitos === 1 ? '' : 's'}</span>
+            {c.taxaAceite !== null && <><span className="text-white/20">·</span><span>{c.taxaAceite}% aceite</span></>}
+            {c.tempoMedio !== null && <><span className="text-white/20">·</span><span className="tabular-nums">{fmtTempoSeg(c.tempoMedio)}</span></>}
+          </div>
+        )}
+        {c.total > 0 && (
+          <p className="text-[9.5px] text-white/30 mt-1 tabular-nums">último lead: {rel}{c.anuncios.size > 0 ? ` · ${c.anuncios.size} anúncio${c.anuncios.size > 1 ? 's' : ''}` : ''}</p>
+        )}
+      </div>
+    );
+  };
+
   const carregando = !cfgCarregada || !corrCarregados;
   const inputCls = 'bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50';
   const labelCls = 'block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1';
@@ -886,44 +983,65 @@ export default function AdminDistribuicaoAdsPage() {
             {campanhas.length === 0 ? (
               <p className="text-[12px] text-text-secondary text-center py-3">{metaStatus === 'carregando' ? 'Buscando campanhas…' : 'Nenhuma campanha ainda — quando um anúncio rodar ou trouxer lead, aparece aqui.'}</p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {campanhas.map((c) => {
-                  const sel = filtroCampanha === c.nome;
-                  const rel = c.ultimoMs > 0 ? fmtQuando(Timestamp.fromMillis(c.ultimoMs)) : '—';
-                  return (
-                    <button
-                      key={c.nome}
-                      type="button"
-                      onClick={() => setFiltroCampanha(sel ? null : c.nome)}
-                      className={`text-left rounded-xl border p-3 transition-colors ${sel ? 'border-[#FF1E56]/50 bg-[#FF1E56]/[0.06]' : 'border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.05]'}`}
-                    >
-                      <div className="flex items-center gap-2 mb-1.5">
-                        {c.ativa
-                          ? <span className={`${chipBase} bg-[#34D399]/12 border-[#34D399]/45 text-emerald-300`}>🟢 Ativa</span>
-                          : <span className={`${chipBase} bg-white/[0.04] border-white/12 text-white/40`}>Parada</span>}
-                        <span className="flex-1 min-w-0 truncate text-[13px] font-bold text-white" title={c.nome}>{c.nome}</span>
-                        <span className="al-display text-[18px] font-bold text-[#FFE9A6] tabular-nums shrink-0">{c.total}</span>
+              <>
+                {/* Busca — só aparece quando a lista começa a crescer */}
+                {campanhas.length > 5 && (
+                  <div className="relative mb-3">
+                    <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/30" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" /><path d="M21 21l-4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+                    <input
+                      type="text"
+                      value={buscaCampanha}
+                      onChange={(e) => setBuscaCampanha(e.target.value)}
+                      placeholder="Buscar campanha pelo nome…"
+                      className={`${inputCls} w-full pl-8 py-1.5 text-[12px]`}
+                    />
+                    {buscaCampanha && (
+                      <button type="button" onClick={() => setBuscaCampanha('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white text-[13px]">✕</button>
+                    )}
+                  </div>
+                )}
+
+                {campanhasBusca.length === 0 ? (
+                  <p className="text-[12px] text-text-secondary text-center py-3">Nenhuma campanha com &quot;{buscaCampanha}&quot; no nome.</p>
+                ) : (
+                  <>
+                    {/* Ativas — sempre abertas, é o que importa no dia a dia */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="h-2 w-2 rounded-full bg-[#34D399] shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+                      <h3 className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-emerald-300/90">Rodando agora</h3>
+                      <span className="text-[10px] font-bold text-emerald-300/70 tabular-nums px-1.5 py-0.5 rounded-full bg-[#34D399]/10 border border-[#34D399]/25">{campAtivas.length}</span>
+                    </div>
+                    {campAtivas.length === 0 ? (
+                      <p className="text-[11.5px] text-text-secondary mb-3">Nenhuma campanha ligada no Meta agora{buscaCampanha ? ' (com esse nome)' : ''}.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                        {campAtivas.map(renderCampanhaCard)}
                       </div>
-                      {c.total === 0 ? (
-                        <div className="text-[10.5px] text-emerald-300/80">
-                          Rodando no Meta · <span className="text-white/50">nenhum lead ainda</span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10.5px] text-text-secondary">
-                          <span className={ORIGEM_CHIP[c.origem] ? 'text-white/60' : ''}>{ORIGEM_LABEL[c.origem] || c.origem}</span>
-                          <span className="text-white/20">·</span>
-                          <span>✅ {c.aceitos} aceito{c.aceitos === 1 ? '' : 's'}</span>
-                          {c.taxaAceite !== null && <><span className="text-white/20">·</span><span>{c.taxaAceite}% aceite</span></>}
-                          {c.tempoMedio !== null && <><span className="text-white/20">·</span><span className="tabular-nums">{fmtTempoSeg(c.tempoMedio)}</span></>}
-                        </div>
-                      )}
-                      {c.total > 0 && (
-                        <p className="text-[9.5px] text-white/30 mt-1 tabular-nums">último lead: {rel}{c.anuncios.size > 0 ? ` · ${c.anuncios.size} anúncio${c.anuncios.size > 1 ? 's' : ''}` : ''}</p>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+                    )}
+
+                    {/* Paradas — recolhidas por padrão pra não virar um paredão */}
+                    {campParadas.length > 0 && (
+                      <div className="border-t border-white/[0.06] pt-3">
+                        <button
+                          type="button"
+                          onClick={() => setMostrarParadas((v) => !v)}
+                          className="w-full flex items-center gap-2 text-left group"
+                        >
+                          <svg className={`text-white/40 transition-transform ${mostrarParadas ? 'rotate-90' : ''}`} width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                          <h3 className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/45 group-hover:text-white/70 transition-colors">Paradas</h3>
+                          <span className="text-[10px] font-bold text-white/40 tabular-nums px-1.5 py-0.5 rounded-full bg-white/[0.05] border border-white/10">{campParadas.length}</span>
+                          <span className="ml-auto text-[10px] text-white/30 tabular-nums">{leadsParadas} lead{leadsParadas === 1 ? '' : 's'} no total · {mostrarParadas ? 'ocultar' : 'ver'}</span>
+                        </button>
+                        {mostrarParadas && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2.5">
+                            {campParadas.map(renderCampanhaCard)}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
             )}
           </div>
 
