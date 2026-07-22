@@ -32,8 +32,8 @@ const FUNIL_PALETA = ['#FFE9A6', '#E8C547', '#D4A017', '#F59E0B', '#FF7A45', '#3
 const ETAPAS_ATIVAS = ETAPAS_CIRCUITO;
 
 const DESCRICAO_ETAPA: Record<string, string> = {
-  'Entrada': 'lead novo — ligar agora',
-  'Follow-up': 'próximo contato combinado',
+  'Entrada': 'lead novo ou ainda tentando falar',
+  'Em Contato': 'o cliente já respondeu — em conversa',
   'Meet': 'reunião marcada',
   'Visita': 'visita marcada',
   'Negociação': 'proposta na mesa',

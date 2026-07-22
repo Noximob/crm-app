@@ -240,11 +240,11 @@ export default function LeadDetailPage() {
         return perguntaDoLead(normalizeEtapa(lead.etapa), tasks, cadencias, Date.now());
     }, [lead, tasks, cadencias, normalizeEtapa, tickCircuito]);
 
-    // Rodízio do 1º contato: lead em Entrada/Follow-up que ainda não teve conversa de verdade
+    // Rodízio do 1º contato: lead em Entrada/Em Contato que ainda não teve conversa de verdade
     const rodizioPrimeiroContato = useMemo(() => {
         if (!lead) return null;
         const e = normalizeEtapa(lead.etapa);
-        if (e !== 'Entrada' && e !== 'Follow-up') return null;
+        if (e !== 'Entrada' && e !== 'Em Contato') return null;
         if (lead.circuito?.primeiroContatoEm) return null;
         return { tentativas: lead.circuito?.tentativas || 0 };
     }, [lead, normalizeEtapa]);

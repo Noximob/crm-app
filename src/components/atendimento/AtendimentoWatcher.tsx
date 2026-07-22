@@ -338,7 +338,7 @@ export default function AtendimentoWatcher() {
           historico={historico}
           rodizioPrimeiroContato={(() => {
             const e = normalizeEtapa(leadAberto.etapa);
-            if ((e !== 'Entrada' && e !== 'Follow-up') || leadAberto.circuito?.primeiroContatoEm) return null;
+            if ((e !== 'Entrada' && e !== 'Em Contato') || leadAberto.circuito?.primeiroContatoEm) return null;
             return { tentativas: leadAberto.circuito?.tentativas || 0 };
           })()}
           onFecharX={() => {

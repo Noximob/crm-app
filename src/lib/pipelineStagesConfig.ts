@@ -28,7 +28,7 @@ export interface PipelineStageWithMeta {
  */
 export const DEFAULT_PIPELINE_STAGES_WITH_META: PipelineStageWithMeta[] = [
   { label: 'Entrada', reportCategory: 'Topo de Funil', isQuente: false },
-  { label: 'Follow-up', reportCategory: 'Qualificado', isQuente: false },
+  { label: 'Em Contato', reportCategory: 'Qualificado', isQuente: false },
   { label: 'Meet', reportCategory: 'Reunião agendada', isQuente: false },
   { label: 'Visita', reportCategory: 'Reunião agendada', isQuente: false },
   { label: 'Negociação', reportCategory: 'Negociação e contrato', isQuente: true },
@@ -38,8 +38,8 @@ export const DEFAULT_PIPELINE_STAGES_WITH_META: PipelineStageWithMeta[] = [
 /** Labels curtos para exibição em TV / cards compactos (por categoria) */
 export const COMPACT_GROUP_LABELS: Record<ReportCategory, string> = {
   'Topo de Funil': 'Entrada',
-  'Qualificado': 'Follow-up',
-  'Apresentação do imóvel': 'Follow-up',
+  'Qualificado': 'Em Contato',
+  'Apresentação do imóvel': 'Em Contato',
   'Reunião agendada': 'Meet & Visita',
   'Negociação e contrato': 'Negociação',
   'Follow up': 'Fechamento',

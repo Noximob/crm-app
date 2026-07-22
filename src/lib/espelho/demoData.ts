@@ -79,7 +79,7 @@ export interface DemoLead {
 }
 
 // Etapas do circuito (na ordem do quadro) + estados da área do admin gravados em lead.etapa
-const [ETAPA_ENTRADA, ETAPA_FOLLOWUP, ETAPA_MEET, ETAPA_VISITA, ETAPA_NEGOCIACAO, ETAPA_FECHADO] = PIPELINE_STAGES;
+const [ETAPA_ENTRADA, ETAPA_EM_CONTATO, ETAPA_MEET, ETAPA_VISITA, ETAPA_NEGOCIACAO, ETAPA_FECHADO] = PIPELINE_STAGES;
 const ETAPA_BOLSAO = 'Bolsão';
 const ETAPA_DESCARTADO = 'Descartado';
 
@@ -89,9 +89,9 @@ const ETAPA_PLAN: string[] = [
   ETAPA_VISITA,     // 1 — visita hoje (dashboard: Hoje)
   ETAPA_NEGOCIACAO, // 2 — proposta amanhã (dashboard: Futuro)
   ETAPA_MEET,       // 3 — meet amanhã às 10:00 (fluxo do circuito)
-  ETAPA_FOLLOWUP,   // 4 — follow-up marcado (fluxo do circuito)
+  ETAPA_EM_CONTATO, // 4 — follow-up marcado (fluxo do circuito)
   ...Array(11).fill(ETAPA_ENTRADA),
-  ...Array(9).fill(ETAPA_FOLLOWUP),
+  ...Array(9).fill(ETAPA_EM_CONTATO),
   ...Array(6).fill(ETAPA_MEET),
   ...Array(5).fill(ETAPA_VISITA),
   ...Array(4).fill(ETAPA_NEGOCIACAO),

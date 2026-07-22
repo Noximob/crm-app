@@ -13,7 +13,7 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ETAPA_ENTRADA, ETAPA_FOLLOWUP, ETAPA_MEET, ETAPA_VISITA, ETAPA_NEGOCIACAO, ETAPA_FECHADO, ETAPA_DESCARTADO,
+  ETAPA_ENTRADA, ETAPA_EM_CONTATO, ETAPA_MEET, ETAPA_VISITA, ETAPA_NEGOCIACAO, ETAPA_FECHADO, ETAPA_DESCARTADO,
   TIPO_TAREFA_MEET, TIPO_TAREFA_VISITA, TIPO_TAREFA_FOLLOWUP, TIPO_TAREFA_PRODUTO,
   TIPOS_CONTATO, MOTIVOS_DESCARTE, REQUALIFICA_OPCOES,
   type CadenciasFunil,
@@ -85,6 +85,9 @@ export interface PerguntaPendente {
   urgencia: number;
 }
 
+/** A tarefa que cobra a resposta da proposta (criada no negPrazo). */
+const ehCobrancaProposta = (t: TaskLike) => /^resposta da proposta/i.test((t.description || '').trim());
+
 export function perguntaDoLead(
   etapaNormalizada: string,
   pendentes: TaskLike[],
@@ -93,40 +96,43 @@ export function perguntaDoLead(
 ): PerguntaPendente | null {
   const porData = (a: TaskLike, b: TaskLike) =>
     (toJsDate(a.dueDate)?.getTime() ?? 0) - (toJsDate(b.dueDate)?.getTime() ?? 0);
-  const contato = pendentes
-    .filter(t => (TIPOS_CONTATO as unknown as string[]).includes(t.type) || t.type === TIPO_TAREFA_PRODUTO)
-    .sort(porData)[0];
-  // Na Negociação a cobrança é sempre a resposta da proposta — tarefa de
-  // Produto NÃO pode virar a pergunta "Fechou?"
-  const cobranca = pendentes
-    .filter(t => (TIPOS_CONTATO as unknown as string[]).includes(t.type))
-    .sort(porData)[0];
-  const meet = pendentes.filter(t => t.type === TIPO_TAREFA_MEET).sort(porData)[0];
-  const visita = pendentes.filter(t => t.type === TIPO_TAREFA_VISITA).sort(porData)[0];
   const dueMs = (t?: TaskLike) => (t ? toJsDate(t.dueDate)?.getTime() ?? 0 : 0);
   const venceu = (t: TaskLike | undefined, horasExtra = 0) =>
     t ? agora >= dueMs(t) + horasExtra * 3600_000 : false;
 
-  switch (etapaNormalizada) {
-    case ETAPA_ENTRADA:
-      return { pendente: true, estado: { t: 'entrada' }, urgencia: 0 };
-    case ETAPA_FOLLOWUP:
-      if (!contato) return { pendente: true, estado: { t: 'proximaAcao' }, urgencia: agora };
-      return { pendente: venceu(contato), estado: { t: 'tarefaAgora', taskId: contato.id }, urgencia: dueMs(contato) };
-    case ETAPA_MEET:
-      if (!meet) return { pendente: true, estado: { t: 'agendarData', tipo: 'Meet' }, urgencia: agora };
-      return { pendente: venceu(meet, cadencias.perguntarMeetHoras), estado: { t: 'meetQ', taskId: meet.id }, urgencia: dueMs(meet) };
-    case ETAPA_VISITA:
-      if (!visita) return { pendente: true, estado: { t: 'agendarData', tipo: 'Visita' }, urgencia: agora };
-      return { pendente: venceu(visita, cadencias.perguntarVisitaHoras), estado: { t: 'visitaQ', taskId: visita.id }, urgencia: dueMs(visita) };
-    case ETAPA_NEGOCIACAO:
-      if (!cobranca) return { pendente: true, estado: { t: 'negPrazo' }, urgencia: agora };
-      return { pendente: venceu(cobranca), estado: { t: 'negQ', taskId: cobranca.id }, urgencia: dueMs(cobranca) };
-    case ETAPA_FECHADO:
-      return null;
-    default: // Descartado → reativar agenda um follow-up
-      return { pendente: false, estado: { t: 'quando' }, urgencia: Infinity };
+  if (etapaNormalizada === ETAPA_FECHADO) return null;
+  // Descartado → reativar agenda um follow-up
+  if (etapaNormalizada === ETAPA_DESCARTADO) return { pendente: false, estado: { t: 'quando' }, urgencia: Infinity };
+
+  // A etapa é o estágio máximo alcançado; quem dita a PERGUNTA são as tarefas.
+  // Cada tipo pendente vira um candidato; vale o mais urgente.
+  const meet = pendentes.filter(t => t.type === TIPO_TAREFA_MEET).sort(porData)[0];
+  const visita = pendentes.filter(t => t.type === TIPO_TAREFA_VISITA).sort(porData)[0];
+  const contatos = pendentes
+    .filter(t => (TIPOS_CONTATO as unknown as string[]).includes(t.type) || t.type === TIPO_TAREFA_PRODUTO)
+    .sort(porData);
+  // Na Negociação, a cobrança da proposta pergunta "Fechou?"; um follow-up
+  // comum (nutrição) segue como tarefa normal mesmo em Negociação.
+  const proposta = etapaNormalizada === ETAPA_NEGOCIACAO
+    ? contatos.filter(t => t.type !== TIPO_TAREFA_PRODUTO && ehCobrancaProposta(t))[0]
+    : undefined;
+  const contato = contatos.filter(t => t !== proposta)[0];
+
+  const candidatos: PerguntaPendente[] = [];
+  if (meet) candidatos.push({ pendente: venceu(meet, cadencias.perguntarMeetHoras), estado: { t: 'meetQ', taskId: meet.id }, urgencia: dueMs(meet) });
+  if (visita) candidatos.push({ pendente: venceu(visita, cadencias.perguntarVisitaHoras), estado: { t: 'visitaQ', taskId: visita.id }, urgencia: dueMs(visita) });
+  if (proposta) candidatos.push({ pendente: venceu(proposta), estado: { t: 'negQ', taskId: proposta.id }, urgencia: dueMs(proposta) });
+  if (contato) candidatos.push({ pendente: venceu(contato), estado: { t: 'tarefaAgora', taskId: contato.id }, urgencia: dueMs(contato) });
+
+  if (candidatos.length === 0) {
+    // Sem NENHUMA próxima ação marcada — a cobrança depende do estágio.
+    if (etapaNormalizada === ETAPA_ENTRADA) return { pendente: true, estado: { t: 'entrada' }, urgencia: 0 };
+    if (etapaNormalizada === ETAPA_NEGOCIACAO) return { pendente: true, estado: { t: 'negPrazo' }, urgencia: agora };
+    return { pendente: true, estado: { t: 'proximaAcao' }, urgencia: agora };
   }
+
+  candidatos.sort((a, b) => a.urgencia - b.urgencia);
+  return candidatos.find(c => c.pendente) ?? candidatos[0];
 }
 
 interface AtendimentoOverlayProps {
@@ -443,11 +449,11 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             return;
           }
           const mapa: Record<string, { tipo: string; etapa: string; desc: string; inter: string; toast: string }> = {
-            'Ligar': { tipo: 'Ligação', etapa: ETAPA_FOLLOWUP, desc: `Ligar para ${nome}`, inter: '📌 Tarefa criada: ligar', toast: 'ligar' },
-            'WhatsApp': { tipo: 'WhatsApp', etapa: ETAPA_FOLLOWUP, desc: `Chamar ${nome} no WhatsApp`, inter: '📌 Tarefa criada: WhatsApp', toast: 'WhatsApp' },
+            'Ligar': { tipo: 'Ligação', etapa: ETAPA_EM_CONTATO, desc: `Ligar para ${nome}`, inter: '📌 Tarefa criada: ligar', toast: 'ligar' },
+            'WhatsApp': { tipo: 'WhatsApp', etapa: ETAPA_EM_CONTATO, desc: `Chamar ${nome} no WhatsApp`, inter: '📌 Tarefa criada: WhatsApp', toast: 'WhatsApp' },
             'Marcar meet': { tipo: TIPO_TAREFA_MEET, etapa: ETAPA_MEET, desc: `Meet com ${nome}`, inter: '📅 Meet marcado', toast: 'meet' },
             'Marcar visita': { tipo: TIPO_TAREFA_VISITA, etapa: ETAPA_VISITA, desc: `Visita com ${nome}`, inter: '🏠 Visita marcada', toast: 'visita' },
-            [ACAO_PRODUTO]: { tipo: TIPO_TAREFA_PRODUTO, etapa: ETAPA_FOLLOWUP, desc: `Buscar imóvel pra oferecer a ${nome}`, inter: '🔎 Vai buscar imóvel pra oferecer — tarefa', toast: 'buscar imóvel' },
+            [ACAO_PRODUTO]: { tipo: TIPO_TAREFA_PRODUTO, etapa: ETAPA_EM_CONTATO, desc: `Buscar imóvel pra oferecer a ${nome}`, inter: '🔎 Vai buscar imóvel pra oferecer — tarefa', toast: 'buscar imóvel' },
           };
           const a = mapa[acaoSel];
           const ok = await executar({
@@ -502,7 +508,10 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
               const d = dataValidada();
               if (!d) return;
               const ok = await executar({
-                novaEtapa: ETAPA_FOLLOWUP,
+                // Tentativa sem resposta NÃO avança o estágio (Entrada continua
+                // Entrada); conversa de verdade garante pelo menos Em Contato —
+                // e a catraca segura quem já está mais na frente.
+                novaEtapa: m.tentativa ? undefined : ETAPA_EM_CONTATO,
                 concluirTaskId: m.concluirTaskId,
                 cancelarTaskId: m.cancelarTaskId,
                 novaTarefa: { description: descComObs(`Follow-up com ${nome}`), type: TIPO_TAREFA_FOLLOWUP, dueDate: d },
@@ -734,13 +743,13 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             <>
               O que {b('não encaixou')}? Atualiza aqui:
               <Chips itens={REQUALIFICA_OPCOES} sel={requalSel} onSel={v => setRequalSel(p => p.includes(v) ? p.filter(x => x !== v) : [...p, v])} />
-              <small>O lead volta pro follow-up mais inteligente do que entrou. A qualificação completa fica no painel ao lado. →</small>
+              <small>O cliente segue no estágio dele — só volta a ser nutrido, mais inteligente do que antes. A qualificação completa fica no painel ao lado. →</small>
             </>
           ),
           btns: [{
             t: 'Salvar e voltar a nutrir →', c: 'primary', f: async () => {
               const ok = await executar({
-                novaEtapa: ETAPA_FOLLOWUP,
+                novaEtapa: ETAPA_EM_CONTATO,
                 interacao: { type: 'Etapa', notes: `🎯 Requalificação${requalSel.length ? `: ${requalSel.join(', ')}` : ' registrada'}` },
               });
               if (ok) irLimpo({ t: 'quando' });
@@ -787,7 +796,8 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             {
               t: 'Esfriou', c: 'ghost', f: async () => {
                 const ok = await executar({
-                  novaEtapa: ETAPA_FOLLOWUP,
+                  // catraca: continua em Negociação — só troca a cobrança por nutrição
+                  novaEtapa: ETAPA_EM_CONTATO,
                   concluirTaskId: estado.taskId,
                   interacao: { type: 'Etapa', notes: '🌡️ Negociação esfriou — voltando a nutrir' },
                 });

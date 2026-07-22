@@ -6,7 +6,7 @@
 import { collection, doc, getDocs, limit, query, serverTimestamp, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { TarefaPendente, fetchPendentesDaSubcolecao } from '@/lib/leadTasks';
-import { mapEtapaCircuito } from '@/lib/circuito';
+import { etapaAposAcao, mapEtapaCircuito } from '@/lib/circuito';
 import type { AcaoCircuito } from '@/components/atendimento/AtendimentoOverlay';
 
 export interface LeadParaAcao {
@@ -69,12 +69,16 @@ export async function executarAcaoCircuito(params: {
 
     const leadUpdate: Record<string, any> = mexeuEmTarefa ? { tarefasPendentes: pendentes } : {};
     if (acao.novaEtapa) {
-      if (acao.novaEtapa !== mapEtapaCircuito(lead.etapa)) {
-        leadUpdate.etapa = acao.novaEtapa;
+      // CATRACA: a etapa é o estágio máximo alcançado — a ação propõe um alvo,
+      // mas o cliente nunca anda pra trás (follow-up em Negociação fica Negociação).
+      const atualNorm = mapEtapaCircuito(lead.etapa);
+      const etapaFinal = etapaAposAcao(atualNorm, acao.novaEtapa);
+      if (etapaFinal !== atualNorm) {
+        leadUpdate.etapa = etapaFinal;
         leadUpdate['circuito.desde'] = serverTimestamp();
-      } else if (lead.etapa !== acao.novaEtapa) {
+      } else if (lead.etapa !== etapaFinal) {
         // etapa legada equivalente → persiste o nome novo sem resetar o "desde"
-        leadUpdate.etapa = acao.novaEtapa;
+        leadUpdate.etapa = etapaFinal;
       }
     }
     if (acao.circuitoTentativas === 'inc') leadUpdate['circuito.tentativas'] = (lead.circuito?.tentativas || 0) + 1;

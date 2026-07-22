@@ -1,13 +1,19 @@
 /**
  * Circuito do lead — o funil guiado da Nox.
  *
- * Etapas do quadro: Entrada → Follow-up → Meet → Visita → Negociação → Fechamento.
+ * Etapas do quadro: Entrada → Em Contato → Meet → Visita → Negociação → Fechamento.
+ * A etapa é o ESTÁGIO MÁXIMO que o cliente alcançou — ela só anda pra frente
+ * (catraca). A próxima ação (ligar, whats, follow-up…) é TAREFA, não etapa:
+ * um cliente em Negociação com follow-up marcado continua em Negociação.
+ * "Follow-up" deixou de ser etapa — é tipo de tarefa, em qualquer estágio.
+ *
+ * Entrada = ainda não conseguiu falar (tentativas moram aqui).
+ * Em Contato = o cliente atendeu/respondeu — conversa de verdade aconteceu.
  * Fechamento = venda concluída (fim de linha feliz, visível no funil).
  * Descartado = área do ADMIN (bolsa de redistribuição), fora da visão do corretor.
- * "Bolsão" não é mais estado de lead — etapas legadas desse tipo viram Follow-up.
  *
- * Este módulo é a fonte única de: nomes de etapa, mapeamento de etapas legadas,
- * motivos de descarte e as cadências (temporizadores) configuráveis pelo admin.
+ * Este módulo é a fonte única de: nomes de etapa, a catraca (etapaAposAcao),
+ * mapeamento de etapas legadas, motivos de descarte e as cadências do admin.
  */
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -16,7 +22,7 @@ import { db } from '@/lib/firebase';
 // Etapas
 // ---------------------------------------------------------------------------
 export const ETAPA_ENTRADA = 'Entrada';
-export const ETAPA_FOLLOWUP = 'Follow-up';
+export const ETAPA_EM_CONTATO = 'Em Contato';
 export const ETAPA_MEET = 'Meet';
 export const ETAPA_VISITA = 'Visita';
 export const ETAPA_NEGOCIACAO = 'Negociação';
@@ -26,18 +32,41 @@ export const ETAPA_DESCARTADO = 'Descartado';
 
 /**
  * Etapas do quadro (kanban / funil pessoal) — na ordem do circuito.
+ * Cada casa é o estágio MÁXIMO alcançado; a catraca (etapaAposAcao) garante
+ * que criar um follow-up nunca rebaixa o cliente de volta.
  * Fechamento é a última casa: venda concluída fica visível no fim do funil.
  * Bolsão NÃO é etapa de funil: estacionados e descartados moram na
  * bolsa do ADMIN (redistribuição), fora da visão do corretor.
  */
 export const ETAPAS_CIRCUITO = [
   ETAPA_ENTRADA,
-  ETAPA_FOLLOWUP,
+  ETAPA_EM_CONTATO,
   ETAPA_MEET,
   ETAPA_VISITA,
   ETAPA_NEGOCIACAO,
   ETAPA_FECHADO,
 ] as const;
+
+/** Posição da etapa no circuito (-1 se não for etapa do quadro). */
+export const etapaIndex = (etapa: string): number =>
+  (ETAPAS_CIRCUITO as readonly string[]).indexOf(etapa);
+
+/**
+ * A CATRACA do circuito: dado o estágio atual (já normalizado) e o alvo que a
+ * ação pediu, devolve a etapa final. Regras:
+ *  - Descartar é sempre explícito (alvo Descartado passa direto);
+ *  - Reativar um descartado aplica o alvo direto (recomeço);
+ *  - No quadro, a etapa NUNCA anda pra trás: agendar um follow-up com um
+ *    cliente que já chegou em Negociação o mantém em Negociação.
+ */
+export function etapaAposAcao(atualNormalizada: string, alvo: string): string {
+  if (alvo === ETAPA_DESCARTADO) return alvo;
+  if (atualNormalizada === ETAPA_DESCARTADO) return alvo;
+  const ia = etapaIndex(atualNormalizada);
+  const ib = etapaIndex(alvo);
+  if (ib < 0) return atualNormalizada;
+  return ib > ia ? alvo : atualNormalizada;
+}
 
 /** Estados fora da cobrança do circuito (sem pergunta pendente / fora da carteira ativa). */
 export const ETAPAS_TERMINAIS = [ETAPA_FECHADO, ETAPA_DESCARTADO] as const;
@@ -60,7 +89,8 @@ const norm = (s: string): string =>
 
 /**
  * Converte qualquer etapa (legada ou atual) para uma etapa do circuito.
- * Cobre as 11 etapas padrão antigas e nomes customizados prováveis.
+ * Cobre as 11 etapas padrão antigas, o extinto "Follow-up" (etapa até jul/2026)
+ * e nomes customizados prováveis.
  * Etapa já válida passa direto; desconhecida cai em Entrada.
  */
 export function mapEtapaCircuito(etapa: string | undefined | null): string {
@@ -76,11 +106,11 @@ export function mapEtapaCircuito(etapa: string | undefined | null): string {
   if (e.includes('visita')) return ETAPA_VISITA;
   if (e.includes('meet') || e.includes('reuni') || e.includes('ligacao agendada') || e.includes('atendimento agendado')) return ETAPA_MEET;
   // Estacionados de antigamente (Interesse Futuro, Carteira, Geladeira, Bolsão…)
-  // voltam pro FOLLOW-UP: são clientes de verdade — a régua de tarefas de cada um
-  // (atrasada / sem tarefa) decide a cobrança. Bolsão de lead não existe mais.
-  if (e.includes('carteira') || e.includes('geladeira') || e.includes('interesse futuro') || e.includes('troca') || e.includes('bolsao')) return ETAPA_FOLLOWUP;
+  // e o extinto Follow-up viram EM CONTATO: são clientes com quem já se falou —
+  // a régua de tarefas de cada um (atrasada / sem tarefa) decide a cobrança.
+  if (e.includes('carteira') || e.includes('geladeira') || e.includes('interesse futuro') || e.includes('troca') || e.includes('bolsao')) return ETAPA_EM_CONTATO;
   if (e.includes('pre qualifica') || e.includes('topo') || e.includes('entrada')) return ETAPA_ENTRADA;
-  if (e.includes('qualifica') || e.includes('apresenta') || e.includes('follow') || e.includes('oferta')) return ETAPA_FOLLOWUP;
+  if (e.includes('qualifica') || e.includes('apresenta') || e.includes('follow') || e.includes('oferta') || e.includes('contato')) return ETAPA_EM_CONTATO;
   return ETAPA_ENTRADA;
 }
 
