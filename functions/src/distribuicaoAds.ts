@@ -833,6 +833,102 @@ export const conectarPaginaLeadgen = onCall(
 );
 
 // ---------------------------------------------------------------------------
+// 6.6) Importar leads que JÁ entraram no formulário (backfill)
+//      O webhook só empurra leads NOVOS; os antigos ficam no Meta. Aqui a gente
+//      PUXA os leads existentes dos formulários da página e joga na fila —
+//      funciona mesmo com o app não-publicado (é o dono lendo os próprios leads).
+// ---------------------------------------------------------------------------
+
+/** Pega o 1º valor de um campo do field_data cujo nome contenha algum dos termos. */
+function pegarCampoDe(fieldData: MetaFieldData[], ...nomes: string[]): string {
+    for (const nome of nomes) {
+        const c = fieldData.find((f) => (f.name || "").toLowerCase().includes(nome));
+        if (c?.values?.[0]) return c.values[0];
+    }
+    return "";
+}
+
+export const importarLeadsExistentes = onCall(
+    {secrets: [META_PAGE_TOKEN]},
+    async (request): Promise<{ok: boolean; motivo?: string; importados?: number; jaExistiam?: number; formularios?: number}> => {
+        if (!request.auth) {
+            throw new HttpsError("unauthenticated", "É preciso estar logado.");
+        }
+        const chamadorSnap = await db().collection("usuarios").doc(request.auth.uid).get();
+        const chamador = chamadorSnap.data() || {};
+        const ehAdmin = chamador.tipoConta === "imobiliaria" || chamador.permissoes?.admin === true;
+        if (!ehAdmin) {
+            throw new HttpsError("permission-denied", "Apenas administradores.");
+        }
+
+        const token = META_PAGE_TOKEN.value() || process.env.META_PAGE_TOKEN || "";
+        if (!token) return {ok: false, motivo: "sem_token"};
+
+        try {
+            // 1) Página do token
+            const me = await axios.get(`${GRAPH_BASE}/me`, {params: {access_token: token, fields: "id,name"}, timeout: 15000});
+            const pageId = String(me.data?.id || "");
+            if (!pageId) return {ok: false, motivo: "token_sem_pagina"};
+
+            // 2) Formulários da página
+            const formsResp = await axios.get(`${GRAPH_BASE}/${pageId}/leadgen_forms`, {
+                params: {access_token: token, fields: "id,name", limit: 200},
+                timeout: 15000,
+            });
+            const forms = (formsResp.data?.data || []) as {id: string; name?: string}[];
+
+            let importados = 0;
+            let jaExistiam = 0;
+            const MAX = 500; // trava de segurança
+
+            for (const form of forms) {
+                let url: string | null = `${GRAPH_BASE}/${form.id}/leads`;
+                let params: Record<string, unknown> | undefined = {
+                    access_token: token,
+                    fields: "id,created_time,field_data,ad_id,ad_name,campaign_name",
+                    limit: 100,
+                };
+                while (url && importados + jaExistiam < MAX) {
+                    const resp: any = await axios.get(url, {params, timeout: 20000});
+                    const leads = (resp.data?.data || []) as any[];
+                    for (const l of leads) {
+                        const metaLeadId = String(l.id || "");
+                        if (!metaLeadId) continue;
+                        // dedupe: já existe um adsLead com esse metaLeadId?
+                        const existe = await db().collection("adsLeads").where("metaLeadId", "==", metaLeadId).limit(1).get();
+                        if (!existe.empty) { jaExistiam++; continue; }
+                        const fieldData = (l.field_data || []) as MetaFieldData[];
+                        const nome = pegarCampoDe(fieldData, "full_name", "nome", "name") || "Lead Meta";
+                        const telefone = pegarCampoDe(fieldData, "phone", "telefone", "whatsapp", "celular");
+                        await criarEDistribuir({
+                            nome,
+                            telefone,
+                            origem: "meta-form",
+                            campanhaNome: l.campaign_name || undefined,
+                            anuncioNome: l.ad_name || undefined,
+                            formNome: form.name || undefined,
+                            metaLeadId,
+                            respostasForm: montarRespostasForm(fieldData),
+                        });
+                        importados++;
+                    }
+                    url = resp.data?.paging?.next || null;
+                    params = undefined; // o "next" já é a URL completa com cursor
+                }
+            }
+
+            logger.info("importarLeadsExistentes: concluído", {pageId, formularios: forms.length, importados, jaExistiam});
+            return {ok: true, importados, jaExistiam, formularios: forms.length};
+        } catch (error: any) {
+            const fb = error?.response?.data?.error;
+            logger.warn("importarLeadsExistentes: falha no Graph", {code: fb?.code, msg: fb?.message});
+            if (fb?.code === 190 || fb?.code === 200 || fb?.code === 10) return {ok: false, motivo: "sem_permissao"};
+            return {ok: false, motivo: "erro_graph"};
+        }
+    },
+);
+
+// ---------------------------------------------------------------------------
 // 7) Campanhas do Meta (status ATIVO) — pra mostrar campanhas rodando mesmo
 //    sem lead ainda. Lê a conta de anúncios via Graph API.
 // ---------------------------------------------------------------------------

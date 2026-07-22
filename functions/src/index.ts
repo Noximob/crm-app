@@ -24,6 +24,7 @@ export {
     testeCriarAdsLead,
     listarCampanhasMeta,
     conectarPaginaLeadgen,
+    importarLeadsExistentes,
 } from "./distribuicaoAds";
 
 // Define a estrutura esperada dos dados para clareza
