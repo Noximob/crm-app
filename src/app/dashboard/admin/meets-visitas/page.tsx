@@ -419,33 +419,33 @@ export default function AdminMeetsVisitasPage() {
                           ) : (
                             <>
                               {prova.dentro.length === 0 ? (
-                                <p className="text-[10.5px] text-text-secondary">Nenhum Meet/Visita com data dentro do período.</p>
+                                <p className="text-[10.5px] text-text-secondary">Nenhum Meet/Visita MARCADO dentro do período.</p>
                               ) : (
                                 prova.dentro.map((ag, k) => {
-                                  const d = new Date(ag.dueMs);
-                                  const quando = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                                  const fmt = (ms: number) => { const d = new Date(ms); return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
                                   return (
                                     <div key={k} className="flex items-center gap-2 text-[11.5px]">
                                       <span className={`shrink-0 px-1.5 py-0.5 rounded-full text-[8.5px] font-extrabold uppercase tracking-wider border ${ag.tipo === 'Meet' ? 'bg-[#9F6BFF]/10 border-[#9F6BFF]/35 text-[#C4A6FF]' : 'bg-[#7DD3FC]/10 border-[#7DD3FC]/35 text-[#7DD3FC]'}`}>{ag.tipo}</span>
-                                      <span className="shrink-0 text-white/60 tabular-nums">{quando}</span>
+                                      <span className="shrink-0 text-white/60 tabular-nums" title="Quando o corretor marcou (é o que conta)">marcou {fmt(ag.marcouMs)}</span>
                                       <span className="flex-1 min-w-0 truncate text-white/85" title={ag.descricao}>{ag.leadNome}</span>
-                                      <span className={`shrink-0 text-[9px] font-bold uppercase tracking-wider ${ag.status === 'concluída' ? 'text-emerald-300' : 'text-[#FFE9A6]/70'}`}>{ag.status === 'concluída' ? '✓ feito' : 'agendado'}</span>
+                                      {ag.eventoMs && <span className="shrink-0 text-[10px] text-white/40 tabular-nums" title="Pra quando ficou marcado">📅 {fmt(ag.eventoMs)}</span>}
+                                      <span className={`shrink-0 text-[9px] font-bold uppercase tracking-wider ${ag.status === 'concluída' ? 'text-emerald-300' : ag.status === 'cancelada' ? 'text-white/35' : 'text-[#FFE9A6]/70'}`}>{ag.status === 'concluída' ? '✓ feito' : ag.status === 'cancelada' ? 'cancelado' : 'agendado'}</span>
                                     </div>
                                   );
                                 })
                               )}
                               {prova.fora.length > 0 && (
                                 <div className="pt-1.5 mt-1 border-t border-white/[0.05]">
-                                  <p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-white/35 mb-1">Marcados pra depois — contam na semana deles</p>
+                                  <p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-white/35 mb-1">Marcações fora do período — contam na semana em que foram feitas</p>
                                   {prova.fora.map((ag, k) => {
-                                    const d = new Date(ag.dueMs);
+                                    const d = new Date(ag.marcouMs);
                                     const quando = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
                                     return (
                                       <div key={k} className="flex items-center gap-2 text-[11px] opacity-55">
                                         <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[8.5px] font-extrabold uppercase tracking-wider border bg-white/[0.04] border-white/15 text-white/60">{ag.tipo}</span>
-                                        <span className="shrink-0 text-white/60 tabular-nums">{quando}</span>
+                                        <span className="shrink-0 text-white/60 tabular-nums">marcou {quando}</span>
                                         <span className="flex-1 min-w-0 truncate text-white/70" title={ag.descricao}>{ag.leadNome}</span>
-                                        <span className="shrink-0 text-[9px] font-bold uppercase tracking-wider text-white/40">fora da semana</span>
+                                        <span className="shrink-0 text-[9px] font-bold uppercase tracking-wider text-white/40">fora do período</span>
                                       </div>
                                     );
                                   })}
@@ -453,7 +453,7 @@ export default function AdminMeetsVisitasPage() {
                               )}
                               {prova.dentro.length !== l.n && (
                                 <p className="text-[10px] font-bold text-[#FFE9A6] pt-1">
-                                  ⚠️ A lista mostra {prova.dentro.length} e o contador {l.n} — houve remarcação depois da última contagem. Clique em &quot;↻ Atualizar agora&quot; que acerta.
+                                  ⚠️ A lista mostra {prova.dentro.length} e o contador {l.n} — a contagem está defasada. Clique em &quot;↻ Atualizar agora&quot; que acerta.
                                 </p>
                               )}
                             </>
@@ -468,7 +468,7 @@ export default function AdminMeetsVisitasPage() {
                 total do período: <b className="text-[#FFE9A6] tabular-nums">{totalDe(atual)}</b>
               </p>
               <p className="text-[10px] text-white/30 mt-1">
-                Conta agendamentos de Meet e Visita com data DENTRO do período — feitos e por vir. Remarcou pra fora da semana? Sai da conta na próxima atualização. Clique num corretor pra ver a lista exata.
+                Conta os meets e visitas <b className="text-white/50">MARCADOS</b> dentro do período — a data em que o corretor agendou no CRM (produção da semana), não a data do compromisso. Remarcação não conta de novo. Clique num corretor pra ver a lista exata.
               </p>
             </div>
           )}
@@ -495,7 +495,7 @@ export default function AdminMeetsVisitasPage() {
                           onClick={() => recalcular(p)}
                           disabled={recalcId === p.id}
                           className="shrink-0 px-2 py-1 rounded-lg text-[11px] font-bold text-text-secondary border border-white/10 bg-white/[0.03] hover:text-white hover:bg-white/[0.08] transition-colors disabled:opacity-50"
-                          title="Recontar do CRM as tarefas desse intervalo"
+                          title="Recontar do CRM os meets/visitas MARCADOS nesse intervalo"
                         >
                           {recalcId === p.id ? '…' : '↻'}
                         </button>

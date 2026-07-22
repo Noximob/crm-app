@@ -138,8 +138,8 @@ export function perguntaDoLead(
   return candidatos.find(c => c.pendente) ?? candidatos[0];
 }
 
-/** Motivos do "Recomeçar busca" (a jornada reinicia — imóvel/negócio de antes já era). */
-const MOTIVOS_RECOMECO = ['Negociação caiu', 'Desistiu do imóvel', 'Mudou a busca', 'Outro'] as const;
+/** Motivos do "Re-Qualificar" (a jornada reinicia — o negócio de antes não vingou). */
+const MOTIVOS_RECOMECO = ['Negociação caiu', 'Desistiu do imóvel', 'Visita/meet não vingou', 'Mudou a busca', 'Outro'] as const;
 
 interface AtendimentoOverlayProps {
   aberto: boolean;
@@ -651,6 +651,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             { t: '📅 Remarcar o meet', c: 'primary', f: () => irPara({ t: 'agendarData', tipo: 'Meet', cancelarTaskId: estado.cancelarTaskId, remarcando: true }) },
             { t: '💬 Virar follow-up (ligar / WhatsApp…)', c: 'gold', f: () => irPara({ t: 'proximaAcao', cancelarTaskId: estado.cancelarTaskId }) },
             { t: '📵 Sumiu — não consegui falar', c: 'ghost', f: () => irPara({ t: 'quando', cancelarTaskId: estado.cancelarTaskId, tentativa: true }) },
+            { t: '🔄 Não vai rolar — Re-Qualificar', c: 'ghost', f: () => irPara({ t: 'recomecar', volta: estado }) },
           ],
         };
 
@@ -711,6 +712,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             { t: '📅 Remarcar a visita', c: 'primary', f: () => irPara({ t: 'agendarData', tipo: 'Visita', cancelarTaskId: estado.cancelarTaskId, remarcando: true }) },
             { t: '💬 Virar follow-up (ligar / WhatsApp…)', c: 'gold', f: () => irPara({ t: 'proximaAcao', cancelarTaskId: estado.cancelarTaskId }) },
             { t: '📵 Sumiu — não consegui falar', c: 'ghost', f: () => irPara({ t: 'quando', cancelarTaskId: estado.cancelarTaskId, tentativa: true }) },
+            { t: '🔄 Não vai rolar — Re-Qualificar', c: 'ghost', f: () => irPara({ t: 'recomecar', volta: estado }) },
           ],
         };
 
@@ -812,7 +814,8 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                 if (ok) irLimpo({ t: 'quando' });
               },
             },
-            { t: 'Morreu', c: 'danger', f: () => irPara({ t: 'descarte', volta: { t: 'negQ', taskId: estado.taskId } }) },
+            // "Caiu" abre o Re-Qualificar: lá o corretor escolhe voltar a trabalhar (Em Contato) ou descartar de vez
+            { t: '💔 Caiu', c: 'danger', f: () => irPara({ t: 'recomecar', volta: { t: 'negQ', taskId: estado.taskId } }) },
           ],
         };
       }
@@ -881,16 +884,17 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
       }
 
       case 'recomecar': {
-        // A jornada REINICIA: o imóvel/negócio de antes já era, mas o cliente
-        // continua cliente. Único jeito de voltar etapa — decisão explícita, com
-        // motivo no histórico. O corretor escolhe: nutrir de novo ou descartar.
+        // RE-QUALIFICAR: o meet/visita/negociação não vingou e a jornada
+        // reinicia — o cliente volta pra Em Contato pra ser trabalhado de novo.
+        // Único jeito de voltar etapa — decisão explícita, com motivo no
+        // histórico. O corretor escolhe: re-qualificar ou descartar de vez.
         const volta = estado.volta;
         const motivoFinal = motivoSel === 'Outro' ? motivoOutro.trim() : motivoSel;
         return {
-          bar: 'Recomeçar busca',
+          bar: '🔄 Re-Qualificar',
           body: (
             <>
-              ↩️ A jornada com {b(nomeCliente)} vai recomeçar: ele volta pra {b('Em Contato')} e as tarefas marcadas são canceladas — o negócio de antes já era, mas o cliente continua seu.
+              🔄 {b(`Re-Qualificar ${nomeCliente}`)}: o negócio de antes não vingou — ele volta pra {b('Em Contato')} pra ser trabalhado do começo (as tarefas antigas são canceladas). O cliente continua seu.
               <small>O que aconteceu? (obrigatório — fica no histórico)</small>
               <Chips itens={MOTIVOS_RECOMECO} sel={motivoSel ? [motivoSel] : []} onSel={v => { setMotivoSel(v); setAviso(''); }} />
               {motivoSel === 'Outro' && (
@@ -905,19 +909,19 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             </>
           ),
           btns: [
-            { t: '← Voltar (deixar como está)', c: 'ghost', f: () => irPara(volta) },
             {
-              t: executando ? 'Recomeçando…' : '↩️ Recomeçar — voltar a nutrir', c: 'primary', f: async () => {
+              t: executando ? 'Re-qualificando…' : '🔄 Re-Qualificar — volta pra Em Contato', c: 'gold', f: async () => {
                 if (!motivoFinal) { setAviso('⚠️ Escolha o que aconteceu — fica registrado no histórico.'); return; }
                 const ok = await executar({
                   forcarEtapa: ETAPA_EM_CONTATO,
                   cancelarTodasPendentes: true,
                   circuitoTentativas: 'zero',
-                  interacao: { type: 'Etapa', notes: `↩️ Recomeçar busca — ${motivoFinal}. De volta pra Em Contato.` },
+                  interacao: { type: 'Etapa', notes: `🔄 Re-Qualificado — ${motivoFinal}. De volta pra Em Contato.` },
                 });
                 if (ok) irLimpo({ t: 'quando' });
               },
             },
+            { t: '← Voltar (deixar como está)', c: 'ghost', f: () => irPara(volta) },
             { t: '🗑 Descartar de vez', c: 'danger', f: () => irPara({ t: 'descarte', volta: estado }) },
           ],
         };
@@ -1004,17 +1008,17 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                   <Pbtn key={`${estado.t}-${i}`} c={btn.c} onClick={btn.f} disabled={executando}>{btn.t}</Pbtn>
                 ))}
               </div>
-              {/* Descarte (e Recomeçar busca) sempre à mão — de qualquer passo do circuito */}
+              {/* Re-Qualificar (destaque) + Descarte sempre à mão — de qualquer passo do circuito */}
               {estado.t !== 'descarte' && estado.t !== 'venda' && estado.t !== 'recomecar' && (
-                <div className="px-4 pb-3 -mt-1.5 flex justify-end gap-3">
+                <div className="px-4 pb-3 -mt-1.5 flex items-center justify-end gap-2.5 flex-wrap">
                   {[ETAPA_MEET, ETAPA_VISITA, ETAPA_NEGOCIACAO].includes(etapaAtual || '') && (
                     <button
                       onClick={() => irPara({ t: 'recomecar', volta: estado })}
                       disabled={executando}
-                      className="text-[11px] font-semibold text-white/35 hover:text-[#FFE9A6] transition-colors disabled:opacity-40"
-                      title="A negociação caiu / desistiu do imóvel? A jornada recomeça: volta pra Em Contato com o motivo no histórico."
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11.5px] font-bold bg-[#E8C547]/10 border border-[#E8C547]/45 text-[#E8C547] hover:bg-[#E8C547]/20 hover:brightness-110 transition-all active:scale-[0.97] disabled:opacity-40"
+                      title="Negociação caiu? Visita/meet não vingou? Re-Qualificar volta o cliente pra Em Contato pra trabalhar do começo — com o motivo no histórico."
                     >
-                      ↩️ Recomeçar busca
+                      🔄 Re-Qualificar
                     </button>
                   )}
                   <button

@@ -1,19 +1,32 @@
 /**
- * Contagem automática do placar Meets & Visitas a partir das tarefas do CRM.
+ * Contagem automática do placar Meets & Visitas a partir do CRM.
+ *
+ * REGRA (decidida em 22/07/2026): o placar conta a PRODUÇÃO da semana — quando
+ * o corretor MARCOU o meet/visita (data da ação no CRM), não a data em que o
+ * compromisso vai acontecer. Marcou 3 meets essa semana pra acontecerem na
+ * outra? Placar desta semana +3. Remarcação NÃO conta de novo; cancelar depois
+ * não desconta (o esforço de marcar aconteceu).
+ *
+ * Fonte: as INTERAÇÕES da linha do tempo (têm o timestamp exato da ação):
+ *  - do circuito: type 'Meet'/'Visita' com notes "📅 Meet marcado"/"🏠 Visita
+ *    marcada" (remarcações têm "remarcad" e ficam de fora);
+ *  - manuais: type 'Tarefa Agendada' cujo taskId aponta pra uma tarefa de
+ *    Meet/Visita (o modal de agenda grava assim).
+ * Nenhum índice composto necessário; o intervalo é filtrado no cliente.
  *
  * Fonte única usada pela Área do administrador (recalcular/modo automático) e
- * pelo auto-refresh silencioso da home: períodos com `automatico: true` se
- * retroalimentam do CRM sem ninguém precisar lançar nada na mão.
- *
- * Abordagem (a mesma validada na tela do admin): busca os leads da imobiliária
- * (where imobiliariaId ==, índice simples) e lê a subcoleção leads/{id}/tarefas
- * com where('type','in',[Visita, Meet]) — nenhum índice composto necessário.
- * O intervalo de datas é filtrado no cliente (dueDate → YYYY-MM-DD local).
- * Tarefas canceladas não contam.
+ * pelo auto-refresh silencioso da home.
  */
 import { collection, doc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { TIPO_TAREFA_MEET, TIPO_TAREFA_VISITA } from '@/lib/circuito';
+
+/** Interação de marcação do circuito? ("Meet marcado"/"Visita marcada"; remarcação não conta) */
+const ehMarcacaoCircuito = (type: string, notes: string) =>
+  (type === TIPO_TAREFA_MEET || type === TIPO_TAREFA_VISITA) && /marcad/i.test(notes) && !/remarcad/i.test(notes);
+
+const tsToDate = (t: any): Date | null =>
+  t?.toDate ? t.toDate() : (typeof t?.seconds === 'number' ? new Date(t.seconds * 1000) : null);
 
 export interface PeriodoMeetsLite {
   id: string;
@@ -26,7 +39,7 @@ export interface PeriodoMeetsLite {
 const dateToYmd = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-/** Conta as tarefas de Meet e Visita do CRM dentro do período, por corretor. */
+/** Conta os meets/visitas MARCADOS dentro do período (data da ação), por corretor. */
 export async function contarMeetsVisitasDoCrm(
   imobiliariaId: string,
   periodo: { inicio: string; fim: string }
@@ -44,18 +57,25 @@ export async function contarMeetsVisitasDoCrm(
     const lote = leads.slice(i, i + CHUNK);
     await Promise.all(
       lote.map(async (lead) => {
-        const snap = await getDocs(
-          query(collection(db, 'leads', lead.id, 'tarefas'), where('type', 'in', [TIPO_TAREFA_VISITA, TIPO_TAREFA_MEET]))
-        );
+        // ids das tarefas Meet/Visita do lead — validam as marcações manuais ('Tarefa Agendada')
+        const [tarefasSnap, interSnap] = await Promise.all([
+          getDocs(query(collection(db, 'leads', lead.id, 'tarefas'), where('type', 'in', [TIPO_TAREFA_VISITA, TIPO_TAREFA_MEET]))),
+          getDocs(query(collection(db, 'leads', lead.id, 'interactions'), where('type', 'in', [TIPO_TAREFA_MEET, TIPO_TAREFA_VISITA, 'Tarefa Agendada']))),
+        ]);
+        const idsMeetVisita = new Set(tarefasSnap.docs.map((t) => t.id));
         let n = 0;
-        snap.forEach((t) => {
-          const d = t.data() as any;
-          if (d.status === 'cancelada') return;
-          const due = d.dueDate;
-          const dt: Date | null = due?.toDate ? due.toDate() : (due?.seconds ? new Date(due.seconds * 1000) : null);
-          if (!dt) return;
-          const ymd = dateToYmd(dt);
-          if (ymd >= periodo.inicio && ymd <= periodo.fim) n++;
+        interSnap.forEach((i) => {
+          const d = i.data() as any;
+          const quando = tsToDate(d.timestamp);
+          if (!quando) return;
+          const ymd = dateToYmd(quando);
+          if (ymd < periodo.inicio || ymd > periodo.fim) return;
+          const type = String(d.type || '');
+          const notes = String(d.notes || '');
+          const conta = type === 'Tarefa Agendada'
+            ? !!d.taskId && idsMeetVisita.has(d.taskId)
+            : ehMarcacaoCircuito(type, notes);
+          if (conta) n++;
         });
         if (n > 0) contadores[lead.userId] = (contadores[lead.userId] || 0) + n;
       })
@@ -78,21 +98,24 @@ export async function recalcularPeriodoMeets(
   return contadores;
 }
 
-/** Um agendamento que ENTROU na conta do placar — pra auditoria do admin. */
+/** Uma MARCAÇÃO que entrou na conta do placar — pra auditoria do admin. */
 export interface AgendamentoContado {
   leadId: string;
   leadNome: string;
   tipo: string; // 'Meet' | 'Visita'
-  dueMs: number;
-  status: string; // 'pendente' | 'concluída'
+  /** Quando o corretor MARCOU (a data que conta no placar) */
+  marcouMs: number;
+  /** Pra quando ficou marcado (dueDate da tarefa), se conhecido */
+  eventoMs: number | null;
+  status: string; // status atual da tarefa ('pendente' | 'concluída' | 'cancelada' | '—')
   descricao: string;
 }
 
 /**
- * Lista os agendamentos de UM corretor: os que CONTAM no período (mesma regra
- * do contarMeetsVisitasDoCrm) e os FUTUROS fora do período — pra matar a dúvida
- * "cadê o meet do fulano?" (ex.: lead na etapa Meet com data na semana que vem
- * não conta nesta semana).
+ * Lista as MARCAÇÕES de UM corretor: as que CONTAM no período (mesma regra do
+ * contarMeetsVisitasDoCrm — pela data em que MARCOU) e as feitas fora do
+ * período — pra matar a dúvida "cadê o meet do fulano?" (ex.: meet marcado
+ * semana passada pra acontecer nesta conta na semana em que foi marcado).
  */
 export async function listarAgendamentosDoCorretor(
   imobiliariaId: string,
@@ -111,32 +134,42 @@ export async function listarAgendamentosDoCorretor(
   for (let i = 0; i < docs.length; i += CHUNK) {
     await Promise.all(docs.slice(i, i + CHUNK).map(async (leadDoc) => {
       const leadNome = String((leadDoc.data() as any).nome || 'Sem nome');
-      const snap = await getDocs(
-        query(collection(db, 'leads', leadDoc.id, 'tarefas'), where('type', 'in', [TIPO_TAREFA_VISITA, TIPO_TAREFA_MEET]))
-      );
-      snap.forEach((t) => {
+      const [tarefasSnap, interSnap] = await Promise.all([
+        getDocs(query(collection(db, 'leads', leadDoc.id, 'tarefas'), where('type', 'in', [TIPO_TAREFA_VISITA, TIPO_TAREFA_MEET]))),
+        getDocs(query(collection(db, 'leads', leadDoc.id, 'interactions'), where('type', 'in', [TIPO_TAREFA_MEET, TIPO_TAREFA_VISITA, 'Tarefa Agendada']))),
+      ]);
+      const tarefas = new Map(tarefasSnap.docs.map((t) => {
         const d = t.data() as any;
-        if (d.status === 'cancelada') return;
-        const due = d.dueDate;
-        const dt: Date | null = due?.toDate ? due.toDate() : (due?.seconds ? new Date(due.seconds * 1000) : null);
-        if (!dt) return;
-        const ymd = dateToYmd(dt);
+        return [t.id, { type: String(d.type || ''), dueMs: tsToDate(d.dueDate)?.getTime() ?? null, status: String(d.status || 'pendente') }] as const;
+      }));
+      interSnap.forEach((i) => {
+        const d = i.data() as any;
+        const quando = tsToDate(d.timestamp);
+        if (!quando) return;
+        const type = String(d.type || '');
+        const notes = String(d.notes || '');
+        const tarefa = d.taskId ? tarefas.get(d.taskId) : undefined;
+        const conta = type === 'Tarefa Agendada' ? !!tarefa : ehMarcacaoCircuito(type, notes);
+        if (!conta) return;
         const item: AgendamentoContado = {
           leadId: leadDoc.id,
           leadNome,
-          tipo: String(d.type || ''),
-          dueMs: dt.getTime(),
-          status: String(d.status || 'pendente'),
-          descricao: String(d.description || ''),
+          tipo: type === 'Tarefa Agendada' ? (tarefa?.type || 'Meet/Visita') : type,
+          marcouMs: quando.getTime(),
+          eventoMs: tarefa?.dueMs ?? null,
+          status: tarefa?.status ?? '—',
+          descricao: notes,
         };
+        const ymd = dateToYmd(quando);
         if (ymd >= periodo.inicio && ymd <= periodo.fim) dentro.push(item);
-        else if (ymd > periodo.fim) fora.push(item); // futuros — contam na semana deles
+        else fora.push(item);
       });
     }));
   }
-  dentro.sort((a, b) => a.dueMs - b.dueMs);
-  fora.sort((a, b) => a.dueMs - b.dueMs);
-  return { dentro, fora };
+  dentro.sort((a, b) => a.marcouMs - b.marcouMs);
+  // fora: as mais recentes primeiro (interessam as marcações perto do período)
+  fora.sort((a, b) => b.marcouMs - a.marcouMs);
+  return { dentro, fora: fora.slice(0, 20) };
 }
 
 const UMA_HORA_MS = 60 * 60 * 1000;
