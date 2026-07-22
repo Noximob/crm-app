@@ -165,20 +165,26 @@ const buildDemo = () => {
   ];
   const nomes = [2, 3, 4, 5, 2, 3];
   const tempos = [45, 230, 95, 610, 152, 78];
-  const aceitos: AdsLead[] = nomes.map((n, i) => ({
-    id: `demo-ads-ok-${i}`,
-    nome: ['Fernanda Souza', 'Ricardo Prado', 'Aline Martins', 'Otávio Nunes', 'Beatriz Melo', 'Caio Duarte'][i],
-    telefone: `4799${String(1110000 + i * 137)}`,
-    origem: i % 2 === 0 ? 'meta-form' : 'meta-whatsapp',
-    campanhaNome: i % 2 === 0 ? 'Lançamento Vista Mar' : 'Retargeting Julho',
-    status: 'aceito',
-    aceitoPor: DEMO_REPORT_CORRETORES[n].uid,
-    aceitoPorNome: DEMO_REPORT_CORRETORES[n].nome,
-    aceitoEm: demoTs(-(i + 1) * 5 * 3600000),
-    tempoAceiteSeg: tempos[i],
-    viaGeral: i === 1 || i === 3,
-    criadoEm: demoTs(-(i + 1) * 5 * 3600000 - tempos[i] * 1000),
-  }));
+  // Lançamento Vista Mar = ativa (aceites recentes); Retargeting Julho = parada (aceites antigos, >72h)
+  const aceitos: AdsLead[] = nomes.map((n, i) => {
+    const vistaMar = i % 2 === 0;
+    const hAtras = vistaMar ? (i + 1) * 5 : 96 + i * 12; // Retargeting sempre além de 72h
+    return {
+      id: `demo-ads-ok-${i}`,
+      nome: ['Fernanda Souza', 'Ricardo Prado', 'Aline Martins', 'Otávio Nunes', 'Beatriz Melo', 'Caio Duarte'][i],
+      telefone: `4799${String(1110000 + i * 137)}`,
+      origem: vistaMar ? 'meta-form' : 'meta-whatsapp',
+      campanhaNome: vistaMar ? 'Lançamento Vista Mar' : 'Retargeting Julho',
+      anuncioNome: vistaMar ? (i === 0 ? 'Vídeo frente-mar' : 'Carrossel plantas') : 'Story stories',
+      status: 'aceito',
+      aceitoPor: DEMO_REPORT_CORRETORES[n].uid,
+      aceitoPorNome: DEMO_REPORT_CORRETORES[n].nome,
+      aceitoEm: demoTs(-hAtras * 3600000),
+      tempoAceiteSeg: tempos[i],
+      viaGeral: i === 1 || i === 3,
+      criadoEm: demoTs(-hAtras * 3600000 - tempos[i] * 1000),
+    };
+  });
   return { config, aoVivo, naoAtendidos, aceitos };
 };
 
@@ -219,6 +225,9 @@ export default function AdminDistribuicaoAdsPage() {
 
   // Ações em andamento por lead (re-disparar / descartar)
   const [agindoId, setAgindoId] = useState<string | null>(null);
+
+  // Filtro por campanha (clica no painel de campanhas e filtra as listas)
+  const [filtroCampanha, setFiltroCampanha] = useState<string | null>(null);
 
   // Relógio do countdown (só roda quando há lead ao vivo)
   const [nowMs, setNowMs] = useState(Date.now());
@@ -612,6 +621,48 @@ export default function AdminDistribuicaoAdsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aceitos, corretores]);
 
+  // ------------------------------------------------------------------
+  // Campanhas: agrega os leads (ao vivo + não atendidos + aceitos) por campanha.
+  // "Ativa" = recebeu lead nas últimas 72h (o melhor sinal de estar rodando).
+  // ------------------------------------------------------------------
+  const ATIVA_MS = 72 * 3600 * 1000;
+  const campanhas = useMemo(() => {
+    const mapa = new Map<string, {
+      nome: string; origem: string; total: number; aceitos: number; naoAtendidos: number;
+      aoVivo: number; somaTempo: number; nTempo: number; ultimoMs: number; anuncios: Set<string>;
+    }>();
+    const add = (l: AdsLead, tipo: 'aovivo' | 'nao' | 'aceito') => {
+      const nome = (l.campanhaNome || '').trim() || 'Sem campanha';
+      const cur = mapa.get(nome) || { nome, origem: l.origem, total: 0, aceitos: 0, naoAtendidos: 0, aoVivo: 0, somaTempo: 0, nTempo: 0, ultimoMs: 0, anuncios: new Set<string>() };
+      cur.total++;
+      if (tipo === 'aceito') { cur.aceitos++; if (typeof l.tempoAceiteSeg === 'number') { cur.somaTempo += l.tempoAceiteSeg; cur.nTempo++; } }
+      if (tipo === 'nao') cur.naoAtendidos++;
+      if (tipo === 'aovivo') cur.aoVivo++;
+      if (l.anuncioNome) cur.anuncios.add(l.anuncioNome);
+      const ms = tsToMs(l.aceitoEm) ?? tsToMs(l.criadoEm) ?? 0;
+      if (ms > cur.ultimoMs) cur.ultimoMs = ms;
+      mapa.set(nome, cur);
+    };
+    aoVivo.forEach((l) => add(l, 'aovivo'));
+    naoAtendidos.forEach((l) => add(l, 'nao'));
+    aceitos.forEach((l) => add(l, 'aceito'));
+    return Array.from(mapa.values())
+      .map((c) => ({
+        ...c,
+        taxaAceite: c.aceitos + c.naoAtendidos > 0 ? Math.round((c.aceitos / (c.aceitos + c.naoAtendidos)) * 100) : null,
+        tempoMedio: c.nTempo > 0 ? c.somaTempo / c.nTempo : null,
+        ativa: c.ultimoMs > 0 && Date.now() - c.ultimoMs < ATIVA_MS,
+      }))
+      .sort((a, b) => (b.ativa ? 1 : 0) - (a.ativa ? 1 : 0) || b.total - a.total);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aoVivo, naoAtendidos, aceitos]);
+
+  // Aplica o filtro de campanha nas 3 listas
+  const bateCampanha = (l: AdsLead) => !filtroCampanha || ((l.campanhaNome || '').trim() || 'Sem campanha') === filtroCampanha;
+  const aoVivoView = aoVivo.filter(bateCampanha);
+  const naoAtendidosView = naoAtendidos.filter(bateCampanha);
+  const aceitosView = aceitos.filter(bateCampanha);
+
   const carregando = !cfgCarregada || !corrCarregados;
   const inputCls = 'bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50';
   const labelCls = 'block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-1';
@@ -776,20 +827,70 @@ export default function AdminDistribuicaoAdsPage() {
             </div>
           </div>
 
+          {/* 3.5 Campanhas — de onde vêm os leads + qual está ativa */}
+          <div className="al-card relative overflow-hidden p-4">
+            <div className="absolute inset-x-0 top-0 gx-line" />
+            <div className="flex flex-wrap items-center gap-3 mb-1">
+              <h2 className="al-display text-[14px] font-bold text-white uppercase tracking-[0.14em]">📣 Campanhas</h2>
+              {campanhas.length > 0 && (
+                <span className="text-[11px] font-semibold text-text-secondary tabular-nums px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/[0.08]">{campanhas.length}</span>
+              )}
+              {filtroCampanha && (
+                <button type="button" onClick={() => setFiltroCampanha(null)} className="ml-auto text-[11px] font-bold text-[#FF9EB5] border border-[#FF1E56]/30 bg-[#FF1E56]/[0.06] hover:bg-[#FF1E56]/15 rounded-lg px-2.5 py-1 transition-colors">✕ Ver todas</button>
+              )}
+            </div>
+            <p className="text-[10.5px] text-text-secondary mb-3">De onde vêm os leads. Clique numa campanha pra filtrar as listas abaixo. 🟢 Ativa = recebeu lead nas últimas 72h.</p>
+            {campanhas.length === 0 ? (
+              <p className="text-[12px] text-text-secondary text-center py-3">Nenhum lead de anúncio ainda — quando chegar, as campanhas aparecem aqui.</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {campanhas.map((c) => {
+                  const sel = filtroCampanha === c.nome;
+                  const rel = c.ultimoMs > 0 ? fmtQuando(Timestamp.fromMillis(c.ultimoMs)) : '—';
+                  return (
+                    <button
+                      key={c.nome}
+                      type="button"
+                      onClick={() => setFiltroCampanha(sel ? null : c.nome)}
+                      className={`text-left rounded-xl border p-3 transition-colors ${sel ? 'border-[#FF1E56]/50 bg-[#FF1E56]/[0.06]' : 'border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.05]'}`}
+                    >
+                      <div className="flex items-center gap-2 mb-1.5">
+                        {c.ativa
+                          ? <span className={`${chipBase} bg-[#34D399]/12 border-[#34D399]/45 text-emerald-300`}>🟢 Ativa</span>
+                          : <span className={`${chipBase} bg-white/[0.04] border-white/12 text-white/40`}>Parada</span>}
+                        <span className="flex-1 min-w-0 truncate text-[13px] font-bold text-white" title={c.nome}>{c.nome}</span>
+                        <span className="al-display text-[18px] font-bold text-[#FFE9A6] tabular-nums shrink-0">{c.total}</span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10.5px] text-text-secondary">
+                        <span className={ORIGEM_CHIP[c.origem] ? 'text-white/60' : ''}>{ORIGEM_LABEL[c.origem] || c.origem}</span>
+                        <span className="text-white/20">·</span>
+                        <span>✅ {c.aceitos} aceito{c.aceitos === 1 ? '' : 's'}</span>
+                        {c.taxaAceite !== null && <><span className="text-white/20">·</span><span>{c.taxaAceite}% aceite</span></>}
+                        {c.tempoMedio !== null && <><span className="text-white/20">·</span><span className="tabular-nums">{fmtTempoSeg(c.tempoMedio)}</span></>}
+                      </div>
+                      <p className="text-[9.5px] text-white/30 mt-1 tabular-nums">último lead: {rel}{c.anuncios.size > 0 ? ` · ${c.anuncios.size} anúncio${c.anuncios.size > 1 ? 's' : ''}` : ''}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           {/* 4. Ao vivo */}
           <div className="al-card relative overflow-hidden p-4">
             <div className="absolute inset-x-0 top-0 gx-line" />
             <div className="flex flex-wrap items-center gap-3 mb-3">
               <h2 className="al-display text-[14px] font-bold text-white uppercase tracking-[0.14em]">Ao vivo</h2>
-              {aoVivo.length > 0 && (
-                <span className="text-[11px] font-semibold text-text-secondary tabular-nums px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/[0.08]">{aoVivo.length}</span>
+              {filtroCampanha && <span className="text-[10px] font-bold text-[#FF9EB5] px-2 py-0.5 rounded-full bg-[#FF1E56]/10 border border-[#FF1E56]/25 normal-case tracking-normal">{filtroCampanha}</span>}
+              {aoVivoView.length > 0 && (
+                <span className="text-[11px] font-semibold text-text-secondary tabular-nums px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/[0.08]">{aoVivoView.length}</span>
               )}
             </div>
-            {aoVivo.length === 0 ? (
+            {aoVivoView.length === 0 ? (
               <p className="text-[12px] text-text-secondary text-center py-3">Nenhum lead rodando a escala agora — quando um anúncio gerar lead, ele aparece aqui em tempo real.</p>
             ) : (
               <div className="space-y-2">
-                {aoVivo.map((l) => {
+                {aoVivoView.map((l) => {
                   const cd = fmtCountdown(l.prazoAte, nowMs);
                   return (
                     <div key={l.id} className="rounded-xl bg-white/[0.03] border border-white/[0.08] p-3">
@@ -851,15 +952,15 @@ export default function AdminDistribuicaoAdsPage() {
             <div className="absolute inset-x-0 top-0 gx-line" />
             <div className="flex flex-wrap items-center gap-3 mb-3">
               <h2 className="al-display text-[14px] font-bold text-white uppercase tracking-[0.14em]">Não atendidos</h2>
-              {naoAtendidos.length > 0 && (
-                <span className="text-[11px] font-semibold text-red-300 tabular-nums px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/30">{naoAtendidos.length}</span>
+              {naoAtendidosView.length > 0 && (
+                <span className="text-[11px] font-semibold text-red-300 tabular-nums px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/30">{naoAtendidosView.length}</span>
               )}
             </div>
-            {naoAtendidos.length === 0 ? (
+            {naoAtendidosView.length === 0 ? (
               <p className="text-[12px] text-text-secondary text-center py-3">Nenhum lead perdido — todos os leads foram aceitos dentro do tempo.</p>
             ) : (
               <div className="space-y-2">
-                {naoAtendidos.map((l) => (
+                {naoAtendidosView.map((l) => (
                   <div key={l.id} className="rounded-xl bg-white/[0.03] border border-white/[0.08] p-3">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                       <span className="text-[13px] font-bold text-white">{l.nome || 'Sem nome'}</span>
@@ -919,12 +1020,12 @@ export default function AdminDistribuicaoAdsPage() {
                 <span className={`${chipBase} bg-[#7DD3FC]/10 border-[#7DD3FC]/35 text-[#7DD3FC]`}><span className="tabular-nums">{resumoHistorico.pctGeral}%</span> via geral</span>
               )}
             </div>
-            {aceitos.length === 0 ? (
+            {aceitosView.length === 0 ? (
               <p className="text-[12px] text-text-secondary text-center py-3">Nenhum lead aceito ainda — o histórico monta conforme a equipe for aceitando.</p>
             ) : (
               <>
                 <div className="space-y-1.5">
-                  {aceitos.map((l) => (
+                  {aceitosView.map((l) => (
                     <div key={l.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg px-3 py-2 bg-white/[0.03] border border-white/[0.07]">
                       <span className="text-[12.5px] font-bold text-white min-w-0 truncate max-w-[45%]">{l.nome || 'Sem nome'}</span>
                       <span className={`${chipBase} bg-[#34D399]/10 border-[#34D399]/35 text-emerald-300 normal-case tracking-normal`}>{l.aceitoPorNome || nomeDoCorretor(l.aceitoPor)}</span>
