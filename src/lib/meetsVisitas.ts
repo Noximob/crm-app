@@ -21,9 +21,17 @@ import { collection, doc, getDocs, query, serverTimestamp, setDoc, where } from 
 import { db } from '@/lib/firebase';
 import { TIPO_TAREFA_MEET, TIPO_TAREFA_VISITA } from '@/lib/circuito';
 
-/** Interação de marcação do circuito? ("Meet marcado"/"Visita marcada"; remarcação não conta) */
-const ehMarcacaoCircuito = (type: string, notes: string) =>
-  (type === TIPO_TAREFA_MEET || type === TIPO_TAREFA_VISITA) && /marcad/i.test(notes) && !/remarcad/i.test(notes);
+/**
+ * Interação de marcação do circuito? "Meet marcado"/"Visita marcada" CONTA;
+ * "remarcado/remarcada" (não veio → remarcou) NÃO conta — só marcação nova.
+ * A observação livre do corretor (depois do '📝') é ignorada na checagem, senão
+ * uma obs tipo "cliente remarcada do feriado" derrubaria uma marcação nova.
+ */
+const ehMarcacaoCircuito = (type: string, notes: string) => {
+  if (type !== TIPO_TAREFA_MEET && type !== TIPO_TAREFA_VISITA) return false;
+  const prefixo = notes.split('📝')[0]; // só o texto gerado pelo circuito
+  return /marcad/i.test(prefixo) && !/remarcad/i.test(prefixo);
+};
 
 const tsToDate = (t: any): Date | null =>
   t?.toDate ? t.toDate() : (typeof t?.seconds === 'number' ? new Date(t.seconds * 1000) : null);
