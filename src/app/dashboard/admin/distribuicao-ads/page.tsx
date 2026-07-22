@@ -235,6 +235,9 @@ export default function AdminDistribuicaoAdsPage() {
   const [mostrarParadas, setMostrarParadas] = useState(false);
   const [excluindoCampanha, setExcluindoCampanha] = useState<string | null>(null);
 
+  // Conectar a Página ao webhook de leads (subscribed_apps → leadgen)
+  const [conectando, setConectando] = useState(false);
+
   // Campanhas ATIVAS puxadas do Meta (mostra rodando mesmo sem lead ainda)
   const [campanhasMeta, setCampanhasMeta] = useState<{ nome: string; objetivo: string }[]>([]);
   const [metaStatus, setMetaStatus] = useState<'idle' | 'carregando' | 'ok' | 'sem_permissao_ads' | 'sem_token' | 'erro'>('idle');
@@ -256,6 +259,35 @@ export default function AdminDistribuicaoAdsPage() {
       })
       .catch((e) => { console.error('listarCampanhasMeta falhou:', e); setMetaStatus('erro'); });
   }, [userData?.imobiliariaId, isEspelhoDemo]);
+
+  const handleConectarPagina = async () => {
+    if (isEspelhoDemo) { showToast('Modo demonstração — nada é salvo.', 'info'); return; }
+    setConectando(true);
+    try {
+      const fn = httpsCallable(getFunctions(app), 'conectarPaginaLeadgen');
+      const r = await fn({});
+      const d = (r.data || {}) as any;
+      if (d.ok) {
+        showToast(
+          d.jaEstava
+            ? `Página "${d.pagina}" já estava conectada ao webhook de leads. ✓`
+            : `Página "${d.pagina}" conectada! Os leads de formulário passam a chegar aqui.`,
+          'success'
+        );
+      } else {
+        const msg = d.motivo === 'sem_token' ? 'Token da página não configurado.'
+          : d.motivo === 'token_sem_pagina' ? 'O token configurado não é de uma Página do Facebook.'
+          : d.motivo === 'sem_permissao' ? 'O token não tem permissão pra assinar a página (precisa de pages_manage_metadata / leads_retrieval).'
+          : 'Não foi possível conectar — confira o token da página.';
+        showToast(`⚠️ ${msg}`, 'error');
+      }
+    } catch (e) {
+      console.error('conectarPaginaLeadgen falhou:', e);
+      showToast('Não foi possível conectar a página — tente de novo.', 'error');
+    } finally {
+      setConectando(false);
+    }
+  };
 
   // Relógio do countdown (só roda quando há lead ao vivo)
   const [nowMs, setNowMs] = useState(Date.now());
@@ -980,6 +1012,21 @@ export default function AdminDistribuicaoAdsPage() {
                 ⚠️ Pra mostrar as campanhas ativas <b>sem lead ainda</b>, falta conectar o acesso de leitura de anúncios do Meta (token com <code>ads_read</code>). Por enquanto, só aparecem campanhas que já trouxeram lead.
               </p>
             )}
+            {/* Conectar a Página ao webhook — faz os leads de formulário (Face+Insta) chegarem sozinhos */}
+            <div className="mb-3 rounded-xl border border-[#7DD3FC]/25 bg-[#7DD3FC]/[0.04] px-3 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
+              <div className="flex-1 min-w-[200px]">
+                <p className="text-[11.5px] font-bold text-[#7DD3FC]">🔌 Recebimento automático de leads de formulário</p>
+                <p className="text-[10.5px] text-white/55 mt-0.5">Conecta a Página do Facebook ao webhook — leads de formulário (Facebook <b>e</b> Instagram) passam a cair aqui sozinhos. Rode uma vez; se trocar de página/token, rode de novo.</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleConectarPagina}
+                disabled={conectando}
+                className="shrink-0 px-3.5 py-2 rounded-xl text-[12px] font-bold text-[#0d2a38] bg-[#7DD3FC] hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50"
+              >
+                {conectando ? 'Conectando…' : 'Conectar página'}
+              </button>
+            </div>
             {campanhas.length === 0 ? (
               <p className="text-[12px] text-text-secondary text-center py-3">{metaStatus === 'carregando' ? 'Buscando campanhas…' : 'Nenhuma campanha ainda — quando um anúncio rodar ou trouxer lead, aparece aqui.'}</p>
             ) : (

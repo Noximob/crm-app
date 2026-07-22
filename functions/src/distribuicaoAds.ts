@@ -762,6 +762,77 @@ export const testeCriarAdsLead = onRequest(
 );
 
 // ---------------------------------------------------------------------------
+// 6.5) Conectar a Página ao app (subscribed_apps) — o passo que faz os leads
+//      de formulário (Face + Insta) DISPARAREM o webhook. Sem isso o app tem o
+//      campo leadgen assinado, mas a página não "empurra" os leads.
+// ---------------------------------------------------------------------------
+
+/**
+ * Callable (admin): assina a Página no app pro campo leadgen, usando o
+ * META_PAGE_TOKEN (token da página). Devolve o nome da página pra conferência.
+ * Idempotente: se já estava assinada, só confirma.
+ */
+export const conectarPaginaLeadgen = onCall(
+    {secrets: [META_PAGE_TOKEN]},
+    async (request): Promise<{ok: boolean; motivo?: string; pagina?: string; pageId?: string; jaEstava?: boolean}> => {
+        if (!request.auth) {
+            throw new HttpsError("unauthenticated", "É preciso estar logado.");
+        }
+        const chamadorSnap = await db().collection("usuarios").doc(request.auth.uid).get();
+        const chamador = chamadorSnap.data() || {};
+        const ehAdmin = chamador.tipoConta === "imobiliaria" || chamador.permissoes?.admin === true;
+        if (!ehAdmin) {
+            throw new HttpsError("permission-denied", "Apenas administradores.");
+        }
+
+        const token = META_PAGE_TOKEN.value() || process.env.META_PAGE_TOKEN || "";
+        if (!token) return {ok: false, motivo: "sem_token"};
+
+        try {
+            // 1) Quem é o dono do token? (precisa ser um token de PÁGINA)
+            const me = await axios.get(`${GRAPH_BASE}/me`, {
+                params: {access_token: token, fields: "id,name"},
+                timeout: 15000,
+            });
+            const pageId = String(me.data?.id || "");
+            const pagina = String(me.data?.name || "");
+            if (!pageId) return {ok: false, motivo: "token_sem_pagina"};
+
+            // 2) Já está assinada pro leadgen?
+            let jaEstava = false;
+            try {
+                const subs = await axios.get(`${GRAPH_BASE}/${pageId}/subscribed_apps`, {
+                    params: {access_token: token},
+                    timeout: 15000,
+                });
+                const lista = (subs.data?.data || []) as any[];
+                jaEstava = lista.some((a) =>
+                    Array.isArray(a?.subscribed_fields) && a.subscribed_fields.includes("leadgen"),
+                );
+            } catch (e) {
+                logger.warn("conectarPaginaLeadgen: falha ao checar subscribed_apps (segue e tenta assinar)", e);
+            }
+
+            // 3) Assina (idempotente — reforça o leadgen mesmo se já estava)
+            await axios.post(`${GRAPH_BASE}/${pageId}/subscribed_apps`, null, {
+                params: {access_token: token, subscribed_fields: "leadgen"},
+                timeout: 15000,
+            });
+
+            logger.info("conectarPaginaLeadgen: página conectada", {pageId, pagina, jaEstava});
+            return {ok: true, pagina, pageId, jaEstava};
+        } catch (error: any) {
+            const fb = error?.response?.data?.error;
+            logger.warn("conectarPaginaLeadgen: falha no Graph", {code: fb?.code, msg: fb?.message});
+            if (fb?.code === 190 || fb?.code === 200 || fb?.code === 10) {
+                return {ok: false, motivo: "sem_permissao"};
+            }
+            return {ok: false, motivo: "erro_graph"};
+        }
+    },
+);
+
+// ---------------------------------------------------------------------------
 // 7) Campanhas do Meta (status ATIVO) — pra mostrar campanhas rodando mesmo
 //    sem lead ainda. Lê a conta de anúncios via Graph API.
 // ---------------------------------------------------------------------------

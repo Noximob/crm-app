@@ -23,6 +23,7 @@ export {
     redistribuirAdsLead,
     testeCriarAdsLead,
     listarCampanhasMeta,
+    conectarPaginaLeadgen,
 } from "./distribuicaoAds";
 
 // Define a estrutura esperada dos dados para clareza
