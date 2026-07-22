@@ -280,6 +280,66 @@ export default function ImportarLigacaoAtivaPage() {
   const [crmDestino, setCrmDestino] = useState('');
   const [redistribuindo, setRedistribuindo] = useState(false);
   const [excluindoCrm, setExcluindoCrm] = useState(false);
+  // --- Transferência de carteira entre corretores (função da antiga Gestão de Corretores) ---
+  const [transfOrigem, setTransfOrigem] = useState('');
+  const [transfDestino, setTransfDestino] = useState('');
+  const [transfLeads, setTransfLeads] = useState<{ id: string }[] | null>(null);
+  const [transferindo, setTransferindo] = useState(false);
+
+  useEffect(() => {
+    setTransfLeads(null);
+    if (!transfOrigem || !userData?.imobiliariaId || isEspelhoDemo) return;
+    getDocs(query(
+      collection(db, 'leads'),
+      where('imobiliariaId', '==', userData.imobiliariaId),
+      where('userId', '==', transfOrigem)
+    ))
+      .then(snap => setTransfLeads(snap.docs.map(d => ({ id: d.id }))))
+      .catch(e => { console.error('Erro ao contar leads do corretor:', e); showToast('Não foi possível carregar os leads do corretor.', 'error'); });
+  }, [transfOrigem, userData?.imobiliariaId, isEspelhoDemo]);
+
+  /** Transfere a carteira INTEIRA preservando etapa, tarefas e histórico (só muda o dono). */
+  const transferirCarteira = async () => {
+    if (!transfOrigem || !transfDestino || transfOrigem === transfDestino || !transfLeads?.length || !currentUser) return;
+    if (isEspelhoDemo) { showToast('Modo demonstração — nada é salvo.', 'info'); return; }
+    const nomeOrigem = corretores.find(c => c.id === transfOrigem)?.nome || 'corretor';
+    const nomeDestino = corretores.find(c => c.id === transfDestino)?.nome || 'corretor';
+    const ok = await confirmDialog({
+      title: `Transferir ${transfLeads.length} lead${transfLeads.length > 1 ? 's' : ''}?`,
+      message: `TODA a carteira de ${nomeOrigem} passa pra ${nomeDestino} — etapa, tarefas e linha do tempo vão juntas.`,
+      confirmLabel: 'Transferir carteira',
+    });
+    if (!ok) return;
+    setTransferindo(true);
+    try {
+      const adminNome = (userData as any)?.nome || '';
+      let batch = writeBatch(db);
+      let ops = 0;
+      for (const l of transfLeads) {
+        batch.update(doc(db, 'leads', l.id), { userId: transfDestino });
+        batch.set(doc(collection(db, 'leads', l.id, 'interactions')), {
+          type: 'Etapa',
+          notes: `🔄 Lead transferido de ${nomeOrigem.split(' ')[0]} pra ${nomeDestino.split(' ')[0]}`,
+          timestamp: serverTimestamp(),
+          circuito: true,
+          por: adminNome,
+        });
+        ops += 2;
+        if (ops >= 398) { await batch.commit(); batch = writeBatch(db); ops = 0; }
+      }
+      if (ops > 0) await batch.commit();
+      showToast(`${transfLeads.length} lead${transfLeads.length > 1 ? 's' : ''} transferidos pra ${nomeDestino} — com etapa, tarefas e histórico.`, 'success');
+      setTransfOrigem('');
+      setTransfDestino('');
+      setTransfLeads(null);
+      carregarCrmBolsao();
+    } catch (e) {
+      console.error('Erro ao transferir carteira:', e);
+      showToast('Erro ao transferir — tente de novo.', 'error');
+    } finally {
+      setTransferindo(false);
+    }
+  };
   // Filtros do bolsão: busca, motivo, corretor e PERFIL do cliente (qualificação)
   const [crmBusca, setCrmBusca] = useState('');
   const [crmMotivoF, setCrmMotivoF] = useState('');
@@ -604,7 +664,7 @@ export default function ImportarLigacaoAtivaPage() {
     <div className="min-h-screen py-8 px-4">
       <div className="max-w-2xl mx-auto al-card relative overflow-hidden p-6">
         <div className="absolute inset-x-0 top-0 gx-line" />
-        <span className="gx-tag mb-2 inline-flex"><span>Ligação ativa</span></span>
+        <span className="gx-tag mb-2 inline-flex"><span>Central de Leads</span></span>
         <h1 className="al-display text-[20px] font-bold text-white uppercase tracking-[0.1em] mb-2 text-left">Importar Lista de Ligação</h1>
         <p className="text-text-secondary mb-6 text-left text-sm">
           Cole nome, telefone e, se tiver, uma <b className="text-white">anotação</b> na terceira coluna (endereço, condomínio, de onde veio…) — direto do Excel/Sheets. A lista vira a <b className="text-white">tabela da Ligação Ativa</b> do corretor —
@@ -1009,6 +1069,45 @@ export default function ImportarLigacaoAtivaPage() {
             </div>
           </>
         )}
+      </div>
+
+      {/* ===== Transferir carteira entre corretores (veio da antiga Gestão de Corretores) ===== */}
+      <div className="max-w-2xl mx-auto al-card relative overflow-hidden p-6 mt-6">
+        <div className="absolute inset-x-0 top-0 gx-line" />
+        <h2 className="al-display text-[17px] font-bold text-white uppercase tracking-[0.1em] mb-1">🔁 Transferir carteira</h2>
+        <p className="text-text-secondary mb-4 text-sm">
+          Passa <b className="text-white">todos os leads</b> de um corretor pra outro (férias, saída do time…) —
+          etapa, tarefas e linha do tempo vão juntas. Pra redistribuir só descartados, use o Bolsão do CRM aí em cima.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-2 mb-3">
+          <select className={`${inputCls} flex-1`} value={transfOrigem} onChange={e => setTransfOrigem(e.target.value)}>
+            <option value="">Corretor de ORIGEM</option>
+            {corretores.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+          </select>
+          <span className="self-center text-white/30 hidden sm:block">→</span>
+          <select className={`${inputCls} flex-1`} value={transfDestino} onChange={e => setTransfDestino(e.target.value)}>
+            <option value="">Corretor de DESTINO</option>
+            {corretores.filter(c => c.id !== transfOrigem).map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+          </select>
+        </div>
+        {isEspelhoDemo ? (
+          <p className="text-[11px] text-text-secondary">Modo demonstração — a transferência real acontece na conta de verdade.</p>
+        ) : transfOrigem && transfLeads === null ? (
+          <p className="text-[11px] text-text-secondary">Contando os leads…</p>
+        ) : transfOrigem && transfLeads !== null ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-[12px] text-white/80 tabular-nums">
+              <b className="text-[#FFE9A6]">{transfLeads.length}</b> lead{transfLeads.length === 1 ? '' : 's'} na carteira
+            </span>
+            <button
+              onClick={transferirCarteira}
+              disabled={!transfDestino || transfLeads.length === 0 || transferindo}
+              className="ml-auto px-6 py-2.5 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white rounded-xl font-bold shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all disabled:opacity-50"
+            >
+              {transferindo ? 'Transferindo…' : '🔁 Transferir tudo'}
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

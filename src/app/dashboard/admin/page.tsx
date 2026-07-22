@@ -15,51 +15,47 @@ const gxTilePalette = [
 // Categorias organizadas para melhor UX (aprovação de corretores fica na área do Desenvolvedor)
 const adminCategories = [
   {
-    title: 'Equipe',
-    description: 'Corretores, acessos e leads',
+    title: 'Time & Leads',
+    description: 'Quem trabalha o quê — leads, listas e distribuição',
     icon: '👥',
     color: 'from-[#FF1E56]/25 to-[#FF1E56]/[0.03] border-[#FF1E56]/30',
     items: [
-      { title: 'Gestão de Corretores e Leads', icon: '🧑‍💼', description: 'Transfira, redistribua e exclua leads; acompanhe cada corretor', href: '/dashboard/admin/gestao-corretores' },
-      { title: 'Distribuição de Anúncios', icon: '📣', description: 'Escala, rodízio e tempos dos leads de propaganda', href: '/dashboard/admin/distribuicao-ads' },
-      { title: 'Visualizar CRM do corretor', icon: '🔎', description: 'Veja os leads e tarefas de um corretor específico', href: '/dashboard/admin/visualizar-crm-corretor' },
-      { title: 'Agenda dos Usuários', icon: '📅', description: 'Visualize a agenda de todos os usuários', href: '/dashboard/admin/agenda-usuarios' },
-      { title: 'Brello da Equipe', icon: '🗂️', description: 'Veja os quadros e cartões salvos por cada corretor', href: '/dashboard/admin/brello-equipe' },
-      { title: 'Importar Lista de Ligação', icon: '⬆️', description: 'Suba listas frias (nome + telefone) que viram a tabela da Ligação Ativa do corretor', href: '/dashboard/admin/importar-leads' },
+      { title: 'Central de Leads', icon: '🗃️', description: 'Importa listas frias, bolsão de descartados (filtros por perfil), excluir e transferir carteira', href: '/dashboard/admin/importar-leads' },
+      { title: 'CRM e Agenda do Corretor', icon: '🔎', description: 'Os leads, tarefas e a agenda de cada corretor — tudo num clique', href: '/dashboard/admin/corretor' },
+      { title: 'Distribuição de Anúncios', icon: '📣', description: 'Escala, rodízio, tempos e o filtro "CRM em dia" dos leads de propaganda', href: '/dashboard/admin/distribuicao-ads' },
+      { title: 'Brello da Equipe', icon: '🗂️', description: 'Os quadros e cartões salvos por cada corretor', href: '/dashboard/admin/brello-equipe' },
+    ]
+  },
+  {
+    title: 'Acompanhamento',
+    description: 'Placar, vendas e números da equipe',
+    icon: '📊',
+    color: 'from-[#E8C547]/25 to-[#E8C547]/[0.03] border-[#E8C547]/40',
+    items: [
+      { title: 'Meets & Visitas', icon: '🔥', description: 'Placar automático da semana — contador e data, com prova por corretor', href: '/dashboard/admin/meets-visitas' },
+      { title: 'Comissões', icon: '💵', description: 'Imposto, política de comissão e lançamento oficial das vendas', href: '/dashboard/admin/comissoes' },
+      { title: 'Relatórios', icon: '🚧', description: 'Em construção — serão refeitos do zero', href: '/dashboard/admin/relatorios' },
     ]
   },
   {
     title: 'Imobiliária',
-    description: 'Rotina, captações e conteúdo',
+    description: 'Rotina e conteúdo da casa',
     icon: '🏢',
     color: 'from-[#34D399]/25 to-[#34D399]/[0.03] border-[#34D399]/30',
     items: [
-      { title: 'Agenda Imobiliária', icon: '📆', description: 'Gerencie agenda e plantões da imobiliária', href: '/dashboard/admin/agenda-imobiliaria' },
-      { title: 'Materiais Construtora', icon: '🏗️', description: 'Materiais das construtoras', href: '/dashboard/admin/materiais-construtora' },
-      { title: 'Ligação Ativa (roteiro)', icon: '📞', description: 'Edite o mapa mental da ligação ativa: mensagens, passos e botões', href: '/dashboard/admin/ligacao-ativa' },
-      { title: 'Documentos da Imobiliária', icon: '📁', description: 'Treinamentos, slides de contratação e materiais internos — só do admin', href: '/dashboard/admin/documentos' },
-    ]
-  },
-  {
-    title: 'Financeiro e Metas',
-    description: 'Comissões, metas e relatórios',
-    icon: '💰',
-    color: 'from-[#E8C547]/25 to-[#E8C547]/[0.03] border-[#E8C547]/40',
-    items: [
-      { title: 'Comissões', icon: '💵', description: 'Imposto, meta, política de comissão e lançamento de vendas por equipe', href: '/dashboard/admin/comissoes' },
-      { title: 'Metas', icon: '🎯', description: 'Meta da imobiliária e soma das metas dos corretores', href: '/dashboard/admin/metas' },
-      { title: 'Meets & Visitas', icon: '🔥', description: 'Período contado, contadores por corretor e histórico do pódio da home', href: '/dashboard/admin/meets-visitas' },
-      { title: 'Relatórios', icon: '📈', description: 'Pulso do período, funil, ranking da equipe, individual × coletivo e origens de leads', href: '/dashboard/admin/relatorios' },
-      { title: 'Dashboards TV', icon: '📺', description: 'Telas para TV da imobiliária', href: '/dashboard/admin/dashboards-tv' },
+      { title: 'Agenda Imobiliária', icon: '📆', description: 'Eventos e plantões da imobiliária (aparecem no radar dos corretores)', href: '/dashboard/admin/agenda-imobiliaria' },
+      { title: 'Materiais Construtora', icon: '🏗️', description: 'Materiais das construtoras pros corretores', href: '/dashboard/admin/materiais-construtora' },
+      { title: 'Documentos da Imobiliária', icon: '📁', description: 'Treinamentos, slides e materiais internos — só do admin', href: '/dashboard/admin/documentos' },
     ]
   },
   {
     title: 'Configurações',
-    description: 'Estrutura do CRM',
+    description: 'Como o CRM se comporta',
     icon: '⚙️',
     color: 'from-[#9F6BFF]/25 to-[#9F6BFF]/[0.03] border-[#9F6BFF]/30',
     items: [
-      { title: 'Funil & Cadências', icon: '🔁', description: 'O circuito do lead e os temporizadores da cadência', href: '/dashboard/admin/funil-vendas' },
+      { title: 'Funil & Cadências', icon: '🔁', description: 'As etapas do circuito e os relógios que cobram o corretor', href: '/dashboard/admin/funil-vendas' },
+      { title: 'Roteiro da Ligação Ativa', icon: '📞', description: 'O script único que guia a ligação fria', href: '/dashboard/admin/ligacao-ativa' },
     ]
   }
 ];
