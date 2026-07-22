@@ -29,8 +29,10 @@ export interface PipelineStageWithMeta {
 export const DEFAULT_PIPELINE_STAGES_WITH_META: PipelineStageWithMeta[] = [
   { label: 'Entrada', reportCategory: 'Topo de Funil', isQuente: false },
   { label: 'Em Contato', reportCategory: 'Qualificado', isQuente: false },
-  { label: 'Meet', reportCategory: 'Reunião agendada', isQuente: false },
-  { label: 'Visita', reportCategory: 'Reunião agendada', isQuente: false },
+  { label: 'Meet Agendado', reportCategory: 'Reunião agendada', isQuente: false },
+  { label: 'Meet Feito', reportCategory: 'Reunião agendada', isQuente: true },
+  { label: 'Visita Agendada', reportCategory: 'Reunião agendada', isQuente: false },
+  { label: 'Visita Feita', reportCategory: 'Reunião agendada', isQuente: true },
   { label: 'Negociação', reportCategory: 'Negociação e contrato', isQuente: true },
   { label: 'Fechamento', reportCategory: 'Follow up', isQuente: false },
 ];

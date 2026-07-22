@@ -13,7 +13,8 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ETAPA_ENTRADA, ETAPA_EM_CONTATO, ETAPA_MEET, ETAPA_VISITA, ETAPA_NEGOCIACAO, ETAPA_FECHADO, ETAPA_DESCARTADO,
+  ETAPA_ENTRADA, ETAPA_EM_CONTATO, ETAPA_MEET_AGENDADO, ETAPA_MEET_FEITO, ETAPA_VISITA_AGENDADA, ETAPA_VISITA_FEITA,
+  ETAPA_NEGOCIACAO, ETAPA_FECHADO, ETAPA_DESCARTADO,
   TIPO_TAREFA_MEET, TIPO_TAREFA_VISITA, TIPO_TAREFA_FOLLOWUP, TIPO_TAREFA_PRODUTO,
   TIPOS_CONTATO, MOTIVOS_DESCARTE, REQUALIFICA_OPCOES,
   type CadenciasFunil,
@@ -459,8 +460,8 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           const mapa: Record<string, { tipo: string; etapa: string; desc: string; inter: string; toast: string }> = {
             'Ligar': { tipo: 'Ligação', etapa: ETAPA_EM_CONTATO, desc: `Ligar para ${nome}`, inter: '📌 Tarefa criada: ligar', toast: 'ligar' },
             'WhatsApp': { tipo: 'WhatsApp', etapa: ETAPA_EM_CONTATO, desc: `Chamar ${nome} no WhatsApp`, inter: '📌 Tarefa criada: WhatsApp', toast: 'WhatsApp' },
-            'Marcar meet': { tipo: TIPO_TAREFA_MEET, etapa: ETAPA_MEET, desc: `Meet com ${nome}`, inter: '📅 Meet marcado', toast: 'meet' },
-            'Marcar visita': { tipo: TIPO_TAREFA_VISITA, etapa: ETAPA_VISITA, desc: `Visita com ${nome}`, inter: '🏠 Visita marcada', toast: 'visita' },
+            'Marcar meet': { tipo: TIPO_TAREFA_MEET, etapa: ETAPA_MEET_AGENDADO, desc: `Meet com ${nome}`, inter: '📅 Meet marcado', toast: 'meet' },
+            'Marcar visita': { tipo: TIPO_TAREFA_VISITA, etapa: ETAPA_VISITA_AGENDADA, desc: `Visita com ${nome}`, inter: '🏠 Visita marcada', toast: 'visita' },
             [ACAO_PRODUTO]: { tipo: TIPO_TAREFA_PRODUTO, etapa: ETAPA_EM_CONTATO, desc: `Buscar imóvel pra oferecer a ${nome}`, inter: '🔎 Vai buscar imóvel pra oferecer — tarefa', toast: 'buscar imóvel' },
           };
           const a = mapa[acaoSel];
@@ -596,6 +597,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             {
               t: 'Aconteceu ✓', c: 'primary', f: async () => {
                 const ok = await executar({
+                  novaEtapa: ETAPA_MEET_FEITO,
                   concluirTaskId: estado.taskId,
                   interacao: { type: 'Meet', notes: '✅ Meet realizado' },
                 });
@@ -668,6 +670,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             {
               t: 'Aconteceu ✓', c: 'primary', f: async () => {
                 const ok = await executar({
+                  novaEtapa: ETAPA_VISITA_FEITA,
                   concluirTaskId: estado.taskId,
                   interacao: { type: 'Visita', notes: '✅ Visita realizada' },
                 });
@@ -734,7 +737,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
               if (!d) return;
               const ehMeet = m.tipo === 'Meet';
               const ok = await executar({
-                novaEtapa: ehMeet ? ETAPA_MEET : ETAPA_VISITA,
+                novaEtapa: ehMeet ? ETAPA_MEET_AGENDADO : ETAPA_VISITA_AGENDADA,
                 cancelarTaskId: m.cancelarTaskId,
                 novaTarefa: { description: descComObs(`${m.tipo} com ${nome}`), type: ehMeet ? TIPO_TAREFA_MEET : TIPO_TAREFA_VISITA, dueDate: d },
                 circuitoTentativas: 'zero',
@@ -1011,7 +1014,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
               {/* Re-Qualificar (destaque) + Descarte sempre à mão — de qualquer passo do circuito */}
               {estado.t !== 'descarte' && estado.t !== 'venda' && estado.t !== 'recomecar' && (
                 <div className="px-4 pb-3 -mt-1.5 flex items-center justify-end gap-2.5 flex-wrap">
-                  {[ETAPA_MEET, ETAPA_VISITA, ETAPA_NEGOCIACAO].includes(etapaAtual || '') && (
+                  {[ETAPA_MEET_AGENDADO, ETAPA_MEET_FEITO, ETAPA_VISITA_AGENDADA, ETAPA_VISITA_FEITA, ETAPA_NEGOCIACAO].includes(etapaAtual || '') && (
                     <button
                       onClick={() => irPara({ t: 'recomecar', volta: estado })}
                       disabled={executando}

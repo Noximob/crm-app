@@ -78,22 +78,24 @@ export interface DemoLead {
   circuito?: { tentativas: number; desde: Timestamp };
 }
 
-// Etapas do circuito (na ordem do quadro) + estados da área do admin gravados em lead.etapa
-const [ETAPA_ENTRADA, ETAPA_EM_CONTATO, ETAPA_MEET, ETAPA_VISITA, ETAPA_NEGOCIACAO, ETAPA_FECHADO] = PIPELINE_STAGES;
+// Etapas do circuito (nomes explícitos — o funil tem 8 casas agora)
+const [ETAPA_ENTRADA, ETAPA_EM_CONTATO, ETAPA_MEET_AGENDADO, ETAPA_MEET_FEITO, ETAPA_VISITA_AGENDADA, ETAPA_VISITA_FEITA, ETAPA_NEGOCIACAO, ETAPA_FECHADO] = PIPELINE_STAGES;
 const ETAPA_BOLSAO = 'Bolsão';
 const ETAPA_DESCARTADO = 'Descartado';
 
 // Distribuição realista pelas etapas (os 5 primeiros índices casam com as tarefas fixas do builder)
 const ETAPA_PLAN: string[] = [
-  ETAPA_ENTRADA,    // 0 — tarefa atrasada (dashboard: Atraso)
-  ETAPA_VISITA,     // 1 — visita hoje (dashboard: Hoje)
-  ETAPA_NEGOCIACAO, // 2 — proposta amanhã (dashboard: Futuro)
-  ETAPA_MEET,       // 3 — meet amanhã às 10:00 (fluxo do circuito)
-  ETAPA_EM_CONTATO, // 4 — follow-up marcado (fluxo do circuito)
+  ETAPA_ENTRADA,        // 0 — tarefa atrasada (dashboard: Atraso)
+  ETAPA_VISITA_AGENDADA,// 1 — visita hoje (dashboard: Hoje)
+  ETAPA_NEGOCIACAO,     // 2 — proposta amanhã (dashboard: Futuro)
+  ETAPA_MEET_AGENDADO,  // 3 — meet amanhã às 10:00 (fluxo do circuito)
+  ETAPA_EM_CONTATO,     // 4 — follow-up marcado (fluxo do circuito)
   ...Array(11).fill(ETAPA_ENTRADA),
   ...Array(9).fill(ETAPA_EM_CONTATO),
-  ...Array(6).fill(ETAPA_MEET),
-  ...Array(5).fill(ETAPA_VISITA),
+  ...Array(4).fill(ETAPA_MEET_AGENDADO),
+  ...Array(3).fill(ETAPA_MEET_FEITO),
+  ...Array(3).fill(ETAPA_VISITA_AGENDADA),
+  ...Array(2).fill(ETAPA_VISITA_FEITA),
   ...Array(4).fill(ETAPA_NEGOCIACAO),
   ...Array(5).fill(ETAPA_BOLSAO),
   ...Array(2).fill(ETAPA_FECHADO),

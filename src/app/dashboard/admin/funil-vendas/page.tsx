@@ -26,7 +26,7 @@ import {
 // O circuito (visual) — etapas ativas, cores e descrições
 // ---------------------------------------------------------------------------
 /** Paleta do funil por posição (Entrada → Negociação). */
-const FUNIL_PALETA = ['#FFE9A6', '#E8C547', '#D4A017', '#F59E0B', '#FF7A45', '#34D399'];
+const FUNIL_PALETA = ['#FFE9A6', '#E8C547', '#D4A017', '#F59E0B', '#FB923C', '#FF7A45', '#FB5E7E', '#34D399'];
 
 /** Etapas ativas do quadro (Bolsão já não faz parte do circuito). */
 const ETAPAS_ATIVAS = ETAPAS_CIRCUITO;
@@ -34,8 +34,10 @@ const ETAPAS_ATIVAS = ETAPAS_CIRCUITO;
 const DESCRICAO_ETAPA: Record<string, string> = {
   'Entrada': 'lead novo ou ainda tentando falar',
   'Em Contato': 'o cliente já respondeu — em conversa',
-  'Meet': 'reunião marcada',
-  'Visita': 'visita marcada',
+  'Meet Agendado': 'reunião marcada, ainda não aconteceu',
+  'Meet Feito': 'reunião realizada ✓',
+  'Visita Agendada': 'visita marcada, ainda não aconteceu',
+  'Visita Feita': 'visita realizada ✓',
   'Negociação': 'proposta na mesa',
   'Fechamento': 'venda concluída 🏆 — lançar em Comissões',
 };

@@ -23,8 +23,10 @@ import { db } from '@/lib/firebase';
 // ---------------------------------------------------------------------------
 export const ETAPA_ENTRADA = 'Entrada';
 export const ETAPA_EM_CONTATO = 'Em Contato';
-export const ETAPA_MEET = 'Meet';
-export const ETAPA_VISITA = 'Visita';
+export const ETAPA_MEET_AGENDADO = 'Meet Agendado';
+export const ETAPA_MEET_FEITO = 'Meet Feito';
+export const ETAPA_VISITA_AGENDADA = 'Visita Agendada';
+export const ETAPA_VISITA_FEITA = 'Visita Feita';
 export const ETAPA_NEGOCIACAO = 'Negociação';
 export const ETAPA_BOLSAO = 'Bolsão';
 export const ETAPA_FECHADO = 'Fechamento';
@@ -32,6 +34,8 @@ export const ETAPA_DESCARTADO = 'Descartado';
 
 /**
  * Etapas do quadro (kanban / funil pessoal) — na ordem do circuito.
+ * Meet e Visita são divididos em AGENDADO (marcou) → FEITO (aconteceu): o
+ * sistema move sozinho quando o corretor responde "aconteceu ✓" no pop-up.
  * Cada casa é o estágio MÁXIMO alcançado; a catraca (etapaAposAcao) garante
  * que criar um follow-up nunca rebaixa o cliente de volta.
  * Fechamento é a última casa: venda concluída fica visível no fim do funil.
@@ -41,8 +45,10 @@ export const ETAPA_DESCARTADO = 'Descartado';
 export const ETAPAS_CIRCUITO = [
   ETAPA_ENTRADA,
   ETAPA_EM_CONTATO,
-  ETAPA_MEET,
-  ETAPA_VISITA,
+  ETAPA_MEET_AGENDADO,
+  ETAPA_MEET_FEITO,
+  ETAPA_VISITA_AGENDADA,
+  ETAPA_VISITA_FEITA,
   ETAPA_NEGOCIACAO,
   ETAPA_FECHADO,
 ] as const;
@@ -103,8 +109,9 @@ export function mapEtapaCircuito(etapa: string | undefined | null): string {
   // 'fechad' cobre o legado 'Fechado' (etapa antiga gravada nos leads) e variações
   if (e.includes('fechad') || e.includes('pos venda') || e.includes('fideliza') || e.includes('vendido') || e.includes('ganho')) return ETAPA_FECHADO;
   if (e.includes('negocia') || e.includes('proposta') || e.includes('contrato')) return ETAPA_NEGOCIACAO;
-  if (e.includes('visita')) return ETAPA_VISITA;
-  if (e.includes('meet') || e.includes('reuni') || e.includes('ligacao agendada') || e.includes('atendimento agendado')) return ETAPA_MEET;
+  // Visita/Meet: "feita/realizada/aconteceu" → FEITO; senão AGENDADO (legado 'Visita'/'Meet' cai em agendado)
+  if (e.includes('visita')) return (e.includes('feit') || e.includes('realizad') || e.includes('aconteceu')) ? ETAPA_VISITA_FEITA : ETAPA_VISITA_AGENDADA;
+  if (e.includes('meet') || e.includes('reuni') || e.includes('ligacao agendada') || e.includes('atendimento agendado')) return (e.includes('feit') || e.includes('realizad') || e.includes('aconteceu')) ? ETAPA_MEET_FEITO : ETAPA_MEET_AGENDADO;
   // Estacionados de antigamente (Interesse Futuro, Carteira, Geladeira, Bolsão…)
   // e o extinto Follow-up viram EM CONTATO: são clientes com quem já se falou —
   // a régua de tarefas de cada um (atrasada / sem tarefa) decide a cobrança.
@@ -150,7 +157,7 @@ export const TIPOS_TAREFA = ['Ligação', 'WhatsApp', 'Visita', 'Meet', 'Follow-
 export const TIPOS_CONTATO = ['Follow-up', 'Ligação', 'WhatsApp'] as const;
 
 /** Paleta do funil por posição (mesma dos kanban/home/relatórios). */
-export const CORES_CIRCUITO = ['#FFE9A6', '#E8C547', '#D4A017', '#F59E0B', '#FF7A45', '#34D399'] as const;
+export const CORES_CIRCUITO = ['#FFE9A6', '#E8C547', '#D4A017', '#F59E0B', '#FB923C', '#FF7A45', '#FB5E7E', '#34D399'] as const;
 
 // ---------------------------------------------------------------------------
 // Cadências (temporizadores configuráveis pelo admin)

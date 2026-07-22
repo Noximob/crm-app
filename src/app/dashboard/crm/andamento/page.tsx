@@ -17,7 +17,7 @@ import { ETAPAS_DO_ADMIN } from '@/lib/circuito';
 type LeadsByStage = { [key: string]: Lead[] };
 
 // Paleta do funil GX — cor por índice de etapa (repete com módulo)
-const FUNNEL_COLORS = ['#FFE9A6', '#E8C547', '#D4A017', '#F59E0B', '#FF7A45', '#34D399'];
+const FUNNEL_COLORS = ['#FFE9A6', '#E8C547', '#D4A017', '#F59E0B', '#FB923C', '#FF7A45', '#FB5E7E', '#34D399'];
 
 // Persistência dos filtros do kanban (própria — NÃO compartilhada com a lista)
 const KANBAN_FILTERS_KEY = 'crm-kanban-filtros-v1';
