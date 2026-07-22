@@ -72,6 +72,8 @@ interface NovoAdsLead {
     anuncioNome?: string;
     formNome?: string;
     metaLeadId?: string;
+    /** Respostas do formulário Meta já formatadas p/ virar anotação do lead */
+    respostasForm?: string;
 }
 
 interface ResultadoDistribuicao {
@@ -347,6 +349,7 @@ export async function criarEDistribuir(novo: NovoAdsLead): Promise<ResultadoDist
             anuncioNome: novo.anuncioNome,
             formNome: novo.formNome,
             metaLeadId: novo.metaLeadId,
+            respostasForm: novo.respostasForm || undefined,
             criadoEm: agora,
             imobiliariaId,
             duplicadoDe: duplicadoDe ?? undefined,
@@ -439,6 +442,10 @@ async function buscarLeadNaGraph(leadgenId: string, adId: string | undefined, pa
     const nome = pegarCampo("full_name", "nome", "name") || "Lead Meta";
     const telefone = pegarCampo("phone", "telefone", "whatsapp", "celular");
 
+    // Todas as OUTRAS respostas do formulário viram anotação do lead — o corretor
+    // já abre o lead sabendo o que a pessoa respondeu (orçamento, região, prazo…).
+    const respostasForm = montarRespostasForm(fieldData);
+
     let campanhaNome: string | undefined;
     let anuncioNome: string | undefined;
     const formNome: string | undefined = leadResp.data?.form?.name || undefined;
@@ -464,7 +471,27 @@ async function buscarLeadNaGraph(leadgenId: string, adId: string | undefined, pa
         anuncioNome,
         formNome,
         metaLeadId: leadgenId,
+        respostasForm,
     };
+}
+
+/**
+ * Formata as respostas do formulário Meta como anotação legível do lead.
+ * Pula nome/telefone (já viram campos próprios do lead) e campos vazios.
+ * Ex.: "📋 Respostas do formulário:\n• Orçamento: até 500 mil\n• Região: Penha"
+ */
+function montarRespostasForm(fieldData: MetaFieldData[]): string {
+    const IGNORAR = /(full_name|first_name|last_name|^nome$|^name$|phone|telefone|whatsapp|celular|email|e-mail)/i;
+    const linhas: string[] = [];
+    for (const f of fieldData) {
+        const chave = (f.name || "").trim();
+        const valor = (f.values || []).filter(Boolean).join(", ").trim();
+        if (!chave || !valor || IGNORAR.test(chave)) continue;
+        const rotulo = chave.replace(/_/g, " ").replace(/\?+$/, "").trim();
+        const rotuloCap = rotulo.charAt(0).toUpperCase() + rotulo.slice(1);
+        linhas.push(`• ${rotuloCap}: ${valor}`);
+    }
+    return linhas.length > 0 ? `📋 Respostas do formulário:\n${linhas.join("\n")}` : "";
 }
 
 /**

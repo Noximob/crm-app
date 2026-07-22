@@ -22,6 +22,8 @@ export interface AdsLead {
   anuncioNome?: string;
   formNome?: string;
   metaLeadId?: string;
+  /** Respostas do formulário Meta já formatadas — viram anotação do lead */
+  respostasForm?: string;
   status: 'escalado' | 'geral' | 'aceito' | 'nao-atendido';
   corretorEscalado: string | null;
   escaladoEm: Timestamp;
@@ -101,6 +103,8 @@ export async function aceitarAdsLead({
         origemPropaganda: dados.campanhaNome
           ? `${dados.campanhaNome}${dados.anuncioNome ? ` (${dados.anuncioNome})` : ''}`
           : 'Meta',
+        // O que a pessoa respondeu no formulário Meta já entra como anotação
+        anotacoes: dados.respostasForm || '',
         createdAt: serverTimestamp(),
         tarefasPendentes: [],
         automacao: {
