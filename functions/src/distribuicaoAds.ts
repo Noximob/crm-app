@@ -40,6 +40,8 @@ import axios from "axios";
 const META_PAGE_TOKEN = defineSecret("META_PAGE_TOKEN");
 const META_VERIFY_TOKEN = defineSecret("META_VERIFY_TOKEN");
 const TEST_SECRET = defineSecret("TEST_SECRET");
+// Token de Usuário do Sistema com ads_read (lê as campanhas da conta de anúncios)
+const META_ADS_TOKEN = defineSecret("META_ADS_TOKEN");
 
 const GRAPH_BASE = "https://graph.facebook.com/v21.0";
 // Conta de anúncios padrão (NoxImoveis, portfólio TEMERÁRIO). Pode ser
@@ -751,7 +753,7 @@ interface CampanhaMeta {
  * pra UI orientar a conectar o acesso — nunca lança por falta de permissão.
  */
 export const listarCampanhasMeta = onCall(
-    {secrets: [META_PAGE_TOKEN]},
+    {secrets: [META_ADS_TOKEN, META_PAGE_TOKEN]},
     async (request): Promise<{ok: boolean; motivo?: string; contaId?: string; campanhas?: CampanhaMeta[]}> => {
         if (!request.auth) {
             throw new HttpsError("unauthenticated", "É preciso estar logado.");
@@ -763,9 +765,8 @@ export const listarCampanhasMeta = onCall(
             throw new HttpsError("permission-denied", "Apenas administradores.");
         }
 
-        // Token com ads_read via env META_ADS_TOKEN (setar depois no Secret
-        // Manager quando existir); por ora tenta o token da página.
-        const token = process.env.META_ADS_TOKEN ||
+        // Token de anúncios (ads_read); fallback pro token da página se faltar
+        const token = META_ADS_TOKEN.value() || process.env.META_ADS_TOKEN ||
             META_PAGE_TOKEN.value() || process.env.META_PAGE_TOKEN || "";
         if (!token) return {ok: false, motivo: "sem_token"};
 
