@@ -8,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import Link from 'next/link';
-import FilterModal, { Filters, ORIGEM_FILTER_OPTIONS, getOrigemBucket, getCampanhaDoLead } from './_components/FilterModal';
+import FilterModal, { Filters, ORIGEM_FILTER_OPTIONS, ACAO_FILTER_OPTIONS, getOrigemBucket, getCampanhaDoLead, getAcaoBuckets } from './_components/FilterModal';
 import { getDemoLeads } from '@/lib/espelho/demoData';
 import LoadingState from '@/components/ui/LoadingState';
 import { ensureTarefasPendentes } from '@/lib/leadTasks';
@@ -22,6 +22,8 @@ interface Lead {
   telefone: string;
   etapa: string;
   taskStatus: StatusLead;
+  /** Tarefas pendentes (espelho) — base do filtro "Próxima ação" */
+  pendentes?: { type?: string; description?: string }[];
   origem?: string;
   origemTipo?: string;
   origemPropaganda?: string;
@@ -112,6 +114,7 @@ export default function CrmPage() {
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState<string | null>(null);
     const [activeTaskFilter, setActiveTaskFilter] = useState<StatusLead | null>(null);
+    const [activeAcaoFilter, setActiveAcaoFilter] = useState<string | null>(null);
     const [activeOrigemFilter, setActiveOrigemFilter] = useState<string | null>(null);
     const [activePropagandaFilter, setActivePropagandaFilter] = useState<string | null>(null);
     const [isFilterModalOpen, setFilterModalOpen] = useState(false);
@@ -161,6 +164,7 @@ export default function CrmPage() {
                 const saved = JSON.parse(raw);
                 if (saved.activeFilter !== undefined) setActiveFilter(saved.activeFilter);
                 if (saved.activeTaskFilter !== undefined && !veioComFiltroUrl) setActiveTaskFilter(saved.activeTaskFilter);
+                if (saved.activeAcaoFilter !== undefined) setActiveAcaoFilter(saved.activeAcaoFilter);
                 if (saved.activeOrigemFilter !== undefined) setActiveOrigemFilter(saved.activeOrigemFilter);
                 if (saved.activePropagandaFilter !== undefined) setActivePropagandaFilter(saved.activePropagandaFilter);
                 if (saved.advancedFilters !== undefined) setAdvancedFilters(saved.advancedFilters);
@@ -198,6 +202,7 @@ export default function CrmPage() {
             const toSave = {
                 activeFilter,
                 activeTaskFilter,
+                activeAcaoFilter,
                 activeOrigemFilter,
                 activePropagandaFilter,
                 advancedFilters,
@@ -208,7 +213,7 @@ export default function CrmPage() {
         } catch (err) {
             console.error('Erro ao salvar estado da lista CRM:', err);
         }
-    }, [hasRestoredState, activeFilter, activeTaskFilter, activeOrigemFilter, activePropagandaFilter, advancedFilters, searchTerm, currentPage]);
+    }, [hasRestoredState, activeFilter, activeTaskFilter, activeAcaoFilter, activeOrigemFilter, activePropagandaFilter, advancedFilters, searchTerm, currentPage]);
 
     useEffect(() => {
         if (isEspelhoDemo) {
@@ -216,10 +221,14 @@ export default function CrmPage() {
             // Bolsão/Descartado ficam só na área do admin — não aparecem pro corretor
             setLeads(getDemoLeads()
                 .filter(l => !(ETAPAS_DO_ADMIN as readonly string[]).includes(normalizeEtapa((l as any).etapa)))
-                .map(l => ({
-                    ...l,
-                    taskStatus: statusDoLead((l as any).etapa, ((l as any).tasks || []).filter((t: any) => t.status === 'pendente')),
-                })) as unknown as Lead[]);
+                .map(l => {
+                    const pendentes = ((l as any).tasks || []).filter((t: any) => t.status === 'pendente');
+                    return {
+                        ...l,
+                        pendentes,
+                        taskStatus: statusDoLead((l as any).etapa, pendentes),
+                    };
+                }) as unknown as Lead[]);
             setLoading(false);
             return;
         }
@@ -250,7 +259,8 @@ export default function CrmPage() {
             if ((ETAPAS_DO_ADMIN as readonly string[]).includes(normalizeEtapa(leadData.etapa))) return;
             // Lead novo já traz tarefasPendentes ([]); ensure cobre leads legados sem o campo
             const tarefasMap = await ensureTarefasPendentes([leadData]);
-            leadData.taskStatus = statusDoLead(leadData.etapa, tarefasMap.get(leadData.id) || []);
+            leadData.pendentes = tarefasMap.get(leadData.id) || [];
+            leadData.taskStatus = statusDoLead(leadData.etapa, leadData.pendentes as any);
             leadData.qualificacao = doc.data().qualificacao || {};
             // Só adiciona se não estiver na lista
             setLeads(prev => {
@@ -285,7 +295,8 @@ export default function CrmPage() {
             }).filter(lead => !(ETAPAS_DO_ADMIN as readonly string[]).includes(normalizeEtapa(lead.etapa)));
             const tarefasMap = await ensureTarefasPendentes(rawLeads);
             const newLeads = rawLeads.map(leadData => {
-                leadData.taskStatus = statusDoLead(leadData.etapa, tarefasMap.get(leadData.id) || []);
+                leadData.pendentes = tarefasMap.get(leadData.id) || [];
+                leadData.taskStatus = statusDoLead(leadData.etapa, leadData.pendentes as any);
                 return leadData;
             });
             setLeads(newLeads);
@@ -308,6 +319,7 @@ export default function CrmPage() {
         setSearchTerm('');
         setActiveFilter(null);
         setActiveTaskFilter(null);
+        setActiveAcaoFilter(null);
         setActiveOrigemFilter(null);
         setActivePropagandaFilter(null);
         setAdvancedFilters({});
@@ -335,6 +347,11 @@ export default function CrmPage() {
             leadsToFilter = leadsToFilter.filter(lead => lead.taskStatus === activeTaskFilter);
         }
 
+        // Próxima ação: o que está MARCADO com o cliente (meet, visita, proposta, follow-up…)
+        if (activeAcaoFilter) {
+            leadsToFilter = leadsToFilter.filter(lead => getAcaoBuckets(lead.pendentes).includes(activeAcaoFilter));
+        }
+
         // Filtro por origem do lead (derivada: legado sem origemTipo cai em "Outros")
         if (activeOrigemFilter) {
             leadsToFilter = leadsToFilter.filter(lead => getOrigemBucket(lead) === activeOrigemFilter);
@@ -357,6 +374,12 @@ export default function CrmPage() {
                         return selectedOptions.includes(lead.taskStatus);
                     }
 
+                    // Próxima ação: derivada das tarefas pendentes (um lead pode ter várias)
+                    if (key === 'proximaAcao') {
+                        const buckets = getAcaoBuckets(lead.pendentes);
+                        return selectedOptions.some(o => buckets.includes(o));
+                    }
+
                     const leadValue = key === 'etapa' ? normalizeEtapa(lead.etapa) : lead.qualificacao?.[key];
                     
                     if (leadValue === undefined) {
@@ -374,7 +397,7 @@ export default function CrmPage() {
         }
 
         return leadsToFilter;
-    }, [leads, searchTerm, activeFilter, activeTaskFilter, activeOrigemFilter, activePropagandaFilter, advancedFilters, normalizeEtapa]);
+    }, [leads, searchTerm, activeFilter, activeTaskFilter, activeAcaoFilter, activeOrigemFilter, activePropagandaFilter, advancedFilters, normalizeEtapa]);
 
     // Campanhas (propagandas) distintas nos leads carregados, com contagem — para os chips "Qual propaganda?"
     const campanhas = useMemo(() => {
@@ -414,6 +437,7 @@ export default function CrmPage() {
                     ...saved,
                     activeFilter,
                     activeTaskFilter,
+                    activeAcaoFilter,
                     activeOrigemFilter,
                     activePropagandaFilter,
                     advancedFilters,
@@ -429,11 +453,19 @@ export default function CrmPage() {
 
     const activeAdvancedFilterCount = Object.values(advancedFilters).reduce((count, options: string[]) => count + options.length, 0);
 
-    // Status de tarefa para filtros rápidos (mesma ordem e lógica do dashboard)
+    // Status de tarefa para filtros rápidos (valor interno → rótulo amigável, mesmo da tabela)
     const taskStatusFilters: StatusLead[] = ['Ação agora', 'Tarefa em Atraso', 'Tarefa do Dia', 'Tarefa Futura', 'Sem tarefa', 'Venda fechada'];
+    const taskStatusLabel: Record<string, string> = {
+        'Ação agora': '⚡ Ação agora',
+        'Tarefa em Atraso': 'Atrasada',
+        'Tarefa do Dia': 'Para Hoje',
+        'Tarefa Futura': 'Futura',
+        'Sem tarefa': 'Sem tarefa',
+        'Venda fechada': '🏆 Venda fechada',
+    };
 
-    // Quantos filtros rápidos estão ativos (etapa + tarefa + origem + campanha) — badge do botão
-    const quickFilterCount = (activeFilter ? 1 : 0) + (activeTaskFilter ? 1 : 0) + (activeOrigemFilter ? 1 : 0) + (activePropagandaFilter ? 1 : 0);
+    // Quantos filtros rápidos estão ativos (etapa + tarefa + ação + origem + campanha) — badge do botão
+    const quickFilterCount = (activeFilter ? 1 : 0) + (activeTaskFilter ? 1 : 0) + (activeAcaoFilter ? 1 : 0) + (activeOrigemFilter ? 1 : 0) + (activePropagandaFilter ? 1 : 0);
 
     return (
         <>
@@ -500,6 +532,23 @@ export default function CrmPage() {
                                         ))}
                                     </div>
                                     <div className="w-full h-px bg-white/10 my-2" />
+                                    <p className="text-[10px] font-extrabold text-text-secondary uppercase tracking-[0.18em] mb-2 px-1">Próxima ação</p>
+                                    <div className="flex flex-wrap gap-2 mb-3">
+                                        {ACAO_FILTER_OPTIONS.map((acao) => (
+                                            <FilterChip
+                                                key={acao}
+                                                selected={activeAcaoFilter === acao}
+                                                onClick={() => {
+                                                    setActiveAcaoFilter(activeAcaoFilter === acao ? null : acao);
+                                                    setCurrentPage(1);
+                                                    setFiltroRapidoOpen(false);
+                                                }}
+                                            >
+                                                {acao}
+                                            </FilterChip>
+                                        ))}
+                                    </div>
+                                    <div className="w-full h-px bg-white/10 my-2" />
                                     <p className="text-[10px] font-extrabold text-text-secondary uppercase tracking-[0.18em] mb-2 px-1">Status da tarefa</p>
                                     <div className="flex flex-wrap gap-2">
                                         {taskStatusFilters.map((taskStatus) => (
@@ -512,7 +561,7 @@ export default function CrmPage() {
                                                     setFiltroRapidoOpen(false);
                                                 }}
                                             >
-                                                {taskStatus}
+                                                {taskStatusLabel[taskStatus] || taskStatus}
                                             </FilterChip>
                                         ))}
                                     </div>
@@ -600,7 +649,7 @@ export default function CrmPage() {
                                     </span>
                                 )}
                             </button>
-                            {(searchTerm.trim() || activeFilter || activeTaskFilter || activeOrigemFilter || activeAdvancedFilterCount > 0) && (
+                            {(searchTerm.trim() || activeFilter || activeTaskFilter || activeAcaoFilter || activeOrigemFilter || activeAdvancedFilterCount > 0) && (
                                 <button
                                     onClick={handleClearFilters}
                                     className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-300 border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition-colors"

@@ -33,6 +33,8 @@ export interface TaskLike {
 /** Ação composta que o pai executa num único batch. */
 export interface AcaoCircuito {
   novaEtapa?: string;
+  /** Recomeçar busca: seta a etapa DIRETO, furando a catraca (decisão explícita). */
+  forcarEtapa?: string;
   concluirTaskId?: string;
   cancelarTaskId?: string;
   cancelarTodasPendentes?: boolean;
@@ -68,7 +70,8 @@ export type EstadoFluxo =
   | { t: 'negPrazo'; cancelarTaskId?: string }
   | { t: 'negQ'; taskId?: string }
   | { t: 'venda' }
-  | { t: 'descarte'; volta: EstadoFluxo };
+  | { t: 'descarte'; volta: EstadoFluxo }
+  | { t: 'recomecar'; volta: EstadoFluxo };
 
 interface QualGroup { title: string; key: string; options: string[] }
 
@@ -135,12 +138,17 @@ export function perguntaDoLead(
   return candidatos.find(c => c.pendente) ?? candidatos[0];
 }
 
+/** Motivos do "Recomeçar busca" (a jornada reinicia — imóvel/negócio de antes já era). */
+const MOTIVOS_RECOMECO = ['Negociação caiu', 'Desistiu do imóvel', 'Mudou a busca', 'Outro'] as const;
+
 interface AtendimentoOverlayProps {
   aberto: boolean;
   estadoInicial: EstadoFluxo;
   nome: string;
   telefone: string;
   origem?: string;
+  /** Etapa atual normalizada — habilita o "Recomeçar busca" pra quem já passou de Em Contato. */
+  etapaAtual?: string;
   tasks: TaskLike[];
   cadencias: CadenciasFunil;
   executando: boolean;
@@ -248,7 +256,7 @@ function Chips({ itens, sel, onSel }: { itens: readonly string[]; sel: string[];
 // ---------------------------------------------------------------------------
 export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
   const {
-    aberto, estadoInicial, nome, telefone, origem, tasks, cadencias, executando, isDemo,
+    aberto, estadoInicial, nome, telefone, origem, etapaAtual, tasks, cadencias, executando, isDemo,
     executar, registrarContato, onFecharX, onConcluido, onPular, historico, rodizioPrimeiroContato,
     qualGroups, qualifications, onToggleQual, saveQual, anotacoes, onChangeAnotacoes, saveNotas,
   } = props;
@@ -871,6 +879,49 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           ],
         };
       }
+
+      case 'recomecar': {
+        // A jornada REINICIA: o imóvel/negócio de antes já era, mas o cliente
+        // continua cliente. Único jeito de voltar etapa — decisão explícita, com
+        // motivo no histórico. O corretor escolhe: nutrir de novo ou descartar.
+        const volta = estado.volta;
+        const motivoFinal = motivoSel === 'Outro' ? motivoOutro.trim() : motivoSel;
+        return {
+          bar: 'Recomeçar busca',
+          body: (
+            <>
+              ↩️ A jornada com {b(nomeCliente)} vai recomeçar: ele volta pra {b('Em Contato')} e as tarefas marcadas são canceladas — o negócio de antes já era, mas o cliente continua seu.
+              <small>O que aconteceu? (obrigatório — fica no histórico)</small>
+              <Chips itens={MOTIVOS_RECOMECO} sel={motivoSel ? [motivoSel] : []} onSel={v => { setMotivoSel(v); setAviso(''); }} />
+              {motivoSel === 'Outro' && (
+                <input
+                  value={motivoOutro}
+                  onChange={e => setMotivoOutro(e.target.value)}
+                  placeholder="O que aconteceu?"
+                  className="mt-1 w-full px-3 py-2 bg-white/[0.04] border border-white/15 rounded-lg text-white text-sm placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#E8C547]/50"
+                />
+              )}
+              {aviso && <small className="!text-amber-300">{aviso}</small>}
+            </>
+          ),
+          btns: [
+            { t: '← Voltar (deixar como está)', c: 'ghost', f: () => irPara(volta) },
+            {
+              t: executando ? 'Recomeçando…' : '↩️ Recomeçar — voltar a nutrir', c: 'primary', f: async () => {
+                if (!motivoFinal) { setAviso('⚠️ Escolha o que aconteceu — fica registrado no histórico.'); return; }
+                const ok = await executar({
+                  forcarEtapa: ETAPA_EM_CONTATO,
+                  cancelarTodasPendentes: true,
+                  circuitoTentativas: 'zero',
+                  interacao: { type: 'Etapa', notes: `↩️ Recomeçar busca — ${motivoFinal}. De volta pra Em Contato.` },
+                });
+                if (ok) irLimpo({ t: 'quando' });
+              },
+            },
+            { t: '🗑 Descartar de vez', c: 'danger', f: () => irPara({ t: 'descarte', volta: estado }) },
+          ],
+        };
+      }
     }
   };
 
@@ -953,9 +1004,19 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                   <Pbtn key={`${estado.t}-${i}`} c={btn.c} onClick={btn.f} disabled={executando}>{btn.t}</Pbtn>
                 ))}
               </div>
-              {/* Descarte sempre à mão — de qualquer passo do circuito */}
-              {estado.t !== 'descarte' && estado.t !== 'venda' && (
-                <div className="px-4 pb-3 -mt-1.5 flex justify-end">
+              {/* Descarte (e Recomeçar busca) sempre à mão — de qualquer passo do circuito */}
+              {estado.t !== 'descarte' && estado.t !== 'venda' && estado.t !== 'recomecar' && (
+                <div className="px-4 pb-3 -mt-1.5 flex justify-end gap-3">
+                  {[ETAPA_MEET, ETAPA_VISITA, ETAPA_NEGOCIACAO].includes(etapaAtual || '') && (
+                    <button
+                      onClick={() => irPara({ t: 'recomecar', volta: estado })}
+                      disabled={executando}
+                      className="text-[11px] font-semibold text-white/35 hover:text-[#FFE9A6] transition-colors disabled:opacity-40"
+                      title="A negociação caiu / desistiu do imóvel? A jornada recomeça: volta pra Em Contato com o motivo no histórico."
+                    >
+                      ↩️ Recomeçar busca
+                    </button>
+                  )}
                   <button
                     onClick={() => irPara({ t: 'descarte', volta: estado })}
                     disabled={executando}

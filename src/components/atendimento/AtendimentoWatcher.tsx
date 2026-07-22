@@ -336,6 +336,7 @@ export default function AtendimentoWatcher() {
           executar={executar}
           registrarContato={registrarContato}
           historico={historico}
+          etapaAtual={normalizeEtapa(leadAberto.etapa)}
           rodizioPrimeiroContato={(() => {
             const e = normalizeEtapa(leadAberto.etapa);
             if ((e !== 'Entrada' && e !== 'Em Contato') || leadAberto.circuito?.primeiroContatoEm) return null;

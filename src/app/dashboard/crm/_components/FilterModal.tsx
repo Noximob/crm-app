@@ -2,26 +2,49 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
+import { QUALIFICATION_QUESTIONS } from '@/lib/qualificacao';
+import { TIPO_TAREFA_MEET, TIPO_TAREFA_VISITA, TIPO_TAREFA_PRODUTO, TIPOS_CONTATO } from '@/lib/circuito';
 
-// Definições movidas para cá para evitar dependências circulares e manter o componente contido.
-const QUALIFICATION_QUESTIONS = [
-    { title: 'Finalidade', key: 'finalidade', options: ['Moradia', 'Veraneio', 'Investimento', 'Locação', 'Imóvel à Venda'] },
-    { title: 'Estágio do Imóvel', key: 'estagio', options: ['Lançamento', 'Em Construção', 'Pronto para Morar'] },
-    { title: 'Quartos', key: 'quartos', options: ['1 quarto', '2 quartos', '1 Suíte + 1 Quarto', '3 quartos', '4 quartos'] },
-    { title: 'Localização', key: 'localizacao', options: ['Penha', 'Piçarras', 'Barra Velha', 'Outros'] },
-    { title: 'Tipo do Imóvel', key: 'tipo', options: ['Apartamento', 'Casa', 'Terreno'] },
-    { title: 'Vagas de Garagem', key: 'vagas', options: ['1', '2', '3+'] },
-    { title: 'Valor do Imóvel', key: 'valor', options: ['< 500k', '500k-800k', '800k-1.2M', '1.2M-2M', '> 2M'] },
+// Valor interno (bate com lead.taskStatus) + rótulo amigável exibido no chip
+const TASK_STATUS_OPTIONS: { value: string; label: string }[] = [
+    { value: 'Ação agora', label: '⚡ Ação agora' },
+    { value: 'Tarefa em Atraso', label: 'Atrasada' },
+    { value: 'Tarefa do Dia', label: 'Para Hoje' },
+    { value: 'Tarefa Futura', label: 'Futura' },
+    { value: 'Sem tarefa', label: 'Sem tarefa' },
+    { value: 'Venda fechada', label: '🏆 Venda fechada' },
 ];
 
-const TASK_STATUS_OPTIONS = [
-    'Ação agora',
-    'Tarefa em Atraso',
-    'Tarefa do Dia',
-    'Tarefa Futura',
-    'Sem tarefa',
-    'Venda fechada',
-];
+// ---------------------------------------------------------------------------
+// Próxima ação — o jeito novo de achar os leads pelo que está MARCADO.
+// (A etapa é o estágio máximo alcançado; quem diz o próximo passo é a tarefa.)
+// ---------------------------------------------------------------------------
+export const ACAO_FILTER_OPTIONS = [
+    '📅 Meet marcado',
+    '🏠 Visita marcada',
+    '🤝 Resposta de proposta',
+    '💬 Follow-up marcado',
+    '🔎 Buscando imóvel',
+    'Sem próxima ação',
+] as const;
+
+/** Buckets de "próxima ação" de um lead a partir das tarefas pendentes (pode ter vários). */
+export function getAcaoBuckets(pendentes: { type?: string; description?: string }[] | undefined): string[] {
+    const tasks = pendentes || [];
+    if (tasks.length === 0) return ['Sem próxima ação'];
+    const buckets = new Set<string>();
+    for (const t of tasks) {
+        const tipo = t.type || '';
+        if (tipo === TIPO_TAREFA_MEET) buckets.add('📅 Meet marcado');
+        else if (tipo === TIPO_TAREFA_VISITA) buckets.add('🏠 Visita marcada');
+        else if (tipo === TIPO_TAREFA_PRODUTO) buckets.add('🔎 Buscando imóvel');
+        else if ((TIPOS_CONTATO as readonly string[]).includes(tipo)) {
+            if (/^resposta da proposta/i.test((t.description || '').trim())) buckets.add('🤝 Resposta de proposta');
+            else buckets.add('💬 Follow-up marcado');
+        }
+    }
+    return buckets.size > 0 ? Array.from(buckets) : ['Sem próxima ação'];
+}
 
 // Origens conhecidas (mesmas opções do NewLeadModal). Leads legados sem origemTipo caem em "Outros".
 export const ORIGEM_FILTER_OPTIONS = ['Networking', 'Ligação', 'Ação de rua', 'Disparo de msg', 'Propaganda', 'Outros'] as const;
@@ -151,7 +174,8 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters, 
     };
 
     const hasActiveFilters = Object.values(selectedFilters).some(arr => arr && arr.length > 0) || origemSel !== null;
-    const situationQuestion = { title: 'Situação do Cliente (Etapa do funil)', key: 'etapa', options: [...pipelineStages] };
+    const situationQuestion = { title: 'Etapa do funil (até onde o cliente chegou)', key: 'etapa', options: [...pipelineStages] };
+    const acaoQuestion = { title: 'Próxima ação (o que está marcado)', key: 'proximaAcao', options: [...ACAO_FILTER_OPTIONS] };
 
     if (!isOpen) return null;
 
@@ -173,12 +197,12 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters, 
                     <div>
                         <h4 className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-2.5">Status da Tarefa</h4>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
-                            {TASK_STATUS_OPTIONS.map(option => (
-                                <FilterTag 
-                                    key={option}
-                                    label={option}
-                                    isSelected={(selectedFilters['taskStatus'] || []).includes(option)}
-                                    onClick={() => handleTagClick('taskStatus', option)}
+                            {TASK_STATUS_OPTIONS.map(({ value, label }) => (
+                                <FilterTag
+                                    key={value}
+                                    label={label}
+                                    isSelected={(selectedFilters['taskStatus'] || []).includes(value)}
+                                    onClick={() => handleTagClick('taskStatus', value)}
                                 />
                             ))}
                         </div>
@@ -228,7 +252,7 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters, 
                         )}
                     </div>
 
-                    {[situationQuestion, ...QUALIFICATION_QUESTIONS].map(group => (
+                    {[situationQuestion, acaoQuestion, ...QUALIFICATION_QUESTIONS].map(group => (
                         <div key={group.key}>
                             <h4 className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary mb-2.5">{group.title}</h4>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">

@@ -68,7 +68,14 @@ export async function executarAcaoCircuito(params: {
     }
 
     const leadUpdate: Record<string, any> = mexeuEmTarefa ? { tarefasPendentes: pendentes } : {};
-    if (acao.novaEtapa) {
+    if (acao.forcarEtapa) {
+      // "Recomeçar busca": fura a catraca por decisão explícita do corretor
+      // (o motivo vai junto na interação da ação).
+      if (lead.etapa !== acao.forcarEtapa) {
+        leadUpdate.etapa = acao.forcarEtapa;
+        leadUpdate['circuito.desde'] = serverTimestamp();
+      }
+    } else if (acao.novaEtapa) {
       // CATRACA: a etapa é o estágio máximo alcançado — a ação propõe um alvo,
       // mas o cliente nunca anda pra trás (follow-up em Negociação fica Negociação).
       const atualNorm = mapEtapaCircuito(lead.etapa);

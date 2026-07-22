@@ -9,7 +9,7 @@ import { usePipelineStages } from '@/context/PipelineStagesContext';
 import KanbanColumn from './_components/KanbanColumn';
 import { Lead } from '@/types';
 import LoadingState from '@/components/ui/LoadingState';
-import { ORIGEM_FILTER_OPTIONS, getOrigemBucket, getCampanhaDoLead } from '../_components/FilterModal';
+import { ORIGEM_FILTER_OPTIONS, ACAO_FILTER_OPTIONS, getOrigemBucket, getCampanhaDoLead, getAcaoBuckets } from '../_components/FilterModal';
 import { getTaskStatusInfo, TaskStatus } from '@/lib/leadTasks';
 import { getDemoLeads } from '@/lib/espelho/demoData';
 import { ETAPAS_DO_ADMIN } from '@/lib/circuito';
@@ -83,6 +83,7 @@ export default function AndamentoPage() {
     const [origemFilter, setOrigemFilter] = useState<string | null>(null);
     const [campanhaFilter, setCampanhaFilter] = useState<string | null>(null);
     const [taskFilter, setTaskFilter] = useState<TaskStatus | null>(null);
+    const [acaoFilter, setAcaoFilter] = useState<string | null>(null);
     const [filtersRestored, setFiltersRestored] = useState(false);
 
     // Restaurar filtros da sessão (chave própria do kanban)
@@ -101,6 +102,9 @@ export default function AndamentoPage() {
                 if (typeof saved.taskFilter === 'string' && TASK_FILTER_OPTIONS.some(o => o.value === saved.taskFilter)) {
                     setTaskFilter(saved.taskFilter as TaskStatus);
                 }
+                if (typeof saved.acaoFilter === 'string' && (ACAO_FILTER_OPTIONS as readonly string[]).includes(saved.acaoFilter)) {
+                    setAcaoFilter(saved.acaoFilter);
+                }
             }
         } catch (err) {
             console.error('Erro ao restaurar filtros do kanban:', err);
@@ -112,11 +116,11 @@ export default function AndamentoPage() {
     useEffect(() => {
         if (!filtersRestored) return;
         try {
-            window.sessionStorage.setItem(KANBAN_FILTERS_KEY, JSON.stringify({ searchTerm, origemFilter, campanhaFilter, taskFilter }));
+            window.sessionStorage.setItem(KANBAN_FILTERS_KEY, JSON.stringify({ searchTerm, origemFilter, campanhaFilter, taskFilter, acaoFilter }));
         } catch (err) {
             console.error('Erro ao salvar filtros do kanban:', err);
         }
-    }, [filtersRestored, searchTerm, origemFilter, campanhaFilter, taskFilter]);
+    }, [filtersRestored, searchTerm, origemFilter, campanhaFilter, taskFilter, acaoFilter]);
 
     useEffect(() => {
         if (!currentUser) return;
@@ -194,6 +198,7 @@ export default function AndamentoPage() {
                 if (origemFilter === 'Propaganda' && campanhaFilter && campanhaDoLead(lead) !== campanhaFilter) return false;
             }
             if (taskFilter && getTaskStatusInfo(lead.tarefasPendentes) !== taskFilter) return false;
+            if (acaoFilter && !getAcaoBuckets(lead.tarefasPendentes as any).includes(acaoFilter)) return false;
             return true;
         };
         const out: LeadsByStage = {};
@@ -201,20 +206,22 @@ export default function AndamentoPage() {
             out[stage] = leads[stage].filter(matches);
         }
         return out;
-    }, [leads, searchTerm, origemFilter, campanhaFilter, taskFilter]);
+    }, [leads, searchTerm, origemFilter, campanhaFilter, taskFilter, acaoFilter]);
 
-    // Badge: quantos filtros estão ativos (busca + origem + campanha + tarefa)
+    // Badge: quantos filtros estão ativos (busca + origem + campanha + tarefa + ação)
     const activeFilterCount =
         (searchTerm.trim() ? 1 : 0) +
         (origemFilter ? 1 : 0) +
         (origemFilter === 'Propaganda' && campanhaFilter ? 1 : 0) +
-        (taskFilter ? 1 : 0);
+        (taskFilter ? 1 : 0) +
+        (acaoFilter ? 1 : 0);
 
     const handleClearFilters = () => {
         setSearchTerm('');
         setOrigemFilter(null);
         setCampanhaFilter(null);
         setTaskFilter(null);
+        setAcaoFilter(null);
     };
 
     const handleOrigemClick = (option: string) => {
@@ -339,6 +346,27 @@ export default function AndamentoPage() {
                                         onClick={() => setTaskFilter(taskFilter === value ? null : value)}
                                     >
                                         {label}
+                                    </FilterChip>
+                                ))}
+                            </div>
+                        </div>
+                        {/* Próxima ação — o que está MARCADO (a etapa diz até onde chegou; a tarefa diz o próximo passo) */}
+                        <div className="flex items-center gap-2 min-w-0">
+                            <FilterLabel>Próxima ação</FilterLabel>
+                            <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto min-w-0 pb-1 -mb-1">
+                                <FilterChip
+                                    selected={!acaoFilter}
+                                    onClick={() => setAcaoFilter(null)}
+                                >
+                                    Todas
+                                </FilterChip>
+                                {ACAO_FILTER_OPTIONS.map((acao) => (
+                                    <FilterChip
+                                        key={acao}
+                                        selected={acaoFilter === acao}
+                                        onClick={() => setAcaoFilter(acaoFilter === acao ? null : acao)}
+                                    >
+                                        {acao}
                                     </FilterChip>
                                 ))}
                             </div>

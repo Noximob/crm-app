@@ -827,6 +827,7 @@ export default function LeadDetailPage() {
                     nome={lead.nome}
                     telefone={lead.telefone}
                     origem={lead.origem}
+                    etapaAtual={normalizeEtapa(lead.etapa)}
                     tasks={tasks}
                     cadencias={cadencias}
                     executando={executandoCircuito}

@@ -17,8 +17,19 @@ import { collection, query, where, getDocs, doc, writeBatch, serverTimestamp, de
 import { showToast } from '@/components/ui/toast';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import { QUALIFICATION_QUESTIONS } from '@/lib/qualificacao';
-import { ETAPAS_DO_ADMIN, mapEtapaCircuito } from '@/lib/circuito';
+import { ETAPAS_DO_ADMIN, MOTIVOS_DESCARTE, mapEtapaCircuito } from '@/lib/circuito';
 import { deleteLeadsComSubcolecoes } from '@/lib/leadDelete';
+
+/**
+ * Bucket do motivo de descarte pro filtro: motivos padrão passam direto;
+ * qualquer texto livre digitado no "Outro" vira o bucket único "Outros".
+ */
+const MOTIVOS_PADRAO = new Set<string>(MOTIVOS_DESCARTE.filter(m => m !== 'Outro'));
+const motivoBucket = (motivo?: string): string => {
+  const m = (motivo || '').trim();
+  if (!m) return 'Sem motivo';
+  return MOTIVOS_PADRAO.has(m) ? m : 'Outros';
+};
 
 interface Corretor {
   id: string;
@@ -285,31 +296,71 @@ export default function ImportarLigacaoAtivaPage() {
   // --- Transferência de carteira entre corretores (função da antiga Gestão de Corretores) ---
   const [transfOrigem, setTransfOrigem] = useState('');
   const [transfDestino, setTransfDestino] = useState('');
-  const [transfLeads, setTransfLeads] = useState<{ id: string }[] | null>(null);
+  const [transfLeads, setTransfLeads] = useState<{ id: string; nome: string; telefone: string; etapa: string }[] | null>(null);
   const [transferindo, setTransferindo] = useState(false);
+  // Filtro + seleção da carteira: passa TODOS, alguns ou por etapa
+  const [transfBusca, setTransfBusca] = useState('');
+  const [transfEtapaF, setTransfEtapaF] = useState('');
+  const [selTransf, setSelTransf] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setTransfLeads(null);
+    setSelTransf(new Set());
+    setTransfBusca('');
+    setTransfEtapaF('');
     if (!transfOrigem || !userData?.imobiliariaId || isEspelhoDemo) return;
     getDocs(query(
       collection(db, 'leads'),
       where('imobiliariaId', '==', userData.imobiliariaId),
       where('userId', '==', transfOrigem)
     ))
-      .then(snap => setTransfLeads(snap.docs.map(d => ({ id: d.id }))))
-      .catch(e => { console.error('Erro ao contar leads do corretor:', e); showToast('Não foi possível carregar os leads do corretor.', 'error'); });
+      .then(snap => {
+        const lista = snap.docs.map(d => {
+          const l = d.data() as any;
+          return { id: d.id, nome: l.nome || 'Sem nome', telefone: l.telefone || '', etapa: mapEtapaCircuito(l.etapa) };
+        }).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+        setTransfLeads(lista);
+        // Começa com TODOS marcados (o caso comum "passar a carteira inteira" continua 1 clique)
+        setSelTransf(new Set(lista.map(l => l.id)));
+      })
+      .catch(e => { console.error('Erro ao carregar leads do corretor:', e); showToast('Não foi possível carregar os leads do corretor.', 'error'); });
   }, [transfOrigem, userData?.imobiliariaId, isEspelhoDemo]);
 
-  /** Transfere a carteira INTEIRA preservando etapa, tarefas e histórico (só muda o dono). */
+  // Filtro da carteira: busca (nome/telefone) + etapa
+  const transfFiltrados = useMemo(() => {
+    if (!transfLeads) return [];
+    const busca = transfBusca.trim().toLowerCase();
+    const buscaDigitos = transfBusca.replace(/\D/g, '');
+    return transfLeads.filter(l => {
+      if (busca) {
+        const nomeOk = l.nome.toLowerCase().includes(busca);
+        const telOk = buscaDigitos.length >= 3 && l.telefone.replace(/\D/g, '').includes(buscaDigitos);
+        if (!nomeOk && !telOk) return false;
+      }
+      if (transfEtapaF && l.etapa !== transfEtapaF) return false;
+      return true;
+    });
+  }, [transfLeads, transfBusca, transfEtapaF]);
+
+  // Etapas presentes na carteira (com contagem) — chips do filtro
+  const transfEtapas = useMemo(() => {
+    const m = new Map<string, number>();
+    (transfLeads || []).forEach(l => m.set(l.etapa, (m.get(l.etapa) || 0) + 1));
+    return Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
+  }, [transfLeads]);
+
+  /** Transfere os leads SELECIONADOS preservando etapa, tarefas e histórico (só muda o dono). */
   const transferirCarteira = async () => {
-    if (!transfOrigem || !transfDestino || transfOrigem === transfDestino || !transfLeads?.length || !currentUser) return;
+    const escolhidos = (transfLeads || []).filter(l => selTransf.has(l.id));
+    if (!transfOrigem || !transfDestino || transfOrigem === transfDestino || !escolhidos.length || !currentUser) return;
     if (isEspelhoDemo) { showToast('Modo demonstração — nada é salvo.', 'info'); return; }
     const nomeOrigem = corretores.find(c => c.id === transfOrigem)?.nome || 'corretor';
     const nomeDestino = corretores.find(c => c.id === transfDestino)?.nome || 'corretor';
+    const ehTudo = escolhidos.length === (transfLeads?.length || 0);
     const ok = await confirmDialog({
-      title: `Transferir ${transfLeads.length} lead${transfLeads.length > 1 ? 's' : ''}?`,
-      message: `TODA a carteira de ${nomeOrigem} passa pra ${nomeDestino} — etapa, tarefas e linha do tempo vão juntas.`,
-      confirmLabel: 'Transferir carteira',
+      title: `Transferir ${escolhidos.length} lead${escolhidos.length > 1 ? 's' : ''}?`,
+      message: `${ehTudo ? 'TODA a carteira' : `${escolhidos.length} lead${escolhidos.length > 1 ? 's' : ''} selecionado${escolhidos.length > 1 ? 's' : ''}`} de ${nomeOrigem} passa pra ${nomeDestino} — etapa, tarefas e linha do tempo vão juntas.`,
+      confirmLabel: 'Transferir',
     });
     if (!ok) return;
     setTransferindo(true);
@@ -317,7 +368,7 @@ export default function ImportarLigacaoAtivaPage() {
       const adminNome = (userData as any)?.nome || '';
       let batch = writeBatch(db);
       let ops = 0;
-      for (const l of transfLeads) {
+      for (const l of escolhidos) {
         batch.update(doc(db, 'leads', l.id), { userId: transfDestino });
         batch.set(doc(collection(db, 'leads', l.id, 'interactions')), {
           type: 'Etapa',
@@ -330,10 +381,17 @@ export default function ImportarLigacaoAtivaPage() {
         if (ops >= 398) { await batch.commit(); batch = writeBatch(db); ops = 0; }
       }
       if (ops > 0) await batch.commit();
-      showToast(`${transfLeads.length} lead${transfLeads.length > 1 ? 's' : ''} transferidos pra ${nomeDestino} — com etapa, tarefas e histórico.`, 'success');
-      setTransfOrigem('');
-      setTransfDestino('');
-      setTransfLeads(null);
+      showToast(`${escolhidos.length} lead${escolhidos.length > 1 ? 's' : ''} transferido${escolhidos.length > 1 ? 's' : ''} pra ${nomeDestino} — com etapa, tarefas e histórico.`, 'success');
+      if (ehTudo) {
+        setTransfOrigem('');
+        setTransfDestino('');
+        setTransfLeads(null);
+        setSelTransf(new Set());
+      } else {
+        // Sobraram leads na carteira: atualiza a lista local e segue na tela
+        setTransfLeads(prev => (prev || []).filter(l => !selTransf.has(l.id)));
+        setSelTransf(new Set());
+      }
       carregarCrmBolsao();
     } catch (e) {
       console.error('Erro ao transferir carteira:', e);
@@ -447,7 +505,7 @@ export default function ImportarLigacaoAtivaPage() {
         const telOk = buscaDigitos.length >= 3 && (l.telefone || '').replace(/\D/g, '').includes(buscaDigitos);
         if (!nomeOk && !telOk) return false;
       }
-      if (crmMotivoF && (l.motivo || 'Sem motivo') !== crmMotivoF) return false;
+      if (crmMotivoF && motivoBucket(l.motivo) !== crmMotivoF) return false;
       if (crmCorretorF && (l.descartadoPor || '') !== crmCorretorF) return false;
       for (const [key, valor] of qualAtivas) {
         const v = l.qualificacao?.[key];
@@ -458,10 +516,12 @@ export default function ImportarLigacaoAtivaPage() {
     });
   }, [crmBolsao, crmBusca, crmMotivoF, crmCorretorF, crmQualF]);
 
-  // Chips de motivo (com contagem) e corretores presentes no bolsão
+  // Chips de motivo (com contagem) e corretores presentes no bolsão.
+  // Motivos digitados no "Outro" do descarte são AGRUPADOS num único chip
+  // "Outros" — senão cada texto livre viraria um chip e a linha explodia.
   const crmMotivos = useMemo(() => {
     const m = new Map<string, number>();
-    crmBolsao.forEach(l => { const k = l.motivo || 'Sem motivo'; m.set(k, (m.get(k) || 0) + 1); });
+    crmBolsao.forEach(l => { const k = motivoBucket(l.motivo); m.set(k, (m.get(k) || 0) + 1); });
     return Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
   }, [crmBolsao]);
   const crmCorretoresDoBolsao = useMemo(() => {
@@ -1098,8 +1158,9 @@ export default function ImportarLigacaoAtivaPage() {
         <div className="absolute inset-x-0 top-0 gx-line" />
         <h2 className="al-display text-[18px] font-bold text-white uppercase tracking-[0.1em] mb-1">🔁 Transferir carteira</h2>
         <p className="text-text-secondary mb-4 text-sm">
-          Passa <b className="text-white">todos os leads</b> de um corretor pra outro (férias, saída do time…) —
-          etapa, tarefas e linha do tempo vão juntas. Pra redistribuir só descartados, use a aba Redistribuir descartados.
+          Passa leads de um corretor pra outro (férias, saída do time, divisão de carteira…) —
+          <b className="text-white"> todos ou só os que você marcar</b>; etapa, tarefas e linha do tempo vão juntas.
+          Pra redistribuir só descartados, use a aba Redistribuir descartados.
         </p>
         <div className="flex flex-col sm:flex-row gap-2 mb-3">
           <select className={`${inputCls} flex-1`} value={transfOrigem} onChange={e => setTransfOrigem(e.target.value)}>
@@ -1115,20 +1176,92 @@ export default function ImportarLigacaoAtivaPage() {
         {isEspelhoDemo ? (
           <p className="text-[11px] text-text-secondary">Modo demonstração — a transferência real acontece na conta de verdade.</p>
         ) : transfOrigem && transfLeads === null ? (
-          <p className="text-[11px] text-text-secondary">Contando os leads…</p>
+          <p className="text-[11px] text-text-secondary">Carregando a carteira…</p>
         ) : transfOrigem && transfLeads !== null ? (
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-[12px] text-white/80 tabular-nums">
-              <b className="text-[#FFE9A6]">{transfLeads.length}</b> lead{transfLeads.length === 1 ? '' : 's'} na carteira
-            </span>
-            <button
-              onClick={transferirCarteira}
-              disabled={!transfDestino || transfLeads.length === 0 || transferindo}
-              className="ml-auto px-6 py-2.5 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white rounded-xl font-bold shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all disabled:opacity-50"
-            >
-              {transferindo ? 'Transferindo…' : '🔁 Transferir tudo'}
-            </button>
-          </div>
+          transfLeads.length === 0 ? (
+            <p className="text-[12px] text-text-secondary">Esse corretor não tem nenhum lead na carteira.</p>
+          ) : (
+          <>
+            {/* Filtros: busca + etapa (chips com contagem) + marcar/desmarcar filtrados */}
+            <div className="space-y-2 mb-2">
+              <input
+                className={`${inputCls} w-full`}
+                placeholder="🔎 Buscar por nome ou telefone…"
+                value={transfBusca}
+                onChange={e => setTransfBusca(e.target.value)}
+              />
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[9.5px] font-extrabold uppercase tracking-[0.16em] text-text-secondary shrink-0">Etapa</span>
+                <button
+                  type="button"
+                  onClick={() => setTransfEtapaF('')}
+                  className={`px-2 py-1 rounded-full text-[10px] font-bold border transition-colors ${!transfEtapaF ? 'bg-[#E8C547]/15 border-[#E8C547]/60 text-[#FFE9A6]' : 'bg-white/[0.04] border-white/12 text-text-secondary hover:border-white/30'}`}
+                >
+                  Todas {transfLeads.length}
+                </button>
+                {transfEtapas.map(([etapa, n]) => (
+                  <button
+                    key={etapa}
+                    type="button"
+                    onClick={() => setTransfEtapaF(prev => prev === etapa ? '' : etapa)}
+                    className={`px-2 py-1 rounded-full text-[10px] font-bold border transition-colors ${transfEtapaF === etapa ? 'bg-[#E8C547]/15 border-[#E8C547]/60 text-[#FFE9A6]' : 'bg-white/[0.04] border-white/12 text-text-secondary hover:border-white/30'}`}
+                  >
+                    {etapa} <span className="tabular-nums opacity-70">{n}</span>
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const todosSel = transfFiltrados.length > 0 && transfFiltrados.every(l => selTransf.has(l.id));
+                    setSelTransf(prev => {
+                      const n = new Set(prev);
+                      transfFiltrados.forEach(l => { if (todosSel) n.delete(l.id); else n.add(l.id); });
+                      return n;
+                    });
+                  }}
+                  className="ml-auto px-2.5 py-1 rounded-lg text-[11px] font-bold border border-[#E8C547]/40 bg-[#E8C547]/10 text-[#FFE9A6] hover:bg-[#E8C547]/20 transition-colors"
+                >
+                  {transfFiltrados.length > 0 && transfFiltrados.every(l => selTransf.has(l.id)) ? 'Desmarcar' : 'Marcar'} os {transfFiltrados.length} filtrados
+                </button>
+              </div>
+            </div>
+
+            {/* Lista com checkboxes */}
+            <div className="mb-3 max-h-72 overflow-y-auto rounded-xl border border-white/[0.08] bg-white/[0.02] divide-y divide-white/[0.05]">
+              {transfFiltrados.length === 0 ? (
+                <p className="text-sm text-text-secondary p-4">Nada com esses filtros.</p>
+              ) : transfFiltrados.map(l => {
+                const marcado = selTransf.has(l.id);
+                return (
+                  <div
+                    key={l.id}
+                    onClick={() => setSelTransf(prev => { const n = new Set(prev); if (marcado) n.delete(l.id); else n.add(l.id); return n; })}
+                    className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors ${marcado ? 'bg-[#E8C547]/[0.07]' : 'hover:bg-white/[0.03]'}`}
+                  >
+                    <span className={`h-3.5 w-3.5 rounded border grid place-items-center text-[9px] shrink-0 ${marcado ? 'bg-[#E8C547]/20 border-[#E8C547]/60 text-[#FFE9A6]' : 'border-white/20 text-transparent'}`}>✓</span>
+                    <span className="flex-1 min-w-0 text-[13px] font-semibold text-white truncate">{l.nome}</span>
+                    <span className="text-[12px] text-text-secondary tabular-nums shrink-0">{l.telefone}</span>
+                    <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-[#E8C547]/10 border border-[#E8C547]/30 text-[#FFE9A6]">{l.etapa}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Rodapé: contagem + transferir */}
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-[12px] text-white/80 tabular-nums">
+                <b className="text-[#FFE9A6]">{selTransf.size}</b> de {transfLeads.length} selecionado{selTransf.size === 1 ? '' : 's'}
+              </span>
+              <button
+                onClick={transferirCarteira}
+                disabled={!transfDestino || selTransf.size === 0 || transferindo}
+                className="ml-auto px-6 py-2.5 bg-gradient-to-r from-[#FF1E56] to-[#A50D38] hover:brightness-110 text-white rounded-xl font-bold shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)] active:scale-[0.98] transition-all disabled:opacity-50"
+              >
+                {transferindo ? 'Transferindo…' : selTransf.size === transfLeads.length ? '🔁 Transferir a carteira inteira' : `🔁 Transferir ${selTransf.size} selecionado${selTransf.size === 1 ? '' : 's'}`}
+              </button>
+            </div>
+          </>
+          )
         ) : null}
       </div>
       )}
