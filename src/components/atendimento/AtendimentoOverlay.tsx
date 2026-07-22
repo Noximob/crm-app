@@ -143,6 +143,8 @@ interface AtendimentoOverlayProps {
   registrarContato: (via: 'Ligação' | 'WhatsApp') => void;
   onFecharX: () => void;   // ✕ → pendência
   onConcluido: (msg?: string) => void; // ação final ok → fecha
+  /** "Pular" — deixa este em aberto e vai pro PRÓXIMO da fila (só no vigia). */
+  onPular?: () => void;
   /** Histórico de interações do lead — aparece abaixo da pergunta pra ajudar a pensar */
   historico?: { id: string; type: string; notes: string; timestamp: any }[];
   /**
@@ -241,7 +243,7 @@ function Chips({ itens, sel, onSel }: { itens: readonly string[]; sel: string[];
 export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
   const {
     aberto, estadoInicial, nome, telefone, origem, tasks, cadencias, executando, isDemo,
-    executar, registrarContato, onFecharX, onConcluido, historico, rodizioPrimeiroContato,
+    executar, registrarContato, onFecharX, onConcluido, onPular, historico, rodizioPrimeiroContato,
     qualGroups, qualifications, onToggleQual, saveQual, anotacoes, onChangeAnotacoes, saveNotas,
   } = props;
 
@@ -897,6 +899,15 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                       title="Voltar um passo"
                     >
                       ‹ voltar
+                    </button>
+                  )}
+                  {onPular && (
+                    <button
+                      onClick={onPular}
+                      className="px-2 py-0.5 rounded-md text-[11px] font-bold text-[#7DD3FC]/80 hover:text-[#7DD3FC] hover:bg-[#7DD3FC]/10 transition-colors normal-case tracking-normal"
+                      title="Não dá pra resolver agora? Pula pro próximo — este segue esperando no aviso."
+                    >
+                      próxima →
                     </button>
                   )}
                   {!d.noX && (

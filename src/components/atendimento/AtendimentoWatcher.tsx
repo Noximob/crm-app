@@ -347,6 +347,16 @@ export default function AtendimentoWatcher() {
             const nome = (leadAberto.nome || 'O lead').split(' ')[0];
             showToast(`⚠️ ${nome} ficou sem encaminhamento — segue no aviso aí embaixo.`, 'info');
           }}
+          onPular={fila.length > 1 ? () => {
+            // Não dá pra resolver agora: anda pro PRÓXIMO na ordem da fila (dá a
+            // volta), deixando este em aberto — segue no aviso pra resolver depois.
+            modoFila.current = true;
+            const f = filaRef.current.filter(c => c.lead.id !== leadDaPagina);
+            const idx = f.findIndex(c => c.lead.id === leadAberto.id);
+            const proximo = f[(idx + 1) % f.length] ?? f[0];
+            if (proximo && proximo.lead.id !== leadAberto.id) abrir(proximo);
+            else { setAbertoId(null); showToast('Esse é o único atendimento esperando — segue no aviso.', 'info'); }
+          } : undefined}
           onConcluido={(msg) => {
             setAbertoId(null);
             if (msg) showToast(msg, 'success');

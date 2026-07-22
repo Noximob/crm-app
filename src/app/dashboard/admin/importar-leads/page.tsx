@@ -280,6 +280,8 @@ export default function ImportarLigacaoAtivaPage() {
   const [crmDestino, setCrmDestino] = useState('');
   const [redistribuindo, setRedistribuindo] = useState(false);
   const [excluindoCrm, setExcluindoCrm] = useState(false);
+  // Aba ativa da Central de Leads
+  const [secao, setSecao] = useState<'importar' | 'redistribuir' | 'transferir'>('importar');
   // --- Transferência de carteira entre corretores (função da antiga Gestão de Corretores) ---
   const [transfOrigem, setTransfOrigem] = useState('');
   const [transfDestino, setTransfDestino] = useState('');
@@ -660,12 +662,28 @@ export default function ImportarLigacaoAtivaPage() {
 
   const inputCls = 'w-full px-3 py-2 rounded-lg border border-white/10 bg-white/[0.04] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 focus:border-[#FF1E56]/50';
 
+  const pillCls = (ativo: boolean) => `px-4 py-1.5 rounded-full text-[12px] font-extrabold uppercase tracking-wider border transition-colors ${
+    ativo ? 'bg-gradient-to-r from-[#FF1E56] to-[#A50D38] border-[#FF1E56]/60 text-white shadow-[0_8px_24px_-8px_rgba(255,30,86,0.5)]' : 'border-white/10 bg-white/[0.04] text-text-secondary hover:bg-white/[0.08] hover:text-white'
+  }`;
+
   return (
     <div className="min-h-screen py-8 px-4">
+      {/* Cabeçalho + navegação da Central de Leads */}
+      <div className="max-w-2xl mx-auto mb-5">
+        <span className="gx-tag mb-2 inline-flex"><span>Central de Leads</span></span>
+        <h1 className="al-display text-[22px] font-bold text-white uppercase tracking-[0.1em]">Central de Leads</h1>
+        <p className="text-text-secondary text-sm mt-1 mb-3">Importe listas frias, redistribua descartados e passe carteiras entre corretores — tudo num lugar.</p>
+        <div className="flex flex-wrap gap-1.5">
+          <button type="button" onClick={() => setSecao('importar')} className={pillCls(secao === 'importar')}>📥 Importar lista</button>
+          <button type="button" onClick={() => setSecao('redistribuir')} className={pillCls(secao === 'redistribuir')}>♻️ Redistribuir descartados</button>
+          <button type="button" onClick={() => setSecao('transferir')} className={pillCls(secao === 'transferir')}>🔁 Transferir carteira</button>
+        </div>
+      </div>
+
+      {secao === 'importar' && (
       <div className="max-w-2xl mx-auto al-card relative overflow-hidden p-6">
         <div className="absolute inset-x-0 top-0 gx-line" />
-        <span className="gx-tag mb-2 inline-flex"><span>Central de Leads</span></span>
-        <h1 className="al-display text-[20px] font-bold text-white uppercase tracking-[0.1em] mb-2 text-left">Importar Lista de Ligação</h1>
+        <h2 className="al-display text-[18px] font-bold text-white uppercase tracking-[0.1em] mb-2 text-left">Importar Lista de Ligação</h2>
         <p className="text-text-secondary mb-6 text-left text-sm">
           Cole nome, telefone e, se tiver, uma <b className="text-white">anotação</b> na terceira coluna (endereço, condomínio, de onde veio…) — direto do Excel/Sheets. A lista vira a <b className="text-white">tabela da Ligação Ativa</b> do corretor —
           o contato só entra no CRM quando atender e o corretor clicar em &quot;Incluir no CRM&quot;.
@@ -735,9 +753,11 @@ export default function ImportarLigacaoAtivaPage() {
           {loading ? 'Criando lista…' : `Criar lista da Ligação Ativa (${preview.length})`}
         </button>
       </div>
+      )}
 
+      {secao === 'redistribuir' && (<>
       {/* ===== Bolsão de descartados — achar, retirar, realocar ===== */}
-      <div className="max-w-2xl mx-auto al-card relative overflow-hidden p-6 mt-6">
+      <div className="max-w-2xl mx-auto al-card relative overflow-hidden p-6">
         <div className="absolute inset-x-0 top-0 gx-line" />
         <div className="flex items-center justify-between gap-3 mb-1">
           <h2 className="al-display text-[17px] font-bold text-white uppercase tracking-[0.1em]">🧊 Bolsão da Ligação Ativa</h2>
@@ -1071,13 +1091,15 @@ export default function ImportarLigacaoAtivaPage() {
         )}
       </div>
 
-      {/* ===== Transferir carteira entre corretores (veio da antiga Gestão de Corretores) ===== */}
-      <div className="max-w-2xl mx-auto al-card relative overflow-hidden p-6 mt-6">
+      </>)}
+
+      {secao === 'transferir' && (
+      <div className="max-w-2xl mx-auto al-card relative overflow-hidden p-6">
         <div className="absolute inset-x-0 top-0 gx-line" />
-        <h2 className="al-display text-[17px] font-bold text-white uppercase tracking-[0.1em] mb-1">🔁 Transferir carteira</h2>
+        <h2 className="al-display text-[18px] font-bold text-white uppercase tracking-[0.1em] mb-1">🔁 Transferir carteira</h2>
         <p className="text-text-secondary mb-4 text-sm">
           Passa <b className="text-white">todos os leads</b> de um corretor pra outro (férias, saída do time…) —
-          etapa, tarefas e linha do tempo vão juntas. Pra redistribuir só descartados, use o Bolsão do CRM aí em cima.
+          etapa, tarefas e linha do tempo vão juntas. Pra redistribuir só descartados, use a aba Redistribuir descartados.
         </p>
         <div className="flex flex-col sm:flex-row gap-2 mb-3">
           <select className={`${inputCls} flex-1`} value={transfOrigem} onChange={e => setTransfOrigem(e.target.value)}>
@@ -1109,6 +1131,7 @@ export default function ImportarLigacaoAtivaPage() {
           </div>
         ) : null}
       </div>
+      )}
     </div>
   );
 }

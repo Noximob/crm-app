@@ -32,6 +32,12 @@
   .tab:hover{color:var(--ink-text)}
   .tab.active{color:var(--ink);border-bottom-color:var(--brass)}
   .tabpane[hidden]{display:none}
+  /* Modo view lado a lado: Minhas comissões | Calculadora de meta */
+  body.nox-viewmode .tabs{display:none}
+  .nox-view-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px;align-items:start}
+  .nox-view-grid .nox-col-head{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--brass);margin:0 0 12px}
+  .nox-view-grid .tabpane{display:block!important;margin:0}
+  @media(max-width:860px){.nox-view-grid{grid-template-columns:1fr;gap:20px}}
 
   .rules{background:var(--ink-2);border-left:3px solid var(--brass);border-radius:8px;padding:16px 18px;margin-bottom:26px;color:#dfe6ec;font-size:13px}
   .rules summary{cursor:pointer;font-weight:600;color:#f4f1ea;list-style:none;display:flex;align-items:center;gap:8px}
@@ -2330,6 +2336,28 @@ function showViewNotice(msg){
   if(!_notice){ _notice=document.createElement('div'); _notice.style.cssText='background:#fef3c7;border:1px solid #f0d38a;color:#7a5b13;border-radius:10px;padding:12px 16px;margin:0 0 16px;font-size:13.5px;line-height:1.5'; const tabsEl=document.querySelector('.tabs'); if(tabsEl&&tabsEl.parentNode) tabsEl.parentNode.insertBefore(_notice, tabsEl.nextSibling); }
   _notice.textContent=msg||''; _notice.style.display=msg?'':'none';
 }
+let _viewGrid=null;
+/** Coloca "Minhas comissões" (cor) à esquerda e "Calculadora de meta" à direita. */
+function layoutViewSideBySide(showCor){
+  const cor=document.getElementById('tab-cor'), meta=document.getElementById('tab-meta');
+  if(!cor||!meta) return;
+  if(!_viewGrid){
+    _viewGrid=document.createElement('div'); _viewGrid.className='nox-view-grid';
+    const left=document.createElement('div'); left.id='nox-col-cor';
+    const lh=document.createElement('div'); lh.className='nox-col-head'; lh.textContent='Minhas comissões';
+    const right=document.createElement('div');
+    const rh=document.createElement('div'); rh.className='nox-col-head'; rh.textContent='Calculadora de meta';
+    cor.parentNode.insertBefore(_viewGrid, cor);
+    left.appendChild(lh); left.appendChild(cor);
+    right.appendChild(rh); right.appendChild(meta);
+    _viewGrid.appendChild(left); _viewGrid.appendChild(right);
+    document.body.classList.add('nox-viewmode');
+  }
+  cor.hidden=false; meta.hidden=false;
+  const leftCol=document.getElementById('nox-col-cor');
+  if(leftCol){ leftCol.style.display=showCor?'':'none'; }
+  _viewGrid.style.gridTemplateColumns = showCor ? '' : '1fr';
+}
 function refreshView(){
   if(currentMode!=='view') return;
   const tabs=[...document.querySelectorAll('.tab')];
@@ -2347,9 +2375,15 @@ function refreshView(){
   else if(me && me.kind==='broker'){ reportTab='cor'; metaRole=teams[me.ti].brokers[me.bi].type||'corretor'; corSel=`${me.ti}:${me.bi}`; buildCorSelect(); lockSel('corSelect'); renderCor(); shown=['cor','meta']; }
   else if(me && me.kind==='solo'){ reportTab='cor'; metaRole='solo'; corSel=`s:${me.si}`; buildCorSelect(); lockSel('corSelect'); renderCor(); shown=['cor','meta']; }
   else { metaRole='corretor'; shown=['meta']; }
-  tabs.forEach(t=> t.style.display = shown.includes(t.dataset.tab)?'':'none');
-  if(reportTab && !_viewLanded){ _viewLanded=true; const tb=tabs.find(t=>t.dataset.tab===reportTab); if(tb) tb.click(); }
-  else { const cur=document.querySelector('.tab.active'); if(!cur || cur.style.display==='none'){ const first=tabs.find(t=>shown.includes(t.dataset.tab)); if(first) first.click(); } }
+  // Corretor/solo: comissões e calculadora LADO A LADO (não em abas). Gerente
+  // mantém as abas (visão mais complexa da equipe).
+  const doisLados = !(me && me.kind==='mgr');
+  if(doisLados){ layoutViewSideBySide(shown.includes('cor')); renderMeta(); }
+  else {
+    tabs.forEach(t=> t.style.display = shown.includes(t.dataset.tab)?'':'none');
+    if(reportTab && !_viewLanded){ _viewLanded=true; const tb=tabs.find(t=>t.dataset.tab===reportTab); if(tb) tb.click(); }
+    else { const cur=document.querySelector('.tab.active'); if(!cur || cur.style.display==='none'){ const first=tabs.find(t=>shown.includes(t.dataset.tab)); if(first) first.click(); } }
+  }
   loadMyGoal();
   showViewNotice(me ? '' : 'Seu usuário ainda não está vinculado a uma pessoa nas equipes. Você pode usar a calculadora de meta abaixo; peça para a administração vincular você em Comissões para ver seus ganhos.');
 }
@@ -2380,9 +2414,8 @@ document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState=
   const wrap=document.querySelector('.wrap'); if(wrap) wrap.style.padding='12px 20px 60px';
   const tabs=[...document.querySelectorAll('.tab')];
   if(currentMode==='view'){
-    // até saber quem está logado, mostra só a calculadora (evita flash do restante)
-    tabs.forEach(t=> t.style.display=(t.dataset.tab==='meta')?'':'none');
-    const meta=tabs.find(t=>t.dataset.tab==='meta'); if(meta) meta.click();
+    // até saber quem está logado, mostra só a calculadora lado-a-lado (sem col esquerda)
+    layoutViewSideBySide(false);
     setMetricsLocked(true);
     document.addEventListener('nox-ready', refreshView);
   } else { // admin: vê tudo (Administrativa, Gerente, Corretor, Eventos, Calculadora, Relatórios)

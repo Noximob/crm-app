@@ -9,7 +9,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, doc, getDocs, setDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 import { DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
 import { garantirPeriodoSemanaAtual, recalcularPeriodoMeets, listarAgendamentosDoCorretor, type AgendamentoContado } from '@/lib/meetsVisitas';
@@ -72,6 +72,11 @@ export default function AdminMeetsVisitasPage() {
   const [salvandoDatas, setSalvandoDatas] = useState(false);
   const [erroDatas, setErroDatas] = useState('');
 
+  // Quem aparece no COLETIVO (placar/pódio). uids ocultos ficam de fora do
+  // ranking — mas o número pessoal de cada um continua na home dele.
+  const [ocultos, setOcultos] = useState<Set<string>>(new Set());
+  const [ocultosConfig, setOcultosConfig] = useState(false);
+
   // ------------------------------------------------------------------
   // Carga: corretores + períodos (garantindo que a semana atual existe)
   // ------------------------------------------------------------------
@@ -127,6 +132,30 @@ export default function AdminMeetsVisitasPage() {
   };
 
   useEffect(() => { carregarPeriodos(true); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [userData?.imobiliariaId, isEspelhoDemo]);
+
+  // Config de quem aparece no coletivo (lista de uids ocultos)
+  useEffect(() => {
+    if (isEspelhoDemo || !userData?.imobiliariaId) return;
+    getDoc(doc(db, 'meetsVisitasConfig', userData.imobiliariaId))
+      .then((snap) => {
+        const arr = snap.exists() ? (snap.data() as any).ocultos : [];
+        setOcultos(new Set(Array.isArray(arr) ? arr : []));
+      })
+      .catch((e) => console.error('Erro ao carregar config do coletivo:', e));
+  }, [userData?.imobiliariaId, isEspelhoDemo]);
+
+  const toggleOculto = async (uid: string) => {
+    if (guardaDemo() || !userData?.imobiliariaId) return;
+    const novo = new Set(ocultos);
+    if (novo.has(uid)) novo.delete(uid); else novo.add(uid);
+    setOcultos(novo);
+    try {
+      await setDoc(doc(db, 'meetsVisitasConfig', userData.imobiliariaId), { ocultos: Array.from(novo) }, { merge: true });
+    } catch (e) {
+      console.error('Erro ao salvar config do coletivo:', e);
+      showToast('Não foi possível salvar — tente de novo.', 'error');
+    }
+  };
 
   const hoje = hojeYmd();
   const atual = periodos.find((p) => p.inicio <= hoje && hoje <= p.fim) ?? null;
@@ -240,16 +269,18 @@ export default function AdminMeetsVisitasPage() {
 
   const nomeDe = (uid: string) => corretores.find((c) => c.id === uid)?.nome || 'Corretor';
 
-  /** Linhas do placar: todos os corretores (0 incluso), maiores primeiro. */
+  /** Linhas do placar: corretores DO COLETIVO (ocultos ficam de fora), maiores primeiro. */
   const linhasDe = (p: PeriodoMeets) => {
     const cont = p.contadores || {};
     const ids = new Set<string>([...corretores.map((c) => c.id), ...Object.keys(cont)]);
     return Array.from(ids)
+      .filter((id) => !ocultos.has(id))
       .map((id) => ({ id, nome: nomeDe(id), n: cont[id] || 0 }))
       .sort((a, b) => b.n - a.n || a.nome.localeCompare(b.nome, 'pt-BR'));
   };
 
-  const totalDe = (p: PeriodoMeets) => Object.values(p.contadores || {}).reduce((s, v) => s + v, 0);
+  const totalDe = (p: PeriodoMeets) =>
+    Object.entries(p.contadores || {}).reduce((s, [uid, v]) => s + (ocultos.has(uid) ? 0 : v), 0);
 
   // ------------------------------------------------------------------
   // Render
@@ -271,6 +302,45 @@ export default function AdminMeetsVisitasPage() {
         <div className="al-card p-6"><LoadingState label="Carregando placar..." /></div>
       ) : (
         <>
+          {/* Quem aparece no coletivo — tira sócios / conta da imobiliária do ranking */}
+          {!isEspelhoDemo && corretores.length > 0 && (
+            <div className="al-card relative overflow-hidden p-4">
+              <div className="absolute inset-x-0 top-0 gx-line" />
+              <button type="button" onClick={() => setOcultosConfig(v => !v)} className="w-full flex items-center gap-2 text-left">
+                <span className="text-[13px]">👁️</span>
+                <span className="al-display text-[13px] font-bold text-white uppercase tracking-[0.12em]">Quem aparece no coletivo</span>
+                {ocultos.size > 0 && <span className="text-[10px] font-bold text-text-secondary tabular-nums px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/[0.08]">{ocultos.size} fora</span>}
+                <span className={`ml-auto text-[10px] shrink-0 transition-transform ${ocultosConfig ? 'rotate-90 text-[#FF9EB5]' : 'text-white/30'}`}>▶</span>
+              </button>
+              {ocultosConfig && (
+                <>
+                  <p className="text-[10.5px] text-text-secondary mt-2 mb-2.5">
+                    Desmarque quem não deve entrar no ranking (sócios, conta da imobiliária…). O número pessoal de cada um continua na home dele — isso é só a visão coletiva.
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {corretores.map((c) => {
+                      const dentro = !ocultos.has(c.id);
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => toggleOculto(c.id)}
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors ${
+                            dentro
+                              ? 'bg-[#34D399]/10 border-[#34D399]/40 text-emerald-300'
+                              : 'bg-white/[0.03] border-white/12 text-white/40 line-through'
+                          }`}
+                        >
+                          {dentro ? '✓ ' : ''}{c.nome}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
           {/* Período atual — datas (editáveis) + contadores */}
           {!atual ? (
             <div className="al-card relative overflow-hidden p-5">

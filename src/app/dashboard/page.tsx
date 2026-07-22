@@ -914,10 +914,16 @@ export default function DashboardPage() {
 
   // Períodos de Meets & Visitas — criados na Área do administrador (tempo real)
   const [mvPeriodos, setMvPeriodos] = useState<any[]>([]);
+  // Quem está fora do coletivo (config da tela de Meets & Visitas do admin)
+  const [mvOcultos, setMvOcultos] = useState<Set<string>>(new Set());
   const mvAutoRecalcFeito = useRef(false);
   useEffect(() => {
     if (isEspelhoDemo || !userData?.imobiliariaId) return;
     const imobId = userData.imobiliariaId;
+    const unsubCfg = onSnapshot(firestoreDoc(db, 'meetsVisitasConfig', imobId), (snap) => {
+      const arr = snap.exists() ? (snap.data() as any).ocultos : [];
+      setMvOcultos(new Set(Array.isArray(arr) ? arr : []));
+    }, () => {});
     const qMv = query(collection(db, 'meetsVisitas'), where('imobiliariaId', '==', imobId));
     const unsub = onSnapshot(qMv, (snap) => {
       const lista = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as any[];
@@ -932,7 +938,7 @@ export default function DashboardPage() {
           .catch(() => undefined);
       }
     });
-    return () => unsub();
+    return () => { unsub(); unsubCfg(); };
   }, [userData?.imobiliariaId, isEspelhoDemo]);
 
   function calcularVariacao(atual: string, anterior: string) {
@@ -1016,14 +1022,17 @@ export default function DashboardPage() {
     .filter((p) => p.inicio && p.fim && p.inicio <= ymdHoje && ymdHoje <= p.fim)
     .sort((a, b) => (b.inicio || '').localeCompare(a.inicio || ''))[0] || null;
   const contadoresMeets: Record<string, number> = (periodoMeets?.contadores as Record<string, number>) || {};
+  // Coletivo (pódio/posição) exclui quem o admin tirou do ranking; o número
+  // pessoal (meusMeets) sempre aparece, mesmo pra quem está fora do coletivo.
+  const contadoresColetivo = Object.entries(contadoresMeets).filter(([id]) => !mvOcultos.has(id));
   const podioMeets: { nome: string; qtd: number }[] = isEspelhoDemo
     ? [{ nome: 'Renan', qtd: 12 }, { nome: 'Toni', qtd: 9 }, { nome: 'Breno', qtd: 7 }]
-    : Object.entries(contadoresMeets)
+    : contadoresColetivo
         .map(([id, q]) => ({ nome: nomesEquipe[id] || 'Corretor', qtd: Number(q) || 0 }))
         .sort((a, b) => b.qtd - a.qtd)
         .slice(0, 3);
   const meusMeets = isEspelhoDemo ? 5 : Number(contadoresMeets[currentUser?.uid || ''] || 0);
-  const minhaPosMeets = isEspelhoDemo ? 4 : Object.values(contadoresMeets).filter((q) => Number(q) > meusMeets).length + 1;
+  const minhaPosMeets = isEspelhoDemo ? 4 : contadoresColetivo.filter(([, q]) => Number(q) > meusMeets).length + 1;
   const liderMeets = Math.max(podioMeets[0]?.qtd || 0, meusMeets, 1);
   const qtdMinhaMeets = (p: any) => Number(p?.contadores?.[currentUser?.uid || ''] || 0);
   const ymdAtras = (dias: number) => { const d = new Date(currentTime); d.setDate(d.getDate() - dias); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };

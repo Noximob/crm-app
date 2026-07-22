@@ -314,15 +314,6 @@ export default function LeadDetailPage() {
         return true;
     }, [currentUser, lead, isEspelhoDemo, readOnly, executandoCircuito, tasks, tasksLoaded, userData?.imobiliariaId]);
 
-    // Ajuste manual de etapa — o circuito conduz sozinho, mas dá pra mover na mão se precisar
-    const handleStageChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const novaEtapa = e.target.value;
-        await executarCircuito({
-            novaEtapa,
-            interacao: { type: 'Etapa', notes: `↷ Etapa alterada manualmente para ${novaEtapa}` },
-        });
-    };
-
     // Registro avulso de tentativa de contato (botões "Liguei"/"Chamei no WhatsApp")
     const registrarContato = useCallback((via: 'Ligação' | 'WhatsApp') => {
         if (!currentUser || !lead || isEspelhoDemo || readOnly) return;
@@ -560,20 +551,11 @@ export default function LeadDetailPage() {
                                 <span className={`h-2 w-2 rounded-full shrink-0 ${getTaskStatusColor(taskStatus)}`} title={taskStatus}></span>
                             </div>
                             <div className="flex items-center gap-2 flex-wrap">
-                                {readOnly ? (
-                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#FF1E56]/10 border border-[#FF1E56]/35 text-[#FF7A97]">{etapaAtual}</span>
-                                ) : (
-                                  <select
-                                    id="lead-situation"
-                                    value={etapaAtual}
-                                    onChange={handleStageChange}
-                                    disabled={executandoCircuito}
-                                    className="px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider bg-[#FF1E56]/10 border border-[#FF1E56]/35 rounded-full text-[#FF7A97] focus:outline-none focus:ring-2 focus:ring-[#FF1E56]/50 [&>option]:bg-[#12101a] [&>option]:text-white disabled:opacity-60"
-                                    title="O circuito move sozinho pelas respostas — aqui é o ajuste manual"
-                                  >
-                                    {(stages.includes(etapaAtual) ? stages : [etapaAtual, ...stages]).map(s => (<option key={s} value={s}>{s}</option>))}
-                                  </select>
-                                )}
+                                {/* Etapa é só LEITURA — o circuito conduz pelo momento do cliente */}
+                                <span
+                                  className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#FF1E56]/10 border border-[#FF1E56]/35 text-[#FF7A97]"
+                                  title="O circuito move sozinho pelas respostas do cliente"
+                                >{etapaAtual}</span>
                                 {rodizioPrimeiroContato && (
                                     <span
                                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#7DD3FC]/10 border border-[#7DD3FC]/35 text-[#7DD3FC]"

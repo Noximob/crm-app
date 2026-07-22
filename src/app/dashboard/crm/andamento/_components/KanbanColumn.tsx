@@ -1,6 +1,4 @@
 import React from 'react';
-import { useDroppable } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import LeadCard from './LeadCard';
 import { Lead } from '@/types';
 
@@ -11,34 +9,17 @@ interface KanbanColumnProps {
   corEtapa?: string;
 }
 
-export default function KanbanColumn({ id, title, leads, corEtapa }: KanbanColumnProps) {
+// Coluna do kanban — SÓ leitura (o circuito conduz). Header fixo + lista com
+// scroll VERTICAL próprio (h-full herdado da linha, que só rola na horizontal).
+export default function KanbanColumn({ title, leads, corEtapa }: KanbanColumnProps) {
   const cor = corEtapa || '#FF1E56';
-  const { setNodeRef, isOver } = useDroppable({ 
-    id: `column-${id}`,
-    data: {
-      type: 'column',
-      columnId: id
-    }
-  });
-
-  // Droppable específico para colunas vazias
-  const { setNodeRef: setEmptyRef, isOver: isOverEmpty } = useDroppable({
-    id: `empty-${id}`,
-    data: {
-      type: 'empty-column',
-      columnId: id
-    }
-  });
-
   return (
-    <div className="kanban-col flex flex-col flex-shrink-0 w-40 al-card relative overflow-hidden transition-all duration-200 min-h-[340px] mx-1">
-      {/* Barra da etapa no topo */}
+    <div className="kanban-col flex flex-col flex-shrink-0 w-40 h-full al-card relative overflow-hidden mx-1">
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[2px]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[2px] z-10"
         style={{ backgroundColor: cor, boxShadow: `0 0 12px ${cor}` }}
       />
-      {/* Header da coluna */}
-      <div className="kanban-col-head flex items-center justify-between px-4 py-3 border-b border-white/[0.08]">
+      <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/[0.08]">
         <h3 className="al-display text-[11px] font-bold text-white uppercase tracking-[0.14em] truncate">
           {title}
         </h3>
@@ -47,34 +28,15 @@ export default function KanbanColumn({ id, title, leads, corEtapa }: KanbanColum
         </span>
       </div>
 
-      {/* Área de conteúdo da coluna */}
-      <div className="flex-grow min-h-[100px] p-3 space-y-3 flex flex-col items-center relative">
+      <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
         {leads.length > 0 ? (
-          // Se há leads, usar a área normal droppable
-          <div 
-            ref={setNodeRef}
-            className={`w-full space-y-3 ${
-              isOver ? 'ring-2 ring-[#FF1E56]/50 rounded-lg' : ''
-            }`}
-          >
-            <SortableContext id={`sortable-${id}`} items={leads.map(lead => lead.id)} strategy={verticalListSortingStrategy}>
-              {leads.map(lead => (
-                <LeadCard key={lead.id} lead={lead} corEtapa={cor} />
-              ))}
-            </SortableContext>
-          </div>
+          leads.map(lead => <LeadCard key={lead.id} lead={lead} corEtapa={cor} />)
         ) : (
-          // Se não há leads, usar área de drop vazia específica
-          <div 
-            ref={setEmptyRef}
-            className={`w-full h-20 border-2 border-dashed border-white/10 rounded-lg flex items-center justify-center bg-white/[0.02] transition-all duration-200 ${
-              isOverEmpty ? 'ring-2 ring-[#FF1E56]/50 border-[#FF1E56]/60' : ''
-            }`}
-          >
-            <span className="text-xs text-text-secondary">Solte aqui</span>
+          <div className="w-full h-20 border-2 border-dashed border-white/10 rounded-lg flex items-center justify-center bg-white/[0.02]">
+            <span className="text-xs text-text-secondary">Sem leads aqui</span>
           </div>
         )}
       </div>
     </div>
   );
-} 
+}

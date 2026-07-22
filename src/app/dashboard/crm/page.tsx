@@ -427,59 +427,6 @@ export default function CrmPage() {
         }
     };
 
-    // Exporta os leads atualmente filtrados (lista completa pós-filtros/busca, não só a página atual) para CSV
-    const handleExportCsv = () => {
-        if (filteredLeads.length === 0) return;
-
-        const escapeCsv = (value: string) => {
-            let v = value ?? '';
-            // Proteção contra injeção de fórmula em planilhas (=, +, -, @ no início)
-            if (/^[=+\-@]/.test(v)) v = `'${v}`;
-            return /[";\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
-        };
-
-        const formatCreatedAt = (createdAt: any): string => {
-            if (!createdAt) return '';
-            let d: Date | null = null;
-            if (typeof createdAt.toDate === 'function') {
-                d = createdAt.toDate();
-            } else if (createdAt instanceof Date) {
-                d = createdAt;
-            } else if (typeof createdAt === 'string' || typeof createdAt === 'number') {
-                const parsed = new Date(createdAt);
-                if (!isNaN(parsed.getTime())) d = parsed;
-            }
-            return d ? d.toLocaleString('pt-BR') : '';
-        };
-
-        const header = ['Nome', 'Telefone', 'WhatsApp', 'Etapa', 'Status da tarefa', 'Origem', 'Criado em'];
-        const rows = filteredLeads.map(lead => [
-            lead.nome || '',
-            lead.telefone || '',
-            lead.whatsapp || (lead.telefone ? lead.telefone.replace(/\D/g, '') : ''),
-            normalizeEtapa(lead.etapa) || '',
-            lead.taskStatus || '',
-            lead.origem || '',
-            formatCreatedAt(lead.createdAt),
-        ]);
-
-        // BOM UTF-8 + separador ";" para abrir com acentuação correta no Excel pt-BR
-        const csv = '﻿' + [header, ...rows].map(r => r.map(escapeCsv).join(';')).join('\r\n');
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-
-        const today = new Date();
-        const fileName = `leads-${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}.csv`;
-
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-    };
-
     const activeAdvancedFilterCount = Object.values(advancedFilters).reduce((count, options: string[]) => count + options.length, 0);
 
     // Status de tarefa para filtros rápidos (mesma ordem e lógica do dashboard)
@@ -652,15 +599,6 @@ export default function CrmPage() {
                                         {activeAdvancedFilterCount}
                                     </span>
                                 )}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleExportCsv}
-                                disabled={totalFiltered === 0}
-                                title="Exportar os leads filtrados para CSV"
-                                className="px-3 py-1.5 text-xs font-semibold text-text-secondary border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                            >
-                                Exportar CSV
                             </button>
                             {(searchTerm.trim() || activeFilter || activeTaskFilter || activeOrigemFilter || activeAdvancedFilterCount > 0) && (
                                 <button
