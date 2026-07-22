@@ -848,9 +848,21 @@ function pegarCampoDe(fieldData: MetaFieldData[], ...nomes: string[]): string {
     return "";
 }
 
+/**
+ * Detecta leads criados pela Lead Ads Testing Tool do Meta — eles vêm com
+ * email "test@meta.com" e valores no formato "<test lead: dummy data for ...>".
+ * Não devem ser distribuídos pra equipe.
+ */
+function ehLeadDeTeste(fieldData: MetaFieldData[]): boolean {
+    return fieldData.some((f) => {
+        const v = (f.values?.[0] || "").toLowerCase();
+        return v === "test@meta.com" || v.includes("test lead: dummy data");
+    });
+}
+
 export const importarLeadsExistentes = onCall(
     {secrets: [META_PAGE_TOKEN]},
-    async (request): Promise<{ok: boolean; motivo?: string; importados?: number; jaExistiam?: number; formularios?: number}> => {
+    async (request): Promise<{ok: boolean; motivo?: string; importados?: number; jaExistiam?: number; testes?: number; formularios?: number}> => {
         if (!request.auth) {
             throw new HttpsError("unauthenticated", "É preciso estar logado.");
         }
@@ -879,6 +891,7 @@ export const importarLeadsExistentes = onCall(
 
             let importados = 0;
             let jaExistiam = 0;
+            let testes = 0;
             const MAX = 500; // trava de segurança
 
             for (const form of forms) {
@@ -898,6 +911,7 @@ export const importarLeadsExistentes = onCall(
                         const existe = await db().collection("adsLeads").where("metaLeadId", "==", metaLeadId).limit(1).get();
                         if (!existe.empty) { jaExistiam++; continue; }
                         const fieldData = (l.field_data || []) as MetaFieldData[];
+                        if (ehLeadDeTeste(fieldData)) { testes++; continue; } // pula leads de teste do Meta
                         const nome = pegarCampoDe(fieldData, "full_name", "nome", "name") || "Lead Meta";
                         const telefone = pegarCampoDe(fieldData, "phone", "telefone", "whatsapp", "celular");
                         await criarEDistribuir({
@@ -917,8 +931,8 @@ export const importarLeadsExistentes = onCall(
                 }
             }
 
-            logger.info("importarLeadsExistentes: concluído", {pageId, formularios: forms.length, importados, jaExistiam});
-            return {ok: true, importados, jaExistiam, formularios: forms.length};
+            logger.info("importarLeadsExistentes: concluído", {pageId, formularios: forms.length, importados, jaExistiam, testes});
+            return {ok: true, importados, jaExistiam, testes, formularios: forms.length};
         } catch (error: any) {
             const fb = error?.response?.data?.error;
             logger.warn("importarLeadsExistentes: falha no Graph", {code: fb?.code, msg: fb?.message});

@@ -268,10 +268,14 @@ export default function AdminDistribuicaoAdsPage() {
       const r = await fn({});
       const d = (r.data || {}) as any;
       if (d.ok) {
+        const extras = [
+          d.jaExistiam ? `${d.jaExistiam} já estavam aqui` : '',
+          d.testes ? `${d.testes} de teste ignorado${d.testes === 1 ? '' : 's'}` : '',
+        ].filter(Boolean).join(', ');
         if (d.importados > 0) {
-          showToast(`${d.importados} lead${d.importados === 1 ? '' : 's'} importado${d.importados === 1 ? '' : 's'} do formulário e ${d.importados === 1 ? 'distribuído' : 'distribuídos'} na escala!${d.jaExistiam ? ` (${d.jaExistiam} já estavam aqui)` : ''}`, 'success');
+          showToast(`${d.importados} lead${d.importados === 1 ? '' : 's'} importado${d.importados === 1 ? '' : 's'} do formulário e ${d.importados === 1 ? 'distribuído' : 'distribuídos'} na escala!${extras ? ` (${extras})` : ''}`, 'success');
         } else {
-          showToast(d.jaExistiam > 0 ? `Nenhum lead novo — os ${d.jaExistiam} do formulário já estavam aqui. ✓` : 'Nenhum lead encontrado nos formulários da página ainda.', 'info');
+          showToast(extras ? `Nenhum lead novo — ${extras}. ✓` : 'Nenhum lead encontrado nos formulários da página ainda.', 'info');
         }
       } else {
         const msg = d.motivo === 'sem_token' ? 'Token da página não configurado.'
