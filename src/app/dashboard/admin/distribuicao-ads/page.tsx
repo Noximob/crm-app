@@ -16,6 +16,8 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { app } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
@@ -228,6 +230,28 @@ export default function AdminDistribuicaoAdsPage() {
 
   // Filtro por campanha (clica no painel de campanhas e filtra as listas)
   const [filtroCampanha, setFiltroCampanha] = useState<string | null>(null);
+
+  // Campanhas ATIVAS puxadas do Meta (mostra rodando mesmo sem lead ainda)
+  const [campanhasMeta, setCampanhasMeta] = useState<{ nome: string; objetivo: string }[]>([]);
+  const [metaStatus, setMetaStatus] = useState<'idle' | 'carregando' | 'ok' | 'sem_permissao_ads' | 'sem_token' | 'erro'>('idle');
+  useEffect(() => {
+    if (isEspelhoDemo) {
+      // Demo: finge que a Itajuba Casamar está ativa sem lead ainda
+      setCampanhasMeta([{ nome: 'Camp. Leads Formulário [Itajuba Casamar]', objetivo: 'OUTCOME_LEADS' }, { nome: 'Viverde breno Beto', objetivo: 'OUTCOME_ENGAGEMENT' }]);
+      setMetaStatus('ok');
+      return;
+    }
+    if (!userData?.imobiliariaId) return;
+    setMetaStatus('carregando');
+    const fn = httpsCallable(getFunctions(app), 'listarCampanhasMeta');
+    fn({})
+      .then((r) => {
+        const d = (r.data || {}) as any;
+        if (d.ok) { setCampanhasMeta((d.campanhas || []).map((c: any) => ({ nome: c.nome, objetivo: c.objetivo }))); setMetaStatus('ok'); }
+        else setMetaStatus(d.motivo || 'erro');
+      })
+      .catch((e) => { console.error('listarCampanhasMeta falhou:', e); setMetaStatus('erro'); });
+  }, [userData?.imobiliariaId, isEspelhoDemo]);
 
   // Relógio do countdown (só roda quando há lead ao vivo)
   const [nowMs, setNowMs] = useState(Date.now());
@@ -646,16 +670,25 @@ export default function AdminDistribuicaoAdsPage() {
     aoVivo.forEach((l) => add(l, 'aovivo'));
     naoAtendidos.forEach((l) => add(l, 'nao'));
     aceitos.forEach((l) => add(l, 'aceito'));
+    // Campanhas ATIVAS no Meta que ainda não têm lead entram com total 0
+    const nomesMeta = new Set(campanhasMeta.map((c) => c.nome.trim()));
+    campanhasMeta.forEach((cm) => {
+      const nome = cm.nome.trim();
+      if (!nome || mapa.has(nome)) return;
+      mapa.set(nome, { nome, origem: cm.objetivo === 'OUTCOME_LEADS' ? 'meta-form' : 'meta-whatsapp', total: 0, aceitos: 0, naoAtendidos: 0, aoVivo: 0, somaTempo: 0, nTempo: 0, ultimoMs: 0, anuncios: new Set<string>() });
+    });
     return Array.from(mapa.values())
       .map((c) => ({
         ...c,
         taxaAceite: c.aceitos + c.naoAtendidos > 0 ? Math.round((c.aceitos / (c.aceitos + c.naoAtendidos)) * 100) : null,
         tempoMedio: c.nTempo > 0 ? c.somaTempo / c.nTempo : null,
-        ativa: c.ultimoMs > 0 && Date.now() - c.ultimoMs < ATIVA_MS,
+        // status REAL do Meta quando conhecido; senão cai na recência de lead
+        ativa: nomesMeta.size > 0 ? nomesMeta.has(c.nome) : (c.ultimoMs > 0 && Date.now() - c.ultimoMs < ATIVA_MS),
+        ativaMeta: nomesMeta.has(c.nome),
       }))
       .sort((a, b) => (b.ativa ? 1 : 0) - (a.ativa ? 1 : 0) || b.total - a.total);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aoVivo, naoAtendidos, aceitos]);
+  }, [aoVivo, naoAtendidos, aceitos, campanhasMeta]);
 
   // Aplica o filtro de campanha nas 3 listas
   const bateCampanha = (l: AdsLead) => !filtroCampanha || ((l.campanhaNome || '').trim() || 'Sem campanha') === filtroCampanha;
@@ -839,9 +872,19 @@ export default function AdminDistribuicaoAdsPage() {
                 <button type="button" onClick={() => setFiltroCampanha(null)} className="ml-auto text-[11px] font-bold text-[#FF9EB5] border border-[#FF1E56]/30 bg-[#FF1E56]/[0.06] hover:bg-[#FF1E56]/15 rounded-lg px-2.5 py-1 transition-colors">✕ Ver todas</button>
               )}
             </div>
-            <p className="text-[10.5px] text-text-secondary mb-3">De onde vêm os leads. Clique numa campanha pra filtrar as listas abaixo. 🟢 Ativa = recebeu lead nas últimas 72h.</p>
+            <p className="text-[10.5px] text-text-secondary mb-2">
+              De onde vêm os leads. Clique numa campanha pra filtrar as listas abaixo.
+              {metaStatus === 'ok'
+                ? ' 🟢 Ativa = ligada no Meta agora (aparece mesmo sem lead ainda).'
+                : ' 🟢 Ativa = recebeu lead nas últimas 72h.'}
+            </p>
+            {(metaStatus === 'sem_permissao_ads' || metaStatus === 'sem_token') && (
+              <p className="text-[10.5px] text-[#FFE9A6]/90 mb-2 rounded-lg border border-[#E8C547]/30 bg-[#E8C547]/[0.05] px-3 py-2">
+                ⚠️ Pra mostrar as campanhas ativas <b>sem lead ainda</b>, falta conectar o acesso de leitura de anúncios do Meta (token com <code>ads_read</code>). Por enquanto, só aparecem campanhas que já trouxeram lead.
+              </p>
+            )}
             {campanhas.length === 0 ? (
-              <p className="text-[12px] text-text-secondary text-center py-3">Nenhum lead de anúncio ainda — quando chegar, as campanhas aparecem aqui.</p>
+              <p className="text-[12px] text-text-secondary text-center py-3">{metaStatus === 'carregando' ? 'Buscando campanhas…' : 'Nenhuma campanha ainda — quando um anúncio rodar ou trouxer lead, aparece aqui.'}</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {campanhas.map((c) => {
@@ -861,14 +904,22 @@ export default function AdminDistribuicaoAdsPage() {
                         <span className="flex-1 min-w-0 truncate text-[13px] font-bold text-white" title={c.nome}>{c.nome}</span>
                         <span className="al-display text-[18px] font-bold text-[#FFE9A6] tabular-nums shrink-0">{c.total}</span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10.5px] text-text-secondary">
-                        <span className={ORIGEM_CHIP[c.origem] ? 'text-white/60' : ''}>{ORIGEM_LABEL[c.origem] || c.origem}</span>
-                        <span className="text-white/20">·</span>
-                        <span>✅ {c.aceitos} aceito{c.aceitos === 1 ? '' : 's'}</span>
-                        {c.taxaAceite !== null && <><span className="text-white/20">·</span><span>{c.taxaAceite}% aceite</span></>}
-                        {c.tempoMedio !== null && <><span className="text-white/20">·</span><span className="tabular-nums">{fmtTempoSeg(c.tempoMedio)}</span></>}
-                      </div>
-                      <p className="text-[9.5px] text-white/30 mt-1 tabular-nums">último lead: {rel}{c.anuncios.size > 0 ? ` · ${c.anuncios.size} anúncio${c.anuncios.size > 1 ? 's' : ''}` : ''}</p>
+                      {c.total === 0 ? (
+                        <div className="text-[10.5px] text-emerald-300/80">
+                          Rodando no Meta · <span className="text-white/50">nenhum lead ainda</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10.5px] text-text-secondary">
+                          <span className={ORIGEM_CHIP[c.origem] ? 'text-white/60' : ''}>{ORIGEM_LABEL[c.origem] || c.origem}</span>
+                          <span className="text-white/20">·</span>
+                          <span>✅ {c.aceitos} aceito{c.aceitos === 1 ? '' : 's'}</span>
+                          {c.taxaAceite !== null && <><span className="text-white/20">·</span><span>{c.taxaAceite}% aceite</span></>}
+                          {c.tempoMedio !== null && <><span className="text-white/20">·</span><span className="tabular-nums">{fmtTempoSeg(c.tempoMedio)}</span></>}
+                        </div>
+                      )}
+                      {c.total > 0 && (
+                        <p className="text-[9.5px] text-white/30 mt-1 tabular-nums">último lead: {rel}{c.anuncios.size > 0 ? ` · ${c.anuncios.size} anúncio${c.anuncios.size > 1 ? 's' : ''}` : ''}</p>
+                      )}
                     </button>
                   );
                 })}

@@ -22,6 +22,7 @@ export {
     expirarAdsLeads,
     redistribuirAdsLead,
     testeCriarAdsLead,
+    listarCampanhasMeta,
 } from "./distribuicaoAds";
 
 // Define a estrutura esperada dos dados para clareza

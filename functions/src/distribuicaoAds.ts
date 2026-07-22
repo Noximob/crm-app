@@ -40,8 +40,14 @@ import axios from "axios";
 const META_PAGE_TOKEN = defineSecret("META_PAGE_TOKEN");
 const META_VERIFY_TOKEN = defineSecret("META_VERIFY_TOKEN");
 const TEST_SECRET = defineSecret("TEST_SECRET");
+// Token com permissão de LEITURA de anúncios (ads_read). Se não existir, cai no
+// token da página (que provavelmente NÃO lê campanhas — aí a função avisa).
+const META_ADS_TOKEN = defineSecret("META_ADS_TOKEN");
 
 const GRAPH_BASE = "https://graph.facebook.com/v21.0";
+// Conta de anúncios padrão (NoxImoveis, portfólio TEMERÁRIO). Pode ser
+// sobrescrita em distribuicaoAds/config.metaAdAccountId.
+const DEFAULT_AD_ACCOUNT_ID = "2451035921773388";
 
 const CONFIG_REF_PATH = "distribuicaoAds/config";
 
@@ -725,6 +731,78 @@ export const testeCriarAdsLead = onRequest(
         } catch (error) {
             logger.error("testeCriarAdsLead: erro", error);
             response.status(500).json({erro: error instanceof Error ? error.message : String(error)});
+        }
+    },
+);
+
+// ---------------------------------------------------------------------------
+// 7) Campanhas do Meta (status ATIVO) — pra mostrar campanhas rodando mesmo
+//    sem lead ainda. Lê a conta de anúncios via Graph API.
+// ---------------------------------------------------------------------------
+
+interface CampanhaMeta {
+    id: string;
+    nome: string;
+    objetivo: string;
+    status: string; // effective_status: ACTIVE | PAUSED | ...
+}
+
+/**
+ * Callable (admin): lista as campanhas ATIVAS da conta de anúncios do Meta.
+ * Usa META_ADS_TOKEN (token com ads_read); se não houver, tenta META_PAGE_TOKEN
+ * e, se o token não tiver permissão de anúncios, devolve {ok:false, motivo}
+ * pra UI orientar a conectar o acesso — nunca lança por falta de permissão.
+ */
+export const listarCampanhasMeta = onCall(
+    {secrets: [META_ADS_TOKEN, META_PAGE_TOKEN]},
+    async (request): Promise<{ok: boolean; motivo?: string; contaId?: string; campanhas?: CampanhaMeta[]}> => {
+        if (!request.auth) {
+            throw new HttpsError("unauthenticated", "É preciso estar logado.");
+        }
+        const chamadorSnap = await db().collection("usuarios").doc(request.auth.uid).get();
+        const chamador = chamadorSnap.data() || {};
+        const ehAdmin = chamador.tipoConta === "imobiliaria" || chamador.permissoes?.admin === true;
+        if (!ehAdmin) {
+            throw new HttpsError("permission-denied", "Apenas administradores.");
+        }
+
+        const token = META_ADS_TOKEN.value() || process.env.META_ADS_TOKEN ||
+            META_PAGE_TOKEN.value() || process.env.META_PAGE_TOKEN || "";
+        if (!token) return {ok: false, motivo: "sem_token"};
+
+        // Conta de anúncios: config da imobiliária → padrão conhecido
+        const configSnap = await db().doc(CONFIG_REF_PATH).get();
+        const config = (configSnap.data() || {}) as Partial<DistribuicaoConfig> & {metaAdAccountId?: string};
+        const contaId = (config.metaAdAccountId || DEFAULT_AD_ACCOUNT_ID).replace(/^act_/, "");
+
+        try {
+            const resp = await axios.get(`${GRAPH_BASE}/act_${contaId}/campaigns`, {
+                params: {
+                    access_token: token,
+                    fields: "name,effective_status,objective",
+                    // só as que estão rodando de fato
+                    effective_status: JSON.stringify(["ACTIVE"]),
+                    limit: 200,
+                },
+                timeout: 15000,
+            });
+            const data = (resp.data?.data || []) as any[];
+            const campanhas: CampanhaMeta[] = data.map((c) => ({
+                id: String(c.id || ""),
+                nome: String(c.name || ""),
+                objetivo: String(c.objective || ""),
+                status: String(c.effective_status || ""),
+            }));
+            return {ok: true, contaId, campanhas};
+        } catch (error: any) {
+            const fb = error?.response?.data?.error;
+            const code = fb?.code;
+            logger.warn("listarCampanhasMeta: falha no Graph", {code, msg: fb?.message});
+            // 200 (permissão) / 190 (token) → orientar a conectar; resto = erro genérico
+            if (code === 200 || code === 10 || code === 190 || code === 2635) {
+                return {ok: false, motivo: "sem_permissao_ads"};
+            }
+            return {ok: false, motivo: "erro_graph"};
         }
     },
 );
