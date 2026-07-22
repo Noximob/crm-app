@@ -220,7 +220,7 @@ export default function AtendimentoWatcher() {
       return false;
     }
     if (res.transferiuPara && res.transferiuPara !== currentUser.uid) {
-      showToast('O lead foi pro bolsão do gestor.', 'info');
+      showToast('O lead foi pro bolsão do administrador.', 'info');
     }
     return true;
   }, [leadAberto, currentUser, executando, userData?.imobiliariaId]);
@@ -324,6 +324,9 @@ export default function AtendimentoWatcher() {
 
       {leadAberto && (
         <AtendimentoOverlay
+          // key por lead: trocar de lead no "próxima →" REMONTA o overlay,
+          // zerando pilha/estado/chips do lead anterior (senão vazam pro próximo).
+          key={abertoId}
           aberto={!!abertoId}
           estadoInicial={estadoInicial}
           nome={leadAberto.nome}

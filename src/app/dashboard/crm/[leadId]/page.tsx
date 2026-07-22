@@ -15,7 +15,7 @@ import AtendimentoOverlay, { perguntaDoLead, fmtDataHora, type AcaoCircuito, typ
 import { executarAcaoCircuito } from '@/lib/circuitoActions';
 import { QUALIFICATION_QUESTIONS } from '@/lib/qualificacao';
 import { getDemoLeadById, getDemoInteractions } from '@/lib/espelho/demoData';
-import { CADENCIAS_PADRAO, carregarCadencias, ETAPA_DESCARTADO, type CadenciasFunil } from '@/lib/circuito';
+import { CADENCIAS_PADRAO, carregarCadencias, etapaAposAcao, ETAPA_DESCARTADO, ETAPA_MEET_FEITO, ETAPA_VISITA_FEITA, type CadenciasFunil } from '@/lib/circuito';
 import { showToast } from '@/components/ui/toast';
 import LoadingState from '@/components/ui/LoadingState';
 
@@ -265,7 +265,7 @@ export default function LeadDetailPage() {
         setEstadoForcado(null);
         setFechouNoX(true);
         const primeiroNome = (lead?.nome || 'O lead').split(' ')[0];
-        showToast(`⚠️ ${primeiroNome} ficou sem encaminhamento. Resolva pra voltar a receber leads novos.`, 'info');
+        showToast(`⚠️ ${primeiroNome} ficou sem próximo passo — resolve na faixa amarela aqui do lead.`, 'info');
     };
 
     const handleConcluido = (msg?: string) => {
@@ -438,11 +438,25 @@ export default function LeadDetailPage() {
         const tarefasPendentes: TarefaPendente[] = tasks
             .filter(t => t.id !== taskId)
             .map(t => ({ id: t.id, description: t.description, type: t.type, dueDate: t.dueDate }));
-        batch.update(doc(db, 'leads', leadId), { tarefasPendentes });
         // Concluir um Meet/Visita = "aconteceu" — narra no vocabulário do circuito
         // (o relatório conta '✅ ... realizado') e o pop-up de "aconteceu?" não precisa repetir a pergunta.
         const tarefa = tasks.find(t => t.id === taskId);
         const eventoFeito = status === 'concluída' && (tarefa?.type === 'Meet' || tarefa?.type === 'Visita') ? tarefa.type : null;
+        // Move a etapa pela MESMA catraca do pop-up "Aconteceu ✓" (senão o funil
+        // mente: histórico diz realizado, coluna fica em Agendado).
+        const leadUpdate: Record<string, any> = { tarefasPendentes };
+        if (eventoFeito && lead) {
+            const alvo = eventoFeito === 'Meet' ? ETAPA_MEET_FEITO : ETAPA_VISITA_FEITA;
+            const atualNorm = normalizeEtapa(lead.etapa);
+            const etapaFinal = etapaAposAcao(atualNorm, alvo);
+            if (etapaFinal !== atualNorm) {
+                leadUpdate.etapa = etapaFinal;
+                leadUpdate['circuito.desde'] = serverTimestamp();
+            } else if (lead.etapa !== etapaFinal) {
+                leadUpdate.etapa = etapaFinal; // rótulo legado → grava o nome canônico sem resetar "desde"
+            }
+        }
+        batch.update(doc(db, 'leads', leadId), leadUpdate);
         const interactionData: any = {
             type: eventoFeito ?? (status === 'concluída' ? 'Tarefa Concluída' : 'Tarefa Cancelada'),
             notes: eventoFeito

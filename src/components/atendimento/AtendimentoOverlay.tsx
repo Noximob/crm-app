@@ -49,28 +49,34 @@ export interface AcaoCircuito {
   transferirParaGestor?: boolean;
 }
 
-/** Estados do fluxo — espelham as funções do protótipo. */
+/** Estados do fluxo — cada um é um pop-up; flags carregam contexto entre eles. */
 export type EstadoFluxo =
   | { t: 'entrada' }
   | { t: 'ligar' }
-  | { t: 'atendeu' }
-  | { t: 'followQ' }
   | { t: 'proximaAcao'; concluirTaskId?: string; cancelarTaskId?: string; contato?: boolean }
-  | { t: 'quando'; concluirTaskId?: string; cancelarTaskId?: string; tentativa?: boolean }
+  | {
+      t: 'quando';
+      concluirTaskId?: string;
+      cancelarTaskId?: string;
+      /** veio de um "não atendeu/sem resposta" — conta tentativa e registra 📵 */
+      tentativa?: boolean;
+      /** veio da cobrança da proposta ("Esfriou") — conclui a cobrança junto */
+      esfriou?: boolean;
+      /** reativação de lead descartado — é o que o tira de Descartado */
+      reativacao?: boolean;
+    }
   | { t: 'tarefaAgora'; taskId?: string }
-  | { t: 'fuRetry'; taskId?: string }
   | { t: 'meetQ'; taskId?: string }
   | { t: 'meetGostou' }
-  | { t: 'meetNext' }
   | { t: 'meetRemarca'; cancelarTaskId?: string }
   | { t: 'visitaQ'; taskId?: string }
   | { t: 'visitaGostou' }
   | { t: 'visitaRemarca'; cancelarTaskId?: string }
-  | { t: 'agendarData'; tipo: 'Meet' | 'Visita'; cancelarTaskId?: string; remarcando?: boolean }
+  | { t: 'agendarData'; tipo: 'Meet' | 'Visita'; cancelarTaskId?: string; remarcando?: boolean; contato?: boolean }
   | { t: 'requalifica' }
-  | { t: 'negPrazo'; cancelarTaskId?: string }
+  | { t: 'negPrazo'; concluirTaskId?: string; cancelarTaskId?: string }
   | { t: 'negQ'; taskId?: string }
-  | { t: 'venda' }
+  | { t: 'venda'; concluirTaskId?: string }
   | { t: 'descarte'; volta: EstadoFluxo }
   | { t: 'recomecar'; volta: EstadoFluxo };
 
@@ -105,15 +111,18 @@ export function perguntaDoLead(
     t ? agora >= dueMs(t) + horasExtra * 3600_000 : false;
 
   if (etapaNormalizada === ETAPA_FECHADO) return null;
-  // Descartado → reativar agenda um follow-up
-  if (etapaNormalizada === ETAPA_DESCARTADO) return { pendente: false, estado: { t: 'quando' }, urgencia: Infinity };
+  // Descartado → reativar agenda um follow-up (o flag é o que o tira de Descartado)
+  if (etapaNormalizada === ETAPA_DESCARTADO) return { pendente: false, estado: { t: 'quando', reativacao: true }, urgencia: Infinity };
 
   // A etapa é o estágio máximo alcançado; quem dita a PERGUNTA são as tarefas.
   // Cada tipo pendente vira um candidato; vale o mais urgente.
+  // Tudo que não é Meet/Visita conta como "próxima ação" (Ligação, WhatsApp,
+  // Follow-up, Produto, Outros…) — tarefa agendada de QUALQUER tipo segura a
+  // cobrança até o horário dela.
   const meet = pendentes.filter(t => t.type === TIPO_TAREFA_MEET).sort(porData)[0];
   const visita = pendentes.filter(t => t.type === TIPO_TAREFA_VISITA).sort(porData)[0];
   const contatos = pendentes
-    .filter(t => (TIPOS_CONTATO as unknown as string[]).includes(t.type) || t.type === TIPO_TAREFA_PRODUTO)
+    .filter(t => t.type !== TIPO_TAREFA_MEET && t.type !== TIPO_TAREFA_VISITA)
     .sort(porData);
   // Na Negociação, a cobrança da proposta pergunta "Fechou?"; um follow-up
   // comum (nutrição) segue como tarefa normal mesmo em Negociação.
@@ -380,7 +389,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
     switch (estado.t) {
       case 'entrada':
         return {
-          bar: 'Lead novo · Entrada',
+          bar: 'Entrada · primeiro contato',
           body: (
             <>
               Você já falou com {b(nomeCliente)}?
@@ -388,45 +397,31 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             </>
           ),
           btns: [
-            { t: `Já falei com ${nomeCliente}`, c: 'primary', f: () => irPara({ t: 'proximaAcao', contato: true }) },
-            { t: 'Ainda não', c: 'ghost', f: () => irPara({ t: 'ligar' }) },
+            // Em Entrada, a resposta mais provável é "ainda não" — ela vem primeiro
+            // e convida à ligação imediata (o que o sistema quer incentivar).
+            { t: '📞 Ainda não — ligar agora', c: 'gold', f: () => irPara({ t: 'ligar' }) },
+            { t: `Já falei ✓`, c: 'primary', f: () => irPara({ t: 'proximaAcao', contato: true }) },
           ],
         };
 
       case 'ligar':
+        // Um pop-up só: o corretor clica DEPOIS de ligar/chamar — já sabe o
+        // resultado, então cada botão já carrega a resposta (sem tela extra).
         return {
           bar: 'Primeiro contato',
           body: (
             <>
-              Liga pra {b(nomeCliente)} agora — quanto antes, maior a chance de conversão.
+              Fala com {b(nomeCliente)} agora — quanto antes, maior a chance de conversão.
               <small>
                 Telefone: {telefone} · <a className="text-[#7DD3FC] underline" href={`tel:${digits}`}>ligar</a> · <a className="text-emerald-300 underline" href={`https://wa.me/55${digits}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>
               </small>
             </>
           ),
           btns: [
-            { t: '📞 Liguei', c: 'gold', f: () => { registrarContato('Ligação'); irPara({ t: 'atendeu' }); } },
-            { t: '💬 Chamei no WhatsApp', c: 'gold', f: () => { registrarContato('WhatsApp'); irPara({ t: 'atendeu' }); } },
-          ],
-        };
-
-      case 'atendeu':
-        return {
-          bar: 'Primeiro contato',
-          body: <>E aí, {b(nomeCliente)} atendeu?</>,
-          btns: [
-            { t: 'Atendeu ✓', c: 'primary', f: () => irPara({ t: 'proximaAcao', contato: true }) },
-            { t: 'Não atendeu', c: 'ghost', f: () => irPara({ t: 'followQ' }) },
-          ],
-        };
-
-      case 'followQ':
-        return {
-          bar: 'Sem resposta',
-          body: <>Quer programar um follow-up pra tentar de novo?</>,
-          btns: [
-            { t: 'Sim, agendar', c: 'primary', f: () => irPara({ t: 'quando', tentativa: true }) },
-            { t: 'Não, desistir', c: 'danger', f: () => irPara({ t: 'descarte', volta: { t: 'followQ' } }) },
+            { t: '📞 Liguei — atendeu ✓', c: 'primary', f: () => { registrarContato('Ligação'); irLimpo({ t: 'proximaAcao', contato: true }); } },
+            { t: '💬 Mandei WhatsApp — respondeu ✓', c: 'gold', f: () => { registrarContato('WhatsApp'); irLimpo({ t: 'proximaAcao', contato: true }); } },
+            { t: '📞 Liguei — não atendeu', c: 'ghost', f: () => { registrarContato('Ligação'); irLimpo({ t: 'quando', tentativa: true }); } },
+            { t: '💬 WhatsApp — sem resposta ainda', c: 'ghost', f: () => { registrarContato('WhatsApp'); irLimpo({ t: 'quando', tentativa: true }); } },
           ],
         };
 
@@ -464,7 +459,13 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
             'Marcar visita': { tipo: TIPO_TAREFA_VISITA, etapa: ETAPA_VISITA_AGENDADA, desc: `Visita com ${nome}`, inter: '🏠 Visita marcada', toast: 'visita' },
             [ACAO_PRODUTO]: { tipo: TIPO_TAREFA_PRODUTO, etapa: ETAPA_EM_CONTATO, desc: `Buscar imóvel pra oferecer a ${nome}`, inter: '🔎 Vai buscar imóvel pra oferecer — tarefa', toast: 'buscar imóvel' },
           };
-          const a = mapa[acaoSel];
+          const a = { ...mapa[acaoSel] };
+          // Cancelou um meet e marcou OUTRO meet (idem visita)? É REMARCAÇÃO —
+          // a nota usa 'remarcado' pro placar não contar a mesma produção 2x.
+          const tipoCancelado = m.cancelarTaskId ? taskDe(m.cancelarTaskId)?.type : undefined;
+          if (tipoCancelado && tipoCancelado === a.tipo && (a.tipo === TIPO_TAREFA_MEET || a.tipo === TIPO_TAREFA_VISITA)) {
+            a.inter = `📌 ${a.tipo} remarcad${a.tipo === TIPO_TAREFA_MEET ? 'o' : 'a'}`;
+          }
           const ok = await executar({
             novaEtapa: a.etapa,
             concluirTaskId: m.concluirTaskId,
@@ -503,35 +504,58 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
 
       case 'quando': {
         const m = estado;
+        // Remarcação de tarefa comum (não Meet/Visita): a nova tarefa HERDA tipo
+        // e descrição da cancelada — só muda a data (nada de virar follow-up genérico).
+        const orig = m.cancelarTaskId ? taskDe(m.cancelarTaskId) : undefined;
+        const herda = !!(orig && orig.type !== TIPO_TAREFA_MEET && orig.type !== TIPO_TAREFA_VISITA && !m.tentativa);
+        // Contexto visível: o corretor precisa saber O QUE está agendando.
+        const ctx = m.reativacao
+          ? { bar: '🔄 Reativar lead', body: <>Reativar {b(nomeCliente)}: ele volta pro seu funil e a cobrança recomeça. Quando você fala com ele?</> }
+          : m.esfriou
+            ? { bar: '🌡️ Esfriou · voltar a nutrir', body: <>Sem problema — {b(nomeCliente)} segue seu. Quando você retoma o contato?</> }
+            : m.tentativa
+              ? { bar: '📵 Sem resposta · tentar de novo', body: <>Em imóveis, a venda média sai {b('depois do 5º contato')} — persistência fecha negócio. Quando você tenta de novo?</> }
+              : herda
+                ? { bar: '🕐 Remarcar tarefa', body: <>Remarcando: {b(orig!.description)}. Pra quando?</> }
+                : { bar: 'Follow-up · agendar', body: <>Quando você volta a falar com {b(nomeCliente)}? <small>Cria um follow-up — o sistema te cobra na hora certa.</small></> };
         return {
-          bar: 'Agendar',
+          ...ctx,
           body: (
             <>
-              Quando?
+              {ctx.body}
               {seletorQuando()}
               {aviso && <small className="!text-amber-300">{aviso}</small>}
             </>
           ),
           btns: [{
-            t: executando ? 'Agendando…' : 'Agendar ✓', c: 'primary', f: async () => {
+            t: executando ? 'Agendando…' : (herda ? 'Remarcar ✓' : 'Agendar follow-up ✓'), c: 'primary', f: async () => {
               const d = dataValidada();
               if (!d) return;
               const ok = await executar({
-                // Tentativa sem resposta NÃO avança o estágio (Entrada continua
-                // Entrada); conversa de verdade garante pelo menos Em Contato —
-                // e a catraca segura quem já está mais na frente.
-                novaEtapa: m.tentativa ? undefined : ETAPA_EM_CONTATO,
+                // Só a REATIVAÇÃO muda etapa por aqui (tira de Descartado; o
+                // executor decide Entrada × Em Contato pelo 1º contato do lead).
+                // Remarcar/tentar de novo nunca promove ninguém sem conversa.
+                novaEtapa: m.reativacao ? ETAPA_EM_CONTATO : undefined,
                 concluirTaskId: m.concluirTaskId,
                 cancelarTaskId: m.cancelarTaskId,
-                novaTarefa: { description: descComObs(`Follow-up com ${nome}`), type: TIPO_TAREFA_FOLLOWUP, dueDate: d },
+                novaTarefa: herda
+                  ? { description: descComObs(orig!.description), type: orig!.type, dueDate: d }
+                  : { description: descComObs(`Follow-up com ${nome}`), type: TIPO_TAREFA_FOLLOWUP, dueDate: d },
                 circuitoTentativas: m.tentativa ? 'inc' : undefined,
-                interacao: {
-                  type: 'Follow-up',
-                  // "tentativa" = veio de um "não atendeu" → registra nomeado (alimenta o relatório de atividade)
-                  notes: notesComObs(`${m.tentativa ? '📵 Não atendeu · ' : ''}📌 Tarefa criada: follow-up · ${fmtDataHora(d)}`),
-                },
+                interacao: m.esfriou
+                  // Esfriou: UM batch só — conclui a cobrança, cria a nutrição e narra tudo junto
+                  ? { type: 'Etapa', notes: notesComObs(`🌡️ Negociação esfriou — voltando a nutrir · 📌 Tarefa criada: follow-up · ${fmtDataHora(d)}`) }
+                  : {
+                      type: 'Follow-up',
+                      // "tentativa" = veio de um "não atendeu" → registra nomeado (alimenta o relatório de atividade)
+                      notes: notesComObs(`${m.tentativa ? '📵 Não atendeu · ' : ''}📌 Tarefa ${herda ? `remarcada: ${orig!.type}` : 'criada: follow-up'} · ${fmtDataHora(d)}`),
+                    },
               });
-              if (ok) fecha(`✓ Follow-up com ${nomeCliente} agendado: ${quandoLabel(d)}.`);
+              if (ok) fecha(
+                m.reativacao ? `🔄 ${nomeCliente} reativado! Follow-up ${quandoLabel(d)}.`
+                : herda ? `✓ Tarefa remarcada: ${quandoLabel(d)}.`
+                : `✓ Follow-up com ${nomeCliente} agendado: ${quandoLabel(d)}.`
+              );
             },
           }],
         };
@@ -542,18 +566,21 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
         const task = taskDe(estado.taskId);
         const due = task ? toJsDate(task.dueDate) : null;
         const atrasada = due ? due.getTime() < Date.now() - 60_000 : false;
-        const ehProduto = task?.type === TIPO_TAREFA_PRODUTO;
-        if (ehProduto) {
+        const ehContato = !task || (TIPOS_CONTATO as unknown as string[]).includes(task.type);
+        if (!ehContato) {
+          // Tarefa que não é conversa (Produto, Outros…): botões neutros —
+          // "feito" não marca 1º contato nem pergunta se atendeu.
+          const ehProduto = task?.type === TIPO_TAREFA_PRODUTO;
           return {
-            bar: '⏰ Agora · Produto',
+            bar: `⏰ Agora · ${task?.type || 'Tarefa'}`,
             body: (
               <>
-                🔎 Hora de {b(task?.description || `procurar produto para ${nomeCliente}`)}.
+                {ehProduto ? '🔎 ' : ''}Hora de {b(task?.description || `resolver a tarefa de ${nomeCliente}`)}.
                 {due && <small>Combinado para {quandoLabel(due)}.</small>}
               </>
             ),
             btns: [
-              { t: 'Achei! Falar com o cliente ✓', c: 'primary', f: () => irPara({ t: 'proximaAcao', concluirTaskId: estado.taskId }) },
+              { t: ehProduto ? 'Achei! Falar com o cliente ✓' : 'Feito ✓ — e o próximo passo?', c: 'primary', f: () => irPara({ t: 'proximaAcao', concluirTaskId: estado.taskId }) },
               { t: '🕐 Remarcar', c: 'ghost', f: () => irPara({ t: 'quando', cancelarTaskId: estado.taskId }) },
             ],
           };
@@ -568,21 +595,11 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           ),
           btns: [
             { t: `✅ Falei com ${nomeCliente}`, c: 'primary', f: () => irPara({ t: 'proximaAcao', concluirTaskId: estado.taskId, contato: true }) },
-            { t: '📵 Não atendeu', c: 'ghost', f: () => irPara({ t: 'fuRetry', taskId: estado.taskId }) },
+            { t: '📵 Não atendeu', c: 'ghost', f: () => irPara({ t: 'quando', concluirTaskId: estado.taskId, tentativa: true }) },
             { t: '🕐 Remarcar', c: 'ghost', f: () => irPara({ t: 'quando', cancelarTaskId: estado.taskId }) },
           ],
         };
       }
-
-      case 'fuRetry':
-        return {
-          bar: 'Follow-up',
-          body: <>Tentar de novo? Em imóveis, a venda média sai {b('depois do 5º contato')} — persistência fecha negócio.</>,
-          btns: [
-            { t: 'Sim, novo follow-up', c: 'primary', f: () => irPara({ t: 'quando', concluirTaskId: estado.taskId, tentativa: true }) },
-            { t: `Desistir de ${nomeCliente}`, c: 'danger', f: () => irPara({ t: 'descarte', volta: { t: 'fuRetry', taskId: estado.taskId } }) },
-          ],
-        };
 
       case 'meetQ': {
         const task = taskDe(estado.taskId);
@@ -599,6 +616,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                 const ok = await executar({
                   novaEtapa: ETAPA_MEET_FEITO,
                   concluirTaskId: estado.taskId,
+                  contatoEfetivo: true, // meet realizado É conversa de verdade
                   interacao: { type: 'Meet', notes: '✅ Meet realizado' },
                 });
                 if (ok) irLimpo({ t: 'meetGostou' });
@@ -611,23 +629,15 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
       }
 
       case 'meetGostou':
+        // Uma tela só: resultado + próximo passo juntos (o meetNext virou peso morto).
+        // contatoEfetivo já foi marcado no "Aconteceu ✓" — aqui NÃO repassa contato.
         return {
           bar: 'Meet · resultado',
-          body: <>{b(nomeCliente)} gostou do {b('produto')} que você apresentou?</>,
+          body: <>E aí: {b(nomeCliente)} gostou de algum imóvel que você apresentou?</>,
           btns: [
-            { t: 'Gostou 😀', c: 'primary', f: () => irPara({ t: 'meetNext' }) },
-            { t: 'Não gostou', c: 'ghost', f: () => irPara({ t: 'requalifica' }) },
-          ],
-        };
-
-      case 'meetNext':
-        return {
-          bar: 'Próximo passo',
-          body: <>Boa! Qual o próximo passo com {b(nomeCliente)}?</>,
-          btns: [
-            { t: '📅 Marcar visita', c: 'primary', f: () => irPara({ t: 'agendarData', tipo: 'Visita' }) },
+            { t: '😀 Gostou — marcar visita', c: 'primary', f: () => irPara({ t: 'agendarData', tipo: 'Visita' }) },
             {
-              t: 'Direto pra proposta', c: 'gold', f: async () => {
+              t: '😀 Gostou — direto pra proposta', c: 'gold', f: async () => {
                 const ok = await executar({
                   novaEtapa: ETAPA_NEGOCIACAO,
                   circuitoTentativas: 'zero',
@@ -636,24 +646,21 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                 if (ok) irLimpo({ t: 'negPrazo' });
               },
             },
-            { t: 'Outra ação (follow)', c: 'ghost', f: () => irPara({ t: 'quando' }) },
+            { t: '😀 Gostou — outro passo', c: 'ghost', f: () => irPara({ t: 'proximaAcao' }) },
+            { t: 'Não gostou', c: 'ghost', f: () => irPara({ t: 'requalifica' }) },
           ],
         };
 
       case 'meetRemarca':
+        // 3 caminhos, cada rótulo diz se FALOU com o cliente ou não.
+        // Re-Qualificar sai do corpo — o chip dourado do rodapé já cobre.
         return {
           bar: 'Meet · não rolou',
-          body: (
-            <>
-              O meet com {b(nomeCliente)} não rolou — e agora?
-              <small>Falou com o cliente e dá pra remarcar já? Remarca. Senão, vira follow-up: liga, chama no WhatsApp, do jeito que fizer sentido.</small>
-            </>
-          ),
+          body: <>O meet com {b(nomeCliente)} não rolou — o que rolou?</>,
           btns: [
-            { t: '📅 Remarcar o meet', c: 'primary', f: () => irPara({ t: 'agendarData', tipo: 'Meet', cancelarTaskId: estado.cancelarTaskId, remarcando: true }) },
-            { t: '💬 Virar follow-up (ligar / WhatsApp…)', c: 'gold', f: () => irPara({ t: 'proximaAcao', cancelarTaskId: estado.cancelarTaskId }) },
-            { t: '📵 Sumiu — não consegui falar', c: 'ghost', f: () => irPara({ t: 'quando', cancelarTaskId: estado.cancelarTaskId, tentativa: true }) },
-            { t: '🔄 Não vai rolar — Re-Qualificar', c: 'ghost', f: () => irPara({ t: 'recomecar', volta: estado }) },
+            { t: '✅ Falei — já remarcamos', c: 'primary', f: () => irPara({ t: 'agendarData', tipo: 'Meet', cancelarTaskId: estado.cancelarTaskId, remarcando: true }) },
+            { t: '✅ Falei — ainda sem nova data', c: 'gold', f: () => irPara({ t: 'proximaAcao', cancelarTaskId: estado.cancelarTaskId }) },
+            { t: '📵 Não consegui falar', c: 'ghost', f: () => irPara({ t: 'quando', cancelarTaskId: estado.cancelarTaskId, tentativa: true }) },
           ],
         };
 
@@ -672,6 +679,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                 const ok = await executar({
                   novaEtapa: ETAPA_VISITA_FEITA,
                   concluirTaskId: estado.taskId,
+                  contatoEfetivo: true, // visita realizada É conversa de verdade
                   interacao: { type: 'Visita', notes: '✅ Visita realizada' },
                 });
                 if (ok) irLimpo({ t: 'visitaGostou' });
@@ -684,12 +692,13 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
       }
 
       case 'visitaGostou':
+        // Inclui o caso comum "gostou mas quer ver mais" — sem forçar binário.
         return {
           bar: 'Visita · resultado',
-          body: <>{b(nomeCliente)} gostou do {b('imóvel')}?</>,
+          body: <>E aí: {b(nomeCliente)} gostou do imóvel?</>,
           btns: [
             {
-              t: 'Gostou 😀 — hora da proposta', c: 'primary', f: async () => {
+              t: '😀 Gostou — hora da proposta', c: 'primary', f: async () => {
                 const ok = await executar({
                   novaEtapa: ETAPA_NEGOCIACAO,
                   circuitoTentativas: 'zero',
@@ -698,6 +707,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
                 if (ok) irLimpo({ t: 'negPrazo' });
               },
             },
+            { t: '🔁 Quer ver outros — marcar visita', c: 'gold', f: () => irPara({ t: 'agendarData', tipo: 'Visita' }) },
             { t: 'Não gostou', c: 'ghost', f: () => irPara({ t: 'requalifica' }) },
           ],
         };
@@ -705,17 +715,11 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
       case 'visitaRemarca':
         return {
           bar: 'Visita · não rolou',
-          body: (
-            <>
-              A visita de {b(nomeCliente)} não rolou — e agora?
-              <small>Falou com o cliente e dá pra remarcar já? Remarca. Senão, vira follow-up: liga, chama no WhatsApp, do jeito que fizer sentido.</small>
-            </>
-          ),
+          body: <>A visita de {b(nomeCliente)} não rolou — o que rolou?</>,
           btns: [
-            { t: '📅 Remarcar a visita', c: 'primary', f: () => irPara({ t: 'agendarData', tipo: 'Visita', cancelarTaskId: estado.cancelarTaskId, remarcando: true }) },
-            { t: '💬 Virar follow-up (ligar / WhatsApp…)', c: 'gold', f: () => irPara({ t: 'proximaAcao', cancelarTaskId: estado.cancelarTaskId }) },
-            { t: '📵 Sumiu — não consegui falar', c: 'ghost', f: () => irPara({ t: 'quando', cancelarTaskId: estado.cancelarTaskId, tentativa: true }) },
-            { t: '🔄 Não vai rolar — Re-Qualificar', c: 'ghost', f: () => irPara({ t: 'recomecar', volta: estado }) },
+            { t: '✅ Falei — já remarcamos', c: 'primary', f: () => irPara({ t: 'agendarData', tipo: 'Visita', cancelarTaskId: estado.cancelarTaskId, remarcando: true }) },
+            { t: '✅ Falei — ainda sem nova data', c: 'gold', f: () => irPara({ t: 'proximaAcao', cancelarTaskId: estado.cancelarTaskId }) },
+            { t: '📵 Não consegui falar', c: 'ghost', f: () => irPara({ t: 'quando', cancelarTaskId: estado.cancelarTaskId, tentativa: true }) },
           ],
         };
 
@@ -750,22 +754,26 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
       }
 
       case 'requalifica':
+        // Renomeado pra NÃO colidir com o "Re-Qualificar" do rodapé (que rebaixa
+        // a etapa). Aqui só ajusta a busca — a etapa fica onde está (a catraca já
+        // seguraria um EM_CONTATO, então nem mandamos etapa: código = texto).
         return {
-          bar: 'Requalificação',
+          bar: 'Ajustar a busca',
           body: (
             <>
-              O que {b('não encaixou')}? Atualiza aqui:
+              O que {b('não encaixou')} pra {b(nomeCliente)}?
               <Chips itens={REQUALIFICA_OPCOES} sel={requalSel} onSel={v => setRequalSel(p => p.includes(v) ? p.filter(x => x !== v) : [...p, v])} />
-              <small>O cliente segue no estágio dele — só volta a ser nutrido, mais inteligente do que antes. A qualificação completa fica no painel ao lado. →</small>
+              <small>O cliente segue no estágio dele — volta a ser nutrido, mais afiado do que antes. A qualificação completa fica no painel ao lado. →</small>
             </>
           ),
           btns: [{
-            t: 'Salvar e voltar a nutrir →', c: 'primary', f: async () => {
+            t: executando ? 'Salvando…' : 'Salvar ajuste e seguir →', c: 'primary', f: async () => {
               const ok = await executar({
-                novaEtapa: ETAPA_EM_CONTATO,
-                interacao: { type: 'Etapa', notes: `🎯 Requalificação${requalSel.length ? `: ${requalSel.join(', ')}` : ' registrada'}` },
+                interacao: { type: 'Etapa', notes: `🎯 Ajuste na busca${requalSel.length ? `: ${requalSel.join(', ')}` : ' registrado'}` },
               });
-              if (ok) irLimpo({ t: 'quando' });
+              // Aterrissa nas ações tipadas (marcar visita nova, buscar imóvel…),
+              // não num follow-up genérico. Se abandonar aqui, o ajuste já foi salvo.
+              if (ok) irLimpo({ t: 'proximaAcao' });
             },
           }],
         };
@@ -787,6 +795,9 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
               if (!d) return;
               const ok = await executar({
                 novaEtapa: ETAPA_NEGOCIACAO,
+                // "Ainda negociando" traz concluirTaskId (a cobrança FOI respondida);
+                // o negPrazo do meet/visita aprovado não traz nada.
+                concluirTaskId: m.concluirTaskId,
                 cancelarTaskId: m.cancelarTaskId,
                 novaTarefa: { description: descComObs(`Resposta da proposta — ${nome}`), type: TIPO_TAREFA_FOLLOWUP, dueDate: d },
                 interacao: { type: 'Follow-up', notes: notesComObs(`📌 Cobrança agendada: resposta da proposta · ${fmtDataHora(d)}`) },
@@ -804,21 +815,12 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           bar: 'Negociação · prazo venceu',
           body: <>A proposta pra {b(nomeCliente)} tinha resposta prevista pra {due ? quandoLabel(due) : 'ontem'}. Fechou?</>,
           btns: [
-            { t: 'FECHOU! 🎉', c: 'win', f: () => irPara({ t: 'venda' }) },
-            { t: 'Ainda negociando', c: 'ghost', f: () => irPara({ t: 'negPrazo', cancelarTaskId: estado.taskId }) },
-            {
-              t: 'Esfriou', c: 'ghost', f: async () => {
-                const ok = await executar({
-                  // catraca: continua em Negociação — só troca a cobrança por nutrição
-                  novaEtapa: ETAPA_EM_CONTATO,
-                  concluirTaskId: estado.taskId,
-                  interacao: { type: 'Etapa', notes: '🌡️ Negociação esfriou — voltando a nutrir' },
-                });
-                if (ok) irLimpo({ t: 'quando' });
-              },
-            },
-            // "Caiu" abre o Re-Qualificar: lá o corretor escolhe voltar a trabalhar (Em Contato) ou descartar de vez
-            { t: '💔 Caiu', c: 'danger', f: () => irPara({ t: 'recomecar', volta: { t: 'negQ', taskId: estado.taskId } }) },
+            { t: 'FECHOU! 🎉', c: 'win', f: () => irPara({ t: 'venda', concluirTaskId: estado.taskId }) },
+            { t: 'Ainda negociando — novo prazo', c: 'ghost', f: () => irPara({ t: 'negPrazo', concluirTaskId: estado.taskId }) },
+            // Esfriou NÃO grava aqui: leva pro 'quando' que faz tudo num batch só
+            // (conclui a cobrança + cria a nutrição). ✕ no meio não deixa nada pela metade.
+            { t: 'Esfriou — pausar e nutrir', c: 'ghost', f: () => irPara({ t: 'quando', concluirTaskId: estado.taskId, esfriou: true }) },
+            { t: '💔 Caiu — recomeçar ou descartar', c: 'danger', f: () => irPara({ t: 'recomecar', volta: { t: 'negQ', taskId: estado.taskId } }) },
           ],
         };
       }
@@ -829,21 +831,25 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           noX: true,
           body: (
             <>
-              Fechou com {b(nomeCliente)}? 🎉
-              <small>O lançamento oficial (valor, comissão, meta) é feito em <b className="text-white">Comissões</b>, na área do administrador — lá também se registra de onde veio a venda.</small>
+              Confirma que fechou com {b(nomeCliente)}? 🎉
+              <small>Vou <b className="text-white">cancelar as tarefas pendentes</b> e mover pra <b className="text-white">Fechamento</b>. O lançamento oficial (valor, comissão, meta) é feito em <b className="text-white">Comissões</b>, na área do administrador.</small>
             </>
           ),
-          btns: [{
-            t: executando ? 'Registrando…' : '🏆 Confirmar — FECHOU!', c: 'win', f: async () => {
-              const ok = await executar({
-                novaEtapa: ETAPA_FECHADO,
-                cancelarTodasPendentes: true,
-                circuitoTentativas: 'zero',
-                interacao: { type: 'Venda', notes: '🏆 VENDA FECHADA! (lançamento oficial em Comissões)' },
-              });
-              if (ok) fecha(`🏆 VENDA de ${nomeCliente} fechada! Parabéns! 🎉 Avisa o admin pra lançar em Comissões.`);
+          btns: [
+            {
+              t: executando ? 'Registrando…' : '🏆 Confirmar — FECHOU!', c: 'win', f: async () => {
+                const ok = await executar({
+                  novaEtapa: ETAPA_FECHADO,
+                  concluirTaskId: estado.concluirTaskId, // a cobrança respondida vira concluída (não cancelada)
+                  cancelarTodasPendentes: true,
+                  circuitoTentativas: 'zero',
+                  interacao: { type: 'Venda', notes: '🏆 VENDA FECHADA! (lançamento oficial em Comissões)' },
+                });
+                if (ok) fecha(`🏆 VENDA de ${nomeCliente} fechada! Parabéns! 🎉 Avisa o admin pra lançar em Comissões.`);
+              },
             },
-          }],
+            { t: '← Ainda não fechou', c: 'ghost', f: () => voltarPasso() },
+          ],
         };
 
       case 'descarte': {
@@ -854,7 +860,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           red: true,
           body: (
             <>
-              ⚠️ Sem um próximo passo, {b(nomeCliente)} sai do seu funil e vai pro descarte. Tem certeza?
+              ⚠️ {b(nomeCliente)} sai do seu funil e vai pro bolsão do administrador — de lá pode ser redistribuído a outro corretor. Tem certeza?
               <small>Escolha o motivo (obrigatório):</small>
               <Chips itens={MOTIVOS_DESCARTE} sel={motivoSel ? [motivoSel] : []} onSel={v => { setMotivoSel(v); setAviso(''); }} />
               {motivoSel === 'Outro' && (
@@ -1014,7 +1020,8 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
               {/* Re-Qualificar (destaque) + Descarte sempre à mão — de qualquer passo do circuito */}
               {estado.t !== 'descarte' && estado.t !== 'venda' && estado.t !== 'recomecar' && (
                 <div className="px-4 pb-3 -mt-1.5 flex items-center justify-end gap-2.5 flex-wrap">
-                  {[ETAPA_MEET_AGENDADO, ETAPA_MEET_FEITO, ETAPA_VISITA_AGENDADA, ETAPA_VISITA_FEITA, ETAPA_NEGOCIACAO].includes(etapaAtual || '') && (
+                  {/* No negQ o botão "💔 Caiu" já é essa porta — não duplicar o chip */}
+                  {estado.t !== 'negQ' && [ETAPA_MEET_AGENDADO, ETAPA_MEET_FEITO, ETAPA_VISITA_AGENDADA, ETAPA_VISITA_FEITA, ETAPA_NEGOCIACAO].includes(etapaAtual || '') && (
                     <button
                       onClick={() => irPara({ t: 'recomecar', volta: estado })}
                       disabled={executando}
