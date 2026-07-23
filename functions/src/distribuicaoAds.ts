@@ -146,9 +146,17 @@ export async function enviarPush(
         // Payload DATA-ONLY (sem bloco `notification`): assim o navegador/FCM
         // NÃO exibe nada automaticamente e o service worker é o único
         // responsável por chamar showNotification (evita notificação duplicada).
+        //
+        // PRIORIDADE ALTA em todas as plataformas: lead é urgente, não pode ser
+        // enfileirado/adiado. `webpush.Urgency: high` faz o serviço de push (web/
+        // PWA) entregar na hora em vez de agrupar; `android.priority: high` fura
+        // o Doze; `apns-priority: 10` entrega imediata no iOS.
         const resposta = await admin.messaging().sendEachForMulticast({
             tokens,
             data: {title, body, url: "/dashboard", ...data},
+            webpush: {headers: {Urgency: "high", TTL: "600"}},
+            android: {priority: "high"},
+            apns: {headers: {"apns-priority": "10", "apns-push-type": "alert"}},
         });
 
         // Remove tokens que o FCM diz não existirem mais
@@ -633,6 +641,62 @@ export const expirarAdsLeads = onSchedule("every 1 minutes", async () => {
         await doc.ref.update({status: "nao-atendido"});
         logger.info("expirarAdsLeads: geral → nao-atendido", {adsLeadId: doc.id});
     }
+});
+
+// ---------------------------------------------------------------------------
+// 4.5) Corretor NEGA o lead → libera pra escala inteira NA HORA + push
+//      (rodízio coletivo: quem está na vez recusa e todos passam a ver)
+// ---------------------------------------------------------------------------
+
+/**
+ * Callable: o corretor da vez nega o lead exclusivo. Vira 'geral' imediatamente
+ * (novo prazo) e dispara push pra toda a escala (menos quem negou), pra que o
+ * lead chegue rápido em todos mesmo com o app fechado. Marca `negadoPor` pra não
+ * reaparecer pra quem recusou. Se já era 'geral', só registra o negadoPor.
+ */
+export const negarAdsLead = onCall(async (request): Promise<{ok: boolean; motivo?: string}> => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "É preciso estar logado.");
+    const uid = request.auth.uid;
+    const adsLeadId = String((request.data as {adsLeadId?: string})?.adsLeadId || "");
+    if (!adsLeadId) throw new HttpsError("invalid-argument", "adsLeadId ausente.");
+
+    const ref = db().collection("adsLeads").doc(adsLeadId);
+    const snap = await ref.get();
+    if (!snap.exists) return {ok: false, motivo: "nao_existe"};
+    const lead = snap.data() || {};
+    if (lead.status === "aceito") return {ok: false, motivo: "ja_aceito"};
+
+    const configSnap = await db().doc(CONFIG_REF_PATH).get();
+    const config = (configSnap.data() || {}) as Partial<DistribuicaoConfig>;
+    const corretores = Array.isArray(config.corretores) ? config.corretores : [];
+    const minutosGeral = typeof config.minutosGeral === "number" && config.minutosGeral > 0 ?
+        config.minutosGeral : 30;
+
+    const agora = admin.firestore.Timestamp.now();
+    const eraEscalado = lead.status === "escalado";
+    const updates: Record<string, unknown> = {
+        negadoPor: admin.firestore.FieldValue.arrayUnion(uid),
+    };
+    if (eraEscalado) {
+        updates.status = "geral";
+        updates.abriuGeralEm = agora;
+        updates.prazoAte = admin.firestore.Timestamp.fromMillis(agora.toMillis() + minutosGeral * 60 * 1000);
+    }
+    await ref.update(updates);
+
+    // Só avisa a escala quando REALMENTE abriu agora (transição escalado→geral).
+    // Se já era geral, todos já foram avisados na criação.
+    if (eraEscalado) {
+        const outros = corretores.filter((c) => c !== uid);
+        await enviarPush(
+            outros,
+            "⚡ Lead liberado para todos!",
+            `${lead.nome || "Lead"} — quem chegar primeiro leva`,
+            {tipo: "adsLead", adsLeadId},
+        );
+    }
+    logger.info("negarAdsLead: concluído", {adsLeadId, uid, eraEscalado});
+    return {ok: true};
 });
 
 // ---------------------------------------------------------------------------

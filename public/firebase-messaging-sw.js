@@ -31,6 +31,11 @@ messaging.onBackgroundMessage((payload) => {
     // tag: se dois eventos dispararem para o mesmo lead, o SO substitui
     // a notificação em vez de mostrar duas.
     tag: data.adsLeadId || 'nox-lead',
+    // Lead é urgente: a notificação FICA na tela até o corretor tocar (não
+    // some sozinha), vibra e re-alerta mesmo reusando a tag.
+    requireInteraction: true,
+    renotify: true,
+    vibrate: [200, 100, 200],
     data,
   });
 });

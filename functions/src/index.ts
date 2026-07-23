@@ -21,6 +21,7 @@ export {
     metaLeadsWebhook,
     expirarAdsLeads,
     redistribuirAdsLead,
+    negarAdsLead,
     testeCriarAdsLead,
     listarCampanhasMeta,
     conectarPaginaLeadgen,
