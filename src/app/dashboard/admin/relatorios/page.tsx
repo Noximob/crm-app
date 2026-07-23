@@ -14,9 +14,12 @@ import {
 } from './logic';
 
 const LS_SEL = 'relatorio_corretores_sel';
+const LS_MARCO = 'relatorio_ativ_desde';
 const PERIODOS: { id: Periodo; label: string }[] = [
   { id: 'tudo', label: 'Tudo' }, { id: 'mes', label: 'Mês' }, { id: '30d', label: '30d' }, { id: '90d', label: '90d' },
 ];
+function ymdDiasAtras(n: number): string { const d = new Date(); d.setDate(d.getDate() - n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+const fmtYmd = (s: string) => (s && s.length >= 10 ? `${s.slice(8, 10)}/${s.slice(5, 7)}` : '');
 const CORES = {
   verde: { txt: 'text-emerald-300', bg: 'bg-emerald-500/15', bd: 'border-emerald-500/40', bar: '#34D399' },
   amarelo: { txt: 'text-amber-300', bg: 'bg-amber-500/15', bd: 'border-amber-500/40', bar: '#FBBF24' },
@@ -177,6 +180,7 @@ export default function RelatoriosPage() {
   const { mapa, loadingAtiv, progresso } = useAtividade(leads, ativo);
 
   const [periodo, setPeriodo] = useState<Periodo>('tudo');
+  const [ativDesde, setAtivDesde] = useState<string>('tudo');
   const [sel, setSel] = useState<Set<string> | null>(null);
   const [abertoId, setAbertoId] = useState<string | null>(null);
   const [seletorAberto, setSeletorAberto] = useState(false);
@@ -199,10 +203,14 @@ export default function RelatoriosPage() {
     setSel(new Set(defaultSel));
   }, [corretores, defaultSel, sel]);
 
+  useEffect(() => { try { const v = localStorage.getItem(LS_MARCO); if (v) setAtivDesde(v); } catch { /* ignore */ } }, []);
+  const setMarco = (v: string) => { setAtivDesde(v); try { localStorage.setItem(LS_MARCO, v); } catch { /* ignore */ } };
+  const atividadeDesdeMs = useMemo(() => { if (ativDesde === 'tudo') return 0; const p = Date.parse(`${ativDesde}T00:00:00`); return Number.isNaN(p) ? 0 : p; }, [ativDesde]);
+
   const salvarSel = (novo: Set<string>) => { setSel(novo); try { localStorage.setItem(LS_SEL, JSON.stringify(Array.from(novo))); } catch { /* ignore */ } };
   const toggleSel = (id: string) => { const n = new Set(sel || []); if (n.has(id)) n.delete(id); else n.add(id); salvarSel(n); };
 
-  const rel = useMemo(() => computeRelatorio(leads, corretores, ads, mapa, sel || new Set(), periodo), [leads, corretores, ads, mapa, sel, periodo]);
+  const rel = useMemo(() => computeRelatorio(leads, corretores, ads, mapa, sel || new Set(), periodo, atividadeDesdeMs), [leads, corretores, ads, mapa, sel, periodo, atividadeDesdeMs]);
 
   if (isEspelhoDemo) {
     return (
@@ -233,6 +241,16 @@ export default function RelatoriosPage() {
               <button key={p.id} onClick={() => setPeriodo(p.id)} className={`px-3 py-1.5 rounded-lg text-[12px] font-bold transition-colors ${periodo === p.id ? 'bg-white/[0.10] text-white' : 'text-text-secondary hover:text-white'}`}>{p.label}</button>
             ))}
           </div>
+        </div>
+        {/* Marco de atividade: conta só o trabalho real depois que o sistema entrou pra valer */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-text-secondary mr-1">Atividade desde</span>
+          <button onClick={() => setMarco('tudo')} className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors ${ativDesde === 'tudo' ? 'bg-white/[0.10] text-white' : 'bg-white/[0.04] text-text-secondary hover:text-white'}`}>Tudo</button>
+          <button onClick={() => setMarco(ymdDiasAtras(7))} className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white/[0.04] text-text-secondary hover:text-white transition-colors">7d</button>
+          <button onClick={() => setMarco(ymdDiasAtras(14))} className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white/[0.04] text-text-secondary hover:text-white transition-colors">14d</button>
+          <button onClick={() => setMarco(ymdDiasAtras(30))} className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white/[0.04] text-text-secondary hover:text-white transition-colors">30d</button>
+          <input type="date" value={ativDesde === 'tudo' ? '' : ativDesde} onChange={(e) => setMarco(e.target.value || 'tudo')} className="px-2 py-1 rounded-lg text-[11px] bg-white/[0.04] border border-white/10 text-white [color-scheme:dark]" />
+          {atividadeDesdeMs > 0 && <span className="text-[11px] text-emerald-300 font-semibold">✓ medindo desde {fmtYmd(ativDesde)} — antes disso é considerado organização/faxina</span>}
         </div>
       </div>
 
@@ -374,10 +392,10 @@ export default function RelatoriosPage() {
         </div>
       )}
 
-      <p className="text-center text-[10px] text-text-secondary px-4">
-        O <b>Score de Saúde</b> pondera Atividade, Velocidade, Conversão, Qualidade e Higiene. Verde ≥70 · Amarelo 45-69 · Vermelho &lt;45.
-        {!rel.comAtividade && ' (Atividade entra no score assim que a leitura da timeline terminar.)'}
-      </p>
+      <div className="text-center text-[10px] text-text-secondary px-4 space-y-1">
+        <p>O <b>Score de Saúde</b> pondera Atividade, Velocidade, Conversão, Qualidade e Higiene. Verde ≥70 · Amarelo 45-69 · Vermelho &lt;45.{!rel.comAtividade && ' (Atividade entra no score quando a leitura da timeline terminar.)'}</p>
+        <p><b>Atividade desde</b> corta a faxina de organização: atividade, cadência, canal, última atividade e "sem toque" contam só depois da data. Já <b>qualificação/conversão</b> refletem o estado ATUAL da carteira (não têm data de quando foram preenchidos) — pra deixá-las justas, use o <b>período</b> de leads (ex.: 30d) e olhe só os leads novos.</p>
+      </div>
     </div>
   );
 }

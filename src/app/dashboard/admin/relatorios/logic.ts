@@ -27,7 +27,7 @@ export interface RelLead {
 }
 export interface RelCorretor { id: string; nome: string; tipoConta?: string; aprovado?: boolean; email?: string; }
 export interface RelAdsLead { id: string; status?: string; corretorEscalado?: string; aceitoPor?: string; tempoAceiteSeg?: number; viaGeral?: boolean; campanhaNome?: string; negadoPor?: string[]; }
-export interface AtividadeLead { ultimaMs: number; total: number; porTipo: Record<string, number>; cadenciaMediaDias: number | null; }
+export interface AtividadeLead { eventos: { ms: number; tipo: string }[]; }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 export function msOf(ts: unknown): number {
@@ -102,12 +102,10 @@ export function useAtividade(leads: RelLead[], ativo: boolean): { mapa: Map<stri
         await Promise.all(slice.map(async (id) => {
           try {
             const snap = await getDocs(collection(db, 'leads', id, 'interactions'));
-            const ts: number[] = []; const porTipo: Record<string, number> = {};
-            snap.forEach((d) => { const x = d.data(); const ms = msOf(x.timestamp); if (ms) ts.push(ms); const t = String(x.type || ''); porTipo[t] = (porTipo[t] || 0) + 1; });
-            ts.sort((a, b) => a - b);
-            let cad: number | null = null;
-            if (ts.length >= 2) { let s = 0; for (let k = 1; k < ts.length; k++) s += ts[k] - ts[k - 1]; cad = s / (ts.length - 1) / DIA; }
-            m.set(id, { ultimaMs: ts.length ? ts[ts.length - 1] : 0, total: snap.size, porTipo, cadenciaMediaDias: cad });
+            const eventos: { ms: number; tipo: string }[] = [];
+            snap.forEach((d) => { const x = d.data(); const ms = msOf(x.timestamp); if (ms) eventos.push({ ms, tipo: String(x.type || '') }); });
+            eventos.sort((a, b) => a.ms - b.ms);
+            m.set(id, { eventos });
           } catch { /* pula lead com erro */ }
         }));
         if (!cancel) setProgresso(Math.min(1, (i + CHUNK) / ids.length));
@@ -181,6 +179,7 @@ function calcScore(r: RankingRow): { score: number; sub: SubScores; cor: Ranking
 export function computeRelatorio(
   leads: RelLead[], corretores: RelCorretor[], ads: RelAdsLead[],
   atividade: Map<string, AtividadeLead> | null, selecionados: Set<string>, periodo: Periodo,
+  atividadeDesdeMs = 0,
 ): Relatorio {
   const inicio = inicioPeriodo(periodo);
   const comAtividade = !!atividade && atividade.size > 0;
@@ -216,7 +215,9 @@ export function computeRelatorio(
     const estag = isAtivo && desde > 0 && (agora - desde) / DIA > ESTAGNADO_DIAS;
     const avancado = idx >= IDX_MEET_AG;
     const at = atividade?.get(l.id);
-    const ultimaMs = at?.ultimaMs || 0;
+    // atividade só conta a partir do marco (ignora a faxina de organização do CRM)
+    const evs = at ? (atividadeDesdeMs > 0 ? at.eventos.filter((e) => e.ms >= atividadeDesdeMs) : at.eventos) : [];
+    const ultimaMs = evs.length ? evs[evs.length - 1].ms : 0;
 
     if (idx >= 0) { agoraPorEtapa[et]++; for (let i = 0; i <= idx; i++) alcancaram[ETAPAS_CIRCUITO[i]]++; }
     if (isAtivo) ativos++; if (isFech) fechados++; if (isDesc) descartados++;
@@ -227,7 +228,7 @@ export function computeRelatorio(
     // não é a entrada real), então não entra na média de velocidade.
     const tem1o = cMs > 0 && pMs > 0 && pMs >= cMs && (pMs - cMs) <= 30 * DIA;
     if (tem1o) { soma1o += (pMs - cMs) / DIA; n1o++; }
-    if (at) interacoesTotal += at.total;
+    interacoesTotal += evs.length;
 
     const og = String(l.origemTipo || l.origem || '—');
     const om = origemMap.get(og) || { count: 0, fechados: 0 }; om.count++; if (isFech) om.fechados++; origemMap.set(og, om);
@@ -244,10 +245,9 @@ export function computeRelatorio(
     if (avancado && !qualif) a.semQualAv++;
     if (idx >= 0) a.porEtapa[et] = (a.porEtapa[et] || 0) + 1;
     if (at) {
-      a.interacoes += at.total;
-      a.ligacoes += (at.porTipo['Ligação'] || 0) + (at.porTipo['Ligacao'] || 0);
-      a.whats += at.porTipo['WhatsApp'] || 0;
-      if (at.cadenciaMediaDias !== null) { a.somaCad += at.cadenciaMediaDias; a.nCad++; }
+      a.interacoes += evs.length;
+      for (const e of evs) { if (e.tipo === 'Ligação' || e.tipo === 'Ligacao') a.ligacoes++; else if (e.tipo === 'WhatsApp') a.whats++; }
+      if (evs.length >= 2) { let s = 0; for (let k = 1; k < evs.length; k++) s += evs[k].ms - evs[k - 1].ms; a.somaCad += s / (evs.length - 1) / DIA; a.nCad++; }
       if (ultimaMs > a.ultimaMs) a.ultimaMs = ultimaMs;
       if (isAtivo && (ultimaMs === 0 || (agora - ultimaMs) / DIA > SEM_TOQUE_DIAS)) a.semToque++;
     }
