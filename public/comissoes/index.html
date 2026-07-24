@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calculadora de Comissões — Nox Imóveis</title>
+<script>/* No modo view (corretor/gerente) tranca o administrativo ANTES de pintar — sem flash de dados. */try{if(new URLSearchParams(location.search).get('mode')==='view')document.documentElement.classList.add('nox-view');}catch(e){}</script>
 <style>
   :root{
     --ink:#13212e; --ink-2:#1c2f40; --paper:#f7f5f0; --card:#ffffff;
@@ -34,6 +35,10 @@
   .tabpane[hidden]{display:none}
   /* Modo view lado a lado: Minhas comissões | Calculadora de meta */
   body.nox-viewmode .tabs{display:none}
+  /* Modo view (qualquer): o administrativo, eventos e relatórios internos NUNCA aparecem
+     pro corretor/gerente — é só relatório do que a administração gerou, sem edição. */
+  html.nox-view #tab-admin, html.nox-view #tab-eventos, html.nox-view #tab-rel{display:none!important}
+  html.nox-view #tab-admin *{pointer-events:none}
   .nox-view-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px;align-items:start}
   .nox-view-grid .nox-col-head{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--brass);margin:0 0 12px}
   .nox-view-grid .tabpane{display:block!important;margin:0}
@@ -2414,6 +2419,7 @@ document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState=
   const wrap=document.querySelector('.wrap'); if(wrap) wrap.style.padding='12px 20px 60px';
   const tabs=[...document.querySelectorAll('.tab')];
   if(currentMode==='view'){
+    document.documentElement.classList.add('nox-view'); // tranca o administrativo (belt-and-suspenders)
     // até saber quem está logado, mostra só a calculadora lado-a-lado (sem col esquerda)
     layoutViewSideBySide(false);
     setMetricsLocked(true);
