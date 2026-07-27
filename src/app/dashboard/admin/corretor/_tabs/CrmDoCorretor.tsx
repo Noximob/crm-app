@@ -20,6 +20,8 @@ interface Lead {
   etapa: string;
   taskStatus: StatusLead;
   qualificacao?: { [key: string]: string | string[] };
+  /** Pendentes do lead — usadas no filtro "agendado no período". */
+  tarefas?: TarefaPendente[];
   [key: string]: unknown;
 }
 
@@ -96,6 +98,35 @@ const MAX_LEADS_LOAD = 500;
 const PAGE_SIZE = 20;
 const taskStatusFilters: StatusLead[] = ['Ação agora', 'Tarefa em Atraso', 'Tarefa do Dia', 'Tarefa Futura', 'Sem tarefa', 'Venda fechada'];
 
+// ── Filtro por período ──────────────────────────────────────────────────────
+// Dois modos, porque são perguntas diferentes:
+//  • "interagido"  → o que JÁ foi feito (lê a timeline do lead)
+//  • "agendado"    → o que está MARCADO pra fazer (lê o vencimento das tarefas)
+type PeriodoModo = 'off' | 'interagido' | 'agendado';
+const DIA_MS = 24 * 60 * 60 * 1000;
+const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+/** Segunda-feira da semana de `base` (semana seg→dom), com deslocamento em semanas. */
+const segundaDaSemana = (base: Date, offsetSemanas = 0) => {
+  const d = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+  const diaSemana = (d.getDay() + 6) % 7; // 0 = segunda
+  d.setDate(d.getDate() - diaSemana + offsetSemanas * 7);
+  return d;
+};
+const semanaRange = (offsetSemanas: number) => {
+  const ini = segundaDaSemana(new Date(), offsetSemanas);
+  const fim = new Date(ini.getTime() + 6 * DIA_MS);
+  return { ini: ymd(ini), fim: ymd(fim) };
+};
+const msDe = (v: unknown): number => {
+  if (!v) return 0;
+  const t = v as { toMillis?: () => number; seconds?: number };
+  if (typeof t.toMillis === 'function') return t.toMillis();
+  if (typeof t.seconds === 'number') return t.seconds * 1000;
+  if (v instanceof Date) return v.getTime();
+  if (typeof v === 'string') { const p = Date.parse(v); return Number.isNaN(p) ? 0 : p; }
+  return 0;
+};
+
 export default function VisualizarCrmCorretorPage() {
   const { userData, isEspelhoDemo } = useAuth();
   const { stages, normalizeEtapa } = usePipelineStages();
@@ -111,6 +142,12 @@ export default function VisualizarCrmCorretorPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [filtroRapidoOpen, setFiltroRapidoOpen] = useState(false);
   const filtroRapidoRef = useRef<HTMLDivElement>(null);
+  // período: o que foi interagido / o que está agendado, num intervalo
+  const [periodoModo, setPeriodoModo] = useState<PeriodoModo>('off');
+  const [periodoIni, setPeriodoIni] = useState('');
+  const [periodoFim, setPeriodoFim] = useState('');
+  const [interacoesPorLead, setInteracoesPorLead] = useState<Map<string, number[]>>(new Map());
+  const [carregandoInter, setCarregandoInter] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -186,7 +223,9 @@ export default function VisualizarCrmCorretorPage() {
       }).filter(lead => !(ETAPAS_DO_ADMIN as readonly string[]).includes(normalizeEtapa(lead.etapa)));
       const tarefasMap = await ensureTarefasPendentes(rawLeads);
       const newLeads = rawLeads.map(leadData => {
-        leadData.taskStatus = statusDoLead(leadData.etapa, tarefasMap.get(leadData.id) || []);
+        const pend = tarefasMap.get(leadData.id) || [];
+        leadData.taskStatus = statusDoLead(leadData.etapa, pend);
+        leadData.tarefas = pend; // guardadas pro filtro "agendado no período"
         return leadData;
       });
       setLeads(newLeads);
@@ -214,6 +253,36 @@ export default function VisualizarCrmCorretorPage() {
     }
   }, [stages.join(','), activeFilter]);
 
+  // Timeline dos leads — só é lida quando o admin pede o modo "interagido"
+  // (é uma subcoleção por lead; não vale puxar sem necessidade).
+  useEffect(() => {
+    if (periodoModo !== 'interagido' || leads.length === 0 || isEspelhoDemo) return;
+    let cancelado = false;
+    (async () => {
+      setCarregandoInter(true);
+      const mapa = new Map<string, number[]>();
+      const CHUNK = 25;
+      for (let i = 0; i < leads.length && !cancelado; i += CHUNK) {
+        await Promise.all(leads.slice(i, i + CHUNK).map(async (l) => {
+          try {
+            const snap = await getDocs(collection(db, 'leads', l.id, 'interactions'));
+            const ts: number[] = [];
+            snap.forEach((d) => { const ms = msDe(d.data().timestamp); if (ms) ts.push(ms); });
+            mapa.set(l.id, ts);
+          } catch { /* lead sem timeline acessível — fica de fora */ }
+        }));
+      }
+      if (!cancelado) { setInteracoesPorLead(mapa); setCarregandoInter(false); }
+    })();
+    return () => { cancelado = true; };
+  }, [periodoModo, leads, isEspelhoDemo]);
+
+  const aplicarPreset = (offsetSemanas: number, modo: PeriodoModo) => {
+    const { ini, fim } = semanaRange(offsetSemanas);
+    setPeriodoIni(ini); setPeriodoFim(fim); setPeriodoModo(modo); setCurrentPage(1);
+  };
+  const limparPeriodo = () => { setPeriodoModo('off'); setPeriodoIni(''); setPeriodoFim(''); setCurrentPage(1); };
+
   const handleApplyFilters = (filters: Filters) => {
     setAdvancedFilters(filters);
     setFilterModalOpen(false);
@@ -239,6 +308,16 @@ export default function VisualizarCrmCorretorPage() {
     }
     if (activeFilter) list = list.filter(l => normalizeEtapa(l.etapa) === activeFilter);
     if (activeTaskFilter) list = list.filter(l => l.taskStatus === activeTaskFilter);
+    // Período: interações já feitas OU tarefas marcadas dentro do intervalo
+    if (periodoModo !== 'off' && periodoIni && periodoFim) {
+      const de = Date.parse(`${periodoIni}T00:00:00`);
+      const ate = Date.parse(`${periodoFim}T23:59:59`);
+      if (!Number.isNaN(de) && !Number.isNaN(ate)) {
+        list = periodoModo === 'interagido'
+          ? list.filter(l => (interacoesPorLead.get(l.id) || []).some(ms => ms >= de && ms <= ate))
+          : list.filter(l => (l.tarefas || []).some(t => { const ms = msDe(t.dueDate); return ms >= de && ms <= ate; }));
+      }
+    }
     const hasAdvanced = Object.values(advancedFilters).some((opts: string[]) => opts.length > 0);
     if (hasAdvanced) {
       list = list.filter(lead => {
@@ -253,7 +332,7 @@ export default function VisualizarCrmCorretorPage() {
       });
     }
     return list;
-  }, [leads, searchTerm, activeFilter, activeTaskFilter, advancedFilters, normalizeEtapa]);
+  }, [leads, searchTerm, activeFilter, activeTaskFilter, advancedFilters, normalizeEtapa, periodoModo, periodoIni, periodoFim, interacoesPorLead]);
 
   const totalFiltered = filteredLeads.length;
   const totalPages = Math.max(1, Math.ceil(totalFiltered / PAGE_SIZE));
@@ -394,6 +473,51 @@ export default function VisualizarCrmCorretorPage() {
                       >
                         <XIcon className="h-4 w-4" /> Limpar filtros
                       </button>
+                    )}
+                  </div>
+
+                  {/* Período: o que já foi interagido / o que está agendado */}
+                  <div className="w-full flex flex-wrap items-center gap-1.5 pt-2 mt-1 border-t border-white/[0.06]">
+                    <span className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mr-1">Período</span>
+                    <FilterChip selected={periodoModo === 'interagido' && periodoIni === semanaRange(-1).ini} onClick={() => aplicarPreset(-1, 'interagido')}>
+                      ✓ Interagiu semana passada
+                    </FilterChip>
+                    <FilterChip selected={periodoModo === 'interagido' && periodoIni === semanaRange(0).ini} onClick={() => aplicarPreset(0, 'interagido')}>
+                      ✓ Interagiu esta semana
+                    </FilterChip>
+                    <FilterChip selected={periodoModo === 'agendado' && periodoIni === semanaRange(0).ini} onClick={() => aplicarPreset(0, 'agendado')}>
+                      📅 Agendado esta semana
+                    </FilterChip>
+                    <FilterChip selected={periodoModo === 'agendado' && periodoIni === semanaRange(1).ini} onClick={() => aplicarPreset(1, 'agendado')}>
+                      📅 Agendado próxima semana
+                    </FilterChip>
+
+                    <span className="mx-1 h-4 w-px bg-white/10" />
+                    <select
+                      value={periodoModo}
+                      onChange={(e) => { const m = e.target.value as PeriodoModo; setPeriodoModo(m); if (m !== 'off' && !periodoIni) { const r = semanaRange(0); setPeriodoIni(r.ini); setPeriodoFim(r.fim); } setCurrentPage(1); }}
+                      className="px-2 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-[11px] focus:outline-none"
+                      title="O que medir no intervalo escolhido"
+                    >
+                      <option value="off" className="bg-[#12101a]">sem período</option>
+                      <option value="interagido" className="bg-[#12101a]">o que foi interagido</option>
+                      <option value="agendado" className="bg-[#12101a]">o que está agendado</option>
+                    </select>
+                    <input type="date" value={periodoIni} onChange={(e) => { setPeriodoIni(e.target.value); setCurrentPage(1); }} disabled={periodoModo === 'off'}
+                      className="px-2 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-[11px] [color-scheme:dark] disabled:opacity-40" />
+                    <span className="text-[11px] text-text-secondary">até</span>
+                    <input type="date" value={periodoFim} onChange={(e) => { setPeriodoFim(e.target.value); setCurrentPage(1); }} disabled={periodoModo === 'off'}
+                      className="px-2 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-[11px] [color-scheme:dark] disabled:opacity-40" />
+
+                    {periodoModo !== 'off' && (
+                      <>
+                        <button onClick={limparPeriodo} className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-[#F45B69] bg-[#F45B69]/10 hover:bg-[#F45B69]/20 rounded-lg transition-colors">
+                          <XIcon className="h-3 w-3" /> limpar
+                        </button>
+                        <span className="text-[11px] text-text-secondary">
+                          {carregandoInter ? 'lendo interações…' : periodoModo === 'interagido' ? 'leads com interação no intervalo' : 'leads com tarefa marcada no intervalo'}
+                        </span>
+                      </>
                     )}
                   </div>
                   <div className="ml-auto flex items-center gap-1.5 flex-nowrap shrink-0 w-full sm:w-auto justify-end sm:justify-start">

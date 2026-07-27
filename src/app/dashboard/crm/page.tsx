@@ -12,7 +12,7 @@ import FilterModal, { Filters, ORIGEM_FILTER_OPTIONS, ACAO_FILTER_OPTIONS, getOr
 import { getDemoLeads } from '@/lib/espelho/demoData';
 import LoadingState from '@/components/ui/LoadingState';
 import { ensureTarefasPendentes } from '@/lib/leadTasks';
-import { ETAPA_FECHADO, ETAPA_DESCARTADO, ETAPAS_DO_ADMIN } from '@/lib/circuito';
+import { ETAPA_FECHADO, ETAPA_DESCARTADO, ETAPAS_DO_ADMIN, ETAPA_INTERESSE_FUTURO, colunaDoLead, comInteresseFuturo } from '@/lib/circuito';
 import { statusDoLead, type StatusLead } from '@/lib/statusLead';
 
 // --- Tipos ---
@@ -22,8 +22,8 @@ interface Lead {
   telefone: string;
   etapa: string;
   taskStatus: StatusLead;
-  /** Tarefas pendentes (espelho) — base do filtro "Próxima ação" */
-  pendentes?: { type?: string; description?: string }[];
+  /** Tarefas pendentes (espelho) — base do filtro "Próxima ação" e do "Interesse futuro" */
+  pendentes?: { type?: string; description?: string; dueDate?: unknown }[];
   origem?: string;
   origemTipo?: string;
   origemPropaganda?: string;
@@ -340,7 +340,10 @@ export default function CrmPage() {
         }
         
         if (activeFilter) {
-            leadsToFilter = leadsToFilter.filter(lead => normalizeEtapa(lead.etapa) === activeFilter);
+            // "Interesse futuro" é coluna derivada (agendado pra +15d), não etapa gravada
+            leadsToFilter = activeFilter === ETAPA_INTERESSE_FUTURO
+                ? leadsToFilter.filter(lead => colunaDoLead(normalizeEtapa(lead.etapa), lead.pendentes) === ETAPA_INTERESSE_FUTURO)
+                : leadsToFilter.filter(lead => normalizeEtapa(lead.etapa) === activeFilter);
         }
 
         if (activeTaskFilter) {
@@ -517,7 +520,7 @@ export default function CrmPage() {
                                 <div key={`filtro-etapas-${stages.join('-')}`} className="absolute left-0 top-full mt-1.5 z-50 w-[min(90vw,420px)] max-h-[70vh] overflow-y-auto rounded-xl border border-white/10 bg-[#12101a] shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] py-3 px-3">
                                     <p className="text-[10px] font-extrabold text-text-secondary uppercase tracking-[0.18em] mb-2 px-1">Etapa do funil</p>
                                     <div className="flex flex-wrap gap-2 mb-3">
-                                        {stages.map((stage) => (
+                                        {comInteresseFuturo(stages).map((stage) => (
                                             <FilterChip
                                                 key={stage}
                                                 selected={activeFilter === stage}

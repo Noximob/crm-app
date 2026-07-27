@@ -12,7 +12,7 @@ import LoadingState from '@/components/ui/LoadingState';
 import { ORIGEM_FILTER_OPTIONS, ACAO_FILTER_OPTIONS, getOrigemBucket, getCampanhaDoLead, getAcaoBuckets } from '../_components/FilterModal';
 import { getTaskStatusInfo, TaskStatus } from '@/lib/leadTasks';
 import { getDemoLeads } from '@/lib/espelho/demoData';
-import { ETAPAS_DO_ADMIN } from '@/lib/circuito';
+import { ETAPAS_DO_ADMIN, colunaDoLead, comInteresseFuturo } from '@/lib/circuito';
 
 type LeadsByStage = { [key: string]: Lead[] };
 
@@ -126,13 +126,16 @@ export default function AndamentoPage() {
         if (!currentUser) return;
         setLoading(true);
 
-        const stageList = stages.length ? stages : [];
+        // "Interesse futuro" é coluna derivada (agendado pra +15 dias) — entra no
+        // quadro logo depois de Em Contato, sem existir como etapa no banco.
+        const stageList = stages.length ? comInteresseFuturo(stages) : [];
         const groupByStage = (list: Lead[]) => {
             const leadsByStage = stageList.reduce<LeadsByStage>((acc, stage) => ({ ...acc, [stage]: [] }), {});
             for (const lead of list) {
-                const stage = normalizeEtapa(lead.etapa);
+                const etapa = normalizeEtapa(lead.etapa);
                 // Descartado/Bolsão ficam fora do quadro (bolsa é do admin); Fechamento é coluna
-                if ((ETAPAS_DO_ADMIN as readonly string[]).includes(stage)) continue;
+                if ((ETAPAS_DO_ADMIN as readonly string[]).includes(etapa)) continue;
+                const stage = colunaDoLead(etapa, lead.tarefasPendentes);
                 if (leadsByStage[stage]) {
                     leadsByStage[stage].push(lead);
                 } else {
@@ -377,7 +380,7 @@ export default function AndamentoPage() {
                         <LoadingState label="Carregando quadro..." className="py-10" />
                     ) : (
                         <div className="flex gap-4 flex-1 min-h-0 overflow-x-auto w-full max-w-full pb-2">
-                            {stages.map((stage, index) => (
+                            {comInteresseFuturo(stages).map((stage, index) => (
                                 <KanbanColumn
                                     key={stage}
                                     id={stage}

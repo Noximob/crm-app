@@ -77,6 +77,71 @@ export function etapaAposAcao(atualNormalizada: string, alvo: string): string {
 /** Estados fora da cobrança do circuito (sem pergunta pendente / fora da carteira ativa). */
 export const ETAPAS_TERMINAIS = [ETAPA_FECHADO, ETAPA_DESCARTADO] as const;
 
+// ---------------------------------------------------------------------------
+// Interesse futuro — COLUNA DERIVADA (não é etapa gravada no lead)
+// ---------------------------------------------------------------------------
+/**
+ * Cliente que já teve contato mas só volta ao radar lá na frente: a próxima
+ * tarefa dele está marcada pra daqui a mais de INTERESSE_FUTURO_DIAS.
+ *
+ * É deliberadamente DERIVADO da tarefa, e não gravado em `lead.etapa`:
+ *  - a etapa é catraca (só anda pra frente) — gravar prenderia o cliente aqui
+ *    mesmo depois de antecipar a tarefa;
+ *  - assim que a tarefa é antecipada (ou vence), ele volta sozinho pra Em Contato;
+ *  - o histórico do funil continua íntegro (nada de etapa fantasma no banco).
+ */
+export const ETAPA_INTERESSE_FUTURO = 'Interesse futuro';
+export const INTERESSE_FUTURO_DIAS = 15;
+
+/** dueDate em ms — aceita Timestamp, {seconds}, Date ou string. */
+function dueMs(due: unknown): number {
+  if (!due) return 0;
+  const d = due as { toMillis?: () => number; seconds?: number };
+  if (typeof d.toMillis === 'function') return d.toMillis();
+  if (typeof d.seconds === 'number') return d.seconds * 1000;
+  if (due instanceof Date) return due.getTime();
+  if (typeof due === 'string') { const p = Date.parse(due); return Number.isNaN(p) ? 0 : p; }
+  return 0;
+}
+
+/**
+ * O lead está "guardado pra depois"? Só vale pra quem está em Em Contato e tem
+ * TODAS as tarefas pendentes marcadas pra além do horizonte (a mais próxima
+ * define — se tem algo pra essa semana, ele continua no dia a dia).
+ */
+export function ehInteresseFuturo(
+  etapaNormalizada: string,
+  tarefasPendentes: { dueDate?: unknown }[] | undefined,
+  agora = Date.now(),
+): boolean {
+  if (etapaNormalizada !== ETAPA_EM_CONTATO) return false;
+  const prazos = (tarefasPendentes || []).map((t) => dueMs(t.dueDate)).filter((ms) => ms > 0);
+  if (prazos.length === 0) return false; // sem tarefa não é "futuro", é lead parado
+  const maisProxima = Math.min(...prazos);
+  return maisProxima - agora > INTERESSE_FUTURO_DIAS * 24 * 60 * 60 * 1000;
+}
+
+/**
+ * Coluna do quadro: a etapa real, ou "Interesse futuro" quando o cliente está
+ * agendado pra muito adiante. Use nas VISÕES (kanban, listas, filtros) — nunca
+ * pra gravar no banco.
+ */
+export function colunaDoLead(
+  etapaNormalizada: string,
+  tarefasPendentes: { dueDate?: unknown }[] | undefined,
+  agora = Date.now(),
+): string {
+  return ehInteresseFuturo(etapaNormalizada, tarefasPendentes, agora) ? ETAPA_INTERESSE_FUTURO : etapaNormalizada;
+}
+
+/** Insere a coluna derivada logo depois de "Em Contato" na lista de colunas. */
+export function comInteresseFuturo(stages: string[]): string[] {
+  if (stages.includes(ETAPA_INTERESSE_FUTURO)) return stages;
+  const i = stages.indexOf(ETAPA_EM_CONTATO);
+  if (i < 0) return stages;
+  return [...stages.slice(0, i + 1), ETAPA_INTERESSE_FUTURO, ...stages.slice(i + 1)];
+}
+
 /**
  * Etapas que ficam SÓ com o admin (bolsa de redistribuição) = DESCARTADO.
  * "Bolsão" deixou de ser estado de lead: estacionados/interesse futuro voltam

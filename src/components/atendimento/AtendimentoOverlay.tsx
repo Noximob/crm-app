@@ -185,6 +185,9 @@ interface AtendimentoOverlayProps {
   anotacoes: string;
   onChangeAnotacoes: (v: string) => void;
   saveNotas: 'idle' | 'salvando' | 'salvo';
+  /** Marca "Importante": lead que o gerente acompanha e leva pra reunião. */
+  importante?: boolean;
+  onToggleImportante?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -269,6 +272,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
     aberto, estadoInicial, nome, telefone, origem, etapaAtual, tasks, cadencias, executando, isDemo,
     executar, registrarContato, onFecharX, onConcluido, onPular, historico, rodizioPrimeiroContato,
     qualGroups, qualifications, onToggleQual, saveQual, anotacoes, onChangeAnotacoes, saveNotas,
+    importante, onToggleImportante,
   } = props;
 
   const [estado, setEstado] = useState<EstadoFluxo>(estadoInicial);
@@ -1071,7 +1075,36 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
           <div className="bg-[#201c2e] border border-white/15 rounded-xl overflow-hidden shadow-[0_24px_80px_-24px_rgba(0,0,0,0.9)] w-full">
             <div className="flex items-center gap-2 px-3.5 py-2 bg-white/[0.03] border-b border-white/10 text-[11px] font-extrabold uppercase tracking-[0.12em] text-white/40">
               <span className="h-2 w-2 rounded-full bg-[#7DD3FC]" />
-              {nomeCliente} · Anotações & Qualificação
+              <span className="min-w-0 truncate">{nomeCliente} · Anotações & Qualificação</span>
+              {onToggleImportante && (
+                <span className="ml-auto flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={onToggleImportante}
+                    disabled={executando}
+                    aria-pressed={!!importante}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-extrabold uppercase tracking-wider border transition-all active:scale-[0.97] disabled:opacity-40 ${
+                      importante
+                        ? 'bg-gradient-to-r from-[#E8C547] to-[#C89210] border-[#E8C547] text-[#181203] shadow-[0_0_14px_rgba(232,197,71,0.45)]'
+                        : 'bg-white/[0.04] border-white/15 text-white/50 hover:text-[#E8C547] hover:border-[#E8C547]/50'
+                    }`}
+                    title={importante ? 'Marcado como importante — clique para desmarcar' : 'Marcar como importante'}
+                  >
+                    <span aria-hidden>{importante ? '⭐' : '☆'}</span>
+                    Importante
+                  </button>
+                  <span
+                    tabIndex={0}
+                    role="note"
+                    aria-label="Para que serve o marcador Importante"
+                    className="group relative grid place-items-center w-4 h-4 rounded-full border border-white/25 text-white/45 text-[9px] font-bold cursor-help hover:border-[#E8C547]/60 hover:text-[#E8C547] transition-colors"
+                  >
+                    i
+                    <span className="pointer-events-none absolute right-0 top-6 z-20 w-60 rounded-lg border border-white/15 bg-[#12101a] px-3 py-2 text-[11px] font-medium normal-case tracking-normal leading-snug text-white/80 opacity-0 shadow-[0_14px_40px_-12px_rgba(0,0,0,0.9)] transition-opacity group-hover:opacity-100 group-focus:opacity-100">
+                      Marque os leads que <b className="text-[#E8C547]">precisam de atenção</b>. Eles ficam visíveis para o gerente e são conversados na reunião, pra aumentar a conversão.
+                    </span>
+                  </span>
+                </span>
+              )}
             </div>
             <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
               <div>

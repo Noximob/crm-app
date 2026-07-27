@@ -349,6 +349,16 @@ export default function LeadDetailPage() {
         }, 800);
     };
 
+    /** "Importante": lead que o gerente acompanha e leva pra reunião. */
+    const handleToggleImportante = () => {
+        if (!lead) return;
+        if (isEspelhoDemo || readOnly) { showToast('Modo demonstração — nada é salvo.', 'info'); return; }
+        const novo = !lead.importante;
+        updateDoc(doc(db, 'leads', lead.id), { importante: novo })
+            .then(() => showToast(novo ? '⭐ Marcado como importante — o gerente vê na lista.' : 'Desmarcado.', novo ? 'success' : 'info'))
+            .catch(() => showToast('Não foi possível salvar — tente de novo.', 'error'));
+    };
+
     // ------------------------------------------------------------------
     // Qualificação — sempre aberta, salva a cada toque (com debounce)
     // ------------------------------------------------------------------
@@ -859,6 +869,8 @@ export default function LeadDetailPage() {
                     anotacoes={tempAnnotations}
                     onChangeAnotacoes={handleAnnotationsChange}
                     saveNotas={saveNotas}
+                    importante={!!lead?.importante}
+                    onToggleImportante={handleToggleImportante}
                 />
             )}
         </div>

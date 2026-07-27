@@ -41,6 +41,8 @@ interface LeadDoc {
   tarefasPendentes?: TarefaPendente[];
   qualificacao?: Record<string, any>;
   anotacoes?: string;
+  /** Marcado pelo corretor: lead que o gerente acompanha e leva pra reunião. */
+  importante?: boolean;
 }
 
 interface Candidato {
@@ -271,6 +273,15 @@ export default function AtendimentoWatcher() {
     }, 800);
   };
 
+  /** Marca/desmarca "Importante" — grava na hora (é um clique só, sem debounce). */
+  const handleToggleImportante = () => {
+    if (!leadAberto) return;
+    const novo = !leadAberto.importante;
+    updateDoc(doc(db, 'leads', leadAberto.id), { importante: novo })
+      .then(() => showToast(novo ? '⭐ Marcado como importante — o gerente vê na lista.' : 'Desmarcado.', novo ? 'success' : 'info'))
+      .catch(() => showToast('Não foi possível salvar — tente de novo.', 'error'));
+  };
+
   const abrirFila = () => {
     modoFila.current = true;
     // Nunca abre o lead da própria página (lá quem conduz é a página)
@@ -381,6 +392,8 @@ export default function AtendimentoWatcher() {
           anotacoes={anot}
           onChangeAnotacoes={handleAnot}
           saveNotas={saveNotas}
+          importante={!!leadAberto.importante}
+          onToggleImportante={handleToggleImportante}
         />
       )}
     </>
