@@ -73,8 +73,8 @@ const ValorFlex = ({ label, mode, value, base, onMode, onValue, hint, ph }: {
   };
   return (
     <div>
-      <div className="flex items-center justify-between gap-2 mb-1.5">
-        <label className="block text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary truncate">{label}</label>
+      <div className="flex items-start justify-between gap-2 mb-1.5 min-h-[26px]">
+        <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary leading-snug">{label}</label>
         <div className="flex rounded-md overflow-hidden border border-white/10 bg-white/[0.04] shrink-0">
           {(['rs', 'pct'] as const).map((m) => (
             <button key={m} type="button" onClick={() => trocar(m)} className={`px-2 py-0.5 text-[10px] font-extrabold transition-colors ${mode === m ? 'bg-gradient-to-r from-[#FF1E56] to-[#A50D38] text-white shadow-[0_0_10px_rgba(255,30,86,0.4)]' : 'text-text-secondary hover:text-white'}`}>
@@ -255,18 +255,18 @@ export default function FluxoTab({ header }: { header: HeaderImovel }) {
       <div className="space-y-4">
         <Secao icon="🔑" titulo="Até a entrega das chaves">
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <ValorFlex label="Desconto" mode={descMode} value={descVal} base={c.valor} onMode={setDescMode} onValue={setDescVal}
-              hint={c.descR > 0 ? <>{descMode === 'pct' ? <>= {brl(c.descR)}</> : <>= {fmtPct(c.pctDesc)}</>} · proposta <b>{brl(c.vp)}</b></> : 'opcional'} />
-            <ValorFlex label="A pagar até a chave" mode={chaveMode} value={chaveVal} base={c.vp} onMode={setChaveMode} onValue={setChaveVal} ph="30"
-              hint={c.ac > 0 ? (chaveMode === 'pct' ? <>= <b>{brl(c.ac)}</b></> : <>= <b>{fmtPct(c.pctChaveEff)}</b> da proposta</>) : 'ex.: 30% até a entrega'} />
-            <ValorFlex label="Entrada (total)" mode={entradaMode} value={entradaVal} base={c.vp} onMode={setEntradaMode} onValue={setEntradaVal}
-              hint={eq(entradaMode, entradaVal, c.nEntr > 1 && c.entradaR > 0 ? <b>{c.nEntr}× de {brl(c.entradaParc)}</b> : undefined)} />
-            <Campo label="Entrada em quantas vezes" hint={c.nEntr > 1 ? 'no ato e meses seguintes' : '1 = à vista no ato'}>
+            <ValorFlex label="Desconto no valor de tabela" mode={descMode} value={descVal} base={c.valor} onMode={setDescMode} onValue={setDescVal}
+              hint={c.descR > 0 ? <>{descMode === 'pct' ? <>= {brl(c.descR)}</> : <>= {fmtPct(c.pctDesc)}</>} · proposta <b>{brl(c.vp)}</b></> : 'opcional — deixe 0 se não houver'} />
+            <ValorFlex label="Total a pagar até as chaves" mode={chaveMode} value={chaveVal} base={c.vp} onMode={setChaveMode} onValue={setChaveVal} ph="30"
+              hint={c.ac > 0 ? (chaveMode === 'pct' ? <>= <b>{brl(c.ac)}</b></> : <>= <b>{fmtPct(c.pctChaveEff)}</b> da proposta</>) : 'quanto entra antes de financiar — ex.: 30%'} />
+            <ValorFlex label="Entrada — valor total" mode={entradaMode} value={entradaVal} base={c.vp} onMode={setEntradaMode} onValue={setEntradaVal}
+              hint={eq(entradaMode, entradaVal, c.nEntr > 1 && c.entradaR > 0 ? <b>{c.nEntr}× de {brl(c.entradaParc)}</b> : undefined) || 'o sinal, somando todas as vezes'} />
+            <Campo label="Entrada dividida em quantas vezes" hint={c.nEntr > 1 ? '1ª no ato, as outras nos meses seguintes' : '1 = à vista, tudo no ato'}>
               <input type="number" min="1" value={nEntrada} onChange={(e) => setNEntrada(e.target.value)} placeholder="1" className={inputCls + ' tabular-nums'} />
             </Campo>
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
-            <Campo label="Parcelamento com a construtora até quando?" hint={mesesPrazo > 0
+            <Campo label="Pagar direto com a construtora até quando" hint={mesesPrazo > 0
               ? <>prazo de <b>{mesesPrazo} meses</b> → já preenchi <b>{mesesPrazo} parcelas</b> e <b>{Math.floor(mesesPrazo / PERIODOS[periodicidade].meses)} reforços</b> {PERIODOS[periodicidade].label.toLowerCase()} lá embaixo{!dataBase ? ' (contando a partir de hoje)' : ''}</>
               : 'a data limite do parcelamento direto com a construtora (entrega das chaves). Ao escolher, preencho sozinho quantas parcelas e reforços cabem no prazo.'}>
               <input type="date" value={dataLimite} onChange={(e) => setDataLimite(e.target.value)} className={inputCls} />
@@ -292,9 +292,9 @@ export default function FluxoTab({ header }: { header: HeaderImovel }) {
 
         <Secao icon="📅" titulo="Parcelas mensais">
           <div className="grid sm:grid-cols-3 gap-3">
-            <Campo label="Data da 1ª parcela"><input type="date" value={dataBase} onChange={(e) => setDataBase(e.target.value)} className={inputCls} /></Campo>
-            <Campo label="Quantidade de parcelas" hint={mesesPrazo > 0 ? 'calculada pelo prazo (pode ajustar)' : undefined}><input type="number" value={nParcelas} onChange={(e) => setNParcelas(e.target.value)} placeholder="40" className={inputCls + ' tabular-nums'} /></Campo>
-            <ValorFlex label={parcelaMode === 'pct' ? 'Parcelas — % do total' : 'Valor de cada parcela'} mode={parcelaMode} value={parcelaVal} base={c.baseParcela} onMode={setParcelaMode} onValue={setParcelaVal}
+            <Campo label="Data da 1ª parcela mensal" hint="as demais vencem de mês em mês"><input type="date" value={dataBase} onChange={(e) => setDataBase(e.target.value)} className={inputCls} /></Campo>
+            <Campo label="Quantas parcelas mensais" hint={mesesPrazo > 0 ? 'preenchida pelo prazo — pode ajustar' : 'quantas mensais no total'}><input type="number" value={nParcelas} onChange={(e) => setNParcelas(e.target.value)} placeholder="40" className={inputCls + ' tabular-nums'} /></Campo>
+            <ValorFlex label={parcelaMode === 'pct' ? 'Cada parcela — % do valor' : 'Valor de cada parcela mensal'} mode={parcelaMode} value={parcelaVal} base={c.baseParcela} onMode={setParcelaMode} onValue={setParcelaVal}
               hint={parcelaVal > 0 ? (parcelaMode === 'pct'
                 ? <>{fmtPct(parcelaVal)} do valor ÷ {c.nParc} = <b>{brl(c.parcelaR)}</b> por parcela</>
                 : c.vp > 0 && c.totalParc > 0 ? <>total <b>{brl(c.totalParc)}</b> = <b>{fmtPct((c.totalParc / c.vp) * 100)}</b> do valor</> : undefined) : undefined} />
@@ -305,14 +305,14 @@ export default function FluxoTab({ header }: { header: HeaderImovel }) {
 
         <Secao icon="💰" titulo="Reforços (balões)">
           <div className="grid sm:grid-cols-3 gap-3">
-            <Campo label="Quantidade" hint={mesesPrazo > 0 ? 'calculada pelo prazo (pode ajustar)' : undefined}><input type="number" value={nReforcos} onChange={(e) => setNReforcos(e.target.value)} placeholder="3" className={inputCls + ' tabular-nums'} /></Campo>
-            <ValorFlex label={reforcoMode === 'pct' ? 'Reforços — % do total' : 'Valor de cada reforço'} mode={reforcoMode} value={reforcoVal} base={c.baseReforco} onMode={setReforcoMode} onValue={setReforcoVal}
+            <Campo label="Quantos reforços" hint={mesesPrazo > 0 ? 'preenchida pelo prazo — pode ajustar' : 'parcelas maiores, fora as mensais'}><input type="number" value={nReforcos} onChange={(e) => setNReforcos(e.target.value)} placeholder="3" className={inputCls + ' tabular-nums'} /></Campo>
+            <ValorFlex label={reforcoMode === 'pct' ? 'Cada reforço — % do valor' : 'Valor de cada reforço'} mode={reforcoMode} value={reforcoVal} base={c.baseReforco} onMode={setReforcoMode} onValue={setReforcoVal}
               hint={reforcoVal > 0 ? (reforcoMode === 'pct'
                 ? <>{fmtPct(reforcoVal)} do valor ÷ {c.nRef} = <b>{brl(c.reforcoR)}</b> por reforço</>
                 : c.vp > 0 && c.totalRef > 0 ? <>total <b>{brl(c.totalRef)}</b> = <b>{fmtPct((c.totalRef / c.vp) * 100)}</b> do valor</> : undefined) : undefined} />
-            <Campo label="Periodicidade (sugestão)">
+            <Campo label="Os reforços caem de quanto em quanto tempo" hint="define as datas sugeridas abaixo">
               <select value={periodicidade} onChange={(e) => setPeriodicidade(e.target.value)} className={inputCls}>
-                <option value="trimestral">Trimestrais</option><option value="semestral">Semestrais</option><option value="anual">Anuais</option>
+                <option value="trimestral">A cada 3 meses (trimestrais)</option><option value="semestral">A cada 6 meses (semestrais)</option><option value="anual">A cada 12 meses (anuais)</option>
               </select>
             </Campo>
           </div>

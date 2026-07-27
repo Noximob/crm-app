@@ -504,7 +504,15 @@ export default function AdminDistribuicaoAdsPage() {
     if (guardaDemo()) return;
     setSalvandoEscala(true);
     try {
-      await persistConfig({ corretores: escala });
+      // O rodízio é por ÍNDICE. Se a ordem muda e o índice fica igual, o "próximo
+      // da vez" passa a apontar pra outra pessoa (parecia que a escala não salvava
+      // direito). Aqui a gente reancora o ponteiro em QUEM era o próximo: se ele
+      // continua na escala, o índice acompanha; se saiu, volta pro começo da fila.
+      const antiga = config?.corretores ?? [];
+      const idxAntigo = antiga.length ? ((config?.proximoIndex ?? 0) % antiga.length + antiga.length) % antiga.length : 0;
+      const uidProximo = antiga[idxAntigo];
+      const novoIdx = uidProximo ? escala.indexOf(uidProximo) : -1;
+      await persistConfig({ corretores: escala, proximoIndex: novoIdx >= 0 ? novoIdx : 0 });
       showToast('Escala salva.', 'success');
     } catch (e) {
       console.error('Erro ao salvar escala:', e);

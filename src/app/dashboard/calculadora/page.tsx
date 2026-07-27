@@ -44,6 +44,17 @@ function CalculadoraInner() {
     }
   };
 
+  // Limpar campos: trocar a key remonta a aba, então todo o estado interno dela
+  // volta ao zero — sem precisar resetar campo por campo.
+  const [keyFluxo, setKeyFluxo] = useState(0);
+  const [keyInvestidor, setKeyInvestidor] = useState(0);
+  const limparAba = () => (tab === 'fluxo' ? setKeyFluxo((k) => k + 1) : setKeyInvestidor((k) => k + 1));
+  const limparTudo = () => {
+    setEmpreendimento(''); setUnidade(''); setTorre(''); setCliente(''); setValorImovel(0);
+    setKeyFluxo((k) => k + 1); setKeyInvestidor((k) => k + 1);
+  };
+  const btnLimpar = 'px-3 py-2 rounded-lg text-[11px] font-extrabold uppercase tracking-wider border border-white/10 bg-white/[0.04] text-text-secondary hover:text-white hover:bg-white/[0.08] transition-colors whitespace-nowrap';
+
   return (
     <div className="min-h-full py-6 px-4">
       <div className="max-w-6xl mx-auto">
@@ -56,8 +67,9 @@ function CalculadoraInner() {
           </p>
         </div>
 
-        {/* ---- abas ---- */}
-        <div className="flex sm:inline-flex rounded-xl border border-white/10 bg-white/[0.04] p-1 gap-1 mb-4">
+        {/* ---- abas + limpar ---- */}
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+        <div className="flex sm:inline-flex rounded-xl border border-white/10 bg-white/[0.04] p-1 gap-1">
           {TABS.map(([t, label]) => (
             <button
               key={t}
@@ -72,6 +84,13 @@ function CalculadoraInner() {
               {label}
             </button>
           ))}
+        </div>
+          <button type="button" onClick={limparAba} className={btnLimpar} title="Zera os campos desta calculadora (mantém os dados do imóvel)">
+            ✕ Limpar campos
+          </button>
+          <button type="button" onClick={limparTudo} className={btnLimpar} title="Zera o imóvel e as duas calculadoras — começar do zero">
+            ⟲ Limpar tudo
+          </button>
         </div>
 
         {/* ---- imóvel (compartilhado entre as abas) ---- */}
@@ -92,8 +111,8 @@ function CalculadoraInner() {
         </div>
 
         {/* ---- conteúdo das abas (as duas ficam montadas p/ não perder o que foi digitado) ---- */}
-        <div className={tab === 'fluxo' ? '' : 'hidden'}><FluxoTab header={header} /></div>
-        <div className={tab === 'investidor' ? '' : 'hidden'}><InvestidorTab header={header} /></div>
+        <div className={tab === 'fluxo' ? '' : 'hidden'}><FluxoTab key={keyFluxo} header={header} /></div>
+        <div className={tab === 'investidor' ? '' : 'hidden'}><InvestidorTab key={keyInvestidor} header={header} /></div>
       </div>
     </div>
   );

@@ -66,6 +66,7 @@ export async function aceitarAdsLead({
   etapaInicial,
 }: AceitarAdsLeadParams): Promise<AceitarAdsLeadResultado> {
   const adsLeadRef = doc(db, 'adsLeads', adsLeadId);
+  const configRef = doc(db, 'distribuicaoAds', 'config');
 
   try {
     return await runTransaction(db, async (transaction) => {
@@ -83,6 +84,14 @@ export async function aceitarAdsLead({
           aceitoPorNome: dados.aceitoPorNome,
         } as AceitarAdsLeadResultado;
       }
+
+      // Rodízio: quem aceita GASTA A VEZ. Sem isso, quem pegou um lead do bolsão
+      // (que não era dele) continuava sendo o próximo da fila e levava dois
+      // seguidos. Todas as leituras vêm antes das escritas (regra do Firestore).
+      const cfgSnap = await transaction.get(configRef);
+      const cfg = cfgSnap.exists() ? (cfgSnap.data() as { corretores?: string[] }) : null;
+      const fila = Array.isArray(cfg?.corretores) ? (cfg?.corretores as string[]) : [];
+      const idxQuemPegou = fila.indexOf(uid);
 
       const digitos = String(dados.telefone || '').replace(/\D/g, '');
 
@@ -129,6 +138,11 @@ export async function aceitarAdsLead({
         tempoAceiteSeg,
         leadId: novoLeadRef.id,
       });
+
+      // Quem pegou sai da vez: o rodízio segue de quem vem DEPOIS dele.
+      if (idxQuemPegou >= 0 && fila.length > 0) {
+        transaction.update(configRef, { proximoIndex: (idxQuemPegou + 1) % fila.length });
+      }
 
       return { status: 'ok', leadId: novoLeadRef.id } as AceitarAdsLeadResultado;
     });
