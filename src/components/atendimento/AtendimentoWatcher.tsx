@@ -253,7 +253,14 @@ export default function AtendimentoWatcher() {
       setSaveQual('salvando');
       if (qualTimer.current) clearTimeout(qualTimer.current);
       qualTimer.current = setTimeout(() => {
-        updateDoc(doc(db, 'leads', leadAberto.id), { qualificacao: next })
+        // Carimbo: sem ele dá pra saber SE tem qualificação, nunca QUANDO foi
+        // preenchida (nem se foi antes ou depois do meet).
+        updateDoc(doc(db, 'leads', leadAberto.id), {
+          qualificacao: next,
+          qualificadoEm: serverTimestamp(),
+          qualificadoPor: currentUser?.uid || null,
+          qualificadoPorNome: userData?.nome || null,
+        })
           .then(() => { setSaveQual('salvo'); setTimeout(() => setSaveQual(s => s === 'salvo' ? 'idle' : s), 2000); })
           .catch(() => setSaveQual('idle'));
       }, 600);
@@ -267,7 +274,12 @@ export default function AtendimentoWatcher() {
     setSaveNotas('salvando');
     if (notasTimer.current) clearTimeout(notasTimer.current);
     notasTimer.current = setTimeout(() => {
-      updateDoc(doc(db, 'leads', leadAberto.id), { anotacoes: v })
+      updateDoc(doc(db, 'leads', leadAberto.id), {
+        anotacoes: v,
+        anotadoEm: serverTimestamp(),
+        anotadoPor: currentUser?.uid || null,
+        anotadoPorNome: userData?.nome || null,
+      })
         .then(() => { setSaveNotas('salvo'); setTimeout(() => setSaveNotas(s => s === 'salvo' ? 'idle' : s), 2000); })
         .catch(() => setSaveNotas('idle'));
     }, 800);

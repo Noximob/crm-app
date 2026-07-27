@@ -10,6 +10,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, onSnapshot, query, where } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { app } from '@/lib/firebase';
 import {
   mapEtapaCircuito, etapaIndex, ETAPAS_CIRCUITO,
   ETAPA_FECHADO, ETAPA_DESCARTADO, ETAPA_MEET_AGENDADO, ETAPA_VISITA_AGENDADA,
@@ -25,7 +27,11 @@ export interface RelLead {
   circuito?: { tentativas?: number; contatosFeitos?: number; primeiroContatoEm?: unknown; tentativasAtePrimeiroContato?: number; desde?: unknown };
   [k: string]: unknown;
 }
-export interface RelCorretor { id: string; nome: string; tipoConta?: string; aprovado?: boolean; email?: string; }
+export interface RelCorretor {
+  id: string; nome: string; tipoConta?: string; aprovado?: boolean; email?: string;
+  /** Último acesso ao sistema (gravado no login) — "sumido há X dias". */
+  lastActiveAt?: unknown; ultimoAcesso?: unknown;
+}
 export interface RelAdsLead {
   id: string; status?: string; corretorEscalado?: string; aceitoPor?: string; tempoAceiteSeg?: number;
   viaGeral?: boolean; campanhaNome?: string; negadoPor?: string[];
@@ -87,7 +93,7 @@ export function useRelatorioData(imobiliariaId: string | undefined, ativo: boole
       (s) => { setLeads(s.docs.map((d) => ({ id: d.id, ...d.data() } as RelLead))); setError(null); setLoading(false); },
       (e) => { setError(e.message || 'Erro ao carregar leads'); setLoading(false); });
     const u2 = onSnapshot(query(collection(db, 'usuarios'), where('imobiliariaId', '==', imobiliariaId)),
-      (s) => setCorretores(s.docs.map((d) => { const x = d.data(); return { id: d.id, nome: x.nome || 'Sem nome', tipoConta: x.tipoConta, aprovado: x.aprovado, email: x.email } as RelCorretor; })), () => {});
+      (s) => setCorretores(s.docs.map((d) => { const x = d.data(); return { id: d.id, nome: x.nome || 'Sem nome', tipoConta: x.tipoConta, aprovado: x.aprovado, email: x.email, lastActiveAt: x.lastActiveAt, ultimoAcesso: x.ultimoAcesso } as RelCorretor; })), () => {});
     const u3 = onSnapshot(query(collection(db, 'adsLeads'), where('imobiliariaId', '==', imobiliariaId)),
       (s) => setAds(s.docs.map((d) => ({ id: d.id, ...d.data() } as RelAdsLead))), () => {});
     // janela exclusiva configurada (pra saber o que é "não atendeu a tempo")
@@ -96,6 +102,38 @@ export function useRelatorioData(imobiliariaId: string | undefined, ativo: boole
     return () => { u1(); u2(); u3(); u4(); };
   }, [imobiliariaId, ativo]);
   return { leads, corretores, ads, minutosExclusivo, loading, error };
+}
+
+// ── Custo por campanha (Meta Insights) — fecha o ROI do anúncio ─────────────
+export interface GastoCampanha {
+  campanhaId: string; nome: string; gasto: number;
+  impressoes: number; cliques: number; alcance: number; leadsMeta: number; cpl: number | null;
+}
+export function useCustoCampanhas(ativo: boolean, periodo: Periodo) {
+  const [gastos, setGastos] = useState<GastoCampanha[]>([]);
+  const [totalGasto, setTotalGasto] = useState(0);
+  const [erroGasto, setErroGasto] = useState<string | null>(null);
+  const [carregandoGasto, setCarregando] = useState(false);
+  useEffect(() => {
+    if (!ativo) return;
+    let cancel = false;
+    (async () => {
+      setCarregando(true); setErroGasto(null);
+      try {
+        const ini = inicioPeriodo(periodo);
+        const dia = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+        const fn = httpsCallable(getFunctions(app), 'custoCampanhasMeta');
+        const r = await fn(ini > 0 ? { desde: dia(ini), ate: dia(Date.now()) } : {});
+        const d = (r.data || {}) as { ok?: boolean; motivo?: string; total?: number; campanhas?: GastoCampanha[] };
+        if (cancel) return;
+        if (d.ok) { setGastos(d.campanhas || []); setTotalGasto(d.total || 0); }
+        else setErroGasto(d.motivo === 'sem_permissao_ads' ? 'sem permissão de leitura de anúncios' : d.motivo === 'sem_token' ? 'token do Meta não configurado' : 'não foi possível ler o gasto');
+      } catch { if (!cancel) setErroGasto('não foi possível ler o gasto'); }
+      finally { if (!cancel) setCarregando(false); }
+    })();
+    return () => { cancel = true; };
+  }, [ativo, periodo]);
+  return { gastos, totalGasto, erroGasto, carregandoGasto };
 }
 
 // ── Hook 2: atividade (lê interactions de cada lead, em lotes, no fundo) ─────
@@ -164,6 +202,8 @@ export interface RankingRow {
   respostaAdsMed: number | null; aceitosAds: number; negou: number;
   // atividade
   ultimaAtividadeMs: number | null; diasSemAtividade: number | null; interacoes: number; interacoesPorLeadAtivo: number | null;
+  /** Último login (campo do usuário) — separado de "mexeu num lead". */
+  ultimoAcessoMs: number | null; diasSemAcessar: number | null;
   ligacoes: number; whats: number; cadenciaMediaDias: number | null; leadsSemToque: number;
   porEtapa: Record<string, number>;
   // score
@@ -222,6 +262,7 @@ export function computeRelatorio(
   ETAPAS_CIRCUITO.forEach((e) => { agoraPorEtapa[e] = 0; alcancaram[e] = 0; });
   const nomeDe = new Map(corretores.map((c) => [c.id, c.nome] as const));
   const tipoDe = new Map(corretores.map((c) => [c.id, c.tipoConta] as const));
+  const acessoDe = new Map(corretores.map((c) => [c.id, msOf(c.lastActiveAt ?? c.ultimoAcesso)] as const));
 
   interface Acc {
     total: number; ativos: number; fechados: number; descartes: number; soma1o: number; n1o: number; somaTent: number; nTent: number;
@@ -305,6 +346,8 @@ export function computeRelatorio(
       respostaAdsMed: media(respAds.get(id) || []), aceitosAds: aceitosC.get(id) || 0, negou: negouC.get(id) || 0,
       ultimaAtividadeMs: comAtividade ? (a.ultimaMs || 0) : null,
       diasSemAtividade: comAtividade ? (a.ultimaMs ? (agora - a.ultimaMs) / DIA : 999) : null,
+      ultimoAcessoMs: acessoDe.get(id) || null,
+      diasSemAcessar: acessoDe.get(id) ? (agora - (acessoDe.get(id) as number)) / DIA : null,
       interacoes: a.interacoes, interacoesPorLeadAtivo: a.ativos ? a.interacoes / a.ativos : null,
       ligacoes: a.ligacoes, whats: a.whats, cadenciaMediaDias: a.nCad ? a.somaCad / a.nCad : null, leadsSemToque: a.semToque,
       porEtapa: a.porEtapa,

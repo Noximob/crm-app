@@ -9,8 +9,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { ETAPAS_CIRCUITO } from '@/lib/circuito';
 import {
-  useRelatorioData, useAtividade, computeRelatorio, computeRelatorioDist,
-  type Periodo, type RankingRow, type LeadDistRow,
+  useRelatorioData, useAtividade, useCustoCampanhas, computeRelatorio, computeRelatorioDist,
+  type Periodo, type RankingRow, type LeadDistRow, type GastoCampanha,
   fmtPct, fmtPct1, fmtDias, fmtDiasInt, fmtNum, fmtSeg, fmtMoeda,
 } from './logic';
 
@@ -146,6 +146,7 @@ function CorretorCard({ r, rank, aberto, onToggle, comAtividade }: { r: RankingR
             <Metric label="Visitas ger." valor={String(r.visitasGeradas)} />
             <Metric label="Estagnados" valor={String(r.estagnados)} tom="text-amber-300" />
             {comAtividade && <Metric label="Últ. atividade" valor={fmtDiasInt(r.diasSemAtividade)} />}
+            <Metric label="Últ. acesso ao sistema" valor={r.diasSemAcessar === null ? 'sem registro' : fmtDiasInt(r.diasSemAcessar)} tom={(r.diasSemAcessar ?? 0) > 7 ? 'text-rose-300' : 'text-white'} />
             {comAtividade && <Metric label="Interações" valor={String(r.interacoes)} />}
             {comAtividade && <Metric label="Int/lead ativo" valor={fmtNum(r.interacoesPorLeadAtivo)} />}
             {comAtividade && <Metric label="Cadência" valor={fmtDias(r.cadenciaMediaDias)} />}
@@ -186,7 +187,10 @@ function CorretorCard({ r, rank, aberto, onToggle, comAtividade }: { r: RankingR
 }
 
 // ── Aba: leads que vieram pela DISTRIBUIÇÃO (propaganda) ─────────────────────
-function AbaDistribuicao({ dist, comAtividade }: { dist: ReturnType<typeof computeRelatorioDist>; comAtividade: boolean }) {
+function AbaDistribuicao({ dist, comAtividade, gastos, totalGasto, erroGasto, carregandoGasto }: {
+  dist: ReturnType<typeof computeRelatorioDist>; comAtividade: boolean;
+  gastos: GastoCampanha[]; totalGasto: number; erroGasto: string | null; carregandoGasto: boolean;
+}) {
   const { linhas, resumo: r } = dist;
   const [filtro, setFiltro] = useState<'todos' | 'perdeu' | 'semQualif' | 'semToque' | 'fuAtrasado'>('todos');
   const [busca, setBusca] = useState('');
@@ -356,16 +360,63 @@ function AbaDistribuicao({ dist, comAtividade }: { dist: ReturnType<typeof compu
         </div>
       </Secao>
 
-      {/* Por campanha */}
-      <Secao titulo="Por campanha" sub="Qual propaganda traz lead que o time aceita — e que fecha">
-        <div className="space-y-1.5">
-          {r.porCampanha.map((c) => (
-            <div key={c.nome} className="flex items-center gap-3">
-              <span className="flex-1 min-w-0 text-[12px] text-white/90 truncate">{c.nome}</span>
-              <span className="text-[11px] text-text-secondary tabular-nums shrink-0">{c.total} leads · {c.aceitos} aceitos · <span className="text-emerald-300">{c.fechados} fech.</span></span>
-            </div>
-          ))}
+      {/* Por campanha — agora com custo real do Meta */}
+      <Secao titulo="Por campanha · custo e retorno" sub="Cruza o gasto do Meta com os leads que realmente entraram e fecharam">
+        {carregandoGasto && <p className="text-[11px] text-text-secondary mb-2">lendo o gasto no Meta…</p>}
+        {erroGasto && <p className="text-[11px] text-amber-300 mb-2">⚠ Gasto indisponível ({erroGasto}) — os volumes abaixo seguem valendo.</p>}
+        {totalGasto > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3 rounded-xl bg-white/[0.03] border border-white/10 p-3">
+            <Metric label="Investido no período" valor={fmtMoeda(totalGasto)} />
+            <Metric label="Custo por lead (nosso)" valor={r.total > 0 ? fmtMoeda(totalGasto / r.total) : '—'} />
+            <Metric label="Custo por venda" valor={r.fechados > 0 ? fmtMoeda(totalGasto / r.fechados) : '—'} tom={r.fechados > 0 ? 'text-white' : 'text-text-secondary'} />
+            <Metric label="Leads por real" valor={totalGasto > 0 ? (r.total / totalGasto).toFixed(2) : '—'} />
+          </div>
+        )}
+        <div className="overflow-x-auto">
+          <table className="w-full text-[12px] border-collapse">
+            <thead>
+              <tr className="text-text-secondary">
+                {['Campanha', 'Gasto', 'Leads', 'CPL', 'Aceitos', 'Fechados', 'Custo/venda'].map((h, i) => (
+                  <th key={h} className={`px-2 py-2 font-bold whitespace-nowrap ${i === 0 ? 'text-left' : 'text-right'}`}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {r.porCampanha.map((c) => {
+                // casa pelo nome da campanha (é o que o adsLead guarda)
+                const g = gastos.find((x) => x.nome === c.nome);
+                const gasto = g?.gasto ?? 0;
+                return (
+                  <tr key={c.nome} className="border-t border-white/[0.06]">
+                    <td className="px-2 py-2 text-white/90 max-w-[260px] truncate" title={c.nome}>{c.nome}</td>
+                    <td className="px-2 py-2 text-right tabular-nums text-white/90">{gasto > 0 ? fmtMoeda(gasto) : '—'}</td>
+                    <td className="px-2 py-2 text-right tabular-nums text-white/90">{c.total}</td>
+                    <td className="px-2 py-2 text-right tabular-nums text-white/90">{gasto > 0 && c.total > 0 ? fmtMoeda(gasto / c.total) : '—'}</td>
+                    <td className="px-2 py-2 text-right tabular-nums text-white/90">{c.aceitos}</td>
+                    <td className="px-2 py-2 text-right tabular-nums text-emerald-300">{c.fechados}</td>
+                    <td className="px-2 py-2 text-right tabular-nums text-white/90">{gasto > 0 && c.fechados > 0 ? fmtMoeda(gasto / c.fechados) : '—'}</td>
+                  </tr>
+                );
+              })}
+              {/* campanhas que gastaram mas ainda não geraram lead no CRM */}
+              {gastos.filter((g) => g.gasto > 0 && !r.porCampanha.some((c) => c.nome === g.nome)).map((g) => (
+                <tr key={g.campanhaId} className="border-t border-white/[0.06] opacity-70">
+                  <td className="px-2 py-2 text-white/70 max-w-[260px] truncate" title={g.nome}>{g.nome}</td>
+                  <td className="px-2 py-2 text-right tabular-nums text-white/90">{fmtMoeda(g.gasto)}</td>
+                  <td className="px-2 py-2 text-right tabular-nums text-rose-300" title="gastou e nenhum lead chegou no CRM">0</td>
+                  <td className="px-2 py-2 text-right tabular-nums text-white/50">—</td>
+                  <td className="px-2 py-2 text-right tabular-nums text-white/50">—</td>
+                  <td className="px-2 py-2 text-right tabular-nums text-white/50">—</td>
+                  <td className="px-2 py-2 text-right tabular-nums text-white/50">—</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+        <p className="mt-2 text-[10px] text-text-secondary">
+          <b>CPL</b> = gasto ÷ leads que entraram no CRM (o número do Meta pode diferir: ele conta o envio do formulário).
+          Linhas esmaecidas são campanhas que gastaram e <b>nenhum lead chegou aqui</b> — vale investigar.
+        </p>
       </Secao>
 
       {/* Lead a lead */}
@@ -446,6 +497,8 @@ export default function RelatoriosPage() {
 
   const [aba, setAba] = useState<'corretores' | 'distribuicao'>('corretores');
   const [periodo, setPeriodo] = useState<Periodo>('tudo');
+  // custo do Meta: só busca quando a aba de propaganda está aberta
+  const { gastos, totalGasto, erroGasto, carregandoGasto } = useCustoCampanhas(ativo && aba === 'distribuicao', periodo);
   const [ativDesde, setAtivDesde] = useState<string>('tudo');
   const [sel, setSel] = useState<Set<string> | null>(null);
   const [abertoId, setAbertoId] = useState<string | null>(null);
@@ -531,7 +584,10 @@ export default function RelatoriosPage() {
       {loading && <div className="al-card p-8 text-center text-text-secondary">Carregando dados…</div>}
 
       {/* ══════════ ABA: LEADS DE PROPAGANDA ══════════ */}
-      {!loading && aba === 'distribuicao' && <AbaDistribuicao dist={dist} comAtividade={rel.comAtividade} />}
+      {!loading && aba === 'distribuicao' && (
+        <AbaDistribuicao dist={dist} comAtividade={rel.comAtividade}
+          gastos={gastos} totalGasto={totalGasto} erroGasto={erroGasto} carregandoGasto={carregandoGasto} />
+      )}
 
       {/* ══════════ ABA: GESTÃO DE CORRETORES ══════════ */}
       {/* Faixa da equipe */}

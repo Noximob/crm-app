@@ -13,7 +13,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, doc, writeBatch, serverTimestamp, deleteDoc, deleteField, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, writeBatch, serverTimestamp, deleteDoc, deleteField, Timestamp, arrayUnion, increment } from 'firebase/firestore';
 import { showToast } from '@/components/ui/toast';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import { QUALIFICATION_QUESTIONS } from '@/lib/qualificacao';
@@ -369,7 +369,22 @@ export default function ImportarLigacaoAtivaPage() {
       let batch = writeBatch(db);
       let ops = 0;
       for (const l of escolhidos) {
-        batch.update(doc(db, 'leads', l.id), { userId: transfDestino });
+        // Além de trocar o dono, guarda a transferência de forma consultável.
+        // Antes isso virava só um texto na linha do tempo — não dava pra contar
+        // quantas vezes um lead rodou nem cruzar com a conversão depois.
+        batch.update(doc(db, 'leads', l.id), {
+          userId: transfDestino,
+          transferidoEm: serverTimestamp(),
+          transferidoDe: transfOrigem,
+          transferidoPor: currentUser.uid,
+          transferenciasCount: increment(1),
+          transferencias: arrayUnion({
+            de: transfOrigem, deNome: nomeOrigem,
+            para: transfDestino, paraNome: nomeDestino,
+            em: Timestamp.now(),
+            por: currentUser.uid, porNome: adminNome,
+          }),
+        });
         batch.set(doc(collection(db, 'leads', l.id, 'interactions')), {
           type: 'Etapa',
           notes: `🔄 Lead transferido de ${nomeOrigem.split(' ')[0]} pra ${nomeDestino.split(' ')[0]}`,

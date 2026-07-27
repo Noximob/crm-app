@@ -24,6 +24,7 @@ export {
     negarAdsLead,
     testeCriarAdsLead,
     listarCampanhasMeta,
+    custoCampanhasMeta,
     conectarPaginaLeadgen,
     importarLeadsExistentes,
 } from "./distribuicaoAds";

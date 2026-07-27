@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, addDoc, onSnapshot, updateDoc, collection, query, orderBy, serverTimestamp, where, writeBatch, limit } from 'firebase/firestore';
+import { doc, getDoc, addDoc, onSnapshot, updateDoc, collection, query, orderBy, serverTimestamp, where, writeBatch, limit, arrayUnion, Timestamp } from 'firebase/firestore';
 import { TarefaPendente, fetchPendentesDaSubcolecao, getTaskStatusInfo, toJsDate, type TaskStatus } from '@/lib/leadTasks';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { Lead } from '@/types';
@@ -337,7 +337,12 @@ export default function LeadDetailPage() {
         notasTimer.current = setTimeout(() => {
             notasDirty.current = false;
             if (isEspelhoDemo || readOnly || !lead) { setSaveNotas('idle'); return; }
-            updateDoc(doc(db, 'leads', lead.id), { anotacoes: valor })
+            updateDoc(doc(db, 'leads', lead.id), {
+                anotacoes: valor,
+                anotadoEm: serverTimestamp(),
+                anotadoPor: currentUser?.uid || null,
+                anotadoPorNome: userData?.nome || null,
+            })
                 .then(() => {
                     setSaveNotas('salvo');
                     setTimeout(() => setSaveNotas(s => (s === 'salvo' ? 'idle' : s)), 2000);
@@ -385,7 +390,12 @@ export default function LeadDetailPage() {
             qualTimer.current = setTimeout(() => {
                 qualDirty.current = false;
                 if (isEspelhoDemo || !lead) { setSaveQual('idle'); return; }
-                updateDoc(doc(db, 'leads', lead.id), { qualificacao: next })
+                updateDoc(doc(db, 'leads', lead.id), {
+                    qualificacao: next,
+                    qualificadoEm: serverTimestamp(),
+                    qualificadoPor: currentUser?.uid || null,
+                    qualificadoPorNome: userData?.nome || null,
+                })
                     .then(() => {
                         setSaveQual('salvo');
                         setTimeout(() => setSaveQual(s => (s === 'salvo' ? 'idle' : s)), 2000);
@@ -444,7 +454,15 @@ export default function LeadDetailPage() {
         if (status === 'cancelada') setIsCancelling(true);
 
         const batch = writeBatch(db);
-        batch.update(doc(db, 'leads', leadId, 'tarefas', taskId), { status });
+        // Mesmo carimbo do circuito: quando fechou e quem fechou (base do
+        // "tempo pra fazer o follow-up" no relatório do admin).
+        batch.update(doc(db, 'leads', leadId, 'tarefas', taskId), {
+            status,
+            ...(status === 'concluída' ? { concluidaEm: serverTimestamp() } : { canceladaEm: serverTimestamp() }),
+            finalizadaEm: serverTimestamp(),
+            finalizadaPor: currentUser.uid,
+            finalizadaPorNome: userData?.nome || null,
+        });
         const tarefasPendentes: TarefaPendente[] = tasks
             .filter(t => t.id !== taskId)
             .map(t => ({ id: t.id, description: t.description, type: t.type, dueDate: t.dueDate }));
@@ -462,6 +480,11 @@ export default function LeadDetailPage() {
             if (etapaFinal !== atualNorm) {
                 leadUpdate.etapa = etapaFinal;
                 leadUpdate['circuito.desde'] = serverTimestamp();
+                // histórico da transição (mesmo formato do circuitoActions)
+                leadUpdate.etapasHist = arrayUnion({
+                    de: atualNorm, para: etapaFinal, em: Timestamp.now(),
+                    por: currentUser.uid, porNome: userData?.nome || '',
+                });
             } else if (lead.etapa !== etapaFinal) {
                 leadUpdate.etapa = etapaFinal; // rótulo legado → grava o nome canônico sem resetar "desde"
             }

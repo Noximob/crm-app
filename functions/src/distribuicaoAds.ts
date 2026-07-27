@@ -1097,3 +1097,97 @@ export const listarCampanhasMeta = onCall(
         }
     },
 );
+
+// ---------------------------------------------------------------------------
+// 8) Custo por campanha (Meta Insights) — o que faltava pra fechar o ROI
+//    Sem o gasto só dava pra saber o VOLUME de leads de cada campanha; com ele
+//    o relatório calcula custo por lead (CPL), custo por venda (CPA) e retorno.
+// ---------------------------------------------------------------------------
+
+export interface GastoCampanha {
+    campanhaId: string;
+    nome: string;
+    gasto: number;        // R$ no período
+    impressoes: number;
+    cliques: number;
+    alcance: number;
+    leadsMeta: number;    // conversões de lead contadas pelo próprio Meta
+    cpl: number | null;   // gasto / leadsMeta (o CPL do Meta; o nosso sai no relatório)
+}
+
+/** Soma as ações de lead que o Meta reporta (nomes variam por objetivo). */
+function contarLeadsDasAcoes(actions: {action_type?: string; value?: string}[] | undefined): number {
+    if (!Array.isArray(actions)) return 0;
+    const alvos = ["lead", "onsite_conversion.lead_grouped", "offsite_conversion.fb_pixel_lead", "leadgen_grouped", "onsite_web_lead"];
+    let total = 0;
+    for (const a of actions) {
+        if (a?.action_type && alvos.includes(a.action_type)) total += Number(a.value || 0);
+    }
+    return total;
+}
+
+export const custoCampanhasMeta = onCall(
+    {secrets: [META_ADS_TOKEN, META_PAGE_TOKEN]},
+    async (request): Promise<{ok: boolean; motivo?: string; desde?: string; ate?: string; total?: number; campanhas?: GastoCampanha[]}> => {
+        if (!request.auth) throw new HttpsError("unauthenticated", "É preciso estar logado.");
+        const chamadorSnap = await db().collection("usuarios").doc(request.auth.uid).get();
+        const chamador = chamadorSnap.data() || {};
+        const ehAdmin = chamador.tipoConta === "imobiliaria" || chamador.permissoes?.admin === true;
+        if (!ehAdmin) throw new HttpsError("permission-denied", "Apenas administradores.");
+
+        const token = META_ADS_TOKEN.value() || process.env.META_ADS_TOKEN ||
+            META_PAGE_TOKEN.value() || process.env.META_PAGE_TOKEN || "";
+        if (!token) return {ok: false, motivo: "sem_token"};
+
+        const configSnap = await db().doc(CONFIG_REF_PATH).get();
+        const config = (configSnap.data() || {}) as Partial<DistribuicaoConfig> & {metaAdAccountId?: string};
+        const contaId = (config.metaAdAccountId || DEFAULT_AD_ACCOUNT_ID).replace(/^act_/, "");
+
+        // Janela: o relatório manda desde/ate (YYYY-MM-DD); sem isso, 90 dias.
+        const dados = (request.data || {}) as {desde?: string; ate?: string};
+        const hoje = new Date();
+        const ate = dados.ate || hoje.toISOString().slice(0, 10);
+        const desde = dados.desde || new Date(hoje.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+        try {
+            const campanhas: GastoCampanha[] = [];
+            let url: string | null = `${GRAPH_BASE}/act_${contaId}/insights`;
+            let params: Record<string, unknown> | undefined = {
+                access_token: token,
+                level: "campaign",
+                fields: "campaign_id,campaign_name,spend,impressions,clicks,reach,actions",
+                time_range: JSON.stringify({since: desde, until: ate}),
+                limit: 200,
+            };
+            let guarda = 0;
+            while (url && guarda++ < 10) {
+                const resp: any = await axios.get(url, {params, timeout: 20000});
+                for (const r of (resp.data?.data || []) as any[]) {
+                    const gasto = Number(r.spend || 0);
+                    const leadsMeta = contarLeadsDasAcoes(r.actions);
+                    campanhas.push({
+                        campanhaId: String(r.campaign_id || ""),
+                        nome: String(r.campaign_name || ""),
+                        gasto,
+                        impressoes: Number(r.impressions || 0),
+                        cliques: Number(r.clicks || 0),
+                        alcance: Number(r.reach || 0),
+                        leadsMeta,
+                        cpl: leadsMeta > 0 ? gasto / leadsMeta : null,
+                    });
+                }
+                url = resp.data?.paging?.next || null;
+                params = undefined; // o "next" já vem com cursor
+            }
+            const total = campanhas.reduce((s, c) => s + c.gasto, 0);
+            logger.info("custoCampanhasMeta: ok", {contaId, desde, ate, campanhas: campanhas.length, total});
+            return {ok: true, desde, ate, total, campanhas};
+        } catch (error: any) {
+            const fb = error?.response?.data?.error;
+            const code = fb?.code;
+            logger.warn("custoCampanhasMeta: falha no Graph", {code, msg: fb?.message});
+            if (code === 200 || code === 10 || code === 190 || code === 2635) return {ok: false, motivo: "sem_permissao_ads"};
+            return {ok: false, motivo: "erro_graph"};
+        }
+    },
+);

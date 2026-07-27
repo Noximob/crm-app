@@ -3,7 +3,7 @@
  * vigia global de atendimento. Uma ação composta (concluir/cancelar/criar
  * tarefa + etapa + interação + campos do circuito) vira UM writeBatch.
  */
-import { collection, doc, getDocs, limit, query, serverTimestamp, where, writeBatch } from 'firebase/firestore';
+import { arrayUnion, collection, doc, getDocs, limit, query, serverTimestamp, Timestamp, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { TarefaPendente, fetchPendentesDaSubcolecao } from '@/lib/leadTasks';
 import { etapaAposAcao, mapEtapaCircuito } from '@/lib/circuito';
@@ -42,16 +42,19 @@ export async function executarAcaoCircuito(params: {
     // ou derrubar tarefas de outras gravações.
     const mexeuEmTarefa = !!(acao.concluirTaskId || acao.cancelarTaskId || acao.cancelarTodasPendentes || acao.novaTarefa);
 
+    // Carimbo de fechamento da tarefa: sem ele o "tempo pra fazer o follow-up"
+    // só dava pra deduzir por um vestígio na timeline (e sumia quando faltava).
+    const fechamento = { finalizadaEm: serverTimestamp(), finalizadaPor: currentUid || null, finalizadaPorNome: autorNome || null };
     if (acao.concluirTaskId) {
-      batch.update(doc(tasksCol, acao.concluirTaskId), { status: 'concluída' });
+      batch.update(doc(tasksCol, acao.concluirTaskId), { status: 'concluída', concluidaEm: serverTimestamp(), ...fechamento });
       pendentes = pendentes.filter(t => t.id !== acao.concluirTaskId);
     }
     if (acao.cancelarTaskId) {
-      batch.update(doc(tasksCol, acao.cancelarTaskId), { status: 'cancelada' });
+      batch.update(doc(tasksCol, acao.cancelarTaskId), { status: 'cancelada', canceladaEm: serverTimestamp(), ...fechamento });
       pendentes = pendentes.filter(t => t.id !== acao.cancelarTaskId);
     }
     if (acao.cancelarTodasPendentes) {
-      pendentes.forEach(t => batch.update(doc(tasksCol, t.id), { status: 'cancelada' }));
+      pendentes.forEach(t => batch.update(doc(tasksCol, t.id), { status: 'cancelada', canceladaEm: serverTimestamp(), ...fechamento }));
       pendentes = [];
     }
     let novaTaskId: string | undefined;
@@ -68,12 +71,29 @@ export async function executarAcaoCircuito(params: {
     }
 
     const leadUpdate: Record<string, any> = mexeuEmTarefa ? { tarefasPendentes: pendentes } : {};
+
+    /**
+     * Carimbo de CADA transição de etapa (antes só existia `circuito.desde`, da
+     * etapa atual — o caminho percorrido se perdia). Com isso dá pra medir
+     * quanto tempo o cliente ficou em cada casa do funil.
+     * Usa Timestamp.now() porque serverTimestamp() não é aceito dentro de array.
+     */
+    const marcarEtapa = (de: string, para: string) => {
+      leadUpdate.etapasHist = arrayUnion({
+        de, para,
+        em: Timestamp.now(),
+        ...(currentUid ? { por: currentUid } : {}),
+        ...(autorNome ? { porNome: autorNome } : {}),
+      });
+    };
+
     if (acao.forcarEtapa) {
       // "Recomeçar busca": fura a catraca por decisão explícita do corretor
       // (o motivo vai junto na interação da ação).
       if (lead.etapa !== acao.forcarEtapa) {
         leadUpdate.etapa = acao.forcarEtapa;
         leadUpdate['circuito.desde'] = serverTimestamp();
+        marcarEtapa(mapEtapaCircuito(lead.etapa), acao.forcarEtapa);
       }
     } else if (acao.novaEtapa) {
       // CATRACA: a etapa é o estágio máximo alcançado — a ação propõe um alvo,
@@ -83,6 +103,7 @@ export async function executarAcaoCircuito(params: {
       if (etapaFinal !== atualNorm) {
         leadUpdate.etapa = etapaFinal;
         leadUpdate['circuito.desde'] = serverTimestamp();
+        marcarEtapa(atualNorm, etapaFinal);
       } else if (lead.etapa !== etapaFinal) {
         // etapa legada equivalente → persiste o nome novo sem resetar o "desde"
         leadUpdate.etapa = etapaFinal;

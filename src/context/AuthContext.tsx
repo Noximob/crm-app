@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { onAuthStateChanged, User, signOut as firebaseSignOut } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { ESPELHO_DEMO_UID, ESPELHO_STORAGE_KEY } from '@/lib/constants';
 
@@ -119,7 +119,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           
           setCurrentUser(firebaseUser);
           setUserData(data);
-          
+
+          // Último acesso: alimenta o "sem uso há X dias" da TV e o relatório de
+          // gestão. Regrava no máximo 1x por hora — a sessão reabre o app várias
+          // vezes ao dia e não vale uma escrita a cada vez.
+          try {
+            const anterior = (data as { lastActiveAt?: { toMillis?: () => number; seconds?: number } }).lastActiveAt;
+            const antesMs = anterior?.toMillis?.() ?? (typeof anterior?.seconds === 'number' ? anterior.seconds * 1000 : 0);
+            if (!antesMs || Date.now() - antesMs > 60 * 60 * 1000) {
+              updateDoc(userDocRef, { lastActiveAt: serverTimestamp() }).catch(() => {});
+            }
+          } catch { /* nunca bloqueia o login por causa da telemetria */ }
+
           if (data.aprovado) {
             setIsApproved(true);
           } else {
