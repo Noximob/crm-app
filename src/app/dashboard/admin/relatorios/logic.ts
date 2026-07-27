@@ -26,7 +26,12 @@ export interface RelLead {
   [k: string]: unknown;
 }
 export interface RelCorretor { id: string; nome: string; tipoConta?: string; aprovado?: boolean; email?: string; }
-export interface RelAdsLead { id: string; status?: string; corretorEscalado?: string; aceitoPor?: string; tempoAceiteSeg?: number; viaGeral?: boolean; campanhaNome?: string; negadoPor?: string[]; }
+export interface RelAdsLead {
+  id: string; status?: string; corretorEscalado?: string; aceitoPor?: string; tempoAceiteSeg?: number;
+  viaGeral?: boolean; campanhaNome?: string; negadoPor?: string[];
+  // rastro explícito gravado pelo robô quando a janela exclusiva vence
+  expirouEm?: unknown; expirouDe?: string; expirouDeNome?: string; expirouAposSeg?: number;
+}
 export interface TarefaLead { id: string; tipo: string; status: string; dueMs: number; concluidaMs: number }
 export interface AtividadeLead { eventos: { ms: number; tipo: string; taskId?: string }[]; tarefas: TarefaLead[] }
 
@@ -355,7 +360,8 @@ export interface LeadDistRow {
   aceitoPor: string; aceitoPorNome: string; tempoAceiteSeg: number | null;
   viaGeral: boolean;
   nasceuNoBolsao: boolean;   // rodízio desligado: entrou aberto pra todos, ninguém "perdeu"
-  perdeuAVez: boolean;       // TINHA dono e o lead foi pro bolsão DEPOIS (abriuGeralEm > escaladoEm)
+  perdeuAVez: boolean;       // passou da janela e POR ISSO foi pro bolsão
+  expirouDe: string; expirouDeNome: string; expirouAposSeg: number | null;  // quem deixou vencer
   estourouJanela: boolean;   // aceitou (ou está pendente) além dos minutos exclusivos
   pegouNoBolsao: boolean;    // aceitou quando o lead já estava aberto pra todos
   negouQtd: number;
@@ -422,15 +428,16 @@ export function computeRelatorioDist(
     const ultimo = evs.length ? evs[evs.length - 1].ms : 0;
     const desde = lead ? (msOf(lead.circuito?.desde) || cMs) : 0;
 
-    // ── Quem realmente perdeu a vez ──────────────────────────────────────────
-    // Cuidado: `abriuGeralEm` fica gravado de quando o lead NASCE no bolsão
-    // (rodízio desligado) e não é limpo se ele for escalado depois. Por isso a
-    // regra compara os timestamps: só é "perdeu a vez" se foi pro bolsão DEPOIS
-    // de ter dono. Sem isso, lead aceito em 7s aparecia como perda.
+    // ── Quem passou da janela e por isso foi pro bolsão ──────────────────────
+    // Fonte da verdade: `expirouDe`, gravado pelo robô no momento em que a
+    // janela vence. Pros leads antigos (antes desse rastro existir) cai numa
+    // heurística por timestamp — `abriuGeralEm` sozinho NÃO serve, porque ele
+    // também é gravado quando o lead já nasce no bolsão (rodízio desligado).
     const escMs = msOf((x as { escaladoEm?: unknown }).escaladoEm);
     const geralMs = msOf(x.abriuGeralEm);
     const nasceuNoBolsao = !x.corretorEscalado;
-    const perdeuAVez = !!x.corretorEscalado && geralMs > 0 && escMs > 0 && geralMs > escMs;
+    const perdeuAVez = !!x.expirouDe || (!!x.corretorEscalado && geralMs > 0 && escMs > 0 && geralMs > escMs);
+    const expirouDeNome = x.expirouDeNome || (x.expirouDe ? nomeDe.get(x.expirouDe) || '—' : '');
     const tAceite = typeof x.tempoAceiteSeg === 'number' ? x.tempoAceiteSeg : null;
     // "não atendeu na janela": aceitou depois do tempo exclusivo, ou ainda está
     // escalado com a janela já vencida. Pega até quem o robô ainda não expirou.
@@ -451,6 +458,9 @@ export function computeRelatorioDist(
       tempoAceiteSeg: tAceite,
       viaGeral: !!x.viaGeral,
       nasceuNoBolsao, perdeuAVez, estourouJanela, pegouNoBolsao: !!x.viaGeral,
+      expirouDe: x.expirouDe || (perdeuAVez ? x.corretorEscalado || '' : ''),
+      expirouDeNome: expirouDeNome || (perdeuAVez && x.corretorEscalado ? nomeDe.get(x.corretorEscalado) || '—' : ''),
+      expirouAposSeg: typeof x.expirouAposSeg === 'number' ? x.expirouAposSeg : null,
       negouQtd: Array.isArray(x.negadoPor) ? x.negadoPor.length : 0,
       etapa, etapaIdx: idx, fechado: etapa === ETAPA_FECHADO, descartado: etapa === ETAPA_DESCARTADO,
       temAnotacao: !!(lead?.anotacoes && String(lead.anotacoes).trim()), temQualificacao: qualifCampos > 0, qualifCampos,
@@ -486,7 +496,11 @@ export function computeRelatorioDist(
   // quem recusou explicitamente (botão Negar) — vem do array negadoPor do adsLead
   adsF.forEach((a) => { if (Array.isArray(a.negadoPor)) a.negadoPor.forEach((u) => { acc(u).negou++; }); });
   linhas.forEach((l) => {
-    if (l.escaladoPara) { const v = acc(l.escaladoPara); v.recebidos++; if (l.perdeuAVez) v.perdeu++; if (l.estourouJanela) v.estourou++; }
+    if (l.escaladoPara) { const v = acc(l.escaladoPara); v.recebidos++; if (l.estourouJanela) v.estourou++; }
+    // a perda é creditada a QUEM deixou vencer (pode não ser o dono atual, se
+    // o lead foi redistribuído depois)
+    const culpado = l.expirouDe || (l.perdeuAVez ? l.escaladoPara : '');
+    if (l.perdeuAVez && culpado) acc(culpado).perdeu++;
     if (l.aceitoPor) {
       const v = acc(l.aceitoPor);
       v.aceitos++; if (l.tempoAceiteSeg !== null) v.tAceite.push(l.tempoAceiteSeg);

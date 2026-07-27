@@ -615,19 +615,38 @@ export const expirarAdsLeads = onSchedule("every 1 minutes", async () => {
             const prazoAte = admin.firestore.Timestamp.fromMillis(
                 agora.toMillis() + minutosGeral * 60 * 1000,
             );
+            const dadosAntes = doc.data();
+            const donoUid = (dadosAntes.corretorEscalado as string) || "";
+            // RASTRO da janela exclusiva: quem tinha o lead e deixou vencer.
+            // Campo próprio (não dá pra inferir por abriuGeralEm — esse fica
+            // gravado também quando o lead JÁ NASCE no bolsão).
+            let donoNome = "";
+            if (donoUid) {
+                try {
+                    const u = await db().collection("usuarios").doc(donoUid).get();
+                    donoNome = (u.data()?.nome as string) || "";
+                } catch { /* nome é conveniência; o uid é o que importa */ }
+            }
+            const escaladoMs = (dadosAntes.escaladoEm as admin.firestore.Timestamp | undefined)?.toMillis?.() || 0;
             await doc.ref.update({
                 status: "geral",
                 abriuGeralEm: agora,
                 prazoAte,
+                ...(donoUid ? {
+                    expirouEm: agora,
+                    expirouDe: donoUid,
+                    expirouDeNome: donoNome,
+                    expirouAposSeg: escaladoMs ? Math.round((agora.toMillis() - escaladoMs) / 1000) : null,
+                } : {}),
             });
-            const dados = doc.data();
+            const dados = dadosAntes;
             await enviarPush(
                 corretores,
                 "⚡ Lead liberado para todos!",
                 `${dados.nome || "Lead"} não foi aceito — quem chegar primeiro leva`,
                 {tipo: "adsLead", adsLeadId: doc.id},
             );
-            logger.info("expirarAdsLeads: escalado → geral", {adsLeadId: doc.id});
+            logger.info("expirarAdsLeads: escalado → geral", {adsLeadId: doc.id, expirouDe: donoUid || null, expirouDeNome: donoNome || null});
         }
     }
 

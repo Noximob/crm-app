@@ -39,6 +39,15 @@
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "etapa", "order": "ASCENDING" }
       ]
+    },
+    {
+      "_comment": "expirarAdsLeads: escalado/geral vencido. Sem este índice o robô da janela exclusiva falha a cada minuto e NENHUM lead expira.",
+      "collectionGroup": "adsLeads",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "prazoAte", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": [

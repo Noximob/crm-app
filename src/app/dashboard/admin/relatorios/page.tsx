@@ -270,9 +270,9 @@ function AbaDistribuicao({ dist, comAtividade }: { dist: ReturnType<typeof compu
               <div key={l.adsId} className="flex flex-wrap items-center gap-x-2 text-[11.5px]">
                 <span className="text-amber-300 shrink-0">⏱</span>
                 <span className="text-white/90">{l.nome}</span>
-                <span className="text-text-secondary">— era do <b className="text-white/80">{l.escaladoParaNome}</b></span>
+                <span className="text-text-secondary">— era do <b className="text-white/80">{l.expirouDeNome || l.escaladoParaNome}</b></span>
                 {l.tempoAceiteSeg !== null && <span className="text-amber-300 font-bold">levou {fmtSeg(l.tempoAceiteSeg)}</span>}
-                {l.perdeuAVez && <span className="text-rose-300">· foi pro bolsão</span>}
+                {l.perdeuAVez && <span className="text-rose-300">· venceu{l.expirouAposSeg ? ` em ${fmtSeg(l.expirouAposSeg)}` : ''} e foi pro bolsão</span>}
                 {l.status === 'escalado' && <span className="text-rose-300">· ainda não pegou!</span>}
                 {l.aceitoPorNome !== '—' && l.aceitoPorNome !== l.escaladoParaNome && <span className="text-text-secondary">→ pegou <b className="text-white/80">{l.aceitoPorNome}</b></span>}
                 {l.aceitoPorNome !== '—' && l.aceitoPorNome === l.escaladoParaNome && l.perdeuAVez && <span className="text-white/40">(ele mesmo repegou no bolsão)</span>}
@@ -415,9 +415,9 @@ function LinhaLead({ l, comAtividade }: { l: LeadDistRow; comAtividade: boolean 
         {l.nasceuNoBolsao && <span className="ml-1 text-white/30" title="Entrou aberto pra todos (rodízio desligado)">∗</span>}
       </td>
       <td className="px-2 py-2 text-right whitespace-nowrap">
-        {l.perdeuAVez && l.escaladoParaNome !== '—' && l.aceitoPorNome !== l.escaladoParaNome ? (
-          <span title={`Era do ${l.escaladoParaNome}, que deixou vencer`}>
-            <span className="text-rose-300 line-through decoration-rose-300/50">{l.escaladoParaNome}</span>
+        {l.perdeuAVez && (l.expirouDeNome || l.escaladoParaNome) !== '—' ? (
+          <span title={`Era do ${l.expirouDeNome || l.escaladoParaNome} — a janela venceu e o lead foi pro bolsão`}>
+            <span className="text-rose-300 line-through decoration-rose-300/50">{l.expirouDeNome || l.escaladoParaNome}</span>
             {l.aceitoPorNome !== '—' && <span className="text-white/90"> → {l.aceitoPorNome}</span>}
           </span>
         ) : (
