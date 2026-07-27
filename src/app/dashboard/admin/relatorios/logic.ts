@@ -9,7 +9,7 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, doc, getDocs, onSnapshot, query, where } from 'firebase/firestore';
 import {
   mapEtapaCircuito, etapaIndex, ETAPAS_CIRCUITO,
   ETAPA_FECHADO, ETAPA_DESCARTADO, ETAPA_MEET_AGENDADO, ETAPA_VISITA_AGENDADA,
@@ -67,11 +67,12 @@ export function inicioPeriodo(p: Periodo): number {
 }
 
 // ── Hook 1: leads + corretores + ads (tempo real) ───────────────────────────
-export interface DadosRelatorio { leads: RelLead[]; corretores: RelCorretor[]; ads: RelAdsLead[]; loading: boolean; error: string | null; }
+export interface DadosRelatorio { leads: RelLead[]; corretores: RelCorretor[]; ads: RelAdsLead[]; minutosExclusivo: number; loading: boolean; error: string | null; }
 export function useRelatorioData(imobiliariaId: string | undefined, ativo: boolean): DadosRelatorio {
   const [leads, setLeads] = useState<RelLead[]>([]);
   const [corretores, setCorretores] = useState<RelCorretor[]>([]);
   const [ads, setAds] = useState<RelAdsLead[]>([]);
+  const [minutosExclusivo, setMinutosExclusivo] = useState(5);
   const [loading, setLoading] = useState(!!imobiliariaId && ativo);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -84,9 +85,12 @@ export function useRelatorioData(imobiliariaId: string | undefined, ativo: boole
       (s) => setCorretores(s.docs.map((d) => { const x = d.data(); return { id: d.id, nome: x.nome || 'Sem nome', tipoConta: x.tipoConta, aprovado: x.aprovado, email: x.email } as RelCorretor; })), () => {});
     const u3 = onSnapshot(query(collection(db, 'adsLeads'), where('imobiliariaId', '==', imobiliariaId)),
       (s) => setAds(s.docs.map((d) => ({ id: d.id, ...d.data() } as RelAdsLead))), () => {});
-    return () => { u1(); u2(); u3(); };
+    // janela exclusiva configurada (pra saber o que é "não atendeu a tempo")
+    const u4 = onSnapshot(doc(db, 'distribuicaoAds', 'config'),
+      (s) => { const n = Number(s.data()?.minutosExclusivo); setMinutosExclusivo(n > 0 ? n : 5); }, () => {});
+    return () => { u1(); u2(); u3(); u4(); };
   }, [imobiliariaId, ativo]);
-  return { leads, corretores, ads, loading, error };
+  return { leads, corretores, ads, minutosExclusivo, loading, error };
 }
 
 // ── Hook 2: atividade (lê interactions de cada lead, em lotes, no fundo) ─────
@@ -349,7 +353,11 @@ export interface LeadDistRow {
   status: string;                    // escalado | geral | aceito | nao-atendido
   escaladoPara: string; escaladoParaNome: string;
   aceitoPor: string; aceitoPorNome: string; tempoAceiteSeg: number | null;
-  viaGeral: boolean; perdeuAVez: boolean;   // deixou vencer os 5 min (foi pro bolsão)
+  viaGeral: boolean;
+  nasceuNoBolsao: boolean;   // rodízio desligado: entrou aberto pra todos, ninguém "perdeu"
+  perdeuAVez: boolean;       // TINHA dono e o lead foi pro bolsão DEPOIS (abriuGeralEm > escaladoEm)
+  estourouJanela: boolean;   // aceitou (ou está pendente) além dos minutos exclusivos
+  pegouNoBolsao: boolean;    // aceitou quando o lead já estava aberto pra todos
   negouQtd: number;
   // o que aconteceu com o lead no CRM
   etapa: string; etapaIdx: number; fechado: boolean; descartado: boolean;
@@ -362,7 +370,8 @@ export interface LeadDistRow {
 export interface ResumoDist {
   total: number; aceitos: number; naoAtendidos: number; naFila: number;
   taxaAceite: number; tempoMedioAceiteSeg: number | null; medianaAceiteSeg: number | null;
-  perderamAVez: number; viaGeral: number;
+  perderamAVez: number; viaGeral: number; estouraramJanela: number; nasceramNoBolsao: number;
+  dentroDaJanela: number; janelaMin: number;
   comAnotacao: number; comQualificacao: number; pctAnotacao: number; pctQualificacao: number;
   tempoMedio1oContato: number | null; semNenhumToque: number;
   fuCriados: number; fuConcluidos: number; fuAtrasados: number; fuTempoMedioDias: number | null;
@@ -370,7 +379,7 @@ export interface ResumoDist {
   porEtapa: Record<string, number>;
   porCampanha: { nome: string; total: number; aceitos: number; fechados: number }[];
   porCorretor: {
-    id: string; nome: string; recebidos: number; aceitos: number; perdeuAVez: number; negou: number;
+    id: string; nome: string; recebidos: number; aceitos: number; perdeuAVez: number; estourouJanela: number; negou: number;
     tempoAceiteMed: number | null; pctAnotacao: number; pctQualificacao: number;
     tempo1oContato: number | null; fuCriados: number; fuConcluidos: number; fuAtrasados: number;
     fuTempoMedioDias: number | null; fechados: number; conversao: number; interacoes: number;
@@ -387,7 +396,9 @@ const med = (arr: number[]): number | null => arr.length ? arr.reduce((s, n) => 
 export function computeRelatorioDist(
   ads: RelAdsLead[], leads: RelLead[], corretores: RelCorretor[],
   atividade: Map<string, AtividadeLead> | null, periodo: Periodo,
+  minutosExclusivo = 5,
 ): { linhas: LeadDistRow[]; resumo: ResumoDist } {
+  const janelaSeg = Math.max(1, minutosExclusivo) * 60;
   const inicio = inicioPeriodo(periodo);
   const leadById = new Map(leads.map((l) => [l.id, l] as const));
   const nomeDe = new Map(corretores.map((c) => [c.id, c.nome] as const));
@@ -411,6 +422,21 @@ export function computeRelatorioDist(
     const ultimo = evs.length ? evs[evs.length - 1].ms : 0;
     const desde = lead ? (msOf(lead.circuito?.desde) || cMs) : 0;
 
+    // ── Quem realmente perdeu a vez ──────────────────────────────────────────
+    // Cuidado: `abriuGeralEm` fica gravado de quando o lead NASCE no bolsão
+    // (rodízio desligado) e não é limpo se ele for escalado depois. Por isso a
+    // regra compara os timestamps: só é "perdeu a vez" se foi pro bolsão DEPOIS
+    // de ter dono. Sem isso, lead aceito em 7s aparecia como perda.
+    const escMs = msOf((x as { escaladoEm?: unknown }).escaladoEm);
+    const geralMs = msOf(x.abriuGeralEm);
+    const nasceuNoBolsao = !x.corretorEscalado;
+    const perdeuAVez = !!x.corretorEscalado && geralMs > 0 && escMs > 0 && geralMs > escMs;
+    const tAceite = typeof x.tempoAceiteSeg === 'number' ? x.tempoAceiteSeg : null;
+    // "não atendeu na janela": aceitou depois do tempo exclusivo, ou ainda está
+    // escalado com a janela já vencida. Pega até quem o robô ainda não expirou.
+    const aindaEscaladoVencido = x.status === 'escalado' && escMs > 0 && (agora - escMs) / 1000 > janelaSeg;
+    const estourouJanela = !nasceuNoBolsao && ((tAceite !== null && tAceite > janelaSeg) || perdeuAVez || aindaEscaladoVencido);
+
     const fus = (at?.tarefas || []).filter((t) => ehFollowup(t.tipo));
     const fuConcl = fus.filter((t) => ehConcluida(t.status));
     const fuPend = fus.filter((t) => !ehConcluida(t.status) && !ehCancelada(t.status));
@@ -422,8 +448,9 @@ export function computeRelatorioDist(
       criadoMs: msOf(x.criadoEm), status: x.status || '—',
       escaladoPara: x.corretorEscalado || '', escaladoParaNome: x.corretorEscalado ? (nomeDe.get(x.corretorEscalado) || '—') : '—',
       aceitoPor: x.aceitoPor || '', aceitoPorNome: x.aceitoPorNome || (x.aceitoPor ? nomeDe.get(x.aceitoPor) || '—' : '—'),
-      tempoAceiteSeg: typeof x.tempoAceiteSeg === 'number' ? x.tempoAceiteSeg : null,
-      viaGeral: !!x.viaGeral, perdeuAVez: !!msOf(x.abriuGeralEm) && !!x.corretorEscalado,
+      tempoAceiteSeg: tAceite,
+      viaGeral: !!x.viaGeral,
+      nasceuNoBolsao, perdeuAVez, estourouJanela, pegouNoBolsao: !!x.viaGeral,
       negouQtd: Array.isArray(x.negadoPor) ? x.negadoPor.length : 0,
       etapa, etapaIdx: idx, fechado: etapa === ETAPA_FECHADO, descartado: etapa === ETAPA_DESCARTADO,
       temAnotacao: !!(lead?.anotacoes && String(lead.anotacoes).trim()), temQualificacao: qualifCampos > 0, qualifCampos,
@@ -454,12 +481,12 @@ export function computeRelatorioDist(
     campMap.set(l.campanha, c);
   });
 
-  const corrMap = new Map<string, { recebidos: number; aceitos: number; perdeu: number; negou: number; tAceite: number[]; anot: number; qual: number; t1: number[]; fuC: number; fuOk: number; fuAtr: number; fuT: number[]; fech: number; inter: number }>();
-  const acc = (id: string) => { let v = corrMap.get(id); if (!v) { v = { recebidos: 0, aceitos: 0, perdeu: 0, negou: 0, tAceite: [], anot: 0, qual: 0, t1: [], fuC: 0, fuOk: 0, fuAtr: 0, fuT: [], fech: 0, inter: 0 }; corrMap.set(id, v); } return v; };
+  const corrMap = new Map<string, { recebidos: number; aceitos: number; perdeu: number; estourou: number; negou: number; tAceite: number[]; anot: number; qual: number; t1: number[]; fuC: number; fuOk: number; fuAtr: number; fuT: number[]; fech: number; inter: number }>();
+  const acc = (id: string) => { let v = corrMap.get(id); if (!v) { v = { recebidos: 0, aceitos: 0, perdeu: 0, estourou: 0, negou: 0, tAceite: [], anot: 0, qual: 0, t1: [], fuC: 0, fuOk: 0, fuAtr: 0, fuT: [], fech: 0, inter: 0 }; corrMap.set(id, v); } return v; };
   // quem recusou explicitamente (botão Negar) — vem do array negadoPor do adsLead
   adsF.forEach((a) => { if (Array.isArray(a.negadoPor)) a.negadoPor.forEach((u) => { acc(u).negou++; }); });
   linhas.forEach((l) => {
-    if (l.escaladoPara) { const v = acc(l.escaladoPara); v.recebidos++; if (l.perdeuAVez) v.perdeu++; }
+    if (l.escaladoPara) { const v = acc(l.escaladoPara); v.recebidos++; if (l.perdeuAVez) v.perdeu++; if (l.estourouJanela) v.estourou++; }
     if (l.aceitoPor) {
       const v = acc(l.aceitoPor);
       v.aceitos++; if (l.tempoAceiteSeg !== null) v.tAceite.push(l.tempoAceiteSeg);
@@ -478,7 +505,11 @@ export function computeRelatorioDist(
     taxaAceite: linhas.length ? aceitos.length / linhas.length : 0,
     tempoMedioAceiteSeg: med(tempos), medianaAceiteSeg: mediana(tempos),
     perderamAVez: linhas.filter((l) => l.perdeuAVez).length,
-    viaGeral: aceitos.filter((l) => l.viaGeral).length,
+    viaGeral: aceitos.filter((l) => l.pegouNoBolsao).length,
+    estouraramJanela: linhas.filter((l) => l.estourouJanela).length,
+    nasceramNoBolsao: linhas.filter((l) => l.nasceuNoBolsao).length,
+    dentroDaJanela: linhas.filter((l) => !l.nasceuNoBolsao && !l.estourouJanela && l.status === 'aceito').length,
+    janelaMin: minutosExclusivo,
     comAnotacao: comLead.filter((l) => l.temAnotacao).length,
     comQualificacao: comLead.filter((l) => l.temQualificacao).length,
     pctAnotacao: comLead.length ? comLead.filter((l) => l.temAnotacao).length / comLead.length : 0,
@@ -495,7 +526,7 @@ export function computeRelatorioDist(
     porEtapa,
     porCampanha: Array.from(campMap.entries()).map(([nome, v]) => ({ nome, ...v })).sort((a, b) => b.total - a.total),
     porCorretor: Array.from(corrMap.entries()).map(([id, v]) => ({
-      id, nome: nomeDe.get(id) || id.slice(0, 6), recebidos: v.recebidos, aceitos: v.aceitos, perdeuAVez: v.perdeu, negou: v.negou,
+      id, nome: nomeDe.get(id) || id.slice(0, 6), recebidos: v.recebidos, aceitos: v.aceitos, perdeuAVez: v.perdeu, estourouJanela: v.estourou, negou: v.negou,
       tempoAceiteMed: med(v.tAceite),
       pctAnotacao: v.aceitos ? v.anot / v.aceitos : 0, pctQualificacao: v.aceitos ? v.qual / v.aceitos : 0,
       tempo1oContato: med(v.t1), fuCriados: v.fuC, fuConcluidos: v.fuOk, fuAtrasados: v.fuAtr, fuTempoMedioDias: med(v.fuT),

@@ -193,7 +193,7 @@ function AbaDistribuicao({ dist, comAtividade }: { dist: ReturnType<typeof compu
 
   const visiveis = useMemo(() => {
     let arr = linhas;
-    if (filtro === 'perdeu') arr = arr.filter((l) => l.perdeuAVez);
+    if (filtro === 'perdeu') arr = arr.filter((l) => l.estourouJanela);
     if (filtro === 'semQualif') arr = arr.filter((l) => l.leadId && !l.temQualificacao);
     if (filtro === 'semToque') arr = arr.filter((l) => l.leadId && l.interacoes === 0);
     if (filtro === 'fuAtrasado') arr = arr.filter((l) => l.fuAtrasados > 0);
@@ -215,47 +215,67 @@ function AbaDistribuicao({ dist, comAtividade }: { dist: ReturnType<typeof compu
 
   return (
     <div className="space-y-4">
-      {/* Entrega e resposta */}
-      <Secao titulo="Chegada e resposta" sub="O que a distribuição entregou e como o time respondeu">
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+      {/* 1. O que chegou */}
+      <Secao titulo="1 · O que chegou" sub="Leads entregues pela distribuição no período">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <Metric label="Leads recebidos" valor={String(r.total)} />
           <Metric label="Aceitos" valor={String(r.aceitos)} tom="text-emerald-300" />
           <Metric label="Taxa de aceite" valor={fmtPct(r.taxaAceite)} />
-          <Metric label="Não atendidos" valor={String(r.naoAtendidos)} tom="text-rose-300" />
+          <Metric label="Perdidos (ninguém pegou)" valor={String(r.naoAtendidos)} tom={r.naoAtendidos ? 'text-rose-300' : 'text-white'} />
           <Metric label="Ainda na fila" valor={String(r.naFila)} />
-          <Metric label="Tempo p/ aceitar" valor={fmtSeg(r.tempoMedioAceiteSeg)} />
-          <Metric label="Mediana" valor={fmtSeg(r.medianaAceiteSeg)} />
-        </div>
-        <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-xl bg-white/[0.03] border border-white/10 p-3">
-          <Metric label="Perderam a vez (5 min)" valor={String(r.perderamAVez)} tom="text-amber-300" />
-          <Metric label="Pegos no bolsão" valor={String(r.viaGeral)} />
-          <Metric label="Fechados" valor={String(r.fechados)} tom="text-emerald-300" />
-          <Metric label="Conversão" valor={fmtPct1(r.conversao)} />
+          <Metric label="Fechados" valor={`${r.fechados} · ${fmtPct1(r.conversao)}`} tom="text-emerald-300" />
         </div>
       </Secao>
 
-      {/* Quem perdeu a vez */}
-      {r.perderamAVez > 0 && (
-        <Secao titulo="⏱ Quem perdeu a vez" sub="Foi escalado, não pegou dentro do tempo exclusivo e o lead caiu no bolsão">
+      {/* 2. Velocidade — o coração do lead de anúncio */}
+      <Secao titulo={`2 · Velocidade de resposta (janela de ${r.janelaMin} min)`} sub="Lead de anúncio esfria em minutos — aqui é onde se ganha ou perde">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <Metric label="Tempo médio p/ aceitar" valor={fmtSeg(r.tempoMedioAceiteSeg)} />
+          <Metric label="Mediana" valor={fmtSeg(r.medianaAceiteSeg)} />
+          <Metric label={`Atendidos em até ${r.janelaMin} min`} valor={String(r.dentroDaJanela)} tom="text-emerald-300" />
+          <Metric label={`Passaram dos ${r.janelaMin} min`} valor={String(r.estouraramJanela)} tom={r.estouraramJanela ? 'text-amber-300' : 'text-white'} />
+          <Metric label="Perderam a vez (foi p/ bolsão)" valor={String(r.perderamAVez)} tom={r.perderamAVez ? 'text-rose-300' : 'text-white'} />
+        </div>
+        <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-3 rounded-xl bg-white/[0.03] border border-white/10 p-3">
+          <Metric label="Pegos no bolsão" valor={String(r.viaGeral)} />
+          <Metric label="Entraram abertos p/ todos" valor={String(r.nasceramNoBolsao)} />
+          <Metric label="Interações por lead" valor={comAtividade ? fmtNum(r.interacoesMedia) : '—'} />
+        </div>
+        <p className="mt-2 text-[10px] text-text-secondary">
+          <b>Passou dos {r.janelaMin} min</b> = demorou mais que a janela exclusiva (mesmo que tenha aceitado depois).{' '}
+          <b>Perdeu a vez</b> = a janela venceu e o lead abriu pro bolsão.{' '}
+          <b>Entraram abertos p/ todos</b> = rodízio desligado, ninguém tinha exclusividade — não conta como falha de ninguém.
+        </p>
+      </Secao>
+
+      {/* Quem demorou / perdeu a vez */}
+      {r.estouraramJanela > 0 && (
+        <Secao titulo={`⏱ Quem não atendeu na janela de ${r.janelaMin} min`} sub="Ordenado por quem mais demorou — é aqui que o lead esfria">
           <div className="space-y-1.5">
-            {r.porCorretor.filter((c) => c.perdeuAVez > 0).sort((a, b) => b.perdeuAVez - a.perdeuAVez).map((c) => (
+            {r.porCorretor.filter((c) => c.estourouJanela > 0 || c.perdeuAVez > 0).sort((a, b) => (b.estourouJanela - a.estourouJanela) || (b.perdeuAVez - a.perdeuAVez)).map((c) => (
               <div key={c.id} className="flex items-center gap-3 rounded-lg bg-amber-500/[0.06] border border-amber-500/25 px-3 py-2">
                 <span className="flex-1 min-w-0 text-[13px] font-bold text-white truncate">{c.nome}</span>
-                <span className="text-[11px] text-text-secondary tabular-nums shrink-0">
-                  {c.recebidos > 0 && <>{fmtPct(c.perdeuAVez / c.recebidos)} dos {c.recebidos} que recebeu · </>}tempo médio {fmtSeg(c.tempoAceiteMed)}
+                <span className="text-[11px] text-text-secondary tabular-nums shrink-0 text-right">
+                  {c.recebidos > 0 && <>{c.estourouJanela} de {c.recebidos} recebidos ({fmtPct(c.estourouJanela / c.recebidos)}) · </>}
+                  tempo médio dele: <b className="text-white/80">{fmtSeg(c.tempoAceiteMed)}</b>
+                  {c.perdeuAVez > 0 && <span className="text-rose-300"> · {c.perdeuAVez} foram pro bolsão</span>}
                 </span>
-                <span className="al-display text-[18px] font-bold text-amber-300 tabular-nums shrink-0">{c.perdeuAVez}×</span>
+                <span className="al-display text-[18px] font-bold text-amber-300 tabular-nums shrink-0">{c.estourouJanela}×</span>
               </div>
             ))}
           </div>
           <div className="mt-2.5 pt-2.5 border-t border-white/[0.06] space-y-1">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-text-secondary">Os leads que vencerem</p>
-            {linhas.filter((l) => l.perdeuAVez).map((l) => (
-              <div key={l.adsId} className="flex items-center gap-2 text-[11.5px]">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-text-secondary">Os casos, um a um</p>
+            {linhas.filter((l) => l.estourouJanela).sort((a, b) => (b.tempoAceiteSeg ?? 0) - (a.tempoAceiteSeg ?? 0)).map((l) => (
+              <div key={l.adsId} className="flex flex-wrap items-center gap-x-2 text-[11.5px]">
                 <span className="text-amber-300 shrink-0">⏱</span>
-                <span className="text-white/90 truncate">{l.nome}</span>
-                <span className="text-text-secondary shrink-0">— era do <b className="text-white/80">{l.escaladoParaNome}</b></span>
-                <span className="text-text-secondary truncate">{l.aceitoPorNome !== '—' ? <>→ pegou <b className="text-white/80">{l.aceitoPorNome}</b> {l.aceitoPorNome === l.escaladoParaNome && <span className="text-white/40">(ele mesmo, no bolsão)</span>}</> : '→ ninguém pegou'}</span>
+                <span className="text-white/90">{l.nome}</span>
+                <span className="text-text-secondary">— era do <b className="text-white/80">{l.escaladoParaNome}</b></span>
+                {l.tempoAceiteSeg !== null && <span className="text-amber-300 font-bold">levou {fmtSeg(l.tempoAceiteSeg)}</span>}
+                {l.perdeuAVez && <span className="text-rose-300">· foi pro bolsão</span>}
+                {l.status === 'escalado' && <span className="text-rose-300">· ainda não pegou!</span>}
+                {l.aceitoPorNome !== '—' && l.aceitoPorNome !== l.escaladoParaNome && <span className="text-text-secondary">→ pegou <b className="text-white/80">{l.aceitoPorNome}</b></span>}
+                {l.aceitoPorNome !== '—' && l.aceitoPorNome === l.escaladoParaNome && l.perdeuAVez && <span className="text-white/40">(ele mesmo repegou no bolsão)</span>}
               </div>
             ))}
           </div>
@@ -305,7 +325,7 @@ function AbaDistribuicao({ dist, comAtividade }: { dist: ReturnType<typeof compu
           <table className="w-full text-[12px] border-collapse">
             <thead>
               <tr className="text-text-secondary">
-                {['Corretor', 'Receb.', 'Aceitos', 'Perdeu a vez', 'Negou', 'Tempo aceite', 'Anot%', 'Qualif%', '1º contato', 'FU criados', 'FU feitos', 'FU atras.', 'Tempo FU', 'Fech.', 'Conv.'].map((h, i) => (
+                {['Corretor', 'Receb.', 'Aceitos', 'Tempo aceite', `Passou ${r.janelaMin}min`, 'Perdeu a vez', 'Negou', 'Anot%', 'Qualif%', '1º contato', 'FU criados', 'FU feitos', 'FU atras.', 'Tempo FU', 'Fech.', 'Conv.'].map((h, i) => (
                   <th key={h} className={`px-2 py-2 font-bold whitespace-nowrap ${i === 0 ? 'text-left sticky left-0 bg-[#12101a]' : 'text-right'}`}>{h}</th>
                 ))}
               </tr>
@@ -316,9 +336,10 @@ function AbaDistribuicao({ dist, comAtividade }: { dist: ReturnType<typeof compu
                   <td className="px-2 py-2 sticky left-0 bg-[#12101a] font-semibold text-white whitespace-nowrap">{c.nome}</td>
                   <td className="px-2 py-2 text-right tabular-nums text-white/90">{c.recebidos}</td>
                   <td className="px-2 py-2 text-right tabular-nums text-emerald-300">{c.aceitos}</td>
-                  <td className={`px-2 py-2 text-right tabular-nums ${c.perdeuAVez > 0 ? 'text-amber-300 font-bold' : 'text-white/50'}`}>{c.perdeuAVez}</td>
-                  <td className={`px-2 py-2 text-right tabular-nums ${c.negou > 0 ? 'text-white/90' : 'text-white/50'}`}>{c.negou}</td>
                   <td className="px-2 py-2 text-right tabular-nums text-white/90">{fmtSeg(c.tempoAceiteMed)}</td>
+                  <td className={`px-2 py-2 text-right tabular-nums ${c.estourouJanela > 0 ? 'text-amber-300 font-bold' : 'text-white/50'}`}>{c.estourouJanela}</td>
+                  <td className={`px-2 py-2 text-right tabular-nums ${c.perdeuAVez > 0 ? 'text-rose-300 font-bold' : 'text-white/50'}`}>{c.perdeuAVez}</td>
+                  <td className={`px-2 py-2 text-right tabular-nums ${c.negou > 0 ? 'text-white/90' : 'text-white/50'}`}>{c.negou}</td>
                   <td className={`px-2 py-2 text-right tabular-nums ${c.pctAnotacao < 0.5 ? 'text-amber-300' : 'text-white/90'}`}>{fmtPct(c.pctAnotacao)}</td>
                   <td className={`px-2 py-2 text-right tabular-nums ${c.pctQualificacao < 0.5 ? 'text-amber-300' : 'text-white/90'}`}>{fmtPct(c.pctQualificacao)}</td>
                   <td className="px-2 py-2 text-right tabular-nums text-white/90">{fmtDias(c.tempo1oContato)}</td>
@@ -351,7 +372,7 @@ function AbaDistribuicao({ dist, comAtividade }: { dist: ReturnType<typeof compu
       <Secao titulo="Lead a lead" sub={`${visiveis.length} de ${linhas.length} — clique nos filtros pra caçar problema`}>
         <div className="flex flex-wrap items-center gap-2 mb-3">
           {chip('todos', 'Todos', linhas.length)}
-          {chip('perdeu', '⏱ Perderam a vez', linhas.filter((l) => l.perdeuAVez).length)}
+          {chip('perdeu', `⏱ Passaram de ${r.janelaMin}min`, linhas.filter((l) => l.estourouJanela).length)}
           {chip('semQualif', '🚩 Sem qualificação', linhas.filter((l) => l.leadId && !l.temQualificacao).length)}
           {chip('semToque', '📵 Sem nenhum toque', linhas.filter((l) => l.leadId && l.interacoes === 0).length)}
           {chip('fuAtrasado', '🔥 Follow-up atrasado', linhas.filter((l) => l.fuAtrasados > 0).length)}
@@ -386,11 +407,17 @@ function LinhaLead({ l, comAtividade }: { l: LeadDistRow; comAtividade: boolean 
         {l.leadId ? <a href={`/dashboard/crm/${l.leadId}`} className="font-semibold text-white hover:text-[#FF7A97] transition-colors">{l.nome}</a> : <span className="font-semibold text-white/70">{l.nome}</span>}
       </td>
       <td className="px-2 py-2 text-right text-white/70 max-w-[180px] truncate" title={l.campanha}>{l.campanha}</td>
-      <td className={`px-2 py-2 text-right font-bold whitespace-nowrap ${statusCor}`}>{statusTxt}{l.perdeuAVez && <span className="ml-1 text-amber-300" title="Deixou vencer a janela exclusiva">⏱</span>}{l.viaGeral && <span className="ml-1 text-white/40" title="Pego no bolsão">↺</span>}</td>
+      <td className={`px-2 py-2 text-right font-bold whitespace-nowrap ${statusCor}`}>
+        {statusTxt}
+        {l.estourouJanela && <span className="ml-1 text-amber-300" title="Passou da janela exclusiva">⏱</span>}
+        {l.perdeuAVez && <span className="ml-1 text-rose-300" title="A janela venceu e o lead foi pro bolsão">↯</span>}
+        {l.pegouNoBolsao && <span className="ml-1 text-white/40" title="Pego quando já estava no bolsão">↺</span>}
+        {l.nasceuNoBolsao && <span className="ml-1 text-white/30" title="Entrou aberto pra todos (rodízio desligado)">∗</span>}
+      </td>
       <td className="px-2 py-2 text-right whitespace-nowrap">
-        {l.perdeuAVez && l.escaladoParaNome !== '—' ? (
+        {l.perdeuAVez && l.escaladoParaNome !== '—' && l.aceitoPorNome !== l.escaladoParaNome ? (
           <span title={`Era do ${l.escaladoParaNome}, que deixou vencer`}>
-            <span className="text-amber-300 line-through decoration-amber-300/50">{l.escaladoParaNome}</span>
+            <span className="text-rose-300 line-through decoration-rose-300/50">{l.escaladoParaNome}</span>
             {l.aceitoPorNome !== '—' && <span className="text-white/90"> → {l.aceitoPorNome}</span>}
           </span>
         ) : (
@@ -414,7 +441,7 @@ export default function RelatoriosPage() {
   const { userData, isEspelhoDemo } = useAuth();
   const imobiliariaId = userData?.imobiliariaId;
   const ativo = !!imobiliariaId && !isEspelhoDemo;
-  const { leads, corretores, ads, loading, error } = useRelatorioData(imobiliariaId, ativo);
+  const { leads, corretores, ads, minutosExclusivo, loading, error } = useRelatorioData(imobiliariaId, ativo);
   const { mapa, loadingAtiv, progresso } = useAtividade(leads, ativo);
 
   const [aba, setAba] = useState<'corretores' | 'distribuicao'>('corretores');
@@ -450,7 +477,7 @@ export default function RelatoriosPage() {
   const toggleSel = (id: string) => { const n = new Set(sel || []); if (n.has(id)) n.delete(id); else n.add(id); salvarSel(n); };
 
   const rel = useMemo(() => computeRelatorio(leads, corretores, ads, mapa, sel || new Set(), periodo, atividadeDesdeMs), [leads, corretores, ads, mapa, sel, periodo, atividadeDesdeMs]);
-  const dist = useMemo(() => computeRelatorioDist(ads, leads, corretores, mapa, periodo), [ads, leads, corretores, mapa, periodo]);
+  const dist = useMemo(() => computeRelatorioDist(ads, leads, corretores, mapa, periodo, minutosExclusivo), [ads, leads, corretores, mapa, periodo, minutosExclusivo]);
 
   if (isEspelhoDemo) {
     return (
