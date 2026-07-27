@@ -456,6 +456,8 @@ export function computeRelatorioDist(
 
   const corrMap = new Map<string, { recebidos: number; aceitos: number; perdeu: number; negou: number; tAceite: number[]; anot: number; qual: number; t1: number[]; fuC: number; fuOk: number; fuAtr: number; fuT: number[]; fech: number; inter: number }>();
   const acc = (id: string) => { let v = corrMap.get(id); if (!v) { v = { recebidos: 0, aceitos: 0, perdeu: 0, negou: 0, tAceite: [], anot: 0, qual: 0, t1: [], fuC: 0, fuOk: 0, fuAtr: 0, fuT: [], fech: 0, inter: 0 }; corrMap.set(id, v); } return v; };
+  // quem recusou explicitamente (botão Negar) — vem do array negadoPor do adsLead
+  adsF.forEach((a) => { if (Array.isArray(a.negadoPor)) a.negadoPor.forEach((u) => { acc(u).negou++; }); });
   linhas.forEach((l) => {
     if (l.escaladoPara) { const v = acc(l.escaladoPara); v.recebidos++; if (l.perdeuAVez) v.perdeu++; }
     if (l.aceitoPor) {

@@ -234,6 +234,34 @@ function AbaDistribuicao({ dist, comAtividade }: { dist: ReturnType<typeof compu
         </div>
       </Secao>
 
+      {/* Quem perdeu a vez */}
+      {r.perderamAVez > 0 && (
+        <Secao titulo="⏱ Quem perdeu a vez" sub="Foi escalado, não pegou dentro do tempo exclusivo e o lead caiu no bolsão">
+          <div className="space-y-1.5">
+            {r.porCorretor.filter((c) => c.perdeuAVez > 0).sort((a, b) => b.perdeuAVez - a.perdeuAVez).map((c) => (
+              <div key={c.id} className="flex items-center gap-3 rounded-lg bg-amber-500/[0.06] border border-amber-500/25 px-3 py-2">
+                <span className="flex-1 min-w-0 text-[13px] font-bold text-white truncate">{c.nome}</span>
+                <span className="text-[11px] text-text-secondary tabular-nums shrink-0">
+                  {c.recebidos > 0 && <>{fmtPct(c.perdeuAVez / c.recebidos)} dos {c.recebidos} que recebeu · </>}tempo médio {fmtSeg(c.tempoAceiteMed)}
+                </span>
+                <span className="al-display text-[18px] font-bold text-amber-300 tabular-nums shrink-0">{c.perdeuAVez}×</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-2.5 pt-2.5 border-t border-white/[0.06] space-y-1">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-text-secondary">Os leads que vencerem</p>
+            {linhas.filter((l) => l.perdeuAVez).map((l) => (
+              <div key={l.adsId} className="flex items-center gap-2 text-[11.5px]">
+                <span className="text-amber-300 shrink-0">⏱</span>
+                <span className="text-white/90 truncate">{l.nome}</span>
+                <span className="text-text-secondary shrink-0">— era do <b className="text-white/80">{l.escaladoParaNome}</b></span>
+                <span className="text-text-secondary truncate">{l.aceitoPorNome !== '—' ? <>→ pegou <b className="text-white/80">{l.aceitoPorNome}</b> {l.aceitoPorNome === l.escaladoParaNome && <span className="text-white/40">(ele mesmo, no bolsão)</span>}</> : '→ ninguém pegou'}</span>
+              </div>
+            ))}
+          </div>
+        </Secao>
+      )}
+
       {/* Tratamento */}
       <Secao titulo="Tratamento do lead" sub="Depois que caiu no CRM: anotou? qualificou? em quanto tempo falou?">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -277,7 +305,7 @@ function AbaDistribuicao({ dist, comAtividade }: { dist: ReturnType<typeof compu
           <table className="w-full text-[12px] border-collapse">
             <thead>
               <tr className="text-text-secondary">
-                {['Corretor', 'Receb.', 'Aceitos', 'Perdeu a vez', 'Tempo aceite', 'Anot%', 'Qualif%', '1º contato', 'FU criados', 'FU feitos', 'FU atras.', 'Tempo FU', 'Fech.', 'Conv.'].map((h, i) => (
+                {['Corretor', 'Receb.', 'Aceitos', 'Perdeu a vez', 'Negou', 'Tempo aceite', 'Anot%', 'Qualif%', '1º contato', 'FU criados', 'FU feitos', 'FU atras.', 'Tempo FU', 'Fech.', 'Conv.'].map((h, i) => (
                   <th key={h} className={`px-2 py-2 font-bold whitespace-nowrap ${i === 0 ? 'text-left sticky left-0 bg-[#12101a]' : 'text-right'}`}>{h}</th>
                 ))}
               </tr>
@@ -289,6 +317,7 @@ function AbaDistribuicao({ dist, comAtividade }: { dist: ReturnType<typeof compu
                   <td className="px-2 py-2 text-right tabular-nums text-white/90">{c.recebidos}</td>
                   <td className="px-2 py-2 text-right tabular-nums text-emerald-300">{c.aceitos}</td>
                   <td className={`px-2 py-2 text-right tabular-nums ${c.perdeuAVez > 0 ? 'text-amber-300 font-bold' : 'text-white/50'}`}>{c.perdeuAVez}</td>
+                  <td className={`px-2 py-2 text-right tabular-nums ${c.negou > 0 ? 'text-white/90' : 'text-white/50'}`}>{c.negou}</td>
                   <td className="px-2 py-2 text-right tabular-nums text-white/90">{fmtSeg(c.tempoAceiteMed)}</td>
                   <td className={`px-2 py-2 text-right tabular-nums ${c.pctAnotacao < 0.5 ? 'text-amber-300' : 'text-white/90'}`}>{fmtPct(c.pctAnotacao)}</td>
                   <td className={`px-2 py-2 text-right tabular-nums ${c.pctQualificacao < 0.5 ? 'text-amber-300' : 'text-white/90'}`}>{fmtPct(c.pctQualificacao)}</td>
@@ -358,7 +387,16 @@ function LinhaLead({ l, comAtividade }: { l: LeadDistRow; comAtividade: boolean 
       </td>
       <td className="px-2 py-2 text-right text-white/70 max-w-[180px] truncate" title={l.campanha}>{l.campanha}</td>
       <td className={`px-2 py-2 text-right font-bold whitespace-nowrap ${statusCor}`}>{statusTxt}{l.perdeuAVez && <span className="ml-1 text-amber-300" title="Deixou vencer a janela exclusiva">⏱</span>}{l.viaGeral && <span className="ml-1 text-white/40" title="Pego no bolsão">↺</span>}</td>
-      <td className="px-2 py-2 text-right text-white/90 whitespace-nowrap">{l.aceitoPorNome !== '—' ? l.aceitoPorNome : l.escaladoParaNome}</td>
+      <td className="px-2 py-2 text-right whitespace-nowrap">
+        {l.perdeuAVez && l.escaladoParaNome !== '—' ? (
+          <span title={`Era do ${l.escaladoParaNome}, que deixou vencer`}>
+            <span className="text-amber-300 line-through decoration-amber-300/50">{l.escaladoParaNome}</span>
+            {l.aceitoPorNome !== '—' && <span className="text-white/90"> → {l.aceitoPorNome}</span>}
+          </span>
+        ) : (
+          <span className="text-white/90">{l.aceitoPorNome !== '—' ? l.aceitoPorNome : l.escaladoParaNome}</span>
+        )}
+      </td>
       <td className="px-2 py-2 text-right tabular-nums text-white/90">{fmtSeg(l.tempoAceiteSeg)}</td>
       <td className="px-2 py-2 text-right text-white/90 whitespace-nowrap">{l.etapa}</td>
       <td className="px-2 py-2 text-right">{l.leadId ? (l.temAnotacao ? <span className="text-emerald-300">✓</span> : <span className="text-rose-300">✗</span>) : '—'}</td>
