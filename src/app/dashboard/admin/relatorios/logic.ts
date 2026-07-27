@@ -27,7 +27,14 @@ export interface RelLead {
 }
 export interface RelCorretor { id: string; nome: string; tipoConta?: string; aprovado?: boolean; email?: string; }
 export interface RelAdsLead { id: string; status?: string; corretorEscalado?: string; aceitoPor?: string; tempoAceiteSeg?: number; viaGeral?: boolean; campanhaNome?: string; negadoPor?: string[]; }
-export interface AtividadeLead { eventos: { ms: number; tipo: string }[]; }
+export interface TarefaLead { id: string; tipo: string; status: string; dueMs: number; concluidaMs: number }
+export interface AtividadeLead { eventos: { ms: number; tipo: string; taskId?: string }[]; tarefas: TarefaLead[] }
+
+/** Tarefas de acompanhamento: é isso que o time chama de "follow-up" no dia a dia. */
+export const TIPOS_FOLLOWUP = ['Follow-up', 'Ligação', 'Ligacao', 'WhatsApp'];
+export const ehFollowup = (tipo: string) => TIPOS_FOLLOWUP.includes(tipo);
+const ehConcluida = (s: string) => /conclu/i.test(s);
+const ehCancelada = (s: string) => /cancel/i.test(s);
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 export function msOf(ts: unknown): number {
@@ -101,11 +108,25 @@ export function useAtividade(leads: RelLead[], ativo: boolean): { mapa: Map<stri
         const slice = ids.slice(i, i + CHUNK);
         await Promise.all(slice.map(async (id) => {
           try {
-            const snap = await getDocs(collection(db, 'leads', id, 'interactions'));
-            const eventos: { ms: number; tipo: string }[] = [];
-            snap.forEach((d) => { const x = d.data(); const ms = msOf(x.timestamp); if (ms) eventos.push({ ms, tipo: String(x.type || '') }); });
+            const [snap, tsnap] = await Promise.all([
+              getDocs(collection(db, 'leads', id, 'interactions')),
+              getDocs(collection(db, 'leads', id, 'tarefas')),
+            ]);
+            const eventos: { ms: number; tipo: string; taskId?: string }[] = [];
+            snap.forEach((d) => {
+              const x = d.data(); const ms = msOf(x.timestamp);
+              if (ms) eventos.push({ ms, tipo: String(x.type || ''), taskId: x.taskId ? String(x.taskId) : undefined });
+            });
             eventos.sort((a, b) => a.ms - b.ms);
-            m.set(id, { eventos });
+            // quando cada tarefa foi concluída: a interação "Tarefa Concluída" carrega o taskId
+            const conclusaoDe = new Map<string, number>();
+            for (const e of eventos) if (e.taskId && /conclu/i.test(e.tipo)) conclusaoDe.set(e.taskId, e.ms);
+            const tarefas: TarefaLead[] = [];
+            tsnap.forEach((d) => {
+              const x = d.data();
+              tarefas.push({ id: d.id, tipo: String(x.type || ''), status: String(x.status || ''), dueMs: msOf(x.dueDate), concluidaMs: conclusaoDe.get(d.id) || 0 });
+            });
+            m.set(id, { eventos, tarefas });
           } catch { /* pula lead com erro */ }
         }));
         if (!cancel) setProgresso(Math.min(1, (i + CHUNK) / ids.length));
@@ -314,6 +335,173 @@ export function computeRelatorio(
   };
 
   return { kpis, funil, ranking, ads: adsResumo, mercado, origem, comAtividade };
+}
+
+// ---------------------------------------------------------------------------
+// RELATÓRIO DOS LEADS DE DISTRIBUIÇÃO (só o que veio de anúncio/propaganda)
+// Cruza adsLeads → lead do CRM (pelo leadId gravado no aceite) e mede o que
+// aconteceu DEPOIS: etapa no funil, anotação, qualificação, tempo de atendimento,
+// follow-ups e o tempo pra fazer cada um. Inclui quem deixou vencer a exclusiva.
+// ---------------------------------------------------------------------------
+export interface LeadDistRow {
+  adsId: string; leadId: string | null; nome: string; telefone: string;
+  campanha: string; anuncio: string; criadoMs: number;
+  status: string;                    // escalado | geral | aceito | nao-atendido
+  escaladoPara: string; escaladoParaNome: string;
+  aceitoPor: string; aceitoPorNome: string; tempoAceiteSeg: number | null;
+  viaGeral: boolean; perdeuAVez: boolean;   // deixou vencer os 5 min (foi pro bolsão)
+  negouQtd: number;
+  // o que aconteceu com o lead no CRM
+  etapa: string; etapaIdx: number; fechado: boolean; descartado: boolean;
+  temAnotacao: boolean; temQualificacao: boolean; qualifCampos: number;
+  tempo1oContatoDias: number | null; tentativas: number;
+  interacoes: number; ultimoToqueMs: number; diasSemToque: number | null; diasParado: number | null;
+  fuCriados: number; fuConcluidos: number; fuPendentes: number; fuAtrasados: number;
+  fuTempoMedioDias: number | null;   // do vencimento até concluir (+ = atrasou)
+}
+export interface ResumoDist {
+  total: number; aceitos: number; naoAtendidos: number; naFila: number;
+  taxaAceite: number; tempoMedioAceiteSeg: number | null; medianaAceiteSeg: number | null;
+  perderamAVez: number; viaGeral: number;
+  comAnotacao: number; comQualificacao: number; pctAnotacao: number; pctQualificacao: number;
+  tempoMedio1oContato: number | null; semNenhumToque: number;
+  fuCriados: number; fuConcluidos: number; fuAtrasados: number; fuTempoMedioDias: number | null;
+  fechados: number; conversao: number; interacoesMedia: number | null;
+  porEtapa: Record<string, number>;
+  porCampanha: { nome: string; total: number; aceitos: number; fechados: number }[];
+  porCorretor: {
+    id: string; nome: string; recebidos: number; aceitos: number; perdeuAVez: number; negou: number;
+    tempoAceiteMed: number | null; pctAnotacao: number; pctQualificacao: number;
+    tempo1oContato: number | null; fuCriados: number; fuConcluidos: number; fuAtrasados: number;
+    fuTempoMedioDias: number | null; fechados: number; conversao: number; interacoes: number;
+  }[];
+}
+
+const mediana = (arr: number[]): number | null => {
+  if (!arr.length) return null;
+  const a = [...arr].sort((x, y) => x - y); const m = Math.floor(a.length / 2);
+  return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+};
+const med = (arr: number[]): number | null => arr.length ? arr.reduce((s, n) => s + n, 0) / arr.length : null;
+
+export function computeRelatorioDist(
+  ads: RelAdsLead[], leads: RelLead[], corretores: RelCorretor[],
+  atividade: Map<string, AtividadeLead> | null, periodo: Periodo,
+): { linhas: LeadDistRow[]; resumo: ResumoDist } {
+  const inicio = inicioPeriodo(periodo);
+  const leadById = new Map(leads.map((l) => [l.id, l] as const));
+  const nomeDe = new Map(corretores.map((c) => [c.id, c.nome] as const));
+  const agora = Date.now();
+
+  const adsF = ads.filter((a) => periodo === 'tudo' || msOf((a as { criadoEm?: unknown }).criadoEm) >= inicio);
+
+  const linhas: LeadDistRow[] = adsF.map((a) => {
+    const x = a as RelAdsLead & { nome?: string; telefone?: string; campanhaNome?: string; anuncioNome?: string; criadoEm?: unknown; abriuGeralEm?: unknown; leadId?: string; aceitoPorNome?: string };
+    const leadId = x.leadId || null;
+    const lead = leadId ? leadById.get(leadId) : undefined;
+    const at = leadId && atividade ? atividade.get(leadId) : undefined;
+
+    const etapa = lead ? mapEtapaCircuito(lead.etapa) : '—';
+    const idx = lead ? etapaIndex(etapa) : -1;
+    const qualifCampos = lead?.qualificacao ? Object.values(lead.qualificacao).filter((v) => Array.isArray(v) && v.length > 0).length : 0;
+    const cMs = lead ? msOf(lead.createdAt) : 0;
+    const pMs = lead ? msOf(lead.circuito?.primeiroContatoEm) : 0;
+    const t1 = cMs > 0 && pMs >= cMs ? (pMs - cMs) / DIA : null;
+    const evs = at?.eventos || [];
+    const ultimo = evs.length ? evs[evs.length - 1].ms : 0;
+    const desde = lead ? (msOf(lead.circuito?.desde) || cMs) : 0;
+
+    const fus = (at?.tarefas || []).filter((t) => ehFollowup(t.tipo));
+    const fuConcl = fus.filter((t) => ehConcluida(t.status));
+    const fuPend = fus.filter((t) => !ehConcluida(t.status) && !ehCancelada(t.status));
+    const atrasos = fuConcl.filter((t) => t.concluidaMs > 0 && t.dueMs > 0).map((t) => (t.concluidaMs - t.dueMs) / DIA);
+
+    return {
+      adsId: a.id, leadId, nome: x.nome || 'Sem nome', telefone: String(x.telefone || ''),
+      campanha: x.campanhaNome || '(sem campanha)', anuncio: x.anuncioNome || '',
+      criadoMs: msOf(x.criadoEm), status: x.status || '—',
+      escaladoPara: x.corretorEscalado || '', escaladoParaNome: x.corretorEscalado ? (nomeDe.get(x.corretorEscalado) || '—') : '—',
+      aceitoPor: x.aceitoPor || '', aceitoPorNome: x.aceitoPorNome || (x.aceitoPor ? nomeDe.get(x.aceitoPor) || '—' : '—'),
+      tempoAceiteSeg: typeof x.tempoAceiteSeg === 'number' ? x.tempoAceiteSeg : null,
+      viaGeral: !!x.viaGeral, perdeuAVez: !!msOf(x.abriuGeralEm) && !!x.corretorEscalado,
+      negouQtd: Array.isArray(x.negadoPor) ? x.negadoPor.length : 0,
+      etapa, etapaIdx: idx, fechado: etapa === ETAPA_FECHADO, descartado: etapa === ETAPA_DESCARTADO,
+      temAnotacao: !!(lead?.anotacoes && String(lead.anotacoes).trim()), temQualificacao: qualifCampos > 0, qualifCampos,
+      tempo1oContatoDias: t1, tentativas: lead?.circuito?.tentativas || 0,
+      interacoes: evs.length, ultimoToqueMs: ultimo,
+      diasSemToque: ultimo ? (agora - ultimo) / DIA : null,
+      diasParado: desde ? (agora - desde) / DIA : null,
+      fuCriados: fus.length, fuConcluidos: fuConcl.length, fuPendentes: fuPend.length,
+      fuAtrasados: fuPend.filter((t) => t.dueMs > 0 && t.dueMs < agora).length,
+      fuTempoMedioDias: med(atrasos),
+    };
+  }).sort((a, b) => b.criadoMs - a.criadoMs);
+
+  // ── resumo ──
+  const aceitos = linhas.filter((l) => l.status === 'aceito');
+  const comLead = linhas.filter((l) => !!l.leadId);
+  const tempos = aceitos.map((l) => l.tempoAceiteSeg).filter((n): n is number => n !== null);
+  const t1s = comLead.map((l) => l.tempo1oContatoDias).filter((n): n is number => n !== null);
+  const fuMedios = comLead.map((l) => l.fuTempoMedioDias).filter((n): n is number => n !== null);
+  const porEtapa: Record<string, number> = {};
+  ETAPAS_CIRCUITO.forEach((e) => { porEtapa[e] = 0; });
+  comLead.forEach((l) => { if (l.etapaIdx >= 0) porEtapa[l.etapa] = (porEtapa[l.etapa] || 0) + 1; });
+
+  const campMap = new Map<string, { total: number; aceitos: number; fechados: number }>();
+  linhas.forEach((l) => {
+    const c = campMap.get(l.campanha) || { total: 0, aceitos: 0, fechados: 0 };
+    c.total++; if (l.status === 'aceito') c.aceitos++; if (l.fechado) c.fechados++;
+    campMap.set(l.campanha, c);
+  });
+
+  const corrMap = new Map<string, { recebidos: number; aceitos: number; perdeu: number; negou: number; tAceite: number[]; anot: number; qual: number; t1: number[]; fuC: number; fuOk: number; fuAtr: number; fuT: number[]; fech: number; inter: number }>();
+  const acc = (id: string) => { let v = corrMap.get(id); if (!v) { v = { recebidos: 0, aceitos: 0, perdeu: 0, negou: 0, tAceite: [], anot: 0, qual: 0, t1: [], fuC: 0, fuOk: 0, fuAtr: 0, fuT: [], fech: 0, inter: 0 }; corrMap.set(id, v); } return v; };
+  linhas.forEach((l) => {
+    if (l.escaladoPara) { const v = acc(l.escaladoPara); v.recebidos++; if (l.perdeuAVez) v.perdeu++; }
+    if (l.aceitoPor) {
+      const v = acc(l.aceitoPor);
+      v.aceitos++; if (l.tempoAceiteSeg !== null) v.tAceite.push(l.tempoAceiteSeg);
+      if (l.temAnotacao) v.anot++; if (l.temQualificacao) v.qual++;
+      if (l.tempo1oContatoDias !== null) v.t1.push(l.tempo1oContatoDias);
+      v.fuC += l.fuCriados; v.fuOk += l.fuConcluidos; v.fuAtr += l.fuAtrasados;
+      if (l.fuTempoMedioDias !== null) v.fuT.push(l.fuTempoMedioDias);
+      if (l.fechado) v.fech++; v.inter += l.interacoes;
+    }
+  });
+
+  const resumo: ResumoDist = {
+    total: linhas.length, aceitos: aceitos.length,
+    naoAtendidos: linhas.filter((l) => l.status === 'nao-atendido').length,
+    naFila: linhas.filter((l) => l.status === 'escalado' || l.status === 'geral').length,
+    taxaAceite: linhas.length ? aceitos.length / linhas.length : 0,
+    tempoMedioAceiteSeg: med(tempos), medianaAceiteSeg: mediana(tempos),
+    perderamAVez: linhas.filter((l) => l.perdeuAVez).length,
+    viaGeral: aceitos.filter((l) => l.viaGeral).length,
+    comAnotacao: comLead.filter((l) => l.temAnotacao).length,
+    comQualificacao: comLead.filter((l) => l.temQualificacao).length,
+    pctAnotacao: comLead.length ? comLead.filter((l) => l.temAnotacao).length / comLead.length : 0,
+    pctQualificacao: comLead.length ? comLead.filter((l) => l.temQualificacao).length / comLead.length : 0,
+    tempoMedio1oContato: med(t1s),
+    semNenhumToque: comLead.filter((l) => l.interacoes === 0).length,
+    fuCriados: comLead.reduce((s, l) => s + l.fuCriados, 0),
+    fuConcluidos: comLead.reduce((s, l) => s + l.fuConcluidos, 0),
+    fuAtrasados: comLead.reduce((s, l) => s + l.fuAtrasados, 0),
+    fuTempoMedioDias: med(fuMedios),
+    fechados: comLead.filter((l) => l.fechado).length,
+    conversao: comLead.length ? comLead.filter((l) => l.fechado).length / comLead.length : 0,
+    interacoesMedia: comLead.length ? comLead.reduce((s, l) => s + l.interacoes, 0) / comLead.length : null,
+    porEtapa,
+    porCampanha: Array.from(campMap.entries()).map(([nome, v]) => ({ nome, ...v })).sort((a, b) => b.total - a.total),
+    porCorretor: Array.from(corrMap.entries()).map(([id, v]) => ({
+      id, nome: nomeDe.get(id) || id.slice(0, 6), recebidos: v.recebidos, aceitos: v.aceitos, perdeuAVez: v.perdeu, negou: v.negou,
+      tempoAceiteMed: med(v.tAceite),
+      pctAnotacao: v.aceitos ? v.anot / v.aceitos : 0, pctQualificacao: v.aceitos ? v.qual / v.aceitos : 0,
+      tempo1oContato: med(v.t1), fuCriados: v.fuC, fuConcluidos: v.fuOk, fuAtrasados: v.fuAtr, fuTempoMedioDias: med(v.fuT),
+      fechados: v.fech, conversao: v.aceitos ? v.fech / v.aceitos : 0, interacoes: v.inter,
+    })).sort((a, b) => b.aceitos - a.aceitos),
+  };
+
+  return { linhas, resumo };
 }
 
 // ── Formatadores ─────────────────────────────────────────────────────────────
