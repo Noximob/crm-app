@@ -1,15 +1,14 @@
 'use client';
 
 /**
- * Relatórios do admin.
+ * Relatórios do admin — LEADS DE PROPAGANDA.
  *
- * Aba "Leads de propaganda": tudo sobre o lead que veio da distribuição —
- * chegada, velocidade de resposta, tratamento, follow-ups, funil e custo/retorno
- * por campanha.
+ * Tudo sobre o lead que veio da distribuição: chegada, velocidade de resposta,
+ * tratamento (anotação/qualificação), follow-ups, funil e custo/retorno por
+ * campanha.
  *
- * Aba "Gestão de corretores": ESVAZIADA de propósito — a lógica antiga não
- * servia e será refeita do zero. Não repovoar por partes: a estrutura nova vem
- * junto com a nova regra.
+ * A antiga aba "Gestão de corretores" foi removida por inteiro — a lógica dela
+ * será definida do zero e entra depois, com estrutura própria.
  */
 import React, { useMemo, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
@@ -52,8 +51,8 @@ function Metric({ label, valor, tom }: { label: string; valor: string; tom?: str
   );
 }
 
-// ── Aba: leads que vieram pela DISTRIBUIÇÃO (propaganda) ─────────────────────
-function AbaDistribuicao({ dist, comAtividade, gastos, totalGasto, erroGasto, carregandoGasto }: {
+// ── Relatório dos leads que vieram pela distribuição (propaganda) ───────────
+function RelatorioPropaganda({ dist, comAtividade, gastos, totalGasto, erroGasto, carregandoGasto }: {
   dist: ReturnType<typeof computeRelatorioDist>; comAtividade: boolean;
   gastos: GastoCampanha[]; totalGasto: number; erroGasto: string | null; carregandoGasto: boolean;
 }) {
@@ -361,10 +360,8 @@ export default function RelatoriosPage() {
   const { leads, corretores, ads, minutosExclusivo, loading, error } = useRelatorioData(imobiliariaId, ativo);
   const { mapa, loadingAtiv, progresso } = useAtividade(leads, ativo);
 
-  const [aba, setAba] = useState<'corretores' | 'distribuicao'>('corretores');
   const [periodo, setPeriodo] = useState<Periodo>('tudo');
-  // custo do Meta: só busca quando a aba de propaganda está aberta
-  const { gastos, totalGasto, erroGasto, carregandoGasto } = useCustoCampanhas(ativo && aba === 'distribuicao', periodo);
+  const { gastos, totalGasto, erroGasto, carregandoGasto } = useCustoCampanhas(ativo, periodo);
   const dist = useMemo(() => computeRelatorioDist(ads, leads, corretores, mapa, periodo, minutosExclusivo), [ads, leads, corretores, mapa, periodo, minutosExclusivo]);
   const comAtividade = mapa.size > 0;
 
@@ -384,10 +381,10 @@ export default function RelatoriosPage() {
         <span className="gx-tag"><span>Área do administrador</span></span>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="al-display text-[22px] font-bold text-white uppercase tracking-[0.1em]">Relatórios</h1>
+            <h1 className="al-display text-[22px] font-bold text-white uppercase tracking-[0.1em]">Leads de propaganda</h1>
             <p className="text-[12px] text-text-secondary mt-0.5">
-              {loading ? 'Carregando…' : aba === 'corretores' ? 'em reconstrução' : `${dist.linhas.length} leads de propaganda`}
-              {loadingAtiv && aba === 'distribuicao' && ` · atividade ${Math.round(progresso * 100)}%`}
+              {loading ? 'Carregando…' : `${dist.linhas.length} leads vindos da distribuição`}
+              {loadingAtiv && ` · atividade ${Math.round(progresso * 100)}%`}
             </p>
           </div>
           <div className="flex items-center gap-1 rounded-xl bg-white/[0.04] border border-white/10 p-1">
@@ -396,38 +393,15 @@ export default function RelatoriosPage() {
             ))}
           </div>
         </div>
-        {/* Abas */}
-        <div className="flex rounded-xl border border-white/10 bg-white/[0.04] p-1 gap-1 self-start">
-          {([['corretores', '👥 Gestão de corretores'], ['distribuicao', '🔥 Leads de propaganda']] as const).map(([id, label]) => (
-            <button key={id} onClick={() => setAba(id)} className={`px-3.5 py-2 rounded-lg text-[12px] font-bold transition-all ${aba === id ? 'bg-gradient-to-r from-[#FF1E56] to-[#A50D38] text-white shadow-[0_0_16px_rgba(255,30,86,0.35)]' : 'text-text-secondary hover:text-white'}`}>{label}</button>
-          ))}
-        </div>
       </div>
 
       {error && <div className="al-card p-4 text-rose-300 text-sm">Erro: {error}</div>}
       {loading && <div className="al-card p-8 text-center text-text-secondary">Carregando dados…</div>}
 
-      {/* ══════════ ABA: LEADS DE PROPAGANDA ══════════ */}
-      {!loading && aba === 'distribuicao' && (
-        <AbaDistribuicao dist={dist} comAtividade={comAtividade}
+      {!loading && (
+        <RelatorioPropaganda dist={dist} comAtividade={comAtividade}
           gastos={gastos} totalGasto={totalGasto} erroGasto={erroGasto} carregandoGasto={carregandoGasto} />
       )}
-
-      {/* ══════════ ABA: GESTÃO DE CORRETORES ══════════ */}
-      {/* Conteúdo removido a pedido — a lógica será refeita do zero. A aba fica
-          aqui só como porta de entrada; sem número provisório enquanto isso. */}
-      {!loading && aba === 'corretores' && (
-        <div className="al-card relative overflow-hidden p-10 text-center">
-          <div className="absolute inset-x-0 top-0 gx-line" />
-          <p className="text-[40px] leading-none mb-3">🧭</p>
-          <h2 className="al-display text-[18px] font-bold text-white uppercase tracking-[0.12em]">Gestão de corretores</h2>
-          <p className="text-sm text-text-secondary mt-2 max-w-md mx-auto">
-            Estamos refazendo esta parte do zero, com uma lógica nova. Enquanto isso,
-            a aba <b className="text-white">Leads de propaganda</b> segue valendo.
-          </p>
-        </div>
-      )}
-
     </div>
   );
 }
