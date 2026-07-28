@@ -15,6 +15,7 @@ import { app } from '@/lib/firebase';
 import {
   mapEtapaCircuito, etapaIndex, ETAPAS_CIRCUITO,
   ETAPA_FECHADO, ETAPA_DESCARTADO, ETAPA_MEET_AGENDADO, ETAPA_VISITA_AGENDADA,
+  ehInteresseFuturo,
 } from '@/lib/circuito';
 import { QUALIFICATION_QUESTIONS } from '@/lib/qualificacao';
 
@@ -191,6 +192,8 @@ export interface Kpis {
   faturamento: number; ticket: number; fechadosComValor: number; tempoMedio1oContato: number | null;
   indiceQualif: number; indiceAnot: number; estagnados: number; leadsPerdidos: number;
   ativosHoje: number; sumidos: number; interacoesTotal: number;
+  /** Guardados pra depois (agenda > 15 dias) — saem do dia a dia do corretor. */
+  interesseFuturo: number;
 }
 export interface FunilRow { etapa: string; agora: number; alcancaram: number; pct: number; }
 export interface SubScores { atividade: number | null; velocidade: number | null; conversao: number; qualidade: number; higiene: number; }
@@ -256,7 +259,7 @@ export function computeRelatorio(
   const leadsF = leads.filter((l) => !!l.userId && selecionados.has(l.userId) && (periodo === 'tudo' || msOf(l.createdAt) >= inicio));
   const agora = Date.now();
 
-  let ativos = 0, fechados = 0, descartados = 0, comQualif = 0, comAnot = 0, estagnados = 0, faturamento = 0, fechadosComValor = 0;
+  let ativos = 0, fechados = 0, descartados = 0, comQualif = 0, comAnot = 0, estagnados = 0, faturamento = 0, fechadosComValor = 0, interesseFuturo = 0;
   let soma1o = 0, n1o = 0, interacoesTotal = 0;
   const agoraPorEtapa: Record<string, number> = {}, alcancaram: Record<string, number> = {};
   ETAPAS_CIRCUITO.forEach((e) => { agoraPorEtapa[e] = 0; alcancaram[e] = 0; });
@@ -293,6 +296,8 @@ export function computeRelatorio(
     if (idx >= 0) { agoraPorEtapa[et]++; for (let i = 0; i <= idx; i++) alcancaram[ETAPAS_CIRCUITO[i]]++; }
     if (isAtivo) ativos++; if (isFech) fechados++; if (isDesc) descartados++;
     if (qualif) comQualif++; if (anot) comAnot++; if (estag) estagnados++;
+    // "guardado pra depois" (agenda > 15d) — mesma regra da coluna do quadro
+    if (ehInteresseFuturo(et, (l as { tarefasPendentes?: { dueDate?: unknown }[] }).tarefasPendentes, agora)) interesseFuturo++;
     if (isFech) { const v = parseVenda(l.vendaValor); if (v > 0) { faturamento += v; fechadosComValor++; } }
     const cMs = msOf(l.createdAt), pMs = msOf(l.circuito?.primeiroContatoEm);
     // velocidade = resposta a lead FRESCO; gap > 30d é backfill/importação (createdAt
@@ -383,7 +388,7 @@ export function computeRelatorio(
     total, ativos, fechados, descartados, conversao: total ? fechados / total : 0, taxaDescarte: total ? descartados / total : 0,
     faturamento, ticket: fechadosComValor ? faturamento / fechadosComValor : 0, fechadosComValor, tempoMedio1oContato: n1o ? soma1o / n1o : null,
     indiceQualif: total ? comQualif / total : 0, indiceAnot: total ? comAnot / total : 0, estagnados, leadsPerdidos: adsResumo.naoAtendido,
-    ativosHoje, sumidos, interacoesTotal,
+    ativosHoje, sumidos, interacoesTotal, interesseFuturo,
   };
 
   return { kpis, funil, ranking, ads: adsResumo, mercado, origem, comAtividade };

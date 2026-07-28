@@ -85,6 +85,8 @@ const StatusIndicator = ({ status }: { status: StatusLead }) => {
 const etapaChipClasses = (etapa: string) => {
     if (etapa === ETAPA_FECHADO) return 'bg-[#34D399]/10 border-[#34D399]/35 text-[#34D399]';
     if (etapa === ETAPA_DESCARTADO) return 'bg-white/[0.05] border-white/15 text-text-secondary';
+    // Interesse futuro: azul "geladeira" — está vivo, mas fora do dia a dia
+    if (etapa === ETAPA_INTERESSE_FUTURO) return 'bg-[#7DD3FC]/10 border-[#7DD3FC]/35 text-[#7DD3FC]';
     return 'bg-[#E8C547]/10 border-[#E8C547]/35 text-[#FFE9A6]';
 };
 
@@ -180,13 +182,16 @@ export default function CrmPage() {
         }
     }, []);
 
-    // Quando o funil (etapas) muda, limpar filtro rápido se a etapa selecionada não existir mais
-    // Só aplica quando stages já foi carregado (length > 0) para não resetar página ao voltar do detalhe
+    // Quando o funil (etapas) muda, limpar filtro rápido se a etapa selecionada não existir mais.
+    // Só aplica quando stages já foi carregado (length > 0) para não resetar página ao voltar do detalhe.
+    // "Interesse futuro" NÃO está em `stages` (é coluna derivada da agenda) — precisa entrar na
+    // lista válida aqui, senão o filtro era zerado no mesmo instante em que o usuário clicava nele.
     useEffect(() => {
+        const validas = comInteresseFuturo(stages);
         if (
             stages.length > 0 &&
             activeFilter &&
-            !stages.includes(activeFilter)
+            !validas.includes(activeFilter)
         ) {
             setActiveFilter(null);
             setCurrentPage(1);
@@ -383,7 +388,11 @@ export default function CrmPage() {
                         return selectedOptions.some(o => buckets.includes(o));
                     }
 
-                    const leadValue = key === 'etapa' ? normalizeEtapa(lead.etapa) : lead.qualificacao?.[key];
+                    // Etapa usa a COLUNA do quadro (inclui "Interesse futuro", que é
+                    // derivado da agenda) — senão o filtro completo discordaria do kanban.
+                    const leadValue = key === 'etapa'
+                        ? colunaDoLead(normalizeEtapa(lead.etapa), lead.pendentes)
+                        : lead.qualificacao?.[key];
                     
                     if (leadValue === undefined) {
                         return false; 
@@ -758,7 +767,7 @@ export default function CrmPage() {
                                             </a>
                                         </td>
                                         <td className="px-3 py-1.5 text-xs w-1/5">
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border truncate max-w-[120px] ${etapaChipClasses(normalizeEtapa(lead.etapa))}`}>{normalizeEtapa(lead.etapa)}</span>
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border truncate max-w-[120px] ${etapaChipClasses(colunaDoLead(normalizeEtapa(lead.etapa), lead.pendentes))}`}>{colunaDoLead(normalizeEtapa(lead.etapa), lead.pendentes)}</span>
                                         </td>
                                         <td className="px-3 py-1.5 text-xs w-1/5">
                                             <span className="text-white">
@@ -817,7 +826,7 @@ export default function CrmPage() {
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-2 mt-2 min-w-0">
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border truncate max-w-[55%] shrink-0 ${etapaChipClasses(normalizeEtapa(lead.etapa))}`}>{normalizeEtapa(lead.etapa)}</span>
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border truncate max-w-[55%] shrink-0 ${etapaChipClasses(colunaDoLead(normalizeEtapa(lead.etapa), lead.pendentes))}`}>{colunaDoLead(normalizeEtapa(lead.etapa), lead.pendentes)}</span>
                                             <span className="text-text-secondary text-sm truncate">{lead.telefone}</span>
                                         </div>
                                         <div className="flex items-center justify-end gap-3 mt-1">

@@ -594,9 +594,10 @@ export default function RelatoriosPage() {
       {!loading && aba === 'corretores' && (
         <div className="al-card relative overflow-hidden p-3.5">
           <div className="absolute inset-x-0 top-0 gx-line" />
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 gap-3">
             <Metric label="Leads" valor={String(rel.kpis.total)} />
             <Metric label="Ativos" valor={String(rel.kpis.ativos)} />
+            <Metric label="Interesse futuro" valor={String(rel.kpis.interesseFuturo)} tom="text-[#7DD3FC]" />
             <Metric label="Fechados" valor={String(rel.kpis.fechados)} tom="text-emerald-300" />
             <Metric label="Conversão" valor={fmtPct1(rel.kpis.conversao)} />
             <Metric label="Ativos hoje" valor={rel.comAtividade ? String(rel.kpis.ativosHoje) : '—'} tom="text-emerald-300" />

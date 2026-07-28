@@ -5,7 +5,7 @@ import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { getDemoLeads, DEMO_REPORT_CORRETORES } from '@/lib/espelho/demoData';
-import { ETAPAS_DO_ADMIN } from '@/lib/circuito';
+import { ETAPAS_DO_ADMIN, colunaDoLead, comInteresseFuturo } from '@/lib/circuito';
 
 export interface LeadFunil {
   id: string;
@@ -71,6 +71,7 @@ export function useFunilVendasData(imobiliariaId: string | undefined, corretores
       query(collection(db, 'leads'), where('imobiliariaId', '==', imobiliariaId)),
       (snap) => {
         const list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as LeadFunil));
+        // (tarefasPendentes vem junto — é o que decide a coluna "Interesse futuro")
         setLeads(list);
         setError(null);
         setLoading(false);
@@ -108,10 +109,15 @@ export function useFunilVendasData(imobiliariaId: string | undefined, corretores
     const leadsFiltrados = setVisiveis ? leadsAtivos.filter((l) => l.userId && setVisiveis.has(l.userId)) : leadsAtivos;
     const corretoresFiltrados = setVisiveis ? corretores.filter((c) => setVisiveis.has(c.id)) : corretores;
 
+    // O funil da TV mostra a mesma coluna do quadro — com "Interesse futuro"
+    // separado, senão "Em Contato" incha com quem só volta daqui a meses.
+    const colunas = comInteresseFuturo(stages);
+    const colunaDe = (l: LeadFunil) => colunaDoLead(normalizeEtapa(l.etapa), (l as { tarefasPendentes?: { dueDate?: unknown }[] }).tarefasPendentes);
+
     const funilCorporativo: FunilPorEtapa = {};
-    stages.forEach((e) => { funilCorporativo[e] = 0; });
+    colunas.forEach((e) => { funilCorporativo[e] = 0; });
     leadsFiltrados.forEach((l) => {
-      const etapa = normalizeEtapa(l.etapa);
+      const etapa = colunaDe(l);
       funilCorporativo[etapa] = (funilCorporativo[etapa] || 0) + 1;
     });
 
@@ -120,7 +126,7 @@ export function useFunilVendasData(imobiliariaId: string | undefined, corretores
     const porCorretorMap = new Map<string, FunilPorEtapa>();
     corretoresFiltrados.forEach((c) => {
       const porEtapa: FunilPorEtapa = {};
-      stages.forEach((e) => { porEtapa[e] = 0; });
+      colunas.forEach((e) => { porEtapa[e] = 0; });
       porCorretorMap.set(c.id, porEtapa);
     });
     leadsFiltrados.forEach((l) => {
@@ -129,11 +135,11 @@ export function useFunilVendasData(imobiliariaId: string | undefined, corretores
       let porEtapa = porCorretorMap.get(uid);
       if (!porEtapa) {
         porEtapa = {};
-        stages.forEach((e) => { porEtapa![e] = 0; });
-        porEtapa[normalizeEtapa(l.etapa)] = 1;
+        colunas.forEach((e) => { porEtapa![e] = 0; });
+        porEtapa[colunaDe(l)] = 1;
         porCorretorMap.set(uid, porEtapa);
       } else {
-        const etapa = normalizeEtapa(l.etapa);
+        const etapa = colunaDe(l);
         porEtapa[etapa] = (porEtapa[etapa] || 0) + 1;
       }
     });

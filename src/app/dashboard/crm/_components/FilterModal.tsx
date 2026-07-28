@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { usePipelineStages } from '@/context/PipelineStagesContext';
 import { QUALIFICATION_QUESTIONS } from '@/lib/qualificacao';
-import { TIPO_TAREFA_MEET, TIPO_TAREFA_VISITA, TIPO_TAREFA_PRODUTO, TIPOS_CONTATO } from '@/lib/circuito';
+import { TIPO_TAREFA_MEET, TIPO_TAREFA_VISITA, TIPO_TAREFA_PRODUTO, TIPOS_CONTATO, comInteresseFuturo } from '@/lib/circuito';
 
 // Valor interno (bate com lead.taskStatus) + rótulo amigável exibido no chip
 const TASK_STATUS_OPTIONS: { value: string; label: string }[] = [
@@ -124,7 +124,9 @@ const FilterTag = ({ label, isSelected, onClick }: { label: string; isSelected: 
 
 export default function FilterModal({ isOpen, onClose, onApply, initialFilters, initialOrigem = null, initialCampanha = null, campanhas = [] }: FilterModalProps) {
     const { stages: stagesFromContext } = usePipelineStages();
-    const pipelineStages = stagesFromContext;
+    // "Interesse futuro" é coluna derivada (agenda > 15 dias) — precisa aparecer
+    // aqui, senão dá pra ver a coluna no quadro mas não filtrar por ela.
+    const pipelineStages = useMemo(() => comInteresseFuturo(stagesFromContext), [stagesFromContext]);
     const [selectedFilters, setSelectedFilters] = useState<Filters>(initialFilters);
     const [origemSel, setOrigemSel] = useState<string | null>(initialOrigem);
     const [campanhaSel, setCampanhaSel] = useState<string | null>(initialCampanha);
