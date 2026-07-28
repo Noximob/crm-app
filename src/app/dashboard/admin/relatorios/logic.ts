@@ -1,11 +1,14 @@
 'use client';
 
 /**
- * Relatórios do admin — motor de dados + métricas pra GESTÃO DE CORRETORES.
- * Fontes: `leads` (+ circuito/qualificação), `usuarios` (a escala / seletor),
- * `adsLeads` (distribuição) e a subcoleção `interactions` de cada lead (atividade
- * real: última ação, cadência, canal). Cada corretor recebe um SCORE DE SAÚDE
- * composto (0-100) com semáforo e ponto fraco, pra cobrança personalizada.
+ * Relatórios do admin — motor de dados da aba "Leads de propaganda".
+ *
+ * Fontes: `adsLeads` (a distribuição), o `lead` correspondente no CRM e as
+ * subcoleções `interactions`/`tarefas` dele (atividade real e follow-ups).
+ * Cruza ainda o gasto do Meta pra fechar custo por lead e por venda.
+ *
+ * A aba "Gestão de corretores" foi esvaziada: a lógica antiga (score de saúde)
+ * saiu daqui inteira e será reescrita do zero.
  */
 import { useEffect, useMemo, useState } from 'react';
 import { db } from '@/lib/firebase';
@@ -15,9 +18,7 @@ import { app } from '@/lib/firebase';
 import {
   mapEtapaCircuito, etapaIndex, ETAPAS_CIRCUITO,
   ETAPA_FECHADO, ETAPA_DESCARTADO, ETAPA_MEET_AGENDADO, ETAPA_VISITA_AGENDADA,
-  ehInteresseFuturo,
 } from '@/lib/circuito';
-import { QUALIFICATION_QUESTIONS } from '@/lib/qualificacao';
 
 // ── Tipos crus ──────────────────────────────────────────────────────────────
 export interface RelLead {
@@ -59,17 +60,7 @@ export function msOf(ts: unknown): number {
   if (typeof ts === 'number') return ts;
   return 0;
 }
-export function parseVenda(v: unknown): number {
-  if (typeof v === 'number') return v;
-  if (typeof v !== 'string' || !v) return 0;
-  const limpo = v.replace(/[^\d,.-]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.');
-  const n = Number(limpo);
-  return Number.isNaN(n) ? 0 : n;
-}
 const DIA = 24 * 60 * 60 * 1000;
-const ESTAGNADO_DIAS = 14;
-const SEM_TOQUE_DIAS = 7;
-const clamp = (n: number, a = 0, b = 100) => Math.max(a, Math.min(b, n));
 
 export type Periodo = 'tudo' | 'mes' | '30d' | '90d';
 export function inicioPeriodo(p: Periodo): number {
@@ -187,212 +178,9 @@ export function useAtividade(leads: RelLead[], ativo: boolean): { mapa: Map<stri
 }
 
 // ── Saída ───────────────────────────────────────────────────────────────────
-export interface Kpis {
-  total: number; ativos: number; fechados: number; descartados: number; conversao: number; taxaDescarte: number;
-  faturamento: number; ticket: number; fechadosComValor: number; tempoMedio1oContato: number | null;
-  indiceQualif: number; indiceAnot: number; estagnados: number; leadsPerdidos: number;
-  ativosHoje: number; sumidos: number; interacoesTotal: number;
-  /** Guardados pra depois (agenda > 15 dias) — saem do dia a dia do corretor. */
-  interesseFuturo: number;
-}
-export interface FunilRow { etapa: string; agora: number; alcancaram: number; pct: number; }
-export interface SubScores { atividade: number | null; velocidade: number | null; conversao: number; qualidade: number; higiene: number; }
-export interface RankingRow {
-  id: string; nome: string; tipoConta?: string;
-  total: number; ativos: number; fechados: number; conversao: number; descartes: number; taxaDescarte: number;
-  tempo1oContato: number | null; tentativasMed: number | null; qualifPct: number; anotPct: number; estagnados: number;
-  meetsGerados: number; visitasGeradas: number; noShowMeet: number; semQualifAvancado: number; descartesRapidos: number;
-  respostaAdsMed: number | null; aceitosAds: number; negou: number;
-  // atividade
-  ultimaAtividadeMs: number | null; diasSemAtividade: number | null; interacoes: number; interacoesPorLeadAtivo: number | null;
-  /** Último login (campo do usuário) — separado de "mexeu num lead". */
-  ultimoAcessoMs: number | null; diasSemAcessar: number | null;
-  ligacoes: number; whats: number; cadenciaMediaDias: number | null; leadsSemToque: number;
-  porEtapa: Record<string, number>;
-  // score
-  score: number; sub: SubScores; cor: 'verde' | 'amarelo' | 'vermelho'; pontoFraco: string; dica: string;
-}
-export interface AdsResumo { total: number; aceitos: number; geral: number; naoAtendido: number; escalado: number; taxaAceite: number; tempoMedioAceite: number | null; viaGeralPct: number; porCampanha: { nome: string; total: number; aceitos: number }[]; }
-export interface MercadoRow { key: string; title: string; respondidos: number; opcoes: { label: string; count: number }[]; }
-export interface OrigemRow { origem: string; count: number; fechados: number; }
-export interface Relatorio { kpis: Kpis; funil: FunilRow[]; ranking: RankingRow[]; ads: AdsResumo; mercado: MercadoRow[]; origem: OrigemRow[]; comAtividade: boolean; }
-
+// ── Helpers compartilhados ──────────────────────────────────────────────────
 const IDX_MEET_AG = etapaIndex(ETAPA_MEET_AGENDADO);
 const IDX_VISITA_AG = etapaIndex(ETAPA_VISITA_AGENDADA);
-const temQualificacao = (q?: Record<string, string[]>) => !!q && Object.values(q).some((a) => Array.isArray(a) && a.length > 0);
-
-// ── Score de saúde ──────────────────────────────────────────────────────────
-const DIMS: { key: keyof SubScores; nome: string; peso: number; dica: string }[] = [
-  { key: 'atividade', nome: 'Atividade', peso: 0.24, dica: 'Está pouco ativo — pode ter largado a carteira. Cobre presença diária no CRM.' },
-  { key: 'velocidade', nome: 'Velocidade', peso: 0.16, dica: 'Demora a fazer o 1º contato/aceitar lead. Cobre resposta rápida — lead esfria em minutos.' },
-  { key: 'conversao', nome: 'Conversão', peso: 0.24, dica: 'Converte pouco pra o volume que tem. Acompanhe o funil dele de perto (onde trava?).' },
-  { key: 'qualidade', nome: 'Qualidade', peso: 0.20, dica: 'Não qualifica/anota os leads — trabalha no escuro. Cobre preenchimento a cada atendimento.' },
-  { key: 'higiene', nome: 'Higiene', peso: 0.16, dica: 'Muita coisa parada/descartada rápido. Faça revisão da carteira dele com ele.' },
-];
-
-function calcScore(r: RankingRow): { score: number; sub: SubScores; cor: RankingRow['cor']; pontoFraco: string; dica: string } {
-  const sub: SubScores = {
-    atividade: r.diasSemAtividade === null ? null : (r.diasSemAtividade <= 1 ? 100 : r.diasSemAtividade <= 2 ? 85 : r.diasSemAtividade <= 4 ? 65 : r.diasSemAtividade <= 7 ? 45 : r.diasSemAtividade <= 14 ? 25 : 5),
-    velocidade: r.tempo1oContato === null ? null : (r.tempo1oContato < 1 / 24 ? 100 : r.tempo1oContato < 0.5 ? 85 : r.tempo1oContato < 1 ? 70 : r.tempo1oContato < 3 ? 45 : r.tempo1oContato < 7 ? 20 : 5),
-    conversao: r.conversao >= 0.07 ? 100 : r.conversao >= 0.05 ? 85 : r.conversao >= 0.03 ? 65 : r.conversao >= 0.015 ? 45 : r.conversao > 0 ? 25 : 5,
-    qualidade: clamp(Math.round((r.qualifPct * 0.6 + r.anotPct * 0.4) * 100)),
-    higiene: clamp(Math.round(100 - r.taxaDescarte * 70 - (r.total ? r.estagnados / r.total : 0) * 50 - (r.total ? r.semQualifAvancado / r.total : 0) * 80)),
-  };
-  let somaPeso = 0, soma = 0;
-  for (const d of DIMS) { const v = sub[d.key]; if (v !== null) { soma += v * d.peso; somaPeso += d.peso; } }
-  const score = somaPeso ? Math.round(soma / somaPeso) : 0;
-  // ponto fraco = menor dimensão com dado
-  let fraco = DIMS[0], menor = 101;
-  for (const d of DIMS) { const v = sub[d.key]; if (v !== null && v < menor) { menor = v; fraco = d; } }
-  const cor: RankingRow['cor'] = score >= 70 ? 'verde' : score >= 45 ? 'amarelo' : 'vermelho';
-  return { score, sub, cor, pontoFraco: fraco.nome, dica: menor <= 60 ? fraco.dica : 'Está bem nas principais frentes — mantenha o ritmo.' };
-}
-
-// ── Núcleo ──────────────────────────────────────────────────────────────────
-export function computeRelatorio(
-  leads: RelLead[], corretores: RelCorretor[], ads: RelAdsLead[],
-  atividade: Map<string, AtividadeLead> | null, selecionados: Set<string>, periodo: Periodo,
-  atividadeDesdeMs = 0,
-): Relatorio {
-  const inicio = inicioPeriodo(periodo);
-  const comAtividade = !!atividade && atividade.size > 0;
-  const leadsF = leads.filter((l) => !!l.userId && selecionados.has(l.userId) && (periodo === 'tudo' || msOf(l.createdAt) >= inicio));
-  const agora = Date.now();
-
-  let ativos = 0, fechados = 0, descartados = 0, comQualif = 0, comAnot = 0, estagnados = 0, faturamento = 0, fechadosComValor = 0, interesseFuturo = 0;
-  let soma1o = 0, n1o = 0, interacoesTotal = 0;
-  const agoraPorEtapa: Record<string, number> = {}, alcancaram: Record<string, number> = {};
-  ETAPAS_CIRCUITO.forEach((e) => { agoraPorEtapa[e] = 0; alcancaram[e] = 0; });
-  const nomeDe = new Map(corretores.map((c) => [c.id, c.nome] as const));
-  const tipoDe = new Map(corretores.map((c) => [c.id, c.tipoConta] as const));
-  const acessoDe = new Map(corretores.map((c) => [c.id, msOf(c.lastActiveAt ?? c.ultimoAcesso)] as const));
-
-  interface Acc {
-    total: number; ativos: number; fechados: number; descartes: number; soma1o: number; n1o: number; somaTent: number; nTent: number;
-    qualif: number; anot: number; estag: number; meets: number; visitas: number; noShow: number; semQualAv: number; descRapido: number;
-    ultimaMs: number; interacoes: number; ligacoes: number; whats: number; somaCad: number; nCad: number; semToque: number;
-    porEtapa: Record<string, number>;
-  }
-  const acc = new Map<string, Acc>();
-  const novo = (): Acc => ({ total: 0, ativos: 0, fechados: 0, descartes: 0, soma1o: 0, n1o: 0, somaTent: 0, nTent: 0, qualif: 0, anot: 0, estag: 0, meets: 0, visitas: 0, noShow: 0, semQualAv: 0, descRapido: 0, ultimaMs: 0, interacoes: 0, ligacoes: 0, whats: 0, somaCad: 0, nCad: 0, semToque: 0, porEtapa: {} });
-
-  const origemMap = new Map<string, { count: number; fechados: number }>();
-  const mercCont: Record<string, Record<string, number>> = {}, mercResp: Record<string, number> = {};
-  QUALIFICATION_QUESTIONS.forEach((q) => { mercCont[q.key] = {}; mercResp[q.key] = 0; });
-
-  for (const l of leadsF) {
-    const et = mapEtapaCircuito(l.etapa); const idx = etapaIndex(et);
-    const isFech = et === ETAPA_FECHADO, isDesc = et === ETAPA_DESCARTADO, isAtivo = !isFech && !isDesc;
-    const qualif = temQualificacao(l.qualificacao);
-    const anot = !!(l.anotacoes && String(l.anotacoes).trim());
-    const desde = msOf(l.circuito?.desde) || msOf(l.createdAt);
-    const estag = isAtivo && desde > 0 && (agora - desde) / DIA > ESTAGNADO_DIAS;
-    const avancado = idx >= IDX_MEET_AG;
-    const at = atividade?.get(l.id);
-    // atividade só conta a partir do marco (ignora a faxina de organização do CRM)
-    const evs = at ? (atividadeDesdeMs > 0 ? at.eventos.filter((e) => e.ms >= atividadeDesdeMs) : at.eventos) : [];
-    const ultimaMs = evs.length ? evs[evs.length - 1].ms : 0;
-
-    if (idx >= 0) { agoraPorEtapa[et]++; for (let i = 0; i <= idx; i++) alcancaram[ETAPAS_CIRCUITO[i]]++; }
-    if (isAtivo) ativos++; if (isFech) fechados++; if (isDesc) descartados++;
-    if (qualif) comQualif++; if (anot) comAnot++; if (estag) estagnados++;
-    // "guardado pra depois" (agenda > 15d) — mesma regra da coluna do quadro
-    if (ehInteresseFuturo(et, (l as { tarefasPendentes?: { dueDate?: unknown }[] }).tarefasPendentes, agora)) interesseFuturo++;
-    if (isFech) { const v = parseVenda(l.vendaValor); if (v > 0) { faturamento += v; fechadosComValor++; } }
-    const cMs = msOf(l.createdAt), pMs = msOf(l.circuito?.primeiroContatoEm);
-    // velocidade = resposta a lead FRESCO; gap > 30d é backfill/importação (createdAt
-    // não é a entrada real), então não entra na média de velocidade.
-    const tem1o = cMs > 0 && pMs > 0 && pMs >= cMs && (pMs - cMs) <= 30 * DIA;
-    if (tem1o) { soma1o += (pMs - cMs) / DIA; n1o++; }
-    interacoesTotal += evs.length;
-
-    const og = String(l.origemTipo || l.origem || '—');
-    const om = origemMap.get(og) || { count: 0, fechados: 0 }; om.count++; if (isFech) om.fechados++; origemMap.set(og, om);
-    if (l.qualificacao) for (const q of QUALIFICATION_QUESTIONS) { const vals = l.qualificacao[q.key]; if (Array.isArray(vals) && vals.length) { mercResp[q.key]++; for (const v of vals) mercCont[q.key][v] = (mercCont[q.key][v] || 0) + 1; } }
-
-    const uid = l.userId as string; let a = acc.get(uid); if (!a) { a = novo(); acc.set(uid, a); }
-    a.total++; if (isAtivo) a.ativos++; if (isFech) a.fechados++;
-    if (isDesc) { a.descartes++; if ((l.circuito?.tentativas || 0) <= 1) a.descRapido++; }
-    if (qualif) a.qualif++; if (anot) a.anot++; if (estag) a.estag++;
-    if (tem1o) { a.soma1o += (pMs - cMs) / DIA; a.n1o++; }
-    if (typeof l.circuito?.tentativas === 'number') { a.somaTent += l.circuito.tentativas; a.nTent++; }
-    if (idx >= IDX_MEET_AG) a.meets++; if (idx >= IDX_VISITA_AG) a.visitas++;
-    if (et === ETAPA_MEET_AGENDADO) a.noShow++;
-    if (avancado && !qualif) a.semQualAv++;
-    if (idx >= 0) a.porEtapa[et] = (a.porEtapa[et] || 0) + 1;
-    if (at) {
-      a.interacoes += evs.length;
-      for (const e of evs) { if (e.tipo === 'Ligação' || e.tipo === 'Ligacao') a.ligacoes++; else if (e.tipo === 'WhatsApp') a.whats++; }
-      if (evs.length >= 2) { let s = 0; for (let k = 1; k < evs.length; k++) s += evs[k].ms - evs[k - 1].ms; a.somaCad += s / (evs.length - 1) / DIA; a.nCad++; }
-      if (ultimaMs > a.ultimaMs) a.ultimaMs = ultimaMs;
-      if (isAtivo && (ultimaMs === 0 || (agora - ultimaMs) / DIA > SEM_TOQUE_DIAS)) a.semToque++;
-    }
-  }
-
-  const total = leadsF.length;
-  const media = (arr: number[]): number | null => arr.length ? arr.reduce((s, n) => s + n, 0) / arr.length : null;
-
-  // ads por corretor
-  const respAds = new Map<string, number[]>(), aceitosC = new Map<string, number>(), negouC = new Map<string, number>();
-  for (const x of ads) {
-    if (x.status === 'aceito' && x.aceitoPor && typeof x.tempoAceiteSeg === 'number') { const a = respAds.get(x.aceitoPor) || []; a.push(x.tempoAceiteSeg); respAds.set(x.aceitoPor, a); }
-    if (x.status === 'aceito' && x.aceitoPor) aceitosC.set(x.aceitoPor, (aceitosC.get(x.aceitoPor) || 0) + 1);
-    if (Array.isArray(x.negadoPor)) for (const u of x.negadoPor) negouC.set(u, (negouC.get(u) || 0) + 1);
-  }
-
-  const ranking: RankingRow[] = Array.from(acc.entries()).map(([id, a]) => {
-    const base: RankingRow = {
-      id, nome: nomeDe.get(id) || id, tipoConta: tipoDe.get(id),
-      total: a.total, ativos: a.ativos, fechados: a.fechados, conversao: a.total ? a.fechados / a.total : 0,
-      descartes: a.descartes, taxaDescarte: a.total ? a.descartes / a.total : 0,
-      tempo1oContato: a.n1o ? a.soma1o / a.n1o : null, tentativasMed: a.nTent ? a.somaTent / a.nTent : null,
-      qualifPct: a.total ? a.qualif / a.total : 0, anotPct: a.total ? a.anot / a.total : 0, estagnados: a.estag,
-      meetsGerados: a.meets, visitasGeradas: a.visitas, noShowMeet: a.noShow, semQualifAvancado: a.semQualAv, descartesRapidos: a.descRapido,
-      respostaAdsMed: media(respAds.get(id) || []), aceitosAds: aceitosC.get(id) || 0, negou: negouC.get(id) || 0,
-      ultimaAtividadeMs: comAtividade ? (a.ultimaMs || 0) : null,
-      diasSemAtividade: comAtividade ? (a.ultimaMs ? (agora - a.ultimaMs) / DIA : 999) : null,
-      ultimoAcessoMs: acessoDe.get(id) || null,
-      diasSemAcessar: acessoDe.get(id) ? (agora - (acessoDe.get(id) as number)) / DIA : null,
-      interacoes: a.interacoes, interacoesPorLeadAtivo: a.ativos ? a.interacoes / a.ativos : null,
-      ligacoes: a.ligacoes, whats: a.whats, cadenciaMediaDias: a.nCad ? a.somaCad / a.nCad : null, leadsSemToque: a.semToque,
-      porEtapa: a.porEtapa,
-      score: 0, sub: { atividade: null, velocidade: null, conversao: 0, qualidade: 0, higiene: 0 }, cor: 'amarelo', pontoFraco: '', dica: '',
-    };
-    const s = calcScore(base);
-    return { ...base, ...s };
-  }).sort((x, y) => y.score - x.score);
-
-  const funil: FunilRow[] = ETAPAS_CIRCUITO.map((e) => ({ etapa: e, agora: agoraPorEtapa[e] || 0, alcancaram: alcancaram[e] || 0, pct: total ? (alcancaram[e] || 0) / total : 0 }));
-
-  // ads resumo (respeita seleção por aceitoPor/escalado)
-  const adsSel = ads.filter((x) => !x.aceitoPor || selecionados.has(x.aceitoPor) || (x.corretorEscalado ? selecionados.has(x.corretorEscalado) : true));
-  const adsAceitos = adsSel.filter((x) => x.status === 'aceito');
-  const tempos = adsAceitos.map((x) => x.tempoAceiteSeg).filter((n): n is number => typeof n === 'number');
-  const campMap = new Map<string, { total: number; aceitos: number }>();
-  for (const x of adsSel) { const nome = x.campanhaNome || '(sem campanha)'; const c = campMap.get(nome) || { total: 0, aceitos: 0 }; c.total++; if (x.status === 'aceito') c.aceitos++; campMap.set(nome, c); }
-  const adsResumo: AdsResumo = {
-    total: adsSel.length, aceitos: adsAceitos.length, geral: adsSel.filter((x) => x.status === 'geral').length,
-    naoAtendido: adsSel.filter((x) => x.status === 'nao-atendido').length, escalado: adsSel.filter((x) => x.status === 'escalado').length,
-    taxaAceite: adsSel.length ? adsAceitos.length / adsSel.length : 0, tempoMedioAceite: media(tempos),
-    viaGeralPct: adsAceitos.length ? adsAceitos.filter((x) => x.viaGeral).length / adsAceitos.length : 0,
-    porCampanha: Array.from(campMap.entries()).map(([nome, v]) => ({ nome, ...v })).sort((a, b) => b.total - a.total),
-  };
-
-  const mercado: MercadoRow[] = QUALIFICATION_QUESTIONS.map((q) => ({ key: q.key, title: q.title, respondidos: mercResp[q.key], opcoes: Object.entries(mercCont[q.key]).map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count) }));
-  const origem: OrigemRow[] = Array.from(origemMap.entries()).map(([o, v]) => ({ origem: o, count: v.count, fechados: v.fechados })).sort((a, b) => b.count - a.count);
-
-  const ativosHoje = comAtividade ? ranking.filter((r) => r.diasSemAtividade !== null && r.diasSemAtividade <= 1).length : 0;
-  const sumidos = comAtividade ? ranking.filter((r) => r.diasSemAtividade !== null && r.diasSemAtividade > 7).length : 0;
-
-  const kpis: Kpis = {
-    total, ativos, fechados, descartados, conversao: total ? fechados / total : 0, taxaDescarte: total ? descartados / total : 0,
-    faturamento, ticket: fechadosComValor ? faturamento / fechadosComValor : 0, fechadosComValor, tempoMedio1oContato: n1o ? soma1o / n1o : null,
-    indiceQualif: total ? comQualif / total : 0, indiceAnot: total ? comAnot / total : 0, estagnados, leadsPerdidos: adsResumo.naoAtendido,
-    ativosHoje, sumidos, interacoesTotal, interesseFuturo,
-  };
-
-  return { kpis, funil, ranking, ads: adsResumo, mercado, origem, comAtividade };
-}
 
 // ---------------------------------------------------------------------------
 // RELATÓRIO DOS LEADS DE DISTRIBUIÇÃO (só o que veio de anúncio/propaganda)
