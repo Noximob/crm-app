@@ -20,6 +20,7 @@ import {
   type CadenciasFunil,
 } from '@/lib/circuito';
 import { toJsDate } from '@/lib/leadTasks';
+import MoneyInput from '@/components/MoneyInput';
 
 // ---------------------------------------------------------------------------
 // Tipos compartilhados com a página
@@ -45,7 +46,15 @@ export interface AcaoCircuito {
   /** Conversa de verdade (atendeu/respondeu/falei) — marca o 1º contato e conta o rodízio */
   contatoEfetivo?: boolean;
   descartadoMotivo?: string;
-  vendaValor?: string;
+  /** Valor do imóvel em R$ (número puro — máscara só na UI). Dispara o passo 1 do Financeiro. */
+  vendaValor?: number;
+  /** Detalhes capturados no fechamento — viram o doc em `vendas` (pendente de confirmação do admin). */
+  vendaDetalhes?: {
+    empreendimento?: string;
+    construtora?: string;
+    tipoProduto: 'lancamento' | 'pronto';
+    origem: 'lead' | 'carteira' | 'ligacao_ativa' | 'outro';
+  };
   transferirParaGestor?: boolean;
 }
 
@@ -297,6 +306,11 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
   const [requalSel, setRequalSel] = useState<string[]>([]);
   const [obsStr, setObsStr] = useState('');
   const [aviso, setAviso] = useState('');
+  // passo 1 do Financeiro — capturados no "FECHOU!" (o admin completa o resto em Financeiro)
+  const [vendaVal, setVendaVal] = useState(0);
+  const [vendaEmp, setVendaEmp] = useState('');
+  const [vendaTipo, setVendaTipo] = useState<'lancamento' | 'pronto'>('lancamento');
+  const [vendaOrigem, setVendaOrigem] = useState('');
 
   // Reseta pro estado inicial só quando o overlay ABRE (não a cada render/snapshot)
   const prevAberto = useRef(false);
@@ -311,6 +325,7 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
   useEffect(() => {
     setAcaoSel(''); setQuandoSel(''); setDataStr(''); setHoraStr('10:00');
     setMotivoSel(''); setMotivoOutro(''); setRequalSel([]); setObsStr(''); setAviso('');
+    setVendaVal(0); setVendaEmp(''); setVendaTipo('lancamento'); setVendaOrigem('');
   }, [estado.t]);
 
   // Nome COMPLETO nos pop-ups — pedido do usuário (só o primeiro nome confundia)
@@ -829,32 +844,66 @@ export default function AtendimentoOverlay(props: AtendimentoOverlayProps) {
         };
       }
 
-      case 'venda':
+      case 'venda': {
+        const ORIGENS_VENDA = ['Lead (propaganda)', 'Carteira', 'Ligação ativa', 'Outro'] as const;
+        const origemKey: Record<string, 'lead' | 'carteira' | 'ligacao_ativa' | 'outro'> =
+          { 'Lead (propaganda)': 'lead', 'Carteira': 'carteira', 'Ligação ativa': 'ligacao_ativa', 'Outro': 'outro' };
+        const inputVenda = 'w-full px-3 py-2 bg-white/[0.04] border border-white/15 rounded-lg text-white text-sm placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#3AC17C]/50';
         return {
           bar: '🎉 Venda fechada',
           noX: true,
           body: (
             <>
-              Confirma que fechou com {b(nomeCliente)}? 🎉
-              <small>Vou <b className="text-white">cancelar as tarefas pendentes</b> e mover pra <b className="text-white">Fechamento</b>. O lançamento oficial (valor, comissão, meta) é feito em <b className="text-white">Comissões</b>, na área do administrador.</small>
+              FECHOU com {b(nomeCliente)}? 🎉 Me conta o essencial — o resto o admin completa no <b className="text-white">Financeiro</b>.
+              <div className="mt-2 space-y-2">
+                <div>
+                  <small className="block mb-1">Valor do imóvel (obrigatório):</small>
+                  <MoneyInput value={vendaVal} onChange={setVendaVal} placeholder="800.000,00" className={inputVenda + ' pl-9 tabular-nums'} />
+                </div>
+                <div>
+                  <small className="block mb-1">Empreendimento / construtora:</small>
+                  <input value={vendaEmp} onChange={e => setVendaEmp(e.target.value)} placeholder="Ex: Orla da Barra · SANTER" className={inputVenda} />
+                </div>
+                <div>
+                  <small className="block mb-1">Produto:</small>
+                  <Chips itens={['Lançamento', 'Pronto']} sel={[vendaTipo === 'lancamento' ? 'Lançamento' : 'Pronto']} onSel={v => setVendaTipo(v === 'Pronto' ? 'pronto' : 'lancamento')} />
+                </div>
+                <div>
+                  <small className="block mb-1">De onde veio esse cliente? <b className="text-white/70">(venda de lead tem retenção — precisa estar certo)</b></small>
+                  <Chips itens={ORIGENS_VENDA} sel={vendaOrigem ? [vendaOrigem] : []} onSel={v => { setVendaOrigem(v); setAviso(''); }} />
+                </div>
+              </div>
+              <small>Vou <b className="text-white">cancelar as tarefas pendentes</b> e mover pra <b className="text-white">Fechamento</b>. O rateio oficial sai no <b className="text-white">Financeiro</b> do admin.</small>
+              {aviso && <small className="!text-amber-300">{aviso}</small>}
             </>
           ),
           btns: [
             {
               t: executando ? 'Registrando…' : '🏆 Confirmar — FECHOU!', c: 'win', f: async () => {
+                if (!vendaVal || vendaVal <= 0) { setAviso('⚠️ Informa o valor do imóvel — é ele que vira comissão e meta.'); return; }
+                if (!vendaOrigem) { setAviso('⚠️ Escolhe de onde veio o cliente (lead tem retenção de 10%).'); return; }
+                const partes = vendaEmp.split('·').map(s => s.trim());
                 const ok = await executar({
                   novaEtapa: ETAPA_FECHADO,
                   concluirTaskId: estado.concluirTaskId, // a cobrança respondida vira concluída (não cancelada)
                   cancelarTodasPendentes: true,
                   circuitoTentativas: 'zero',
-                  interacao: { type: 'Venda', notes: '🏆 VENDA FECHADA! (lançamento oficial em Comissões)' },
+                  vendaValor: vendaVal,
+                  vendaDetalhes: {
+                    empreendimento: partes[0] || '',
+                    construtora: partes[1] || '',
+                    tipoProduto: vendaTipo,
+                    origem: origemKey[vendaOrigem] || 'outro',
+                  },
+                  interacao: { type: 'Venda', notes: `🏆 VENDA FECHADA! ${vendaVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}${vendaEmp ? ` · ${vendaEmp}` : ''} — aguardando confirmação no Financeiro` },
                 });
-                if (ok) fecha(`🏆 VENDA de ${nomeCliente} fechada! Parabéns! 🎉 Avisa o admin pra lançar em Comissões.`);
+                if (ok) fecha(`🏆 VENDA de ${nomeCliente} fechada! Parabéns! 🎉 O admin confirma o rateio no Financeiro.`);
               },
             },
             { t: '← Ainda não fechou', c: 'ghost', f: () => voltarPasso() },
           ],
         };
+      }
 
       case 'descarte': {
         const volta = estado.volta;

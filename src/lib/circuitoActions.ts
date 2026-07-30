@@ -13,6 +13,7 @@ export interface LeadParaAcao {
   id: string;
   etapa?: string;
   userId?: string;
+  nome?: string;
   circuito?: { tentativas?: number; contatosFeitos?: number; primeiroContatoEm?: any };
 }
 
@@ -135,8 +136,36 @@ export async function executarAcaoCircuito(params: {
       leadUpdate.descartadoPor = currentUid;
     }
     if (acao.vendaValor) {
-      leadUpdate.vendaValor = acao.vendaValor;
+      // NÃO espelhar o valor no doc do lead: /leads/{id} tem leitura anônima
+      // (TV do saguão) e valor de venda é dado financeiro — mora SÓ em /vendas
+      // (que exige login). No lead fica apenas o carimbo de quando fechou.
       leadUpdate.vendaEm = serverTimestamp();
+      // Passo 1 do Financeiro: a venda nasce AQUI, no mesmo batch (sem falha
+      // parcial). Vai como pendente_confirmacao — o admin completa gerente/SDR/
+      // agenciador/permuta e oficializa o rateio na tela Financeiro. Nada conta
+      // em DRE/meta antes disso.
+      const d = new Date();
+      const dataVenda = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      batch.set(doc(collection(db, 'vendas')), {
+        imobiliariaId,
+        leadId: lead.id,
+        leadNome: lead.nome || '',
+        corretorUid: lead.userId || currentUid, // dono do lead = quem vendeu
+        // nome só quando o OPERADOR é o dono — um admin fechando o pop-up de
+        // lead alheio gravaria o nome errado; o Financeiro resolve pelo uid
+        corretorNome: (!lead.userId || lead.userId === currentUid) ? (autorNome || '') : '',
+        valorBruto: acao.vendaValor,
+        valorPermuta: 0,
+        parceriaPct: 0,
+        tipoProduto: acao.vendaDetalhes?.tipoProduto || 'lancamento',
+        origem: acao.vendaDetalhes?.origem || 'outro',
+        construtora: acao.vendaDetalhes?.construtora || '',
+        empreendimento: acao.vendaDetalhes?.empreendimento || '',
+        status: 'pendente_confirmacao',
+        dataVenda,
+        criadoEm: serverTimestamp(),
+        criadoPor: currentUid,
+      });
     }
 
     let transferiuPara: string | undefined;

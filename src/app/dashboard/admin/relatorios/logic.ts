@@ -24,7 +24,7 @@ import {
 export interface RelLead {
   id: string; userId?: string; etapa?: string; origem?: string; origemTipo?: string;
   anotacoes?: string; qualificacao?: Record<string, string[]>;
-  createdAt?: unknown; vendaEm?: unknown; vendaValor?: string;
+  createdAt?: unknown; vendaEm?: unknown; // valor da venda mora em /vendas (não no lead — leads é público pra TV)
   descartadoEm?: unknown; descartadoMotivo?: string;
   circuito?: { tentativas?: number; contatosFeitos?: number; primeiroContatoEm?: unknown; tentativasAtePrimeiroContato?: number; desde?: unknown };
   [k: string]: unknown;

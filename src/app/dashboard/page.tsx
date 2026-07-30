@@ -795,7 +795,9 @@ export default function DashboardPage() {
 
   // Buscar dados da meta e nome da imobiliária
   useEffect(() => {
-    if (!userData?.imobiliariaId) {
+    // Espelho navega SEM auth de verdade — com as regras novas (leitura exige
+    // login fora das coleções da TV), essas buscas só geram permission-denied.
+    if (!userData?.imobiliariaId || isEspelhoDemo) {
       return;
     }
     let unsubscribe: (() => void) | undefined;
@@ -860,7 +862,7 @@ export default function DashboardPage() {
         unsubscribe();
       }
     };
-  }, [userData, currentUser]);
+  }, [userData, currentUser, isEspelhoDemo]);
 
   // Meta pessoal (valor almejado) e contribuições para calcular realizado no período
   useEffect(() => {

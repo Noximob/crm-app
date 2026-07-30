@@ -67,11 +67,10 @@ export default function CadastroPage() {
           setImobiliarias(todasImobiliarias.map(imob => ({ id: imob.id, nome: imob.nome })));
         }
       } catch (error) {
+        // NÃO repetir a mesma query que acabou de falhar (permission-denied
+        // relança e vira rejection não tratada) — degrada pra lista vazia.
         console.error('❌ Erro ao buscar imobiliárias:', error);
-        // Em caso de erro, busca todas as imobiliárias
-        const allSnapshot = await getDocs(imobiliariasRef);
-        const todasImobiliarias = allSnapshot.docs.map(doc => ({ id: doc.id, nome: doc.data().nome }));
-        setImobiliarias(todasImobiliarias);
+        setImobiliarias([]);
       }
     }
     fetchImobiliarias();

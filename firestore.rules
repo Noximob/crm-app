@@ -1,13 +1,46 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Fase 1 (uso interno Nox Imóveis):
-    // - Leitura liberada: a TV do saguão (/tv) lê sem login (dashboards, agenda, funil).
-    // - Escrita SÓ para usuários autenticados: ninguém de fora cria/edita/apaga nada.
-    // Fase 2 (futuro): logar a TV num usuário próprio e restringir leituras também.
-    match /{document=**} {
+    // ════════════════════════════════════════════════════════════════════
+    // Reestruturado com o módulo Financeiro (antes: read liberado GLOBAL).
+    // Regras são avaliadas em OU — qualquer match que conceda, concede.
+    // Por isso o catch-all "read: if true" saiu: leitura anônima agora é
+    // permitida SÓ no que o /tv (TV do saguão, sem login) e o /cadastro
+    // (pré-login) realmente leem.
+    //
+    // DÍVIDAS CONHECIDAS (fase curta seguinte, exigem enumerar TODAS as
+    // coleções — o catch-all de auth anula qualquer gate específico por OU):
+    //  1. Escrita/leitura de vendas/configFinanceiro/custosFixos deveria ser
+    //     por tenant + papel (hoje: qualquer autenticado, gating no cliente).
+    //  2. usuarios com escrita aberta permite auto-promoção de permissoes.
+    //  3. leads/usuarios públicos expõem PII pré-existente — trocar a TV por
+    //     um doc agregado sem PII (dashboardsTvFunil) e fechar as coleções.
+    // ════════════════════════════════════════════════════════════════════
+
+    function isAuth() { return request.auth != null; }
+
+    // ── TV do saguão (sem login) — SOMENTE o que o /tv lê ──
+    match /dashboardsTvConfig/{id}          { allow read: if true; }
+    match /dashboardsTvSelecaoNox/{id}      { allow read: if true; }
+    match /dashboardsTvUnidadesSelecao/{id} { allow read: if true; }
+    match /dashboardsTvNoticiaSemana/{id}   { allow read: if true; }
+    match /agendaImobiliaria/{id}           { allow read: if true; }
+    // funil da TV lê leads e usuarios (só o doc — subcoleções exigem login)
+    match /usuarios/{id}                    { allow read: if true; }
+    match /leads/{id}                       { allow read: if true; }
+    // metas + contribuições (slide Metas & Resultados)
+    match /metas/{id} {
       allow read: if true;
-      allow write: if request.auth != null;
+      match /{sub=**} { allow read: if true; }
+    }
+    // /cadastro (pré-login) lista as imobiliárias pro corretor se vincular
+    match /imobiliarias/{id}                { allow read: if true; }
+
+    // ── Resto do sistema (inclui vendas/configFinanceiro/custosFixos):
+    //    exige login pra ler E escrever ──
+    match /{document=**} {
+      allow read: if isAuth();
+      allow write: if isAuth();
     }
   }
 }
