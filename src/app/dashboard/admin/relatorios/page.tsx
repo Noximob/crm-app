@@ -1,14 +1,14 @@
 'use client';
 
 /**
- * Relatórios do admin — LEADS DE PROPAGANDA.
+ * Relatórios do admin — duas visões:
  *
- * Tudo sobre o lead que veio da distribuição: chegada, velocidade de resposta,
- * tratamento (anotação/qualificação), follow-ups, funil e custo/retorno por
- * campanha.
+ * 👥 GESTÃO DE CORRETORES — o dossiê de cada um: resultado, esforço (está
+ *    trabalhando ou empurrando?), o gargalo do funil DELE e a qualidade do
+ *    registro. Serve pra cobrança individual e pra achar onde o funil vaza.
  *
- * A antiga aba "Gestão de corretores" foi removida por inteiro — a lógica dela
- * será definida do zero e entra depois, com estrutura própria.
+ * 🔥 LEADS DE PROPAGANDA — o que veio da distribuição: chegada, velocidade de
+ *    resposta, tratamento, follow-ups, funil e custo/retorno por campanha.
  */
 import React, { useMemo, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
@@ -18,6 +18,7 @@ import {
   type Periodo, type LeadDistRow, type GastoCampanha,
   fmtPct, fmtPct1, fmtDias, fmtDiasInt, fmtNum, fmtSeg, fmtMoeda,
 } from './logic';
+import { computeGestao, gestaoDemo, corEsforco, type CorretorGestao, type EtapaFunil } from './gestao';
 
 const PERIODOS: { id: Periodo; label: string }[] = [
   { id: 'tudo', label: 'Tudo' }, { id: 'mes', label: 'Mês' }, { id: '30d', label: '30d' }, { id: '90d', label: '90d' },
@@ -42,11 +43,12 @@ function Secao({ titulo, sub, children }: { titulo: string; sub?: string; childr
     </section>
   );
 }
-function Metric({ label, valor, tom }: { label: string; valor: string; tom?: string }) {
+function Metric({ label, valor, tom, hint }: { label: string; valor: string; tom?: string; hint?: string }) {
   return (
     <div>
       <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-text-secondary">{label}</p>
       <p className={`text-[15px] font-bold tabular-nums leading-tight ${tom || 'text-white'}`}>{valor}</p>
+      {hint && <p className="text-[9.5px] text-text-secondary mt-0.5">{hint}</p>}
     </div>
   );
 }
@@ -353,26 +355,284 @@ function LinhaLead({ l, comAtividade }: { l: LeadDistRow; comAtividade: boolean 
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// GESTÃO DE CORRETORES
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** Funil com taxa de passagem e tempo — a leitura de gargalo. */
+function FunilGargalo({ funil, comparar }: { funil: EtapaFunil[]; comparar?: EtapaFunil[] }) {
+  const maxPassaram = Math.max(1, ...funil.map((f) => f.passaram));
+  return (
+    <div className="space-y-1.5">
+      {funil.map((f, i) => {
+        const ref = comparar?.[i];
+        const ultima = i === funil.length - 1;
+        const ruim = !ultima && f.passaram >= 3 && f.passagem < 0.35;
+        const piorQueTime = ref && !ultima && f.passaram >= 3 && ref.passagem > 0 && f.passagem < ref.passagem * 0.7;
+        // etapa que ninguém ocupa nem morre: o time marca ela "de passagem", então
+        // os 100% são artefato da catraca — não é saúde, é ausência de registro.
+        const dePassagem = !ultima && f.agora === 0 && f.morreram === 0;
+        return (
+          <div key={f.etapa} className="flex items-center gap-2 text-[11.5px]">
+            <span className="w-28 sm:w-32 shrink-0 text-text-secondary truncate">{f.etapa}</span>
+            <div className="flex-1 min-w-[60px]">
+              <Barra pct={f.passaram / maxPassaram} cor={ruim ? 'linear-gradient(90deg,#F45B69,#FB7185)' : 'linear-gradient(90deg,#7C5CFF,#B48CFF)'} alt="h-2" />
+            </div>
+            <span className="w-10 text-right tabular-nums text-white font-bold">{f.passaram}</span>
+            <span className="w-14 text-right tabular-nums text-text-secondary" title="quantos estão nesta etapa agora">
+              {f.agora > 0 ? `${f.agora} aqui` : '—'}
+            </span>
+            {!ultima ? (
+              <span className={`w-16 text-right tabular-nums font-bold ${dePassagem ? 'text-white/25 font-normal' : ruim ? 'text-rose-300' : f.passagem >= 0.6 ? 'text-emerald-300' : 'text-white/80'}`}
+                title={dePassagem
+                  ? 'Ninguém fica nesta etapa — o time marca ela de passagem, então os 100% não medem nada'
+                  : `${f.avancaram} de ${f.passaram} avançaram${ref ? ` · time: ${Math.round(ref.passagem * 100)}%` : ''}`}>
+                {f.passaram > 0 ? `${Math.round(f.passagem * 100)}%↓` : '—'}
+              </span>
+            ) : <span className="w-16" />}
+            <span className="w-14 text-right tabular-nums text-text-secondary" title="tempo médio parado nesta etapa">
+              {f.diasMedios !== null ? `${f.diasMedios}d` : '—'}
+            </span>
+            {piorQueTime && <span className="text-rose-300 text-[10px] shrink-0" title="bem abaixo da média do time">▼</span>}
+          </div>
+        );
+      })}
+      <p className="text-[9.5px] text-text-secondary pt-1">
+        <b>nº</b> passaram pela etapa · <b>aqui</b> estão nela agora · <b>%↓</b> avançaram pra próxima · <b>d</b> dias parados em média.
+        Etapa com <span className="text-white/25">%↓ apagado</span> é etapa de passagem — ninguém para nela, então a taxa não mede nada.
+      </p>
+    </div>
+  );
+}
+
+function CardCorretor({ c, funilTime, medias, aberto, onToggle }: {
+  c: CorretorGestao; funilTime: EtapaFunil[];
+  medias: { conversao: number; qualifPct: number; interacoesPorLeadAtivo: number | null; tempoAteContato: number | null };
+  aberto: boolean; onToggle: () => void;
+}) {
+  const cor = corEsforco(c.indiceEsforco);
+  const alertasAltos = c.alertas.filter((a) => a.nivel === 'alto');
+  const vsTime = (v: number, ref: number) => (ref > 0 ? v / ref : 1);
+
+  return (
+    <div className={`rounded-2xl border transition-colors ${aberto ? 'border-[#7C5CFF]/40 bg-white/[0.045]' : 'border-white/10 bg-white/[0.025]'}`}>
+      <button onClick={onToggle} className="w-full p-3.5 text-left hover:bg-white/[0.02] rounded-2xl">
+        <div className="flex flex-wrap items-center gap-2.5 mb-2.5">
+          <span className="grid place-items-center w-11 h-11 rounded-full border shrink-0"
+            style={{ borderColor: `${cor}66`, background: `${cor}1a` }} title="Índice de esforço (trabalho, não venda)">
+            <span className="al-display text-[15px] font-bold" style={{ color: cor }}>{c.indiceEsforco ?? '—'}</span>
+          </span>
+          <div className="min-w-0 flex-1">
+            <span className="block text-[14px] font-bold text-white truncate">
+              {c.nome}
+              {c.tipoConta === 'imobiliaria' && <span className="ml-1 text-[9px] text-amber-300">prop.</span>}
+            </span>
+            <span className="block text-[10.5px] text-text-secondary">
+              {c.leads} leads · {c.ativos} ativos
+              {c.vendas > 0 && <> · <b className="text-emerald-300">{c.vendas} venda{c.vendas > 1 ? 's' : ''}</b></>}
+              {c.diasSemAtividade !== null && c.diasSemAtividade <= 1 && <> · <span className="text-emerald-300">ativo hoje</span></>}
+            </span>
+          </div>
+          {alertasAltos.length > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-rose-500/10 border border-rose-500/40 text-rose-300 shrink-0">
+              {alertasAltos.length} alerta{alertasAltos.length > 1 ? 's' : ''}
+            </span>
+          )}
+          <span className="text-text-secondary text-[12px] shrink-0">{aberto ? '▲' : '▼'}</span>
+        </div>
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
+          <Metric label="VGV vendido" valor={c.vgv > 0 ? fmtMoeda(c.vgv) : '—'} tom={c.vgv > 0 ? 'al-grad-text' : 'text-white/50'} />
+          <Metric label="Conversão" valor={fmtPct1(c.conversao)} tom={vsTime(c.conversao, medias.conversao) < 0.6 ? 'text-rose-300' : c.conversao > medias.conversao ? 'text-emerald-300' : 'text-white'} />
+          <Metric label="Comissão dele" valor={c.comissaoGerada > 0 ? fmtMoeda(c.comissaoGerada) : '—'} />
+          <Metric label="Qualificação" valor={fmtPct(c.qualifPct)} tom={c.qualifPct < 0.3 ? 'text-rose-300' : c.qualifPct >= 0.6 ? 'text-emerald-300' : 'text-amber-300'} />
+          <Metric label="Tarefas atrasadas" valor={String(c.tarefasAtrasadas)} tom={c.tarefasAtrasadas > 0 ? 'text-amber-300' : 'text-white'} />
+          <Metric label="Últ. atividade" valor={fmtDiasInt(c.diasSemAtividade)} tom={(c.diasSemAtividade ?? 0) > 7 ? 'text-rose-300' : 'text-white'} />
+        </div>
+      </button>
+
+      {aberto && (
+        <div className="px-3.5 pb-3.5 pt-1 space-y-3.5 border-t border-white/[0.07]">
+          {/* alertas — o que cobrar */}
+          {c.alertas.length > 0 && (
+            <div className="pt-3">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-text-secondary mb-1.5">O que cobrar dele</p>
+              <div className="space-y-1">
+                {c.alertas.map((a) => (
+                  <div key={a.chave} className={`flex items-start gap-2 rounded-lg px-2.5 py-1.5 border text-[11.5px] ${a.nivel === 'alto' ? 'bg-rose-500/[0.07] border-rose-500/25' : 'bg-amber-500/[0.06] border-amber-500/20'}`}>
+                    <span className={a.nivel === 'alto' ? 'text-rose-300' : 'text-amber-300'}>{a.nivel === 'alto' ? '🔴' : '🟡'}</span>
+                    <span className="min-w-0">
+                      <b className="text-white">{a.titulo}</b>
+                      <span className="text-text-secondary"> — {a.detalhe}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* gargalo do funil dele */}
+          <div>
+            <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1.5">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-text-secondary">Funil dele · onde trava</p>
+              {c.gargalo && (
+                <p className="text-[11px]">
+                  <span className="text-text-secondary">gargalo em </span>
+                  <b className="text-rose-300">{c.gargalo.etapa}</b>
+                  <span className="text-text-secondary"> — só {Math.round(c.gargalo.passagem * 100)}% avançam{c.gargalo.presos > 0 ? `, ${c.gargalo.presos} parado(s) lá` : ''}</span>
+                </p>
+              )}
+            </div>
+            <FunilGargalo funil={c.funil} comparar={funilTime} />
+          </div>
+
+          {/* números crus */}
+          <div>
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-text-secondary mb-1.5">Esforço e ritmo</p>
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5 rounded-xl bg-white/[0.03] border border-white/10 p-3">
+              <Metric label="Interações" valor={String(c.interacoes)} />
+              <Metric label="Por lead ativo" valor={fmtNum(c.interacoesPorLeadAtivo)} tom={(c.interacoesPorLeadAtivo ?? 9) < 1 ? 'text-rose-300' : 'text-white'} hint={medias.interacoesPorLeadAtivo !== null ? `time ${fmtNum(medias.interacoesPorLeadAtivo)}` : undefined} />
+              <Metric label="Cadência" valor={fmtDias(c.cadenciaDias)} hint="entre toques" />
+              <Metric label="1º contato" valor={fmtDias(c.tempoAteContato)} hint={medias.tempoAteContato !== null ? `time ${fmtDias(medias.tempoAteContato)}` : undefined} />
+              <Metric label="Tentativas" valor={fmtNum(c.tentativasMedias)} hint="até falar" />
+              <Metric label="Tarefas feitas" valor={String(c.tarefasConcluidas)} />
+              <Metric label="Pendentes" valor={String(c.tarefasPendentes)} />
+              <Metric label="Sem toque +7d" valor={String(c.leadsSemToque)} tom={c.leadsSemToque > 0 ? 'text-rose-300' : 'text-white'} />
+              <Metric label="Parados +14d" valor={String(c.leadsParados)} tom={c.leadsParados > 0 ? 'text-amber-300' : 'text-white'} />
+              <Metric label="Interesse futuro" valor={String(c.interesseFuturo)} tom="text-[#7DD3FC]" hint="agenda +15d" />
+            </div>
+          </div>
+
+          {/* qualidade e descarte */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="rounded-xl bg-white/[0.03] border border-white/10 p-3">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-text-secondary mb-2">O que ele registra</p>
+              <div className="space-y-2">
+                <div>
+                  <div className="flex justify-between text-[11px] mb-1"><span className="text-text-secondary">Qualificação</span><span className="text-white tabular-nums">{fmtPct(c.qualifPct)} <span className="text-text-secondary">· time {fmtPct(medias.qualifPct)}</span></span></div>
+                  <Barra pct={c.qualifPct} cor={c.qualifPct < 0.3 ? 'linear-gradient(90deg,#F45B69,#FB7185)' : 'linear-gradient(90deg,#3AC17C,#34D399)'} />
+                </div>
+                <div>
+                  <div className="flex justify-between text-[11px] mb-1"><span className="text-text-secondary">Anotação</span><span className="text-white tabular-nums">{fmtPct(c.anotPct)}</span></div>
+                  <Barra pct={c.anotPct} cor={c.anotPct < 0.3 ? 'linear-gradient(90deg,#F45B69,#FB7185)' : 'linear-gradient(90deg,#3AC17C,#34D399)'} />
+                </div>
+                {c.avancouSemQualificar > 0 && (
+                  <p className="text-[11px] text-amber-300">🚩 {c.avancouSemQualificar} lead(s) passaram de Meet <b>sem qualificação</b> — trabalhou no escuro.</p>
+                )}
+              </div>
+            </div>
+            <div className="rounded-xl bg-white/[0.03] border border-white/10 p-3">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-text-secondary mb-2">Descarte · {fmtPct(c.taxaDescarte)} da carteira</p>
+              {c.descartes === 0 ? (
+                <p className="text-[11.5px] text-text-secondary">Nenhum descarte no período.</p>
+              ) : (
+                <>
+                  {c.descartesRapidos > 0 && (
+                    <p className="text-[11px] text-rose-300 mb-1.5">⚡ {c.descartesRapidos} descartado(s) com <b>1 tentativa ou menos</b>.</p>
+                  )}
+                  <div className="space-y-1">
+                    {c.motivosDescarte.slice(0, 5).map((m) => (
+                      <div key={m.motivo} className="flex items-center justify-between text-[11.5px]">
+                        <span className="text-white/85 truncate">{m.motivo}</span>
+                        <span className="tabular-nums text-text-secondary shrink-0">{m.n}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RelatorioGestao({ gestao, comAtividade }: { gestao: ReturnType<typeof computeGestao>; comAtividade: boolean }) {
+  const [aberto, setAberto] = useState<string | null>(null);
+  const [ordem, setOrdem] = useState<'vgv' | 'esforco' | 'alertas' | 'conversao' | 'leads'>('vgv');
+
+  const lista = useMemo(() => {
+    const arr = [...gestao.corretores];
+    if (ordem === 'esforco') arr.sort((a, b) => (a.indiceEsforco ?? 999) - (b.indiceEsforco ?? 999));
+    if (ordem === 'alertas') arr.sort((a, b) => b.alertas.filter((x) => x.nivel === 'alto').length - a.alertas.filter((x) => x.nivel === 'alto').length);
+    if (ordem === 'conversao') arr.sort((a, b) => b.conversao - a.conversao);
+    if (ordem === 'leads') arr.sort((a, b) => b.leads - a.leads);
+    return arr;
+  }, [gestao.corretores, ordem]);
+
+  if (!gestao.corretores.length) {
+    return <div className="al-card p-8 text-center text-text-secondary">Nenhum corretor com lead na carteira.</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* time */}
+      <Secao titulo="O time em números" sub="A régua pra comparar cada corretor">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <Metric label="Leads" valor={String(gestao.totais.leads)} />
+          <Metric label="Ativos" valor={String(gestao.totais.ativos)} />
+          <Metric label="Vendas" valor={String(gestao.totais.vendas)} tom="text-emerald-300" />
+          <Metric label="VGV" valor={gestao.totais.vgv > 0 ? fmtMoeda(gestao.totais.vgv) : '—'} tom="al-grad-text" />
+          <Metric label="Conversão média" valor={fmtPct1(gestao.medias.conversao)} />
+          <Metric label="1º contato (méd)" valor={fmtDias(gestao.medias.tempoAteContato)} />
+        </div>
+      </Secao>
+
+      {/* gargalo do time */}
+      <Secao titulo="Onde o funil do time vaza"
+        sub={gestao.gargaloTime ? `Maior gargalo: ${gestao.gargaloTime.etapa} — só ${Math.round(gestao.gargaloTime.passagem * 100)}% avançam de lá` : 'Sem volume suficiente pra apontar gargalo'}>
+        <FunilGargalo funil={gestao.funilTime} />
+      </Secao>
+
+      {/* corretores */}
+      <div className="flex flex-wrap items-center gap-2 px-1">
+        <h2 className="al-display text-[14px] font-bold text-white uppercase tracking-[0.1em]">Corretor por corretor</h2>
+        <span className="text-[11px] text-text-secondary">clique pra abrir o dossiê</span>
+        <div className="ml-auto flex items-center gap-1 rounded-xl bg-white/[0.04] border border-white/10 p-1">
+          {([['vgv', 'VGV'], ['esforco', 'Menor esforço'], ['alertas', 'Mais alertas'], ['conversao', 'Conversão'], ['leads', 'Carteira']] as const).map(([id, label]) => (
+            <button key={id} onClick={() => setOrdem(id)}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors ${ordem === id ? 'bg-white/[0.10] text-white' : 'text-text-secondary hover:text-white'}`}>{label}</button>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-2">
+        {lista.map((c) => (
+          <CardCorretor key={c.uid} c={c} funilTime={gestao.funilTime} medias={gestao.medias}
+            aberto={aberto === c.uid} onToggle={() => setAberto(aberto === c.uid ? null : c.uid)} />
+        ))}
+      </div>
+
+      <p className="text-center text-[10px] text-text-secondary px-4">
+        O <b>índice de esforço</b> (0-100) mede TRABALHO — presença no CRM, tarefas em dia, toques por lead, qualificação e leads não abandonados.
+        É de propósito separado do resultado: dá pra ter esforço alto e conversão baixa (falta técnica) ou o contrário (carteira boa).
+        {!comAtividade && ' As métricas de atividade entram quando a leitura da timeline terminar.'}
+      </p>
+    </div>
+  );
+}
+
 export default function RelatoriosPage() {
   const { userData, isEspelhoDemo } = useAuth();
   const imobiliariaId = userData?.imobiliariaId;
   const ativo = !!imobiliariaId && !isEspelhoDemo;
-  const { leads, corretores, ads, minutosExclusivo, loading, error } = useRelatorioData(imobiliariaId, ativo);
+  const { leads, corretores, ads, vendas, minutosExclusivo, loading, error } = useRelatorioData(imobiliariaId, ativo);
   const { mapa, loadingAtiv, progresso } = useAtividade(leads, ativo);
 
+  const [aba, setAba] = useState<'gestao' | 'propaganda'>('gestao');
   const [periodo, setPeriodo] = useState<Periodo>('tudo');
-  const { gastos, totalGasto, erroGasto, carregandoGasto } = useCustoCampanhas(ativo, periodo);
+  const { gastos, totalGasto, erroGasto, carregandoGasto } = useCustoCampanhas(ativo && aba === 'propaganda', periodo);
   const dist = useMemo(() => computeRelatorioDist(ads, leads, corretores, mapa, periodo, minutosExclusivo), [ads, leads, corretores, mapa, periodo, minutosExclusivo]);
   const comAtividade = mapa.size > 0;
 
-  if (isEspelhoDemo) {
-    return (
-      <div className="max-w-3xl mx-auto mt-10 px-4">
-        <span className="gx-tag"><span>Área do administrador</span></span>
-        <div className="al-card p-10 mt-3 text-center"><p className="text-[40px] mb-2">📊</p><p className="text-sm text-text-secondary">Os relatórios usam os dados reais da imobiliária — indisponíveis no modo demonstração.</p></div>
-      </div>
-    );
-  }
+  // quem entra na gestão: corretores aprovados (fora o CRM do proprietário)
+  const selecionados = useMemo(
+    () => new Set(corretores.filter((c) => c.aprovado !== false && (c.tipoConta || '').startsWith('corretor')).map((c) => c.id)),
+    [corretores]
+  );
+  const gestao = useMemo(
+    () => (isEspelhoDemo ? gestaoDemo() : computeGestao(leads, corretores, vendas, mapa, selecionados)),
+    [isEspelhoDemo, leads, corretores, vendas, mapa, selecionados]
+  );
 
   return (
     <div className="max-w-5xl mx-auto px-3 sm:px-4 pb-16 pt-6 space-y-4">
@@ -381,24 +641,46 @@ export default function RelatoriosPage() {
         <span className="gx-tag"><span>Área do administrador</span></span>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="al-display text-[22px] font-bold text-white uppercase tracking-[0.1em]">Leads de propaganda</h1>
+            <h1 className="al-display text-[22px] font-bold text-white uppercase tracking-[0.1em]">Relatórios</h1>
             <p className="text-[12px] text-text-secondary mt-0.5">
-              {loading ? 'Carregando…' : `${dist.linhas.length} leads vindos da distribuição`}
-              {loadingAtiv && ` · atividade ${Math.round(progresso * 100)}%`}
+              {loading ? 'Carregando…' : aba === 'gestao'
+                ? `${gestao.corretores.length} corretores · ${gestao.totais.leads} leads na régua`
+                : `${dist.linhas.length} leads vindos da distribuição`}
+              {loadingAtiv && ` · lendo atividade ${Math.round(progresso * 100)}%`}
             </p>
           </div>
-          <div className="flex items-center gap-1 rounded-xl bg-white/[0.04] border border-white/10 p-1">
-            {PERIODOS.map((p) => (
-              <button key={p.id} onClick={() => setPeriodo(p.id)} className={`px-3 py-1.5 rounded-lg text-[12px] font-bold transition-colors ${periodo === p.id ? 'bg-white/[0.10] text-white' : 'text-text-secondary hover:text-white'}`}>{p.label}</button>
-            ))}
-          </div>
+          {aba === 'propaganda' && (
+            <div className="flex items-center gap-1 rounded-xl bg-white/[0.04] border border-white/10 p-1">
+              {PERIODOS.map((p) => (
+                <button key={p.id} onClick={() => setPeriodo(p.id)} className={`px-3 py-1.5 rounded-lg text-[12px] font-bold transition-colors ${periodo === p.id ? 'bg-white/[0.10] text-white' : 'text-text-secondary hover:text-white'}`}>{p.label}</button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="flex rounded-xl border border-white/10 bg-white/[0.04] p-1 gap-1 self-start">
+          {([['gestao', '👥 Gestão de corretores'], ['propaganda', '🔥 Leads de propaganda']] as const).map(([id, label]) => (
+            <button key={id} onClick={() => setAba(id)}
+              className={`px-3.5 py-2 rounded-lg text-[12px] font-bold transition-all ${aba === id ? 'bg-gradient-to-r from-[#FF1E56] to-[#A50D38] text-white shadow-[0_0_16px_rgba(255,30,86,0.35)]' : 'text-text-secondary hover:text-white'}`}>{label}</button>
+          ))}
         </div>
       </div>
 
-      {error && <div className="al-card p-4 text-rose-300 text-sm">Erro: {error}</div>}
-      {loading && <div className="al-card p-8 text-center text-text-secondary">Carregando dados…</div>}
+      {isEspelhoDemo && (
+        <div className="al-card p-3 text-[12px] text-text-secondary border-l-2 border-l-[#E8C547]">
+          <b className="text-white">Modo demonstração.</b> Os números abaixo são de exemplo, só pra mostrar a leitura da tela — o relatório real usa os dados da sua imobiliária.
+        </div>
+      )}
 
-      {!loading && (
+      {error && !isEspelhoDemo && <div className="al-card p-4 text-rose-300 text-sm">Erro: {error}</div>}
+      {loading && !isEspelhoDemo && <div className="al-card p-8 text-center text-text-secondary">Carregando dados…</div>}
+
+      {(!loading || isEspelhoDemo) && aba === 'gestao' && <RelatorioGestao gestao={gestao} comAtividade={comAtividade || isEspelhoDemo} />}
+
+      {isEspelhoDemo && aba === 'propaganda' && (
+        <div className="al-card p-10 text-center"><p className="text-[40px] mb-2">📊</p><p className="text-sm text-text-secondary">O relatório de propaganda lê os anúncios reais da imobiliária — indisponível no modo demonstração.</p></div>
+      )}
+
+      {!loading && !isEspelhoDemo && aba === 'propaganda' && (
         <RelatorioPropaganda dist={dist} comAtividade={comAtividade}
           gastos={gastos} totalGasto={totalGasto} erroGasto={erroGasto} carregandoGasto={carregandoGasto} />
       )}

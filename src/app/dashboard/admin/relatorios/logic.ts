@@ -70,11 +70,19 @@ export function inicioPeriodo(p: Periodo): number {
 }
 
 // ── Hook 1: leads + corretores + ads (tempo real) ───────────────────────────
-export interface DadosRelatorio { leads: RelLead[]; corretores: RelCorretor[]; ads: RelAdsLead[]; minutosExclusivo: number; loading: boolean; error: string | null; }
+/** Venda do Financeiro — a gestão cruza resultado real (VGV/comissão) com esforço. */
+export interface RelVenda {
+  id: string; corretorUid: string; status?: string; dataVenda: string;
+  vgvLiquido?: number; valorBruto?: number; comissaoBruta?: number;
+  rateio?: { papel: string; valor: number }[];
+}
+
+export interface DadosRelatorio { leads: RelLead[]; corretores: RelCorretor[]; ads: RelAdsLead[]; vendas: RelVenda[]; minutosExclusivo: number; loading: boolean; error: string | null; }
 export function useRelatorioData(imobiliariaId: string | undefined, ativo: boolean): DadosRelatorio {
   const [leads, setLeads] = useState<RelLead[]>([]);
   const [corretores, setCorretores] = useState<RelCorretor[]>([]);
   const [ads, setAds] = useState<RelAdsLead[]>([]);
+  const [vendas, setVendas] = useState<RelVenda[]>([]);
   const [minutosExclusivo, setMinutosExclusivo] = useState(5);
   const [loading, setLoading] = useState(!!imobiliariaId && ativo);
   const [error, setError] = useState<string | null>(null);
@@ -91,9 +99,12 @@ export function useRelatorioData(imobiliariaId: string | undefined, ativo: boole
     // janela exclusiva configurada (pra saber o que é "não atendeu a tempo")
     const u4 = onSnapshot(doc(db, 'distribuicaoAds', 'config'),
       (s) => { const n = Number(s.data()?.minutosExclusivo); setMinutosExclusivo(n > 0 ? n : 5); }, () => {});
-    return () => { u1(); u2(); u3(); u4(); };
+    // vendas oficializadas (Financeiro) — resultado real por corretor
+    const u5 = onSnapshot(query(collection(db, 'vendas'), where('imobiliariaId', '==', imobiliariaId)),
+      (s) => setVendas(s.docs.map((d) => ({ id: d.id, ...d.data() } as RelVenda))), () => {});
+    return () => { u1(); u2(); u3(); u4(); u5(); };
   }, [imobiliariaId, ativo]);
-  return { leads, corretores, ads, minutosExclusivo, loading, error };
+  return { leads, corretores, ads, vendas, minutosExclusivo, loading, error };
 }
 
 // ── Custo por campanha (Meta Insights) — fecha o ROI do anúncio ─────────────
