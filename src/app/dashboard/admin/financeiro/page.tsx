@@ -153,7 +153,7 @@ export default function FinanceiroPage() {
   const { currentUser, userData, isEspelhoDemo } = useAuth();
   const imobiliariaId = userData?.imobiliariaId;
 
-  const [aba, setAba] = useState<'painel' | 'vendas' | 'corretores' | 'config'>('painel');
+  const [aba, setAba] = useState<'painel' | 'vendas' | 'contas' | 'corretores' | 'config'>('painel');
   const [vendas, setVendas] = useState<Venda[]>([]);
   const [cfgDoc, setCfgDoc] = useState<Partial<ConfigFinanceiro> | null>(null);
   const [custos, setCustos] = useState<CustoFixo[]>([]);
@@ -206,7 +206,10 @@ export default function FinanceiroPage() {
 
   // ── derivados ──
   const assinadas = useMemo(() => vendas.filter((v) => v.status === 'assinada'), [vendas]);
-  const pendentes = useMemo(() => vendas.filter((v) => v.status === 'pendente_confirmacao' || v.status === 'pre_reserva'), [vendas]);
+  // Fluxo simplificado a pedido: venda ou está PENDENTE (corretor fechou) ou
+  // ASSINADA (você oficializou). Pré-reserva saiu da UI — reserva de pré-
+  // lançamento nem entra no sistema (só vira venda no contrato).
+  const pendentes = useMemo(() => vendas.filter((v) => v.status === 'pendente_confirmacao'), [vendas]);
 
   /** Grava a venda editada + recalcula em cascata o(s) trimestre(s) afetado(s). */
   const salvarVenda = async (v: Venda, ehNova: boolean) => {
@@ -438,7 +441,7 @@ export default function FinanceiroPage() {
           </p>
         </div>
         <div className="flex rounded-xl border border-white/10 bg-white/[0.04] p-1 gap-1">
-          {([['painel', '📊 Painel'], ['vendas', '🏆 Vendas'], ['corretores', '👥 Corretores'], ['config', '⚙️ Configuração']] as const).map(([id, label]) => (
+          {([['painel', '📊 Painel'], ['vendas', '🏆 Vendas'], ['contas', '💸 Contas'], ['corretores', '👥 Corretores'], ['config', '⚙️ Configuração']] as const).map(([id, label]) => (
             <button key={id} onClick={() => setAba(id)}
               className={`px-3 py-2 rounded-lg text-[12px] font-bold transition-all ${aba === id ? 'bg-gradient-to-r from-[#E8C547] to-[#C89210] text-[#181203] shadow-[0_0_16px_rgba(232,197,71,0.35)]' : 'text-text-secondary hover:text-white'}`}>
               {label}
@@ -599,7 +602,7 @@ export default function FinanceiroPage() {
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 <select value={fStatus} onChange={(e) => setFStatus(e.target.value)} className={inputCls + ' w-auto'}>
                   <option value="">Todos os status</option>
-                  {Object.entries(STATUS_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                  {Object.entries(STATUS_LABEL).filter(([k]) => k !== 'pre_reserva').map(([k, l]) => <option key={k} value={k}>{l}</option>)}
                 </select>
                 <select value={fCorretor} onChange={(e) => setFCorretor(e.target.value)} className={inputCls + ' w-auto'}>
                   <option value="">Todos os corretores</option>
@@ -695,9 +698,27 @@ export default function FinanceiroPage() {
             </Secao>
           )}
 
+          {/* ══════════ CONTAS DO MÊS ══════════ */}
+          {aba === 'contas' && (
+            <ContasTab cfg={cfg} custos={custos}
+              onSalvarCategorias={salvarConfig}
+              onAddCusto={async (mes, categoria, valor) => {
+                if (isEspelhoDemo) { showToast('Modo demonstração — nada é salvo.', 'info'); return; }
+                try {
+                  await addDoc(collection(db, 'custosFixos'), { imobiliariaId, mes, categoria, valor, criadoEm: serverTimestamp() });
+                  showToast('Conta lançada.', 'success');
+                } catch { showToast('Não foi possível lançar a conta.', 'error'); }
+              }}
+              onDelCusto={async (id) => {
+                if (isEspelhoDemo) { showToast('Modo demonstração — nada é salvo.', 'info'); return; }
+                try { await deleteDoc(doc(db, 'custosFixos', id)); } catch { showToast('Não foi possível excluir.', 'error'); }
+              }}
+            />
+          )}
+
           {/* ══════════ CONFIGURAÇÃO ══════════ */}
           {aba === 'config' && (
-            <ConfigTab cfg={cfg} meta={meta} custos={custos} isDemo={isEspelhoDemo}
+            <ConfigTab cfg={cfg} meta={meta} isDemo={isEspelhoDemo}
               onSalvar={salvarConfig}
               onSalvarMeta={async (m) => {
                 if (isEspelhoDemo) { showToast('Modo demonstração — nada é salvo.', 'info'); return; }
@@ -705,17 +726,6 @@ export default function FinanceiroPage() {
                   await setDoc(doc(db, 'metas', imobiliariaId), m, { merge: true });
                   showToast('Meta salva.', 'success');
                 } catch { showToast('Não foi possível salvar a meta.', 'error'); }
-              }}
-              onAddCusto={async (mes, categoria, valor) => {
-                if (isEspelhoDemo) { showToast('Modo demonstração — nada é salvo.', 'info'); return; }
-                try {
-                  await addDoc(collection(db, 'custosFixos'), { imobiliariaId, mes, categoria, valor, criadoEm: serverTimestamp() });
-                  showToast('Custo lançado.', 'success');
-                } catch { showToast('Não foi possível lançar o custo.', 'error'); }
-              }}
-              onDelCusto={async (id) => {
-                if (isEspelhoDemo) { showToast('Modo demonstração — nada é salvo.', 'info'); return; }
-                try { await deleteDoc(doc(db, 'custosFixos', id)); } catch { showToast('Não foi possível excluir.', 'error'); }
               }}
             />
           )}
@@ -1019,11 +1029,6 @@ function ModalVenda({ venda, cfg, vendas, usuarios, onFechar, onSalvar }: {
             </div>
             <div className="flex gap-2">
               <button onClick={onFechar} className={btnGhost}>Cancelar</button>
-              {f.status !== 'assinada' && f.status !== 'distratada' && (
-                <button disabled={salvando} onClick={() => salvar('pre_reserva')} className={btnGhost} title="Reserva reembolsável — NÃO computa receita (a venda só conta no contrato)">
-                  Salvar como pré-reserva
-                </button>
-              )}
               <button disabled={salvando} onClick={() => salvar('assinada')} className={btnOuro}>
                 {salvando ? 'Salvando…' : f.status === 'assinada' ? 'Salvar (recalcula o trimestre)' : '✓ Oficializar — contrato assinado'}
               </button>
@@ -1073,23 +1078,17 @@ function RecebiveisEditor({ recebiveis, onChange }: { recebiveis: { valorPrevist
 // ---------------------------------------------------------------------------
 // Aba Configuração — os parâmetros da consultoria (nada é fixo no código)
 // ---------------------------------------------------------------------------
-function ConfigTab({ cfg, meta, custos, isDemo, onSalvar, onSalvarMeta, onAddCusto, onDelCusto }: {
+function ConfigTab({ cfg, meta, isDemo, onSalvar, onSalvarMeta }: {
   cfg: ConfigFinanceiro;
   meta: MetaDoc | null;
-  custos: CustoFixo[];
   isDemo: boolean;
   onSalvar: (c: Partial<ConfigFinanceiro>) => Promise<void>;
   onSalvarMeta: (m: MetaDoc) => Promise<void>;
-  onAddCusto: (mes: string, categoria: string, valor: number) => Promise<void>;
-  onDelCusto: (id: string) => Promise<void>;
 }) {
   const [c, setC] = useState<ConfigFinanceiro>(cfg);
   useEffect(() => setC(cfg), [cfg]);
   const [m, setM] = useState<MetaDoc>({ valor: meta?.valor || 0, metaUnidades: meta?.metaUnidades || 0, inicio: meta?.inicio || '', fim: meta?.fim || '' });
   useEffect(() => setM({ valor: meta?.valor || 0, metaUnidades: meta?.metaUnidades || 0, inicio: meta?.inicio || '', fim: meta?.fim || '' }), [meta]);
-  const [custoMes, setCustoMes] = useState(mesAtualYM());
-  const [custoCat, setCustoCat] = useState('');
-  const [custoValor, setCustoValor] = useState(0);
   const [novaVigencia, setNovaVigencia] = useState('');
 
   const num = (label: string, key: keyof ConfigFinanceiro, hint?: string, step = 0.1) => (
@@ -1197,54 +1196,126 @@ function ConfigTab({ cfg, meta, custos, isDemo, onSalvar, onSalvarMeta, onAddCus
         </div>
       </Secao>
 
-      <Secao titulo="Custos fixos" sub='Cada linha com meta ("eu tenho que ter meta de conta de luz") — o DRE cobra o estouro'>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-text-secondary mb-2">Categorias e metas mensais</p>
-            <div className="space-y-1.5">
-              {c.custoCategorias.map((cat, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <input value={cat.nome} onChange={(e) => { const cs = [...c.custoCategorias]; cs[i] = { ...cat, nome: e.target.value }; setC({ ...c, custoCategorias: cs }); }} className={inputCls + ' flex-1'} />
-                  <div className="w-32"><MoneyInput value={cat.metaMensal} onChange={(n) => { const cs = [...c.custoCategorias]; cs[i] = { ...cat, metaMensal: n }; setC({ ...c, custoCategorias: cs }); }} className={inputCls + ' pl-9 tabular-nums'} /></div>
-                  <button onClick={() => setC({ ...c, custoCategorias: c.custoCategorias.filter((_, j) => j !== i) })} className="text-text-secondary hover:text-rose-300">✕</button>
-                </div>
-              ))}
-              <div className="flex gap-2">
-                <button className={btnGhost} onClick={() => setC({ ...c, custoCategorias: [...c.custoCategorias, { nome: 'Nova categoria', metaMensal: 0 }] })}>+ categoria</button>
-                <button className={btnOuro} onClick={() => onSalvar(c)}>Salvar categorias</button>
-              </div>
-            </div>
+      {isDemo && <p className="text-center text-[11px] text-amber-300 font-bold">Modo demonstração — nada aqui é salvo de verdade.</p>}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Aba Contas — o dinheiro que SAI pra manter a casa aberta ("lançar uma conta")
+// ---------------------------------------------------------------------------
+function ContasTab({ cfg, custos, onSalvarCategorias, onAddCusto, onDelCusto }: {
+  cfg: ConfigFinanceiro;
+  custos: CustoFixo[];
+  onSalvarCategorias: (c: Partial<ConfigFinanceiro>) => Promise<void>;
+  onAddCusto: (mes: string, categoria: string, valor: number) => Promise<void>;
+  onDelCusto: (id: string) => Promise<void>;
+}) {
+  const [mes, setMes] = useState(mesAtualYM());
+  const [cat, setCat] = useState('');
+  const [valor, setValor] = useState(0);
+  const [cats, setCats] = useState(cfg.custoCategorias);
+  useEffect(() => setCats(cfg.custoCategorias), [cfg.custoCategorias]);
+  const [editandoCats, setEditandoCats] = useState(false);
+
+  const doMes = custos.filter((x) => x.mes === mes);
+  const totalMes = round2(doMes.reduce((s, x) => s + (x.valor || 0), 0));
+  const totalMetas = round2(cfg.custoCategorias.reduce((s, x) => s + (x.metaMensal || 0), 0));
+  const gastoDe = (nome: string) => round2(doMes.filter((x) => x.categoria === nome).reduce((s, x) => s + x.valor, 0));
+
+  return (
+    <div className="space-y-4">
+      <Secao titulo={`Contas de ${labelMes(mes)}`} sub='O dinheiro que sai pra manter a casa — cada categoria com meta ("meta de conta de luz")'
+        acao={
+          <div className="flex items-center gap-1.5">
+            <button className={btnGhost} onClick={() => setMes(addMesesYM(mes, -1))}>‹</button>
+            <input type="month" value={mes} onChange={(e) => setMes(e.target.value || mesAtualYM())} className={inputCls + ' w-auto [color-scheme:dark]'} />
+            <button className={btnGhost} onClick={() => setMes(addMesesYM(mes, 1))}>›</button>
           </div>
-          <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-text-secondary mb-2">Lançar gasto do mês</p>
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <input type="month" value={custoMes} onChange={(e) => setCustoMes(e.target.value || mesAtualYM())} className={inputCls + ' w-auto [color-scheme:dark]'} />
-              <select value={custoCat} onChange={(e) => setCustoCat(e.target.value)} className={inputCls + ' w-auto max-w-[180px]'}>
-                <option value="">— categoria —</option>
-                {c.custoCategorias.map((cat) => <option key={cat.nome} value={cat.nome}>{cat.nome}</option>)}
-              </select>
-              <div className="w-32"><MoneyInput value={custoValor} onChange={setCustoValor} className={inputCls + ' pl-9 tabular-nums'} /></div>
-              <button className={btnGhost} onClick={async () => {
-                if (!custoCat || custoValor <= 0) { showToast('Escolha a categoria e o valor.', 'error'); return; }
-                await onAddCusto(custoMes, custoCat, custoValor);
-                setCustoValor(0);
-              }}>+ lançar</button>
-            </div>
-            <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
-              {custos.filter((x) => x.mes === custoMes).map((x) => (
-                <div key={x.id} className="flex items-center gap-2 text-[12px]">
-                  <span className="flex-1 text-white/85 truncate">{x.categoria}</span>
-                  <span className="tabular-nums text-white">{fmtBRL2(x.valor)}</span>
-                  <button onClick={() => onDelCusto(x.id)} className="text-text-secondary hover:text-rose-300">✕</button>
+        }>
+        {/* resumo do mês */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4 rounded-xl bg-white/[0.03] border border-white/10 p-3">
+          <Metric label="Gasto no mês" valor={fmtBRL2(totalMes)} tom={totalMetas > 0 && totalMes > totalMetas ? 'text-rose-300' : 'text-white'} />
+          <Metric label="Meta total do mês" valor={totalMetas > 0 ? fmtBRL2(totalMetas) : '—'} hint={totalMetas > 0 ? undefined : 'defina metas por categoria abaixo'} />
+          <Metric label="Folga / estouro" valor={totalMetas > 0 ? fmtBRL2(totalMetas - totalMes) : '—'} tom={totalMetas - totalMes >= 0 ? 'text-emerald-300' : 'text-rose-300'} />
+        </div>
+
+        {/* lançar conta */}
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <select value={cat} onChange={(e) => setCat(e.target.value)} className={inputCls + ' w-auto max-w-[240px]'}>
+            <option value="">— qual conta? —</option>
+            {cfg.custoCategorias.map((x) => <option key={x.nome} value={x.nome}>{x.nome}</option>)}
+          </select>
+          <div className="w-36"><MoneyInput value={valor} onChange={setValor} className={inputCls + ' pl-9 tabular-nums'} /></div>
+          <button className={btnOuro} onClick={async () => {
+            if (!cat || valor <= 0) { showToast('Escolha a conta e o valor.', 'error'); return; }
+            await onAddCusto(mes, cat, valor);
+            setValor(0);
+          }}>+ Lançar conta</button>
+        </div>
+
+        {/* categoria a categoria: gasto vs meta */}
+        <div className="space-y-2.5">
+          {cfg.custoCategorias.map((x) => {
+            const gasto = gastoDe(x.nome);
+            const estourou = x.metaMensal > 0 && gasto > x.metaMensal;
+            if (!gasto && !x.metaMensal) return null;
+            return (
+              <div key={x.nome}>
+                <div className="flex items-baseline justify-between gap-2 mb-1">
+                  <span className="text-[12px] font-semibold text-white truncate">{x.nome}{estourou && <span className="ml-1 text-rose-300">⚠ estourou</span>}</span>
+                  <span className="text-[11px] text-text-secondary tabular-nums shrink-0">
+                    {fmtBRL2(gasto)}{x.metaMensal > 0 && <> de <b className={estourou ? 'text-rose-300' : 'text-white/80'}>{fmtBRL2(x.metaMensal)}</b></>}
+                  </span>
                 </div>
-              ))}
-              {custos.filter((x) => x.mes === custoMes).length === 0 && <p className="text-[11px] text-text-secondary">Nenhum gasto lançado em {labelMes(custoMes)}.</p>}
-            </div>
+                {x.metaMensal > 0 && <Barra pct={gasto / x.metaMensal} cor={estourou ? 'linear-gradient(90deg,#F45B69,#FB7185)' : 'linear-gradient(90deg,#3AC17C,#34D399)'} alt="h-1.5" />}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* lançamentos do mês */}
+        <div className="mt-4 pt-3 border-t border-white/[0.06]">
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-text-secondary mb-2">Lançamentos de {labelMes(mes)}</p>
+          <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
+            {doMes.map((x) => (
+              <div key={x.id} className="flex items-center gap-2 text-[12px]">
+                <span className="flex-1 text-white/85 truncate">{x.categoria}</span>
+                <span className="tabular-nums text-white">{fmtBRL2(x.valor)}</span>
+                <button onClick={() => onDelCusto(x.id)} className="text-text-secondary hover:text-rose-300" title="Excluir lançamento">✕</button>
+              </div>
+            ))}
+            {doMes.length === 0 && <p className="text-[11px] text-text-secondary">Nenhuma conta lançada em {labelMes(mes)} ainda.</p>}
           </div>
         </div>
       </Secao>
 
-      {isDemo && <p className="text-center text-[11px] text-amber-300 font-bold">Modo demonstração — nada aqui é salvo de verdade.</p>}
+      <Secao titulo="Categorias e metas mensais" sub="As contas fixas da casa — o DRE cobra o estouro de cada meta"
+        acao={<button className={btnGhost} onClick={() => setEditandoCats((v) => !v)}>{editandoCats ? 'fechar edição' : '✎ editar'}</button>}>
+        {editandoCats ? (
+          <div className="space-y-1.5">
+            {cats.map((x, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input value={x.nome} onChange={(e) => { const cs = [...cats]; cs[i] = { ...x, nome: e.target.value }; setCats(cs); }} className={inputCls + ' flex-1'} />
+                <div className="w-32"><MoneyInput value={x.metaMensal} onChange={(n) => { const cs = [...cats]; cs[i] = { ...x, metaMensal: n }; setCats(cs); }} className={inputCls + ' pl-9 tabular-nums'} /></div>
+                <button onClick={() => setCats(cats.filter((_, j) => j !== i))} className="text-text-secondary hover:text-rose-300">✕</button>
+              </div>
+            ))}
+            <div className="flex gap-2 pt-1">
+              <button className={btnGhost} onClick={() => setCats([...cats, { nome: 'Nova categoria', metaMensal: 0 }])}>+ categoria</button>
+              <button className={btnOuro} onClick={async () => { await onSalvarCategorias({ custoCategorias: cats }); setEditandoCats(false); }}>Salvar categorias</button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {cfg.custoCategorias.map((x) => (
+              <span key={x.nome} className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white/[0.04] border border-white/10 text-white/85">
+                {x.nome}{x.metaMensal > 0 && <span className="text-text-secondary"> · meta {fmtBRL(x.metaMensal)}</span>}
+              </span>
+            ))}
+          </div>
+        )}
+      </Secao>
     </div>
   );
 }
