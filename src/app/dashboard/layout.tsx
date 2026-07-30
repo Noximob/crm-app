@@ -69,7 +69,6 @@ const HomeIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns
 const KanbanIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 7v7"/><path d="M12 7v4"/><path d="M16 7v9"/></svg>;
 const BanknoteIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01"/><path d="M18 12h.01"/></svg>;
 const GlobeIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>;
-const ChartCandlestickIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5v4"/><rect width="4" height="6" x="7" y="9" rx="1"/><path d="M9 15v2"/><path d="M17 3v2"/><rect width="4" height="8" x="15" y="5" rx="1"/><path d="M17 13v3"/><path d="M3 3v16a2 2 0 0 0 2 2h16"/></svg>;
 const ShieldIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>;
 
 const NavLink = ({ href, icon: Icon, children, collapsed, isActive }: any) => (
@@ -183,8 +182,9 @@ export default function DashboardLayout({
     ] },
     ...((isAdminUser || isDevUser) ? [{
       titulo: 'Gestão', itens: [
+        // O Financeiro NÃO tem atalho aqui de propósito: ele mora dentro da
+        // Área do administrador, e é de lá que se entra nele.
         ...(isAdminUser ? [{ href: '/dashboard/admin', icon: ShieldIcon, label: 'Área administrador', cor: 'text-[#FF5C7E]' }] : []),
-        ...(isAdminUser ? [{ href: '/dashboard/admin/financeiro', icon: ChartCandlestickIcon, label: 'Financeiro', cor: 'text-[#E8C547]' }] : []),
         ...(isDevUser ? [{ href: '/dashboard/developer', icon: CodeIcon, label: 'Desenvolvedor', cor: 'text-[#C4A6FF]' }] : []),
       ] as NavItem[],
     }] : []),

@@ -27,7 +27,7 @@ import MoneyInput from '@/components/MoneyInput';
 import {
   CONFIG_FINANCEIRO_DEFAULT, PENDENCIAS_CONFIG, normalizarConfig, type ConfigFinanceiro, type Venda, type PapelVendedor,
   type Beneficiario, type StatusNota, type FaixaComissao, type OrigemVenda, type TipoProduto,
-  calcularRateio, montarBeneficiarios, recalcularTrimestre, tabelaVigente, vgvLiquidoDe,
+  calcularRateio, montarBeneficiarios, recalcularTrimestre, tabelaVigente, vgvLiquidoDe, vgvProgressaoDe,
   percComissaoPadrao, periodoDe, labelTrimestre, mesDe, hojeYMD, round2, limitesPorMetaEDegrau,
   fmtBRL, fmtBRL2, fmtPctBR,
 } from '@/lib/financeiro';
@@ -399,6 +399,8 @@ export default function FinanceiroPage() {
     const hoje = new Date();
     return Array.from(porCorretor.entries()).map(([uid, lista]) => {
       const vgvTri = round2(lista.reduce((s, v) => s + (v.vgvLiquido || 0), 0));
+      // o que ANDA a faixa pode ser maior que o faturado (parceria no modo integral)
+      const vgvProg = round2(lista.reduce((s, v) => s + (v.vgvProgressao ?? v.vgvLiquido ?? 0), 0));
       // ajustes do trimestre (clawback de congelada + estorno de distratada paga)
       const ajustes = round2(vendas
         .filter((v) => v.corretorUid === uid && periodoDe(v.dataVenda, cfg) === triAtivo && (v.status === 'assinada' || v.status === 'distratada'))
@@ -413,9 +415,9 @@ export default function FinanceiroPage() {
       let proxima: { falta: number; pct: number } | null = null;
       for (let i = 0; i < faixas.length; i++) {
         const limite = faixas[i].ateVgv;
-        if (limite === null || vgvTri < limite) {
+        if (limite === null || vgvProg < limite) {
           faixaAtual = faixas[i].corretor;
-          if (limite !== null) proxima = { falta: round2(limite - vgvTri), pct: faixas[i + 1]?.corretor ?? faixas[i].corretor };
+          if (limite !== null) proxima = { falta: round2(limite - vgvProg), pct: faixas[i + 1]?.corretor ?? faixas[i].corretor };
           break;
         }
       }
@@ -428,7 +430,7 @@ export default function FinanceiroPage() {
       }
       return {
         uid, nome: lista[0]?.corretorNome || nomeDe.get(uid) || uid.slice(0, 6),
-        vendas: lista.length, vgvTri, aPagar, jaPago, ajustes, retencoes, notasPend, faixaAtual, proxima, vacancia,
+        vendas: lista.length, vgvTri, vgvProg, aPagar, jaPago, ajustes, retencoes, notasPend, faixaAtual, proxima, vacancia,
         lista: [...lista].sort((a, b) => (a.dataVenda < b.dataVenda ? -1 : 1)), // extrato em ordem cronológica
       };
     }).sort((a, b) => b.vgvTri - a.vgvTri);
@@ -925,19 +927,21 @@ function ModalVenda({ venda, cfg, vendas, usuarios, onFechar, onSalvar, onCancel
 
   // preview do rateio EXATAMENTE como a oficialização vai gravar
   const preview = useMemo(() => {
-    const liquido = vgvLiquidoDe(f.valorBruto, f.valorPermuta, f.parceriaPct, cfg.parceriaModo);
+    const liquido = vgvLiquidoDe(f.valorBruto, f.valorPermuta, f.parceriaPct);
+    const progressao = vgvProgressaoDe(f.valorBruto, f.valorPermuta, f.parceriaPct, cfg.parceriaModo);
     const tri = periodoDe(f.dataVenda, cfg);
+    // acumulado do trimestre = VGV de PROGRESSÃO das anteriores (é ele que anda a faixa)
     const acumuladoAntes = vendas
       .filter((v) => v.id !== f.id && v.status === 'assinada' && v.corretorUid === f.corretorUid && periodoDe(v.dataVenda, cfg) === tri)
       .filter((v) => v.dataVenda < f.dataVenda || (v.dataVenda === f.dataVenda && String(v.id) < String(f.id || '￿')))
-      .reduce((s, v) => s + (v.vgvLiquido ?? vgvLiquidoDe(v.valorBruto, v.valorPermuta, v.parceriaPct, cfg.parceriaModo)), 0);
+      .reduce((s, v) => s + (v.vgvProgressao ?? vgvProgressaoDe(v.valorBruto, v.valorPermuta, v.parceriaPct, cfg.parceriaModo)), 0);
     const r = calcularRateio({
-      cfg, faixas: tabelaVigente(cfg, f.dataVenda), vgvLiquido: liquido, percComissao: perc,
+      cfg, faixas: tabelaVigente(cfg, f.dataVenda), vgvLiquido: liquido, vgvProgressao: progressao, percComissao: perc,
       origemLead: f.origem === 'lead', acumuladoTrimestreAntes: acumuladoAntes,
       papelVendedor: f.papelVendedor || 'corretor',
       temGerente: !!f.gerenteUid, temSdr: !!f.sdrUid, temAgenciador: !!f.agenciadorUid,
     });
-    return { liquido, r };
+    return { liquido, progressao, r };
   }, [f, cfg, vendas, perc]);
 
   const selUsuario = (label: string, uidKey: 'gerenteUid' | 'sdrUid' | 'agenciadorUid', nomeKey: 'gerenteNome' | 'sdrNome' | 'agenciadorNome', hint: string) => (
@@ -1097,7 +1101,10 @@ function ModalVenda({ venda, cfg, vendas, usuarios, onFechar, onSalvar, onCancel
           <div className="mt-4 rounded-xl bg-white/[0.03] border border-[#E8C547]/25 p-3.5">
             <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#E8C547] mb-2">A conta desta venda (ordem canônica)</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-2 text-[12px] tabular-nums">
-              <Metric label="VGV líquido" valor={fmtBRL(preview.liquido)} hint={f.valorPermuta || f.parceriaPct ? `bruto ${fmtBRL(f.valorBruto)}` : undefined} />
+              <Metric label="VGV líquido" valor={fmtBRL(preview.liquido)}
+                hint={preview.progressao !== preview.liquido
+                  ? `bruto ${fmtBRL(f.valorBruto)} · anda ${fmtBRL(preview.progressao)} na meta dele`
+                  : (f.valorPermuta || f.parceriaPct ? `bruto ${fmtBRL(f.valorBruto)}` : undefined)} />
               <Metric label={`Comissão (${fmtPctBR(perc)})`} valor={fmtBRL2(preview.r.comissaoBruta)} tom="text-[#E8C547]" />
               <Metric label={`− Imposto (${fmtPctBR(cfg.aliquotaImpostoPct)})`} valor={fmtBRL2(preview.r.imposto)} />
               <Metric label={f.origem === 'lead' ? `− Lead (${fmtPctBR(cfg.taxaLeadPct, 0)})` : '− Lead'} valor={f.origem === 'lead' ? fmtBRL2(preview.r.retencaoLead) : '—'} />
@@ -1213,6 +1220,103 @@ function RecebiveisEditor({ recebiveis, onChange }: { recebiveis: { valorPrevist
 }
 
 // ---------------------------------------------------------------------------
+// Simulador: a mesma conta do rateio real, numa venda de mentira. Existe pra
+// quem mexe nos parâmetros ver o efeito EM REAIS antes de salvar — é a única
+// explicação que não envelhece quando alguém muda um percentual.
+// ---------------------------------------------------------------------------
+function SimuladorRateio({ c }: { c: ConfigFinanceiro }) {
+  const [vgv, setVgv] = useState(1_000_000);
+  const [temGerente, setTemGerente] = useState(true);
+  const [temSdr, setTemSdr] = useState(true);
+  const [temAgenciador, setTemAgenciador] = useState(false);
+  const [origemLead, setOrigemLead] = useState(true);
+
+  const faixas = c.tabelas[c.tabelas.length - 1]?.faixas || [];
+  const r = useMemo(() => calcularRateio({
+    cfg: c, faixas, vgvLiquido: vgv, percComissao: c.percLancamento,
+    origemLead, acumuladoTrimestreAntes: 0, papelVendedor: 'corretor',
+    temGerente, temSdr, temAgenciador,
+  }), [c, faixas, vgv, origemLead, temGerente, temSdr, temAgenciador]);
+
+  // o mesmo cenário sem cada papel, pra mostrar de QUEM sai o dinheiro
+  const semAgenciador = useMemo(() => calcularRateio({
+    cfg: c, faixas, vgvLiquido: vgv, percComissao: c.percLancamento,
+    origemLead, acumuladoTrimestreAntes: 0, papelVendedor: 'corretor',
+    temGerente, temSdr, temAgenciador: false,
+  }), [c, faixas, vgv, origemLead, temGerente, temSdr]);
+
+  const chip = (on: boolean, set: (v: boolean) => void, label: string) => (
+    <button onClick={() => set(!on)}
+      className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all border ${on
+        ? 'bg-[#E8C547]/15 border-[#E8C547]/50 text-[#E8C547]'
+        : 'bg-white/[0.03] border-white/10 text-text-secondary hover:text-white'}`}>
+      {on ? '✓ ' : ''}{label}
+    </button>
+  );
+
+  const Linha = ({ rotulo, valor, quem, tom, recuo }: { rotulo: string; valor: number; quem: string; tom?: string; recuo?: boolean }) => (
+    <div className={`flex items-baseline gap-2 py-1.5 ${recuo ? 'pl-4 border-l border-white/10 ml-1' : ''}`}>
+      <span className={`text-[12px] ${tom || 'text-white/90'} font-semibold w-32 shrink-0`}>{rotulo}</span>
+      <span className={`text-[13px] tabular-nums font-bold w-28 text-right shrink-0 ${tom || 'text-white'}`}>{fmtBRL2(valor)}</span>
+      <span className="text-[10.5px] text-text-secondary leading-tight">{quem}</span>
+    </div>
+  );
+
+  return (
+    <Secao titulo="A conta, na prática" sub="Mexa nos parâmetros abaixo e veja aqui, em reais, quem leva o quê. Venda de exemplo — não grava nada.">
+      <div className="flex flex-wrap items-end gap-3 mb-3">
+        <div>
+          <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">VGV da venda-exemplo</label>
+          <MoneyInput value={vgv} onChange={setVgv} className={inputCls + ' tabular-nums w-44'} />
+        </div>
+        <div className="flex flex-wrap gap-1.5 pb-0.5">
+          {chip(origemLead, setOrigemLead, 'Veio de lead')}
+          {chip(temGerente, setTemGerente, 'Tem gerente')}
+          {chip(temSdr, setTemSdr, 'SDR originou')}
+          {chip(temAgenciador, setTemAgenciador, 'Tem agenciador')}
+        </div>
+      </div>
+
+      <div className="rounded-xl bg-white/[0.03] border border-white/10 p-3.5">
+        <Linha rotulo="Comissão bruta" valor={r.comissaoBruta} tom="text-[#E8C547]"
+          quem={`${fmtPctBR(c.percLancamento)} do VGV — é o que a construtora paga pra Nox`} />
+        <Linha rotulo={`− Imposto (${fmtPctBR(c.aliquotaImpostoPct)})`} valor={-r.imposto} tom="text-rose-300" recuo
+          quem="sai na fonte, antes de qualquer divisão" />
+        {origemLead && <Linha rotulo={`− ${c.taxaLeadLabel} (${fmtPctBR(c.taxaLeadPct)})`} valor={-r.retencaoLead} tom="text-rose-300" recuo
+          quem="a casa retém pra pagar o anúncio que trouxe esse lead" />}
+        <div className="border-t border-white/10 my-1" />
+        <Linha rotulo="= Base do rateio" valor={r.baseRateio} tom="text-white"
+          quem="é sobre ESTE valor que todos os percentuais abaixo incidem" />
+        <div className="border-t border-white/10 my-1" />
+        <Linha rotulo="Corretor" valor={r.corretorValor} tom="text-emerald-300"
+          quem={temAgenciador
+            ? `${fmtPctBR(r.corretorPctMedio)} da faixa dele MENOS ${c.agenciadorPontos} pontos que vão pro agenciador — sem agenciador ele levaria ${fmtBRL2(semAgenciador.corretorValor)}`
+            : `${fmtPctBR(r.corretorPctMedio)} — a faixa dele na tabela abaixo`} />
+        {temAgenciador && <Linha rotulo="Agenciador" valor={r.agenciadorValor} tom="text-emerald-300"
+          quem={`${c.agenciadorPontos}% — quem captou/agenciou o imóvel. Sai da fatia do corretor, não da casa`} />}
+        {temGerente && <Linha rotulo="Gerente" valor={r.gerenteValor} tom="text-sky-300"
+          quem={temSdr
+            ? `o override do gerente foi ${fmtBRL2(r.gerenteValor + r.sdrValor)} e ele fica com ${fmtPctBR(100 - c.sdrSplitPct, 0)} porque o SDR originou`
+            : 'override sobre a venda do time dele — a escala está na tabela abaixo'} />}
+        {temSdr && <Linha rotulo="SDR originador" valor={r.sdrValor} tom="text-sky-300"
+          quem={temGerente
+            ? `${fmtPctBR(c.sdrSplitPct, 0)} do bloco do gerente — NÃO sai do corretor nem da casa`
+            : 'sem gerente na venda não existe bloco pra rachar — hoje esse valor fica com a casa'} />}
+        <div className="border-t border-white/10 my-1" />
+        <Linha rotulo="Casa" valor={r.casaValor} tom="text-white"
+          quem={`o que sobra da base${origemLead ? `, + ${fmtBRL2(r.retencaoLead)} da retenção acima` : ''} — margem de ${fmtPctBR(r.margemCasaPct)} sobre a comissão bruta`} />
+      </div>
+
+      {!temGerente && temSdr && (
+        <p className="text-[11px] text-amber-300/90 mt-2">
+          ⚠ Este é o caso que precisa de decisão sua: venda sem gerente, o SDR originou e hoje não recebe nada — o valor fica com a casa.
+        </p>
+      )}
+    </Secao>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Aba Configuração — os parâmetros da consultoria (nada é fixo no código)
 // ---------------------------------------------------------------------------
 function ConfigTab({ cfg, meta, isDemo, onSalvar, onSalvarMeta }: {
@@ -1228,11 +1332,13 @@ function ConfigTab({ cfg, meta, isDemo, onSalvar, onSalvarMeta }: {
   useEffect(() => setM({ valor: meta?.valor || 0, metaUnidades: meta?.metaUnidades || 0, inicio: meta?.inicio || '', fim: meta?.fim || '' }), [meta]);
   const [novaVigencia, setNovaVigencia] = useState('');
 
-  const num = (label: string, key: keyof ConfigFinanceiro, hint?: string, step = 0.1) => (
+  // hint = o que o campo faz (sempre). alerta = o que ainda depende de decisão sua.
+  const num = (label: string, key: keyof ConfigFinanceiro, hint?: string, step = 0.1, alerta?: string) => (
     <div>
       <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">{label}</label>
       <input type="number" step={step} value={(c[key] as number) ?? ''} onChange={(e) => setC({ ...c, [key]: Number(e.target.value) || 0 })} className={inputCls + ' tabular-nums'} />
-      {hint && <p className="text-[10px] text-amber-300/90 mt-0.5">{hint}</p>}
+      {hint && <p className="text-[10px] text-text-secondary mt-0.5 leading-snug">{hint}</p>}
+      {alerta && <p className="text-[10px] text-amber-300/90 mt-0.5 leading-snug">⚠ {alerta}</p>}
     </div>
   );
 
@@ -1245,28 +1351,40 @@ function ConfigTab({ cfg, meta, isDemo, onSalvar, onSalvarMeta }: {
 
   return (
     <div className="space-y-4">
-      <Secao titulo="Parâmetros do rateio" sub="Da consultoria de 28/07 — os campos em âmbar precisam de confirmação da Nox"
+      <SimuladorRateio c={c} />
+
+      <Secao titulo="Parâmetros do rateio" sub="O que a casa desconta antes de dividir, e como a divisão é feita. Veja o efeito em reais no simulador acima."
         acao={<button className={btnOuro} onClick={() => onSalvar(c)}>Salvar parâmetros</button>}>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {num('Imposto na fonte (%)', 'aliquotaImpostoPct', PENDENCIAS_CONFIG[0].aviso)}
-          {num('Retenção propaganda (%)', 'taxaLeadPct', 'Só em venda vinda de lead — retida pela casa.')}
+          {num('Imposto na fonte (%)', 'aliquotaImpostoPct',
+            'Sai da comissão bruta antes de qualquer divisão. Ninguém recebe sobre imposto.', 0.1,
+            PENDENCIAS_CONFIG[0].aviso)}
+          {num('Retenção propaganda (%)', 'taxaLeadPct',
+            'Só quando a venda veio de LEAD. A casa retém pra bancar o anúncio que gerou esse lead. Venda de carteira não desconta.')}
           <div>
             <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">Motivo da retenção</label>
             <input value={c.taxaLeadLabel} onChange={(e) => setC({ ...c, taxaLeadLabel: e.target.value })} className={inputCls} />
-            <p className="text-[10px] text-text-secondary mt-0.5">Aparece nos relatórios do corretor.</p>
+            <p className="text-[10px] text-text-secondary mt-0.5 leading-snug">O nome que o corretor vê no extrato dele explicando o desconto.</p>
           </div>
-          {num('SDR originador — % do bloco do gerente', 'sdrSplitPct', PENDENCIAS_CONFIG[2].aviso, 1)}
-          {num('Agenciador (pontos %)', 'agenciadorPontos', 'Saem da fatia do vendedor.', 1)}
-          {num('Comissão lançamento (%)', 'percLancamento', undefined, 0.5)}
-          {num('Comissão pronto (%)', 'percPronto', undefined, 0.5)}
-          {num('Pronto p/ carteira (%)', 'percProntoCarteira', undefined, 0.5)}
-          <div>
-            <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">Parceria</label>
+          {num('SDR originador — % do bloco do gerente', 'sdrSplitPct',
+            'Quando o SDR agendou a reunião que virou venda, ele racha o override do GERENTE nessa proporção. Não tira nada do corretor nem da casa.',
+            1, PENDENCIAS_CONFIG[2].aviso)}
+          {num('Agenciador (pontos %)', 'agenciadorPontos',
+            'Quem captou o imóvel, quando não é quem vendeu. Esses pontos saem da fatia do CORRETOR — a casa recebe igual com ou sem agenciador.', 1)}
+          {num('Comissão lançamento (%)', 'percLancamento', 'Quanto a construtora paga à Nox em lançamento.', 0.5)}
+          {num('Comissão pronto (%)', 'percPronto', 'Idem, em imóvel pronto de terceiros.', 0.5)}
+          {num('Pronto p/ carteira (%)', 'percProntoCarteira', 'Imóvel pronto da carteira própria da Nox.', 0.5)}
+          <div className="col-span-2">
+            <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">Parceria — o que conta pra meta do corretor</label>
             <select value={c.parceriaModo} onChange={(e) => setC({ ...c, parceriaModo: e.target.value as ConfigFinanceiro['parceriaModo'] })} className={inputCls}>
-              <option value="exclui">Exclui do VGV</option>
-              <option value="parcial">Conta parcial</option>
+              <option value="exclui">Só a parte da Nox conta na meta dele</option>
+              <option value="integral">A venda inteira conta na meta dele</option>
             </select>
-            <p className="text-[10px] text-amber-300/90 mt-0.5">{PENDENCIAS_CONFIG[3].aviso}</p>
+            <p className="text-[10px] text-text-secondary mt-0.5 leading-snug">
+              A comissão é sempre só sobre a parte da Nox — o parceiro leva a dele, e nisso não há escolha.
+              O que muda aqui é a <b className="text-white/80">velocidade de subir de faixa</b>: numa venda de R$ 1.000.000 em parceria 50%,
+              o corretor anda {c.parceriaModo === 'integral' ? 'R$ 1.000.000' : 'R$ 500.000'} na meta do trimestre.
+            </p>
           </div>
         </div>
       </Secao>
@@ -1373,6 +1491,9 @@ function ConfigTab({ cfg, meta, isDemo, onSalvar, onSalvarMeta }: {
         </div>
       </Secao>
 
+      {/* mesmo componente da aba Contas — quem procura "configurar categoria" acha aqui */}
+      <CategoriasCusto cfg={cfg} onSalvar={onSalvar} />
+
       <Secao titulo="Meta de VGV" sub='Baseline: 28 mi/12m. Proposta da consultoria: dobrar — R$ 56 mi em 12 meses ("meta é dado, não constante")'
         acao={<button className={btnOuro} onClick={() => onSalvarMeta(m)}>Salvar meta</button>}>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -1413,10 +1534,6 @@ function ContasTab({ cfg, custos, onSalvarCategorias, onAddCusto, onDelCusto }: 
   const [mes, setMes] = useState(mesAtualYM());
   const [cat, setCat] = useState('');
   const [valor, setValor] = useState(0);
-  const [cats, setCats] = useState(cfg.custoCategorias);
-  useEffect(() => setCats(cfg.custoCategorias), [cfg.custoCategorias]);
-  const [editandoCats, setEditandoCats] = useState(false);
-
   const doMes = custos.filter((x) => x.mes === mes);
   const totalMes = round2(doMes.reduce((s, x) => s + (x.valor || 0), 0));
   const totalMetas = round2(cfg.custoCategorias.reduce((s, x) => s + (x.metaMensal || 0), 0));
@@ -1489,32 +1606,61 @@ function ContasTab({ cfg, custos, onSalvarCategorias, onAddCusto, onDelCusto }: 
         </div>
       </Secao>
 
-      <Secao titulo="Categorias e metas mensais" sub="As contas fixas da casa — o DRE cobra o estouro de cada meta"
-        acao={<button className={btnGhost} onClick={() => setEditandoCats((v) => !v)}>{editandoCats ? 'fechar edição' : '✎ editar'}</button>}>
-        {editandoCats ? (
-          <div className="space-y-1.5">
-            {cats.map((x, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <input value={x.nome} onChange={(e) => { const cs = [...cats]; cs[i] = { ...x, nome: e.target.value }; setCats(cs); }} className={inputCls + ' flex-1'} />
-                <div className="w-32"><MoneyInput value={x.metaMensal} onChange={(n) => { const cs = [...cats]; cs[i] = { ...x, metaMensal: n }; setCats(cs); }} className={inputCls + ' pl-9 tabular-nums'} /></div>
-                <button onClick={() => setCats(cats.filter((_, j) => j !== i))} className="text-text-secondary hover:text-rose-300">✕</button>
-              </div>
-            ))}
-            <div className="flex gap-2 pt-1">
-              <button className={btnGhost} onClick={() => setCats([...cats, { nome: 'Nova categoria', metaMensal: 0 }])}>+ categoria</button>
-              <button className={btnOuro} onClick={async () => { await onSalvarCategorias({ custoCategorias: cats }); setEditandoCats(false); }}>Salvar categorias</button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {cfg.custoCategorias.map((x) => (
-              <span key={x.nome} className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white/[0.04] border border-white/10 text-white/85">
-                {x.nome}{x.metaMensal > 0 && <span className="text-text-secondary"> · meta {fmtBRL(x.metaMensal)}</span>}
-              </span>
-            ))}
-          </div>
-        )}
-      </Secao>
+      <CategoriasCusto cfg={cfg} onSalvar={onSalvarCategorias} />
     </div>
+  );
+}
+
+/**
+ * Categorias de custo + metas. Aparece na aba Contas (onde você lança) E na
+ * Configuração (onde se procura por "configurar") — é o MESMO componente e o
+ * mesmo doc salvo, então não tem versão certa e versão errada.
+ */
+function CategoriasCusto({ cfg, onSalvar }: { cfg: ConfigFinanceiro; onSalvar: (c: Partial<ConfigFinanceiro>) => Promise<void> }) {
+  const [cats, setCats] = useState(cfg.custoCategorias);
+  useEffect(() => setCats(cfg.custoCategorias), [cfg.custoCategorias]);
+  const [salvando, setSalvando] = useState(false);
+
+  const salvar = async (lista: typeof cats) => {
+    setSalvando(true);
+    await onSalvar({ custoCategorias: lista.filter((x) => x.nome.trim()) });
+    setSalvando(false);
+  };
+  const alterou = JSON.stringify(cats) !== JSON.stringify(cfg.custoCategorias);
+
+  return (
+    <Secao titulo="Categorias de contas" sub="Cada conta fixa da casa com sua meta mensal — o DRE cobra o estouro de cada uma">
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-2 px-1">
+          <span className="flex-1 text-[9px] font-bold uppercase tracking-[0.14em] text-text-secondary">Nome da conta</span>
+          <span className="w-32 text-[9px] font-bold uppercase tracking-[0.14em] text-text-secondary">Meta por mês</span>
+          <span className="w-4" />
+        </div>
+        {cats.map((x, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <input value={x.nome} placeholder="Ex: Aluguel"
+              onChange={(e) => { const cs = [...cats]; cs[i] = { ...x, nome: e.target.value }; setCats(cs); }}
+              className={inputCls + ' flex-1'} />
+            <div className="w-32">
+              <MoneyInput value={x.metaMensal} onChange={(n) => { const cs = [...cats]; cs[i] = { ...x, metaMensal: n }; setCats(cs); }}
+                className={inputCls + ' pl-9 tabular-nums'} />
+            </div>
+            <button onClick={() => setCats(cats.filter((_, j) => j !== i))}
+              className="text-text-secondary hover:text-rose-300 w-4 shrink-0" title="Remover categoria">✕</button>
+          </div>
+        ))}
+        {cats.length === 0 && <p className="text-[11px] text-text-secondary py-2">Nenhuma categoria ainda — crie a primeira abaixo (luz, aluguel, marketing…).</p>}
+        <div className="flex flex-wrap items-center gap-2 pt-2">
+          <button className={btnGhost} onClick={() => setCats([...cats, { nome: '', metaMensal: 0 }])}>+ nova categoria</button>
+          <button className={btnOuro} disabled={!alterou || salvando} onClick={() => salvar(cats)}>
+            {salvando ? 'Salvando…' : 'Salvar categorias'}
+          </button>
+          {alterou && !salvando && <span className="text-[11px] text-amber-300">alterações não salvas</span>}
+          <span className="text-[11px] text-text-secondary ml-auto">
+            Total das metas: <b className="text-white tabular-nums">{fmtBRL(cats.reduce((s, x) => s + (x.metaMensal || 0), 0))}</b>/mês
+          </span>
+        </div>
+      </div>
+    </Secao>
   );
 }

@@ -103,6 +103,9 @@ export default function MinhasComissoesPage() {
     const pendentes = doTri.filter((v) => v.status === 'pendente_confirmacao');
     const minhaFatia = (v: Venda) => (v.rateio || []).find((b) => b.papel === 'corretor');
     const vgvTri = round2(assinadas.reduce((s, v) => s + (v.vgvLiquido || 0), 0));
+    // a faixa anda pelo VGV de PROGRESSÃO (≠ do faturado em parceria integral) —
+    // tem que ser a MESMA régua que o admin usa, senão o corretor vê outra conta
+    const vgvProg = round2(assinadas.reduce((s, v) => s + (v.vgvProgressao ?? v.vgvLiquido ?? 0), 0));
     const ajustes = round2(doTri.filter((v) => v.status === 'assinada' || v.status === 'distratada')
       .reduce((s, v) => s + (v.ajustes || []).reduce((a, x) => a + (x.deltaCorretor || 0), 0), 0));
     const totalTri = round2(assinadas.reduce((s, v) => s + (minhaFatia(v)?.valor || 0), 0) + ajustes);
@@ -116,13 +119,13 @@ export default function MinhasComissoesPage() {
     let proxima: { falta: number; pct: number } | null = null;
     for (let i = 0; i < faixas.length; i++) {
       const limite = faixas[i].ateVgv;
-      if (limite === null || vgvTri < limite) {
+      if (limite === null || vgvProg < limite) {
         faixaAtual = faixas[i].corretor;
-        if (limite !== null) proxima = { falta: round2(limite - vgvTri), pct: faixas[i + 1]?.corretor ?? faixas[i].corretor };
+        if (limite !== null) proxima = { falta: round2(limite - vgvProg), pct: faixas[i + 1]?.corretor ?? faixas[i].corretor };
         break;
       }
     }
-    return { doTri, assinadas, pendentes, vgvTri, ajustes, totalTri, jaPago, aReceber, notasPendentes, faixaAtual, proxima, minhaFatia };
+    return { doTri, assinadas, pendentes, vgvTri, vgvProg, ajustes, totalTri, jaPago, aReceber, notasPendentes, faixaAtual, proxima, minhaFatia };
   }, [vendas, triAtivo, cfg]);
 
   return (
@@ -158,7 +161,7 @@ export default function MinhasComissoesPage() {
                   <span className="text-[11px] text-text-secondary">faltam <b className="text-white">{fmtBRL(resumo.proxima.falta)}</b> de VGV pra faixa de <b className="text-[#E8C547]">{fmtPctBR(resumo.proxima.pct, 0)}</b></span>
                   <span className="text-[10px] text-text-secondary">a progressão zera na virada do trimestre</span>
                 </div>
-                <Barra pct={resumo.vgvTri / (resumo.vgvTri + resumo.proxima.falta)} cor="linear-gradient(90deg,#E8C547,#C89210)" alt="h-3" />
+                <Barra pct={resumo.vgvProg / (resumo.vgvProg + resumo.proxima.falta)} cor="linear-gradient(90deg,#E8C547,#C89210)" alt="h-3" />
               </div>
             ) : (
               <p className="text-[11px] text-emerald-300 font-bold">🏆 Você está na faixa máxima do trimestre!</p>

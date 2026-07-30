@@ -69,8 +69,8 @@ export interface ConfigFinanceiro {
   sdrSplitPct: number;
   /** Pontos percentuais que saem da fatia do corretor vendedor quando o imóvel foi agenciado por outro. */
   agenciadorPontos: number;
-  /** Parceria: exclui do VGV, ou conta parcial (percentual por venda). CONFIRMAR. */
-  parceriaModo: 'exclui' | 'parcial';
+  /** Parceria: a parte do parceiro conta ou não na PROGRESSÃO de faixa do corretor. */
+  parceriaModo: 'exclui' | 'integral';
   /** % de comissão padrão por tipo de produto (edição por venda permitida). */
   percLancamento: number;
   percPronto: number;
@@ -128,8 +128,7 @@ export const CONFIG_FINANCEIRO_DEFAULT: ConfigFinanceiro = {
 export const PENDENCIAS_CONFIG: { campo: keyof ConfigFinanceiro | string; aviso: string }[] = [
   { campo: 'aliquotaImpostoPct', aviso: 'O app de Comissões rodava 10%; a consultoria falou ~9,1% (Simples varia com o faturamento 12m). Confirmar com o contador.' },
   { campo: 'corretorOv', aviso: 'Override do gerente: o sócio falou "15–22%" mas a política em uso é 15/17/19. Confirmar a escala.' },
-  { campo: 'sdrSplitPct', aviso: 'SDR que ORIGINOU a reunião racha o bloco do gerente. Sem gerente na venda, o valor fica com a casa — confirmar.' },
-  { campo: 'parceriaModo', aviso: 'Parceria: exclui do VGV ou conta parcial? A fala foi ambígua — hoje o ajuste é manual.' },
+  { campo: 'sdrSplitPct', aviso: 'Hoje, venda SEM gerente não paga o SDR — o valor fica com a casa. Se o SDR tem que receber mesmo sem gerente, a regra precisa mudar.' },
 ];
 
 /**
@@ -172,7 +171,8 @@ export function normalizarConfig(parcial: Partial<ConfigFinanceiro> | null | und
     periodoFim: d.periodoFim ?? base.periodoFim,
     sdrSplitPct: d.sdrSplitPct ?? base.sdrSplitPct,
     agenciadorPontos: d.agenciadorPontos ?? base.agenciadorPontos,
-    parceriaModo: d.parceriaModo ?? base.parceriaModo,
+    // 'parcial' era o rótulo antigo do modo que hoje se chama 'integral'
+    parceriaModo: (d.parceriaModo as string) === 'parcial' ? 'integral' : (d.parceriaModo ?? base.parceriaModo),
     percLancamento: d.percLancamento ?? base.percLancamento,
     percPronto: d.percPronto ?? base.percPronto,
     percProntoCarteira: d.percProntoCarteira ?? base.percProntoCarteira,
@@ -230,6 +230,8 @@ export interface Venda {
   percComissao: number;
   // ── calculados na oficialização (e recalculados em cascata) ──
   vgvLiquido?: number;
+  /** VGV que contou pra progressão de faixa (≠ do líquido só em parceria 'integral'). */
+  vgvProgressao?: number;
   comissaoBruta?: number;
   imposto?: number;
   retencaoLead?: number;
@@ -312,13 +314,35 @@ export const round2 = (n: number): number => Math.round((n + Number.EPSILON) * 1
 // VGV líquido — permuta sai; parceria conforme o modo (item 1.1)
 // ---------------------------------------------------------------------------
 
-export function vgvLiquidoDe(valorBruto: number, valorPermuta: number, parceriaPct: number, modo: ConfigFinanceiro['parceriaModo']): number {
+/**
+ * VGV que gera COMISSÃO. Permuta sai sempre (não entra dinheiro por ela) e a
+ * fatia do parceiro sai sempre (é dele, não da Nox). Isso NÃO depende do modo
+ * de parceria — a Nox nunca comissiona sobre o que não recebeu.
+ */
+export function vgvLiquidoDe(valorBruto: number, valorPermuta: number, parceriaPct: number, _modo?: ConfigFinanceiro['parceriaModo']): number {
   const semPermuta = Math.max(0, (valorBruto || 0) - (valorPermuta || 0));
   if (!parceriaPct) return semPermuta;
-  // 'exclui': a parte parceirada sai do VGV; 'parcial': conta o que ficou pra Nox
-  // (na prática as duas fórmulas convergem — o campo por venda diz QUANTO é do parceiro)
-  const fator = Math.max(0, 1 - Math.min(100, parceriaPct) / 100);
-  return round2(semPermuta * (modo === 'exclui' ? fator : fator));
+  return round2(semPermuta * Math.max(0, 1 - Math.min(100, parceriaPct) / 100));
+}
+
+/**
+ * VGV que conta pra PROGRESSÃO de faixa do corretor no trimestre — é aqui que
+ * o modo de parceria muda alguma coisa, e é a única coisa que ele muda:
+ *
+ *   'exclui'   → só a parte da Nox conta. Venda de 1M em parceria 50% anda
+ *                500k na meta dele. Conservador: a casa paga % maior só sobre
+ *                volume que ela de fato faturou.
+ *   'integral' → a venda inteira conta (1M), mesmo comissionando sobre 500k.
+ *                Reconhece o esforço: fechar em parceria dá o mesmo trabalho,
+ *                e o corretor sobe de faixa na mesma velocidade.
+ *
+ * O modo não muda quanto ele ganha NESTA venda — muda a velocidade com que ele
+ * chega no degrau seguinte, e portanto o quanto ganha nas PRÓXIMAS.
+ */
+export function vgvProgressaoDe(valorBruto: number, valorPermuta: number, parceriaPct: number, modo: ConfigFinanceiro['parceriaModo']): number {
+  const semPermuta = Math.max(0, (valorBruto || 0) - (valorPermuta || 0));
+  if (!parceriaPct || modo === 'integral') return round2(semPermuta);
+  return vgvLiquidoDe(valorBruto, valorPermuta, parceriaPct);
 }
 
 /** % de comissão padrão pelo tipo de produto. */
@@ -409,10 +433,14 @@ export function faixasMarginais(faixas: FaixaComissao[], acumuladoAntes: number,
 export interface EntradaRateio {
   cfg: ConfigFinanceiro;
   faixas: FaixaComissao[];
+  /** VGV que gera comissão (permuta e fatia do parceiro já fora). */
   vgvLiquido: number;
+  /** VGV que conta pra progressão de faixa — difere do de cima só em parceria
+   *  com modo 'integral'. Omitido = igual ao vgvLiquido. */
+  vgvProgressao?: number;
   percComissao: number;
   origemLead: boolean;
-  /** VGV líquido já ASSINADO pelo vendedor no trimestre ANTES desta venda. */
+  /** VGV de PROGRESSÃO já assinado pelo vendedor no trimestre ANTES desta venda. */
   acumuladoTrimestreAntes: number;
   /** Papel de quem vendeu — define a coluna da matriz (corretor/sdr/gerente/autônomo). */
   papelVendedor: PapelVendedor;
@@ -448,8 +476,10 @@ export function calcularRateio(e: EntradaRateio): ResultadoRateio {
   const baseRateio = round2(comissaoBruta - imposto - retencaoLead);
 
   // 4) VENDEDOR: coluna da matriz do papel dele, marginal sobre o VGV do
-  //    trimestre, aplicada proporcionalmente à base
-  const fx = faixasMarginais(e.faixas, e.acumuladoTrimestreAntes, e.vgvLiquido);
+  //    trimestre, aplicada proporcionalmente à base. As faixas são atravessadas
+  //    pelo VGV de PROGRESSÃO (em parceria 'integral' ele é maior que o que
+  //    comissiona); as frações somam 1 e recaem sobre a base real.
+  const fx = faixasMarginais(e.faixas, e.acumuladoTrimestreAntes, e.vgvProgressao ?? e.vgvLiquido);
   const descontoAgenciador = e.temAgenciador ? e.cfg.agenciadorPontos : 0;
   const corretorValor = round2(fx.partes.reduce(
     (s, p) => s + baseRateio * p.fracao * (Math.max(0, pctVendedorDaFaixa(p.faixa, papel) - descontoAgenciador) / 100), 0
@@ -540,11 +570,13 @@ export function recalcularTrimestre(vendasDoCorretor: Venda[], cfg: ConfigFinanc
   const out: ResultadoCascata[] = [];
   let acumulado = 0;
   for (const v of assinadas) {
-    const liquido = vgvLiquidoDe(v.valorBruto, v.valorPermuta, v.parceriaPct, cfg.parceriaModo);
+    const liquido = vgvLiquidoDe(v.valorBruto, v.valorPermuta, v.parceriaPct);
+    const progressao = vgvProgressaoDe(v.valorBruto, v.valorPermuta, v.parceriaPct, cfg.parceriaModo);
     const faixas = tabelaVigente(cfg, v.dataVenda);
     const r = calcularRateio({
       cfg, faixas,
       vgvLiquido: liquido,
+      vgvProgressao: progressao,
       percComissao: v.percComissao,
       origemLead: v.origem === 'lead',
       acumuladoTrimestreAntes: acumulado,
@@ -564,6 +596,7 @@ export function recalcularTrimestre(vendasDoCorretor: Venda[], cfg: ConfigFinanc
         vendaId: v.id,
         patch: {
           vgvLiquido: liquido,
+          vgvProgressao: progressao,
           comissaoBruta: r.comissaoBruta,
           imposto: r.imposto,
           retencaoLead: r.retencaoLead,
@@ -573,7 +606,7 @@ export function recalcularTrimestre(vendasDoCorretor: Venda[], cfg: ConfigFinanc
         ajuste: null,
       });
     }
-    acumulado += liquido; // congelada TAMBÉM soma no acumulador (o VGV dela aconteceu)
+    acumulado += progressao; // congelada TAMBÉM soma no acumulador (o VGV dela aconteceu)
   }
 
   // Distrato de venda congelada (já paga): o que foi pago vira ESTORNO explícito
