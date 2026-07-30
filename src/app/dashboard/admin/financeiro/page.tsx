@@ -28,7 +28,7 @@ import {
   CONFIG_FINANCEIRO_DEFAULT, PENDENCIAS_CONFIG, normalizarConfig, type ConfigFinanceiro, type Venda, type PapelVendedor,
   type Beneficiario, type StatusNota, type FaixaComissao, type OrigemVenda, type TipoProduto,
   calcularRateio, montarBeneficiarios, recalcularTrimestre, tabelaVigente, vgvLiquidoDe,
-  percComissaoPadrao, trimestreDe, labelTrimestre, mesDe, hojeYMD, round2,
+  percComissaoPadrao, periodoDe, labelTrimestre, mesDe, hojeYMD, round2, limitesPorMetaEDegrau,
   fmtBRL, fmtBRL2, fmtPctBR,
 } from '@/lib/financeiro';
 
@@ -136,8 +136,8 @@ function demoVendas(imobId: string): Venda[] {
   // passa o demo pelo MESMO motor da oficialização — números de exemplo reais
   const cfg = CONFIG_FINANCEIRO_DEFAULT;
   for (const uid of ['demo-1', 'demo-2']) {
-    for (const tri of Array.from(new Set(lista.map((v) => trimestreDe(v.dataVenda))))) {
-      const grupo = lista.filter((v) => v.corretorUid === uid && trimestreDe(v.dataVenda) === tri);
+    for (const tri of Array.from(new Set(lista.map((v) => periodoDe(v.dataVenda, cfg))))) {
+      const grupo = lista.filter((v) => v.corretorUid === uid && periodoDe(v.dataVenda, cfg) === tri);
       for (const r of recalcularTrimestre(grupo, cfg)) {
         if (!r.patch) continue;
         const alvo = lista.find((v) => v.id === r.vendaId);
@@ -161,10 +161,11 @@ export default function FinanceiroPage() {
   const [usuarios, setUsuarios] = useState<UsuarioMin[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<Venda | 'nova' | null>(null);
+  const [corretorAberto, setCorretorAberto] = useState<string | null>(null);
 
   // filtros
   const [mesDre, setMesDre] = useState(mesAtualYM());
-  const [triSel, setTriSel] = useState(trimestreDe(hojeYMD()));
+  const [triSel, setTriSel] = useState(''); // '' = período corrente (resolvido com a config)
   const [fStatus, setFStatus] = useState('');
   const [fCorretor, setFCorretor] = useState('');
   const [fBusca, setFBusca] = useState('');
@@ -197,6 +198,8 @@ export default function FinanceiroPage() {
 
   // normaliza QUALQUER formato salvo (inclusive o antigo, de faixa única `pct`)
   const cfg: ConfigFinanceiro = useMemo(() => normalizarConfig(cfgDoc), [cfgDoc]);
+  const periodoAtual = useMemo(() => periodoDe(hojeYMD(), cfg), [cfg]);
+  const triAtivo = triSel || periodoAtual;
 
   const nomeDe = useMemo(() => new Map(usuarios.map((u) => [u.id, u.nome] as const)), [usuarios]);
 
@@ -225,12 +228,12 @@ export default function FinanceiroPage() {
 
       // cascata: trimestre(s) do corretor afetado (o antigo também, se corretor/data mudou)
       const lista = [...vendas.filter((x) => x.id !== vendaFinal.id), vendaFinal];
-      const grupos = new Set([`${vendaFinal.corretorUid}|${trimestreDe(vendaFinal.dataVenda)}`]);
+      const grupos = new Set([`${vendaFinal.corretorUid}|${periodoDe(vendaFinal.dataVenda, cfg)}`]);
       const antiga = vendas.find((x) => x.id === v.id);
-      if (antiga) grupos.add(`${antiga.corretorUid}|${trimestreDe(antiga.dataVenda)}`);
+      if (antiga) grupos.add(`${antiga.corretorUid}|${periodoDe(antiga.dataVenda, cfg)}`);
       for (const g of Array.from(grupos)) {
         const [uid, tri] = g.split('|');
-        const doCorretor = lista.filter((x) => x.corretorUid === uid && trimestreDe(x.dataVenda) === tri);
+        const doCorretor = lista.filter((x) => x.corretorUid === uid && periodoDe(x.dataVenda, cfg) === tri);
         for (const r of recalcularTrimestre(doCorretor, cfg)) {
           const alvo = r.vendaId === vendaFinal.id ? ref : doc(db, 'vendas', r.vendaId);
           if (r.patch) batch.set(alvo, r.patch as Record<string, unknown>, { merge: true });
@@ -250,6 +253,54 @@ export default function FinanceiroPage() {
       console.error('salvarVenda falhou:', e);
       showToast('Não foi possível salvar a venda — tente de novo.', 'error');
       return false;
+    }
+  };
+
+  /**
+   * Cancelar venda = ela some das contas. Sem pagamento efetuado, o doc é
+   * apagado de vez (era um lançamento errado). Com pagamento, vira `distratada`
+   * (fica no banco com o estorno registrado — dinheiro que saiu tem que ser
+   * rastreável). Nos dois casos, o trimestre do corretor é recalculado.
+   */
+  const cancelarVenda = async (v: Venda) => {
+    if (isEspelhoDemo) { showToast('Modo demonstração — nada é salvo.', 'info'); return; }
+    if (!currentUser) return;
+    try {
+      const jaPago = (v.rateio || []).some((b) => b.papel !== 'casa' && b.pago);
+      const batch = writeBatch(db);
+      const ref = doc(db, 'vendas', v.id);
+      if (jaPago) {
+        batch.set(ref, {
+          status: 'distratada', congelada: true,
+          distratadaEm: serverTimestamp(), motivoDistrato: 'Venda cancelada pelo admin',
+          canceladaPor: currentUser.uid, atualizadoEm: serverTimestamp(),
+        }, { merge: true });
+      } else {
+        batch.delete(ref);
+      }
+      // recalcula o período do corretor sem esta venda
+      const restantes = vendas.filter((x) => x.id !== v.id);
+      const lista = jaPago
+        ? [...restantes, { ...v, status: 'distratada' as const, congelada: true }]
+        : restantes;
+      const doCorretor = lista.filter((x) => x.corretorUid === v.corretorUid && periodoDe(x.dataVenda, cfg) === periodoDe(v.dataVenda, cfg));
+      for (const r of recalcularTrimestre(doCorretor, cfg)) {
+        const alvo = doc(db, 'vendas', r.vendaId);
+        if (r.patch) batch.set(alvo, r.patch as Record<string, unknown>, { merge: true });
+        if (r.ajuste) batch.set(alvo, {
+          ajustes: arrayUnion({
+            em: Timestamp.now(), por: currentUser.uid, porNome: userData?.nome || '',
+            motivo: r.vendaId === v.id ? 'Venda cancelada — estorno do que já tinha sido pago' : 'Recálculo do trimestre (venda cancelada)',
+            deltaCorretor: r.ajuste.deltaCorretor,
+          }),
+        }, { merge: true });
+      }
+      await batch.commit();
+      setModal(null);
+      showToast(jaPago ? 'Venda cancelada — estorno registrado.' : 'Venda cancelada.', 'success');
+    } catch (e) {
+      console.error('cancelarVenda falhou:', e);
+      showToast('Não foi possível cancelar — tente de novo.', 'error');
     }
   };
 
@@ -316,8 +367,8 @@ export default function FinanceiroPage() {
     const vgv = round2(noPeriodo.reduce((s, v) => s + (v.vgvLiquido || 0), 0));
     const unidades = noPeriodo.length;
     const mesZerado = assinadas.filter((v) => mesDe(v.dataVenda) === mesAtualYM()).length === 0;
-    const triCorrente = trimestreDe(hojeYMD());
-    const vgvTri = round2(assinadas.filter((v) => trimestreDe(v.dataVenda) === triCorrente).reduce((s, v) => s + (v.vgvLiquido || 0), 0));
+    const triCorrente = periodoDe(hojeYMD(), cfg);
+    const vgvTri = round2(assinadas.filter((v) => periodoDe(v.dataVenda, cfg) === triCorrente).reduce((s, v) => s + (v.vgvLiquido || 0), 0));
     return { valor, metaUnidades: meta?.metaUnidades || 0, inicio, fim, vgv, unidades, mesZerado, vgvTri, triCorrente };
   }, [meta, assinadas]);
 
@@ -342,7 +393,7 @@ export default function FinanceiroPage() {
 
   // ── extrato por corretor (trimestre selecionado) ──
   const extrato = useMemo(() => {
-    const doTri = assinadas.filter((v) => trimestreDe(v.dataVenda) === triSel);
+    const doTri = assinadas.filter((v) => periodoDe(v.dataVenda, cfg) === triAtivo);
     const porCorretor = new Map<string, Venda[]>();
     doTri.forEach((v) => { const l = porCorretor.get(v.corretorUid) || []; l.push(v); porCorretor.set(v.corretorUid, l); });
     const hoje = new Date();
@@ -350,11 +401,12 @@ export default function FinanceiroPage() {
       const vgvTri = round2(lista.reduce((s, v) => s + (v.vgvLiquido || 0), 0));
       // ajustes do trimestre (clawback de congelada + estorno de distratada paga)
       const ajustes = round2(vendas
-        .filter((v) => v.corretorUid === uid && trimestreDe(v.dataVenda) === triSel && (v.status === 'assinada' || v.status === 'distratada'))
+        .filter((v) => v.corretorUid === uid && periodoDe(v.dataVenda, cfg) === triAtivo && (v.status === 'assinada' || v.status === 'distratada'))
         .reduce((s, v) => s + (v.ajustes || []).reduce((a, x) => a + (x.deltaCorretor || 0), 0), 0));
       const aPagar = round2(lista.reduce((s, v) => s + ((v.rateio || []).find((b) => b.papel === 'corretor')?.valor || 0), 0) + ajustes);
       const retencoes = round2(lista.reduce((s, v) => s + (v.imposto || 0) + (v.retencaoLead || 0), 0));
       const notasPend = lista.reduce((s, v) => s + (v.rateio || []).filter((b) => b.papel !== 'casa' && b.statusNota === 'pendente').length, 0);
+      const jaPago = round2(lista.reduce((s, v) => { const b = (v.rateio || []).find((x) => x.papel === 'corretor'); return s + (b?.pago ? b.valor : 0); }, 0));
       const faixas = tabelaVigente(cfg, lista[lista.length - 1]?.dataVenda || hojeYMD());
       // faixa em que o PRÓXIMO real vai cair + quanto falta (coluna do corretor)
       let faixaAtual = faixas[faixas.length - 1].corretor;
@@ -376,10 +428,11 @@ export default function FinanceiroPage() {
       }
       return {
         uid, nome: lista[0]?.corretorNome || nomeDe.get(uid) || uid.slice(0, 6),
-        vendas: lista.length, vgvTri, aPagar, ajustes, retencoes, notasPend, faixaAtual, proxima, vacancia,
+        vendas: lista.length, vgvTri, aPagar, jaPago, ajustes, retencoes, notasPend, faixaAtual, proxima, vacancia,
+        lista: [...lista].sort((a, b) => (a.dataVenda < b.dataVenda ? -1 : 1)), // extrato em ordem cronológica
       };
     }).sort((a, b) => b.vgvTri - a.vgvTri);
-  }, [assinadas, vendas, triSel, cfg, nomeDe]);
+  }, [assinadas, vendas, triAtivo, cfg, nomeDe]);
 
   /** Corretores com vacância ≥ 2 meses (todos, não só os do trimestre) — pedido explícito da consultoria. */
   const vacantes = useMemo(() => {
@@ -418,8 +471,8 @@ export default function FinanceiroPage() {
   }, [assinadas]);
 
   const trimestres = useMemo(() => {
-    const s = new Set(vendas.map((v) => trimestreDe(v.dataVenda)).filter(Boolean));
-    s.add(trimestreDe(hojeYMD()));
+    const s = new Set(vendas.map((v) => periodoDe(v.dataVenda, cfg)).filter(Boolean));
+    s.add(periodoDe(hojeYMD(), cfg));
     return Array.from(s).sort().reverse();
   }, [vendas]);
 
@@ -598,7 +651,8 @@ export default function FinanceiroPage() {
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 <select value={fStatus} onChange={(e) => setFStatus(e.target.value)} className={inputCls + ' w-auto'}>
                   <option value="">Todos os status</option>
-                  {Object.entries(STATUS_LABEL).filter(([k]) => k !== 'pre_reserva').map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                  <option value="pendente_confirmacao">Pendente</option>
+                  <option value="assinada">Assinada</option>
                 </select>
                 <select value={fCorretor} onChange={(e) => setFCorretor(e.target.value)} className={inputCls + ' w-auto'}>
                   <option value="">Todos os corretores</option>
@@ -651,45 +705,108 @@ export default function FinanceiroPage() {
             </Secao>
           )}
 
-          {/* ══════════ CORRETORES ══════════ */}
+          {/* ══════════ CORRETORES — quanto pagar pra cada um ══════════ */}
           {aba === 'corretores' && (
-            <Secao titulo="Extrato por corretor" sub="A progressão de faixas zera a cada trimestre — modelo marginal, como IR"
+            <Secao titulo="Comissão a pagar por corretor"
+              sub="O que cada um tem a receber no trimestre. Clique num corretor pra ver o extrato venda a venda."
               acao={
-                <select value={triSel} onChange={(e) => setTriSel(e.target.value)} className={inputCls + ' w-auto'}>
+                <select value={triAtivo} onChange={(e) => setTriSel(e.target.value)} className={inputCls + ' w-auto'}>
                   {trimestres.map((t) => <option key={t} value={t}>{labelTrimestre(t)}</option>)}
                 </select>
               }>
               {extrato.length === 0 ? (
-                <p className="text-[12px] text-text-secondary py-4 text-center">Nenhuma venda assinada em {labelTrimestre(triSel)}.</p>
+                <p className="text-[12px] text-text-secondary py-4 text-center">Nenhuma venda assinada em {labelTrimestre(triAtivo)}.</p>
               ) : (
-                <div className="space-y-2">
-                  {extrato.map((c) => (
-                    <div key={c.uid} className="rounded-xl bg-white/[0.03] border border-white/10 p-3.5">
-                      <div className="flex flex-wrap items-center gap-3 mb-2.5">
-                        <span className="text-[14px] font-bold text-white">{c.nome}</span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#E8C547]/10 border border-[#E8C547]/40 text-[#E8C547]">faixa {fmtPctBR(c.faixaAtual, 0)}</span>
-                        {c.vacancia >= 2 && <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-rose-500/10 border border-rose-500/40 text-rose-300">{c.vacancia} meses sem vender</span>}
-                        {c.notasPend > 0 && <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-500/10 border border-amber-500/40 text-amber-300">{c.notasPend} nota{c.notasPend > 1 ? 's' : ''} pendente{c.notasPend > 1 ? 's' : ''}</span>}
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-2.5">
-                        <Metric label="VGV no trimestre" valor={fmtBRL(c.vgvTri)} />
-                        <Metric label="Vendas" valor={String(c.vendas)} />
-                        <Metric label="A pagar (corretor)" valor={fmtBRL2(c.aPagar)} tom="text-[#E8C547]" hint={c.ajustes !== 0 ? `inclui ajustes ${fmtBRL2(c.ajustes)}` : undefined} />
-                        <Metric label="Retido (imposto + lead)" valor={fmtBRL2(c.retencoes)} />
-                      </div>
-                      {c.proxima ? (
-                        <div>
-                          <div className="flex items-baseline justify-between mb-1">
-                            <span className="text-[10.5px] text-text-secondary">faltam <b className="text-white">{fmtBRL(c.proxima.falta)}</b> pra faixa de <b className="text-[#E8C547]">{fmtPctBR(c.proxima.pct, 0)}</b></span>
-                          </div>
-                          <Barra pct={c.vgvTri / (c.vgvTri + c.proxima.falta)} cor="linear-gradient(90deg,#E8C547,#C89210)" alt="h-1.5" />
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 rounded-xl bg-white/[0.03] border border-white/10 p-3">
+                    <Metric label="Total a pagar (todos)" valor={fmtBRL2(extrato.reduce((s, c) => s + c.aPagar, 0))} tom="al-grad-text" />
+                    <Metric label="Já pago" valor={fmtBRL2(extrato.reduce((s, c) => s + c.jaPago, 0))} tom="text-emerald-300" />
+                    <Metric label="Falta pagar" valor={fmtBRL2(extrato.reduce((s, c) => s + (c.aPagar - c.jaPago), 0))} tom="text-[#E8C547]" />
+                    <Metric label="Notas pendentes" valor={String(extrato.reduce((s, c) => s + c.notasPend, 0))} tom={extrato.some((c) => c.notasPend > 0) ? 'text-amber-300' : 'text-white'} />
+                  </div>
+                  <div className="space-y-2">
+                    {extrato.map((c) => {
+                      const aberto = corretorAberto === c.uid;
+                      return (
+                        <div key={c.uid} className={`rounded-xl border transition-colors ${aberto ? 'bg-white/[0.05] border-[#E8C547]/35' : 'bg-white/[0.03] border-white/10'}`}>
+                          <button onClick={() => setCorretorAberto(aberto ? null : c.uid)} className="w-full p-3.5 text-left">
+                            <div className="flex flex-wrap items-center gap-3 mb-2.5">
+                              <span className="text-[14px] font-bold text-white">{c.nome}</span>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#E8C547]/10 border border-[#E8C547]/40 text-[#E8C547]">faixa {fmtPctBR(c.faixaAtual, 0)}</span>
+                              {c.vacancia >= 2 && <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-rose-500/10 border border-rose-500/40 text-rose-300">{c.vacancia} meses sem vender</span>}
+                              {c.notasPend > 0 && <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-500/10 border border-amber-500/40 text-amber-300">{c.notasPend} nota{c.notasPend > 1 ? 's' : ''} pendente{c.notasPend > 1 ? 's' : ''}</span>}
+                              <span className="ml-auto text-text-secondary text-[12px]">{aberto ? '▲ fechar' : '▼ extrato'}</span>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                              <Metric label="VGV no trimestre" valor={fmtBRL(c.vgvTri)} />
+                              <Metric label="Vendas" valor={String(c.vendas)} />
+                              <Metric label="Total do corretor" valor={fmtBRL2(c.aPagar)} tom="text-[#E8C547]" hint={c.ajustes !== 0 ? `inclui ajustes ${fmtBRL2(c.ajustes)}` : undefined} />
+                              <Metric label="Já pago" valor={fmtBRL2(c.jaPago)} tom={c.jaPago > 0 ? 'text-emerald-300' : 'text-white/60'} />
+                              <Metric label="Falta pagar" valor={fmtBRL2(c.aPagar - c.jaPago)} tom={(c.aPagar - c.jaPago) > 0 ? 'text-white' : 'text-white/60'} />
+                            </div>
+                            {c.proxima ? (
+                              <div className="mt-2.5">
+                                <span className="text-[10.5px] text-text-secondary">faltam <b className="text-white">{fmtBRL(c.proxima.falta)}</b> de VGV pra faixa de <b className="text-[#E8C547]">{fmtPctBR(c.proxima.pct, 0)}</b></span>
+                                <div className="mt-1"><Barra pct={c.vgvTri / (c.vgvTri + c.proxima.falta)} cor="linear-gradient(90deg,#E8C547,#C89210)" alt="h-1.5" /></div>
+                              </div>
+                            ) : (
+                              <p className="mt-2.5 text-[10.5px] text-emerald-300 font-bold">✓ Faixa máxima do trimestre</p>
+                            )}
+                          </button>
+
+                          {/* extrato venda a venda — o relatório individual */}
+                          {aberto && (
+                            <div className="px-3.5 pb-3.5 border-t border-white/[0.08] pt-3">
+                              <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-text-secondary mb-2">Vendas do trimestre · como a comissão é calculada</p>
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-[11.5px] border-collapse">
+                                  <thead>
+                                    <tr className="text-text-secondary">
+                                      {['Data', 'Cliente / imóvel', 'VGV', 'Comissão', `− Imp. (${fmtPctBR(cfg.aliquotaImpostoPct)})`, `− ${cfg.taxaLeadLabel}`, '= Base', '%', 'Ele recebe', 'NF', 'Pago'].map((h, i) => (
+                                        <th key={h} className={`px-1.5 py-1.5 font-bold whitespace-nowrap ${i <= 1 ? 'text-left' : 'text-right'}`}>{h}</th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {c.lista.map((v) => {
+                                      const b = (v.rateio || []).find((x) => x.papel === 'corretor');
+                                      return (
+                                        <tr key={v.id} onClick={() => setModal(v)} className="border-t border-white/[0.06] hover:bg-white/[0.04] cursor-pointer">
+                                          <td className="px-1.5 py-1.5 whitespace-nowrap text-white/70 tabular-nums">{v.dataVenda.split('-').reverse().slice(0, 2).join('/')}</td>
+                                          <td className="px-1.5 py-1.5 max-w-[170px]">
+                                            <span className="block truncate text-white">{v.leadNome || '—'}</span>
+                                            <span className="block truncate text-[10px] text-text-secondary">{[v.empreendimento, v.construtora].filter(Boolean).join(' · ')}</span>
+                                          </td>
+                                          <td className="px-1.5 py-1.5 text-right tabular-nums text-white/85">{fmtBRL(v.vgvLiquido || 0)}</td>
+                                          <td className="px-1.5 py-1.5 text-right tabular-nums text-white/85">{fmtBRL2(v.comissaoBruta || 0)}</td>
+                                          <td className="px-1.5 py-1.5 text-right tabular-nums text-white/60">{fmtBRL2(v.imposto || 0)}</td>
+                                          <td className="px-1.5 py-1.5 text-right tabular-nums text-white/60">{v.retencaoLead ? fmtBRL2(v.retencaoLead) : '—'}</td>
+                                          <td className="px-1.5 py-1.5 text-right tabular-nums text-white/85">{fmtBRL2(v.baseRateio || 0)}</td>
+                                          <td className="px-1.5 py-1.5 text-right tabular-nums text-text-secondary">{b?.pct ? fmtPctBR(b.pct) : '—'}</td>
+                                          <td className="px-1.5 py-1.5 text-right tabular-nums font-bold text-[#E8C547]">{fmtBRL2(b?.valor || 0)}</td>
+                                          <td className="px-1.5 py-1.5 text-right">{b?.statusNota === 'emitida' ? <span className="text-emerald-300">✓</span> : b?.statusNota === 'dispensada' ? <span className="text-white/40">—</span> : <span className="text-amber-300">!</span>}</td>
+                                          <td className="px-1.5 py-1.5 text-right">{b?.pago ? <span className="text-emerald-300">✓</span> : <span className="text-white/30">—</span>}</td>
+                                        </tr>
+                                      );
+                                    })}
+                                    <tr className="border-t-2 border-white/15 font-bold">
+                                      <td className="px-1.5 py-2 text-white" colSpan={8}>Total do trimestre{c.ajustes !== 0 ? ' (com ajustes)' : ''}</td>
+                                      <td className="px-1.5 py-2 text-right tabular-nums al-display text-[14px] al-grad-text">{fmtBRL2(c.aPagar)}</td>
+                                      <td colSpan={2} />
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                              <p className="mt-2 text-[10px] text-text-secondary">
+                                A casa recebe a comissão sobre o VGV e retém o imposto na fonte{cfg.taxaLeadPct > 0 ? `; nas vendas de ${cfg.taxaLeadLabel.toLowerCase()} também retém ${fmtPctBR(cfg.taxaLeadPct, 0)}` : ''}; sobre essa base o corretor recebe o % da faixa. Clique numa linha pra abrir a venda e marcar NF/pagamento.
+                              </p>
+                            </div>
+                          )}
                         </div>
-                      ) : (
-                        <p className="text-[10.5px] text-emerald-300 font-bold">✓ Faixa máxima do trimestre</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
             </Secao>
           )}
@@ -736,6 +853,7 @@ export default function FinanceiroPage() {
           usuarios={usuarios}
           onFechar={() => setModal(null)}
           onSalvar={async (v, ehNova) => { const ok = await salvarVenda(v, ehNova); if (ok) setModal(null); }}
+          onCancelar={cancelarVenda}
         />
       )}
     </div>
@@ -779,13 +897,14 @@ function TabelaCorte({ linhas }: { linhas: { nome: string; vgv: number; receita:
 // ---------------------------------------------------------------------------
 // Modal Lançar / editar venda (passo 2 — oficialização)
 // ---------------------------------------------------------------------------
-function ModalVenda({ venda, cfg, vendas, usuarios, onFechar, onSalvar }: {
+function ModalVenda({ venda, cfg, vendas, usuarios, onFechar, onSalvar, onCancelar }: {
   venda: Venda | null;
   cfg: ConfigFinanceiro;
   vendas: Venda[];
   usuarios: UsuarioMin[];
   onFechar: () => void;
   onSalvar: (v: Venda, ehNova: boolean) => Promise<void>;
+  onCancelar?: (v: Venda) => Promise<void>;
 }) {
   const ehNova = !venda;
   const [f, setF] = useState<Venda>(() => venda ? { ...venda } : {
@@ -807,9 +926,9 @@ function ModalVenda({ venda, cfg, vendas, usuarios, onFechar, onSalvar }: {
   // preview do rateio EXATAMENTE como a oficialização vai gravar
   const preview = useMemo(() => {
     const liquido = vgvLiquidoDe(f.valorBruto, f.valorPermuta, f.parceriaPct, cfg.parceriaModo);
-    const tri = trimestreDe(f.dataVenda);
+    const tri = periodoDe(f.dataVenda, cfg);
     const acumuladoAntes = vendas
-      .filter((v) => v.id !== f.id && v.status === 'assinada' && v.corretorUid === f.corretorUid && trimestreDe(v.dataVenda) === tri)
+      .filter((v) => v.id !== f.id && v.status === 'assinada' && v.corretorUid === f.corretorUid && periodoDe(v.dataVenda, cfg) === tri)
       .filter((v) => v.dataVenda < f.dataVenda || (v.dataVenda === f.dataVenda && String(v.id) < String(f.id || '￿')))
       .reduce((s, v) => s + (v.vgvLiquido ?? vgvLiquidoDe(v.valorBruto, v.valorPermuta, v.parceriaPct, cfg.parceriaModo)), 0);
     const r = calcularRateio({
@@ -1031,15 +1150,17 @@ function ModalVenda({ venda, cfg, vendas, usuarios, onFechar, onSalvar }: {
 
           <div className="flex flex-wrap items-center justify-between gap-2 pt-4 mt-4 border-t border-white/10">
             <div className="flex gap-2">
-              {f.status !== 'distratada' && !ehNova && (
-                <button disabled={salvando} onClick={() => {
-                  const motivo = (window.prompt('Motivo do distrato:') || '').trim();
-                  if (!motivo) return;
-                  // motivo vai por argumento — setState é assíncrono e o closure
-                  // de `salvar` leria o `f` velho (motivo se perderia)
-                  void salvar('distratada', { motivoDistrato: motivo });
+              {!ehNova && onCancelar && (
+                <button disabled={salvando} onClick={async () => {
+                  const jaPago = (f.rateio || []).some((b) => b.papel !== 'casa' && b.pago);
+                  const aviso = jaPago
+                    ? `A venda de ${f.leadNome || 'cliente'} JÁ TEVE PAGAMENTO. Cancelar registra o estorno do que foi pago e tira a venda das contas. Confirma?`
+                    : `Cancelar a venda de ${f.leadNome || 'cliente'}? Ela sai do DRE, da meta e da comissão do corretor.`;
+                  if (!window.confirm(aviso)) return;
+                  setSalvando(true);
+                  try { await onCancelar(f); } finally { setSalvando(false); }
                 }} className="px-3 py-2 rounded-xl text-[12px] font-bold border border-rose-500/40 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 transition-colors">
-                  Distratar (estorna tudo)
+                  🗑 Cancelar venda
                 </button>
               )}
             </div>
@@ -1127,8 +1248,13 @@ function ConfigTab({ cfg, meta, isDemo, onSalvar, onSalvarMeta }: {
       <Secao titulo="Parâmetros do rateio" sub="Da consultoria de 28/07 — os campos em âmbar precisam de confirmação da Nox"
         acao={<button className={btnOuro} onClick={() => onSalvar(c)}>Salvar parâmetros</button>}>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {num('Alíquota imposto (%)', 'aliquotaImpostoPct', PENDENCIAS_CONFIG[0].aviso)}
-          {num('Taxa de lead (%)', 'taxaLeadPct', 'Só em venda vinda de lead — retida pela casa.')}
+          {num('Imposto na fonte (%)', 'aliquotaImpostoPct', PENDENCIAS_CONFIG[0].aviso)}
+          {num('Retenção propaganda (%)', 'taxaLeadPct', 'Só em venda vinda de lead — retida pela casa.')}
+          <div>
+            <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">Motivo da retenção</label>
+            <input value={c.taxaLeadLabel} onChange={(e) => setC({ ...c, taxaLeadLabel: e.target.value })} className={inputCls} />
+            <p className="text-[10px] text-text-secondary mt-0.5">Aparece nos relatórios do corretor.</p>
+          </div>
           {num('SDR originador — % do bloco do gerente', 'sdrSplitPct', PENDENCIAS_CONFIG[2].aviso, 1)}
           {num('Agenciador (pontos %)', 'agenciadorPontos', 'Saem da fatia do vendedor.', 1)}
           {num('Comissão lançamento (%)', 'percLancamento', undefined, 0.5)}
@@ -1196,15 +1322,43 @@ function ConfigTab({ cfg, meta, isDemo, onSalvar, onSalvarMeta }: {
             </tbody>
           </table>
         </div>
-        <div className="mt-2 flex flex-wrap items-center gap-3">
+        {/* atalho: meta por pessoa + degrau reancoram os limites (como o app antigo) */}
+        <div className="mt-3 pt-3 border-t border-white/[0.06] flex flex-wrap items-end gap-3">
+          <div>
+            <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">Meta por pessoa (R$)</label>
+            <div className="w-40"><MoneyInput value={c.metaPorPessoa} onChange={(n) => setC({ ...c, metaPorPessoa: n })} className={inputCls + ' pl-9 tabular-nums'} /></div>
+          </div>
+          <div>
+            <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">Faixa progressiva (R$)</label>
+            <div className="w-40"><MoneyInput value={c.faixaProgressiva} onChange={(n) => setC({ ...c, faixaProgressiva: n })} className={inputCls + ' pl-9 tabular-nums'} /></div>
+          </div>
+          <button className={btnGhost} onClick={() => setFaixas(limitesPorMetaEDegrau(tabelaAtual.faixas, c.metaPorPessoa, c.faixaProgressiva))}
+            title="Recalcula os limites das faixas a partir da meta e do degrau (mantém os percentuais)">
+            ↻ aplicar nos limites
+          </button>
           <button className={btnGhost} onClick={() => {
             const ultima = tabelaAtual.faixas[tabelaAtual.faixas.length - 1];
             const penultimo = tabelaAtual.faixas[tabelaAtual.faixas.length - 2];
-            const novoLimite = (penultimo?.ateVgv || 1_200_000) + 500_000;
+            const novoLimite = (penultimo?.ateVgv || c.metaPorPessoa) + c.faixaProgressiva;
             setFaixas([...tabelaAtual.faixas.slice(0, -1), { ...ultima, ateVgv: novoLimite }, { ...ultima, ateVgv: null }]);
           }}>+ degrau</button>
-          <p className="text-[10px] text-amber-300/90">{PENDENCIAS_CONFIG[1].aviso}</p>
         </div>
+        <p className="mt-2 text-[10px] text-amber-300/90">{PENDENCIAS_CONFIG[1].aviso}</p>
+        {/* período de apuração — o trimestre da Nox não é civil (06/07 → 05/10) */}
+        <div className="mt-3 pt-3 border-t border-white/[0.06] flex flex-wrap items-end gap-3">
+          <div>
+            <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">Trimestre começa em</label>
+            <input type="date" value={c.periodoInicio} onChange={(e) => setC({ ...c, periodoInicio: e.target.value })} className={inputCls + ' [color-scheme:dark]'} />
+          </div>
+          <div>
+            <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">e termina em</label>
+            <input type="date" value={c.periodoFim} onChange={(e) => setC({ ...c, periodoFim: e.target.value })} className={inputCls + ' [color-scheme:dark]'} />
+          </div>
+          <p className="text-[10px] text-text-secondary flex-1 min-w-[200px]">
+            O acumulado da progressão zera aqui. O de vocês <b className="text-white/80">não é trimestre civil</b> — a régua anda de 3 em 3 meses a partir desta data.
+          </p>
+        </div>
+
         <div className="mt-3 pt-3 border-t border-white/[0.06] flex flex-wrap items-center gap-2">
           <span className="text-[11px] text-text-secondary">Nova vigência (ex.: próximo trimestre — "tudo pode ser mudado"):</span>
           <input type="date" value={novaVigencia} onChange={(e) => setNovaVigencia(e.target.value)} className={inputCls + ' w-auto [color-scheme:dark]'} />

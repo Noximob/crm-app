@@ -16,7 +16,7 @@ import { useAuth } from '@/context/AuthContext';
 import LoadingState from '@/components/ui/LoadingState';
 import {
   normalizarConfig, type ConfigFinanceiro, type Venda,
-  tabelaVigente, trimestreDe, labelTrimestre, hojeYMD, round2,
+  tabelaVigente, periodoDe, labelTrimestre, hojeYMD, round2,
   fmtBRL, fmtBRL2, fmtPctBR,
 } from '@/lib/financeiro';
 
@@ -67,7 +67,8 @@ export default function MinhasComissoesPage() {
   const [vendas, setVendas] = useState<Venda[]>([]);
   const [cfgDoc, setCfgDoc] = useState<Partial<ConfigFinanceiro> | null>(null);
   const [loading, setLoading] = useState(true);
-  const [triSel, setTriSel] = useState(trimestreDe(hojeYMD()));
+  // '' = período corrente (resolvido quando a config carrega)
+  const [triSel, setTriSel] = useState('');
 
   useEffect(() => {
     if (!uid) return;
@@ -87,15 +88,17 @@ export default function MinhasComissoesPage() {
   }, [uid, imobiliariaId, isEspelhoDemo]);
 
   const cfg: ConfigFinanceiro = useMemo(() => normalizarConfig(cfgDoc), [cfgDoc]);
+  const periodoAtual = useMemo(() => periodoDe(hojeYMD(), cfg), [cfg]);
+  const triAtivo = triSel || periodoAtual;
 
   const trimestres = useMemo(() => {
-    const s = new Set(vendas.map((v) => trimestreDe(v.dataVenda)).filter(Boolean));
-    s.add(trimestreDe(hojeYMD()));
+    const s = new Set(vendas.map((v) => periodoDe(v.dataVenda, cfg)).filter(Boolean));
+    s.add(periodoAtual);
     return Array.from(s).sort().reverse();
-  }, [vendas]);
+  }, [vendas, cfg, periodoAtual]);
 
   const resumo = useMemo(() => {
-    const doTri = vendas.filter((v) => trimestreDe(v.dataVenda) === triSel);
+    const doTri = vendas.filter((v) => periodoDe(v.dataVenda, cfg) === triAtivo);
     const assinadas = doTri.filter((v) => v.status === 'assinada');
     const pendentes = doTri.filter((v) => v.status === 'pendente_confirmacao');
     const minhaFatia = (v: Venda) => (v.rateio || []).find((b) => b.papel === 'corretor');
@@ -120,7 +123,7 @@ export default function MinhasComissoesPage() {
       }
     }
     return { doTri, assinadas, pendentes, vgvTri, ajustes, totalTri, jaPago, aReceber, notasPendentes, faixaAtual, proxima, minhaFatia };
-  }, [vendas, triSel, cfg]);
+  }, [vendas, triAtivo, cfg]);
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-16 pt-6 space-y-4">
@@ -132,7 +135,7 @@ export default function MinhasComissoesPage() {
             {isEspelhoDemo && <span className="text-amber-300 font-bold"> · modo demonstração</span>}
           </p>
         </div>
-        <select value={triSel} onChange={(e) => setTriSel(e.target.value)}
+        <select value={triAtivo} onChange={(e) => setTriSel(e.target.value)}
           className="px-3 py-2 rounded-xl border border-white/10 bg-white/[0.04] text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-[#E8C547]/40">
           {trimestres.map((t) => <option key={t} value={t}>{labelTrimestre(t)}</option>)}
         </select>
@@ -178,7 +181,7 @@ export default function MinhasComissoesPage() {
           {/* vendas do trimestre */}
           <section className="al-card relative overflow-hidden p-4 sm:p-5">
             <div className="absolute inset-x-0 top-0 gx-line" />
-            <h2 className="al-display text-[14px] font-bold text-white uppercase tracking-[0.1em] mb-3">Suas vendas · {labelTrimestre(triSel)}</h2>
+            <h2 className="al-display text-[14px] font-bold text-white uppercase tracking-[0.1em] mb-3">Suas vendas · {labelTrimestre(triAtivo)}</h2>
             {resumo.doTri.length === 0 ? (
               <p className="text-[12.5px] text-text-secondary py-6 text-center">
                 Nenhuma venda neste trimestre ainda. Quando você fechar um cliente no atendimento (botão FECHOU! 🎉), ela aparece aqui após a confirmação do admin.

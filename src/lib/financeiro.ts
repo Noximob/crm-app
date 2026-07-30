@@ -52,10 +52,19 @@ export interface TabelaVigencia { id: string; inicio: string; faixas: FaixaComis
 export interface CategoriaCusto { nome: string; metaMensal: number }
 
 export interface ConfigFinanceiro {
-  /** Simples Nacional — ~9,1%; varia com faturamento acumulado 12m. CONFIRMAR com o contador. */
+  /** Simples Nacional. O app de Comissões rodava 10% — confirmar com o contador. */
   aliquotaImpostoPct: number;
-  /** Retenção da casa quando a venda veio de lead (custeia a geração de leads). */
+  /** Retenção da casa na venda de lead/propaganda (custeia a geração de leads). */
   taxaLeadPct: number;
+  /** Nome da retenção nos relatórios (o app antigo chamava "Propaganda"). */
+  taxaLeadLabel: string;
+  /** Meta de VGV por pessoa no trimestre — define o teto da 1ª faixa. */
+  metaPorPessoa: number;
+  /** Tamanho de cada degrau seguinte (R$ de VGV). */
+  faixaProgressiva: number;
+  /** Trimestre corrente (o da Nox NÃO é civil: 06/07 → 05/10). */
+  periodoInicio: string;
+  periodoFim: string;
   /** % do BLOCO do gerente que vai pro SDR quando ele ORIGINOU a reunião ("meia-meia"). CONFIRMAR. */
   sdrSplitPct: number;
   /** Pontos percentuais que saem da fatia do corretor vendedor quando o imóvel foi agenciado por outro. */
@@ -74,10 +83,22 @@ export interface ConfigFinanceiro {
   atualizadoPor?: string;
 }
 
-/** Defaults: a política que RODAVA no app de Comissões + ambiguidades marcadas. */
+/**
+ * Defaults = a POLÍTICA REAL que rodava no app de Comissões (lida do doc
+ * `nox/state` do projeto comissoes-nox em 28/07/2026), não valores inventados:
+ *   imposto 10% · retenção "Propaganda" 10% · meta 1,2mi + degrau 500k
+ *   corretor 50/55/60 (override 15/17/19) · SDR 32,5/36/39,5 (override IGUAL —
+ *   é o "meia-meia" que a consultoria citou) · gerente e autônomo 60/65/70
+ *   trimestre 06/07 → 05/10 (NÃO é civil)
+ */
 export const CONFIG_FINANCEIRO_DEFAULT: ConfigFinanceiro = {
-  aliquotaImpostoPct: 9.1,
+  aliquotaImpostoPct: 10,
   taxaLeadPct: 10,
+  taxaLeadLabel: 'Propaganda',
+  metaPorPessoa: 1_200_000,
+  faixaProgressiva: 500_000,
+  periodoInicio: '2026-07-06',
+  periodoFim: '2026-10-05',
   sdrSplitPct: 50,
   agenciadorPontos: 10,
   parceriaModo: 'exclui',
@@ -86,11 +107,11 @@ export const CONFIG_FINANCEIRO_DEFAULT: ConfigFinanceiro = {
   percProntoCarteira: 5,
   tabelas: [{
     id: 'inicial',
-    inicio: '2026-07-01', // teste do trimestre de julho (01:21:25)
+    inicio: '2026-07-06',
     faixas: [
-      { ateVgv: 1_200_000, corretor: 50, corretorOv: 15, sdr: 40, sdrOv: 20, gerenteProprio: 60, autonomo: 60 },
-      { ateVgv: 1_700_000, corretor: 55, corretorOv: 17, sdr: 45, sdrOv: 22, gerenteProprio: 65, autonomo: 65 },
-      { ateVgv: null, corretor: 60, corretorOv: 19, sdr: 50, sdrOv: 24, gerenteProprio: 70, autonomo: 70 },
+      { ateVgv: 1_200_000, corretor: 50, corretorOv: 15, sdr: 32.5, sdrOv: 32.5, gerenteProprio: 60, autonomo: 60 },
+      { ateVgv: 1_700_000, corretor: 55, corretorOv: 17, sdr: 36, sdrOv: 36, gerenteProprio: 65, autonomo: 65 },
+      { ateVgv: null, corretor: 60, corretorOv: 19, sdr: 39.5, sdrOv: 39.5, gerenteProprio: 70, autonomo: 70 },
     ],
   }],
   custoCategorias: [
@@ -105,9 +126,9 @@ export const CONFIG_FINANCEIRO_DEFAULT: ConfigFinanceiro = {
 
 /** O que ainda precisa de confirmação da Nox (item 1.5 do briefing) — mostrado na tela de config. */
 export const PENDENCIAS_CONFIG: { campo: keyof ConfigFinanceiro | string; aviso: string }[] = [
-  { campo: 'aliquotaImpostoPct', aviso: 'Confirmar alíquota efetiva do Simples com o contador (varia com o faturamento 12m; a gravação oscilou entre ~9 e 10%).' },
-  { campo: 'corretorOv', aviso: 'Override do gerente: o sócio falou "15–22%" mas o app rodava 15/17/19 (anotação do consultor). Defaults seguem o app — confirmar a escala.' },
-  { campo: 'sdrSplitPct', aviso: 'SDR que ORIGINOU a reunião racha o bloco do gerente ("meia-meia"). Sem gerente na venda, o valor fica com a casa — confirmar.' },
+  { campo: 'aliquotaImpostoPct', aviso: 'O app de Comissões rodava 10%; a consultoria falou ~9,1% (Simples varia com o faturamento 12m). Confirmar com o contador.' },
+  { campo: 'corretorOv', aviso: 'Override do gerente: o sócio falou "15–22%" mas a política em uso é 15/17/19. Confirmar a escala.' },
+  { campo: 'sdrSplitPct', aviso: 'SDR que ORIGINOU a reunião racha o bloco do gerente. Sem gerente na venda, o valor fica com a casa — confirmar.' },
   { campo: 'parceriaModo', aviso: 'Parceria: exclui do VGV ou conta parcial? A fala foi ambígua — hoje o ajuste é manual.' },
 ];
 
@@ -144,6 +165,11 @@ export function normalizarConfig(parcial: Partial<ConfigFinanceiro> | null | und
   return {
     aliquotaImpostoPct: d.aliquotaImpostoPct ?? base.aliquotaImpostoPct,
     taxaLeadPct: d.taxaLeadPct ?? base.taxaLeadPct,
+    taxaLeadLabel: d.taxaLeadLabel ?? base.taxaLeadLabel,
+    metaPorPessoa: d.metaPorPessoa ?? base.metaPorPessoa,
+    faixaProgressiva: d.faixaProgressiva ?? base.faixaProgressiva,
+    periodoInicio: d.periodoInicio ?? base.periodoInicio,
+    periodoFim: d.periodoFim ?? base.periodoFim,
     sdrSplitPct: d.sdrSplitPct ?? base.sdrSplitPct,
     agenciadorPontos: d.agenciadorPontos ?? base.agenciadorPontos,
     parceriaModo: d.parceriaModo ?? base.parceriaModo,
@@ -231,16 +257,53 @@ export const hojeYMD = (): string => {
 /** 'YYYY-MM' da competência. */
 export const mesDe = (ymd: string): string => (ymd || '').slice(0, 7);
 
-/** Trimestre CIVIL da data — o acumulador da progressão zera na virada (01:17:42). */
+/** Trimestre CIVIL da data — usado quando não há período configurado. */
 export const trimestreDe = (ymd: string): string => {
   const [a, m] = (ymd || '').split('-').map(Number);
   if (!a || !m) return '';
   return `${a}-T${Math.ceil(m / 3)}`;
 };
 
+const diaMs = (ymd: string) => Date.parse(`${ymd}T00:00:00`);
+const somaMeses = (ymd: string, n: number) => {
+  const [a, m, d] = ymd.split('-').map(Number);
+  const x = new Date(a, (m - 1) + n, d);
+  return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+};
+
+/**
+ * Período de apuração da data — o "trimestre" que zera o acumulador.
+ * O trimestre da Nox NÃO é civil (roda 06/07 → 05/10), então quando há
+ * `periodoInicio` configurado a régua são janelas de 3 meses ancoradas nele
+ * (pra frente e pra trás). Sem config, cai no trimestre civil.
+ */
+export function periodoDe(ymd: string, cfg?: Pick<ConfigFinanceiro, 'periodoInicio'>): string {
+  const ancora = cfg?.periodoInicio;
+  if (!ancora || !ymd) return trimestreDe(ymd);
+  const alvo = diaMs(ymd);
+  if (Number.isNaN(alvo)) return trimestreDe(ymd);
+  // caminha de 3 em 3 meses até a janela que contém a data
+  let ini = ancora;
+  let guarda = 0;
+  while (diaMs(ini) > alvo && guarda++ < 200) ini = somaMeses(ini, -3);
+  guarda = 0;
+  while (diaMs(somaMeses(ini, 3)) <= alvo && guarda++ < 200) ini = somaMeses(ini, 3);
+  return ini; // o id do período é a data de início (YYYY-MM-DD)
+}
+
+/** Fim do período (dia anterior ao início do próximo). */
+export const fimDoPeriodo = (inicioYMD: string): string => {
+  const prox = somaMeses(inicioYMD, 3);
+  const d = new Date(diaMs(prox) - 86_400_000);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+const brDia = (ymd: string) => ymd.split('-').reverse().join('/');
+
 export const labelTrimestre = (tri: string): string => {
-  const [a, t] = tri.split('-T');
-  return `${t}º tri ${a}`;
+  if (/^\d{4}-T\d$/.test(tri)) { const [a, t] = tri.split('-T'); return `${t}º tri ${a}`; }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(tri)) return `${brDia(tri)} a ${brDia(fimDoPeriodo(tri))}`;
+  return tri;
 };
 
 export const round2 = (n: number): number => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -280,6 +343,18 @@ export function tabelaVigente(cfg: ConfigFinanceiro, dataVenda: string): FaixaCo
 // ---------------------------------------------------------------------------
 // Faixas marginais (modelo IR): a progressão incide SÓ sobre o excedente
 // ---------------------------------------------------------------------------
+
+/**
+ * Reancora os limites das faixas a partir de "meta por pessoa" + "degrau"
+ * (como o app antigo derivava: 1ª faixa até a meta, depois +degrau por faixa).
+ * Preserva os percentuais já digitados na matriz.
+ */
+export function limitesPorMetaEDegrau(faixas: FaixaComissao[], meta: number, degrau: number): FaixaComissao[] {
+  return faixas.map((f, i) => ({
+    ...f,
+    ateVgv: i === faixas.length - 1 ? null : meta + degrau * i,
+  }));
+}
 
 /** Coluna da matriz que remunera o VENDEDOR, pelo papel dele. */
 export const pctVendedorDaFaixa = (f: FaixaComissao, papel: PapelVendedor): number =>
@@ -457,6 +532,7 @@ function corretorEfetivo(v: Venda): number {
  * foi pago, também idempotente.
  */
 export function recalcularTrimestre(vendasDoCorretor: Venda[], cfg: ConfigFinanceiro): ResultadoCascata[] {
+  // (quem chama já agrupou por corretor + período — ver periodoDe)
   const assinadas = vendasDoCorretor
     .filter((v) => v.status === 'assinada')
     .sort((a, b) => (a.dataVenda === b.dataVenda ? String(a.id).localeCompare(String(b.id)) : a.dataVenda < b.dataVenda ? -1 : 1));
