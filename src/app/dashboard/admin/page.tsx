@@ -33,8 +33,7 @@ const adminCategories = [
     color: 'from-[#E8C547]/25 to-[#E8C547]/[0.03] border-[#E8C547]/40',
     items: [
       { title: 'Meets & Visitas', icon: '🔥', description: 'Placar automático da semana — contador e data, com prova por corretor', href: '/dashboard/admin/meets-visitas' },
-      { title: 'Financeiro', icon: '📈', description: 'Margem real por venda, DRE mensal, progressão dos corretores e meta de VGV', href: '/dashboard/admin/financeiro' },
-      { title: 'Comissões', icon: '💵', description: 'Imposto, política de comissão e lançamento oficial das vendas (legado)', href: '/dashboard/admin/comissoes' },
+      { title: 'Financeiro', icon: '📈', description: 'Margem por venda, DRE, contas do mês, comissões dos corretores e meta de VGV', href: '/dashboard/admin/financeiro' },
       { title: 'Relatórios', icon: '🚧', description: 'Em construção — serão refeitos do zero', href: '/dashboard/admin/relatorios' },
     ]
   },

@@ -12,8 +12,8 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    # SAMEORIGIN (e não DENY) para o CRM poder embutir /comissoes do mesmo domínio.
-    # Continua bloqueando qualquer site externo de enquadrar o app (anti-clickjacking).
+    # Anti-clickjacking (o embed /comissoes que exigia SAMEORIGIN foi aposentado —
+    # mantido SAMEORIGIN por compatibilidade, sem efeito prático hoje).
     X-Frame-Options = "SAMEORIGIN"
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
