@@ -25,7 +25,7 @@ import LoadingState from '@/components/ui/LoadingState';
 import { showToast } from '@/components/ui/toast';
 import MoneyInput from '@/components/MoneyInput';
 import {
-  CONFIG_FINANCEIRO_DEFAULT, PENDENCIAS_CONFIG, type ConfigFinanceiro, type Venda,
+  CONFIG_FINANCEIRO_DEFAULT, PENDENCIAS_CONFIG, normalizarConfig, type ConfigFinanceiro, type Venda, type PapelVendedor,
   type Beneficiario, type StatusNota, type FaixaComissao, type OrigemVenda, type TipoProduto,
   calcularRateio, montarBeneficiarios, recalcularTrimestre, tabelaVigente, vgvLiquidoDe,
   percComissaoPadrao, trimestreDe, labelTrimestre, mesDe, hojeYMD, round2,
@@ -195,12 +195,8 @@ export default function FinanceiroPage() {
     return () => { u1(); u2(); u3(); u4(); };
   }, [imobiliariaId, isEspelhoDemo]);
 
-  const cfg: ConfigFinanceiro = useMemo(() => ({
-    ...CONFIG_FINANCEIRO_DEFAULT,
-    ...(cfgDoc || {}),
-    tabelas: cfgDoc?.tabelas?.length ? cfgDoc.tabelas : CONFIG_FINANCEIRO_DEFAULT.tabelas,
-    custoCategorias: cfgDoc?.custoCategorias?.length ? cfgDoc.custoCategorias : CONFIG_FINANCEIRO_DEFAULT.custoCategorias,
-  }), [cfgDoc]);
+  // normaliza QUALQUER formato salvo (inclusive o antigo, de faixa única `pct`)
+  const cfg: ConfigFinanceiro = useMemo(() => normalizarConfig(cfgDoc), [cfgDoc]);
 
   const nomeDe = useMemo(() => new Map(usuarios.map((u) => [u.id, u.nome] as const)), [usuarios]);
 
@@ -360,14 +356,14 @@ export default function FinanceiroPage() {
       const retencoes = round2(lista.reduce((s, v) => s + (v.imposto || 0) + (v.retencaoLead || 0), 0));
       const notasPend = lista.reduce((s, v) => s + (v.rateio || []).filter((b) => b.papel !== 'casa' && b.statusNota === 'pendente').length, 0);
       const faixas = tabelaVigente(cfg, lista[lista.length - 1]?.dataVenda || hojeYMD());
-      // faixa em que o PRÓXIMO real vai cair + quanto falta pro degrau seguinte
-      let faixaAtual = faixas[faixas.length - 1].pct;
+      // faixa em que o PRÓXIMO real vai cair + quanto falta (coluna do corretor)
+      let faixaAtual = faixas[faixas.length - 1].corretor;
       let proxima: { falta: number; pct: number } | null = null;
       for (let i = 0; i < faixas.length; i++) {
         const limite = faixas[i].ateVgv;
         if (limite === null || vgvTri < limite) {
-          faixaAtual = faixas[i].pct;
-          if (limite !== null) proxima = { falta: round2(limite - vgvTri), pct: faixas[i + 1]?.pct ?? faixas[i].pct };
+          faixaAtual = faixas[i].corretor;
+          if (limite !== null) proxima = { falta: round2(limite - vgvTri), pct: faixas[i + 1]?.corretor ?? faixas[i].corretor };
           break;
         }
       }
@@ -819,6 +815,7 @@ function ModalVenda({ venda, cfg, vendas, usuarios, onFechar, onSalvar }: {
     const r = calcularRateio({
       cfg, faixas: tabelaVigente(cfg, f.dataVenda), vgvLiquido: liquido, percComissao: perc,
       origemLead: f.origem === 'lead', acumuladoTrimestreAntes: acumuladoAntes,
+      papelVendedor: f.papelVendedor || 'corretor',
       temGerente: !!f.gerenteUid, temSdr: !!f.sdrUid, temAgenciador: !!f.agenciadorUid,
     });
     return { liquido, r };
@@ -865,6 +862,7 @@ function ModalVenda({ venda, cfg, vendas, usuarios, onFechar, onSalvar }: {
       const baseMudou = venda.valorBruto !== f.valorBruto || venda.valorPermuta !== f.valorPermuta
         || venda.parceriaPct !== f.parceriaPct || venda.percComissao !== perc
         || venda.dataVenda !== f.dataVenda || venda.origem !== f.origem
+        || (venda.papelVendedor || 'corretor') !== (f.papelVendedor || 'corretor')
         || venda.corretorUid !== f.corretorUid || venda.gerenteUid !== f.gerenteUid
         || venda.sdrUid !== f.sdrUid || venda.agenciadorUid !== f.agenciadorUid;
       if (baseMudou) {
@@ -902,7 +900,7 @@ function ModalVenda({ venda, cfg, vendas, usuarios, onFechar, onSalvar }: {
               <input value={f.leadNome || ''} onChange={(e) => set({ leadNome: e.target.value })} placeholder="Nome do cliente" className={inputCls} />
             </div>
             <div>
-              <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">Corretor (vendedor)</label>
+              <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">Vendedor</label>
               <select value={f.corretorUid} onChange={(e) => {
                 const u = usuarios.find((x) => x.id === e.target.value);
                 set({ corretorUid: u?.id || '', corretorNome: u?.nome || '' });
@@ -910,6 +908,20 @@ function ModalVenda({ venda, cfg, vendas, usuarios, onFechar, onSalvar }: {
                 <option value="">— escolher —</option>
                 {usuarios.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
               </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">Papel do vendedor</label>
+              <select value={f.papelVendedor || 'corretor'} onChange={(e) => set({ papelVendedor: e.target.value as PapelVendedor })} className={inputCls}>
+                <option value="corretor">Corretor de equipe</option>
+                <option value="sdr">SDR (vendeu ele mesmo)</option>
+                <option value="gerente">Gerente (venda própria)</option>
+                <option value="autonomo">Autônomo (sem equipe)</option>
+              </select>
+              <p className="text-[10px] text-text-secondary mt-0.5">
+                {f.papelVendedor === 'gerente' || f.papelVendedor === 'autonomo'
+                  ? 'faixa própria, sem override de gerente'
+                  : 'define a coluna da matriz de comissão'}
+              </p>
             </div>
             <div>
               <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">Data da assinatura</label>
@@ -953,9 +965,13 @@ function ModalVenda({ venda, cfg, vendas, usuarios, onFechar, onSalvar }: {
               <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">Construtora</label>
               <input value={f.construtora || ''} onChange={(e) => set({ construtora: e.target.value })} placeholder="Ex: SANTER" className={inputCls} />
             </div>
-            {selUsuario('Gerente', 'gerenteUid', 'gerenteNome', `${fmtPctBR(cfg.gerentePct, 0)} da base`)}
-            {selUsuario('SDR (originou a reunião)', 'sdrUid', 'sdrNome', `racha ${fmtPctBR(cfg.sdrSplitPct, 0)} do bloco do gerente`)}
-            {selUsuario('Agenciador (agenciou o imóvel)', 'agenciadorUid', 'agenciadorNome', `${cfg.agenciadorPontos} p.p. saem da fatia do corretor`)}
+            {(f.papelVendedor || 'corretor') === 'corretor' || f.papelVendedor === 'sdr' ? (
+              <>
+                {selUsuario('Gerente (recebe o override)', 'gerenteUid', 'gerenteNome', 'override pela faixa da venda (matriz na Configuração)')}
+                {selUsuario('SDR (originou a reunião)', 'sdrUid', 'sdrNome', `racha ${fmtPctBR(cfg.sdrSplitPct, 0)} do bloco do gerente`)}
+              </>
+            ) : null}
+            {selUsuario('Agenciador (agenciou o imóvel)', 'agenciadorUid', 'agenciadorNome', `${cfg.agenciadorPontos} p.p. saem da fatia do vendedor`)}
           </div>
 
           {/* preview do rateio */}
@@ -967,7 +983,7 @@ function ModalVenda({ venda, cfg, vendas, usuarios, onFechar, onSalvar }: {
               <Metric label={`− Imposto (${fmtPctBR(cfg.aliquotaImpostoPct)})`} valor={fmtBRL2(preview.r.imposto)} />
               <Metric label={f.origem === 'lead' ? `− Lead (${fmtPctBR(cfg.taxaLeadPct, 0)})` : '− Lead'} valor={f.origem === 'lead' ? fmtBRL2(preview.r.retencaoLead) : '—'} />
               <Metric label="= Base de rateio" valor={fmtBRL2(preview.r.baseRateio)} tom="text-white" />
-              <Metric label={`Corretor (${fmtPctBR(preview.r.corretorPctMedio)})`} valor={fmtBRL2(preview.r.corretorValor)} />
+              <Metric label={`Vendedor (${fmtPctBR(preview.r.corretorPctMedio)})`} valor={fmtBRL2(preview.r.corretorValor)} />
               <Metric label="Gerente / SDR / Agenc." valor={fmtBRL2(preview.r.gerenteValor + preview.r.sdrValor + preview.r.agenciadorValor)} />
               <Metric label={`Casa (margem ${fmtPctBR(preview.r.margemCasaPct)})`} valor={fmtBRL2(preview.r.casaValor)} tom={preview.r.casaValor >= 0 ? 'text-emerald-300' : 'text-rose-300'} />
             </div>
@@ -1113,9 +1129,8 @@ function ConfigTab({ cfg, meta, isDemo, onSalvar, onSalvarMeta }: {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {num('Alíquota imposto (%)', 'aliquotaImpostoPct', PENDENCIAS_CONFIG[0].aviso)}
           {num('Taxa de lead (%)', 'taxaLeadPct', 'Só em venda vinda de lead — retida pela casa.')}
-          {num('Gerente (%)', 'gerentePct', PENDENCIAS_CONFIG[1].aviso)}
-          {num('SDR — % do bloco do gerente', 'sdrSplitPct', PENDENCIAS_CONFIG[2].aviso, 1)}
-          {num('Agenciador (pontos %)', 'agenciadorPontos', 'Saem da fatia do corretor vendedor.', 1)}
+          {num('SDR originador — % do bloco do gerente', 'sdrSplitPct', PENDENCIAS_CONFIG[2].aviso, 1)}
+          {num('Agenciador (pontos %)', 'agenciadorPontos', 'Saem da fatia do vendedor.', 1)}
           {num('Comissão lançamento (%)', 'percLancamento', undefined, 0.5)}
           {num('Comissão pronto (%)', 'percPronto', undefined, 0.5)}
           {num('Pronto p/ carteira (%)', 'percProntoCarteira', undefined, 0.5)}
@@ -1130,35 +1145,65 @@ function ConfigTab({ cfg, meta, isDemo, onSalvar, onSalvarMeta }: {
         </div>
       </Secao>
 
-      <Secao titulo={`Faixas do corretor · vigência desde ${tabelaAtual.inicio.split('-').reverse().join('/')}`}
-        sub="Progressão MARGINAL por trimestre (só o excedente muda de faixa). Tabela nova NÃO recalcula vendas antigas."
-        acao={<button className={btnOuro} onClick={() => onSalvar(c)}>Salvar faixas</button>}>
-        <div className="space-y-2">
-          {tabelaAtual.faixas.map((fx, i) => (
-            <div key={i} className="flex flex-wrap items-center gap-2 text-[12px]">
-              <span className="text-text-secondary w-14">Faixa {i + 1}</span>
-              {fx.ateVgv === null ? (
-                <span className="text-white/70">acima da última</span>
-              ) : (
-                <>
-                  <span className="text-text-secondary">até</span>
-                  <div className="w-40"><MoneyInput value={fx.ateVgv} onChange={(n) => { const fs = [...tabelaAtual.faixas]; fs[i] = { ...fx, ateVgv: n }; setFaixas(fs); }} className={inputCls + ' pl-9 tabular-nums'} /></div>
-                  <span className="text-text-secondary">de VGV no trimestre →</span>
-                </>
-              )}
-              <input type="number" step={1} value={fx.pct} onChange={(e) => { const fs = [...tabelaAtual.faixas]; fs[i] = { ...fx, pct: Number(e.target.value) || 0 }; setFaixas(fs); }} className={inputCls + ' w-20 tabular-nums'} />
-              <span className="text-text-secondary">%</span>
-              {fx.ateVgv !== null && tabelaAtual.faixas.length > 2 && (
-                <button onClick={() => setFaixas(tabelaAtual.faixas.filter((_, j) => j !== i))} className="text-text-secondary hover:text-rose-300">✕</button>
-              )}
-            </div>
-          ))}
+      <Secao titulo={`Política de comissão (% da base) · vigência desde ${tabelaAtual.inicio.split('-').reverse().join('/')}`}
+        sub="A matriz completa por papel × faixa (a mesma do Comissões). Progressão MARGINAL por trimestre — tabela nova NÃO recalcula vendas antigas."
+        acao={<button className={btnOuro} onClick={() => onSalvar(c)}>Salvar política</button>}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-[12px] border-collapse min-w-[540px]">
+            <thead>
+              <tr className="text-text-secondary">
+                <th className="text-left font-bold px-2 py-2">Papel</th>
+                {tabelaAtual.faixas.map((fx, i) => (
+                  <th key={i} className="px-2 py-2 font-bold text-center">
+                    {fx.ateVgv === null ? (
+                      <span className="text-white/80 whitespace-nowrap">acima disso</span>
+                    ) : (
+                      <div className="flex items-center justify-center gap-1 whitespace-nowrap">
+                        <span>até</span>
+                        <div className="w-32"><MoneyInput value={fx.ateVgv} onChange={(n) => { const fs = [...tabelaAtual.faixas]; fs[i] = { ...fx, ateVgv: n }; setFaixas(fs); }} className={inputCls + ' pl-9 tabular-nums !py-1 text-[11px]'} /></div>
+                        {tabelaAtual.faixas.length > 2 && (
+                          <button onClick={() => setFaixas(tabelaAtual.faixas.filter((_, j) => j !== i))} className="text-text-secondary hover:text-rose-300" title="Remover faixa">✕</button>
+                        )}
+                      </div>
+                    )}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {([
+                ['Corretor — comissão', 'corretor', false],
+                ['↳ override do gerente', 'corretorOv', true],
+                ['SDR — comissão (quando ELE vende)', 'sdr', false],
+                ['↳ override do gerente', 'sdrOv', true],
+                ['Gerente — venda própria', 'gerenteProprio', false],
+                ['Autônomo (sem equipe)', 'autonomo', false],
+              ] as const).map(([rotulo, campo, indent]) => (
+                <tr key={campo} className="border-t border-white/[0.06]">
+                  <td className={`px-2 py-1.5 whitespace-nowrap ${indent ? 'pl-6 text-text-secondary' : 'font-semibold text-white'}`}>{rotulo}</td>
+                  {tabelaAtual.faixas.map((fx, i) => (
+                    <td key={i} className="px-2 py-1.5 text-center">
+                      <div className="inline-flex items-center gap-1">
+                        <input type="number" step={1} min={0} max={100} value={fx[campo]}
+                          onChange={(e) => { const fs = [...tabelaAtual.faixas]; fs[i] = { ...fx, [campo]: Number(e.target.value) || 0 }; setFaixas(fs); }}
+                          className={inputCls + ' w-16 !py-1 text-center tabular-nums'} />
+                        <span className="text-text-secondary text-[10px]">%</span>
+                      </div>
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
           <button className={btnGhost} onClick={() => {
             const ultima = tabelaAtual.faixas[tabelaAtual.faixas.length - 1];
             const penultimo = tabelaAtual.faixas[tabelaAtual.faixas.length - 2];
             const novoLimite = (penultimo?.ateVgv || 1_200_000) + 500_000;
-            setFaixas([...tabelaAtual.faixas.slice(0, -1), { ateVgv: novoLimite, pct: ultima.pct }, { ateVgv: null, pct: ultima.pct + 5 }]);
+            setFaixas([...tabelaAtual.faixas.slice(0, -1), { ...ultima, ateVgv: novoLimite }, { ...ultima, ateVgv: null }]);
           }}>+ degrau</button>
+          <p className="text-[10px] text-amber-300/90">{PENDENCIAS_CONFIG[1].aviso}</p>
         </div>
         <div className="mt-3 pt-3 border-t border-white/[0.06] flex flex-wrap items-center gap-2">
           <span className="text-[11px] text-text-secondary">Nova vigência (ex.: próximo trimestre — "tudo pode ser mudado"):</span>

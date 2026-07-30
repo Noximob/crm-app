@@ -15,7 +15,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import LoadingState from '@/components/ui/LoadingState';
 import {
-  CONFIG_FINANCEIRO_DEFAULT, type ConfigFinanceiro, type Venda,
+  normalizarConfig, type ConfigFinanceiro, type Venda,
   tabelaVigente, trimestreDe, labelTrimestre, hojeYMD, round2,
   fmtBRL, fmtBRL2, fmtPctBR,
 } from '@/lib/financeiro';
@@ -86,12 +86,7 @@ export default function MinhasComissoesPage() {
     return () => { u1(); if (u2) u2(); };
   }, [uid, imobiliariaId, isEspelhoDemo]);
 
-  const cfg: ConfigFinanceiro = useMemo(() => ({
-    ...CONFIG_FINANCEIRO_DEFAULT,
-    ...(cfgDoc || {}),
-    tabelas: cfgDoc?.tabelas?.length ? cfgDoc.tabelas : CONFIG_FINANCEIRO_DEFAULT.tabelas,
-    custoCategorias: cfgDoc?.custoCategorias?.length ? cfgDoc.custoCategorias : CONFIG_FINANCEIRO_DEFAULT.custoCategorias,
-  }), [cfgDoc]);
+  const cfg: ConfigFinanceiro = useMemo(() => normalizarConfig(cfgDoc), [cfgDoc]);
 
   const trimestres = useMemo(() => {
     const s = new Set(vendas.map((v) => trimestreDe(v.dataVenda)).filter(Boolean));
@@ -112,15 +107,15 @@ export default function MinhasComissoesPage() {
     const aReceber = round2(totalTri - jaPago);
     const notasPendentes = assinadas.reduce((s, v) => { const b = minhaFatia(v); return s + (b && b.statusNota === 'pendente' ? 1 : 0); }, 0);
 
-    // faixa atual + quanto falta pro degrau (mesma régua do admin)
+    // faixa atual + quanto falta pro degrau (mesma régua do admin — coluna do corretor)
     const faixas = tabelaVigente(cfg, hojeYMD());
-    let faixaAtual = faixas[faixas.length - 1].pct;
+    let faixaAtual = faixas[faixas.length - 1].corretor;
     let proxima: { falta: number; pct: number } | null = null;
     for (let i = 0; i < faixas.length; i++) {
       const limite = faixas[i].ateVgv;
       if (limite === null || vgvTri < limite) {
-        faixaAtual = faixas[i].pct;
-        if (limite !== null) proxima = { falta: round2(limite - vgvTri), pct: faixas[i + 1]?.pct ?? faixas[i].pct };
+        faixaAtual = faixas[i].corretor;
+        if (limite !== null) proxima = { falta: round2(limite - vgvTri), pct: faixas[i + 1]?.corretor ?? faixas[i].corretor };
         break;
       }
     }

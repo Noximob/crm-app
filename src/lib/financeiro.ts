@@ -20,8 +20,31 @@
 // Tipos
 // ---------------------------------------------------------------------------
 
-/** Faixa da progressão do corretor: até `ateVgv` (acumulado no trimestre) paga `pct`%. `ateVgv: null` = daí em diante. */
-export interface FaixaComissao { ateVgv: number | null; pct: number }
+/**
+ * Faixa da progressão (até `ateVgv` de VGV acumulado no trimestre; null = daí
+ * em diante), com a POLÍTICA COMPLETA por papel — espelho da matriz que rodava
+ * no app de Comissões:
+ *   corretor 50/55/60 (override do gerente 15/17/19) · SDR 40/45/50 (override
+ *   20/22/24) · gerente venda própria 60/65/70 · autônomo 60/65/70 sem override.
+ */
+export interface FaixaComissao {
+  ateVgv: number | null;
+  /** % do corretor de equipe quando ELE vende */
+  corretor: number;
+  /** override do gerente sobre a venda do corretor */
+  corretorOv: number;
+  /** % do SDR quando ELE MESMO vende */
+  sdr: number;
+  /** override do gerente sobre a venda do SDR */
+  sdrOv: number;
+  /** % do gerente na venda PRÓPRIA (sem override — ele é o gerente) */
+  gerenteProprio: number;
+  /** % do corretor SEM equipe (autônomo) — sem gerente, sem override */
+  autonomo: number;
+}
+
+/** Quem vendeu — define a coluna da matriz que remunera o vendedor. */
+export type PapelVendedor = 'corretor' | 'sdr' | 'gerente' | 'autonomo';
 
 /** Tabela de comissão com vigência — trocar a tabela NÃO recalcula vendas antigas (usa a da época). */
 export interface TabelaVigencia { id: string; inicio: string; faixas: FaixaComissao[] }
@@ -33,9 +56,7 @@ export interface ConfigFinanceiro {
   aliquotaImpostoPct: number;
   /** Retenção da casa quando a venda veio de lead (custeia a geração de leads). */
   taxaLeadPct: number;
-  /** % do gerente sobre a base. Consultoria oscilou 15–22 — CONFIRMAR. */
-  gerentePct: number;
-  /** % do BLOCO do gerente que vai pro SDR quando ele originou a reunião ("meia-meia"). CONFIRMAR. */
+  /** % do BLOCO do gerente que vai pro SDR quando ele ORIGINOU a reunião ("meia-meia"). CONFIRMAR. */
   sdrSplitPct: number;
   /** Pontos percentuais que saem da fatia do corretor vendedor quando o imóvel foi agenciado por outro. */
   agenciadorPontos: number;
@@ -53,11 +74,10 @@ export interface ConfigFinanceiro {
   atualizadoPor?: string;
 }
 
-/** Defaults propostos pela consultoria — as 4 ambiguidades ficam marcadas pra confirmação. */
+/** Defaults: a política que RODAVA no app de Comissões + ambiguidades marcadas. */
 export const CONFIG_FINANCEIRO_DEFAULT: ConfigFinanceiro = {
   aliquotaImpostoPct: 9.1,
   taxaLeadPct: 10,
-  gerentePct: 15,
   sdrSplitPct: 50,
   agenciadorPontos: 10,
   parceriaModo: 'exclui',
@@ -68,9 +88,9 @@ export const CONFIG_FINANCEIRO_DEFAULT: ConfigFinanceiro = {
     id: 'inicial',
     inicio: '2026-07-01', // teste do trimestre de julho (01:21:25)
     faixas: [
-      { ateVgv: 1_200_000, pct: 50 },
-      { ateVgv: 1_700_000, pct: 55 },
-      { ateVgv: null, pct: 60 },
+      { ateVgv: 1_200_000, corretor: 50, corretorOv: 15, sdr: 40, sdrOv: 20, gerenteProprio: 60, autonomo: 60 },
+      { ateVgv: 1_700_000, corretor: 55, corretorOv: 17, sdr: 45, sdrOv: 22, gerenteProprio: 65, autonomo: 65 },
+      { ateVgv: null, corretor: 60, corretorOv: 19, sdr: 50, sdrOv: 24, gerenteProprio: 70, autonomo: 70 },
     ],
   }],
   custoCategorias: [
@@ -86,11 +106,56 @@ export const CONFIG_FINANCEIRO_DEFAULT: ConfigFinanceiro = {
 /** O que ainda precisa de confirmação da Nox (item 1.5 do briefing) — mostrado na tela de config. */
 export const PENDENCIAS_CONFIG: { campo: keyof ConfigFinanceiro | string; aviso: string }[] = [
   { campo: 'aliquotaImpostoPct', aviso: 'Confirmar alíquota efetiva do Simples com o contador (varia com o faturamento 12m; a gravação oscilou entre ~9 e 10%).' },
-  { campo: 'gerentePct', aviso: 'Teto do gerente ficou ambíguo na consultoria (15–22% vs 15–19%). Confirmar a escala.' },
-  { campo: 'sdrSplitPct', aviso: 'Split SDR/gerente ("meia-meia… uns 30%") não fecha com o teto do gerente. Confirmar o bloco.' },
+  { campo: 'corretorOv', aviso: 'Override do gerente: o sócio falou "15–22%" mas o app rodava 15/17/19 (anotação do consultor). Defaults seguem o app — confirmar a escala.' },
+  { campo: 'sdrSplitPct', aviso: 'SDR que ORIGINOU a reunião racha o bloco do gerente ("meia-meia"). Sem gerente na venda, o valor fica com a casa — confirmar.' },
   { campo: 'parceriaModo', aviso: 'Parceria: exclui do VGV ou conta parcial? A fala foi ambígua — hoje o ajuste é manual.' },
-  { campo: 'sdrSplitPct', aviso: 'Venda com SDR e SEM gerente: a consultoria não definiu quem paga o SDR — hoje o valor fica com a casa. Confirmar.' },
 ];
+
+/**
+ * Normaliza um doc de configFinanceiro em QUALQUER formato pro atual:
+ * - faixas antigas `{ateVgv, pct}` → `pct` vira a coluna do corretor;
+ * - `gerentePct` fixo antigo → vira o override do corretor em todas as faixas;
+ * - colunas ausentes (sdr/gerenteProprio/autonomo) → defaults da matriz do app.
+ */
+export function normalizarConfig(parcial: Partial<ConfigFinanceiro> | null | undefined): ConfigFinanceiro {
+  const base = CONFIG_FINANCEIRO_DEFAULT;
+  const d = (parcial || {}) as Partial<ConfigFinanceiro> & { gerentePct?: number };
+  const ovLegado = typeof d.gerentePct === 'number' ? d.gerentePct : undefined;
+
+  const normFaixa = (f: Partial<FaixaComissao> & { pct?: number }, i: number): FaixaComissao => {
+    const padrao = base.tabelas[0].faixas[Math.min(i, base.tabelas[0].faixas.length - 1)];
+    return {
+      ateVgv: f.ateVgv === null ? null : (typeof f.ateVgv === 'number' ? f.ateVgv : padrao.ateVgv),
+      corretor: f.corretor ?? f.pct ?? padrao.corretor,
+      corretorOv: f.corretorOv ?? ovLegado ?? padrao.corretorOv,
+      sdr: f.sdr ?? padrao.sdr,
+      sdrOv: f.sdrOv ?? ovLegado ?? padrao.sdrOv,
+      gerenteProprio: f.gerenteProprio ?? padrao.gerenteProprio,
+      autonomo: f.autonomo ?? padrao.autonomo,
+    };
+  };
+
+  const tabelas: TabelaVigencia[] = (d.tabelas?.length ? d.tabelas : base.tabelas).map((t, ti) => ({
+    id: t.id || `v${ti + 1}`,
+    inicio: t.inicio || base.tabelas[0].inicio,
+    faixas: (t.faixas?.length ? t.faixas : base.tabelas[0].faixas).map((f, i) => normFaixa(f as Partial<FaixaComissao> & { pct?: number }, i)),
+  }));
+
+  return {
+    aliquotaImpostoPct: d.aliquotaImpostoPct ?? base.aliquotaImpostoPct,
+    taxaLeadPct: d.taxaLeadPct ?? base.taxaLeadPct,
+    sdrSplitPct: d.sdrSplitPct ?? base.sdrSplitPct,
+    agenciadorPontos: d.agenciadorPontos ?? base.agenciadorPontos,
+    parceriaModo: d.parceriaModo ?? base.parceriaModo,
+    percLancamento: d.percLancamento ?? base.percLancamento,
+    percPronto: d.percPronto ?? base.percPronto,
+    percProntoCarteira: d.percProntoCarteira ?? base.percProntoCarteira,
+    tabelas,
+    custoCategorias: d.custoCategorias?.length ? d.custoCategorias : base.custoCategorias,
+    atualizadoEm: d.atualizadoEm,
+    atualizadoPor: d.atualizadoPor,
+  };
+}
 
 export type PapelRateio = 'corretor' | 'gerente' | 'sdr' | 'agenciador' | 'casa';
 export type StatusNota = 'pendente' | 'emitida' | 'dispensada';
@@ -121,6 +186,8 @@ export interface Venda {
   leadNome?: string;
   corretorUid: string;
   corretorNome?: string;
+  /** Papel de QUEM vendeu — define a coluna da matriz (default: corretor de equipe). */
+  papelVendedor?: PapelVendedor;
   gerenteUid?: string; gerenteNome?: string;
   sdrUid?: string; sdrNome?: string;
   agenciadorUid?: string; agenciadorNome?: string;
@@ -214,48 +281,50 @@ export function tabelaVigente(cfg: ConfigFinanceiro, dataVenda: string): FaixaCo
 // Faixas marginais (modelo IR): a progressão incide SÓ sobre o excedente
 // ---------------------------------------------------------------------------
 
+/** Coluna da matriz que remunera o VENDEDOR, pelo papel dele. */
+export const pctVendedorDaFaixa = (f: FaixaComissao, papel: PapelVendedor): number =>
+  papel === 'corretor' ? f.corretor : papel === 'sdr' ? f.sdr : papel === 'gerente' ? f.gerenteProprio : f.autonomo;
+
+/** Override do gerente pela faixa — só existe sobre venda de corretor ou de SDR. */
+export const pctOverrideDaFaixa = (f: FaixaComissao, papel: PapelVendedor): number =>
+  papel === 'corretor' ? f.corretorOv : papel === 'sdr' ? f.sdrOv : 0;
+
 export interface ResultadoFaixas {
-  /** frações da venda em cada faixa: [{pct da faixa, fração do VGV da venda}] */
-  partes: { pct: number; fracao: number }[];
-  /** % médio efetivo do corretor nesta venda */
-  pctMedio: number;
-  /** quanto falta de VGV pro próximo degrau (null = já está na última faixa) */
+  /** frações da venda em cada faixa (a faixa inteira — quem consome escolhe a coluna) */
+  partes: { faixa: FaixaComissao; fracao: number }[];
+  /** quanto falta de VGV pro próximo degrau (pct = coluna do corretor, pra exibição) */
   proximaFaixa: { falta: number; pct: number } | null;
 }
 
 export function faixasMarginais(faixas: FaixaComissao[], acumuladoAntes: number, vgvVenda: number): ResultadoFaixas {
-  const partes: { pct: number; fracao: number }[] = [];
-  if (vgvVenda <= 0 || !faixas.length) return { partes: [{ pct: faixas[0]?.pct || 0, fracao: 1 }], pctMedio: faixas[0]?.pct || 0, proximaFaixa: null };
+  const partes: { faixa: FaixaComissao; fracao: number }[] = [];
+  if (vgvVenda <= 0 || !faixas.length) return { partes: faixas.length ? [{ faixa: faixas[0], fracao: 1 }] : [], proximaFaixa: null };
 
-  let inicio = acumuladoAntes;
+  const inicio = acumuladoAntes;
   const fim = acumuladoAntes + vgvVenda;
   let limiteAnterior = 0;
   for (const f of faixas) {
     const limite = f.ateVgv === null ? Infinity : f.ateVgv;
     const de = Math.max(inicio, limiteAnterior);
     const ate = Math.min(fim, limite);
-    if (ate > de) partes.push({ pct: f.pct, fracao: (ate - de) / vgvVenda });
+    if (ate > de) partes.push({ faixa: f, fracao: (ate - de) / vgvVenda });
     limiteAnterior = limite;
     if (limite >= fim) break;
   }
   // acumulado além da última faixa com limite: cai na última (defensivo)
   const somaFracao = partes.reduce((s, p) => s + p.fracao, 0);
-  if (somaFracao < 0.9999) {
-    const ultima = faixas[faixas.length - 1];
-    partes.push({ pct: ultima.pct, fracao: 1 - somaFracao });
-  }
-  const pctMedio = partes.reduce((s, p) => s + p.pct * p.fracao, 0);
+  if (somaFracao < 0.9999) partes.push({ faixa: faixas[faixas.length - 1], fracao: 1 - somaFracao });
 
   // próximo degrau a partir do acumulado FINAL
   let proximaFaixa: ResultadoFaixas['proximaFaixa'] = null;
   for (let i = 0; i < faixas.length; i++) {
     const limite = faixas[i].ateVgv;
     if (limite !== null && fim < limite) {
-      proximaFaixa = { falta: round2(limite - fim), pct: faixas[i + 1]?.pct ?? faixas[i].pct };
+      proximaFaixa = { falta: round2(limite - fim), pct: faixas[i + 1]?.corretor ?? faixas[i].corretor };
       break;
     }
   }
-  return { partes, pctMedio, proximaFaixa };
+  return { partes, proximaFaixa };
 }
 
 // ---------------------------------------------------------------------------
@@ -268,9 +337,12 @@ export interface EntradaRateio {
   vgvLiquido: number;
   percComissao: number;
   origemLead: boolean;
-  /** VGV líquido já ASSINADO pelo corretor no trimestre ANTES desta venda. */
+  /** VGV líquido já ASSINADO pelo vendedor no trimestre ANTES desta venda. */
   acumuladoTrimestreAntes: number;
+  /** Papel de quem vendeu — define a coluna da matriz (corretor/sdr/gerente/autônomo). */
+  papelVendedor: PapelVendedor;
   temGerente: boolean;
+  /** SDR que ORIGINOU a reunião (racha o bloco do gerente) — não confundir com SDR vendedor. */
   temSdr: boolean;
   temAgenciador: boolean;
 }
@@ -291,6 +363,7 @@ export interface ResultadoRateio {
 }
 
 export function calcularRateio(e: EntradaRateio): ResultadoRateio {
+  const papel = e.papelVendedor || 'corretor';
   const comissaoBruta = round2(e.vgvLiquido * (e.percComissao / 100));
   // 1) imposto na fonte, sobre a comissão bruta
   const imposto = round2(comissaoBruta * (e.cfg.aliquotaImpostoPct / 100));
@@ -299,21 +372,24 @@ export function calcularRateio(e: EntradaRateio): ResultadoRateio {
   // 3) base de rateio
   const baseRateio = round2(comissaoBruta - imposto - retencaoLead);
 
-  // 4) corretor: faixas marginais sobre o VGV do trimestre, aplicadas proporcionalmente à base
+  // 4) VENDEDOR: coluna da matriz do papel dele, marginal sobre o VGV do
+  //    trimestre, aplicada proporcionalmente à base
   const fx = faixasMarginais(e.faixas, e.acumuladoTrimestreAntes, e.vgvLiquido);
   const descontoAgenciador = e.temAgenciador ? e.cfg.agenciadorPontos : 0;
   const corretorValor = round2(fx.partes.reduce(
-    (s, p) => s + baseRateio * p.fracao * (Math.max(0, p.pct - descontoAgenciador) / 100), 0
+    (s, p) => s + baseRateio * p.fracao * (Math.max(0, pctVendedorDaFaixa(p.faixa, papel) - descontoAgenciador) / 100), 0
   ));
+  const corretorPctMedio = fx.partes.reduce((s, p) => s + pctVendedorDaFaixa(p.faixa, papel) * p.fracao, 0);
   const agenciadorValor = e.temAgenciador ? round2(baseRateio * (e.cfg.agenciadorPontos / 100)) : 0;
 
-  // gerente (e SDR rachando o bloco do gerente quando originou a reunião).
-  // SDR SEM gerente: a consultoria não definiu quem paga — regra literal é
-  // "racha o bloco do gerente", e sem gerente não há bloco. O valor fica com
-  // a casa até a Nox decidir (pendência registrada na tela de config).
-  const blocoGerente = e.temGerente ? round2(baseRateio * (e.cfg.gerentePct / 100)) : 0;
-  const sdrValor = e.temGerente && e.temSdr ? round2(blocoGerente * (e.cfg.sdrSplitPct / 100)) : 0;
-  const gerenteValor = e.temGerente ? round2(blocoGerente - (e.temSdr ? sdrValor : 0)) : 0;
+  // OVERRIDE do gerente: só sobre venda de corretor/SDR de equipe, TAMBÉM pela
+  // faixa da venda (15/17/19 corretor · 20/22/24 SDR — a escala do app antigo).
+  // Gerente vendendo ou autônomo: sem override. SDR ORIGINADOR racha o bloco.
+  const blocoGerente = e.temGerente ? round2(fx.partes.reduce(
+    (s, p) => s + baseRateio * p.fracao * (pctOverrideDaFaixa(p.faixa, papel) / 100), 0
+  )) : 0;
+  const sdrValor = blocoGerente > 0 && e.temSdr ? round2(blocoGerente * (e.cfg.sdrSplitPct / 100)) : 0;
+  const gerenteValor = round2(blocoGerente - sdrValor);
 
   // 5) casa = o que sobra da base (a retenção de lead também fica com a casa, mas é linha própria)
   const casaValor = round2(baseRateio - corretorValor - gerenteValor - sdrValor - agenciadorValor);
@@ -321,7 +397,7 @@ export function calcularRateio(e: EntradaRateio): ResultadoRateio {
 
   return {
     comissaoBruta, imposto, retencaoLead, baseRateio,
-    corretorValor, corretorPctMedio: fx.pctMedio,
+    corretorValor, corretorPctMedio,
     gerenteValor, sdrValor, agenciadorValor, casaValor, margemCasaPct,
     proximaFaixa: fx.proximaFaixa,
   };
@@ -396,6 +472,7 @@ export function recalcularTrimestre(vendasDoCorretor: Venda[], cfg: ConfigFinanc
       percComissao: v.percComissao,
       origemLead: v.origem === 'lead',
       acumuladoTrimestreAntes: acumulado,
+      papelVendedor: v.papelVendedor || 'corretor',
       temGerente: !!v.gerenteUid,
       temSdr: !!v.sdrUid,
       temAgenciador: !!v.agenciadorUid,
