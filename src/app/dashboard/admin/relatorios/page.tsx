@@ -18,7 +18,9 @@ import {
   type Periodo, type LeadDistRow, type GastoCampanha,
   fmtPct, fmtPct1, fmtDias, fmtDiasInt, fmtNum, fmtSeg, fmtMoeda,
 } from './logic';
-import { computeGestao, gestaoDemo, corEsforco, type CorretorGestao, type EtapaFunil } from './gestao';
+import { computeGestao, gestaoDemo, dadosDemo, corEsforco, type CorretorGestao, type EtapaFunil } from './gestao';
+import { RelatorioSemanal } from './semana-view';
+import { RelatorioCampanha } from './campanha';
 
 const PERIODOS: { id: Periodo; label: string }[] = [
   { id: 'tudo', label: 'Tudo' }, { id: 'mes', label: 'Mês' }, { id: '30d', label: '30d' }, { id: '90d', label: '90d' },
@@ -618,16 +620,23 @@ export default function RelatoriosPage() {
   const { leads, corretores, ads, vendas, minutosExclusivo, loading, error } = useRelatorioData(imobiliariaId, ativo);
   const { mapa, loadingAtiv, progresso } = useAtividade(leads, ativo);
 
-  const [aba, setAba] = useState<'gestao' | 'propaganda'>('gestao');
+  const [aba, setAba] = useState<'semana' | 'gestao' | 'campanhas' | 'propaganda'>('semana');
   const [periodo, setPeriodo] = useState<Periodo>('tudo');
-  const { gastos, totalGasto, erroGasto, carregandoGasto } = useCustoCampanhas(ativo && aba === 'propaganda', periodo);
+  const { gastos, totalGasto, erroGasto, carregandoGasto } = useCustoCampanhas(ativo && (aba === 'propaganda' || aba === 'campanhas'), periodo);
   const dist = useMemo(() => computeRelatorioDist(ads, leads, corretores, mapa, periodo, minutosExclusivo), [ads, leads, corretores, mapa, periodo, minutosExclusivo]);
   const comAtividade = mapa.size > 0;
 
+  // no Espelho os relatórios rodam com dados sintéticos (a estrutura é a mesma)
+  const demo = useMemo(() => (isEspelhoDemo ? dadosDemo() : null), [isEspelhoDemo]);
+  const dLeads = demo ? demo.leads : leads;
+  const dCorretores = demo ? demo.corretores : corretores;
+  const dVendas = demo ? demo.vendas : vendas;
+  const dMapa = demo ? demo.atividade : mapa;
+
   // quem entra na gestão: corretores aprovados (fora o CRM do proprietário)
   const selecionados = useMemo(
-    () => new Set(corretores.filter((c) => c.aprovado !== false && (c.tipoConta || '').startsWith('corretor')).map((c) => c.id)),
-    [corretores]
+    () => (demo ? demo.selecionados : new Set(corretores.filter((c) => c.aprovado !== false && (c.tipoConta || '').startsWith('corretor')).map((c) => c.id))),
+    [demo, corretores]
   );
   const gestao = useMemo(
     () => (isEspelhoDemo ? gestaoDemo() : computeGestao(leads, corretores, vendas, mapa, selecionados)),
@@ -643,13 +652,15 @@ export default function RelatoriosPage() {
           <div>
             <h1 className="al-display text-[22px] font-bold text-white uppercase tracking-[0.1em]">Relatórios</h1>
             <p className="text-[12px] text-text-secondary mt-0.5">
-              {loading ? 'Carregando…' : aba === 'gestao'
-                ? `${gestao.corretores.length} corretores · ${gestao.totais.leads} leads na régua`
+              {loading && !isEspelhoDemo ? 'Carregando…'
+                : aba === 'semana' ? 'o dossiê da reunião com cada corretor — gere o PDF e leve pra conversa'
+                : aba === 'gestao' ? `${gestao.corretores.length} corretores · ${gestao.totais.leads} leads na régua`
+                : aba === 'campanhas' ? 'o resultado dos leads de cada campanha, pronto pra apresentar'
                 : `${dist.linhas.length} leads vindos da distribuição`}
               {loadingAtiv && ` · lendo atividade ${Math.round(progresso * 100)}%`}
             </p>
           </div>
-          {aba === 'propaganda' && (
+          {(aba === 'propaganda' || aba === 'campanhas') && (
             <div className="flex items-center gap-1 rounded-xl bg-white/[0.04] border border-white/10 p-1">
               {PERIODOS.map((p) => (
                 <button key={p.id} onClick={() => setPeriodo(p.id)} className={`px-3 py-1.5 rounded-lg text-[12px] font-bold transition-colors ${periodo === p.id ? 'bg-white/[0.10] text-white' : 'text-text-secondary hover:text-white'}`}>{p.label}</button>
@@ -657,8 +668,8 @@ export default function RelatoriosPage() {
             </div>
           )}
         </div>
-        <div className="flex rounded-xl border border-white/10 bg-white/[0.04] p-1 gap-1 self-start">
-          {([['gestao', '👥 Gestão de corretores'], ['propaganda', '🔥 Leads de propaganda']] as const).map(([id, label]) => (
+        <div className="flex flex-wrap rounded-xl border border-white/10 bg-white/[0.04] p-1 gap-1 self-start">
+          {([['semana', '🗓️ Semana a semana'], ['gestao', '👥 Gestão de corretores'], ['campanhas', '🎯 Campanhas'], ['propaganda', '🔥 Leads de propaganda']] as const).map(([id, label]) => (
             <button key={id} onClick={() => setAba(id)}
               className={`px-3.5 py-2 rounded-lg text-[12px] font-bold transition-all ${aba === id ? 'bg-gradient-to-r from-[#FF1E56] to-[#A50D38] text-white shadow-[0_0_16px_rgba(255,30,86,0.35)]' : 'text-text-secondary hover:text-white'}`}>{label}</button>
           ))}
@@ -674,10 +685,20 @@ export default function RelatoriosPage() {
       {error && !isEspelhoDemo && <div className="al-card p-4 text-rose-300 text-sm">Erro: {error}</div>}
       {loading && !isEspelhoDemo && <div className="al-card p-8 text-center text-text-secondary">Carregando dados…</div>}
 
+      {(!loading || isEspelhoDemo) && aba === 'semana' && (
+        <RelatorioSemanal leads={dLeads} corretores={dCorretores} vendas={dVendas}
+          atividade={dMapa} selecionados={selecionados} comAtividade={comAtividade || isEspelhoDemo} />
+      )}
+
       {(!loading || isEspelhoDemo) && aba === 'gestao' && <RelatorioGestao gestao={gestao} comAtividade={comAtividade || isEspelhoDemo} />}
 
-      {isEspelhoDemo && aba === 'propaganda' && (
-        <div className="al-card p-10 text-center"><p className="text-[40px] mb-2">📊</p><p className="text-sm text-text-secondary">O relatório de propaganda lê os anúncios reais da imobiliária — indisponível no modo demonstração.</p></div>
+      {isEspelhoDemo && (aba === 'propaganda' || aba === 'campanhas') && (
+        <div className="al-card p-10 text-center"><p className="text-[40px] mb-2">📊</p><p className="text-sm text-text-secondary">Este relatório lê os anúncios reais da imobiliária — indisponível no modo demonstração.</p></div>
+      )}
+
+      {!loading && !isEspelhoDemo && aba === 'campanhas' && (
+        <RelatorioCampanha linhas={dist.linhas} vendas={vendas} gastos={gastos} erroGasto={erroGasto}
+          periodoLabel={PERIODOS.find((p) => p.id === periodo)?.label || ''} />
       )}
 
       {!loading && !isEspelhoDemo && aba === 'propaganda' && (

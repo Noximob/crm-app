@@ -73,6 +73,8 @@ export function inicioPeriodo(p: Periodo): number {
 /** Venda do Financeiro — a gestão cruza resultado real (VGV/comissão) com esforço. */
 export interface RelVenda {
   id: string; corretorUid: string; status?: string; dataVenda: string;
+  /** lead que originou (liga a venda à campanha no relatório de campanha) */
+  leadId?: string;
   vgvLiquido?: number; valorBruto?: number; comissaoBruta?: number;
   rateio?: { papel: string; valor: number }[];
 }
