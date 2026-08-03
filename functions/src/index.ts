@@ -56,10 +56,18 @@ interface Mensagem {
 
 const logToLead = async (leadId: string, message: string, data: object = {}) => {
     try {
+        // O Firestore REJEITA o documento inteiro se qualquer campo for undefined,
+        // e aqui isso é comum: a auditoria costuma logar campos que ainda não
+        // existem no lead (ex.: automacao.initialMessageSent antes do 1º envio).
+        // Perder o registro do diagnóstico por causa do próprio diagnóstico é o
+        // pior jeito de falhar — undefined vira null e o log é gravado.
+        const limpo = Object.fromEntries(
+            Object.entries(data).map(([k, v]) => [k, v === undefined ? null : v])
+        );
         const logData = {
             timestamp: admin.firestore.FieldValue.serverTimestamp(),
             message,
-            ...data,
+            ...limpo,
         };
         await admin.firestore().collection("leads").doc(leadId).collection("function_logs").add(logData);
     } catch (error) {
