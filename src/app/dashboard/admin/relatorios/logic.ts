@@ -126,7 +126,12 @@ export function useCustoCampanhas(ativo: boolean, periodo: Periodo) {
       setCarregando(true); setErroGasto(null);
       try {
         const ini = inicioPeriodo(periodo);
-        const dia = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+        // dia LOCAL, não UTC: toISOString depois das 21h (UTC-3) viraria o dia
+        // seguinte e o gasto do 1º dia do período sumiria da soma do Meta
+        const dia = (ms: number) => {
+          const d = new Date(ms);
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        };
         const fn = httpsCallable(getFunctions(app), 'custoCampanhasMeta');
         const r = await fn(ini > 0 ? { desde: dia(ini), ate: dia(Date.now()) } : {});
         const d = (r.data || {}) as { ok?: boolean; motivo?: string; total?: number; campanhas?: GastoCampanha[] };
@@ -214,8 +219,15 @@ export interface LeadDistRow {
   estourouJanela: boolean;   // aceitou (ou está pendente) além dos minutos exclusivos
   pegouNoBolsao: boolean;    // aceitou quando o lead já estava aberto pra todos
   negouQtd: number;
+  /** uids de quem negou explicitamente (a análise do corretor credita a recusa a ele) */
+  negadoPorUids: string[];
+  /** motivo do descarte (o raio-X da qualidade do lead na análise de campanha) */
+  descartadoMotivo: string;
   // o que aconteceu com o lead no CRM
   etapa: string; etapaIdx: number; fechado: boolean; descartado: boolean;
+  /** etapa MÁXIMA que o lead alcançou (etapasHist ∪ atual) — o descarte zera a
+   *  etapa atual (-1) e sem isso o meet/visita que ele fez sumiria do funil */
+  maxEtapaIdx: number;
   temAnotacao: boolean; temQualificacao: boolean; qualifCampos: number;
   tempo1oContatoDias: number | null; tentativas: number;
   interacoes: number; ultimoToqueMs: number; diasSemToque: number | null; diasParado: number | null;
@@ -269,6 +281,13 @@ export function computeRelatorioDist(
 
     const etapa = lead ? mapEtapaCircuito(lead.etapa) : '—';
     const idx = lead ? etapaIndex(etapa) : -1;
+    // máximo alcançado: o histórico preserva o que o descarte apaga da etapa atual
+    let maxIdx = idx;
+    if (lead) {
+      for (const t of ((lead as { etapasHist?: { para?: string }[] }).etapasHist || [])) {
+        if (t.para) maxIdx = Math.max(maxIdx, etapaIndex(mapEtapaCircuito(t.para)));
+      }
+    }
     const qualifCampos = lead?.qualificacao ? Object.values(lead.qualificacao).filter((v) => Array.isArray(v) && v.length > 0).length : 0;
     const cMs = lead ? msOf(lead.createdAt) : 0;
     const pMs = lead ? msOf(lead.circuito?.primeiroContatoEm) : 0;
@@ -311,7 +330,9 @@ export function computeRelatorioDist(
       expirouDeNome: expirouDeNome || (perdeuAVez && x.corretorEscalado ? nomeDe.get(x.corretorEscalado) || '—' : ''),
       expirouAposSeg: typeof x.expirouAposSeg === 'number' ? x.expirouAposSeg : null,
       negouQtd: Array.isArray(x.negadoPor) ? x.negadoPor.length : 0,
-      etapa, etapaIdx: idx, fechado: etapa === ETAPA_FECHADO, descartado: etapa === ETAPA_DESCARTADO,
+      negadoPorUids: Array.isArray(x.negadoPor) ? (x.negadoPor as string[]) : [],
+      descartadoMotivo: String(lead?.descartadoMotivo || ''),
+      etapa, etapaIdx: idx, maxEtapaIdx: maxIdx, fechado: etapa === ETAPA_FECHADO, descartado: etapa === ETAPA_DESCARTADO,
       temAnotacao: !!(lead?.anotacoes && String(lead.anotacoes).trim()), temQualificacao: qualifCampos > 0, qualifCampos,
       tempo1oContatoDias: t1, tentativas: lead?.circuito?.tentativas || 0,
       interacoes: evs.length, ultimoToqueMs: ultimo,
