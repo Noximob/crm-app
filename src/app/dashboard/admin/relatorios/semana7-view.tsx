@@ -56,8 +56,12 @@ interface Semana7Corretor {
   adsProprios: number;
   adsBolsao: number;
   adsPerdeu: number;
-  // disciplina
+  // disciplina — "deixou atrasar +24h" é o TOTAL: as que ainda estão vencidas
+  // e as que ele acabou fazendo com mais de um dia de atraso. Contar só as
+  // abertas deixaria zerar o número fazendo tudo atrasado na véspera da 1:1.
   atrasadas24h: number;
+  atrasadasAbertas: number;
+  atrasadasFeitasTarde: number;
   semToque7d: number;
   atencao: number; // pra ordenar: quem precisa de olho primeiro
 }
@@ -87,7 +91,8 @@ function computeSemana7(
 
     // funil da carteira agora
     const funil = ETAPAS_CIRCUITO.map((e) => ({ etapa: e, n: 0 }));
-    let ativos = 0, fechadosCarteira = 0, descartadosCarteira = 0, semToque7d = 0, atrasadas24h = 0;
+    let ativos = 0, fechadosCarteira = 0, descartadosCarteira = 0, semToque7d = 0;
+    let atrasadasAbertas = 0, atrasadasFeitasTarde = 0;
     const t1s: number[] = [];
     let novosSemContato = 0;
     for (const l of meus) {
@@ -108,10 +113,15 @@ function computeSemana7(
         if (pMs >= cMs && pMs > 0) t1s.push((pMs - cMs) / HORA);
         else if (et !== ETAPA_DESCARTADO && (agora - cMs) / HORA >= 24) novosSemContato++;
       }
-      const at = atividade?.get(l.id);
-      if (at) for (const t of at.tarefas) {
-        // vencida há MAIS de 24h e ninguém fez nem cancelou
-        if (!/conclu|cancel/i.test(t.status) && t.dueMs > 0 && t.dueMs < agora - DIA) atrasadas24h++;
+      const atT = atividade?.get(l.id);
+      if (atT) for (const t of atT.tarefas) {
+        if (t.dueMs <= 0) continue;
+        const concluida = /conclu/i.test(t.status);
+        const cancelada = /cancel/i.test(t.status);
+        // ainda vencida agora, há mais de um dia
+        if (!concluida && !cancelada && t.dueMs < agora - DIA) atrasadasAbertas++;
+        // fez, mas só depois de deixar passar +24h (conclusão dentro da janela)
+        else if (concluida && t.concluidaMs > 0 && t.concluidaMs >= ini && t.concluidaMs - t.dueMs > DIA) atrasadasFeitasTarde++;
       }
     }
 
@@ -137,8 +147,10 @@ function computeSemana7(
       adsProprios: ads.filter((a) => a.origem === 'proprio').length,
       adsBolsao: ads.filter((a) => a.origem === 'bolsao').length,
       adsPerdeu,
-      atrasadas24h, semToque7d,
-      atencao: atrasadas24h + semToque7d + novosSemContato + adsPerdeu * 2,
+      atrasadas24h: atrasadasAbertas + atrasadasFeitasTarde, atrasadasAbertas, atrasadasFeitasTarde,
+      semToque7d,
+      // pendente em aberto pesa mais que a que ele acabou fazendo
+      atencao: atrasadasAbertas * 2 + atrasadasFeitasTarde + semToque7d + novosSemContato + adsPerdeu * 2,
     });
   }
   // quem mais precisa de olho primeiro
@@ -204,7 +216,13 @@ export function Semana7View({ leads, corretores, vendas, atividade, distLinhas, 
                   {c.m.vendas > 0 && <b className="text-emerald-300"> · {c.m.vendas} venda{c.m.vendas > 1 ? 's' : ''} ({fmtMoeda(c.m.vgv)})</b>}
                 </span>
                 {c.adsPerdeu > 0 && <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/10 border border-rose-500/40 text-rose-300">{c.adsPerdeu} lead{c.adsPerdeu > 1 ? 's' : ''} pago{c.adsPerdeu > 1 ? 's' : ''} perdido{c.adsPerdeu > 1 ? 's' : ''}</span>}
-                {c.atrasadas24h > 0 && <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/10 border border-amber-500/40 text-amber-300">{c.atrasadas24h} tarefa{c.atrasadas24h > 1 ? 's' : ''} +24h</span>}
+                {c.atrasadas24h > 0 && (
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${c.atrasadasAbertas > 0 ? 'bg-rose-500/10 border-rose-500/40 text-rose-300' : 'bg-amber-500/10 border-amber-500/40 text-amber-300'}`}
+                    title={`${c.atrasadasAbertas} ainda em aberto · ${c.atrasadasFeitasTarde} concluídas com mais de 24h de atraso`}>
+                    {c.atrasadas24h} tarefa{c.atrasadas24h > 1 ? 's' : ''} atrasada{c.atrasadas24h > 1 ? 's' : ''} +24h
+                    {c.atrasadasAbertas > 0 && ` (${c.atrasadasAbertas} aberta${c.atrasadasAbertas > 1 ? 's' : ''})`}
+                  </span>
+                )}
                 <span className="text-text-secondary text-[11px]">{estaAberto ? '▲' : '▼'}</span>
               </div>
             </button>
@@ -237,7 +255,10 @@ export function Semana7View({ leads, corretores, vendas, atividade, distLinhas, 
                     <Num rotulo="Avanços de etapa" v={c.m.avancos} />
                     <Num rotulo="Meets marc. × feitos" v={`${c.m.meetsAgendados} × ${c.m.meetsFeitos}`} tom={c.m.meetsAgendados >= 2 && c.m.meetsFeitos === 0 ? 'text-rose-300' : 'text-white'} hint={c.m.meetsAgendados > 0 ? `${pct(c.m.meetsFeitos, c.m.meetsAgendados)} aconteceram` : undefined} />
                     <Num rotulo="Visitas marc. × feitas" v={`${c.m.visitasAgendadas} × ${c.m.visitasFeitas}`} hint={c.m.visitasAgendadas > 0 ? `${pct(c.m.visitasFeitas, c.m.visitasAgendadas)} aconteceram` : undefined} />
-                    <Num rotulo="Tarefas +24h vencidas" v={c.atrasadas24h} tom={c.atrasadas24h > 0 ? 'text-rose-300' : 'text-emerald-300'} />
+                    <Num rotulo="Deixou atrasar +24h" v={c.atrasadas24h} tom={c.atrasadas24h > 0 ? 'text-rose-300' : 'text-emerald-300'}
+                      hint={c.atrasadas24h > 0
+                        ? [c.atrasadasAbertas > 0 ? `${c.atrasadasAbertas} ainda em aberto` : '', c.atrasadasFeitasTarde > 0 ? `${c.atrasadasFeitasTarde} fez atrasado` : ''].filter(Boolean).join(' · ')
+                        : 'nenhuma passou de um dia'} />
                     <Num rotulo="Descartes" v={c.m.descartes} hint={c.m.descartesRapidos > 0 ? `${c.m.descartesRapidos} no 1º toque` : undefined} tom={c.m.descartesRapidos > 0 ? 'text-amber-300' : 'text-white'} />
                     <Num rotulo="Tarefas concluídas" v={c.m.tarefasConcluidas} />
                     <Num rotulo="Vendas · VGV" v={c.m.vendas > 0 ? `${c.m.vendas} · ${fmtMoeda(c.m.vgv)}` : '—'} tom={c.m.vendas > 0 ? 'text-emerald-300' : 'text-white'} />
