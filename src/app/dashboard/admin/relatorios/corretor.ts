@@ -225,7 +225,7 @@ export interface AnaliseCorretores {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const mediana = (arr: number[]): number | null => {
+export const mediana = (arr: number[]): number | null => {
   if (!arr.length) return null;
   const a = [...arr].sort((x, y) => x - y);
   const m = Math.floor(a.length / 2);

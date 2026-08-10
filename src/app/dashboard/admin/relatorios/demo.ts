@@ -9,7 +9,7 @@
 import {
   ETAPA_ENTRADA, ETAPA_EM_CONTATO, ETAPA_FECHADO, ETAPA_DESCARTADO,
 } from '@/lib/circuito';
-import type { RelLead, RelCorretor, RelVenda, AtividadeLead } from './logic';
+import type { RelLead, RelCorretor, RelVenda, AtividadeLead, LeadDistRow } from './logic';
 
 const DIA = 24 * 60 * 60 * 1000;
 
@@ -19,6 +19,8 @@ export interface DadosDemo {
   vendas: RelVenda[];
   atividade: Map<string, AtividadeLead>;
   selecionados: Set<string>;
+  /** leads de propaganda sintéticos — a aba dos 7 dias mostra próprio/bolsão/perdeu */
+  distLinhas: LeadDistRow[];
 }
 
 export function dadosDemo(): DadosDemo {
@@ -84,5 +86,37 @@ export function dadosDemo(): DadosDemo {
     { id: 'vd2', corretorUid: 'demo-1', leadId: 'demo-1-0', status: 'assinada', dataVenda: ymd(2), vgvLiquido: 650_000, comissaoBruta: 32_500, rateio: [{ papel: 'corretor', valor: 14_771 }] },
   ];
 
-  return { leads, corretores, vendas, atividade, selecionados: new Set(perfis.map((p) => p.uid)) };
+  // propaganda dos últimos 7 dias: a Ana pega rápido, o Bruno pega no bolsão
+  // e demora, o Caio deixou vencer — os três casos que a aba precisa mostrar
+  const mkDist = (i: number, nome: string, campanha: string, uid: string, aceiteSeg: number | null, origem: 'proprio' | 'bolsao' | 'perdeu', diasAtras: number): LeadDistRow => ({
+    adsId: `ads-${i}`, leadId: null, nome, telefone: '', campanha, anuncio: '',
+    criadoMs: agora - diasAtras * DIA,
+    status: origem === 'perdeu' ? 'geral' : 'aceito',
+    escaladoPara: origem === 'bolsao' ? '' : uid,
+    escaladoParaNome: origem === 'bolsao' ? '—' : (perfis.find((p) => p.uid === uid)?.nome || '—'),
+    aceitoPor: origem === 'perdeu' ? '' : uid,
+    aceitoPorNome: origem === 'perdeu' ? '—' : (perfis.find((p) => p.uid === uid)?.nome || '—'),
+    tempoAceiteSeg: aceiteSeg,
+    viaGeral: origem === 'bolsao', nasceuNoBolsao: false,
+    perdeuAVez: origem === 'perdeu', estourouJanela: origem === 'perdeu' || (aceiteSeg ?? 0) > 300,
+    expirouDe: origem === 'perdeu' ? uid : '',
+    expirouDeNome: origem === 'perdeu' ? (perfis.find((p) => p.uid === uid)?.nome || '—') : '',
+    expirouAposSeg: origem === 'perdeu' ? 300 : null,
+    pegouNoBolsao: origem === 'bolsao',
+    negouQtd: 0, negadoPorUids: [], descartadoMotivo: '',
+    etapa: 'Em Contato', etapaIdx: 1, maxEtapaIdx: 1, fechado: false, descartado: false,
+    temAnotacao: true, temQualificacao: true, qualifCampos: 2,
+    tempo1oContatoDias: 0.1, tentativas: 1,
+    interacoes: 3, ultimoToqueMs: agora - diasAtras * DIA, diasSemToque: diasAtras, diasParado: diasAtras,
+    fuCriados: 1, fuConcluidos: 1, fuPendentes: 0, fuAtrasados: 0, fuTempoMedioDias: 0,
+  });
+  const distLinhas: LeadDistRow[] = [
+    mkDist(1, 'Fernanda Reis', 'Lançamento Orla — Agosto', 'demo-1', 92, 'proprio', 1),
+    mkDist(2, 'Marcos Vieira', 'Lançamento Orla — Agosto', 'demo-1', 210, 'proprio', 3),
+    mkDist(3, 'Sandra Küster', 'Pronto Centro — Remarketing', 'demo-2', 1450, 'bolsao', 2),
+    mkDist(4, 'Otávio Prado', 'Lançamento Orla — Agosto', 'demo-2', 640, 'proprio', 5),
+    mkDist(5, 'Renata Bittencourt', 'Pronto Centro — Remarketing', 'demo-3', null, 'perdeu', 4),
+  ];
+
+  return { leads, corretores, vendas, atividade, selecionados: new Set(perfis.map((p) => p.uid)), distLinhas };
 }
