@@ -35,6 +35,7 @@ const adminCategories = [
       { title: 'Meets & Visitas', icon: '🔥', description: 'Placar automático da semana — contador e data, com prova por corretor', href: '/dashboard/admin/meets-visitas' },
       { title: 'Financeiro', icon: '📈', description: 'Margem por venda, DRE, contas do mês, comissões dos corretores e meta de VGV', href: '/dashboard/admin/financeiro' },
       { title: 'Relatórios', icon: '📋', description: 'Gestão corretor a corretor: resultado, esforço, gargalo do funil e o que cobrar de cada um — mais os leads de propaganda', href: '/dashboard/admin/relatorios' },
+      { title: 'Auditoria de Atendimento', icon: '🔍', description: 'Monta o pacote de dados de um corretor pra cruzar o CRM com as conversas reais de WhatsApp', href: '/dashboard/admin/auditoria' },
     ]
   },
   {
