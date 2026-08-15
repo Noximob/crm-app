@@ -269,7 +269,8 @@ export default function DiretrizesAuditoriaPage() {
       </Secao>
 
       {/* ── Tom + prompts ── */}
-      <Secao titulo="Tom e prompts da análise" sub="Os textos que guiam a IA na leitura. Ficam aqui — e não soltos — pra régua e prompt andarem na MESMA versão: prompt novo com régua velha invalida a comparação entre rodadas.">
+      <Secao titulo="Tom e prompts da análise" sub="Os textos que guiam a IA na leitura. Ficam aqui — e não soltos — pra régua e prompt andarem na MESMA versão: prompt novo com régua velha invalida a comparação entre rodadas."
+        acao={<button className={btnGhost} onClick={() => set({ prompts: DIRETRIZES_PADRAO.prompts })}>restaurar prompts</button>}>
         <div className="space-y-3">
           <Campo label="Tom do relatório">
             <textarea value={d.tomDoRelatorio} onChange={(e) => set({ tomDoRelatorio: e.target.value })} className={inputCls + ' min-h-[56px] leading-snug'} />
