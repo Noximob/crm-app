@@ -138,11 +138,27 @@ const embaralhar = <T,>(arr: T[]): T[] => {
   return a;
 };
 
+/**
+ * Quem pode ser sorteado: o lead precisava estar NA MÃO do corretor durante o
+ * período auditado. Nasceu depois do fim? não era dele ainda. Foi descartado
+ * antes do início? já tinha saído. Note que lead PARADO continua elegível —
+ * ele é o achado mais importante da auditoria, não uma exclusão.
+ */
+export function elegivelNoPeriodo(l: LeadAud, iniMs: number, fimMs: number): boolean {
+  const nascimento = msOf(l.createdAt);
+  if (nascimento > 0 && nascimento >= fimMs) return false;
+  const descarte = msOf(l.descartadoEm);
+  if (descarte > 0 && descarte < iniMs) return false;
+  return true;
+}
+
 export function sortearAmostra(
   leads: LeadAud[], ultimoToqueDe: (id: string) => number, tamanho: number, agora = Date.now(),
+  periodo?: { iniMs: number; fimMs: number },
 ): ResultadoSorteio {
+  const universo = periodo ? leads.filter((l) => elegivelNoPeriodo(l, periodo.iniMs, periodo.fimMs)) : leads;
   const porFaixa = new Map<FaixaSorteio, LeadAud[]>();
-  for (const l of leads) {
+  for (const l of universo) {
     const f = faixaDoLead(l, ultimoToqueDe(l.id), agora);
     if (!f) continue;
     const arr = porFaixa.get(f) || [];
@@ -167,7 +183,7 @@ export function sortearAmostra(
   }
   // o que faltou vira aleatório livre entre TODOS os elegíveis restantes
   if (sobra > 0) {
-    const resto = embaralhar(leads.filter((l) => !usados.has(l.id) && faixaDoLead(l, ultimoToqueDe(l.id), agora) !== null));
+    const resto = embaralhar(universo.filter((l) => !usados.has(l.id) && faixaDoLead(l, ultimoToqueDe(l.id), agora) !== null));
     resto.slice(0, sobra).forEach((l) => { usados.add(l.id); escolhidos.push({ lead: l, faixa: 'livre' }); });
   }
   return { escolhidos, incompletas };

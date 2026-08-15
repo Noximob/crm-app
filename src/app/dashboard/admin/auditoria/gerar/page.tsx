@@ -148,7 +148,8 @@ export default function GerarPacotePage() {
 
   const sortear = () => {
     if (!leads.length) { showToast('Carregue os dados do corretor primeiro.', 'info'); return; }
-    const r = sortearAmostra(leads, ultimoToqueDe, tamanho);
+    // o sorteio respeita o período: só entra quem estava na mão dele nesses dias
+    const r = sortearAmostra(leads, ultimoToqueDe, tamanho, Date.now(), { iniMs, fimMs });
     setAmostra(r.escolhidos);
     setIncompletas(r.incompletas);
     setFora(new Set());
@@ -278,6 +279,15 @@ export default function GerarPacotePage() {
   const semMetrica = disp.filter((x) => x.vazia);
   const parciais = disp.filter((x) => x.parcial);
   const antesDoCorte = iniMs < dadosConfiaveisDesdeMs();
+
+  // resumo em tela: os mesmos números que vão no arquivo, sem precisar abri-lo
+  const [verResumo, setVerResumo] = useState(true);
+  const resumo = useMemo(
+    () => (leads.length && diretrizes
+      ? aplicarDisponibilidade(computarPanorama(leads, ativ, vendas, ads, diretrizes, uid, iniMs, fimMs), disp)
+      : null),
+    [leads, ativ, vendas, ads, diretrizes, uid, iniMs, fimMs, disp]
+  );
 
   return (
     <div className="max-w-5xl mx-auto px-3 sm:px-4 pb-16 pt-6 space-y-4">
@@ -431,11 +441,53 @@ export default function GerarPacotePage() {
         </section>
       )}
 
-      {/* 3. gerar */}
+      {/* 3. resumo em tela — confere sem precisar abrir o arquivo */}
+      {amostra.length > 0 && diretrizes && (
+        <section className="al-card relative overflow-hidden p-4 sm:p-5">
+          <div className="absolute inset-x-0 top-0 gx-line" />
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h2 className="al-display text-[13px] font-bold text-white uppercase tracking-[0.1em]">3 · O que vai no pacote</h2>
+            <button onClick={() => setVerResumo((v) => !v)} className={btnGhost}>{verResumo ? 'ocultar números' : '👁 ver os números'}</button>
+          </div>
+          {verResumo && resumo && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-3">
+              {[
+                ['Leads no período', String(resumo.leads_recebidos)],
+                ['1º contato (mediana útil)', resumo.mediana_primeiro_contato_min_util === null ? 'não medido' : `${resumo.mediana_primeiro_contato_min_util} min`],
+                ['1º contato (corrido)', resumo.mediana_primeiro_contato_min_corrido === null ? 'não medido' : `${resumo.mediana_primeiro_contato_min_corrido} min`],
+                ['Sem 1º contato', String(resumo.leads_sem_primeiro_contato)],
+                ['Sem toque +7d', resumo.sem_toque_7d === null ? 'não medido' : String(resumo.sem_toque_7d)],
+                ['Tarefas atrasadas', resumo.tarefas_atrasadas_24h === null ? 'não medido' : String(resumo.tarefas_atrasadas_24h)],
+                ['Sem tarefa futura', resumo.leads_sem_tarefa_futura === null ? 'não medido' : String(resumo.leads_sem_tarefa_futura)],
+                ['Sem anotação', String(resumo.leads_sem_anotacao)],
+                ['Meets marcados/feitos', resumo.meets_marcados === null ? 'não medido' : `${resumo.meets_marcados}/${resumo.meets_feitos}`],
+                ['Visitas marcadas/feitas', resumo.visitas_marcadas === null ? 'não medido' : `${resumo.visitas_marcadas}/${resumo.visitas_feitas}`],
+                ['Descartes', `${resumo.descartes}${resumo.descartes_primeiro_toque ? ` (${resumo.descartes_primeiro_toque} no 1º toque)` : ''}`],
+                ['Vendas · VGV', resumo.vendas ? `${resumo.vendas} · ${resumo.vgv.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}` : '—'],
+                ['Rodízio recebidos', String(resumo.rodizio.recebidos)],
+                ['Aceite mediano', resumo.rodizio.aceite_mediano_seg === null ? '—' : `${Math.round(resumo.rodizio.aceite_mediano_seg / 60)} min`],
+                ['Deixou vencer', String(resumo.rodizio.deixou_vencer)],
+              ].map(([r, v]) => (
+                <div key={r}>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-text-secondary">{r}</p>
+                  <p className={`text-[15px] font-bold tabular-nums leading-tight ${v === 'não medido' ? 'text-white/30' : 'text-white'}`}>{v}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          {!verResumo && (
+            <p className="text-[11.5px] text-text-secondary">
+              {selecionados.length} leads selecionados · números do período {fmtData(iniMs)} a {fmtData(fimMs - DIA)} · régua {diretrizes.versao} · timeline completa de cada lead.
+            </p>
+          )}
+        </section>
+      )}
+
+      {/* 4. gerar */}
       {amostra.length > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-[11px] text-text-secondary">
-            O arquivo leva os números do período, a régua {diretrizes?.versao} e a timeline completa dos {selecionados.length} leads selecionados.
+            Primeira vez? Bota <b className="text-white">5</b> no campo Amostra e testa o fluxo antes de rodar com 20.
           </p>
           <button onClick={gerar} disabled={gerando || !selecionados.length} className={btnOuro}>
             {gerando ? 'Gerando…' : `⬇ Gerar pacote (${selecionados.length} leads)`}
