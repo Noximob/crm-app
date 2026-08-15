@@ -20,6 +20,18 @@ import { db } from './firebase';
 
 const HORA = 3_600_000;
 
+/**
+ * Quando o time começou a USAR o CRM de verdade. Antes disso a base existe
+ * mas está vazia de trabalho — puxar período anterior faz o corretor parecer
+ * parado quando na verdade o sistema é que não estava em uso. Toda tela de
+ * auditoria ancora o período aqui.
+ */
+export const DADOS_CONFIAVEIS_DESDE = '2026-07-15';
+export const dadosConfiaveisDesdeMs = (): number => {
+  const [a, m, d] = DADOS_CONFIAVEIS_DESDE.split('-').map(Number);
+  return new Date(a, m - 1, d).getTime();
+};
+
 // ---------------------------------------------------------------------------
 // Tipos
 // ---------------------------------------------------------------------------

@@ -174,6 +174,86 @@ export function sortearAmostra(
 }
 
 // ---------------------------------------------------------------------------
+// Disponibilidade de métrica — cada uma nasceu numa data
+//
+// O CRM foi ganhando instrumentação aos poucos: o carimbo de etapa começou
+// num dia, o registro de 1º contato noutro, o rodízio noutro. Se o período
+// pedido começa antes de a métrica existir, mostrar ZERO é mentira — parece
+// que o corretor não fez, quando o sistema é que não media. Aqui a data de
+// nascimento de cada família é DETECTADA no próprio dado, e o que não existe
+// vira null com o motivo escrito no pacote.
+// ---------------------------------------------------------------------------
+
+export interface DisponibilidadeMetrica {
+  metrica: string;
+  rotulo: string;
+  primeiro_registro: string | null;
+  /** o período pedido começa antes de a métrica passar a ser coletada */
+  parcial: boolean;
+  /** nunca houve registro nenhum dessa família */
+  vazia: boolean;
+  motivo: string;
+}
+
+/** Famílias de métrica e o que as alimenta. */
+const FAMILIAS: { chave: string; rotulo: string; campos: string[] }[] = [
+  { chave: 'agenda', rotulo: 'Meets e visitas (marcados/feitos)', campos: ['meets_marcados', 'meets_feitos', 'visitas_marcadas', 'visitas_feitas'] },
+  { chave: 'primeiro_contato', rotulo: 'Tempo até o 1º contato', campos: ['mediana_primeiro_contato_min_util', 'mediana_primeiro_contato_min_corrido', 'dentro_do_prazo_1o_contato', 'fora_do_prazo_1o_contato'] },
+  { chave: 'timeline', rotulo: 'Toques e leads parados', campos: ['sem_toque_7d', 'sem_toque_7d_por_etapa'] },
+  { chave: 'tarefas', rotulo: 'Tarefas e atrasos', campos: ['tarefas_atrasadas_24h', 'tarefas_concluidas_atrasadas_24h', 'leads_sem_tarefa_futura'] },
+  { chave: 'rodizio', rotulo: 'Rodízio de leads de anúncio', campos: ['rodizio'] },
+];
+
+const ymdOuNull = (ms: number | null) => (ms ? new Date(ms).toISOString().slice(0, 10) : null);
+
+export function detectarDisponibilidade(
+  leads: LeadAud[], ativ: Map<string, AtividadeAud>, ads: AdsAud[], iniMs: number,
+): DisponibilidadeMetrica[] {
+  const min = (a: number | null, b: number) => (b > 0 && (a === null || b < a) ? b : a);
+  let agenda: number | null = null, primeiro: number | null = null, timeline: number | null = null, tarefas: number | null = null;
+  let rodizio: number | null = null;
+
+  for (const l of leads) {
+    for (const h of (l.etapasHist || [])) agenda = min(agenda, msOf(h.em));
+    primeiro = min(primeiro, msOf(l.circuito?.primeiroContatoEm));
+    const a = ativ.get(l.id);
+    for (const i of (a?.interacoes || [])) timeline = min(timeline, i.ms);
+    for (const t of (a?.tarefas || [])) tarefas = min(tarefas, t.dueMs);
+  }
+  if (ads.some((a) => typeof a.tempoAceiteSeg === 'number' || a.expirouDe)) rodizio = iniMs; // existe; sem data própria
+
+  const achado: Record<string, number | null> = { agenda, primeiro_contato: primeiro, timeline, tarefas, rodizio };
+
+  return FAMILIAS.map((f) => {
+    const ms = achado[f.chave] ?? null;
+    const vazia = ms === null;
+    const parcial = !vazia && (ms as number) > iniMs;
+    return {
+      metrica: f.chave,
+      rotulo: f.rotulo,
+      primeiro_registro: ymdOuNull(ms),
+      parcial, vazia,
+      motivo: vazia
+        ? `NÃO UTILIZADO POR FALTA DE MÉTRICA: não há nenhum registro dessa informação na base. O número não é zero — é inexistente, e não deve ser lido como falha do corretor.`
+        : parcial
+          ? `PARCIAL: essa informação só passou a ser registrada em ${ymdOuNull(ms)}, depois do início do período pedido. O que aconteceu antes não foi medido — número baixo aqui significa ausência de histórico, não ausência de trabalho.`
+          : 'Disponível em todo o período.',
+    };
+  });
+}
+
+/** Zera (null) no panorama o que a base nunca mediu — mostrar 0 seria mentir. */
+export function aplicarDisponibilidade(p: Panorama, disp: DisponibilidadeMetrica[]): Panorama {
+  const out = { ...p } as Panorama & Record<string, unknown>;
+  for (const d of disp) {
+    if (!d.vazia) continue;
+    const fam = FAMILIAS.find((f) => f.chave === d.metrica);
+    for (const campo of (fam?.campos || [])) out[campo] = null;
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // Panorama
 // ---------------------------------------------------------------------------
 
@@ -338,6 +418,8 @@ export interface OpcoesPacote {
   historico: unknown;
   /** data do carimbo de etapa mais antigo da base — antes disso não há agenda */
   historicoEtapasDesdeMs: number | null;
+  /** o que cada métrica conseguiu medir no período pedido */
+  disponibilidade: DisponibilidadeMetrica[];
 }
 
 const iso = (ms: number): string | null => (ms > 0 ? new Date(ms).toISOString() : null);
@@ -452,9 +534,18 @@ export function montarPacote(o: OpcoesPacote, agora = Date.now()): Record<string
         ...(parcialAgenda ? [
           `ATENÇÃO: o carimbo de mudança de etapa só existe desde ${ymdStr(o.historicoEtapasDesdeMs as number)}. Meets e visitas marcados/feitos ANTES dessa data não foram registrados — o número baixo no começo do período significa ausência de histórico, NÃO ausência de trabalho.`,
         ] : []),
+        ...(o.disponibilidade.some((d) => d.vazia || d.parcial) ? [
+          'REGRA DE LEITURA: as métricas listadas em metricas_indisponiveis_no_periodo vêm null (não zero) porque a base não as mediu no período. No relatório, escreva "não utilizado por falta de métrica" — não conte como falha do corretor. As de metricas_parciais_no_periodo existem só a partir da data indicada.',
+        ] : []),
       ],
       historico_etapas_desde: o.historicoEtapasDesdeMs ? ymdStr(o.historicoEtapasDesdeMs) : null,
       agenda_parcial_no_periodo: parcialAgenda,
+      // Regra de leitura: métrica que a base não mediu no período NÃO vira zero.
+      // Vem null aqui com o motivo — o relatório deve dizer "não utilizado por
+      // falta de métrica" em vez de cobrar o corretor por algo que ninguém mediu.
+      disponibilidade_das_metricas: o.disponibilidade,
+      metricas_indisponiveis_no_periodo: o.disponibilidade.filter((d) => d.vazia).map((d) => d.rotulo),
+      metricas_parciais_no_periodo: o.disponibilidade.filter((d) => d.parcial).map((d) => d.rotulo),
     },
     diretrizes: {
       cadencia: o.diretrizes.cadencia,

@@ -11,9 +11,11 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/ui/toast';
 import { mapEtapaCircuito } from '@/lib/circuito';
-import { carregarDiretrizes, type DiretrizesAuditoria } from '@/lib/auditoria';
+import { carregarDiretrizes, DADOS_CONFIAVEIS_DESDE, dadosConfiaveisDesdeMs, type DiretrizesAuditoria } from '@/lib/auditoria';
+import { auditoriaDemo } from '@/lib/auditoriaDemo';
 import {
   sortearAmostra, computarPanorama, montarPacote, faixaDoLead, msOf,
+  detectarDisponibilidade, aplicarDisponibilidade,
   ROTULO_FAIXA, type LeadAud, type AtividadeAud, type VendaAud, type AdsAud, type FaixaSorteio,
 } from '@/lib/auditoriaPacote';
 
@@ -39,7 +41,9 @@ export default function GerarPacotePage() {
 
   const [corretores, setCorretores] = useState<{ id: string; nome: string }[]>([]);
   const [uid, setUid] = useState('');
-  const [ini, setIni] = useState(() => ymd(Date.now() - 60 * DIA));
+  // nunca começa antes de 15/07: antes disso o time não usava o CRM, e o
+  // período mais largo só faria o corretor parecer parado
+  const [ini, setIni] = useState(() => ymd(Math.max(Date.now() - 60 * DIA, dadosConfiaveisDesdeMs())));
   const [fim, setFim] = useState(() => ymd(Date.now()));
   const [tamanho, setTamanho] = useState(20);
 
@@ -61,7 +65,8 @@ export default function GerarPacotePage() {
   useEffect(() => { carregarDiretrizes(imobiliariaId).then(setDiretrizes); }, [imobiliariaId]);
 
   useEffect(() => {
-    if (!imobiliariaId || isEspelhoDemo) return;
+    if (isEspelhoDemo) { setCorretores(auditoriaDemo().corretores); return; }
+    if (!imobiliariaId) return;
     getDocs(query(collection(db, 'usuarios'), where('imobiliariaId', '==', imobiliariaId)))
       .then((s) => setCorretores(s.docs
         .map((d) => ({ id: d.id, nome: String(d.data().nome || d.id.slice(0, 6)), tipo: String(d.data().tipoConta || ''), ok: d.data().aprovado !== false }))
@@ -72,8 +77,16 @@ export default function GerarPacotePage() {
 
   /** Carrega tudo do corretor: leads, timeline de cada um, vendas e leads de anúncio. */
   const carregarDados = async () => {
-    if (!uid || !imobiliariaId) return;
+    if (!uid) return;
     setCarregando(true); setProgresso(0); setAmostra([]); setFora(new Set());
+    if (isEspelhoDemo) {
+      const d = auditoriaDemo();
+      setLeads(d.leads); setAtiv(d.atividade); setVendas(d.vendas); setAds(d.ads); setEtapasDesde(d.etapasDesdeMs);
+      setCarregando(false); setProgresso(1);
+      showToast(`${d.leads.length} leads de demonstração carregados.`, 'success');
+      return;
+    }
+    if (!imobiliariaId) { setCarregando(false); return; }
     try {
       const ls = await getDocs(query(collection(db, 'leads'), where('imobiliariaId', '==', imobiliariaId), where('userId', '==', uid)));
       const arr: LeadAud[] = ls.docs.map((d) => ({ id: d.id, ...d.data() } as LeadAud));
@@ -159,7 +172,6 @@ export default function GerarPacotePage() {
 
   const selecionados = useMemo(() => amostra.filter((a) => !fora.has(a.lead.id)), [amostra, fora]);
   const iniMs = doYmd(ini), fimMs = doYmd(fim) + DIA;
-  const agendaParcial = etapasDesde !== null && etapasDesde > iniMs;
 
   const resultadosBusca = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -172,10 +184,11 @@ export default function GerarPacotePage() {
     setGerando(true);
     try {
       const corretor = { id: uid, nome: corretores.find((c) => c.id === uid)?.nome || uid };
-      const panorama = computarPanorama(leads, ativ, vendas, ads, diretrizes, uid, iniMs, fimMs);
+      const disponibilidade = detectarDisponibilidade(leads, ativ, ads, iniMs);
+      const panorama = aplicarDisponibilidade(computarPanorama(leads, ativ, vendas, ads, diretrizes, uid, iniMs, fimMs), disponibilidade);
 
       // benchmark do time: mesma conta, todos os corretores
-      try {
+      if (!isEspelhoDemo) try {
         const todos = await getDocs(query(collection(db, 'leads'), where('imobiliariaId', '==', imobiliariaId)));
         const arrT = todos.docs.map((d) => ({ id: d.id, ...d.data() } as LeadAud));
         const t1: number[] = [];
@@ -199,7 +212,7 @@ export default function GerarPacotePage() {
 
       // histórico das rodadas anteriores (Tela 2 alimenta isto)
       let historico: unknown = { ultimos_15d: null, ultimo_mes: null, ultimos_3m: null, rodadas_anteriores: 0 };
-      try {
+      if (!isEspelhoDemo) try {
         const rs = await getDocs(query(collection(db, 'auditoriaRodadas'),
           where('imobiliariaId', '==', imobiliariaId), where('corretorUid', '==', uid),
           orderBy('geradoEm', 'desc'), qLimit(12)));
@@ -217,7 +230,7 @@ export default function GerarPacotePage() {
       const pacote = montarPacote({
         corretor, periodo: { iniMs, fimMs }, diretrizes, panorama,
         amostra: selecionados, atividade: ativ, ads, historico,
-        historicoEtapasDesdeMs: etapasDesde,
+        historicoEtapasDesdeMs: etapasDesde, disponibilidade,
       });
 
       const blob = new Blob([JSON.stringify(pacote, null, 2)], { type: 'application/json' });
@@ -256,18 +269,13 @@ export default function GerarPacotePage() {
     }
   };
 
-  if (isEspelhoDemo) {
-    return (
-      <div className="max-w-3xl mx-auto mt-10 px-4">
-        <span className="gx-tag"><span>Área do administrador</span></span>
-        <div className="al-card p-10 mt-3 text-center">
-          <p className="text-[40px] mb-2">📦</p>
-          <p className="text-sm text-text-secondary">A geração do pacote lê os leads reais da imobiliária — indisponível no modo demonstração.</p>
-          <Link href="/dashboard/admin/auditoria/" className={btnGhost + ' inline-block mt-4'}>← Auditoria</Link>
-        </div>
-      </div>
-    );
-  }
+  const disp = useMemo(
+    () => (leads.length ? detectarDisponibilidade(leads, ativ, ads, iniMs) : []),
+    [leads, ativ, ads, iniMs]
+  );
+  const semMetrica = disp.filter((x) => x.vazia);
+  const parciais = disp.filter((x) => x.parcial);
+  const antesDoCorte = iniMs < dadosConfiaveisDesdeMs();
 
   return (
     <div className="max-w-5xl mx-auto px-3 sm:px-4 pb-16 pt-6 space-y-4">
@@ -315,13 +323,30 @@ export default function GerarPacotePage() {
           {leads.length > 0 && <span className="text-[11px] text-text-secondary">{leads.length} leads na carteira dele</span>}
         </div>
 
-        {agendaParcial && (
+        {antesDoCorte && (
           <div className="mt-3 rounded-xl border border-amber-500/40 bg-amber-500/[0.07] p-3">
             <p className="text-[12px] text-amber-200">
-              ⚠ <b>Meets e visitas ficam parciais neste período.</b> O carimbo de mudança de etapa só existe desde <b>{fmtData(etapasDesde as number)}</b>,
-              e você escolheu começar em <b>{fmtData(iniMs)}</b>. O que aconteceu antes disso não foi registrado — número baixo no começo significa
-              ausência de histórico, não ausência de trabalho. Esse aviso vai dentro do pacote também.
+              ⚠ O time só começou a usar o CRM de verdade em <b>{fmtData(dadosConfiaveisDesdeMs())}</b>. Puxar de antes disso faz o corretor
+              parecer parado quando o sistema é que não estava em uso.
+              <button onClick={() => setIni(DADOS_CONFIAVEIS_DESDE)} className="ml-2 underline font-bold hover:text-white">ajustar para {DADOS_CONFIAVEIS_DESDE.split('-').reverse().join('/')}</button>
             </p>
+          </div>
+        )}
+
+        {(semMetrica.length > 0 || parciais.length > 0) && (
+          <div className="mt-3 rounded-xl border border-white/15 bg-white/[0.03] p-3 space-y-1.5">
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">O que a base consegue medir neste período</p>
+            {semMetrica.map((m) => (
+              <p key={m.metrica} className="text-[11.5px] text-rose-300">
+                ✖ <b>{m.rotulo}</b> — sem nenhum registro. Vai <b>null</b> no pacote e o relatório dirá &quot;não utilizado por falta de métrica&quot;, não zero.
+              </p>
+            ))}
+            {parciais.map((m) => (
+              <p key={m.metrica} className="text-[11.5px] text-amber-300">
+                ▲ <b>{m.rotulo}</b> — só existe a partir de <b>{m.primeiro_registro}</b>. O que veio antes não foi medido.
+              </p>
+            ))}
+            {semMetrica.length === 0 && parciais.length === 0 && <p className="text-[11.5px] text-emerald-300">✓ Todas as métricas cobrem o período inteiro.</p>}
           </div>
         )}
       </section>
