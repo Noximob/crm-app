@@ -458,14 +458,21 @@ export default function GerarPacotePage() {
       {amostra.length > 0 && diretrizes && (
         <section className="al-card relative overflow-hidden p-4 sm:p-5">
           <div className="absolute inset-x-0 top-0 gx-line" />
-          <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center justify-between gap-2 mb-1">
             <h2 className="al-display text-[13px] font-bold text-white uppercase tracking-[0.1em]">3 · O que vai no pacote</h2>
             <button onClick={() => setVerResumo((v) => !v)} className={btnGhost}>{verResumo ? 'ocultar números' : '👁 ver os números'}</button>
           </div>
+          {/* três números que confundem se não estiverem lado a lado */}
+          <p className="text-[11px] text-text-secondary mb-3">
+            <b className="text-white">{selecionados.length} leads vão na amostra</b> (é o que a análise vai auditar um a um)
+            · <b className="text-white">{resumo?.leads_recebidos ?? 0}</b> entraram no período
+            · <b className="text-white">{leads.length}</b> na carteira dele.
+            Os números abaixo são do PERÍODO inteiro, não só da amostra.
+          </p>
           {verResumo && resumo && (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-3">
               {[
-                ['Leads no período', String(resumo.leads_recebidos)],
+                ['Entraram no período', String(resumo.leads_recebidos)],
                 ['1º contato (mediana útil)', resumo.mediana_primeiro_contato_min_util === null ? 'não medido' : `${resumo.mediana_primeiro_contato_min_util} min`],
                 ['1º contato (corrido)', resumo.mediana_primeiro_contato_min_corrido === null ? 'não medido' : `${resumo.mediana_primeiro_contato_min_corrido} min`],
                 ['Sem 1º contato', String(resumo.leads_sem_primeiro_contato)],
