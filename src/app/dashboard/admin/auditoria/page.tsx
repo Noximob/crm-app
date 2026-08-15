@@ -31,7 +31,7 @@ const CARDS = [
     icone: '🗂️',
     titulo: 'Histórico das rodadas',
     desc: 'O que foi apontado em cada rodada, a instrução dada e se ela foi cumprida — a evolução do corretor ao longo do tempo.',
-    pronto: false,
+    pronto: true,
   },
 ];
 

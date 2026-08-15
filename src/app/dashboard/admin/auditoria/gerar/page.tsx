@@ -6,7 +6,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { collection, query, where, getDocs, addDoc, serverTimestamp, orderBy, limit as qLimit } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/ui/toast';
@@ -213,10 +213,12 @@ export default function GerarPacotePage() {
       // histórico das rodadas anteriores (Tela 2 alimenta isto)
       let historico: unknown = { ultimos_15d: null, ultimo_mes: null, ultimos_3m: null, rodadas_anteriores: 0 };
       if (!isEspelhoDemo) try {
+        // sem orderBy na query de propósito: evita exigir índice composto —
+        // são poucas rodadas por corretor, ordenar aqui é barato
         const rs = await getDocs(query(collection(db, 'auditoriaRodadas'),
-          where('imobiliariaId', '==', imobiliariaId), where('corretorUid', '==', uid),
-          orderBy('geradoEm', 'desc'), qLimit(12)));
-        const rodadas = rs.docs.map((d) => d.data());
+          where('imobiliariaId', '==', imobiliariaId), where('corretorUid', '==', uid)));
+        const rodadas = rs.docs.map((d) => d.data())
+          .sort((a, b) => String(b.geradoEmYmd || '').localeCompare(String(a.geradoEmYmd || '')));
         historico = {
           rodadas_anteriores: rodadas.length,
           ultimas: rodadas.slice(0, 6).map((r: Record<string, unknown>) => ({
