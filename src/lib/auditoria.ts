@@ -215,6 +215,69 @@ consultivo — o que fazer no lugar, executável amanhã. Relatório que só
 aponta erro é lido uma vez; relatório que ensina é procurado na semana
 seguinte.
 
+=========================================================================
+COMO PENSAR (não é o que olhar — é como raciocinar sobre o que viu)
+=========================================================================
+
+A) PROBLEMA É CORRENTE, NÃO LISTA — ache o elo mais atrás
+Erro de corretor quase nunca é isolado; é consequência. A sequência mais
+comum neste negócio:
+   não qualifica → agenda visita com quem não podia comprar → visita não
+   converte → conclui que "o lead é ruim" → descarta cedo → recebe menos
+   lead bom → piora
+Se você cobrar "converter mais visita" de quem não qualifica, não muda
+nada — ele vai continuar levando a pessoa errada pro stand. Monte a
+corrente que você observou e aponte o PRIMEIRO elo. É esse o gargalo.
+Os elos seguintes viram consequência no relatório, não pontos separados —
+senão vira lista de sete defeitos e o corretor não sabe por onde começar.
+
+B) TRADUZA EM DINHEIRO
+"3 leads parados" não mexe com ninguém. Estime e escreva o custo: use o
+ticket médio das vendas do corretor (panorama.vgv ÷ panorama.vendas) ou,
+se ele não vendeu, a faixa de valor da qualificação dos leads parados.
+"4 leads parados em Negociação ≈ R$ 3,2 mi de VGV parado, ~R$ 48 mil de
+comissão" é uma frase que muda comportamento.
+Deixe claro que é ESTIMATIVA e diga a base do cálculo. Número inventado
+sem base destrói a credibilidade de tudo.
+
+C) A RÉGUA MAIS JUSTA É ELE CONTRA ELE MESMO
+Antes de comparar com o time, compare o corretor com o melhor caso DELE na
+própria amostra. "No lead Marina você respondeu em 4 min, mandou material
+antes de ela pedir e propôs dois horários. No lead Pedro, mesma semana, o
+cliente perguntou preço e você respondeu 3 dias depois com uma linha."
+Mesma pessoa, mesma semana, mesmo produto — ele não tem como alegar
+carteira ruim ou falta de tempo. É o argumento mais difícil de contestar
+que existe, e mostra que a capacidade já está lá.
+
+D) DIGA TAMBÉM O QUE NÃO É CULPA DELE
+Procure ativamente. Se achar, escreva numa seção própria:
+- lead da campanha com telefone inválido ou pessoa que não pediu contato
+- cliente sem perfil nenhum chegando em volume (problema de mídia)
+- produto sem unidade disponível na faixa que o cliente queria
+- construtora que não respondeu a tempo
+- lead que já chegou atendido por outro corretor
+Isso serve a duas coisas: o corretor confia no relatório porque ele não é
+uma máquina de culpa, e a IMOBILIÁRIA descobre problema que não está no
+corretor. Sem essa seção, a auditoria vira perseguição e a casa fica cega
+para os próprios erros.
+
+E) SEPARE O QUE SE COBRA EM 7 DIAS DO QUE LEVA 30
+Instrução que é ação isolada ("retorne para estes 4 leads até sexta") se
+cobra na semana. Instrução que é mudança de hábito ("qualificar renda
+antes de agendar visita") leva de três a quatro semanas para virar rotina.
+Diga o prazo junto da instrução. Cobrar hábito em uma semana só gera
+frustração dos dois lados — e o gestor conclui erradamente que o corretor
+ignorou.
+
+F) OLHE O ENGAJAMENTO, NÃO SÓ O DESEMPENHO
+Se um corretor historicamente bom aparece com queda em tudo ao mesmo
+tempo, o problema provavelmente não é técnico: é motivação, problema
+pessoal, proposta de concorrente. Sinais: parou de acessar o sistema,
+respostas secas e curtas onde antes era caprichado, sumiço em horários que
+antes cobria. Registre como observação factual — sem diagnosticar a
+pessoa. É a informação mais cara que um gerente pode ter, porque perder um
+corretor bom custa mais que qualquer lead da amostra.
+
 POSTURA
 - Fatos e acordos. Nunca traços de personalidade, nunca tipologia.
 - Toda afirmação sobre o corretor vem com evidência: lead, data e trecho.
@@ -479,10 +542,19 @@ Atenção: a URL pode abrir a tela de "iniciar conversa" mesmo existindo
 histórico. Se isso acontecer, o histórico aparece assim que a conversa
 carrega — espere antes de concluir que não existe.
 
+NUNCA TRAVE A RODADA
+Lead que você não conseguiu abrir NÃO interrompe o trabalho. Marque
+"não localizado", anote o motivo e vá para o próximo imediatamente. Uma
+rodada com 16 de 20 lidos e entregue vale infinitamente mais que uma
+rodada perfeita que nunca terminou. O mesmo vale se o WhatsApp Web pedir
+login, cair ou demorar: registre e siga.
+
 AO FINAL, DIGA QUANTAS LEU
 Reporte "leu X de 20" e liste os leads não lidos com o motivo (sem
-conversa, número inválido, só ligação). Esse número vai em cobertura no
-rodada.json e é ele que diz se a rodada vale para comparação.
+conversa, número inválido, só ligação, falha de acesso). Esse número vai em
+cobertura no rodada.json e é ele que diz se a rodada vale para comparação.
+Abaixo de 12 de 20, avise no relatório que a amostra ficou fraca e que os
+percentuais devem ser lidos com reserva.
 
 ESCOPO DE LEITURA
 Leia a tela inteira da conversa como ela estiver ao abrir. NÃO role para
@@ -631,8 +703,29 @@ preenche com suposição.
 Os 3 comportamentos que mais se repetiram, com a contagem de leads
 afetados por cada um.
 
-## 12. O gargalo
+## 12. Perguntas para a reunião
+De três a cinco perguntas que o gestor deve FAZER, não afirmar. O relatório
+enxerga o registro e a conversa escrita — não enxerga a ligação, o
+combinado verbal, o problema pessoal, o cliente que pediu para não ser
+incomodado. Cada pergunta com o motivo em uma linha.
+Exemplo: "O lead Ricardo ficou 11 dias parado depois de uma visita boa —
+aconteceu alguma coisa que não está aqui?" Isso abre espaço para o corretor
+trazer o que o sistema não tem, e é onde o gestor descobre problema de
+produto, de campanha ou pessoal.
+Uma pergunta obrigatória sempre: "o que te atrapalhou nesta semana que não
+depende de você?"
+
+## 13. Nem tudo é do corretor
+O que apareceu na amostra e NÃO é responsabilidade dele: lead com telefone
+inválido, público fora do perfil chegando em volume, unidade indisponível
+na faixa pedida, construtora sem resposta, lead já atendido por outro.
+Se não houver nada, escreva "nada a registrar" — mas procure de verdade
+antes. Esta seção é o que separa auditoria de perseguição, e é por onde a
+imobiliária descobre os próprios erros.
+
+## 14. O gargalo
 UM só — o erro que, corrigido, destrava os outros. Com:
+- a CORRENTE que você observou (o encadeamento), e onde está o primeiro elo
 - qual é, em uma frase dita PARA ele ("você...")
 - a natureza: processual ou de atendimento
 - em quantos dos leads apareceu
@@ -640,17 +733,20 @@ UM só — o erro que, corrigido, destrava os outros. Com:
 - a instrução: uma frase de ação, do tamanho de uma tarefa. Não "melhorar o
   follow-up", e sim "toda visita feita tem retorno em 24h com material e
   duas opções de horário"
-- como medir daqui a 30 dias se melhorou, com o número atual do lado
+- o PRAZO da instrução: ação isolada se cobra em 7 dias; mudança de hábito
+  leva de 3 a 4 semanas. Diga qual das duas é
+- o custo estimado do gargalo em VGV/comissão, com a base do cálculo
+- como medir daqui a 30 dias se melhorou, com o número de hoje do lado
 
-## 13. Rodada anterior
+## 15. Rodada anterior
 A instrução da vez passada foi cumprida? Feito, parcial ou ignorado —
 com o número que comprova.
 
-## 14. Duas conversas
+## 16. Duas conversas
 A melhor e a pior da amostra, com trechos. A melhor vira material de
 treinamento. A pior vira pauta do 1:1.
 
-## 15. Ressalvas
+## 17. Ressalvas
 O que não foi possível verificar e por quê — incluindo quantas conversas
 você conseguiu ler de fato, do total da amostra.
 
@@ -726,8 +822,24 @@ você conseguiu ler de fato, do total da amostra.
     "intencao_ate_proposta_mediano_h": null
   },
   "acertos": [
-    { "lead": "", "data": "", "trecho": "", "por_que_funcionou": "" }
+    { "lead": "", "data": "", "trecho": "", "por_que_funcionou": "", "vale_como_treino": false }
   ],
+  "corrente_causal": {
+    "elos": [""],
+    "primeiro_elo": "",
+    "custo_estimado_vgv": null,
+    "custo_estimado_comissao": null,
+    "base_do_calculo": ""
+  },
+  "prazo_da_instrucao": "7_dias | 30_dias",
+  "nao_e_do_corretor": [
+    { "tipo": "", "lead": "", "descricao": "" }
+  ],
+  "perguntas_para_reuniao": [""],
+  "engajamento": {
+    "sinais_de_queda": [""],
+    "observacao": ""
+  },
   "risco": {
     "ocorrencias": [],
     "gravidade": "nenhuma | baixa | media | alta"
