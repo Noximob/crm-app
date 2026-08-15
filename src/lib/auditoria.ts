@@ -154,15 +154,67 @@ O QUE PROCURAR EM CADA CONVERSA
 - Próximo passo definido ao fim da conversa (indicador mais preditivo)
 - Cadência: quais dos 6 contatos aconteceram e quando
 - Material enviado: fotos, vídeo do decorado, tabela — e em que momento
-- Áudio: quantidade, duração de cada um, quem enviou
-- Escrita e tom: erros, rajada de mensagens, tom inadequado
-- Mensagem copiada e colada entre leads diferentes
+
+=========================================================================
+QUALIDADE DA CONVERSA — o que SÓ o WhatsApp mostra
+=========================================================================
+Estas dimensões não existem no CRM. São o motivo de a auditoria cruzar as
+duas fontes, e é aqui que se descobre POR QUE um corretor com bom volume
+não converte.
+
+Regra que vale para todas: registre COMPORTAMENTO OBSERVADO com trecho e
+data. Nunca rótulo de pessoa. "Escreveu 'vc' e 'blz' em 8 das 10 conversas,
+inclusive com cliente de imóvel de 1,2M" é achado. "É desleixado" é ofensa
+disfarçada de análise — e o corretor derruba em dois minutos de reunião.
+
+1) RITMO E RECIPROCIDADE
+- Tempo que ELE leva pra responder dentro da conversa já iniciada (isso é
+  diferente do 1º contato: aqui o cliente já está falando com ele).
+- Vácuo: quem deixou quem esperando, e quanto tempo. Vácuo do corretor
+  depois de o cliente demonstrar interesse é o erro mais caro que existe.
+- Proporção da conversa: quem fala mais? Conversa saudável tem troca. Se o
+  corretor manda 10 e o cliente responde "ok", não houve conversa.
+- Quem encerra: se é sempre o cliente que some, veja o que veio antes.
+
+2) FORMATO — ESCRITA × ÁUDIO
+- Proporção de áudio e texto enviados por ele.
+- Duração de cada áudio. Acima de 2 minutos é sinal de risco.
+- ADEQUAÇÃO AO CLIENTE: cliente que só escreve e recebe áudio longo é
+  desalinho de canal — anote. O contrário também (cliente que manda áudio e
+  recebe texto seco).
+- Rajada: sete mensagens curtas seguidas em vez de uma organizada.
+- Áudio para informação que precisa ficar registrada (valores, condições,
+  endereço) é erro: o cliente não consegue reler.
+
+3) ESCRITA E CREDIBILIDADE
+- Erros de português que comprometem a autoridade de quem vende imóvel de
+  alto valor. Não é perfeccionismo: é o que o cliente pensa ao ler.
+- Abreviação excessiva (vc, blz, tb, pfv) — pese pelo ticket do imóvel.
+- CAPS LOCK, excesso de emoji, pontuação agressiva ("???").
+- Mensagem claramente copiada e colada entre leads diferentes: compare as
+  conversas entre si. Pitch padrão sem uma linha personalizada é achado.
+
+4) RAPPORT
+- Chamou o cliente pelo nome.
+- Retomou algo que o cliente falou antes (filho, mudança, prazo, trabalho).
+- Adaptou o tom ao do cliente, em vez de despejar o mesmo script.
+- Perguntou algo além do imóvel.
+- SINAIS DE VOLTA (o mais confiável): o cliente responde rápido, manda
+  áudio, usa emoji, agradece, conta algo pessoal. Rapport não se mede pelo
+  que o corretor faz, e sim pelo que o cliente devolve.
+
+5) CONDUÇÃO COMERCIAL
+- Fez pergunta aberta ou só respondeu o que perguntaram? Corretor que só
+  responde é atendente, não vendedor.
+- Ancorou valor (localização, obra, potencial) antes de falar preço?
+- Diante do silêncio, insistiu com ângulo NOVO ou repetiu a mesma mensagem?
+- Ofereceu alternativa quando o imóvel não serviu, ou deixou morrer?
 
 SOBRE ÁUDIO
-Você não consegue ouvir. Não tente. Registre quantidade, duração e quem
-enviou. Áudio acima de 2 minutos enviado pelo corretor é sinal de risco.
-Se boa parte do atendimento for áudio, registre isso como achado: o CRM
-nunca vai refletir o que foi dito.
+Você não consegue ouvir. Não tente e não suponha o conteúdo. Registre
+quantidade, duração, quem enviou e em que ponto da conversa. Se boa parte
+do atendimento for áudio, registre isso como achado estrutural: o CRM nunca
+vai refletir o que foi dito, e a auditoria fica cega nessa parte.
 
 O QUE NÃO FAZER
 - Não invente o que não conseguiu ler.
@@ -227,13 +279,27 @@ da mediana do time quando houver. Métricas null aparecem como
 
 ## 2. Tabela dos leads auditados
 Uma linha por lead:
-nome | etapa | dias sem toque | cadência (x/6) | vácuo | divergência CRM | achado principal
+nome | etapa | dias sem toque | cadência (x/6) | vácuo | divergência CRM |
+áudio/texto | próximo passo | achado principal
 
-## 3. Padrões recorrentes
+## 3. Qualidade da conversa
+Como o time conversa, com contagem e um exemplo de cada:
+- Ritmo: tempo mediano de resposta dele dentro da conversa; em quantas
+  conversas ele deixou o cliente no vácuo depois de sinal de interesse
+- Formato: % de áudio, áudios acima de 2 min, casos de desalinho de canal
+- Escrita: erros que comprometem credibilidade, abreviação com ticket alto,
+  rajada de mensagens
+- Rapport: em quantas chamou pelo nome, retomou algo pessoal, e em quantas
+  o CLIENTE devolveu sinal (resposta rápida, áudio, agradecimento)
+- Condução: em quantas houve pergunta aberta, tratamento de objeção e
+  proposta de próximo passo
+- Personalização: quantas mensagens eram claramente copiadas entre leads
+
+## 4. Padrões recorrentes
 Os 3 comportamentos que mais se repetiram, com a contagem de leads
 afetados por cada um.
 
-## 4. O gargalo
+## 5. O gargalo
 UM só. Com:
 - qual é, em uma frase
 - em quantos dos leads apareceu
@@ -241,15 +307,15 @@ UM só. Com:
 - a instrução: o que ele deve fazer diferente, em linguagem de ação
 - como medir daqui a 30 dias se melhorou
 
-## 5. Rodada anterior
+## 6. Rodada anterior
 A instrução da vez passada foi cumprida? Feito, parcial ou ignorado —
 com o número que comprova.
 
-## 6. Duas conversas
+## 7. Duas conversas
 A melhor e a pior da amostra, com trechos. A melhor vira material de
 treinamento. A pior vira pauta do 1:1.
 
-## 7. Ressalvas
+## 8. Ressalvas
 O que não foi possível verificar e por quê.
 
 === ARQUIVO 2: rodada.json (para o CRM importar) ===
@@ -271,6 +337,20 @@ O que não foi possível verificar e por quê.
     "vendas": null,
     "vgv": null
   },
+  "qualidade_conversa": {
+    "tempo_resposta_mediano_min": null,
+    "conversas_com_vacuo_do_corretor": null,
+    "audio_pct_do_corretor": null,
+    "audios_acima_2min": null,
+    "desalinho_de_canal": null,
+    "erros_escrita_relevantes": null,
+    "mensagens_copiadas_entre_leads": null,
+    "chamou_pelo_nome_pct": null,
+    "retomou_algo_pessoal_pct": null,
+    "cliente_devolveu_sinal_pct": null,
+    "pergunta_aberta_pct": null,
+    "objecao_tratada_pct": null
+  },
   "gargalo": "",
   "instrucao": "",
   "status_instrucao_anterior": "feito | parcial | ignorado | primeira_rodada",
@@ -284,7 +364,11 @@ O que não foi possível verificar e por quê.
 Regras do arquivo 2:
 - gargalo e instrucao: uma frase cada, direta e acionável.
 - Métrica que não deu para apurar vai null, não zero.
-- Descreva comportamento observado, nunca personalidade.`;
+- Descreva comportamento observado, nunca personalidade.
+- Em qualidade_conversa, os "_pct" são sobre as conversas que você
+  CONSEGUIU LER — não sobre o total da amostra. Se leu 12 de 20, a base é
+  12, e isso vai nas ressalvas.
+- Não invente número de áudio: se a conversa não deixa ver duração, vai null.`;
 
 export const DIRETRIZES_PADRAO: DiretrizesAuditoria = {
   versao: 'v1',

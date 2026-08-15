@@ -77,6 +77,15 @@ export const METRICAS: RegraMetrica[] = [
   { chave: 'conversao_venda', rotulo: 'Conversão lead → venda', tipo: 'conversao', ...EXIGENCIA.conversao, usoHoje: 'O ciclo do imóvel é longo: quem entrou agora ainda nem teve tempo de fechar.' },
   { chave: 'ciclo_venda', rotulo: 'Ciclo médio lead → venda', tipo: 'conversao', ...EXIGENCIA.conversao, usoHoje: 'Só as vendas já fechadas contam, e elas enviesam pra baixo no começo.' },
 
+  // ── QUALIDADE DA CONVERSA: não sai do CRM, só da auditoria do WhatsApp.
+  // Cada conversa lida é uma observação, então amadurece por rodada e não
+  // por tempo de base — duas rodadas de 20 leads já dão leitura. ──
+  { chave: 'ritmo_conversa', rotulo: 'Ritmo de resposta dentro da conversa', tipo: 'ritmo', ...EXIGENCIA.ritmo, usoHoje: 'Só via auditoria. Diferente do 1º contato: aqui o cliente já estava falando com ele.' },
+  { chave: 'escrita_audio', rotulo: 'Escrita × áudio (e adequação ao cliente)', tipo: 'ritmo', ...EXIGENCIA.ritmo, usoHoje: 'Só via auditoria. Áudio longo pra quem só escreve é desalinho de canal.' },
+  { chave: 'rapport', rotulo: 'Rapport (medido pelo que o CLIENTE devolve)', tipo: 'ritmo', ...EXIGENCIA.ritmo, usoHoje: 'Só via auditoria. Não meça pelo que o corretor faz — meça pela resposta do cliente.' },
+  { chave: 'personalizacao', rotulo: 'Personalização × mensagem copiada', tipo: 'ritmo', ...EXIGENCIA.ritmo, usoHoje: 'Só via auditoria, comparando as conversas entre si.' },
+  { chave: 'conducao_comercial', rotulo: 'Condução comercial (pergunta, objeção, próximo passo)', tipo: 'ritmo', ...EXIGENCIA.ritmo, usoHoje: 'Só via auditoria. É o que explica volume alto sem conversão.' },
+
   // ── TENDÊNCIA: precisa de dois períodos ──
   { chave: 'delta_periodo', rotulo: 'Melhorou/piorou vs período anterior', tipo: 'tendencia', ...EXIGENCIA.tendencia, usoHoje: 'Sem dois períodos cheios, "melhorou" é ruído. Compare com o TIME.' },
   { chave: 'serie_semanal', rotulo: 'Série semanal (tendência)', tipo: 'tendencia', ...EXIGENCIA.tendencia, usoHoje: 'Junte semanas até ter 8. Antes disso, leia como pontos soltos.' },
