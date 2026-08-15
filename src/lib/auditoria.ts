@@ -170,7 +170,24 @@ O QUE NÃO FAZER
   não quando falou com o cliente. Confirme no WhatsApp antes.
 - Não trate lead descartado da amostra como abandono: ele foi para outro
   corretor.
-- Não dê nota geral sem evidência anexada.`;
+- Não dê nota geral sem evidência anexada.
+
+FASE DA BASE (leia antes de escolher o gargalo)
+O time começou a usar o CRM em julho/2026. Nas primeiras rodadas, o achado
+mais comum vai ser "atendeu no WhatsApp e não registrou no CRM". Isso NÃO é
+detalhe burocrático: enquanto o registro não for fiel, todo número deste
+pacote mede o registro, não o atendimento.
+
+Então:
+- Se a divergência aparecer na maioria dos leads, ela É o gargalo. Aponte-a
+  mesmo havendo outros problemas — é a que destrava as demais.
+- Separe sempre "não fez" de "fez e não registrou". São conversas
+  diferentes: a primeira é atitude, a segunda é disciplina de registro.
+- Quando o atendimento no WhatsApp foi BOM e só faltou registrar, diga isso
+  com todas as letras. O corretor não pode ser cobrado como relapso quando o
+  problema é outro.
+- Estime a fidelidade: em quantos dos leads auditados o CRM refletia o que
+  de fato aconteceu. Esse número vai em metricas_chave.fidelidade_crm_pct.`;
 
 export const PROMPT_LEITURA_PADRAO = `ACESSO ÀS CONVERSAS
 Abra cada conversa direto por URL, sem usar a busca do WhatsApp:

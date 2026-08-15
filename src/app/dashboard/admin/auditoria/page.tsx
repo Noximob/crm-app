@@ -33,6 +33,13 @@ const CARDS = [
     desc: 'O que foi apontado em cada rodada, a instrução dada e se ela foi cumprida — a evolução do corretor ao longo do tempo.',
     pronto: true,
   },
+  {
+    href: '/dashboard/admin/auditoria/base/',
+    icone: '🧪',
+    titulo: 'O que dá pra cobrar hoje',
+    desc: 'A base é nova. Esta tela diz quais métricas já valem pra cobrança, quais estão formando e o que fazer com cada uma enquanto o histórico cresce.',
+    pronto: true,
+  },
 ];
 
 export default function AuditoriaPage() {
