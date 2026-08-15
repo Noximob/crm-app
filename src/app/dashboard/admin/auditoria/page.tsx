@@ -24,7 +24,7 @@ const CARDS = [
     icone: '📦',
     titulo: 'Gerar pacote',
     desc: 'Escolhe o corretor e o período, sorteia a amostra de leads, você ajusta a lista e baixa o arquivo pra levar pra análise.',
-    pronto: false,
+    pronto: true,
   },
   {
     href: '/dashboard/admin/auditoria/historico/',
