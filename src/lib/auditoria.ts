@@ -216,6 +216,121 @@ quantidade, duração, quem enviou e em que ponto da conversa. Se boa parte
 do atendimento for áudio, registre isso como achado estrutural: o CRM nunca
 vai refletir o que foi dito, e a auditoria fica cega nessa parte.
 
+=========================================================================
+O QUE MAIS CUSTA DINHEIRO — procure sempre, mesmo que o resto esteja bom
+=========================================================================
+
+6) SINAL DE COMPRA IGNORADO  ← o achado mais caro que existe
+O cliente avisa quando está pronto, e quase nunca dizendo "quero comprar".
+Ele diz: "quanto fica a parcela?", "posso ver no sábado?", "minha esposa
+quer conhecer", "aceita financiamento?", "esse é o último andar?", "até
+quando fica esse preço?". Cada uma dessas é mão levantada.
+Procure: houve sinal? o corretor RECONHECEU? o que fez em seguida?
+Sinal de compra respondido com informação seca, sem propor próximo passo,
+é dinheiro indo embora com data e hora registradas. Liste um por um.
+
+7) HORÁRIO E DIA DE ATENDIMENTO
+Cliente de imóvel decide à noite e no fim de semana — é quando ele está com
+a família e com tempo. Levante a distribuição dos horários em que ELE
+responde. Corretor que só existe das 9h às 18h de segunda a sexta perde
+justamente a janela em que o cliente pensa em comprar.
+Isto NÃO contradiz o horário útil das diretrizes: aquilo é o que a casa
+pode COBRAR; isto é oportunidade que ele está deixando na mesa. São coisas
+diferentes e a análise não deve confundir as duas.
+
+8) RISCO PARA A IMOBILIÁRIA  ← levante com prioridade máxima
+Registre qualquer um destes, com trecho literal:
+- prometeu desconto, condição de pagamento ou prazo sem autorização
+- afirmou algo sobre a obra/entrega que pode não se cumprir
+- passou valor divergente da tabela
+- falou mal de concorrente, de colega ou da construtora
+- expôs dado de outro cliente
+- combinou pagamento por fora do processo
+Isso vai numa seção própria do relatório, separada do gargalo. Não é
+questão de desempenho: é exposição da empresa.
+
+9) CHAMADAS DE VOZ NÃO REGISTRADAS
+O WhatsApp mostra chamadas (feitas, recebidas, perdidas). Compare com a
+timeline do CRM. Ligação de 12 minutos que não virou anotação nenhuma é o
+caso mais comum de "atendeu bem e registrou mal" — e é a evidência que
+inocenta o corretor de acusação de demora.
+
+10) CONHECIMENTO DO PRODUTO
+Cliente perguntou metragem, posição solar, condição de pagamento, previsão
+de entrega — e ele soube responder? Desconversou? Prometeu retornar e não
+voltou? Mandou material do empreendimento errado?
+Erro de produto em fase avançada (pós-visita) é o que mais derruba negócio
+pronto, e não aparece em número nenhum do CRM.
+
+11) PRIORIZAÇÃO
+Compare o esforço dele entre os leads da amostra. Lead de ticket alto ou
+com sinal claro de compra recebeu mais atenção que lead frio? Ou ele trata
+todos igual — e, pior, atende primeiro quem responde mais rápido em vez de
+quem está mais perto de comprar?
+
+12) TENTATIVA DE RECUPERAÇÃO
+No lead que esfriou, o que ele fez? "Oi, tudo bem?" não é recuperação — é
+ocupação. Recuperação é ângulo NOVO: unidade que abriu, condição que mudou,
+obra que avançou, cliente parecido que fechou. Registre qual dos dois.
+
+=========================================================================
+ESPECÍFICO DE IMÓVEL — onde este negócio se decide
+=========================================================================
+
+13) QUALIFICAÇÃO FINANCEIRA ANTES DO ESFORÇO
+Imóvel tem ciclo longo e caro: cada visita custa tempo, deslocamento e
+disponibilidade de unidade. O corretor levantou entrada, renda ou aprovação
+de crédito ANTES de investir visita e proposta? Ou passou três semanas com
+alguém que nunca teve capacidade?
+Cuidado com a leitura inversa: qualificar não é interrogar no primeiro
+contato. Procure se ele levantou em ALGUM momento antes do esforço pesado.
+
+14) QUEM DECIDE
+Em imóvel raramente decide uma pessoa só: cônjuge, pais, sócio, filho que
+entende de investimento. O corretor identificou o outro decisor e tentou
+trazê-lo pra conversa/visita? Negociar semanas com quem não assina é dos
+erros mais caros e mais invisíveis.
+
+15) URGÊNCIA E PRAZO DO CLIENTE
+"Preciso mudar até dezembro", "meu aluguel vence em março", "quero antes do
+casamento". Prazo muda tudo: prioridade, argumento e ritmo de cobrança.
+Ele perguntou? Quando o cliente falou, ele USOU isso depois?
+
+16) FOLLOW-UP PÓS-VISITA  ← o momento mais crítico do funil
+Depois da visita o cliente está no pico de interesse, e é onde mais se
+perde negócio pronto. Meça: quanto tempo até o corretor retornar, e o que
+ele mandou. Retorno em 24h com material e proposta de próximo passo é o
+padrão; três dias de silêncio depois de uma visita boa é o desperdício mais
+caro que existe neste negócio.
+
+17) PREPARO DA VISITA
+Mandou material, localização e o que esperar ANTES de o cliente ir? Cliente
+que chega no stand sem contexto rende visita fraca. Depois: confirmou na
+véspera? (falta de confirmação é a causa nº 1 de no-show).
+
+18) CONCORRÊNCIA NA MESA
+O cliente mencionou outro imóvel, outra imobiliária, outro corretor? O que
+ele fez: perguntou o que agradou lá, defendeu o produto com argumento, ou
+ignorou? Cliente comparando é cliente em decisão — ignorar isso é entregar
+a venda.
+
+19) DA INTENÇÃO À PROPOSTA
+Quando surgiu intenção real, quanto tempo até virar proposta/tabela na mão
+do cliente? Intenção que fica dois dias sem formalização esfria, e o
+concorrente formaliza primeiro.
+
+=========================================================================
+O QUE ELE FAZ BEM — obrigatório, não é cortesia
+=========================================================================
+Auditoria que só encontra erro é ignorada na segunda rodada e o corretor
+para de colaborar. Além disso, o que um corretor faz bem é o material de
+treinamento mais barato que a imobiliária tem: veio de dentro de casa, com
+o cliente real e o produto real.
+Registre pelo menos DOIS acertos concretos, com trecho: uma abordagem que
+gerou resposta rápida, um tratamento de objeção que destravou, uma
+recuperação que funcionou. Se de fato não houver nada, escreva isso — mas
+procure de verdade antes.
+
 O QUE NÃO FAZER
 - Não invente o que não conseguiu ler.
 - Não cobre demora usando só o CRM: o carimbo mede quando ele REGISTROU,
@@ -295,11 +410,43 @@ Como o time conversa, com contagem e um exemplo de cada:
   proposta de próximo passo
 - Personalização: quantas mensagens eram claramente copiadas entre leads
 
-## 4. Padrões recorrentes
+## 4. Oportunidade perdida (dinheiro na mesa)
+- Sinais de compra ignorados: um por um, com lead, data, o que o cliente
+  disse e o que o corretor respondeu
+- Janela de atendimento: em que horários e dias ele responde, e o que isso
+  deixa passar
+- Chamadas de voz sem registro no CRM
+- Falhas de produto: pergunta que ele não soube responder ou material errado
+- Priorização: recebeu mais esforço quem estava mais perto de comprar?
+- Recuperação: nos leads frios, houve ângulo novo ou só "oi, tudo bem?"
+
+## 5. Risco para a imobiliária
+Só o que for concreto, com trecho literal: promessa não autorizada, valor
+divergente da tabela, informação duvidosa sobre a obra, fala sobre
+concorrente/colega/construtora, exposição de dado de outro cliente.
+Se não houver nada, escreva "nada a registrar" — essa seção não se
+preenche com suposição.
+
+## 6. O funil de imóvel
+- Qualificação financeira: em quantos ele levantou capacidade antes do
+  esforço pesado
+- Decisor: em quantos identificou quem mais decide
+- Prazo do cliente: em quantos levantou, e se usou depois
+- Pós-visita: tempo mediano até o retorno, e quantas visitas ficaram sem
+  retorno em 24h
+- Preparo e confirmação de visita/meet na véspera
+- Concorrência mencionada pelo cliente e o que ele fez
+- Intenção → proposta: tempo mediano
+
+## 7. O que ele faz bem
+Pelo menos dois acertos concretos com trecho e data. Isto vira material de
+treinamento do time — não é elogio de cortesia.
+
+## 8. Padrões recorrentes
 Os 3 comportamentos que mais se repetiram, com a contagem de leads
 afetados por cada um.
 
-## 5. O gargalo
+## 9. O gargalo
 UM só. Com:
 - qual é, em uma frase
 - em quantos dos leads apareceu
@@ -307,16 +454,17 @@ UM só. Com:
 - a instrução: o que ele deve fazer diferente, em linguagem de ação
 - como medir daqui a 30 dias se melhorou
 
-## 6. Rodada anterior
+## 10. Rodada anterior
 A instrução da vez passada foi cumprida? Feito, parcial ou ignorado —
 com o número que comprova.
 
-## 7. Duas conversas
+## 11. Duas conversas
 A melhor e a pior da amostra, com trechos. A melhor vira material de
 treinamento. A pior vira pauta do 1:1.
 
-## 8. Ressalvas
-O que não foi possível verificar e por quê.
+## 12. Ressalvas
+O que não foi possível verificar e por quê — incluindo quantas conversas
+você conseguiu ler de fato, do total da amostra.
 
 === ARQUIVO 2: rodada.json (para o CRM importar) ===
 
@@ -351,6 +499,39 @@ O que não foi possível verificar e por quê.
     "pergunta_aberta_pct": null,
     "objecao_tratada_pct": null
   },
+  "oportunidade_perdida": {
+    "sinais_de_compra_identificados": null,
+    "sinais_de_compra_ignorados": null,
+    "atende_fora_do_horario_comercial": null,
+    "atende_fim_de_semana": null,
+    "chamadas_voz_sem_registro": null,
+    "falhas_de_conhecimento_produto": null,
+    "priorizou_lead_mais_quente": null,
+    "recuperacao_com_angulo_novo": null,
+    "recuperacao_generica": null
+  },
+  "funil_imovel": {
+    "qualificacao_financeira_pct": null,
+    "decisor_identificado_pct": null,
+    "prazo_do_cliente_levantado_pct": null,
+    "retorno_pos_visita_mediano_h": null,
+    "visitas_sem_retorno_24h": null,
+    "confirmou_vespera_pct": null,
+    "concorrencia_mencionada": null,
+    "intencao_ate_proposta_mediano_h": null
+  },
+  "acertos": [
+    { "lead": "", "data": "", "trecho": "", "por_que_funcionou": "" }
+  ],
+  "risco": {
+    "ocorrencias": [],
+    "gravidade": "nenhuma | baixa | media | alta"
+  },
+  "cobertura": {
+    "leads_na_amostra": null,
+    "conversas_lidas": null,
+    "sem_conversa_localizada": null
+  },
   "gargalo": "",
   "instrucao": "",
   "status_instrucao_anterior": "feito | parcial | ignorado | primeira_rodada",
@@ -366,9 +547,12 @@ Regras do arquivo 2:
 - Métrica que não deu para apurar vai null, não zero.
 - Descreva comportamento observado, nunca personalidade.
 - Em qualidade_conversa, os "_pct" são sobre as conversas que você
-  CONSEGUIU LER — não sobre o total da amostra. Se leu 12 de 20, a base é
-  12, e isso vai nas ressalvas.
-- Não invente número de áudio: se a conversa não deixa ver duração, vai null.`;
+  CONSEGUIU LER — não sobre o total da amostra. Preencha "cobertura" com os
+  três números para a leitura ficar auditável.
+- Não invente número de áudio: se a conversa não deixa ver duração, vai null.
+- Em "risco", cada ocorrência precisa de { lead, data, trecho }. Sem trecho
+  literal, não registre — acusação sem prova destrói a confiança na
+  auditoria inteira. Nenhuma ocorrência = gravidade "nenhuma".`;
 
 export const DIRETRIZES_PADRAO: DiretrizesAuditoria = {
   versao: 'v1',

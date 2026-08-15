@@ -85,6 +85,16 @@ export const METRICAS: RegraMetrica[] = [
   { chave: 'rapport', rotulo: 'Rapport (medido pelo que o CLIENTE devolve)', tipo: 'ritmo', ...EXIGENCIA.ritmo, usoHoje: 'Só via auditoria. Não meça pelo que o corretor faz — meça pela resposta do cliente.' },
   { chave: 'personalizacao', rotulo: 'Personalização × mensagem copiada', tipo: 'ritmo', ...EXIGENCIA.ritmo, usoHoje: 'Só via auditoria, comparando as conversas entre si.' },
   { chave: 'conducao_comercial', rotulo: 'Condução comercial (pergunta, objeção, próximo passo)', tipo: 'ritmo', ...EXIGENCIA.ritmo, usoHoje: 'Só via auditoria. É o que explica volume alto sem conversão.' },
+  { chave: 'sinal_compra', rotulo: 'Sinal de compra ignorado', tipo: 'estado', ...EXIGENCIA.estado, usoHoje: 'Só via auditoria — e é o achado mais caro. Um único caso já é pauta: tem data, trecho e valor perdido.' },
+  { chave: 'janela_atendimento', rotulo: 'Horário e dia em que ele atende', tipo: 'ritmo', ...EXIGENCIA.ritmo, usoHoje: 'Só via auditoria. Cliente de imóvel decide à noite e no fim de semana — não confundir com o que a casa pode cobrar.' },
+  { chave: 'risco_empresa', rotulo: 'Risco para a imobiliária (promessa, valor, exposição)', tipo: 'estado', ...EXIGENCIA.estado, usoHoje: 'Só via auditoria. Uma ocorrência já basta pra agir — não é desempenho, é exposição da empresa.' },
+  { chave: 'chamadas_sem_registro', rotulo: 'Chamadas de voz sem registro no CRM', tipo: 'estado', ...EXIGENCIA.estado, usoHoje: 'Só via auditoria. É a evidência que INOCENTA quem atendeu bem e registrou mal.' },
+  { chave: 'conhecimento_produto', rotulo: 'Conhecimento do produto', tipo: 'ritmo', ...EXIGENCIA.ritmo, usoHoje: 'Só via auditoria. Erro de produto pós-visita derruba negócio pronto e não aparece em número nenhum.' },
+  { chave: 'pos_visita', rotulo: 'Follow-up pós-visita (tempo até retornar)', tipo: 'ritmo', ...EXIGENCIA.ritmo, usoHoje: 'Só via auditoria. É o momento de pico de interesse — 3 dias de silêncio depois de visita boa é o desperdício mais caro do negócio.' },
+  { chave: 'qualificacao_financeira', rotulo: 'Qualificação financeira antes do esforço', tipo: 'ritmo', ...EXIGENCIA.ritmo, usoHoje: 'Só via auditoria. Três semanas com quem nunca teve capacidade é visita, tempo e unidade desperdiçados.' },
+  { chave: 'decisor', rotulo: 'Identificou quem mais decide', tipo: 'ritmo', ...EXIGENCIA.ritmo, usoHoje: 'Só via auditoria. Negociar com quem não assina é o erro mais invisível que existe.' },
+  { chave: 'concorrencia', rotulo: 'Tratou a concorrência mencionada', tipo: 'ritmo', ...EXIGENCIA.ritmo, usoHoje: 'Só via auditoria. Cliente comparando é cliente em decisão — ignorar é entregar a venda.' },
+  { chave: 'acertos', rotulo: 'O que ele faz BEM (material de treino)', tipo: 'estado', ...EXIGENCIA.estado, usoHoje: 'Só via auditoria. Auditoria que só acha erro é ignorada na 2ª rodada — e o acerto interno é o treinamento mais barato que existe.' },
 
   // ── TENDÊNCIA: precisa de dois períodos ──
   { chave: 'delta_periodo', rotulo: 'Melhorou/piorou vs período anterior', tipo: 'tendencia', ...EXIGENCIA.tendencia, usoHoje: 'Sem dois períodos cheios, "melhorou" é ruído. Compare com o TIME.' },
