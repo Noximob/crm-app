@@ -634,7 +634,73 @@ blocos, nesta ordem — nenhum ponto sai sem o último:
 - **O que fazer no lugar** — o consultivo. Ação executável amanhã, com a
   mensagem pronta quando fizer sentido. Sem isto, o ponto não entra.
 
-## 4. Panorama — o que o CRM diz × o que de fato aconteceu
+## 4. QUADRO DE INDICADORES  ← obrigatório, sai IGUAL em toda rodada
+Tabela fechada. Mesmos indicadores, mesma ordem, sempre — é isso que
+permite comparar a rodada 1 com a rodada 8. Indicador que você não
+conseguiu apurar vai "n/d", nunca zero e nunca sumindo da tabela.
+
+Colunas: INDICADOR | VALOR | REFERÊNCIA | RODADA ANTERIOR | STATUS
+
+REFERÊNCIA = a régua das diretrizes quando existir; senão a mediana do
+time vinda do panorama.benchmark_time; senão "—".
+STATUS = 🟢 dentro / 🟡 atenção / 🔴 fora / ⚪ n/d, pelos limiares abaixo.
+
+A. VELOCIDADE
+ 1. 1º contato — mediana em minutos ÚTEIS (real, pós-cruzamento)
+    🟢 ≤ prazo das diretrizes · 🟡 até 3× o prazo · 🔴 acima
+ 2. % de leads novos com 1º contato dentro do prazo
+    🟢 ≥90% · 🟡 70-89% · 🔴 <70%
+ 3. Aceite no rodízio — mediana em minutos
+    🟢 ≤5 · 🟡 6-30 · 🔴 >30
+ 4. Tempo mediano de resposta DENTRO da conversa
+    🟢 ≤30min · 🟡 até 4h · 🔴 >4h
+
+B. DISCIPLINA E COBERTURA
+ 5. Fidelidade do CRM — % dos leads em que o registro bate com o WhatsApp
+    🟢 ≥80% · 🟡 50-79% · 🔴 <50%
+ 6. % de leads ativos com próximo passo agendado
+    🟢 ≥90% · 🟡 70-89% · 🔴 <70%
+ 7. Tarefas vencidas +24h em aberto (número)
+    🟢 0 · 🟡 1-3 · 🔴 4+
+ 8. % da carteira ativa parada além do prazo de lead parado
+    🟢 ≤5% · 🟡 6-15% · 🔴 >15%
+ 9. % de leads com qualificação preenchida
+    🟢 ≥80% · 🟡 50-79% · 🔴 <50%
+
+C. FUNIL
+10. % 1º contato → meet marcado
+11. % meet marcado → meet feito     🟢 ≥75% · 🟡 50-74% · 🔴 <50%
+12. % visita marcada → visita feita  🟢 ≥70% · 🟡 50-69% · 🔴 <50%
+13. % visita feita → negociação
+14. Retorno pós-visita — mediana em horas
+    🟢 ≤24h · 🟡 25-72h · 🔴 >72h
+Nos itens 10 e 13, sem limiar fixo: compare com a mediana do time e diga
+se está acima ou abaixo. Base menor que 5 → marque "amostra pequena" e
+não classifique status.
+
+D. CONVERSA
+15. % de conversas em que ele propôs próximo passo concreto
+    🟢 ≥80% · 🟡 50-79% · 🔴 <50%
+16. % de conversas com pergunta aberta / descoberta
+17. % de conversas com sinal de compra — e quantos foram IGNORADOS
+    Qualquer sinal ignorado = 🔴, independentemente do percentual
+18. % de áudio no que ELE enviou (e nº de áudios acima de 2 min)
+19. % de conversas com personalização (vs mensagem copiada)
+    🟢 ≥80% · 🟡 50-79% · 🔴 <50%
+
+E. RESULTADO
+20. Meets feitos · visitas feitas · vendas · VGV (números absolutos)
+21. Conversão lead → venda no período (só informativo se a base for curta)
+22. Cobertura da auditoria: leu X de 20 (🟢 ≥16 · 🟡 12-15 · 🔴 <12)
+
+FECHAMENTO DO QUADRO
+Logo abaixo da tabela, três linhas:
+- quantos 🟢, 🟡 e 🔴
+- os 3 piores indicadores em ordem
+- o indicador que mais MELHOROU e o que mais PIOROU vs a rodada anterior
+  (se for a primeira rodada, escreva "linha de base — primeira medição")
+
+## 5. Panorama — o que o CRM diz × o que de fato aconteceu
 Duas colunas para cada número que a auditoria conseguiu verificar:
 o valor do CRM e o valor REAL depois do cruzamento com o WhatsApp.
 Onde houver diferença, marque e explique em uma linha.
@@ -643,14 +709,14 @@ medindo quando ele anotou, não quando falou".
 Métricas null aparecem como "não medido no período", nunca como zero.
 Sempre ao lado da mediana do time quando houver.
 
-## 5. Veredito dos quatro estados
+## 6. Veredito dos quatro estados
 A contagem geral dos achados:
 - ✓ fez e registrou: N
 - ⚠ fez e NÃO registrou (processo): N
 - ✗ não fez (atendimento): N
 - ? não verificável: N
 
-## 6. Tabela dos leads auditados
+## 7. Tabela dos leads auditados
 Uma linha por lead:
 nome | etapa CRM | etapa real | veredito (✓ ⚠ ✗ ?) | dias sem toque |
 cadência (x/6) | vácuo | áudio/texto | próximo passo | achado principal
@@ -658,7 +724,7 @@ cadência (x/6) | vácuo | áudio/texto | próximo passo | achado principal
 A coluna "etapa real" é onde mais aparece defasagem: lead que no CRM está
 em Em Contato e no WhatsApp já visitou.
 
-## 7. Qualidade da conversa
+## 8. Qualidade da conversa
 Como o time conversa, com contagem e um exemplo de cada:
 - Ritmo: tempo mediano de resposta dele dentro da conversa; em quantas
   conversas ele deixou o cliente no vácuo depois de sinal de interesse
@@ -671,7 +737,7 @@ Como o time conversa, com contagem e um exemplo de cada:
   proposta de próximo passo
 - Personalização: quantas mensagens eram claramente copiadas entre leads
 
-## 8. Oportunidade perdida (dinheiro na mesa)
+## 9. Oportunidade perdida (dinheiro na mesa)
 - Sinais de compra ignorados: um por um, com lead, data, o que o cliente
   disse e o que o corretor respondeu
 - Janela de atendimento: em que horários e dias ele responde, e o que isso
@@ -681,14 +747,14 @@ Como o time conversa, com contagem e um exemplo de cada:
 - Priorização: recebeu mais esforço quem estava mais perto de comprar?
 - Recuperação: nos leads frios, houve ângulo novo ou só "oi, tudo bem?"
 
-## 9. Risco para a imobiliária
+## 10. Risco para a imobiliária
 Só o que for concreto, com trecho literal: promessa não autorizada, valor
 divergente da tabela, informação duvidosa sobre a obra, fala sobre
 concorrente/colega/construtora, exposição de dado de outro cliente.
 Se não houver nada, escreva "nada a registrar" — essa seção não se
 preenche com suposição.
 
-## 10. O funil de imóvel
+## 11. O funil de imóvel
 - Qualificação financeira: em quantos ele levantou capacidade antes do
   esforço pesado
 - Decisor: em quantos identificou quem mais decide
@@ -699,11 +765,11 @@ preenche com suposição.
 - Concorrência mencionada pelo cliente e o que ele fez
 - Intenção → proposta: tempo mediano
 
-## 11. Padrões recorrentes
+## 12. Padrões recorrentes
 Os 3 comportamentos que mais se repetiram, com a contagem de leads
 afetados por cada um.
 
-## 12. Perguntas para a reunião
+## 13. Perguntas para a reunião
 De três a cinco perguntas que o gestor deve FAZER, não afirmar. O relatório
 enxerga o registro e a conversa escrita — não enxerga a ligação, o
 combinado verbal, o problema pessoal, o cliente que pediu para não ser
@@ -715,7 +781,7 @@ produto, de campanha ou pessoal.
 Uma pergunta obrigatória sempre: "o que te atrapalhou nesta semana que não
 depende de você?"
 
-## 13. Nem tudo é do corretor
+## 14. Nem tudo é do corretor
 O que apareceu na amostra e NÃO é responsabilidade dele: lead com telefone
 inválido, público fora do perfil chegando em volume, unidade indisponível
 na faixa pedida, construtora sem resposta, lead já atendido por outro.
@@ -723,7 +789,7 @@ Se não houver nada, escreva "nada a registrar" — mas procure de verdade
 antes. Esta seção é o que separa auditoria de perseguição, e é por onde a
 imobiliária descobre os próprios erros.
 
-## 14. O gargalo
+## 15. O gargalo
 UM só — o erro que, corrigido, destrava os outros. Com:
 - a CORRENTE que você observou (o encadeamento), e onde está o primeiro elo
 - qual é, em uma frase dita PARA ele ("você...")
@@ -738,15 +804,15 @@ UM só — o erro que, corrigido, destrava os outros. Com:
 - o custo estimado do gargalo em VGV/comissão, com a base do cálculo
 - como medir daqui a 30 dias se melhorou, com o número de hoje do lado
 
-## 15. Rodada anterior
+## 16. Rodada anterior
 A instrução da vez passada foi cumprida? Feito, parcial ou ignorado —
 com o número que comprova.
 
-## 16. Duas conversas
+## 17. Duas conversas
 A melhor e a pior da amostra, com trechos. A melhor vira material de
 treinamento. A pior vira pauta do 1:1.
 
-## 17. Ressalvas
+## 18. Ressalvas
 O que não foi possível verificar e por quê — incluindo quantas conversas
 você conseguiu ler de fato, do total da amostra.
 
@@ -757,6 +823,37 @@ você conseguiu ler de fato, do total da amostra.
   "data_rodada": "",
   "periodo": { "inicio": "", "fim": "" },
   "versao_diretrizes": "",
+  "quadro_indicadores": [
+    { "n": 1,  "indicador": "1o_contato_mediana_min_util",        "valor": null, "referencia": null, "status": "verde|amarelo|vermelho|nd" },
+    { "n": 2,  "indicador": "pct_1o_contato_no_prazo",            "valor": null, "referencia": null, "status": "nd" },
+    { "n": 3,  "indicador": "aceite_rodizio_mediana_min",         "valor": null, "referencia": null, "status": "nd" },
+    { "n": 4,  "indicador": "resposta_na_conversa_mediana_min",   "valor": null, "referencia": null, "status": "nd" },
+    { "n": 5,  "indicador": "fidelidade_crm_pct",                 "valor": null, "referencia": null, "status": "nd" },
+    { "n": 6,  "indicador": "pct_ativos_com_proximo_passo",       "valor": null, "referencia": null, "status": "nd" },
+    { "n": 7,  "indicador": "tarefas_vencidas_24h",               "valor": null, "referencia": null, "status": "nd" },
+    { "n": 8,  "indicador": "pct_carteira_parada",                "valor": null, "referencia": null, "status": "nd" },
+    { "n": 9,  "indicador": "pct_com_qualificacao",               "valor": null, "referencia": null, "status": "nd" },
+    { "n": 10, "indicador": "pct_1o_contato_para_meet",           "valor": null, "referencia": null, "status": "nd" },
+    { "n": 11, "indicador": "pct_meet_marcado_para_feito",        "valor": null, "referencia": null, "status": "nd" },
+    { "n": 12, "indicador": "pct_visita_marcada_para_feita",      "valor": null, "referencia": null, "status": "nd" },
+    { "n": 13, "indicador": "pct_visita_para_negociacao",         "valor": null, "referencia": null, "status": "nd" },
+    { "n": 14, "indicador": "retorno_pos_visita_mediana_h",       "valor": null, "referencia": null, "status": "nd" },
+    { "n": 15, "indicador": "pct_com_proximo_passo_proposto",     "valor": null, "referencia": null, "status": "nd" },
+    { "n": 16, "indicador": "pct_com_pergunta_aberta",            "valor": null, "referencia": null, "status": "nd" },
+    { "n": 17, "indicador": "sinais_de_compra_ignorados",         "valor": null, "referencia": null, "status": "nd" },
+    { "n": 18, "indicador": "pct_audio_do_corretor",              "valor": null, "referencia": null, "status": "nd" },
+    { "n": 19, "indicador": "pct_personalizacao",                 "valor": null, "referencia": null, "status": "nd" },
+    { "n": 20, "indicador": "meets_feitos",                       "valor": null, "referencia": null, "status": "nd" },
+    { "n": 21, "indicador": "visitas_feitas",                     "valor": null, "referencia": null, "status": "nd" },
+    { "n": 22, "indicador": "vendas",                             "valor": null, "referencia": null, "status": "nd" },
+    { "n": 23, "indicador": "vgv",                                "valor": null, "referencia": null, "status": "nd" },
+    { "n": 24, "indicador": "cobertura_lidos_de_20",              "valor": null, "referencia": 20,   "status": "nd" }
+  ],
+  "placar_indicadores": {
+    "verdes": null, "amarelos": null, "vermelhos": null, "nd": null,
+    "tres_piores": [""],
+    "mais_melhorou": "", "mais_piorou": ""
+  },
   "veredito": {
     "fez_e_registrou": null,
     "fez_e_nao_registrou": null,
@@ -860,6 +957,10 @@ você conseguiu ler de fato, do total da amostra.
 }
 
 Regras do arquivo 2:
+- quadro_indicadores: os 24 SEMPRE, na mesma ordem, mesmo os que ficaram
+  "nd". Não remova linha, não invente linha, não mude nome de indicador —
+  é essa estabilidade que faz a série histórica existir. Valor numérico
+  puro (sem "%" nem "min" na string); a unidade já está no nome.
 - gargalo e instrucao: uma frase cada, direta e acionável.
 - O gargalo PRECISA dizer a natureza: se o corretor atende bem e não
   registra, o gargalo é processual e a instrução é sobre registro — não
