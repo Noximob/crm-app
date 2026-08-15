@@ -75,7 +75,11 @@ export default function GerarPacotePage() {
       .catch(() => showToast('Não foi possível listar os corretores.', 'error'));
   }, [imobiliariaId, isEspelhoDemo]);
 
-  /** Carrega tudo do corretor: leads, timeline de cada um, vendas e leads de anúncio. */
+  /**
+   * Carrega tudo do corretor: leads, timeline de cada um, vendas e leads de
+   * anúncio. Dispara sozinho ao escolher o corretor — é passo técnico, não
+   * decisão do gestor; ele só precisa escolher quem e sortear.
+   */
   const carregarDados = async () => {
     if (!uid) return;
     setCarregando(true); setProgresso(0); setAmostra([]); setFora(new Set());
@@ -140,6 +144,13 @@ export default function GerarPacotePage() {
       setCarregando(false); setProgresso(1);
     }
   };
+
+  // escolheu o corretor → já lê a carteira dele, sem botão intermediário
+  useEffect(() => {
+    if (!uid) return;
+    carregarDados();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uid]);
 
   const ultimoToqueDe = (id: string) => {
     const a = ativ.get(id);
@@ -328,11 +339,13 @@ export default function GerarPacotePage() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 mt-3">
-          <button onClick={carregarDados} disabled={!uid || carregando} className={btnGhost}>
-            {carregando ? `carregando ${Math.round(progresso * 100)}%…` : '1) Carregar dados do corretor'}
+          <button onClick={sortear} disabled={!leads.length || carregando} className={btnOuro}>
+            {carregando ? `lendo a carteira… ${Math.round(progresso * 100)}%` : amostra.length ? '↻ Sortear outra amostra' : `🎲 Sortear ${tamanho} leads`}
           </button>
-          <button onClick={sortear} disabled={!leads.length || carregando} className={btnOuro}>2) Sugerir amostra</button>
-          {leads.length > 0 && <span className="text-[11px] text-text-secondary">{leads.length} leads na carteira dele</span>}
+          {leads.length > 0 && !carregando && (
+            <span className="text-[11px] text-text-secondary">{leads.length} leads na carteira dele · o sorteio pega {tamanho} misturando etapa avançada, parados, recentes e aleatórios</span>
+          )}
+          {!uid && <span className="text-[11px] text-text-secondary">escolha o corretor pra começar</span>}
         </div>
 
         {antesDoCorte && (
