@@ -279,7 +279,31 @@ Diga o prazo junto da instrução. Cobrar hábito em uma semana só gera
 frustração dos dois lados — e o gestor conclui erradamente que o corretor
 ignorou.
 
-F) OLHE O ENGAJAMENTO, NÃO SÓ O DESEMPENHO
+F) LEIA O CONTEÚDO, NÃO SÓ O COMPORTAMENTO
+Contar "propôs data / não propôs data" é o básico. O gerente bom lê o que
+foi DITO e responde a três perguntas por conversa:
+- O que o cliente realmente queria, nas palavras dele? Compare com o que
+  foi oferecido. Oferta boa para o cliente errado é desperdício dos dois
+  lados, e só aparece lendo.
+- Por que o cliente parou de responder? Silêncio tem causa: preço acima do
+  que ele podia, o corretor não respondeu algo, ele já decidiu e não avisou,
+  ou está esperando algo combinado. Diga qual, ou diga que não dá pra saber.
+- Qual era a objeção REAL? "Vou pensar" e "vou conversar com minha esposa"
+  quase nunca são a objeção — são a saída educada. O que veio antes na
+  conversa indica a de verdade: preço, prazo, localização, insegurança com
+  a construtora. Se o corretor tratou a frase e não a causa, isso é achado.
+
+G) TEMPERATURA DE CADA LEAD VIVO
+Classifique cada lead ativo da amostra em QUENTE (sinal de compra recente,
+respondendo rápido, negociação em pé), MORNO (interesse real mas parado ou
+esperando algo), FRIO (sem resposta há semanas, sem sinal) ou PERDIDO
+(comprou com outro, desistiu, sem perfil).
+Isso muda a ordem do trabalho: cobrar um lead que está esperando a obra
+ficar pronta é desperdício; deixar esfriar um quente é perder venda. O
+gestor precisa saber a diferença ANTES de mandar o corretor correr atrás
+de todo mundo igual.
+
+H) OLHE O ENGAJAMENTO, NÃO SÓ O DESEMPENHO
 Se um corretor historicamente bom aparece com queda em tudo ao mesmo
 tempo, o problema provavelmente não é técnico: é motivação, problema
 pessoal, proposta de concorrente. Sinais: parou de acessar o sistema,
@@ -619,9 +643,10 @@ Antes de marcar ✗ em qualquer coisa, verifique nesta ordem:
 4. Houve conversa em outro número do mesmo cliente?
 Só depois de descartar as quatro é que "não fez" pode ser afirmado.`;
 
-export const PROMPT_FORMATO_PADRAO = `Entregue DOIS arquivos ao final.
+export const PROMPT_FORMATO_PADRAO = `Entregue DOIS arquivos ao final:
+relatorio.html (para ler e imprimir) e rodada.json (para o CRM importar).
 
-=== ARQUIVO 1: relatorio.md ===
+=== ARQUIVO 1: relatorio.html ===
 
 ESTE DOCUMENTO É A PAUTA DE UMA CONVERSA, NÃO UM PROCESSO.
 O gestor vai sentar com o corretor e ler isto junto com ele, toda semana.
@@ -641,6 +666,23 @@ Três regras de escrita que valem do começo ao fim:
 3. SEPARE PROCESSO DE ATENDIMENTO EM TODA FRASE. "Você não fez" e "você fez
    e não registrou" são conversas diferentes, e trocá-las faz o corretor
    perder a confiança no relatório inteiro.
+
+COMO O DOCUMENTO TEM QUE SE APRESENTAR
+Entregue em HTML de página única, autocontido (CSS inline, sem link
+externo, sem script), que abra bem no navegador e imprima em A4.
+- As três primeiras seções são a reunião: quem só ler até a Fila de Ataque
+  já sabe o que fazer. O resto é a prova, para consultar quando o corretor
+  perguntar "de onde saiu isso?".
+- Índice clicável no topo, porque o documento é longo.
+- Tabela para o que é comparação (indicadores, leads, sinais de compra).
+  Texto corrido para o que é argumento. Nunca o contrário.
+- Trecho de conversa sempre em citação destacada, com nome e data ao lado —
+  é a prova, precisa saltar aos olhos.
+- Números que decidem algo em negrito. Se tudo está em negrito, nada está.
+- Verde/amarelo/vermelho SEMPRE acompanhados de símbolo (🟢🟡🔴 ou ●▲✖),
+  porque impressora P&B e daltônico existem.
+- Funciona em tema claro e escuro, e a fonte não pode ficar menor que 11pt
+  no papel: esse documento vai ser lido a dois numa mesa.
 
 # Auditoria — <corretor> — <período>
 
@@ -669,7 +711,31 @@ blocos, nesta ordem — nenhum ponto sai sem o último:
 - **O que fazer no lugar** — o consultivo. Ação executável amanhã, com a
   mensagem pronta quando fizer sentido. Sem isto, o ponto não entra.
 
-## 4. QUADRO DE INDICADORES  ← obrigatório, sai IGUAL em toda rodada
+## 4. FILA DE ATAQUE — o que fazer amanhã de manhã, nesta ordem
+A parte mais acionável do relatório. Os leads VIVOS da amostra, ordenados
+por (valor em jogo × temperatura × risco de esfriar). No máximo 6.
+Para cada um, uma linha de tabela:
+
+POSIÇÃO | LEAD | TEMPERATURA | VALOR EM JOGO | POR QUE AGORA | O QUE MANDAR
+
+E, embaixo da tabela, a MENSAGEM PRONTA dos três primeiros — escrita como
+o corretor vai enviar, já com nome, produto, número e duas opções de
+horário. Não é modelo genérico: é a mensagem daquele cliente, usando o que
+ele disse na conversa.
+
+TEMPERATURA: 🔥 quente (sinal recente, respondendo, negociação em pé) ·
+🌤 morno (interesse real, parado ou esperando algo) · ❄ frio (sem resposta
+há semanas) · ⚰ perdido (comprou com outro, desistiu, sem perfil).
+
+RISCO DE ESFRIAR: diga em quantos dias aquele lead vira frio se nada
+acontecer, e por quê. Lead que está esperando obra ficar pronta não esfria
+em 3 dias; lead que pediu preço e não teve resposta esfria em 48h.
+
+Esta seção existe porque "cobre todo mundo" não é gestão. O corretor tem
+manhã de segunda e uma lista — o trabalho do gerente é dizer por onde
+começar e com que palavra.
+
+## 5. QUADRO DE INDICADORES  ← obrigatório, sai IGUAL em toda rodada
 Tabela fechada. Mesmos indicadores, mesma ordem, sempre — é isso que
 permite comparar a rodada 1 com a rodada 8. Indicador que você não
 conseguiu apurar vai "n/d", nunca zero e nunca sumindo da tabela.
@@ -735,7 +801,7 @@ Logo abaixo da tabela, três linhas:
 - o indicador que mais MELHOROU e o que mais PIOROU vs a rodada anterior
   (se for a primeira rodada, escreva "linha de base — primeira medição")
 
-## 5. Panorama — o que o CRM diz × o que de fato aconteceu
+## 6. Panorama — o que o CRM diz × o que de fato aconteceu
 Duas colunas para cada número que a auditoria conseguiu verificar:
 o valor do CRM e o valor REAL depois do cruzamento com o WhatsApp.
 Onde houver diferença, marque e explique em uma linha.
@@ -744,22 +810,28 @@ medindo quando ele anotou, não quando falou".
 Métricas null aparecem como "não medido no período", nunca como zero.
 Sempre ao lado da mediana do time quando houver.
 
-## 6. Veredito dos quatro estados
+## 7. Veredito dos quatro estados
 A contagem geral dos achados:
 - ✓ fez e registrou: N
 - ⚠ fez e NÃO registrou (processo): N
 - ✗ não fez (atendimento): N
 - ? não verificável: N
 
-## 7. Tabela dos leads auditados
+## 8. Tabela dos leads auditados
 Uma linha por lead:
-nome | etapa CRM | etapa real | veredito (✓ ⚠ ✗ ?) | dias sem toque |
-cadência (x/6) | vácuo | áudio/texto | próximo passo | achado principal
+nome | temperatura (🔥🌤❄⚰) | etapa CRM | etapa real | veredito (✓ ⚠ ✗ ?) |
+dias sem toque | cadência (x/6) | vácuo | áudio/texto | próximo passo |
+o que o cliente queria | por que parou | achado principal
+
+As duas colunas novas são o que separa auditoria de contagem:
+- "o que o cliente queria" nas palavras DELE (finalidade, valor, prazo)
+- "por que parou" — a causa do silêncio, ou "não dá pra saber" quando não
+  dá. Nunca deixe em branco sem dizer que não deu pra concluir.
 
 A coluna "etapa real" é onde mais aparece defasagem: lead que no CRM está
 em Em Contato e no WhatsApp já visitou.
 
-## 8. Qualidade da conversa
+## 9. Qualidade da conversa
 Como o time conversa, com contagem e um exemplo de cada:
 - Ritmo: tempo mediano de resposta dele dentro da conversa; em quantas
   conversas ele deixou o cliente no vácuo depois de sinal de interesse
@@ -772,7 +844,7 @@ Como o time conversa, com contagem e um exemplo de cada:
   proposta de próximo passo
 - Personalização: quantas mensagens eram claramente copiadas entre leads
 
-## 9. Oportunidade perdida (dinheiro na mesa)
+## 10. Oportunidade perdida (dinheiro na mesa)
 - Sinais de compra ignorados: um por um, com lead, data, o que o cliente
   disse e o que o corretor respondeu
 - Janela de atendimento: em que horários e dias ele responde, e o que isso
@@ -782,14 +854,14 @@ Como o time conversa, com contagem e um exemplo de cada:
 - Priorização: recebeu mais esforço quem estava mais perto de comprar?
 - Recuperação: nos leads frios, houve ângulo novo ou só "oi, tudo bem?"
 
-## 10. Risco para a imobiliária
+## 11. Risco para a imobiliária
 Só o que for concreto, com trecho literal: promessa não autorizada, valor
 divergente da tabela, informação duvidosa sobre a obra, fala sobre
 concorrente/colega/construtora, exposição de dado de outro cliente.
 Se não houver nada, escreva "nada a registrar" — essa seção não se
 preenche com suposição.
 
-## 11. O funil de imóvel
+## 12. O funil de imóvel
 - Qualificação financeira: em quantos ele levantou capacidade antes do
   esforço pesado
 - Decisor: em quantos identificou quem mais decide
@@ -800,11 +872,11 @@ preenche com suposição.
 - Concorrência mencionada pelo cliente e o que ele fez
 - Intenção → proposta: tempo mediano
 
-## 12. Padrões recorrentes
+## 13. Padrões recorrentes
 Os 3 comportamentos que mais se repetiram, com a contagem de leads
 afetados por cada um.
 
-## 13. Perguntas para a reunião
+## 14. Perguntas para a reunião
 De três a cinco perguntas que o gestor deve FAZER, não afirmar. O relatório
 enxerga o registro e a conversa escrita — não enxerga a ligação, o
 combinado verbal, o problema pessoal, o cliente que pediu para não ser
@@ -816,7 +888,22 @@ produto, de campanha ou pessoal.
 Uma pergunta obrigatória sempre: "o que te atrapalhou nesta semana que não
 depende de você?"
 
-## 14. Nem tudo é do corretor
+## 15. O que VOCÊ (gestor) precisa destravar
+O relatório manda o corretor agir — mas parte do que trava não está na mão
+dele. Liste o que depende da casa, com o responsável sugerido:
+- decisão comercial pendente (condição especial a confirmar com a
+  construtora, desconto a aprovar, unidade a reservar)
+- problema de dado ou de origem (telefone inválido vindo da campanha, lead
+  duplicado, lead que já era de outro corretor)
+- ferramenta ou processo (campo de motivo livre que aceita qualquer texto,
+  etapa que ninguém move, tarefa sem padrão de título)
+- treino que o time inteiro precisa, e não só ele — se o mesmo erro
+  aparecer em vários corretores, é aula, não bronca individual
+Se não houver nada, escreva "nada a destravar". Mas procure: relatório que
+só cobra o corretor e nunca a casa perde credibilidade na terceira rodada,
+porque todo mundo sabe que nem tudo é do corretor.
+
+## 16. Nem tudo é do corretor
 O que apareceu na amostra e NÃO é responsabilidade dele: lead com telefone
 inválido, público fora do perfil chegando em volume, unidade indisponível
 na faixa pedida, construtora sem resposta, lead já atendido por outro.
@@ -824,7 +911,7 @@ Se não houver nada, escreva "nada a registrar" — mas procure de verdade
 antes. Esta seção é o que separa auditoria de perseguição, e é por onde a
 imobiliária descobre os próprios erros.
 
-## 15. O gargalo
+## 17. O gargalo
 UM só — o erro que, corrigido, destrava os outros. Com:
 - a CORRENTE que você observou (o encadeamento), e onde está o primeiro elo
 - qual é, em uma frase dita PARA ele ("você...")
@@ -839,15 +926,15 @@ UM só — o erro que, corrigido, destrava os outros. Com:
 - o custo estimado do gargalo em VGV/comissão, com a base do cálculo
 - como medir daqui a 30 dias se melhorou, com o número de hoje do lado
 
-## 16. Rodada anterior
+## 18. Rodada anterior
 A instrução da vez passada foi cumprida? Feito, parcial ou ignorado —
 com o número que comprova.
 
-## 17. Duas conversas
+## 19. Duas conversas
 A melhor e a pior da amostra, com trechos. A melhor vira material de
 treinamento. A pior vira pauta do 1:1.
 
-## 18. Ressalvas
+## 20. Ressalvas
 O que não foi possível verificar e por quê — incluindo quantas conversas
 você conseguiu ler de fato, do total da amostra.
 
@@ -966,6 +1053,21 @@ você conseguiu ler de fato, do total da amostra.
   "prazo_da_instrucao": "7_dias | 30_dias",
   "nao_e_do_corretor": [
     { "tipo": "", "lead": "", "descricao": "" }
+  ],
+  "fila_de_ataque": [
+    {
+      "posicao": 1,
+      "lead": "",
+      "temperatura": "quente | morno | frio | perdido",
+      "valor_em_jogo": null,
+      "por_que_agora": "",
+      "esfria_em_dias": null,
+      "mensagem_pronta": ""
+    }
+  ],
+  "temperatura_da_carteira": { "quente": null, "morno": null, "frio": null, "perdido": null },
+  "gestor_precisa_destravar": [
+    { "tipo": "comercial | dado | processo | treino", "descricao": "", "responsavel_sugerido": "" }
   ],
   "perguntas_para_reuniao": [""],
   "engajamento": {
