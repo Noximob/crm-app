@@ -335,13 +335,28 @@ export default function GerarPacotePage() {
         }),
       });
 
-      const blob = new Blob([JSON.stringify(pacote, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `auditoria-${corretor.nome.toLowerCase().replace(/\s+/g, '-')}-${ymd(Date.now())}.json`;
-      document.body.appendChild(a); a.click(); a.remove();
-      URL.revokeObjectURL(url);
+      /**
+       * Dois arquivos, não um. As instruções passam de 100 KB e são
+       * IDÊNTICAS em toda rodada e para todo corretor — mandá-las junto com
+       * os dados significa reenviar 100 KB de contexto a cada auditoria, e
+       * esse espaço faz falta justamente para o que importa: as conversas.
+       * Na mesma conversa do Cowork, as instruções sobem uma vez só.
+       */
+      const baixar = (nome: string, conteudo: string) => {
+        const url = URL.createObjectURL(new Blob([conteudo], { type: 'application/json' }));
+        const a = document.createElement('a');
+        a.href = url; a.download = nome;
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+      };
+
+      const slug = corretor.nome.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const { prompts, ...dados } = pacote as Record<string, unknown>;
+
+      baixar(`1-instrucoes-auditoria-${diretrizes.versao}.json`,
+        JSON.stringify({ versao_diretrizes: diretrizes.versao, prompts }, null, 2));
+      baixar(`2-dados-${slug}-${ymd(Date.now())}.json`, JSON.stringify(dados, null, 2));
 
       if (!isEspelhoDemo) {
         await addDoc(collection(db, 'auditoriaRodadas'), {
@@ -654,6 +669,42 @@ export default function GerarPacotePage() {
             {gerando ? 'Gerando…' : `⬇ Gerar pacote (${selecionados.length} leads)`}
           </button>
         </div>
+      )}
+
+      {/* o download vem em dois arquivos e isso precisa estar dito ANTES,
+          senão chegam dois e ninguém sabe o que fazer com eles */}
+      {amostra.length > 0 && diretrizes && (
+        <section className="al-card p-4 sm:p-5">
+          <h2 className="al-display text-[13px] font-bold text-white uppercase tracking-[0.1em] mb-2">Depois de gerar</h2>
+          <p className="text-[11.5px] text-text-secondary mb-3">
+            Saem <b className="text-white">dois arquivos</b>. As instruções são iguais em toda rodada e passam de 100 KB —
+            separadas, elas sobem uma vez só e o espaço fica para o que importa, que são as conversas.
+          </p>
+          <ol className="space-y-2 text-[12px] text-white/85">
+            <li>
+              <b className="text-[#E8C547]">1.</b> Abra o Cowork com o WhatsApp do corretor conectado e mande o
+              {' '}<b className="text-white">1-instrucoes-auditoria-{diretrizes.versao}.json</b>.
+              {' '}<span className="text-text-secondary">Só na primeira vez daquela conversa — nas rodadas seguintes, pule.</span>
+            </li>
+            <li>
+              <b className="text-[#E8C547]">2.</b> Mande o <b className="text-white">2-dados-…json</b> e peça a auditoria.
+            </li>
+            <li>
+              <b className="text-[#E8C547]">3.</b> Ele devolve o relatório e um <b className="text-white">rodada.json</b>.
+              {' '}Importe esse JSON no <Link href="/dashboard/admin/auditoria/historico/" className="text-[#E8C547] font-bold hover:brightness-125">Histórico</Link>.
+            </li>
+            <li>
+              <b className="text-[#E8C547]">4.</b> Clique em <b className="text-white">abrir relatório</b> — a análise aparece no layout da casa,
+              com os dois PDFs.
+            </li>
+          </ol>
+          {ehTeste && (
+            <p className="text-[11px] text-amber-300 mt-3">
+              Esta rodada está marcada como <b>teste</b>. Ela não entra no histórico que compara as semanas nem alimenta o rodízio da amostra —
+              desmarque acima quando for pra valer.
+            </p>
+          )}
+        </section>
       )}
     </div>
   );
