@@ -167,6 +167,21 @@ export const COR_STATUS: Record<string, string> = {
 };
 export const BOLA_STATUS: Record<string, string> = { verde: '🟢', amarelo: '🟡', vermelho: '🔴', nd: '⚪' };
 
+/**
+ * O status vem da IA e pode chegar em qualquer uma das linguagens que o
+ * relatório usa: a da cor (verde/amarelo/vermelho) ou a do sentido
+ * (dentro/atenção/fora). O prompt usa AS DUAS em pontos diferentes, e na
+ * primeira rodada real vieram "dentro/atencao/fora" — que caíam todos em
+ * "não medido" e apagavam o quadro inteiro.
+ */
+function normalizarStatus(bruto: unknown): string {
+  const s = asStr(bruto).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  if (['verde', 'dentro', 'ok', 'bom'].includes(s)) return 'verde';
+  if (['amarelo', 'atencao', 'alerta', 'parcial'].includes(s)) return 'amarelo';
+  if (['vermelho', 'fora', 'critico', 'ruim'].includes(s)) return 'vermelho';
+  return 'nd';
+}
+
 /** Casa o quadro desta rodada com o da anterior e resolve o rumo de cada linha. */
 export function lerIndicadores(bruto: unknown, anterior?: unknown): Indicador[] {
   const antes = new Map<string, number | null>();
@@ -177,7 +192,7 @@ export function lerIndicadores(bruto: unknown, anterior?: unknown): Indicador[] 
     const def = DEF_INDICADOR[chave];
     const valor = asNum(l.valor);
     const ant = antes.has(chave) ? antes.get(chave)! : null;
-    let st = asStr(l.status).toLowerCase();
+    let st = normalizarStatus(l.status);
 
     const og = asStr(l.origem_referencia).toLowerCase();
     const origemReferencia: Indicador['origemReferencia'] =
