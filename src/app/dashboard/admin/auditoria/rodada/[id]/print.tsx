@@ -125,11 +125,20 @@ export default function RodadaPrint({ r, a, indicadores, porGrupo, modo }: Props
   const destravar = asArr(a.gestor_precisa_destravar);
   const soGestor = modo === 'gestor';
 
+  const sinais = asArr(a.sinais_de_compra);
+  const metas = asArr(a.metas_da_instrucao);
+  const duasConversas = asObj(a.duas_conversas);
+
+  // "observacao" é prosa: sai da grade de números e vira parágrafo
   const blocos = [
     { t: 'Qualidade da conversa', src: asObj(a.qualidade_conversa), rot: ROTULO_QUALIDADE },
     { t: 'Oportunidade perdida', src: asObj(a.oportunidade_perdida), rot: ROTULO_OPORTUNIDADE },
     { t: 'O funil de imóvel', src: asObj(a.funil_imovel), rot: ROTULO_FUNIL },
-  ].filter((b) => Object.keys(b.src).length > 0);
+  ].filter((b) => Object.keys(b.src).length > 0).map((b) => ({
+    ...b,
+    numeros: Object.entries(b.src).filter(([k]) => k !== 'observacao'),
+    observacao: asStr(b.src.observacao),
+  }));
 
   return (
     <div id="aud-print">
@@ -339,7 +348,7 @@ export default function RodadaPrint({ r, a, indicadores, porGrupo, modo }: Props
         <section key={b.t}>
           <h2>{b.t}</h2>
           <div className="grade">
-            {Object.entries(b.src).map(([k, v]) => {
+            {b.numeros.map(([k, v]) => {
               const s = valorSolto(v);
               return (
                 <div key={k} className="cel">
@@ -349,8 +358,66 @@ export default function RodadaPrint({ r, a, indicadores, porGrupo, modo }: Props
               );
             })}
           </div>
+          {b.observacao && <p>{b.observacao}</p>}
+          {b.t === 'Oportunidade perdida' && sinais.length > 0 && (
+            <table>
+              <thead><tr><th>Lead</th><th>Data</th><th>O que o cliente disse</th><th>O que voce respondeu</th><th>Veredito</th></tr></thead>
+              <tbody>
+                {sinais.map((s, i) => (
+                  <tr key={i}>
+                    <td><b>{asStr(s.lead)}</b></td>
+                    <td>{fmtYmd(asStr(s.data))}</td>
+                    <td><i>{asStr(s.o_que_o_cliente_disse)}</i></td>
+                    <td>{asStr(s.o_que_voce_respondeu)}</td>
+                    <td><b>{asStr(s.veredito)}</b></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </section>
       ))}
+
+      {metas.length > 0 && (
+        <section>
+          <h2>Como medir a instrucao — o que precisa ter mudado na proxima rodada</h2>
+          <table>
+            <thead><tr><th>Indicador</th><th className="num">Hoje</th><th className="num">Meta</th></tr></thead>
+            <tbody>
+              {metas.map((m, i) => (
+                <tr key={i}>
+                  <td>{asStr(m.indicador)}</td>
+                  <td className="num vermelho">{asStr(m.hoje) || valorSolto(m.hoje).txt}</td>
+                  <td className="num verde">{asStr(m.meta) || valorSolto(m.meta).txt}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+
+      {(asStr(asObj(duasConversas.melhor).lead) || asStr(asObj(duasConversas.pior).lead)) && (
+        <section>
+          <h2>Duas conversas</h2>
+          {([['melhor', 'A melhor — material de treinamento'], ['pior', 'A pior — pauta do 1:1']] as const).map(([k, tit]) => {
+            const c = asObj(duasConversas[k]);
+            if (!asStr(c.lead)) return null;
+            return (
+              <div key={k}>
+                <h3>{tit}: {asStr(c.lead)}{asStr(c.data) ? ` · ${fmtYmd(asStr(c.data))}` : ''}</h3>
+                <p>{asStr(c.por_que)}</p>
+              </div>
+            );
+          })}
+        </section>
+      )}
+
+      {asStr(a.comparativo_rodada_anterior) && (
+        <section>
+          <h2>Desde a rodada anterior</h2>
+          <p>{asStr(a.comparativo_rodada_anterior)}</p>
+        </section>
+      )}
 
       {Object.keys(temperatura).length > 0 && (
         <section>

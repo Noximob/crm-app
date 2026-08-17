@@ -147,7 +147,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
   const temAnalise = Object.keys(a).length > 0;
 
   const indicadores = useMemo(() => lerIndicadores(a.quadro_indicadores, anteriorQuadro), [a, anteriorQuadro]);
-  const porGrupo = useMemo(() => {
+  const porGrupo = useMemo<[string, Indicador[]][]>(() => {
     const m = new Map<string, Indicador[]>();
     for (const i of indicadores) {
       if (!m.has(i.grupo)) m.set(i.grupo, []);
@@ -178,6 +178,23 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
   const temperatura = asObj(a.temperatura_da_carteira);
   const engajamento = asObj(a.engajamento);
   const evidencias = asArr(a.evidencias);
+  const sinais = asArr(a.sinais_de_compra);
+  const metas = asArr(a.metas_da_instrucao);
+  const duasConversas = asObj(a.duas_conversas);
+
+  /**
+   * "observacao" é prosa e não cabe numa célula de número — sai da grade e
+   * vira parágrafo abaixo dela.
+   */
+  const blocos = useMemo(() => [
+    { t: 'Qualidade da conversa', src: asObj(a.qualidade_conversa), rot: ROTULO_QUALIDADE },
+    { t: 'Oportunidade perdida', src: asObj(a.oportunidade_perdida), rot: ROTULO_OPORTUNIDADE },
+    { t: 'O funil de imóvel', src: asObj(a.funil_imovel), rot: ROTULO_FUNIL },
+  ].filter((b) => Object.keys(b.src).length > 0).map((b) => ({
+    ...b,
+    numeros: Object.entries(b.src).filter(([k]) => k !== 'observacao'),
+    observacao: asStr(b.src.observacao),
+  })), [a]);
 
   const nomeArquivo = useMemo(() => {
     const nome = (r?.corretorNome || 'corretor').normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -484,16 +501,32 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
         )}
 
         {/* 8 — qualidade / oportunidade / funil */}
-        {[
-          { t: 'Qualidade da conversa', src: asObj(a.qualidade_conversa), rot: ROTULO_QUALIDADE },
-          { t: 'Oportunidade perdida', src: asObj(a.oportunidade_perdida), rot: ROTULO_OPORTUNIDADE },
-          { t: 'O funil de imóvel', src: asObj(a.funil_imovel), rot: ROTULO_FUNIL },
-        ].filter((b) => Object.keys(b.src).length > 0).map((b, i) => (
+        {blocos.map((b, i) => (
           <Secao key={b.t} n={7 + i} titulo={b.t}>
-            <Grade itens={Object.entries(b.src).map(([k, v]) => {
+            <Grade itens={b.numeros.map(([k, v]) => {
               const s = valorSolto(v);
               return { rot: b.rot[k] || k.replace(/_/g, ' '), val: s.txt, nulo: s.nulo };
             })} />
+            {b.observacao && <p className="text-[12.5px] text-white/85 leading-relaxed mt-3">{b.observacao}</p>}
+            {b.t === 'Oportunidade perdida' && sinais.length > 0 && (
+              <div className="mt-3">
+                <Tabela cols={['Lead', 'Data', 'O que o cliente disse', 'O que você respondeu', 'Veredito']}>
+                  {sinais.map((s, j) => {
+                    const v = asStr(s.veredito).toLowerCase();
+                    const cor = v.startsWith('aprov') ? 'text-emerald-300' : v.startsWith('ignor') ? 'text-rose-300' : 'text-amber-300';
+                    return (
+                      <tr key={j}>
+                        <td className={td + ' text-white font-bold whitespace-nowrap'}>{asStr(s.lead)}</td>
+                        <td className={td + ' text-text-secondary whitespace-nowrap tabular-nums'}>{fmtYmd(asStr(s.data))}</td>
+                        <td className={td + ' text-white/85 italic leading-relaxed'}>{asStr(s.o_que_o_cliente_disse)}</td>
+                        <td className={td + ' text-text-secondary leading-relaxed'}>{asStr(s.o_que_voce_respondeu)}</td>
+                        <td className={`${td} font-bold whitespace-nowrap ${cor}`}>{asStr(s.veredito)}</td>
+                      </tr>
+                    );
+                  })}
+                </Tabela>
+              </div>
+            )}
           </Secao>
         ))}
 
@@ -551,6 +584,49 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
                 )}
               </div>
             )}
+          </Secao>
+        )}
+
+        {/* como medir em 30 dias — a instrução vira número cobrável */}
+        {metas.length > 0 && (
+          <Secao titulo="Como medir a instrução" hint="O que precisa ter mudado quando a próxima rodada abrir.">
+            <Tabela cols={['Indicador', 'Hoje', 'Meta']}>
+              {metas.map((m, i) => (
+                <tr key={i}>
+                  <td className={td + ' text-white/85'}>{asStr(m.indicador)}</td>
+                  <td className={td + ' text-rose-300 font-bold tabular-nums whitespace-nowrap'}>{asStr(m.hoje) || valorSolto(m.hoje).txt}</td>
+                  <td className={td + ' text-emerald-300 font-bold tabular-nums whitespace-nowrap'}>{asStr(m.meta) || valorSolto(m.meta).txt}</td>
+                </tr>
+              ))}
+            </Tabela>
+          </Secao>
+        )}
+
+        {/* a melhor e a pior — material de treino e pauta do 1:1 */}
+        {(asStr(asObj(duasConversas.melhor).lead) || asStr(asObj(duasConversas.pior).lead)) && (
+          <Secao titulo="Duas conversas">
+            <div className="grid sm:grid-cols-2 gap-3">
+              {([['melhor', 'A melhor', 'material de treinamento', 'emerald'], ['pior', 'A pior', 'pauta do 1:1', 'rose']] as const).map(([k, tit, uso, cor]) => {
+                const c = asObj(duasConversas[k]);
+                if (!asStr(c.lead)) return null;
+                return (
+                  <div key={k} className={`rounded-xl border p-3 ${cor === 'emerald' ? 'border-emerald-500/30 bg-emerald-500/[0.04]' : 'border-rose-500/30 bg-rose-500/[0.04]'}`}>
+                    <p className={`text-[9.5px] font-extrabold uppercase tracking-[0.14em] ${cor === 'emerald' ? 'text-emerald-300/80' : 'text-rose-300/80'}`}>{tit} · {uso}</p>
+                    <p className="text-[13px] font-bold text-white mt-1">
+                      {asStr(c.lead)}{asStr(c.data) ? <span className="text-text-secondary font-normal"> · {fmtYmd(asStr(c.data))}</span> : null}
+                    </p>
+                    <p className="text-[12px] text-white/85 leading-relaxed mt-1">{asStr(c.por_que)}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </Secao>
+        )}
+
+        {/* o que mudou desde a rodada passada */}
+        {asStr(a.comparativo_rodada_anterior) && (
+          <Secao titulo="Desde a rodada anterior">
+            <p className="text-[12.5px] text-white/85 leading-relaxed">{asStr(a.comparativo_rodada_anterior)}</p>
           </Secao>
         )}
 

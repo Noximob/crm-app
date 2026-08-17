@@ -1017,7 +1017,8 @@ você conseguiu ler de fato, do total da amostra.
     "retomou_algo_pessoal_pct": null,
     "cliente_devolveu_sinal_pct": null,
     "pergunta_aberta_pct": null,
-    "objecao_tratada_pct": null
+    "objecao_tratada_pct": null,
+    "observacao": ""
   },
   "oportunidade_perdida": {
     "sinais_de_compra_identificados": null,
@@ -1038,7 +1039,8 @@ você conseguiu ler de fato, do total da amostra.
     "visitas_sem_retorno_24h": null,
     "confirmou_vespera_pct": null,
     "concorrencia_mencionada": null,
-    "intencao_ate_proposta_mediano_h": null
+    "intencao_ate_proposta_mediano_h": null,
+    "observacao": ""
   },
   "acertos": [
     { "lead": "", "data": "", "trecho": "", "por_que_funcionou": "", "vale_como_treino": false }
@@ -1083,6 +1085,17 @@ você conseguiu ler de fato, do total da amostra.
     "conversas_lidas": null,
     "sem_conversa_localizada": null
   },
+  "sinais_de_compra": [
+    { "lead": "", "data": "", "o_que_o_cliente_disse": "", "o_que_voce_respondeu": "", "veredito": "aproveitado | subaproveitado | ignorado" }
+  ],
+  "duas_conversas": {
+    "melhor": { "lead": "", "data": "", "por_que": "" },
+    "pior": { "lead": "", "data": "", "por_que": "" }
+  },
+  "metas_da_instrucao": [
+    { "indicador": "", "hoje": "", "meta": "" }
+  ],
+  "comparativo_rodada_anterior": "",
   "achados": [
     {
       "titulo": "",
@@ -1148,6 +1161,15 @@ Regras do arquivo 2:
 - "leads_auditados" é a tabela da seção 8 em campos: uma linha por lead da
   amostra, TODOS, inclusive os que você não conseguiu ler (nesses,
   veredito "?" e o motivo em por_que_parou).
+- "sinais_de_compra" é a tabela da seção 10; "duas_conversas" é a seção 19;
+  "metas_da_instrucao" é o "como medir em 30 dias" da seção 17; e
+  "comparativo_rodada_anterior" é a seção 18 em um parágrafo.
+- Os campos "observacao" de qualidade_conversa e funil_imovel levam a leitura
+  em prosa que você escreveu nas seções 9 e 12 — os números sozinhos não
+  dizem QUAIS foram os textos repetidos nem QUEM era o decisor.
+- REGRA GERAL: nada que você escreveu no HTML pode ficar de fora do JSON. O
+  HTML é para ler hoje; o JSON é o que o CRM guarda e reapresenta daqui a
+  seis meses. O que só existir no HTML se perde.
 - Os dois arquivos precisam sair com o NOME DO CORRETOR e a data no nome:
   "auditoria-nome-do-corretor-AAAA-MM-DD.html" e
   "rodada-nome-do-corretor-AAAA-MM-DD.json". Arquivo chamado só
@@ -1182,6 +1204,27 @@ const num = (v: unknown, min: number, max: number, fb: number): number => {
   return Math.min(max, Math.max(min, Math.round(n)));
 };
 const txt = (v: unknown, fb = ''): string => (typeof v === 'string' ? v : fb);
+
+/**
+ * Campos que o CRM passou a LER do rodada.json e que precisam existir no
+ * prompt para a IA produzi-los. Um prompt salvo antes deles é surdo para as
+ * seções novas: a tela abre sem a prosa e sem a tabela de leads, e ninguém
+ * descobre por quê.
+ */
+const MARCAS_FORMATO = ['leads_auditados', 'achados'];
+
+/**
+ * Prompt salvo que não conhece um campo novo é substituído pelo padrão.
+ *
+ * A régua salva é do gestor e normalmente vence o código — mas aqui o texto
+ * antigo produziria um JSON que a tela não consegue apresentar por inteiro,
+ * e o gestor não tem como saber disso olhando a tela. A versão trocada fica
+ * arquivada em configAuditoria/{id}/versoes.
+ */
+function migrar(salvo: string, padrao: string, marcas: string[]): string {
+  if (!salvo.trim()) return padrao;
+  return marcas.every((m) => salvo.includes(m)) ? salvo : padrao;
+}
 
 export function normalizarDiretrizes(raw: unknown): DiretrizesAuditoria {
   const d = (raw || {}) as Record<string, any>;
@@ -1227,7 +1270,7 @@ export function normalizarDiretrizes(raw: unknown): DiretrizesAuditoria {
     // existirem não fica com o bloco em branco no pacote
     prompts: {
       principal: txt(pr.principal) || PROMPT_PRINCIPAL_PADRAO,
-      formatoRelatorio: txt(pr.formatoRelatorio) || PROMPT_FORMATO_PADRAO,
+      formatoRelatorio: migrar(txt(pr.formatoRelatorio), PROMPT_FORMATO_PADRAO, MARCAS_FORMATO),
       instrucoesLeitura: txt(pr.instrucoesLeitura) || PROMPT_LEITURA_PADRAO,
     },
     atualizadoEm: d.atualizadoEm,
