@@ -34,7 +34,7 @@ const btnGhost = 'px-3 py-2 rounded-xl text-[12px] font-bold border border-white
 export interface RodadaDoc {
   id: string; corretorUid: string; corretorNome: string;
   geradoEmYmd: string; periodoInicio: string; periodoFim: string;
-  versaoDiretrizes?: string; tamanhoAmostra?: number; teste?: boolean;
+  versaoDiretrizes?: string; tamanhoAmostra?: number;
   gargalo?: string; instrucao?: string; statusInstrucao?: string;
   analise?: Record<string, unknown>;
 }
@@ -309,7 +309,6 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
                 <button onClick={() => setEditandoNome((v) => !v)} title="corrigir o nome do corretor"
                   className="text-text-secondary hover:text-white text-[13px]">✎</button>
               )}
-              {r.teste && <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold border bg-amber-500/10 border-amber-500/40 text-amber-300">TESTE</span>}
             </div>
             <p className="text-[12px] text-text-secondary mt-0.5 tabular-nums">
               {fmtYmd(r.periodoInicio)} a {fmtYmd(r.periodoFim)}

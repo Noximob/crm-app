@@ -67,9 +67,6 @@ export default function GerarPacotePage() {
   const [incompletas, setIncompletas] = useState<{ faixa: FaixaSorteio; pedidos: number; obtidos: number }[]>([]);
   const [busca, setBusca] = useState('');
   const [gerando, setGerando] = useState(false);
-  // enquanto a régua está sendo calibrada, a rodada nasce marcada como teste
-  // e não suja a linha do tempo do corretor
-  const [ehTeste, setEhTeste] = useState(true);
 
   useEffect(() => { carregarDiretrizes(imobiliariaId).then(setDiretrizes); }, [imobiliariaId]);
 
@@ -153,7 +150,6 @@ export default function GerarPacotePage() {
         const rs = await getDocs(query(collection(db, 'auditoriaRodadas'),
           where('imobiliariaId', '==', imobiliariaId), where('corretorUid', '==', uid)));
         const rodadas = rs.docs.map((d) => d.data() as Record<string, unknown>)
-          .filter((r) => !r.teste)
           .sort((a, b) => String(a.geradoEmYmd || '').localeCompare(String(b.geradoEmYmd || '')));
         const jaAuditados = new Set<string>();
         const ultimaLeitura = new Map<string, number>();
@@ -362,7 +358,6 @@ export default function GerarPacotePage() {
         await addDoc(collection(db, 'auditoriaRodadas'), {
           imobiliariaId, corretorUid: uid, corretorNome: corretor.nome,
           geradoEm: serverTimestamp(), geradoEmYmd: ymd(Date.now()), geradoPor: userData?.nome || '',
-          teste: ehTeste,
           periodoInicio: ini, periodoFim: fim,
           versaoDiretrizes: diretrizes.versao,
           leadIds: selecionados.map((s) => s.lead.id),
@@ -657,14 +652,7 @@ export default function GerarPacotePage() {
 
       {/* 4. gerar */}
       {amostra.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <label className="flex items-center gap-2 text-[11.5px] text-text-secondary cursor-pointer select-none">
-            <input type="checkbox" checked={ehTeste} onChange={(e) => setEhTeste(e.target.checked)} className="accent-[#E8C547]" />
-            <span>
-              <b className={ehTeste ? 'text-amber-300' : 'text-white'}>rodada de teste</b> — fica marcada no histórico e dá pra apagar em lote.
-              {!ehTeste && <span className="text-emerald-300"> Desmarcado: esta rodada vale pra valer.</span>}
-            </span>
-          </label>
+        <div className="flex flex-wrap items-center justify-end gap-3">
           <button onClick={gerar} disabled={gerando || !selecionados.length} className={btnOuro}>
             {gerando ? 'Gerando…' : `⬇ Gerar pacote (${selecionados.length} leads)`}
           </button>
@@ -698,12 +686,6 @@ export default function GerarPacotePage() {
               com os dois PDFs.
             </li>
           </ol>
-          {ehTeste && (
-            <p className="text-[11px] text-amber-300 mt-3">
-              Esta rodada está marcada como <b>teste</b>. Ela não entra no histórico que compara as semanas nem alimenta o rodízio da amostra —
-              desmarque acima quando for pra valer.
-            </p>
-          )}
         </section>
       )}
     </div>

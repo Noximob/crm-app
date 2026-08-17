@@ -89,7 +89,7 @@ export const CSS_PRINT_RODADA = `
 `;
 
 interface Props {
-  r: { corretorNome: string; geradoEmYmd: string; periodoInicio: string; periodoFim: string; versaoDiretrizes?: string; teste?: boolean };
+  r: { corretorNome: string; geradoEmYmd: string; periodoInicio: string; periodoFim: string; versaoDiretrizes?: string };
   a: Record<string, unknown>;
   indicadores: Indicador[];
   porGrupo: [string, Indicador[]][];
@@ -159,7 +159,7 @@ export default function RodadaPrint({ r, a, indicadores, porGrupo, modo }: Props
       <section className="pg">
         <header className="cab">
           <div>
-            <p className="marca">NOX IMÓVEIS · AUDITORIA DE ATENDIMENTO{r.teste ? ' · TESTE' : ''}</p>
+            <p className="marca">NOX IMÓVEIS · AUDITORIA DE ATENDIMENTO</p>
             <h1>{r.corretorNome}</h1>
           </div>
           <div className="cab-dir">
