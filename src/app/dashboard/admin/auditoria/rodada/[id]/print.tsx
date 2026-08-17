@@ -366,6 +366,15 @@ export default function RodadaPrint({ r, a, indicadores, porGrupo, modo }: Props
               ))}
             </tbody>
           </table>
+          {/* contado da tabela, não copiado do JSON: o status pode ter sido
+              rebaixado, e placar que não bate com a tabela acima derruba a
+              confiança no documento inteiro */}
+          <p className="mini">
+            {(['verde', 'amarelo', 'vermelho', 'nd'] as const).map((k) => {
+              const v = indicadores.filter((i) => i.status === k).length;
+              return v ? <span key={k}>{k}: <b>{v}</b> &nbsp;·&nbsp; </span> : null;
+            })}
+          </p>
           {asStrArr(placar.tres_piores).length > 0 && <p className="mini"><b>Três piores:</b> {asStrArr(placar.tres_piores).join(' · ')}</p>}
           {asStr(placar.mais_melhorou) && <p className="mini"><b>Mais melhorou:</b> {asStr(placar.mais_melhorou)}</p>}
           {asStr(placar.mais_piorou) && <p className="mini"><b>Mais piorou:</b> {asStr(placar.mais_piorou)}</p>}

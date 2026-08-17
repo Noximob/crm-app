@@ -589,13 +589,20 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
         {/* 5 — quadro de indicadores */}
         {indicadores.length > 0 && (
           <Secao id="quadro" n={nDe("quadro")} titulo="Os números" hint="O que cada linha mede está escrito embaixo do nome.">
+            {/* contado a partir da tabela, não copiado do JSON: o status pode
+                ter sido rebaixado aqui, e placar que não bate com a tabela
+                logo abaixo dele derruba a confiança no documento inteiro */}
             <div className="flex flex-wrap gap-x-4 gap-y-1 mb-3 text-[11.5px]">
-              {(['verdes', 'amarelos', 'vermelhos', 'nd'] as const).map((k) => {
-                const v = asNum(placar[k]);
-                if (v === null) return null;
-                const bola = { verdes: '🟢', amarelos: '🟡', vermelhos: '🔴', nd: '⚪' }[k];
-                return <span key={k} className="text-text-secondary">{bola} <b className="text-white tabular-nums">{v}</b></span>;
+              {(['verde', 'amarelo', 'vermelho', 'nd'] as const).map((k) => {
+                const v = indicadores.filter((i) => i.status === k).length;
+                if (!v) return null;
+                return <span key={k} className="text-text-secondary">{BOLA_STATUS[k]} <b className="text-white tabular-nums">{v}</b></span>;
               })}
+              {indicadores.some((i) => i.origemReferencia === 'mercado') && (
+                <span className="text-[10.5px] text-white/40">
+                  status vermelho só contra o que a casa combinou
+                </span>
+              )}
             </div>
             <Tabela cols={['#', 'Indicador', 'Valor', 'Referência', 'Anterior', '']}>
               {porGrupo.map(([grupo, linhas]) => (
@@ -612,7 +619,12 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
                         {ind.oQueMede && <span className="block text-[10px] text-text-secondary font-normal leading-snug mt-0.5">{ind.oQueMede}</span>}
                       </td>
                       <td className={`${td} font-bold tabular-nums ${COR_STATUS[ind.status]}`}>{valorIndicador(ind)}</td>
-                      <td className={td + ' text-text-secondary tabular-nums'}>{referenciaIndicador(ind)}</td>
+                      <td className={td + ' text-text-secondary tabular-nums'}>
+                        {referenciaIndicador(ind)}
+                        {ind.origemReferencia === 'mercado' && (
+                          <span className="block text-[9.5px] text-white/30 font-normal normal-case tracking-normal">de mercado, não combinado</span>
+                        )}
+                      </td>
                       <td className={td + ' text-text-secondary tabular-nums'}>
                         {ind.anterior === null ? '—' : valorIndicador({ valor: ind.anterior, unidade: ind.unidade })}
                         {ind.rumo === 'melhorou' && <span className="text-emerald-300 ml-1">↑</span>}

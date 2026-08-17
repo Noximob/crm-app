@@ -139,6 +139,13 @@ export interface Indicador {
   oQueMede: string;
   bom: 'alto' | 'baixo' | 'neutro';
   valor: number | null; referencia: number | null;
+  /**
+   * De onde veio a régua. É isto que autoriza o vermelho: fora de um padrão
+   * de mercado que ninguém combinou com este corretor é atenção, não
+   * reprovação. Sem esta distinção, o relatório cobra um acordo que nunca
+   * houve — e o corretor tem razão em ignorá-lo.
+   */
+  origemReferencia: 'casa' | 'mercado' | 'nenhuma';
   status: 'verde' | 'amarelo' | 'vermelho' | 'nd';
   anterior: number | null;
   /** 'melhorou' | 'piorou' | 'igual' | null — já resolvido pelo sentido do indicador. */
@@ -160,7 +167,17 @@ export function lerIndicadores(bruto: unknown, anterior?: unknown): Indicador[] 
     const def = DEF_INDICADOR[chave];
     const valor = asNum(l.valor);
     const ant = antes.has(chave) ? antes.get(chave)! : null;
-    const st = asStr(l.status).toLowerCase();
+    let st = asStr(l.status).toLowerCase();
+
+    const og = asStr(l.origem_referencia).toLowerCase();
+    const origemReferencia: Indicador['origemReferencia'] =
+      og === 'casa' ? 'casa' : og === 'mercado' ? 'mercado' : 'nenhuma';
+
+    // rede de segurança: vermelho só se sustenta contra régua da casa. Se a
+    // análise pintou de vermelho um indicador cuja referência é só padrão de
+    // mercado, rebaixa para amarelo — reprovar por acordo que não houve é o
+    // erro que faz o corretor descartar o relatório inteiro.
+    if (st === 'vermelho' && origemReferencia !== 'casa') st = 'amarelo';
 
     let rumo: Indicador['rumo'] = null;
     if (valor !== null && ant !== null && def && def.bom !== 'neutro') {
@@ -178,6 +195,7 @@ export function lerIndicadores(bruto: unknown, anterior?: unknown): Indicador[] 
       bom: def?.bom || 'neutro',
       valor,
       referencia: asNum(l.referencia),
+      origemReferencia,
       status: (['verde', 'amarelo', 'vermelho', 'nd'].includes(st) ? st : 'nd') as Indicador['status'],
       anterior: ant,
       rumo,
