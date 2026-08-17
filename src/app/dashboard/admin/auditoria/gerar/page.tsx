@@ -11,12 +11,12 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/ui/toast';
 import { mapEtapaCircuito } from '@/lib/circuito';
-import { carregarDiretrizes, DADOS_CONFIAVEIS_DESDE, dadosConfiaveisDesdeMs, type DiretrizesAuditoria } from '@/lib/auditoria';
+import { carregarDiretrizes, minutosUteisEntre, DADOS_CONFIAVEIS_DESDE, dadosConfiaveisDesdeMs, type DiretrizesAuditoria } from '@/lib/auditoria';
 import { auditoriaDemo } from '@/lib/auditoriaDemo';
 import {
-  sortearAmostra, computarPanorama, computarCobranca, montarPacote, faixaDoLead, msOf,
+  sortearAmostra, computarPanorama, computarCobranca, computarCoberturaAcumulada, montarPacote, faixaDoLead, msOf,
   detectarDisponibilidade, aplicarDisponibilidade, telefoneUtilizavel,
-  ROTULO_FAIXA, type LeadAud, type AtividadeAud, type VendaAud, type AdsAud, type FaixaSorteio,
+  ROTULO_FAIXA, type HistoricoAmostra, type LeadAud, type AtividadeAud, type VendaAud, type AdsAud, type FaixaSorteio,
 } from '@/lib/auditoriaPacote';
 
 const DIA = 24 * 60 * 60 * 1000;
@@ -29,6 +29,10 @@ const doYmd = (s: string) => { const [a, m, d] = s.split('-').map(Number); retur
 const fmtData = (ms: number) => ms ? new Date(ms).toLocaleDateString('pt-BR') : '—';
 
 const COR_FAIXA: Record<FaixaSorteio, string> = {
+  obrigatorio: 'bg-[#E8C547]/10 border-[#E8C547]/40 text-[#E8C547]',
+  painel: 'bg-[#9F6BFF]/10 border-[#9F6BFF]/40 text-[#C4A6FF]',
+  rotativo: 'bg-sky-500/10 border-sky-500/40 text-sky-300',
+  controle: 'bg-rose-500/10 border-rose-500/40 text-rose-300',
   avancado: 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300',
   parado_15d: 'bg-rose-500/10 border-rose-500/40 text-rose-300',
   entrada_recente: 'bg-sky-500/10 border-sky-500/40 text-sky-300',
@@ -53,6 +57,7 @@ export default function GerarPacotePage() {
   const [vendas, setVendas] = useState<VendaAud[]>([]);
   const [ads, setAds] = useState<AdsAud[]>([]);
   const [etapasDesde, setEtapasDesde] = useState<number | null>(null);
+  const [histAmostra, setHistAmostra] = useState<HistoricoAmostra>({ jaAuditados: new Set(), painel: [] });
   const [carregando, setCarregando] = useState(false);
   const [progresso, setProgresso] = useState(0);
 
@@ -139,6 +144,30 @@ export default function GerarPacotePage() {
       ]);
       setVendas(vs.docs.map((d) => d.data() as VendaAud));
       setAds(as.docs.map((d) => d.data() as AdsAud));
+
+      // quem já foi lido e quem é do painel fixo — sem isso o rotativo
+      // repete gente e o painel não existe, que é o que quebra a comparação
+      // entre uma semana e a seguinte
+      try {
+        const rs = await getDocs(query(collection(db, 'auditoriaRodadas'),
+          where('imobiliariaId', '==', imobiliariaId), where('corretorUid', '==', uid)));
+        const rodadas = rs.docs.map((d) => d.data() as Record<string, unknown>)
+          .filter((r) => !r.teste)
+          .sort((a, b) => String(a.geradoEmYmd || '').localeCompare(String(b.geradoEmYmd || '')));
+        const jaAuditados = new Set<string>();
+        const ultimaLeitura = new Map<string, number>();
+        let painel: string[] = [];
+        for (const r of rodadas) {
+          const quando = doYmd(String(r.geradoEmYmd || ''));
+          for (const id of (Array.isArray(r.amostraIds) ? r.amostraIds : [])) {
+            jaAuditados.add(String(id));
+            if (quando) ultimaLeitura.set(String(id), quando);
+          }
+          if (Array.isArray(r.painelIds) && r.painelIds.length) painel = r.painelIds.map(String);
+        }
+        setHistAmostra({ jaAuditados, painel, ultimaLeitura });
+      } catch { setHistAmostra({ jaAuditados: new Set(), painel: [], ultimaLeitura: new Map() }); }
+
       showToast(`${arr.length} leads carregados.`, 'success');
     } catch (e) {
       console.error('carregarDados auditoria:', e);
@@ -155,6 +184,12 @@ export default function GerarPacotePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uid]);
 
+  /** cobertura acumulada da carteira, para a tela mostrar o rodízio */
+  const cobertura = useMemo(
+    () => computarCoberturaAcumulada(leads, histAmostra, amostra.map((a) => a.lead.id)),
+    [leads, histAmostra, amostra],
+  );
+
   const ultimoToqueDe = (id: string) => {
     const a = ativ.get(id);
     return a?.interacoes.length ? a.interacoes[a.interacoes.length - 1].ms : 0;
@@ -163,7 +198,7 @@ export default function GerarPacotePage() {
   const sortear = () => {
     if (!leads.length) { showToast('Carregue os dados do corretor primeiro.', 'info'); return; }
     // o sorteio respeita o período: só entra quem estava na mão dele nesses dias
-    const r = sortearAmostra(leads, ultimoToqueDe, tamanho, Date.now(), { iniMs, fimMs });
+    const r = sortearAmostra(leads, ultimoToqueDe, tamanho, Date.now(), { iniMs, fimMs }, histAmostra, ativ);
     setAmostra(r.escolhidos);
     setIncompletas(r.incompletas);
     setFora(new Set());
@@ -238,13 +273,22 @@ export default function GerarPacotePage() {
         const t1: number[] = [];
         let ativos = 0, semToque = 0;
         for (const l of arrT) {
-          const n = msOf(l.createdAt), p = msOf(l.circuito?.primeiroContatoEm);
-          if (n > 0 && p >= n && p > 0) t1.push(Math.round((p - n) / 60000));
+          const n = msOf(l.createdAt), pc = msOf(l.circuito?.primeiroContatoEm);
+          // MESMA régua do corretor, senão a comparação é fraude estatística:
+          // só quem NASCEU no período, e em minutos ÚTEIS. Sem isso o time
+          // aparecia com 15.364 min (leads antigos carimbados agora) contra
+          // 1 min do corretor, e o relatório dizia que ele era 15 mil vezes
+          // melhor que a casa.
+          if (n >= iniMs && n < fimMs && pc >= n && pc > 0) {
+            t1.push(minutosUteisEntre(n, pc, diretrizes.horarioUtil));
+          }
           const et = mapEtapaCircuito(l.etapa);
           if (et !== 'Fechamento' && et !== 'Descartado') {
             ativos++;
             const desde = msOf(l.circuito?.desde) || n;
-            if (desde && (Date.now() - desde) / DIA > diretrizes.prazos.leadParadoDias) semToque++;
+            // e também sem contar quem tem retorno agendado, igual ao individual
+            const temFutura = (l.tarefasPendentes || []).some((t) => msOf(t.dueDate) > Date.now());
+            if (!temFutura && desde && (Date.now() - desde) / DIA > diretrizes.prazos.leadParadoDias) semToque++;
           }
         }
         const s = [...t1].sort((a, b) => a - b);
@@ -276,6 +320,8 @@ export default function GerarPacotePage() {
       const pacote = montarPacote({
         corretor, periodo: { iniMs, fimMs }, diretrizes, panorama,
         cobranca: computarCobranca(leads, ativ, panorama, diretrizes, iniMs, fimMs, etapasDesde),
+        coberturaAcumulada: computarCoberturaAcumulada(leads, histAmostra, selecionados.map((x) => x.lead.id)),
+        composicaoAmostra: selecionados.reduce((acc, x) => { acc[x.faixa] = (acc[x.faixa] || 0) + 1; return acc; }, {} as Record<string, number>),
         amostra: selecionados, atividade: ativ, ads, historico,
         historicoEtapasDesdeMs: etapasDesde, disponibilidade,
         // descartados do período: fora da amostra, mas com nome e data pra o
@@ -302,6 +348,11 @@ export default function GerarPacotePage() {
           periodoInicio: ini, periodoFim: fim,
           versaoDiretrizes: diretrizes.versao,
           leadIds: selecionados.map((s) => s.lead.id),
+          // o que a PRÓXIMA rodada precisa saber: quem já foi lido (o
+          // rotativo evita repetir) e quem é do painel fixo (esses voltam,
+          // e são eles que permitem dizer "melhorou" com honestidade)
+          amostraIds: selecionados.map((s) => s.lead.id),
+          painelIds: selecionados.filter((s) => s.faixa === 'painel').map((s) => s.lead.id),
           tamanhoAmostra: selecionados.length,
           metricas: {
             mediana_1o_contato_min_util: panorama.mediana_primeiro_contato_min_util,
@@ -431,9 +482,37 @@ export default function GerarPacotePage() {
             </div>
           </div>
 
+          {/* de onde veio cada lead e quanto da carteira já foi coberta —
+              sem isso o gestor sorteia às cegas e não sabe se está vendo
+              gente nova ou relendo os mesmos toda semana */}
+          <div className="mb-3 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3">
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 mb-2">
+              {(['obrigatorio', 'painel', 'controle', 'rotativo'] as const).map((f) => {
+                const n = amostra.filter((a) => a.faixa === f).length;
+                if (!n) return null;
+                return (
+                  <span key={f} className="text-[11.5px] text-text-secondary">
+                    <b className={`px-1.5 py-0.5 rounded border text-[10px] font-extrabold ${COR_FAIXA[f]}`}>{n}</b>
+                    {' '}{ROTULO_FAIXA[f]}
+                  </span>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-text-secondary leading-relaxed">
+              {cobertura.novos_nesta_rodada > 0 ? (
+                <><b className="text-white">{cobertura.novos_nesta_rodada}</b> nunca foram auditados. </>
+              ) : null}
+              Somando as rodadas anteriores, a auditoria já cobriu{' '}
+              <b className="text-white">{cobertura.ja_auditados} de {cobertura.carteira_ativa}</b> clientes ativos ({cobertura.pct}%).
+              {cobertura.rodadas_para_cobrir_tudo !== null && cobertura.nunca_auditados > 0 && (
+                <> Neste ritmo, mais <b className="text-white">{cobertura.rodadas_para_cobrir_tudo}</b> rodada{cobertura.rodadas_para_cobrir_tudo > 1 ? 's' : ''} cobrem a carteira inteira.</>
+              )}
+            </p>
+          </div>
+
           {incompletas.length > 0 && (
             <p className="text-[11px] text-amber-300 mb-2">
-              ⚠ Faixa incompleta: {incompletas.map((i) => `${ROTULO_FAIXA[i.faixa]} (${i.obtidos} de ${i.pedidos})`).join(' · ')} — o que faltou virou aleatório livre.
+              ⚠ {incompletas.map((i) => `${ROTULO_FAIXA[i.faixa]} (${i.obtidos} de ${i.pedidos})`).join(' · ')} — não havia gente suficiente nessa faixa; as vagas foram para o rodízio.
             </p>
           )}
 

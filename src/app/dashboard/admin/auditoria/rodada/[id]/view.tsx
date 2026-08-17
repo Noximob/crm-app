@@ -609,6 +609,18 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
                 </span>
               )}
             </div>
+
+            {/* de onde vem cada número: sem isto o gestor lê um percentual da
+                amostra como se fosse da carteira — e a amostra é sorteada de
+                propósito nas faixas mais críticas, então não representa o todo */}
+            <p className="text-[10.5px] text-text-secondary mb-3 leading-relaxed">
+              <span className="inline-block text-[8.5px] font-extrabold uppercase tracking-[0.08em] px-1 py-px rounded bg-sky-500/15 text-sky-300 align-middle">lido</span>
+              {' '}saiu dos {fmtNum(asNum(cobertura.conversas_lidas))} clientes cuja conversa foi lida — tem prova, mas é uma
+              amostra sorteada nas faixas mais críticas e <b className="text-white/70">não representa a carteira inteira</b>.
+              {' '}
+              <span className="inline-block text-[8.5px] font-extrabold uppercase tracking-[0.08em] px-1 py-px rounded bg-white/[0.07] text-white/40 align-middle">CRM</span>
+              {' '}saiu da carteira toda, direto do sistema — cobre todo mundo, mas mede o que foi digitado.
+            </p>
             <Tabela cols={['#', 'Indicador', 'Valor', 'Referência', 'Anterior', '']}>
               {porGrupo.map(([grupo, linhas]) => (
                 <React.Fragment key={grupo}>
@@ -620,7 +632,16 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
                     <tr key={ind.n}>
                       <td className={td + ' text-text-secondary tabular-nums'}>{ind.n}</td>
                       <td className={td + ' text-white/85'}>
-                        {ind.rotulo}
+                        <span className="inline-flex items-baseline gap-1.5">
+                          {ind.rotulo}
+                          <span className={`text-[8.5px] font-extrabold uppercase tracking-[0.08em] px-1 py-px rounded ${
+                            ind.base === 'amostra' ? 'bg-sky-500/15 text-sky-300' : 'bg-white/[0.07] text-white/40'
+                          }`} title={ind.base === 'amostra'
+                            ? 'medido nos leads sorteados, com a conversa lida no WhatsApp'
+                            : 'vem do CRM, da carteira inteira — não foi verificado no WhatsApp'}>
+                            {ind.base === 'amostra' ? 'lido' : 'CRM'}
+                          </span>
+                        </span>
                         {ind.oQueMede && <span className="block text-[10px] text-text-secondary font-normal leading-snug mt-0.5">{ind.oQueMede}</span>}
                       </td>
                       <td className={`${td} font-bold tabular-nums ${COR_STATUS[ind.status]}`}>{valorIndicador(ind)}</td>

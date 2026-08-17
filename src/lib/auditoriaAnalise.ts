@@ -85,6 +85,15 @@ export function fmtNum(v: number | null): string {
 export interface DefIndicador {
   rotulo: string; unidade: string; grupo: string; bom: 'alto' | 'baixo' | 'neutro';
   /**
+   * De onde o número sai.
+   *   carteira — todos os leads do corretor, direto do CRM. NÃO foi
+   *     verificado no WhatsApp: mede o que foi digitado.
+   *   amostra  — só os leads sorteados, com a conversa lida. É a única
+   *     parte com prova, e a amostra é ESTRATIFICADA: não representa a
+   *     carteira e não pode ser extrapolada para ela.
+   */
+  base: 'carteira' | 'amostra';
+  /**
    * O indicador em português de gente. Quem lê o relatório vende imóvel e não
    * conhece o vocabulário do sistema — "fidelidade do CRM" não quer dizer
    * nada até alguém explicar que é o quanto o registro bate com a conversa.
@@ -104,39 +113,40 @@ export const PERGUNTA_DO_GRUPO: Record<string, string> = {
 };
 
 export const DEF_INDICADOR: Record<string, DefIndicador> = {
-  '1o_contato_mediana_min_util': { rotulo: 'tempo até o 1º contato', unidade: 'min', grupo: 'Velocidade', bom: 'baixo', oQueMede: 'Quanto tempo o lead novo espera até você falar com ele pela primeira vez. Só conta horário de trabalho — das 20h às 9h e no domingo o relógio para.' },
-  'pct_1o_contato_no_prazo': { rotulo: 'leads novos atendidos no prazo', unidade: '%', grupo: 'Velocidade', bom: 'alto', oQueMede: 'De cada 100 leads novos, quantos você atendeu dentro do tempo combinado.' },
-  'aceite_rodizio_mediana_min': { rotulo: 'tempo para aceitar o lead', unidade: 'min', grupo: 'Velocidade', bom: 'baixo', oQueMede: 'Quanto tempo o lead fica no rodízio esperando você clicar em aceitar.' },
-  'resposta_na_conversa_mediana_min': { rotulo: 'tempo para responder', unidade: 'min', grupo: 'Velocidade', bom: 'baixo', oQueMede: 'Com a conversa já aberta, quanto o cliente espera pela sua resposta.' },
+  '1o_contato_mediana_min_util': { rotulo: 'tempo até o 1º contato', unidade: 'min', grupo: 'Velocidade', base: 'carteira', bom: 'baixo', oQueMede: 'Quanto tempo o lead novo espera até você falar com ele pela primeira vez. Só conta horário de trabalho — das 20h às 9h e no domingo o relógio para.' },
+  'pct_1o_contato_no_prazo': { rotulo: 'leads novos atendidos no prazo', unidade: '%', grupo: 'Velocidade', base: 'carteira', bom: 'alto', oQueMede: 'De cada 100 leads novos, quantos você atendeu dentro do tempo combinado.' },
+  'aceite_rodizio_mediana_min': { rotulo: 'tempo para aceitar o lead', unidade: 'min', grupo: 'Velocidade', base: 'carteira', bom: 'baixo', oQueMede: 'Quanto tempo o lead fica no rodízio esperando você clicar em aceitar.' },
+  'resposta_na_conversa_mediana_min': { rotulo: 'tempo para responder', unidade: 'min', grupo: 'Velocidade', base: 'amostra', bom: 'baixo', oQueMede: 'Com a conversa já aberta, quanto o cliente espera pela sua resposta.' },
 
-  'fidelidade_crm_pct': { rotulo: 'o sistema bate com a realidade', unidade: '%', grupo: 'Disciplina e cobertura', bom: 'alto', oQueMede: 'De cada 100 leads, em quantos o que está escrito no CRM é o que de fato aconteceu no WhatsApp.' },
-  'pct_ativos_com_proximo_passo': { rotulo: 'clientes com próximo passo marcado', unidade: '%', grupo: 'Disciplina e cobertura', bom: 'alto', oQueMede: 'Quantos dos seus clientes ativos têm uma próxima ação agendada. Sem isso, o lead depende de você lembrar.' },
-  'tarefas_vencidas_24h': { rotulo: 'tarefas atrasadas mais de um dia', unidade: '', grupo: 'Disciplina e cobertura', bom: 'baixo', oQueMede: 'Quantas tarefas você marcou e deixou passar mais de 24 horas.' },
-  'pct_carteira_parada': { rotulo: 'clientes sem receber nada há mais de 7 dias', unidade: '%', grupo: 'Disciplina e cobertura', bom: 'baixo', oQueMede: 'A fatia da sua carteira que está há mais de uma semana sem nenhum contato seu.' },
-  'pct_com_qualificacao': { rotulo: 'clientes com a ficha preenchida', unidade: '%', grupo: 'Disciplina e cobertura', bom: 'alto', oQueMede: 'Em quantos você já levantou o que a pessoa procura, quanto pode pagar e para quando.' },
+  'fidelidade_crm_pct': { rotulo: 'o sistema bate com a realidade', unidade: '%', grupo: 'Disciplina e cobertura', base: 'amostra', bom: 'alto', oQueMede: 'De cada 100 leads, em quantos o que está escrito no CRM é o que de fato aconteceu no WhatsApp.' },
+  'pct_ativos_com_proximo_passo': { rotulo: 'clientes com próximo passo marcado', unidade: '%', grupo: 'Disciplina e cobertura', base: 'carteira', bom: 'alto', oQueMede: 'Quantos dos seus clientes ativos têm uma próxima ação agendada. Sem isso, o lead depende de você lembrar.' },
+  'tarefas_vencidas_24h': { rotulo: 'tarefas atrasadas mais de um dia', unidade: '', grupo: 'Disciplina e cobertura', base: 'carteira', bom: 'baixo', oQueMede: 'Quantas tarefas você marcou e deixou passar mais de 24 horas.' },
+  'pct_carteira_parada': { rotulo: 'clientes sem receber nada há mais de 7 dias', unidade: '%', grupo: 'Disciplina e cobertura', base: 'carteira', bom: 'baixo', oQueMede: 'A fatia da sua carteira que está há mais de uma semana sem nenhum contato seu.' },
+  'pct_com_qualificacao': { rotulo: 'clientes com a ficha preenchida', unidade: '%', grupo: 'Disciplina e cobertura', base: 'carteira', bom: 'alto', oQueMede: 'Em quantos você já levantou o que a pessoa procura, quanto pode pagar e para quando.' },
 
-  'pct_1o_contato_para_meet': { rotulo: 'do 1º contato até marcar reunião', unidade: '%', grupo: 'Funil', bom: 'alto', oQueMede: 'De cada 100 pessoas com quem você falou, quantas aceitaram marcar uma reunião.' },
-  'pct_meet_marcado_para_feito': { rotulo: 'reunião marcada que aconteceu', unidade: '%', grupo: 'Funil', bom: 'alto', oQueMede: 'Das reuniões marcadas, quantas o cliente compareceu. O resto é bolo.' },
-  'pct_visita_marcada_para_feita': { rotulo: 'visita marcada que aconteceu', unidade: '%', grupo: 'Funil', bom: 'alto', oQueMede: 'Das visitas agendadas, quantas o cliente foi de fato.' },
-  'pct_visita_para_negociacao': { rotulo: 'visita que virou negociação', unidade: '%', grupo: 'Funil', bom: 'alto', oQueMede: 'De cada 100 visitas feitas, quantas avançaram para proposta.' },
-  'retorno_pos_visita_mediana_h': { rotulo: 'tempo para retornar depois da visita', unidade: 'h', grupo: 'Funil', bom: 'baixo', oQueMede: 'Quantas horas o cliente espera por notícias suas depois de visitar o imóvel. É aqui que mais se perde negócio pronto.' },
+  'pct_1o_contato_para_meet': { rotulo: 'do 1º contato até marcar reunião', unidade: '%', grupo: 'Funil', base: 'carteira', bom: 'alto', oQueMede: 'De cada 100 pessoas com quem você falou, quantas aceitaram marcar uma reunião.' },
+  'pct_meet_marcado_para_feito': { rotulo: 'reunião marcada que aconteceu', unidade: '%', grupo: 'Funil', base: 'carteira', bom: 'alto', oQueMede: 'Das reuniões marcadas, quantas o cliente compareceu. O resto é bolo.' },
+  'pct_visita_marcada_para_feita': { rotulo: 'visita marcada que aconteceu', unidade: '%', grupo: 'Funil', base: 'carteira', bom: 'alto', oQueMede: 'Das visitas agendadas, quantas o cliente foi de fato.' },
+  'pct_visita_para_negociacao': { rotulo: 'visita que virou negociação', unidade: '%', grupo: 'Funil', base: 'carteira', bom: 'alto', oQueMede: 'De cada 100 visitas feitas, quantas avançaram para proposta.' },
+  'retorno_pos_visita_mediana_h': { rotulo: 'tempo para retornar depois da visita', unidade: 'h', grupo: 'Funil', base: 'amostra', bom: 'baixo', oQueMede: 'Quantas horas o cliente espera por notícias suas depois de visitar o imóvel. É aqui que mais se perde negócio pronto.' },
 
-  'pct_com_proximo_passo_proposto': { rotulo: 'conversas que terminaram com data marcada', unidade: '%', grupo: 'Conversa', bom: 'alto', oQueMede: 'De cada 100 conversas, quantas acabaram com dia e hora combinados. Conversa sem data não continua sozinha.' },
-  'pct_com_pergunta_aberta': { rotulo: 'conversas em que você perguntou algo', unidade: '%', grupo: 'Conversa', bom: 'alto', oQueMede: 'Em quantas conversas você fez uma pergunta de verdade, em vez de só mandar informação.' },
-  'sinais_de_compra_ignorados': { rotulo: 'sinais de compra que passaram batido', unidade: '', grupo: 'Conversa', bom: 'baixo', oQueMede: 'Quantas vezes o cliente demonstrou interesse claro e a conversa não avançou por causa disso.' },
-  'pct_audio_do_corretor': { rotulo: 'quanto do que você mandou foi áudio', unidade: '%', grupo: 'Conversa', bom: 'neutro', oQueMede: 'A fatia das suas mensagens que foi áudio. Nem alto nem baixo é errado — o que pesa é áudio ser o único contato.' },
-  'pct_personalizacao': { rotulo: 'mensagens escritas para aquela pessoa', unidade: '%', grupo: 'Conversa', bom: 'alto', oQueMede: 'Quantas conversas tiveram mensagem feita para aquele cliente, e não texto que foi para vários.' },
+  'pct_com_proximo_passo_proposto': { rotulo: 'conversas que terminaram com data marcada', unidade: '%', grupo: 'Conversa', base: 'amostra', bom: 'alto', oQueMede: 'De cada 100 conversas, quantas acabaram com dia e hora combinados. Conversa sem data não continua sozinha.' },
+  'pct_com_pergunta_aberta': { rotulo: 'conversas em que você perguntou algo', unidade: '%', grupo: 'Conversa', base: 'amostra', bom: 'alto', oQueMede: 'Em quantas conversas você fez uma pergunta de verdade, em vez de só mandar informação.' },
+  'sinais_de_compra_ignorados': { rotulo: 'sinais de compra que passaram batido', unidade: '', grupo: 'Conversa', base: 'amostra', bom: 'baixo', oQueMede: 'Quantas vezes o cliente demonstrou interesse claro e a conversa não avançou por causa disso.' },
+  'pct_audio_do_corretor': { rotulo: 'quanto do que você mandou foi áudio', unidade: '%', grupo: 'Conversa', base: 'amostra', bom: 'neutro', oQueMede: 'A fatia das suas mensagens que foi áudio. Nem alto nem baixo é errado — o que pesa é áudio ser o único contato.' },
+  'pct_personalizacao': { rotulo: 'mensagens escritas para aquela pessoa', unidade: '%', grupo: 'Conversa', base: 'amostra', bom: 'alto', oQueMede: 'Quantas conversas tiveram mensagem feita para aquele cliente, e não texto que foi para vários.' },
 
-  'meets_feitos': { rotulo: 'reuniões realizadas', unidade: '', grupo: 'Resultado', bom: 'alto', oQueMede: 'Quantas reuniões aconteceram no período.' },
-  'visitas_feitas': { rotulo: 'visitas realizadas', unidade: '', grupo: 'Resultado', bom: 'alto', oQueMede: 'Quantas visitas ao imóvel aconteceram no período.' },
-  'vendas': { rotulo: 'vendas fechadas', unidade: '', grupo: 'Resultado', bom: 'alto', oQueMede: 'Quantos negócios fecharam no período.' },
-  'vgv': { rotulo: 'valor vendido', unidade: 'R$', grupo: 'Resultado', bom: 'alto', oQueMede: 'A soma do valor dos imóveis vendidos no período.' },
-  'cobertura_lidos_de_20': { rotulo: 'conversas que a auditoria conseguiu ler', unidade: 'conversas', grupo: 'Resultado', bom: 'alto', oQueMede: 'Quantas conversas da amostra foram lidas de fato. Quanto menor, menos confiança nos percentuais acima.' },
+  'meets_feitos': { rotulo: 'reuniões realizadas', unidade: '', grupo: 'Resultado', base: 'carteira', bom: 'alto', oQueMede: 'Quantas reuniões aconteceram no período.' },
+  'visitas_feitas': { rotulo: 'visitas realizadas', unidade: '', grupo: 'Resultado', base: 'carteira', bom: 'alto', oQueMede: 'Quantas visitas ao imóvel aconteceram no período.' },
+  'vendas': { rotulo: 'vendas fechadas', unidade: '', grupo: 'Resultado', base: 'carteira', bom: 'alto', oQueMede: 'Quantos negócios fecharam no período.' },
+  'vgv': { rotulo: 'valor vendido', unidade: 'R$', grupo: 'Resultado', base: 'carteira', bom: 'alto', oQueMede: 'A soma do valor dos imóveis vendidos no período.' },
+  'cobertura_lidos_de_20': { rotulo: 'conversas que a auditoria conseguiu ler', unidade: 'conversas', grupo: 'Resultado', base: 'amostra', bom: 'alto', oQueMede: 'Quantas conversas da amostra foram lidas de fato. Quanto menor, menos confiança nos percentuais acima.' },
 };
 
 export interface Indicador {
   n: number; chave: string; rotulo: string; unidade: string; grupo: string;
   oQueMede: string;
+  base: DefIndicador['base'];
   bom: 'alto' | 'baixo' | 'neutro';
   valor: number | null; referencia: number | null;
   /**
@@ -192,6 +202,7 @@ export function lerIndicadores(bruto: unknown, anterior?: unknown): Indicador[] 
       unidade: def?.unidade ?? '',
       grupo: def?.grupo || 'Outros',
       oQueMede: def?.oQueMede || '',
+      base: def?.base || 'carteira',
       bom: def?.bom || 'neutro',
       valor,
       referencia: asNum(l.referencia),

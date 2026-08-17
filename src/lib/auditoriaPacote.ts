@@ -116,14 +116,103 @@ export function normalizarTelefone(bruto: string | undefined): { telefone: strin
 // Sorteio estratificado
 // ---------------------------------------------------------------------------
 
-export type FaixaSorteio = 'avancado' | 'parado_15d' | 'entrada_recente' | 'livre';
+/**
+ * O PAPEL DE CADA LEAD NA AMOSTRA
+ *
+ * Ler as 75 conversas de um corretor toda semana é caro demais. Mas sortear
+ * 20 diferentes a cada rodada tem um custo escondido pior: nada fica
+ * comparável. O percentual sobe ou desce porque os leads são outros, não
+ * porque o corretor mudou — e um número que se move sozinho não gere
+ * ninguém.
+ *
+ * A amostra por isso não é um sorteio só. São quatro papéis:
+ *
+ *   obrigatorio — o dinheiro na mesa. Negociação, Fechamento e quem teve
+ *     visita ou reunião nos últimos 14 dias. Não se sorteia o que a casa
+ *     precisa ver: esses entram sempre, todos.
+ *   painel — os mesmos clientes toda rodada, enquanto vivos. É o único
+ *     jeito honesto de dizer "melhorou": mesma pessoa, mesma conversa,
+ *     semana seguinte.
+ *   rotativo — quem nunca foi lido, com prioridade para o mais antigo sem
+ *     auditoria. É o que dá cobertura da carteira ao longo do mês sem
+ *     pagar por ela toda semana.
+ *   controle — parados e frios, para a amostra não olhar só para o bonito.
+ */
+export type FaixaSorteio = 'obrigatorio' | 'painel' | 'rotativo' | 'controle'
+  | 'avancado' | 'parado_15d' | 'entrada_recente' | 'livre';
 
 export const ROTULO_FAIXA: Record<FaixaSorteio, string> = {
+  obrigatorio: 'Dinheiro na mesa',
+  painel: 'Painel fixo',
+  rotativo: 'Nunca auditado',
+  controle: 'Parado / frio',
+  // faixas antigas — rodadas já geradas ainda as exibem
   avancado: 'Etapa avançada',
   parado_15d: 'Parado +15 dias',
   entrada_recente: 'Entrada recente',
   livre: 'Aleatório livre',
 };
+
+/**
+ * Quanto da amostra cabe a cada papel.
+ *
+ * Os tetos existem por causa de uma simulação: sem eles, a carteira do
+ * Breno enchia a amostra só de obrigatórios (11 de 20), sobrava UM lugar
+ * para gente nova e a cobertura da carteira travava em 40% depois de cinco
+ * semanas. Amostra que quase não roda vira o mesmo relatório toda semana.
+ */
+export const COMPOSICAO = { obrigatorio: 0.35, painel: 0.15, controle: 0.10 } as const;
+
+/** Dias desde a visita/reunião em que o lead ainda é dinheiro quente. */
+const JANELA_POS_EVENTO_DIAS = 14;
+
+/**
+ * O lead está com dinheiro na mesa? Candidato a entrar sem sorteio.
+ *
+ * Só ser valioso não basta: se ele já foi lido e NADA aconteceu desde
+ * então, reler é gastar a vaga com uma conversa que não mudou. Por isso
+ * "obrigatório" exige valor E movimento.
+ */
+export function ehObrigatorio(
+  l: LeadAud, ativ: Map<string, AtividadeAud> | undefined, agora: number,
+  ultimaLeituraMs = 0,
+): boolean {
+  const et = mapEtapaCircuito(l.etapa);
+  const at = ativ?.get(l.id);
+  const ultimaInteracao = at?.interacoes.length ? at.interacoes[at.interacoes.length - 1].ms : 0;
+
+  // já lido e sem nada novo desde então: não há o que reler
+  if (ultimaLeituraMs > 0 && ultimaInteracao > 0 && ultimaInteracao <= ultimaLeituraMs) return false;
+
+  if (et === 'Negociação' || et === ETAPA_FECHADO) return true;
+
+  if (et === ETAPA_MEET_FEITO || et === ETAPA_VISITA_FEITA) {
+    // só enquanto o pós-evento está quente; depois disso ele já é histórico
+    let quando = 0;
+    for (const h of (l.etapasHist || [])) {
+      const alvo = mapEtapaCircuito(String(h.para || ''));
+      if (alvo === ETAPA_MEET_FEITO || alvo === ETAPA_VISITA_FEITA) {
+        const ms = msOf(h.em);
+        if (ms > quando) quando = ms;
+      }
+    }
+    if (!quando) quando = ultimaInteracao;
+    return !!quando && (agora - quando) / DIA <= JANELA_POS_EVENTO_DIAS;
+  }
+  return false;
+}
+
+/** Ordena os obrigatórios por urgência, para o teto cortar os menos urgentes. */
+function urgenciaObrigatorio(l: LeadAud, ativ: Map<string, AtividadeAud> | undefined, agora: number): number {
+  const et = mapEtapaCircuito(l.etapa);
+  const at = ativ?.get(l.id);
+  const ultimo = at?.interacoes.length ? at.interacoes[at.interacoes.length - 1].ms : 0;
+  const diasParado = ultimo ? (agora - ultimo) / DIA : 999;
+  // pós-visita primeiro (janela curta), depois quem está parado há mais tempo
+  const pesoEtapa = et === ETAPA_VISITA_FEITA ? 300 : et === ETAPA_MEET_FEITO ? 250
+    : et === 'Negociação' ? 200 : 150;
+  return pesoEtapa + Math.min(diasParado, 120);
+}
 
 /** Proporção alvo pra 20. Descartado NÃO tem faixa: os 3 lugares dele foram pro livre. */
 export const PROPORCAO: { faixa: FaixaSorteio; parte: number }[] = [
@@ -176,40 +265,124 @@ export function elegivelNoPeriodo(l: LeadAud, iniMs: number, fimMs: number): boo
   return true;
 }
 
+export interface HistoricoAmostra {
+  /** ids já lidos em qualquer rodada anterior — o rotativo os evita */
+  jaAuditados: Set<string>;
+  /** ids do painel fixo, na ordem em que foram escolhidos */
+  painel: string[];
+  /** quando cada lead foi lido pela última vez — decide se vale reler */
+  ultimaLeitura?: Map<string, number>;
+}
+
+export interface CoberturaAcumulada {
+  carteira_ativa: number;
+  ja_auditados: number;
+  nunca_auditados: number;
+  pct: number;
+  novos_nesta_rodada: number;
+  /** quantas rodadas, no ritmo atual, para cobrir a carteira inteira */
+  rodadas_para_cobrir_tudo: number | null;
+}
+
+/**
+ * Quanto da carteira já passou pela auditoria somando todas as rodadas.
+ *
+ * É o número que responde à objeção certa do corretor: "vocês olharam só 20
+ * dos meus 75". Em quatro semanas de rodízio a resposta passa a ser "olhamos
+ * 61 dos 75", e aí o retrato deixa de ser recorte e vira cobertura.
+ */
+export function computarCoberturaAcumulada(
+  leads: LeadAud[], hist: HistoricoAmostra, amostraAtual: string[],
+): CoberturaAcumulada {
+  const ativos = leads.filter((l) => {
+    const et = mapEtapaCircuito(l.etapa);
+    return et !== ETAPA_DESCARTADO && et !== ETAPA_FECHADO;
+  });
+  const ids = new Set(ativos.map((l) => l.id));
+  const lidos = new Set<string>();
+  hist.jaAuditados.forEach((id) => { if (ids.has(id)) lidos.add(id); });
+  const novos = amostraAtual.filter((id) => ids.has(id) && !lidos.has(id));
+  novos.forEach((id) => lidos.add(id));
+
+  const total = ativos.length;
+  const falta = Math.max(0, total - lidos.size);
+  return {
+    carteira_ativa: total,
+    ja_auditados: lidos.size,
+    nunca_auditados: falta,
+    pct: total ? Math.round((lidos.size / total) * 100) : 0,
+    novos_nesta_rodada: novos.length,
+    rodadas_para_cobrir_tudo: novos.length > 0 ? Math.ceil(falta / novos.length) : null,
+  };
+}
+
 export function sortearAmostra(
   leads: LeadAud[], ultimoToqueDe: (id: string) => number, tamanho: number, agora = Date.now(),
   periodo?: { iniMs: number; fimMs: number },
+  hist: HistoricoAmostra = { jaAuditados: new Set(), painel: [] },
+  ativ?: Map<string, AtividadeAud>,
 ): ResultadoSorteio {
-  const universo = periodo ? leads.filter((l) => elegivelNoPeriodo(l, periodo.iniMs, periodo.fimMs)) : leads;
-  const porFaixa = new Map<FaixaSorteio, LeadAud[]>();
-  for (const l of universo) {
-    const f = faixaDoLead(l, ultimoToqueDe(l.id), agora);
-    if (!f) continue;
-    const arr = porFaixa.get(f) || [];
-    arr.push(l);
-    porFaixa.set(f, arr);
-  }
-  const total = PROPORCAO.reduce((s, p) => s + p.parte, 0);
+  const universo = (periodo ? leads.filter((l) => elegivelNoPeriodo(l, periodo.iniMs, periodo.fimMs)) : leads)
+    .filter((l) => mapEtapaCircuito(l.etapa) !== ETAPA_DESCARTADO);
+
   const escolhidos: { lead: LeadAud; faixa: FaixaSorteio }[] = [];
   const incompletas: ResultadoSorteio['incompletas'] = [];
   const usados = new Set<string>();
-  let sobra = 0;
+  const pegar = (l: LeadAud, faixa: FaixaSorteio) => { usados.add(l.id); escolhidos.push({ lead: l, faixa }); };
+  const livres = () => universo.filter((l) => !usados.has(l.id));
 
-  for (const { faixa, parte } of PROPORCAO) {
-    const querem = Math.max(0, Math.round((parte / total) * tamanho));
-    const disponiveis = embaralhar((porFaixa.get(faixa) || []).filter((l) => !usados.has(l.id)));
-    const pega = disponiveis.slice(0, querem);
-    pega.forEach((l) => { usados.add(l.id); escolhidos.push({ lead: l, faixa }); });
-    if (pega.length < querem) {
-      sobra += querem - pega.length;
-      if (faixa !== 'livre') incompletas.push({ faixa, pedidos: querem, obtidos: pega.length });
-    }
+  const lidoEm = (id: string) => hist.ultimaLeitura?.get(id) ?? 0;
+
+  // 1) DINHEIRO NA MESA — entram sem sorteio, mas com TETO. Sem o teto a
+  //    carteira inteira de Negociação/Fechamento ocupa a amostra e não
+  //    sobra vaga para gente nova, o que congela o relatório. Quem não
+  //    couber no teto disputa o rotativo como todo mundo.
+  const candidatos = universo
+    .filter((l) => ehObrigatorio(l, ativ, agora, lidoEm(l.id)))
+    .sort((a, b) => urgenciaObrigatorio(b, ativ, agora) - urgenciaObrigatorio(a, ativ, agora));
+  const tetoObrig = Math.max(1, Math.round(tamanho * COMPOSICAO.obrigatorio));
+  candidatos.slice(0, tetoObrig).forEach((l) => pegar(l, 'obrigatorio'));
+
+  const resto = Math.max(0, tamanho - escolhidos.length);
+
+  // 2) PAINEL — os mesmos de sempre, enquanto vivos. É o que torna a
+  //    comparação entre semanas honesta.
+  const alvoPainel = Math.round(tamanho * COMPOSICAO.painel);
+  const painelVivo = hist.painel
+    .map((id) => universo.find((l) => l.id === id))
+    .filter((l): l is LeadAud => !!l && !usados.has(l.id));
+  painelVivo.slice(0, Math.min(alvoPainel, resto)).forEach((l) => pegar(l, 'painel'));
+
+  // completa o painel com quem ainda não está nele — na 1ª rodada ele nasce
+  const faltaPainel = Math.min(alvoPainel, resto) - painelVivo.length;
+  if (faltaPainel > 0) {
+    embaralhar(livres()).slice(0, faltaPainel).forEach((l) => pegar(l, 'painel'));
   }
-  // o que faltou vira aleatório livre entre TODOS os elegíveis restantes
-  if (sobra > 0) {
-    const resto = embaralhar(universo.filter((l) => !usados.has(l.id) && faixaDoLead(l, ultimoToqueDe(l.id), agora) !== null));
-    resto.slice(0, sobra).forEach((l) => { usados.add(l.id); escolhidos.push({ lead: l, faixa: 'livre' }); });
+
+  // 3) CONTROLE — parados e frios, para a amostra não olhar só o bonito
+  const alvoControle = Math.round(tamanho * COMPOSICAO.controle);
+  const parados = embaralhar(livres().filter((l) => {
+    const ref = ultimoToqueDe(l.id) || msOf(l.createdAt);
+    if (!(ref > 0 && (agora - ref) / DIA > 15)) return false;
+    // quem tem retorno marcado não é "parado": está esperando a data
+    const at = ativ?.get(l.id);
+    return !(at?.tarefas || []).some((t) => !/conclu|cancel/i.test(t.status) && t.dueMs > agora);
+  }));
+  parados.slice(0, alvoControle).forEach((l) => pegar(l, 'controle'));
+  if (parados.length < alvoControle) {
+    incompletas.push({ faixa: 'controle', pedidos: alvoControle, obtidos: parados.length });
   }
+
+  // 4) ROTATIVO — o que sobra, priorizando quem NUNCA foi auditado. É isto
+  //    que faz a cobertura da carteira crescer ao longo do mês sem pagar
+  //    por ela toda semana.
+  const falta = Math.max(0, tamanho - escolhidos.length);
+  if (falta > 0) {
+    const inéditos = embaralhar(livres().filter((l) => !hist.jaAuditados.has(l.id)));
+    const revisitas = embaralhar(livres().filter((l) => hist.jaAuditados.has(l.id)));
+    [...inéditos, ...revisitas].slice(0, falta).forEach((l) => pegar(l, 'rotativo'));
+  }
+
   return { escolhidos, incompletas };
 }
 
@@ -239,7 +412,7 @@ export interface DisponibilidadeMetrica {
 const FAMILIAS: { chave: string; rotulo: string; campos: string[] }[] = [
   { chave: 'agenda', rotulo: 'Meets e visitas (marcados/feitos)', campos: ['meets_marcados', 'meets_feitos', 'visitas_marcadas', 'visitas_feitas'] },
   { chave: 'primeiro_contato', rotulo: 'Tempo até o 1º contato', campos: ['mediana_primeiro_contato_min_util', 'mediana_primeiro_contato_min_corrido', 'dentro_do_prazo_1o_contato', 'fora_do_prazo_1o_contato'] },
-  { chave: 'timeline', rotulo: 'Toques e leads parados', campos: ['sem_toque_7d', 'sem_toque_7d_por_etapa'] },
+  { chave: 'timeline', rotulo: 'Toques e leads parados', campos: ['sem_toque_7d', 'sem_toque_7d_por_etapa', 'parados_com_retorno_agendado'] },
   { chave: 'tarefas', rotulo: 'Tarefas e atrasos', campos: ['tarefas_atrasadas_24h', 'tarefas_concluidas_atrasadas_24h', 'leads_sem_tarefa_futura'] },
   { chave: 'rodizio', rotulo: 'Rodízio de leads de anúncio', campos: ['rodizio'] },
 ];
@@ -301,6 +474,8 @@ export interface Panorama {
   leads_recebidos: number;
   leads_novos_30d: number;
   leads_sem_primeiro_contato: number;
+  /** entraram agora e ainda estão dentro do prazo — não são atraso */
+  leads_novos_ainda_no_prazo: number;
   /** leads antigos cujo 1º contato foi carimbado dentro do período — mede
    *  adoção do CRM, não velocidade de atendimento (ficam FORA da mediana) */
   carimbos_retroativos: number;
@@ -309,8 +484,11 @@ export interface Panorama {
   dentro_do_prazo_1o_contato: number;
   fora_do_prazo_1o_contato: number;
   distribuicao_funil: Record<string, number>;
+  /** sem toque E sem retorno agendado — é este que se cobra */
   sem_toque_7d: number;
   sem_toque_7d_por_etapa: Record<string, number>;
+  /** sem toque MAS com tarefa futura marcada: está esperando, não largado */
+  parados_com_retorno_agendado: number;
   tarefas_atrasadas_24h: number;
   tarefas_concluidas_atrasadas_24h: number;
   leads_sem_tarefa_futura: number;
@@ -475,6 +653,12 @@ export function computarCobranca(
     for (const c of vazios) faltando[c] = (faltando[c] || 0) + 1;
 
     // ---- tempo parado na etapa
+    // lead com retorno já marcado não está parado: está esperando a data que
+    // o próprio cliente pediu. Cobrar silêncio dele é cobrar o certo.
+    const at0 = ativ.get(l.id);
+    const temRetornoAgendado = (at0?.tarefas || []).some((t) => !/conclu|cancel/i.test(t.status) && t.dueMs > agora);
+    if (temRetornoAgendado) continue;
+
     const prazo = d.prazoMaximoEtapaDias[et];
     if (!prazo) continue;
     const carimbo = entrouNaEtapaEm(l, et);
@@ -534,10 +718,10 @@ export function computarPanorama(
 ): Panorama {
   const dentroJ = (ms: number) => ms >= iniMs && ms < fimMs;
   const p: Panorama = {
-    leads_recebidos: 0, leads_novos_30d: 0, leads_sem_primeiro_contato: 0, carimbos_retroativos: 0,
+    leads_recebidos: 0, leads_novos_30d: 0, leads_sem_primeiro_contato: 0, leads_novos_ainda_no_prazo: 0, carimbos_retroativos: 0,
     mediana_primeiro_contato_min_util: null, mediana_primeiro_contato_min_corrido: null,
     dentro_do_prazo_1o_contato: 0, fora_do_prazo_1o_contato: 0,
-    distribuicao_funil: {}, sem_toque_7d: 0, sem_toque_7d_por_etapa: {},
+    distribuicao_funil: {}, sem_toque_7d: 0, sem_toque_7d_por_etapa: {}, parados_com_retorno_agendado: 0,
     tarefas_atrasadas_24h: 0, tarefas_concluidas_atrasadas_24h: 0,
     leads_sem_tarefa_futura: 0, leads_sem_anotacao: 0, leads_sem_qualificacao: 0,
     meets_marcados: 0, meets_feitos: 0, visitas_marcadas: 0, visitas_feitas: 0,
@@ -559,7 +743,9 @@ export function computarPanorama(
     const ultimo = at?.interacoes.length ? at.interacoes[at.interacoes.length - 1].ms : 0;
 
     if (dentroJ(nascimento)) p.leads_recebidos++;
-    if (nascimento > 0 && (agora - nascimento) / DIA <= 30) p.leads_novos_30d++;
+    // relativo ao FIM DO PERÍODO, não a "agora": um relatório de julho lido
+    // em setembro dizia "0 leads novos" porque contava a partir de hoje
+    if (nascimento > 0 && nascimento <= fimMs && (fimMs - nascimento) / DIA <= 30) p.leads_novos_30d++;
 
     // funil (interesse futuro é DERIVADO — não é etapa gravada)
     const rotulo = ehInteresseFuturo(et, l.tarefasPendentes, agora) ? ETAPA_INTERESSE_FUTURO : et;
@@ -581,7 +767,11 @@ export function computarPanorama(
       if (util <= d.prazos.primeiroContatoMaximoMin) p.dentro_do_prazo_1o_contato++;
       else p.fora_do_prazo_1o_contato++;
     } else if (nasceuNoPeriodo && ativo) {
-      p.leads_sem_primeiro_contato++;
+      // lead que entrou agora ainda TEM prazo. Contá-lo como "sem 1º
+      // contato" é cobrar antes de o relógio acabar de correr.
+      const jaVenceu = minutosUteisEntre(nascimento, agora, d.horarioUtil) > d.prazos.primeiroContatoMaximoMin;
+      if (jaVenceu) p.leads_sem_primeiro_contato++;
+      else p.leads_novos_ainda_no_prazo++;
     } else if (!nasceuNoPeriodo && pMs > 0 && dentroJ(pMs) && nascimento > 0) {
       // carimbado no período mas nascido antes: é adoção do CRM, não
       // atendimento. Fica registrado à parte pra não sumir da leitura.
@@ -590,19 +780,31 @@ export function computarPanorama(
 
     if (ativo) {
       const ref = ultimo || nascimento;
-      if (ref > 0 && (agora - ref) / DIA > d.prazos.leadParadoDias) {
-        p.sem_toque_7d++;
-        p.sem_toque_7d_por_etapa[rotulo] = (p.sem_toque_7d_por_etapa[rotulo] || 0) + 1;
-      }
       const temFutura = (at?.tarefas || []).some((t) => !/conclu|cancel/i.test(t.status) && t.dueMs > agora);
+
+      if (ref > 0 && (agora - ref) / DIA > d.prazos.leadParadoDias) {
+        // ABANDONADO é diferente de AGENDADO. Cliente que pediu para ser
+        // chamado em dois meses e tem a tarefa marcada não está largado —
+        // está esperando, e cobrar silêncio dele é cobrar o certo. Numa
+        // rodada real isso inflava "34 leads parados" quando 28 tinham
+        // retorno agendado.
+        if (temFutura) {
+          p.parados_com_retorno_agendado++;
+        } else {
+          p.sem_toque_7d++;
+          p.sem_toque_7d_por_etapa[rotulo] = (p.sem_toque_7d_por_etapa[rotulo] || 0) + 1;
+        }
+      }
       if (!temFutura) p.leads_sem_tarefa_futura++;
       if (!String(l.anotacoes || '').trim()) p.leads_sem_anotacao++;
       const temQualif = !!l.qualificacao && Object.values(l.qualificacao).some((v) => Array.isArray(v) && v.length > 0);
       if (!temQualif) p.leads_sem_qualificacao++;
     }
 
-    // tarefas: em aberto agora, e as que ele fez com atraso dentro da janela
-    for (const t of (at?.tarefas || [])) {
+    // tarefas: em aberto agora, e as que ele fez com atraso dentro da janela.
+    // SÓ de lead vivo: tarefa pendente em lead descartado ou fechado não é
+    // trabalho em aberto, é resíduo — e contava como atraso do corretor.
+    for (const t of (ativo ? (at?.tarefas || []) : [])) {
       if (t.dueMs <= 0) continue;
       const concl = /conclu/i.test(t.status), canc = /cancel/i.test(t.status);
       if (!concl && !canc && horasUteisEntre(t.dueMs, agora, d.horarioUtil) > atrasoH) p.tarefas_atrasadas_24h++;
@@ -662,6 +864,10 @@ export interface OpcoesPacote {
   panorama: Panorama;
   /** o que a régua do gestor permite cobrar nesta rodada */
   cobranca: Cobranca;
+  /** quanto da carteira já passou pela auditoria somando todas as rodadas */
+  coberturaAcumulada: CoberturaAcumulada;
+  /** quantos leads de cada papel entraram nesta amostra */
+  composicaoAmostra: Record<string, number>;
   amostra: { lead: LeadAud; faixa: FaixaSorteio }[];
   atividade: Map<string, AtividadeAud>;
   ads: AdsAud[];
@@ -826,6 +1032,8 @@ export function montarPacote(o: OpcoesPacote, agora = Date.now()): Record<string
     prompts: o.diretrizes.prompts,
     panorama: o.panorama,
     cobranca: o.cobranca,
+    cobertura_acumulada: o.coberturaAcumulada,
+    composicao_da_amostra: o.composicaoAmostra,
     historico: o.historico,
     amostra,
   };

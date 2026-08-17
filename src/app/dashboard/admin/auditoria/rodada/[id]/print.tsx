@@ -58,6 +58,8 @@ export const CSS_PRINT_RODADA = `
   color: #55595f; border-bottom: 1.5px solid #14161a; padding: 3px 4px; }
 #aud-print td { border-bottom: 1px solid #e6e8eb; padding: 3.5px 4px; vertical-align: top; }
 #aud-print td.num, #aud-print th.num { text-align: right; font-variant-numeric: tabular-nums; }
+#aud-print .fonte { font-size: 6.5px; font-weight: 800; letter-spacing: .5px;
+  text-transform: uppercase; color: #6b7075; border: 1px solid #cdd1d6; border-radius: 2px; padding: 0 2px; }
 #aud-print .expl { display: block; font-size: 7.5px; color: #6b7075; line-height: 1.35; font-weight: 400; }
 #aud-print tr.grp td { background: #f0f1f3; font-weight: 800; font-size: 7.5px;
   letter-spacing: 1px; text-transform: uppercase; padding: 3px 4px; }
@@ -351,7 +353,7 @@ export default function RodadaPrint({ r, a, indicadores, porGrupo, modo }: Props
                     <tr key={ind.n}>
                       <td className="nd">{ind.n}</td>
                       <td>
-                        {ind.rotulo}
+                        {ind.rotulo} <span className="fonte">{ind.base === "amostra" ? "lido" : "CRM"}</span>
                         {ind.oQueMede && <span className="expl">{ind.oQueMede}</span>}
                       </td>
                       <td className={`num ${ind.status}`}>{valorIndicador(ind)}</td>

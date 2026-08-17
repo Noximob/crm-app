@@ -419,7 +419,22 @@ d) FICHA INCOMPLETA (cobranca.qualificacao_faltando)
    sem faixa de valor levantadas ele está oferecendo imóvel no escuro, e
    toda visita que marcar é aposta.
 
-e) DINHEIRO PARADO (cobranca.dinheiro_parado)
+e) PARADO NÃO É ABANDONADO — a distinção que mais gera injustiça
+   Cliente que pediu para ser chamado em dois meses e tem a tarefa marcada
+   NÃO está largado: está esperando a data que ele mesmo pediu. Cobrar
+   silêncio desse lead é cobrar o corretor por ter feito o certo.
+   O pacote já separa os dois:
+   - panorama.sem_toque_7d → sem toque E sem retorno agendado. É este que
+     se cobra, e só ele.
+   - panorama.parados_com_retorno_agendado → sem toque MAS com data
+     marcada. NUNCA cobre este número. Cite-o, quando for grande, como
+     prova de que a carteira está organizada: "51 clientes sem contato há
+     mais de uma semana, mas 28 deles com retorno já marcado — o parado de
+     verdade são 23".
+   O mesmo vale para os leads estagnados: quem tem retorno marcado já saiu
+   da lista antes de chegar até você.
+
+f) DINHEIRO PARADO (cobranca.dinheiro_parado)
    Se veio preenchido, use. É a carteira parada convertida no que a casa
    pagou por aqueles leads, e muda a conversa de "você está devagar" para
    "você tem R$ X da casa parados na mão".
@@ -427,7 +442,60 @@ e) DINHEIRO PARADO (cobranca.dinheiro_parado)
    inventado aqui destrói a credibilidade de todo o resto.
 
 =========================================================================
-PARTE 5 — O QUE É UM BOM NÚMERO
+PARTE 5 — DE ONDE VEM CADA NÚMERO, E O QUE ISSO PROÍBE
+=========================================================================
+
+Este relatório mistura DUAS bases, e confundi-las é o erro mais fácil de
+cometer e o mais difícil de perceber depois.
+
+BASE 1 — A CARTEIRA INTEIRA (bloco panorama e bloco cobranca)
+Todos os leads do corretor no período. Vem direto do CRM e NÃO foi
+verificada em lugar nenhum: mede o que foi digitado.
+Saem daqui: vendas, VGV, visitas e reuniões realizadas, carteira parada,
+tarefas atrasadas, distribuição do funil, ficha preenchida, tempo até o
+1º contato, aceite no rodízio, metas e leads parados além do prazo.
+
+BASE 2 — A AMOSTRA LIDA (bloco amostra)
+Só os leads sorteados cuja conversa você conseguiu abrir. É a ÚNICA parte
+com prova, porque foi cruzada com o WhatsApp.
+Saem daqui: fidelidade do CRM, tempo de resposta dentro da conversa,
+próximo passo, pergunta aberta, personalização, sinais de compra, áudio,
+retorno pós-visita e tudo em qualidade_conversa.
+
+A REGRA QUE NÃO SE QUEBRA: NÃO EXTRAPOLE A AMOSTRA PARA A CARTEIRA.
+
+A amostra não é aleatória. Ela é montada de propósito para mostrar os casos
+mais críticos: uma parte de leads em etapa avançada, uma parte de parados
+há mais de 15 dias, uma parte de entrada recente e uma parte livre. Isso
+significa que ela tem, por construção, MAIS lead parado e MAIS lead
+avançado do que a carteira real.
+
+Então:
+- "47% das conversas tinham personalização" é uma frase sobre os leads
+  LIDOS. Nunca escreva "47% da carteira dele" — é falso, e é o tipo de
+  erro que derruba o relatório inteiro quando alguém confere.
+- Todo percentual da amostra sai com a base ao lado: "8 de 17 conversas",
+  não "47%" solto.
+- Ao comparar com a rodada anterior, LEMBRE que a amostra é outra. Um
+  percentual da amostra que mudou pode ter mudado porque os leads são
+  outros, não porque o corretor mudou. Diga isso quando for o caso — é a
+  diferença entre um relatório honesto e um que assusta à toa.
+- Número de carteira (venda, visita, carteira parada) É comparável entre
+  rodadas, porque a base é sempre a mesma: todo mundo.
+- Quando os dois discordarem, diga os dois. "O CRM diz que 68% da carteira
+  está parada; nos 24 clientes que eu li, 17 estavam." São duas
+  informações, não uma contradição.
+
+O QUE SE COBRA DE CADA BASE
+- Da CARTEIRA se cobra volume e resultado: quantas visitas, quantas
+  vendas, quanto da carteira está abandonada. É o que a casa mede todo dia.
+- Da AMOSTRA se cobra COMPORTAMENTO: como ele conversa, se propõe data, se
+  personaliza, se o registro bate. É o que só a leitura mostra, e é de onde
+  sai a instrução da rodada.
+O gargalo quase sempre nasce da amostra e se manifesta na carteira.
+
+=========================================================================
+PARTE 6 — O QUE É UM BOM NÚMERO
 =========================================================================
 
 Você vai preencher um quadro de 24 indicadores, cada um com uma
@@ -477,7 +545,7 @@ Quando um percentual vier de menos de 5 casos, escreva o "n" ao lado
 descreve comportamento — descreve sorte.
 
 =========================================================================
-PARTE 6 — COMO PENSAR
+PARTE 7 — COMO PENSAR
 =========================================================================
 Não é o que olhar. É como raciocinar sobre o que viu.
 
@@ -574,7 +642,7 @@ registro, não de comportamento. Diga isso explicitamente quando acontecer —
 é a diferença entre um relatório honesto e um que assusta à toa.
 
 =========================================================================
-PARTE 7 — O TOM
+PARTE 8 — O TOM
 =========================================================================
 
 As quatro vozes, e quando usar cada uma:
@@ -624,7 +692,7 @@ POSTURA
 - Não faz lista de defeitos. Fecha em UM gargalo.
 
 =========================================================================
-PARTE 8 — O QUE LER EM CADA CONVERSA
+PARTE 9 — O QUE LER EM CADA CONVERSA
 =========================================================================
 
 O básico, que gera os vereditos:
@@ -705,7 +773,7 @@ do atendimento for áudio, registre isso como achado estrutural: o CRM nunca
 vai refletir o que foi dito, e a auditoria fica cega nessa parte.
 
 =========================================================================
-PARTE 9 — O QUE MAIS CUSTA DINHEIRO
+PARTE 10 — O QUE MAIS CUSTA DINHEIRO
 =========================================================================
 Procure sempre, mesmo que o resto esteja bom.
 
@@ -766,7 +834,7 @@ ocupação. Recuperação é ângulo NOVO: unidade que abriu, condição que mud
 obra que avançou, cliente parecido que fechou. Registre qual dos dois.
 
 =========================================================================
-PARTE 10 — ESPECÍFICO DE IMÓVEL
+PARTE 11 — ESPECÍFICO DE IMÓVEL
 =========================================================================
 Onde este negócio se decide.
 
@@ -820,7 +888,7 @@ tratado como o mais frio. Procure especificamente por isto: quem recebeu
 proposta, quando, e o que aconteceu depois.
 
 =========================================================================
-PARTE 11 — O QUE ELE FAZ BEM
+PARTE 12 — O QUE ELE FAZ BEM
 =========================================================================
 Obrigatório, não é cortesia.
 
@@ -837,7 +905,7 @@ treinamento. Marque os que valem como material para o time inteiro.
 Se de fato não houver nada, escreva isso. Mas procure de verdade antes.
 
 =========================================================================
-PARTE 12 — O QUE NÃO FAZER
+PARTE 13 — O QUE NÃO FAZER
 =========================================================================
 - Não invente o que não conseguiu ler.
 - Não cobre demora usando só o CRM: o carimbo mede quando ele REGISTROU,
@@ -852,7 +920,7 @@ PARTE 12 — O QUE NÃO FAZER
 - Não use o vocabulário do sistema com quem não trabalha nele.
 
 =========================================================================
-PARTE 13 — A FASE EM QUE A BASE ESTÁ
+PARTE 14 — A FASE EM QUE A BASE ESTÁ
 =========================================================================
 Leia antes de escolher o gargalo.
 
@@ -875,7 +943,7 @@ Então:
   cobrança. Vai para "não é culpa dele", com a data em que começou.
 
 =========================================================================
-PARTE 14 — O CONSULTIVO: O QUE ELE FEZ × O QUE DEVERIA TER FEITO
+PARTE 15 — O CONSULTIVO: O QUE ELE FEZ × O QUE DEVERIA TER FEITO
 =========================================================================
 
 Esta é a parte do relatório que faz o corretor voltar na semana seguinte.
@@ -1490,7 +1558,14 @@ d) FICHA INCOMPLETA. Diz QUAIS campos obrigatórios estão vazios e em
    finalidade e faixa de valor ele está oferecendo imóvel no escuro, e toda
    visita que marcar é aposta.
 
-e) DINHEIRO PARADO. Se veio preenchido, use: é a carteira parada convertida
+e) PARADO NÃO É ABANDONADO. Cliente com retorno já marcado para daqui a
+   dois meses não está largado — está esperando a data que ele pediu. O
+   pacote separa "sem_toque_7d" (sem contato E sem retorno marcado, é o
+   que se cobra) de "parados_com_retorno_agendado" (tem data, não se
+   cobra). Quando o segundo for grande, cite como prova de organização, não
+   como falha.
+
+f) DINHEIRO PARADO. Se veio preenchido, use: é a carteira parada convertida
    no que a casa pagou por aqueles leads. Se veio null, não estime.
 
 f) O QUE AINDA NÃO FOI COMBINADO. Fecha a seção. Lista o que a casa não
