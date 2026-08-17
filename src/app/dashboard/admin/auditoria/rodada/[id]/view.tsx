@@ -147,6 +147,15 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
   onRenomear?: (nome: string) => Promise<void>;
 }) {
   const [modoPdf, setModoPdf] = useState<'corretor' | 'gestor'>('corretor');
+  /**
+   * A tela abre mostrando tudo — quem entra aqui é o gestor. Mas a reunião
+   * acontece com os dois olhando a MESMA tela, e aí o risco apurado e as
+   * perguntas preparadas não podem estar à vista: o corretor lê o roteiro
+   * antes de a conversa começar. Este botão é o que torna a tela usável na
+   * frente dele.
+   */
+  const [modoTela, setModoTela] = useState<'gestor' | 'corretor'>('gestor');
+  const soEu = modoTela === 'gestor';
   const [editandoNome, setEditandoNome] = useState(false);
   const [nomeNovo, setNomeNovo] = useState(r.corretorNome || '');
 
@@ -242,6 +251,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
   ].filter((s) => s.tem)), [a, fila, acertos, achados, evidencias, indicadores, crmVsReal, leadsAud, blocos,
     temperatura, corrente, metas, duasConversas, padroes, engajamento, naoEDele, riscoOcorr, perguntas, destravar, ressalvas]);
 
+  const indiceVisivel = useMemo(() => indice.filter((s) => soEu || !s.gestor), [indice, soEu]);
   const nDe = (id: string) => indice.findIndex((s) => s.id === id) + 1;
 
   const nomeArquivo = useMemo(() => {
@@ -310,10 +320,27 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link href="/dashboard/admin/auditoria/historico/" className={btnGhost}>← Histórico</Link>
+            <button
+              onClick={() => setModoTela(soEu ? 'corretor' : 'gestor')}
+              title={soEu ? 'esconde o risco, as perguntas do 1:1 e o que a casa precisa destravar' : 'volta a mostrar tudo'}
+              className={soEu ? btnGhost : 'px-3 py-2 rounded-xl text-[12px] font-bold border border-emerald-500/50 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 transition-colors'}>
+              {soEu ? '👥 Ver com o corretor' : '✓ Modo reunião · voltar a ver tudo'}
+            </button>
             <button onClick={() => imprimir('gestor')} className={btnGhost}>🖨 PDF do gestor</button>
             <button onClick={() => imprimir('corretor')} className={btnOuro}>📄 PDF do corretor</button>
           </div>
         </div>
+
+        {/* precisa saltar aos olhos: o custo de achar que está escondido e não
+            estar é o corretor ler o roteiro da reunião por cima do seu ombro */}
+        {!soEu && (
+          <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/[0.08] px-4 py-2.5 flex flex-wrap items-center gap-2">
+            <span className="text-[12px] font-bold text-emerald-300">👥 Modo reunião</span>
+            <span className="text-[11.5px] text-white/80">
+              Pode virar a tela: o risco, as perguntas do 1:1 e o que a casa precisa destravar estão escondidos.
+            </span>
+          </div>
+        )}
 
         {editandoNome && (
           <div className="al-card p-3 flex flex-wrap items-center gap-2">
@@ -369,11 +396,11 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
         </section>
 
         {/* índice — o documento é longo e ninguém rola atrás do que quer */}
-        {indice.length > 2 && (
+        {indiceVisivel.length > 2 && (
           <nav className="al-card p-3">
             <p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-text-secondary mb-2">Neste relatório</p>
             <div className="flex flex-wrap gap-1.5">
-              {indice.map((s, i) => (
+              {indiceVisivel.map((s, i) => (
                 <a key={s.id} href={`#${s.id}`}
                   className={`px-2.5 py-1 rounded-lg text-[11.5px] font-bold transition-colors ${
                     s.gestor
@@ -384,7 +411,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
                 </a>
               ))}
             </div>
-            {indice.some((s) => s.gestor) && (
+            {soEu && indice.some((s) => s.gestor) && (
               <p className="text-[10px] text-text-secondary mt-2">
                 <span className="inline-block w-2 h-2 rounded-sm bg-[#9F6BFF]/40 align-middle mr-1" />
                 roxo = só você vê; não sai no PDF do corretor
@@ -913,7 +940,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
         )}
 
         {/* ——— daqui para baixo: só o gestor ——— */}
-        {(riscoOcorr.length > 0 || perguntas.length > 0 || destravar.length > 0) && (
+        {soEu && (riscoOcorr.length > 0 || perguntas.length > 0 || destravar.length > 0) && (
           <div className="flex items-center gap-3 pt-2">
             <div className="h-px flex-1 bg-white/10" />
             <span className="text-[9.5px] font-extrabold uppercase tracking-[0.16em] text-text-secondary">Só para o gestor · não vai no PDF do corretor</span>
@@ -921,7 +948,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
           </div>
         )}
 
-        {riscoOcorr.length > 0 && (
+        {soEu && riscoOcorr.length > 0 && (
           <Secao id="risco" n={nDe("risco")} titulo="Risco para a imobiliária">
             <p className="text-[11px] text-text-secondary mb-2">
               Gravidade <b className={asStr(risco.gravidade) === 'alta' ? 'text-rose-300' : 'text-amber-300'}>{asStr(risco.gravidade) || '—'}</b>.
@@ -931,7 +958,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
           </Secao>
         )}
 
-        {perguntas.length > 0 && (
+        {soEu && perguntas.length > 0 && (
           <Secao id="perguntas" n={nDe("perguntas")} titulo="Perguntas para a reunião" hint="Perguntas, não acusações — a primeira abre a conversa.">
             <ol className="space-y-2">
               {perguntas.map((p, i) => (
@@ -943,7 +970,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
           </Secao>
         )}
 
-        {destravar.length > 0 && (
+        {soEu && destravar.length > 0 && (
           <Secao id="destravar" n={nDe("destravar")} titulo="O que VOCÊ precisa destravar" hint="O corretor não resolve isso sozinho.">
             <Tabela cols={['Tipo', 'O que travou', 'Responsável']}>
               {destravar.map((d, i) => (
