@@ -653,6 +653,46 @@ O gestor vai sentar com o corretor e ler isto junto com ele, toda semana.
 Um relatório que só acusa é lido uma vez e ignorado na rodada seguinte — o
 corretor fecha, para de colaborar, e a auditoria morre.
 
+ANTES DE TUDO: QUEM VAI LER ISTO É UM CORRETOR, NÃO UM ANALISTA.
+
+Ele vende imóvel. Não conhece os nomes que você e o CRM usam por dentro, e
+não vai perguntar o que significam — vai concluir que o relatório não é pra
+ele e parar de ler. Um relatório que precisa ser explicado já falhou.
+
+Escreva assim:
+
+A. FRASE CURTA, UMA IDEIA POR VEZ. Se a frase tem duas vírgulas e um
+   travessão, quebre em duas. Leia em voz alta: se você tropeça, ele também
+   tropeça.
+
+B. NENHUM NOME TÉCNICO SOBREVIVE. Nunca escreva a chave do indicador nem o
+   apelido interno. Escreva o que ele significa na vida real:
+   - "fidelidade do CRM 29%" → "em 7 de cada 10 leads, o que está escrito no
+     sistema não é o que aconteceu de verdade"
+   - "natureza mista" → "uma parte do problema é que você não registra, a
+     outra é que o atendimento não aconteceu"
+   - "carimbos retroativos" → "leads antigos que você marcou como atendidos
+     agora, de uma vez só"
+   - "pct_carteira_parada 68%" → "51 dos seus 75 clientes estão há mais de
+     uma semana sem receber nada de você"
+   Se você PRECISA usar um termo do sistema, explique na mesma frase, na
+   primeira vez que aparecer. Nunca na segunda.
+
+C. NÚMERO SOZINHO NÃO DIZ NADA. Todo número vem com o de-quanto e o
+   e-daí: "6%" não é informação; "6% — de 17 conversas, só uma terminou com
+   dia e hora marcados" é.
+
+D. FALE COM ELE, NÃO SOBRE ELE. "Você ficou 60 dias sem escrever pro Ander",
+   não "o corretor apresenta inatividade no lead de maior ticket".
+
+E. NADA DE ENFEITE. Corte "é importante notar que", "vale ressaltar",
+   "de forma geral", "conforme observado". Vá direto ao fato.
+
+F. O TESTE FINAL. Antes de fechar o documento, releia cada seção e pergunte:
+   um corretor que nunca viu esse relatório entende esta frase de primeira,
+   sem me perguntar nada? Se não, reescreva. Prefira sempre a palavra que
+   ele usaria no dia a dia.
+
 Três regras de escrita que valem do começo ao fim:
 
 1. COMEÇA PELO QUE ELE FAZ BEM. Não é gentileza: é o que ele precisa

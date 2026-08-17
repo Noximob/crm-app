@@ -15,7 +15,7 @@ import React from 'react';
 import {
   asObj, asArr, asStrArr, asStr, asNum, fmtYmd, fmtDinheiro, fmtNum,
   valorIndicador, referenciaIndicador, VEREDITO, TEMPERATURA, naturezaLegivel, valorSolto,
-  ROTULO_QUALIDADE, ROTULO_OPORTUNIDADE, ROTULO_FUNIL, TIPO_DESTRAVE, PRAZO_LEGIVEL,
+  ROTULO_QUALIDADE, ROTULO_OPORTUNIDADE, ROTULO_FUNIL, TIPO_DESTRAVE, PRAZO_LEGIVEL, PERGUNTA_DO_GRUPO,
   type ChaveVeredito, type Indicador,
 } from '@/lib/auditoriaAnalise';
 
@@ -58,6 +58,7 @@ export const CSS_PRINT_RODADA = `
   color: #55595f; border-bottom: 1.5px solid #14161a; padding: 3px 4px; }
 #aud-print td { border-bottom: 1px solid #e6e8eb; padding: 3.5px 4px; vertical-align: top; }
 #aud-print td.num, #aud-print th.num { text-align: right; font-variant-numeric: tabular-nums; }
+#aud-print .expl { display: block; font-size: 7.5px; color: #6b7075; line-height: 1.35; font-weight: 400; }
 #aud-print tr.grp td { background: #f0f1f3; font-weight: 800; font-size: 7.5px;
   letter-spacing: 1px; text-transform: uppercase; padding: 3px 4px; }
 #aud-print .verde { color: #0a7a35; font-weight: 700; }
@@ -264,11 +265,14 @@ export default function RodadaPrint({ r, a, indicadores, porGrupo, modo }: Props
             <tbody>
               {porGrupo.map(([grupo, linhas]) => (
                 <React.Fragment key={grupo}>
-                  <tr className="grp"><td colSpan={5}>{grupo}</td></tr>
+                  <tr className="grp"><td colSpan={5}>{grupo}{PERGUNTA_DO_GRUPO[grupo] ? ` — ${PERGUNTA_DO_GRUPO[grupo]}` : ''}</td></tr>
                   {linhas.map((ind) => (
                     <tr key={ind.n}>
                       <td className="nd">{ind.n}</td>
-                      <td>{ind.rotulo}</td>
+                      <td>
+                        {ind.rotulo}
+                        {ind.oQueMede && <span className="expl">{ind.oQueMede}</span>}
+                      </td>
                       <td className={`num ${ind.status}`}>{valorIndicador(ind)}</td>
                       <td className="num nd">{referenciaIndicador(ind)}</td>
                       <td className="num nd">

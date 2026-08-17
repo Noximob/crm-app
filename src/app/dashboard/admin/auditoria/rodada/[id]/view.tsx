@@ -22,7 +22,7 @@ import {
   asObj, asArr, asStrArr, asStr, asNum, fmtYmd, fmtDinheiro, fmtNum,
   lerIndicadores, valorIndicador, referenciaIndicador, GRUPOS, BOLA_STATUS, COR_STATUS,
   VEREDITO, TEMPERATURA, naturezaLegivel, valorSolto,
-  ROTULO_QUALIDADE, ROTULO_OPORTUNIDADE, ROTULO_FUNIL, TIPO_DESTRAVE, PRAZO_LEGIVEL,
+  ROTULO_QUALIDADE, ROTULO_OPORTUNIDADE, ROTULO_FUNIL, TIPO_DESTRAVE, PRAZO_LEGIVEL, PERGUNTA_DO_GRUPO,
   type ChaveVeredito, type Indicador,
 } from '@/lib/auditoriaAnalise';
 import { showToast } from '@/components/ui/toast';
@@ -127,6 +127,13 @@ function Tabela({ cols, children }: { cols: string[]; children: React.ReactNode 
 
 const td = 'px-2 py-1.5 border-b border-white/[0.06] align-top';
 
+/**
+ * Âncora dos blocos de métricas. Vive aqui porque índice e seção precisam
+ * chegar EXATAMENTE ao mesmo id — quando cada um monta o seu, os links do
+ * índice apontam para o vazio e ninguém percebe.
+ */
+const ancoraBloco = (titulo: string) => 'b-' + titulo.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
 // ---------------------------------------------------------------------------
 // a apresentação
 // ---------------------------------------------------------------------------
@@ -195,6 +202,36 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
     numeros: Object.entries(b.src).filter(([k]) => k !== 'observacao'),
     observacao: asStr(b.src.observacao),
   })), [a]);
+
+  /**
+   * O índice é a fonte única da ordem E da numeração das seções. Numerar à
+   * mão fazia o documento pular do 1 para o 3 quando um bloco não vinha no
+   * JSON — e um relatório que pula número parece quebrado.
+   */
+  const indice = useMemo(() => ([
+    { id: 'fila', t: 'Fila de ataque', tem: fila.length > 0, gestor: false },
+    { id: 'bem', t: 'O que você faz bem', tem: acertos.length > 0, gestor: false },
+    { id: 'muda', t: 'O que muda agora', tem: achados.length > 0 || evidencias.length > 0, gestor: false },
+    { id: 'quadro', t: 'Os números', tem: indicadores.length > 0, gestor: false },
+    { id: 'crm', t: 'CRM × realidade', tem: crmVsReal.length > 0, gestor: false },
+    { id: 'leads', t: 'Cliente por cliente', tem: leadsAud.length > 0, gestor: false },
+    ...blocos.map((b) => ({ id: ancoraBloco(b.t), t: b.t, tem: true, gestor: false })),
+    { id: 'temp', t: 'Temperatura da carteira', tem: Object.keys(temperatura).length > 0, gestor: false },
+    { id: 'corrente', t: 'Como um erro puxa o outro', tem: asStrArr(corrente.elos).length > 0 || asNum(corrente.custo_estimado_vgv) !== null, gestor: false },
+    { id: 'metas', t: 'Como medir a instrução', tem: metas.length > 0, gestor: false },
+    { id: 'duas', t: 'Duas conversas', tem: !!(asStr(asObj(duasConversas.melhor).lead) || asStr(asObj(duasConversas.pior).lead)), gestor: false },
+    { id: 'antes', t: 'Desde a rodada anterior', tem: !!asStr(a.comparativo_rodada_anterior), gestor: false },
+    { id: 'padroes', t: 'Padrões recorrentes', tem: padroes.length > 0, gestor: false },
+    { id: 'engaja', t: 'Engajamento', tem: !!asStr(engajamento.observacao) || asStrArr(engajamento.sinais_de_queda).length > 0, gestor: false },
+    { id: 'naodele', t: 'Nem tudo é do corretor', tem: naoEDele.length > 0, gestor: false },
+    { id: 'risco', t: 'Risco para a imobiliária', tem: riscoOcorr.length > 0, gestor: true },
+    { id: 'perguntas', t: 'Perguntas para a reunião', tem: perguntas.length > 0, gestor: true },
+    { id: 'destravar', t: 'O que você precisa destravar', tem: destravar.length > 0, gestor: true },
+    { id: 'ressalvas', t: 'Ressalvas', tem: ressalvas.length > 0, gestor: false },
+  ].filter((s) => s.tem)), [a, fila, acertos, achados, evidencias, indicadores, crmVsReal, leadsAud, blocos,
+    temperatura, corrente, metas, duasConversas, padroes, engajamento, naoEDele, riscoOcorr, perguntas, destravar, ressalvas]);
+
+  const nDe = (id: string) => indice.findIndex((s) => s.id === id) + 1;
 
   const nomeArquivo = useMemo(() => {
     const nome = (r?.corretorNome || 'corretor').normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -320,9 +357,34 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
           </div>
         </section>
 
+        {/* índice — o documento é longo e ninguém rola atrás do que quer */}
+        {indice.length > 2 && (
+          <nav className="al-card p-3">
+            <p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-text-secondary mb-2">Neste relatório</p>
+            <div className="flex flex-wrap gap-1.5">
+              {indice.map((s, i) => (
+                <a key={s.id} href={`#${s.id}`}
+                  className={`px-2.5 py-1 rounded-lg text-[11.5px] font-bold transition-colors ${
+                    s.gestor
+                      ? 'bg-[#9F6BFF]/10 text-[#C4A6FF] hover:bg-[#9F6BFF]/20'
+                      : 'bg-white/[0.05] text-text-secondary hover:text-white hover:bg-white/[0.1]'
+                  }`}>
+                  <span className="opacity-50 mr-1 tabular-nums">{i + 1}</span>{s.t}
+                </a>
+              ))}
+            </div>
+            {indice.some((s) => s.gestor) && (
+              <p className="text-[10px] text-text-secondary mt-2">
+                <span className="inline-block w-2 h-2 rounded-sm bg-[#9F6BFF]/40 align-middle mr-1" />
+                roxo = só você vê; não sai no PDF do corretor
+              </p>
+            )}
+          </nav>
+        )}
+
         {/* 2 — fila de ataque */}
         {fila.length > 0 && (
-          <Secao n={1} titulo="Fila de ataque" hint="O que fazer amanhã de manhã, nesta ordem.">
+          <Secao id="fila" n={nDe("fila")} titulo="Fila de ataque" hint="O que fazer amanhã de manhã, nesta ordem.">
             <div className="space-y-2.5">
               {fila.map((f, i) => {
                 const t = TEMPERATURA[asStr(f.temperatura).toLowerCase()] || TEMPERATURA.frio;
@@ -356,7 +418,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
 
         {/* 3 — o que faz bem */}
         {acertos.length > 0 && (
-          <Secao n={2} titulo="O que você faz bem" hint="Manter e replicar — é daqui que sai o material de treino do time.">
+          <Secao id="bem" n={nDe("bem")} titulo="O que você faz bem" hint="Manter e replicar — é daqui que sai o material de treino do time.">
             <div className="space-y-3">
               {acertos.map((ac, i) => (
                 <div key={i}>
@@ -378,7 +440,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
 
         {/* 4 — achados (a prosa) */}
         {achados.length > 0 && (
-          <Secao n={3} titulo="O que muda a partir de agora">
+          <Secao id="muda" n={nDe("muda")} titulo="O que muda a partir de agora">
             <div className="space-y-5">
               {achados.map((ac, i) => {
                 const est = VEREDITO[asStr(ac.estado) as ChaveVeredito];
@@ -402,7 +464,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
 
         {/* evidências avulsas — só quando não vieram achados */}
         {achados.length === 0 && evidencias.length > 0 && (
-          <Secao n={3} titulo="Evidências">
+          <Secao id="muda" n={nDe("muda")} titulo="Evidências">
             {evidencias.map((e, i) => (
               <div key={i}>
                 <Citacao lead={asStr(e.lead)} data={asStr(e.data)} trecho={asStr(e.trecho)} />
@@ -414,7 +476,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
 
         {/* 5 — quadro de indicadores */}
         {indicadores.length > 0 && (
-          <Secao n={4} titulo="Quadro de indicadores">
+          <Secao id="quadro" n={nDe("quadro")} titulo="Os números" hint="O que cada linha mede está escrito embaixo do nome.">
             <div className="flex flex-wrap gap-x-4 gap-y-1 mb-3 text-[11.5px]">
               {(['verdes', 'amarelos', 'vermelhos', 'nd'] as const).map((k) => {
                 const v = asNum(placar[k]);
@@ -426,11 +488,17 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
             <Tabela cols={['#', 'Indicador', 'Valor', 'Referência', 'Anterior', '']}>
               {porGrupo.map(([grupo, linhas]) => (
                 <React.Fragment key={grupo}>
-                  <tr><td colSpan={6} className="px-2 pt-3 pb-1 text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-[#E8C547]/70">{grupo}</td></tr>
+                  <tr><td colSpan={6} className="px-2 pt-4 pb-1">
+                    <span className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-[#E8C547]/70">{grupo}</span>
+                    {PERGUNTA_DO_GRUPO[grupo] && <span className="text-[10.5px] text-text-secondary ml-2 font-normal normal-case tracking-normal">{PERGUNTA_DO_GRUPO[grupo]}</span>}
+                  </td></tr>
                   {linhas.map((ind) => (
                     <tr key={ind.n}>
                       <td className={td + ' text-text-secondary tabular-nums'}>{ind.n}</td>
-                      <td className={td + ' text-white/85'}>{ind.rotulo}</td>
+                      <td className={td + ' text-white/85'}>
+                        {ind.rotulo}
+                        {ind.oQueMede && <span className="block text-[10px] text-text-secondary font-normal leading-snug mt-0.5">{ind.oQueMede}</span>}
+                      </td>
                       <td className={`${td} font-bold tabular-nums ${COR_STATUS[ind.status]}`}>{valorIndicador(ind)}</td>
                       <td className={td + ' text-text-secondary tabular-nums'}>{referenciaIndicador(ind)}</td>
                       <td className={td + ' text-text-secondary tabular-nums'}>
@@ -454,7 +522,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
 
         {/* 6 — CRM × real */}
         {crmVsReal.length > 0 && (
-          <Secao n={5} titulo="O CRM × o que de fato aconteceu" hint="Onde as duas fontes divergem — e para que lado o erro pende.">
+          <Secao id="crm" n={nDe("crm")} titulo="O CRM × o que de fato aconteceu" hint="Onde as duas fontes divergem — e para que lado o erro pende.">
             <Tabela cols={['Métrica', 'CRM', 'Real', 'Veredito', 'Leitura']}>
               {crmVsReal.map((l, i) => {
                 const v = VEREDITO[asStr(l.veredito) as ChaveVeredito];
@@ -474,7 +542,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
 
         {/* 7 — tabela dos leads */}
         {leadsAud.length > 0 && (
-          <Secao n={6} titulo="Os leads auditados" hint={`${leadsAud.length} leads da amostra, um por linha.`}>
+          <Secao id="leads" n={nDe("leads")} titulo="Cliente por cliente" hint={`${leadsAud.length} leads da amostra, um por linha.`}>
             <Tabela cols={['Lead', 'T', 'Etapa CRM', 'Etapa real', 'Ver.', 'Sem toque', 'Formato', 'O que queria', 'Por que parou']}>
               {leadsAud.map((l, i) => {
                 const t = TEMPERATURA[asStr(l.temperatura).toLowerCase()];
@@ -502,7 +570,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
 
         {/* 8 — qualidade / oportunidade / funil */}
         {blocos.map((b, i) => (
-          <Secao key={b.t} n={7 + i} titulo={b.t}>
+          <Secao key={b.t} id={ancoraBloco(b.t)} n={nDe(ancoraBloco(b.t))} titulo={b.t}>
             <Grade itens={b.numeros.map(([k, v]) => {
               const s = valorSolto(v);
               return { rot: b.rot[k] || k.replace(/_/g, ' '), val: s.txt, nulo: s.nulo };
@@ -532,7 +600,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
 
         {/* 9 — temperatura da carteira */}
         {Object.keys(temperatura).length > 0 && (
-          <Secao n={10} titulo="Temperatura da carteira">
+          <Secao id="temp" n={nDe("temp")} titulo="Temperatura da carteira">
             <div className="flex flex-wrap gap-2">
               {(['quente', 'morno', 'frio', 'perdido'] as const).map((k) => {
                 const v = asNum(temperatura[k]);
@@ -550,7 +618,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
 
         {/* 10 — corrente causal + custo */}
         {(asStrArr(corrente.elos).length > 0 || asNum(corrente.custo_estimado_vgv) !== null) && (
-          <Secao n={11} titulo="A corrente causal" hint="Como um elo puxa o outro até virar dinheiro perdido.">
+          <Secao id="corrente" n={nDe("corrente")} titulo="Como um erro puxa o outro" hint="Como um elo puxa o outro até virar dinheiro perdido.">
             {asStrArr(corrente.elos).length > 0 && (
               <div className="space-y-1 mb-3">
                 {asStrArr(corrente.elos).map((e, i) => (
@@ -589,7 +657,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
 
         {/* como medir em 30 dias — a instrução vira número cobrável */}
         {metas.length > 0 && (
-          <Secao titulo="Como medir a instrução" hint="O que precisa ter mudado quando a próxima rodada abrir.">
+          <Secao id="metas" n={nDe("metas")} titulo="Como medir a instrução" hint="O que precisa ter mudado quando a próxima rodada abrir.">
             <Tabela cols={['Indicador', 'Hoje', 'Meta']}>
               {metas.map((m, i) => (
                 <tr key={i}>
@@ -604,7 +672,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
 
         {/* a melhor e a pior — material de treino e pauta do 1:1 */}
         {(asStr(asObj(duasConversas.melhor).lead) || asStr(asObj(duasConversas.pior).lead)) && (
-          <Secao titulo="Duas conversas">
+          <Secao id="duas" n={nDe("duas")} titulo="Duas conversas">
             <div className="grid sm:grid-cols-2 gap-3">
               {([['melhor', 'A melhor', 'material de treinamento', 'emerald'], ['pior', 'A pior', 'pauta do 1:1', 'rose']] as const).map(([k, tit, uso, cor]) => {
                 const c = asObj(duasConversas[k]);
@@ -625,14 +693,14 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
 
         {/* o que mudou desde a rodada passada */}
         {asStr(a.comparativo_rodada_anterior) && (
-          <Secao titulo="Desde a rodada anterior">
+          <Secao id="antes" n={nDe("antes")} titulo="Desde a rodada anterior">
             <p className="text-[12.5px] text-white/85 leading-relaxed">{asStr(a.comparativo_rodada_anterior)}</p>
           </Secao>
         )}
 
         {/* 11 — padrões */}
         {padroes.length > 0 && (
-          <Secao n={12} titulo="Padrões recorrentes">
+          <Secao id="padroes" n={nDe("padroes")} titulo="Padrões recorrentes">
             <ol className="space-y-1.5">
               {padroes.map((p, i) => (
                 <li key={i} className="text-[12.5px] text-white/85 leading-relaxed">
@@ -645,7 +713,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
 
         {/* 12 — engajamento */}
         {(asStr(engajamento.observacao) || asStrArr(engajamento.sinais_de_queda).length > 0) && (
-          <Secao n={13} titulo="Engajamento">
+          <Secao id="engaja" n={nDe("engaja")} titulo="Engajamento">
             {asStrArr(engajamento.sinais_de_queda).length > 0 && (
               <ul className="mb-2 space-y-1">
                 {asStrArr(engajamento.sinais_de_queda).map((s, i) => (
@@ -659,7 +727,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
 
         {/* 13 — nem tudo é do corretor */}
         {naoEDele.length > 0 && (
-          <Secao n={14} titulo="Nem tudo é do corretor" hint="O que a casa precisa assumir antes de cobrar dele.">
+          <Secao id="naodele" n={nDe("naodele")} titulo="Nem tudo é do corretor" hint="O que a casa precisa assumir antes de cobrar dele.">
             <ul className="space-y-2">
               {naoEDele.map((n, i) => (
                 <li key={i} className="text-[12.5px] text-white/85 leading-relaxed">
@@ -680,7 +748,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
         )}
 
         {riscoOcorr.length > 0 && (
-          <Secao titulo="Risco para a imobiliária">
+          <Secao id="risco" n={nDe("risco")} titulo="Risco para a imobiliária">
             <p className="text-[11px] text-text-secondary mb-2">
               Gravidade <b className={asStr(risco.gravidade) === 'alta' ? 'text-rose-300' : 'text-amber-300'}>{asStr(risco.gravidade) || '—'}</b>.
               Cada ocorrência traz o trecho literal — sem prova, não se registra.
@@ -690,7 +758,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
         )}
 
         {perguntas.length > 0 && (
-          <Secao titulo="Perguntas para a reunião" hint="Perguntas, não acusações — a primeira abre a conversa.">
+          <Secao id="perguntas" n={nDe("perguntas")} titulo="Perguntas para a reunião" hint="Perguntas, não acusações — a primeira abre a conversa.">
             <ol className="space-y-2">
               {perguntas.map((p, i) => (
                 <li key={i} className="text-[12.5px] text-white/90 leading-relaxed">
@@ -702,7 +770,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
         )}
 
         {destravar.length > 0 && (
-          <Secao titulo="O que VOCÊ precisa destravar" hint="O corretor não resolve isso sozinho.">
+          <Secao id="destravar" n={nDe("destravar")} titulo="O que VOCÊ precisa destravar" hint="O corretor não resolve isso sozinho.">
             <Tabela cols={['Tipo', 'O que travou', 'Responsável']}>
               {destravar.map((d, i) => (
                 <tr key={i}>
@@ -717,7 +785,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
 
         {/* ressalvas — fecham o documento */}
         {ressalvas.length > 0 && (
-          <Secao titulo="Ressalvas" hint="O que não foi possível verificar, e por quê.">
+          <Secao id="ressalvas" n={nDe("ressalvas")} titulo="Ressalvas" hint="O que não foi possível verificar, e por quê.">
             <ul className="space-y-1.5">
               {ressalvas.map((s, i) => <li key={i} className="text-[11.5px] text-text-secondary leading-relaxed">• {s}</li>)}
             </ul>
