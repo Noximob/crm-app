@@ -11,7 +11,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { collection, query, where, getDocs, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, addDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/ui/toast';
@@ -26,6 +26,8 @@ interface Rodada {
   geradoEmYmd: string; periodoInicio: string; periodoFim: string;
   versaoDiretrizes?: string; tamanhoAmostra?: number;
   metricas?: Record<string, number | null>;
+  /** rodada de calibragem: não conta como histórico do corretor */
+  teste?: boolean;
   gargalo?: string; instrucao?: string;
   statusInstrucao?: string;            // pendente | feito | parcial | ignorado
   statusInstrucaoAnterior?: string;
@@ -95,6 +97,7 @@ export default function HistoricoAuditoriaPage() {
     [rodadas]
   );
   const visiveis = useMemo(() => filtro ? rodadas.filter((r) => r.corretorUid === filtro) : rodadas, [rodadas, filtro]);
+  const testesVisiveis = useMemo(() => visiveis.filter((r) => r.teste).length, [visiveis]);
 
   /** Casa o resultado da análise com a rodada aberta daquele corretor (ou cria uma). */
   const importar = async () => {
@@ -162,6 +165,30 @@ export default function HistoricoAuditoriaPage() {
     } finally { setSalvando(false); }
   };
 
+  const excluir = async (r: Rodada) => {
+    if (isEspelhoDemo) { showToast('Modo demonstração — nada é salvo.', 'info'); return; }
+    const qual = `${r.corretorNome} · rodada de ${fmt(r.geradoEmYmd)}`;
+    if (!window.confirm(`Apagar esta rodada?\n\n${qual}\n\nIsso remove o gargalo, a instrução e as métricas dela do histórico do corretor. Não dá pra desfazer.`)) return;
+    try {
+      await deleteDoc(doc(db, 'auditoriaRodadas', r.id));
+      setRodadas(rodadas.filter((x) => x.id !== r.id));
+      showToast('Rodada apagada.', 'success');
+    } catch { showToast('Não foi possível apagar.', 'error'); }
+  };
+
+  const excluirTestes = async () => {
+    if (isEspelhoDemo) { showToast('Modo demonstração — nada é salvo.', 'info'); return; }
+    const alvos = (filtro ? rodadas.filter((r) => r.corretorUid === filtro) : rodadas).filter((r) => r.teste);
+    if (!alvos.length) return;
+    if (!window.confirm(`Apagar ${alvos.length} rodada(s) marcada(s) como TESTE?\n\nAs rodadas que valem não são tocadas. Não dá pra desfazer.`)) return;
+    try {
+      await Promise.all(alvos.map((r) => deleteDoc(doc(db, 'auditoriaRodadas', r.id))));
+      const ids = new Set(alvos.map((r) => r.id));
+      setRodadas(rodadas.filter((r) => !ids.has(r.id)));
+      showToast(`${alvos.length} rodada(s) de teste apagada(s).`, 'success');
+    } catch { showToast('Não foi possível apagar.', 'error'); }
+  };
+
   const marcar = async (r: Rodada, status: string) => {
     if (isEspelhoDemo) { showToast('Modo demonstração — nada é salvo.', 'info'); return; }
     try {
@@ -226,13 +253,22 @@ export default function HistoricoAuditoriaPage() {
         </section>
       )}
 
-      {/* filtro por corretor */}
-      {corretores.length > 1 && (
+      {/* filtro por corretor + limpeza dos testes */}
+      {(corretores.length > 1 || testesVisiveis > 0) && (
         <div className="flex flex-wrap items-center gap-1.5">
-          <button onClick={() => setFiltro('')} className={`px-2.5 py-1 rounded-lg text-[11.5px] font-bold ${!filtro ? 'bg-white/[0.12] text-white' : 'bg-white/[0.04] text-text-secondary hover:text-white'}`}>todos</button>
-          {corretores.map(([id, nome]) => (
-            <button key={id} onClick={() => setFiltro(id)} className={`px-2.5 py-1 rounded-lg text-[11.5px] font-bold ${filtro === id ? 'bg-white/[0.12] text-white' : 'bg-white/[0.04] text-text-secondary hover:text-white'}`}>{nome}</button>
-          ))}
+          {corretores.length > 1 && (
+            <>
+              <button onClick={() => setFiltro('')} className={`px-2.5 py-1 rounded-lg text-[11.5px] font-bold ${!filtro ? 'bg-white/[0.12] text-white' : 'bg-white/[0.04] text-text-secondary hover:text-white'}`}>todos</button>
+              {corretores.map(([id, nome]) => (
+                <button key={id} onClick={() => setFiltro(id)} className={`px-2.5 py-1 rounded-lg text-[11.5px] font-bold ${filtro === id ? 'bg-white/[0.12] text-white' : 'bg-white/[0.04] text-text-secondary hover:text-white'}`}>{nome}</button>
+              ))}
+            </>
+          )}
+          {testesVisiveis > 0 && (
+            <button onClick={excluirTestes} className="ml-auto px-2.5 py-1 rounded-lg text-[11.5px] font-bold bg-amber-500/10 border border-amber-500/40 text-amber-300 hover:bg-amber-500/20">
+              🧹 apagar {testesVisiveis} rodada{testesVisiveis > 1 ? 's' : ''} de teste
+            </button>
+          )}
         </div>
       )}
 
@@ -260,9 +296,15 @@ export default function HistoricoAuditoriaPage() {
                   {r.tamanhoAmostra ? ` · ${r.tamanhoAmostra} leads` : ''}
                   {r.versaoDiretrizes ? ` · régua ${r.versaoDiretrizes}` : ''}
                 </span>
+                {r.teste && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold border bg-amber-500/10 border-amber-500/40 text-amber-300" title="rodada de calibragem — não conta como histórico">
+                    TESTE
+                  </span>
+                )}
                 <span className={`ml-auto px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${STATUS_COR[st] || STATUS_COR.pendente}`}>
                   {STATUS_TXT[st] || st}
                 </span>
+                <button onClick={() => excluir(r)} className="text-text-secondary hover:text-rose-300 text-[13px] px-1" title="apagar esta rodada">✕</button>
               </div>
 
               {r.gargalo ? (

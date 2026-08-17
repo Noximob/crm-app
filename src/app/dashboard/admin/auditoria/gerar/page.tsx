@@ -61,6 +61,9 @@ export default function GerarPacotePage() {
   const [incompletas, setIncompletas] = useState<{ faixa: FaixaSorteio; pedidos: number; obtidos: number }[]>([]);
   const [busca, setBusca] = useState('');
   const [gerando, setGerando] = useState(false);
+  // enquanto a régua está sendo calibrada, a rodada nasce marcada como teste
+  // e não suja a linha do tempo do corretor
+  const [ehTeste, setEhTeste] = useState(true);
 
   useEffect(() => { carregarDiretrizes(imobiliariaId).then(setDiretrizes); }, [imobiliariaId]);
 
@@ -294,6 +297,7 @@ export default function GerarPacotePage() {
         await addDoc(collection(db, 'auditoriaRodadas'), {
           imobiliariaId, corretorUid: uid, corretorNome: corretor.nome,
           geradoEm: serverTimestamp(), geradoEmYmd: ymd(Date.now()), geradoPor: userData?.nome || '',
+          teste: ehTeste,
           periodoInicio: ini, periodoFim: fim,
           versaoDiretrizes: diretrizes.versao,
           leadIds: selecionados.map((s) => s.lead.id),
@@ -556,9 +560,13 @@ export default function GerarPacotePage() {
       {/* 4. gerar */}
       {amostra.length > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-[11px] text-text-secondary">
-            Primeira vez? Bota <b className="text-white">5</b> no campo Amostra e testa o fluxo antes de rodar com 20.
-          </p>
+          <label className="flex items-center gap-2 text-[11.5px] text-text-secondary cursor-pointer select-none">
+            <input type="checkbox" checked={ehTeste} onChange={(e) => setEhTeste(e.target.checked)} className="accent-[#E8C547]" />
+            <span>
+              <b className={ehTeste ? 'text-amber-300' : 'text-white'}>rodada de teste</b> — fica marcada no histórico e dá pra apagar em lote.
+              {!ehTeste && <span className="text-emerald-300"> Desmarcado: esta rodada vale pra valer.</span>}
+            </span>
+          </label>
           <button onClick={gerar} disabled={gerando || !selecionados.length} className={btnOuro}>
             {gerando ? 'Gerando…' : `⬇ Gerar pacote (${selecionados.length} leads)`}
           </button>
