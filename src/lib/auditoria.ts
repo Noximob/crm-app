@@ -1083,6 +1083,31 @@ você conseguiu ler de fato, do total da amostra.
     "conversas_lidas": null,
     "sem_conversa_localizada": null
   },
+  "achados": [
+    {
+      "titulo": "",
+      "estado": "fez_e_registrou | fez_e_nao_registrou | nao_fez | nao_verificavel",
+      "o_que_aconteceu": "",
+      "o_que_custou": "",
+      "o_que_fazer": "",
+      "modelo_de_mensagem": "",
+      "citacoes": [{ "lead": "", "data": "", "trecho": "" }]
+    }
+  ],
+  "leads_auditados": [
+    {
+      "lead": "",
+      "temperatura": "quente | morno | frio | perdido | desconhecido",
+      "etapa_crm": "",
+      "etapa_real": "",
+      "veredito": "",
+      "sem_toque_crm": null,
+      "sem_toque_real": null,
+      "formato": "",
+      "o_que_o_cliente_queria": "",
+      "por_que_parou": ""
+    }
+  ],
   "gargalo": "",
   "instrucao": "",
   "status_instrucao_anterior": "feito | parcial | ignorado | primeira_rodada",
@@ -1098,6 +1123,10 @@ Regras do arquivo 2:
   "nd". Não remova linha, não invente linha, não mude nome de indicador —
   é essa estabilidade que faz a série histórica existir. Valor numérico
   puro (sem "%" nem "min" na string); a unidade já está no nome.
+- Em "tres_piores", "mais_melhorou" e "mais_piorou", escreva o indicador em
+  PORTUGUÊS e não a chave técnica: "próximo passo concreto (6% — 1 conversa
+  em 17 terminou com data)", nunca "pct_com_proximo_passo_proposto (6%…)".
+  Esse texto aparece direto na tela do gestor.
 - gargalo e instrucao: uma frase cada, direta e acionável.
 - O gargalo PRECISA dizer a natureza: se o corretor atende bem e não
   registra, o gargalo é processual e a instrução é sobre registro — não
@@ -1112,7 +1141,17 @@ Regras do arquivo 2:
 - Não invente número de áudio: se a conversa não deixa ver duração, vai null.
 - Em "risco", cada ocorrência precisa de { lead, data, trecho }. Sem trecho
   literal, não registre — acusação sem prova destrói a confiança na
-  auditoria inteira. Nenhuma ocorrência = gravidade "nenhuma".`;
+  auditoria inteira. Nenhuma ocorrência = gravidade "nenhuma".
+- "achados" é a seção 3 do HTML em campos: um objeto por achado, na MESMA
+  ordem e com o MESMO texto que você escreveu lá. Não resuma — o CRM
+  apresenta esse texto na íntegra para o corretor.
+- "leads_auditados" é a tabela da seção 8 em campos: uma linha por lead da
+  amostra, TODOS, inclusive os que você não conseguiu ler (nesses,
+  veredito "?" e o motivo em por_que_parou).
+- Os dois arquivos precisam sair com o NOME DO CORRETOR e a data no nome:
+  "auditoria-nome-do-corretor-AAAA-MM-DD.html" e
+  "rodada-nome-do-corretor-AAAA-MM-DD.json". Arquivo chamado só
+  "rodada.json" se perde no meio de vinte iguais.`;
 
 export const DIRETRIZES_PADRAO: DiretrizesAuditoria = {
   versao: 'v1',

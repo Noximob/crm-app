@@ -11,7 +11,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { collection, query, where, getDocs, doc, updateDoc, addDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc, addDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { showToast } from '@/components/ui/toast';
@@ -28,6 +28,8 @@ interface Rodada {
   metricas?: Record<string, number | null>;
   /** rodada de calibragem: não conta como histórico do corretor */
   teste?: boolean;
+  /** o rodada.json inteiro — é ele que a tela de apresentação renderiza */
+  analise?: Record<string, unknown>;
   gargalo?: string; instrucao?: string;
   statusInstrucao?: string;            // pendente | feito | parcial | ignorado
   statusInstrucaoAnterior?: string;
@@ -117,6 +119,9 @@ export default function HistoricoAuditoriaPage() {
     try {
       const metricas = (j.metricas_chave || {}) as Record<string, number | null>;
       const patch = {
+        // guarda o JSON INTEIRO: é ele que a tela de apresentação renderiza
+        // no layout da casa (fila de ataque, 24 indicadores, temperatura…)
+        analise: j,
         gargalo: String(j.gargalo || ''),
         instrucao: String(j.instrucao || ''),
         statusInstrucaoAnterior: String(j.status_instrucao_anterior || 'primeira_rodada'),
@@ -147,9 +152,18 @@ export default function HistoricoAuditoriaPage() {
         }
         showToast('Resultado importado na rodada.', 'success');
       } else {
+        // rodada nova: o nome vem do cadastro, não do UID cortado — é ele que
+        // vai no título do relatório e no nome do PDF.
+        let nome = corretores.find(([id]) => id === corretorId)?.[1] || '';
+        if (!nome) {
+          try {
+            const u = await getDoc(doc(db, 'usuarios', corretorId));
+            nome = String(u.data()?.nome || '');
+          } catch { /* sem cadastro: cai no UID abaixo */ }
+        }
         await addDoc(collection(db, 'auditoriaRodadas'), {
           imobiliariaId, corretorUid: corretorId,
-          corretorNome: corretores.find(([id]) => id === corretorId)?.[1] || corretorId.slice(0, 6),
+          corretorNome: nome || corretorId.slice(0, 6),
           geradoEmYmd: patch.analisadoEmYmd,
           periodoInicio: periodo.inicio || '', periodoFim: periodo.fim || '',
           versaoDiretrizes: String(j.versao_diretrizes || ''),
@@ -160,8 +174,11 @@ export default function HistoricoAuditoriaPage() {
       setTexto(''); setColando(false);
       await carregar();
     } catch (e) {
+      // a mensagem do Firestore é específica (campo inválido, doc grande
+      // demais) e sem ela o gestor fica travado sem saber o que corrigir
       console.error('importar rodada:', e);
-      showToast('Não foi possível importar.', 'error');
+      const msg = e instanceof Error ? e.message : '';
+      showToast(msg ? `Não foi possível importar: ${msg}` : 'Não foi possível importar.', 'error');
     } finally { setSalvando(false); }
   };
 
@@ -304,6 +321,11 @@ export default function HistoricoAuditoriaPage() {
                 <span className={`ml-auto px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${STATUS_COR[st] || STATUS_COR.pendente}`}>
                   {STATUS_TXT[st] || st}
                 </span>
+                {r.analise && (
+                  <Link href={`/dashboard/admin/auditoria/rodada/${r.id}/`} className={btnOuro + ' !py-1 !px-2.5'}>
+                    abrir relatório →
+                  </Link>
+                )}
                 <button onClick={() => excluir(r)} className="text-text-secondary hover:text-rose-300 text-[13px] px-1" title="apagar esta rodada">✕</button>
               </div>
 
