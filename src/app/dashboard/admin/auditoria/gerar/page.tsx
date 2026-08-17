@@ -15,7 +15,7 @@ import { carregarDiretrizes, DADOS_CONFIAVEIS_DESDE, dadosConfiaveisDesdeMs, typ
 import { auditoriaDemo } from '@/lib/auditoriaDemo';
 import {
   sortearAmostra, computarPanorama, montarPacote, faixaDoLead, msOf,
-  detectarDisponibilidade, aplicarDisponibilidade,
+  detectarDisponibilidade, aplicarDisponibilidade, telefoneUtilizavel,
   ROTULO_FAIXA, type LeadAud, type AtividadeAud, type VendaAud, type AdsAud, type FaixaSorteio,
 } from '@/lib/auditoriaPacote';
 
@@ -166,13 +166,38 @@ export default function GerarPacotePage() {
     setFora(new Set());
   };
 
+  /** Troca um lead por outro da mesma faixa, preferindo quem tem telefone bom. */
+  const escolherSubstituto = (id: string, faixa: FaixaSorteio, usados: Set<string>): LeadAud | null => {
+    const daFaixa = leads.filter((l) => !usados.has(l.id) && faixaDoLead(l, ultimoToqueDe(l.id), Date.now()) === faixa);
+    const qualquer = leads.filter((l) => !usados.has(l.id) && faixaDoLead(l, ultimoToqueDe(l.id), Date.now()) !== null);
+    // 1º: mesma faixa com telefone bom · 2º: mesma faixa · 3º: qualquer com telefone bom
+    const pool = daFaixa.filter((l) => telefoneUtilizavel(l.telefone || l.whatsapp).ok);
+    const alt = pool.length ? pool : (daFaixa.length ? daFaixa : qualquer.filter((l) => telefoneUtilizavel(l.telefone || l.whatsapp).ok));
+    const final = alt.length ? alt : qualquer;
+    return final.length ? final[Math.floor(Math.random() * final.length)] : null;
+  };
+
   const substituir = (id: string, faixa: FaixaSorteio) => {
     const usados = new Set(amostra.map((a) => a.lead.id));
-    const cands = leads.filter((l) => !usados.has(l.id) && faixaDoLead(l, ultimoToqueDe(l.id), Date.now()) === faixa);
-    const pool = cands.length ? cands : leads.filter((l) => !usados.has(l.id) && faixaDoLead(l, ultimoToqueDe(l.id), Date.now()) !== null);
-    if (!pool.length) { showToast('Não há outro lead disponível nessa faixa.', 'info'); return; }
-    const novo = pool[Math.floor(Math.random() * pool.length)];
+    const novo = escolherSubstituto(id, faixa, usados);
+    if (!novo) { showToast('Não há outro lead disponível nessa faixa.', 'info'); return; }
     setAmostra(amostra.map((a) => a.lead.id === id ? { lead: novo, faixa } : a));
+  };
+
+  /** Troca de uma vez todos os que têm telefone inutilizável. */
+  const trocarInvalidos = () => {
+    const usados = new Set(amostra.map((a) => a.lead.id));
+    let trocados = 0;
+    const nova = amostra.map((a) => {
+      if (telefoneUtilizavel(a.lead.telefone || a.lead.whatsapp).ok) return a;
+      const novo = escolherSubstituto(a.lead.id, a.faixa, usados);
+      if (!novo || !telefoneUtilizavel(novo.telefone || novo.whatsapp).ok) return a;
+      usados.add(novo.id);
+      trocados++;
+      return { lead: novo, faixa: a.faixa };
+    });
+    setAmostra(nova);
+    showToast(trocados ? `${trocados} lead(s) trocado(s) por outros com telefone válido.` : 'Não há substitutos com telefone válido na carteira.', trocados ? 'success' : 'info');
   };
 
   const adicionar = (l: LeadAud) => {
@@ -183,6 +208,10 @@ export default function GerarPacotePage() {
   };
 
   const selecionados = useMemo(() => amostra.filter((a) => !fora.has(a.lead.id)), [amostra, fora]);
+  const semTelefone = useMemo(
+    () => selecionados.filter((a) => !telefoneUtilizavel(a.lead.telefone || a.lead.whatsapp).ok),
+    [selecionados]
+  );
   const iniMs = doYmd(ini), fimMs = doYmd(fim) + DIA;
 
   const resultadosBusca = useMemo(() => {
@@ -245,6 +274,12 @@ export default function GerarPacotePage() {
         corretor, periodo: { iniMs, fimMs }, diretrizes, panorama,
         amostra: selecionados, atividade: ativ, ads, historico,
         historicoEtapasDesdeMs: etapasDesde, disponibilidade,
+        // descartados do período: fora da amostra, mas com nome e data pra o
+        // achado de risco poder ser rastreado
+        descartes: leads.filter((l) => {
+          const d = msOf(l.descartadoEm);
+          return d > 0 && d >= iniMs && d < fimMs;
+        }),
       });
 
       const blob = new Blob([JSON.stringify(pacote, null, 2)], { type: 'application/json' });
@@ -397,6 +432,16 @@ export default function GerarPacotePage() {
             </p>
           )}
 
+          {semTelefone.length > 0 && (
+            <div className="mb-3 rounded-xl border border-rose-500/40 bg-rose-500/[0.07] p-3 flex flex-wrap items-center gap-2">
+              <p className="text-[12px] text-rose-200 flex-1 min-w-[260px]">
+                <b>{semTelefone.length} de {amostra.length} não têm telefone utilizável</b> — a análise não vai conseguir abrir essas conversas e elas voltam como &quot;não localizado&quot;.
+                {' '}Vale trocar, mas anote: cadastro sem telefone válido é um achado da casa (campanha ou plantão), não do corretor.
+              </p>
+              <button onClick={trocarInvalidos} className={btnGhost}>↻ trocar os {semTelefone.length} por leads com telefone</button>
+            </div>
+          )}
+
           <div className="flex items-center gap-2 mb-3 relative">
             <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="buscar um lead pra adicionar…" className={inputCls + ' max-w-sm'} />
             {resultadosBusca.length > 0 && (
@@ -431,7 +476,12 @@ export default function GerarPacotePage() {
                       </td>
                       <td className="px-2 py-2 text-white font-semibold whitespace-nowrap">
                         {l.nome || 'Sem nome'}
-                        <span className="block text-[10px] text-text-secondary font-normal tabular-nums">{l.telefone || '—'}</span>
+                        {(() => {
+                          const t = telefoneUtilizavel(l.telefone || l.whatsapp);
+                          return t.ok
+                            ? <span className="block text-[10px] text-text-secondary font-normal tabular-nums">{l.telefone}</span>
+                            : <span className="block text-[10px] text-rose-300 font-normal" title="a análise não vai conseguir abrir a conversa">☎ {t.motivo}</span>;
+                        })()}
                       </td>
                       <td className="px-2 py-2 text-right">
                         <span className={`px-1.5 py-0.5 rounded text-[9.5px] font-extrabold border ${COR_FAIXA[faixa]}`}>{ROTULO_FAIXA[faixa]}</span>

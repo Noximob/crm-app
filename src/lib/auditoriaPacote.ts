@@ -73,6 +73,30 @@ export const msOf = (ts: unknown): number => {
  * 55 + DDD + número, só dígitos. O WhatsApp de números antigos aparece sem o
  * 9 mesmo quando o CRM guardou com — procurar só uma variação perde a conversa.
  */
+/**
+ * Diz se o telefone tem cara de contato real. Sem isso, a amostra sorteia
+ * lead com número de teste (99 99999-9953) ou malformado, o analista gasta
+ * a tentativa e volta "não localizado" — foi 30% de uma rodada real.
+ */
+export function telefoneUtilizavel(bruto: string | undefined): { ok: boolean; motivo: string } {
+  const d = String(bruto || '').replace(/\D/g, '');
+  if (!d) return { ok: false, motivo: 'sem telefone' };
+  const n = d.startsWith('55') && d.length >= 12 ? d.slice(2) : d;
+  if (n.length < 10) return { ok: false, motivo: `curto demais (${n.length} dígitos)` };
+  if (n.length > 11) return { ok: false, motivo: `malformado (${d.length} dígitos)` };
+  const ddd = Number(n.slice(0, 2));
+  if (ddd < 11 || ddd > 99) return { ok: false, motivo: `DDD inválido (${n.slice(0, 2)})` };
+  const corpo = n.slice(2);
+  if (/^(\d)\1+$/.test(corpo)) return { ok: false, motivo: 'número de teste (dígito repetido)' };
+  if (/^9{4,}/.test(corpo)) return { ok: false, motivo: 'número de teste (9999…)' };
+  // celular de 9 dígitos SEMPRE começa com 9; fixo (8) começa em 2-5.
+  // Sem isso, "5547656559595" passa como se fosse número bom e a análise
+  // gasta a tentativa pra descobrir que não existe.
+  if (corpo.length === 9 && !corpo.startsWith('9')) return { ok: false, motivo: 'malformado (9 dígitos sem começar com 9)' };
+  if (corpo.length === 8 && !/^[2-9]/.test(corpo)) return { ok: false, motivo: 'malformado (prefixo inválido)' };
+  return { ok: true, motivo: '' };
+}
+
 export function normalizarTelefone(bruto: string | undefined): { telefone: string | null; telefone_alt: string | null } {
   const d = String(bruto || '').replace(/\D/g, '');
   if (d.length < 10) return { telefone: null, telefone_alt: null };
@@ -277,6 +301,9 @@ export interface Panorama {
   leads_recebidos: number;
   leads_novos_30d: number;
   leads_sem_primeiro_contato: number;
+  /** leads antigos cujo 1º contato foi carimbado dentro do período — mede
+   *  adoção do CRM, não velocidade de atendimento (ficam FORA da mediana) */
+  carimbos_retroativos: number;
   mediana_primeiro_contato_min_util: number | null;
   mediana_primeiro_contato_min_corrido: number | null;
   dentro_do_prazo_1o_contato: number;
@@ -311,7 +338,7 @@ export function computarPanorama(
 ): Panorama {
   const dentroJ = (ms: number) => ms >= iniMs && ms < fimMs;
   const p: Panorama = {
-    leads_recebidos: 0, leads_novos_30d: 0, leads_sem_primeiro_contato: 0,
+    leads_recebidos: 0, leads_novos_30d: 0, leads_sem_primeiro_contato: 0, carimbos_retroativos: 0,
     mediana_primeiro_contato_min_util: null, mediana_primeiro_contato_min_corrido: null,
     dentro_do_prazo_1o_contato: 0, fora_do_prazo_1o_contato: 0,
     distribuicao_funil: {}, sem_toque_7d: 0, sem_toque_7d_por_etapa: {},
@@ -344,16 +371,25 @@ export function computarPanorama(
 
     const ativo = et !== ETAPA_FECHADO && et !== ETAPA_DESCARTADO;
 
-    // 1º contato
+    // 1º CONTATO — só de quem NASCEU no período.
+    // Sem esse filtro, lead de outubro carimbado agora entra como "109 dias
+    // até o 1º contato" e a mediana explode (deu 71.750 min numa rodada
+    // real). Isso mede a adoção do CRM, não a velocidade do corretor — e
+    // acusa de lento quem responde em minutos.
     const pMs = msOf(l.circuito?.primeiroContatoEm);
-    if (nascimento > 0 && pMs >= nascimento && pMs > 0) {
+    const nasceuNoPeriodo = dentroJ(nascimento);
+    if (nasceuNoPeriodo && pMs >= nascimento && pMs > 0) {
       const util = minutosUteisEntre(nascimento, pMs, d.horarioUtil);
       t1Uteis.push(util);
       t1Corridos.push(Math.round((pMs - nascimento) / 60000));
       if (util <= d.prazos.primeiroContatoMaximoMin) p.dentro_do_prazo_1o_contato++;
       else p.fora_do_prazo_1o_contato++;
-    } else if (ativo) {
+    } else if (nasceuNoPeriodo && ativo) {
       p.leads_sem_primeiro_contato++;
+    } else if (!nasceuNoPeriodo && pMs > 0 && dentroJ(pMs) && nascimento > 0) {
+      // carimbado no período mas nascido antes: é adoção do CRM, não
+      // atendimento. Fica registrado à parte pra não sumir da leitura.
+      p.carimbos_retroativos++;
     }
 
     if (ativo) {
@@ -436,6 +472,8 @@ export interface OpcoesPacote {
   historicoEtapasDesdeMs: number | null;
   /** o que cada métrica conseguiu medir no período pedido */
   disponibilidade: DisponibilidadeMetrica[];
+  /** descartados no período — fora da amostra, mas rastreáveis (motivo é texto livre) */
+  descartes: LeadAud[];
 }
 
 const iso = (ms: number): string | null => (ms > 0 ? new Date(ms).toISOString() : null);
@@ -535,6 +573,18 @@ export function montarPacote(o: OpcoesPacote, agora = Date.now()): Record<string
   });
 
   return {
+    // Descartes do período com NOME, DATA e MOTIVO. Ficam fora da amostra
+    // (o lead já foi pra outro corretor), mas o motivo é campo de texto livre
+    // e numa rodada real apareceu "gay" — sem esta lista, o achado de risco
+    // não tem como ser rastreado até o lead nem até a data.
+    descartes_do_periodo: o.descartes.map((l) => ({
+      id: l.id,
+      nome: l.nome || null,
+      descartado_em: iso(msOf(l.descartadoEm)),
+      motivo: l.descartadoMotivo || null,
+      tentativas_antes: l.circuito?.tentativas ?? null,
+      dias_de_vida: msOf(l.createdAt) > 0 ? Math.floor((msOf(l.descartadoEm) - msOf(l.createdAt)) / DIA) : null,
+    })),
     meta: {
       gerado_em: new Date(agora).toISOString(),
       corretor: o.corretor,

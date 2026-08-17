@@ -77,7 +77,9 @@ export function auditoriaDemo(agora = Date.now()): DemoAuditoria {
       leads.push({
         id, userId: uid, imobiliariaId: 'espelho-demo',
         nome: NOMES[i % NOMES.length],
-        telefone: `4799${String(100000 + i * 137).slice(0, 6)}`,
+        // 3 telefones ruins de propósito (foi 30% de uma rodada real): número
+        // de teste, malformado e em branco — pra a tela mostrar o aviso
+        telefone: i === 2 ? '99999999953' : i === 9 ? '5547656559595' : i === 16 ? '' : `4799${String(100000 + i * 137).slice(0, 6)}`,
         etapa: r.etapa,
         origem: usouAds ? `Propaganda · ${CAMPANHAS[i % CAMPANHAS.length]}` : 'Networking',
         origemTipo: usouAds ? 'Propaganda' : 'Networking',

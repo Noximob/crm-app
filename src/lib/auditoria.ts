@@ -117,9 +117,19 @@ Você recebe um pacote JSON com:
 - meta.campos_indisponiveis e metricas_indisponiveis_no_periodo: campos
   null significam "a base não mede", não "o corretor não fez". Nunca
   cobre alguém por um null.
-- panorama: números da base completa do corretor no período.
+- panorama: números da base completa do corretor no período. Atenção a
+  panorama.carimbos_retroativos: leads antigos cujo 1º contato foi carimbado
+  agora. Eles medem ADOÇÃO do CRM, não velocidade — já estão fora da
+  mediana, mas o número em si é um achado de processo.
 - historico: rodadas anteriores, com o gargalo apontado e a instrução dada.
 - amostra: os leads a auditar, com timeline e dados do CRM.
+- descartes_do_periodo: quem ele descartou, com nome, data, motivo e
+  quantas tentativas fez antes. Não entram na amostra (o lead já foi pra
+  outro corretor), mas LEIA sempre: é aqui que aparece descarte no 1º toque
+  e, principalmente, MOTIVO INADEQUADO. Motivo de descarte é campo de texto
+  livre — se houver qualquer registro discriminatório, ofensivo ou que
+  exponha a empresa, isso vai direto para a seção de Risco com o nome do
+  lead e a data, e é o achado mais grave do relatório.
 
 =========================================================================
 O MÉTODO — vale para TODA métrica, sem exceção
@@ -556,11 +566,36 @@ cobertura no rodada.json e é ele que diz se a rodada vale para comparação.
 Abaixo de 12 de 20, avise no relatório que a amostra ficou fraca e que os
 percentuais devem ser lidos com reserva.
 
-ESCOPO DE LEITURA
-Leia a tela inteira da conversa como ela estiver ao abrir. NÃO role para
-cima. Em conversas curtas isso pega tudo; em conversas longas pega o
-trecho final, que é o que mostra o estado atual. O começo da história
-está na timeline do CRM, dentro do pacote — use as duas fontes juntas.
+ESCOPO DE LEITURA — role até cobrir o PERÍODO, e pare ali
+
+Ler só a última tela não é auditoria: é palpite sobre o fim da história.
+Mas rolar até o começo de uma conversa de dois anos gasta tempo e dinheiro
+sem acrescentar nada ao período que está sendo julgado.
+
+A REGRA DE PARADA, nesta ordem:
+1. Abra a conversa e role PARA CIMA até encontrar uma mensagem com data
+   ANTERIOR ao início do período auditado (meta.periodo.inicio). Quando
+   você vê uma mensagem de antes do período, tem certeza de que cobriu o
+   período inteiro — pode parar.
+2. Teto de segurança: se depois de ~8 rolagens (ou ~60 mensagens) você
+   ainda não alcançou essa data, PARE mesmo assim e registre na ressalva
+   daquele lead "histórico mais antigo não carregado".
+3. Conversa curta que já cabe na tela: não role nada.
+4. Se o WhatsApp Web não tiver histórico tão antigo (ele costuma guardar
+   só alguns meses), registre até onde foi e siga — é limitação da
+   ferramenta, não do corretor.
+
+O QUE VOCÊ PRECISA TER LIDO ANTES DE JULGAR
+- Todas as mensagens dentro do período auditado, dos dois lados.
+- O que veio imediatamente ANTES do período, o suficiente para entender o
+  contexto em que a conversa entrou nele (uma proposta feita antes, uma
+  visita combinada antes, uma objeção que ficou pendurada).
+Sem isso você vai chamar de "silêncio" o que era espera combinada, e de
+"abandono" o que era cliente que pediu para ser chamado depois.
+
+O começo remoto da história está na timeline do CRM, dentro do pacote —
+use as duas fontes juntas, mas não confunda: a timeline diz o que foi
+REGISTRADO, a conversa diz o que ACONTECEU.
 
 EXECUÇÃO
 - Use o texto da página. Só use captura de tela se a leitura falhar.
