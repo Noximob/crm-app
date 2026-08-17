@@ -185,6 +185,15 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
   const temperatura = asObj(a.temperatura_da_carteira);
   const engajamento = asObj(a.engajamento);
   const evidencias = asArr(a.evidencias);
+  const combinado = asObj(a.combinado);
+  const metasComb = asArr(combinado.metas);
+  const paradosPrazo = asArr(combinado.leads_parados_alem_do_prazo);
+  const descartesExplicar = asArr(combinado.descartes_a_explicar);
+  const fichaIncompleta = asArr(combinado.ficha_incompleta);
+  const naoCombinado = asStrArr(combinado.o_que_nao_foi_combinado);
+  const temCombinado = metasComb.length > 0 || paradosPrazo.length > 0
+    || descartesExplicar.length > 0 || fichaIncompleta.length > 0 || naoCombinado.length > 0;
+
   const sinais = asArr(a.sinais_de_compra);
   const metas = asArr(a.metas_da_instrucao);
   const duasConversas = asObj(a.duas_conversas);
@@ -212,6 +221,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
     { id: 'fila', t: 'Fila de ataque', tem: fila.length > 0, gestor: false },
     { id: 'bem', t: 'O que você faz bem', tem: acertos.length > 0, gestor: false },
     { id: 'muda', t: 'O que muda agora', tem: achados.length > 0 || evidencias.length > 0, gestor: false },
+    { id: 'combinado', t: 'O combinado', tem: temCombinado, gestor: false },
     { id: 'quadro', t: 'Os números', tem: indicadores.length > 0, gestor: false },
     { id: 'crm', t: 'CRM × realidade', tem: crmVsReal.length > 0, gestor: false },
     { id: 'leads', t: 'Cliente por cliente', tem: leadsAud.length > 0, gestor: false },
@@ -471,6 +481,108 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
                 {asStr(e.tipo) && <p className="text-[10.5px] text-text-secondary -mt-1 mb-2">{asStr(e.tipo).replace(/_/g, ' ')}</p>}
               </div>
             ))}
+          </Secao>
+        )}
+
+        {/* o combinado — a única parte cobrável, porque foi acertada antes */}
+        {temCombinado && (
+          <Secao id="combinado" n={nDe('combinado')} titulo="O combinado"
+            hint="Só entra aqui o que a casa acertou antes. O que não foi combinado não é cobrança do corretor — é do gestor.">
+
+            {metasComb.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                {metasComb.map((m, i) => {
+                  const bateu = m.bateu === true;
+                  const semMeta = asNum(m.meta) === null;
+                  return (
+                    <div key={i} className={`rounded-xl border px-3 py-2.5 ${
+                      semMeta ? 'border-white/[0.07] bg-white/[0.02]'
+                        : bateu ? 'border-emerald-500/30 bg-emerald-500/[0.05]' : 'border-rose-500/30 bg-rose-500/[0.05]'}`}>
+                      <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-text-secondary leading-tight">
+                        {asStr(m.indicador).replace(/_/g, ' ')}
+                      </p>
+                      <p className="mt-1">
+                        <span className={`text-[20px] font-extrabold tabular-nums ${semMeta ? 'text-white/60' : bateu ? 'text-emerald-300' : 'text-rose-300'}`}>
+                          {fmtNum(asNum(m.realizado))}
+                        </span>
+                        {!semMeta && <span className="text-[12px] text-text-secondary tabular-nums"> / {fmtNum(asNum(m.meta))}</span>}
+                      </p>
+                      <p className="text-[10.5px] text-text-secondary leading-snug mt-0.5">
+                        {semMeta ? 'a casa não cobra isto' : (asStr(m.faltou) || (bateu ? 'meta batida' : ''))}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {asNum(combinado.dinheiro_parado) !== null && (
+              <div className="rounded-xl border border-rose-500/30 bg-rose-500/[0.05] p-3 mb-4">
+                <p className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-rose-300/80">Dinheiro da casa parado na mão dele</p>
+                <p className="text-[24px] font-extrabold text-rose-300 tabular-nums">{fmtDinheiro(asNum(combinado.dinheiro_parado))}</p>
+                <p className="text-[10.5px] text-text-secondary">O que a casa pagou pelos leads que estão parados na carteira.</p>
+              </div>
+            )}
+
+            {paradosPrazo.length > 0 && (
+              <div className="mb-4">
+                <p className="text-[11.5px] font-bold text-white mb-1.5">Passaram do prazo da etapa</p>
+                <Tabela cols={['Lead', 'Etapa', 'Está há', 'Prazo']}>
+                  {paradosPrazo.map((l, i) => (
+                    <tr key={i}>
+                      <td className={td + ' text-white font-bold whitespace-nowrap'}>{asStr(l.lead)}</td>
+                      <td className={td + ' text-text-secondary'}>{asStr(l.etapa)}</td>
+                      <td className={td + ' text-rose-300 font-bold tabular-nums whitespace-nowrap'}>{fmtNum(asNum(l.dias_na_etapa))} dias</td>
+                      <td className={td + ' text-text-secondary tabular-nums whitespace-nowrap'}>{fmtNum(asNum(l.prazo_da_etapa))} dias</td>
+                    </tr>
+                  ))}
+                </Tabela>
+              </div>
+            )}
+
+            {descartesExplicar.length > 0 && (
+              <div className="mb-4">
+                <p className="text-[11.5px] font-bold text-white mb-1.5">Descartes para explicar</p>
+                <p className="text-[10.5px] text-text-secondary mb-1.5">Motivos que não se parecem com nenhum critério da régua. Pergunta, não acusação.</p>
+                <Tabela cols={['Motivo registrado', 'Quantos', 'Por que chamou atenção']}>
+                  {descartesExplicar.map((x, i) => (
+                    <tr key={i}>
+                      <td className={td + ' text-amber-300 font-bold'}>“{asStr(x.motivo)}”</td>
+                      <td className={td + ' text-white tabular-nums'}>{fmtNum(asNum(x.quantidade))}</td>
+                      <td className={td + ' text-text-secondary leading-relaxed'}>{asStr(x.por_que_chamou_atencao)}</td>
+                    </tr>
+                  ))}
+                </Tabela>
+              </div>
+            )}
+
+            {fichaIncompleta.length > 0 && (
+              <div className="mb-4">
+                <p className="text-[11.5px] font-bold text-white mb-1.5">Ficha do cliente incompleta</p>
+                <div className="flex flex-wrap gap-2">
+                  {fichaIncompleta.map((f, i) => (
+                    <div key={i} className="rounded-xl border border-amber-500/25 bg-amber-500/[0.04] px-3 py-1.5">
+                      <span className="text-[11.5px] text-white font-bold">{asStr(f.campo)}</span>
+                      <span className="text-[11.5px] text-amber-300 tabular-nums"> · falta em {fmtNum(asNum(f.leads_sem))}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {naoCombinado.length > 0 && (
+              <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+                <p className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1.5">
+                  Isto ainda não foi combinado — cobrança sua, não dele
+                </p>
+                <ul className="space-y-1">
+                  {naoCombinado.map((s, i) => <li key={i} className="text-[12px] text-white/80 leading-relaxed">• {s}</li>)}
+                </ul>
+                <Link href="/dashboard/admin/auditoria/diretrizes/" className="inline-block mt-2 text-[11px] font-bold text-[#E8C547] hover:brightness-125">
+                  definir na régua →
+                </Link>
+              </div>
+            )}
           </Secao>
         )}
 

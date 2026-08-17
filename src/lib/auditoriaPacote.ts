@@ -325,6 +325,176 @@ export interface Panorama {
   benchmark_time: { mediana_primeiro_contato_min_util: number | null; sem_toque_7d_percentual: number | null };
 }
 
+// ---------------------------------------------------------------------------
+// O QUE DÁ PARA COBRAR
+//
+// Medir é fácil; cobrar exige ter combinado antes. Tudo aqui nasce de uma
+// régua que o gestor definiu na tela de Diretrizes — meta, prazo de etapa,
+// critério de descarte, ficha obrigatória. Sem régua, o campo sai null e o
+// relatório diz "não é meta", em vez de marcar vermelho contra nada.
+// ---------------------------------------------------------------------------
+
+export interface LinhaMeta {
+  indicador: string;
+  realizado: number;
+  /** já ajustada ao tamanho do período — meta mensal em 7 dias vale 7/30 */
+  meta: number | null;
+  pct: number | null;
+  bateu: boolean | null;
+}
+
+export interface LeadEstagnado {
+  id: string; nome: string; etapa: string;
+  dias_na_etapa: number; prazo_da_etapa: number; dias_sem_toque: number;
+  /**
+   * true quando não há carimbo de entrada nesta etapa e o tempo foi contado
+   * do nascimento do lead. O CRM só carimba etapa desde julho: sem esta
+   * marca, um lead de outubro apareceria como "359 dias em Em Contato"
+   * quando o que se sabe é que ele existe há 359 dias.
+   */
+  estimado: boolean;
+}
+
+export interface Cobranca {
+  dias_do_periodo: number;
+  metas: LinhaMeta[];
+  metas_definidas: boolean;
+  leads_estagnados: LeadEstagnado[];
+  estagnados_por_etapa: Record<string, number>;
+  /**
+   * Todos os motivos usados, com a régua ao lado. O sistema NÃO julga
+   * semântica de texto livre — tentar isso marcava "Comprou com outro" como
+   * suspeito e "já está no crm do toni" como válido, e um alarme que erra
+   * assim é pior que alarme nenhum. Quem classifica contra os critérios é a
+   * IA, que lê linguagem; o sistema só aponta o que é indefensável por
+   * forma: motivo de uma palavra ou curto demais para explicar coisa alguma.
+   */
+  motivos_descarte_usados: { motivo: string; quantidade: number; curto_demais: boolean }[];
+  /** vai junto para a IA poder classificar cada motivo contra a régua */
+  criterios_da_regua: string[];
+  qualificacao_faltando: Record<string, number>;
+  leads_com_ficha_completa: number;
+  leads_ativos: number;
+  custo_medio_lead: number | null;
+  /** carteira parada convertida em dinheiro — null quando a casa não acompanha custo */
+  dinheiro_parado: number | null;
+}
+
+/** Quando o lead entrou na etapa em que está hoje. */
+function entrouNaEtapaEm(l: LeadAud, etapaAtual: string): number {
+  let quando = 0;
+  for (const h of (l.etapasHist || [])) {
+    if (mapEtapaCircuito(String(h.para || '')) === etapaAtual) {
+      const ms = msOf(h.em);
+      if (ms > quando) quando = ms;
+    }
+  }
+  return quando || msOf(l.createdAt);
+}
+
+/**
+ * Um motivo que não chega a ser uma frase não explica um descarte. Este é o
+ * único juízo que o sistema faz sobre o texto — forma, não sentido.
+ */
+const motivoCurtoDemais = (motivo: string): boolean => {
+  const m = motivo.trim();
+  return m.length < 10 || !/\s/.test(m);
+};
+
+export function computarCobranca(
+  leads: LeadAud[], ativ: Map<string, AtividadeAud>, p: Panorama,
+  d: DiretrizesAuditoria, iniMs: number, fimMs: number,
+  /** desde quando existe carimbo de etapa na base — antes disso, tempo na etapa é estimativa */
+  historicoEtapasDesdeMs: number | null = null,
+  agora = Date.now(),
+): Cobranca {
+  const dias = Math.max(1, Math.round((fimMs - iniMs) / DIA));
+  const fator = dias / 30; // as metas são mensais
+
+  const linha = (indicador: string, realizado: number, metaMes: number | null): LinhaMeta => {
+    if (metaMes === null) return { indicador, realizado, meta: null, pct: null, bateu: null };
+    const meta = Math.round(metaMes * fator * 10) / 10;
+    return {
+      indicador, realizado, meta,
+      pct: meta > 0 ? Math.round((realizado / meta) * 100) : null,
+      bateu: realizado >= meta,
+    };
+  };
+
+  const m = d.metasMensais;
+  const metas = [
+    linha('visitas_feitas', p.visitas_feitas, m.visitasFeitas),
+    linha('meets_feitos', p.meets_feitos, m.meetsFeitos),
+    linha('vendas', p.vendas, m.vendas),
+    linha('vgv', p.vgv, m.vgv),
+  ];
+
+  const estagnados: LeadEstagnado[] = [];
+  const porEtapa: Record<string, number> = {};
+  const faltando: Record<string, number> = {};
+  let ativos = 0, fichaCompleta = 0;
+
+  for (const l of leads) {
+    const et = mapEtapaCircuito(l.etapa);
+    if (et === ETAPA_FECHADO || et === ETAPA_DESCARTADO) continue;
+    ativos++;
+
+    // ---- ficha obrigatória
+    const q = l.qualificacao || {};
+    const vazios = d.qualificacaoObrigatoria.filter((campo) => {
+      const v = q[campo];
+      return !(Array.isArray(v) ? v.length : !!v);
+    });
+    if (!vazios.length) fichaCompleta++;
+    for (const c of vazios) faltando[c] = (faltando[c] || 0) + 1;
+
+    // ---- tempo parado na etapa
+    const prazo = d.prazoMaximoEtapaDias[et];
+    if (!prazo) continue;
+    const carimbo = entrouNaEtapaEm(l, et);
+    if (!carimbo) continue;
+
+    // sem carimbo próprio, o piso é o início do histórico de etapas: o que se
+    // sabe é "está nesta etapa desde pelo menos então", não desde que nasceu
+    const temCarimbo = (l.etapasHist || []).some((h) => mapEtapaCircuito(String(h.para || '')) === et && msOf(h.em) > 0);
+    const desde = temCarimbo ? carimbo : Math.max(carimbo, historicoEtapasDesdeMs || 0);
+    const diasNaEtapa = Math.floor((agora - desde) / DIA);
+    if (diasNaEtapa <= prazo) continue;
+
+    const at = ativ.get(l.id);
+    const ultimo = at?.interacoes.length ? at.interacoes[at.interacoes.length - 1].ms : 0;
+    estagnados.push({
+      id: l.id, nome: String(l.nome || ''), etapa: et,
+      dias_na_etapa: diasNaEtapa, prazo_da_etapa: prazo,
+      dias_sem_toque: ultimo ? Math.floor((agora - ultimo) / DIA) : diasNaEtapa,
+      estimado: !temCarimbo,
+    });
+    porEtapa[et] = (porEtapa[et] || 0) + 1;
+  }
+
+  estagnados.sort((a, b) => b.dias_na_etapa - a.dias_na_etapa);
+
+  const motivos = Object.entries(p.motivos_descarte)
+    .map(([motivo, quantidade]) => ({ motivo, quantidade, curto_demais: motivoCurtoDemais(motivo) }))
+    .sort((a, b) => Number(b.curto_demais) - Number(a.curto_demais) || b.quantidade - a.quantidade);
+
+  const custo = d.custoMedioLead;
+  return {
+    dias_do_periodo: dias,
+    metas,
+    metas_definidas: metas.some((x) => x.meta !== null),
+    leads_estagnados: estagnados.slice(0, 40),
+    estagnados_por_etapa: porEtapa,
+    motivos_descarte_usados: motivos,
+    criterios_da_regua: d.criteriosDescarteValido,
+    qualificacao_faltando: faltando,
+    leads_com_ficha_completa: fichaCompleta,
+    leads_ativos: ativos,
+    custo_medio_lead: custo,
+    dinheiro_parado: custo !== null ? Math.round(custo * p.sem_toque_7d) : null,
+  };
+}
+
 const mediana = (a: number[]): number | null => {
   if (!a.length) return null;
   const s = [...a].sort((x, y) => x - y);
@@ -464,6 +634,8 @@ export interface OpcoesPacote {
   periodo: { iniMs: number; fimMs: number };
   diretrizes: DiretrizesAuditoria;
   panorama: Panorama;
+  /** o que a régua do gestor permite cobrar nesta rodada */
+  cobranca: Cobranca;
   amostra: { lead: LeadAud; faixa: FaixaSorteio }[];
   atividade: Map<string, AtividadeAud>;
   ads: AdsAud[];
@@ -619,10 +791,15 @@ export function montarPacote(o: OpcoesPacote, agora = Date.now()): Record<string
       horario_util: { ...o.diretrizes.horarioUtil, descricao: descreverHorarioUtil(o.diretrizes.horarioUtil) },
       criterios_descarte_valido: o.diretrizes.criteriosDescarteValido,
       pesos_avaliacao: o.diretrizes.pesosAvaliacao,
+      metas_mensais: o.diretrizes.metasMensais,
+      prazo_maximo_por_etapa_dias: o.diretrizes.prazoMaximoEtapaDias,
+      qualificacao_obrigatoria: o.diretrizes.qualificacaoObrigatoria,
+      custo_medio_lead: o.diretrizes.custoMedioLead,
       tom_do_relatorio: o.diretrizes.tomDoRelatorio,
     },
     prompts: o.diretrizes.prompts,
     panorama: o.panorama,
+    cobranca: o.cobranca,
     historico: o.historico,
     amostra,
   };

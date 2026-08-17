@@ -224,8 +224,79 @@ export default function DiretrizesAuditoriaPage() {
         </div>
       </Secao>
 
-      {/* ── Descarte válido (vazio de propósito) ── */}
-      <Secao titulo="Critérios de descarte válido" sub="O que conta como descarte legítimo. Nasce vazio de propósito — é política da casa, não do sistema.">
+      {/* ── Metas: sem isto, "vendas: 0" é vermelho contra nada ── */}
+      <Secao titulo="Metas do mês"
+        sub="O que o corretor precisa entregar. O sistema ajusta ao tamanho do período sozinho — meta mensal num relatório de 7 dias vale 7/30. Deixe em branco o que a casa não cobra: aí o relatório escreve “não é meta” em vez de marcar vermelho.">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {([
+            ['visitasFeitas', 'Visitas realizadas', 'Visita ao imóvel, com o cliente presente.'],
+            ['meetsFeitos', 'Reuniões realizadas', 'Reunião de apresentação que aconteceu.'],
+            ['propostasEnviadas', 'Propostas enviadas', 'Proposta formal na mesa do cliente.'],
+            ['vendas', 'Vendas fechadas', 'Negócio fechado no mês.'],
+          ] as const).map(([campo, label, hint]) => (
+            <Campo key={campo} label={label} hint={hint}>
+              <input type="number" min={0} value={d.metasMensais[campo] ?? ''} placeholder="não cobra"
+                onChange={(e) => set({ metasMensais: { ...d.metasMensais, [campo]: e.target.value === '' ? null : Number(e.target.value) } })}
+                className={inputCls + ' tabular-nums'} />
+            </Campo>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+          <Campo label="VGV do mês (R$)" hint="Valor total vendido. Em branco = a casa cobra número de vendas, não valor.">
+            <input type="number" min={0} value={d.metasMensais.vgv ?? ''} placeholder="não cobra"
+              onChange={(e) => set({ metasMensais: { ...d.metasMensais, vgv: e.target.value === '' ? null : Number(e.target.value) } })}
+              className={inputCls + ' tabular-nums'} />
+          </Campo>
+          <Campo label="Custo médio de um lead (R$)"
+            hint="Quanto a casa paga, em média, por lead. Converte carteira parada em dinheiro parado: 51 leads × R$ 80 = R$ 4.080 na mão do corretor. Em branco = não acompanhamos.">
+            <input type="number" min={0} value={d.custoMedioLead ?? ''} placeholder="não acompanhamos"
+              onChange={(e) => set({ custoMedioLead: e.target.value === '' ? null : Number(e.target.value) })}
+              className={inputCls + ' tabular-nums'} />
+          </Campo>
+        </div>
+      </Secao>
+
+      {/* ── Prazo por etapa: transforma "virou depósito" em achado ── */}
+      <Secao titulo="Quanto tempo um lead pode ficar em cada etapa"
+        sub="Passou disso, o sistema aponta sozinho, com nome e tempo. É esta régua que impede uma etapa de virar depósito — sem ela, um lead há 349 dias em Fechamento só aparece se alguém reparar.">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {Object.entries(d.prazoMaximoEtapaDias).map(([etapa, dias]) => (
+            <Campo key={etapa} label={etapa}>
+              <div className="flex items-center gap-1.5">
+                <input type="number" min={1} value={dias}
+                  onChange={(e) => set({ prazoMaximoEtapaDias: { ...d.prazoMaximoEtapaDias, [etapa]: Number(e.target.value) || 1 } })}
+                  className={inputCls + ' tabular-nums'} />
+                <span className="text-[11px] text-text-secondary shrink-0">dias</span>
+              </div>
+            </Campo>
+          ))}
+        </div>
+      </Secao>
+
+      {/* ── Ficha obrigatória ── */}
+      <Secao titulo="O que o corretor é obrigado a levantar"
+        sub="Os campos da ficha sem os quais ele está oferecendo imóvel no escuro. O relatório diz quais faltam e em quantos clientes.">
+        <div className="flex flex-wrap gap-1.5">
+          {(['finalidade', 'valor', 'localizacao', 'estagio', 'quartos', 'tipo', 'vagas'] as const).map((campo) => {
+            const marcado = d.qualificacaoObrigatoria.includes(campo);
+            return (
+              <button key={campo}
+                onClick={() => set({ qualificacaoObrigatoria: marcado
+                  ? d.qualificacaoObrigatoria.filter((c) => c !== campo)
+                  : [...d.qualificacaoObrigatoria, campo] })}
+                className={`px-3 py-1.5 rounded-xl text-[12px] font-bold border transition-colors ${
+                  marcado ? 'bg-[#E8C547]/10 border-[#E8C547]/40 text-[#E8C547]' : 'border-white/10 bg-white/[0.03] text-text-secondary hover:text-white'
+                }`}>
+                {marcado ? '✓ ' : ''}{campo}
+              </button>
+            );
+          })}
+        </div>
+      </Secao>
+
+      {/* ── Descarte válido ── */}
+      <Secao titulo="Critérios de descarte válido"
+        sub="O que conta como descarte legítimo. Descarte é a saída mais fácil para limpar carteira sem trabalhar — todo motivo que não se parecer com nenhum destes vira pergunta no relatório.">
         <div className="space-y-1.5">
           {d.criteriosDescarteValido.map((c, i) => (
             <div key={i} className="flex items-center gap-2">

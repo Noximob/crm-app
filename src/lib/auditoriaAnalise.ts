@@ -51,7 +51,13 @@ export const fmtYmd = (s?: string) => {
   return /^\d{4}-\d{2}-\d{2}$/.test(t) ? t.split('-').reverse().join('/') : (t || '—');
 };
 
-/** R$ curto: 1.500.000 → "R$ 1,5 mi"; 623.264 → "R$ 623 mil". */
+/**
+ * R$ curto: 1.500.000 → "R$ 1,5 mi"; 623.264 → "R$ 623 mil"; 2.720 → "R$ 2.720".
+ *
+ * Abaixo de 100 mil o valor sai inteiro. Abreviar ali custa precisão demais
+ * — R$ 2.720 de dinheiro parado virava "R$ 3 mil", e número de cobrança que
+ * o corretor consegue contestar na conta não se usa numa reunião.
+ */
 export function fmtDinheiro(v: number | null): string {
   if (v === null) return '—';
   if (v === 0) return 'R$ 0';
@@ -59,8 +65,8 @@ export function fmtDinheiro(v: number | null): string {
     const mi = v / 1_000_000;
     return `R$ ${mi.toFixed(mi >= 10 ? 0 : 1).replace('.', ',')} mi`;
   }
-  if (Math.abs(v) >= 1_000) return `R$ ${Math.round(v / 1_000)} mil`;
-  return `R$ ${v.toLocaleString('pt-BR')}`;
+  if (Math.abs(v) >= 100_000) return `R$ ${Math.round(v / 1_000)} mil`;
+  return `R$ ${Math.round(v).toLocaleString('pt-BR')}`;
 }
 
 export function fmtNum(v: number | null): string {

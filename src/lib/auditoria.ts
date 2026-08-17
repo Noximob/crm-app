@@ -61,6 +61,57 @@ export interface PrazosAuditoria {
   leadParadoDias: number;
 }
 
+/**
+ * A entrega esperada no mês. null em qualquer campo = a casa não cobra
+ * aquilo — e o relatório diz "não é meta", em vez de marcar vermelho.
+ */
+export interface MetasMensais {
+  visitasFeitas: number | null;
+  meetsFeitos: number | null;
+  propostasEnviadas: number | null;
+  vendas: number | null;
+  vgv: number | null;
+}
+
+export const METAS_PADRAO: MetasMensais = {
+  visitasFeitas: 8, meetsFeitos: 8, propostasEnviadas: 4, vendas: 1, vgv: null,
+};
+
+/**
+ * Padrão discutível de propósito: é para o gestor abrir a tela e mudar, não
+ * para aceitar calado. Um número errado que ele corrige vale mais que um
+ * campo vazio que ele nunca preenche.
+ */
+export const PRAZO_ETAPA_PADRAO: Record<string, number> = {
+  'Entrada': 1,
+  'Em Contato': 15,
+  'Meet Agendado': 7,
+  'Meet Feito': 7,
+  'Visita Agendada': 7,
+  'Visita Feita': 5,
+  'Negociação': 15,
+  'Fechamento': 30,
+};
+
+/**
+ * O que é descarte legítimo. Sem esta lista, descarte é terra de ninguém —
+ * e é a saída mais fácil para limpar a carteira sem trabalhar. Foi assim que
+ * "gay" e "já está no CRM do toni" entraram no banco sem ninguém barrar.
+ */
+export const CRITERIOS_DESCARTE_PADRAO: string[] = [
+  'Telefone inexistente ou não é WhatsApp — confirmado nas duas formas do número',
+  'Não responde após a cadência completa de 6 contatos',
+  'Fora do perfil: procura em cidade ou faixa de valor que a casa não atende',
+  'Já comprou com outra imobiliária — com data e o que o cliente disse',
+  'Pediu para não ser mais contatado',
+  'Adiou a compra por mais de 6 meses — vai para Interesse futuro, não para descarte',
+];
+
+/** Os campos da ficha sem os quais não dá para atender direito. */
+export const QUALIFICACAO_OBRIGATORIA_PADRAO: string[] = [
+  'finalidade', 'valor', 'localizacao', 'estagio',
+];
+
 export interface PromptsAuditoria {
   principal: string;
   formatoRelatorio: string;
@@ -77,6 +128,27 @@ export interface DiretrizesAuditoria {
   criteriosDescarteValido: string[];
   /** quanto vale cada dimensão na nota — a casa preenche */
   pesosAvaliacao: { dimensao: string; peso: number }[];
+  /**
+   * Quanto o corretor precisa ENTREGAR no mês. Sem isto, "vendas: 0" é um
+   * número vermelho contra nada: nunca foi combinado quanto ele deveria
+   * vender, e cobrar meta que não existe é o jeito mais rápido de perder a
+   * autoridade do relatório.
+   */
+  metasMensais: MetasMensais;
+  /**
+   * Quanto tempo um lead pode ficar parado em cada etapa. É esta régua que
+   * transforma "Fechamento virou depósito" de opinião em achado: sem ela, um
+   * lead há 349 dias em Fechamento só é encontrado se a IA reparar.
+   */
+  prazoMaximoEtapaDias: Record<string, number>;
+  /** os campos da ficha que o corretor é obrigado a levantar */
+  qualificacaoObrigatoria: string[];
+  /**
+   * O que a casa pagou, em média, por um lead. Converte carteira parada em
+   * dinheiro parado — é a diferença entre "você está devagar" e "você tem
+   * quatro mil reais da casa parados na mão". null = não acompanhamos.
+   */
+  custoMedioLead: number | null;
   tomDoRelatorio: string;
   prompts: PromptsAuditoria;
   atualizadoEm?: unknown;
@@ -857,6 +929,53 @@ A contagem geral dos achados:
 - ✗ não fez (atendimento): N
 - ? não verificável: N
 
+## 7b. O combinado — o que a casa pode cobrar
+
+Esta seção só existe porque a casa combinou antes. Ela vem pronta no bloco
+"cobranca" do pacote; sua função é ler, escrever em português e apontar o
+que importa. NÃO invente meta, prazo nem critério que não esteja lá.
+
+Regra que vale para a seção inteira: SÓ SE COBRA O QUE FOI COMBINADO. Se a
+meta veio null, escreva "a casa não definiu meta para isto" e siga — nunca
+marque vermelho contra um combinado que não existe. Meta ausente é falha da
+gestão, não do corretor, e vai para "o que o gestor precisa destravar".
+
+a) METAS. Uma linha por meta com realizado, meta do período e o percentual.
+   A meta já vem ajustada ao tamanho do período — não recalcule. Diga o que
+   falta em unidades, não em percentual: "faltaram 3 visitas" pesa mais que
+   "você fez 62% da meta".
+
+b) LEADS PARADOS ALÉM DO PRAZO DA ETAPA. Vem em "leads_estagnados", já com
+   o prazo que a casa definiu para cada etapa. Cite os piores pelo nome e
+   pelo tempo. É aqui que "Fechamento virou depósito" deixa de ser opinião:
+   o prazo era 30 dias e o lead está há 349.
+   ATENÇÃO ao campo "estimado". Quando ele vier true, não existe carimbo de
+   entrada naquela etapa e o tempo foi contado do começo do histórico. Nesse
+   caso escreva "está nesta etapa há PELO MENOS N dias" — nunca afirme o
+   número exato. Acusar alguém de 359 dias parado com base em estimativa é o
+   jeito mais rápido de o corretor descartar o relatório inteiro.
+
+c) DESCARTES. Você recebe "motivos_descarte_usados" (todos os motivos, com
+   quantidade e a marca "curto_demais") e "criterios_da_regua". A
+   classificação é SUA: leia cada motivo e diga se ele cabe em algum
+   critério. O sistema não julga texto livre de propósito — "Comprou com
+   outro" é legítimo e "já está no crm do toni" não é, e nenhuma regra
+   automática acerta os dois.
+   Não acuse: pergunte. Motivo pode ser legítimo mal escrito. Mas descarte é
+   a saída mais fácil para limpar carteira sem trabalhar, e todo motivo que
+   não cabe na régua é conversa — principalmente os "curto_demais", que não
+   chegam a explicar coisa alguma.
+
+d) FICHA INCOMPLETA. "qualificacao_faltando" diz QUAIS campos obrigatórios
+   estão vazios e em quantos leads. Sem finalidade e valor levantados, o
+   corretor está oferecendo no escuro — e é isso que se cobra, não o
+   preenchimento do campo em si.
+
+e) DINHEIRO PARADO. Se "dinheiro_parado" veio preenchido, use: é a carteira
+   parada convertida no que a casa pagou por aqueles leads. Muda a conversa
+   de "você está devagar" para "você tem R$ X da casa parados na mão". Se
+   veio null, não estime — a casa não acompanha custo de lead.
+
 ## 8. Tabela dos leads auditados
 Uma linha por lead:
 nome | temperatura (🔥🌤❄⚰) | etapa CRM | etapa real | veredito (✓ ⚠ ✗ ?) |
@@ -1125,6 +1244,22 @@ você conseguiu ler de fato, do total da amostra.
     "conversas_lidas": null,
     "sem_conversa_localizada": null
   },
+  "combinado": {
+    "metas": [
+      { "indicador": "", "realizado": null, "meta": null, "faltou": "", "bateu": null }
+    ],
+    "leads_parados_alem_do_prazo": [
+      { "lead": "", "etapa": "", "dias_na_etapa": null, "prazo_da_etapa": null }
+    ],
+    "descartes_a_explicar": [
+      { "motivo": "", "quantidade": null, "por_que_chamou_atencao": "" }
+    ],
+    "ficha_incompleta": [
+      { "campo": "", "leads_sem": null }
+    ],
+    "dinheiro_parado": null,
+    "o_que_nao_foi_combinado": [""]
+  },
   "sinais_de_compra": [
     { "lead": "", "data": "", "o_que_o_cliente_disse": "", "o_que_voce_respondeu": "", "veredito": "aproveitado | subaproveitado | ignorado" }
   ],
@@ -1201,6 +1336,10 @@ Regras do arquivo 2:
 - "leads_auditados" é a tabela da seção 8 em campos: uma linha por lead da
   amostra, TODOS, inclusive os que você não conseguiu ler (nesses,
   veredito "?" e o motivo em por_que_parou).
+- "combinado" é a seção 7b em campos, copiada do bloco "cobranca" do pacote e
+  reescrita em português. "o_que_nao_foi_combinado" lista o que a casa ainda
+  não definiu (meta null, régua faltando) — é cobrança do gestor, não do
+  corretor, e some da lista quando ele definir.
 - "sinais_de_compra" é a tabela da seção 10; "duas_conversas" é a seção 19;
   "metas_da_instrucao" é o "como medir em 30 dias" da seção 17; e
   "comparativo_rodada_anterior" é a seção 18 em um parágrafo.
@@ -1224,8 +1363,12 @@ export const DIRETRIZES_PADRAO: DiretrizesAuditoria = {
     leadParadoDias: 7,
   },
   horarioUtil: { inicioHora: 9, fimHora: 20, contarSabado: true, contarDomingo: false },
-  criteriosDescarteValido: [],
+  criteriosDescarteValido: CRITERIOS_DESCARTE_PADRAO,
   pesosAvaliacao: [],
+  metasMensais: METAS_PADRAO,
+  prazoMaximoEtapaDias: PRAZO_ETAPA_PADRAO,
+  qualificacaoObrigatoria: QUALIFICACAO_OBRIGATORIA_PADRAO,
+  custoMedioLead: null,
   tomDoRelatorio: 'Direto, em fatos e acordos. Sempre com data e trecho como evidência. Nunca em traços de personalidade.',
   prompts: {
     principal: PROMPT_PRINCIPAL_PADRAO,
@@ -1244,6 +1387,17 @@ const num = (v: unknown, min: number, max: number, fb: number): number => {
   return Math.min(max, Math.max(min, Math.round(n)));
 };
 const txt = (v: unknown, fb = ''): string => (typeof v === 'string' ? v : fb);
+
+/**
+ * Meta aceita null de propósito: null é "a casa não cobra isso", e é
+ * diferente de zero, que seria "a meta é não fazer nada".
+ */
+const meta = (v: unknown, fb: number | null): number | null => {
+  if (v === null) return null;
+  if (v === undefined || v === '') return fb;
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 ? n : fb;
+};
 
 /**
  * Campos que o CRM passou a LER do rodada.json e que precisam existir no
@@ -1271,6 +1425,8 @@ export function normalizarDiretrizes(raw: unknown): DiretrizesAuditoria {
   const p = (d.prazos || {}) as Record<string, unknown>;
   const h = (d.horarioUtil || {}) as Record<string, unknown>;
   const pr = (d.prompts || {}) as Record<string, unknown>;
+  const m = (d.metasMensais || {}) as Record<string, unknown>;
+  const pz = (d.prazoMaximoEtapaDias || {}) as Record<string, unknown>;
 
   const cadencia: PassoCadencia[] = Array.isArray(d.cadencia) && d.cadencia.length
     ? d.cadencia.map((x: Record<string, unknown>, i: number) => ({
@@ -1298,8 +1454,25 @@ export function normalizarDiretrizes(raw: unknown): DiretrizesAuditoria {
       contarSabado: h.contarSabado !== false,
       contarDomingo: h.contarDomingo === true,
     },
-    criteriosDescarteValido: Array.isArray(d.criteriosDescarteValido)
-      ? d.criteriosDescarteValido.filter((s: unknown) => typeof s === 'string' && s.trim()) : [],
+    // régua nunca preenchida cai no padrão: campo vazio vira métrica que não
+    // pode ser cobrada, e é justamente o que se quer evitar aqui
+    criteriosDescarteValido: Array.isArray(d.criteriosDescarteValido) && d.criteriosDescarteValido.length
+      ? d.criteriosDescarteValido.filter((s: unknown) => typeof s === 'string' && s.trim())
+      : CRITERIOS_DESCARTE_PADRAO,
+    metasMensais: {
+      visitasFeitas: meta(m.visitasFeitas, METAS_PADRAO.visitasFeitas),
+      meetsFeitos: meta(m.meetsFeitos, METAS_PADRAO.meetsFeitos),
+      propostasEnviadas: meta(m.propostasEnviadas, METAS_PADRAO.propostasEnviadas),
+      vendas: meta(m.vendas, METAS_PADRAO.vendas),
+      vgv: meta(m.vgv, METAS_PADRAO.vgv),
+    },
+    prazoMaximoEtapaDias: Object.fromEntries(
+      Object.entries(PRAZO_ETAPA_PADRAO).map(([et, pad]) => [et, num(pz[et], 1, 3650, pad)])
+    ),
+    qualificacaoObrigatoria: Array.isArray(d.qualificacaoObrigatoria) && d.qualificacaoObrigatoria.length
+      ? d.qualificacaoObrigatoria.filter((s: unknown) => typeof s === 'string' && s.trim())
+      : QUALIFICACAO_OBRIGATORIA_PADRAO,
+    custoMedioLead: meta(d.custoMedioLead, null),
     pesosAvaliacao: Array.isArray(d.pesosAvaliacao)
       ? d.pesosAvaliacao
           .filter((x: Record<string, unknown>) => x && typeof x.dimensao === 'string' && x.dimensao.trim())

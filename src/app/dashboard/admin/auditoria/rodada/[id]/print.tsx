@@ -126,6 +126,15 @@ export default function RodadaPrint({ r, a, indicadores, porGrupo, modo }: Props
   const destravar = asArr(a.gestor_precisa_destravar);
   const soGestor = modo === 'gestor';
 
+  const combinado = asObj(a.combinado);
+  const metasComb = asArr(combinado.metas);
+  const paradosPrazo = asArr(combinado.leads_parados_alem_do_prazo);
+  const descartesExplicar = asArr(combinado.descartes_a_explicar);
+  const fichaIncompleta = asArr(combinado.ficha_incompleta);
+  const naoCombinado = asStrArr(combinado.o_que_nao_foi_combinado);
+  const temCombinado = metasComb.length > 0 || paradosPrazo.length > 0
+    || descartesExplicar.length > 0 || fichaIncompleta.length > 0;
+
   const sinais = asArr(a.sinais_de_compra);
   const metas = asArr(a.metas_da_instrucao);
   const duasConversas = asObj(a.duas_conversas);
@@ -252,6 +261,78 @@ export default function RodadaPrint({ r, a, indicadores, porGrupo, modo }: Props
       )}
 
       {/* ——— o quadro ——— */}
+      {temCombinado && (
+        <section>
+          <h2>O combinado — o que a casa acertou antes</h2>
+          {metasComb.length > 0 && (
+            <div className="grade">
+              {metasComb.map((m, i) => {
+                const semMeta = asNum(m.meta) === null;
+                return (
+                  <div key={i} className="cel">
+                    <span className="r">{asStr(m.indicador).replace(/_/g, ' ')}</span>
+                    <span className={`v ${semMeta ? 'nulo' : m.bateu === true ? 'verde' : 'vermelho'}`}>
+                      {fmtNum(asNum(m.realizado))}{semMeta ? '' : ` / ${fmtNum(asNum(m.meta))}`}
+                    </span>
+                    <span className="r">{semMeta ? 'nao e meta' : (asStr(m.faltou) || (m.bateu === true ? 'bateu' : ''))}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {asNum(combinado.dinheiro_parado) !== null && (
+            <div className="caixa">
+              <p className="r">Dinheiro da casa parado na mao dele</p>
+              <p className="v">{fmtDinheiro(asNum(combinado.dinheiro_parado))} — o que a casa pagou pelos leads que estao parados na carteira</p>
+            </div>
+          )}
+          {paradosPrazo.length > 0 && (
+            <>
+              <h3>Passaram do prazo da etapa</h3>
+              <table>
+                <thead><tr><th>Lead</th><th>Etapa</th><th className="num">Esta ha</th><th className="num">Prazo</th></tr></thead>
+                <tbody>
+                  {paradosPrazo.map((l, i) => (
+                    <tr key={i}>
+                      <td><b>{asStr(l.lead)}</b></td>
+                      <td>{asStr(l.etapa)}</td>
+                      <td className="num vermelho">{fmtNum(asNum(l.dias_na_etapa))} dias</td>
+                      <td className="num">{fmtNum(asNum(l.prazo_da_etapa))} dias</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+          {descartesExplicar.length > 0 && (
+            <>
+              <h3>Descartes para explicar</h3>
+              <table>
+                <thead><tr><th>Motivo registrado</th><th className="num">Quantos</th><th>Por que chamou atencao</th></tr></thead>
+                <tbody>
+                  {descartesExplicar.map((x, i) => (
+                    <tr key={i}>
+                      <td><b>“{asStr(x.motivo)}”</b></td>
+                      <td className="num">{fmtNum(asNum(x.quantidade))}</td>
+                      <td>{asStr(x.por_que_chamou_atencao)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+          {fichaIncompleta.length > 0 && (
+            <p><b>Ficha incompleta:</b> {fichaIncompleta.map((f) => `${asStr(f.campo)} (falta em ${fmtNum(asNum(f.leads_sem))})`).join(' · ')}</p>
+          )}
+          {naoCombinado.length > 0 && soGestor && (
+            <>
+              <h3>Isto ainda nao foi combinado — cobranca sua, nao dele</h3>
+              <ul>{naoCombinado.map((s, i) => <li key={i}>{s}</li>)}</ul>
+            </>
+          )}
+        </section>
+      )}
+
       {indicadores.length > 0 && (
         <section>
           <h2>Quadro de indicadores</h2>

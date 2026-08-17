@@ -14,7 +14,7 @@ import { mapEtapaCircuito } from '@/lib/circuito';
 import { carregarDiretrizes, DADOS_CONFIAVEIS_DESDE, dadosConfiaveisDesdeMs, type DiretrizesAuditoria } from '@/lib/auditoria';
 import { auditoriaDemo } from '@/lib/auditoriaDemo';
 import {
-  sortearAmostra, computarPanorama, montarPacote, faixaDoLead, msOf,
+  sortearAmostra, computarPanorama, computarCobranca, montarPacote, faixaDoLead, msOf,
   detectarDisponibilidade, aplicarDisponibilidade, telefoneUtilizavel,
   ROTULO_FAIXA, type LeadAud, type AtividadeAud, type VendaAud, type AdsAud, type FaixaSorteio,
 } from '@/lib/auditoriaPacote';
@@ -275,6 +275,7 @@ export default function GerarPacotePage() {
 
       const pacote = montarPacote({
         corretor, periodo: { iniMs, fimMs }, diretrizes, panorama,
+        cobranca: computarCobranca(leads, ativ, panorama, diretrizes, iniMs, fimMs, etapasDesde),
         amostra: selecionados, atividade: ativ, ads, historico,
         historicoEtapasDesdeMs: etapasDesde, disponibilidade,
         // descartados do período: fora da amostra, mas com nome e data pra o
