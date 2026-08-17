@@ -113,6 +113,7 @@ export default function RodadaPrint({ r, a, indicadores, porGrupo, modo }: Props
   const cobertura = asObj(a.cobertura);
   const fila = asArr(a.fila_de_ataque).sort((x, y) => (asNum(x.posicao) ?? 99) - (asNum(y.posicao) ?? 99));
   const acertos = asArr(a.acertos);
+  const destaques = asObj(a.destaques_do_periodo);
   const achados = asArr(a.achados);
   const leadsAud = asArr(a.leads_auditados);
   const crmVsReal = asArr(a.crm_vs_real);
@@ -223,7 +224,18 @@ export default function RodadaPrint({ r, a, indicadores, porGrupo, modo }: Props
         {acertos.length > 0 && (
           <>
             <h2>O que você faz bem — manter e replicar</h2>
-            {acertos.map((ac, i) => (
+            {Object.keys(destaques).length > 0 && (
+            <div className="grade">
+              {([["avancos_de_etapa","clientes que avancaram"],["leads_recuperados","recuperados de parado"],["atendimento_mais_rapido","atendimento mais rapido"],["tarefas_no_prazo","tarefas no prazo"],["dias_fora_do_expediente","dias fora do expediente"]] as const).map(([k, rot]) => {
+                const v = valorSolto(destaques[k]);
+                return v.nulo ? null : (
+                  <div key={k} className="cel"><span className="r">{rot}</span><span className="v verde">{v.txt}</span></div>
+                );
+              })}
+            </div>
+          )}
+          {asStr(destaques.observacao) && <p>{asStr(destaques.observacao)}</p>}
+          {acertos.map((ac, i) => (
               <div key={i}>
                 <h3>{asStr(ac.lead)}{ac.vale_como_treino === true ? ' — vale como treino' : ''}</h3>
                 <Cit data={asStr(ac.data)} trecho={asStr(ac.trecho)} />

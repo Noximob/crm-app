@@ -171,6 +171,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
   const cobertura = asObj(a.cobertura);
   const fila = asArr(a.fila_de_ataque).sort((x, y) => (asNum(x.posicao) ?? 99) - (asNum(y.posicao) ?? 99));
   const acertos = asArr(a.acertos);
+  const destaques = asObj(a.destaques_do_periodo);
   const achados = asArr(a.achados);
   const leadsAud = asArr(a.leads_auditados);
   const crmVsReal = asArr(a.crm_vs_real);
@@ -219,7 +220,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
    */
   const indice = useMemo(() => ([
     { id: 'fila', t: 'Fila de ataque', tem: fila.length > 0, gestor: false },
-    { id: 'bem', t: 'O que você faz bem', tem: acertos.length > 0, gestor: false },
+    { id: 'bem', t: 'O que você faz bem', tem: acertos.length > 0 || Object.keys(destaques).length > 0, gestor: false },
     { id: 'muda', t: 'O que muda agora', tem: achados.length > 0 || evidencias.length > 0, gestor: false },
     { id: 'combinado', t: 'O combinado', tem: temCombinado, gestor: false },
     { id: 'quadro', t: 'Os números', tem: indicadores.length > 0, gestor: false },
@@ -427,8 +428,31 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
         )}
 
         {/* 3 — o que faz bem */}
-        {acertos.length > 0 && (
+        {(acertos.length > 0 || Object.keys(destaques).length > 0) && (
           <Secao id="bem" n={nDe("bem")} titulo="O que você faz bem" hint="Manter e replicar — é daqui que sai o material de treino do time.">
+            {Object.keys(destaques).length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-4">
+                {([
+                  ['avancos_de_etapa', 'clientes que avançaram'],
+                  ['leads_recuperados', 'recuperados de parado'],
+                  ['atendimento_mais_rapido', 'atendimento mais rápido'],
+                  ['tarefas_no_prazo', 'tarefas no prazo'],
+                  ['dias_fora_do_expediente', 'dias fora do expediente'],
+                ] as const).map(([k, rot]) => {
+                  const v = valorSolto(destaques[k]);
+                  if (v.nulo) return null;
+                  return (
+                    <div key={k} className="rounded-xl border border-emerald-500/25 bg-emerald-500/[0.04] px-3 py-2">
+                      <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-emerald-300/70 leading-tight">{rot}</p>
+                      <p className="text-[17px] font-extrabold text-emerald-300 tabular-nums mt-0.5">{v.txt}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {asStr(destaques.observacao) && (
+              <p className="text-[12.5px] text-white/85 leading-relaxed mb-3">{asStr(destaques.observacao)}</p>
+            )}
             <div className="space-y-3">
               {acertos.map((ac, i) => (
                 <div key={i}>

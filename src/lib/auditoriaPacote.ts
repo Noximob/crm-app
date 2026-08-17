@@ -547,6 +547,58 @@ export interface LeadEstagnado {
   estimado: boolean;
 }
 
+/**
+ * A cadência da régua (6 contatos até o dia 10) estava definida e ninguém
+ * media. O prompt pedia "cadência x/6" na tabela de leads e a análise tinha
+ * de contar isso a olho, conversa por conversa — que é exatamente o tipo de
+ * conta que a máquina faz melhor e sem cansar.
+ */
+export interface CadenciaLead {
+  lead: string;
+  dias_de_vida: number;
+  toques_previstos: number;
+  toques_registrados: number;
+  cumpriu: boolean;
+}
+
+export function computarCadencia(
+  leads: LeadAud[], ativ: Map<string, AtividadeAud>, d: DiretrizesAuditoria,
+  iniMs: number, fimMs: number, agora = Date.now(),
+): { leads: CadenciaLead[]; media_cumprimento_pct: number | null } {
+  const passos = [...d.cadencia].sort((a, b) => a.dia - b.dia);
+  if (!passos.length) return { leads: [], media_cumprimento_pct: null };
+
+  const out: CadenciaLead[] = [];
+  for (const l of leads) {
+    const nascimento = msOf(l.createdAt);
+    // só leads que nasceram no período: em lead antigo a cadência já passou
+    // e o que se veria era o histórico, não o trabalho desta rodada
+    if (!(nascimento >= iniMs && nascimento < fimMs)) continue;
+    if (mapEtapaCircuito(l.etapa) === ETAPA_DESCARTADO) continue;
+
+    const dias = Math.floor((Math.min(agora, fimMs) - nascimento) / DIA);
+    // só cobra os passos cujo dia já chegou
+    const previstos = passos.filter((p) => p.dia <= dias).length;
+    if (!previstos) continue;
+
+    const at = ativ.get(l.id);
+    const registrados = (at?.interacoes || []).filter((i) => i.ms >= nascimento && i.ms <= fimMs).length;
+    out.push({
+      lead: String(l.nome || l.id.slice(0, 6)),
+      dias_de_vida: dias,
+      toques_previstos: previstos,
+      toques_registrados: registrados,
+      cumpriu: registrados >= previstos,
+    });
+  }
+  out.sort((a, b) => (a.toques_registrados - a.toques_previstos) - (b.toques_registrados - b.toques_previstos));
+  const cumpriram = out.filter((x) => x.cumpriu).length;
+  return {
+    leads: out.slice(0, 25),
+    media_cumprimento_pct: out.length ? Math.round((cumpriram / out.length) * 100) : null,
+  };
+}
+
 export interface Cobranca {
   dias_do_periodo: number;
   metas: LinhaMeta[];
@@ -703,6 +755,108 @@ export function computarCobranca(
     custo_medio_lead: custo,
     dinheiro_parado: custo !== null ? Math.round(custo * p.sem_toque_7d) : null,
   };
+}
+
+// ---------------------------------------------------------------------------
+// O QUE ELE FEZ BEM — provado pelo sistema, não achado na leitura
+//
+// Todo o resto que este arquivo calcula é problema: parado, atrasado, sem
+// ficha, sem próximo passo. Entregar só isso faz o pacote ser uma máquina de
+// achar defeito, e um relatório que só acusa é lido uma vez.
+// O acerto também tem prova no CRM — ela só nunca tinha sido procurada.
+// ---------------------------------------------------------------------------
+
+export interface Destaques {
+  /** leads que subiram de etapa no período, do maior salto para o menor */
+  avancos: { lead: string; de: string; para: string; etapas: number; em: string }[];
+  /** estava parado além do prazo e voltou a receber contato */
+  recuperados: { lead: string; dias_parado: number; retomado_em: string }[];
+  /** atendidos dentro do prazo do 1º contato, com o tempo */
+  atendidos_no_prazo: { lead: string; minutos_uteis: number }[];
+  tarefas_concluidas_no_prazo: number;
+  tarefas_concluidas_total: number;
+  /** o lead atendido mais rápido do período */
+  atendimento_mais_rapido: { lead: string; minutos_uteis: number } | null;
+  trabalhou_fim_de_semana: number;
+  trabalhou_fora_do_horario: number;
+}
+
+export function computarDestaques(
+  leads: LeadAud[], ativ: Map<string, AtividadeAud>, d: DiretrizesAuditoria,
+  iniMs: number, fimMs: number, agora = Date.now(),
+): Destaques {
+  const dentroJ = (ms: number) => ms >= iniMs && ms < fimMs;
+  const r: Destaques = {
+    avancos: [], recuperados: [], atendidos_no_prazo: [],
+    tarefas_concluidas_no_prazo: 0, tarefas_concluidas_total: 0,
+    atendimento_mais_rapido: null, trabalhou_fim_de_semana: 0, trabalhou_fora_do_horario: 0,
+  };
+  const diasFds = new Set<string>(), diasFora = new Set<string>();
+
+  for (const l of leads) {
+    const nome = String(l.nome || l.id.slice(0, 6));
+    const at = ativ.get(l.id);
+
+    // ---- avanços de etapa no período
+    for (const h of (l.etapasHist || [])) {
+      const em = msOf(h.em);
+      if (!em || !dentroJ(em) || !h.de || !h.para) continue;
+      const de = mapEtapaCircuito(String(h.de)), para = mapEtapaCircuito(String(h.para));
+      if (para === ETAPA_DESCARTADO) continue;
+      const salto = etapaIndex(para) - etapaIndex(de);
+      if (salto > 0) r.avancos.push({ lead: nome, de, para, etapas: salto, em: new Date(em).toISOString().slice(0, 10) });
+    }
+
+    // ---- 1º contato dentro do prazo
+    const nascimento = msOf(l.createdAt), pMs = msOf(l.circuito?.primeiroContatoEm);
+    if (dentroJ(nascimento) && pMs >= nascimento && pMs > 0) {
+      const min = minutosUteisEntre(nascimento, pMs, d.horarioUtil);
+      if (min <= d.prazos.primeiroContatoMaximoMin) {
+        r.atendidos_no_prazo.push({ lead: nome, minutos_uteis: min });
+        if (!r.atendimento_mais_rapido || min < r.atendimento_mais_rapido.minutos_uteis) {
+          r.atendimento_mais_rapido = { lead: nome, minutos_uteis: min };
+        }
+      }
+    }
+
+    // ---- recuperação: ficou parado além do prazo e voltou
+    const toques = (at?.interacoes || []).map((i) => i.ms).sort((a, b) => a - b);
+    for (let i = 1; i < toques.length; i++) {
+      const gap = (toques[i] - toques[i - 1]) / DIA;
+      if (gap > d.prazos.leadParadoDias && dentroJ(toques[i])) {
+        r.recuperados.push({
+          lead: nome, dias_parado: Math.round(gap),
+          retomado_em: new Date(toques[i]).toISOString().slice(0, 10),
+        });
+        break;
+      }
+    }
+
+    // ---- tarefas cumpridas, e quando ele trabalhou
+    for (const t of (at?.tarefas || [])) {
+      if (!/conclu/i.test(t.status) || !t.concluidaMs || !dentroJ(t.concluidaMs)) continue;
+      r.tarefas_concluidas_total++;
+      if (t.dueMs > 0 && horasUteisEntre(t.dueMs, t.concluidaMs, d.horarioUtil) <= d.prazos.tarefaAtrasadaHoras) {
+        r.tarefas_concluidas_no_prazo++;
+      }
+    }
+    for (const i of (at?.interacoes || [])) {
+      if (!dentroJ(i.ms)) continue;
+      const dt = new Date(i.ms), dia = dt.toISOString().slice(0, 10), h = dt.getHours(), dow = dt.getDay();
+      if (dow === 0 || dow === 6) diasFds.add(dia);
+      if (h < d.horarioUtil.inicioHora || h >= d.horarioUtil.fimHora) diasFora.add(dia);
+    }
+  }
+
+  r.avancos.sort((a, b) => b.etapas - a.etapas || b.em.localeCompare(a.em));
+  r.atendidos_no_prazo.sort((a, b) => a.minutos_uteis - b.minutos_uteis);
+  r.recuperados.sort((a, b) => b.dias_parado - a.dias_parado);
+  r.avancos = r.avancos.slice(0, 15);
+  r.atendidos_no_prazo = r.atendidos_no_prazo.slice(0, 10);
+  r.recuperados = r.recuperados.slice(0, 10);
+  r.trabalhou_fim_de_semana = diasFds.size;
+  r.trabalhou_fora_do_horario = diasFora.size;
+  return r;
 }
 
 const mediana = (a: number[]): number | null => {
@@ -864,6 +1018,10 @@ export interface OpcoesPacote {
   panorama: Panorama;
   /** o que a régua do gestor permite cobrar nesta rodada */
   cobranca: Cobranca;
+  /** o que ele fez bem, com prova no CRM */
+  destaques: Destaques;
+  /** cumprimento da cadência nos leads que nasceram no período */
+  cadencia: { leads: CadenciaLead[]; media_cumprimento_pct: number | null };
   /** quanto da carteira já passou pela auditoria somando todas as rodadas */
   coberturaAcumulada: CoberturaAcumulada;
   /** quantos leads de cada papel entraram nesta amostra */
@@ -1032,6 +1190,8 @@ export function montarPacote(o: OpcoesPacote, agora = Date.now()): Record<string
     prompts: o.diretrizes.prompts,
     panorama: o.panorama,
     cobranca: o.cobranca,
+    destaques: o.destaques,
+    cadencia_cumprida: o.cadencia,
     cobertura_acumulada: o.coberturaAcumulada,
     composicao_da_amostra: o.composicaoAmostra,
     historico: o.historico,

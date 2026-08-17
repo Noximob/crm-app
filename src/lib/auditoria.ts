@@ -494,6 +494,73 @@ O QUE SE COBRA DE CADA BASE
   sai a instrução da rodada.
 O gargalo quase sempre nasce da amostra e se manifesta na carteira.
 
+A AMOSTRA NÃO É UM SORTEIO SÓ — e isso muda o que dá para comparar
+
+Ler a carteira inteira toda semana é caro demais; sortear 25 diferentes a
+cada rodada torna tudo incomparável. Por isso cada lead da amostra vem com
+um PAPEL, no campo faixa_sorteio:
+
+  obrigatorio — dinheiro na mesa: Negociação, Fechamento ou pós-visita
+    recente, e só quando houve movimento novo desde a última leitura. Não
+    foi sorteado: a casa precisa ver.
+  painel — os MESMOS clientes toda rodada, enquanto vivos.
+  rotativo — quem nunca foi lido antes. Muda quase inteiro toda semana.
+  controle — parados e frios de verdade, para a amostra não olhar só o bonito.
+
+O QUE ISSO OBRIGA:
+
+1. Comparação entre rodadas SÓ vale no painel e nos números de carteira.
+   O painel é a mesma pessoa, na semana seguinte: se lá melhorou, melhorou
+   de verdade. Um percentual do rotativo que subiu pode ter subido porque
+   os leads são outros — e dizer "melhorou" nesse caso é inventar.
+   Quando citar evolução, diga de onde veio: "nos 4 clientes que acompanho
+   desde a rodada passada, três agora têm data marcada".
+
+2. O rotativo é para COBERTURA, não para tendência. Ele responde "o que
+   está acontecendo na carteira que ninguém tinha olhado", e é onde
+   costumam aparecer os achados novos.
+
+3. Os obrigatórios são a fila de ataque em potencial. Se um lead está em
+   Negociação e entrou na amostra, ele tem dinheiro na mesa AGORA.
+
+4. Leia cobertura_acumulada e cite no relatório. É a resposta para a
+   objeção certa do corretor — "vocês olharam 25 dos meus 75". Em quatro ou
+   cinco rodadas a resposta vira "olhamos a carteira inteira", e aí o
+   retrato deixa de ser recorte.
+
+O QUE ELE FEZ BEM — o bloco "destaques" (leia ANTES de escrever a seção 2)
+
+Todo o resto do pacote é problema: parado, atrasado, sem ficha, sem próximo
+passo. Se você só ler aquilo, escreve um relatório que só acusa — e um
+relatório que só acusa é lido uma vez.
+
+O bloco "destaques" traz o acerto com prova no CRM, sem depender de você
+achar na conversa:
+  avancos — quem subiu de etapa no período, e quantas etapas de uma vez
+  recuperados — leads que estavam parados e voltaram a receber contato.
+    Recuperação é a habilidade mais cara de ensinar e a menos reconhecida
+  atendidos_no_prazo e atendimento_mais_rapido — a velocidade dele, com nome
+  tarefas_concluidas_no_prazo sobre o total — disciplina cumprida
+  trabalhou_fim_de_semana e trabalhou_fora_do_horario — em quantos DIAS
+    distintos ele apareceu fora do expediente. Isso não é cobrança de
+    ninguém: é esforço que ninguém vê e que precisa ser dito em voz alta
+
+Use pelo menos DOIS destes na seção 2, com nome e número, e cruze com a
+conversa para dizer POR QUE funcionou. Um avanço de etapa vira elogio de
+verdade quando você lê a mensagem que o destravou.
+
+A CADÊNCIA — o bloco "cadencia_cumprida"
+
+A casa definiu uma cadência de contatos para o lead novo. O pacote agora
+mede quem cumpriu: por lead, quantos toques eram previstos até hoje e
+quantos foram registrados.
+  - toques_previstos já respeita a idade do lead: um lead de 2 dias só deve
+    os passos até o dia 2. Não cobre o passo que ainda não venceu.
+  - Como isso vem do CRM, vale o método dos quatro estados: cadência baixa
+    no sistema com conversa cheia no WhatsApp é ⚠ processo, não ✗.
+  - media_cumprimento_pct é o número da seção; a lista mostra quem ficou
+    mais para trás, e é dela que sai a cobrança nominal.
+
 =========================================================================
 PARTE 6 — O QUE É UM BOM NÚMERO
 =========================================================================
@@ -523,7 +590,7 @@ combinado" quando citar:
 - conversas que terminaram com data marcada: ≥ 50%
 - conversas com personalização: ≥ 80%
 - sinais de compra ignorados: zero
-- cobertura da auditoria: ≥ 16 de 20 conversas lidas
+- cobertura da auditoria: ≥ 70% da amostra lida (meta.tamanho_amostra)
 
 SEM REFERÊNCIA — indicadores que só fazem sentido comparados com ele mesmo
 ou com o time. Deixe a referência null e não pinte de vermelho:
@@ -1490,6 +1557,12 @@ começar e com que palavra.
 
 ## 2. O que você faz bem — manter e replicar
 
+Comece pelo bloco "destaques" do pacote: ele traz o acerto JÁ PROVADO pelo
+CRM — quem avançou de etapa, quem foi recuperado depois de parado, o
+atendimento mais rápido do período, as tarefas cumpridas no prazo e em
+quantos dias ele apareceu fora do expediente. Escolha os que importam e
+cruze com a conversa para dizer o que ele fez para aquilo acontecer.
+
 Pelo menos dois acertos concretos, com lead, data e trecho, e uma linha
 dizendo POR QUE funcionou. Sem o porquê é elogio; com o porquê é
 treinamento. Se algum servir de exemplo para o time, marque "vale como
@@ -1568,7 +1641,14 @@ e) PARADO NÃO É ABANDONADO. Cliente com retorno já marcado para daqui a
 f) DINHEIRO PARADO. Se veio preenchido, use: é a carteira parada convertida
    no que a casa pagou por aqueles leads. Se veio null, não estime.
 
-f) O QUE AINDA NÃO FOI COMBINADO. Fecha a seção. Lista o que a casa não
+f) CADÊNCIA DO LEAD NOVO. O bloco "cadencia_cumprida" diz, por lead que
+   nasceu no período, quantos toques a régua previa até hoje e quantos
+   foram registrados. O previsto já respeita a idade do lead — não cobre
+   passo que ainda não venceu. Cite o percentual e os que ficaram mais para
+   trás, pelo nome. E aplique os quatro estados: cadência baixa no sistema
+   com conversa cheia no WhatsApp é ⚠ processo, não ✗.
+
+g) O QUE AINDA NÃO FOI COMBINADO. Fecha a seção. Lista o que a casa não
    definiu e por isso não pode cobrar. É cobrança do GESTOR, não dele.
 
 ## 5. Os números — quadro de indicadores
@@ -1647,7 +1727,7 @@ E. RESULTADO — o que virou dinheiro
 22. vendas fechadas  [vendas]                   régua: diretrizes.metasMensais
 23. valor vendido, R$  [vgv]                    régua: diretrizes.metasMensais
 24. conversas que a auditoria conseguiu ler  [cobertura_lidos_de_20]
-    mercado: ≥ 16 de 20. Abaixo de 12, avise que a amostra ficou fraca e
+    mercado: ≥ 70% da amostra. Abaixo de 60%, avise que ficou fraca e
     que os percentuais acima devem ser lidos com reserva
 
 FECHAMENTO DO QUADRO, logo abaixo da tabela:
@@ -1880,8 +1960,16 @@ lá precisa estar aqui, com o MESMO texto. Não resuma para o JSON.
 
   "_secao_2": "o que você faz bem",
   "acertos": [
-    { "lead": "", "data": "", "trecho": "", "por_que_funcionou": "", "vale_como_treino": false }
+    { "lead": "", "data": "", "trecho": "", "por_que_funcionou": "", "vale_como_treino": false, "origem": "conversa | destaque_do_crm" }
   ],
+  "destaques_do_periodo": {
+    "avancos_de_etapa": null,
+    "leads_recuperados": null,
+    "atendimento_mais_rapido": "",
+    "tarefas_no_prazo": "",
+    "dias_fora_do_expediente": null,
+    "observacao": ""
+  },
 
   "_secao_3": "o que muda a partir de agora",
   "achados": [
@@ -1911,6 +1999,7 @@ lá precisa estar aqui, com o MESMO texto. Não resuma para o JSON.
       { "campo": "", "leads_sem": null }
     ],
     "dinheiro_parado": null,
+    "cadencia": { "cumprimento_pct": null, "quem_ficou_para_tras": [{ "lead": "", "previstos": null, "registrados": null }] },
     "o_que_nao_foi_combinado": [""]
   },
 

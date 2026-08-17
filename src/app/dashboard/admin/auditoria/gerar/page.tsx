@@ -14,7 +14,7 @@ import { mapEtapaCircuito } from '@/lib/circuito';
 import { carregarDiretrizes, minutosUteisEntre, DADOS_CONFIAVEIS_DESDE, dadosConfiaveisDesdeMs, type DiretrizesAuditoria } from '@/lib/auditoria';
 import { auditoriaDemo } from '@/lib/auditoriaDemo';
 import {
-  sortearAmostra, computarPanorama, computarCobranca, computarCoberturaAcumulada, montarPacote, faixaDoLead, msOf,
+  sortearAmostra, computarPanorama, computarCobranca, computarCoberturaAcumulada, computarDestaques, computarCadencia, montarPacote, faixaDoLead, msOf,
   detectarDisponibilidade, aplicarDisponibilidade, telefoneUtilizavel,
   ROTULO_FAIXA, type HistoricoAmostra, type LeadAud, type AtividadeAud, type VendaAud, type AdsAud, type FaixaSorteio,
 } from '@/lib/auditoriaPacote';
@@ -49,7 +49,8 @@ export default function GerarPacotePage() {
   // período mais largo só faria o corretor parecer parado
   const [ini, setIni] = useState(() => ymd(Math.max(Date.now() - 60 * DIA, dadosConfiaveisDesdeMs())));
   const [fim, setFim] = useState(() => ymd(Date.now()));
-  const [tamanho, setTamanho] = useState(20);
+  // 25 é o tamanho de trabalho da casa: cobre a carteira em ~5 rodadas
+  const [tamanho, setTamanho] = useState(25);
 
   const [diretrizes, setDiretrizes] = useState<DiretrizesAuditoria | null>(null);
   const [leads, setLeads] = useState<LeadAud[]>([]);
@@ -320,6 +321,8 @@ export default function GerarPacotePage() {
       const pacote = montarPacote({
         corretor, periodo: { iniMs, fimMs }, diretrizes, panorama,
         cobranca: computarCobranca(leads, ativ, panorama, diretrizes, iniMs, fimMs, etapasDesde),
+        destaques: computarDestaques(leads, ativ, diretrizes, iniMs, fimMs),
+        cadencia: computarCadencia(leads, ativ, diretrizes, iniMs, fimMs),
         coberturaAcumulada: computarCoberturaAcumulada(leads, histAmostra, selecionados.map((x) => x.lead.id)),
         composicaoAmostra: selecionados.reduce((acc, x) => { acc[x.faixa] = (acc[x.faixa] || 0) + 1; return acc; }, {} as Record<string, number>),
         amostra: selecionados, atividade: ativ, ads, historico,
