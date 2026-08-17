@@ -493,7 +493,9 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
                 {metasComb.map((m, i) => {
                   const bateu = m.bateu === true;
-                  const semMeta = asNum(m.meta) === null;
+                  // "não avaliável" é cinza, não vermelho: ou o CRM não mede,
+                  // ou o período é curto demais para a meta fazer sentido
+                  const semMeta = asNum(m.meta) === null || m.avaliavel === false;
                   return (
                     <div key={i} className={`rounded-xl border px-3 py-2.5 ${
                       semMeta ? 'border-white/[0.07] bg-white/[0.02]'
@@ -508,7 +510,10 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
                         {!semMeta && <span className="text-[12px] text-text-secondary tabular-nums"> / {fmtNum(asNum(m.meta))}</span>}
                       </p>
                       <p className="text-[10.5px] text-text-secondary leading-snug mt-0.5">
-                        {semMeta ? 'a casa não cobra isto' : (asStr(m.faltou) || (bateu ? 'meta batida' : ''))}
+                        {asStr(m.faltou)
+                          || (asNum(m.meta) === null ? 'a casa não cobra isto'
+                            : m.avaliavel === false ? `meta de ${fmtNum(asNum(m.meta_mensal))} no mês — não dá pra cobrar neste período`
+                              : bateu ? 'meta batida' : '')}
                       </p>
                     </div>
                   );

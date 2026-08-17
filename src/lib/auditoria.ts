@@ -73,8 +73,17 @@ export interface MetasMensais {
   vgv: number | null;
 }
 
+/**
+ * Metas calibradas pelo que a base mostra hoje, não por número redondo.
+ *
+ * Um corretor da casa carrega ~75 leads ativos e fez 2 visitas no mês. Meta
+ * boa é a que ele alcança se trabalhar direito, não a que humilha nem a que
+ * ele bate dormindo: 6 visitas é uma e meia por semana, o triplo do que
+ * fez, e é o volume que sustenta uma venda por mês num ciclo de imóvel de
+ * praia. VGV vem de uma venda no ticket médio da região.
+ */
 export const METAS_PADRAO: MetasMensais = {
-  visitasFeitas: 8, meetsFeitos: 8, propostasEnviadas: 4, vendas: 1, vgv: null,
+  visitasFeitas: 6, meetsFeitos: 8, propostasEnviadas: 3, vendas: 1, vgv: 650_000,
 };
 
 /**
@@ -83,15 +92,43 @@ export const METAS_PADRAO: MetasMensais = {
  * campo vazio que ele nunca preenche.
  */
 export const PRAZO_ETAPA_PADRAO: Record<string, number> = {
+  // sai no mesmo dia: lead que dorme em Entrada é lead que ninguém pegou
   'Entrada': 1,
+  // a cadência inteira vai até o dia 10; 15 dá folga e ainda força a
+  // decisão — avança, vira interesse futuro ou sai
   'Em Contato': 15,
   'Meet Agendado': 7,
-  'Meet Feito': 7,
+  // depois da reunião o cliente está quente; 5 dias sem avançar é esfriar
+  'Meet Feito': 5,
   'Visita Agendada': 7,
-  'Visita Feita': 5,
+  // o pós-visita é o momento mais caro do funil: 3 dias e a janela fecha
+  'Visita Feita': 3,
   'Negociação': 15,
+  // proposta na mesa por mais de um mês não é negociação, é esperança
   'Fechamento': 30,
 };
+
+/**
+ * Quanto cada frente vale na leitura da rodada.
+ *
+ * O registro pesa mais AGORA e isso é de propósito: com a base recém
+ * adotada, enquanto o CRM não contar a verdade nenhum outro número da casa
+ * significa coisa alguma. Conforme a fidelidade subir, este peso desce e o
+ * de resultado sobe — é o gestor que muda, na tela.
+ */
+export const PESOS_PADRAO: { dimensao: string; peso: number }[] = [
+  { dimensao: 'Registro fiel — o CRM conta o que aconteceu', peso: 30 },
+  { dimensao: 'Velocidade e cobertura da carteira', peso: 25 },
+  { dimensao: 'Qualidade da conversa e condução comercial', peso: 25 },
+  { dimensao: 'Resultado — visitas, reuniões e vendas', peso: 20 },
+];
+
+/**
+ * Estimativa de mercado para lead de imóvel no litoral de SC. Existe para
+ * a conta de dinheiro parado sair do zero — o gestor troca pelo custo real
+ * do Meta Ads na tela de Diretrizes.
+ */
+export const CUSTO_LEAD_PADRAO = 70;
 
 /**
  * O que é descarte legítimo. Sem esta lista, descarte é terra de ninguém —
@@ -339,8 +376,15 @@ cobrar meta que ninguém combinou é o jeito mais rápido de o corretor
 descartar o relatório inteiro — e ele estaria certo.
 
 a) METAS (cobranca.metas)
-   Vêm com realizado, meta já ajustada ao tamanho do período e o
-   percentual. NÃO recalcule o ajuste.
+   Vêm com realizado, meta já ajustada ao tamanho do período, a meta mensal
+   original e o percentual. NÃO recalcule o ajuste.
+   Duas marcas mandam aqui:
+   - avaliavel: false com realizado null → o CRM não registra aquilo (é o
+     caso de proposta enviada). QUEM CONTA É VOCÊ, lendo as conversas.
+     Escreva o número que encontrou e diga que veio da leitura.
+   - avaliavel: false com meta 0 → o período é curto demais para aquela
+     meta. Uma venda por mês não vira meia venda em quinze dias. Escreva
+     "meta mensal de X, período curto demais para cobrar" e siga.
    Escreva o que falta em UNIDADES, não em percentual: "faltaram 3 visitas"
    pesa mais que "você fez 62% da meta". Quando bateu, diga que bateu —
    meta batida sem reconhecimento ensina que não vale a pena bater.
@@ -831,6 +875,307 @@ Então:
   cobrança. Vai para "não é culpa dele", com a data em que começou.
 
 =========================================================================
+PARTE 14 — O CONSULTIVO: O QUE ELE FEZ × O QUE DEVERIA TER FEITO
+=========================================================================
+
+Esta é a parte do relatório que faz o corretor voltar na semana seguinte.
+Apontar erro qualquer planilha faz. Ensinar o que fazer no lugar, com a
+frase pronta, é o que separa o gerente de um painel de indicadores.
+
+COMO USAR ESTA PARTE
+Quando você identificar um dos padrões abaixo numa conversa, escreva os
+três blocos, sempre nesta ordem e nunca só o primeiro:
+
+  O QUE VOCÊ FEZ — o trecho, com data. Fato, sem adjetivo.
+  POR QUE ISSO CUSTA — o mecanismo, não a moral. Explique o que acontece
+    na cabeça do cliente e onde o dinheiro se perde. O corretor precisa
+    ENTENDER, não obedecer: quem entende corrige sozinho no próximo lead.
+  O QUE FAZER NO LUGAR — a ação, com a mensagem pronta usando o nome
+    daquele cliente e o que ele disse.
+
+Adapte sempre ao caso. As frases abaixo são o esqueleto do raciocínio, não
+texto para copiar e colar. Mensagem genérica no relatório ensina o corretor
+a mandar mensagem genérica no WhatsApp.
+
+-------------------------------------------------------------------------
+A. O CANAL: qual formato para quê
+-------------------------------------------------------------------------
+
+Antes dos padrões, a régua de canal. Grande parte dos erros de atendimento
+é escolha errada de formato, e o corretor nunca ouviu isso de ninguém.
+
+TEXTO — para tudo que o cliente precisa RELER ou MOSTRAR para alguém.
+Valor, condição de pagamento, metragem, endereço, data e hora combinadas.
+O cliente vai mostrar para o cônjuge, vai reler à noite, vai comparar. Se
+está em áudio, ele não consegue — e o que ele não consegue mostrar não
+entra na decisão da família.
+
+ÁUDIO — para o que é relação, não informação. Explicar um contexto,
+transmitir entusiasmo, responder algo complexo com calor humano. Até 40
+segundos. Acima disso o cliente adia ouvir, e adiar ouvir vira nunca.
+Áudio NUNCA é o primeiro contato de alguém que não conhece a voz dele, e
+NUNCA é o único toque de um lead: quem manda um áudio de 5 segundos e some
+não atendeu — avisou que existe.
+
+LIGAÇÃO — para destravar. Quando a conversa por escrito empacou, quando há
+objeção real, quando o cliente sumiu depois de sinal de interesse, quando
+o assunto tem mais de duas variáveis. Voz resolve em 4 minutos o que texto
+não resolve em 4 dias. Regra: ligou, ANOTOU — ligação sem anotação é
+trabalho que não existe para a casa, e é o corretor quem perde.
+
+VÍDEO CURTO — para o que precisa ser VISTO. Vista da sacada, acabamento,
+o caminho da praia até o prédio, a obra andando. Vale mais que dez fotos
+e dá sensação de exclusividade quando é gravado na hora, com o nome do
+cliente dito no começo.
+
+PRESENCIAL — para decidir. Toda a conversa anterior existe para chegar
+aqui. Se a conversa está boa e não caminha para uma data, o canal está
+sendo usado como fim, e não como meio.
+
+O ERRO MAIS COMUM DE CANAL: cliente que só escreve recebendo áudio longo.
+Ele escreve porque está no trabalho, porque prefere ler, ou porque quer
+registro. Responder em áudio ignora tudo isso. Anote como desalinho de
+canal — e o contrário também (cliente que manda áudio e recebe texto seco).
+
+-------------------------------------------------------------------------
+B. OS PADRÕES — o que fez, por que custa, o que fazer
+-------------------------------------------------------------------------
+
+1) DISPAROU CONTEÚDO SEM PERGUNTA
+Fez: mandou notícia da região, tese de investimento, matéria da imprensa.
+Nenhuma pergunta no fim.
+Custa: informação sem pergunta não pede resposta, e conversa que não pede
+resposta acaba. O cliente lê, acha interessante e não responde — e o CRM
+registra "toque feito" enquanto o lead esfria. Pior: gastou a atenção dele
+sem descobrir nada sobre ele.
+No lugar: todo conteúdo sai com uma ponte pessoal e uma pergunta que só
+aquele cliente pode responder. "Mariane, essa notícia muda o jogo pra quem
+tem imóvel pra trocar. Falando nisso: aquele seu de São Bento, você ainda
+pensa em colocar na negociação? Se sim, levanto o valor dele esta semana."
+
+2) ÁUDIO COMO ÚNICO TOQUE
+Fez: mandou um áudio de poucos segundos e não voltou.
+Custa: o cliente não sabe quem é, não tem nada escrito para reler e não
+tem o que responder. Num lead de indicação isso é pior ainda: veio com
+confiança emprestada de alguém e recebeu menos atenção que um lead frio.
+No lugar: áudio curto de apresentação SEMPRE acompanhado de texto com o
+que foi dito e uma pergunta. "Josemeri, mandei um áudio pra você me
+conhecer. Resumindo: sou o Breno, da Nox, o Valdir me passou seu contato.
+Você chegou a ver o Barra View pessoalmente? Consigo te mostrar duas
+opções parecidas — prefere quarta 18h ou sábado de manhã?"
+
+3) RESPONDEU A PERGUNTA E PAROU ALI
+Fez: o cliente perguntou metragem, andar ou preço; ele respondeu certo,
+rápido e completo. E acabou.
+Custa: pergunta de produto é mão levantada. Responder bem e não propor
+nada devolve a bola para o cliente decidir sozinho — e cliente sozinho
+adia. É o erro mais frequente de corretor tecnicamente bom.
+No lugar: resposta + ancoragem + próximo passo, na mesma mensagem. "São 8
+andares, tenho duas opções: 5º e 6º, as duas com vista pro verde e o mar
+ao fundo. As duas últimas desse padrão saíram em duas semanas. Consigo te
+mostrar pessoalmente sábado 10h ou terça 18h — qual fica melhor?"
+
+4) FECHOU A CONVERSA SEM DATA
+Fez: encerrou com "qualquer coisa me chama", "fico à disposição", "me avisa
+quando puder".
+Custa: pergunta aberta não tem resposta obrigatória, então não tem
+resposta. Conversa sem data não continua sozinha — ela depende de o cliente
+lembrar, e ele tem outras dez coisas na frente.
+No lugar: SEMPRE duas opções fechadas de horário. "Consigo terça 18h ou
+quarta 9h, qual fica melhor?" Duas opções dão a sensação de escolha e
+tiram a opção de não responder. Se ele não puder nenhuma, ele propõe uma
+terceira — e aí a data existe do mesmo jeito.
+
+5) NÃO RETORNOU DEPOIS DA VISITA
+Fez: levou o cliente, a visita aconteceu, e a conversa parou.
+Custa: é o desperdício mais caro do funil. O cliente sai da visita no pico
+de interesse e essa curva desce todo dia. Enquanto ele espera, o corretor
+do concorrente está mandando proposta. Negócio pronto se perde aqui mais
+que em qualquer outro ponto.
+No lugar: mensagem no MESMO dia, sem exceção, com três coisas: duas fotos
+do que ele mais olhou, a condição por escrito, e a proposta de próximo
+passo. "Jean, obrigado pela manhã de hoje. Mandei as fotos da sacada e da
+cozinha, que foi o que você mais olhou. A condição que conversamos:
+[valor], entrada [x], saldo em [y]. Vou segurar a unidade até sexta.
+Consigo te ligar amanhã 18h pra fechar os detalhes?"
+
+6) PROPOSTA ENVIADA E NUNCA COBRADA
+Fez: mandou a proposta e ficou esperando.
+Custa: o lead mais quente da carteira sendo tratado como o mais frio.
+Proposta sem cobrança comunica que você não acredita nela — e o cliente
+lê isso. Silêncio depois de proposta quase nunca é "não": é dúvida que
+ninguém respondeu.
+No lugar: cobrança com prazo e com pergunta específica, não "e aí, pensou?".
+"Valdir, sobre a proposta do 305B que te mandei dia 8: o que ficou pesando
+mais, o valor da entrada ou o prazo do saldo? Pergunto porque nos dois eu
+tenho margem pra conversar com a construtora — mas preciso levar até sexta."
+
+7) RECUPERAÇÃO GENÉRICA
+Fez: mandou "oi, tudo bem?" ou "e aí, alguma novidade?" no lead que esfriou.
+Custa: não é recuperação, é ocupação. O cliente parou por um motivo, e
+nada mudou desde então — então a resposta continua sendo silêncio. E cada
+mensagem vazia ensina o cliente a ignorar as próximas.
+No lugar: ângulo NOVO, obrigatoriamente. Unidade que abriu, condição que
+mudou, obra que avançou, cliente parecido que fechou, notícia que afeta o
+que ELE queria. "Ander, apareceu exatamente o que você descreveu: vista
+aberta permanente pro mar, mobiliado, na faixa que conversamos. Antes de
+te mandar, me diz uma coisa — a mudança pra Floripa ficou de pé?"
+
+8) FALOU PREÇO ANTES DE ANCORAR VALOR
+Fez: o cliente perguntou quanto custa e ele respondeu o número, seco.
+Custa: número sem contexto é sempre caro. O cliente não tem com o que
+comparar, então compara com o que ele imaginou — e o que ele imaginou é
+sempre menos.
+No lugar: uma linha de valor antes do número, e uma pergunta depois. "É
+frente mar de verdade, não vista lateral, e a metragem privativa é [x] —
+que é o que faz diferença na revenda. Fica em [valor], com entrada
+facilitada em [y]. Isso está dentro do que você pensou?"
+
+9) NÃO TROUXE QUEM DECIDE
+Fez: o cliente mencionou o cônjuge, o pai ou o sócio — e a conversa
+continuou só com ele.
+Custa: semanas negociando com quem não assina. E pior: a pessoa que decide
+chega no fim sem contexto nenhum e a resposta padrão de quem não
+participou é "não".
+No lugar: traga a pessoa para dentro no momento em que ela é citada.
+"Larissa, como o imóvel de vocês entra na negociação, faz sentido o seu pai
+participar da conversa desde já — posso contar com ele no sábado também?
+Assim ele tira as dúvidas dele direto comigo."
+
+10) O CLIENTE DEU O PRAZO E ELE IGNOROU
+Fez: o cliente disse "preciso até dezembro", "meu aluguel vence em março",
+"quero antes do casamento" — e o prazo nunca mais apareceu.
+Custa: o prazo é a maior alavanca de urgência que existe, e é o CLIENTE
+que a entrega de graça. Ignorar é jogar fora o argumento mais forte da
+negociação.
+No lugar: use o prazo dele como régua de tudo. "Irene, você me disse que
+precisa de entrega até 27/28. Esse é justamente o prazo desse, e é o único
+na região nessa janela — por isso quis falar com você primeiro."
+
+11) TRATOU "VOU PENSAR" COMO RESPOSTA
+Fez: o cliente disse "vou pensar" ou "vou ver com minha esposa" e a
+conversa encerrou ali.
+Custa: essas frases quase nunca são a objeção — são a saída educada. A
+objeção real ficou escondida e vai continuar lá na próxima conversa.
+Ninguém decide um imóvel "pensando"; decide-se resolvendo uma dúvida.
+No lugar: uma pergunta que faça a dúvida real aparecer, sem pressionar.
+"Claro, é uma decisão grande. Só pra eu te ajudar melhor: o que mais pesa
+na hora de pensar — o valor, o prazo de entrega ou a localização? Se for
+alguma dessas eu já te adianto o que dá pra fazer."
+
+12) OBJEÇÃO DE FINANCIAMENTO NÃO TRATADA
+Fez: o cliente falou que não fechou algo antes por causa de financiamento,
+ou que está com o crédito apertado — e a conversa seguiu falando do imóvel.
+Custa: crédito é objeção de PROCESSO, não de produto. Enquanto não for
+resolvido, nenhuma unidade, preço ou vista muda a resposta. Continuar
+oferecendo imóvel para quem tem trava de crédito é gastar as duas agendas.
+No lugar: puxe o problema para dentro e ofereça caminho. "Pedro, você
+comentou que o financiamento travou da outra vez. Me conta o que aconteceu
+— em muitos casos é só a composição de renda ou o banco errado. Tenho um
+parceiro que resolve isso em uma conversa, e aí a gente volta pro imóvel
+com o crédito já de pé."
+
+13) CLIENTE COMPARANDO E ELE NÃO PERGUNTOU
+Fez: o cliente mencionou outro imóvel, outro corretor ou outra imobiliária,
+e ele ignorou ou só defendeu o próprio produto.
+Custa: cliente comparando é cliente EM DECISÃO — é o melhor momento do
+funil, e o mais fácil de perder. Sem saber o que agradou no concorrente,
+o corretor argumenta no escuro.
+No lugar: pergunte antes de defender. "Legal você estar vendo outras
+opções, é o certo mesmo. O que te agradou mais lá? Pergunto porque se for
+[x] eu tenho um argumento, e se for [y] eu talvez nem seja o melhor pra
+você — prefiro te falar a verdade."
+
+14) MANDOU RAJADA DE MENSAGENS
+Fez: sete mensagens curtas seguidas, ou cinco fotos no mesmo minuto sem
+uma linha explicando.
+Custa: o cliente recebe um bloco e não sabe o que responder, então não
+responde nada. Material sem curadoria comunica "não pensei em você", e é
+o oposto do que o volume tentava demonstrar.
+No lugar: uma mensagem organizada, com o material escolhido e a razão da
+escolha. "Separei três, não mandei todas de propósito: a primeira é a que
+mais combina com o que você falou de vista permanente, as outras duas são
+alternativas na mesma faixa. Quer que eu te mostre a primeira ao vivo?"
+
+15) MENSAGEM COPIADA ENTRE CLIENTES
+Fez: o mesmo texto, palavra por palavra, para clientes diferentes.
+Custa: o cliente percebe. Todo mundo já recebeu disparo e reconhece o
+formato — e no instante em que reconhece, ele deixa de ser cliente e passa
+a ser lista. Num produto de ticket alto isso custa a relação inteira.
+No lugar: o conteúdo pode ser o mesmo, a abertura e o fechamento nunca.
+Uma linha ligando ao que aquele cliente disse, e uma pergunta dele. Custa
+vinte segundos por lead e muda a taxa de resposta.
+
+16) DEMOROU A RESPONDER DENTRO DA CONVERSA
+Fez: o cliente perguntou algo e a resposta veio dias depois.
+Custa: no primeiro contato a demora custa o lead; DENTRO da conversa
+custa mais, porque ali ele já estava engajado. Cliente que espera três
+dias por uma resposta conclui que não é prioridade — e ele está certo.
+No lugar: responda o que dá na hora, mesmo sem a resposta completa.
+"Recebi sua pergunta. Vou confirmar a metragem exata com a construtora
+ainda hoje e te trago até as 18h." Prazo declarado e cumprido vale mais
+que resposta perfeita atrasada.
+
+17) MARCOU E NÃO CONFIRMOU A VÉSPERA
+Fez: agendou visita ou reunião e não falou mais nada até o dia.
+Custa: falta de confirmação é a causa número um de no-show. O cliente
+esquece, se enrola, ou desiste sem avisar — e o corretor perde a manhã e
+a unidade que segurou.
+No lugar: confirmação na véspera que também prepara a visita. "Larissa,
+confirmando amanhã 10h. Te mando agora a localização e duas fotos do
+decorado pra você já ir com uma ideia. Alguma coisa específica que você
+quer que eu deixe separado pra ver?"
+
+18) LEAD DE ALTO VALOR TRATADO COMO OS OUTROS
+Fez: o lead com o maior ticket e o briefing mais completo recebeu a mesma
+atenção — ou menos — que leads frios.
+Custa: é a definição de prioridade invertida. Quem descreveu exatamente o
+que quer e tem capacidade é o mais perto de comprar, e é justamente quem
+some quando não recebe atenção.
+No lugar: a carteira tem ordem. Todo dia começa pelos quentes e pelos de
+maior valor em jogo, e o resto entra no tempo que sobra. Se não sobrar
+tempo, sobrou para quem não ia comprar mesmo.
+
+19) NÃO QUALIFICOU E JÁ MARCOU VISITA
+Fez: agendou visita sem saber finalidade, faixa de valor ou como o cliente
+pretende pagar.
+Custa: visita é o recurso mais caro do negócio — tempo, deslocamento e
+unidade segurada. Levar quem não podia comprar queima os três, e ainda
+produz a conclusão errada de que "o lead é ruim".
+No lugar: qualificar não é interrogar. É uma pergunta natural antes do
+esforço pesado. "Antes de marcar, só pra eu levar as opções certas: você
+pensa em usar financiamento ou seria à vista/consórcio? E a faixa que te
+deixa confortável fica em quanto?"
+
+20) DEIXOU O LEAD EM "INTERESSE FUTURO" E ESQUECEU
+Fez: o cliente disse que compra ano que vem e o lead virou arquivo.
+Custa: interesse futuro sem data marcada é cemitério com nome bonito.
+Quando a hora chegar, quem estiver na frente dele leva a venda — e não
+vai ser quem sumiu por doze meses.
+No lugar: interesse futuro SEMPRE com data de retomada e um motivo para
+voltar antes. "Perfeito, então a gente se fala em março. Vou te mandar uma
+mensagem quando a obra chegar na laje do seu andar — assim você acompanha
+mesmo de longe."
+
+-------------------------------------------------------------------------
+C. COMO ESCOLHER O QUE ENSINAR
+-------------------------------------------------------------------------
+
+Não despeje os vinte. O relatório escolhe de três a cinco, na ordem:
+
+1. O que aparece em MAIS leads. Padrão que se repete é hábito, e hábito é
+   o que a instrução da rodada precisa mudar.
+2. O que custa mais caro no lead de maior valor da amostra.
+3. O que ele consegue executar amanhã sem depender de ninguém.
+
+E o mais importante: para CADA um, mostre que a capacidade já está lá.
+Se o corretor fez certo em algum lead da própria amostra, cite esse lead
+ao lado do erro. "Na Irene você respondeu em 2 minutos com número exato e
+duas opções. No Ander, a mesma semana, a conversa morreu num comparativo
+de mobília." Mesma pessoa, mesma semana — não dá para alegar carteira ruim
+nem falta de tempo, e o corretor sai da reunião sabendo que sabe fazer.
+
+=========================================================================
 ORDEM DE TRABALHO
 =========================================================================
 1. Leia meta.avisos e as diretrizes. Saiba o que a casa combinou ANTES de
@@ -1096,6 +1441,16 @@ blocos, nesta ordem — nenhum ponto sai sem o último:
 - O QUE FAZER NO LUGAR — o consultivo. Ação executável amanhã, com a
   mensagem pronta quando fizer sentido. Sem isto, o ponto não entra.
 
+A PARTE 14 das diretrizes traz a biblioteca dos padrões mais comuns deste
+negócio, cada um com o mecanismo do custo e a mensagem que resolve. Use-a
+como esqueleto do raciocínio e ADAPTE ao caso: escreva com o nome daquele
+cliente e o que ele disse. Mensagem genérica no relatório ensina o corretor
+a mandar mensagem genérica no WhatsApp.
+
+Em cada ponto, quando existir, cite um lead da PRÓPRIA amostra em que ele
+fez certo a mesma coisa. Mesma pessoa, mesma semana — é o argumento mais
+difícil de contestar e o único que mostra que a capacidade já está lá.
+
 ## 4. O combinado — o que a casa pode cobrar
 
 Vem pronto no bloco "cobranca" do pacote. Sua função é ler, escrever em
@@ -1110,6 +1465,9 @@ destravar.
 
 a) METAS. Uma linha por meta, com realizado, meta do período e o que falta.
    A meta já vem ajustada ao tamanho do período — não recalcule.
+   Quando vier avaliavel: false, NÃO marque como não cumprida: ou o CRM não
+   registra aquilo (e quem conta é você, lendo as conversas), ou o período é
+   curto demais para a meta fazer sentido. Diga qual dos dois.
    Diga o que falta em UNIDADES: "faltaram 3 visitas" pesa mais que "você
    fez 62% da meta". Quando bateu, diga que bateu.
 
@@ -1466,7 +1824,7 @@ lá precisa estar aqui, com o MESMO texto. Não resuma para o JSON.
   "_secao_4": "o combinado",
   "combinado": {
     "metas": [
-      { "indicador": "", "realizado": null, "meta": null, "faltou": "", "bateu": null }
+      { "indicador": "", "realizado": null, "meta": null, "meta_mensal": null, "faltou": "", "bateu": null, "avaliavel": true, "origem_do_numero": "crm | leitura" }
     ],
     "leads_parados_alem_do_prazo": [
       { "lead": "", "etapa": "", "dias_na_etapa": null, "prazo_da_etapa": null, "estimado": false }
@@ -1717,11 +2075,11 @@ export const DIRETRIZES_PADRAO: DiretrizesAuditoria = {
   },
   horarioUtil: { inicioHora: 9, fimHora: 20, contarSabado: true, contarDomingo: false },
   criteriosDescarteValido: CRITERIOS_DESCARTE_PADRAO,
-  pesosAvaliacao: [],
+  pesosAvaliacao: PESOS_PADRAO,
   metasMensais: METAS_PADRAO,
   prazoMaximoEtapaDias: PRAZO_ETAPA_PADRAO,
   qualificacaoObrigatoria: QUALIFICACAO_OBRIGATORIA_PADRAO,
-  custoMedioLead: null,
+  custoMedioLead: CUSTO_LEAD_PADRAO,
   tomDoRelatorio: 'Direto, em fatos e acordos. Sempre com data e trecho como evidência. Nunca em traços de personalidade.',
   prompts: {
     principal: PROMPT_PRINCIPAL_PADRAO,
@@ -1825,12 +2183,12 @@ export function normalizarDiretrizes(raw: unknown): DiretrizesAuditoria {
     qualificacaoObrigatoria: Array.isArray(d.qualificacaoObrigatoria) && d.qualificacaoObrigatoria.length
       ? d.qualificacaoObrigatoria.filter((s: unknown) => typeof s === 'string' && s.trim())
       : QUALIFICACAO_OBRIGATORIA_PADRAO,
-    custoMedioLead: meta(d.custoMedioLead, null),
-    pesosAvaliacao: Array.isArray(d.pesosAvaliacao)
+    custoMedioLead: meta(d.custoMedioLead, CUSTO_LEAD_PADRAO),
+    pesosAvaliacao: Array.isArray(d.pesosAvaliacao) && d.pesosAvaliacao.length
       ? d.pesosAvaliacao
           .filter((x: Record<string, unknown>) => x && typeof x.dimensao === 'string' && x.dimensao.trim())
           .map((x: Record<string, unknown>) => ({ dimensao: String(x.dimensao), peso: num(x.peso, 0, 100, 0) }))
-      : [],
+      : PESOS_PADRAO,
     tomDoRelatorio: txt(d.tomDoRelatorio, DIRETRIZES_PADRAO.tomDoRelatorio),
     // campo vazio cai no padrão: quem salvou a régua antes dos prompts
     // existirem não fica com o bloco em branco no pacote

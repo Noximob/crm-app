@@ -336,11 +336,25 @@ export interface Panorama {
 
 export interface LinhaMeta {
   indicador: string;
-  realizado: number;
+  /**
+   * null quando o CRM não registra aquilo — proposta enviada não é evento
+   * no sistema. Zero diria "ele não fez nenhuma", que é diferente de "não
+   * sabemos", e quem conta nesse caso é a leitura das conversas.
+   */
+  realizado: number | null;
   /** já ajustada ao tamanho do período — meta mensal em 7 dias vale 7/30 */
   meta: number | null;
+  /** o que a casa combinou para o mês inteiro, sem ajuste */
+  meta_mensal: number | null;
   pct: number | null;
   bateu: boolean | null;
+  /**
+   * false quando o período é curto demais para aquela meta fazer sentido.
+   * Uma venda por mês vira "0,2 venda" numa semana, e cobrar 0,2 venda é o
+   * tipo de número que faz o corretor rir do relatório inteiro. Nesses
+   * casos o veredito fica em aberto e o texto explica o porquê.
+   */
+  avaliavel: boolean;
 }
 
 export interface LeadEstagnado {
@@ -411,13 +425,22 @@ export function computarCobranca(
   const dias = Math.max(1, Math.round((fimMs - iniMs) / DIA));
   const fator = dias / 30; // as metas são mensais
 
-  const linha = (indicador: string, realizado: number, metaMes: number | null): LinhaMeta => {
-    if (metaMes === null) return { indicador, realizado, meta: null, pct: null, bateu: null };
-    const meta = Math.round(metaMes * fator * 10) / 10;
+  /** `inteiro` marca o que só acontece em unidades — venda não é 0,2. */
+  const linha = (indicador: string, realizado: number | null, metaMes: number | null, inteiro = true): LinhaMeta => {
+    if (metaMes === null) {
+      return { indicador, realizado, meta: null, meta_mensal: null, pct: null, bateu: null, avaliavel: false };
+    }
+    const bruta = metaMes * fator;
+    // para baixo de propósito: meia venda arredondada para cima vira cobrança
+    // de mês inteiro em meio mês, e a régua tem que ser defensável na reunião
+    const meta = inteiro ? Math.floor(bruta) : Math.round(bruta * 10) / 10;
+    // meta que arredonda para zero não é meta: o período é curto demais
+    const avaliavel = meta >= 1 && realizado !== null;
     return {
-      indicador, realizado, meta,
-      pct: meta > 0 ? Math.round((realizado / meta) * 100) : null,
-      bateu: realizado >= meta,
+      indicador, realizado, meta, meta_mensal: metaMes,
+      pct: avaliavel && meta > 0 ? Math.round((realizado! / meta) * 100) : null,
+      bateu: avaliavel ? realizado! >= meta : null,
+      avaliavel,
     };
   };
 
@@ -425,8 +448,11 @@ export function computarCobranca(
   const metas = [
     linha('visitas_feitas', p.visitas_feitas, m.visitasFeitas),
     linha('meets_feitos', p.meets_feitos, m.meetsFeitos),
+    // o CRM nao registra proposta como evento: quem conta e a leitura
+    linha('propostas_enviadas', null, m.propostasEnviadas),
     linha('vendas', p.vendas, m.vendas),
-    linha('vgv', p.vgv, m.vgv),
+    // VGV é dinheiro, não contagem: proporção fracionada faz sentido
+    linha('vgv', p.vgv, m.vgv, false),
   ];
 
   const estagnados: LeadEstagnado[] = [];
