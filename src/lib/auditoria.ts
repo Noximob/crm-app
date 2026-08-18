@@ -888,6 +888,169 @@ do atendimento for áudio, registre isso como achado estrutural: o CRM nunca
 vai refletir o que foi dito, e a auditoria fica cega nessa parte.
 
 =========================================================================
+O ÁUDIO TRANSCRITO — o que só ele mostra
+=========================================================================
+
+Texto o corretor revisa antes de mandar. Áudio não. É por isso que o áudio
+é a fonte mais honesta que esta auditoria tem: nele aparece o vendedor que
+ele é quando ninguém está olhando, e é lá que estão os achados que nenhuma
+outra fonte entrega.
+
+Quando houver transcrição, passe por TODOS os pontos abaixo. Cada um vira
+número em qualidade_conversa e, quando doer, achado na seção 3.
+
+1) QUANTO TEMPO ATÉ CHEGAR AO PONTO
+Conte os segundos entre o começo e a primeira informação útil. Vinte
+segundos de "oi, tudo bem, aqui é o fulano, espero que esteja tudo ótimo,
+então, é o seguinte…" é um quarto da atenção do cliente gasto antes de
+começar. Registre a mediana e cite o pior caso.
+
+2) ELE SE IDENTIFICOU
+Nome e imobiliária, no primeiro áudio para quem não o conhece. Cliente que
+recebe áudio de número desconhecido sem saber quem é apaga sem ouvir.
+Conte em quantos primeiros contatos por áudio ele se identificou.
+
+3) O ÁUDIO TEM FIM, OU SÓ PARA
+Bom áudio termina com pedido: uma pergunta, duas opções de horário, um
+"me confirma". Áudio que termina em "então é isso" devolve a bola para
+ninguém. Conte a proporção que termina pedindo algo.
+
+4) INFORMAÇÃO QUE PRECISAVA ESTAR ESCRITA — o erro de canal mais caro
+Valor, condição de pagamento, metragem, endereço, data e hora combinadas.
+O cliente não consegue reler áudio, não consegue mostrar para o cônjuge e
+não consegue conferir. Liste toda vez que um número importante saiu só em
+áudio e NÃO foi repetido por escrito. Isso é achado de processo, e o
+conserto é uma linha: "manda o áudio se quiser, mas repete o valor
+escrito embaixo".
+
+5) PROMESSA DITA EM ÁUDIO   ← risco, prioridade máxima
+Desconto, condição especial, prazo de entrega, garantia de valorização,
+reserva de unidade. Dito em áudio, some do CRM e some da memória de todo
+mundo menos do cliente — que vai cobrar. Toda promessa em áudio vai para a
+seção de risco com o trecho transcrito e o horário. Se a promessa não
+puder ser cumprida pela casa, é o achado mais grave do relatório.
+
+6) SEGURANÇA SOBRE O PRODUTO
+Marque hesitação: "acho que", "se não me engano", "vou confirmar e te
+falo", "acredito que seja". Uma ou outra é honestidade — dizer que vai
+confirmar é melhor que inventar. Um padrão delas é despreparo, e o cliente
+sente. Conte quantas por áudio e em quantos leads apareceu.
+Atenção: se ele prometeu confirmar, veja se VOLTOU. Prometer e não voltar
+é pior que não saber.
+
+7) NÚMERO QUE NÃO BATE
+Compare o que ele diz em áudio com o que está no CRM e nos outros áudios:
+metragem, valor, entrada, prazo de entrega, andar. Corretor que diz 620
+mil numa conversa e 640 mil noutra para o mesmo produto tem um problema de
+tabela, e o cliente que comparar vai achar. Liste as divergências.
+
+8) COMO ELE FALA — só o que compromete a venda
+Não é aula de português. Registre apenas o que o cliente percebe e pesa
+contra: muleta repetida a ponto de atrapalhar ("né" a cada frase), gíria
+com cliente de ticket alto, atropelo (falar rápido demais para caber tudo
+no áudio), tom apressado ou desanimado num lead quente.
+Comportamento observado, com trecho. Nunca característica da pessoa.
+
+9) ELE RESPONDEU O QUE FOI PERGUNTADO
+Cliente perguntou X, o áudio responde X? Ou responde o que o corretor
+queria falar? Desvio de pergunta é o sinal mais comum de despreparo — e o
+cliente que percebe para de perguntar.
+
+10) O ÁUDIO É RESPOSTA OU É EMPURRÃO
+Áudio pedido pelo cliente ("me manda um áudio explicando") é serviço.
+Áudio não pedido, longo, com informação que cabia em texto, é o corretor
+economizando o tempo dele às custas do tempo do cliente. Diga qual dos
+dois predomina.
+
+11) ENERGIA NO LEAD CERTO
+Compare o áudio do lead de maior valor com o do lead frio. Se o pitch mais
+caprichado foi para quem não ia comprar, isso é prioridade invertida — e
+só o áudio mostra, porque no texto todo mundo escreve igual.
+
+12) O QUE ELE FALA DE TERCEIROS
+Concorrente, colega, construtora, cliente antigo. Áudio solta a língua.
+Qualquer coisa que exponha a casa vai para a seção de risco, com trecho.
+
+REGRAS AO USAR TRANSCRIÇÃO
+- Cite sempre como transcrição, com data e horário: "no áudio de 25/07 às
+  14h10 (transcrito), você diz…". Ela erra nome próprio e número, e o
+  corretor precisa poder contestar sabendo de onde saiu.
+- Se a transcrição sair truncada ou incompreensível, diga que saiu, e trate
+  aquele ponto como não verificável. Não preencha com suposição.
+- Não transcreva por esporte: áudio que não muda nenhum veredito continua
+  valendo só como contagem.
+- Áudio de VOZ DO CLIENTE também conta, e às vezes vale mais: é lá que
+  aparece a objeção real, o prazo, e quem decide junto. Quando o cliente
+  mandar áudio longo, esse é dos que vale transcrever.
+
+=========================================================================
+COMO ELE FALA DO PRODUTO, E COMO ELE PERGUNTA
+=========================================================================
+
+Vale para texto E para áudio transcrito — no áudio pesa mais, porque é lá
+que o corretor solta o discurso inteiro sem revisar.
+
+A) O PITCH — quando ele apresenta o imóvel
+
+O que separa apresentação de despejo de informação:
+
+  BENEFÍCIO, NÃO CARACTERÍSTICA. "Tem vista para o verde" é
+  característica. "A vista é permanente, porque na frente é área de
+  preservação e não pode subir prédio" é benefício — diz o que aquilo
+  significa para quem vai morar ou revender. Conte quantas apresentações
+  ficaram só na característica.
+
+  PARA AQUELE CLIENTE. O pitch usa o que ELE disse querer, ou é o mesmo
+  texto que serviria para qualquer um? Cliente que falou em permuta e ouve
+  um pitch sobre lazer não foi escutado. Compare o que o cliente pediu com
+  o que foi apresentado.
+
+  VALOR ANTES DO PREÇO. Número sem contexto é sempre caro. Veja se veio
+  uma linha de valor antes de dizer quanto custa.
+
+  PROVA, SEM EXAGERO. Obra que avançou, unidade que saiu, revenda da
+  região, quem já comprou. Prova concreta sustenta preço; superlativo solto
+  ("é o melhor da praia", "imperdível") não sustenta nada e ainda queima
+  credibilidade. Se houver promessa que a casa não pode garantir, isso sobe
+  para a seção de risco.
+
+  TERMINA PEDINDO ALGO. Apresentação que acaba sem pergunta e sem convite
+  é informação entregue e conversa encerrada.
+
+  TAMANHO. Em áudio, 40 segundos bem ditos valem mais que três minutos.
+  Áudio longo de apresentação quase sempre é o corretor pensando em voz
+  alta — e o cliente adia ouvir, o que vira nunca ouvir.
+
+B) AS PERGUNTAS — como ele descobre
+
+  ABERTA OU FECHADA. "Você quer 2 ou 3 quartos?" fecha em duas opções.
+  "Me conta como vocês imaginam usar o imóvel" abre e entrega informação
+  que ele não pediu. As duas servem, em momentos diferentes: aberta para
+  descobrir, fechada para fechar. O erro é só ter as fechadas.
+
+  DESCOBRIU O QUE IMPORTA? Finalidade, prazo, quem decide junto e como
+  pretende pagar. São quatro; conte quantas ele levantou por conversa e em
+  quantas levantou todas.
+
+  UMA POR VEZ. Três perguntas na mesma mensagem viram interrogatório e o
+  cliente responde só a última — quando responde.
+
+  DEVOLVEU O QUE OUVIU? A melhor pergunta nasce da resposta anterior.
+  "Você falou que o seu pai decide junto — ele já viu as fotos?" mostra
+  escuta. Pergunta que ignora o que o cliente acabou de dizer mostra
+  roteiro.
+
+  PERGUNTOU, E DEPOIS? Perguntar e não usar a resposta é pior que não
+  perguntar: o cliente entregou informação e viu que não serviu para nada.
+
+O QUE ISSO VIRA NO RELATÓRIO
+Números em qualidade_conversa, e pelo menos um exemplo de cada lado — o
+melhor pitch e a melhor pergunta do período viram material de treino na
+seção 2; o pior vira ensinamento na seção 3, com a versão reescrita do
+jeito que deveria ter sido dita. Sempre com o trecho literal, e dizendo
+quando veio de áudio transcrito.
+
+=========================================================================
 PARTE 10 — O QUE MAIS CUSTA DINHEIRO
 =========================================================================
 Procure sempre, mesmo que o resto esteja bom.
@@ -1453,12 +1616,27 @@ enviou e em que ponto da conversa, e trate o conteúdo como não verificável.
 Nunca suponha o que foi dito.
 
 MAS existe transcrição local disponível nesta máquina, e ela muda o que dá
-para afirmar. Use quando o áudio for decisivo — e ele é decisivo em três
-casos, que valem o trabalho:
+para afirmar. Ela é barata (roda a ~5x o tempo real, sem custo por uso), e
+o áudio é a fonte mais honesta que existe nesta auditoria: texto o corretor
+revisa antes de mandar, áudio não.
 
+TRANSCREVA SEMPRE:
   1. o áudio foi o ÚNICO toque daquele cliente no período
   2. o cliente respondeu ao áudio com sinal de compra, ou sumiu logo depois
-  3. o áudio tem mais de 1 minuto num lead de ticket alto
+  3. áudio acima de 1 minuto em qualquer lead de ticket alto
+  4. o áudio veio logo antes ou logo depois de visita, reunião ou proposta
+  5. o CLIENTE mandou áudio longo — é onde aparecem a objeção real, o prazo
+     e quem decide junto
+  6. o lead está travado e a última coisa que aconteceu foi um áudio
+  7. você precisa de pelo menos 3 ou 4 áudios do corretor para conseguir
+     dizer QUALQUER coisa sobre pitch, perguntas e promessas — se ele usa
+     áudio, transcreva uma amostra mesmo sem nenhum gatilho acima
+
+NÃO TRANSCREVA:
+  - áudio curto de resposta social ("valeu", "beleza", "bom dia")
+  - áudio em lead que você já classificou por outros motivos e cujo
+    conteúdo não muda nenhum veredito
+  - conversa inteira por esporte
 
 Como fazer:
   a) baixe o áudio pelo menu da mensagem no WhatsApp Web
@@ -1867,6 +2045,12 @@ dizem QUAIS foram os textos repetidos nem em que conversas ele sumiu.
   passo proposto
 - Personalização: quantas mensagens eram copiadas entre leads — e CITE os
   textos repetidos, com os nomes de quem recebeu cada um
+- Pitch: em quantas apresentações ele falou BENEFÍCIO e não só
+  característica, em quantas usou o que aquele cliente pediu, e em quantas
+  terminou pedindo algo. Cite o melhor pitch do período inteiro
+- Perguntas: quantas por conversa, em quantas ele levantou as quatro que
+  importam (finalidade, prazo, quem decide, como paga), e em quantas usou
+  depois a resposta que recebeu. Cite a melhor pergunta do período
 
 ## 9. Oportunidade perdida — dinheiro na mesa
 
@@ -2177,6 +2361,26 @@ lá precisa estar aqui, com o MESMO texto. Não resuma para o JSON.
     "cliente_devolveu_sinal_pct": null,
     "pergunta_aberta_pct": null,
     "objecao_tratada_pct": null,
+    "pitch_com_beneficio_pct": null,
+    "pitch_personalizado_pct": null,
+    "pitch_terminou_pedindo_algo_pct": null,
+    "descoberta_completa_pct": null,
+    "perguntas_por_conversa": null,
+    "usou_a_resposta_depois_pct": null,
+    "audio_segundos_ate_o_ponto_mediana": null,
+    "audio_se_identificou_pct": null,
+    "audio_terminou_pedindo_algo_pct": null,
+    "audio_com_numero_nao_repetido_por_escrito": null,
+    "audio_com_promessa": null,
+    "audio_com_hesitacao_de_produto": null,
+    "audio_prometeu_confirmar_e_nao_voltou": null,
+    "audio_divergencia_de_numero": null,
+    "audio_desviou_da_pergunta": null,
+    "audio_nao_pedido_pelo_cliente": null,
+    "audio_do_cliente_transcritos": null,
+    "audios_transcritos": null,
+    "melhor_pitch": { "lead": "", "data": "", "trecho": "", "de_audio": false },
+    "melhor_pergunta": { "lead": "", "data": "", "trecho": "", "de_audio": false },
     "observacao": ""
   },
 
