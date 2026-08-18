@@ -394,6 +394,16 @@ export default function GerarPacotePage() {
           amostraIds: selecionados.map((s) => s.lead.id),
           painelIds: selecionados.filter((s) => s.faixa === 'painel').map((s) => s.lead.id),
           tamanhoAmostra: selecionados.length,
+          /**
+           * O panorama INTEIRO fica guardado na rodada. A análise deixou de
+           * devolver o quadro de indicadores — ela só entrega o que vem da
+           * leitura da conversa — então é daqui que a apresentação monta os
+           * números do CRM. Sem isto, o relatório abriria sem quadro nenhum.
+           */
+          panorama,
+          cobranca: computarCobranca(leads, ativ, panorama, diretrizes, iniMs, fimMs, etapasDesde),
+          destaques: computarDestaques(leads, ativ, diretrizes, iniMs, fimMs),
+          cadencia: computarCadencia(leads, ativ, diretrizes, iniMs, fimMs),
           metricas: {
             mediana_1o_contato_min_util: panorama.mediana_primeiro_contato_min_util,
             sem_toque: panorama.sem_toque_7d,

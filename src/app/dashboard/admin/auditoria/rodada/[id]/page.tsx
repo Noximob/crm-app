@@ -14,6 +14,7 @@ import { useParams } from 'next/navigation';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
+import { carregarDiretrizes, type DiretrizesAuditoria } from '@/lib/auditoria';
 import { showToast } from '@/components/ui/toast';
 import RodadaView, { type RodadaDoc } from './view';
 
@@ -27,8 +28,12 @@ export default function RodadaPage() {
   const [r, setR] = useState<RodadaDoc | null>(null);
   const [anteriorQuadro, setAnteriorQuadro] = useState<unknown>(null);
   const [corretores, setCorretores] = useState<{ id: string; nome: string }[]>([]);
+  const [diretrizes, setDiretrizes] = useState<DiretrizesAuditoria | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
+
+  // a régua da casa dá as referências do quadro que o sistema monta
+  useEffect(() => { carregarDiretrizes(imobiliariaId).then(setDiretrizes); }, [imobiliariaId]);
 
   useEffect(() => {
     if (!id || !imobiliariaId || isEspelhoDemo) { setCarregando(false); return; }
@@ -91,5 +96,5 @@ export default function RodadaPage() {
     );
   }
 
-  return <RodadaView r={r} anteriorQuadro={anteriorQuadro} corretores={corretores} onRenomear={renomear} />;
+  return <RodadaView r={r} anteriorQuadro={anteriorQuadro} corretores={corretores} diretrizes={diretrizes} onRenomear={renomear} />;
 }

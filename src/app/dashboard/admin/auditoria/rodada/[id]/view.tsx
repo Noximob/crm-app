@@ -3,15 +3,24 @@
 /**
  * AUDITORIA · A RODADA — a análise apresentada no layout da casa.
  *
- * O rodada.json é lido fora do sistema e importado inteiro. Esta view é onde
- * ele vira documento: o mesmo conteúdo do HTML, mas no design do CRM e com
- * dois PDFs distintos.
+ * O documento tem TRÊS camadas, e a ordem delas é a coisa mais importante
+ * deste arquivo:
  *
- * A separação dos dois PDFs não é enfeite. O relatório tem partes que são do
- * GESTOR e não do corretor — o risco apurado, as perguntas preparadas para o
- * 1:1, o que a diretoria precisa destravar. Mandar isso para o corretor
- * queima a conversa antes dela começar. Por isso "PDF do corretor" corta
- * essas seções e "PDF do gestor" leva tudo.
+ *   1. A REUNIÃO — o que o gestor e o corretor leem juntos, olhando a mesma
+ *      tela. O gargalo, o retrato (todo número num lugar só), a fila de
+ *      amanhã, o que ele faz bem e o que muda. Abre sempre.
+ *   2. A PROVA — o quadro de indicadores linha a linha, cliente por cliente,
+ *      o que foi combinado e as ressalvas. Abre fechada: é onde se vai
+ *      quando alguém pergunta "de onde saiu isso?".
+ *   3. SÓ O GESTOR — o risco apurado, as perguntas preparadas para o 1:1 e o
+ *      que a casa precisa destravar. Some no modo reunião e não sai no PDF
+ *      do corretor: mandar isso para ele queima a conversa antes dela
+ *      começar.
+ *
+ * A versão anterior tinha 22 seções no mesmo nível e um índice em cima — que
+ * é a definição de "espalhado". Os números apareciam em seis pontos
+ * diferentes e metade das seções só existia para blocos de relatório que a
+ * análise não produz mais.
  *
  * Recebe a rodada pronta por prop e não fala com o Firestore: quem carrega é
  * a page. Isso mantém a apresentação testável fora do banco.
@@ -19,13 +28,16 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
-  asObj, asArr, asStrArr, asStr, asNum, fmtYmd, fmtDinheiro, fmtNum,
+  asObj, asArr, asStr, asNum, fmtYmd, fmtDinheiro, fmtNum,
   lerIndicadores, valorIndicador, referenciaIndicador, GRUPOS, BOLA_STATUS, COR_STATUS,
-  VEREDITO, TEMPERATURA, naturezaLegivel, valorSolto,
-  ROTULO_QUALIDADE, ROTULO_OPORTUNIDADE, ROTULO_FUNIL, TIPO_DESTRAVE, PRAZO_LEGIVEL, PERGUNTA_DO_GRUPO,
+  VEREDITO, TEMPERATURA, naturezaLegivel,
+  TIPO_DESTRAVE, PRAZO_LEGIVEL, PERGUNTA_DO_GRUPO,
   type ChaveVeredito, type Indicador,
 } from '@/lib/auditoriaAnalise';
+import { lerRelatorio, type Citacao as TCitacao } from '@/lib/auditoriaRelatorio';
 import { showToast } from '@/components/ui/toast';
+import { montarQuadro, compararComAnterior } from '@/lib/auditoriaQuadro';
+import type { DiretrizesAuditoria } from '@/lib/auditoria';
 import RodadaPrint, { CSS_PRINT_RODADA } from './print';
 import GraficosRodada from './graficos';
 
@@ -38,39 +50,83 @@ export interface RodadaDoc {
   versaoDiretrizes?: string; tamanhoAmostra?: number;
   gargalo?: string; instrucao?: string; statusInstrucao?: string;
   analise?: Record<string, unknown>;
+  /** o que o CRM sabia quando o pacote foi gerado — é daqui que sai o quadro */
+  panorama?: Record<string, unknown>;
+  cobranca?: Record<string, unknown>;
+  destaques?: Record<string, unknown>;
+  cadencia?: Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------
 // blocos visuais
 // ---------------------------------------------------------------------------
 
-function Secao({ id, n, titulo, hint, children }: {
-  id?: string; n?: number; titulo: string; hint?: string; children: React.ReactNode;
+function Secao({ id, titulo, hint, children }: {
+  id?: string; titulo: string; hint?: string; children: React.ReactNode;
 }) {
   return (
     <section id={id} className="al-card relative overflow-hidden p-4 sm:p-5 scroll-mt-20">
       <div className="absolute inset-x-0 top-0 gx-line" />
-      <div className="flex items-baseline gap-2 mb-3">
-        {n !== undefined && <span className="text-[11px] font-extrabold text-[#E8C547]/60 tabular-nums">{n}</span>}
-        <h2 className="al-display text-[13px] font-bold text-white uppercase tracking-[0.1em]">{titulo}</h2>
-      </div>
+      <h2 className="al-display text-[13px] font-bold text-white uppercase tracking-[0.1em] mb-3">{titulo}</h2>
       {hint && <p className="text-[11px] text-text-secondary -mt-2 mb-3">{hint}</p>}
       {children}
     </section>
   );
 }
 
-function Citacao({ lead, data, trecho }: { lead?: string; data?: string; trecho?: string }) {
-  if (!trecho) return null;
+/**
+ * Um trecho que não é fala de ninguém — "CRM: 8 dias sem toque · WhatsApp:
+ * conversa às 18h02" — é anotação da análise, não citação. Apresentar isso
+ * entre aspas e em itálico, como se o cliente tivesse dito, é o que faz o
+ * relatório soar incongruente para quem conhece a conversa de verdade. Aqui
+ * a diferença fica explícita em vez de escondida.
+ */
+const PARECE_ANOTACAO = /CRM:|WhatsApp:|whatsapp:|→|\bdias sem\b|\bsem toque\b|^\s*\[/;
+
+function Citacao({ c, mostrarLead = true }: { c: TCitacao; mostrarLead?: boolean }) {
+  if (!c.trecho) return null;
+  const rodape = [mostrarLead ? c.lead : '', c.data ? fmtYmd(c.data) : '', c.de && c.de !== 'corretor' ? c.de : '']
+    .filter(Boolean).join(' · ');
+
+  if (PARECE_ANOTACAO.test(c.trecho)) {
+    return (
+      <div className="my-2 rounded-lg border border-white/[0.09] bg-white/[0.02] px-3 py-2">
+        <p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">
+          anotação da análise — não é fala do cliente
+        </p>
+        <p className="text-[12px] text-white/80 leading-relaxed">{c.trecho}</p>
+        {rodape && <p className="text-[10.5px] text-text-secondary font-bold mt-1">{rodape}</p>}
+      </div>
+    );
+  }
   return (
     <blockquote className="my-2 pl-3 border-l-2 border-[#E8C547]/50 bg-white/[0.03] rounded-r-lg py-2 pr-3">
-      <p className="text-[12.5px] text-white/90 italic leading-relaxed">“{trecho}”</p>
-      {(lead || data) && (
-        <p className="text-[10.5px] text-text-secondary font-bold mt-1.5">
-          {lead}{lead && data ? ' · ' : ''}{data ? fmtYmd(data) : ''}
-        </p>
-      )}
+      <p className="text-[12.5px] text-white/90 italic leading-relaxed">“{c.trecho}”</p>
+      {rodape && <p className="text-[10.5px] text-text-secondary font-bold mt-1.5">{rodape}</p>}
     </blockquote>
+  );
+}
+
+/**
+ * Duas citações bastam para provar um padrão. A análise às vezes manda cinco
+ * do mesmo erro, e ler cinco variações da mesma coisa numa reunião faz o
+ * ponto perder força em vez de ganhar. As outras ficam a um clique.
+ */
+function Citacoes({ lista }: { lista: TCitacao[] }) {
+  const [tudo, setTudo] = useState(false);
+  if (!lista.length) return null;
+  const mostra = tudo ? lista : lista.slice(0, 2);
+  const resto = lista.length - mostra.length;
+  return (
+    <>
+      {mostra.map((c, i) => <Citacao key={i} c={c} />)}
+      {resto > 0 && (
+        <button onClick={() => setTudo(true)}
+          className="text-[10.5px] font-bold text-text-secondary hover:text-white no-print">
+          + {resto} exemplo{resto === 1 ? '' : 's'} do mesmo erro
+        </button>
+      )}
+    </>
   );
 }
 
@@ -97,20 +153,6 @@ function MensagemPronta({ rotulo, texto }: { rotulo: string; texto: string }) {
   );
 }
 
-function Grade({ itens }: { itens: { rot: string; val: string; nulo?: boolean }[] }) {
-  if (!itens.length) return null;
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-      {itens.map((it, i) => (
-        <div key={i} className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2">
-          <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-text-secondary leading-tight">{it.rot}</p>
-          <p className={`text-[17px] font-extrabold tabular-nums mt-0.5 ${it.nulo ? 'text-white/25' : 'text-white'}`}>{it.val}</p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function Tabela({ cols, children }: { cols: string[]; children: React.ReactNode }) {
   return (
     <div className="overflow-x-auto -mx-1">
@@ -126,34 +168,19 @@ function Tabela({ cols, children }: { cols: string[]; children: React.ReactNode 
   );
 }
 
-/**
- * A etapa que a conversa mostrou, ou vazio quando a análise não conseguiu
- * dizer. "não dá para saber" não é divergência: é ausência de leitura, e
- * tratá-la como erro de etapa inflou um contador de 6 para 44.
- */
-const etapaRealDe = (l: Record<string, unknown>): string => {
-  const e = asStr(l.etapa_real);
-  return !e || /^[?-]$|n\/d|não dá|nao da|não sei|desconhec/i.test(e) ? '' : e;
-};
-
 const td = 'px-2 py-1.5 border-b border-white/[0.06] align-top';
-
-/**
- * Âncora dos blocos de métricas. Vive aqui porque índice e seção precisam
- * chegar EXATAMENTE ao mesmo id — quando cada um monta o seu, os links do
- * índice apontam para o vazio e ninguém percebe.
- */
-const ancoraBloco = (titulo: string) => 'b-' + titulo.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 // ---------------------------------------------------------------------------
 // a apresentação
 // ---------------------------------------------------------------------------
 
-export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }: {
+export default function RodadaView({ r, anteriorQuadro, corretores, diretrizes, onRenomear }: {
   r: RodadaDoc;
   /** quadro_indicadores da rodada anterior — dá o rumo de cada linha */
   anteriorQuadro?: unknown;
   corretores?: { id: string; nome: string }[];
+  /** a régua da casa — dá as referências do quadro */
+  diretrizes?: DiretrizesAuditoria | null;
   /** ausente = o nome não é editável (preview, espelho) */
   onRenomear?: (nome: string) => Promise<void>;
 }) {
@@ -162,10 +189,11 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
    * A tela abre mostrando tudo — quem entra aqui é o gestor. Mas a reunião
    * acontece com os dois olhando a MESMA tela, e aí o risco apurado e as
    * perguntas preparadas não podem estar à vista: o corretor lê o roteiro
-   * antes de a conversa começar. Este botão é o que torna a tela usável na
-   * frente dele.
+   * antes de a conversa começar.
    */
   const [modoTela, setModoTela] = useState<'gestor' | 'corretor'>('gestor');
+  /** a prova abre fechada: a reunião se faz com a camada de cima */
+  const [mostrarProva, setMostrarProva] = useState(false);
   const soEu = modoTela === 'gestor';
   const [editandoNome, setEditandoNome] = useState(false);
   const [nomeNovo, setNomeNovo] = useState(r.corretorNome || '');
@@ -173,7 +201,37 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
   const a = useMemo(() => asObj(r?.analise), [r]);
   const temAnalise = Object.keys(a).length > 0;
 
-  const indicadores = useMemo(() => lerIndicadores(a.quadro_indicadores, anteriorQuadro), [a, anteriorQuadro]);
+  /**
+   * Uma estrutura só, venha o relatório no formato antigo ou no novo. Daqui
+   * para baixo a tela nunca pergunta qual chegou.
+   */
+  const rel = useMemo(() => lerRelatorio(a), [a]);
+
+  /**
+   * O QUADRO SAI DO SISTEMA — sempre que a rodada tiver o panorama guardado.
+   *
+   * Antes a tela preferia o quadro que a análise digitava, e ele se
+   * contradizia: 100% de visitas realizadas contra meta de 70% marcado como
+   * "atenção", e duas linhas sem valor nenhum também marcadas como
+   * "atenção". Quem conhece a operação lê isso e para de confiar no
+   * documento inteiro — com razão.
+   *
+   * O CRM já tem esses números e a régua é sempre a mesma conta. Só se cai
+   * no quadro da análise quando a rodada é antiga e não guardou panorama —
+   * e mesmo lá o status é recalculado, nunca lido do JSON.
+   */
+  const indicadores = useMemo(() => {
+    if (r.panorama) {
+      return compararComAnterior(
+        montarQuadro(r.panorama, rel.daConversa, asObj(a.cobertura), diretrizes ?? null),
+        Array.isArray(anteriorQuadro) ? (anteriorQuadro as Indicador[]) : null,
+      );
+    }
+    return lerIndicadores(rel.legado.quadro, anteriorQuadro);
+  }, [a, rel, r.panorama, anteriorQuadro, diretrizes]);
+
+  const quadroDoSistema = !!r.panorama;
+
   const porGrupo = useMemo<[string, Indicador[]][]>(() => {
     const m = new Map<string, Indicador[]>();
     for (const i of indicadores) {
@@ -185,85 +243,17 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
     );
   }, [indicadores]);
 
-  const placar = asObj(a.placar_indicadores);
-  const veredito = asObj(a.veredito);
-  const natureza = naturezaLegivel(asStr(veredito.natureza_do_problema));
-  const cobertura = asObj(a.cobertura);
-  const fila = asArr(a.fila_de_ataque).sort((x, y) => (asNum(x.posicao) ?? 99) - (asNum(y.posicao) ?? 99));
-  const acertos = asArr(a.acertos);
-  const destaques = asObj(a.destaques_do_periodo);
-  const achados = asArr(a.achados);
-  const leadsAud = asArr(a.leads_auditados);
-  const crmVsReal = asArr(a.crm_vs_real);
-  const destravar = asArr(a.gestor_precisa_destravar);
-  const naoEDele = asArr(a.nao_e_do_corretor);
-  const perguntas = asStrArr(a.perguntas_para_reuniao);
-  const padroes = asStrArr(a.padroes_observados);
-  const ressalvas = asStrArr(a.ressalvas);
-  const corrente = asObj(a.corrente_causal);
-  const risco = asObj(a.risco);
-  const riscoOcorr = asArr(risco.ocorrencias);
-  const temperatura = asObj(a.temperatura_da_carteira);
-  const engajamento = asObj(a.engajamento);
-  const evidencias = asArr(a.evidencias);
-  const combinado = asObj(a.combinado);
-  const metasComb = asArr(combinado.metas);
+  const natureza = naturezaLegivel(rel.natureza);
+  const destaques = asObj(rel.legado.destaques);
+  const combinado = rel.legado.combinado;
   const paradosPrazo = asArr(combinado.leads_parados_alem_do_prazo);
   const descartesExplicar = asArr(combinado.descartes_a_explicar);
   const fichaIncompleta = asArr(combinado.ficha_incompleta);
-  const naoCombinado = asStrArr(combinado.o_que_nao_foi_combinado);
-  const temCombinado = metasComb.length > 0 || paradosPrazo.length > 0
-    || descartesExplicar.length > 0 || fichaIncompleta.length > 0 || naoCombinado.length > 0;
+  const naoCombinado = asArr(combinado.o_que_nao_foi_combinado).map((x) => String(x));
 
-  const sinais = asArr(a.sinais_de_compra);
-  const metas = asArr(a.metas_da_instrucao);
-  const duasConversas = asObj(a.duas_conversas);
-
-  /**
-   * "observacao" é prosa e não cabe numa célula de número — sai da grade e
-   * vira parágrafo abaixo dela.
-   */
-  const blocos = useMemo(() => [
-    { t: 'Qualidade da conversa', src: asObj(a.qualidade_conversa), rot: ROTULO_QUALIDADE },
-    { t: 'Oportunidade perdida', src: asObj(a.oportunidade_perdida), rot: ROTULO_OPORTUNIDADE },
-    { t: 'O funil de imóvel', src: asObj(a.funil_imovel), rot: ROTULO_FUNIL },
-  ].filter((b) => Object.keys(b.src).length > 0).map((b) => ({
-    ...b,
-    numeros: Object.entries(b.src).filter(([k]) => k !== 'observacao'),
-    observacao: asStr(b.src.observacao),
-  })), [a]);
-
-  /**
-   * O índice é a fonte única da ordem E da numeração das seções. Numerar à
-   * mão fazia o documento pular do 1 para o 3 quando um bloco não vinha no
-   * JSON — e um relatório que pula número parece quebrado.
-   */
-  const indice = useMemo(() => ([
-    { id: 'fila', t: 'Fila de ataque', tem: fila.length > 0, gestor: false },
-    { id: 'bem', t: 'O que você faz bem', tem: acertos.length > 0 || Object.keys(destaques).length > 0, gestor: false },
-    { id: 'muda', t: 'O que muda agora', tem: achados.length > 0 || evidencias.length > 0, gestor: false },
-    { id: 'combinado', t: 'O combinado', tem: temCombinado, gestor: false },
-    { id: 'quadro', t: 'Os números', tem: indicadores.length > 0, gestor: false },
-    { id: 'crm', t: 'CRM × realidade', tem: crmVsReal.length > 0, gestor: false },
-    { id: 'leads', t: 'Cliente por cliente', tem: leadsAud.length > 0, gestor: false },
-    ...blocos.map((b) => ({ id: ancoraBloco(b.t), t: b.t, tem: true, gestor: false })),
-    { id: 'temp', t: 'Temperatura da carteira', tem: Object.keys(temperatura).length > 0, gestor: false },
-    { id: 'corrente', t: 'Como um erro puxa o outro', tem: asStrArr(corrente.elos).length > 0 || asNum(corrente.custo_estimado_vgv) !== null, gestor: false },
-    { id: 'metas', t: 'Como medir a instrução', tem: metas.length > 0, gestor: false },
-    { id: 'duas', t: 'Duas conversas', tem: !!(asStr(asObj(duasConversas.melhor).lead) || asStr(asObj(duasConversas.pior).lead)), gestor: false },
-    { id: 'antes', t: 'Desde a rodada anterior', tem: !!asStr(a.comparativo_rodada_anterior), gestor: false },
-    { id: 'padroes', t: 'Padrões recorrentes', tem: padroes.length > 0, gestor: false },
-    { id: 'engaja', t: 'Engajamento', tem: !!asStr(engajamento.observacao) || asStrArr(engajamento.sinais_de_queda).length > 0, gestor: false },
-    { id: 'naodele', t: 'Nem tudo é do corretor', tem: naoEDele.length > 0, gestor: false },
-    { id: 'risco', t: 'Risco para a imobiliária', tem: riscoOcorr.length > 0, gestor: true },
-    { id: 'perguntas', t: 'Perguntas para a reunião', tem: perguntas.length > 0, gestor: true },
-    { id: 'destravar', t: 'O que você precisa destravar', tem: destravar.length > 0, gestor: true },
-    { id: 'ressalvas', t: 'Ressalvas', tem: ressalvas.length > 0, gestor: false },
-  ].filter((s) => s.tem)), [a, fila, acertos, achados, evidencias, indicadores, crmVsReal, leadsAud, blocos,
-    temperatura, corrente, metas, duasConversas, padroes, engajamento, naoEDele, riscoOcorr, perguntas, destravar, ressalvas]);
-
-  const indiceVisivel = useMemo(() => indice.filter((s) => soEu || !s.gestor), [indice, soEu]);
-  const nDe = (id: string) => indice.findIndex((s) => s.id === id) + 1;
+  const temProva = indicadores.length > 0 || rel.leads.length > 0
+    || paradosPrazo.length > 0 || descartesExplicar.length > 0
+    || fichaIncompleta.length > 0 || rel.ressalvas.length > 0;
 
   const nomeArquivo = useMemo(() => {
     const nome = (r?.corretorNome || 'corretor').normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -323,7 +313,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
             </div>
             <p className="text-[12px] text-text-secondary mt-0.5 tabular-nums">
               {fmtYmd(r.periodoInicio)} a {fmtYmd(r.periodoFim)}
-              {asNum(cobertura.conversas_lidas) !== null && ` · ${fmtNum(asNum(cobertura.conversas_lidas))} de ${fmtNum(asNum(cobertura.leads_na_amostra))} conversas lidas`}
+              {rel.cobertura.lidas !== null && ` · ${fmtNum(rel.cobertura.lidas)} de ${fmtNum(rel.cobertura.naAmostra)} conversas lidas`}
               {r.versaoDiretrizes && ` · régua ${r.versaoDiretrizes}`}
               {natureza.txt !== '—' && <> · natureza <b className={natureza.cor}>{natureza.txt}</b></>}
             </p>
@@ -370,64 +360,42 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
           </div>
         )}
 
-        {/* 1 — a conversa em três linhas */}
+        {/* ═══════════ CAMADA 1 · A REUNIÃO ═══════════ */}
+
+        {/* a conversa inteira em duas frases */}
         <section className="al-card relative overflow-hidden p-4 sm:p-5">
           <div className="absolute inset-x-0 top-0 gx-line" />
-          {asStr(a.gargalo) && (
+          {rel.gargalo && (
             <div className="rounded-xl border border-rose-500/40 bg-rose-500/[0.07] p-3.5 mb-3">
               <p className="text-[9.5px] font-extrabold uppercase tracking-[0.16em] text-rose-300/80 mb-1">O gargalo</p>
-              <p className="text-[15px] font-bold text-white leading-snug">{asStr(a.gargalo)}</p>
+              <p className="text-[15px] font-bold text-white leading-snug">{rel.gargalo}</p>
             </div>
           )}
-          {asStr(a.instrucao) && (
+          {rel.instrucao && (
             <div className="rounded-xl border border-[#E8C547]/40 bg-[#E8C547]/[0.07] p-3.5">
               <p className="text-[9.5px] font-extrabold uppercase tracking-[0.16em] text-[#E8C547]/80 mb-1">
-                A instrução{PRAZO_LEGIVEL[asStr(a.prazo_da_instrucao)] ? ` · prazo ${PRAZO_LEGIVEL[asStr(a.prazo_da_instrucao)]}` : ''}
+                A instrução{PRAZO_LEGIVEL[rel.prazoInstrucao] ? ` · prazo ${PRAZO_LEGIVEL[rel.prazoInstrucao]}` : ''}
               </p>
-              <p className="text-[15px] font-bold text-white leading-snug">{asStr(a.instrucao)}</p>
+              <p className="text-[15px] font-bold text-white leading-snug">{rel.instrucao}</p>
             </div>
           )}
-          {asNum(veredito.leads_com_etapa_defasada) ? (
+          {rel.veredito.etapaDefasada ? (
             <p className="text-[11.5px] text-text-secondary mt-3 pt-3 border-t border-white/[0.07]">
-              <b className="text-amber-300 tabular-nums">{fmtNum(asNum(veredito.leads_com_etapa_defasada))}</b> clientes
+              <b className="text-amber-300 tabular-nums">{fmtNum(rel.veredito.etapaDefasada)}</b> clientes
               estão numa etapa do CRM diferente da que a conversa mostra — todo relatório da casa que usa etapa
               erra por causa deles.
             </p>
           ) : null}
         </section>
 
-        <GraficosRodada a={a} indicadores={indicadores} porGrupo={porGrupo} />
+        {/* o retrato — TODO número da rodada vive aqui dentro */}
+        <GraficosRodada rel={rel} indicadores={indicadores} porGrupo={porGrupo} />
 
-        {/* índice — o documento é longo e ninguém rola atrás do que quer */}
-        {indiceVisivel.length > 2 && (
-          <nav className="al-card p-3">
-            <p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-text-secondary mb-2">Neste relatório</p>
-            <div className="flex flex-wrap gap-1.5">
-              {indiceVisivel.map((s, i) => (
-                <a key={s.id} href={`#${s.id}`}
-                  className={`px-2.5 py-1 rounded-lg text-[11.5px] font-bold transition-colors ${
-                    s.gestor
-                      ? 'bg-[#9F6BFF]/10 text-[#C4A6FF] hover:bg-[#9F6BFF]/20'
-                      : 'bg-white/[0.05] text-text-secondary hover:text-white hover:bg-white/[0.1]'
-                  }`}>
-                  <span className="opacity-50 mr-1 tabular-nums">{i + 1}</span>{s.t}
-                </a>
-              ))}
-            </div>
-            {soEu && indice.some((s) => s.gestor) && (
-              <p className="text-[10px] text-text-secondary mt-2">
-                <span className="inline-block w-2 h-2 rounded-sm bg-[#9F6BFF]/40 align-middle mr-1" />
-                roxo = só você vê; não sai no PDF do corretor
-              </p>
-            )}
-          </nav>
-        )}
-
-        {/* 2 — fila de ataque */}
-        {fila.length > 0 && (
-          <Secao id="fila" n={nDe("fila")} titulo="Fila de ataque" hint="O que fazer amanhã de manhã, nesta ordem.">
+        {/* a fila de amanhã */}
+        {rel.fila.length > 0 && (
+          <Secao id="fila" titulo="Fila de ataque" hint="O que fazer amanhã de manhã, nesta ordem.">
             <div className="space-y-2.5">
-              {fila.map((f, i) => {
+              {rel.fila.map((f, i) => {
                 const t = TEMPERATURA[asStr(f.temperatura).toLowerCase()] || TEMPERATURA.frio;
                 const dias = asNum(f.esfria_em_dias);
                 const urgente = dias !== null && dias <= 3;
@@ -457,44 +425,24 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
           </Secao>
         )}
 
-        {/* 3 — o que faz bem */}
-        {(acertos.length > 0 || Object.keys(destaques).length > 0) && (
-          <Secao id="bem" n={nDe("bem")} titulo="O que você faz bem" hint="Manter e replicar — é daqui que sai o material de treino do time.">
-            {Object.keys(destaques).length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-4">
-                {([
-                  ['avancos_de_etapa', 'clientes que avançaram'],
-                  ['leads_recuperados', 'recuperados de parado'],
-                  ['atendimento_mais_rapido', 'atendimento mais rápido'],
-                  ['tarefas_no_prazo', 'tarefas no prazo'],
-                  ['dias_fora_do_expediente', 'dias fora do expediente'],
-                ] as const).map(([k, rot]) => {
-                  const v = valorSolto(destaques[k]);
-                  if (v.nulo) return null;
-                  return (
-                    <div key={k} className="rounded-xl border border-emerald-500/25 bg-emerald-500/[0.04] px-3 py-2">
-                      <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-emerald-300/70 leading-tight">{rot}</p>
-                      <p className="text-[17px] font-extrabold text-emerald-300 tabular-nums mt-0.5">{v.txt}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+        {/* o que faz bem — abre antes da cobrança, de propósito */}
+        {(rel.acertos.length > 0 || asStr(destaques.observacao)) && (
+          <Secao id="bem" titulo="O que você faz bem" hint="Manter e replicar — é daqui que sai o material de treino do time.">
             {asStr(destaques.observacao) && (
               <p className="text-[12.5px] text-white/85 leading-relaxed mb-3">{asStr(destaques.observacao)}</p>
             )}
             <div className="space-y-3">
-              {acertos.map((ac, i) => (
+              {rel.acertos.map((ac, i) => (
                 <div key={i}>
                   <div className="flex items-center gap-2">
-                    <span className="text-[12.5px] font-bold text-white">{asStr(ac.lead) || 'lead'}</span>
-                    {ac.vale_como_treino === true && (
+                    <span className="text-[12.5px] font-bold text-white">{ac.lead || 'lead'}</span>
+                    {ac.valeComoTreino && (
                       <span className="px-2 py-0.5 rounded-full text-[9.5px] font-extrabold border bg-emerald-500/10 border-emerald-500/40 text-emerald-300">vale como treino</span>
                     )}
                   </div>
-                  <Citacao lead="" data={asStr(ac.data)} trecho={asStr(ac.trecho)} />
-                  {asStr(ac.por_que_funcionou) && (
-                    <p className="text-[12px] text-text-secondary leading-relaxed"><b className="text-white/80">Por que funciona:</b> {asStr(ac.por_que_funcionou)}</p>
+                  <Citacao c={ac} mostrarLead={false} />
+                  {ac.porQue && (
+                    <p className="text-[12px] text-text-secondary leading-relaxed"><b className="text-white/80">Por que funciona:</b> {ac.porQue}</p>
                   )}
                 </div>
               ))}
@@ -502,351 +450,29 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
           </Secao>
         )}
 
-        {/* 4 — achados (a prosa) */}
-        {achados.length > 0 && (
-          <Secao id="muda" n={nDe("muda")} titulo="O que muda a partir de agora">
+        {/* o que muda — a cobrança, com dois exemplos por padrão */}
+        {rel.achados.length > 0 && (
+          <Secao id="muda" titulo="O que muda a partir de agora"
+            hint="Cada ponto é um padrão que se repete, não um caso isolado. Os exemplos são a prova dele.">
             <div className="space-y-5">
-              {achados.map((ac, i) => {
-                const est = VEREDITO[asStr(ac.estado) as ChaveVeredito];
+              {rel.achados.map((ac, i) => {
+                const est = VEREDITO[ac.estado as ChaveVeredito];
                 return (
                   <div key={i} className={i > 0 ? 'pt-4 border-t border-white/[0.07]' : ''}>
                     <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                      <h3 className="text-[13.5px] font-bold text-white">{asStr(ac.titulo) || `Achado ${i + 1}`}</h3>
+                      <h3 className="text-[13.5px] font-bold text-white">{ac.titulo || `Ponto ${i + 1}`}</h3>
                       {est && <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-extrabold border ${est.bg}`}>{est.simb} {est.txt}</span>}
-                    </div>
-                    {asStr(ac.o_que_aconteceu) && <p className="text-[12.5px] text-white/85 leading-relaxed mb-1"><b className="text-white">O que aconteceu.</b> {asStr(ac.o_que_aconteceu)}</p>}
-                    {asArr(ac.citacoes).map((c, j) => <Citacao key={j} lead={asStr(c.lead)} data={asStr(c.data)} trecho={asStr(c.trecho)} />)}
-                    {asStr(ac.o_que_custou) && <p className="text-[12.5px] text-white/85 leading-relaxed mb-1"><b className="text-rose-300">O que custou.</b> {asStr(ac.o_que_custou)}</p>}
-                    {asStr(ac.o_que_fazer) && <p className="text-[12.5px] text-white/85 leading-relaxed"><b className="text-emerald-300">O que fazer no lugar.</b> {asStr(ac.o_que_fazer)}</p>}
-                    <MensagemPronta rotulo="modelo" texto={asStr(ac.modelo_de_mensagem)} />
-                  </div>
-                );
-              })}
-            </div>
-          </Secao>
-        )}
-
-        {/* evidências avulsas — só quando não vieram achados */}
-        {achados.length === 0 && evidencias.length > 0 && (
-          <Secao id="muda" n={nDe("muda")} titulo="Evidências">
-            {evidencias.map((e, i) => (
-              <div key={i}>
-                <Citacao lead={asStr(e.lead)} data={asStr(e.data)} trecho={asStr(e.trecho)} />
-                {asStr(e.tipo) && <p className="text-[10.5px] text-text-secondary -mt-1 mb-2">{asStr(e.tipo).replace(/_/g, ' ')}</p>}
-              </div>
-            ))}
-          </Secao>
-        )}
-
-        {/* o combinado — a única parte cobrável, porque foi acertada antes */}
-        {temCombinado && (
-          <Secao id="combinado" n={nDe('combinado')} titulo="O combinado"
-            hint="Só entra aqui o que a casa acertou antes. O que não foi combinado não é cobrança do corretor — é do gestor.">
-
-            {metasComb.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-                {metasComb.map((m, i) => {
-                  const bateu = m.bateu === true;
-                  // "não avaliável" é cinza, não vermelho: ou o CRM não mede,
-                  // ou o período é curto demais para a meta fazer sentido
-                  const semMeta = asNum(m.meta) === null || m.avaliavel === false;
-                  return (
-                    <div key={i} className={`rounded-xl border px-3 py-2.5 ${
-                      semMeta ? 'border-white/[0.07] bg-white/[0.02]'
-                        : bateu ? 'border-emerald-500/30 bg-emerald-500/[0.05]' : 'border-rose-500/30 bg-rose-500/[0.05]'}`}>
-                      <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-text-secondary leading-tight">
-                        {asStr(m.indicador).replace(/_/g, ' ')}
-                      </p>
-                      <p className="mt-1">
-                        <span className={`text-[20px] font-extrabold tabular-nums ${semMeta ? 'text-white/60' : bateu ? 'text-emerald-300' : 'text-rose-300'}`}>
-                          {fmtNum(asNum(m.realizado))}
+                      {ac.quantosLeads !== null && (
+                        <span className="px-2 py-0.5 rounded-full text-[9.5px] font-extrabold border bg-white/[0.05] border-white/15 text-text-secondary">
+                          em {fmtNum(ac.quantosLeads)} cliente{ac.quantosLeads === 1 ? '' : 's'}
                         </span>
-                        {!semMeta && <span className="text-[12px] text-text-secondary tabular-nums"> / {fmtNum(asNum(m.meta))}</span>}
-                      </p>
-                      <p className="text-[10.5px] text-text-secondary leading-snug mt-0.5">
-                        {asStr(m.faltou)
-                          || (asNum(m.meta) === null ? 'a casa não cobra isto'
-                            : m.avaliavel === false ? `meta de ${fmtNum(asNum(m.meta_mensal))} no mês — não dá pra cobrar neste período`
-                              : bateu ? 'meta batida' : '')}
-                      </p>
+                      )}
                     </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {asNum(combinado.dinheiro_parado) !== null && (
-              <div className="rounded-xl border border-rose-500/30 bg-rose-500/[0.05] p-3 mb-4">
-                <p className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-rose-300/80">Dinheiro da casa parado na mão dele</p>
-                <p className="text-[24px] font-extrabold text-rose-300 tabular-nums">{fmtDinheiro(asNum(combinado.dinheiro_parado))}</p>
-                <p className="text-[10.5px] text-text-secondary">O que a casa pagou pelos leads que estão parados na carteira.</p>
-              </div>
-            )}
-
-            {paradosPrazo.length > 0 && (
-              <div className="mb-4">
-                <p className="text-[11.5px] font-bold text-white mb-1.5">Passaram do prazo da etapa</p>
-                <Tabela cols={['Lead', 'Etapa', 'Está há', 'Prazo']}>
-                  {paradosPrazo.map((l, i) => (
-                    <tr key={i}>
-                      <td className={td + ' text-white font-bold whitespace-nowrap'}>{asStr(l.lead)}</td>
-                      <td className={td + ' text-text-secondary'}>{asStr(l.etapa)}</td>
-                      <td className={td + ' text-rose-300 font-bold tabular-nums whitespace-nowrap'}>{fmtNum(asNum(l.dias_na_etapa))} dias</td>
-                      <td className={td + ' text-text-secondary tabular-nums whitespace-nowrap'}>{fmtNum(asNum(l.prazo_da_etapa))} dias</td>
-                    </tr>
-                  ))}
-                </Tabela>
-              </div>
-            )}
-
-            {descartesExplicar.length > 0 && (
-              <div className="mb-4">
-                <p className="text-[11.5px] font-bold text-white mb-1.5">Descartes para explicar</p>
-                <p className="text-[10.5px] text-text-secondary mb-1.5">Motivos que não se parecem com nenhum critério da régua. Pergunta, não acusação.</p>
-                <Tabela cols={['Motivo registrado', 'Quantos', 'Por que chamou atenção']}>
-                  {descartesExplicar.map((x, i) => (
-                    <tr key={i}>
-                      <td className={td + ' text-amber-300 font-bold'}>“{asStr(x.motivo)}”</td>
-                      <td className={td + ' text-white tabular-nums'}>{fmtNum(asNum(x.quantidade))}</td>
-                      <td className={td + ' text-text-secondary leading-relaxed'}>{asStr(x.por_que_chamou_atencao)}</td>
-                    </tr>
-                  ))}
-                </Tabela>
-              </div>
-            )}
-
-            {fichaIncompleta.length > 0 && (
-              <div className="mb-4">
-                <p className="text-[11.5px] font-bold text-white mb-1.5">Ficha do cliente incompleta</p>
-                <div className="flex flex-wrap gap-2">
-                  {fichaIncompleta.map((f, i) => (
-                    <div key={i} className="rounded-xl border border-amber-500/25 bg-amber-500/[0.04] px-3 py-1.5">
-                      <span className="text-[11.5px] text-white font-bold">{asStr(f.campo)}</span>
-                      <span className="text-[11.5px] text-amber-300 tabular-nums"> · falta em {fmtNum(asNum(f.leads_sem))}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {naoCombinado.length > 0 && (
-              <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
-                <p className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1.5">
-                  Isto ainda não foi combinado — cobrança sua, não dele
-                </p>
-                <ul className="space-y-1">
-                  {naoCombinado.map((s, i) => <li key={i} className="text-[12px] text-white/80 leading-relaxed">• {s}</li>)}
-                </ul>
-                <Link href="/dashboard/admin/auditoria/diretrizes/" className="inline-block mt-2 text-[11px] font-bold text-[#E8C547] hover:brightness-125">
-                  definir na régua →
-                </Link>
-              </div>
-            )}
-          </Secao>
-        )}
-
-        {/* 5 — quadro de indicadores */}
-        {indicadores.length > 0 && (
-          <Secao id="quadro" n={nDe("quadro")} titulo="Os números" hint="O que cada linha mede está escrito embaixo do nome.">
-            {/* contado a partir da tabela, não copiado do JSON: o status pode
-                ter sido rebaixado aqui, e placar que não bate com a tabela
-                logo abaixo dele derruba a confiança no documento inteiro */}
-            <div className="flex flex-wrap gap-x-4 gap-y-1 mb-3 text-[11.5px]">
-              {(['verde', 'amarelo', 'vermelho', 'nd'] as const).map((k) => {
-                const v = indicadores.filter((i) => i.status === k).length;
-                if (!v) return null;
-                return <span key={k} className="text-text-secondary">{BOLA_STATUS[k]} <b className="text-white tabular-nums">{v}</b></span>;
-              })}
-              {indicadores.some((i) => i.origemReferencia === 'mercado') && (
-                <span className="text-[10.5px] text-white/40">
-                  status vermelho só contra o que a casa combinou
-                </span>
-              )}
-            </div>
-
-            {/* de onde vem cada número: sem isto o gestor lê um percentual da
-                amostra como se fosse da carteira — e a amostra é sorteada de
-                propósito nas faixas mais críticas, então não representa o todo */}
-            <p className="text-[10.5px] text-text-secondary mb-3 leading-relaxed">
-              <span className="inline-block text-[8.5px] font-extrabold uppercase tracking-[0.08em] px-1 py-px rounded bg-sky-500/15 text-sky-300 align-middle">lido</span>
-              {' '}saiu dos {fmtNum(asNum(cobertura.conversas_lidas))} clientes cuja conversa foi lida — tem prova, mas é uma
-              amostra sorteada nas faixas mais críticas e <b className="text-white/70">não representa a carteira inteira</b>.
-              {' '}
-              <span className="inline-block text-[8.5px] font-extrabold uppercase tracking-[0.08em] px-1 py-px rounded bg-white/[0.07] text-white/40 align-middle">CRM</span>
-              {' '}saiu da carteira toda, direto do sistema — cobre todo mundo, mas mede o que foi digitado.
-            </p>
-            <Tabela cols={['#', 'Indicador', 'Valor', 'Referência', 'Anterior', '']}>
-              {porGrupo.map(([grupo, linhas]) => (
-                <React.Fragment key={grupo}>
-                  <tr><td colSpan={6} className="px-2 pt-4 pb-1">
-                    <span className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-[#E8C547]/70">{grupo}</span>
-                    {PERGUNTA_DO_GRUPO[grupo] && <span className="text-[10.5px] text-text-secondary ml-2 font-normal normal-case tracking-normal">{PERGUNTA_DO_GRUPO[grupo]}</span>}
-                  </td></tr>
-                  {linhas.map((ind) => (
-                    <tr key={ind.n}>
-                      <td className={td + ' text-text-secondary tabular-nums'}>{ind.n}</td>
-                      <td className={td + ' text-white/85'}>
-                        <span className="inline-flex items-baseline gap-1.5">
-                          {ind.rotulo}
-                          <span className={`text-[8.5px] font-extrabold uppercase tracking-[0.08em] px-1 py-px rounded ${
-                            ind.base === 'amostra' ? 'bg-sky-500/15 text-sky-300' : 'bg-white/[0.07] text-white/40'
-                          }`} title={ind.base === 'amostra'
-                            ? 'medido nos leads sorteados, com a conversa lida no WhatsApp'
-                            : 'vem do CRM, da carteira inteira — não foi verificado no WhatsApp'}>
-                            {ind.base === 'amostra' ? 'lido' : 'CRM'}
-                          </span>
-                        </span>
-                        {ind.oQueMede && <span className="block text-[10px] text-text-secondary font-normal leading-snug mt-0.5">{ind.oQueMede}</span>}
-                      </td>
-                      <td className={`${td} font-bold tabular-nums ${COR_STATUS[ind.status]}`}>{valorIndicador(ind)}</td>
-                      <td className={td + ' text-text-secondary tabular-nums'}>
-                        {referenciaIndicador(ind)}
-                        {ind.origemReferencia === 'mercado' && (
-                          <span className="block text-[9.5px] text-white/30 font-normal normal-case tracking-normal">de mercado, não combinado</span>
-                        )}
-                      </td>
-                      <td className={td + ' text-text-secondary tabular-nums'}>
-                        {ind.anterior === null ? '—' : valorIndicador({ valor: ind.anterior, unidade: ind.unidade })}
-                        {ind.rumo === 'melhorou' && <span className="text-emerald-300 ml-1">↑</span>}
-                        {ind.rumo === 'piorou' && <span className="text-rose-300 ml-1">↓</span>}
-                      </td>
-                      <td className={td}>{BOLA_STATUS[ind.status]}</td>
-                    </tr>
-                  ))}
-                </React.Fragment>
-              ))}
-            </Tabela>
-            {asStrArr(placar.tres_piores).length > 0 && (
-              <p className="text-[11.5px] text-text-secondary mt-3"><b className="text-rose-300">Três piores:</b> {asStrArr(placar.tres_piores).join(' · ')}</p>
-            )}
-            {asStr(placar.mais_melhorou) && <p className="text-[11.5px] text-text-secondary mt-1"><b className="text-emerald-300">Mais melhorou:</b> {asStr(placar.mais_melhorou)}</p>}
-            {asStr(placar.mais_piorou) && <p className="text-[11.5px] text-text-secondary mt-1"><b className="text-rose-300">Mais piorou:</b> {asStr(placar.mais_piorou)}</p>}
-          </Secao>
-        )}
-
-        {/* 6 — CRM × real */}
-        {crmVsReal.length > 0 && (
-          <Secao id="crm" n={nDe("crm")} titulo="O CRM × o que de fato aconteceu" hint="Onde as duas fontes divergem — e para que lado o erro pende.">
-            <Tabela cols={['Métrica', 'CRM', 'Real', 'Veredito', 'Leitura']}>
-              {crmVsReal.map((l, i) => {
-                const v = VEREDITO[asStr(l.veredito) as ChaveVeredito];
-                return (
-                  <tr key={i}>
-                    <td className={td + ' text-white/85 font-medium'}>{asStr(l.metrica).replace(/_/g, ' ')}</td>
-                    <td className={td + ' text-text-secondary tabular-nums'}>{valorSolto(l.valor_crm).txt}</td>
-                    <td className={td + ' text-white font-bold tabular-nums'}>{valorSolto(l.valor_real).txt}</td>
-                    <td className={td}>{v ? <span className={v.cor + ' font-bold'}>{v.simb} {v.txt}</span> : '—'}</td>
-                    <td className={td + ' text-text-secondary leading-relaxed'}>{asStr(l.observacao)}</td>
-                  </tr>
-                );
-              })}
-            </Tabela>
-          </Secao>
-        )}
-
-        {/* 7 — tabela dos leads */}
-        {leadsAud.length > 0 && (
-          <Secao id="leads" n={nDe("leads")} titulo="Cliente por cliente" hint={`${leadsAud.length} clientes, um por linha. Os números acima dizem onde olhar primeiro.`}>
-            {(() => {
-              const conta = (fn: (l: Record<string, unknown>) => boolean) => leadsAud.filter(fn).length;
-              // vem do veredito, não de comparar strings: a análise escreve
-              // observação dentro de etapa_real ("Em Contato — conversa viva
-              // ontem", "Proposta esperando o DECISOR"), e recontar dali dava
-              // 44 onde ela própria apurou 6.
-              const defasados = asNum(veredito.leads_com_etapa_defasada) ?? 0;
-              const divergem = conta((l) => {
-                const c = asNum(l.sem_toque_crm), r = asNum(l.sem_toque_real);
-                return c !== null && r !== null && Math.abs(c - r) > 2;
-              });
-              const naoLidos = conta((l) => asStr(l.veredito) === '?' || !asStr(l.veredito));
-              const quentes = conta((l) => asStr(l.temperatura).toLowerCase() === 'quente');
-              const cartoes = [
-                { n: leadsAud.length, rot: 'clientes na lista', cor: 'text-white' },
-                { n: quentes, rot: 'quentes', cor: 'text-rose-300' },
-                { n: defasados, rot: 'com a etapa errada no CRM', cor: 'text-amber-300' },
-                { n: divergem, rot: 'em que o CRM erra o tempo sem contato', cor: 'text-amber-300' },
-                { n: naoLidos, rot: 'sem conversa localizada', cor: 'text-white/40' },
-              ].filter((c) => c.n > 0);
-              return (
-                <div className="flex flex-wrap gap-x-5 gap-y-2 mb-3 pb-3 border-b border-white/[0.07]">
-                  {cartoes.map((c) => (
-                    <span key={c.rot} className="text-[11.5px] text-text-secondary">
-                      <b className={`${c.cor} text-[17px] font-extrabold tabular-nums`}>{c.n}</b>
-                      {' '}{c.rot}
-                      {c.rot !== 'clientes na lista' && leadsAud.length
-                        ? <span className="text-white/30 tabular-nums"> · {Math.round((c.n / leadsAud.length) * 100)}%</span>
-                        : null}
-                    </span>
-                  ))}
-                </div>
-              );
-            })()}
-            <Tabela cols={['Lead', 'T', 'Etapa CRM', 'Etapa real', 'Ver.', 'Sem toque', 'Formato', 'O que queria', 'Por que parou']}>
-              {leadsAud.map((l, i) => {
-                const t = TEMPERATURA[asStr(l.temperatura).toLowerCase()];
-                const crmD = asNum(l.sem_toque_crm); const realD = asNum(l.sem_toque_real);
-                const divergiu = crmD !== null && realD !== null && Math.abs(crmD - realD) > 2;
-                return (
-                  <tr key={i}>
-                    <td className={td + ' text-white font-bold whitespace-nowrap'}>{asStr(l.lead)}</td>
-                    <td className={td}>{t?.simb || '·'}</td>
-                    <td className={td + ' text-text-secondary'}>{asStr(l.etapa_crm) || '—'}</td>
-                    <td className={`${td} ${etapaRealDe(l) && etapaRealDe(l) !== asStr(l.etapa_crm) ? 'text-amber-300 font-bold' : 'text-text-secondary'}`}>{asStr(l.etapa_real) || '—'}</td>
-                    <td className={td + ' whitespace-nowrap'}>{asStr(l.veredito) || '—'}</td>
-                    <td className={`${td} tabular-nums whitespace-nowrap ${divergiu ? 'text-amber-300 font-bold' : 'text-text-secondary'}`}>
-                      {crmD === null ? '—' : crmD} → {realD === null ? 'n/d' : realD}
-                    </td>
-                    <td className={td + ' text-text-secondary'}>{asStr(l.formato) || '—'}</td>
-                    <td className={td + ' text-text-secondary leading-relaxed'}>{asStr(l.o_que_o_cliente_queria)}</td>
-                    <td className={td + ' text-text-secondary leading-relaxed'}>{asStr(l.por_que_parou)}</td>
-                  </tr>
-                );
-              })}
-            </Tabela>
-          </Secao>
-        )}
-
-        {/* 8 — qualidade / oportunidade / funil */}
-        {blocos.map((b, i) => (
-          <Secao key={b.t} id={ancoraBloco(b.t)} n={nDe(ancoraBloco(b.t))} titulo={b.t}>
-            <Grade itens={b.numeros.map(([k, v]) => {
-              const s = valorSolto(v);
-              return { rot: b.rot[k] || k.replace(/_/g, ' '), val: s.txt, nulo: s.nulo };
-            })} />
-            {b.observacao && <p className="text-[12.5px] text-white/85 leading-relaxed mt-3">{b.observacao}</p>}
-            {b.t === 'Oportunidade perdida' && sinais.length > 0 && (
-              <div className="mt-3">
-                <Tabela cols={['Lead', 'Data', 'O que o cliente disse', 'O que você respondeu', 'Veredito']}>
-                  {sinais.map((s, j) => {
-                    const v = asStr(s.veredito).toLowerCase();
-                    const cor = v.startsWith('aprov') ? 'text-emerald-300' : v.startsWith('ignor') ? 'text-rose-300' : 'text-amber-300';
-                    return (
-                      <tr key={j}>
-                        <td className={td + ' text-white font-bold whitespace-nowrap'}>{asStr(s.lead)}</td>
-                        <td className={td + ' text-text-secondary whitespace-nowrap tabular-nums'}>{fmtYmd(asStr(s.data))}</td>
-                        <td className={td + ' text-white/85 italic leading-relaxed'}>{asStr(s.o_que_o_cliente_disse)}</td>
-                        <td className={td + ' text-text-secondary leading-relaxed'}>{asStr(s.o_que_voce_respondeu)}</td>
-                        <td className={`${td} font-bold whitespace-nowrap ${cor}`}>{asStr(s.veredito)}</td>
-                      </tr>
-                    );
-                  })}
-                </Tabela>
-              </div>
-            )}
-          </Secao>
-        ))}
-
-        {/* 9 — temperatura da carteira */}
-        {Object.keys(temperatura).length > 0 && (
-          <Secao id="temp" n={nDe("temp")} titulo="Temperatura da carteira">
-            <div className="flex flex-wrap gap-2">
-              {(['quente', 'morno', 'frio', 'perdido'] as const).map((k) => {
-                const v = asNum(temperatura[k]);
-                if (v === null) return null;
-                return (
-                  <div key={k} className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-2.5 min-w-[92px]">
-                    <p className={`text-[10px] font-bold uppercase tracking-[0.1em] ${TEMPERATURA[k].cor}`}>{TEMPERATURA[k].simb} {k}</p>
-                    <p className="text-[22px] font-extrabold text-white tabular-nums">{v}</p>
+                    {ac.oQueAconteceu && <p className="text-[12.5px] text-white/85 leading-relaxed mb-1"><b className="text-white">O que aconteceu.</b> {ac.oQueAconteceu}</p>}
+                    <Citacoes lista={ac.citacoes} />
+                    {ac.oQueCustou && <p className="text-[12.5px] text-white/85 leading-relaxed mb-1"><b className="text-rose-300">O que custou.</b> {ac.oQueCustou}</p>}
+                    {ac.oQueFazer && <p className="text-[12.5px] text-white/85 leading-relaxed"><b className="text-emerald-300">O que fazer no lugar.</b> {ac.oQueFazer}</p>}
+                    <MensagemPronta rotulo="modelo" texto={ac.mensagemPronta} />
                   </div>
                 );
               })}
@@ -854,120 +480,11 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
           </Secao>
         )}
 
-        {/* 10 — corrente causal + custo */}
-        {(asStrArr(corrente.elos).length > 0 || asNum(corrente.custo_estimado_vgv) !== null) && (
-          <Secao id="corrente" n={nDe("corrente")} titulo="Como um erro puxa o outro" hint="Como um elo puxa o outro até virar dinheiro perdido.">
-            {asStrArr(corrente.elos).length > 0 && (
-              <div className="space-y-1 mb-3">
-                {asStrArr(corrente.elos).map((e, i) => (
-                  <p key={i} className="text-[12.5px] text-white/85 leading-relaxed">
-                    <span className="text-[#E8C547]/60 font-bold mr-1.5">{i + 1}.</span>{e}
-                  </p>
-                ))}
-              </div>
-            )}
-            {asStr(corrente.primeiro_elo) && (
-              <p className="text-[12.5px] text-white/90 mb-3"><b className="text-rose-300">O primeiro elo:</b> {asStr(corrente.primeiro_elo)}</p>
-            )}
-            {(asNum(corrente.custo_estimado_vgv) !== null || asNum(corrente.custo_estimado_comissao) !== null) && (
-              <div className="rounded-xl border border-[#E8C547]/25 bg-[#E8C547]/[0.04] p-3">
-                <div className="flex flex-wrap gap-x-8 gap-y-2">
-                  {asNum(corrente.custo_estimado_vgv) !== null && (
-                    <div>
-                      <p className="text-[9.5px] font-extrabold uppercase tracking-[0.12em] text-text-secondary">VGV parado e recuperável</p>
-                      <p className="text-[22px] font-extrabold text-[#E8C547] tabular-nums">{fmtDinheiro(asNum(corrente.custo_estimado_vgv))}</p>
-                    </div>
-                  )}
-                  {asNum(corrente.custo_estimado_comissao) !== null && (
-                    <div>
-                      <p className="text-[9.5px] font-extrabold uppercase tracking-[0.12em] text-text-secondary">Comissão estimada</p>
-                      <p className="text-[22px] font-extrabold text-white tabular-nums">{fmtDinheiro(asNum(corrente.custo_estimado_comissao))}</p>
-                    </div>
-                  )}
-                </div>
-                {asStr(corrente.base_do_calculo) && (
-                  <p className="text-[10.5px] text-text-secondary mt-2 leading-relaxed"><b>Estimativa, não valor apurado.</b> {asStr(corrente.base_do_calculo)}</p>
-                )}
-              </div>
-            )}
-          </Secao>
-        )}
-
-        {/* como medir em 30 dias — a instrução vira número cobrável */}
-        {metas.length > 0 && (
-          <Secao id="metas" n={nDe("metas")} titulo="Como medir a instrução" hint="O que precisa ter mudado quando a próxima rodada abrir.">
-            <Tabela cols={['Indicador', 'Hoje', 'Meta']}>
-              {metas.map((m, i) => (
-                <tr key={i}>
-                  <td className={td + ' text-white/85'}>{asStr(m.indicador)}</td>
-                  <td className={td + ' text-rose-300 font-bold tabular-nums whitespace-nowrap'}>{asStr(m.hoje) || valorSolto(m.hoje).txt}</td>
-                  <td className={td + ' text-emerald-300 font-bold tabular-nums whitespace-nowrap'}>{asStr(m.meta) || valorSolto(m.meta).txt}</td>
-                </tr>
-              ))}
-            </Tabela>
-          </Secao>
-        )}
-
-        {/* a melhor e a pior — material de treino e pauta do 1:1 */}
-        {(asStr(asObj(duasConversas.melhor).lead) || asStr(asObj(duasConversas.pior).lead)) && (
-          <Secao id="duas" n={nDe("duas")} titulo="Duas conversas">
-            <div className="grid sm:grid-cols-2 gap-3">
-              {([['melhor', 'A melhor', 'material de treinamento', 'emerald'], ['pior', 'A pior', 'pauta do 1:1', 'rose']] as const).map(([k, tit, uso, cor]) => {
-                const c = asObj(duasConversas[k]);
-                if (!asStr(c.lead)) return null;
-                return (
-                  <div key={k} className={`rounded-xl border p-3 ${cor === 'emerald' ? 'border-emerald-500/30 bg-emerald-500/[0.04]' : 'border-rose-500/30 bg-rose-500/[0.04]'}`}>
-                    <p className={`text-[9.5px] font-extrabold uppercase tracking-[0.14em] ${cor === 'emerald' ? 'text-emerald-300/80' : 'text-rose-300/80'}`}>{tit} · {uso}</p>
-                    <p className="text-[13px] font-bold text-white mt-1">
-                      {asStr(c.lead)}{asStr(c.data) ? <span className="text-text-secondary font-normal"> · {fmtYmd(asStr(c.data))}</span> : null}
-                    </p>
-                    <p className="text-[12px] text-white/85 leading-relaxed mt-1">{asStr(c.por_que)}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </Secao>
-        )}
-
-        {/* o que mudou desde a rodada passada */}
-        {asStr(a.comparativo_rodada_anterior) && (
-          <Secao id="antes" n={nDe("antes")} titulo="Desde a rodada anterior">
-            <p className="text-[12.5px] text-white/85 leading-relaxed">{asStr(a.comparativo_rodada_anterior)}</p>
-          </Secao>
-        )}
-
-        {/* 11 — padrões */}
-        {padroes.length > 0 && (
-          <Secao id="padroes" n={nDe("padroes")} titulo="Padrões recorrentes">
-            <ol className="space-y-1.5">
-              {padroes.map((p, i) => (
-                <li key={i} className="text-[12.5px] text-white/85 leading-relaxed">
-                  <span className="text-[#E8C547]/60 font-bold mr-1.5">{i + 1}.</span>{p}
-                </li>
-              ))}
-            </ol>
-          </Secao>
-        )}
-
-        {/* 12 — engajamento */}
-        {(asStr(engajamento.observacao) || asStrArr(engajamento.sinais_de_queda).length > 0) && (
-          <Secao id="engaja" n={nDe("engaja")} titulo="Engajamento">
-            {asStrArr(engajamento.sinais_de_queda).length > 0 && (
-              <ul className="mb-2 space-y-1">
-                {asStrArr(engajamento.sinais_de_queda).map((s, i) => (
-                  <li key={i} className="text-[12.5px] text-amber-300">• {s}</li>
-                ))}
-              </ul>
-            )}
-            {asStr(engajamento.observacao) && <p className="text-[12.5px] text-white/85 leading-relaxed">{asStr(engajamento.observacao)}</p>}
-          </Secao>
-        )}
-
-        {/* 13 — nem tudo é do corretor */}
-        {naoEDele.length > 0 && (
-          <Secao id="naodele" n={nDe("naodele")} titulo="Nem tudo é do corretor" hint="O que a casa precisa assumir antes de cobrar dele.">
+        {/* o que a casa deve antes de cobrar — fica visível para os dois */}
+        {rel.naoEDele.length > 0 && (
+          <Secao id="naodele" titulo="Nem tudo é do corretor" hint="O que a casa precisa assumir antes de cobrar dele.">
             <ul className="space-y-2">
-              {naoEDele.map((n, i) => (
+              {rel.naoEDele.map((n, i) => (
                 <li key={i} className="text-[12.5px] text-white/85 leading-relaxed">
                   <span className="text-text-secondary">•</span> <b className="text-white/70">{asStr(n.lead) || asStr(n.tipo).replace(/_/g, ' ')}</b> — {asStr(n.descricao)}
                 </li>
@@ -976,8 +493,8 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
           </Secao>
         )}
 
-        {/* ——— daqui para baixo: só o gestor ——— */}
-        {soEu && (riscoOcorr.length > 0 || perguntas.length > 0 || destravar.length > 0) && (
+        {/* ═══════════ CAMADA 3 · SÓ O GESTOR ═══════════ */}
+        {soEu && (rel.risco.length > 0 || rel.perguntas.length > 0 || rel.destravar.length > 0) && (
           <div className="flex items-center gap-3 pt-2">
             <div className="h-px flex-1 bg-white/10" />
             <span className="text-[9.5px] font-extrabold uppercase tracking-[0.16em] text-text-secondary">Só para o gestor · não vai no PDF do corretor</span>
@@ -985,20 +502,10 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
           </div>
         )}
 
-        {soEu && riscoOcorr.length > 0 && (
-          <Secao id="risco" n={nDe("risco")} titulo="Risco para a imobiliária">
-            <p className="text-[11px] text-text-secondary mb-2">
-              Gravidade <b className={asStr(risco.gravidade) === 'alta' ? 'text-rose-300' : 'text-amber-300'}>{asStr(risco.gravidade) || '—'}</b>.
-              Cada ocorrência traz o trecho literal — sem prova, não se registra.
-            </p>
-            {riscoOcorr.map((o, i) => <Citacao key={i} lead={asStr(o.lead)} data={asStr(o.data)} trecho={asStr(o.trecho)} />)}
-          </Secao>
-        )}
-
-        {soEu && perguntas.length > 0 && (
-          <Secao id="perguntas" n={nDe("perguntas")} titulo="Perguntas para a reunião" hint="Perguntas, não acusações — a primeira abre a conversa.">
+        {soEu && rel.perguntas.length > 0 && (
+          <Secao id="perguntas" titulo="Perguntas para a reunião" hint="Perguntas, não acusações — a primeira abre a conversa.">
             <ol className="space-y-2">
-              {perguntas.map((p, i) => (
+              {rel.perguntas.map((p, i) => (
                 <li key={i} className="text-[12.5px] text-white/90 leading-relaxed">
                   <span className="text-[#E8C547]/60 font-bold mr-1.5">{i + 1}.</span>{p}
                 </li>
@@ -1007,10 +514,22 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
           </Secao>
         )}
 
-        {soEu && destravar.length > 0 && (
-          <Secao id="destravar" n={nDe("destravar")} titulo="O que VOCÊ precisa destravar" hint="O corretor não resolve isso sozinho.">
+        {soEu && rel.risco.length > 0 && (
+          <Secao id="risco" titulo="Risco para a imobiliária"
+            hint="Cada ocorrência traz o trecho literal — sem prova, não se registra.">
+            {rel.risco.map((o, i) => (
+              <div key={i}>
+                <Citacao c={o} />
+                {o.porQue && <p className="text-[11.5px] text-text-secondary -mt-1 mb-2 leading-relaxed">{o.porQue}</p>}
+              </div>
+            ))}
+          </Secao>
+        )}
+
+        {soEu && rel.destravar.length > 0 && (
+          <Secao id="destravar" titulo="O que VOCÊ precisa destravar" hint="O corretor não resolve isso sozinho.">
             <Tabela cols={['Tipo', 'O que travou', 'Responsável']}>
-              {destravar.map((d, i) => (
+              {rel.destravar.map((d, i) => (
                 <tr key={i}>
                   <td className={td + ' text-[#E8C547] font-bold whitespace-nowrap'}>{TIPO_DESTRAVE[asStr(d.tipo)] || asStr(d.tipo)}</td>
                   <td className={td + ' text-white/85 leading-relaxed'}>{asStr(d.descricao)}</td>
@@ -1021,13 +540,203 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
           </Secao>
         )}
 
-        {/* ressalvas — fecham o documento */}
-        {ressalvas.length > 0 && (
-          <Secao id="ressalvas" n={nDe("ressalvas")} titulo="Ressalvas" hint="O que não foi possível verificar, e por quê.">
-            <ul className="space-y-1.5">
-              {ressalvas.map((s, i) => <li key={i} className="text-[11.5px] text-text-secondary leading-relaxed">• {s}</li>)}
-            </ul>
-          </Secao>
+        {/* ═══════════ CAMADA 2 · A PROVA ═══════════ */}
+        {temProva && (
+          <>
+            <button
+              onClick={() => setMostrarProva((v) => !v)}
+              className="w-full al-card px-4 py-3 flex items-center justify-between gap-3 hover:bg-white/[0.04] transition-colors text-left">
+              <span>
+                <span className="al-display text-[12.5px] font-bold text-white uppercase tracking-[0.1em]">
+                  {mostrarProva ? 'Esconder a prova' : 'Ver a prova'}
+                </span>
+                <span className="block text-[11px] text-text-secondary mt-0.5">
+                  O quadro linha a linha, cliente por cliente, o que foi combinado e as ressalvas.
+                  {' '}É consulta — para quando alguém perguntar de onde saiu um número.
+                </span>
+              </span>
+              <span className="text-[18px] text-text-secondary shrink-0">{mostrarProva ? '▴' : '▾'}</span>
+            </button>
+
+            {mostrarProva && (
+              <>
+                {/* o quadro linha a linha */}
+                {indicadores.length > 0 && (
+                  <Secao id="quadro" titulo="Os números, linha a linha"
+                    hint={quadroDoSistema
+                      ? 'Calculado pelo CRM contra a régua da casa — a mesma conta em toda rodada.'
+                      : 'Rodada antiga: estes números vieram do relatório, não do CRM.'}>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 mb-3 text-[11.5px]">
+                      {(['verde', 'amarelo', 'vermelho', 'nd'] as const).map((k) => {
+                        const v = indicadores.filter((i) => i.status === k).length;
+                        if (!v) return null;
+                        return <span key={k} className="text-text-secondary">{BOLA_STATUS[k]} <b className="text-white tabular-nums">{v}</b></span>;
+                      })}
+                      {indicadores.some((i) => i.origemReferencia === 'mercado') && (
+                        <span className="text-[10.5px] text-white/40">status vermelho só contra o que a casa combinou</span>
+                      )}
+                    </div>
+
+                    {/* de onde vem cada número: sem isto o gestor lê um percentual
+                        da amostra como se fosse da carteira — e a amostra é
+                        sorteada de propósito nas faixas mais críticas */}
+                    <p className="text-[10.5px] text-text-secondary mb-3 leading-relaxed">
+                      <span className="inline-block text-[8.5px] font-extrabold uppercase tracking-[0.08em] px-1 py-px rounded bg-sky-500/15 text-sky-300 align-middle">lido</span>
+                      {' '}saiu dos {fmtNum(rel.cobertura.lidas)} clientes cuja conversa foi lida — tem prova, mas é uma
+                      amostra sorteada nas faixas mais críticas e <b className="text-white/70">não representa a carteira inteira</b>.
+                      {' '}
+                      <span className="inline-block text-[8.5px] font-extrabold uppercase tracking-[0.08em] px-1 py-px rounded bg-white/[0.07] text-white/40 align-middle">CRM</span>
+                      {' '}saiu da carteira toda, direto do sistema — cobre todo mundo, mas mede o que foi digitado.
+                    </p>
+                    <Tabela cols={['#', 'Indicador', 'Valor', 'Referência', 'Anterior', '']}>
+                      {porGrupo.map(([grupo, linhas]) => (
+                        <React.Fragment key={grupo}>
+                          <tr><td colSpan={6} className="px-2 pt-4 pb-1">
+                            <span className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-[#E8C547]/70">{grupo}</span>
+                            {PERGUNTA_DO_GRUPO[grupo] && <span className="text-[10.5px] text-text-secondary ml-2 font-normal normal-case tracking-normal">{PERGUNTA_DO_GRUPO[grupo]}</span>}
+                          </td></tr>
+                          {linhas.map((ind) => (
+                            <tr key={ind.n}>
+                              <td className={td + ' text-text-secondary tabular-nums'}>{ind.n}</td>
+                              <td className={td + ' text-white/85'}>
+                                <span className="inline-flex items-baseline gap-1.5">
+                                  {ind.rotulo}
+                                  <span className={`text-[8.5px] font-extrabold uppercase tracking-[0.08em] px-1 py-px rounded ${
+                                    ind.base === 'amostra' ? 'bg-sky-500/15 text-sky-300' : 'bg-white/[0.07] text-white/40'
+                                  }`} title={ind.base === 'amostra'
+                                    ? 'medido nos leads sorteados, com a conversa lida no WhatsApp'
+                                    : 'vem do CRM, da carteira inteira — não foi verificado no WhatsApp'}>
+                                    {ind.base === 'amostra' ? 'lido' : 'CRM'}
+                                  </span>
+                                </span>
+                                {ind.oQueMede && <span className="block text-[10px] text-text-secondary font-normal leading-snug mt-0.5">{ind.oQueMede}</span>}
+                              </td>
+                              <td className={`${td} font-bold tabular-nums ${COR_STATUS[ind.status]}`}>{valorIndicador(ind)}</td>
+                              <td className={td + ' text-text-secondary tabular-nums'}>
+                                {referenciaIndicador(ind)}
+                                {ind.origemReferencia === 'mercado' && (
+                                  <span className="block text-[9.5px] text-white/30 font-normal normal-case tracking-normal">de mercado, não combinado</span>
+                                )}
+                              </td>
+                              <td className={td + ' text-text-secondary tabular-nums'}>
+                                {ind.anterior === null ? '—' : valorIndicador({ valor: ind.anterior, unidade: ind.unidade })}
+                                {ind.rumo === 'melhorou' && <span className="text-emerald-300 ml-1">↑</span>}
+                                {ind.rumo === 'piorou' && <span className="text-rose-300 ml-1">↓</span>}
+                              </td>
+                              <td className={td}>{BOLA_STATUS[ind.status]}</td>
+                            </tr>
+                          ))}
+                        </React.Fragment>
+                      ))}
+                    </Tabela>
+                  </Secao>
+                )}
+
+                {/* cliente por cliente */}
+                {rel.leads.length > 0 && (
+                  <Secao id="leads" titulo="Cliente por cliente"
+                    hint={rel.leadsSemAchado !== null
+                      ? `${rel.leads.length} clientes na lista. Outros ${rel.leadsSemAchado} foram lidos e estavam em ordem.`
+                      : `${rel.leads.length} clientes, um por linha.`}>
+                    <Tabela cols={['Cliente', '', 'Etapa no CRM', 'Etapa real', 'Sem toque', 'O que travou']}>
+                      {rel.leads.map((l, i) => {
+                        const v = VEREDITO[l.veredito as ChaveVeredito];
+                        const divergiu = !!l.etapaReal && !!l.etapaCrm && l.etapaReal !== l.etapaCrm;
+                        return (
+                          <tr key={i}>
+                            <td className={td + ' text-white font-bold whitespace-nowrap'}>{l.lead}</td>
+                            <td className={td + ' whitespace-nowrap'} title={v?.txt}>{v ? <span className={v.cor + ' font-bold'}>{v.simb}</span> : '—'}</td>
+                            <td className={td + ' text-text-secondary'}>{l.etapaCrm || '—'}</td>
+                            <td className={`${td} ${divergiu ? 'text-amber-300 font-bold' : 'text-text-secondary'}`}>{l.etapaReal || '—'}</td>
+                            <td className={td + ' text-text-secondary tabular-nums whitespace-nowrap'}>
+                              {l.diasSemToqueReal === null ? '—' : `${fmtNum(l.diasSemToqueReal)}d`}
+                            </td>
+                            <td className={td + ' text-text-secondary leading-relaxed'}>{l.porQueParou || l.oQueQueria}</td>
+                          </tr>
+                        );
+                      })}
+                    </Tabela>
+                  </Secao>
+                )}
+
+                {/* o combinado — a única parte cobrável, porque foi acertada antes */}
+                {(paradosPrazo.length > 0 || descartesExplicar.length > 0 || fichaIncompleta.length > 0 || naoCombinado.length > 0) && (
+                  <Secao id="combinado" titulo="O combinado"
+                    hint="Só entra aqui o que a casa acertou antes. O que não foi combinado não é cobrança do corretor — é do gestor.">
+
+                    {paradosPrazo.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-[11.5px] font-bold text-white mb-1.5">Passaram do prazo da etapa</p>
+                        <Tabela cols={['Lead', 'Etapa', 'Está há', 'Prazo']}>
+                          {paradosPrazo.map((l, i) => (
+                            <tr key={i}>
+                              <td className={td + ' text-white font-bold whitespace-nowrap'}>{asStr(l.lead)}</td>
+                              <td className={td + ' text-text-secondary'}>{asStr(l.etapa)}</td>
+                              <td className={td + ' text-rose-300 font-bold tabular-nums whitespace-nowrap'}>{fmtNum(asNum(l.dias_na_etapa))} dias</td>
+                              <td className={td + ' text-text-secondary tabular-nums whitespace-nowrap'}>{fmtNum(asNum(l.prazo_da_etapa))} dias</td>
+                            </tr>
+                          ))}
+                        </Tabela>
+                      </div>
+                    )}
+
+                    {descartesExplicar.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-[11.5px] font-bold text-white mb-1.5">Descartes para explicar</p>
+                        <p className="text-[10.5px] text-text-secondary mb-1.5">Motivos que não se parecem com nenhum critério da régua. Pergunta, não acusação.</p>
+                        <Tabela cols={['Motivo registrado', 'Quantos', 'Por que chamou atenção']}>
+                          {descartesExplicar.map((x, i) => (
+                            <tr key={i}>
+                              <td className={td + ' text-amber-300 font-bold'}>“{asStr(x.motivo)}”</td>
+                              <td className={td + ' text-white tabular-nums'}>{fmtNum(asNum(x.quantidade))}</td>
+                              <td className={td + ' text-text-secondary leading-relaxed'}>{asStr(x.por_que_chamou_atencao)}</td>
+                            </tr>
+                          ))}
+                        </Tabela>
+                      </div>
+                    )}
+
+                    {fichaIncompleta.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-[11.5px] font-bold text-white mb-1.5">Ficha do cliente incompleta</p>
+                        <div className="flex flex-wrap gap-2">
+                          {fichaIncompleta.map((f, i) => (
+                            <div key={i} className="rounded-xl border border-amber-500/25 bg-amber-500/[0.04] px-3 py-1.5">
+                              <span className="text-[11.5px] text-white font-bold">{asStr(f.campo)}</span>
+                              <span className="text-[11.5px] text-amber-300 tabular-nums"> · falta em {fmtNum(asNum(f.leads_sem))}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {naoCombinado.length > 0 && (
+                      <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+                        <p className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1.5">
+                          Isto ainda não foi combinado — cobrança sua, não dele
+                        </p>
+                        <ul className="space-y-1">
+                          {naoCombinado.map((s, i) => <li key={i} className="text-[12px] text-white/80 leading-relaxed">• {s}</li>)}
+                        </ul>
+                        <Link href="/dashboard/admin/auditoria/diretrizes/" className="inline-block mt-2 text-[11px] font-bold text-[#E8C547] hover:brightness-125">
+                          definir na régua →
+                        </Link>
+                      </div>
+                    )}
+                  </Secao>
+                )}
+
+                {/* ressalvas — fecham o documento */}
+                {rel.ressalvas.length > 0 && (
+                  <Secao id="ressalvas" titulo="Ressalvas" hint="O que não foi possível verificar, e por quê.">
+                    <ul className="space-y-1.5">
+                      {rel.ressalvas.map((s, i) => <li key={i} className="text-[11.5px] text-text-secondary leading-relaxed">• {s}</li>)}
+                    </ul>
+                  </Secao>
+                )}
+              </>
+            )}
+          </>
         )}
 
         <p className="text-[10.5px] text-text-secondary text-center pt-2">

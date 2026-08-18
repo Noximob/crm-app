@@ -167,22 +167,31 @@ export const COR_STATUS: Record<string, string> = {
 };
 export const BOLA_STATUS: Record<string, string> = { verde: '🟢', amarelo: '🟡', vermelho: '🔴', nd: '⚪' };
 
-/**
- * O status vem da IA e pode chegar em qualquer uma das linguagens que o
- * relatório usa: a da cor (verde/amarelo/vermelho) ou a do sentido
- * (dentro/atenção/fora). O prompt usa AS DUAS em pontos diferentes, e na
- * primeira rodada real vieram "dentro/atencao/fora" — que caíam todos em
- * "não medido" e apagavam o quadro inteiro.
+/*
+ * Havia aqui um normalizarStatus() que traduzia o status escrito pela IA
+ * ("dentro"/"atencao"/"fora" ou verde/amarelo/vermelho) para a linguagem da
+ * tela. Ele saiu junto com a decisão de nunca mais usar esse campo: o status
+ * é sempre recalculado do valor contra a referência, porque o que a análise
+ * escrevia ali contradizia os próprios números dela.
  */
-function normalizarStatus(bruto: unknown): string {
-  const s = asStr(bruto).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-  if (['verde', 'dentro', 'ok', 'bom'].includes(s)) return 'verde';
-  if (['amarelo', 'atencao', 'alerta', 'parcial'].includes(s)) return 'amarelo';
-  if (['vermelho', 'fora', 'critico', 'ruim'].includes(s)) return 'vermelho';
-  return 'nd';
-}
 
 /** Casa o quadro desta rodada com o da anterior e resolve o rumo de cada linha. */
+/**
+ * Lê o quadro que veio DENTRO do relatório. Só roda em rodada antiga, que
+ * não guardou o panorama do CRM — nas novas quem monta o quadro é o sistema.
+ *
+ * O valor e a referência de cada linha se aproveitam: a análise leu do
+ * painel e em geral acertou (inclusive o pró-rata das metas mensais para o
+ * tamanho do período). O JULGAMENTO, não. No relatório real ela marcou
+ * "atenção" num indicador de 100% contra meta de 70% — o corretor bateu a
+ * meta e o quadro o repreendeu — e marcou "atenção" em duas linhas que ela
+ * própria deixou sem valor. Quem conhece a operação lê isso e para de
+ * confiar no documento inteiro, com razão.
+ *
+ * Por isso o status é sempre RECALCULADO aqui, a partir do valor e da
+ * referência, pela mesma conta que o sistema usa nas rodadas novas. O que a
+ * análise escreveu no campo `status` é ignorado.
+ */
 export function lerIndicadores(bruto: unknown, anterior?: unknown): Indicador[] {
   const antes = new Map<string, number | null>();
   for (const l of asArr(anterior)) antes.set(asStr(l.indicador), asNum(l.valor));
@@ -191,18 +200,30 @@ export function lerIndicadores(bruto: unknown, anterior?: unknown): Indicador[] 
     const chave = asStr(l.indicador);
     const def = DEF_INDICADOR[chave];
     const valor = asNum(l.valor);
+    const referencia = asNum(l.referencia);
     const ant = antes.has(chave) ? antes.get(chave)! : null;
-    let st = normalizarStatus(l.status);
 
     const og = asStr(l.origem_referencia).toLowerCase();
     const origemReferencia: Indicador['origemReferencia'] =
       og === 'casa' ? 'casa' : og === 'mercado' ? 'mercado' : 'nenhuma';
 
-    // rede de segurança: vermelho só se sustenta contra régua da casa. Se a
-    // análise pintou de vermelho um indicador cuja referência é só padrão de
-    // mercado, rebaixa para amarelo — reprovar por acordo que não houve é o
-    // erro que faz o corretor descartar o relatório inteiro.
-    if (st === 'vermelho' && origemReferencia !== 'casa') st = 'amarelo';
+    const bom = def?.bom || 'neutro';
+    let st: string;
+    if (valor === null || referencia === null || bom === 'neutro') {
+      // sem valor ou sem régua não existe veredito — e "atenção" numa linha
+      // vazia é a contradição que mais salta aos olhos de quem lê
+      st = 'nd';
+    } else {
+      const dentro = bom === 'alto' ? valor >= referencia : valor <= referencia;
+      if (dentro) st = 'verde';
+      else {
+        // fora: quão fora? perto do limite ainda é atenção
+        const folga = bom === 'alto' ? valor / (referencia || 1) : (referencia || 1) / (valor || 1);
+        // vermelho só se sustenta contra régua da casa: reprovar por acordo
+        // que nunca houve é o erro que faz o corretor descartar o relatório
+        st = origemReferencia === 'casa' && folga < 0.7 ? 'vermelho' : 'amarelo';
+      }
+    }
 
     let rumo: Indicador['rumo'] = null;
     if (valor !== null && ant !== null && def && def.bom !== 'neutro') {
@@ -220,7 +241,7 @@ export function lerIndicadores(bruto: unknown, anterior?: unknown): Indicador[] 
       base: def?.base || 'carteira',
       bom: def?.bom || 'neutro',
       valor,
-      referencia: asNum(l.referencia),
+      referencia,
       origemReferencia,
       status: (['verde', 'amarelo', 'vermelho', 'nd'].includes(st) ? st : 'nd') as Indicador['status'],
       anterior: ant,

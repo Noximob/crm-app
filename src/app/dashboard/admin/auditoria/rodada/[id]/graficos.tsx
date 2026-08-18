@@ -1,23 +1,29 @@
 'use client';
 
 /**
- * AUDITORIA · O RETRATO — a leitura de um segundo, antes do texto.
+ * AUDITORIA · O RETRATO — todo número da rodada, num lugar só.
  *
- * O relatório é longo de propósito: ele é a prova. Mas a reunião começa com
- * o gestor e o corretor olhando a mesma tela, e nesse primeiro minuto
- * ninguém lê 22 seções. Estes gráficos respondem as três perguntas que
- * abrem qualquer 1:1 — como ele está, qual a natureza do problema, e quanto
- * do que se afirma aqui foi de fato verificado.
+ * Antes os números estavam espalhados por seis pontos do documento: estes
+ * gráficos no topo, o quadro de 24 linhas lá embaixo, as metas dentro de "O
+ * combinado", a temperatura numa seção própria, os destaques dentro de "O
+ * que você faz bem" e mais três blocos soltos de percentuais. O gestor
+ * rolava a tela para trás toda vez que queria comparar dois deles.
+ *
+ * Agora é uma seção só, em três camadas de leitura: os quatro números que
+ * abrem a conversa, as metas do período, e os gráficos que explicam de onde
+ * eles vieram. O quadro completo continua existindo — mas como prova, não
+ * como abertura.
  *
  * Regras que valem para todos:
  *   - cor nunca carrega sentido sozinha. Todo segmento vem com número e
  *     rótulo ao lado, porque isto vai para PDF impresso e para quem não
  *     distingue as cores.
- *   - nada decorativo. O que cabe numa frase fica em frase.
  *   - percentual sempre com o de-quantos: "35% (24 de 68)".
+ *   - nada decorativo. O que cabe numa frase fica em frase.
  */
 import React from 'react';
-import { asObj, asNum, fmtNum, type Indicador } from '@/lib/auditoriaAnalise';
+import { asObj, asArr, asNum, asStr, fmtNum, fmtDinheiro, type Indicador } from '@/lib/auditoriaAnalise';
+import type { Relatorio } from '@/lib/auditoriaRelatorio';
 
 /** Status é reservado e valida ≥3:1 sobre a superfície escura do app. */
 const COR = {
@@ -59,10 +65,9 @@ function Legenda({ fatias }: { fatias: Fatia[] }) {
   return (
     <div className="flex flex-wrap gap-x-3 gap-y-1">
       {fatias.filter((f) => f.n > 0).map((f) => (
-        <span key={f.chave} className="inline-flex items-center gap-1.5 text-[11px] text-text-secondary">
+        <span key={f.chave} className="inline-flex items-center gap-1.5 text-[10.5px] text-text-secondary">
           <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: f.cor }} />
-          <b className="text-white tabular-nums">{f.n}</b>
-          <span>{f.rotulo}</span>
+          <b className="text-white tabular-nums">{f.n}</b> {f.rotulo}
           <span className="text-white/35 tabular-nums">{Math.round((f.n / total) * 100)}%</span>
         </span>
       ))}
@@ -70,16 +75,31 @@ function Legenda({ fatias }: { fatias: Fatia[] }) {
   );
 }
 
-// ---------------------------------------------------------------------------
+/** Um número grande com a frase que diz o que ele quer dizer. */
+function Numerao({ valor, rot, leitura, tom }: {
+  valor: string; rot: string; leitura?: string; tom?: 'bom' | 'ruim' | 'neutro';
+}) {
+  const cor = tom === 'bom' ? 'text-emerald-300' : tom === 'ruim' ? 'text-rose-300' : 'text-white';
+  const borda = tom === 'bom' ? 'border-emerald-500/25 bg-emerald-500/[0.04]'
+    : tom === 'ruim' ? 'border-rose-500/25 bg-rose-500/[0.04]'
+      : 'border-white/[0.07] bg-white/[0.02]';
+  return (
+    <div className={`rounded-xl border px-3 py-2.5 ${borda}`}>
+      <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-text-secondary leading-tight">{rot}</p>
+      <p className={`text-[24px] font-extrabold tabular-nums leading-none mt-1 ${cor}`}>{valor}</p>
+      {leitura && <p className="text-[10.5px] text-text-secondary leading-snug mt-1">{leitura}</p>}
+    </div>
+  );
+}
 
-export default function GraficosRodada({ a, indicadores, porGrupo }: {
-  a: Record<string, unknown>;
+export default function GraficosRodada({ rel, indicadores, porGrupo }: {
+  rel: Relatorio;
   indicadores: Indicador[];
   porGrupo: [string, Indicador[]][];
 }) {
-  const veredito = asObj(a.veredito);
-  const cobertura = asObj(a.cobertura);
-  const temperatura = asObj(a.temperatura_da_carteira);
+  const temperatura = asObj(rel.legado.temperatura);
+  const metas = asArr(rel.legado.combinado.metas);
+  const dinheiroParado = asNum(rel.legado.combinado.dinheiro_parado);
 
   const fatiasDe = (linhas: Indicador[]): Fatia[] =>
     (['verde', 'amarelo', 'vermelho', 'nd'] as const).map((k) => ({
@@ -90,18 +110,19 @@ export default function GraficosRodada({ a, indicadores, porGrupo }: {
     }));
 
   const geral = fatiasDe(indicadores);
+  const foraDaRegua = geral[2].n;
 
-  const vTotal = (['fez_e_registrou', 'fez_e_nao_registrou', 'nao_fez', 'nao_verificavel'] as const)
-    .reduce((s, k) => s + (asNum(veredito[k]) ?? 0), 0);
+  const v = rel.veredito;
+  const vTotal = v.ok + v.processo + v.naoFez + v.naoVerificavel;
   const fatiasVeredito: Fatia[] = [
-    { chave: 'ok', n: asNum(veredito.fez_e_registrou) ?? 0, cor: COR.verde, rotulo: 'fez e registrou' },
-    { chave: 'proc', n: asNum(veredito.fez_e_nao_registrou) ?? 0, cor: COR.amarelo, rotulo: 'fez e não registrou' },
-    { chave: 'nao', n: asNum(veredito.nao_fez) ?? 0, cor: COR.vermelho, rotulo: 'não fez' },
-    { chave: 'nv', n: asNum(veredito.nao_verificavel) ?? 0, cor: COR.nd, rotulo: 'não verificável' },
+    { chave: 'ok', n: v.ok, cor: COR.verde, rotulo: 'fez e registrou' },
+    { chave: 'proc', n: v.processo, cor: COR.amarelo, rotulo: 'fez e não registrou' },
+    { chave: 'nao', n: v.naoFez, cor: COR.vermelho, rotulo: 'não fez' },
+    { chave: 'nv', n: v.naoVerificavel, cor: COR.nd, rotulo: 'não verificável' },
   ];
 
-  const lidas = asNum(cobertura.conversas_lidas);
-  const naAmostra = asNum(cobertura.leads_na_amostra);
+  const lidas = rel.cobertura.lidas;
+  const naAmostra = rel.cobertura.naAmostra;
   const pctLido = lidas !== null && naAmostra ? Math.round((lidas / naAmostra) * 100) : null;
 
   const fatiasTemp: Fatia[] = [
@@ -112,17 +133,100 @@ export default function GraficosRodada({ a, indicadores, porGrupo }: {
   ];
   const temTemp = fatiasTemp.some((f) => f.n > 0);
 
-  if (!indicadores.length && !vTotal) return null;
+  if (!indicadores.length && !vTotal && !metas.length) return null;
 
   return (
-    <section className="al-card relative overflow-hidden p-4 sm:p-5">
+    <section id="retrato" className="al-card relative overflow-hidden p-4 sm:p-5 scroll-mt-20">
       <div className="absolute inset-x-0 top-0 gx-line" />
       <h2 className="al-display text-[13px] font-bold text-white uppercase tracking-[0.1em] mb-1">O retrato</h2>
       <p className="text-[11px] text-text-secondary mb-4">
-        Os números primeiro. O porquê de cada um está nas seções abaixo.
+        Todo número da rodada está nesta seção. O porquê de cada um vem logo abaixo, em texto.
       </p>
 
-      <div className="grid lg:grid-cols-2 gap-x-8 gap-y-5">
+      {/* ——— camada 1: os números que abrem a conversa ——— */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-5">
+        {pctLido !== null && (
+          <Numerao
+            valor={`${fmtNum(lidas)} de ${fmtNum(naAmostra)}`}
+            rot="conversas lidas"
+            leitura={`${pctLido}% da amostra. O relatório vale para estas.`}
+          />
+        )}
+        {vTotal > 0 && (
+          <Numerao
+            valor={fmtNum(v.naoFez)}
+            rot="clientes com trabalho não feito"
+            tom={v.naoFez > 0 ? 'ruim' : 'bom'}
+            leitura={v.processo > 0 ? `e ${v.processo} em que fez e não registrou` : undefined}
+          />
+        )}
+        {indicadores.length > 0 && (
+          <Numerao
+            valor={`${foraDaRegua} de ${indicadores.length}`}
+            rot="indicadores fora da régua"
+            tom={foraDaRegua > 0 ? 'ruim' : 'bom'}
+            leitura="fora do que a casa combinou — não do padrão de mercado"
+          />
+        )}
+        {dinheiroParado !== null && (
+          <Numerao
+            valor={fmtDinheiro(dinheiroParado)}
+            rot="dinheiro da casa parado"
+            tom="ruim"
+            leitura="o que a casa pagou pelos leads que estão sem toque"
+          />
+        )}
+      </div>
+
+      {/* ——— camada 2: as metas do período ——— */}
+      {metas.length > 0 && (
+        <div className="mb-5">
+          <p className="text-[11.5px] font-bold text-white mb-0.5">As metas do período</p>
+          <p className="text-[10.5px] text-text-secondary mb-2">
+            Realizado sobre a meta da casa. Cinza é o que não dá para cobrar neste período.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {metas.map((m, i) => {
+              const bateu = m.bateu === true;
+              // "não avaliável" é cinza, não vermelho: ou o CRM não mede, ou o
+              // período é curto demais para a meta mensal fazer sentido nele
+              const semMeta = asNum(m.meta) === null || m.avaliavel === false;
+              const meta = asNum(m.meta);
+              const feito = asNum(m.realizado);
+              const pct = semMeta || !meta ? null : Math.min(100, Math.round(((feito ?? 0) / meta) * 100));
+              return (
+                <div key={i} className={`rounded-xl border px-3 py-2.5 ${
+                  semMeta ? 'border-white/[0.07] bg-white/[0.02]'
+                    : bateu ? 'border-emerald-500/30 bg-emerald-500/[0.05]' : 'border-rose-500/30 bg-rose-500/[0.05]'}`}>
+                  <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-text-secondary leading-tight">
+                    {asStr(m.indicador).replace(/_/g, ' ')}
+                  </p>
+                  <p className="mt-1">
+                    <span className={`text-[20px] font-extrabold tabular-nums ${semMeta ? 'text-white/60' : bateu ? 'text-emerald-300' : 'text-rose-300'}`}>
+                      {fmtNum(feito)}
+                    </span>
+                    {!semMeta && <span className="text-[12px] text-text-secondary tabular-nums"> / {fmtNum(meta)}</span>}
+                  </p>
+                  {pct !== null && (
+                    <div className="h-1.5 rounded bg-white/[0.07] overflow-hidden mt-1.5">
+                      <div className="h-full rounded" style={{ width: `${pct}%`, background: bateu ? COR.verde : COR.vermelho }} />
+                    </div>
+                  )}
+                  <p className="text-[10.5px] text-text-secondary leading-snug mt-1">
+                    {asStr(m.faltou)
+                      || (asNum(m.meta) === null ? 'a casa não cobra isto'
+                        : m.avaliavel === false ? `meta de ${fmtNum(asNum(m.meta_mensal))} no mês — não dá pra cobrar neste período`
+                          : bateu ? 'meta batida' : '')}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ——— camada 3: de onde os números vieram ——— */}
+      <div className="grid lg:grid-cols-2 gap-x-8 gap-y-5 pt-4 border-t border-white/[0.07]">
 
         {/* como ele está, por frente de trabalho */}
         {indicadores.length > 0 && (
@@ -163,7 +267,7 @@ export default function GraficosRodada({ a, indicadores, porGrupo }: {
             <div>
               <p className="text-[11.5px] font-bold text-white mb-0.5">A natureza do problema</p>
               <p className="text-[10.5px] text-text-secondary mb-2">
-                {fatiasVeredito[1].n > fatiasVeredito[2].n
+                {v.processo > v.naoFez
                   ? 'Mais “fez e não registrou” que “não fez”: a conversa é sobre disciplina de registro, não sobre atendimento.'
                   : 'Mais “não fez” que “fez e não registrou”: a conversa é sobre o trabalho que não aconteceu.'}
               </p>
@@ -187,9 +291,7 @@ export default function GraficosRodada({ a, indicadores, porGrupo }: {
               </div>
               <p className="text-[10.5px] text-text-secondary mt-1 tabular-nums">
                 {fmtNum(lidas)} de {fmtNum(naAmostra)} conversas
-                {asNum(cobertura.sem_conversa_localizada)
-                  ? ` · ${fmtNum(asNum(cobertura.sem_conversa_localizada))} não localizadas`
-                  : ''}
+                {rel.cobertura.naoLocalizadas ? ` · ${fmtNum(rel.cobertura.naoLocalizadas)} não localizadas` : ''}
               </p>
             </div>
           )}
