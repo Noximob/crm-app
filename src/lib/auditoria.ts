@@ -878,8 +878,12 @@ ofensa disfarçada de análise, e o corretor derruba em dois minutos.
 - Ofereceu alternativa quando o imóvel não serviu, ou deixou morrer?
 
 SOBRE ÁUDIO
-Você não consegue ouvir. Não tente e não suponha o conteúdo. Registre
-quantidade, duração, quem enviou e em que ponto da conversa. Se boa parte
+Por padrão você não ouve: registre quantidade, duração, quem enviou e em
+que ponto da conversa, e trate o conteúdo como não verificável.
+Quando o áudio for decisivo — único toque do cliente, resposta a sinal de
+compra, ou áudio longo em lead de ticket alto — há transcrição local
+disponível; as instruções de leitura dizem como. Ouvido e citado como
+transcrição, o áudio vale como qualquer outra evidência. Se boa parte
 do atendimento for áudio, registre isso como achado estrutural: o CRM nunca
 vai refletir o que foi dito, e a auditoria fica cega nessa parte.
 
@@ -1441,6 +1445,42 @@ Sem isso você vai chamar de "silêncio" o que era espera combinada, e de
 O começo remoto da história está na timeline do CRM, dentro do pacote —
 use as duas fontes juntas, mas não confunda: a timeline diz o que foi
 REGISTRADO, a conversa diz o que ACONTECEU.
+
+ÁUDIO — quando dá para ouvir, e quando não dá
+
+O padrão continua sendo: você NÃO ouve. Registre quantidade, duração, quem
+enviou e em que ponto da conversa, e trate o conteúdo como não verificável.
+Nunca suponha o que foi dito.
+
+MAS existe transcrição local disponível nesta máquina, e ela muda o que dá
+para afirmar. Use quando o áudio for decisivo — e ele é decisivo em três
+casos, que valem o trabalho:
+
+  1. o áudio foi o ÚNICO toque daquele cliente no período
+  2. o cliente respondeu ao áudio com sinal de compra, ou sumiu logo depois
+  3. o áudio tem mais de 1 minuto num lead de ticket alto
+
+Como fazer:
+  a) baixe o áudio pelo menu da mensagem no WhatsApp Web
+  b) salve em C:/Users/Usuario/Tools/audios-auditoria/ com o nome no
+     formato  nome-do-lead_AAAA-MM-DD.ogg  — é esse nome que amarra a
+     transcrição à conversa certa
+  c) rode:  C:/Users/Usuario/Tools/Python312/python.exe C:/Users/Usuario/Tools/transcrever-audios.py
+  d) leia o .txt que aparece ao lado, com o mesmo nome
+
+Roda a cerca de 5x o tempo real: um áudio de 40 segundos fica pronto em 8.
+Tudo local — áudio de cliente não sai da máquina.
+
+O QUE MUDA NO RELATÓRIO QUANDO VOCÊ OUVIU
+- O veredito daquele ponto deixa de ser "?" e passa a valer como qualquer
+  outra evidência. Cite o trecho transcrito como citaria um texto.
+- Diga SEMPRE que veio de transcrição automática: "no áudio de 25/07
+  (transcrito), você diz…". Transcrição erra nome próprio e número, e o
+  corretor precisa poder contestar sabendo de onde saiu.
+- Não transcreva a conversa inteira por esporte. Áudio que não muda nenhum
+  veredito não vale o tempo — continue contando sem ouvir.
+- Em audios_acima_2min e pct_audio_do_corretor, o número continua sendo de
+  CONTAGEM, esteja transcrito ou não.
 
 EXECUÇÃO
 - Use o texto da página. Só use captura de tela se a leitura falhar.

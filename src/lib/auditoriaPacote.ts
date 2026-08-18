@@ -197,7 +197,7 @@ export function ehObrigatorio(
   // já lido e sem nada novo desde então: não há o que reler
   if (ultimaLeituraMs > 0 && ultimaInteracao > 0 && ultimaInteracao <= ultimaLeituraMs) return false;
 
-  if (et === 'Negociação' || et === ETAPA_FECHADO) return true;
+  if (et === 'Negociação') return true;
 
   if (et === ETAPA_MEET_FEITO || et === ETAPA_VISITA_FEITA) {
     // só enquanto o pós-evento está quente; depois disso ele já é histórico
@@ -358,7 +358,12 @@ export function sortearAmostra(
   tetoParados = TETO_PARADOS_AVANCADOS,
 ): ResultadoSorteio {
   const universo = (periodo ? leads.filter((l) => elegivelNoPeriodo(l, periodo.iniMs, periodo.fimMs)) : leads)
-    .filter((l) => mapEtapaCircuito(l.etapa) !== ETAPA_DESCARTADO);
+    // Fechado e descartado ficam fora de TUDO: o atendimento deles acabou,
+    // e auditar quem já saiu da mão do corretor não cobra nem ensina nada.
+    .filter((l) => {
+      const et = mapEtapaCircuito(l.etapa);
+      return et !== ETAPA_DESCARTADO && et !== ETAPA_FECHADO;
+    });
 
   const escolhidos: { lead: LeadAud; faixa: FaixaSorteio }[] = [];
   const incompletas: ResultadoSorteio['incompletas'] = [];
@@ -416,7 +421,7 @@ export function sortearAmostra(
   const avancado = new Set<string>([
     ETAPA_MEET_AGENDADO, ETAPA_MEET_FEITO,
     ETAPA_VISITA_AGENDADA, ETAPA_VISITA_FEITA,
-    'Negociação', ETAPA_FECHADO,
+    'Negociação',
   ]);
   const paradosNaFrente = livres()
     .filter((l) => avancado.has(mapEtapaCircuito(l.etapa)))
@@ -619,7 +624,8 @@ export function computarCadencia(
     // só leads que nasceram no período: em lead antigo a cadência já passou
     // e o que se veria era o histórico, não o trabalho desta rodada
     if (!(nascimento >= iniMs && nascimento < fimMs)) continue;
-    if (mapEtapaCircuito(l.etapa) === ETAPA_DESCARTADO) continue;
+    const etL = mapEtapaCircuito(l.etapa);
+    if (etL === ETAPA_DESCARTADO || etL === ETAPA_FECHADO) continue;
 
     const dias = Math.floor((Math.min(agora, fimMs) - nascimento) / DIA);
     // só cobra os passos cujo dia já chegou
@@ -847,7 +853,7 @@ export function computarDestaques(
       const em = msOf(h.em);
       if (!em || !dentroJ(em) || !h.de || !h.para) continue;
       const de = mapEtapaCircuito(String(h.de)), para = mapEtapaCircuito(String(h.para));
-      if (para === ETAPA_DESCARTADO) continue;
+      if (para === ETAPA_DESCARTADO || para === ETAPA_FECHADO) continue;
       const salto = etapaIndex(para) - etapaIndex(de);
       if (salto > 0) r.avancos.push({ lead: nome, de, para, etapas: salto, em: new Date(em).toISOString().slice(0, 10) });
     }
