@@ -53,13 +53,6 @@ export default function GerarPacotePage() {
   // período mais largo só faria o corretor parecer parado
   const [ini, setIni] = useState(() => ymd(Math.max(Date.now() - 60 * DIA, dadosConfiaveisDesdeMs())));
   const [fim, setFim] = useState(() => ymd(Date.now()));
-  /**
-   * O único número que ainda é escolha do gestor. Novos e quem se mexeu
-   * entram sem cota — o tamanho da rodada é consequência da semana, não
-   * de um limite. Sobrou controlar quantos parados de etapa avançada
-   * entram junto.
-   */
-  const [tetoParados, setTetoParados] = useState(8);
 
   const [diretrizes, setDiretrizes] = useState<DiretrizesAuditoria | null>(null);
   const [leads, setLeads] = useState<LeadAud[]>([]);
@@ -228,7 +221,7 @@ export default function GerarPacotePage() {
     if (!leads.length) { showToast('Carregue os dados do corretor primeiro.', 'info'); return; }
     // o sorteio respeita o período: só entra quem estava na mão dele nesses dias
     const r = sortearAmostra(leads, ultimoToqueDe, Date.now(), { iniMs, fimMs }, histAmostra, ativ, modo,
-      diretrizes?.prazos.leadParadoDias ?? 7, tetoParados);
+      diretrizes?.prazos.leadParadoDias ?? 7);
     setAmostra(r.escolhidos);
     setIncompletas(r.incompletas);
     setFora(new Set());
@@ -455,7 +448,7 @@ export default function GerarPacotePage() {
       <section className="al-card relative overflow-hidden p-4 sm:p-5">
         <div className="absolute inset-x-0 top-0 gx-line" />
         <h2 className="al-display text-[13px] font-bold text-white uppercase tracking-[0.1em] mb-3">1 · Quem e quando</h2>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
           <div className="lg:col-span-2">
             <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">Corretor</label>
             <select value={uid} onChange={(e) => { setUid(e.target.value); setLeads([]); setAmostra([]); }} className={inputCls}>
@@ -471,13 +464,6 @@ export default function GerarPacotePage() {
             <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">Até</label>
             <input type="date" value={fim} onChange={(e) => setFim(e.target.value)} className={inputCls + ' [color-scheme:dark]'} />
           </div>
-          <div>
-            <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">Parados perto de fechar</label>
-            <input type="number" min={0} max={30} value={tetoParados} onChange={(e) => setTetoParados(Number(e.target.value) || 0)} className={inputCls + ' tabular-nums'} />
-            <p className="text-[10px] text-text-secondary mt-1 leading-snug">
-              quantos clientes em reunião, visita ou negociação — e parados — entram junto
-            </p>
-          </div>
         </div>
         {/* o modo muda o custo e o valor da rodada; precisa ser escolha
             consciente, não default escondido */}
@@ -487,7 +473,7 @@ export default function GerarPacotePage() {
               ['baseline', 'Carteira completa', `Lê os ${ativosDele} clientes ativos dele, de uma vez.`,
                 'Demorado, e é o único jeito de ter denominador de verdade: depois dela, todo percentual vale para a carteira toda. Fechados e descartados ficam fora. Faça uma vez por corretor.'],
               ['semanal', 'Só o que mudou', 'Todos os novos + todos que se mexeram + os parados em etapa avançada.',
-                'Parado comum fica de fora: o painel já mostra que está parado, e confirmar isso na conversa não acrescenta nada. Entram só os que pararam lá na frente — onde "parado" costuma ser erro de registro, não abandono.'],
+                'Nada tem cota: se entraram 30 e 30 se mexeram, os 60 entram. Parado comum fica de fora — o painel já mostra que está parado. Entram só os travados perto de fechar, onde "parado" costuma ser erro de registro e não abandono.'],
             ] as const).map(([m, titulo, resumo, porque]) => (
               <button key={m} onClick={() => setModo(m)}
                 className={`text-left p-3 rounded-xl border transition-colors ${

@@ -169,12 +169,7 @@ export const ROTULO_FAIXA: Record<FaixaSorteio, string> = {
  */
 export const COMPOSICAO = { obrigatorio: 0.35, painel: 0.15, controle: 0.10 } as const;
 
-/**
- * Teto de parados em etapa avançada por rodada. Poucos de propósito: são
- * a exceção que existe para pegar o "atendeu e não registrou", não uma
- * varredura de carteira parada — essa o painel já dá em número.
- */
-export const TETO_PARADOS_AVANCADOS = 8;
+
 
 /** Dias desde a visita/reunião em que o lead ainda é dinheiro quente. */
 const JANELA_POS_EVENTO_DIAS = 14;
@@ -354,8 +349,6 @@ export function sortearAmostra(
   modo: ModoAmostra = 'semanal',
   /** dias sem toque a partir dos quais o lead conta como parado */
   d_leadParadoDias = 7,
-  /** quantos parados em etapa avançada entram, no máximo */
-  tetoParados = TETO_PARADOS_AVANCADOS,
 ): ResultadoSorteio {
   const universo = (periodo ? leads.filter((l) => elegivelNoPeriodo(l, periodo.iniMs, periodo.fimMs)) : leads)
     // Fechado e descartado ficam fora de TUDO: o atendimento deles acabou,
@@ -431,7 +424,11 @@ export function sortearAmostra(
     })
     .sort((a, b) => (lidoEm(a.id) || 0) - (lidoEm(b.id) || 0));
 
-  paradosNaFrente.slice(0, tetoParados).forEach((l) => pegar(l, 'rodizio'));
+  // sem teto, pela mesma razão que novos e movimento não têm: se o corretor
+  // tem vinte clientes travados perto de fechar, isso É o problema dele e
+  // todos precisam aparecer. São etapas estreitas do funil — na prática
+  // costumam ser poucos.
+  paradosNaFrente.forEach((l) => pegar(l, 'rodizio'));
 
   return { escolhidos, incompletas };
 }
