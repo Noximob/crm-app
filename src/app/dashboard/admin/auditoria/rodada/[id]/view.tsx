@@ -27,6 +27,7 @@ import {
 } from '@/lib/auditoriaAnalise';
 import { showToast } from '@/components/ui/toast';
 import RodadaPrint, { CSS_PRINT_RODADA } from './print';
+import GraficosRodada from './graficos';
 
 const btnOuro = 'px-3.5 py-2 rounded-xl text-[12px] font-bold text-[#181203] bg-gradient-to-r from-[#E8C547] to-[#C89210] hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-40';
 const btnGhost = 'px-3 py-2 rounded-xl text-[12px] font-bold border border-white/10 bg-white/[0.04] text-text-secondary hover:text-white hover:bg-white/[0.08] transition-colors disabled:opacity-40';
@@ -124,6 +125,16 @@ function Tabela({ cols, children }: { cols: string[]; children: React.ReactNode 
     </div>
   );
 }
+
+/**
+ * A etapa que a conversa mostrou, ou vazio quando a análise não conseguiu
+ * dizer. "não dá para saber" não é divergência: é ausência de leitura, e
+ * tratá-la como erro de etapa inflou um contador de 6 para 44.
+ */
+const etapaRealDe = (l: Record<string, unknown>): string => {
+  const e = asStr(l.etapa_real);
+  return !e || /^[?-]$|n\/d|não dá|nao da|não sei|desconhec/i.test(e) ? '' : e;
+};
 
 const td = 'px-2 py-1.5 border-b border-white/[0.06] align-top';
 
@@ -376,23 +387,16 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
               <p className="text-[15px] font-bold text-white leading-snug">{asStr(a.instrucao)}</p>
             </div>
           )}
-          <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-3 pt-3 border-t border-white/[0.07]">
-            {(Object.keys(VEREDITO) as ChaveVeredito[]).map((k) => {
-              const v = asNum(veredito[k]);
-              if (v === null) return null;
-              return (
-                <span key={k} className="text-[11.5px] text-text-secondary">
-                  <b className={`${VEREDITO[k].cor} text-[15px] tabular-nums`}>{VEREDITO[k].simb} {v}</b> {VEREDITO[k].txt}
-                </span>
-              );
-            })}
-            {asNum(veredito.leads_com_etapa_defasada) !== null && (
-              <span className="text-[11.5px] text-text-secondary">
-                <b className="text-white text-[15px] tabular-nums">{fmtNum(asNum(veredito.leads_com_etapa_defasada))}</b> com etapa defasada
-              </span>
-            )}
-          </div>
+          {asNum(veredito.leads_com_etapa_defasada) ? (
+            <p className="text-[11.5px] text-text-secondary mt-3 pt-3 border-t border-white/[0.07]">
+              <b className="text-amber-300 tabular-nums">{fmtNum(asNum(veredito.leads_com_etapa_defasada))}</b> clientes
+              estão numa etapa do CRM diferente da que a conversa mostra — todo relatório da casa que usa etapa
+              erra por causa deles.
+            </p>
+          ) : null}
         </section>
+
+        <GraficosRodada a={a} indicadores={indicadores} porGrupo={porGrupo} />
 
         {/* índice — o documento é longo e ninguém rola atrás do que quer */}
         {indiceVisivel.length > 2 && (
@@ -742,7 +746,41 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
 
         {/* 7 — tabela dos leads */}
         {leadsAud.length > 0 && (
-          <Secao id="leads" n={nDe("leads")} titulo="Cliente por cliente" hint={`${leadsAud.length} leads da amostra, um por linha.`}>
+          <Secao id="leads" n={nDe("leads")} titulo="Cliente por cliente" hint={`${leadsAud.length} clientes, um por linha. Os números acima dizem onde olhar primeiro.`}>
+            {(() => {
+              const conta = (fn: (l: Record<string, unknown>) => boolean) => leadsAud.filter(fn).length;
+              // vem do veredito, não de comparar strings: a análise escreve
+              // observação dentro de etapa_real ("Em Contato — conversa viva
+              // ontem", "Proposta esperando o DECISOR"), e recontar dali dava
+              // 44 onde ela própria apurou 6.
+              const defasados = asNum(veredito.leads_com_etapa_defasada) ?? 0;
+              const divergem = conta((l) => {
+                const c = asNum(l.sem_toque_crm), r = asNum(l.sem_toque_real);
+                return c !== null && r !== null && Math.abs(c - r) > 2;
+              });
+              const naoLidos = conta((l) => asStr(l.veredito) === '?' || !asStr(l.veredito));
+              const quentes = conta((l) => asStr(l.temperatura).toLowerCase() === 'quente');
+              const cartoes = [
+                { n: leadsAud.length, rot: 'clientes na lista', cor: 'text-white' },
+                { n: quentes, rot: 'quentes', cor: 'text-rose-300' },
+                { n: defasados, rot: 'com a etapa errada no CRM', cor: 'text-amber-300' },
+                { n: divergem, rot: 'em que o CRM erra o tempo sem contato', cor: 'text-amber-300' },
+                { n: naoLidos, rot: 'sem conversa localizada', cor: 'text-white/40' },
+              ].filter((c) => c.n > 0);
+              return (
+                <div className="flex flex-wrap gap-x-5 gap-y-2 mb-3 pb-3 border-b border-white/[0.07]">
+                  {cartoes.map((c) => (
+                    <span key={c.rot} className="text-[11.5px] text-text-secondary">
+                      <b className={`${c.cor} text-[17px] font-extrabold tabular-nums`}>{c.n}</b>
+                      {' '}{c.rot}
+                      {c.rot !== 'clientes na lista' && leadsAud.length
+                        ? <span className="text-white/30 tabular-nums"> · {Math.round((c.n / leadsAud.length) * 100)}%</span>
+                        : null}
+                    </span>
+                  ))}
+                </div>
+              );
+            })()}
             <Tabela cols={['Lead', 'T', 'Etapa CRM', 'Etapa real', 'Ver.', 'Sem toque', 'Formato', 'O que queria', 'Por que parou']}>
               {leadsAud.map((l, i) => {
                 const t = TEMPERATURA[asStr(l.temperatura).toLowerCase()];
@@ -753,7 +791,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, onRenomear }
                     <td className={td + ' text-white font-bold whitespace-nowrap'}>{asStr(l.lead)}</td>
                     <td className={td}>{t?.simb || '·'}</td>
                     <td className={td + ' text-text-secondary'}>{asStr(l.etapa_crm) || '—'}</td>
-                    <td className={`${td} ${asStr(l.etapa_real) && asStr(l.etapa_real) !== asStr(l.etapa_crm) ? 'text-amber-300 font-bold' : 'text-text-secondary'}`}>{asStr(l.etapa_real) || '—'}</td>
+                    <td className={`${td} ${etapaRealDe(l) && etapaRealDe(l) !== asStr(l.etapa_crm) ? 'text-amber-300 font-bold' : 'text-text-secondary'}`}>{asStr(l.etapa_real) || '—'}</td>
                     <td className={td + ' whitespace-nowrap'}>{asStr(l.veredito) || '—'}</td>
                     <td className={`${td} tabular-nums whitespace-nowrap ${divergiu ? 'text-amber-300 font-bold' : 'text-text-secondary'}`}>
                       {crmD === null ? '—' : crmD} → {realD === null ? 'n/d' : realD}

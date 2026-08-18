@@ -2026,8 +2026,15 @@ As duas últimas colunas são o que separa auditoria de contagem:
 - "por que parou" — a causa do silêncio, ou "não dá para saber" quando não
   dá. Nunca em branco sem dizer que não deu para concluir.
 
-A coluna "etapa real" é onde mais aparece defasagem: lead que no CRM está
-em Em Contato e no WhatsApp já visitou.
+A coluna "etapa real" leva SÓ O NOME DA ETAPA — "Visita Feita",
+"Negociação", "Em Contato" — ou fica vazia quando não deu para saber.
+Nada de comentário ali: "Em Contato — conversa viva ontem" ou "Proposta
+esperando o decisor" são texto de "por que parou", não etapa. Quando a
+coluna vira campo livre, o sistema não consegue mais contar quantos leads
+estão com a etapa errada, e essa é justamente a conta que ela existe para
+permitir.
+É nela que mais aparece defasagem: lead que no CRM está em Em Contato e no
+WhatsApp já visitou.
 
 ## 8. Qualidade da conversa
 
@@ -2336,7 +2343,7 @@ lá precisa estar aqui, com o MESMO texto. Não resuma para o JSON.
       "lead": "",
       "temperatura": "quente | morno | frio | perdido | desconhecido",
       "etapa_crm": "",
-      "etapa_real": "",
+      "etapa_real": "só o nome da etapa, ou vazio se não deu para saber",
       "veredito": "",
       "sem_toque_crm": null,
       "sem_toque_real": null,
