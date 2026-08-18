@@ -16,7 +16,7 @@ import { auditoriaDemo } from '@/lib/auditoriaDemo';
 import {
   sortearAmostra, computarPanorama, computarCobranca, computarCoberturaAcumulada, computarDestaques, computarCadencia, montarPacote, faixaDoLead, msOf,
   detectarDisponibilidade, aplicarDisponibilidade, telefoneUtilizavel,
-  ROTULO_FAIXA, type HistoricoAmostra, type LeadAud, type AtividadeAud, type VendaAud, type AdsAud, type FaixaSorteio,
+  ROTULO_FAIXA, type HistoricoAmostra, type ModoAmostra, type LeadAud, type AtividadeAud, type VendaAud, type AdsAud, type FaixaSorteio,
 } from '@/lib/auditoriaPacote';
 
 const DIA = 24 * 60 * 60 * 1000;
@@ -29,6 +29,10 @@ const doYmd = (s: string) => { const [a, m, d] = s.split('-').map(Number); retur
 const fmtData = (ms: number) => ms ? new Date(ms).toLocaleDateString('pt-BR') : '—';
 
 const COR_FAIXA: Record<FaixaSorteio, string> = {
+  baseline: 'bg-white/[0.06] border-white/20 text-white/70',
+  novo: 'bg-sky-500/10 border-sky-500/40 text-sky-300',
+  movimento: 'bg-[#E8C547]/10 border-[#E8C547]/40 text-[#E8C547]',
+  rodizio: 'bg-[#9F6BFF]/10 border-[#9F6BFF]/40 text-[#C4A6FF]',
   obrigatorio: 'bg-[#E8C547]/10 border-[#E8C547]/40 text-[#E8C547]',
   painel: 'bg-[#9F6BFF]/10 border-[#9F6BFF]/40 text-[#C4A6FF]',
   rotativo: 'bg-sky-500/10 border-sky-500/40 text-sky-300',
@@ -67,6 +71,13 @@ export default function GerarPacotePage() {
   const [incompletas, setIncompletas] = useState<{ faixa: FaixaSorteio; pedidos: number; obtidos: number }[]>([]);
   const [busca, setBusca] = useState('');
   const [gerando, setGerando] = useState(false);
+  /**
+   * baseline le a carteira inteira e so faz sentido uma vez por corretor;
+   * depois dela, a rodada semanal e o delta. O modo e sugerido pelo
+   * historico mas fica na mao do gestor — carteira que virou outra coisa
+   * (corretor voltou de licenca, herdou leads de alguem) pede baseline novo.
+   */
+  const [modo, setModo] = useState<ModoAmostra>('semanal');
 
   useEffect(() => { carregarDiretrizes(imobiliariaId).then(setDiretrizes); }, [imobiliariaId]);
 
@@ -163,6 +174,7 @@ export default function GerarPacotePage() {
           if (Array.isArray(r.painelIds) && r.painelIds.length) painel = r.painelIds.map(String);
         }
         setHistAmostra({ jaAuditados, painel, ultimaLeitura });
+        setModo(jaAuditados.size ? 'semanal' : 'baseline');
       } catch { setHistAmostra({ jaAuditados: new Set(), painel: [], ultimaLeitura: new Map() }); }
 
       showToast(`${arr.length} leads carregados.`, 'success');
@@ -195,7 +207,7 @@ export default function GerarPacotePage() {
   const sortear = () => {
     if (!leads.length) { showToast('Carregue os dados do corretor primeiro.', 'info'); return; }
     // o sorteio respeita o período: só entra quem estava na mão dele nesses dias
-    const r = sortearAmostra(leads, ultimoToqueDe, tamanho, Date.now(), { iniMs, fimMs }, histAmostra, ativ);
+    const r = sortearAmostra(leads, ultimoToqueDe, tamanho, Date.now(), { iniMs, fimMs }, histAmostra, ativ, modo);
     setAmostra(r.escolhidos);
     setIncompletas(r.incompletas);
     setFora(new Set());
@@ -320,6 +332,7 @@ export default function GerarPacotePage() {
         destaques: computarDestaques(leads, ativ, diretrizes, iniMs, fimMs),
         cadencia: computarCadencia(leads, ativ, diretrizes, iniMs, fimMs),
         coberturaAcumulada: computarCoberturaAcumulada(leads, histAmostra, selecionados.map((x) => x.lead.id)),
+        modoAmostra: modo,
         composicaoAmostra: selecionados.reduce((acc, x) => { acc[x.faixa] = (acc[x.faixa] || 0) + 1; return acc; }, {} as Record<string, number>),
         amostra: selecionados, atividade: ativ, ads, historico,
         historicoEtapasDesdeMs: etapasDesde, disponibilidade,
@@ -442,13 +455,43 @@ export default function GerarPacotePage() {
             <input type="number" min={1} max={100} value={tamanho} onChange={(e) => setTamanho(Number(e.target.value) || 20)} className={inputCls + ' tabular-nums'} />
           </div>
         </div>
+        {/* o modo muda o custo e o valor da rodada; precisa ser escolha
+            consciente, não default escondido */}
+        {leads.length > 0 && !carregando && (
+          <div className="mt-3 grid sm:grid-cols-2 gap-2">
+            {([
+              ['baseline', 'Carteira completa', `Lê os ${leads.length} clientes dele, de uma vez.`,
+                'Demorado, e é o único jeito de ter denominador de verdade: depois dela, todo percentual vale para a carteira toda. Faça uma vez por corretor.'],
+              ['semanal', 'Só o que mudou', 'Novos do período + quem teve movimento + rodízio de antigos.',
+                'Barato e rápido. Conversa que não teve mensagem nova desde a última leitura fica de fora — não há o que reler.'],
+            ] as const).map(([m, titulo, resumo, porque]) => (
+              <button key={m} onClick={() => setModo(m)}
+                className={`text-left p-3 rounded-xl border transition-colors ${
+                  modo === m ? 'border-[#E8C547]/50 bg-[#E8C547]/[0.07]' : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.05]'
+                }`}>
+                <p className={`text-[12.5px] font-bold ${modo === m ? 'text-[#E8C547]' : 'text-white'}`}>
+                  {modo === m ? '● ' : '○ '}{titulo}
+                </p>
+                <p className="text-[11px] text-white/80 mt-0.5">{resumo}</p>
+                <p className="text-[10.5px] text-text-secondary mt-1 leading-relaxed">{porque}</p>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {leads.length > 0 && !carregando && !histAmostra.jaAuditados.size && modo === 'semanal' && (
+          <p className="mt-2 text-[11px] text-amber-300">
+            ⚠ Este corretor nunca foi auditado. Sem a carteira completa antes, os percentuais desta rodada
+            valem só para os leads lidos — e não dá para dizer que a carteira melhorou na semana seguinte.
+          </p>
+        )}
         <div className="flex flex-wrap items-center gap-2 mt-3">
           <button onClick={sortear} disabled={!leads.length || carregando} className={btnOuro}>
-            {carregando ? `lendo a carteira… ${Math.round(progresso * 100)}%` : amostra.length ? '↻ Sortear outra amostra' : `🎲 Sortear ${tamanho} leads`}
+            {carregando ? `lendo a carteira… ${Math.round(progresso * 100)}%`
+              : amostra.length ? '↻ Montar de novo'
+              : modo === 'baseline' ? `📚 Montar a carteira completa (${leads.length})`
+              : `🎲 Montar a rodada (até ${tamanho})`}
           </button>
-          {leads.length > 0 && !carregando && (
-            <span className="text-[11px] text-text-secondary">{leads.length} leads na carteira dele · o sorteio pega {tamanho} misturando etapa avançada, parados, recentes e aleatórios</span>
-          )}
           {!uid && <span className="text-[11px] text-text-secondary">escolha o corretor pra começar</span>}
         </div>
 

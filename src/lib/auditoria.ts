@@ -494,18 +494,56 @@ O QUE SE COBRA DE CADA BASE
   sai a instrução da rodada.
 O gargalo quase sempre nasce da amostra e se manifesta na carteira.
 
+DOIS MODOS DE RODADA — leia meta.modo_da_amostra ANTES de comparar qualquer coisa
+
+  baseline — a carteira INTEIRA do corretor foi entregue para leitura. Não é
+    amostra: é o censo. Todo percentual que você calcular vale para a
+    carteira dele, sem ressalva de amostragem. É a rodada mais cara e
+    acontece uma vez por corretor; ela é a LINHA DE BASE contra a qual todas
+    as seguintes serão medidas.
+
+  semanal — só o delta desde a última leitura. Entram os leads que NASCERAM
+    no período (é neles que o 1º contato acontece), os que tiveram
+    movimento novo desde a última vez que foram lidos, e um rodízio de
+    antigos parados. Quem não teve mensagem nova nem mudou de etapa fica de
+    fora de propósito: não há o que reler.
+
+O QUE ISSO MUDA NA SUA CONTA:
+
+1. No BASELINE, escreva os percentuais sem ressalva: "em 29% dos seus
+   clientes o sistema não bate com a conversa" é uma frase sobre a carteira
+   toda, e é assim que ela deve ser dita.
+
+2. Na SEMANAL, o denominador é o delta, e ele é ENVIESADO por construção —
+   quem entrou nele entrou porque teve movimento ou porque é novo. Não
+   escreva "68% da sua carteira" a partir dele. Escreva "dos 14 clientes
+   que se mexeram esta semana, 9…".
+
+3. Comparação entre rodadas: compare a semanal com o BASELINE quando quiser
+   falar da carteira, e com a semanal anterior quando quiser falar do
+   comportamento da semana. Diga qual das duas está fazendo.
+
+4. Um número da semanal que piorou em relação ao baseline pode ser efeito
+   do recorte, não do corretor. Quando desconfiar disso, diga.
+
+5. A faixa de cada lead vem em faixa_sorteio e explica por que ele está ali:
+   novo (entrou no período), movimento (mexeu desde a última leitura),
+   rodizio (antigo sem movimento, entrou para não apodrecer em silêncio),
+   baseline (a carteira inteira). O rodízio é onde costuma aparecer o
+   abandono que ninguém viu.
+
 A AMOSTRA NÃO É UM SORTEIO SÓ — e isso muda o que dá para comparar
 
 Ler a carteira inteira toda semana é caro demais; sortear 25 diferentes a
 cada rodada torna tudo incomparável. Por isso cada lead da amostra vem com
 um PAPEL, no campo faixa_sorteio:
 
-  obrigatorio — dinheiro na mesa: Negociação, Fechamento ou pós-visita
-    recente, e só quando houve movimento novo desde a última leitura. Não
-    foi sorteado: a casa precisa ver.
-  painel — os MESMOS clientes toda rodada, enquanto vivos.
-  rotativo — quem nunca foi lido antes. Muda quase inteiro toda semana.
-  controle — parados e frios de verdade, para a amostra não olhar só o bonito.
+  novo — entrou no período. Todos entram, sem teto: é neles que o 1º
+    contato acontece.
+  movimento — teve mensagem nova ou mudou de etapa desde a última leitura.
+  rodizio — antigo sem movimento, sorteado priorizando quem nunca foi lido
+    ou foi lido há mais tempo.
+  baseline — a carteira inteira, na rodada de linha de base.
 
 O QUE ISSO OBRIGA:
 

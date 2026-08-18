@@ -138,15 +138,21 @@ export function normalizarTelefone(bruto: string | undefined): { telefone: strin
  *     pagar por ela toda semana.
  *   controle — parados e frios, para a amostra não olhar só para o bonito.
  */
-export type FaixaSorteio = 'obrigatorio' | 'painel' | 'rotativo' | 'controle'
+export type FaixaSorteio = 'baseline' | 'novo' | 'movimento' | 'rodizio'
+  // faixas de desenhos anteriores — rodadas já geradas ainda as exibem
+  | 'obrigatorio' | 'painel' | 'rotativo' | 'controle'
   | 'avancado' | 'parado_15d' | 'entrada_recente' | 'livre';
 
 export const ROTULO_FAIXA: Record<FaixaSorteio, string> = {
+  baseline: 'Carteira completa',
+  novo: 'Entrou no período',
+  movimento: 'Teve movimento',
+  rodizio: 'Rodízio de antigos',
+  // faixas de desenhos anteriores
   obrigatorio: 'Dinheiro na mesa',
   painel: 'Painel fixo',
   rotativo: 'Nunca auditado',
   controle: 'Parado / frio',
-  // faixas antigas — rodadas já geradas ainda as exibem
   avancado: 'Etapa avançada',
   parado_15d: 'Parado +15 dias',
   entrada_recente: 'Entrada recente',
@@ -316,11 +322,29 @@ export function computarCoberturaAcumulada(
   };
 }
 
+/**
+ * MODO DA AMOSTRA
+ *
+ *   baseline — lê a carteira INTEIRA, uma vez. Caro e demorado, mas é o
+ *     único jeito de ter denominador de verdade: depois dele, "o CRM bate
+ *     com a realidade em 29%" passa a ser sobre a carteira toda, e não
+ *     sobre os 25 que a sorte escolheu.
+ *   semanal — o delta. Todo lead NOVO (é onde nasce o 1º contato), todo
+ *     lead que teve movimento desde a última leitura, e um rodízio de
+ *     antigos parados para pegar o que apodrece em silêncio.
+ *
+ * Reler conversa que não teve mensagem nova desde a última auditoria é
+ * gastar a vaga com uma história que não mudou. É isso que torna a rodada
+ * semanal barata sem perder cobertura.
+ */
+export type ModoAmostra = 'baseline' | 'semanal';
+
 export function sortearAmostra(
   leads: LeadAud[], ultimoToqueDe: (id: string) => number, tamanho: number, agora = Date.now(),
   periodo?: { iniMs: number; fimMs: number },
   hist: HistoricoAmostra = { jaAuditados: new Set(), painel: [] },
   ativ?: Map<string, AtividadeAud>,
+  modo: ModoAmostra = 'semanal',
 ): ResultadoSorteio {
   const universo = (periodo ? leads.filter((l) => elegivelNoPeriodo(l, periodo.iniMs, periodo.fimMs)) : leads)
     .filter((l) => mapEtapaCircuito(l.etapa) !== ETAPA_DESCARTADO);
@@ -331,56 +355,55 @@ export function sortearAmostra(
   const pegar = (l: LeadAud, faixa: FaixaSorteio) => { usados.add(l.id); escolhidos.push({ lead: l, faixa }); };
   const livres = () => universo.filter((l) => !usados.has(l.id));
 
+  // ---- BASELINE: a carteira inteira, sem sorteio nenhum
+  if (modo === 'baseline') {
+    universo.forEach((l) => pegar(l, 'baseline'));
+    return { escolhidos, incompletas };
+  }
+
   const lidoEm = (id: string) => hist.ultimaLeitura?.get(id) ?? 0;
+  const nuncaLido = (id: string) => !hist.jaAuditados.has(id);
 
-  // 1) DINHEIRO NA MESA — entram sem sorteio, mas com TETO. Sem o teto a
-  //    carteira inteira de Negociação/Fechamento ocupa a amostra e não
-  //    sobra vaga para gente nova, o que congela o relatório. Quem não
-  //    couber no teto disputa o rotativo como todo mundo.
-  const candidatos = universo
-    .filter((l) => ehObrigatorio(l, ativ, agora, lidoEm(l.id)))
-    .sort((a, b) => urgenciaObrigatorio(b, ativ, agora) - urgenciaObrigatorio(a, ativ, agora));
-  const tetoObrig = Math.max(1, Math.round(tamanho * COMPOSICAO.obrigatorio));
-  candidatos.slice(0, tetoObrig).forEach((l) => pegar(l, 'obrigatorio'));
+  // ---- 1) NOVOS DO PERÍODO — todos, sem exceção e sem teto.
+  // É neles que o 1º contato acontece, e é a métrica mais importante da
+  // velocidade. Deixar um de fora por causa de cota significa medir
+  // atendimento de lead novo sem olhar o lead novo.
+  const novos = universo.filter((l) => {
+    const n = msOf(l.createdAt);
+    return periodo ? (n >= periodo.iniMs && n < periodo.fimMs) : nuncaLido(l.id);
+  });
+  novos.forEach((l) => pegar(l, 'novo'));
 
-  const resto = Math.max(0, tamanho - escolhidos.length);
-
-  // 2) PAINEL — os mesmos de sempre, enquanto vivos. É o que torna a
-  //    comparação entre semanas honesta.
-  const alvoPainel = Math.round(tamanho * COMPOSICAO.painel);
-  const painelVivo = hist.painel
-    .map((id) => universo.find((l) => l.id === id))
-    .filter((l): l is LeadAud => !!l && !usados.has(l.id));
-  painelVivo.slice(0, Math.min(alvoPainel, resto)).forEach((l) => pegar(l, 'painel'));
-
-  // completa o painel com quem ainda não está nele — na 1ª rodada ele nasce
-  const faltaPainel = Math.min(alvoPainel, resto) - painelVivo.length;
-  if (faltaPainel > 0) {
-    embaralhar(livres()).slice(0, faltaPainel).forEach((l) => pegar(l, 'painel'));
-  }
-
-  // 3) CONTROLE — parados e frios, para a amostra não olhar só o bonito
-  const alvoControle = Math.round(tamanho * COMPOSICAO.controle);
-  const parados = embaralhar(livres().filter((l) => {
-    const ref = ultimoToqueDe(l.id) || msOf(l.createdAt);
-    if (!(ref > 0 && (agora - ref) / DIA > 15)) return false;
-    // quem tem retorno marcado não é "parado": está esperando a data
+  // ---- 2) TEVE MOVIMENTO desde a última leitura
+  // Conversa nova ou mudança de etapa depois da última vez que foi lido.
+  // Quem não mudou nada não entra: não há o que reler.
+  const comMovimento = livres().filter((l) => {
+    const desde = lidoEm(l.id);
+    if (!desde) return false; // nunca lido cai no rodízio, não aqui
     const at = ativ?.get(l.id);
-    return !(at?.tarefas || []).some((t) => !/conclu|cancel/i.test(t.status) && t.dueMs > agora);
-  }));
-  parados.slice(0, alvoControle).forEach((l) => pegar(l, 'controle'));
-  if (parados.length < alvoControle) {
-    incompletas.push({ faixa: 'controle', pedidos: alvoControle, obtidos: parados.length });
-  }
+    const ultimaInteracao = at?.interacoes.length ? at.interacoes[at.interacoes.length - 1].ms : 0;
+    if (ultimaInteracao > desde) return true;
+    return (l.etapasHist || []).some((h) => msOf(h.em) > desde);
+  }).sort((a, b) => urgenciaObrigatorio(b, ativ, agora) - urgenciaObrigatorio(a, ativ, agora));
+  comMovimento.forEach((l) => pegar(l, 'movimento'));
 
-  // 4) ROTATIVO — o que sobra, priorizando quem NUNCA foi auditado. É isto
-  //    que faz a cobertura da carteira crescer ao longo do mês sem pagar
-  //    por ela toda semana.
+  // ---- 3) RODÍZIO DE ANTIGOS — o que sobra do tamanho pedido
+  // Prioriza quem nunca foi lido, depois quem foi lido há mais tempo. É o
+  // que pega o lead que está apodrecendo em silêncio, justamente porque
+  // "sem movimento" é o sintoma, não a inocência.
   const falta = Math.max(0, tamanho - escolhidos.length);
   if (falta > 0) {
-    const inéditos = embaralhar(livres().filter((l) => !hist.jaAuditados.has(l.id)));
-    const revisitas = embaralhar(livres().filter((l) => hist.jaAuditados.has(l.id)));
-    [...inéditos, ...revisitas].slice(0, falta).forEach((l) => pegar(l, 'rotativo'));
+    const resto = livres().sort((a, b) => {
+      const la = lidoEm(a.id), lb = lidoEm(b.id);
+      if (!la && !lb) return 0;
+      if (!la) return -1;
+      if (!lb) return 1;
+      return la - lb; // lido há mais tempo primeiro
+    });
+    resto.slice(0, falta).forEach((l) => pegar(l, 'rodizio'));
+    if (resto.length < falta) {
+      incompletas.push({ faixa: 'rodizio', pedidos: falta, obtidos: resto.length });
+    }
   }
 
   return { escolhidos, incompletas };
@@ -1026,6 +1049,8 @@ export interface OpcoesPacote {
   coberturaAcumulada: CoberturaAcumulada;
   /** quantos leads de cada papel entraram nesta amostra */
   composicaoAmostra: Record<string, number>;
+  /** baseline (carteira inteira) ou semanal (o delta) */
+  modoAmostra: ModoAmostra;
   amostra: { lead: LeadAud; faixa: FaixaSorteio }[];
   atividade: Map<string, AtividadeAud>;
   ads: AdsAud[];
@@ -1194,6 +1219,7 @@ export function montarPacote(o: OpcoesPacote, agora = Date.now()): Record<string
     cadencia_cumprida: o.cadencia,
     cobertura_acumulada: o.coberturaAcumulada,
     composicao_da_amostra: o.composicaoAmostra,
+    modo_da_amostra: o.modoAmostra,
     historico: o.historico,
     amostra,
   };
