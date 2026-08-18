@@ -1,26 +1,28 @@
 'use client';
 
 /**
- * AUDITORIA · A RODADA — a análise apresentada no layout da casa.
+ * AUDITORIA · A RODADA — o relatório que se lê em pé, em dez segundos.
  *
- * O documento tem TRÊS camadas, e a ordem delas é a coisa mais importante
- * deste arquivo:
+ * A versão anterior tinha 4.143 palavras e 296 números na camada de
+ * abertura, e o gestor rolava três telas de gráfico antes de chegar na
+ * primeira cobrança. Era um artigo longo, não um documento de 1:1.
  *
- *   1. A REUNIÃO — o que o gestor e o corretor leem juntos, olhando a mesma
- *      tela. O gargalo, o retrato (todo número num lugar só), a fila de
- *      amanhã, o que ele faz bem e o que muda. Abre sempre.
- *   2. A PROVA — o quadro de indicadores linha a linha, cliente por cliente,
- *      o que foi combinado e as ressalvas. Abre fechada: é onde se vai
- *      quando alguém pergunta "de onde saiu isso?".
- *   3. SÓ O GESTOR — o risco apurado, as perguntas preparadas para o 1:1 e o
- *      que a casa precisa destravar. Some no modo reunião e não sai no PDF
- *      do corretor: mandar isso para ele queima a conversa antes dela
- *      começar.
+ * A regra desta versão: AO ABRIR, cabe numa tela. Nada mais.
  *
- * A versão anterior tinha 22 seções no mesmo nível e um índice em cima — que
- * é a definição de "espalhado". Os números apareciam em seis pontos
- * diferentes e metade das seções só existia para blocos de relatório que a
- * análise não produz mais.
+ *   A CAPA      o problema em uma frase, TRÊS números, o que muda.
+ *   OS PONTOS   a cobrança em acordeão. Fechado, cada ponto mostra só o
+ *               título, em quantos clientes acontece e o que custou. O
+ *               gestor abre o que vai discutir — um assunto por vez, que é
+ *               como reunião funciona.
+ *   AMANHÃ      a fila, com a mensagem pronta a um clique.
+ *   A PROVA     o retrato completo, o quadro linha a linha, cliente por
+ *               cliente, o combinado e as ressalvas. Tudo continua aqui,
+ *               fechado, para quando alguém perguntar de onde saiu.
+ *
+ * E uma camada que atravessa todas: o que é SÓ DO GESTOR (risco apurado,
+ * perguntas do 1:1, o que a casa precisa destravar) some no modo reunião e
+ * não sai no PDF do corretor. Mandar isso para ele queima a conversa antes
+ * dela começar.
  *
  * Recebe a rodada pronta por prop e não fala com o Firestore: quem carrega é
  * a page. Isso mantém a apresentação testável fora do banco.
@@ -30,8 +32,7 @@ import Link from 'next/link';
 import {
   asObj, asArr, asStr, asNum, fmtYmd, fmtDinheiro, fmtNum,
   lerIndicadores, valorIndicador, referenciaIndicador, GRUPOS, BOLA_STATUS, COR_STATUS,
-  VEREDITO, TEMPERATURA, naturezaLegivel,
-  TIPO_DESTRAVE, PRAZO_LEGIVEL, PERGUNTA_DO_GRUPO,
+  VEREDITO, TEMPERATURA, TIPO_DESTRAVE, PRAZO_LEGIVEL, PERGUNTA_DO_GRUPO,
   type ChaveVeredito, type Indicador,
 } from '@/lib/auditoriaAnalise';
 import { lerRelatorio, type Citacao as TCitacao } from '@/lib/auditoriaRelatorio';
@@ -43,6 +44,9 @@ import GraficosRodada from './graficos';
 
 const btnOuro = 'px-3.5 py-2 rounded-xl text-[12px] font-bold text-[#181203] bg-gradient-to-r from-[#E8C547] to-[#C89210] hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-40';
 const btnGhost = 'px-3 py-2 rounded-xl text-[12px] font-bold border border-white/10 bg-white/[0.04] text-text-secondary hover:text-white hover:bg-white/[0.08] transition-colors disabled:opacity-40';
+
+/** Texto corrido nunca passa disto: linha longa demais o olho não reencontra. */
+const LEITURA = 'max-w-[62ch]';
 
 export interface RodadaDoc {
   id: string; corretorUid: string; corretorNome: string;
@@ -61,6 +65,43 @@ export interface RodadaDoc {
 // blocos visuais
 // ---------------------------------------------------------------------------
 
+/**
+ * O acordeão é a peça central desta tela. Fechado, ele mostra o que basta
+ * para decidir se vale abrir; aberto, mostra tudo. Cinco achados abertos ao
+ * mesmo tempo eram duas mil palavras de uma vez — a parede que ninguém lê.
+ */
+function Dobra({ n, titulo, etiqueta, resumo, tom = 'neutro', children }: {
+  n?: number; titulo: string; etiqueta?: string; resumo?: string;
+  tom?: 'neutro' | 'ruim' | 'bom'; children: React.ReactNode;
+}) {
+  const [aberto, setAberto] = useState(false);
+  const barra = tom === 'ruim' ? 'bg-rose-500/70' : tom === 'bom' ? 'bg-emerald-500/70' : 'bg-white/15';
+  return (
+    <div className="al-card overflow-hidden">
+      <button onClick={() => setAberto((v) => !v)}
+        className="w-full flex items-start gap-3 p-4 text-left hover:bg-white/[0.03] transition-colors">
+        <span className={`w-[3px] self-stretch rounded-full shrink-0 ${barra}`} />
+        {n !== undefined && (
+          <span className="text-[15px] font-extrabold text-white/25 tabular-nums shrink-0 leading-tight">{n}</span>
+        )}
+        <span className="min-w-0 flex-1">
+          <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <span className="text-[14.5px] font-bold text-white leading-snug">{titulo}</span>
+            {etiqueta && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold text-text-secondary bg-white/[0.06] shrink-0">
+                {etiqueta}
+              </span>
+            )}
+          </span>
+          {resumo && <span className={`block text-[12px] text-text-secondary leading-relaxed mt-1 ${LEITURA}`}>{resumo}</span>}
+        </span>
+        <span className="text-[15px] text-text-secondary shrink-0 leading-none mt-1">{aberto ? '▴' : '▾'}</span>
+      </button>
+      {aberto && <div className="px-4 pb-4 pt-1 pl-[30px]">{children}</div>}
+    </div>
+  );
+}
+
 function Secao({ id, titulo, hint, children }: {
   id?: string; titulo: string; hint?: string; children: React.ReactNode;
 }) {
@@ -68,7 +109,7 @@ function Secao({ id, titulo, hint, children }: {
     <section id={id} className="al-card relative overflow-hidden p-4 sm:p-5 scroll-mt-20">
       <div className="absolute inset-x-0 top-0 gx-line" />
       <h2 className="al-display text-[13px] font-bold text-white uppercase tracking-[0.1em] mb-3">{titulo}</h2>
-      {hint && <p className="text-[11px] text-text-secondary -mt-2 mb-3">{hint}</p>}
+      {hint && <p className={`text-[11px] text-text-secondary -mt-2 mb-3 ${LEITURA}`}>{hint}</p>}
       {children}
     </section>
   );
@@ -78,8 +119,7 @@ function Secao({ id, titulo, hint, children }: {
  * Um trecho que não é fala de ninguém — "CRM: 8 dias sem toque · WhatsApp:
  * conversa às 18h02" — é anotação da análise, não citação. Apresentar isso
  * entre aspas e em itálico, como se o cliente tivesse dito, é o que faz o
- * relatório soar incongruente para quem conhece a conversa de verdade. Aqui
- * a diferença fica explícita em vez de escondida.
+ * relatório soar incongruente para quem conhece a conversa de verdade.
  */
 const PARECE_ANOTACAO = /CRM:|WhatsApp:|whatsapp:|→|\bdias sem\b|\bsem toque\b|^\s*\[/;
 
@@ -90,7 +130,7 @@ function Citacao({ c, mostrarLead = true }: { c: TCitacao; mostrarLead?: boolean
 
   if (PARECE_ANOTACAO.test(c.trecho)) {
     return (
-      <div className="my-2 rounded-lg border border-white/[0.09] bg-white/[0.02] px-3 py-2">
+      <div className={`my-2 rounded-lg border border-white/[0.09] bg-white/[0.02] px-3 py-2 ${LEITURA}`}>
         <p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">
           anotação da análise — não é fala do cliente
         </p>
@@ -100,18 +140,14 @@ function Citacao({ c, mostrarLead = true }: { c: TCitacao; mostrarLead?: boolean
     );
   }
   return (
-    <blockquote className="my-2 pl-3 border-l-2 border-[#E8C547]/50 bg-white/[0.03] rounded-r-lg py-2 pr-3">
+    <blockquote className={`my-2 pl-3 border-l-2 border-[#E8C547]/50 bg-white/[0.03] rounded-r-lg py-2 pr-3 ${LEITURA}`}>
       <p className="text-[12.5px] text-white/90 italic leading-relaxed">“{c.trecho}”</p>
       {rodape && <p className="text-[10.5px] text-text-secondary font-bold mt-1.5">{rodape}</p>}
     </blockquote>
   );
 }
 
-/**
- * Duas citações bastam para provar um padrão. A análise às vezes manda cinco
- * do mesmo erro, e ler cinco variações da mesma coisa numa reunião faz o
- * ponto perder força em vez de ganhar. As outras ficam a um clique.
- */
+/** Duas citações provam o padrão; cinco variações do mesmo erro só cansam. */
 function Citacoes({ lista }: { lista: TCitacao[] }) {
   const [tudo, setTudo] = useState(false);
   if (!lista.length) return null;
@@ -141,7 +177,7 @@ function MensagemPronta({ rotulo, texto }: { rotulo: string; texto: string }) {
     } catch { showToast('Não foi possível copiar.', 'error'); }
   };
   return (
-    <div className="mt-2 rounded-xl border border-dashed border-[#E8C547]/40 bg-[#E8C547]/[0.05] p-3">
+    <div className={`mt-2 rounded-xl border border-dashed border-[#E8C547]/40 bg-[#E8C547]/[0.05] p-3 ${LEITURA}`}>
       <div className="flex items-center gap-2 mb-1.5">
         <span className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-[#E8C547]/80">{rotulo}</span>
         <button onClick={copiar} className="ml-auto text-[10px] font-bold text-text-secondary hover:text-white no-print">
@@ -170,6 +206,33 @@ function Tabela({ cols, children }: { cols: string[]; children: React.ReactNode 
 
 const td = 'px-2 py-1.5 border-b border-white/[0.06] align-top';
 
+/**
+ * Corta na primeira frase, para o resumo do acordeão caber numa linha.
+ *
+ * Ponto dentro de aspas não termina frase — a análise cita o cliente o tempo
+ * todo, e cortar ali produzia resumo que não diz nada: `Em 28/07 ele
+ * respondeu "Vou dar uma olhadinha.`. Frase curta demais também não serve de
+ * resumo, então segue para a próxima até dar corpo.
+ */
+function primeiraFrase(t: string, max = 130, min = 55): string {
+  if (!t) return '';
+  const p = t.replace(/\s+/g, ' ').trim();
+
+  let aspas = false;
+  let corte = -1;
+  for (let i = 0; i < p.length; i++) {
+    const c = p[i];
+    if (c === '"' || c === '“' || c === '”') aspas = !aspas;
+    if (aspas || !'.!?'.includes(c)) continue;
+    const prox = p[i + 1];
+    if (prox && prox !== ' ') continue;
+    if (i + 1 >= min) { corte = i + 1; break; }
+  }
+
+  const frase = corte > 0 ? p.slice(0, corte) : p;
+  return frase.length <= max ? frase : frase.slice(0, max).replace(/\s\S*$/, '') + '…';
+}
+
 // ---------------------------------------------------------------------------
 // a apresentação
 // ---------------------------------------------------------------------------
@@ -188,11 +251,9 @@ export default function RodadaView({ r, anteriorQuadro, corretores, diretrizes, 
   /**
    * A tela abre mostrando tudo — quem entra aqui é o gestor. Mas a reunião
    * acontece com os dois olhando a MESMA tela, e aí o risco apurado e as
-   * perguntas preparadas não podem estar à vista: o corretor lê o roteiro
-   * antes de a conversa começar.
+   * perguntas preparadas não podem estar à vista.
    */
   const [modoTela, setModoTela] = useState<'gestor' | 'corretor'>('gestor');
-  /** a prova abre fechada: a reunião se faz com a camada de cima */
   const [mostrarProva, setMostrarProva] = useState(false);
   const soEu = modoTela === 'gestor';
   const [editandoNome, setEditandoNome] = useState(false);
@@ -201,10 +262,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, diretrizes, 
   const a = useMemo(() => asObj(r?.analise), [r]);
   const temAnalise = Object.keys(a).length > 0;
 
-  /**
-   * Uma estrutura só, venha o relatório no formato antigo ou no novo. Daqui
-   * para baixo a tela nunca pergunta qual chegou.
-   */
+  /** Uma estrutura só, venha o relatório no formato antigo ou no novo. */
   const rel = useMemo(() => lerRelatorio(a), [a]);
 
   /**
@@ -243,15 +301,34 @@ export default function RodadaView({ r, anteriorQuadro, corretores, diretrizes, 
     );
   }, [indicadores]);
 
-  const natureza = naturezaLegivel(rel.natureza);
   const destaques = asObj(rel.legado.destaques);
   const combinado = rel.legado.combinado;
+  const metas = useMemo(() => asArr(combinado.metas), [combinado]);
   const paradosPrazo = asArr(combinado.leads_parados_alem_do_prazo);
   const descartesExplicar = asArr(combinado.descartes_a_explicar);
   const fichaIncompleta = asArr(combinado.ficha_incompleta);
   const naoCombinado = asArr(combinado.o_que_nao_foi_combinado).map((x) => String(x));
 
-  const temProva = indicadores.length > 0 || rel.leads.length > 0
+  const v = rel.veredito;
+  const aTratar = v.processo + v.naoFez;
+
+  /**
+   * O TERCEIRO NÚMERO DA CAPA é escolhido, não fixo.
+   *
+   * Mostrar as cinco metas na abertura é o que produzia a parede. Só uma
+   * importa para começar a conversa: a que está mais longe de ser batida.
+   * As outras continuam inteiras no retrato, dentro da prova.
+   */
+  const metaPior = useMemo(() => {
+    const cand = metas
+      .map((m) => ({ m, meta: asNum(m.meta), feito: asNum(m.realizado) }))
+      .filter((x) => x.meta !== null && x.meta > 0 && x.m.avaliavel !== false && x.feito !== null)
+      .map((x) => ({ ...x, pct: x.feito! / x.meta! }))
+      .sort((x, y) => x.pct - y.pct);
+    return cand[0] ?? null;
+  }, [metas]);
+
+  const temProva = indicadores.length > 0 || rel.leads.length > 0 || metas.length > 0
     || paradosPrazo.length > 0 || descartesExplicar.length > 0
     || fichaIncompleta.length > 0 || rel.ressalvas.length > 0;
 
@@ -298,24 +375,22 @@ export default function RodadaView({ r, anteriorQuadro, corretores, diretrizes, 
     <>
       <style dangerouslySetInnerHTML={{ __html: CSS_PRINT_RODADA }} />
 
-      <div className="max-w-5xl mx-auto px-3 sm:px-4 pb-20 pt-6 space-y-4 no-print">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-20 pt-5 space-y-3 no-print">
 
-        {/* cabeçalho */}
+        {/* ═══════════ A CAPA — cabe numa tela ═══════════ */}
+
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <span className="gx-tag"><span>Área do administrador</span></span>
-            <div className="flex items-center gap-2 mt-2">
-              <h1 className="al-display text-[22px] font-bold text-white uppercase tracking-[0.1em] truncate">{r.corretorNome}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="al-display text-[20px] font-bold text-white uppercase tracking-[0.1em] truncate">{r.corretorNome}</h1>
               {onRenomear && (
-                <button onClick={() => setEditandoNome((v) => !v)} title="corrigir o nome do corretor"
+                <button onClick={() => setEditandoNome((x) => !x)} title="corrigir o nome do corretor"
                   className="text-text-secondary hover:text-white text-[13px]">✎</button>
               )}
             </div>
-            <p className="text-[12px] text-text-secondary mt-0.5 tabular-nums">
+            <p className="text-[11.5px] text-text-secondary tabular-nums">
               {fmtYmd(r.periodoInicio)} a {fmtYmd(r.periodoFim)}
-              {rel.cobertura.lidas !== null && ` · ${fmtNum(rel.cobertura.lidas)} de ${fmtNum(rel.cobertura.naAmostra)} conversas lidas`}
               {r.versaoDiretrizes && ` · régua ${r.versaoDiretrizes}`}
-              {natureza.txt !== '—' && <> · natureza <b className={natureza.cor}>{natureza.txt}</b></>}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -324,17 +399,15 @@ export default function RodadaView({ r, anteriorQuadro, corretores, diretrizes, 
               onClick={() => setModoTela(soEu ? 'corretor' : 'gestor')}
               title={soEu ? 'esconde o risco, as perguntas do 1:1 e o que a casa precisa destravar' : 'volta a mostrar tudo'}
               className={soEu ? btnGhost : 'px-3 py-2 rounded-xl text-[12px] font-bold border border-emerald-500/50 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 transition-colors'}>
-              {soEu ? '👥 Ver com o corretor' : '✓ Modo reunião · voltar a ver tudo'}
+              {soEu ? '👥 Ver com o corretor' : '✓ Modo reunião'}
             </button>
-            <button onClick={() => imprimir('gestor')} className={btnGhost}>🖨 PDF do gestor</button>
-            <button onClick={() => imprimir('corretor')} className={btnOuro}>📄 PDF do corretor</button>
+            <button onClick={() => imprimir('gestor')} className={btnGhost}>🖨 Gestor</button>
+            <button onClick={() => imprimir('corretor')} className={btnOuro}>📄 Corretor</button>
           </div>
         </div>
 
-        {/* precisa saltar aos olhos: o custo de achar que está escondido e não
-            estar é o corretor ler o roteiro da reunião por cima do seu ombro */}
         {!soEu && (
-          <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/[0.08] px-4 py-2.5 flex flex-wrap items-center gap-2">
+          <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/[0.08] px-4 py-2 flex flex-wrap items-center gap-2">
             <span className="text-[12px] font-bold text-emerald-300">👥 Modo reunião</span>
             <span className="text-[11.5px] text-white/80">
               Pode virar a tela: o risco, as perguntas do 1:1 e o que a casa precisa destravar estão escondidos.
@@ -360,198 +433,232 @@ export default function RodadaView({ r, anteriorQuadro, corretores, diretrizes, 
           </div>
         )}
 
-        {/* ═══════════ CAMADA 1 · A REUNIÃO ═══════════ */}
-
-        {/* a conversa inteira em duas frases */}
-        <section className="al-card relative overflow-hidden p-4 sm:p-5">
+        {/* o problema e o que muda — as duas únicas frases da capa */}
+        <section className="al-card relative overflow-hidden p-5">
           <div className="absolute inset-x-0 top-0 gx-line" />
           {rel.gargalo && (
-            <div className="rounded-xl border border-rose-500/40 bg-rose-500/[0.07] p-3.5 mb-3">
-              <p className="text-[9.5px] font-extrabold uppercase tracking-[0.16em] text-rose-300/80 mb-1">O gargalo</p>
-              <p className="text-[15px] font-bold text-white leading-snug">{rel.gargalo}</p>
-            </div>
+            <>
+              <p className="text-[9.5px] font-extrabold uppercase tracking-[0.16em] text-rose-300/80 mb-1.5">O problema</p>
+              <p className={`text-[16px] font-bold text-white leading-relaxed ${LEITURA}`}>{rel.gargalo}</p>
+            </>
           )}
           {rel.instrucao && (
-            <div className="rounded-xl border border-[#E8C547]/40 bg-[#E8C547]/[0.07] p-3.5">
-              <p className="text-[9.5px] font-extrabold uppercase tracking-[0.16em] text-[#E8C547]/80 mb-1">
-                A instrução{PRAZO_LEGIVEL[rel.prazoInstrucao] ? ` · prazo ${PRAZO_LEGIVEL[rel.prazoInstrucao]}` : ''}
+            <div className="mt-4 pt-4 border-t border-white/[0.08]">
+              <p className="text-[9.5px] font-extrabold uppercase tracking-[0.16em] text-[#E8C547]/80 mb-1.5">
+                O que muda a partir de amanhã{PRAZO_LEGIVEL[rel.prazoInstrucao] ? ` · ${PRAZO_LEGIVEL[rel.prazoInstrucao]}` : ''}
               </p>
-              <p className="text-[15px] font-bold text-white leading-snug">{rel.instrucao}</p>
+              <p className={`text-[14px] text-white/90 leading-relaxed ${LEITURA}`}>{rel.instrucao}</p>
             </div>
           )}
-          {rel.veredito.etapaDefasada ? (
-            <p className="text-[11.5px] text-text-secondary mt-3 pt-3 border-t border-white/[0.07]">
-              <b className="text-amber-300 tabular-nums">{fmtNum(rel.veredito.etapaDefasada)}</b> clientes
-              estão numa etapa do CRM diferente da que a conversa mostra — todo relatório da casa que usa etapa
-              erra por causa deles.
-            </p>
-          ) : null}
         </section>
 
-        {/* o retrato — TODO número da rodada vive aqui dentro */}
-        <GraficosRodada rel={rel} indicadores={indicadores} porGrupo={porGrupo} />
-
-        {/* a fila de amanhã */}
-        {rel.fila.length > 0 && (
-          <Secao id="fila" titulo="Fila de ataque" hint="O que fazer amanhã de manhã, nesta ordem.">
-            <div className="space-y-2.5">
-              {rel.fila.map((f, i) => {
-                const t = TEMPERATURA[asStr(f.temperatura).toLowerCase()] || TEMPERATURA.frio;
-                const dias = asNum(f.esfria_em_dias);
-                const urgente = dias !== null && dias <= 3;
-                return (
-                  <div key={i} className={`rounded-xl border p-3 ${urgente ? 'border-rose-500/40 bg-rose-500/[0.05]' : 'border-white/[0.08] bg-white/[0.02]'}`}>
-                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                      <span className="w-5 h-5 rounded-full bg-white/[0.08] text-[11px] font-extrabold text-white flex items-center justify-center shrink-0">
-                        {asNum(f.posicao) ?? i + 1}
-                      </span>
-                      <span className="text-[13.5px] font-bold text-white">{asStr(f.lead) || 'lead'}</span>
-                      <span className={`text-[11px] font-bold ${t.cor}`}>{t.simb} {asStr(f.temperatura)}</span>
-                      {asNum(f.valor_em_jogo) !== null && (
-                        <span className="text-[11.5px] font-bold text-[#E8C547] tabular-nums">{fmtDinheiro(asNum(f.valor_em_jogo))}</span>
-                      )}
-                      {dias !== null && (
-                        <span className={`ml-auto px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${urgente ? 'bg-rose-500/10 border-rose-500/40 text-rose-300' : 'bg-white/[0.05] border-white/15 text-text-secondary'}`}>
-                          esfria em {dias} dia{dias === 1 ? '' : 's'}
-                        </span>
-                      )}
-                    </div>
-                    {asStr(f.por_que_agora) && <p className="text-[12px] text-text-secondary mt-1.5 leading-relaxed">{asStr(f.por_que_agora)}</p>}
-                    <MensagemPronta rotulo="mensagem pronta" texto={asStr(f.mensagem_pronta)} />
-                  </div>
-                );
-              })}
+        {/* TRÊS números. Os outros 290 estão no retrato, dentro da prova. */}
+        <div className="grid grid-cols-3 gap-2">
+          {rel.cobertura.lidas !== null && (
+            <div className="al-card px-3 py-2.5">
+              <p className="text-[19px] font-extrabold text-white tabular-nums leading-none">{fmtNum(rel.cobertura.lidas)}</p>
+              <p className="text-[10.5px] text-text-secondary leading-snug mt-1">
+                conversas lidas de {fmtNum(rel.cobertura.naAmostra)}
+              </p>
             </div>
-          </Secao>
+          )}
+          {v.ok + aTratar > 0 && (
+            <div className="al-card px-3 py-2.5">
+              <p className={`text-[19px] font-extrabold tabular-nums leading-none ${aTratar > 0 ? 'text-rose-300' : 'text-emerald-300'}`}>
+                {fmtNum(aTratar)}
+              </p>
+              <p className="text-[10.5px] text-text-secondary leading-snug mt-1">
+                clientes com algo a tratar · {v.ok} em ordem
+              </p>
+            </div>
+          )}
+          {metaPior && (
+            <div className="al-card px-3 py-2.5">
+              <p className={`text-[19px] font-extrabold tabular-nums leading-none ${metaPior.pct >= 1 ? 'text-emerald-300' : 'text-rose-300'}`}>
+                {fmtNum(metaPior.feito)}<span className="text-[13px] text-text-secondary"> / {fmtNum(metaPior.meta)}</span>
+              </p>
+              <p className="text-[10.5px] text-text-secondary leading-snug mt-1">
+                {asStr(metaPior.m.indicador).replace(/_/g, ' ').toLowerCase()} · a meta mais distante
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* ═══════════ OS PONTOS — um assunto por vez ═══════════ */}
+        {rel.achados.length > 0 && (
+          <div className="pt-2 space-y-2">
+            <p className="text-[9.5px] font-extrabold uppercase tracking-[0.16em] text-text-secondary px-1">
+              O que muda · {rel.achados.length} ponto{rel.achados.length === 1 ? '' : 's'} · clique para abrir
+            </p>
+            {rel.achados.map((ac, i) => {
+              const est = VEREDITO[ac.estado as ChaveVeredito];
+              return (
+                <Dobra key={i} n={i + 1}
+                  titulo={ac.titulo || `Ponto ${i + 1}`}
+                  tom={ac.estado === 'nao_fez' ? 'ruim' : 'neutro'}
+                  etiqueta={ac.quantosLeads !== null ? `${fmtNum(ac.quantosLeads)} clientes` : est?.txt}
+                  resumo={primeiraFrase(ac.oQueCustou) || primeiraFrase(ac.oQueAconteceu)}>
+                  {ac.oQueAconteceu && (
+                    <p className={`text-[12.5px] text-white/85 leading-relaxed mb-1 ${LEITURA}`}>{ac.oQueAconteceu}</p>
+                  )}
+                  <Citacoes lista={ac.citacoes} />
+                  {ac.oQueCustou && (
+                    <p className={`text-[12.5px] text-white/85 leading-relaxed mb-1 mt-2 ${LEITURA}`}>
+                      <b className="text-rose-300">O que custou.</b> {ac.oQueCustou}
+                    </p>
+                  )}
+                  {ac.oQueFazer && (
+                    <p className={`text-[12.5px] text-white/85 leading-relaxed ${LEITURA}`}>
+                      <b className="text-emerald-300">O que fazer no lugar.</b> {ac.oQueFazer}
+                    </p>
+                  )}
+                  <MensagemPronta rotulo="modelo" texto={ac.mensagemPronta} />
+                </Dobra>
+              );
+            })}
+          </div>
         )}
 
-        {/* o que faz bem — abre antes da cobrança, de propósito */}
+        {/* ═══════════ AMANHÃ DE MANHÃ ═══════════ */}
+        {rel.fila.length > 0 && (
+          <div className="pt-2 space-y-2">
+            <p className="text-[9.5px] font-extrabold uppercase tracking-[0.16em] text-text-secondary px-1">
+              Amanhã de manhã · nesta ordem
+            </p>
+            {rel.fila.map((f, i) => {
+              const t = TEMPERATURA[asStr(f.temperatura).toLowerCase()] || TEMPERATURA.frio;
+              const dias = asNum(f.esfria_em_dias);
+              const urgente = dias !== null && dias <= 3;
+              const valor = asNum(f.valor_em_jogo);
+              return (
+                <Dobra key={i} n={asNum(f.posicao) ?? i + 1}
+                  titulo={asStr(f.lead) || 'lead'}
+                  tom={urgente ? 'ruim' : 'neutro'}
+                  etiqueta={[
+                    `${t.simb} ${asStr(f.temperatura)}`,
+                    valor !== null ? fmtDinheiro(valor) : '',
+                    dias !== null ? `esfria em ${dias}d` : '',
+                  ].filter(Boolean).join(' · ')}
+                  resumo={primeiraFrase(asStr(f.por_que_agora))}>
+                  {asStr(f.por_que_agora) && (
+                    <p className={`text-[12.5px] text-white/85 leading-relaxed ${LEITURA}`}>{asStr(f.por_que_agora)}</p>
+                  )}
+                  <MensagemPronta rotulo="mensagem pronta" texto={asStr(f.mensagem_pronta)} />
+                </Dobra>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ═══════════ O QUE ELE FAZ BEM ═══════════ */}
         {(rel.acertos.length > 0 || asStr(destaques.observacao)) && (
-          <Secao id="bem" titulo="O que você faz bem" hint="Manter e replicar — é daqui que sai o material de treino do time.">
-            {asStr(destaques.observacao) && (
-              <p className="text-[12.5px] text-white/85 leading-relaxed mb-3">{asStr(destaques.observacao)}</p>
-            )}
-            <div className="space-y-3">
-              {rel.acertos.map((ac, i) => (
-                <div key={i}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[12.5px] font-bold text-white">{ac.lead || 'lead'}</span>
-                    {ac.valeComoTreino && (
-                      <span className="px-2 py-0.5 rounded-full text-[9.5px] font-extrabold border bg-emerald-500/10 border-emerald-500/40 text-emerald-300">vale como treino</span>
+          <div className="pt-2">
+            <Dobra titulo="O que você faz bem" tom="bom"
+              etiqueta={rel.acertos.length ? `${rel.acertos.length}` : undefined}
+              resumo={primeiraFrase(asStr(destaques.observacao))
+                || 'Manter e replicar — é daqui que sai o material de treino do time.'}>
+              {asStr(destaques.observacao) && (
+                <p className={`text-[12.5px] text-white/85 leading-relaxed mb-3 ${LEITURA}`}>{asStr(destaques.observacao)}</p>
+              )}
+              <div className="space-y-3">
+                {rel.acertos.map((ac, i) => (
+                  <div key={i}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[12.5px] font-bold text-white">{ac.lead || 'lead'}</span>
+                      {ac.valeComoTreino && (
+                        <span className="px-2 py-0.5 rounded-full text-[9.5px] font-extrabold border bg-emerald-500/10 border-emerald-500/40 text-emerald-300">vale como treino</span>
+                      )}
+                    </div>
+                    <Citacao c={ac} mostrarLead={false} />
+                    {ac.porQue && (
+                      <p className={`text-[12px] text-text-secondary leading-relaxed ${LEITURA}`}>
+                        <b className="text-white/80">Por que funciona:</b> {ac.porQue}
+                      </p>
                     )}
                   </div>
-                  <Citacao c={ac} mostrarLead={false} />
-                  {ac.porQue && (
-                    <p className="text-[12px] text-text-secondary leading-relaxed"><b className="text-white/80">Por que funciona:</b> {ac.porQue}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </Secao>
+                ))}
+              </div>
+            </Dobra>
+          </div>
         )}
 
-        {/* o que muda — a cobrança, com dois exemplos por padrão */}
-        {rel.achados.length > 0 && (
-          <Secao id="muda" titulo="O que muda a partir de agora"
-            hint="Cada ponto é um padrão que se repete, não um caso isolado. Os exemplos são a prova dele.">
-            <div className="space-y-5">
-              {rel.achados.map((ac, i) => {
-                const est = VEREDITO[ac.estado as ChaveVeredito];
-                return (
-                  <div key={i} className={i > 0 ? 'pt-4 border-t border-white/[0.07]' : ''}>
-                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                      <h3 className="text-[13.5px] font-bold text-white">{ac.titulo || `Ponto ${i + 1}`}</h3>
-                      {est && <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-extrabold border ${est.bg}`}>{est.simb} {est.txt}</span>}
-                      {ac.quantosLeads !== null && (
-                        <span className="px-2 py-0.5 rounded-full text-[9.5px] font-extrabold border bg-white/[0.05] border-white/15 text-text-secondary">
-                          em {fmtNum(ac.quantosLeads)} cliente{ac.quantosLeads === 1 ? '' : 's'}
-                        </span>
-                      )}
-                    </div>
-                    {ac.oQueAconteceu && <p className="text-[12.5px] text-white/85 leading-relaxed mb-1"><b className="text-white">O que aconteceu.</b> {ac.oQueAconteceu}</p>}
-                    <Citacoes lista={ac.citacoes} />
-                    {ac.oQueCustou && <p className="text-[12.5px] text-white/85 leading-relaxed mb-1"><b className="text-rose-300">O que custou.</b> {ac.oQueCustou}</p>}
-                    {ac.oQueFazer && <p className="text-[12.5px] text-white/85 leading-relaxed"><b className="text-emerald-300">O que fazer no lugar.</b> {ac.oQueFazer}</p>}
-                    <MensagemPronta rotulo="modelo" texto={ac.mensagemPronta} />
-                  </div>
-                );
-              })}
-            </div>
-          </Secao>
-        )}
-
-        {/* o que a casa deve antes de cobrar — fica visível para os dois */}
+        {/* o que a casa deve antes de cobrar — os dois veem */}
         {rel.naoEDele.length > 0 && (
-          <Secao id="naodele" titulo="Nem tudo é do corretor" hint="O que a casa precisa assumir antes de cobrar dele.">
+          <Dobra titulo="Nem tudo é do corretor" etiqueta={`${rel.naoEDele.length}`}
+            resumo="O que a casa precisa assumir antes de cobrar dele.">
             <ul className="space-y-2">
               {rel.naoEDele.map((n, i) => (
-                <li key={i} className="text-[12.5px] text-white/85 leading-relaxed">
+                <li key={i} className={`text-[12.5px] text-white/85 leading-relaxed ${LEITURA}`}>
                   <span className="text-text-secondary">•</span> <b className="text-white/70">{asStr(n.lead) || asStr(n.tipo).replace(/_/g, ' ')}</b> — {asStr(n.descricao)}
                 </li>
               ))}
             </ul>
-          </Secao>
+          </Dobra>
         )}
 
-        {/* ═══════════ CAMADA 3 · SÓ O GESTOR ═══════════ */}
+        {/* ═══════════ SÓ O GESTOR ═══════════ */}
         {soEu && (rel.risco.length > 0 || rel.perguntas.length > 0 || rel.destravar.length > 0) && (
-          <div className="flex items-center gap-3 pt-2">
-            <div className="h-px flex-1 bg-white/10" />
-            <span className="text-[9.5px] font-extrabold uppercase tracking-[0.16em] text-text-secondary">Só para o gestor · não vai no PDF do corretor</span>
-            <div className="h-px flex-1 bg-white/10" />
+          <div className="pt-3 space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="h-px flex-1 bg-white/10" />
+              <span className="text-[9.5px] font-extrabold uppercase tracking-[0.16em] text-text-secondary">Só você vê · não sai no PDF do corretor</span>
+              <div className="h-px flex-1 bg-white/10" />
+            </div>
+
+            {rel.perguntas.length > 0 && (
+              <Dobra titulo="Perguntas para abrir a conversa" etiqueta={`${rel.perguntas.length}`}
+                resumo={primeiraFrase(rel.perguntas[0])}>
+                <ol className="space-y-2">
+                  {rel.perguntas.map((p, i) => (
+                    <li key={i} className={`text-[12.5px] text-white/90 leading-relaxed ${LEITURA}`}>
+                      <span className="text-[#E8C547]/60 font-bold mr-1.5">{i + 1}.</span>{p}
+                    </li>
+                  ))}
+                </ol>
+              </Dobra>
+            )}
+
+            {rel.risco.length > 0 && (
+              <Dobra titulo="Risco para a imobiliária" tom="ruim" etiqueta={`${rel.risco.length}`}
+                resumo="Cada ocorrência traz o trecho literal — sem prova, não se registra.">
+                {rel.risco.map((o, i) => (
+                  <div key={i}>
+                    <Citacao c={o} />
+                    {o.porQue && <p className={`text-[11.5px] text-text-secondary -mt-1 mb-2 leading-relaxed ${LEITURA}`}>{o.porQue}</p>}
+                  </div>
+                ))}
+              </Dobra>
+            )}
+
+            {rel.destravar.length > 0 && (
+              <Dobra titulo="O que VOCÊ precisa destravar" etiqueta={`${rel.destravar.length}`}
+                resumo="O corretor não resolve isso sozinho.">
+                <Tabela cols={['Tipo', 'O que travou', 'Responsável']}>
+                  {rel.destravar.map((d, i) => (
+                    <tr key={i}>
+                      <td className={td + ' text-[#E8C547] font-bold whitespace-nowrap'}>{TIPO_DESTRAVE[asStr(d.tipo)] || asStr(d.tipo)}</td>
+                      <td className={td + ' text-white/85 leading-relaxed'}>{asStr(d.descricao)}</td>
+                      <td className={td + ' text-text-secondary whitespace-nowrap'}>{asStr(d.responsavel_sugerido) || '—'}</td>
+                    </tr>
+                  ))}
+                </Tabela>
+              </Dobra>
+            )}
           </div>
         )}
 
-        {soEu && rel.perguntas.length > 0 && (
-          <Secao id="perguntas" titulo="Perguntas para a reunião" hint="Perguntas, não acusações — a primeira abre a conversa.">
-            <ol className="space-y-2">
-              {rel.perguntas.map((p, i) => (
-                <li key={i} className="text-[12.5px] text-white/90 leading-relaxed">
-                  <span className="text-[#E8C547]/60 font-bold mr-1.5">{i + 1}.</span>{p}
-                </li>
-              ))}
-            </ol>
-          </Secao>
-        )}
-
-        {soEu && rel.risco.length > 0 && (
-          <Secao id="risco" titulo="Risco para a imobiliária"
-            hint="Cada ocorrência traz o trecho literal — sem prova, não se registra.">
-            {rel.risco.map((o, i) => (
-              <div key={i}>
-                <Citacao c={o} />
-                {o.porQue && <p className="text-[11.5px] text-text-secondary -mt-1 mb-2 leading-relaxed">{o.porQue}</p>}
-              </div>
-            ))}
-          </Secao>
-        )}
-
-        {soEu && rel.destravar.length > 0 && (
-          <Secao id="destravar" titulo="O que VOCÊ precisa destravar" hint="O corretor não resolve isso sozinho.">
-            <Tabela cols={['Tipo', 'O que travou', 'Responsável']}>
-              {rel.destravar.map((d, i) => (
-                <tr key={i}>
-                  <td className={td + ' text-[#E8C547] font-bold whitespace-nowrap'}>{TIPO_DESTRAVE[asStr(d.tipo)] || asStr(d.tipo)}</td>
-                  <td className={td + ' text-white/85 leading-relaxed'}>{asStr(d.descricao)}</td>
-                  <td className={td + ' text-text-secondary whitespace-nowrap'}>{asStr(d.responsavel_sugerido) || '—'}</td>
-                </tr>
-              ))}
-            </Tabela>
-          </Secao>
-        )}
-
-        {/* ═══════════ CAMADA 2 · A PROVA ═══════════ */}
+        {/* ═══════════ A PROVA ═══════════ */}
         {temProva && (
-          <>
+          <div className="pt-3 space-y-3">
             <button
-              onClick={() => setMostrarProva((v) => !v)}
+              onClick={() => setMostrarProva((x) => !x)}
               className="w-full al-card px-4 py-3 flex items-center justify-between gap-3 hover:bg-white/[0.04] transition-colors text-left">
               <span>
                 <span className="al-display text-[12.5px] font-bold text-white uppercase tracking-[0.1em]">
-                  {mostrarProva ? 'Esconder a prova' : 'Ver a prova'}
+                  {mostrarProva ? 'Esconder os números' : 'Ver todos os números'}
                 </span>
-                <span className="block text-[11px] text-text-secondary mt-0.5">
-                  O quadro linha a linha, cliente por cliente, o que foi combinado e as ressalvas.
+                <span className={`block text-[11px] text-text-secondary mt-0.5 ${LEITURA}`}>
+                  As metas, os {indicadores.length} indicadores linha a linha, cliente por cliente e as ressalvas.
                   {' '}É consulta — para quando alguém perguntar de onde saiu um número.
                 </span>
               </span>
@@ -560,17 +667,18 @@ export default function RodadaView({ r, anteriorQuadro, corretores, diretrizes, 
 
             {mostrarProva && (
               <>
-                {/* o quadro linha a linha */}
+                <GraficosRodada rel={rel} indicadores={indicadores} porGrupo={porGrupo} />
+
                 {indicadores.length > 0 && (
                   <Secao id="quadro" titulo="Os números, linha a linha"
                     hint={quadroDoSistema
                       ? 'Calculado pelo CRM contra a régua da casa — a mesma conta em toda rodada.'
-                      : 'Rodada antiga: estes números vieram do relatório, não do CRM.'}>
+                      : 'Rodada antiga: os valores vieram do relatório, mas a régua é a da casa.'}>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mb-3 text-[11.5px]">
                       {(['verde', 'amarelo', 'vermelho', 'nd'] as const).map((k) => {
-                        const v = indicadores.filter((i) => i.status === k).length;
-                        if (!v) return null;
-                        return <span key={k} className="text-text-secondary">{BOLA_STATUS[k]} <b className="text-white tabular-nums">{v}</b></span>;
+                        const q = indicadores.filter((i) => i.status === k).length;
+                        if (!q) return null;
+                        return <span key={k} className="text-text-secondary">{BOLA_STATUS[k]} <b className="text-white tabular-nums">{q}</b></span>;
                       })}
                       {indicadores.some((i) => i.origemReferencia === 'mercado') && (
                         <span className="text-[10.5px] text-white/40">status vermelho só contra o que a casa combinou</span>
@@ -580,7 +688,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, diretrizes, 
                     {/* de onde vem cada número: sem isto o gestor lê um percentual
                         da amostra como se fosse da carteira — e a amostra é
                         sorteada de propósito nas faixas mais críticas */}
-                    <p className="text-[10.5px] text-text-secondary mb-3 leading-relaxed">
+                    <p className={`text-[10.5px] text-text-secondary mb-3 leading-relaxed ${LEITURA}`}>
                       <span className="inline-block text-[8.5px] font-extrabold uppercase tracking-[0.08em] px-1 py-px rounded bg-sky-500/15 text-sky-300 align-middle">lido</span>
                       {' '}saiu dos {fmtNum(rel.cobertura.lidas)} clientes cuja conversa foi lida — tem prova, mas é uma
                       amostra sorteada nas faixas mais críticas e <b className="text-white/70">não representa a carteira inteira</b>.
@@ -632,7 +740,6 @@ export default function RodadaView({ r, anteriorQuadro, corretores, diretrizes, 
                   </Secao>
                 )}
 
-                {/* cliente por cliente */}
                 {rel.leads.length > 0 && (
                   <Secao id="leads" titulo="Cliente por cliente"
                     hint={rel.leadsSemAchado !== null
@@ -640,12 +747,12 @@ export default function RodadaView({ r, anteriorQuadro, corretores, diretrizes, 
                       : `${rel.leads.length} clientes, um por linha.`}>
                     <Tabela cols={['Cliente', '', 'Etapa no CRM', 'Etapa real', 'Sem toque', 'O que travou']}>
                       {rel.leads.map((l, i) => {
-                        const v = VEREDITO[l.veredito as ChaveVeredito];
+                        const vd = VEREDITO[l.veredito as ChaveVeredito];
                         const divergiu = !!l.etapaReal && !!l.etapaCrm && l.etapaReal !== l.etapaCrm;
                         return (
                           <tr key={i}>
                             <td className={td + ' text-white font-bold whitespace-nowrap'}>{l.lead}</td>
-                            <td className={td + ' whitespace-nowrap'} title={v?.txt}>{v ? <span className={v.cor + ' font-bold'}>{v.simb}</span> : '—'}</td>
+                            <td className={td + ' whitespace-nowrap'} title={vd?.txt}>{vd ? <span className={vd.cor + ' font-bold'}>{vd.simb}</span> : '—'}</td>
                             <td className={td + ' text-text-secondary'}>{l.etapaCrm || '—'}</td>
                             <td className={`${td} ${divergiu ? 'text-amber-300 font-bold' : 'text-text-secondary'}`}>{l.etapaReal || '—'}</td>
                             <td className={td + ' text-text-secondary tabular-nums whitespace-nowrap'}>
@@ -659,7 +766,6 @@ export default function RodadaView({ r, anteriorQuadro, corretores, diretrizes, 
                   </Secao>
                 )}
 
-                {/* o combinado — a única parte cobrável, porque foi acertada antes */}
                 {(paradosPrazo.length > 0 || descartesExplicar.length > 0 || fichaIncompleta.length > 0 || naoCombinado.length > 0) && (
                   <Secao id="combinado" titulo="O combinado"
                     hint="Só entra aqui o que a casa acertou antes. O que não foi combinado não é cobrança do corretor — é do gestor.">
@@ -716,7 +822,7 @@ export default function RodadaView({ r, anteriorQuadro, corretores, diretrizes, 
                           Isto ainda não foi combinado — cobrança sua, não dele
                         </p>
                         <ul className="space-y-1">
-                          {naoCombinado.map((s, i) => <li key={i} className="text-[12px] text-white/80 leading-relaxed">• {s}</li>)}
+                          {naoCombinado.map((s, i) => <li key={i} className={`text-[12px] text-white/80 leading-relaxed ${LEITURA}`}>• {s}</li>)}
                         </ul>
                         <Link href="/dashboard/admin/auditoria/diretrizes/" className="inline-block mt-2 text-[11px] font-bold text-[#E8C547] hover:brightness-125">
                           definir na régua →
@@ -726,17 +832,16 @@ export default function RodadaView({ r, anteriorQuadro, corretores, diretrizes, 
                   </Secao>
                 )}
 
-                {/* ressalvas — fecham o documento */}
                 {rel.ressalvas.length > 0 && (
                   <Secao id="ressalvas" titulo="Ressalvas" hint="O que não foi possível verificar, e por quê.">
                     <ul className="space-y-1.5">
-                      {rel.ressalvas.map((s, i) => <li key={i} className="text-[11.5px] text-text-secondary leading-relaxed">• {s}</li>)}
+                      {rel.ressalvas.map((s, i) => <li key={i} className={`text-[11.5px] text-text-secondary leading-relaxed ${LEITURA}`}>• {s}</li>)}
                     </ul>
                   </Secao>
                 )}
               </>
             )}
-          </>
+          </div>
         )}
 
         <p className="text-[10.5px] text-text-secondary text-center pt-2">

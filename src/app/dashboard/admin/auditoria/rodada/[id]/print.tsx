@@ -235,36 +235,38 @@ export default function RodadaPrint({ r, a, indicadores, porGrupo, modo }: Props
             </p>
           )}
 
-          {metas.length > 0 && (
-            <>
-              <h3>As metas do período</h3>
-              <table>
-                <thead>
-                  <tr><th>Meta</th><th className="num">Feito</th><th className="num">Meta</th><th>Leitura</th></tr>
-                </thead>
-                <tbody>
-                  {metas.map((m, i) => {
-                    const bateu = m.bateu === true;
-                    const semMeta = asNum(m.meta) === null || m.avaliavel === false;
-                    // VGV é dinheiro: o pró-rata da meta mensal cai em centavos
-                    const dinheiro = /vgv|valor/i.test(asStr(m.indicador));
-                    const fmt = (x: number | null) => (dinheiro ? fmtDinheiro(x) : fmtNum(x));
-                    return (
-                      <tr key={i}>
-                        <td>{asStr(m.indicador).replace(/_/g, ' ')}</td>
-                        <td className={'num ' + (semMeta ? 'nd' : bateu ? 'verde' : 'vermelho')}>{fmt(asNum(m.realizado))}</td>
-                        <td className="num">{semMeta ? '—' : fmt(asNum(m.meta))}</td>
-                        <td>{asStr(m.faltou)
-                          || (asNum(m.meta) === null ? 'a casa não cobra isto'
-                            : m.avaliavel === false ? `meta de ${fmtNum(asNum(m.meta_mensal))} no mês — não dá pra cobrar neste período`
-                              : bateu ? 'meta batida' : '')}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </>
-          )}
+        </section>
+      )}
+      {/* ——— o que muda ——— */}
+      {rel.achados.length > 0 && (
+        <section>
+          <h2>O que muda a partir de agora</h2>
+          <p className="mini">Cada ponto é um padrão que se repete, não um caso isolado. Os exemplos são a prova dele.</p>
+          {rel.achados.map((ac, i) => {
+            const est = VEREDITO[ac.estado as ChaveVeredito];
+            return (
+              <div key={i}>
+                <h3>
+                  {ac.titulo || `Ponto ${i + 1}`}
+                  {est && <span className="meta"> — {est.simb} {est.txt}</span>}
+                  {ac.quantosLeads !== null && <span className="meta"> · em {fmtNum(ac.quantosLeads)} cliente{ac.quantosLeads === 1 ? '' : 's'}</span>}
+                </h3>
+                {ac.oQueAconteceu && <p><b>O que aconteceu.</b> {ac.oQueAconteceu}</p>}
+                {duas(ac.citacoes).map((c, j) => <Cit key={j} c={c} />)}
+                {ac.citacoes.length > 2 && (
+                  <p className="mini">+ {ac.citacoes.length - 2} exemplo{ac.citacoes.length - 2 === 1 ? '' : 's'} do mesmo erro estão no sistema.</p>
+                )}
+                {ac.oQueCustou && <p><b>O que custou.</b> {ac.oQueCustou}</p>}
+                {ac.oQueFazer && <p><b>O que fazer no lugar.</b> {ac.oQueFazer}</p>}
+                {ac.mensagemPronta && (
+                  <div className="msg">
+                    <span className="r">modelo</span>
+                    <p>{ac.mensagemPronta}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </section>
       )}
 
@@ -311,39 +313,6 @@ export default function RodadaPrint({ r, a, indicadores, porGrupo, modo }: Props
               {ac.porQue && <p className="mini"><b>Por que funciona:</b> {ac.porQue}</p>}
             </div>
           ))}
-        </section>
-      )}
-
-      {/* ——— o que muda ——— */}
-      {rel.achados.length > 0 && (
-        <section>
-          <h2>O que muda a partir de agora</h2>
-          <p className="mini">Cada ponto é um padrão que se repete, não um caso isolado. Os exemplos são a prova dele.</p>
-          {rel.achados.map((ac, i) => {
-            const est = VEREDITO[ac.estado as ChaveVeredito];
-            return (
-              <div key={i}>
-                <h3>
-                  {ac.titulo || `Ponto ${i + 1}`}
-                  {est && <span className="meta"> — {est.simb} {est.txt}</span>}
-                  {ac.quantosLeads !== null && <span className="meta"> · em {fmtNum(ac.quantosLeads)} cliente{ac.quantosLeads === 1 ? '' : 's'}</span>}
-                </h3>
-                {ac.oQueAconteceu && <p><b>O que aconteceu.</b> {ac.oQueAconteceu}</p>}
-                {duas(ac.citacoes).map((c, j) => <Cit key={j} c={c} />)}
-                {ac.citacoes.length > 2 && (
-                  <p className="mini">+ {ac.citacoes.length - 2} exemplo{ac.citacoes.length - 2 === 1 ? '' : 's'} do mesmo erro estão no sistema.</p>
-                )}
-                {ac.oQueCustou && <p><b>O que custou.</b> {ac.oQueCustou}</p>}
-                {ac.oQueFazer && <p><b>O que fazer no lugar.</b> {ac.oQueFazer}</p>}
-                {ac.mensagemPronta && (
-                  <div className="msg">
-                    <span className="r">modelo</span>
-                    <p>{ac.mensagemPronta}</p>
-                  </div>
-                )}
-              </div>
-            );
-          })}
         </section>
       )}
 
@@ -411,6 +380,40 @@ export default function RodadaPrint({ r, a, indicadores, porGrupo, modo }: Props
         <>
           <div className="pg" />
           <p className="sep">A prova · de onde saiu cada número</p>
+
+      {/* as metas ficam com a prova: na abertura elas eram cinco cartoes
+          antes do primeiro ponto de cobranca */}
+      {metas.length > 0 && (
+        <section>
+          <h2>As metas do período</h2>
+              <table>
+                <thead>
+                  <tr><th>Meta</th><th className="num">Feito</th><th className="num">Meta</th><th>Leitura</th></tr>
+                </thead>
+                <tbody>
+                  {metas.map((m, i) => {
+                    const bateu = m.bateu === true;
+                    const semMeta = asNum(m.meta) === null || m.avaliavel === false;
+                    // VGV é dinheiro: o pró-rata da meta mensal cai em centavos
+                    const dinheiro = /vgv|valor/i.test(asStr(m.indicador));
+                    const fmt = (x: number | null) => (dinheiro ? fmtDinheiro(x) : fmtNum(x));
+                    return (
+                      <tr key={i}>
+                        <td>{asStr(m.indicador).replace(/_/g, ' ')}</td>
+                        <td className={'num ' + (semMeta ? 'nd' : bateu ? 'verde' : 'vermelho')}>{fmt(asNum(m.realizado))}</td>
+                        <td className="num">{semMeta ? '—' : fmt(asNum(m.meta))}</td>
+                        <td>{asStr(m.faltou)
+                          || (asNum(m.meta) === null ? 'a casa não cobra isto'
+                            : m.avaliavel === false ? `meta de ${fmtNum(asNum(m.meta_mensal))} no mês — não dá pra cobrar neste período`
+                              : bateu ? 'meta batida' : '')}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+        </section>
+      )}
+
 
           {indicadores.length > 0 && (
             <section>
