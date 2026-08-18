@@ -200,9 +200,13 @@ export default function RodadaPrint({ r, a, indicadores, porGrupo, modo }: Props
             )}
             {vTotal > 0 && (
               <div className="cel">
-                <span className="r">trabalho não feito</span>
-                <span className={'v ' + (v.naoFez > 0 ? 'vermelho' : 'verde')}>{fmtNum(v.naoFez)}</span>
-                <span className="expl">{v.processo > 0 ? `e ${v.processo} em que fez e não registrou` : 'nenhum cliente com trabalho em aberto'}</span>
+                {/* "não fez" é veredito de VERIFICAÇÃO, não de desempenho —
+                    sozinho ele imprimia "0" logo abaixo de um gargalo que
+                    dizia o contrário. Somado ao "fez e não registrou" vira o
+                    número que o gestor procura. */}
+                <span className="r">clientes com algo a tratar</span>
+                <span className={'v ' + (v.processo + v.naoFez > 0 ? 'vermelho' : 'verde')}>{fmtNum(v.processo + v.naoFez)}</span>
+                <span className="expl">{v.ok} estavam em ordem{v.naoVerificavel ? ` · ${v.naoVerificavel} sem conversa para conferir` : ''}</span>
               </div>
             )}
             {indicadores.length > 0 && (
@@ -242,11 +246,14 @@ export default function RodadaPrint({ r, a, indicadores, porGrupo, modo }: Props
                   {metas.map((m, i) => {
                     const bateu = m.bateu === true;
                     const semMeta = asNum(m.meta) === null || m.avaliavel === false;
+                    // VGV é dinheiro: o pró-rata da meta mensal cai em centavos
+                    const dinheiro = /vgv|valor/i.test(asStr(m.indicador));
+                    const fmt = (x: number | null) => (dinheiro ? fmtDinheiro(x) : fmtNum(x));
                     return (
                       <tr key={i}>
                         <td>{asStr(m.indicador).replace(/_/g, ' ')}</td>
-                        <td className={'num ' + (semMeta ? 'nd' : bateu ? 'verde' : 'vermelho')}>{fmtNum(asNum(m.realizado))}</td>
-                        <td className="num">{semMeta ? '—' : fmtNum(asNum(m.meta))}</td>
+                        <td className={'num ' + (semMeta ? 'nd' : bateu ? 'verde' : 'vermelho')}>{fmt(asNum(m.realizado))}</td>
+                        <td className="num">{semMeta ? '—' : fmt(asNum(m.meta))}</td>
                         <td>{asStr(m.faltou)
                           || (asNum(m.meta) === null ? 'a casa não cobra isto'
                             : m.avaliavel === false ? `meta de ${fmtNum(asNum(m.meta_mensal))} no mês — não dá pra cobrar neste período`

@@ -153,11 +153,19 @@ export default function GraficosRodada({ rel, indicadores, porGrupo }: {
           />
         )}
         {vTotal > 0 && (
+          /*
+           * "não fez" é veredito de VERIFICAÇÃO — o CRM afirma algo que a
+           * conversa desmente — e não de desempenho. Exibi-lo sozinho como
+           * "trabalho não feito" produziu um "0" logo acima de um gargalo
+           * que dizia que a conversa morre na mão dele: a análise tinha
+           * classificado os leads como "fez e não registrou" e os padrões
+           * como "não fez". Somar os dois é o número que o gestor procura.
+           */
           <Numerao
-            valor={fmtNum(v.naoFez)}
-            rot="clientes com trabalho não feito"
-            tom={v.naoFez > 0 ? 'ruim' : 'bom'}
-            leitura={v.processo > 0 ? `e ${v.processo} em que fez e não registrou` : undefined}
+            valor={fmtNum(v.processo + v.naoFez)}
+            rot="clientes com algo a tratar"
+            tom={v.processo + v.naoFez > 0 ? 'ruim' : 'bom'}
+            leitura={`${v.ok} estavam em ordem${v.naoVerificavel ? ` · ${v.naoVerificavel} sem conversa para conferir` : ''}`}
           />
         )}
         {indicadores.length > 0 && (
@@ -194,6 +202,11 @@ export default function GraficosRodada({ rel, indicadores, porGrupo }: {
               const meta = asNum(m.meta);
               const feito = asNum(m.realizado);
               const pct = semMeta || !meta ? null : Math.min(100, Math.round(((feito ?? 0) / meta) * 100));
+              // VGV é dinheiro: o pró-rata da meta mensal cai em centavos e
+              // "0 / 758.333,3" ao lado de "faltou R$ 758.333" na mesma célula
+              // parece erro de conta
+              const dinheiro = /vgv|valor/i.test(asStr(m.indicador));
+              const fmt = (n: number | null) => (dinheiro ? fmtDinheiro(n) : fmtNum(n));
               return (
                 <div key={i} className={`rounded-xl border px-3 py-2.5 ${
                   semMeta ? 'border-white/[0.07] bg-white/[0.02]'
@@ -203,9 +216,9 @@ export default function GraficosRodada({ rel, indicadores, porGrupo }: {
                   </p>
                   <p className="mt-1">
                     <span className={`text-[20px] font-extrabold tabular-nums ${semMeta ? 'text-white/60' : bateu ? 'text-emerald-300' : 'text-rose-300'}`}>
-                      {fmtNum(feito)}
+                      {fmt(feito)}
                     </span>
-                    {!semMeta && <span className="text-[12px] text-text-secondary tabular-nums"> / {fmtNum(meta)}</span>}
+                    {!semMeta && <span className="text-[12px] text-text-secondary tabular-nums"> / {fmt(meta)}</span>}
                   </p>
                   {pct !== null && (
                     <div className="h-1.5 rounded bg-white/[0.07] overflow-hidden mt-1.5">
