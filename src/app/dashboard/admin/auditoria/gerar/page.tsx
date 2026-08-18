@@ -566,6 +566,15 @@ export default function GerarPacotePage() {
             </p>
           </div>
 
+          {amostra.length > tamanho && (
+            <p className="text-[11px] text-text-secondary mb-2">
+              A rodada saiu com <b className="text-white">{amostra.length}</b> em vez de {tamanho}: todo cliente novo e todo
+              que se mexeu entram sem cota, e mais {amostra.filter((a) => a.faixa === 'rodizio').length} parados de rodízio.
+              {' '}Parado custa pouco para auditar — não tem mensagem nova, só a confirmação de que não houve nada — e é o
+              único jeito de o cliente abandonado reaparecer.
+            </p>
+          )}
+
           {incompletas.length > 0 && (
             <p className="text-[11px] text-amber-300 mb-2">
               ⚠ {incompletas.map((i) => `${ROTULO_FAIXA[i.faixa]} (${i.obtidos} de ${i.pedidos})`).join(' · ')} — não havia gente suficiente nessa faixa; as vagas foram para o rodízio.

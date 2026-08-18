@@ -169,6 +169,14 @@ export const ROTULO_FAIXA: Record<FaixaSorteio, string> = {
  */
 export const COMPOSICAO = { obrigatorio: 0.35, painel: 0.15, controle: 0.10 } as const;
 
+/**
+ * Quantos parados entram por rodada, no mínimo — mesmo que os novos e os
+ * que se mexeram já tenham enchido o tamanho pedido. Conversa parada é
+ * barata de auditar (não há mensagem nova, só a confirmação de que não
+ * houve nada) e é o único caminho pelo qual o lead abandonado reaparece.
+ */
+export const PISO_RODIZIO = 5;
+
 /** Dias desde a visita/reunião em que o lead ainda é dinheiro quente. */
 const JANELA_POS_EVENTO_DIAS = 14;
 
@@ -387,11 +395,17 @@ export function sortearAmostra(
   }).sort((a, b) => urgenciaObrigatorio(b, ativ, agora) - urgenciaObrigatorio(a, ativ, agora));
   comMovimento.forEach((l) => pegar(l, 'movimento'));
 
-  // ---- 3) RODÍZIO DE ANTIGOS — o que sobra do tamanho pedido
+  // ---- 3) RODÍZIO DE ANTIGOS — com PISO, não só o que sobra
   // Prioriza quem nunca foi lido, depois quem foi lido há mais tempo. É o
   // que pega o lead que está apodrecendo em silêncio, justamente porque
   // "sem movimento" é o sintoma, não a inocência.
-  const falta = Math.max(0, tamanho - escolhidos.length);
+  //
+  // O piso existe porque, sem ele, numa semana movimentada os novos e os
+  // que mexeram enchiam a cota e o rodízio ficava em ZERO — o abandonado
+  // não aparecia justamente na semana em que todo o resto se mexeu.
+  // Custa pouco: conversa parada não tem mensagem nova para ler, só para
+  // confirmar que não houve nada.
+  const falta = Math.max(PISO_RODIZIO, tamanho - escolhidos.length);
   if (falta > 0) {
     const resto = livres().sort((a, b) => {
       const la = lidoEm(a.id), lb = lidoEm(b.id);
