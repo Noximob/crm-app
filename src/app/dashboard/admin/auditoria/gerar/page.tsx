@@ -53,8 +53,13 @@ export default function GerarPacotePage() {
   // período mais largo só faria o corretor parecer parado
   const [ini, setIni] = useState(() => ymd(Math.max(Date.now() - 60 * DIA, dadosConfiaveisDesdeMs())));
   const [fim, setFim] = useState(() => ymd(Date.now()));
-  // 25 é o tamanho de trabalho da casa: cobre a carteira em ~5 rodadas
-  const [tamanho, setTamanho] = useState(25);
+  /**
+   * O único número que ainda é escolha do gestor. Novos e quem se mexeu
+   * entram sem cota — o tamanho da rodada é consequência da semana, não
+   * de um limite. Sobrou controlar quantos parados de etapa avançada
+   * entram junto.
+   */
+  const [tetoParados, setTetoParados] = useState(8);
 
   const [diretrizes, setDiretrizes] = useState<DiretrizesAuditoria | null>(null);
   const [leads, setLeads] = useState<LeadAud[]>([]);
@@ -207,8 +212,8 @@ export default function GerarPacotePage() {
   const sortear = () => {
     if (!leads.length) { showToast('Carregue os dados do corretor primeiro.', 'info'); return; }
     // o sorteio respeita o período: só entra quem estava na mão dele nesses dias
-    const r = sortearAmostra(leads, ultimoToqueDe, tamanho, Date.now(), { iniMs, fimMs }, histAmostra, ativ, modo,
-      diretrizes?.prazos.leadParadoDias ?? 7);
+    const r = sortearAmostra(leads, ultimoToqueDe, Date.now(), { iniMs, fimMs }, histAmostra, ativ, modo,
+      diretrizes?.prazos.leadParadoDias ?? 7, tetoParados);
     setAmostra(r.escolhidos);
     setIncompletas(r.incompletas);
     setFora(new Set());
@@ -452,8 +457,8 @@ export default function GerarPacotePage() {
             <input type="date" value={fim} onChange={(e) => setFim(e.target.value)} className={inputCls + ' [color-scheme:dark]'} />
           </div>
           <div>
-            <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">Amostra</label>
-            <input type="number" min={1} max={100} value={tamanho} onChange={(e) => setTamanho(Number(e.target.value) || 20)} className={inputCls + ' tabular-nums'} />
+            <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1" title="quantos leads parados em etapa avançada entram junto">Parados na frente</label>
+            <input type="number" min={0} max={30} value={tetoParados} onChange={(e) => setTetoParados(Number(e.target.value) || 0)} className={inputCls + ' tabular-nums'} />
           </div>
         </div>
         {/* o modo muda o custo e o valor da rodada; precisa ser escolha
@@ -491,7 +496,7 @@ export default function GerarPacotePage() {
             {carregando ? `lendo a carteira… ${Math.round(progresso * 100)}%`
               : amostra.length ? '↻ Montar de novo'
               : modo === 'baseline' ? `📚 Montar a carteira completa (${leads.length})`
-              : `🎲 Montar a rodada (até ${tamanho})`}
+              : '🎲 Montar a rodada da semana'}
           </button>
           {!uid && <span className="text-[11px] text-text-secondary">escolha o corretor pra começar</span>}
         </div>
@@ -555,6 +560,10 @@ export default function GerarPacotePage() {
                 );
               })}
             </div>
+            <p className="text-[11.5px] text-white/85 mb-1.5">
+              <b className="text-white">{amostra.length} conversas</b> nesta rodada.
+              {modo === 'semanal' && ' Todo cliente novo e todo que se mexeu entram — o tamanho é consequência da semana, não um limite.'}
+            </p>
             <p className="text-[11px] text-text-secondary leading-relaxed">
               {cobertura.novos_nesta_rodada > 0 ? (
                 <><b className="text-white">{cobertura.novos_nesta_rodada}</b> nunca foram auditados. </>
@@ -566,14 +575,6 @@ export default function GerarPacotePage() {
               )}
             </p>
           </div>
-
-          {amostra.length > tamanho && (
-            <p className="text-[11px] text-text-secondary mb-2">
-              A rodada saiu com <b className="text-white">{amostra.length}</b> em vez de {tamanho}: todo cliente novo e todo
-              que se mexeu entram sem cota — é isso que garante que o 1º contato e o que aconteceu na semana sejam
-              sempre auditados.
-            </p>
-          )}
 
           {incompletas.length > 0 && (
             <p className="text-[11px] text-amber-300 mb-2">

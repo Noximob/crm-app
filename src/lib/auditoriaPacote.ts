@@ -347,13 +347,15 @@ export function computarCoberturaAcumulada(
 export type ModoAmostra = 'baseline' | 'semanal';
 
 export function sortearAmostra(
-  leads: LeadAud[], ultimoToqueDe: (id: string) => number, tamanho: number, agora = Date.now(),
+  leads: LeadAud[], ultimoToqueDe: (id: string) => number, agora = Date.now(),
   periodo?: { iniMs: number; fimMs: number },
   hist: HistoricoAmostra = { jaAuditados: new Set(), painel: [] },
   ativ?: Map<string, AtividadeAud>,
   modo: ModoAmostra = 'semanal',
   /** dias sem toque a partir dos quais o lead conta como parado */
   d_leadParadoDias = 7,
+  /** quantos parados em etapa avançada entram, no máximo */
+  tetoParados = TETO_PARADOS_AVANCADOS,
 ): ResultadoSorteio {
   const universo = (periodo ? leads.filter((l) => elegivelNoPeriodo(l, periodo.iniMs, periodo.fimMs)) : leads)
     .filter((l) => mapEtapaCircuito(l.etapa) !== ETAPA_DESCARTADO);
@@ -424,7 +426,7 @@ export function sortearAmostra(
     })
     .sort((a, b) => (lidoEm(a.id) || 0) - (lidoEm(b.id) || 0));
 
-  paradosNaFrente.slice(0, TETO_PARADOS_AVANCADOS).forEach((l) => pegar(l, 'rodizio'));
+  paradosNaFrente.slice(0, tetoParados).forEach((l) => pegar(l, 'rodizio'));
 
   return { escolhidos, incompletas };
 }
