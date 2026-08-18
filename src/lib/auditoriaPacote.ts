@@ -170,12 +170,11 @@ export const ROTULO_FAIXA: Record<FaixaSorteio, string> = {
 export const COMPOSICAO = { obrigatorio: 0.35, painel: 0.15, controle: 0.10 } as const;
 
 /**
- * Quantos parados entram por rodada, no mínimo — mesmo que os novos e os
- * que se mexeram já tenham enchido o tamanho pedido. Conversa parada é
- * barata de auditar (não há mensagem nova, só a confirmação de que não
- * houve nada) e é o único caminho pelo qual o lead abandonado reaparece.
+ * Teto de parados em etapa avançada por rodada. Poucos de propósito: são
+ * a exceção que existe para pegar o "atendeu e não registrou", não uma
+ * varredura de carteira parada — essa o painel já dá em número.
  */
-export const PISO_RODIZIO = 5;
+export const TETO_PARADOS_AVANCADOS = 8;
 
 /** Dias desde a visita/reunião em que o lead ainda é dinheiro quente. */
 const JANELA_POS_EVENTO_DIAS = 14;
@@ -353,6 +352,8 @@ export function sortearAmostra(
   hist: HistoricoAmostra = { jaAuditados: new Set(), painel: [] },
   ativ?: Map<string, AtividadeAud>,
   modo: ModoAmostra = 'semanal',
+  /** dias sem toque a partir dos quais o lead conta como parado */
+  d_leadParadoDias = 7,
 ): ResultadoSorteio {
   const universo = (periodo ? leads.filter((l) => elegivelNoPeriodo(l, periodo.iniMs, periodo.fimMs)) : leads)
     .filter((l) => mapEtapaCircuito(l.etapa) !== ETAPA_DESCARTADO);
@@ -395,30 +396,35 @@ export function sortearAmostra(
   }).sort((a, b) => urgenciaObrigatorio(b, ativ, agora) - urgenciaObrigatorio(a, ativ, agora));
   comMovimento.forEach((l) => pegar(l, 'movimento'));
 
-  // ---- 3) RODÍZIO DE ANTIGOS — com PISO, não só o que sobra
-  // Prioriza quem nunca foi lido, depois quem foi lido há mais tempo. É o
-  // que pega o lead que está apodrecendo em silêncio, justamente porque
-  // "sem movimento" é o sintoma, não a inocência.
+  // ---- 3) PARADOS EM ETAPA AVANÇADA — o único parado que ainda vale ler
   //
-  // O piso existe porque, sem ele, numa semana movimentada os novos e os
-  // que mexeram enchiam a cota e o rodízio ficava em ZERO — o abandonado
-  // não aparecia justamente na semana em que todo o resto se mexeu.
-  // Custa pouco: conversa parada não tem mensagem nova para ler, só para
-  // confirmar que não houve nada.
-  const falta = Math.max(PISO_RODIZIO, tamanho - escolhidos.length);
-  if (falta > 0) {
-    const resto = livres().sort((a, b) => {
-      const la = lidoEm(a.id), lb = lidoEm(b.id);
-      if (!la && !lb) return 0;
-      if (!la) return -1;
-      if (!lb) return 1;
-      return la - lb; // lido há mais tempo primeiro
-    });
-    resto.slice(0, falta).forEach((l) => pegar(l, 'rodizio'));
-    if (resto.length < falta) {
-      incompletas.push({ faixa: 'rodizio', pedidos: falta, obtidos: resto.length });
-    }
-  }
+  // Parado comum não entra: o CRM já sabe que está parado, e confirmar isso
+  // no WhatsApp não acrescenta nada ao relatório.
+  //
+  // A exceção é quem parou LÁ NA FRENTE. Numa rodada real, Valdir e Leila
+  // apareciam com 180 dias sem toque no CRM e tinham conversa de 16 e 17
+  // dias — os dois em Fechamento, um com proposta de R$ 550 mil na mesa. O
+  // corretor tinha atendido e não registrado, e como o movimento é
+  // detectado pelo CRM, eles não entrariam por nenhum outro caminho.
+  // Nesses casos "parado" é ou mentira do sistema ou dinheiro morrendo, e
+  // as duas coisas precisam ser vistas.
+  // agendado entra junto com feito: reunião ou visita marcada e parada é
+  // encontro que ninguém confirmou, e falta de confirmação de véspera é a
+  // causa nº 1 de no-show — some a unidade segurada e a manhã perdida.
+  const avancado = new Set<string>([
+    ETAPA_MEET_AGENDADO, ETAPA_MEET_FEITO,
+    ETAPA_VISITA_AGENDADA, ETAPA_VISITA_FEITA,
+    'Negociação', ETAPA_FECHADO,
+  ]);
+  const paradosNaFrente = livres()
+    .filter((l) => avancado.has(mapEtapaCircuito(l.etapa)))
+    .filter((l) => {
+      const ref = ultimoToqueDe(l.id) || msOf(l.createdAt);
+      return ref > 0 && (agora - ref) / DIA > d_leadParadoDias;
+    })
+    .sort((a, b) => (lidoEm(a.id) || 0) - (lidoEm(b.id) || 0));
+
+  paradosNaFrente.slice(0, TETO_PARADOS_AVANCADOS).forEach((l) => pegar(l, 'rodizio'));
 
   return { escolhidos, incompletas };
 }

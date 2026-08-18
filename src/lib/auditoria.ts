@@ -541,8 +541,14 @@ um PAPEL, no campo faixa_sorteio:
   novo — entrou no período. Todos entram, sem teto: é neles que o 1º
     contato acontece.
   movimento — teve mensagem nova ou mudou de etapa desde a última leitura.
-  rodizio — antigo sem movimento, sorteado priorizando quem nunca foi lido
-    ou foi lido há mais tempo.
+  rodizio — parado EM ETAPA AVANÇADA: reunião ou visita agendada, reunião
+    ou visita feita, Negociação e Fechamento.
+    Parado comum não entra: o painel já diz que está parado e a conversa
+    não acrescentaria nada. Estes entram porque, lá na frente, "parado"
+    costuma ser erro de registro — o corretor atendeu e não anotou — ou
+    dinheiro morrendo com proposta na mesa. Agendado e parado é encontro
+    que ninguém confirmou, e falta de confirmação de véspera é a causa nº 1
+    de no-show. Olhe estes com atenção redobrada ao cruzar CRM e WhatsApp.
   baseline — a carteira inteira, na rodada de linha de base.
 
 O QUE ISSO OBRIGA:

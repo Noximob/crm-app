@@ -207,7 +207,8 @@ export default function GerarPacotePage() {
   const sortear = () => {
     if (!leads.length) { showToast('Carregue os dados do corretor primeiro.', 'info'); return; }
     // o sorteio respeita o período: só entra quem estava na mão dele nesses dias
-    const r = sortearAmostra(leads, ultimoToqueDe, tamanho, Date.now(), { iniMs, fimMs }, histAmostra, ativ, modo);
+    const r = sortearAmostra(leads, ultimoToqueDe, tamanho, Date.now(), { iniMs, fimMs }, histAmostra, ativ, modo,
+      diretrizes?.prazos.leadParadoDias ?? 7);
     setAmostra(r.escolhidos);
     setIncompletas(r.incompletas);
     setFora(new Set());
@@ -462,8 +463,8 @@ export default function GerarPacotePage() {
             {([
               ['baseline', 'Carteira completa', `Lê os ${leads.length} clientes dele, de uma vez.`,
                 'Demorado, e é o único jeito de ter denominador de verdade: depois dela, todo percentual vale para a carteira toda. Faça uma vez por corretor.'],
-              ['semanal', 'Só o que mudou', 'Novos do período + quem teve movimento + rodízio de antigos.',
-                'Barato e rápido. Conversa que não teve mensagem nova desde a última leitura fica de fora — não há o que reler.'],
+              ['semanal', 'Só o que mudou', 'Todos os novos + todos que se mexeram + os parados em etapa avançada.',
+                'Parado comum fica de fora: o painel já mostra que está parado, e confirmar isso na conversa não acrescenta nada. Entram só os que pararam lá na frente — onde "parado" costuma ser erro de registro, não abandono.'],
             ] as const).map(([m, titulo, resumo, porque]) => (
               <button key={m} onClick={() => setModo(m)}
                 className={`text-left p-3 rounded-xl border transition-colors ${
@@ -569,9 +570,8 @@ export default function GerarPacotePage() {
           {amostra.length > tamanho && (
             <p className="text-[11px] text-text-secondary mb-2">
               A rodada saiu com <b className="text-white">{amostra.length}</b> em vez de {tamanho}: todo cliente novo e todo
-              que se mexeu entram sem cota, e mais {amostra.filter((a) => a.faixa === 'rodizio').length} parados de rodízio.
-              {' '}Parado custa pouco para auditar — não tem mensagem nova, só a confirmação de que não houve nada — e é o
-              único jeito de o cliente abandonado reaparecer.
+              que se mexeu entram sem cota — é isso que garante que o 1º contato e o que aconteceu na semana sejam
+              sempre auditados.
             </p>
           )}
 
