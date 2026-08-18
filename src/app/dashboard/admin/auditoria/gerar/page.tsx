@@ -199,6 +199,21 @@ export default function GerarPacotePage() {
   }, [uid]);
 
   /** cobertura acumulada da carteira, para a tela mostrar o rodízio */
+  /**
+   * Quantos leads o baseline vai ler DE FATO. A tela prometia leads.length
+   * — a carteira inteira, com fechados e descartados dentro — e entregava
+   * bem menos, porque esses dois ficam fora de toda métrica. Número que a
+   * tela promete e não cumpre é o tipo de coisa que faz o gestor duvidar
+   * do resto.
+   */
+  const ativosDele = useMemo(
+    () => leads.filter((l) => {
+      const et = mapEtapaCircuito(l.etapa);
+      return et !== 'Descartado' && et !== 'Fechamento';
+    }).length,
+    [leads],
+  );
+
   const cobertura = useMemo(
     () => computarCoberturaAcumulada(leads, histAmostra, amostra.map((a) => a.lead.id)),
     [leads, histAmostra, amostra],
@@ -457,8 +472,11 @@ export default function GerarPacotePage() {
             <input type="date" value={fim} onChange={(e) => setFim(e.target.value)} className={inputCls + ' [color-scheme:dark]'} />
           </div>
           <div>
-            <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1" title="quantos leads parados em etapa avançada entram junto">Parados na frente</label>
+            <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">Parados perto de fechar</label>
             <input type="number" min={0} max={30} value={tetoParados} onChange={(e) => setTetoParados(Number(e.target.value) || 0)} className={inputCls + ' tabular-nums'} />
+            <p className="text-[10px] text-text-secondary mt-1 leading-snug">
+              quantos clientes em reunião, visita ou negociação — e parados — entram junto
+            </p>
           </div>
         </div>
         {/* o modo muda o custo e o valor da rodada; precisa ser escolha
@@ -466,8 +484,8 @@ export default function GerarPacotePage() {
         {leads.length > 0 && !carregando && (
           <div className="mt-3 grid sm:grid-cols-2 gap-2">
             {([
-              ['baseline', 'Carteira completa', `Lê os ${leads.length} clientes dele, de uma vez.`,
-                'Demorado, e é o único jeito de ter denominador de verdade: depois dela, todo percentual vale para a carteira toda. Faça uma vez por corretor.'],
+              ['baseline', 'Carteira completa', `Lê os ${ativosDele} clientes ativos dele, de uma vez.`,
+                'Demorado, e é o único jeito de ter denominador de verdade: depois dela, todo percentual vale para a carteira toda. Fechados e descartados ficam fora. Faça uma vez por corretor.'],
               ['semanal', 'Só o que mudou', 'Todos os novos + todos que se mexeram + os parados em etapa avançada.',
                 'Parado comum fica de fora: o painel já mostra que está parado, e confirmar isso na conversa não acrescenta nada. Entram só os que pararam lá na frente — onde "parado" costuma ser erro de registro, não abandono.'],
             ] as const).map(([m, titulo, resumo, porque]) => (
@@ -495,7 +513,7 @@ export default function GerarPacotePage() {
           <button onClick={sortear} disabled={!leads.length || carregando} className={btnOuro}>
             {carregando ? `lendo a carteira… ${Math.round(progresso * 100)}%`
               : amostra.length ? '↻ Montar de novo'
-              : modo === 'baseline' ? `📚 Montar a carteira completa (${leads.length})`
+              : modo === 'baseline' ? `📚 Montar a carteira completa (${ativosDele})`
               : '🎲 Montar a rodada da semana'}
           </button>
           {!uid && <span className="text-[11px] text-text-secondary">escolha o corretor pra começar</span>}
@@ -666,7 +684,7 @@ export default function GerarPacotePage() {
           <p className="text-[11px] text-text-secondary mb-3">
             <b className="text-white">{selecionados.length} leads vão na amostra</b> (é o que a análise vai auditar um a um)
             · <b className="text-white">{resumo?.leads_recebidos ?? 0}</b> entraram no período
-            · <b className="text-white">{leads.length}</b> na carteira dele.
+            · <b className="text-white">{ativosDele}</b> ativos na carteira dele ({leads.length} com os fechados e descartados, que ficam fora).
             Os números abaixo são do PERÍODO inteiro, não só da amostra.
           </p>
           {verResumo && resumo && (
