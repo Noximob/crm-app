@@ -19,6 +19,7 @@ import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import { QUALIFICATION_QUESTIONS } from '@/lib/qualificacao';
 import { ETAPAS_DO_ADMIN, MOTIVOS_DESCARTE, mapEtapaCircuito } from '@/lib/circuito';
 import { deleteLeadsComSubcolecoes } from '@/lib/leadDelete';
+import ListasAtivas from './listas';
 
 /**
  * Bucket do motivo de descarte pro filtro: motivos padrão passam direto;
@@ -292,7 +293,7 @@ export default function ImportarLigacaoAtivaPage() {
   const [redistribuindo, setRedistribuindo] = useState(false);
   const [excluindoCrm, setExcluindoCrm] = useState(false);
   // Aba ativa da Central de Leads
-  const [secao, setSecao] = useState<'importar' | 'redistribuir' | 'transferir'>('importar');
+  const [secao, setSecao] = useState<'importar' | 'listas' | 'redistribuir' | 'transferir'>('importar');
   // --- Transferência de carteira entre corretores (função da antiga Gestão de Corretores) ---
   const [transfOrigem, setTransfOrigem] = useState('');
   const [transfDestino, setTransfDestino] = useState('');
@@ -750,6 +751,7 @@ export default function ImportarLigacaoAtivaPage() {
         <p className="text-text-secondary text-sm mt-1 mb-3">Importe listas frias, redistribua descartados e passe carteiras entre corretores — tudo num lugar.</p>
         <div className="flex flex-wrap gap-1.5">
           <button type="button" onClick={() => setSecao('importar')} className={pillCls(secao === 'importar')}>📥 Importar lista</button>
+          <button type="button" onClick={() => setSecao('listas')} className={pillCls(secao === 'listas')}>📋 As listas</button>
           <button type="button" onClick={() => setSecao('redistribuir')} className={pillCls(secao === 'redistribuir')}>♻️ Redistribuir descartados</button>
           <button type="button" onClick={() => setSecao('transferir')} className={pillCls(secao === 'transferir')}>🔁 Transferir carteira</button>
         </div>
@@ -828,6 +830,14 @@ export default function ImportarLigacaoAtivaPage() {
           {loading ? 'Criando lista…' : `Criar lista da Ligação Ativa (${preview.length})`}
         </button>
       </div>
+      )}
+
+      {secao === 'listas' && (
+        <ListasAtivas
+          imobiliariaId={userData?.imobiliariaId}
+          corretores={corretores}
+          isEspelhoDemo={isEspelhoDemo}
+        />
       )}
 
       {secao === 'redistribuir' && (<>

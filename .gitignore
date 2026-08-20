@@ -121,3 +121,4 @@ jspm_packages/
 
 # harness de teste da auditoria: contém dados reais de cliente e vira rota pública
 src/app/preview-auditoria/
+src/app/preview-listas/
