@@ -44,6 +44,7 @@ const adminCategories = [
     icon: '🏢',
     color: 'from-[#34D399]/25 to-[#34D399]/[0.03] border-[#34D399]/30',
     items: [
+      { title: 'Setor de Locação', icon: '🔑', description: 'Anúncios (com pacote pros portais), contratos, documentos e cobranças — e o portal do cliente em /portal', href: '/dashboard/admin/locacao' },
       { title: 'Agenda Imobiliária', icon: '📆', description: 'Eventos e plantões da imobiliária (aparecem no radar dos corretores)', href: '/dashboard/admin/agenda-imobiliaria' },
       { title: 'Materiais Construtora', icon: '🏗️', description: 'Materiais das construtoras pros corretores', href: '/dashboard/admin/materiais-construtora' },
       { title: 'Documentos da Imobiliária', icon: '📁', description: 'Treinamentos, slides e materiais internos — só do admin', href: '/dashboard/admin/documentos' },
