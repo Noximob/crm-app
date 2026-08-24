@@ -60,7 +60,7 @@ interface Contato {
 interface Sessao { client: string; corretor: string; lista: string; }
 
 /** Motivos de descarte da lista fria (vão pro bolsão do admin). */
-const MOTIVOS_FRIA = ['Não atende', 'Não quer', 'Número errado', 'Sem perfil', 'Outro'] as const;
+const MOTIVOS_FRIA = ['Não atende', 'Não quer', 'Número errado', 'Sem perfil', 'Interesse futuro', 'Outro'] as const;
 
 const EVENTO_VISUAL: Record<EventoContato['tipo'], { icone: string; rotulo: (d?: string, por?: string) => string; cor: string }> = {
   tentativa: { icone: '💬', rotulo: (_d, por) => `Tentativa de contato${por ? ` (${por.split(' ')[0]})` : ''}`, cor: 'text-[#FFE9A6]' },
