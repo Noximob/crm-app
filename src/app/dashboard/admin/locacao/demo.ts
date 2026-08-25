@@ -72,6 +72,23 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     descricao: 'Kitnet mobiliada.', fotos: [FOTO, FOTO],
   });
 
+  // um imóvel esperando o dono assinar a administração — a etapa que ficava
+  // zerada porque o exemplo pulava direto pro assinado
+  const imAdm = doc(collection(db, 'locacaoImoveis'));
+  batch.set(imAdm, {
+    ...IMOVEL_VAZIO, ...marca, codigo: 'EX-004', status: 'rascunho',
+    admStatus: 'enviada', admSimulada: true,
+    titulo: 'Apartamento 3 quartos frente mar — Armação',
+    tipo: 'Apartamento', rua: 'Av. Beira Mar', numero: '1200', bairro: 'Armação', cidade: 'Penha/SC',
+    cep: '88385-000', quartos: 3, suites: 1, banheiros: 2, vagas: 2, areaPrivativa: 95,
+    aluguel: 3200, condominio: 620, iptuMensal: 180, seguroIncendio: 42,
+    mobiliado: 'Semimobiliado', comodidades: ['Sacada', 'Piscina', 'Elevador', 'Vista mar'],
+    locadorNome: 'Heloísa Grimm', locadorTelefone: '(47) 98111-4455',
+    locadorEmail: 'heloisa@example.com', locadorDoc: '222.333.444-55', locadorPix: '47981114455',
+    descricao: 'Apartamento de frente pro mar na Armação, três quartos sendo uma suíte, sacada com vista, piscina no condomínio e duas vagas cobertas.',
+    fotos: FOTOS5,
+  });
+
   // ——— candidatos: um em cada estado da burocracia ———
   const leads = [
     { nome: 'Carlos Mendes', telefone: '(47) 99911-2233', email: 'carlos@example.com', origem: 'manual', etapa: 'docs', corretorNome: 'Breno', mensagem: 'Fechou a kitnet, juntando CNH e comprovante de renda.' },
@@ -85,6 +102,27 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
   for (const l of leads) {
     batch.set(doc(collection(db, 'locacaoLeads')), { ...LEAD_VAZIO, ...marca, imovelId: imAnunciado.id, ...l });
   }
+
+  // um contrato com tudo assinado, só faltando entregar a chave — a outra
+  // etapa que nascia zerada
+  const contratoChaves = doc(collection(db, 'locacaoContratos'));
+  batch.set(contratoChaves, {
+    ...CONTRATO_VAZIO, demo: true, imobiliariaId,
+    imovelId: imRascunho.id, leadId: '', status: 'assinado',
+    locadorNome: 'Paulo Andrade', locadorTelefone: '(47) 96666-3322', locadorPix: 'paulo@example.com',
+    locatarioNome: 'Rafael Nogueira', locatarioDoc: '333.222.111-00', locatarioTelefone: '(47) 94477-2211',
+    inicio: desloca(0, 3), prazoMeses: 30, valorAluguel: 980, valorCondominio: 150,
+    valorIptuMensal: 48, valorSeguroIncendio: 22, diaVencimento: 5,
+    garantiaTipo: 'Seguro-fiança (Loft)', garantiaNumero: 'LOFT-91007',
+    garantiaTaxaMensalPct: 12, garantiaVigenciaFim: desloca(12), garantiaSimulada: true,
+    assinaturaEnviadaEm: desloca(0, -4), assinadoEm: desloca(0, -1), assinaturaSimulada: true,
+    vistoriaEntrada: {
+      feitaEm: desloca(0, -2), feitaPor: 'Murilo', assinada: true, assinadaSimulada: true,
+      fotos: [FOTO, FOTO], itens: ['Chaves (jogo completo)', 'Fogão', 'Geladeira', 'Armário do quarto'],
+      ressalvas: [{ onde: 'Cozinha', oque: 'Porta do armário com dobradiça folgada' }],
+    },
+    criadoEm: serverTimestamp(),
+  });
 
   // ——— contrato ATIVO com história: 11 meses rodando ———
   // início há ~11 meses: reajuste anual bate em ~1 mês (alerta aceso) e a
@@ -150,6 +188,15 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     criadoEm: serverTimestamp(),
   });
 
+  // um pedido de manutenção aberto pelo inquilino — o furo do portal
+  batch.set(doc(collection(db, 'locacaoChamados')), {
+    demo: true, imobiliariaId,
+    contratoId: contratoAtivoRef.id, imovelId: imAlugado.id,
+    origem: 'inquilino', status: 'aberto', orcamento: null, quemPaga: '', resposta: '',
+    descricao: 'A torneira da cozinha está pingando desde ontem e o registro não fecha direito.',
+    criadoEm: serverTimestamp(),
+  });
+
   await batch.commit();
   return `Dados de exemplo criados: 3 imóveis, 4 interessados, 2 contratos e ${movs.length} competências no financeiro.`;
 }
@@ -157,7 +204,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
 /** Remove TUDO que foi criado pelo botão de exemplo — e só isso. */
 export async function apagarDadosExemplo(imobiliariaId: string): Promise<number> {
   let total = 0;
-  for (const col of ['locacaoImoveis', 'locacaoLeads', 'locacaoContratos', 'locacaoMovimentos']) {
+  for (const col of ['locacaoImoveis', 'locacaoLeads', 'locacaoContratos', 'locacaoMovimentos', 'locacaoChamados']) {
     const snap = await getDocs(query(collection(db, col),
       where('imobiliariaId', '==', imobiliariaId), where('demo', '==', true)));
     // lotes de até 400 pra respeitar o limite do batch

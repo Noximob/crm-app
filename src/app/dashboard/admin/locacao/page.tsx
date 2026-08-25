@@ -41,6 +41,8 @@ import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   IMOVEL_VAZIO, CONTRATO_VAZIO, LEAD_VAZIO, CATEGORIAS_DOC_LEAD, ITENS_VISTORIA, LOCAIS_VISTORIA,
   alertasDoContrato, gerarMovimentos, dadosPortalDoContrato, dadosPortalDoImovel,
+  calcularReajuste, proximoReajuste, STATUS_CHAMADO,
+  type ChamadoManutencao, type StatusChamado,
   hojeYmd, fmtData, fmtValor, linkWhats, ETAPAS_FUNIL,
   type EtapaFunil,
   type ImovelLocacao, type ContratoLocacao, type LeadLocacao, type MovimentoLocacao,
@@ -83,6 +85,7 @@ export default function LocacaoPage() {
   const [leads, setLeads] = useState<LeadLocacao[]>([]);
   const [contratos, setContratos] = useState<ContratoLocacao[]>([]);
   const [movimentos, setMovimentos] = useState<MovimentoLocacao[]>([]);
+  const [chamados, setChamados] = useState<ChamadoManutencao[]>([]);
   const [carregando, setCarregando] = useState(true);
 
   // o que está aberto embaixo de qual linha
@@ -97,6 +100,10 @@ export default function LocacaoPage() {
   // a vistoria: itens que ficam + ressalvas do que não está perfeito
   const [itens, setItens] = useState<string[]>([]);
   const [ressalvas, setRessalvas] = useState<RessalvaVistoria[]>([]);
+  const [reajustando, setReajustando] = useState<string | null>(null);
+  const [pctReajuste, setPctReajuste] = useState('');
+  const [entregando, setEntregando] = useState<string | null>(null);
+  const [dataEntrega, setDataEntrega] = useState('');
   const [busca, setBusca] = useState('');
   const [etapaSel, setEtapaSel] = useState<EtapaFunil | null>(null);
   const [soMeus, setSoMeus] = useState(false);
@@ -108,6 +115,10 @@ export default function LocacaoPage() {
       const [si, sl, sc, sm] = await Promise.all([
         q('locacaoImoveis'), q('locacaoLeads'), q('locacaoContratos'), q('locacaoMovimentos'),
       ]);
+      try {
+        const sch = await q('locacaoChamados');
+        setChamados(sch.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<ChamadoManutencao, 'id'>) })));
+      } catch { /* coleção nova pode não existir ainda */ }
       setImoveis(si.docs.map((d) => ({ ...IMOVEL_VAZIO, id: d.id, imobiliariaId, ...(d.data() as Partial<ImovelLocacao>) } as ImovelLocacao)));
       setLeads(sl.docs.map((d) => ({ ...LEAD_VAZIO, id: d.id, imobiliariaId, ...(d.data() as Partial<LeadLocacao>) } as LeadLocacao)));
       setContratos(sc.docs.map((d) => ({ ...CONTRATO_VAZIO, id: d.id, imobiliariaId, ...(d.data() as Partial<ContratoLocacao>) } as ContratoLocacao)));
@@ -134,6 +145,12 @@ export default function LocacaoPage() {
       const im = imoveis.find((i) => i.id === c.imovelId);
       const movs = movimentos.filter((m) => m.contratoId === c.id);
       const alertas = alertasDoContrato(c).map((a) => (a.grave ? '🚨 ' : '⚠ ') + a.texto);
+      // FURO CORRIGIDO: o pedido de manutenção do portal do inquilino não
+      // chegava em lugar nenhum — evaporava. Agora acende no contrato dele.
+      const chamadosAbertos = chamados.filter((x) => x.contratoId === c.id && x.status !== 'resolvido');
+      for (const ch of chamadosAbertos) {
+        alertas.unshift(`🔧 Manutenção (${(STATUS_CHAMADO[ch.status] || STATUS_CHAMADO.aberto).rotulo.toLowerCase()}): ${ch.descricao}`);
+      }
       const hoje = hojeYmd();
       const atrasadas = movs.filter((m) => m.statusCobranca !== 'paga' && m.vencimento < hoje).length;
       const aRepassar = movs.filter((m) => m.statusRepasse === 'liberado').length;
@@ -150,8 +167,12 @@ export default function LocacaoPage() {
         encerrando: { p: 7, t: 'Saída: vistoria de saída + distrato', peso: 0, e: 'alugado' },
       };
       const m = mapa[c.status] || { p: 5, t: c.status, peso: 0, e: 'vistoria' as EtapaFunil };
-      if (m.peso === 9) continue;   // rodando bem: a carteira cuida dele
-      out.push({ chave: `c-${c.id}`, etapa: m.e, imovel: im, contrato: c, movs, parada: m.p, titulo: m.t, peso: alertas.length ? 0 : m.peso, alertas });
+      if (m.peso === 9 && !chamadosAbertos.length) continue;   // rodando bem: a carteira cuida dele
+      out.push({
+        chave: `c-${c.id}`, etapa: m.e, imovel: im, contrato: c, movs, parada: m.p,
+        titulo: chamadosAbertos.length ? `Manutenção pedida por ${c.locatarioNome}` : m.t,
+        peso: alertas.length ? 0 : m.peso, alertas,
+      });
     }
 
     for (const l of leads) {
@@ -194,7 +215,7 @@ export default function LocacaoPage() {
     }
 
     return out.sort((a, b) => a.peso - b.peso || a.parada - b.parada);
-  }, [imoveis, leads, contratos, movimentos]);
+  }, [imoveis, leads, contratos, movimentos, chamados]);
 
   /**
    * A fila filtrada. Com trinta contratos rodando, achar "o do João" sem
@@ -379,17 +400,86 @@ export default function LocacaoPage() {
     showToast('⚡ Contrato e laudo assinados no mesmo ato. Pode entregar as chaves.', 'success');
   };
 
-  const entregarChaves = async (c: ContratoLocacao) => {
+  /**
+   * FURO CORRIGIDO: o início do contrato era a data em que o RASCUNHO nasceu.
+   * Se a papelada levou dez dias, todas as competências saíam erradas. Agora
+   * o contrato começa quando a chave é entregue — e o gestor confirma a data.
+   */
+  const entregarChaves = async (c: ContratoLocacao, inicioReal?: string) => {
     if (guarda() || !imobiliariaId) return;
-    const movs = gerarMovimentos(c);
+    const inicio = inicioReal || c.inicio || hojeYmd();
+    const cAtualizado = { ...c, inicio };
+    const movs = gerarMovimentos(cAtualizado);
     if (!movs.length) { showToast('Faltam início, aluguel, prazo ou vencimento — abra "contrato".', 'error'); return; }
     const b = writeBatch(db);
     for (const m of movs) b.set(doc(collection(db, 'locacaoMovimentos')), { ...m, imobiliariaId, criadoEm: serverTimestamp() });
-    b.update(doc(db, 'locacaoContratos', c.id), { status: 'ativo', atualizadoEm: serverTimestamp() });
+    b.update(doc(db, 'locacaoContratos', c.id), { status: 'ativo', inicio, atualizadoEm: serverTimestamp() });
     if (c.imovelId) b.update(doc(db, 'locacaoImoveis', c.imovelId), { status: 'alugado', atualizadoEm: serverTimestamp() });
     await b.commit();
-    showToast(`🔑 Chaves entregues! ${movs.length} meses de cobrança criados.`, 'success');
+    setEntregando(null); setDataEntrega('');
+    showToast(`🔑 Chaves entregues em ${fmtData(inicio)}! ${movs.length} meses de cobrança criados a partir daí.`, 'success');
     recarregar();
+  };
+
+  /**
+   * FURO CORRIGIDO: o sistema avisava "reajuste em 30 dias" e não tinha como
+   * aplicar — o gestor ia calcular na mão e editar o contrato. Agora ele
+   * digita o percentual do índice, e o sistema sobe o aluguel, guarda o
+   * histórico e corrige SÓ as competências ainda não cobradas (as pagas
+   * ficam como foram, que é como a lei funciona).
+   */
+  const aplicarReajuste = async (it: Item) => {
+    const c = it.contrato;
+    if (!c || guarda()) return;
+    const pct = Number(pctReajuste.replace(',', '.'));
+    if (!Number.isFinite(pct) || pct <= 0) { showToast('Informe o percentual do índice (ex.: 4,5).', 'error'); return; }
+    const atual = c.valorAluguel || 0;
+    const novo = calcularReajuste(atual, pct);
+    const ok = await confirmDialog({
+      title: 'Aplicar o reajuste?',
+      message: `O aluguel passa de ${fmtValor(atual)} para ${fmtValor(novo)} (+${pct}% por ${c.indiceReajuste}). As competências já cobradas não mudam; as futuras são corrigidas. O inquilino precisa ser comunicado.`,
+      confirmLabel: 'Aplicar',
+    });
+    if (!ok) return;
+
+    const taxaPct = c.taxaAdmPct || 0;
+    const taxa = Math.round(novo * taxaPct) / 100;
+    const iptu = c.valorIptuMensal || 0;
+    const seguro = c.valorSeguroIncendio || 0;
+    const b = writeBatch(db);
+    b.update(doc(db, 'locacaoContratos', c.id), {
+      valorAluguel: novo,
+      reajustes: [...(c.reajustes || []), { em: hojeYmd(), de: atual, para: novo, indice: c.indiceReajuste, percentual: pct }],
+      atualizadoEm: serverTimestamp(),
+    });
+    for (const m of it.movs) {
+      if (m.statusCobranca === 'paga') continue;   // o passado não se reajusta
+      b.update(doc(db, 'locacaoMovimentos', m.id), {
+        valorAluguel: novo, valorTotal: novo + iptu + seguro,
+        taxaAdm: taxa, repasseDono: Math.round((novo - taxa + iptu) * 100) / 100,
+      });
+    }
+    await b.commit();
+    setReajustando(null); setPctReajuste('');
+    showToast(`Reajuste aplicado: ${fmtValor(atual)} → ${fmtValor(novo)}. Avise o inquilino pelo WhatsApp.`, 'success');
+    recarregar();
+  };
+
+  /** FURO CORRIGIDO: a garantia vencia e o alerta não tinha botão. */
+  const renovarGarantia = async (c: ContratoLocacao) => {
+    if (guarda()) return;
+    const base = c.garantiaVigenciaFim ? new Date(c.garantiaVigenciaFim + 'T12:00:00') : new Date();
+    if (base < new Date()) base.setTime(Date.now());
+    base.setFullYear(base.getFullYear() + 1);
+    const nova = base.toISOString().slice(0, 10);
+    const ok = await confirmDialog({
+      title: 'Renovar a garantia por mais 1 ano?',
+      message: `A vigência passa para ${fmtData(nova)}. Confirme antes que a Loft tenha renovado de fato — garantia vencida deixa o dono descoberto.`,
+      confirmLabel: 'Renovar',
+    });
+    if (!ok) return;
+    await upContrato(c.id, { garantiaVigenciaFim: nova, garantiaSimulada: true });
+    showToast(`⚡ Garantia renovada até ${fmtData(nova)}.`, 'success');
   };
 
   const pagou = async (it: Item) => {
@@ -619,7 +709,18 @@ export default function LocacaoPage() {
       if (c.status === 'rascunho') return <button onClick={() => abrirVistoria(c)} className={btnOuro}>📋 Fazer a vistoria</button>;
       if (c.status === 'vistoria_feita') return <button onClick={() => enviarEnvelope(c)} className={btnOuro}>✍ Enviar contrato + laudo</button>;
       if (c.status === 'assinatura_enviada') return <button onClick={() => todosAssinaram(c)} className={btnSimula}>⚡ Assinaram</button>;
-      if (c.status === 'assinado') return <button onClick={() => entregarChaves(c)} className={btnOuro}>🔑 Entregar chaves</button>;
+      if (c.status === 'assinado') {
+        return entregando === c.id ? (
+          <span className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] text-text-secondary">contrato começa em</span>
+            <input type="date" className={inputCls + ' !w-auto'} value={dataEntrega} onChange={(e) => setDataEntrega(e.target.value)} />
+            <button onClick={() => entregarChaves(c, dataEntrega || hojeYmd())} className={btnOuro}>confirmar</button>
+            <button onClick={() => setEntregando(null)} className={btnGhost}>×</button>
+          </span>
+        ) : (
+          <button onClick={() => { setEntregando(c.id); setDataEntrega(hojeYmd()); }} className={btnOuro}>🔑 Entregar chaves</button>
+        );
+      }
       if (c.status === 'ativo') {
         const lib = it.movs.filter((m) => m.statusRepasse === 'liberado').length;
         return (
@@ -911,12 +1012,45 @@ export default function LocacaoPage() {
                 </div>
 
                 {/* linha 3: alertas */}
-                {it.alertas.map((a, i) => (
-                  <p key={i} className={`text-[11.5px] font-bold mt-2 rounded-lg px-3 py-1.5 ${
-                    a.startsWith('🚨') ? 'text-rose-300 bg-rose-500/10 border border-rose-500/30'
-                      : a.startsWith('💸') ? 'text-amber-300 bg-amber-500/10 border border-amber-500/25'
-                        : 'text-amber-300 bg-amber-500/[0.07] border border-amber-500/20'}`}>{a}</p>
-                ))}
+                {it.alertas.map((a, i) => {
+                  const deGarantia = /garantia/i.test(a);
+                  const deReajuste = /reajuste/i.test(a);
+                  return (
+                    <div key={i} className={`flex flex-wrap items-center gap-2 mt-2 rounded-lg px-3 py-1.5 ${
+                      a.startsWith('🚨') ? 'bg-rose-500/10 border border-rose-500/30'
+                        : a.startsWith('💸') ? 'bg-amber-500/10 border border-amber-500/25'
+                          : 'bg-amber-500/[0.07] border border-amber-500/20'}`}>
+                      <p className={`text-[11.5px] font-bold flex-1 min-w-0 ${a.startsWith('🚨') ? 'text-rose-300' : 'text-amber-300'}`}>{a}</p>
+                      {/* o alerta que só avisava agora resolve ali mesmo */}
+                      {deGarantia && it.contrato && (
+                        <button onClick={() => renovarGarantia(it.contrato!)} className={btnSimula + ' !py-1 !text-[10.5px] shrink-0'}>⚡ renovar 1 ano</button>
+                      )}
+                      {/^🔧/.test(a) && it.contrato && (
+                        <button
+                          onClick={async () => {
+                            const ch = chamados.find((x) => x.contratoId === it.contrato!.id && x.status !== 'resolvido');
+                            if (!ch || guarda()) return;
+                            await updateDoc(doc(db, 'locacaoChamados', ch.id), { status: 'resolvido', atualizadoEm: serverTimestamp() });
+                            showToast('Chamado resolvido.', 'success');
+                            recarregar();
+                          }}
+                          className={btnOuro + ' !py-1 !text-[10.5px] shrink-0'}>✓ resolvido</button>
+                      )}
+                      {deReajuste && it.contrato && (reajustando === it.contrato.id ? (
+                        <span className="flex items-center gap-1.5 shrink-0">
+                          <input className={inputCls + ' !w-20'} placeholder="4,5" value={pctReajuste}
+                            onChange={(e) => setPctReajuste(e.target.value)} />
+                          <span className="text-[11px] text-text-secondary">%</span>
+                          <button onClick={() => aplicarReajuste(it)} className={btnOuro + ' !py-1 !text-[10.5px]'}>aplicar</button>
+                          <button onClick={() => setReajustando(null)} className={btnGhost + ' !py-1 !text-[10.5px]'}>×</button>
+                        </span>
+                      ) : (
+                        <button onClick={() => { setReajustando(it.contrato!.id); setPctReajuste(''); }}
+                          className={btnOuro + ' !py-1 !text-[10.5px] shrink-0'}>📈 aplicar reajuste</button>
+                      ))}
+                    </div>
+                  );
+                })}
 
                 {/* linha 4: falar com as pessoas + consultar */}
                 <div className="flex flex-wrap gap-1.5 mt-2.5">

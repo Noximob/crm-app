@@ -409,6 +409,8 @@ export interface ContratoLocacao {
 
   encerradoEm: string;
   encerradoMotivo: string;
+  /** o histórico dos reajustes anuais — o aluguel de hoje tem uma história */
+  reajustes: ReajusteAplicado[];
 
   criadoEm?: unknown; atualizadoEm?: unknown;
 }
@@ -426,7 +428,7 @@ export const CONTRATO_VAZIO: Omit<ContratoLocacao, 'id' | 'imobiliariaId'> = {
   garantiaVigenciaFim: '', garantiaSimulada: false,
   assinaturaEnviadaEm: '', assinadoEm: '', assinaturaSimulada: false,
   vistoriaEntrada: null, vistoriaSaida: null,
-  documentos: [], observacoes: '', encerradoEm: '', encerradoMotivo: '',
+  documentos: [], observacoes: '', encerradoEm: '', encerradoMotivo: '', reajustes: [],
 };
 
 /** Fim da vigência derivado do prazo — nunca digitado, para não divergir. */
@@ -461,6 +463,43 @@ export function diasAte(ymd: string): number | null {
  */
 export interface AlertaContrato { tipo: 'garantia' | 'reajuste' | 'vigencia'; texto: string; grave: boolean }
 
+/**
+ * O reajuste anual aplicado: sobe o aluguel pelo percentual, guarda o
+ * histórico e devolve o novo valor. As competências JÁ COBRADAS não mudam —
+ * só as futuras, que é como a lei funciona.
+ */
+export interface ReajusteAplicado { em: string; de: number; para: number; indice: string; percentual: number }
+
+export function calcularReajuste(valorAtual: number, percentual: number): number {
+  return Math.round(valorAtual * (1 + percentual / 100) * 100) / 100;
+}
+
+/** Chamado de manutenção — nasce no portal do inquilino e cai na fila do admin. */
+export const STATUS_CHAMADO = {
+  aberto: { rotulo: 'Aberto', cor: 'text-rose-300' },
+  orcando: { rotulo: 'Orçando', cor: 'text-amber-300' },
+  aguardando_dono: { rotulo: 'Aguardando o dono aprovar', cor: 'text-amber-300' },
+  executando: { rotulo: 'Em execução', cor: 'text-sky-300' },
+  resolvido: { rotulo: 'Resolvido', cor: 'text-emerald-300' },
+} as const;
+export type StatusChamado = keyof typeof STATUS_CHAMADO;
+
+export interface ChamadoManutencao {
+  id: string;
+  imobiliariaId: string;
+  contratoId: string;
+  imovelId: string;
+  /** quem abriu: 'inquilino' (pelo portal) ou 'nox' */
+  origem: string;
+  descricao: string;
+  status: StatusChamado;
+  orcamento: number | null;
+  quemPaga: '' | 'dono' | 'inquilino';
+  resposta: string;
+  criadoEm?: unknown;
+  atualizadoEm?: unknown;
+}
+
 export function alertasDoContrato(c: ContratoLocacao): AlertaContrato[] {
   if (c.status !== 'ativo') return [];
   const out: AlertaContrato[] = [];
@@ -474,7 +513,12 @@ export function alertasDoContrato(c: ContratoLocacao): AlertaContrato[] {
   const rj = proximoReajuste(c);
   const dr = diasAte(rj);
   if (dr !== null && dr <= 60) {
-    out.push({ tipo: 'reajuste', grave: false, texto: `Reajuste anual (${c.indiceReajuste}) em ${dr} dias (${fmtData(rj)}) — calcular e comunicar o inquilino.` });
+    out.push({
+      tipo: 'reajuste', grave: dr < 0,
+      texto: dr < 0
+        ? `Reajuste VENCIDO há ${-dr} dias (${fmtData(rj)}) — o aluguel está defasado desde então.`
+        : `Reajuste anual (${c.indiceReajuste}) em ${dr} dias (${fmtData(rj)}) — aplicar e comunicar o inquilino.`,
+    });
   }
 
   const df = diasAte(fimContrato(c));
