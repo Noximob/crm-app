@@ -229,14 +229,20 @@ export const LEAD_VAZIO: Omit<LeadLocacao, 'id' | 'imobiliariaId'> = {
 export const INDICES_REAJUSTE = ['IGP-M', 'IPCA', 'IVAR'] as const;
 
 /**
- * A vida do contrato, na ordem em que acontece. "ativo" só chega depois de
- * assinatura E vistoria — a regra da esteira: sem laudo assinado, sem chave.
+ * A vida do contrato. A ORDEM importa e foi corrigida: a vistoria acontece
+ * ANTES da assinatura, no imóvel vazio — e o laudo vai junto do contrato
+ * num ENVELOPE SÓ na ClickSign (que aceita vários documentos por envelope).
+ *
+ * Por quê: assinar contrato primeiro e vistoriar depois abre uma janela em
+ * que o inquilino já está preso ao contrato mas ainda pode discutir o laudo
+ * ("esse risco não estava aí"). Assinando os dois no mesmo ato, ele aceita o
+ * estado do imóvel junto com as regras — e é um envio a menos.
  */
 export const STATUS_CONTRATO = {
-  rascunho: { rotulo: 'Rascunho', cor: 'text-text-secondary' },
-  assinatura_enviada: { rotulo: 'Aguardando assinaturas', cor: 'text-amber-300' },
-  assinado: { rotulo: 'Assinado · falta vistoria', cor: 'text-sky-300' },
-  vistoria_feita: { rotulo: 'Vistoria feita · falta assinar laudo', cor: 'text-sky-300' },
+  rascunho: { rotulo: 'Rascunho · falta a vistoria', cor: 'text-text-secondary' },
+  vistoria_feita: { rotulo: 'Vistoria feita · pronto pra enviar', cor: 'text-sky-300' },
+  assinatura_enviada: { rotulo: 'Contrato + laudo no WhatsApp, aguardando', cor: 'text-amber-300' },
+  assinado: { rotulo: 'Tudo assinado · pode entregar as chaves', cor: 'text-sky-300' },
   ativo: { rotulo: 'Ativo', cor: 'text-emerald-300' },
   encerrando: { rotulo: 'Em saída', cor: 'text-amber-300' },
   encerrado: { rotulo: 'Encerrado', cor: 'text-text-secondary' },
@@ -308,7 +314,10 @@ export interface ContratoLocacao {
   garantiaVigenciaFim: string;      // renovação ANUAL — o alerta mais sério da esteira
   garantiaSimulada: boolean;
 
-  /** assinatura via ClickSign — simulada até integrar */
+  /**
+   * Assinatura via ClickSign: UM envelope com contrato + laudo de vistoria.
+   * Simulada até integrar.
+   */
   assinaturaEnviadaEm: string;
   assinadoEm: string;
   assinaturaSimulada: boolean;
