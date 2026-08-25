@@ -63,16 +63,26 @@ export function VisaoDono({ d }: { d: DadosPortal }) {
         <p className="text-[14px] font-bold text-white">{d.imovel.titulo}</p>
         <p className="text-[12px] text-text-secondary mt-0.5">{d.imovel.endereco}</p>
         <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[12px]">
-          <span className="text-emerald-300 font-bold">● Alugado</span>
-          <span className="text-text-secondary">inquilino(a): <b className="text-white/85">{d.inquilino.nome}</b></span>
-          <span className="text-text-secondary">contrato até <b className="text-white/85">{d.contrato.fim}</b></span>
+          {d.aguardandoLocacao ? (
+            <>
+              <span className="text-sky-300 font-bold">● Em divulgação</span>
+              <span className="text-text-secondary">aluguel anunciado por <b className="text-white/85">{fmtValor(d.valores.aluguel)}</b></span>
+            </>
+          ) : (
+            <>
+              <span className="text-emerald-300 font-bold">● Alugado</span>
+              <span className="text-text-secondary">inquilino(a): <b className="text-white/85">{d.inquilino.nome}</b></span>
+              <span className="text-text-secondary">contrato até <b className="text-white/85">{d.contrato.fim}</b></span>
+            </>
+          )}
         </div>
       </Cartao>
 
-      <Cartao titulo="O seu repasse">
+      <Cartao titulo={d.aguardandoLocacao ? 'Quanto você vai receber' : 'O seu repasse'}>
         <p className="text-[11.5px] text-text-secondary mb-2 max-w-[58ch]">
-          O aluguel vence dia {d.contrato.diaVencimento ?? '—'}. Confirmado o pagamento, o repasse cai
-          na sua conta em até 2 dias úteis, num PIX só, com o extrato abaixo.
+          {d.aguardandoLocacao
+            ? 'Assim que o imóvel for alugado, é isto que cai na sua conta todo mês — em até 2 dias úteis depois do pagamento do inquilino, num PIX só.'
+            : `O aluguel vence dia ${d.contrato.diaVencimento ?? '—'}. Confirmado o pagamento, o repasse cai na sua conta em até 2 dias úteis, num PIX só, com o extrato abaixo.`}
         </p>
         <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
           <LinhaValor rot="Aluguel pago pelo inquilino" val={fmtValor(v.aluguel)} />
@@ -89,6 +99,7 @@ export function VisaoDono({ d }: { d: DadosPortal }) {
         </p>
       </Cartao>
 
+      {!d.aguardandoLocacao && (
       <Cartao titulo="Histórico de pagamentos">
         {d.historico.length === 0 ? (
           <p className="text-[12px] text-text-secondary">O primeiro mês do contrato ainda não fechou.</p>
@@ -107,7 +118,9 @@ export function VisaoDono({ d }: { d: DadosPortal }) {
           </div>
         )}
       </Cartao>
+      )}
 
+      {!d.aguardandoLocacao && (
       <Cartao titulo="Seu contrato">
         <div className="grid grid-cols-2 gap-x-6">
           <LinhaValor rot="Início" val={d.contrato.inicio} />
@@ -118,6 +131,18 @@ export function VisaoDono({ d }: { d: DadosPortal }) {
           <LinhaValor rot="Vencimento" val={`todo dia ${d.contrato.diaVencimento ?? '—'}`} />
         </div>
       </Cartao>
+      )}
+
+      {d.avisos.length > 0 && (
+        <Cartao titulo="Avisos">
+          {d.avisos.map((a, i) => (
+            <p key={i} className="text-[12.5px] text-white/85 leading-relaxed">
+              {a.data && <span className="text-[10.5px] text-text-secondary font-bold tabular-nums mr-2">{a.data}</span>}
+              {a.texto}
+            </p>
+          ))}
+        </Cartao>
+      )}
 
       <Cartao titulo="Falar com a imobiliária">
         <p className="text-[12.5px] text-text-secondary leading-relaxed">

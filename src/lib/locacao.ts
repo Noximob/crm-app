@@ -295,23 +295,45 @@ export const CATEGORIAS_DOC = [
 
 export interface DocContrato { nome: string; url: string; storagePath?: string; categoria?: string }
 
-export interface AmbienteVistoria {
-  nome: string;
-  estado: 'otimo' | 'bom' | 'regular' | 'ruim';
-  observacao: string;
-  fotos: string[];
+/**
+ * A VISTORIA, como a casa faz de verdade: o registro visual são as FOTOS DO
+ * ANÚNCIO (o imóvel foi fotografado na captação e está vazio, então elas
+ * valem como laudo), mais a lista do que fica no imóvel e as ressalvas do
+ * que não está perfeito.
+ *
+ * Não se refotografa nada: as fotos ficam congeladas no laudo no momento da
+ * vistoria, e é contra elas que a saída é comparada.
+ */
+export interface RessalvaVistoria {
+  onde: string;
+  oque: string;
 }
 
 export interface Vistoria {
   feitaEm: string;            // yyyy-mm-dd
   feitaPor: string;
-  ambientes: AmbienteVistoria[];
-  /** laudo assinado pelo inquilino (via ClickSign quando integrar) */
+  /** as fotos do anúncio no momento da vistoria — o registro visual do laudo */
+  fotos: string[];
+  /** o que fica no imóvel (chaves, fogão, armários…) */
+  itens: string[];
+  /** o que não está em perfeito estado */
+  ressalvas: RessalvaVistoria[];
+  /** laudo assinado pelo inquilino (junto do contrato, no mesmo envelope) */
   assinada: boolean;
   assinadaSimulada: boolean;
 }
 
-export const AMBIENTES_PADRAO = ['Sala', 'Cozinha', 'Quarto 1', 'Banheiro', 'Área de serviço', 'Sacada'] as const;
+/** O que costuma ficar no imóvel — a lista que o vistoriador marca. */
+export const ITENS_VISTORIA = [
+  'Chaves (jogo completo)', 'Controle do portão', 'Fogão', 'Geladeira',
+  'Armários da cozinha', 'Armário do quarto', 'Ar-condicionado', 'Chuveiro',
+  'Luminárias', 'Cortinas', 'Box do banheiro', 'Tanque', 'Varal',
+] as const;
+
+/** Onde as ressalvas costumam estar — atalho pro campo "onde". */
+export const LOCAIS_VISTORIA = [
+  'Sala', 'Cozinha', 'Quarto', 'Banheiro', 'Área de serviço', 'Sacada', 'Garagem', 'Fachada',
+] as const;
 
 /**
  * AS ETAPAS DO SETOR — a barra de atalhos do topo da tela.
@@ -755,6 +777,8 @@ export function pacoteCowork(i: ImovelLocacao): string {
  */
 export interface DadosPortal {
   demo: boolean;
+  /** true = imóvel administrado mas ainda não alugado (portal do dono desde a captação) */
+  aguardandoLocacao?: boolean;
   imovel: { titulo: string; endereco: string; codigo: string };
   dono: { nome: string };
   inquilino: { nome: string };
@@ -821,6 +845,40 @@ export function dadosPortalDoContrato(
     })),
     proxima: proxima ? { competencia: compLegivel(proxima.competencia), vencimento: fmtData(proxima.vencimento) } : null,
     avisos: [],
+  };
+}
+
+/**
+ * O portal do DONO desde a assinatura da administração — antes de existir
+ * inquilino. É o argumento de captação: "o senhor acompanha o anúncio desde
+ * o primeiro dia". Mostra o imóvel e o estado da divulgação; quando alugar,
+ * o mesmo portal passa a mostrar os repasses.
+ */
+export function dadosPortalDoImovel(i: ImovelLocacao): DadosPortal {
+  const st = STATUS_IMOVEL[i.status] || STATUS_IMOVEL.rascunho;
+  return {
+    demo: false,
+    aguardandoLocacao: true,
+    imovel: {
+      titulo: i.titulo,
+      endereco: `${[i.rua, i.numero].filter(Boolean).join(', ')}${i.complemento ? ` — ${i.complemento}` : ''}, ${i.bairro}, ${i.cidade}`,
+      codigo: i.codigo,
+    },
+    dono: { nome: i.locadorNome },
+    inquilino: { nome: '' },
+    contrato: {
+      inicio: '—', fim: '—', prazoMeses: null, indiceReajuste: '—',
+      proximoReajuste: '—', diaVencimento: null, garantia: i.garantiasAceitas.join(', ') || '—',
+    },
+    valores: {
+      aluguel: i.aluguel || 0, condominio: i.condominio || 0, iptuMensal: i.iptuMensal || 0,
+      seguroIncendio: i.seguroIncendio || 0, taxaAdmPct: 10,
+      totalInquilino: (i.aluguel || 0) + (i.iptuMensal || 0) + (i.seguroIncendio || 0),
+      taxaAdm: Math.round((i.aluguel || 0) * 10) / 100,
+      repasseDono: (i.aluguel || 0) - Math.round((i.aluguel || 0) * 10) / 100 + (i.iptuMensal || 0),
+    },
+    historico: [], proxima: null,
+    avisos: [{ data: '', texto: `Seu imóvel está ${st.rotulo.toLowerCase()}. Assim que alugar, os pagamentos e repasses aparecem aqui.` }],
   };
 }
 

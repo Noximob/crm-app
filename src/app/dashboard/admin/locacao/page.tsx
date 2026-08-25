@@ -39,16 +39,17 @@ import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { showToast } from '@/components/ui/toast';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import {
-  IMOVEL_VAZIO, CONTRATO_VAZIO, LEAD_VAZIO, CATEGORIAS_DOC_LEAD, AMBIENTES_PADRAO,
-  alertasDoContrato, gerarMovimentos, dadosPortalDoContrato,
+  IMOVEL_VAZIO, CONTRATO_VAZIO, LEAD_VAZIO, CATEGORIAS_DOC_LEAD, ITENS_VISTORIA, LOCAIS_VISTORIA,
+  alertasDoContrato, gerarMovimentos, dadosPortalDoContrato, dadosPortalDoImovel,
   hojeYmd, fmtData, fmtValor, linkWhats, ETAPAS_FUNIL,
   type EtapaFunil,
   type ImovelLocacao, type ContratoLocacao, type LeadLocacao, type MovimentoLocacao,
-  type AmbienteVistoria,
+  type RessalvaVistoria,
 } from '@/lib/locacao';
 import { VisaoDono, VisaoInquilino } from '@/lib/locacaoPortalView';
 import { inputCls, btnOuro, btnGhost, btnSimula, SeloSimulacao } from './ui';
 import MinutaContrato from './minuta';
+import { MinutaAdministracao, LaudoVistoria, PacoteLoft } from './documentos';
 import FichaImovel from './imoveis';
 import PainelContrato from './contratos';
 import { criarDadosExemplo, apagarDadosExemplo } from './demo';
@@ -85,14 +86,17 @@ export default function LocacaoPage() {
   const [carregando, setCarregando] = useState(true);
 
   // o que está aberto embaixo de qual linha
-  const [aberto, setAberto] = useState<{ chave: string; painel: 'ficha' | 'contrato' | 'minuta' | 'vistoria' | 'portal' | 'extrato'; visao?: 'dono' | 'inquilino' } | null>(null);
+  type Painel = 'ficha' | 'contrato' | 'minuta' | 'vistoria' | 'portal' | 'extrato'
+    | 'adm' | 'laudo' | 'laudoSaida' | 'loft';
+  const [aberto, setAberto] = useState<{ chave: string; painel: Painel; visao?: 'dono' | 'inquilino' } | null>(null);
   const [novoImovel, setNovoImovel] = useState(false);
   const [candidatoDe, setCandidatoDe] = useState<string | null>(null);
   const [cNome, setCNome] = useState(''); const [cTel, setCTel] = useState(''); const [cCorretor, setCCorretor] = useState('');
   const [catDoc, setCatDoc] = useState<string>('CNH/RG');
   const [subindo, setSubindo] = useState<string | null>(null);
-  const [ambientes, setAmbientes] = useState<AmbienteVistoria[]>([]);
-  const [fotoDe, setFotoDe] = useState<number | null>(null);
+  // a vistoria: itens que ficam + ressalvas do que não está perfeito
+  const [itens, setItens] = useState<string[]>([]);
+  const [ressalvas, setRessalvas] = useState<RessalvaVistoria[]>([]);
   const [busca, setBusca] = useState('');
   const [etapaSel, setEtapaSel] = useState<EtapaFunil | null>(null);
   const [soMeus, setSoMeus] = useState(false);
@@ -115,7 +119,7 @@ export default function LocacaoPage() {
 
   const guarda = () => { if (isEspelhoDemo) { showToast('Modo demonstração.', 'info'); return true; } return false; };
   const fechar = () => setAberto(null);
-  const abrir = (chave: string, painel: 'ficha' | 'contrato' | 'minuta' | 'vistoria' | 'portal' | 'extrato', visao?: 'dono' | 'inquilino') =>
+  const abrir = (chave: string, painel: Painel, visao?: 'dono' | 'inquilino') =>
     setAberto((a) => (a?.chave === chave && a.painel === painel && a.visao === visao ? null : { chave, painel, visao }));
 
   // ═══════════════ a fila ═══════════════
@@ -167,10 +171,20 @@ export default function LocacaoPage() {
 
     for (const im of imoveis) {
       if (im.status === 'alugado' || im.status === 'pausado') continue;
-      if (out.some((x) => x.imovel?.id === im.id)) continue;
       if (im.status === 'anunciado') {
-        out.push({ chave: `i-${im.id}`, etapa: 'divulgado', imovel: im, movs: [], parada: 2, titulo: 'Anunciado — quando alguém fechar, registre o candidato', peso: 2, alertas: [] });
-      } else if (im.admStatus === 'pendente') {
+        // quantos já estão em processo neste imóvel — o anúncio continua no ar
+        const emProcesso = out.filter((x) => x.imovel?.id === im.id && (x.lead || x.contrato)).length;
+        out.push({
+          chave: `i-${im.id}`, etapa: 'divulgado', imovel: im, movs: [], parada: 2,
+          titulo: emProcesso
+            ? `No ar · ${emProcesso} em andamento neste imóvel`
+            : 'No ar — quando alguém fechar, registre o candidato',
+          peso: 2, alertas: [],
+        });
+        continue;
+      }
+      if (out.some((x) => x.imovel?.id === im.id)) continue;
+      if (im.admStatus === 'pendente') {
         out.push({ chave: `i-${im.id}`, etapa: 'captado', imovel: im, movs: [], parada: 0, titulo: 'Enviar o contrato de administração pro dono assinar', peso: 0, alertas: [] });
       } else if (im.admStatus === 'enviada') {
         out.push({ chave: `i-${im.id}`, etapa: 'administracao', imovel: im, movs: [], parada: 1, titulo: 'Aguardando o dono assinar a administração', peso: 1, alertas: [] });
@@ -186,12 +200,17 @@ export default function LocacaoPage() {
    * A fila filtrada. Com trinta contratos rodando, achar "o do João" sem
    * busca é rolar a tela procurando — e ninguém opera assim.
    */
-  /** quantos em cada etapa — inclui os alugados, que vivem na carteira */
+  /**
+   * Quantos em cada etapa. Conta EXATAMENTE o que o clique vai mostrar — se o
+   * número diz 2, clicar tem que trazer 2 linhas. Os alugados somam a fila
+   * (os com pendência) mais a carteira (os que rodam sem pedir nada).
+   */
   const porEtapa = useMemo(() => {
     const c: Record<string, number> = {};
     for (const it of fila) c[it.etapa] = (c[it.etapa] || 0) + 1;
-    c.alugado = (c.alugado || 0) + contratos.filter((x) => x.status === 'ativo').length
+    const naCarteira = contratos.filter((x) => x.status === 'ativo').length
       - fila.filter((f) => f.etapa === 'alugado').length;
+    c.alugado = (c.alugado || 0) + Math.max(0, naCarteira);
     return c;
   }, [fila, contratos]);
 
@@ -307,33 +326,27 @@ export default function LocacaoPage() {
 
   const abrirVistoria = (c: ContratoLocacao) => {
     const ex = c.vistoriaEntrada;
-    setAmbientes(ex?.ambientes?.length ? ex.ambientes : AMBIENTES_PADRAO.map((nome) => ({ nome, estado: 'bom' as const, observacao: '', fotos: [] })));
+    setItens(ex?.itens?.length ? ex.itens : []);
+    setRessalvas(ex?.ressalvas?.length ? ex.ressalvas : []);
     abrir(`c-${c.id}`, 'vistoria');
   };
-  const setAmb = (n: number, campos: Partial<AmbienteVistoria>) =>
-    setAmbientes((p) => p.map((a, i) => (i === n ? { ...a, ...campos } : a)));
-  const fotoAmbiente = async (n: number, arquivos: FileList | null) => {
-    if (!arquivos?.length || !imobiliariaId || guarda()) return;
-    setFotoDe(n);
-    try {
-      const urls: string[] = [];
-      for (const a of Array.from(arquivos)) {
-        const caminho = `locacao/${imobiliariaId}/vistorias/${Date.now()}-${a.name}`;
-        const task = uploadBytesResumable(ref(storage, caminho), a, a.type ? { contentType: a.type } : undefined);
-        await task;
-        urls.push(await getDownloadURL(task.snapshot.ref));
-      }
-      setAmb(n, { fotos: [...ambientes[n].fotos, ...urls] });
-    } catch { showToast('Falha na foto.', 'error'); }
-    setFotoDe(null);
-  };
-  const salvarVistoria = async (c: ContratoLocacao) => {
+
+  /**
+   * A vistoria congela as FOTOS DO ANÚNCIO como registro visual — o imóvel
+   * já foi fotografado na captação e está vazio, então elas valem como
+   * laudo. Não se refotografa nada.
+   */
+  const salvarVistoria = async (c: ContratoLocacao, im?: ImovelLocacao) => {
     await upContrato(c.id, {
       status: 'vistoria_feita',
-      vistoriaEntrada: { feitaEm: hojeYmd(), feitaPor: '', ambientes, assinada: false, assinadaSimulada: false },
+      vistoriaEntrada: {
+        feitaEm: hojeYmd(), feitaPor: '',
+        fotos: im?.fotos || [], itens, ressalvas,
+        assinada: false, assinadaSimulada: false,
+      },
     });
     fechar();
-    showToast('Vistoria salva. Agora contrato + laudo vão juntos pra assinatura.', 'success');
+    showToast('Vistoria registrada. Agora contrato + laudo vão juntos pra assinatura.', 'success');
   };
 
   const enviarEnvelope = async (c: ContratoLocacao) => {
@@ -446,6 +459,26 @@ export default function LocacaoPage() {
               {aberto.painel === 'minuta' && it.contrato && (
                 <MinutaContrato c={it.contrato} imovel={it.imovel} onFechar={fechar} />
               )}
+              {aberto.painel === 'adm' && it.imovel && (
+                <MinutaAdministracao imovel={it.imovel} onFechar={fechar} />
+              )}
+              {aberto.painel === 'laudo' && it.contrato?.vistoriaEntrada && (
+                <LaudoVistoria contrato={it.contrato} imovel={it.imovel} tipo="entrada" onFechar={fechar} />
+              )}
+              {aberto.painel === 'laudoSaida' && it.contrato?.vistoriaSaida && (
+                <LaudoVistoria contrato={it.contrato} imovel={it.imovel} tipo="saida" onFechar={fechar} />
+              )}
+              {aberto.painel === 'loft' && it.lead && (
+                <PacoteLoft lead={it.lead} imovel={it.imovel} onFechar={fechar} />
+              )}
+              {aberto.painel === 'portal' && !it.contrato && it.imovel && (
+                <>
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-sky-300 mb-2">
+                    O que o DONO vê — imóvel administrado, ainda não alugado
+                  </p>
+                  <VisaoDono d={dadosPortalDoImovel(it.imovel)} />
+                </>
+              )}
               {aberto.painel === 'portal' && it.contrato && (
                 <>
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-sky-300 mb-2">
@@ -487,30 +520,79 @@ export default function LocacaoPage() {
                 </div>
               )}
               {aberto.painel === 'vistoria' && it.contrato && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">
-                    Vistoria de entrada — imóvel vazio, ambiente por ambiente (funciona no celular).
-                    O laudo vai junto do contrato no mesmo envelope de assinatura.
+                    Vistoria de entrada — o laudo vai junto do contrato, no mesmo envelope
                   </p>
-                  {ambientes.map((a, n) => (
-                    <div key={n} className="flex flex-wrap items-center gap-2 border-b border-white/[0.05] pb-2">
-                      <input className={inputCls + ' !w-36'} value={a.nome} onChange={(e) => setAmb(n, { nome: e.target.value })} />
-                      <select className={inputCls + ' !w-28'} value={a.estado} onChange={(e) => setAmb(n, { estado: e.target.value as AmbienteVistoria['estado'] })}>
-                        <option value="otimo">Ótimo</option><option value="bom">Bom</option>
-                        <option value="regular">Regular</option><option value="ruim">Ruim</option>
-                      </select>
-                      <input className={inputCls + ' flex-1 min-w-[140px]'} placeholder="observação" value={a.observacao} onChange={(e) => setAmb(n, { observacao: e.target.value })} />
-                      <label className={btnGhost + ' cursor-pointer'}>
-                        {fotoDe === n ? '…' : `📷 ${a.fotos.length}`}
-                        <input type="file" accept="image/*" capture="environment" multiple className="hidden"
-                          onChange={(e) => { fotoAmbiente(n, e.target.files); e.currentTarget.value = ''; }} />
-                      </label>
-                      <button onClick={() => setAmbientes(ambientes.filter((_, j) => j !== n))} className="text-rose-300">×</button>
+
+                  {/* as fotos do anúncio SÃO o registro visual: o imóvel foi
+                      fotografado na captação e está vazio */}
+                  <div>
+                    <p className="text-[11.5px] text-white/85 mb-1.5">
+                      Registro visual: <b className="text-[#FFE9A6]">{(it.imovel?.fotos || []).length} fotos do anúncio</b>
+                      <span className="text-text-secondary"> — ficam congeladas no laudo e servem de comparação na saída.</span>
+                    </p>
+                    <div className="flex gap-1.5 overflow-x-auto pb-1">
+                      {(it.imovel?.fotos || []).slice(0, 8).map((u, i) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img key={i} src={u} alt={`foto ${i + 1}`} className="h-16 rounded-lg object-cover shrink-0 border border-white/10" />
+                      ))}
+                      {!(it.imovel?.fotos || []).length && (
+                        <span className="text-[11.5px] text-amber-300">Sem fotos no anúncio — suba as fotos na ficha do imóvel antes.</span>
+                      )}
                     </div>
-                  ))}
+                  </div>
+
+                  {/* o que fica no imóvel */}
+                  <div>
+                    <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1.5">
+                      O que fica no imóvel ({itens.length})
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {ITENS_VISTORIA.map((x) => {
+                        const on = itens.includes(x);
+                        return (
+                          <button key={x} type="button"
+                            onClick={() => setItens(on ? itens.filter((y) => y !== x) : [...itens, x])}
+                            className={`px-2.5 py-1 rounded-full text-[11.5px] font-bold border transition-colors ${
+                              on ? 'bg-[#E8C547]/15 border-[#E8C547]/50 text-[#FFE9A6]' : 'border-white/10 bg-white/[0.03] text-text-secondary hover:text-white'
+                            }`}>{x}</button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* o que não está perfeito */}
+                  <div>
+                    <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1.5">
+                      Ressalvas — o que NÃO está em perfeito estado ({ressalvas.length})
+                    </p>
+                    {ressalvas.map((r, n) => (
+                      <div key={n} className="flex flex-wrap items-center gap-2 mb-1.5">
+                        <input list="locais-vistoria" className={inputCls + ' !w-32'} placeholder="onde" value={r.onde}
+                          onChange={(e) => setRessalvas(ressalvas.map((x, j) => (j === n ? { ...x, onde: e.target.value } : x)))} />
+                        <input className={inputCls + ' flex-1 min-w-[180px]'} placeholder="o que está com problema"
+                          value={r.oque}
+                          onChange={(e) => setRessalvas(ressalvas.map((x, j) => (j === n ? { ...x, oque: e.target.value } : x)))} />
+                        <button onClick={() => setRessalvas(ressalvas.filter((_, j) => j !== n))} className="text-rose-300">×</button>
+                      </div>
+                    ))}
+                    <datalist id="locais-vistoria">
+                      {LOCAIS_VISTORIA.map((x) => <option key={x} value={x} />)}
+                    </datalist>
+                    <button onClick={() => setRessalvas([...ressalvas, { onde: '', oque: '' }])} className={btnGhost}>
+                      + ressalva
+                    </button>
+                    {ressalvas.length === 0 && (
+                      <p className="text-[11px] text-text-secondary mt-1">
+                        Nenhuma ressalva = imóvel entregue em perfeito estado. Na saída, tudo que estiver
+                        diferente das fotos e não estiver aqui é do inquilino.
+                      </p>
+                    )}
+                  </div>
+
                   <div className="flex flex-wrap gap-2">
-                    <button onClick={() => setAmbientes([...ambientes, { nome: '', estado: 'bom', observacao: '', fotos: [] }])} className={btnGhost}>+ ambiente</button>
-                    <button onClick={() => salvarVistoria(it.contrato!)} className={btnOuro}>Salvar vistoria</button>
+                    <button onClick={() => salvarVistoria(it.contrato!, it.imovel)} className={btnOuro}>Salvar vistoria</button>
                     <button onClick={fechar} className={btnGhost}>cancelar</button>
                   </div>
                 </div>
@@ -571,7 +653,7 @@ export default function LocacaoPage() {
                 onChange={(e) => { anexarDoc(l, e.target.files); e.currentTarget.value = ''; }} />
             </label>
           </span>
-          <button onClick={() => upLead(l.id, { etapa: 'analise_enviada' })} className={btnOuro}>▶ Mandar pra Loft</button>
+          <button onClick={() => { abrir(`l-${l.id}`, 'loft'); upLead(l.id, { etapa: 'analise_enviada' }); }} className={btnOuro}>▶ Mandar pra Loft</button>
         </span>
       );
     }
@@ -705,8 +787,8 @@ export default function LocacaoPage() {
           </div>
         )}
 
-        {/* o balcão dos portais */}
-        {balcao.length > 0 && (
+        {/* o balcão dos portais — some quando se filtra uma etapa da papelada */}
+        {balcao.length > 0 && !etapaSel && (
           <div className="al-card p-4">
             <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-sky-300 mb-2">
               📨 Chegaram dos portais — {balcao.length} pessoa{balcao.length > 1 ? 's' : ''} perguntando
@@ -754,6 +836,24 @@ export default function LocacaoPage() {
               Capte um imóvel pra começar — ou clique em <b className="text-white/85">dados de exemplo</b> pra
               ver a papelada inteira funcionando.
             </p>
+          </div>
+        )}
+
+        {etapaSel && filaVisivel.length > 0 && (
+          <p className="text-[11.5px] text-text-secondary">
+            Mostrando {filaVisivel.length} em <b className="text-[#FFE9A6]">{ETAPAS_FUNIL.find((e) => e.chave === etapaSel)?.rot}</b>.
+            <button onClick={() => setEtapaSel(null)} className="ml-2 text-[#E8C547] font-bold">ver tudo</button>
+          </p>
+        )}
+        {etapaSel && filaVisivel.length === 0 && (
+          <div className="al-card p-6 text-center">
+            <p className="text-[13px] text-white/85">
+              Ninguém em <b className="text-[#FFE9A6]">{ETAPAS_FUNIL.find((e) => e.chave === etapaSel)?.rot}</b> agora.
+            </p>
+            <p className="text-[11.5px] text-text-secondary mt-1">
+              {ETAPAS_FUNIL.find((e) => e.chave === etapaSel)?.ajuda}
+            </p>
+            <button onClick={() => setEtapaSel(null)} className={btnGhost + ' mt-3'}>ver tudo</button>
           </div>
         )}
 
@@ -846,6 +946,23 @@ export default function LocacaoPage() {
                     });
                   })()}
                   {it.imovel && <button onClick={() => abrir(it.chave, 'ficha')} className={btnGhost + ' !py-1 !text-[11px]'}>🏠 ficha do imóvel</button>}
+                  {it.imovel && !it.contrato && !it.lead && (
+                    <button onClick={() => abrir(it.chave, 'adm')} className={btnGhost + ' !py-1 !text-[11px]'}>📜 contrato de administração</button>
+                  )}
+                  {/* o portal do dono nasce quando ele assina a administração —
+                      é o argumento de captação, não um prêmio pós-locação */}
+                  {it.imovel?.admStatus === 'assinada' && !it.contrato && (
+                    <button onClick={() => abrir(it.chave, 'portal', 'dono')} className={btnGhost + ' !py-1 !text-[11px]'}>👁 portal do dono</button>
+                  )}
+                  {it.lead && !it.contrato && (
+                    <button onClick={() => abrir(it.chave, 'loft')} className={btnGhost + ' !py-1 !text-[11px]'}>🛡 ficha pra Loft</button>
+                  )}
+                  {it.contrato?.vistoriaEntrada && (
+                    <button onClick={() => abrir(it.chave, 'laudo')} className={btnGhost + ' !py-1 !text-[11px]'}>📋 laudo de vistoria</button>
+                  )}
+                  {it.contrato?.vistoriaSaida && (
+                    <button onClick={() => abrir(it.chave, 'laudoSaida')} className={btnGhost + ' !py-1 !text-[11px]'}>📋 laudo de saída</button>
+                  )}
                   {it.contrato && <button onClick={() => abrir(it.chave, 'contrato')} className={btnGhost + ' !py-1 !text-[11px]'}>📄 dados do contrato</button>}
                   {it.contrato && <button onClick={() => abrir(it.chave, 'minuta')} className={btnGhost + ' !py-1 !text-[11px]'}>📜 ver o contrato</button>}
                   {it.contrato?.status === 'ativo' && (

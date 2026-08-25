@@ -18,9 +18,9 @@ import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { showToast } from '@/components/ui/toast';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import {
-  INDICES_REAJUSTE, GARANTIAS, CATEGORIAS_DOC, AMBIENTES_PADRAO,
+  INDICES_REAJUSTE, GARANTIAS, CATEGORIAS_DOC, LOCAIS_VISTORIA,
   fimContrato, fmtData, fmtValor, hojeYmd,
-  type ContratoLocacao, type ImovelLocacao, type AmbienteVistoria,
+  type ContratoLocacao, type ImovelLocacao, type RessalvaVistoria,
 } from '@/lib/locacao';
 import { inputCls, btnOuro, btnGhost, btnSimula, Campo, num } from './ui';
 
@@ -36,7 +36,8 @@ export default function PainelContrato({ imobiliariaId, isEspelhoDemo, contrato,
   const [salvando, setSalvando] = useState(false);
   const [categoria, setCategoria] = useState<string>('Contrato assinado');
   const [subindo, setSubindo] = useState(false);
-  const [saindo, setSaindo] = useState<AmbienteVistoria[] | null>(null);
+  /** as ressalvas da SAÍDA: o que mudou em relação à entrada */
+  const [saindo, setSaindo] = useState<RessalvaVistoria[] | null>(null);
 
   const f = <K extends keyof ContratoLocacao>(k: K, v: ContratoLocacao[K]) => setForm((p) => ({ ...p, [k]: v }));
   const guarda = () => { if (isEspelhoDemo) { showToast('Modo demonstração.', 'info'); return true; } return false; };
@@ -91,17 +92,18 @@ export default function PainelContrato({ imobiliariaId, isEspelhoDemo, contrato,
     await recarregar();
   };
 
-  const abrirVistoriaSaida = () => {
-    const ent = form.vistoriaEntrada?.ambientes;
-    setSaindo(ent?.length
-      ? ent.map((a) => ({ ...a, fotos: [] }))
-      : AMBIENTES_PADRAO.map((nome) => ({ nome, estado: 'bom' as const, observacao: '', fotos: [] })));
-  };
+  /** Na saída se anota só o que MUDOU — o resto está nas fotos da entrada. */
+  const abrirVistoriaSaida = () => setSaindo([]);
 
   const salvarSaida = async () => {
     if (!saindo || guarda()) return;
     await updateDoc(doc(db, 'locacaoContratos', form.id), {
-      vistoriaSaida: { feitaEm: hojeYmd(), feitaPor: '', ambientes: saindo, assinada: true, assinadaSimulada: true },
+      vistoriaSaida: {
+        feitaEm: hojeYmd(), feitaPor: '',
+        fotos: form.vistoriaEntrada?.fotos || [],
+        itens: form.vistoriaEntrada?.itens || [],
+        ressalvas: saindo, assinada: true, assinadaSimulada: true,
+      },
       atualizadoEm: serverTimestamp(),
     });
     setSaindo(null);
@@ -223,12 +225,18 @@ export default function PainelContrato({ imobiliariaId, isEspelhoDemo, contrato,
           <p className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">
             Vistoria de entrada · {fmtData(form.vistoriaEntrada.feitaEm)} {form.vistoriaEntrada.assinada ? '· assinada ✓' : '· não assinada'}
           </p>
-          {form.vistoriaEntrada.ambientes.map((a, i) => (
-            <p key={i} className="text-[11.5px] text-text-secondary">
-              <b className="text-white/80">{a.nome}</b>: {a.estado}{a.observacao ? ` — ${a.observacao}` : ''}
-              {a.fotos.length ? ` · ${a.fotos.length} foto(s)` : ''}
-            </p>
+          <p className="text-[11.5px] text-text-secondary">
+            {(form.vistoriaEntrada.fotos || []).length} fotos do anúncio · {(form.vistoriaEntrada.itens || []).length} itens no imóvel
+          </p>
+          {(form.vistoriaEntrada.itens || []).length > 0 && (
+            <p className="text-[11.5px] text-white/70">Ficou no imóvel: {(form.vistoriaEntrada.itens || []).join(', ')}</p>
+          )}
+          {(form.vistoriaEntrada.ressalvas || []).map((r, i) => (
+            <p key={i} className="text-[11.5px] text-amber-300">⚠ {r.onde}: {r.oque}</p>
           ))}
+          {!(form.vistoriaEntrada.ressalvas || []).length && (
+            <p className="text-[11.5px] text-emerald-300">Sem ressalvas — entregue em perfeito estado.</p>
+          )}
         </div>
       )}
 
@@ -244,35 +252,43 @@ export default function PainelContrato({ imobiliariaId, isEspelhoDemo, contrato,
           )}
           {saindo && (
             <div className="space-y-2">
-              <p className="text-[11px] text-text-secondary">Compare com a entrada e ajuste o estado de cada ambiente.</p>
-              {saindo.map((a, n) => (
+              <p className="text-[11px] text-text-secondary max-w-[62ch]">
+                Anote só o que MUDOU em relação à entrada. O que não estiver aqui foi devolvido como
+                estava nas fotos — e o que estiver, entra no acerto.
+              </p>
+              {saindo.map((r, n) => (
                 <div key={n} className="flex flex-wrap items-center gap-2">
-                  <span className="text-[12px] text-white/85 w-32">{a.nome}</span>
-                  <select className={inputCls + ' !w-28'} value={a.estado}
-                    onChange={(e) => setSaindo(saindo.map((x, j) => (j === n ? { ...x, estado: e.target.value as AmbienteVistoria['estado'] } : x)))}>
-                    <option value="otimo">Ótimo</option><option value="bom">Bom</option>
-                    <option value="regular">Regular</option><option value="ruim">Ruim</option>
-                  </select>
-                  <input className={inputCls + ' flex-1 min-w-[120px]'} placeholder="o que mudou" value={a.observacao}
-                    onChange={(e) => setSaindo(saindo.map((x, j) => (j === n ? { ...x, observacao: e.target.value } : x)))} />
+                  <input list="locais-saida" className={inputCls + ' !w-32'} placeholder="onde" value={r.onde}
+                    onChange={(e) => setSaindo(saindo.map((x, j) => (j === n ? { ...x, onde: e.target.value } : x)))} />
+                  <input className={inputCls + ' flex-1 min-w-[180px]'} placeholder="o que mudou / danificou" value={r.oque}
+                    onChange={(e) => setSaindo(saindo.map((x, j) => (j === n ? { ...x, oque: e.target.value } : x)))} />
+                  <button onClick={() => setSaindo(saindo.filter((_, j) => j !== n))} className="text-rose-300">×</button>
                 </div>
               ))}
-              <button onClick={salvarSaida} className={btnSimula}>⚡ Salvar e assinar (vistoria + distrato juntos)</button>
+              <datalist id="locais-saida">{LOCAIS_VISTORIA.map((x) => <option key={x} value={x} />)}</datalist>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={() => setSaindo([...saindo, { onde: '', oque: '' }])} className={btnGhost}>+ item danificado</button>
+                <button onClick={salvarSaida} className={btnSimula}>⚡ Salvar e assinar (vistoria + distrato juntos)</button>
+              </div>
+              {saindo.length === 0 && (
+                <p className="text-[11.5px] text-emerald-300">Nada anotado = imóvel devolvido em ordem, sem acerto de danos.</p>
+              )}
             </div>
           )}
           {form.vistoriaSaida && (
             <>
               <div className="rounded border border-white/[0.06] p-2">
-                <p className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">Entrada × saída</p>
-                {form.vistoriaSaida.ambientes.map((s, i) => {
-                  const e = form.vistoriaEntrada?.ambientes.find((x) => x.nome === s.nome);
-                  const piorou = e && ['otimo', 'bom'].includes(e.estado) && ['regular', 'ruim'].includes(s.estado);
-                  return (
-                    <p key={i} className={`text-[11.5px] ${piorou ? 'text-rose-300 font-bold' : 'text-text-secondary'}`}>
-                      {s.nome}: {e?.estado || '—'} → {s.estado}{piorou ? ' ← cobrar no acerto' : ''}
-                    </p>
-                  );
-                })}
+                <p className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1">
+                  Entrada × saída — o que virou acerto
+                </p>
+                {(() => {
+                  const naEntrada = new Set((form.vistoriaEntrada?.ressalvas || []).map((r) => `${r.onde}|${r.oque}`.toLowerCase()));
+                  const novos = (form.vistoriaSaida?.ressalvas || []).filter((r) => !naEntrada.has(`${r.onde}|${r.oque}`.toLowerCase()));
+                  if (!novos.length) return <p className="text-[11.5px] text-emerald-300">Nada novo — devolvido como recebeu. Sem acerto.</p>;
+                  return novos.map((r, i) => (
+                    <p key={i} className="text-[11.5px] text-rose-300 font-bold">🚨 {r.onde}: {r.oque} ← cobrar no acerto</p>
+                  ));
+                })()}
               </div>
               <button onClick={encerrar} className={btnOuro}>✓ Encerrar contrato</button>
             </>

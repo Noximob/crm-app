@@ -106,12 +106,11 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     assinaturaEnviadaEm: desloca(-11, -5), assinadoEm: desloca(-11, -3), assinaturaSimulada: true,
     vistoriaEntrada: {
       feitaEm: desloca(-11, -1), feitaPor: 'Breno', assinada: true, assinadaSimulada: true,
-      ambientes: [
-        { nome: 'Sala', estado: 'bom', observacao: 'Pequeno risco na parede atrás da porta', fotos: [] },
-        { nome: 'Cozinha', estado: 'otimo', observacao: '', fotos: [] },
-        { nome: 'Quarto 1 (suíte)', estado: 'bom', observacao: '', fotos: [] },
-        { nome: 'Banheiro', estado: 'regular', observacao: 'Rejunte do box desgastado', fotos: [] },
-        { nome: 'Quintal', estado: 'otimo', observacao: '', fotos: [] },
+      fotos: FOTOS5,
+      itens: ['Chaves (jogo completo)', 'Fogão', 'Armários da cozinha', 'Chuveiro', 'Varal'],
+      ressalvas: [
+        { onde: 'Sala', oque: 'Pequeno risco na parede atrás da porta' },
+        { onde: 'Banheiro', oque: 'Rejunte do box desgastado' },
       ],
     },
     vistoriaSaida: null,
