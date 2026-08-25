@@ -3,9 +3,13 @@
 /**
  * PORTAL DO CLIENTE — alumma.com.br/portal
  *
- * Duas portas, para quem JÁ É cliente:
- *   🏠 PROPRIETÁRIO   como está o imóvel dele e quanto cai no repasse.
- *   🔑 INQUILINO      a cobrança, o histórico, o contrato e a manutenção.
+ * Duas portas, uma por funil — e cada uma nasce num momento diferente:
+ *
+ *   🏠 PROPRIETÁRIO   abre assim que ele ASSINA A ADMINISTRAÇÃO, antes mesmo
+ *                     de alugar: mostra o imóvel em divulgação e quanto vai
+ *                     cair no repasse. Depois de alugado, vira o extrato.
+ *   🔑 INQUILINO      abre na ENTREGA DA CHAVE: cobrança, histórico de
+ *                     pagamentos, o contrato e o pedido de manutenção.
  *
  * Não existe vitrine aqui de propósito: quem PROCURA imóvel encontra nos
  * portais (OLX, ZAP, VivaReal) e no site da imobiliária. Duplicar a vitrine

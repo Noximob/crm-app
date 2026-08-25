@@ -10,13 +10,14 @@
  * São três peças, e as três saem daqui prontas para impressão/PDF:
  *
  *   ADMINISTRAÇÃO   o contrato com o DONO, que autoriza a Nox a administrar
- *                   e reter a taxa. Nasce na captação.
- *   VISTORIA        o laudo do imóvel vazio, ambiente por ambiente, com as
- *                   fotos. Vai anexo ao contrato de locação no mesmo
+ *                   e reter a taxa. Nasce no FUNIL DO IMÓVEL, logo depois
+ *                   dos documentos dele.
+ *   VISTORIA        o laudo do imóvel, com as fotos do anúncio como registro
+ *                   visual. Vai anexo ao contrato de locação, no mesmo
  *                   envelope de assinatura.
  *   PACOTE DA LOFT  a ficha do candidato com os documentos que ele já subiu
  *                   — o mesmo material que instrui o contrato, reaproveitado
- *                   para a análise da garantia. Um lugar só, digitado uma vez.
+ *                   para a análise da garantia. Digitado uma vez só.
  *
  * O contrato de LOCAÇÃO vive em minuta.tsx (é o maior e tem cláusulas
  * próprias). Quando a ClickSign entrar, estes mesmos dados alimentam os
@@ -24,8 +25,8 @@
  */
 import React from 'react';
 import {
-  fmtData, fmtValor, totalMensal,
-  type ImovelLocacao, type ContratoLocacao, type LeadLocacao,
+  fmtData, fmtValor, custoTotalMensal,
+  type ImovelLocacao, type Locacao,
 } from '@/lib/locacao';
 import { btnOuro, btnGhost } from './ui';
 
@@ -70,17 +71,24 @@ const Lacuna = ({ v }: { v?: string | null }) => v
   ? <b>{v}</b>
   : <span className="inline-block border-b border-neutral-400 min-w-[120px] align-baseline text-neutral-400 text-center text-[10px]">a preencher</span>;
 
+const enderecoDoImovel = (i?: ImovelLocacao) => i
+  ? `${[i.rua, i.numero].filter(Boolean).join(', ')}${i.complemento ? `, ${i.complemento}` : ''}, ${i.bairro}, ${i.cidade}${i.cep ? `, CEP ${i.cep}` : ''}`
+  : '';
+
 // ---------------------------------------------------------------------------
-// 1 · o contrato de ADMINISTRAÇÃO (com o dono)
+// 1 · o contrato de ADMINISTRAÇÃO (funil do imóvel, com o dono)
 // ---------------------------------------------------------------------------
 
 export function MinutaAdministracao({ imovel, onFechar }: { imovel: ImovelLocacao; onFechar: () => void }) {
-  const endereco = `${[imovel.rua, imovel.numero].filter(Boolean).join(', ')}${imovel.complemento ? `, ${imovel.complemento}` : ''}, ${imovel.bairro}, ${imovel.cidade}${imovel.cep ? `, CEP ${imovel.cep}` : ''}`;
+  const pct = imovel.taxaAdmPct ?? 10;
   return (
-    <Papel titulo="Contrato de Administração de Imóvel" aviso="Minuta gerada do cadastro — vai pro WhatsApp do dono pela ClickSign" onFechar={onFechar}>
+    <Papel titulo="Contrato de Administração de Imóvel"
+      aviso="Minuta gerada do cadastro — vai pro WhatsApp do dono pela ClickSign" onFechar={onFechar}>
       <p className="mb-3">
-        <b>PROPRIETÁRIO:</b> <Lacuna v={imovel.locadorNome} />, portador do CPF/CNPJ nº <Lacuna v={imovel.locadorDoc} />,
-        telefone <Lacuna v={imovel.locadorTelefone} />, e-mail <Lacuna v={imovel.locadorEmail} />.
+        <b>PROPRIETÁRIO:</b> <Lacuna v={imovel.donoNome} />, <Lacuna v={imovel.donoEstadoCivil} />,
+        {' '}<Lacuna v={imovel.donoProfissao} />, portador do CPF/CNPJ nº <Lacuna v={imovel.donoDoc} /> e
+        {' '}RG nº <Lacuna v={imovel.donoRg} />, residente em <Lacuna v={imovel.donoEndereco} />,
+        {' '}telefone <Lacuna v={imovel.donoTelefone} />, e-mail <Lacuna v={imovel.donoEmail} />.
       </p>
       <p className="mb-5">
         <b>ADMINISTRADORA:</b> <b>Nox Imóveis</b>, inscrita no CRECI, doravante denominada ADMINISTRADORA.
@@ -89,7 +97,7 @@ export function MinutaAdministracao({ imovel, onFechar }: { imovel: ImovelLocaca
       <h2 className="font-bold text-[13px] mt-5 mb-1">Cláusula 1ª — Do objeto</h2>
       <p>
         O PROPRIETÁRIO autoriza a ADMINISTRADORA a promover a locação e administrar o imóvel situado
-        em <Lacuna v={endereco} />{imovel.codigo ? <> (ref. <b>{imovel.codigo}</b>)</> : null}, praticando
+        em <Lacuna v={enderecoDoImovel(imovel)} />{imovel.codigo ? <> (ref. <b>{imovel.codigo}</b>)</> : null}, praticando
         todos os atos necessários: divulgação, seleção de interessados, exigência de garantia, vistorias,
         celebração do contrato de locação, cobrança dos aluguéis e encargos e repasse dos valores.
       </p>
@@ -100,21 +108,21 @@ export function MinutaAdministracao({ imovel, onFechar }: { imovel: ImovelLocaca
         aluguel de <b>{fmtValor(imovel.aluguel)}</b>
         {imovel.condominio ? <>, com condomínio de {fmtValor(imovel.condominio)}</> : null}
         {imovel.iptuMensal ? <> e IPTU mensal de {fmtValor(imovel.iptuMensal)}</> : null},
-        totalizando {fmtValor(totalMensal(imovel))} para o locatário.
+        totalizando {fmtValor(custoTotalMensal(imovel))} para o locatário.
       </p>
 
       <h2 className="font-bold text-[13px] mt-5 mb-1">Cláusula 3ª — Da remuneração</h2>
       <p>
-        Pela administração, a ADMINISTRADORA fará jus a <b>10% (dez por cento) do valor do aluguel</b>,
-        retidos de cada pagamento. A taxa incide exclusivamente sobre o aluguel — condomínio, IPTU e
-        seguro não integram a base de cálculo.
+        Pela administração, a ADMINISTRADORA fará jus a <b>{pct}% do valor do aluguel</b>, retidos de cada
+        pagamento. A taxa incide exclusivamente sobre o aluguel — condomínio, IPTU e seguro não integram
+        a base de cálculo.
       </p>
 
       <h2 className="font-bold text-[13px] mt-5 mb-1">Cláusula 4ª — Do repasse</h2>
       <p>
         Confirmado o pagamento pelo locatário, a ADMINISTRADORA repassará ao PROPRIETÁRIO, em até 2 (dois)
         dias úteis, o aluguel deduzido da taxa, acrescido do reembolso do IPTU quando houver, mediante PIX
-        para a chave <Lacuna v={imovel.locadorPix} />, acompanhado de extrato discriminado.
+        para a chave <Lacuna v={imovel.donoPix} />, acompanhado de extrato discriminado.
       </p>
 
       <h2 className="font-bold text-[13px] mt-5 mb-1">Cláusula 5ª — Das obrigações do proprietário</h2>
@@ -136,7 +144,7 @@ export function MinutaAdministracao({ imovel, onFechar }: { imovel: ImovelLocaca
         plataforma de assinatura digital.
       </p>
       <div className="grid grid-cols-2 gap-x-10 text-center text-[11px]">
-        <div><div className="border-t border-neutral-500 pt-1">{imovel.locadorNome || 'PROPRIETÁRIO'}</div>Proprietário</div>
+        <div><div className="border-t border-neutral-500 pt-1">{imovel.donoNome || 'PROPRIETÁRIO'}</div>Proprietário</div>
         <div><div className="border-t border-neutral-500 pt-1">Nox Imóveis</div>Administradora</div>
       </div>
     </Papel>
@@ -147,22 +155,19 @@ export function MinutaAdministracao({ imovel, onFechar }: { imovel: ImovelLocaca
 // 2 · o LAUDO DE VISTORIA
 // ---------------------------------------------------------------------------
 
-export function LaudoVistoria({ contrato, imovel, tipo, onFechar }: {
-  contrato: ContratoLocacao; imovel?: ImovelLocacao; tipo: 'entrada' | 'saida'; onFechar: () => void;
+export function LaudoVistoria({ locacao, imovel, tipo, onFechar }: {
+  locacao: Locacao; imovel?: ImovelLocacao; tipo: 'entrada' | 'saida'; onFechar: () => void;
 }) {
-  const v = tipo === 'entrada' ? contrato.vistoriaEntrada : contrato.vistoriaSaida;
+  const v = tipo === 'entrada' ? locacao.vistoriaEntrada : locacao.vistoriaSaida;
   if (!v) return null;
-  const endereco = imovel
-    ? `${[imovel.rua, imovel.numero].filter(Boolean).join(', ')}${imovel.complemento ? `, ${imovel.complemento}` : ''}, ${imovel.bairro}, ${imovel.cidade}`
-    : '';
   return (
     <Papel
       titulo={`Laudo de Vistoria de ${tipo === 'entrada' ? 'Entrada' : 'Saída'}`}
       aviso="Anexo do contrato de locação — assinado no mesmo envelope"
       onFechar={onFechar}>
-      <p className="mb-1"><b>Imóvel:</b> <Lacuna v={endereco} /> {imovel?.codigo ? `(${imovel.codigo})` : ''}</p>
-      <p className="mb-1"><b>Locatário:</b> <Lacuna v={contrato.locatarioNome} /></p>
-      <p className="mb-1"><b>Proprietário:</b> <Lacuna v={contrato.locadorNome} /></p>
+      <p className="mb-1"><b>Imóvel:</b> <Lacuna v={enderecoDoImovel(imovel)} /> {imovel?.codigo ? `(${imovel.codigo})` : ''}</p>
+      <p className="mb-1"><b>Locatário:</b> <Lacuna v={locacao.nome} /></p>
+      <p className="mb-1"><b>Proprietário:</b> <Lacuna v={imovel?.donoNome} /></p>
       <p className="mb-5"><b>Data da vistoria:</b> {fmtData(v.feitaEm)} {v.feitaPor ? `· realizada por ${v.feitaPor}` : ''}</p>
 
       <h2 className="font-bold text-[13px] mb-1">1. Itens que ficam no imóvel</h2>
@@ -218,7 +223,7 @@ export function LaudoVistoria({ contrato, imovel, tipo, onFechar }: {
       </p>
 
       <div className="grid grid-cols-2 gap-x-10 text-center text-[11px]">
-        <div><div className="border-t border-neutral-500 pt-1">{contrato.locatarioNome || 'LOCATÁRIO'}</div>Locatário</div>
+        <div><div className="border-t border-neutral-500 pt-1">{locacao.nome || 'LOCATÁRIO'}</div>Locatário</div>
         <div><div className="border-t border-neutral-500 pt-1">Nox Imóveis</div>Administradora</div>
       </div>
     </Papel>
@@ -229,24 +234,27 @@ export function LaudoVistoria({ contrato, imovel, tipo, onFechar }: {
 // 3 · o PACOTE DA LOFT (ficha do candidato + documentos)
 // ---------------------------------------------------------------------------
 
-export function PacoteLoft({ lead, imovel, onFechar }: {
-  lead: LeadLocacao; imovel?: ImovelLocacao; onFechar: () => void;
+export function PacoteLoft({ locacao, imovel, onFechar }: {
+  locacao: Locacao; imovel?: ImovelLocacao; onFechar: () => void;
 }) {
-  const docs = lead.documentos || [];
+  const docs = locacao.docsInquilino || [];
   const copiar = async () => {
     const linhas = [
       'FICHA PARA ANÁLISE DE GARANTIA — NOX IMÓVEIS',
       '',
-      `Candidato: ${lead.nome}`,
-      `Telefone: ${lead.telefone}`,
-      `E-mail: ${lead.email || '—'}`,
+      `Candidato: ${locacao.nome}`,
+      `CPF: ${locacao.doc || '—'}   RG: ${locacao.rg || '—'}`,
+      `Estado civil: ${locacao.estadoCivil || '—'}   Profissão: ${locacao.profissao || '—'}`,
+      `Telefone: ${locacao.telefone}`,
+      `E-mail: ${locacao.email || '—'}`,
+      `Endereço atual: ${locacao.enderecoAtual || '—'}`,
       '',
       `Imóvel: ${imovel ? `${imovel.codigo} — ${imovel.titulo}` : '—'}`,
-      `Endereço: ${imovel ? `${[imovel.rua, imovel.numero].filter(Boolean).join(', ')}, ${imovel.bairro}, ${imovel.cidade}` : '—'}`,
+      `Endereço: ${enderecoDoImovel(imovel) || '—'}`,
       `Aluguel: ${fmtValor(imovel?.aluguel)}`,
       `Condomínio: ${fmtValor(imovel?.condominio)}`,
       `IPTU mensal: ${fmtValor(imovel?.iptuMensal)}`,
-      `Total mensal: ${imovel ? fmtValor(totalMensal(imovel)) : '—'}`,
+      `Total mensal: ${imovel ? fmtValor(custoTotalMensal(imovel)) : '—'}`,
       '',
       'DOCUMENTOS ANEXADOS:',
       ...(docs.length ? docs.map((d, i) => `${i + 1}. ${d.categoria || 'documento'} — ${d.nome}\n   ${d.url}`) : ['(nenhum documento anexado ainda)']),
@@ -271,13 +279,14 @@ export function PacoteLoft({ lead, imovel, onFechar }: {
 
       <div className="grid sm:grid-cols-2 gap-x-6 gap-y-1 text-[12.5px]">
         {([
-          ['Candidato', lead.nome],
-          ['Telefone', lead.telefone],
-          ['E-mail', lead.email || '—'],
-          ['Corretor', lead.corretorNome || '—'],
+          ['Candidato', locacao.nome],
+          ['CPF', locacao.doc || '—'],
+          ['Telefone', locacao.telefone],
+          ['E-mail', locacao.email || '—'],
+          ['Corretor', locacao.corretorNome || '—'],
           ['Imóvel', imovel ? `${imovel.codigo} — ${imovel.titulo}` : '—'],
           ['Aluguel', fmtValor(imovel?.aluguel)],
-          ['Total mensal', imovel ? fmtValor(totalMensal(imovel)) : '—'],
+          ['Total mensal', imovel ? fmtValor(custoTotalMensal(imovel)) : '—'],
         ] as const).map(([r, v]) => (
           <div key={r} className="flex items-baseline justify-between gap-3 border-b border-white/[0.05] py-1">
             <span className="text-text-secondary">{r}</span>

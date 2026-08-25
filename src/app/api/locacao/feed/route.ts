@@ -2,9 +2,12 @@
  * O FEED DOS PORTAIS — alumma.com.br/api/locacao/feed
  *
  * É esta URL que o Grupo OLX (Canal Pro) vai ler 2×/dia depois da
- * homologação: o XML VRSync com todos os imóveis ANUNCIADOS, gerado na hora
- * a partir do banco. Marcou "anunciado" no admin → entra aqui → o portal
- * publica. Marcou "alugado" → some daqui → o portal tira do ar.
+ * homologação: o XML VRSync com todos os imóveis na etapa PUBLICADO do funil
+ * do imóvel, gerado na hora a partir do banco.
+ *
+ *   publicou no admin → entra aqui  → o portal publica
+ *   entregou a chave  → vira alugado → some daqui → o portal tira do ar
+ *   encerrou a locação → volta a publicado → reentra sozinho
  *
  * Já está pronta pra homologação — só falta a chave de serviço do Firebase
  * na variável de ambiente do Netlify (instruções em lib/firebaseAdmin.ts).
@@ -25,7 +28,7 @@ export async function GET() {
     );
   }
   try {
-    const snap = await db.collection('locacaoImoveis').where('status', '==', 'anunciado').get();
+    const snap = await db.collection('locacaoImoveis').where('etapa', '==', 'publicado').get();
     const imoveis = snap.docs.map((d) => ({ id: d.id, ...d.data() } as ImovelLocacao));
     const xml = gerarFeedVrsync(imoveis, {
       nome: 'Nox Imóveis',
