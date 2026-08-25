@@ -1,28 +1,50 @@
 /**
- * LOCAÇÃO — a base do setor de aluguel da imobiliária.
+ * LOCAÇÃO — a fundação do setor de aluguel, reescrita sobre a esteira acertada.
  *
- * Três frentes usam este arquivo:
- *   1. O cadastro de imóveis/anúncios do admin (e o pacote que vai pro
- *      Claude publicar nos portais);
- *   2. Os contratos e o espelho das cobranças (que a integração Asaas vai
- *      alimentar de verdade — por enquanto o cronograma é derivado do
- *      contrato, marcado como "aguardando integração");
- *   3. O portal do cliente (locador e locatário), que hoje mostra dados de
- *      demonstração porque ainda não tem login.
+ * A esteira tem 11 etapas (documento "Esteira da Locação"), e este arquivo
+ * carrega o que TODAS elas usam: os tipos, as máquinas de estado, as contas
+ * do dinheiro e os geradores (XML dos portais, pacote do Cowork).
  *
- * A regra de ouro do dinheiro: NENHUM valor de cobrança é inventado. Ou vem
- * do contrato (previsão, sempre rotulada de previsão), ou virá do Asaas
- * (fato). As duas coisas nunca se misturam sem rótulo.
+ * As decisões que este código cristaliza — mudou a decisão, muda AQUI:
+ *
+ *   · A taxa de administração incide SÓ sobre o aluguel.
+ *   · CONDOMÍNIO: o inquilino paga DIRETO à administradora do condomínio —
+ *     não passa pela cobrança da Nox. O valor fica no cadastro só pra
+ *     informação e anúncio.
+ *   · IPTU: a Nox cobra do inquilino e repassa INTEIRO ao dono, marcado no
+ *     extrato — o dono paga a prefeitura como sempre pagou (regra fiscal:
+ *     ônus do locatário não é rendimento do dono; a taxa é dedutível).
+ *   · O repasse vai NUM PIX só (aluguel − taxa + IPTU), com extrato
+ *     discriminado.
+ *   · Cobrança e repasse são PREVISÃO até o Asaas ser conectado; contrato e
+ *     garantia são SIMULAÇÃO até ClickSign e Loft serem conectadas. Tudo que
+ *     é simulado fica rotulado como simulado na tela — botão de dinheiro que
+ *     finge funcionar queima confiança.
+ *   · Regras dos portais no cadastro: 5 fotos mínimo e descrição de 50+
+ *     caracteres para ANUNCIAR (rascunho aceita incompleto).
  */
 
 // ---------------------------------------------------------------------------
-// o imóvel anunciado
+// constantes do imóvel e do anúncio
 // ---------------------------------------------------------------------------
 
 export const TIPOS_IMOVEL = [
   'Apartamento', 'Casa', 'Sobrado', 'Kitnet', 'Cobertura',
   'Sala comercial', 'Loja', 'Galpão', 'Terreno',
 ] as const;
+
+/** Mapeia nosso tipo para a taxonomia do VRSync (ajuste fino na homologação). */
+const TIPO_VRSYNC: Record<string, string> = {
+  'Apartamento': 'Residential / Apartment',
+  'Casa': 'Residential / Home',
+  'Sobrado': 'Residential / Home',
+  'Kitnet': 'Residential / Kitnet',
+  'Cobertura': 'Residential / Penthouse',
+  'Sala comercial': 'Commercial / Office',
+  'Loja': 'Commercial / Building',
+  'Galpão': 'Commercial / Industrial',
+  'Terreno': 'Residential / Land Lot',
+};
 
 export const MOBILIADO = ['Não mobiliado', 'Semimobiliado', 'Mobiliado'] as const;
 
@@ -32,58 +54,58 @@ export const COMODIDADES = [
   'Lavanderia', 'Playground', 'Aceita pet',
 ] as const;
 
-/** Onde o anúncio deve aparecer — vira a lista de tarefas do pacote. */
-export const PORTAIS = [
-  'OLX', 'ZAP Imóveis', 'VivaReal', 'ImovelWeb', 'Chaves na Mão',
-  'Facebook Marketplace', 'Instagram da imobiliária',
-] as const;
+/** Comodidade → enum de Feature do VRSync (só as de mapeamento seguro). */
+const FEATURE_VRSYNC: Record<string, string> = {
+  'Piscina': 'Pool', 'Elevador': 'Elevator', 'Academia': 'Gym',
+  'Churrasqueira': 'BBQ', 'Playground': 'Playground', 'Sacada': 'Balcony',
+  'Salão de festas': 'Party Room', 'Lavanderia': 'Laundry',
+  'Ar-condicionado': 'Air Conditioning',
+};
 
 export const GARANTIAS = [
-  'Caução (depósito)', 'Fiador', 'Seguro-fiança', 'Título de capitalização',
+  'Seguro-fiança (Loft)', 'Caução (depósito)', 'Fiador', 'Título de capitalização',
 ] as const;
 
-export const STATUS_ANUNCIO = {
+export const STATUS_IMOVEL = {
   rascunho: { rotulo: 'Rascunho', cor: 'text-text-secondary' },
   anunciado: { rotulo: 'Anunciado', cor: 'text-emerald-300' },
   alugado: { rotulo: 'Alugado', cor: 'text-sky-300' },
   pausado: { rotulo: 'Pausado', cor: 'text-amber-300' },
 } as const;
-
-export type StatusAnuncio = keyof typeof STATUS_ANUNCIO;
+export type StatusImovel = keyof typeof STATUS_IMOVEL;
 
 export interface ImovelLocacao {
   id: string;
   imobiliariaId: string;
-  codigo: string;             // código interno curto (ex.: LOC-004)
-  titulo: string;             // título do anúncio
+  codigo: string;
+  titulo: string;
   tipo: string;
-  status: StatusAnuncio;
+  status: StatusImovel;
 
-  // endereço
   rua: string; numero: string; complemento: string;
   bairro: string; cidade: string; cep: string;
+  /** parte dos portais exige localização no mapa */
+  latitude: string; longitude: string;
 
-  // características
   quartos: number | null; suites: number | null; banheiros: number | null;
   vagas: number | null; areaPrivativa: number | null; areaTotal: number | null;
   andar: string; mobiliado: string;
   comodidades: string[];
 
-  // valores mensais (em reais)
   aluguel: number | null; condominio: number | null;
   iptuMensal: number | null; seguroIncendio: number | null;
 
-  // condições
   garantiasAceitas: string[];
   prazoMinimoMeses: number | null;
-  disponivelAPartir: string;   // yyyy-mm-dd
+  disponivelAPartir: string;
 
-  // o dono do imóvel
-  locadorNome: string; locadorTelefone: string; locadorEmail: string; locadorDoc: string;
+  locadorNome: string; locadorTelefone: string; locadorEmail: string;
+  locadorDoc: string; locadorPix: string;
 
   descricao: string;
-  fotos: string[];            // URLs (Storage ou externas)
-  portais: string[];          // onde anunciar
+  fotos: string[];
+  /** onde anunciar via Cowork (os feeds cobrem OLX/ZAP/VivaReal + ImovelWeb + CNM) */
+  portaisCowork: string[];
 
   criadoEm?: unknown; atualizadoEm?: unknown;
 }
@@ -91,16 +113,19 @@ export interface ImovelLocacao {
 export const IMOVEL_VAZIO: Omit<ImovelLocacao, 'id' | 'imobiliariaId'> = {
   codigo: '', titulo: '', tipo: 'Apartamento', status: 'rascunho',
   rua: '', numero: '', complemento: '', bairro: '', cidade: '', cep: '',
+  latitude: '', longitude: '',
   quartos: null, suites: null, banheiros: null, vagas: null,
   areaPrivativa: null, areaTotal: null, andar: '', mobiliado: 'Não mobiliado',
   comodidades: [],
   aluguel: null, condominio: null, iptuMensal: null, seguroIncendio: null,
-  garantiasAceitas: [], prazoMinimoMeses: 12, disponivelAPartir: '',
-  locadorNome: '', locadorTelefone: '', locadorEmail: '', locadorDoc: '',
-  descricao: '', fotos: [], portais: [],
+  garantiasAceitas: ['Seguro-fiança (Loft)'], prazoMinimoMeses: 12, disponivelAPartir: '',
+  locadorNome: '', locadorTelefone: '', locadorEmail: '', locadorDoc: '', locadorPix: '',
+  descricao: '', fotos: [], portaisCowork: [],
 };
 
-/** Total que o locatário paga por mês — sempre a soma dos quatro. */
+export const PORTAIS_COWORK = ['Facebook Marketplace', 'Instagram da imobiliária'] as const;
+
+/** Total que o inquilino paga por mês. */
 export const totalMensal = (i: Pick<ImovelLocacao, 'aluguel' | 'condominio' | 'iptuMensal' | 'seguroIncendio'>): number =>
   (i.aluguel || 0) + (i.condominio || 0) + (i.iptuMensal || 0) + (i.seguroIncendio || 0);
 
@@ -109,133 +134,183 @@ export const fmtValor = (v: number | null | undefined): string =>
     ? '—'
     : v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: v % 1 ? 2 : 0 });
 
-// ---------------------------------------------------------------------------
-// o pacote pros portais — o que o Claude recebe pra publicar
-// ---------------------------------------------------------------------------
+export const fmtData = (ymd?: string): string =>
+  ymd ? ymd.split('-').reverse().join('/') : '—';
+
+export const hojeYmd = (): string => new Date().toISOString().slice(0, 10);
 
 /**
- * Gera o pacote de publicação. O mesmo desenho da Auditoria: o sistema
- * monta um documento completo e auto-suficiente, o gestor cola no Claude
- * (Cowork), e o Claude executa com as contas da imobiliária abertas no
- * navegador. Nenhum portal tem API pública de publicação — o caminho é
- * esse ou um integrador pago.
+ * As regras dos portais para um anúncio ir ao ar (lidas das especificações).
+ * Rascunho aceita qualquer coisa; ANUNCIAR exige a lista limpa.
  */
-export function pacotePortais(i: ImovelLocacao): string {
-  const linhas: string[] = [];
-  const p = (s = '') => linhas.push(s);
-
-  p('PUBLICAÇÃO DE ANÚNCIO DE LOCAÇÃO — NOX IMÓVEIS');
-  p('='.repeat(48));
-  p();
-  p('O QUE FAZER');
-  p('Publicar o imóvel abaixo nos portais listados, usando as contas da');
-  p('imobiliária já abertas no navegador. Em cada portal: preencher a ficha');
-  p('completa com os dados abaixo, subir as fotos na ordem em que aparecem,');
-  p('usar o título e a descrição indicados (adaptando ao limite de caracteres');
-  p('do portal quando houver), conferir o preview e publicar. Ao final, me');
-  p('devolva a lista de links dos anúncios publicados e qualquer campo que o');
-  p('portal pediu e não está neste pacote.');
-  p();
-  p('REGRAS');
-  p('- Não inventar dado nenhum: o que não estiver aqui, perguntar antes.');
-  p('- O valor do aluguel e dos encargos é EXATAMENTE o informado.');
-  p('- Não aceitar upsell/destaque pago sem me perguntar.');
-  p();
-  p('PORTAIS');
-  (i.portais.length ? i.portais : ['(nenhum portal marcado — perguntar quais)']).forEach((x) => p(`- ${x}`));
-  p();
-  p('O IMÓVEL');
-  p(`Código interno: ${i.codigo || '—'}`);
-  p(`Título do anúncio: ${i.titulo}`);
-  p(`Tipo: ${i.tipo}`);
-  p(`Endereço: ${[i.rua, i.numero].filter(Boolean).join(', ')}${i.complemento ? ` — ${i.complemento}` : ''}`);
-  p(`Bairro: ${i.bairro} · Cidade: ${i.cidade} · CEP: ${i.cep || '—'}`);
-  p();
-  p('CARACTERÍSTICAS');
-  p(`Quartos: ${i.quartos ?? '—'} (sendo ${i.suites ?? 0} suíte(s)) · Banheiros: ${i.banheiros ?? '—'} · Vagas: ${i.vagas ?? '—'}`);
-  p(`Área privativa: ${i.areaPrivativa ? `${i.areaPrivativa} m²` : '—'} · Área total: ${i.areaTotal ? `${i.areaTotal} m²` : '—'}`);
-  p(`Andar: ${i.andar || '—'} · Mobília: ${i.mobiliado}`);
-  p(`Comodidades: ${i.comodidades.length ? i.comodidades.join(', ') : '—'}`);
-  p();
-  p('VALORES MENSAIS');
-  p(`Aluguel: ${fmtValor(i.aluguel)}`);
-  p(`Condomínio: ${fmtValor(i.condominio)}`);
-  p(`IPTU (mensal): ${fmtValor(i.iptuMensal)}`);
-  p(`Seguro incêndio: ${fmtValor(i.seguroIncendio)}`);
-  p(`TOTAL MENSAL: ${fmtValor(totalMensal(i))}`);
-  p();
-  p('CONDIÇÕES');
-  p(`Garantias aceitas: ${i.garantiasAceitas.length ? i.garantiasAceitas.join(', ') : '—'}`);
-  p(`Prazo mínimo: ${i.prazoMinimoMeses ? `${i.prazoMinimoMeses} meses` : '—'}`);
-  p(`Disponível a partir de: ${i.disponivelAPartir || 'imediato'}`);
-  p();
-  p('DESCRIÇÃO DO ANÚNCIO');
-  p(i.descricao || '(sem descrição — escrever uma a partir das características acima e me mostrar antes de publicar)');
-  p();
-  p('FOTOS (nesta ordem)');
-  if (i.fotos.length) i.fotos.forEach((f, n) => p(`${n + 1}. ${f}`));
-  else p('(sem fotos no pacote — pedir as fotos antes de publicar)');
-  p();
-  p('CONTATO DO ANÚNCIO');
-  p('Usar SEMPRE o telefone e o e-mail da imobiliária, nunca o do proprietário.');
-
-  return linhas.join('\n');
+export function pendenciasParaAnunciar(i: Omit<ImovelLocacao, 'id' | 'imobiliariaId'>): string[] {
+  const p: string[] = [];
+  if (!i.titulo.trim() || i.titulo.trim().length < 10) p.push('Título com pelo menos 10 caracteres');
+  if (!i.aluguel) p.push('Valor do aluguel');
+  if (i.fotos.length < 5) p.push(`Mínimo de 5 fotos (tem ${i.fotos.length}) — regra do Grupo OLX`);
+  if (i.descricao.trim().length < 50) p.push(`Descrição com pelo menos 50 caracteres (tem ${i.descricao.trim().length})`);
+  if (!i.bairro.trim() || !i.cidade.trim() || !i.cep.trim()) p.push('Endereço completo com bairro, cidade e CEP');
+  return p;
 }
 
 // ---------------------------------------------------------------------------
-// o contrato
+// o interessado — etapas 3 a 5 da esteira
+// ---------------------------------------------------------------------------
+
+/**
+ * A máquina de estados do interessado. As chaves são a ordem da esteira; um
+ * interessado só anda pra frente (ou pra "perdido"). Quando a análise é
+ * aprovada, ele vira contrato e sai desta fila.
+ */
+export const ETAPAS_LEAD = {
+  novo: { rotulo: 'Novo', proxima: 'visita_agendada', acao: 'Agendar visita' },
+  visita_agendada: { rotulo: 'Visita agendada', proxima: 'visita_feita', acao: 'Visita aconteceu' },
+  visita_feita: { rotulo: 'Visita feita', proxima: 'analise_enviada', acao: 'Enviar pra análise (Loft)' },
+  analise_enviada: { rotulo: 'Em análise na Loft', proxima: null, acao: null },
+  analise_aprovada: { rotulo: 'Garantia aprovada', proxima: null, acao: null },
+  analise_recusada: { rotulo: 'Análise recusada', proxima: null, acao: null },
+  convertido: { rotulo: 'Virou contrato', proxima: null, acao: null },
+  perdido: { rotulo: 'Perdido', proxima: null, acao: null },
+} as const;
+export type EtapaLead = keyof typeof ETAPAS_LEAD;
+
+export interface LeadLocacao {
+  id: string;
+  imobiliariaId: string;
+  imovelId: string;
+  nome: string;
+  telefone: string;
+  email: string;
+  /** de onde veio: manual | grupo_olx | imovelweb — os portais preenchem via webhook */
+  origem: string;
+  /** o Grupo OLX manda a temperatura avaliada por eles */
+  temperatura: '' | 'baixa' | 'media' | 'alta';
+  mensagem: string;
+  etapa: EtapaLead;
+  visitaEm: string;           // yyyy-mm-dd da visita agendada
+  corretorNome: string;       // quem atende (os 40% do 1º aluguel)
+  garantia: {
+    numero: string;
+    taxaMensalPct: number | null;   // ~8 a 12,5% — vem da análise
+    vigenciaFim: string;
+    /** true = resultado veio de simulação, não da Loft real */
+    simulada: boolean;
+  } | null;
+  contratoId: string;         // preenchido quando vira contrato
+  perdidoMotivo: string;
+  criadoEm?: unknown; atualizadoEm?: unknown;
+}
+
+export const LEAD_VAZIO: Omit<LeadLocacao, 'id' | 'imobiliariaId'> = {
+  imovelId: '', nome: '', telefone: '', email: '', origem: 'manual',
+  temperatura: '', mensagem: '', etapa: 'novo', visitaEm: '', corretorNome: '',
+  garantia: null, contratoId: '', perdidoMotivo: '',
+};
+
+// ---------------------------------------------------------------------------
+// o contrato — etapas 6 a 11 da esteira
 // ---------------------------------------------------------------------------
 
 export const INDICES_REAJUSTE = ['IGP-M', 'IPCA', 'IVAR'] as const;
 
+/**
+ * A vida do contrato, na ordem em que acontece. "ativo" só chega depois de
+ * assinatura E vistoria — a regra da esteira: sem laudo assinado, sem chave.
+ */
 export const STATUS_CONTRATO = {
+  rascunho: { rotulo: 'Rascunho', cor: 'text-text-secondary' },
+  assinatura_enviada: { rotulo: 'Aguardando assinaturas', cor: 'text-amber-300' },
+  assinado: { rotulo: 'Assinado · falta vistoria', cor: 'text-sky-300' },
+  vistoria_feita: { rotulo: 'Vistoria feita · falta assinar laudo', cor: 'text-sky-300' },
   ativo: { rotulo: 'Ativo', cor: 'text-emerald-300' },
+  encerrando: { rotulo: 'Em saída', cor: 'text-amber-300' },
   encerrado: { rotulo: 'Encerrado', cor: 'text-text-secondary' },
-  renovacao: { rotulo: 'Em renovação', cor: 'text-amber-300' },
 } as const;
-
 export type StatusContrato = keyof typeof STATUS_CONTRATO;
 
 export interface DocContrato { nome: string; url: string; storagePath?: string }
 
+export interface AmbienteVistoria {
+  nome: string;
+  estado: 'otimo' | 'bom' | 'regular' | 'ruim';
+  observacao: string;
+  fotos: string[];
+}
+
+export interface Vistoria {
+  feitaEm: string;            // yyyy-mm-dd
+  feitaPor: string;
+  ambientes: AmbienteVistoria[];
+  /** laudo assinado pelo inquilino (via ClickSign quando integrar) */
+  assinada: boolean;
+  assinadaSimulada: boolean;
+}
+
+export const AMBIENTES_PADRAO = ['Sala', 'Cozinha', 'Quarto 1', 'Banheiro', 'Área de serviço', 'Sacada'] as const;
+
 export interface ContratoLocacao {
   id: string;
   imobiliariaId: string;
-  imovelId: string;          // referência ao cadastro do imóvel
+  imovelId: string;
+  leadId: string;
   status: StatusContrato;
 
-  locadorNome: string; locadorDoc: string; locadorEmail: string; locadorTelefone: string;
-  /** para onde vai o repasse */
-  locadorPix: string;
+  locadorNome: string; locadorDoc: string; locadorEmail: string;
+  locadorTelefone: string; locadorPix: string;
 
   locatarioNome: string; locatarioDoc: string; locatarioEmail: string; locatarioTelefone: string;
 
-  inicio: string;            // yyyy-mm-dd
+  inicio: string;
   prazoMeses: number | null;
   valorAluguel: number | null;
+  /** informativo: o inquilino paga o condomínio DIRETO à administradora */
+  valorCondominio: number | null;
+  /** cobrado do inquilino e repassado INTEIRO ao dono, que paga a prefeitura */
+  valorIptuMensal: number | null;
+  valorSeguroIncendio: number | null;
   diaVencimento: number | null;
   indiceReajuste: string;
-  garantiaTipo: string;
-  garantiaValor: number | null;
-  /** % que a imobiliária retém de cada aluguel */
+  /** % SÓ sobre o aluguel — decisão fiscal e comercial */
   taxaAdmPct: number | null;
-  observacoes: string;
+
+  garantiaTipo: string;
+  garantiaNumero: string;
+  garantiaTaxaMensalPct: number | null;
+  garantiaVigenciaFim: string;      // renovação ANUAL — o alerta mais sério da esteira
+  garantiaSimulada: boolean;
+
+  /** assinatura via ClickSign — simulada até integrar */
+  assinaturaEnviadaEm: string;
+  assinadoEm: string;
+  assinaturaSimulada: boolean;
+
+  vistoriaEntrada: Vistoria | null;
+  vistoriaSaida: Vistoria | null;
 
   documentos: DocContrato[];
+  observacoes: string;
+
+  encerradoEm: string;
+  encerradoMotivo: string;
 
   criadoEm?: unknown; atualizadoEm?: unknown;
 }
 
 export const CONTRATO_VAZIO: Omit<ContratoLocacao, 'id' | 'imobiliariaId'> = {
-  imovelId: '', status: 'ativo',
+  imovelId: '', leadId: '', status: 'rascunho',
   locadorNome: '', locadorDoc: '', locadorEmail: '', locadorTelefone: '', locadorPix: '',
   locatarioNome: '', locatarioDoc: '', locatarioEmail: '', locatarioTelefone: '',
-  inicio: '', prazoMeses: 30, valorAluguel: null, diaVencimento: 10,
-  indiceReajuste: 'IGP-M', garantiaTipo: '', garantiaValor: null,
-  taxaAdmPct: 10, observacoes: '', documentos: [],
+  inicio: '', prazoMeses: 30, valorAluguel: null, valorCondominio: null,
+  valorIptuMensal: null, valorSeguroIncendio: null, diaVencimento: 5,
+  indiceReajuste: 'IGP-M', taxaAdmPct: 10,
+  garantiaTipo: 'Seguro-fiança (Loft)', garantiaNumero: '', garantiaTaxaMensalPct: null,
+  garantiaVigenciaFim: '', garantiaSimulada: false,
+  assinaturaEnviadaEm: '', assinadoEm: '', assinaturaSimulada: false,
+  vistoriaEntrada: null, vistoriaSaida: null,
+  documentos: [], observacoes: '', encerradoEm: '', encerradoMotivo: '',
 };
 
-/** Fim da vigência derivado — nunca digitado, para não divergir do prazo. */
+/** Fim da vigência derivado do prazo — nunca digitado, para não divergir. */
 export function fimContrato(c: Pick<ContratoLocacao, 'inicio' | 'prazoMeses'>): string {
   if (!c.inicio || !c.prazoMeses) return '';
   const d = new Date(c.inicio + 'T12:00:00');
@@ -243,85 +318,444 @@ export function fimContrato(c: Pick<ContratoLocacao, 'inicio' | 'prazoMeses'>): 
   return d.toISOString().slice(0, 10);
 }
 
-/**
- * O cronograma PREVISTO de cobranças de um contrato — competência a
- * competência, do início até o fim (limitado ao horizonte pedido). É
- * previsão derivada do contrato: quando a integração Asaas entrar, cada
- * linha destas casa com uma cobrança real e o status passa a ser fato.
- */
-export interface CobrancaPrevista {
-  competencia: string;       // "2026-09"
-  vencimento: string;        // yyyy-mm-dd
-  valor: number;
-  repasseLocador: number;    // valor - taxa adm
-  taxaAdm: number;
+/** Próximo aniversário anual do contrato (data do reajuste). */
+export function proximoReajuste(c: Pick<ContratoLocacao, 'inicio'>): string {
+  if (!c.inicio) return '';
+  const ini = new Date(c.inicio + 'T12:00:00');
+  const hoje = new Date();
+  const d = new Date(ini);
+  while (d <= hoje) d.setFullYear(d.getFullYear() + 1);
+  return d.toISOString().slice(0, 10);
 }
 
-export function cronogramaPrevisto(c: ContratoLocacao, ateMeses = 12): CobrancaPrevista[] {
-  if (!c.inicio || !c.valorAluguel || !c.diaVencimento) return [];
-  const out: CobrancaPrevista[] = [];
-  const ini = new Date(c.inicio + 'T12:00:00');
-  const n = Math.min(c.prazoMeses || ateMeses, ateMeses);
-  for (let m = 0; m < n; m++) {
-    const comp = new Date(ini.getFullYear(), ini.getMonth() + m, 1);
-    const venc = new Date(comp.getFullYear(), comp.getMonth(), c.diaVencimento);
-    const taxaReais = Math.round(c.valorAluguel * (c.taxaAdmPct || 0)) / 100;
-    out.push({
-      competencia: `${comp.getFullYear()}-${String(comp.getMonth() + 1).padStart(2, '0')}`,
-      vencimento: venc.toISOString().slice(0, 10),
-      valor: c.valorAluguel,
-      taxaAdm: taxaReais,
-      repasseLocador: Math.round((c.valorAluguel - taxaReais) * 100) / 100,
-    });
+/** Dias até uma data ymd (negativo = já passou). */
+export function diasAte(ymd: string): number | null {
+  if (!ymd) return null;
+  return Math.ceil((new Date(ymd + 'T12:00:00').getTime() - Date.now()) / 864e5);
+}
+
+/**
+ * Os alertas que protegem a operação — cada um nasceu de um risco real:
+ * garantia vencida = dono descoberto (culpa da administradora); reajuste
+ * esquecido = dinheiro deixado na mesa; contrato vencendo = decisão de
+ * renovação em cima da hora.
+ */
+export interface AlertaContrato { tipo: 'garantia' | 'reajuste' | 'vigencia'; texto: string; grave: boolean }
+
+export function alertasDoContrato(c: ContratoLocacao): AlertaContrato[] {
+  if (c.status !== 'ativo') return [];
+  const out: AlertaContrato[] = [];
+
+  const dg = diasAte(c.garantiaVigenciaFim);
+  if (c.garantiaVigenciaFim && dg !== null) {
+    if (dg < 0) out.push({ tipo: 'garantia', grave: true, texto: `GARANTIA VENCIDA há ${-dg} dias — o dono está descoberto. Renovar com a Loft AGORA.` });
+    else if (dg <= 45) out.push({ tipo: 'garantia', grave: dg <= 15, texto: `Garantia vence em ${dg} dias (${fmtData(c.garantiaVigenciaFim)}) — renovar com a Loft.` });
+  }
+
+  const rj = proximoReajuste(c);
+  const dr = diasAte(rj);
+  if (dr !== null && dr <= 60) {
+    out.push({ tipo: 'reajuste', grave: false, texto: `Reajuste anual (${c.indiceReajuste}) em ${dr} dias (${fmtData(rj)}) — calcular e comunicar o inquilino.` });
+  }
+
+  const df = diasAte(fimContrato(c));
+  if (df !== null && df <= 90) {
+    out.push({ tipo: 'vigencia', grave: df <= 30, texto: `Contrato termina em ${df} dias (${fmtData(fimContrato(c))}) — renovar ou iniciar a saída.` });
   }
   return out;
 }
 
 // ---------------------------------------------------------------------------
-// o portal do cliente — dados de demonstração
+// o dinheiro — etapas 8 e 9 da esteira
 // ---------------------------------------------------------------------------
 
 /**
- * Enquanto o portal não tem login, as duas telas rodam com este cenário.
- * É UM cenário coerente dos dois lados: o imóvel que o locador vê alugado é
- * o mesmo que o locatário vê como "seu aluguel", os mesmos valores, o mesmo
- * contrato — porque na vida real são o mesmo registro.
+ * Um movimento = uma competência de um contrato: a cobrança do inquilino e o
+ * repasse do dono, juntos, porque um não existe sem o outro.
+ *
+ * Enquanto o Asaas não está conectado, statusCobranca anda por SIMULAÇÃO
+ * (botões rotulados). Quando conectar, quem move é o webhook de pagamento —
+ * a estrutura é a mesma, só troca a mão que aperta.
  */
-export const DEMO_PORTAL = {
+export const STATUS_COBRANCA = {
+  prevista: { rotulo: 'Prevista', cor: 'text-text-secondary' },
+  emitida: { rotulo: 'Boleto/PIX emitido', cor: 'text-sky-300' },
+  paga: { rotulo: 'Paga', cor: 'text-emerald-300' },
+  atrasada: { rotulo: 'Atrasada', cor: 'text-rose-300' },
+} as const;
+export type StatusCobranca = keyof typeof STATUS_COBRANCA;
+
+export const STATUS_REPASSE = {
+  aguardando: { rotulo: 'Aguarda pagamento', cor: 'text-text-secondary' },
+  liberado: { rotulo: 'Liberado (D+2)', cor: 'text-amber-300' },
+  repassado: { rotulo: 'Repassado', cor: 'text-emerald-300' },
+} as const;
+export type StatusRepasse = keyof typeof STATUS_REPASSE;
+
+export interface MovimentoLocacao {
+  id: string;
+  imobiliariaId: string;
+  contratoId: string;
+  competencia: string;        // 'YYYY-MM'
+  vencimento: string;         // yyyy-mm-dd
+
+  valorAluguel: number;
+  valorIptu: number;          // cobrado e repassado inteiro ao dono
+  valorSeguro: number;
+  valorTotal: number;         // o que o inquilino paga à Nox (condomínio ele paga direto)
+  taxaAdm: number;            // 10% SÓ do aluguel
+  repasseDono: number;        // aluguel − taxa + IPTU
+
+  statusCobranca: StatusCobranca;
+  pagoEm: string;
+  statusRepasse: StatusRepasse;
+  repassadoEm: string;
+  /** true enquanto o status foi movido por botão de simulação, não pelo Asaas */
+  simulado: boolean;
+
+  criadoEm?: unknown;
+}
+
+/**
+ * Gera todos os movimentos do contrato, do início ao fim. Roda UMA vez, na
+ * ativação (entrega de chaves). O reajuste anual futuro atualiza os
+ * movimentos ainda não cobrados — nunca os passados.
+ */
+export function gerarMovimentos(c: ContratoLocacao): Omit<MovimentoLocacao, 'id' | 'imobiliariaId' | 'criadoEm'>[] {
+  if (!c.inicio || !c.valorAluguel || !c.diaVencimento || !c.prazoMeses) return [];
+  const out: Omit<MovimentoLocacao, 'id' | 'imobiliariaId' | 'criadoEm'>[] = [];
+  const ini = new Date(c.inicio + 'T12:00:00');
+  const aluguel = c.valorAluguel;
+  // condomínio NÃO entra: o inquilino paga direto à administradora
+  const iptu = c.valorIptuMensal || 0;
+  const seguro = c.valorSeguroIncendio || 0;
+  const taxa = Math.round(aluguel * (c.taxaAdmPct || 0)) / 100;
+
+  for (let m = 0; m < c.prazoMeses; m++) {
+    const comp = new Date(ini.getFullYear(), ini.getMonth() + m, 1);
+    const venc = new Date(comp.getFullYear(), comp.getMonth(), c.diaVencimento);
+    out.push({
+      contratoId: c.id,
+      competencia: `${comp.getFullYear()}-${String(comp.getMonth() + 1).padStart(2, '0')}`,
+      vencimento: venc.toISOString().slice(0, 10),
+      valorAluguel: aluguel, valorIptu: iptu, valorSeguro: seguro,
+      valorTotal: aluguel + iptu + seguro,
+      taxaAdm: taxa,
+      repasseDono: Math.round((aluguel - taxa + iptu) * 100) / 100,
+      statusCobranca: 'prevista', pagoEm: '',
+      statusRepasse: 'aguardando', repassadoEm: '',
+      simulado: false,
+    });
+  }
+  return out;
+}
+
+/** A descrição que vai no PIX do repasse — resumo; o documento é o extrato. */
+export function descricaoRepasse(m: MovimentoLocacao): string {
+  const partes = [`aluguel ${fmtValor(m.valorAluguel - m.taxaAdm)}`];
+  if (m.valorIptu) partes.push(`IPTU ${fmtValor(m.valorIptu)}`);
+  return `Repasse Nox ${m.competencia.split('-').reverse().join('/')} · ${partes.join(' + ')}`;
+}
+
+// ---------------------------------------------------------------------------
+// integrações — o quadro de tomadas
+// ---------------------------------------------------------------------------
+
+/**
+ * Cada integração externa da esteira, com o que ela liga e o que falta pra
+ * ligar. O status vivo fica em locacaoConfig/{imobiliariaId}; este é o
+ * catálogo do que existe. NENHUMA chave de API entra por tela — tudo que é
+ * segredo vai em variável de ambiente do servidor (Netlify), nunca no banco.
+ */
+export interface DefIntegracao {
+  chave: string;
+  nome: string;
+  papel: string;
+  etapas: string;
+  prontoDoNossoLado: string[];
+  faltaParaLigar: string[];
+}
+
+export const INTEGRACOES: DefIntegracao[] = [
+  {
+    chave: 'asaas', nome: 'Asaas', papel: 'Cobra o inquilino, avisa o pagamento, repassa o dono via PIX, emite a NF da taxa, negativa no Serasa',
+    etapas: '8 · 9 · 10',
+    prontoDoNossoLado: ['Movimentos por competência com a conta do repasse', 'Trava: repasse só depois do pagamento', 'Descrição do PIX com o resumo discriminado'],
+    faltaParaLigar: ['Criar a conta Asaas (CNPJ)', 'Chave de API em variável do servidor', 'Habilitar negativação com o gerente', 'Função de servidor pro webhook de pagamento'],
+  },
+  {
+    chave: 'clicksign', nome: 'ClickSign', papel: 'Todos os documentos assinados pelo WhatsApp: administração, locação, laudo de vistoria, distrato',
+    etapas: '1 · 6 · 7 · 11',
+    prontoDoNossoLado: ['Estados de assinatura no contrato e na vistoria', 'Fluxo: enviar → acompanhar → arquivar'],
+    faltaParaLigar: ['Criar a conta ClickSign', 'Modelos do Lucas em .docx com as variáveis {{campo}}', 'Chave de API em variável do servidor', 'Webhook de assinatura concluída'],
+  },
+  {
+    chave: 'loft', nome: 'Loft Fiança', papel: 'Analisa o inquilino (<1 min), garante o aluguel, paga cashback por contrato',
+    etapas: '5 · 9 · 10',
+    prontoDoNossoLado: ['Etapa de análise na esteira com nº, taxa e vigência da garantia', 'Alerta de renovação anual (o risco nº 1 da modalidade)'],
+    faltaParaLigar: ['Fechar o plano com a Loft', 'Perguntar se a API da fiança vale pra sistema parceiro', 'Sem API: o painel deles + 1 clique aqui continua funcionando'],
+  },
+  {
+    chave: 'feed_olx', nome: 'Grupo OLX (feed VRSync)', papel: 'Publica em OLX + ZAP + VivaReal — eles leem nosso arquivo 2×/dia',
+    etapas: '2',
+    prontoDoNossoLado: ['Gerador do XML VRSync (baixe o arquivo de teste na aba Imóveis)', 'Regras do anúncio no cadastro (5 fotos, descrição 50+)'],
+    faltaParaLigar: ['Assinar o Canal Pro', 'Publicar a URL do feed (função de servidor)', 'Homologação: validador oficial + formulário deles'],
+  },
+  {
+    chave: 'leads_olx', nome: 'Grupo OLX (leads)', papel: 'Cada interessado vira um aviso automático que cai na esteira, já com a temperatura avaliada',
+    etapas: '3',
+    prontoDoNossoLado: ['Esteira recebe lead com origem, temperatura e imóvel', 'Cadastro manual funciona hoje (mesma fila)'],
+    faltaParaLigar: ['Função de servidor pro endpoint', 'Formulário de homologação do Grupo OLX'],
+  },
+  {
+    chave: 'imovelweb', nome: 'ImovelWeb (Open)', papel: 'Publica anúncios e devolve leads por callback',
+    etapas: '2 · 3',
+    prontoDoNossoLado: ['Cadastro cobre os campos obrigatórios deles'],
+    faltaParaLigar: ['Assinar o plano', 'Escolher XML ou API na homologação', 'Configurar callbacks (endpoint + autenticação)'],
+  },
+  {
+    chave: 'cnm', nome: 'Chaves na Mão', papel: 'Publica anúncios via feed XML próprio',
+    etapas: '2',
+    prontoDoNossoLado: ['Cadastro cobre os campos'],
+    faltaParaLigar: ['Assinar o plano', 'Gerar o feed no formato deles (documentação já mapeada)'],
+  },
+];
+
+// ---------------------------------------------------------------------------
+// geradores — o feed VRSync e o pacote do Cowork
+// ---------------------------------------------------------------------------
+
+const xmlEsc = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/**
+ * O feed VRSync (Grupo OLX: OLX + ZAP + VivaReal), gerado do cadastro.
+ *
+ * Hoje serve pro botão "baixar XML de teste" — pra validar no validador
+ * oficial durante a homologação. Quando a função de servidor existir, esta
+ * MESMA função gera a URL viva que os portais leem 2×/dia.
+ */
+export function gerarFeedVrsync(
+  imoveis: ImovelLocacao[],
+  contato: { nome: string; email: string; telefone: string },
+): string {
+  const anunciados = imoveis.filter((i) => i.status === 'anunciado');
+  const L: string[] = [];
+  const p = (s: string) => L.push(s);
+
+  p('<?xml version="1.0" encoding="UTF-8"?>');
+  p('<ListingDataFeed xmlns="http://www.vivareal.com/schemas/1.0/VRSync"');
+  p('  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"');
+  p('  xsi:schemaLocation="http://www.vivareal.com/schemas/1.0/VRSync http://xml.vivareal.com/vrsync.xsd">');
+  p('  <Header>');
+  p(`    <Provider>Nox Imóveis — sistema próprio</Provider>`);
+  p(`    <Email>${xmlEsc(contato.email)}</Email>`);
+  p(`    <ContactName>${xmlEsc(contato.nome)}</ContactName>`);
+  p(`    <PublishDate>${new Date().toISOString()}</PublishDate>`);
+  p(`    <Telephone>${xmlEsc(contato.telefone)}</Telephone>`);
+  p('  </Header>');
+  p('  <Listings>');
+
+  for (const i of anunciados) {
+    p('    <Listing>');
+    p(`      <ListingID>${xmlEsc(i.codigo || i.id)}</ListingID>`);
+    p(`      <Title><![CDATA[${i.titulo}]]></Title>`);
+    p('      <TransactionType>For Rent</TransactionType>');
+    p('      <Details>');
+    p(`        <PropertyType>${TIPO_VRSYNC[i.tipo] || 'Residential / Apartment'}</PropertyType>`);
+    p(`        <Description><![CDATA[${i.descricao}]]></Description>`);
+    if (i.aluguel) p(`        <RentalPrice currency="BRL" period="Monthly">${i.aluguel}</RentalPrice>`);
+    if (i.condominio) p(`        <PropertyAdministrationFee currency="BRL">${i.condominio}</PropertyAdministrationFee>`);
+    if (i.iptuMensal) p(`        <Iptu currency="BRL" period="Monthly">${i.iptuMensal}</Iptu>`);
+    if (i.areaPrivativa) p(`        <LivingArea unit="square metres">${i.areaPrivativa}</LivingArea>`);
+    if (i.areaTotal) p(`        <LotArea unit="square metres">${i.areaTotal}</LotArea>`);
+    if (i.quartos !== null) p(`        <Bedrooms>${i.quartos}</Bedrooms>`);
+    if (i.banheiros !== null) p(`        <Bathrooms>${i.banheiros}</Bathrooms>`);
+    if (i.suites !== null) p(`        <Suites>${i.suites}</Suites>`);
+    if (i.vagas !== null) p(`        <Garage type="Parking Space">${i.vagas}</Garage>`);
+    const feats = i.comodidades.map((c) => FEATURE_VRSYNC[c]).filter(Boolean);
+    if (feats.length) {
+      p('        <Features>');
+      feats.forEach((f) => p(`          <Feature>${f}</Feature>`));
+      p('        </Features>');
+    }
+    p('      </Details>');
+    p('      <Location displayAddress="Neighborhood">');
+    p('        <Country abbreviation="BR">Brasil</Country>');
+    p('        <State abbreviation="SC">Santa Catarina</State>');
+    p(`        <City>${xmlEsc(i.cidade.replace(/\/.*$/, '').trim() || 'Penha')}</City>`);
+    p(`        <Neighborhood>${xmlEsc(i.bairro)}</Neighborhood>`);
+    if (i.rua) p(`        <Address>${xmlEsc(i.rua)}</Address>`);
+    if (i.numero) p(`        <StreetNumber>${xmlEsc(i.numero)}</StreetNumber>`);
+    if (i.cep) p(`        <PostalCode>${xmlEsc(i.cep.replace(/\D/g, ''))}</PostalCode>`);
+    if (i.latitude && i.longitude) {
+      p(`        <Latitude>${xmlEsc(i.latitude)}</Latitude>`);
+      p(`        <Longitude>${xmlEsc(i.longitude)}</Longitude>`);
+    }
+    p('      </Location>');
+    p('      <ContactInfo>');
+    p(`        <Name>${xmlEsc(contato.nome)}</Name>`);
+    p(`        <Email>${xmlEsc(contato.email)}</Email>`);
+    p(`        <Telephone>${xmlEsc(contato.telefone)}</Telephone>`);
+    p('      </ContactInfo>');
+    p('      <Media>');
+    i.fotos.forEach((url, n) => p(`        <Item medium="image"${n === 0 ? ' primary="true"' : ''}>${xmlEsc(url)}</Item>`));
+    p('      </Media>');
+    p('    </Listing>');
+  }
+  p('  </Listings>');
+  p('</ListingDataFeed>');
+  return L.join('\n');
+}
+
+/** O pacote pro Claude publicar onde não tem feed (Facebook/Instagram). */
+export function pacoteCowork(i: ImovelLocacao): string {
+  const L: string[] = [];
+  const p = (s = '') => L.push(s);
+  p('PUBLICAÇÃO DE ANÚNCIO DE LOCAÇÃO — NOX IMÓVEIS');
+  p('='.repeat(48));
+  p();
+  p('O QUE FAZER');
+  p('Publicar o imóvel abaixo nos canais listados, usando as contas da');
+  p('imobiliária abertas no navegador. Preencher a ficha completa, subir as');
+  p('fotos na ordem, conferir o preview e publicar. Devolver os links.');
+  p();
+  p('REGRAS: não inventar dado nenhum; valores EXATOS; sem destaque pago sem perguntar.');
+  p();
+  p('CANAIS');
+  (i.portaisCowork.length ? i.portaisCowork : ['(nenhum marcado — perguntar)']).forEach((x) => p(`- ${x}`));
+  p();
+  p(`IMÓVEL ${i.codigo} — ${i.titulo}`);
+  p(`${i.tipo} · ${[i.rua, i.numero].filter(Boolean).join(', ')}${i.complemento ? ` — ${i.complemento}` : ''}`);
+  p(`${i.bairro} · ${i.cidade} · CEP ${i.cep || '—'}`);
+  p(`Quartos ${i.quartos ?? '—'} (${i.suites ?? 0} suíte) · Banheiros ${i.banheiros ?? '—'} · Vagas ${i.vagas ?? '—'}`);
+  p(`Área ${i.areaPrivativa ? i.areaPrivativa + ' m²' : '—'} · ${i.mobiliado} · Andar ${i.andar || '—'}`);
+  p(`Comodidades: ${i.comodidades.join(', ') || '—'}`);
+  p();
+  p(`Aluguel ${fmtValor(i.aluguel)} · Condomínio ${fmtValor(i.condominio)} · IPTU ${fmtValor(i.iptuMensal)} · Seguro ${fmtValor(i.seguroIncendio)}`);
+  p(`TOTAL MENSAL: ${fmtValor(totalMensal(i))}`);
+  p(`Garantias: ${i.garantiasAceitas.join(', ') || '—'} · Prazo mínimo ${i.prazoMinimoMeses || '—'} meses`);
+  p(`Disponível a partir de: ${i.disponivelAPartir ? fmtData(i.disponivelAPartir) : 'imediato'}`);
+  p();
+  p('DESCRIÇÃO');
+  p(i.descricao || '(escrever a partir das características e me mostrar antes)');
+  p();
+  p('FOTOS (nesta ordem)');
+  i.fotos.forEach((f, n) => p(`${n + 1}. ${f}`));
+  p();
+  p('CONTATO: sempre o telefone e e-mail da imobiliária, nunca o do proprietário.');
+  return L.join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// o portal do cliente — dados compartilhados
+// ---------------------------------------------------------------------------
+
+/**
+ * A forma que as duas telas do portal (dono e inquilino) consomem. O portal
+ * público monta isto do cenário demo; a pré-visualização do admin monta do
+ * contrato real. MESMOS componentes, fontes diferentes — quando o login
+ * chegar, só troca a fonte.
+ */
+export interface DadosPortal {
+  demo: boolean;
+  imovel: { titulo: string; endereco: string; codigo: string };
+  dono: { nome: string };
+  inquilino: { nome: string };
+  contrato: {
+    inicio: string; fim: string; prazoMeses: number | null;
+    indiceReajuste: string; proximoReajuste: string;
+    diaVencimento: number | null; garantia: string;
+  };
+  valores: {
+    aluguel: number; condominio: number; iptuMensal: number; seguroIncendio: number;
+    taxaAdmPct: number; totalInquilino: number; taxaAdm: number; repasseDono: number;
+  };
+  historico: { competencia: string; vencimento: string; pagoEm: string; status: 'pago' | 'pago_atraso' | 'aberta' | 'prevista' }[];
+  proxima: { competencia: string; vencimento: string } | null;
+  avisos: { data: string; texto: string }[];
+}
+
+export function dadosPortalDoContrato(
+  c: ContratoLocacao, imovel: ImovelLocacao | undefined, movimentos: MovimentoLocacao[],
+): DadosPortal {
+  const aluguel = c.valorAluguel || 0;
+  const taxa = Math.round(aluguel * (c.taxaAdmPct || 0)) / 100;
+  const cond = c.valorCondominio || 0;   // informativo — pago direto pelo inquilino
+  const iptu = c.valorIptuMensal || 0;
+  const seg = c.valorSeguroIncendio || 0;
+  const ms = [...movimentos].sort((a, b) => b.competencia.localeCompare(a.competencia));
+  const hoje = hojeYmd();
+  const proxima = [...movimentos]
+    .filter((m) => m.statusCobranca !== 'paga')
+    .sort((a, b) => a.competencia.localeCompare(b.competencia))[0] || null;
+
+  const compLegivel = (comp: string) => {
+    const [ano, mes] = comp.split('-');
+    const nomes = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+    return `${nomes[Number(mes) - 1]}/${ano}`;
+  };
+
+  return {
+    demo: false,
+    imovel: {
+      titulo: imovel?.titulo || 'Imóvel',
+      endereco: imovel ? `${[imovel.rua, imovel.numero].filter(Boolean).join(', ')}${imovel.complemento ? ` — ${imovel.complemento}` : ''}, ${imovel.bairro}, ${imovel.cidade}` : '',
+      codigo: imovel?.codigo || '',
+    },
+    dono: { nome: c.locadorNome },
+    inquilino: { nome: c.locatarioNome },
+    contrato: {
+      inicio: fmtData(c.inicio), fim: fmtData(fimContrato(c)), prazoMeses: c.prazoMeses,
+      indiceReajuste: c.indiceReajuste, proximoReajuste: fmtData(proximoReajuste(c)),
+      diaVencimento: c.diaVencimento, garantia: c.garantiaTipo,
+    },
+    valores: {
+      aluguel, condominio: cond, iptuMensal: iptu, seguroIncendio: seg,
+      taxaAdmPct: c.taxaAdmPct || 0, totalInquilino: aluguel + iptu + seg,
+      taxaAdm: taxa, repasseDono: Math.round((aluguel - taxa + iptu) * 100) / 100,
+    },
+    historico: ms.filter((m) => m.statusCobranca === 'paga' || m.vencimento < hoje).slice(0, 8).map((m) => ({
+      competencia: compLegivel(m.competencia),
+      vencimento: fmtData(m.vencimento),
+      pagoEm: fmtData(m.pagoEm),
+      status: m.statusCobranca === 'paga'
+        ? (m.pagoEm && m.pagoEm > m.vencimento ? 'pago_atraso' : 'pago')
+        : 'aberta',
+    })),
+    proxima: proxima ? { competencia: compLegivel(proxima.competencia), vencimento: fmtData(proxima.vencimento) } : null,
+    avisos: [],
+  };
+}
+
+/** O cenário de demonstração do portal público — coerente dos dois lados. */
+export const DEMO_PORTAL: DadosPortal = {
+  demo: true,
   imovel: {
     titulo: 'Apartamento 2 quartos com sacada — Centro, Penha',
     endereco: 'Rua Nereu Ramos, 245 — apto 302, Centro, Penha/SC',
     codigo: 'LOC-001',
   },
+  dono: { nome: 'Roberto Krüger' },
+  inquilino: { nome: 'Fernanda Lima' },
   contrato: {
-    inicio: '15/03/2026',
-    fim: '15/09/2028',
-    prazoMeses: 30,
-    indiceReajuste: 'IGP-M',
-    proximoReajuste: 'março/2027',
-    diaVencimento: 10,
-    garantia: 'Caução (3 aluguéis)',
+    inicio: '15/03/2026', fim: '15/09/2028', prazoMeses: 30,
+    indiceReajuste: 'IGP-M', proximoReajuste: '15/03/2027',
+    diaVencimento: 5, garantia: 'Seguro-fiança (Loft)',
   },
   valores: {
-    aluguel: 1850,
-    condominio: 380,
-    iptuMensal: 92,
-    seguroIncendio: 28,
-    taxaAdmPct: 10,
+    aluguel: 1850, condominio: 380, iptuMensal: 92, seguroIncendio: 28,
+    taxaAdmPct: 10, totalInquilino: 1970, taxaAdm: 185, repasseDono: 1757,
   },
-  locador: { nome: 'Roberto Krüger' },
-  locatario: { nome: 'Fernanda Lima' },
-  /** meses já passados do contrato — vistos pelos dois lados */
   historico: [
-    { competencia: 'julho/2026', vencimento: '10/07/2026', pagoEm: '08/07/2026', status: 'pago' as const },
-    { competencia: 'junho/2026', vencimento: '10/06/2026', pagoEm: '10/06/2026', status: 'pago' as const },
-    { competencia: 'maio/2026', vencimento: '10/05/2026', pagoEm: '12/05/2026', status: 'pago_atraso' as const },
-    { competencia: 'abril/2026', vencimento: '10/04/2026', pagoEm: '09/04/2026', status: 'pago' as const },
-    { competencia: 'março/2026', vencimento: '15/03/2026', pagoEm: '15/03/2026', status: 'pago' as const },
+    { competencia: 'julho/2026', vencimento: '05/07/2026', pagoEm: '03/07/2026', status: 'pago' },
+    { competencia: 'junho/2026', vencimento: '05/06/2026', pagoEm: '05/06/2026', status: 'pago' },
+    { competencia: 'maio/2026', vencimento: '05/05/2026', pagoEm: '08/05/2026', status: 'pago_atraso' },
+    { competencia: 'abril/2026', vencimento: '05/04/2026', pagoEm: '04/04/2026', status: 'pago' },
   ],
-  proxima: { competencia: 'agosto/2026', vencimento: '10/09/2026', status: 'aberta' as const },
+  proxima: { competencia: 'agosto/2026', vencimento: '05/09/2026' },
   avisos: [
     { data: '20/08/2026', texto: 'A manutenção do portão da garagem está agendada para 28/08, das 8h às 12h.' },
-    { data: '05/08/2026', texto: 'O boleto de agosto já está disponível. Vencimento dia 10.' },
+    { data: '05/08/2026', texto: 'O boleto de agosto já está disponível. Vencimento dia 5.' },
   ],
 };
