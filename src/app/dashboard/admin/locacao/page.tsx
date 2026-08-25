@@ -41,7 +41,8 @@ import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   IMOVEL_VAZIO, CONTRATO_VAZIO, LEAD_VAZIO, CATEGORIAS_DOC_LEAD, AMBIENTES_PADRAO,
   alertasDoContrato, gerarMovimentos, dadosPortalDoContrato,
-  hojeYmd, fmtData, fmtValor, linkWhats,
+  hojeYmd, fmtData, fmtValor, linkWhats, ETAPAS_FUNIL,
+  type EtapaFunil,
   type ImovelLocacao, type ContratoLocacao, type LeadLocacao, type MovimentoLocacao,
   type AmbienteVistoria,
 } from '@/lib/locacao';
@@ -58,6 +59,8 @@ const PARADAS = ['Captado', 'Administração', 'Anunciado', 'Candidato', 'Análi
 
 interface Item {
   chave: string;
+  /** onde este aluguel está no caminho — casa com a barra do topo */
+  etapa: EtapaFunil;
   imovel?: ImovelLocacao;
   lead?: LeadLocacao;
   contrato?: ContratoLocacao;
@@ -91,6 +94,7 @@ export default function LocacaoPage() {
   const [ambientes, setAmbientes] = useState<AmbienteVistoria[]>([]);
   const [fotoDe, setFotoDe] = useState<number | null>(null);
   const [busca, setBusca] = useState('');
+  const [etapaSel, setEtapaSel] = useState<EtapaFunil | null>(null);
   const [soMeus, setSoMeus] = useState(false);
 
   const recarregar = useCallback(async () => {
@@ -132,18 +136,18 @@ export default function LocacaoPage() {
       if (atrasadas) alertas.unshift(`🚨 ${atrasadas} cobrança${atrasadas > 1 ? 's' : ''} atrasada${atrasadas > 1 ? 's' : ''} — acionar a régua e a garantia Loft`);
       if (aRepassar) alertas.unshift(`💸 ${aRepassar} repasse${aRepassar > 1 ? 's' : ''} liberado${aRepassar > 1 ? 's' : ''} pro dono`);
 
-      const mapa: Record<string, { p: number; t: string; peso: number }> = {
-        rascunho: { p: 5, t: 'Fazer a vistoria de entrada (imóvel vazio)', peso: 0 },
-        vistoria_feita: { p: 6, t: 'Enviar contrato + laudo pra assinatura', peso: 0 },
-        assinatura_enviada: { p: 6, t: 'Aguardando dono e inquilino assinarem', peso: 1 },
-        assinado: { p: 7, t: 'Entregar as chaves e começar a cobrar', peso: 0 },
+      const mapa: Record<string, { p: number; t: string; peso: number; e: EtapaFunil }> = {
+        rascunho: { p: 5, t: 'Fazer a vistoria de entrada (imóvel vazio)', peso: 0, e: 'vistoria' },
+        vistoria_feita: { p: 6, t: 'Enviar contrato + laudo pra assinatura', peso: 0, e: 'assinatura' },
+        assinatura_enviada: { p: 6, t: 'Aguardando dono e inquilino assinarem', peso: 1, e: 'assinatura' },
+        assinado: { p: 7, t: 'Entregar as chaves e começar a cobrar', peso: 0, e: 'chaves' },
         // ativo sem pendência sai da fila e vive na carteira (tabela)
-        ativo: { p: 7, t: atrasadas ? 'Cobrança atrasada' : aRepassar ? 'Repasse esperando' : 'Alugado, cobrando todo mês', peso: atrasadas || aRepassar || alertas.length ? 0 : 9 },
-        encerrando: { p: 7, t: 'Saída: vistoria de saída + distrato', peso: 0 },
+        ativo: { p: 7, t: atrasadas ? 'Cobrança atrasada' : aRepassar ? 'Repasse esperando' : 'Alugado, cobrando todo mês', peso: atrasadas || aRepassar || alertas.length ? 0 : 9, e: 'alugado' },
+        encerrando: { p: 7, t: 'Saída: vistoria de saída + distrato', peso: 0, e: 'alugado' },
       };
-      const m = mapa[c.status] || { p: 5, t: c.status, peso: 0 };
+      const m = mapa[c.status] || { p: 5, t: c.status, peso: 0, e: 'vistoria' as EtapaFunil };
       if (m.peso === 9) continue;   // rodando bem: a carteira cuida dele
-      out.push({ chave: `c-${c.id}`, imovel: im, contrato: c, movs, parada: m.p, titulo: m.t, peso: alertas.length ? 0 : m.peso, alertas });
+      out.push({ chave: `c-${c.id}`, etapa: m.e, imovel: im, contrato: c, movs, parada: m.p, titulo: m.t, peso: alertas.length ? 0 : m.peso, alertas });
     }
 
     for (const l of leads) {
@@ -151,26 +155,27 @@ export default function LocacaoPage() {
       // quem ainda está no balcão (veio do portal e ninguém tocou) não polui a fila
       if (l.origem !== 'manual' && l.etapa === 'docs' && !(l.documentos || []).length && !l.corretorNome) continue;
       const im = imoveis.find((i) => i.id === l.imovelId);
-      const mapa: Record<string, { p: number; t: string; peso: number }> = {
-        docs: { p: 3, t: `Juntar documentos de ${l.nome} e mandar pra Loft`, peso: 0 },
-        analise_enviada: { p: 4, t: 'Aguardando a análise da Loft', peso: 1 },
-        analise_aprovada: { p: 4, t: 'Loft aprovou — gerar o contrato', peso: 0 },
+      const mapa: Record<string, { p: number; t: string; peso: number; e: EtapaFunil }> = {
+        docs: { p: 3, t: `Juntar documentos de ${l.nome} e mandar pra Loft`, peso: 0, e: 'documentos' },
+        analise_enviada: { p: 4, t: 'Aguardando a análise da Loft', peso: 1, e: 'loft' },
+        analise_aprovada: { p: 4, t: 'Loft aprovou — está enviando a fiança pro inquilino assinar', peso: 1, e: 'fianca' },
+        garantia_ok: { p: 4, t: 'Fiança assinada na Loft — gerar o nosso contrato', peso: 0, e: 'fianca' },
       };
-      const m = mapa[l.etapa] || { p: 3, t: `Candidato ${l.nome}`, peso: 0 };
-      out.push({ chave: `l-${l.id}`, imovel: im, lead: l, movs: [], parada: m.p, titulo: m.t, peso: m.peso, alertas: [] });
+      const m = mapa[l.etapa] || { p: 3, t: `Candidato ${l.nome}`, peso: 0, e: 'documentos' as EtapaFunil };
+      out.push({ chave: `l-${l.id}`, etapa: m.e, imovel: im, lead: l, movs: [], parada: m.p, titulo: m.t, peso: m.peso, alertas: [] });
     }
 
     for (const im of imoveis) {
       if (im.status === 'alugado' || im.status === 'pausado') continue;
       if (out.some((x) => x.imovel?.id === im.id)) continue;
       if (im.status === 'anunciado') {
-        out.push({ chave: `i-${im.id}`, imovel: im, movs: [], parada: 2, titulo: 'Anunciado — quando alguém fechar, registre o candidato', peso: 2, alertas: [] });
+        out.push({ chave: `i-${im.id}`, etapa: 'divulgado', imovel: im, movs: [], parada: 2, titulo: 'Anunciado — quando alguém fechar, registre o candidato', peso: 2, alertas: [] });
       } else if (im.admStatus === 'pendente') {
-        out.push({ chave: `i-${im.id}`, imovel: im, movs: [], parada: 0, titulo: 'Enviar o contrato de administração pro dono assinar', peso: 0, alertas: [] });
+        out.push({ chave: `i-${im.id}`, etapa: 'captado', imovel: im, movs: [], parada: 0, titulo: 'Enviar o contrato de administração pro dono assinar', peso: 0, alertas: [] });
       } else if (im.admStatus === 'enviada') {
-        out.push({ chave: `i-${im.id}`, imovel: im, movs: [], parada: 1, titulo: 'Aguardando o dono assinar a administração', peso: 1, alertas: [] });
+        out.push({ chave: `i-${im.id}`, etapa: 'administracao', imovel: im, movs: [], parada: 1, titulo: 'Aguardando o dono assinar a administração', peso: 1, alertas: [] });
       } else {
-        out.push({ chave: `i-${im.id}`, imovel: im, movs: [], parada: 2, titulo: 'Completar a ficha e colocar no ar', peso: 0, alertas: [] });
+        out.push({ chave: `i-${im.id}`, etapa: 'captado', imovel: im, movs: [], parada: 2, titulo: 'Completar a ficha e colocar no ar', peso: 0, alertas: [] });
       }
     }
 
@@ -181,9 +186,19 @@ export default function LocacaoPage() {
    * A fila filtrada. Com trinta contratos rodando, achar "o do João" sem
    * busca é rolar a tela procurando — e ninguém opera assim.
    */
+  /** quantos em cada etapa — inclui os alugados, que vivem na carteira */
+  const porEtapa = useMemo(() => {
+    const c: Record<string, number> = {};
+    for (const it of fila) c[it.etapa] = (c[it.etapa] || 0) + 1;
+    c.alugado = (c.alugado || 0) + contratos.filter((x) => x.status === 'ativo').length
+      - fila.filter((f) => f.etapa === 'alugado').length;
+    return c;
+  }, [fila, contratos]);
+
   const filaVisivel = useMemo(() => {
     const b = busca.trim().toLowerCase();
     return fila.filter((it) => {
+      if (etapaSel && it.etapa !== etapaSel) return false;
       if (soMeus && it.peso !== 0) return false;
       if (!b) return true;
       const campos = [
@@ -192,7 +207,7 @@ export default function LocacaoPage() {
       ].filter(Boolean).join(' ').toLowerCase();
       return campos.includes(b);
     });
-  }, [fila, busca, soMeus]);
+  }, [fila, busca, soMeus, etapaSel]);
 
   const grupoAgir = useMemo(() => filaVisivel.filter((f) => f.peso === 0), [filaVisivel]);
   const grupoEsperando = useMemo(() => filaVisivel.filter((f) => f.peso === 1), [filaVisivel]);
@@ -537,7 +552,12 @@ export default function LocacaoPage() {
           </span>
         );
       }
-      if (l.etapa === 'analise_aprovada') return <button onClick={() => gerarContrato(l, im)} className={btnOuro}>📄 Gerar contrato</button>;
+      if (l.etapa === 'analise_aprovada') {
+        // a Loft manda o contrato de fiança DELA pro inquilino assinar — é
+        // um documento separado do nosso, e sem ele não há garantia válida
+        return <button onClick={() => upLead(l.id, { etapa: 'garantia_ok' })} className={btnSimula}>⚡ Inquilino assinou a fiança</button>;
+      }
+      if (l.etapa === 'garantia_ok') return <button onClick={() => gerarContrato(l, im)} className={btnOuro}>📄 Gerar o nosso contrato</button>;
       return (
         <span className="flex flex-wrap items-center gap-1.5">
           <span className="inline-flex items-center">
@@ -633,6 +653,42 @@ export default function LocacaoPage() {
               onFechar={() => setNovoImovel(false)} />
           </div>
         )}
+
+        {/* ——— A BARRA DAS ETAPAS: onde cada um está, num clique ——— */}
+        <div className="al-card p-3">
+          <div className="flex items-center gap-1 overflow-x-auto pb-1">
+            {ETAPAS_FUNIL.map((e, i) => {
+              const q = porEtapa[e.chave] || 0;
+              const sel = etapaSel === e.chave;
+              return (
+                <React.Fragment key={e.chave}>
+                  {i > 0 && <span className="text-white/15 text-[11px] shrink-0">›</span>}
+                  <button
+                    onClick={() => setEtapaSel(sel ? null : e.chave)}
+                    title={e.ajuda}
+                    className={`shrink-0 px-2.5 py-1.5 rounded-xl transition-colors text-center min-w-[74px] ${
+                      sel ? 'bg-[#E8C547]/15 border border-[#E8C547]/50'
+                        : q > 0 ? 'bg-white/[0.05] border border-white/10 hover:bg-white/[0.09]'
+                          : 'border border-transparent opacity-40'
+                    }`}>
+                    <span className={`block text-[17px] font-extrabold tabular-nums leading-none ${
+                      sel ? 'text-[#FFE9A6]' : q > 0 ? 'text-white' : 'text-text-secondary'}`}>{q}</span>
+                    <span className="block text-[9.5px] font-bold text-text-secondary leading-tight mt-0.5 whitespace-nowrap">
+                      {e.icone} {e.rot}
+                    </span>
+                  </button>
+                </React.Fragment>
+              );
+            })}
+          </div>
+          {etapaSel && (
+            <p className="text-[11px] text-text-secondary mt-1.5 pt-1.5 border-t border-white/[0.06]">
+              <b className="text-[#FFE9A6]">{ETAPAS_FUNIL.find((e) => e.chave === etapaSel)?.rot}:</b>{' '}
+              {ETAPAS_FUNIL.find((e) => e.chave === etapaSel)?.ajuda}
+              <button onClick={() => setEtapaSel(null)} className="ml-2 text-[#E8C547] font-bold">ver tudo</button>
+            </p>
+          )}
+        </div>
 
         {/* achar rápido — com carteira grande, é isto que salva o dia */}
         {fila.length > 3 && (
@@ -863,7 +919,7 @@ export default function LocacaoPage() {
         )}
 
         {/* ——— A CARTEIRA: os alugados, em tabela ——— */}
-        <Carteira isEspelhoDemo={isEspelhoDemo} contratos={contratos} imoveis={imoveis}
+        {(!etapaSel || etapaSel === 'alugado') && <Carteira isEspelhoDemo={isEspelhoDemo} contratos={contratos} imoveis={imoveis}
           movimentos={movimentos} recarregar={recarregar}
           abertoEm={aberto && aberto.chave.startsWith('c-') ? { id: aberto.chave.slice(2), painel: aberto.painel as PainelCarteira } : null}
           onAbrir={(id, painel) => abrir(`c-${id}`, painel === 'portalDono' ? 'portal' : painel === 'portalInquilino' ? 'portal' : painel,
@@ -871,14 +927,14 @@ export default function LocacaoPage() {
           renderPainel={(id) => {
             const c = contratos.find((x) => x.id === id);
             if (!c) return null;
-            const it: Item = { chave: `c-${id}`, imovel: imoveis.find((i) => i.id === c.imovelId), contrato: c,
+            const it: Item = { chave: `c-${id}`, etapa: 'alugado', imovel: imoveis.find((i) => i.id === c.imovelId), contrato: c,
               movs: movimentos.filter((m) => m.contratoId === id), parada: 7, titulo: '', peso: 2, alertas: [] };
             return painelAberto(it);
-          }} />
+          }} />}
 
         {fila.length > 0 && filaVisivel.length === 0 && (
           <div className="al-card p-6 text-center text-[13px] text-text-secondary">
-            Nada com esse filtro. <button onClick={() => { setBusca(''); setSoMeus(false); }} className="text-[#E8C547] font-bold">limpar</button>
+            Nada com esse filtro. <button onClick={() => { setBusca(''); setSoMeus(false); setEtapaSel(null); }} className="text-[#E8C547] font-bold">limpar</button>
           </div>
         )}
 

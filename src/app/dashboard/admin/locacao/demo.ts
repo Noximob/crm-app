@@ -78,6 +78,9 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     { nome: 'Eduardo Ramos', telefone: '(47) 97733-6677', email: 'edu@example.com', origem: 'manual', etapa: 'analise_enviada', corretorNome: 'Breno', mensagem: 'Documentos completos, ficha na Loft.' },
     { nome: 'Patrícia Nunes', telefone: '(47) 96644-8899', email: 'pati@example.com', origem: 'manual', etapa: 'analise_aprovada', corretorNome: 'Murilo',
       garantia: { numero: 'LOFT-73421', taxaMensalPct: 9.5, vigenciaFim: desloca(12), simulada: true } },
+    { nome: 'Sandra Correia', telefone: '(47) 95522-7788', email: 'sandra@example.com', origem: 'manual', etapa: 'garantia_ok', corretorNome: 'Murilo',
+      mensagem: 'Fiança assinada com a Loft — só falta o nosso contrato.',
+      garantia: { numero: 'LOFT-80915', taxaMensalPct: 11, vigenciaFim: desloca(12), simulada: true } },
   ];
   for (const l of leads) {
     batch.set(doc(collection(db, 'locacaoLeads')), { ...LEAD_VAZIO, ...marca, imovelId: imAnunciado.id, ...l });

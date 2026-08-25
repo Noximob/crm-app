@@ -208,7 +208,10 @@ export function pendenciasParaAnunciar(i: Omit<ImovelLocacao, 'id' | 'imobiliari
 export const ETAPAS_LEAD = {
   docs: { rotulo: 'Juntando documentos' },
   analise_enviada: { rotulo: 'Em análise na Loft' },
-  analise_aprovada: { rotulo: 'Garantia aprovada' },
+  /** a Loft disse "dá pra fazer" e está mandando o contrato de fiança DELA */
+  analise_aprovada: { rotulo: 'Aprovado · Loft enviando a fiança' },
+  /** o inquilino assinou a fiança com a Loft — agora vem o NOSSO contrato */
+  garantia_ok: { rotulo: 'Fiança assinada · pronto pro nosso contrato' },
   analise_recusada: { rotulo: 'Análise recusada' },
   convertido: { rotulo: 'Virou contrato' },
   perdido: { rotulo: 'Desistiu' },
@@ -309,6 +312,28 @@ export interface Vistoria {
 }
 
 export const AMBIENTES_PADRAO = ['Sala', 'Cozinha', 'Quarto 1', 'Banheiro', 'Área de serviço', 'Sacada'] as const;
+
+/**
+ * AS ETAPAS DO SETOR — a barra de atalhos do topo da tela.
+ *
+ * É o caminho inteiro numa linha: quantos estão em cada ponto e um clique
+ * pra ver quem são. A ordem é a da vida real, com os dois contratos
+ * distintos que a operação tem: a FIANÇA (o inquilino assina com a Loft) e
+ * o de LOCAÇÃO (assina conosco, junto do laudo de vistoria).
+ */
+export const ETAPAS_FUNIL = [
+  { chave: 'captado', rot: 'Captados', icone: '🏠', ajuda: 'imóvel registrado, falta a administração do dono' },
+  { chave: 'administracao', rot: 'Administração', icone: '✍', ajuda: 'contrato de administração no WhatsApp do dono' },
+  { chave: 'divulgado', rot: 'Divulgados', icone: '📣', ajuda: 'no ar nos portais, esperando quem feche' },
+  { chave: 'documentos', rot: 'Documentos', icone: '📎', ajuda: 'candidato juntando CNH, CPF e renda' },
+  { chave: 'loft', rot: 'Na Loft', icone: '🛡', ajuda: 'ficha em análise (resposta em menos de 1 min)' },
+  { chave: 'fianca', rot: 'Fiança Loft', icone: '📜', ajuda: 'aprovado — a Loft manda o contrato de fiança pro inquilino assinar' },
+  { chave: 'vistoria', rot: 'Vistoria', icone: '📋', ajuda: 'laudo do imóvel vazio, com fotos' },
+  { chave: 'assinatura', rot: 'Nosso contrato', icone: '🖊', ajuda: 'contrato + laudo num envelope só' },
+  { chave: 'chaves', rot: 'Chaves', icone: '🔑', ajuda: 'tudo assinado, pode entregar' },
+  { chave: 'alugado', rot: 'Alugados', icone: '💰', ajuda: 'rodando: cobrança e repasse' },
+] as const;
+export type EtapaFunil = typeof ETAPAS_FUNIL[number]['chave'];
 
 export interface ContratoLocacao {
   id: string;
