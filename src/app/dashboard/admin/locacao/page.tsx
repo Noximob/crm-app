@@ -29,19 +29,20 @@ import { pillCls, btnGhost } from './ui';
 import { showToast } from '@/components/ui/toast';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import { criarDadosExemplo, apagarDadosExemplo } from './demo';
+import AbaFluxo from './fluxo';
 import AbaImoveis from './imoveis';
 import AbaEsteira from './esteira';
 import AbaContratos from './contratos';
 import AbaFinanceiro from './financeiro';
 import AbaIntegracoes from './integracoes';
 
-type Aba = 'imoveis' | 'esteira' | 'contratos' | 'financeiro' | 'integracoes';
+type Aba = 'fluxo' | 'imoveis' | 'esteira' | 'contratos' | 'financeiro' | 'integracoes';
 
 export default function LocacaoPage() {
   const { userData, isEspelhoDemo } = useAuth();
   const imobiliariaId = userData?.imobiliariaId;
 
-  const [aba, setAba] = useState<Aba>('imoveis');
+  const [aba, setAba] = useState<Aba>('fluxo');
   const [imoveis, setImoveis] = useState<ImovelLocacao[]>([]);
   const [leads, setLeads] = useState<LeadLocacao[]>([]);
   const [contratos, setContratos] = useState<ContratoLocacao[]>([]);
@@ -125,15 +126,17 @@ export default function LocacaoPage() {
         <span className="gx-tag mb-2 inline-flex"><span>Setor de Locação</span></span>
         <h1 className="al-display text-[22px] font-bold text-white uppercase tracking-[0.1em]">Locação</h1>
         <p className="text-text-secondary text-sm mt-1 mb-3 max-w-[70ch]">
-          A esteira completa: capta → anuncia → interessado → garantia → contrato → vistoria → chave →
-          cobrança → repasse. O que depende de conta externa roda em <b className="text-amber-300">simulação (⚡)</b> até
-          as integrações ligarem.
+          O <b className="text-white/85">Fluxo</b> mostra cada aluguel andando e o próximo passo num botão.
+          Onde a vida real dependeria de alguém de fora (Loft, ClickSign, Asaas), tem um botão
+          <b className="text-amber-300"> ⚡ âmbar</b> que faz o papel dele — quando a integração ligar, esse
+          clique some.
         </p>
         <div className="flex flex-wrap gap-1.5">
+          <button type="button" onClick={() => setAba('fluxo')} className={pillCls(aba === 'fluxo')}>🧭 Fluxo</button>
           <button type="button" onClick={() => setAba('imoveis')} className={pillCls(aba === 'imoveis')}>🏠 Imóveis</button>
-          <button type="button" onClick={() => setAba('esteira')} className={pillCls(aba === 'esteira')}>📥 Esteira<Badge n={badges.esteira} /></button>
+          <button type="button" onClick={() => setAba('esteira')} className={pillCls(aba === 'esteira')}>👥 Interessados<Badge n={badges.esteira} /></button>
           <button type="button" onClick={() => setAba('contratos')} className={pillCls(aba === 'contratos')}>📄 Contratos<Badge n={badges.contratos} /></button>
-          <button type="button" onClick={() => setAba('financeiro')} className={pillCls(aba === 'financeiro')}>💰 Financeiro<Badge n={badges.financeiro} /></button>
+          <button type="button" onClick={() => setAba('financeiro')} className={pillCls(aba === 'financeiro')}>💰 Dinheiro<Badge n={badges.financeiro} /></button>
           <button type="button" onClick={() => setAba('integracoes')} className={pillCls(aba === 'integracoes')}>🔌 Integrações</button>
           <span className="flex-1" />
           {temDemo
@@ -143,6 +146,11 @@ export default function LocacaoPage() {
       </div>
 
       <div className="max-w-4xl mx-auto">
+        {aba === 'fluxo' && (
+          <AbaFluxo imobiliariaId={imobiliariaId} isEspelhoDemo={isEspelhoDemo}
+            imoveis={imoveis} leads={leads} contratos={contratos} movimentos={movimentos}
+            recarregar={recarregar} irPara={(a) => setAba(a)} />
+        )}
         {aba === 'imoveis' && (
           <AbaImoveis imobiliariaId={imobiliariaId} isEspelhoDemo={isEspelhoDemo}
             imoveis={imoveis} contatoFeed={contatoFeed} recarregar={recarregar} />

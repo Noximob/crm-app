@@ -31,6 +31,7 @@ import {
 } from '@/lib/locacao';
 import { VisaoDono, VisaoInquilino } from '@/lib/locacaoPortalView';
 import { inputCls, btnOuro, btnGhost, btnSimula, rotCls, Campo, num, SeloSimulacao } from './ui';
+import MinutaContrato from './minuta';
 
 export default function AbaContratos({ imobiliariaId, isEspelhoDemo, contratos, imoveis, movimentos, recarregar }: {
   imobiliariaId?: string;
@@ -49,6 +50,7 @@ export default function AbaContratos({ imobiliariaId, isEspelhoDemo, contratos, 
   const [portalDe, setPortalDe] = useState<{ id: string; visao: 'dono' | 'inquilino' } | null>(null);
   const [subindoDoc, setSubindoDoc] = useState(false);
   const [categoriaDoc, setCategoriaDoc] = useState<string>('Contrato assinado');
+  const [minutaDe, setMinutaDe] = useState<string | null>(null);
 
   const imovelDe = (id: string) => imoveis.find((x) => x.id === id);
   const guarda = () => { if (isEspelhoDemo) { showToast('Modo demonstração.', 'info'); return true; } return false; };
@@ -404,6 +406,9 @@ export default function AbaContratos({ imobiliariaId, isEspelhoDemo, contratos, 
                 </>
               )}
 
+              <button onClick={() => setMinutaDe(minutaDe === c.id ? null : c.id)} className={btnGhost}>
+                📄 {minutaDe === c.id ? 'fechar minuta' : 'ver minuta'}
+              </button>
               <span className="inline-flex items-center">
                 <select value={categoriaDoc} onChange={(e) => setCategoriaDoc(e.target.value)}
                   className="px-2 py-2 rounded-l-xl border border-white/10 bg-white/[0.04] text-[11px] text-text-secondary focus:outline-none">
@@ -423,6 +428,8 @@ export default function AbaContratos({ imobiliariaId, isEspelhoDemo, contratos, 
               ))}
               {c.status === 'rascunho' && <button onClick={() => excluir(c)} className={btnGhost + ' !text-rose-300 ml-auto'}>excluir</button>}
             </div>
+
+            {minutaDe === c.id && <MinutaContrato c={c} imovel={im} onFechar={() => setMinutaDe(null)} />}
 
             {/* comparação entrada × saída quando as duas existem */}
             {c.vistoriaEntrada && c.vistoriaSaida && (
