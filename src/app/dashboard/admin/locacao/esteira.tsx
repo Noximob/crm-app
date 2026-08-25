@@ -73,7 +73,7 @@ export default function AbaEsteira({ imobiliariaId, isEspelhoDemo, leads, imovei
 
   const agendarVisita = async (l: LeadLocacao) => {
     if (!vData) { showToast('Escolhe a data da visita.', 'error'); return; }
-    await mudar(l, { etapa: 'visita_agendada', visitaEm: vData, corretorNome: vCorretor.trim() });
+    await mudar(l, { etapa: 'visita_agendada', visitaEm: vData, corretorNome: vCorretor.trim() || l.corretorNome });
     setVisitaDe(null); setVData(''); setVCorretor('');
     showToast('Visita agendada.', 'success');
   };

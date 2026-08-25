@@ -498,14 +498,14 @@ export const INTEGRACOES: DefIntegracao[] = [
   {
     chave: 'feed_olx', nome: 'Grupo OLX (feed VRSync)', papel: 'Publica em OLX + ZAP + VivaReal — eles leem nosso arquivo 2×/dia',
     etapas: '2',
-    prontoDoNossoLado: ['Gerador do XML VRSync (baixe o arquivo de teste na aba Imóveis)', 'Regras do anúncio no cadastro (5 fotos, descrição 50+)'],
-    faltaParaLigar: ['Assinar o Canal Pro', 'Publicar a URL do feed (função de servidor)', 'Homologação: validador oficial + formulário deles'],
+    prontoDoNossoLado: ['Gerador do XML VRSync (baixe o teste na aba Imóveis)', 'URL viva JÁ NO AR: /api/locacao/feed — é ela que se informa na homologação', 'Regras do anúncio no cadastro (5 fotos, descrição 50+)'],
+    faltaParaLigar: ['Assinar o Canal Pro', 'Chave de serviço do Firebase no Netlify (passo a passo comigo — 10 min)', 'Homologação: validador oficial + formulário deles'],
   },
   {
     chave: 'leads_olx', nome: 'Grupo OLX (leads)', papel: 'Cada interessado vira um aviso automático que cai na esteira, já com a temperatura avaliada',
     etapas: '3',
-    prontoDoNossoLado: ['Esteira recebe lead com origem, temperatura e imóvel', 'Cadastro manual funciona hoje (mesma fila)'],
-    faltaParaLigar: ['Função de servidor pro endpoint', 'Formulário de homologação do Grupo OLX'],
+    prontoDoNossoLado: ['Endpoint JÁ NO AR: /api/locacao/leads-olx — deduplica, casa o lead com o anúncio e joga na esteira com a temperatura', 'Cadastro manual funciona hoje (mesma fila)'],
+    faltaParaLigar: ['Chave de serviço do Firebase no Netlify (a mesma do feed)', 'Formulário de homologação do Grupo OLX com a URL + token'],
   },
   {
     chave: 'imovelweb', nome: 'ImovelWeb (Open)', papel: 'Publica anúncios e devolve leads por callback',

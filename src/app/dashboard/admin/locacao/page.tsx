@@ -25,7 +25,10 @@ import {
   IMOVEL_VAZIO, CONTRATO_VAZIO, LEAD_VAZIO, alertasDoContrato,
   type ImovelLocacao, type ContratoLocacao, type LeadLocacao, type MovimentoLocacao,
 } from '@/lib/locacao';
-import { pillCls } from './ui';
+import { pillCls, btnGhost } from './ui';
+import { showToast } from '@/components/ui/toast';
+import { confirmDialog } from '@/components/ui/ConfirmDialog';
+import { criarDadosExemplo, apagarDadosExemplo } from './demo';
 import AbaImoveis from './imoveis';
 import AbaEsteira from './esteira';
 import AbaContratos from './contratos';
@@ -80,6 +83,34 @@ export default function LocacaoPage() {
     return { esteira: leadsAtivos, contratos: contratosComAcao, financeiro: financeiroPendente };
   }, [leads, contratos, movimentos]);
 
+  const temDemo = useMemo(
+    () => [imoveis, leads, contratos].some((xs) => xs.some((x) => (x as { demo?: boolean }).demo)),
+    [imoveis, leads, contratos]);
+
+  /**
+   * O playground: povoa a esteira inteira com um cenário fictício coerente
+   * (marcado demo: true) pra sentir o sistema antes do primeiro imóvel real
+   * — e o botão irmão apaga só o que tem a marca.
+   */
+  const seed = async () => {
+    if (!imobiliariaId || isEspelhoDemo) { showToast('Indisponível no modo espelho.', 'info'); return; }
+    const msg = await criarDadosExemplo(imobiliariaId);
+    showToast(msg, 'success');
+    recarregar();
+  };
+  const limparSeed = async () => {
+    if (!imobiliariaId) return;
+    const ok = await confirmDialog({
+      title: 'Apagar os dados de exemplo?',
+      message: 'Remove SÓ o que foi criado pelo botão de exemplo (marca demo) — imóveis, interessados, contratos e financeiro reais ficam intocados.',
+      confirmLabel: 'Apagar exemplos', danger: true,
+    });
+    if (!ok) return;
+    const q = await apagarDadosExemplo(imobiliariaId);
+    showToast(`${q} registros de exemplo apagados.`, 'info');
+    recarregar();
+  };
+
   const Badge = ({ n }: { n: number }) => n > 0
     ? <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-extrabold bg-[#FF1E56] text-white">{n}</span>
     : null;
@@ -104,6 +135,10 @@ export default function LocacaoPage() {
           <button type="button" onClick={() => setAba('contratos')} className={pillCls(aba === 'contratos')}>📄 Contratos<Badge n={badges.contratos} /></button>
           <button type="button" onClick={() => setAba('financeiro')} className={pillCls(aba === 'financeiro')}>💰 Financeiro<Badge n={badges.financeiro} /></button>
           <button type="button" onClick={() => setAba('integracoes')} className={pillCls(aba === 'integracoes')}>🔌 Integrações</button>
+          <span className="flex-1" />
+          {temDemo
+            ? <button type="button" onClick={limparSeed} className={btnGhost + ' !text-rose-300'}>🧪 apagar exemplos</button>
+            : <button type="button" onClick={seed} className={btnGhost}>🧪 criar dados de exemplo</button>}
         </div>
       </div>
 
