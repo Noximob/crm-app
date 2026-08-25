@@ -134,7 +134,7 @@ export default function LocacaoPage() {
         <div className="flex flex-wrap gap-1.5">
           <button type="button" onClick={() => setAba('fluxo')} className={pillCls(aba === 'fluxo')}>🧭 Fluxo</button>
           <button type="button" onClick={() => setAba('imoveis')} className={pillCls(aba === 'imoveis')}>🏠 Imóveis</button>
-          <button type="button" onClick={() => setAba('esteira')} className={pillCls(aba === 'esteira')}>👥 Interessados<Badge n={badges.esteira} /></button>
+          <button type="button" onClick={() => setAba('esteira')} className={pillCls(aba === 'esteira')}>👥 Candidatos<Badge n={badges.esteira} /></button>
           <button type="button" onClick={() => setAba('contratos')} className={pillCls(aba === 'contratos')}>📄 Contratos<Badge n={badges.contratos} /></button>
           <button type="button" onClick={() => setAba('financeiro')} className={pillCls(aba === 'financeiro')}>💰 Dinheiro<Badge n={badges.financeiro} /></button>
           <button type="button" onClick={() => setAba('integracoes')} className={pillCls(aba === 'integracoes')}>🔌 Integrações</button>

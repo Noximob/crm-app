@@ -72,12 +72,11 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     descricao: 'Kitnet mobiliada.', fotos: [FOTO, FOTO],
   });
 
-  // ——— interessados: um em cada etapa da esteira ———
+  // ——— candidatos: um em cada estado da burocracia ———
   const leads = [
-    { nome: 'Carlos Mendes', telefone: '(47) 99911-2233', email: 'carlos@example.com', origem: 'grupo_olx', temperatura: 'alta', etapa: 'novo', mensagem: 'Vi no ZAP Imóveis. Ainda está disponível? Tenho interesse em visitar essa semana.' },
-    { nome: 'Juliana Freitas', telefone: '(47) 98822-4455', email: 'ju@example.com', origem: 'manual', temperatura: 'media', etapa: 'visita_agendada', visitaEm: desloca(0, 2), corretorNome: 'Breno', mensagem: 'Indicação da Marlene.' },
-    { nome: 'Eduardo Ramos', telefone: '(47) 97733-6677', email: 'edu@example.com', origem: 'grupo_olx', temperatura: 'alta', etapa: 'analise_enviada', visitaEm: desloca(0, -3), corretorNome: 'Breno', mensagem: 'Gostou da sacada, quer fechar rápido.' },
-    { nome: 'Patrícia Nunes', telefone: '(47) 96644-8899', email: 'pati@example.com', origem: 'manual', temperatura: '', etapa: 'analise_aprovada', visitaEm: desloca(0, -6), corretorNome: 'Murilo',
+    { nome: 'Carlos Mendes', telefone: '(47) 99911-2233', email: 'carlos@example.com', origem: 'manual', etapa: 'docs', corretorNome: 'Breno', mensagem: 'Fechou a kitnet, juntando CNH e comprovante de renda.' },
+    { nome: 'Eduardo Ramos', telefone: '(47) 97733-6677', email: 'edu@example.com', origem: 'manual', etapa: 'analise_enviada', corretorNome: 'Breno', mensagem: 'Documentos completos, ficha na Loft.' },
+    { nome: 'Patrícia Nunes', telefone: '(47) 96644-8899', email: 'pati@example.com', origem: 'manual', etapa: 'analise_aprovada', corretorNome: 'Murilo',
       garantia: { numero: 'LOFT-73421', taxaMensalPct: 9.5, vigenciaFim: desloca(12), simulada: true } },
   ];
   for (const l of leads) {

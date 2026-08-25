@@ -169,19 +169,18 @@ export function pendenciasParaAnunciar(i: Omit<ImovelLocacao, 'id' | 'imobiliari
 // ---------------------------------------------------------------------------
 
 /**
- * A máquina de estados do interessado. As chaves são a ordem da esteira; um
- * interessado só anda pra frente (ou pra "perdido"). Quando a análise é
- * aprovada, ele vira contrato e sai desta fila.
+ * O CANDIDATO é burocracia, não funil: quem chega aqui já escolheu o imóvel
+ * (visitas e atendimento são dos corretores, numa fase própria). A vida
+ * dele é curta e reta: junta documentos → análise da Loft → aprovado vira
+ * contrato (ou recusado/desistiu, e sai da fila).
  */
 export const ETAPAS_LEAD = {
-  novo: { rotulo: 'Novo', proxima: 'visita_agendada', acao: 'Agendar visita' },
-  visita_agendada: { rotulo: 'Visita agendada', proxima: 'visita_feita', acao: 'Visita aconteceu' },
-  visita_feita: { rotulo: 'Visita feita', proxima: 'analise_enviada', acao: 'Enviar pra análise (Loft)' },
-  analise_enviada: { rotulo: 'Em análise na Loft', proxima: null, acao: null },
-  analise_aprovada: { rotulo: 'Garantia aprovada', proxima: null, acao: null },
-  analise_recusada: { rotulo: 'Análise recusada', proxima: null, acao: null },
-  convertido: { rotulo: 'Virou contrato', proxima: null, acao: null },
-  perdido: { rotulo: 'Perdido', proxima: null, acao: null },
+  docs: { rotulo: 'Juntando documentos' },
+  analise_enviada: { rotulo: 'Em análise na Loft' },
+  analise_aprovada: { rotulo: 'Garantia aprovada' },
+  analise_recusada: { rotulo: 'Análise recusada' },
+  convertido: { rotulo: 'Virou contrato' },
+  perdido: { rotulo: 'Desistiu' },
 } as const;
 export type EtapaLead = keyof typeof ETAPAS_LEAD;
 
@@ -197,12 +196,12 @@ export interface LeadLocacao {
   email: string;
   /** de onde veio: manual | grupo_olx | imovelweb — os portais preenchem via webhook */
   origem: string;
-  /** o Grupo OLX manda a temperatura avaliada por eles */
+  /** o Grupo OLX manda a temperatura avaliada por eles (chegará via funil) */
   temperatura: '' | 'baixa' | 'media' | 'alta';
   mensagem: string;
   etapa: EtapaLead;
-  visitaEm: string;           // yyyy-mm-dd da visita agendada
-  corretorNome: string;       // quem atende (os 40% do 1º aluguel)
+  /** quem fechou a locação (os 40% do 1º aluguel) */
+  corretorNome: string;
   garantia: {
     numero: string;
     taxaMensalPct: number | null;   // ~8 a 12,5% — vem da análise
@@ -219,7 +218,7 @@ export interface LeadLocacao {
 
 export const LEAD_VAZIO: Omit<LeadLocacao, 'id' | 'imobiliariaId'> = {
   imovelId: '', nome: '', telefone: '', email: '', origem: 'manual',
-  temperatura: '', mensagem: '', etapa: 'novo', visitaEm: '', corretorNome: '',
+  temperatura: '', mensagem: '', etapa: 'docs', corretorNome: '',
   garantia: null, contratoId: '', perdidoMotivo: '', documentos: [],
 };
 

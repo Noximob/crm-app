@@ -1,17 +1,17 @@
 'use client';
 
 /**
- * LOCAÇÃO · ABA FLUXO — a tela que responde "o que eu faço agora?".
+ * LOCAÇÃO · ABA FLUXO — a burocracia do aluguel, cartão por cartão.
  *
- * A primeira versão espalhava a esteira em abas e obrigava o gestor a
- * adivinhar onde morava o próximo passo. Esta aba conserta isso: cada
- * aluguel em andamento vira UM cartão com a régua das etapas (feito ✓,
- * atual ●, futuro ○) e UM botão dourado com o próximo passo — clicou,
- * andou. As outras abas viram detalhe, não caminho.
+ * Corte de escopo definido pelo gestor: interessados, visitas e funil são
+ * ATENDIMENTO — isso é dos corretores e vem numa fase própria, depois. Aqui
+ * entra o CANDIDATO que já escolheu o imóvel: junta documentos → análise da
+ * Loft → contrato → vistoria → chaves → dinheiro. Papel, não conversa.
  *
- * As ações daqui repetem de propósito as das abas (mesmos campos, mesmos
- * estados): quando as integrações reais entrarem, os avanços ⚡ somem dos
- * dois lugares de uma vez, porque o estado passa a vir dos webhooks.
+ * Cada cartão é um aluguel andando: a régua mostra onde está, o "Agora:"
+ * diz em uma frase, e o botão dourado é o próximo passo — executado ali.
+ * Cada ⚡ âmbar é uma automação futura fazendo papel de gente (ClickSign,
+ * Loft, Asaas): quando a integração ligar, aquele clique some.
  */
 import React, { useMemo, useState } from 'react';
 import { db, storage } from '@/lib/firebase';
@@ -19,14 +19,15 @@ import { collection, doc, addDoc, updateDoc, writeBatch, serverTimestamp } from 
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { showToast } from '@/components/ui/toast';
 import {
-  LEAD_VAZIO, CONTRATO_VAZIO, AMBIENTES_PADRAO, CATEGORIAS_DOC_LEAD, gerarMovimentos, hojeYmd, fmtData, fmtValor, pendenciasParaAnunciar,
+  LEAD_VAZIO, CONTRATO_VAZIO, AMBIENTES_PADRAO, CATEGORIAS_DOC_LEAD,
+  gerarMovimentos, hojeYmd, fmtValor, pendenciasParaAnunciar,
   type ImovelLocacao, type LeadLocacao, type ContratoLocacao, type MovimentoLocacao,
 } from '@/lib/locacao';
 import { inputCls, btnOuro, btnGhost, btnSimula, SeloSimulacao } from './ui';
 import MinutaContrato from './minuta';
 
-/** As 9 estações da jornada de UM aluguel, na ordem em que acontecem. */
-const ESTACOES = ['Imóvel', 'Administração', 'Anúncio', 'Interessado', 'Visita', 'Garantia', 'Contrato', 'Vistoria', 'Chaves', 'Cobrando'] as const;
+/** As 9 estações da burocracia, na ordem do documento da esteira. */
+const ESTACOES = ['Imóvel', 'Administração', 'Anúncio', 'Candidato', 'Análise', 'Contrato', 'Vistoria', 'Chaves', 'Cobrando'] as const;
 
 interface Negocio {
   chave: string;
@@ -34,7 +35,6 @@ interface Negocio {
   lead?: LeadLocacao;
   contrato?: ContratoLocacao;
   movs: MovimentoLocacao[];
-  /** índice da primeira estação NÃO concluída (= onde o negócio está) */
   atual: number;
   feitas: boolean[];
 }
@@ -47,24 +47,18 @@ export default function AbaFluxo({ imobiliariaId, isEspelhoDemo, imoveis, leads,
   contratos: ContratoLocacao[];
   movimentos: MovimentoLocacao[];
   recarregar: () => Promise<void>;
-  /** navega pra outra aba quando o passo precisa da tela cheia */
   irPara: (aba: 'imoveis' | 'esteira' | 'contratos' | 'financeiro') => void;
 }) {
-  const [novoDe, setNovoDe] = useState<string | null>(null);   // imóvel com o mini-form de interessado aberto
+  const [novoDe, setNovoDe] = useState<string | null>(null);
   const [nNome, setNNome] = useState(''); const [nTel, setNTel] = useState('');
-  const [visitaDe, setVisitaDe] = useState<string | null>(null);
-  const [vData, setVData] = useState('');
   const [minutaDe, setMinutaDe] = useState<string | null>(null);
   const [catDocLead, setCatDocLead] = useState<string>('CNH/RG');
   const [subindoDocDe, setSubindoDocDe] = useState<string | null>(null);
 
   const guarda = () => { if (isEspelhoDemo) { showToast('Modo demonstração.', 'info'); return true; } return false; };
 
-  /**
-   * Monta os negócios: um cartão por aluguel acontecendo. Contrato manda
-   * (ele já uniu imóvel + inquilino); lead ativo sem contrato vem depois;
-   * imóvel anunciado sem ninguém interessado fecha a lista.
-   */
+  /** Um cartão por aluguel: contrato manda; candidato sem contrato depois;
+   *  imóvel sem candidato (inclusive em captação) fecha a lista. */
   const negocios = useMemo<Negocio[]>(() => {
     const out: Negocio[] = [];
     const leadsUsados = new Set<string>();
@@ -76,26 +70,21 @@ export default function AbaFluxo({ imobiliariaId, isEspelhoDemo, imoveis, leads,
       const movs = movimentos.filter((m) => m.contratoId === c.id);
       const admOk = !im || im.admStatus === 'assinada' || im.status !== 'rascunho';
       const feitas = [
-        true, admOk,
-        !!im && im.status !== 'rascunho',
-        true, true, !!c.garantiaNumero,
+        true, admOk, true, true, !!c.garantiaNumero,
         ['assinado', 'vistoria_feita', 'ativo', 'encerrando'].includes(c.status),
         !!c.vistoriaEntrada?.assinada,
         ['ativo', 'encerrando'].includes(c.status),
         movs.some((m) => m.statusCobranca === 'paga'),
       ];
-      out.push({ chave: `c-${c.id}`, imovel: im, contrato: c, movs, feitas, atual: feitas.indexOf(false) === -1 ? 10 : feitas.indexOf(false) });
+      out.push({ chave: `c-${c.id}`, imovel: im, contrato: c, movs, feitas, atual: feitas.indexOf(false) === -1 ? 9 : feitas.indexOf(false) });
     }
 
     for (const l of leads) {
       if (['convertido', 'perdido', 'analise_recusada'].includes(l.etapa) || leadsUsados.has(l.id)) continue;
       const im = imoveis.find((i) => i.id === l.imovelId);
+      const admOk = !im || im.admStatus === 'assinada' || im.status !== 'rascunho';
       const feitas = [
-        true,
-        !im || im.admStatus === 'assinada' || im.status !== 'rascunho',
-        !!im && im.status !== 'rascunho',
-        true,
-        ['visita_feita', 'analise_enviada', 'analise_aprovada'].includes(l.etapa),
+        true, admOk, !!im && im.status !== 'rascunho', true,
         l.etapa === 'analise_aprovada',
         false, false, false, false,
       ];
@@ -104,72 +93,26 @@ export default function AbaFluxo({ imobiliariaId, isEspelhoDemo, imoveis, leads,
 
     for (const im of imoveis) {
       if (im.status === 'alugado' || im.status === 'pausado') continue;
-      const temGente = out.some((n) => n.imovel?.id === im.id);
-      if (temGente) continue;
+      if (out.some((n) => n.imovel?.id === im.id)) continue;
       const admOk = im.admStatus === 'assinada';
       const anunciado = im.status === 'anunciado';
       out.push({
         chave: `i-${im.id}`, imovel: im, movs: [],
-        feitas: [true, admOk || anunciado, anunciado, false, false, false, false, false, false, false],
+        feitas: [true, admOk || anunciado, anunciado, false, false, false, false, false, false],
         atual: !admOk && !anunciado ? 1 : anunciado ? 3 : 2,
       });
     }
 
-    // o que precisa de gente primeiro: quanto mais adiantado, mais em cima
     return out.sort((a, b) => b.atual - a.atual);
   }, [imoveis, leads, contratos, movimentos]);
 
-  // ——— as ações que andam a régua ———
+  // ═══ ações · etapa 1: administração e anúncio ═══
 
-  const mudarLead = async (l: LeadLocacao, campos: Partial<LeadLocacao>) => {
-    if (guarda()) return;
-    await updateDoc(doc(db, 'locacaoLeads', l.id), { ...campos, atualizadoEm: serverTimestamp() });
-    recarregar();
-  };
-
-  const criarInteressado = async (im: ImovelLocacao) => {
-    if (guarda() || !imobiliariaId) return;
-    if (!nNome.trim()) { showToast('Falta o nome.', 'error'); return; }
-    await addDoc(collection(db, 'locacaoLeads'), {
-      ...LEAD_VAZIO, imobiliariaId, imovelId: im.id, nome: nNome.trim(), telefone: nTel.trim(),
-      criadoEm: serverTimestamp(),
-    });
-    setNovoDe(null); setNNome(''); setNTel('');
-    showToast('Interessado no fluxo — próximo passo: agendar a visita.', 'success');
-    recarregar();
-  };
-
-  /**
-   * ⚡ A automação de CHEGADA: finge o webhook do portal entregando um
-   * interessado — mesmo formato que o Grupo OLX manda (nome, telefone,
-   * temperatura avaliada, mensagem). Quando a homologação ligar, isso
-   * acontece sozinho e o botão some.
-   */
-  const simularLeadPortal = async () => {
-    if (guarda() || !imobiliariaId) return;
-    const anunciados = imoveis.filter((i) => i.status === 'anunciado');
-    const alvo = anunciados[Math.floor(Math.random() * anunciados.length)] || imoveis[0];
-    if (!alvo) { showToast('Cadastre um imóvel primeiro.', 'error'); return; }
-    const nomes = ['Marcos Vieira', 'Camila Duarte', 'Rafael Nogueira', 'Beatriz Souza', 'Tiago Melo', 'Vanessa Prado'];
-    const nome = nomes[Math.floor(Math.random() * nomes.length)];
-    const temp = (['alta', 'media', 'baixa'] as const)[Math.floor(Math.random() * 3)];
-    await addDoc(collection(db, 'locacaoLeads'), {
-      ...LEAD_VAZIO, imobiliariaId, imovelId: alvo.id,
-      nome, telefone: `(47) 9${Math.floor(Math.random() * 9000 + 1000)}-${Math.floor(Math.random() * 9000 + 1000)}`,
-      origem: 'grupo_olx', temperatura: temp,
-      mensagem: 'Olá! Vi o anúncio no ZAP Imóveis e tenho interesse. Ainda está disponível?',
-      criadoEm: serverTimestamp(),
-    });
-    showToast(`⚡ ${nome} chegou do portal (temperatura ${temp}) — como o webhook fará sozinho.`, 'success');
-    recarregar();
-  };
-
-  /** ETAPA 1: o contrato de administração do dono, via ClickSign (simulado). */
   const enviarAdm = async (im: ImovelLocacao) => {
     if (guarda()) return;
     if (!im.locadorNome) { showToast('Cadastra o dono no imóvel primeiro (aba Imóveis).', 'error'); return; }
     await updateDoc(doc(db, 'locacaoImoveis', im.id), { admStatus: 'enviada', admSimulada: true, atualizadoEm: serverTimestamp() });
-    showToast(`⚡ Contrato de administração "enviado" pro WhatsApp de ${im.locadorNome} (ClickSign fará de verdade).`, 'info');
+    showToast(`⚡ Contrato de administração "enviado" pro WhatsApp de ${im.locadorNome} (a ClickSign fará de verdade).`, 'info');
     recarregar();
   };
   const admAssinada = async (im: ImovelLocacao) => {
@@ -185,20 +128,39 @@ export default function AbaFluxo({ imobiliariaId, isEspelhoDemo, imoveis, leads,
     recarregar();
   };
 
-  /** Documentos do interessado (CNH, renda…) — a análise da Loft pede. */
+  // ═══ ações · candidato e análise ═══
+
+  const mudarLead = async (l: LeadLocacao, campos: Partial<LeadLocacao>) => {
+    if (guarda()) return;
+    await updateDoc(doc(db, 'locacaoLeads', l.id), { ...campos, atualizadoEm: serverTimestamp() });
+    recarregar();
+  };
+
+  const criarCandidato = async (im: ImovelLocacao) => {
+    if (guarda() || !imobiliariaId) return;
+    if (!nNome.trim()) { showToast('Falta o nome.', 'error'); return; }
+    await addDoc(collection(db, 'locacaoLeads'), {
+      ...LEAD_VAZIO, imobiliariaId, imovelId: im.id, nome: nNome.trim(), telefone: nTel.trim(),
+      criadoEm: serverTimestamp(),
+    });
+    setNovoDe(null); setNNome(''); setNTel('');
+    showToast('Candidato registrado — agora os documentos e a análise.', 'success');
+    recarregar();
+  };
+
   const anexarDocLead = async (l: LeadLocacao, arquivos: FileList | null) => {
     if (!arquivos?.length || !imobiliariaId || guarda()) return;
     setSubindoDocDe(l.id);
     try {
       const novos = [...(l.documentos || [])];
       for (const a of Array.from(arquivos)) {
-        const storagePath = `locacao/${imobiliariaId}/interessados/${Date.now()}-${a.name}`;
+        const storagePath = `locacao/${imobiliariaId}/candidatos/${Date.now()}-${a.name}`;
         const task = uploadBytesResumable(ref(storage, storagePath), a, a.type ? { contentType: a.type } : undefined);
         await task;
         novos.push({ nome: a.name, url: await getDownloadURL(task.snapshot.ref), storagePath, categoria: catDocLead });
       }
       await updateDoc(doc(db, 'locacaoLeads', l.id), { documentos: novos, atualizadoEm: serverTimestamp() });
-      showToast('Documento do interessado anexado.', 'success');
+      showToast('Documento do candidato guardado.', 'success');
       recarregar();
     } catch { showToast('Falha ao subir.', 'error'); }
     setSubindoDocDe(null);
@@ -230,13 +192,14 @@ export default function AbaFluxo({ imobiliariaId, isEspelhoDemo, imoveis, leads,
       inicio: hojeYmd(),
       garantiaNumero: l.garantia?.numero || '', garantiaTaxaMensalPct: l.garantia?.taxaMensalPct ?? null,
       garantiaVigenciaFim: l.garantia?.vigenciaFim || '', garantiaSimulada: l.garantia?.simulada ?? false,
-      // os documentos juntados na análise (CNH, renda…) seguem pro contrato
       documentos: (l.documentos || []).map((d) => ({ ...d, categoria: d.categoria || 'RG/CPF do inquilino' })),
       criadoEm: serverTimestamp(),
     });
     await mudarLead(l, { etapa: 'convertido', contratoId: refC.id });
-    showToast('Contrato criado. Próximo: enviar pra assinatura (confira os dados na aba Contratos se quiser).', 'success');
+    showToast('Contrato criado com os documentos do candidato dentro. Próximo: enviar pra assinatura.', 'success');
   };
+
+  // ═══ ações · contrato, chaves e dinheiro ═══
 
   const mudarContrato = async (c: ContratoLocacao, campos: Partial<ContratoLocacao>) => {
     if (guarda()) return;
@@ -244,7 +207,6 @@ export default function AbaFluxo({ imobiliariaId, isEspelhoDemo, imoveis, leads,
     recarregar();
   };
 
-  /** ⚡ Vistoria expressa: laudo padrão só pra régua andar no teste. */
   const vistoriaExpressa = async (c: ContratoLocacao) => {
     await mudarContrato(c, {
       status: 'vistoria_feita',
@@ -265,7 +227,7 @@ export default function AbaFluxo({ imobiliariaId, isEspelhoDemo, imoveis, leads,
     batch.update(doc(db, 'locacaoContratos', c.id), { status: 'ativo', atualizadoEm: serverTimestamp() });
     if (c.imovelId) batch.update(doc(db, 'locacaoImoveis', c.imovelId), { status: 'alugado', atualizadoEm: serverTimestamp() });
     await batch.commit();
-    showToast(`🔑 Chaves entregues! ${movs.length} meses de cobrança nasceram no Financeiro.`, 'success');
+    showToast(`🔑 Chaves entregues! ${movs.length} meses de cobrança nasceram no Dinheiro.`, 'success');
     recarregar();
   };
 
@@ -276,16 +238,59 @@ export default function AbaFluxo({ imobiliariaId, isEspelhoDemo, imoveis, leads,
     await updateDoc(doc(db, 'locacaoMovimentos', prox.id), {
       statusCobranca: 'paga', pagoEm: hojeYmd(), statusRepasse: 'liberado', simulado: true,
     });
-    showToast(`⚡ ${prox.competencia.split('-').reverse().join('/')} paga (simulação). Repasse de ${fmtValor(prox.repasseDono)} liberado — confirma no Financeiro.`, 'success');
+    showToast(`⚡ ${prox.competencia.split('-').reverse().join('/')} paga (simulação). Repasse de ${fmtValor(prox.repasseDono)} liberado.`, 'success');
     recarregar();
   };
 
-  // ——— o que mostrar em cada cartão ———
+  const repassarLiberados = async (n: Negocio) => {
+    if (guarda()) return;
+    const lib = n.movs.filter((m) => m.statusRepasse === 'liberado');
+    if (!lib.length) { showToast('Nada liberado pra repassar — o inquilino precisa pagar primeiro.', 'info'); return; }
+    for (const m of lib) {
+      await updateDoc(doc(db, 'locacaoMovimentos', m.id), { statusRepasse: 'repassado', repassadoEm: hojeYmd(), simulado: true });
+    }
+    const total = lib.reduce((s, m) => s + m.repasseDono, 0);
+    showToast(`⚡ ${fmtValor(total)} repassado pro dono num PIX só (simulação) — NF da taxa "emitida".`, 'success');
+    recarregar();
+  };
+
+  // ═══ o que cada cartão mostra ═══
+
+  const ondeEsta = (n: Negocio): string => {
+    const { lead: l, contrato: c } = n;
+    if (!l && !c) {
+      const im = n.imovel!;
+      if (im.status === 'rascunho') {
+        if (im.admStatus === 'pendente') return 'Captado — falta o contrato de administração do dono';
+        if (im.admStatus === 'enviada') return 'Administração no WhatsApp do dono, esperando assinatura';
+        return 'Administração assinada — falta completar e anunciar';
+      }
+      return 'No ar — quando alguém fechar, registra o candidato aqui';
+    }
+    if (l && !c) {
+      return {
+        docs: `Candidato juntando papelada (${(l.documentos || []).length} documento${(l.documentos || []).length === 1 ? '' : 's'})`,
+        analise_enviada: 'Na mesa da Loft',
+        analise_aprovada: 'Garantia aprovada — pronto pra virar contrato',
+      }[l.etapa as string] || `Candidato juntando papelada (${(l.documentos || []).length} documentos)`;
+    }
+    if (c) {
+      return {
+        rascunho: 'Contrato montado — confira e envie pra assinatura',
+        assinatura_enviada: 'No WhatsApp das partes, esperando assinaturas',
+        assinado: 'Assinado — falta a vistoria de entrada',
+        vistoria_feita: c.vistoriaEntrada?.assinada ? 'Tudo assinado — pode entregar as chaves' : 'Vistoria feita — falta assinar o laudo',
+        ativo: 'Alugado e cobrando todo mês',
+        encerrando: 'Inquilino saindo — vistoria de saída e distrato',
+      }[c.status as string] || c.status;
+    }
+    return '';
+  };
 
   const proximoPasso = (n: Negocio): React.ReactNode => {
     const { lead: l, contrato: c, imovel: im } = n;
 
-    // sem ninguém interessado ainda: primeiro a burocracia da captação
+    // fase do imóvel: administração → anúncio → candidato
     if (!l && !c) {
       if (im!.admStatus === 'pendente' && im!.status === 'rascunho') {
         return <button onClick={() => enviarAdm(im!)} className={btnOuro}>▶ Enviar contrato de administração pro dono</button>;
@@ -295,47 +300,31 @@ export default function AbaFluxo({ imobiliariaId, isEspelhoDemo, imoveis, leads,
       }
       if (im!.status === 'rascunho') {
         const { id: _x, imobiliariaId: _y, ...resto } = im!;
-        const pend = pendenciasParaAnunciar(resto);
+        const pend = pendenciasParaAnunciar(resto).filter((p) => !p.includes('administração'));
         return pend.length ? (
           <span className="flex flex-wrap items-center gap-2">
             <button onClick={() => irPara('imoveis')} className={btnOuro}>▶ Completar o anúncio</button>
-            <span className="text-[11px] text-amber-300">falta: {pend.filter((p) => !p.includes('administração')).join(' · ') || 'nada — pode anunciar'}</span>
+            <span className="text-[11px] text-amber-300">falta: {pend.join(' · ')}</span>
           </span>
         ) : (
           <button onClick={() => anunciar(im!)} className={btnOuro}>📣 Anunciar nos portais</button>
         );
       }
+      // anunciado: o atendimento acontece lá fora; aqui entra quem fechou
       return novoDe === im!.id ? (
         <span className="flex flex-wrap items-center gap-2">
-          <input className={inputCls + ' !w-44'} placeholder="nome do interessado" value={nNome} onChange={(e) => setNNome(e.target.value)} />
+          <input className={inputCls + ' !w-44'} placeholder="nome do candidato" value={nNome} onChange={(e) => setNNome(e.target.value)} />
           <input className={inputCls + ' !w-40'} placeholder="telefone" value={nTel} onChange={(e) => setNTel(e.target.value)} />
-          <button onClick={() => criarInteressado(im!)} className={btnOuro}>salvar</button>
+          <button onClick={() => criarCandidato(im!)} className={btnOuro}>salvar</button>
           <button onClick={() => setNovoDe(null)} className={btnGhost}>×</button>
         </span>
       ) : (
-        <button onClick={() => { setNovoDe(im!.id); setNNome(''); setNTel(''); }} className={btnOuro}>▶ Apareceu interessado? Registrar</button>
+        <button onClick={() => { setNovoDe(im!.id); setNNome(''); setNTel(''); }} className={btnOuro}>▶ Fechou com alguém? Registrar o candidato</button>
       );
     }
 
-    // fase do interessado
+    // fase do candidato: documentos → análise → contrato
     if (l && !c) {
-      if (l.etapa === 'novo') {
-        return visitaDe === l.id ? (
-          <span className="flex flex-wrap items-center gap-2">
-            <input type="date" className={inputCls + ' !w-auto'} value={vData} onChange={(e) => setVData(e.target.value)} />
-            <button onClick={() => { if (!vData) { showToast('Escolhe a data.', 'error'); return; } mudarLead(l, { etapa: 'visita_agendada', visitaEm: vData }); setVisitaDe(null); }} className={btnOuro}>confirmar</button>
-            <button onClick={() => setVisitaDe(null)} className={btnGhost}>×</button>
-          </span>
-        ) : (
-          <button onClick={() => { setVisitaDe(l.id); setVData(''); }} className={btnOuro}>▶ Agendar a visita</button>
-        );
-      }
-      if (l.etapa === 'visita_agendada') {
-        return <button onClick={() => mudarLead(l, { etapa: 'visita_feita' })} className={btnOuro}>▶ A visita aconteceu</button>;
-      }
-      if (l.etapa === 'visita_feita') {
-        return <button onClick={() => mudarLead(l, { etapa: 'analise_enviada' })} className={btnOuro}>▶ Enviar pra análise (Loft)</button>;
-      }
       if (l.etapa === 'analise_enviada') {
         return (
           <span className="flex flex-wrap items-center gap-2">
@@ -348,6 +337,23 @@ export default function AbaFluxo({ imobiliariaId, isEspelhoDemo, imoveis, leads,
       if (l.etapa === 'analise_aprovada') {
         return <button onClick={() => gerarContrato(l, im)} className={btnOuro}>▶ Gerar o contrato</button>;
       }
+      // qualquer outro estado = juntando documentos
+      return (
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center">
+            <select value={catDocLead} onChange={(e) => setCatDocLead(e.target.value)}
+              className="px-2 py-2 rounded-l-xl border border-white/10 bg-white/[0.04] text-[11px] text-text-secondary focus:outline-none">
+              {CATEGORIAS_DOC_LEAD.map((cat) => <option key={cat}>{cat}</option>)}
+            </select>
+            <label className={btnGhost + ' cursor-pointer !rounded-l-none'}>
+              {subindoDocDe === l.id ? 'Subindo…' : '📎 juntar documento'}
+              <input type="file" multiple className="hidden" disabled={subindoDocDe === l.id}
+                onChange={(e) => { anexarDocLead(l, e.target.files); e.currentTarget.value = ''; }} />
+            </label>
+          </span>
+          <button onClick={() => mudarLead(l, { etapa: 'analise_enviada' })} className={btnOuro}>▶ Enviar pra análise (Loft)</button>
+        </span>
+      );
     }
 
     // fase do contrato
@@ -377,10 +383,12 @@ export default function AbaFluxo({ imobiliariaId, isEspelhoDemo, imoveis, leads,
       }
       if (c.status === 'ativo') {
         const pagas = n.movs.filter((m) => m.statusCobranca === 'paga').length;
+        const liberados = n.movs.filter((m) => m.statusRepasse === 'liberado').length;
         return (
           <span className="flex flex-wrap items-center gap-2">
             <button onClick={() => pagarProxima(n)} className={btnSimula}>⚡ Inquilino pagou o mês</button>
-            <button onClick={() => irPara('financeiro')} className={btnGhost}>ver o dinheiro ({pagas}/{n.movs.length} pagas)</button>
+            {liberados > 0 && <button onClick={() => repassarLiberados(n)} className={btnSimula}>⚡ Repassar pro dono ({liberados})</button>}
+            <button onClick={() => irPara('financeiro')} className={btnGhost}>extrato ({pagas}/{n.movs.length} pagas)</button>
           </span>
         );
       }
@@ -391,53 +399,20 @@ export default function AbaFluxo({ imobiliariaId, isEspelhoDemo, imoveis, leads,
     return null;
   };
 
-  const ondeEsta = (n: Negocio): string => {
-    const { lead: l, contrato: c } = n;
-    if (!l && !c) {
-      const im = n.imovel!;
-      if (im.status === 'rascunho') {
-        if (im.admStatus === 'pendente') return 'Captado — falta o contrato de administração do dono';
-        if (im.admStatus === 'enviada') return 'Administração no WhatsApp do dono, esperando assinatura';
-        return 'Administração assinada — falta completar e anunciar';
-      }
-      return 'No ar, esperando interessados';
-    }
-    if (l && !c) {
-      return {
-        novo: 'Interessado novo — falta agendar a visita',
-        visita_agendada: `Visita marcada pra ${fmtData(l.visitaEm)}`,
-        visita_feita: 'Visitou e gostou — falta a análise da garantia',
-        analise_enviada: 'Na mesa da Loft',
-        analise_aprovada: 'Garantia aprovada — pronto pra virar contrato',
-      }[l.etapa as string] || l.etapa;
-    }
-    if (c) {
-      return {
-        rascunho: 'Contrato montado — falta enviar pra assinatura',
-        assinatura_enviada: 'No WhatsApp das partes, esperando assinaturas',
-        assinado: 'Assinado — falta a vistoria de entrada',
-        vistoria_feita: c.vistoriaEntrada?.assinada ? 'Tudo assinado — pode entregar as chaves' : 'Vistoria feita — falta assinar o laudo',
-        ativo: 'Alugado e cobrando todo mês',
-        encerrando: 'Inquilino saindo — vistoria de saída e distrato',
-      }[c.status as string] || c.status;
-    }
-    return '';
-  };
-
-  // ——— render ———
+  // ═══ render ═══
 
   if (!negocios.length) {
     return (
       <div className="al-card p-8">
         <p className="text-[32px] mb-2 text-center">🧭</p>
-        <p className="text-[14px] font-bold text-white text-center mb-4">Nenhum aluguel andando ainda. O caminho é curto:</p>
+        <p className="text-[14px] font-bold text-white text-center mb-4">Nenhum aluguel andando. O caminho:</p>
         <div className="max-w-md mx-auto space-y-2">
           {[
-            ['1', 'Cadastre um imóvel (ou crie os dados de exemplo no botão 🧪 acima)'],
-            ['2', 'Apareceu gente? Registre o interessado e siga o botão dourado'],
-            ['3', 'Cada cartão aqui mostra onde o aluguel está e qual o próximo passo'],
-          ].map(([n, t]) => (
-            <p key={n} className="text-[12.5px] text-text-secondary"><b className="text-[#E8C547] mr-1.5">{n}.</b>{t}</p>
+            ['1', 'Cadastre um imóvel (ou use o botão 🧪 acima pra ver com dados de exemplo)'],
+            ['2', 'A burocracia anda por aqui: administração → anúncio → candidato → contrato → chaves → dinheiro'],
+            ['3', 'Cada cartão mostra onde está e o botão dourado é o próximo passo'],
+          ].map(([num, txt]) => (
+            <p key={num} className="text-[12.5px] text-text-secondary"><b className="text-[#E8C547] mr-1.5">{num}.</b>{txt}</p>
           ))}
         </div>
         <div className="text-center mt-5">
@@ -449,14 +424,11 @@ export default function AbaFluxo({ imobiliariaId, isEspelhoDemo, imoveis, leads,
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <p className="text-[11.5px] text-text-secondary flex-1 min-w-[260px]">
-          Aqui é o <b className="text-white/85">burocrático andando</b> — o atendimento (conversa) continua no
-          WhatsApp/CRM. O <b className="text-[#FFE9A6]">botão dourado</b> é o próximo passo; cada
-          <b className="text-amber-300"> ⚡ âmbar</b> é uma automação futura fazendo papel de gente.
-        </p>
-        <button onClick={simularLeadPortal} className={btnSimula}>⚡ Chegou interessado do portal</button>
-      </div>
+      <p className="text-[11.5px] text-text-secondary max-w-[75ch]">
+        Aqui é a <b className="text-white/85">burocracia andando</b> — atendimento, visitas e funil são dos
+        corretores (fase 2). O <b className="text-[#FFE9A6]">botão dourado</b> é o próximo passo; cada
+        <b className="text-amber-300"> ⚡ âmbar</b> é uma automação futura fazendo papel de gente.
+      </p>
 
       {negocios.map((n) => {
         const nome = n.contrato?.locatarioNome || n.lead?.nome;
@@ -464,21 +436,19 @@ export default function AbaFluxo({ imobiliariaId, isEspelhoDemo, imoveis, leads,
           <div key={n.chave} className="al-card relative overflow-hidden p-4">
             <div className="absolute inset-x-0 top-0 gx-line-gold" />
 
-            {/* quem e onde */}
             <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
               <span className="text-[14px] font-bold text-white">
                 {n.imovel ? `${n.imovel.codigo} — ${n.imovel.titulo}` : 'Imóvel removido'}
               </span>
               {nome && <span className="text-[12px] text-text-secondary">com <b className="text-white/85">{nome}</b></span>}
               {(n.contrato?.garantiaSimulada || n.contrato?.assinaturaSimulada || n.lead?.garantia?.simulada) && <SeloSimulacao />}
-              {n.contrato?.valorAluguel ? (
-                <span className="text-[12px] text-[#FFE9A6] font-bold tabular-nums ml-auto">{fmtValor(n.contrato.valorAluguel)}/mês</span>
-              ) : n.imovel?.aluguel ? (
-                <span className="text-[12px] text-[#FFE9A6] font-bold tabular-nums ml-auto">{fmtValor(n.imovel.aluguel)}/mês</span>
+              {(n.contrato?.valorAluguel || n.imovel?.aluguel) ? (
+                <span className="text-[12px] text-[#FFE9A6] font-bold tabular-nums ml-auto">
+                  {fmtValor(n.contrato?.valorAluguel || n.imovel!.aluguel)}/mês
+                </span>
               ) : null}
             </div>
 
-            {/* a régua da jornada */}
             <div className="flex flex-wrap items-center gap-x-1 gap-y-1.5 mt-2.5">
               {ESTACOES.map((e, i) => {
                 const feita = n.feitas[i];
@@ -496,31 +466,20 @@ export default function AbaFluxo({ imobiliariaId, isEspelhoDemo, imoveis, leads,
               })}
             </div>
 
-            {/* onde está, em palavras + o botão do próximo passo */}
             <p className="text-[12.5px] text-white/85 mt-2.5 mb-2">
               <b className="text-[#FFE9A6]">Agora:</b> {ondeEsta(n)}
             </p>
+
             <div className="flex flex-wrap items-center gap-2">
               {proximoPasso(n)}
-              {n.lead && !n.contrato && (
-                <span className="inline-flex items-center">
-                  <select value={catDocLead} onChange={(e) => setCatDocLead(e.target.value)}
-                    className="px-2 py-2 rounded-l-xl border border-white/10 bg-white/[0.04] text-[11px] text-text-secondary focus:outline-none">
-                    {CATEGORIAS_DOC_LEAD.map((cat) => <option key={cat}>{cat}</option>)}
-                  </select>
-                  <label className={btnGhost + ' cursor-pointer !rounded-l-none'}>
-                    {subindoDocDe === n.lead.id ? 'Subindo…' : `📎 docs (${(n.lead.documentos || []).length})`}
-                    <input type="file" multiple className="hidden" disabled={subindoDocDe === n.lead.id}
-                      onChange={(e) => { anexarDocLead(n.lead!, e.target.files); e.currentTarget.value = ''; }} />
-                  </label>
-                </span>
-              )}
               {n.contrato && (
                 <button onClick={() => setMinutaDe(minutaDe === n.contrato!.id ? null : n.contrato!.id)} className={btnGhost}>
                   📄 {minutaDe === n.contrato.id ? 'fechar a minuta' : 'ver o contrato (minuta)'}
                 </button>
               )}
             </div>
+
+            {/* os documentos do candidato, sempre à vista na fase dele */}
             {n.lead && !n.contrato && (n.lead.documentos || []).length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {(n.lead.documentos || []).map((d, j) => (
@@ -531,6 +490,7 @@ export default function AbaFluxo({ imobiliariaId, isEspelhoDemo, imoveis, leads,
                 ))}
               </div>
             )}
+
             {n.contrato && minutaDe === n.contrato.id && (
               <div className="mt-3">
                 <MinutaContrato c={n.contrato} imovel={n.imovel} onFechar={() => setMinutaDe(null)} />
