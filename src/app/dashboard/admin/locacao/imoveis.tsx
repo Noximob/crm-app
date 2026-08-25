@@ -305,7 +305,8 @@ export default function AbaImoveis({ imobiliariaId, isEspelhoDemo, imoveis, cont
             <p className="text-[11.5px] text-text-secondary mt-0.5">
               {[i.tipo, i.bairro, i.cidade, i.quartos !== null && `${i.quartos} quarto${i.quartos === 1 ? '' : 's'}`,
                 `${i.fotos.length} foto${i.fotos.length === 1 ? '' : 's'}`,
-                i.locadorNome && `dono: ${i.locadorNome}`].filter(Boolean).join(' · ')}
+                i.locadorNome && `dono: ${i.locadorNome}`,
+                i.admStatus === 'assinada' ? 'administração assinada ✓' : i.admStatus === 'enviada' ? 'administração aguardando assinatura' : 'administração pendente'].filter(Boolean).join(' · ')}
             </p>
             {pendencias.length > 0 && (
               <p className="text-[11px] text-amber-300 mt-1">Pra anunciar falta: {pendencias.join(' · ')}</p>

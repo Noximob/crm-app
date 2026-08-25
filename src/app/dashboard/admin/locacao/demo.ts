@@ -33,6 +33,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
   const imAnunciado = doc(collection(db, 'locacaoImoveis'));
   batch.set(imAnunciado, {
     ...IMOVEL_VAZIO, ...marca, codigo: 'EX-001', status: 'anunciado',
+    admStatus: 'assinada', admAssinadaEm: desloca(0, -20), admSimulada: true,
     titulo: 'Apartamento 2 quartos com sacada — Centro, Penha',
     tipo: 'Apartamento', rua: 'Rua Nereu Ramos', numero: '245', complemento: 'apto 302',
     bairro: 'Centro', cidade: 'Penha/SC', cep: '88385-000', latitude: '-26.7754', longitude: '-48.6461',
@@ -49,6 +50,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
   const imAlugado = doc(collection(db, 'locacaoImoveis'));
   batch.set(imAlugado, {
     ...IMOVEL_VAZIO, ...marca, codigo: 'EX-002', status: 'alugado',
+    admStatus: 'assinada', admAssinadaEm: desloca(-12), admSimulada: true,
     titulo: 'Casa 3 quartos com quintal — Armação, Penha',
     tipo: 'Casa', rua: 'Rua das Gaivotas', numero: '88', bairro: 'Armação', cidade: 'Penha/SC', cep: '88385-000',
     quartos: 3, suites: 1, banheiros: 2, vagas: 2, areaPrivativa: 120, areaTotal: 300,

@@ -82,6 +82,15 @@ export interface ImovelLocacao {
   tipo: string;
   status: StatusImovel;
 
+  /**
+   * ETAPA 1 DA ESTEIRA: o contrato de ADMINISTRAÇÃO com o dono — o
+   * documento que autoriza a Nox a administrar e reter os 10%. Sem ele
+   * assinado, não se anuncia. Vai pela ClickSign (simulado até integrar).
+   */
+  admStatus: 'pendente' | 'enviada' | 'assinada';
+  admAssinadaEm: string;
+  admSimulada: boolean;
+
   rua: string; numero: string; complemento: string;
   bairro: string; cidade: string; cep: string;
   /** parte dos portais exige localização no mapa */
@@ -112,6 +121,7 @@ export interface ImovelLocacao {
 
 export const IMOVEL_VAZIO: Omit<ImovelLocacao, 'id' | 'imobiliariaId'> = {
   codigo: '', titulo: '', tipo: 'Apartamento', status: 'rascunho',
+  admStatus: 'pendente', admAssinadaEm: '', admSimulada: false,
   rua: '', numero: '', complemento: '', bairro: '', cidade: '', cep: '',
   latitude: '', longitude: '',
   quartos: null, suites: null, banheiros: null, vagas: null,
@@ -150,6 +160,7 @@ export function pendenciasParaAnunciar(i: Omit<ImovelLocacao, 'id' | 'imobiliari
   if (i.fotos.length < 5) p.push(`Mínimo de 5 fotos (tem ${i.fotos.length}) — regra do Grupo OLX`);
   if (i.descricao.trim().length < 50) p.push(`Descrição com pelo menos 50 caracteres (tem ${i.descricao.trim().length})`);
   if (!i.bairro.trim() || !i.cidade.trim() || !i.cep.trim()) p.push('Endereço completo com bairro, cidade e CEP');
+  if (i.admStatus !== 'assinada') p.push('Contrato de administração assinado pelo dono (etapa 1 da esteira)');
   return p;
 }
 
@@ -173,6 +184,9 @@ export const ETAPAS_LEAD = {
   perdido: { rotulo: 'Perdido', proxima: null, acao: null },
 } as const;
 export type EtapaLead = keyof typeof ETAPAS_LEAD;
+
+/** As gavetas de documento do INTERESSADO — o que a análise da Loft pede. */
+export const CATEGORIAS_DOC_LEAD = ['CNH/RG', 'CPF', 'Comprovante de renda', 'Outros'] as const;
 
 export interface LeadLocacao {
   id: string;
@@ -198,13 +212,15 @@ export interface LeadLocacao {
   } | null;
   contratoId: string;         // preenchido quando vira contrato
   perdidoMotivo: string;
+  /** CNH/RG, comprovante de renda… — seguem junto quando vira contrato */
+  documentos: DocContrato[];
   criadoEm?: unknown; atualizadoEm?: unknown;
 }
 
 export const LEAD_VAZIO: Omit<LeadLocacao, 'id' | 'imobiliariaId'> = {
   imovelId: '', nome: '', telefone: '', email: '', origem: 'manual',
   temperatura: '', mensagem: '', etapa: 'novo', visitaEm: '', corretorNome: '',
-  garantia: null, contratoId: '', perdidoMotivo: '',
+  garantia: null, contratoId: '', perdidoMotivo: '', documentos: [],
 };
 
 // ---------------------------------------------------------------------------
