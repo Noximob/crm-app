@@ -201,6 +201,16 @@ export default function LocacaoPage() {
    * busca é rolar a tela procurando — e ninguém opera assim.
    */
   /**
+   * O BALCÃO: interessados que chegaram dos portais e ainda não viraram
+   * candidato. Hoje entram pelo botão ⚡ (fazendo o papel do webhook do
+   * Grupo OLX, que já tem endpoint no ar); quando a homologação ligar, eles
+   * aparecem sozinhos aqui. Um clique promove a candidato e ele entra na fila.
+   */
+  const balcao = useMemo(
+    () => leads.filter((l) => l.origem !== 'manual' && l.etapa === 'docs' && !(l.documentos || []).length && !l.corretorNome),
+    [leads]);
+
+  /**
    * Quantos em cada etapa. Conta EXATAMENTE o que o clique vai mostrar — se o
    * número diz 2, clicar tem que trazer 2 linhas. Os alugados somam a fila
    * (os com pendência) mais a carteira (os que rodam sem pedir nada).
@@ -208,11 +218,14 @@ export default function LocacaoPage() {
   const porEtapa = useMemo(() => {
     const c: Record<string, number> = {};
     for (const it of fila) c[it.etapa] = (c[it.etapa] || 0) + 1;
+    // o balcão vive fora da fila (é atendimento, não papelada) mas precisa
+    // aparecer na barra — senão o lead que chega parece ter sumido
+    c.leads = balcao.length;
     const naCarteira = contratos.filter((x) => x.status === 'ativo').length
       - fila.filter((f) => f.etapa === 'alugado').length;
     c.alugado = (c.alugado || 0) + Math.max(0, naCarteira);
     return c;
-  }, [fila, contratos]);
+  }, [fila, contratos, balcao]);
 
   const filaVisivel = useMemo(() => {
     const b = busca.trim().toLowerCase();
@@ -397,21 +410,14 @@ export default function LocacaoPage() {
     recarregar();
   };
 
-  /**
-   * O BALCÃO: interessados que chegaram dos portais e ainda não viraram
-   * candidato. Hoje entram pelo botão ⚡ (fazendo o papel do webhook do
-   * Grupo OLX, que já tem endpoint no ar); quando a homologação ligar, eles
-   * aparecem sozinhos aqui. Um clique promove a candidato e ele entra na fila.
-   */
-  const balcao = useMemo(
-    () => leads.filter((l) => l.origem !== 'manual' && l.etapa === 'docs' && !(l.documentos || []).length && !l.corretorNome),
-    [leads]);
-
   const chegouDoPortal = async () => {
     if (guarda() || !imobiliariaId) return;
     const anunciados = imoveis.filter((i) => i.status === 'anunciado');
     const alvo = anunciados[Math.floor(Math.random() * anunciados.length)];
-    if (!alvo) { showToast('Anuncie um imóvel primeiro — o lead vem de um anúncio.', 'error'); return; }
+    if (!alvo) {
+      showToast('Nenhum imóvel anunciado — o lead vem de um anúncio. Coloque um no ar primeiro.', 'error');
+      return;
+    }
     const nomes = ['Marcos Vieira', 'Camila Duarte', 'Rafael Nogueira', 'Beatriz Souza', 'Tiago Melo'];
     const nome = nomes[Math.floor(Math.random() * nomes.length)];
     await addDoc(collection(db, 'locacaoLeads'), {
@@ -421,7 +427,8 @@ export default function LocacaoPage() {
       mensagem: 'Vi o anúncio no ZAP e tenho interesse. Ainda está disponível?',
       criadoEm: serverTimestamp(),
     });
-    showToast(`⚡ ${nome} chegou do portal — como o webhook fará sozinho.`, 'success');
+    setEtapaSel(null);   // pro balcão aparecer, mesmo se havia filtro
+    showToast(`⚡ ${nome} chegou do portal e está no balcão 📨 lá em cima — como o webhook fará sozinho.`, 'success');
     recarregar();
   };
 
@@ -788,7 +795,7 @@ export default function LocacaoPage() {
         )}
 
         {/* o balcão dos portais — some quando se filtra uma etapa da papelada */}
-        {balcao.length > 0 && !etapaSel && (
+        {balcao.length > 0 && (!etapaSel || etapaSel === 'leads') && (
           <div className="al-card p-4">
             <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-sky-300 mb-2">
               📨 Chegaram dos portais — {balcao.length} pessoa{balcao.length > 1 ? 's' : ''} perguntando
@@ -821,8 +828,9 @@ export default function LocacaoPage() {
               })}
             </div>
             <p className="text-[10.5px] text-text-secondary mt-2">
-              O atendimento (responder, mostrar o imóvel) é dos corretores. Aqui só marca quem FECHOU — aí
-              entra na papelada.
+              Chegaram dos anúncios. O atendimento — responder, mostrar o imóvel, negociar — é dos
+              corretores. Nesta tela só entra quem <b className="text-white/70">FECHOU</b>: aí vira
+              candidato e começa a papelada (documentos → Loft → contrato).
             </p>
           </div>
         )}
@@ -845,7 +853,7 @@ export default function LocacaoPage() {
             <button onClick={() => setEtapaSel(null)} className="ml-2 text-[#E8C547] font-bold">ver tudo</button>
           </p>
         )}
-        {etapaSel && filaVisivel.length === 0 && (
+        {etapaSel && filaVisivel.length === 0 && !(etapaSel === 'leads' && balcao.length > 0) && (
           <div className="al-card p-6 text-center">
             <p className="text-[13px] text-white/85">
               Ninguém em <b className="text-[#FFE9A6]">{ETAPAS_FUNIL.find((e) => e.chave === etapaSel)?.rot}</b> agora.

@@ -347,6 +347,7 @@ export const ETAPAS_FUNIL = [
   { chave: 'captado', rot: 'Captados', icone: '🏠', ajuda: 'imóvel registrado, falta a administração do dono' },
   { chave: 'administracao', rot: 'Administração', icone: '✍', ajuda: 'contrato de administração no WhatsApp do dono' },
   { chave: 'divulgado', rot: 'Divulgados', icone: '📣', ajuda: 'no ar nos portais, esperando quem feche' },
+  { chave: 'leads', rot: 'Leads', icone: '📨', ajuda: 'interessados que chegaram dos portais — atendimento é dos corretores; aqui só entra quem FECHAR' },
   { chave: 'documentos', rot: 'Documentos', icone: '📎', ajuda: 'candidato juntando CNH, CPF e renda' },
   { chave: 'loft', rot: 'Na Loft', icone: '🛡', ajuda: 'ficha em análise (resposta em menos de 1 min)' },
   { chave: 'fianca', rot: 'Fiança Loft', icone: '📜', ajuda: 'aprovado — a Loft manda o contrato de fiança pro inquilino assinar' },
