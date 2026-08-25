@@ -24,7 +24,7 @@ import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { showToast } from '@/components/ui/toast';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import {
-  STATUS_CONTRATO, INDICES_REAJUSTE, GARANTIAS, AMBIENTES_PADRAO,
+  STATUS_CONTRATO, INDICES_REAJUSTE, GARANTIAS, AMBIENTES_PADRAO, CATEGORIAS_DOC,
   fimContrato, fmtData, fmtValor, hojeYmd, gerarMovimentos, alertasDoContrato,
   dadosPortalDoContrato,
   type ContratoLocacao, type ImovelLocacao, type MovimentoLocacao, type Vistoria, type AmbienteVistoria,
@@ -48,6 +48,7 @@ export default function AbaContratos({ imobiliariaId, isEspelhoDemo, contratos, 
   const [subindoFoto, setSubindoFoto] = useState<number | null>(null);
   const [portalDe, setPortalDe] = useState<{ id: string; visao: 'dono' | 'inquilino' } | null>(null);
   const [subindoDoc, setSubindoDoc] = useState(false);
+  const [categoriaDoc, setCategoriaDoc] = useState<string>('Contrato assinado');
 
   const imovelDe = (id: string) => imoveis.find((x) => x.id === id);
   const guarda = () => { if (isEspelhoDemo) { showToast('Modo demonstração.', 'info'); return true; } return false; };
@@ -199,7 +200,7 @@ export default function AbaContratos({ imobiliariaId, isEspelhoDemo, contratos, 
         const storagePath = `locacao/${imobiliariaId}/contratos/${Date.now()}-${a.name}`;
         const task = uploadBytesResumable(ref(storage, storagePath), a, a.type ? { contentType: a.type } : undefined);
         await task;
-        novos.push({ nome: a.name, url: await getDownloadURL(task.snapshot.ref), storagePath });
+        novos.push({ nome: a.name, url: await getDownloadURL(task.snapshot.ref), storagePath, categoria: categoriaDoc });
       }
       await salvarCampos(c, { documentos: novos });
       showToast('Documento anexado.', 'success');
@@ -257,10 +258,35 @@ export default function AbaContratos({ imobiliariaId, isEspelhoDemo, contratos, 
             {/* ——— edição do rascunho ——— */}
             {editando && form && (
               <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3 space-y-3">
+                {/* o cadastro completo das duas partes — é daqui que o modelo
+                    do Lucas puxa cada lacuna do contrato */}
+                <div className="rounded-lg border border-white/[0.06] p-3 space-y-3">
+                  <p className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">Inquilino (locatário) — dados pro contrato</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <Campo rot="Nome completo" largura="col-span-2"><input className={inputCls} value={form.locatarioNome} onChange={(e) => f('locatarioNome', e.target.value)} /></Campo>
+                    <Campo rot="CPF"><input className={inputCls} value={form.locatarioDoc} onChange={(e) => f('locatarioDoc', e.target.value)} /></Campo>
+                    <Campo rot="RG"><input className={inputCls} value={form.locatarioRg} onChange={(e) => f('locatarioRg', e.target.value)} /></Campo>
+                    <Campo rot="Telefone (WhatsApp)"><input className={inputCls} value={form.locatarioTelefone} onChange={(e) => f('locatarioTelefone', e.target.value)} /></Campo>
+                    <Campo rot="E-mail"><input className={inputCls} value={form.locatarioEmail} onChange={(e) => f('locatarioEmail', e.target.value)} /></Campo>
+                    <Campo rot="Estado civil"><input className={inputCls} value={form.locatarioEstadoCivil} onChange={(e) => f('locatarioEstadoCivil', e.target.value)} placeholder="casada, solteiro…" /></Campo>
+                    <Campo rot="Profissão"><input className={inputCls} value={form.locatarioProfissao} onChange={(e) => f('locatarioProfissao', e.target.value)} /></Campo>
+                    <Campo rot="Endereço atual" largura="col-span-2 sm:col-span-4"><input className={inputCls} value={form.locatarioEnderecoAtual} onChange={(e) => f('locatarioEnderecoAtual', e.target.value)} placeholder="onde mora hoje — vai na qualificação do contrato" /></Campo>
+                  </div>
+                </div>
+                <div className="rounded-lg border border-white/[0.06] p-3 space-y-3">
+                  <p className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">Dono (locador) — dados pro contrato</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <Campo rot="Nome completo" largura="col-span-2"><input className={inputCls} value={form.locadorNome} onChange={(e) => f('locadorNome', e.target.value)} /></Campo>
+                    <Campo rot="CPF/CNPJ"><input className={inputCls} value={form.locadorDoc} onChange={(e) => f('locadorDoc', e.target.value)} /></Campo>
+                    <Campo rot="RG"><input className={inputCls} value={form.locadorRg} onChange={(e) => f('locadorRg', e.target.value)} /></Campo>
+                    <Campo rot="Telefone (WhatsApp)"><input className={inputCls} value={form.locadorTelefone} onChange={(e) => f('locadorTelefone', e.target.value)} /></Campo>
+                    <Campo rot="E-mail"><input className={inputCls} value={form.locadorEmail} onChange={(e) => f('locadorEmail', e.target.value)} /></Campo>
+                    <Campo rot="Estado civil"><input className={inputCls} value={form.locadorEstadoCivil} onChange={(e) => f('locadorEstadoCivil', e.target.value)} /></Campo>
+                    <Campo rot="Profissão"><input className={inputCls} value={form.locadorProfissao} onChange={(e) => f('locadorProfissao', e.target.value)} /></Campo>
+                    <Campo rot="Endereço" largura="col-span-2 sm:col-span-4"><input className={inputCls} value={form.locadorEnderecoAtual} onChange={(e) => f('locadorEnderecoAtual', e.target.value)} /></Campo>
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <Campo rot="Locatário — nome" largura="col-span-2"><input className={inputCls} value={form.locatarioNome} onChange={(e) => f('locatarioNome', e.target.value)} /></Campo>
-                  <Campo rot="CPF"><input className={inputCls} value={form.locatarioDoc} onChange={(e) => f('locatarioDoc', e.target.value)} /></Campo>
-                  <Campo rot="Telefone"><input className={inputCls} value={form.locatarioTelefone} onChange={(e) => f('locatarioTelefone', e.target.value)} /></Campo>
                   <Campo rot="Início"><input type="date" className={inputCls} value={form.inicio} onChange={(e) => f('inicio', e.target.value)} /></Campo>
                   <Campo rot="Prazo (meses)"><input className={inputCls} inputMode="numeric" value={form.prazoMeses ?? ''} onChange={(e) => f('prazoMeses', num(e.target.value))} /></Campo>
                   <Campo rot="Fim (derivado)"><input className={inputCls + ' opacity-60'} value={fmtData(fimContrato(form)) || '—'} readOnly /></Campo>
@@ -378,13 +404,22 @@ export default function AbaContratos({ imobiliariaId, isEspelhoDemo, contratos, 
                 </>
               )}
 
-              <label className={btnGhost + ' cursor-pointer'}>
-                {subindoDoc ? 'Subindo…' : '📎 anexar'}
-                <input type="file" multiple className="hidden" disabled={subindoDoc}
-                  onChange={(e) => { anexarDoc(c, e.target.files); e.target.value = ''; }} />
-              </label>
+              <span className="inline-flex items-center">
+                <select value={categoriaDoc} onChange={(e) => setCategoriaDoc(e.target.value)}
+                  className="px-2 py-2 rounded-l-xl border border-white/10 bg-white/[0.04] text-[11px] text-text-secondary focus:outline-none">
+                  {CATEGORIAS_DOC.map((cat) => <option key={cat}>{cat}</option>)}
+                </select>
+                <label className={btnGhost + ' cursor-pointer !rounded-l-none'}>
+                  {subindoDoc ? 'Subindo…' : '📎 anexar'}
+                  <input type="file" multiple className="hidden" disabled={subindoDoc}
+                    onChange={(e) => { anexarDoc(c, e.target.files); e.target.value = ''; }} />
+                </label>
+              </span>
               {c.documentos.map((d, n) => (
-                <a key={n} href={d.url} target="_blank" rel="noreferrer" className="text-[11px] text-text-secondary hover:text-white underline">{d.nome}</a>
+                <a key={n} href={d.url} target="_blank" rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-[11px] text-text-secondary hover:text-white bg-white/[0.04] border border-white/10 rounded-lg px-2 py-1">
+                  {d.categoria && <b className="text-[#FFE9A6]/80 text-[9.5px] uppercase tracking-wide">{d.categoria}</b>} {d.nome}
+                </a>
               ))}
               {c.status === 'rascunho' && <button onClick={() => excluir(c)} className={btnGhost + ' !text-rose-300 ml-auto'}>excluir</button>}
             </div>

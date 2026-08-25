@@ -228,7 +228,17 @@ export const STATUS_CONTRATO = {
 } as const;
 export type StatusContrato = keyof typeof STATUS_CONTRATO;
 
-export interface DocContrato { nome: string; url: string; storagePath?: string }
+/**
+ * As gavetas de documento do contrato. "Contrato assinado" é a mais
+ * importante: é onde o PDF final da ClickSign entra (hoje na mão, depois
+ * automático pelo webhook dela).
+ */
+export const CATEGORIAS_DOC = [
+  'Contrato assinado', 'RG/CPF do inquilino', 'RG/CPF do dono',
+  'Comprovante de renda', 'Laudo de vistoria', 'Apólice/garantia', 'Outros',
+] as const;
+
+export interface DocContrato { nome: string; url: string; storagePath?: string; categoria?: string }
 
 export interface AmbienteVistoria {
   nome: string;
@@ -255,10 +265,14 @@ export interface ContratoLocacao {
   leadId: string;
   status: StatusContrato;
 
-  locadorNome: string; locadorDoc: string; locadorEmail: string;
+  /** os dados completos que o modelo de contrato do Lucas vai preencher */
+  locadorNome: string; locadorDoc: string; locadorRg: string; locadorEmail: string;
   locadorTelefone: string; locadorPix: string;
+  locadorEstadoCivil: string; locadorProfissao: string; locadorEnderecoAtual: string;
 
-  locatarioNome: string; locatarioDoc: string; locatarioEmail: string; locatarioTelefone: string;
+  locatarioNome: string; locatarioDoc: string; locatarioRg: string;
+  locatarioEmail: string; locatarioTelefone: string;
+  locatarioEstadoCivil: string; locatarioProfissao: string; locatarioEnderecoAtual: string;
 
   inicio: string;
   prazoMeses: number | null;
@@ -298,8 +312,10 @@ export interface ContratoLocacao {
 
 export const CONTRATO_VAZIO: Omit<ContratoLocacao, 'id' | 'imobiliariaId'> = {
   imovelId: '', leadId: '', status: 'rascunho',
-  locadorNome: '', locadorDoc: '', locadorEmail: '', locadorTelefone: '', locadorPix: '',
-  locatarioNome: '', locatarioDoc: '', locatarioEmail: '', locatarioTelefone: '',
+  locadorNome: '', locadorDoc: '', locadorRg: '', locadorEmail: '', locadorTelefone: '', locadorPix: '',
+  locadorEstadoCivil: '', locadorProfissao: '', locadorEnderecoAtual: '',
+  locatarioNome: '', locatarioDoc: '', locatarioRg: '', locatarioEmail: '', locatarioTelefone: '',
+  locatarioEstadoCivil: '', locatarioProfissao: '', locatarioEnderecoAtual: '',
   inicio: '', prazoMeses: 30, valorAluguel: null, valorCondominio: null,
   valorIptuMensal: null, valorSeguroIncendio: null, diaVencimento: 5,
   indiceReajuste: 'IGP-M', taxaAdmPct: 10,
