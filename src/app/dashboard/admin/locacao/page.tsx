@@ -33,7 +33,7 @@ import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   IMOVEL_VAZIO, CONTRATO_VAZIO, LEAD_VAZIO, CATEGORIAS_DOC_LEAD, AMBIENTES_PADRAO,
   alertasDoContrato, gerarMovimentos, dadosPortalDoContrato,
-  hojeYmd, fmtData, fmtValor,
+  hojeYmd, fmtData, fmtValor, linkWhats,
   type ImovelLocacao, type ContratoLocacao, type LeadLocacao, type MovimentoLocacao,
   type AmbienteVistoria,
 } from '@/lib/locacao';
@@ -81,6 +81,8 @@ export default function LocacaoPage() {
   const [subindo, setSubindo] = useState<string | null>(null);
   const [ambientes, setAmbientes] = useState<AmbienteVistoria[]>([]);
   const [fotoDe, setFotoDe] = useState<number | null>(null);
+  const [busca, setBusca] = useState('');
+  const [soMeus, setSoMeus] = useState(false);
 
   const recarregar = useCallback(async () => {
     if (!imobiliariaId || isEspelhoDemo) { setCarregando(false); return; }
@@ -163,6 +165,23 @@ export default function LocacaoPage() {
 
     return out.sort((a, b) => a.peso - b.peso || a.parada - b.parada);
   }, [imoveis, leads, contratos, movimentos]);
+
+  /**
+   * A fila filtrada. Com trinta contratos rodando, achar "o do João" sem
+   * busca é rolar a tela procurando — e ninguém opera assim.
+   */
+  const filaVisivel = useMemo(() => {
+    const b = busca.trim().toLowerCase();
+    return fila.filter((it) => {
+      if (soMeus && it.peso !== 0) return false;
+      if (!b) return true;
+      const campos = [
+        it.imovel?.codigo, it.imovel?.titulo, it.imovel?.bairro, it.imovel?.locadorNome,
+        it.contrato?.locatarioNome, it.lead?.nome, it.titulo,
+      ].filter(Boolean).join(' ').toLowerCase();
+      return campos.includes(b);
+    });
+  }, [fila, busca, soMeus]);
 
   const resumo = useMemo(() => {
     const hoje = hojeYmd();
@@ -505,6 +524,21 @@ export default function LocacaoPage() {
           </div>
         )}
 
+        {/* achar rápido — com carteira grande, é isto que salva o dia */}
+        {fila.length > 3 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <input value={busca} onChange={(e) => setBusca(e.target.value)}
+              placeholder="buscar por imóvel, código, bairro, dono ou inquilino…"
+              className="flex-1 min-w-[240px] px-3 py-2 rounded-lg border border-white/10 bg-white/[0.04] text-white text-[13px] placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#E8C547]/40" />
+            <button onClick={() => setSoMeus((v) => !v)} className={soMeus ? btnOuro : btnGhost}>
+              {soMeus ? '✓ só o que espera por mim' : 'só o que espera por mim'}
+            </button>
+            {(busca || soMeus) && (
+              <span className="text-[11.5px] text-text-secondary">{filaVisivel.length} de {fila.length}</span>
+            )}
+          </div>
+        )}
+
         {/* o balcão dos portais */}
         {balcao.length > 0 && (
           <div className="al-card p-4">
@@ -557,7 +591,7 @@ export default function LocacaoPage() {
           </div>
         )}
 
-        {fila.map((it) => {
+        {filaVisivel.map((it) => {
           const eu = it.peso === 0;
           const estaAberto = aberto?.chave === it.chave;
           return (
@@ -604,8 +638,41 @@ export default function LocacaoPage() {
                         : 'text-amber-300 bg-amber-500/[0.07] border border-amber-500/20'}`}>{a}</p>
                 ))}
 
-                {/* linha 4: os atalhos de consulta */}
+                {/* linha 4: falar com as pessoas + consultar */}
                 <div className="flex flex-wrap gap-1.5 mt-2.5">
+                  {(() => {
+                    const alvos: { rot: string; tel: string; msg: string }[] = [];
+                    const im = it.imovel;
+                    const c = it.contrato;
+                    const l = it.lead;
+                    if (im?.locadorTelefone) {
+                      alvos.push({
+                        rot: '💬 dono', tel: im.locadorTelefone,
+                        msg: im.admStatus === 'pendente'
+                          ? `Olá ${im.locadorNome.split(' ')[0]}! Aqui é da Nox Imóveis. Vou te enviar o contrato de administração do ${im.titulo} pra assinatura.`
+                          : `Olá ${im.locadorNome.split(' ')[0]}! Aqui é da Nox Imóveis, sobre o ${im.titulo}.`,
+                      });
+                    }
+                    const telInq = c?.locatarioTelefone || l?.telefone;
+                    const nomeInq = c?.locatarioNome || l?.nome;
+                    if (telInq && nomeInq) {
+                      alvos.push({
+                        rot: '💬 inquilino', tel: telInq,
+                        msg: l && !c
+                          ? `Olá ${nomeInq.split(' ')[0]}! Aqui é da Nox Imóveis. Pra seguir com a locação, preciso da sua CNH/RG, CPF e comprovante de renda.`
+                          : `Olá ${nomeInq.split(' ')[0]}! Aqui é da Nox Imóveis, sobre o seu aluguel.`,
+                      });
+                    }
+                    return alvos.map((a) => {
+                      const href = linkWhats(a.tel, a.msg);
+                      return href ? (
+                        <a key={a.rot} href={href} target="_blank" rel="noreferrer"
+                          className="px-2.5 py-1 rounded-xl text-[11px] font-bold border border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-300 hover:bg-emerald-500/15 transition-colors">
+                          {a.rot}
+                        </a>
+                      ) : null;
+                    });
+                  })()}
                   {it.imovel && <button onClick={() => abrir(it.chave, 'ficha')} className={btnGhost + ' !py-1 !text-[11px]'}>🏠 ficha do imóvel</button>}
                   {it.contrato && <button onClick={() => abrir(it.chave, 'contrato')} className={btnGhost + ' !py-1 !text-[11px]'}>📄 dados do contrato</button>}
                   {it.contrato && <button onClick={() => abrir(it.chave, 'minuta')} className={btnGhost + ' !py-1 !text-[11px]'}>📜 ver o contrato</button>}
@@ -712,6 +779,12 @@ export default function LocacaoPage() {
             </div>
           );
         })}
+
+        {fila.length > 0 && filaVisivel.length === 0 && (
+          <div className="al-card p-6 text-center text-[13px] text-text-secondary">
+            Nada com esse filtro. <button onClick={() => { setBusca(''); setSoMeus(false); }} className="text-[#E8C547] font-bold">limpar</button>
+          </div>
+        )}
 
         {/* o rodapé honesto: o que ainda não está ligado */}
         <div className="al-card p-4">

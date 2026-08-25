@@ -19,7 +19,7 @@ import { showToast } from '@/components/ui/toast';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   TIPOS_IMOVEL, MOBILIADO, COMODIDADES, GARANTIAS, PORTAIS_COWORK,
-  IMOVEL_VAZIO, totalMensal, fmtValor, pendenciasParaAnunciar, gerarFeedVrsync, pacoteCowork,
+  IMOVEL_VAZIO, totalMensal, fmtValor, pendenciasParaAnunciar, gerarFeedVrsync, pacoteCowork, buscarCep,
   type ImovelLocacao,
 } from '@/lib/locacao';
 import { inputCls, btnOuro, btnGhost, Campo, num, Marcaveis } from './ui';
@@ -39,10 +39,31 @@ export default function FichaImovel({ imobiliariaId, isEspelhoDemo, imoveis, imo
   const [form, setForm] = useState<Omit<ImovelLocacao, 'id' | 'imobiliariaId'>>(base);
   const [salvando, setSalvando] = useState(false);
   const [subindo, setSubindo] = useState(false);
+  /**
+   * Captar é uma coisa; preparar o anúncio é outra. Na rua o corretor tem
+   * endereço, dono, telefone e valor — não tem CEP, coordenada nem descrição
+   * de 50 caracteres. O modo rápido pede 6 campos e salva; o completo abre
+   * quando for anunciar (ou pelo botão).
+   */
+  const [completo, setCompleto] = useState(!!imovel);
+  const [buscandoCep, setBuscandoCep] = useState(false);
 
   const f = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => setForm((p) => ({ ...p, [k]: v }));
   const guarda = () => { if (isEspelhoDemo) { showToast('Modo demonstração.', 'info'); return true; } return false; };
   const pend = pendenciasParaAnunciar(form);
+
+  /** CEP preenche rua, bairro e cidade — menos digitação, menos erro. */
+  const preencherPeloCep = async (cep: string) => {
+    f('cep', cep);
+    if (cep.replace(/\D/g, '').length !== 8) return;
+    setBuscandoCep(true);
+    const e = await buscarCep(cep);
+    if (e) {
+      setForm((p) => ({ ...p, cep, rua: e.rua || p.rua, bairro: e.bairro || p.bairro, cidade: e.cidade || p.cidade }));
+      showToast('Endereço preenchido pelo CEP.', 'success');
+    }
+    setBuscandoCep(false);
+  };
 
   const salvar = async (anunciar = false) => {
     if (guarda() || !imobiliariaId) return;
@@ -120,6 +141,49 @@ export default function FichaImovel({ imobiliariaId, isEspelhoDemo, imoveis, imo
         <button onClick={onFechar} className={btnGhost + ' ml-auto !py-1 !text-[11px]'}>fechar</button>
       </div>
 
+      {/* ——— captação rápida: o que se tem na rua ——— */}
+      {!completo && (
+        <>
+          <p className="text-[11.5px] text-text-secondary -mt-2">
+            O essencial pra registrar agora. O resto (fotos, descrição, medidas) você completa antes de anunciar.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Campo rot="Que imóvel é" largura="col-span-2">
+              <input className={inputCls} value={form.titulo} onChange={(e) => f('titulo', e.target.value)}
+                placeholder="Apartamento 2 quartos — Centro, Penha" autoFocus />
+            </Campo>
+            <Campo rot="Tipo">
+              <select className={inputCls} value={form.tipo} onChange={(e) => f('tipo', e.target.value)}>
+                {TIPOS_IMOVEL.map((t) => <option key={t}>{t}</option>)}
+              </select>
+            </Campo>
+            <Campo rot="Aluguel (R$/mês)">
+              <input className={inputCls} inputMode="decimal" value={form.aluguel ?? ''} onChange={(e) => f('aluguel', num(e.target.value))} />
+            </Campo>
+            <Campo rot={buscandoCep ? 'CEP · buscando…' : 'CEP (preenche o endereço)'}>
+              <input className={inputCls} value={form.cep} onChange={(e) => preencherPeloCep(e.target.value)} placeholder="88385-000" />
+            </Campo>
+            <Campo rot="Rua e número" largura="col-span-2 sm:col-span-3">
+              <input className={inputCls} value={[form.rua, form.numero].filter(Boolean).join(', ')}
+                onChange={(e) => { const [r, ...x] = e.target.value.split(','); f('rua', r.trim()); f('numero', x.join(',').trim()); }}
+                placeholder="Rua Nereu Ramos, 245" />
+            </Campo>
+            <Campo rot="Bairro" largura="col-span-2"><input className={inputCls} value={form.bairro} onChange={(e) => f('bairro', e.target.value)} /></Campo>
+            <Campo rot="Cidade" largura="col-span-2"><input className={inputCls} value={form.cidade} onChange={(e) => f('cidade', e.target.value)} placeholder="Penha/SC" /></Campo>
+            <Campo rot="Dono — nome" largura="col-span-2"><input className={inputCls} value={form.locadorNome} onChange={(e) => f('locadorNome', e.target.value)} /></Campo>
+            <Campo rot="Dono — WhatsApp" largura="col-span-2"><input className={inputCls} value={form.locadorTelefone} onChange={(e) => f('locadorTelefone', e.target.value)} /></Campo>
+          </div>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <button onClick={() => salvar(false)} disabled={salvando} className={btnOuro}>
+              {salvando ? 'Salvando…' : 'Salvar e captar'}
+            </button>
+            <button onClick={() => setCompleto(true)} className={btnGhost}>preencher tudo agora →</button>
+            <button onClick={onFechar} className={btnGhost}>cancelar</button>
+          </div>
+        </>
+      )}
+
+      {completo && (<>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Campo rot="Título do anúncio (10–100 caracteres)" largura="sm:col-span-2">
           <input className={inputCls} value={form.titulo} onChange={(e) => f('titulo', e.target.value)}
@@ -138,7 +202,9 @@ export default function FichaImovel({ imobiliariaId, isEspelhoDemo, imoveis, imo
         <Campo rot="Compl." largura="col-span-1 sm:col-span-2"><input className={inputCls} value={form.complemento} onChange={(e) => f('complemento', e.target.value)} placeholder="apto 302" /></Campo>
         <Campo rot="Bairro" largura="col-span-2"><input className={inputCls} value={form.bairro} onChange={(e) => f('bairro', e.target.value)} /></Campo>
         <Campo rot="Cidade" largura="col-span-2"><input className={inputCls} value={form.cidade} onChange={(e) => f('cidade', e.target.value)} placeholder="Penha/SC" /></Campo>
-        <Campo rot="CEP" largura="col-span-2"><input className={inputCls} value={form.cep} onChange={(e) => f('cep', e.target.value)} /></Campo>
+        <Campo rot={buscandoCep ? 'CEP · buscando…' : 'CEP (preenche o endereço)'} largura="col-span-2">
+          <input className={inputCls} value={form.cep} onChange={(e) => preencherPeloCep(e.target.value)} />
+        </Campo>
         <Campo rot="Latitude" largura="col-span-2"><input className={inputCls} value={form.latitude} onChange={(e) => f('latitude', e.target.value)} placeholder="-26.7754" /></Campo>
         <Campo rot="Longitude" largura="col-span-2"><input className={inputCls} value={form.longitude} onChange={(e) => f('longitude', e.target.value)} placeholder="-48.6461" /></Campo>
         <p className="col-span-2 self-end text-[10.5px] text-text-secondary">Pega no Google Maps (botão direito no endereço).</p>
@@ -236,6 +302,7 @@ export default function FichaImovel({ imobiliariaId, isEspelhoDemo, imoveis, imo
         <button onClick={baixarXml} className={btnGhost} title="o arquivo que os portais leem — pra testar na homologação">⬇ XML do feed</button>
         {imovel && <button onClick={excluir} className={btnGhost + ' !text-rose-300 ml-auto'}>excluir imóvel</button>}
       </div>
+      </>)}
     </div>
   );
 }

@@ -150,6 +150,37 @@ export const fmtData = (ymd?: string): string =>
 export const hojeYmd = (): string => new Date().toISOString().slice(0, 10);
 
 /**
+ * O link que abre a conversa no WhatsApp. O trabalho do setor é falar com
+ * dono e inquilino — sem isto, o gestor copia número na mão o dia inteiro.
+ */
+export function linkWhats(telefone: string, texto = ''): string {
+  const n = (telefone || '').replace(/\D/g, '');
+  if (n.length < 10) return '';
+  const comPais = n.startsWith('55') ? n : '55' + n;
+  return `https://wa.me/${comPais}${texto ? '?text=' + encodeURIComponent(texto) : ''}`;
+}
+
+/**
+ * Busca o endereço pelo CEP (ViaCEP, sem chave). Digitar rua/bairro/cidade
+ * à mão é trabalho que a internet faz de graça — e erro de digitação em
+ * endereço reprova o anúncio na homologação do portal.
+ */
+export async function buscarCep(cep: string): Promise<{ rua: string; bairro: string; cidade: string } | null> {
+  const limpo = (cep || '').replace(/\D/g, '');
+  if (limpo.length !== 8) return null;
+  try {
+    const r = await fetch(`https://viacep.com.br/ws/${limpo}/json/`);
+    const d = await r.json();
+    if (d.erro) return null;
+    return {
+      rua: String(d.logradouro || ''),
+      bairro: String(d.bairro || ''),
+      cidade: [d.localidade, d.uf].filter(Boolean).join('/'),
+    };
+  } catch { return null; }
+}
+
+/**
  * As regras dos portais para um anúncio ir ao ar (lidas das especificações).
  * Rascunho aceita qualquer coisa; ANUNCIAR exige a lista limpa.
  */
