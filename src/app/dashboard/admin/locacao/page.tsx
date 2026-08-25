@@ -4,9 +4,17 @@
  * SETOR DE LOCAÇÃO — uma tela só: a fila de trabalho.
  *
  * As versões anteriores tinham 6 abas e o gestor precisava adivinhar em qual
- * morava o próximo passo. Morreram. Aqui existe UMA lista, ordenada pela
- * urgência, e cada linha é um aluguel esperando alguém fazer alguma coisa —
- * com o botão da coisa ali.
+ * morava o próximo passo. Morreram.
+ *
+ * A tela tem TRÊS DENSIDADES, porque com quarenta contratos rodando uma
+ * lista plana de cartões vira treze telas de rolagem:
+ *
+ *   PRECISA DE VOCÊ    cartão completo, com régua e botão do próximo passo.
+ *   ESPERANDO          uma linha por item — não há o que fazer, só saber.
+ *   A CARTEIRA         tabela densa dos alugados, com ação em massa.
+ *
+ * Contrato que corre bem não é tarefa: é linha de tabela. Só sobe pra cartão
+ * quando alguém precisa agir.
  *
  * A ordem da papelada (corrigida com o gestor):
  *   captar → administração do dono → anunciar → candidato fecha →
@@ -43,6 +51,7 @@ import MinutaContrato from './minuta';
 import FichaImovel from './imoveis';
 import PainelContrato from './contratos';
 import { criarDadosExemplo, apagarDadosExemplo } from './demo';
+import Carteira, { type PainelCarteira } from './carteira';
 
 /** As 8 paradas da papelada — o que o gestor lê na barrinha de cada linha. */
 const PARADAS = ['Captado', 'Administração', 'Anunciado', 'Candidato', 'Análise', 'Vistoria', 'Assinatura', 'Alugado'] as const;
@@ -128,10 +137,12 @@ export default function LocacaoPage() {
         vistoria_feita: { p: 6, t: 'Enviar contrato + laudo pra assinatura', peso: 0 },
         assinatura_enviada: { p: 6, t: 'Aguardando dono e inquilino assinarem', peso: 1 },
         assinado: { p: 7, t: 'Entregar as chaves e começar a cobrar', peso: 0 },
-        ativo: { p: 7, t: atrasadas ? 'Cobrança atrasada' : aRepassar ? 'Repasse esperando' : 'Alugado, cobrando todo mês', peso: atrasadas || aRepassar ? 0 : 2 },
+        // ativo sem pendência sai da fila e vive na carteira (tabela)
+        ativo: { p: 7, t: atrasadas ? 'Cobrança atrasada' : aRepassar ? 'Repasse esperando' : 'Alugado, cobrando todo mês', peso: atrasadas || aRepassar || alertas.length ? 0 : 9 },
         encerrando: { p: 7, t: 'Saída: vistoria de saída + distrato', peso: 0 },
       };
       const m = mapa[c.status] || { p: 5, t: c.status, peso: 0 };
+      if (m.peso === 9) continue;   // rodando bem: a carteira cuida dele
       out.push({ chave: `c-${c.id}`, imovel: im, contrato: c, movs, parada: m.p, titulo: m.t, peso: alertas.length ? 0 : m.peso, alertas });
     }
 
@@ -182,6 +193,10 @@ export default function LocacaoPage() {
       return campos.includes(b);
     });
   }, [fila, busca, soMeus]);
+
+  const grupoAgir = useMemo(() => filaVisivel.filter((f) => f.peso === 0), [filaVisivel]);
+  const grupoEsperando = useMemo(() => filaVisivel.filter((f) => f.peso === 1), [filaVisivel]);
+  const grupoOutros = useMemo(() => filaVisivel.filter((f) => f.peso > 1), [filaVisivel]);
 
   const resumo = useMemo(() => {
     const hoje = hojeYmd();
@@ -396,6 +411,101 @@ export default function LocacaoPage() {
     recarregar();
   };
 
+  /**
+   * O painel aberto embaixo de qualquer linha — a fila e a carteira usam o
+   * MESMO, então nada se perde por um contrato estar na tabela compacta.
+   */
+  const painelAberto = (it: Item): React.ReactNode => {
+    if (!aberto || aberto.chave !== it.chave) return null;
+    return (
+      <>
+            <div className="border-t border-white/[0.08] bg-white/[0.02] p-4">
+              {aberto.painel === 'ficha' && it.imovel && (
+                <FichaImovel imobiliariaId={imobiliariaId} isEspelhoDemo={isEspelhoDemo} imoveis={imoveis}
+                  imovel={it.imovel} recarregar={recarregar} onFechar={fechar} />
+              )}
+              {aberto.painel === 'contrato' && it.contrato && (
+                <PainelContrato imobiliariaId={imobiliariaId} isEspelhoDemo={isEspelhoDemo}
+                  contrato={it.contrato} imovel={it.imovel} recarregar={recarregar} onFechar={fechar} />
+              )}
+              {aberto.painel === 'minuta' && it.contrato && (
+                <MinutaContrato c={it.contrato} imovel={it.imovel} onFechar={fechar} />
+              )}
+              {aberto.painel === 'portal' && it.contrato && (
+                <>
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-sky-300 mb-2">
+                    O que o {aberto.visao === 'dono' ? 'DONO' : 'INQUILINO'} vê no portal
+                  </p>
+                  {aberto.visao === 'dono'
+                    ? <VisaoDono d={dadosPortalDoContrato(it.contrato, it.imovel, it.movs)} />
+                    : <VisaoInquilino d={dadosPortalDoContrato(it.contrato, it.imovel, it.movs)} />}
+                </>
+              )}
+              {aberto.painel === 'extrato' && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-[11.5px] border-collapse min-w-[520px]">
+                    <thead><tr>{['Competência', 'Vence', 'Cobrança', 'Situação', 'Repasse', 'Repassado'].map((h) => (
+                      <th key={h} className="text-left font-extrabold uppercase tracking-[0.08em] text-[9.5px] text-text-secondary border-b border-white/15 px-2 py-1.5">{h}</th>
+                    ))}</tr></thead>
+                    <tbody>
+                      {[...it.movs].sort((a, b) => a.competencia.localeCompare(b.competencia)).map((m) => {
+                        const atrasada = m.statusCobranca !== 'paga' && m.vencimento < hojeYmd();
+                        return (
+                          <tr key={m.id}>
+                            <td className="px-2 py-1.5 border-b border-white/[0.06] text-white font-bold tabular-nums">{m.competencia.split('-').reverse().join('/')}</td>
+                            <td className="px-2 py-1.5 border-b border-white/[0.06] text-text-secondary tabular-nums">{fmtData(m.vencimento)}</td>
+                            <td className="px-2 py-1.5 border-b border-white/[0.06] text-white tabular-nums">{fmtValor(m.valorTotal)}</td>
+                            <td className={`px-2 py-1.5 border-b border-white/[0.06] font-bold ${m.statusCobranca === 'paga' ? 'text-emerald-300' : atrasada ? 'text-rose-300' : 'text-text-secondary'}`}>
+                              {m.statusCobranca === 'paga' ? `paga ${fmtData(m.pagoEm)}` : atrasada ? 'atrasada' : 'prevista'}
+                            </td>
+                            <td className="px-2 py-1.5 border-b border-white/[0.06] text-emerald-300 tabular-nums">{fmtValor(m.repasseDono)}</td>
+                            <td className="px-2 py-1.5 border-b border-white/[0.06] text-text-secondary">{m.repassadoEm ? fmtData(m.repassadoEm) : m.statusRepasse === 'liberado' ? 'liberado' : '—'}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  <p className="text-[10.5px] text-text-secondary mt-2">
+                    Cobrança = aluguel + IPTU + seguro. O condomínio o inquilino paga direto à administradora.
+                    Repasse = aluguel − taxa + IPTU, num PIX só.
+                  </p>
+                </div>
+              )}
+              {aberto.painel === 'vistoria' && it.contrato && (
+                <div className="space-y-2">
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">
+                    Vistoria de entrada — imóvel vazio, ambiente por ambiente (funciona no celular).
+                    O laudo vai junto do contrato no mesmo envelope de assinatura.
+                  </p>
+                  {ambientes.map((a, n) => (
+                    <div key={n} className="flex flex-wrap items-center gap-2 border-b border-white/[0.05] pb-2">
+                      <input className={inputCls + ' !w-36'} value={a.nome} onChange={(e) => setAmb(n, { nome: e.target.value })} />
+                      <select className={inputCls + ' !w-28'} value={a.estado} onChange={(e) => setAmb(n, { estado: e.target.value as AmbienteVistoria['estado'] })}>
+                        <option value="otimo">Ótimo</option><option value="bom">Bom</option>
+                        <option value="regular">Regular</option><option value="ruim">Ruim</option>
+                      </select>
+                      <input className={inputCls + ' flex-1 min-w-[140px]'} placeholder="observação" value={a.observacao} onChange={(e) => setAmb(n, { observacao: e.target.value })} />
+                      <label className={btnGhost + ' cursor-pointer'}>
+                        {fotoDe === n ? '…' : `📷 ${a.fotos.length}`}
+                        <input type="file" accept="image/*" capture="environment" multiple className="hidden"
+                          onChange={(e) => { fotoAmbiente(n, e.target.files); e.currentTarget.value = ''; }} />
+                      </label>
+                      <button onClick={() => setAmbientes(ambientes.filter((_, j) => j !== n))} className="text-rose-300">×</button>
+                    </div>
+                  ))}
+                  <div className="flex flex-wrap gap-2">
+                    <button onClick={() => setAmbientes([...ambientes, { nome: '', estado: 'bom', observacao: '', fotos: [] }])} className={btnGhost}>+ ambiente</button>
+                    <button onClick={() => salvarVistoria(it.contrato!)} className={btnOuro}>Salvar vistoria</button>
+                    <button onClick={fechar} className={btnGhost}>cancelar</button>
+                  </div>
+                </div>
+              )}
+            </div>
+      </>
+    );
+  };
+
+
   // ═══════════════ o botão de cada linha ═══════════════
 
   const acao = (it: Item): React.ReactNode => {
@@ -591,7 +701,13 @@ export default function LocacaoPage() {
           </div>
         )}
 
-        {filaVisivel.map((it) => {
+        {/* ——— O QUE PRECISA DE VOCÊ: cartão completo ——— */}
+        {grupoAgir.length > 0 && (
+          <h2 className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#FFE9A6] pt-1">
+            Precisa de você · {grupoAgir.length}
+          </h2>
+        )}
+        {grupoAgir.map((it) => {
           const eu = it.peso === 0;
           const estaAberto = aberto?.chave === it.chave;
           return (
@@ -691,94 +807,74 @@ export default function LocacaoPage() {
                 </div>
               </div>
 
-              {/* o painel aberto embaixo da linha */}
-              {estaAberto && (
-                <div className="border-t border-white/[0.08] bg-white/[0.02] p-4">
-                  {aberto.painel === 'ficha' && it.imovel && (
-                    <FichaImovel imobiliariaId={imobiliariaId} isEspelhoDemo={isEspelhoDemo} imoveis={imoveis}
-                      imovel={it.imovel} recarregar={recarregar} onFechar={fechar} />
-                  )}
-                  {aberto.painel === 'contrato' && it.contrato && (
-                    <PainelContrato imobiliariaId={imobiliariaId} isEspelhoDemo={isEspelhoDemo}
-                      contrato={it.contrato} imovel={it.imovel} recarregar={recarregar} onFechar={fechar} />
-                  )}
-                  {aberto.painel === 'minuta' && it.contrato && (
-                    <MinutaContrato c={it.contrato} imovel={it.imovel} onFechar={fechar} />
-                  )}
-                  {aberto.painel === 'portal' && it.contrato && (
-                    <>
-                      <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-sky-300 mb-2">
-                        O que o {aberto.visao === 'dono' ? 'DONO' : 'INQUILINO'} vê no portal
-                      </p>
-                      {aberto.visao === 'dono'
-                        ? <VisaoDono d={dadosPortalDoContrato(it.contrato, it.imovel, it.movs)} />
-                        : <VisaoInquilino d={dadosPortalDoContrato(it.contrato, it.imovel, it.movs)} />}
-                    </>
-                  )}
-                  {aberto.painel === 'extrato' && (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-[11.5px] border-collapse min-w-[520px]">
-                        <thead><tr>{['Competência', 'Vence', 'Cobrança', 'Situação', 'Repasse', 'Repassado'].map((h) => (
-                          <th key={h} className="text-left font-extrabold uppercase tracking-[0.08em] text-[9.5px] text-text-secondary border-b border-white/15 px-2 py-1.5">{h}</th>
-                        ))}</tr></thead>
-                        <tbody>
-                          {[...it.movs].sort((a, b) => a.competencia.localeCompare(b.competencia)).map((m) => {
-                            const atrasada = m.statusCobranca !== 'paga' && m.vencimento < hojeYmd();
-                            return (
-                              <tr key={m.id}>
-                                <td className="px-2 py-1.5 border-b border-white/[0.06] text-white font-bold tabular-nums">{m.competencia.split('-').reverse().join('/')}</td>
-                                <td className="px-2 py-1.5 border-b border-white/[0.06] text-text-secondary tabular-nums">{fmtData(m.vencimento)}</td>
-                                <td className="px-2 py-1.5 border-b border-white/[0.06] text-white tabular-nums">{fmtValor(m.valorTotal)}</td>
-                                <td className={`px-2 py-1.5 border-b border-white/[0.06] font-bold ${m.statusCobranca === 'paga' ? 'text-emerald-300' : atrasada ? 'text-rose-300' : 'text-text-secondary'}`}>
-                                  {m.statusCobranca === 'paga' ? `paga ${fmtData(m.pagoEm)}` : atrasada ? 'atrasada' : 'prevista'}
-                                </td>
-                                <td className="px-2 py-1.5 border-b border-white/[0.06] text-emerald-300 tabular-nums">{fmtValor(m.repasseDono)}</td>
-                                <td className="px-2 py-1.5 border-b border-white/[0.06] text-text-secondary">{m.repassadoEm ? fmtData(m.repassadoEm) : m.statusRepasse === 'liberado' ? 'liberado' : '—'}</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                      <p className="text-[10.5px] text-text-secondary mt-2">
-                        Cobrança = aluguel + IPTU + seguro. O condomínio o inquilino paga direto à administradora.
-                        Repasse = aluguel − taxa + IPTU, num PIX só.
-                      </p>
-                    </div>
-                  )}
-                  {aberto.painel === 'vistoria' && it.contrato && (
-                    <div className="space-y-2">
-                      <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">
-                        Vistoria de entrada — imóvel vazio, ambiente por ambiente (funciona no celular).
-                        O laudo vai junto do contrato no mesmo envelope de assinatura.
-                      </p>
-                      {ambientes.map((a, n) => (
-                        <div key={n} className="flex flex-wrap items-center gap-2 border-b border-white/[0.05] pb-2">
-                          <input className={inputCls + ' !w-36'} value={a.nome} onChange={(e) => setAmb(n, { nome: e.target.value })} />
-                          <select className={inputCls + ' !w-28'} value={a.estado} onChange={(e) => setAmb(n, { estado: e.target.value as AmbienteVistoria['estado'] })}>
-                            <option value="otimo">Ótimo</option><option value="bom">Bom</option>
-                            <option value="regular">Regular</option><option value="ruim">Ruim</option>
-                          </select>
-                          <input className={inputCls + ' flex-1 min-w-[140px]'} placeholder="observação" value={a.observacao} onChange={(e) => setAmb(n, { observacao: e.target.value })} />
-                          <label className={btnGhost + ' cursor-pointer'}>
-                            {fotoDe === n ? '…' : `📷 ${a.fotos.length}`}
-                            <input type="file" accept="image/*" capture="environment" multiple className="hidden"
-                              onChange={(e) => { fotoAmbiente(n, e.target.files); e.currentTarget.value = ''; }} />
-                          </label>
-                          <button onClick={() => setAmbientes(ambientes.filter((_, j) => j !== n))} className="text-rose-300">×</button>
-                        </div>
-                      ))}
-                      <div className="flex flex-wrap gap-2">
-                        <button onClick={() => setAmbientes([...ambientes, { nome: '', estado: 'bom', observacao: '', fotos: [] }])} className={btnGhost}>+ ambiente</button>
-                        <button onClick={() => salvarVistoria(it.contrato!)} className={btnOuro}>Salvar vistoria</button>
-                        <button onClick={fechar} className={btnGhost}>cancelar</button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+              {painelAberto(it)}            </div>
           );
         })}
+
+        {/* ——— ESPERANDO TERCEIROS: uma linha, sem botão ——— */}
+        {grupoEsperando.length > 0 && (
+          <>
+            <h2 className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-text-secondary pt-2">
+              Esperando terceiros · {grupoEsperando.length}
+            </h2>
+            <div className="al-card divide-y divide-white/[0.06]">
+              {grupoEsperando.map((it) => {
+                const nome = it.contrato?.locatarioNome || it.lead?.nome || it.imovel?.locadorNome;
+                const tel = it.contrato?.locatarioTelefone || it.lead?.telefone || it.imovel?.locadorTelefone || '';
+                const zap = linkWhats(tel, `Olá${nome ? ' ' + nome.split(' ')[0] : ''}! Aqui é da Nox Imóveis.`);
+                return (
+                  <div key={it.chave} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5">
+                    <span className="text-[12.5px] text-white/85 min-w-0 flex-1">
+                      <b className="text-white">{it.imovel?.codigo}</b> {nome ? `· ${nome}` : ''} — {it.titulo.toLowerCase()}
+                    </span>
+                    {zap && <a href={zap} target="_blank" rel="noreferrer"
+                      className="px-2 py-1 rounded-lg text-[10.5px] font-bold border border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-300">💬 cobrar</a>}
+                    {it.contrato && <button onClick={() => abrir(it.chave, 'contrato')} className={btnGhost + ' !py-1 !text-[10.5px]'}>abrir</button>}
+                    {it.lead && !it.contrato && <button onClick={() => abrir(it.chave, 'ficha')} className={btnGhost + ' !py-1 !text-[10.5px]'}>imóvel</button>}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* ——— ANUNCIADOS SEM CANDIDATO: linha compacta ——— */}
+        {grupoOutros.length > 0 && (
+          <>
+            <h2 className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-text-secondary pt-2">
+              No ar, sem candidato · {grupoOutros.length}
+            </h2>
+            <div className="al-card divide-y divide-white/[0.06]">
+              {grupoOutros.map((it) => (
+                <div key={it.chave} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5">
+                  <span className="text-[12.5px] text-white/85 min-w-0 flex-1">
+                    <b className="text-white">{it.imovel?.codigo}</b> · {it.imovel?.titulo}
+                    <span className="text-text-secondary"> — {fmtValor(it.imovel?.aluguel)}/mês</span>
+                  </span>
+                  <div className="shrink-0">{acao(it)}</div>
+                  <button onClick={() => abrir(it.chave, 'ficha')} className={btnGhost + ' !py-1 !text-[10.5px]'}>ficha</button>
+                </div>
+              ))}
+            </div>
+            {grupoOutros.some((it) => aberto?.chave === it.chave) && (
+              <div className="al-card p-4">{painelAberto(grupoOutros.find((it) => aberto?.chave === it.chave)!)}</div>
+            )}
+          </>
+        )}
+
+        {/* ——— A CARTEIRA: os alugados, em tabela ——— */}
+        <Carteira isEspelhoDemo={isEspelhoDemo} contratos={contratos} imoveis={imoveis}
+          movimentos={movimentos} recarregar={recarregar}
+          abertoEm={aberto && aberto.chave.startsWith('c-') ? { id: aberto.chave.slice(2), painel: aberto.painel as PainelCarteira } : null}
+          onAbrir={(id, painel) => abrir(`c-${id}`, painel === 'portalDono' ? 'portal' : painel === 'portalInquilino' ? 'portal' : painel,
+            painel === 'portalDono' ? 'dono' : painel === 'portalInquilino' ? 'inquilino' : undefined)}
+          renderPainel={(id) => {
+            const c = contratos.find((x) => x.id === id);
+            if (!c) return null;
+            const it: Item = { chave: `c-${id}`, imovel: imoveis.find((i) => i.id === c.imovelId), contrato: c,
+              movs: movimentos.filter((m) => m.contratoId === id), parada: 7, titulo: '', peso: 2, alertas: [] };
+            return painelAberto(it);
+          }} />
 
         {fila.length > 0 && filaVisivel.length === 0 && (
           <div className="al-card p-6 text-center text-[13px] text-text-secondary">
