@@ -535,8 +535,8 @@ export const INTEGRACOES: DefIntegracao[] = [
   {
     chave: 'leads_olx', nome: 'Grupo OLX (leads)', papel: 'Cada interessado vira um aviso automático que cai na esteira, já com a temperatura avaliada',
     etapas: '3',
-    prontoDoNossoLado: ['Endpoint JÁ NO AR: /api/locacao/leads-olx — deduplica, casa o lead com o anúncio e joga na esteira com a temperatura', 'Cadastro manual funciona hoje (mesma fila)'],
-    faltaParaLigar: ['Chave de serviço do Firebase no Netlify (a mesma do feed)', 'Formulário de homologação do Grupo OLX com a URL + token'],
+    prontoDoNossoLado: ['Endpoint JÁ NO AR: /api/locacao/leads-olx — deduplica, casa o lead com o anúncio e guarda com a temperatura avaliada'],
+    faltaParaLigar: ['O funil de ATENDIMENTO dos corretores (fase 2) — é lá que estes leads vão desaguar', 'Chave de serviço do Firebase no Netlify (a mesma do feed)', 'Formulário de homologação do Grupo OLX com a URL + token'],
   },
   {
     chave: 'imovelweb', nome: 'ImovelWeb (Open)', papel: 'Publica anúncios e devolve leads por callback',
