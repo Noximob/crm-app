@@ -168,7 +168,16 @@ console.log('\n— O FEED DOS PORTAIS —');
   checa('anúncio completo entra no feed', L.imoveisNoFeed([imovel({})]).length, 1);
   checa('anúncio com 3 fotos fica de fora', L.imoveisNoFeed([imovel({ fotos: ['1', '2', '3'] })]).length, 0);
   checa('e a tela consegue dizer QUEM ficou de fora e por quê',
-    L.imoveisForaDoFeed([imovel({ fotos: ['1', '2', '3'] })])[0].falta[0].startsWith('Mínimo de 5 fotos'), true);
+    L.imoveisForaDoFeed([imovel({ fotos: ['1', '2', '3'] })])[0].falta[0].startsWith('Pelo menos 5 fotos'), true,
+    'a palavra é PELO MENOS: 5 é o piso dos portais, não um teto');
+
+  // as réguas dos portais valem nas duas pontas
+  checa('título acima de 100 caracteres também é pendência',
+    L.pendenciasImovel(imovel({ titulo: 'x'.repeat(120) })).material.length > 0, true);
+  checa('descrição acima de 3.000 caracteres também é pendência',
+    L.pendenciasImovel(imovel({ descricao: 'x'.repeat(3200) })).material.length > 0, true);
+  checa('anúncio com 12 fotos passa — 5 é piso, não teto',
+    L.pendenciasImovel(imovel({ fotos: Array.from({ length: 12 }, (_, i) => String(i)) })).material.length, 0);
   checa('imóvel alugado não entra no feed', L.imoveisNoFeed([imovel({ etapa: 'alugado' })]).length, 0);
   checa('o XML não cita quem ficou de fora',
     L.gerarFeedVrsync([imovel({ fotos: ['1', '2', '3'] })], { nome: 'Nox', email: 'a@b.c', telefone: '' }).includes('LOC-001'), false);

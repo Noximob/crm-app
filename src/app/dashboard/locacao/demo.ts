@@ -335,13 +335,34 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     });
   }
 
-  // um pedido de manutenção aberto pelo inquilino no portal dele
+  // a caixa de entrada: um chamado em cada ponto da esteira + dois recados
   batch.set(doc(collection(db, 'locacaoChamados')), {
     demo: true, imobiliariaId,
     locacaoId: locAtivaRef.id, imovelId: imAlugado.id,
     origem: 'inquilino', status: 'aberto', orcamento: null, quemPaga: '', resposta: '',
     descricao: 'A torneira da cozinha está pingando desde ontem e o registro não fecha direito.',
-    criadoEm: serverTimestamp(),
+    simulada: true, criadoEm: serverTimestamp(),
+  });
+  batch.set(doc(collection(db, 'locacaoChamados')), {
+    demo: true, imobiliariaId,
+    locacaoId: locAtivaRef.id, imovelId: imAlugado.id,
+    origem: 'inquilino', status: 'aguardando_dono', orcamento: 380, quemPaga: 'dono', resposta: '',
+    descricao: 'O chuveiro parou de esquentar — o eletricista orçou a resistência e a chave.',
+    simulada: true, criadoEm: serverTimestamp(),
+  });
+  batch.set(doc(collection(db, 'locacaoMensagens')), {
+    demo: true, imobiliariaId, de: 'inquilino',
+    nome: 'Fernanda Lima', telefone: '(47) 95555-1122',
+    locacaoId: locAtivaRef.id, imovelId: imAlugado.id,
+    texto: 'Esse mês o pagamento vai atrasar uns 3 dias, tem problema? Consigo pagar dia 8.',
+    tratadaEm: '', resposta: '', simulada: true, criadoEm: serverTimestamp(),
+  });
+  batch.set(doc(collection(db, 'locacaoMensagens')), {
+    demo: true, imobiliariaId, de: 'dono',
+    nome: 'Tereza Bianchi', telefone: '(47) 99777-8899',
+    locacaoId: '', imovelId: imAlugado.id,
+    texto: 'Podem me mandar o informe de rendimentos pro meu contador?',
+    tratadaEm: '', resposta: '', simulada: true, criadoEm: serverTimestamp(),
   });
 
   await batch.commit();
@@ -351,7 +372,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
 /** Remove TUDO que foi criado pelo botão de exemplo — e só isso. */
 export async function apagarDadosExemplo(imobiliariaId: string): Promise<number> {
   let total = 0;
-  for (const col of ['locacaoImoveis', 'locacaoLocacoes', 'locacaoMovimentos', 'locacaoChamados']) {
+  for (const col of ['locacaoImoveis', 'locacaoLocacoes', 'locacaoMovimentos', 'locacaoChamados', 'locacaoMensagens']) {
     const snap = await getDocs(query(collection(db, col),
       where('imobiliariaId', '==', imobiliariaId), where('demo', '==', true)));
     const docs = snap.docs;

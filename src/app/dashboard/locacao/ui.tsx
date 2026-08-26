@@ -10,6 +10,7 @@
  * webhooks.
  */
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { ehArquivoTeste, textoDocTeste, type Arquivo } from '@/lib/locacao';
 
 export const inputCls ='w-full px-3 py-2 rounded-lg border border-white/10 bg-white/[0.04] text-white text-[13px] placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#E8C547]/40';
@@ -102,61 +103,63 @@ export function Dobra({ titulo, sub, chips, aberto0 = false, children }: {
 }
 
 /**
- * A CHAVE DOS DOIS FUNIS — a pergunta "de que lado eu estou?" respondida
- * de três formas ao mesmo tempo, porque uma só não estava bastando:
- *   · o lado ativo é OURO CHEIO com texto escuro (a linguagem do botão
- *     principal da casa); o outro é plano e apagado, com seta de "vá pra lá";
+ * AS ABAS DA ÁREA — Imóveis, Locações e Mensagens, agora páginas próprias.
+ *
+ * A pergunta "de que lado eu estou?" é respondida de três formas ao mesmo
+ * tempo, porque uma só não estava bastando:
+ *   · a aba ativa é OURO CHEIO com texto escuro (a linguagem do botão
+ *     principal da casa); as outras são planas e apagadas, com seta;
  *   · logo abaixo, uma faixa escrita "Você está em: 🏠 Funil do Imóvel";
  *   · e o subtítulo diz com QUEM se fala de cada lado.
  */
-export function ChaveDosFunis({ funil, onTrocar, imoveis, locacoes }: {
-  funil: 'imoveis' | 'locacoes';
-  onTrocar: (f: 'imoveis' | 'locacoes') => void;
+export function AbasDaArea({ ativa, imoveis, locacoes, mensagens }: {
+  ativa: 'imoveis' | 'locacoes' | 'mensagens';
   imoveis: { total: number; meus: number };
   locacoes: { total: number; meus: number };
+  mensagens: { total: number; meus: number };
 }) {
-  const lados = [
-    { k: 'imoveis' as const, ic: '🏠', t: 'Imóveis', sub: 'com o proprietário', ...imoveis },
-    { k: 'locacoes' as const, ic: '🔑', t: 'Locações', sub: 'com o inquilino', ...locacoes },
+  const abas = [
+    { k: 'imoveis' as const, href: '/dashboard/locacao/imoveis', ic: '🏠', t: 'Imóveis', sub: 'com o proprietário', ...imoveis },
+    { k: 'locacoes' as const, href: '/dashboard/locacao/locacoes', ic: '🔑', t: 'Locações', sub: 'com o inquilino', ...locacoes },
+    { k: 'mensagens' as const, href: '/dashboard/locacao/mensagens', ic: '💬', t: 'Mensagens', sub: 'manutenção e recados', ...mensagens },
   ];
+  const faixa = {
+    imoveis: ['🏠 Funil do Imóvel', '— captar, documentar o dono, assinar a administração e publicar'],
+    locacoes: ['🔑 Funil da Locação', '— qualificar, aprovar na Loft, assinar o contrato, entregar a chave e cobrar'],
+    mensagens: ['💬 Caixa de entrada', '— o que os donos e inquilinos mandaram: manutenção e recados'],
+  }[ativa];
   return (
     <>
-      <div className="grid grid-cols-2 gap-2">
-        {lados.map(({ k, ic, t, sub, total, meus }) => {
-          const on = funil === k;
+      <div className="grid grid-cols-3 gap-2">
+        {abas.map(({ k, href, ic, t, sub, total, meus }) => {
+          const on = ativa === k;
           return (
-            <button key={k} onClick={() => onTrocar(k)}
+            <Link key={k} href={href}
               className={`relative rounded-2xl px-3.5 py-3 text-left transition-all overflow-hidden ${
                 on
                   ? 'bg-gradient-to-br from-[#E8C547] to-[#C89210] shadow-[0_10px_30px_-12px_rgba(232,197,71,0.7)]'
                   : 'border border-white/10 bg-white/[0.03] hover:bg-white/[0.06]'}`}>
               <div className="flex items-baseline gap-2">
                 <span className="text-[17px] leading-none">{ic}</span>
-                <span className={`al-display text-[15px] font-bold uppercase tracking-[0.1em] ${on ? 'text-[#1a1405]' : 'text-white/70'}`}>{t}</span>
+                <span className={`al-display text-[14px] font-bold uppercase tracking-[0.08em] truncate ${on ? 'text-[#1a1405]' : 'text-white/70'}`}>{t}</span>
                 <span className={`ml-auto text-[19px] font-extrabold tabular-nums leading-none ${on ? 'text-[#1a1405]' : 'text-white/50'}`}>{total}</span>
               </div>
-              <p className={`text-[11px] mt-0.5 ${on ? 'text-[#3d3005] font-semibold' : 'text-text-secondary'}`}>{sub}</p>
-              <p className={`text-[11px] mt-1 font-bold ${
+              <p className={`text-[11px] mt-0.5 truncate ${on ? 'text-[#3d3005] font-semibold' : 'text-text-secondary'}`}>{sub}</p>
+              <p className={`text-[11px] mt-1 font-bold truncate ${
                 on ? (meus ? 'text-[#5c2b00]' : 'text-[#3d3005]/70')
                    : (meus ? 'text-amber-300' : 'text-text-secondary')}`}>
-                {meus ? `● ${meus} esperando você` : '○ nada esperando você'}
+                {meus ? `● ${meus} esperando você` : '○ nada esperando'}
                 {!on && ' →'}
               </p>
-            </button>
+            </Link>
           );
         })}
       </div>
 
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-[#E8C547]/25 bg-[#E8C547]/[0.06] px-3.5 py-2">
         <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#FFE9A6]">Você está em</span>
-        <span className="al-display text-[13px] font-bold uppercase tracking-[0.08em] text-white">
-          {funil === 'imoveis' ? '🏠 Funil do Imóvel' : '🔑 Funil da Locação'}
-        </span>
-        <span className="text-[11.5px] text-text-secondary">
-          {funil === 'imoveis'
-            ? '— captar, documentar o dono, assinar a administração e publicar'
-            : '— qualificar, aprovar na Loft, assinar o contrato, entregar a chave e cobrar'}
-        </span>
+        <span className="al-display text-[13px] font-bold uppercase tracking-[0.08em] text-white">{faixa[0]}</span>
+        <span className="text-[11.5px] text-text-secondary">{faixa[1]}</span>
       </div>
     </>
   );

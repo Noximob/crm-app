@@ -24,7 +24,7 @@ import { showToast } from '@/components/ui/toast';
 import {
   TIPOS_IMOVEL, MOBILIADO, COMODIDADES, GARANTIAS, PORTAIS, DOCS_DONO,
   IMOVEL_VAZIO, custoTotalMensal, fmtValor, pendenciasImovel, buscarCep,
-  IMOVEL_TESTE, DONO_TESTE, ANUNCIO_TESTE, FOTOS_TESTE, arquivoTeste, preencherVazios,
+  IMOVEL_TESTE, DONO_TESTE, ANUNCIO_TESTE, FOTOS_TESTE, REGRAS_PORTAIS, arquivoTeste, preencherVazios,
   type ImovelLocacao,
 } from '@/lib/locacao';
 import { inputCls, btnOuro, btnGhost, btnSimula, Campo, num, Marcaveis, ChipsDocumentos } from './ui';
@@ -58,19 +58,29 @@ export function PainelDono({ imobiliariaId, isEspelhoDemo, imovel, recarregar, o
   const guarda = () => { if (isEspelhoDemo) { showToast('Modo demonstração.', 'info'); return true; } return false; };
   const pend = pendenciasImovel({ ...imovel, ...form }).docs;
 
-  const gravar = async (avancar: boolean) => {
+  /**
+   * O funil ANDA SOZINHO: salvou com a papelada completa, o imóvel avança
+   * de "Captado" pra "Papelada OK" — sem botão separado de "avançar". O
+   * gestor só faz o trabalho; a coluna é consequência.
+   */
+  const gravar = async () => {
     if (guarda()) return;
-    if (avancar && pend.length) { showToast(`Falta: ${pend[0]}`, 'error'); return; }
     setSalvando(true);
+    const completa = pend.length === 0;
+    const avanca = completa && imovel.etapa === 'captado';
     await updateDoc(doc(db, 'locacaoImoveis', imovel.id), {
       ...form,
-      ...(avancar && imovel.etapa === 'captado' ? { etapa: 'docs_dono' as const } : {}),
+      ...(avanca ? { etapa: 'docs_dono' as const } : {}),
       atualizadoEm: serverTimestamp(),
     });
-    showToast(avancar ? 'Papelada completa — pode gerar a administração.' : 'Salvo.', 'success');
+    showToast(
+      avanca ? '📎 Papelada completa — o imóvel avançou pra "Papelada OK". Próximo passo: enviar a administração.'
+        : completa ? 'Salvo.' : `Salvo. Ainda falta: ${pend[0]}`,
+      avanca ? 'success' : 'info',
+    );
     await recarregar();
     setSalvando(false);
-    if (avancar) onFechar();
+    if (avanca) onFechar();
   };
 
   const anexar = async (arquivos: FileList | null) => {
@@ -133,13 +143,10 @@ export function PainelDono({ imobiliariaId, isEspelhoDemo, imovel, recarregar, o
 
       {pend.length > 0
         ? <p className="text-[11.5px] text-amber-300">Falta: {pend.join(' · ')}</p>
-        : <p className="text-[11.5px] text-emerald-300">✓ Papelada completa.</p>}
+        : <p className="text-[11.5px] text-emerald-300">✓ Papelada completa{imovel.etapa === 'captado' ? ' — salvando, o imóvel avança sozinho.' : '.'}</p>}
 
       <div className="flex flex-wrap gap-2">
-        {imovel.etapa === 'captado'
-          ? <button onClick={() => gravar(true)} disabled={salvando} className={btnOuro}>{salvando ? 'Salvando…' : '✓ Papelada completa'}</button>
-          : <button onClick={() => gravar(false)} disabled={salvando} className={btnOuro}>{salvando ? 'Salvando…' : 'Salvar'}</button>}
-        {imovel.etapa === 'captado' && <button onClick={() => gravar(false)} disabled={salvando} className={btnGhost}>só salvar</button>}
+        <button onClick={gravar} disabled={salvando} className={btnOuro}>{salvando ? 'Salvando…' : 'Salvar'}</button>
         <button onClick={onFechar} className={btnGhost}>fechar</button>
       </div>
     </div>
@@ -216,6 +223,20 @@ export default function FichaImovel({ imobiliariaId, isEspelhoDemo, imoveis, imo
         const chaves: readonly string[] = modo === 'anuncio' ? CAMPOS_ANUNCIO : CAMPOS_DADOS;
         const meus: Record<string, unknown> = {};
         for (const k of chaves) meus[k] = form[k as keyof typeof form];
+
+        // O FUNIL ANDA SOZINHO: anúncio completou → "Anúncio pronto";
+        // anúncio pronto que voltou a ficar incompleto → volta pra
+        // "Montando anúncio" (pra nunca publicar quebrado sem querer).
+        if (modo === 'anuncio') {
+          const completo = pendenciasImovel({ ...form }).material.length === 0;
+          if (completo && imovel.etapa === 'adm_assinada') {
+            meus.etapa = 'material';
+            showToast('✅ Anúncio dentro das regras dos portais — avançou pra "Anúncio pronto". Só falta publicar.', 'success');
+          } else if (!completo && imovel.etapa === 'material') {
+            meus.etapa = 'adm_assinada';
+            showToast('O anúncio ficou incompleto — voltou pra "Montando anúncio".', 'info');
+          }
+        }
         await updateDoc(doc(db, 'locacaoImoveis', imovel.id), { ...meus, atualizadoEm: serverTimestamp() });
       } else {
         // imóvel novo: aí sim nasce inteiro, com os dois campos do dono da captação
@@ -279,25 +300,27 @@ export default function FichaImovel({ imobiliariaId, isEspelhoDemo, imoveis, imo
           anúncio fora delas é recusado no feed.
         </p>
 
-        <Campo rot="Título do anúncio (10 a 100 caracteres)">
-          <input className={inputCls} value={form.titulo} onChange={(e) => f('titulo', e.target.value)}
+        <Campo rot={`Título do anúncio — ${REGRAS_PORTAIS.tituloMin} a ${REGRAS_PORTAIS.tituloMax} caracteres (tem ${form.titulo.trim().length})`}>
+          <input className={inputCls} maxLength={REGRAS_PORTAIS.tituloMax} value={form.titulo} onChange={(e) => f('titulo', e.target.value)}
             placeholder="Apartamento 2 quartos com sacada — Centro, Penha" />
         </Campo>
 
-        <Campo rot={`Descrição (mínimo 50 caracteres — tem ${form.descricao.trim().length})`}>
-          <textarea className={inputCls + ' min-h-[96px]'} value={form.descricao} onChange={(e) => f('descricao', e.target.value)}
-            placeholder="O texto que vai nos portais. Sem HTML, sem telefone, sem e-mail; entre 50 e 3.000 caracteres." />
+        <Campo rot={`Descrição — ${REGRAS_PORTAIS.descricaoMin} a ${REGRAS_PORTAIS.descricaoMax.toLocaleString('pt-BR')} caracteres (tem ${form.descricao.trim().length})`}>
+          <textarea className={inputCls + ' min-h-[96px]'} maxLength={REGRAS_PORTAIS.descricaoMax} value={form.descricao} onChange={(e) => f('descricao', e.target.value)}
+            placeholder="O texto que vai nos portais. Sem HTML, sem telefone, sem e-mail no texto." />
         </Campo>
 
-        <Campo rot={`Fotos (${form.fotos.length} de 5 mínimas) — a 1ª é a capa e vale por metade do anúncio`}>
+        <Campo rot={form.fotos.length < REGRAS_PORTAIS.fotosMin
+          ? `Fotos — os portais exigem PELO MENOS ${REGRAS_PORTAIS.fotosMin} (tem ${form.fotos.length}); quanto mais, melhor`
+          : `Fotos (${form.fotos.length}) — a 1ª é a capa e vale por metade do anúncio${form.fotos.length > REGRAS_PORTAIS.fotosMax ? ` · acima de ${REGRAS_PORTAIS.fotosMax} os portais cortam` : ''}`}>
           <div className="flex flex-wrap items-center gap-2">
             <label className={btnGhost + ' cursor-pointer'}>
               {subindo ? 'Subindo…' : '📷 Subir fotos'}
               <input type="file" accept="image/*" multiple className="hidden" disabled={subindo}
                 onChange={(e) => { subirFotos(e.target.files); e.currentTarget.value = ''; }} />
             </label>
-            {form.fotos.length < 5 && (
-              <button type="button" onClick={() => f('fotos', FOTOS_TESTE)} className={btnSimula}>🧪 5 fotos de teste</button>
+            {form.fotos.length < REGRAS_PORTAIS.fotosMin && (
+              <button type="button" onClick={() => f('fotos', FOTOS_TESTE)} className={btnSimula}>🧪 {REGRAS_PORTAIS.fotosMin} fotos de teste</button>
             )}
           </div>
           {form.fotos.length > 0 && (

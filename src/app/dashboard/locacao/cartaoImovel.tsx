@@ -15,7 +15,7 @@
  */
 import React from 'react';
 import {
-  ETAPAS_IMOVEL, PORTAIS, pendenciasImovel, totalInquilino, cents, fmtValor, fmtData,
+  ETAPAS_IMOVEL, PORTAIS, REGRAS_PORTAIS, pendenciasImovel, totalInquilino, cents, fmtValor, fmtData,
   type ImovelLocacao, type AlertaImovel,
 } from '@/lib/locacao';
 import { btnOuro, btnGhost, SeloSimulacao } from './ui';
@@ -41,16 +41,18 @@ export default function CartaoImovel({
 }) {
   const d = ETAPAS_IMOVEL[i.etapa];
   const pend = pendenciasImovel(i);
-  const nossaVez = ['captado', 'docs_dono', 'adm_assinada', 'material'].includes(i.etapa);
+  // a bola está com a gente? — vem da definição da etapa, igual na locação
+  const nossaVez = d?.comQuem === 'nós' && i.etapa !== 'pausado';
   const urgente = nossaVez || alertas.some((a) => a.grave);
   const temCowork = i.portais.some((c) => PORTAIS.find((x) => x.chave === c)?.via === 'cowork');
   const taxa = cents((i.aluguel || 0) * (i.taxaAdmPct || 0) / 100);
   const noAr = ETAPAS_IMOVEL[i.etapa].n >= 4;   // administração assinada em diante
   const nFotos = i.fotos.length;
   const nDesc = i.descricao.trim().length;
+  const R = REGRAS_PORTAIS;
   const seloAnuncio = [
-    { ok: nFotos >= 5, txt: nFotos >= 5 ? `${nFotos} fotos` : `faltam ${5 - nFotos} fotos` },
-    { ok: nDesc >= 50, txt: nDesc >= 50 ? 'descrição' : `descrição curta (${nDesc} de 50)` },
+    { ok: nFotos >= R.fotosMin, txt: nFotos >= R.fotosMin ? `${nFotos} fotos` : `faltam ${R.fotosMin - nFotos} fotos (mín. ${R.fotosMin})` },
+    { ok: nDesc >= R.descricaoMin && nDesc <= R.descricaoMax, txt: nDesc >= R.descricaoMin ? (nDesc <= R.descricaoMax ? 'descrição' : 'descrição longa demais') : `descrição curta (${nDesc} de ${R.descricaoMin})` },
     { ok: !!i.cep.trim(), txt: i.cep.trim() ? 'endereço com CEP' : 'falta o CEP' },
     { ok: i.portais.length > 0, txt: i.portais.length ? `${i.portais.length} portais` : 'escolher os portais' },
   ];
@@ -72,8 +74,8 @@ export default function CartaoImovel({
               </div>
             )}
             <span className={`absolute bottom-1 right-1 px-1.5 py-0.5 rounded-md text-[9px] font-extrabold ${
-              i.fotos.length >= 5 ? 'bg-black/70 text-white/80' : 'bg-amber-500/90 text-[#231a00]'}`}>
-              {i.fotos.length}/5 📷
+              i.fotos.length >= REGRAS_PORTAIS.fotosMin ? 'bg-black/70 text-white/80' : 'bg-amber-500/90 text-[#231a00]'}`}>
+              {i.fotos.length >= REGRAS_PORTAIS.fotosMin ? `${i.fotos.length} 📷` : `${i.fotos.length} 📷 · mín. ${REGRAS_PORTAIS.fotosMin}`}
             </span>
           </div>
 

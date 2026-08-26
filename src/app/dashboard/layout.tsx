@@ -157,11 +157,14 @@ export default function DashboardLayout({
 
   // Adicionar uma tipagem local para userData que inclua permissoes opcional
   // (isso é só para evitar erro de linter, pois o campo pode existir no Firestore)
-  type UserDataWithPerms = typeof userData & { permissoes?: { admin?: boolean; developer?: boolean } };
+  type UserDataWithPerms = typeof userData & { permissoes?: { admin?: boolean; developer?: boolean; locacao?: boolean } };
   const userDataWithPerms = userData as UserDataWithPerms;
 
   const isAdminUser = userDataWithPerms?.tipoConta === 'imobiliaria' || userDataWithPerms?.permissoes?.admin;
   const isDevUser = userDataWithPerms?.tipoConta === 'imobiliaria' || userDataWithPerms?.permissoes?.developer;
+  // Locação NÃO vem de brinde com admin: lá dentro moram CPF, contratos e o
+  // dinheiro dos repasses — a tag é ligada por pessoa, na área do desenvolvedor
+  const isLocacaoUser = userDataWithPerms?.tipoConta === 'imobiliaria' || userDataWithPerms?.permissoes?.locacao;
   type NavItem = { href: string; icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; label: string; isExternal?: boolean; cor?: string };
   const navGroups: { titulo: string | null; itens: NavItem[] }[] = [
     { titulo: null, itens: [
@@ -180,10 +183,13 @@ export default function DashboardLayout({
       { href: 'https://chat.openai.com', icon: ChatGPTIcon, label: 'ChatGPT', isExternal: true, cor: 'text-white/75' },
       { href: 'https://noximobiliaria.com.br/', icon: GlobeIcon, label: 'Site', isExternal: true, cor: 'text-[#60A5FA]' },
     ] },
-    ...((isAdminUser || isDevUser) ? [{
+    ...((isAdminUser || isDevUser || isLocacaoUser) ? [{
       titulo: 'Gestão', itens: [
         // O Financeiro NÃO tem atalho aqui de propósito: ele mora dentro da
         // Área do administrador, e é de lá que se entra nele.
+        // Locação vem ANTES do administrador — pedido do gestor: é operação
+        // do dia a dia, não configuração.
+        ...(isLocacaoUser ? [{ href: '/dashboard/locacao', icon: KeyIcon, label: 'Setor de Locação', cor: 'text-[#E8C547]' }] : []),
         ...(isAdminUser ? [{ href: '/dashboard/admin', icon: ShieldIcon, label: 'Área administrador', cor: 'text-[#FF5C7E]' }] : []),
         ...(isDevUser ? [{ href: '/dashboard/developer', icon: CodeIcon, label: 'Desenvolvedor', cor: 'text-[#C4A6FF]' }] : []),
       ] as NavItem[],
@@ -221,7 +227,8 @@ export default function DashboardLayout({
                 )}
                 <ul className="space-y-0.5">
                   {grupo.itens.map((item) => {
-                    const ativo = pathname === item.href;
+                    const path = (pathname || '').replace(/\/+$/, '') || '/';
+                    const ativo = item.href === '/dashboard' ? path === item.href : path.startsWith(item.href);
                     const cls = `group relative flex items-center gap-3 pl-[10px] pr-2 py-2 rounded-lg text-[12.5px] font-semibold transition-all ${
                       ativo ? 'bg-white/[0.05] text-white' : 'text-text-secondary hover:bg-white/[0.04] hover:text-white'
                     }`;
@@ -350,7 +357,8 @@ export default function DashboardLayout({
                   )}
                   <ul className="space-y-0.5">
                     {grupo.itens.map((item) => {
-                      const ativo = pathname === item.href;
+                      const path = (pathname || '').replace(/\/+$/, '') || '/';
+                      const ativo = item.href === '/dashboard' ? path === item.href : path.startsWith(item.href);
                       const cls = `group relative flex items-center gap-3 px-3 py-3 rounded-lg text-[13.5px] font-semibold transition-all ${
                         ativo ? 'bg-white/[0.05] text-white' : 'text-text-secondary hover:bg-white/[0.04] hover:text-white'
                       }`;

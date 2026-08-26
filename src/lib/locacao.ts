@@ -33,52 +33,81 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * As etapas do imóvel. A ordem é a da vida real e cada uma só abre quando a
- * anterior fecha — é isso que impede anunciar sem autorização do dono.
+ * As etapas do imóvel — no MESMO desenho do funil da locação, que é o que o
+ * gestor aprovou: cada coluna diz o que está acontecendo AGORA e com quem a
+ * bola está. A régua lê como uma frase:
+ *
+ *   Captado › Papelada OK › Assinando › Montando anúncio › Anúncio pronto
+ *   › No ar › Alugado
+ *
+ * E o funil ANDA SOZINHO quando o trabalho é dado interno: completou a
+ * papelada, avança; completou o anúncio, avança. O gestor só clica no que é
+ * ação de verdade no mundo — enviar contrato, publicar, entregar chave.
  */
 export const ETAPAS_IMOVEL = {
   captado: {
-    n: 1, rotulo: 'Captado', icone: '🏠',
-    oQueFalta: 'juntar os documentos do proprietário',
-    ajuda: 'imóvel registrado; falta a papelada do dono',
+    n: 1, rotulo: 'Captado', icone: '🏠', comQuem: 'nós',
+    oQueFalta: 'juntar a papelada e os dados do proprietário',
+    ajuda: 'imóvel recém-chegado; quando a papelada completar, ele avança sozinho',
   },
   docs_dono: {
-    n: 2, rotulo: 'Documentado', icone: '📎',
-    oQueFalta: 'gerar e enviar o contrato de administração',
-    ajuda: 'RG/CPF, matrícula e IPTU do proprietário',
+    n: 2, rotulo: 'Papelada OK', icone: '📎', comQuem: 'nós',
+    oQueFalta: 'enviar o contrato de administração pro dono assinar',
+    ajuda: 'RG/CPF, PIX e documentos do dono completos — pronto pro contrato',
   },
   adm_enviada: {
-    n: 3, rotulo: 'Assinando', icone: '✍',
-    oQueFalta: 'aguardando o dono assinar pela ClickSign',
+    n: 3, rotulo: 'Assinando', icone: '✍', comQuem: 'dono',
+    oQueFalta: 'o dono assina a administração pela ClickSign',
     ajuda: 'contrato de administração no WhatsApp do proprietário',
   },
   adm_assinada: {
-    n: 4, rotulo: 'Autorizado', icone: '🤝',
-    oQueFalta: 'montar o material do anúncio',
-    ajuda: 'autorizado a administrar; portal do dono já criado',
+    n: 4, rotulo: 'Montando anúncio', icone: '📸', comQuem: 'nós',
+    oQueFalta: 'fotos, descrição e portais — completou, avança sozinho',
+    ajuda: 'dono autorizou; o portal do proprietário já está no ar',
   },
   material: {
-    n: 5, rotulo: 'Anúncio pronto', icone: '📸',
-    oQueFalta: 'publicar nos portais',
-    ajuda: 'fotos, vídeo e descrição prontos para os portais',
+    n: 5, rotulo: 'Anúncio pronto', icone: '✅', comQuem: 'nós',
+    oQueFalta: 'só apertar publicar',
+    ajuda: 'anúncio dentro das regras dos portais, esperando o clique',
   },
   publicado: {
-    n: 6, rotulo: 'No ar', icone: '📣',
+    n: 6, rotulo: 'No ar', icone: '📣', comQuem: 'portais',
     oQueFalta: '',
-    ajuda: 'no ar em OLX, ZAP, VivaReal e ImovelWeb',
+    ajuda: 'anunciado em OLX, ZAP, VivaReal e ImovelWeb; os interessados caem no funil de locações',
   },
   alugado: {
-    n: 7, rotulo: 'Alugado', icone: '🔑',
+    n: 7, rotulo: 'Alugado', icone: '🔑', comQuem: 'locacao',
     oQueFalta: '',
-    ajuda: 'fora do ar — locação ativa',
+    ajuda: 'fora do ar — a locação dele está rodando no outro funil',
   },
   pausado: {
-    n: 0, rotulo: 'Fora do ar', icone: '⏸',
+    n: 0, rotulo: 'Fora do ar', icone: '⏸', comQuem: 'nós',
     oQueFalta: 'voltar ao ar quando quiser',
     ajuda: 'retirado dos portais por decisão da casa ou do dono',
   },
 } as const;
 export type EtapaImovel = keyof typeof ETAPAS_IMOVEL;
+
+/**
+ * AS RÉGUAS DOS PORTAIS — os números que o Grupo OLX (OLX + ZAP + VivaReal)
+ * exige de cada anúncio do feed VRSync. Fora delas o anúncio é recusado; e
+ * como eles validam o ARQUIVO, um anúncio ruim derruba o feed da casa toda.
+ *
+ * Fonte: documentação de homologação do Canal Pro / VRSync.
+ *   · fotos: PELO MENOS 5 (não "até 5") — JPG, quanto mais melhor; o portal
+ *     corta o excedente acima de ~30;
+ *   · título: 10 a 100 caracteres;
+ *   · descrição: 50 a 3.000 caracteres, sem HTML, sem telefone no texto;
+ *   · CEP obrigatório (é dele que sai a localização no mapa).
+ */
+export const REGRAS_PORTAIS = {
+  fotosMin: 5,
+  fotosMax: 30,
+  tituloMin: 10,
+  tituloMax: 100,
+  descricaoMin: 50,
+  descricaoMax: 3000,
+} as const;
 
 export const TIPOS_IMOVEL = [
   'Apartamento', 'Casa', 'Sobrado', 'Kitnet', 'Cobertura',
@@ -198,6 +227,7 @@ export const IMOVEL_VAZIO: Omit<ImovelLocacao, 'id' | 'imobiliariaId'> = {
 /** O que falta para o imóvel andar de etapa — a lista que a tela mostra. */
 export function pendenciasImovel(i: Omit<ImovelLocacao, 'id' | 'imobiliariaId'>): Record<string, string[]> {
   const p: Record<string, string[]> = { docs: [], adm: [], material: [] };
+  const R = REGRAS_PORTAIS;
 
   if (!i.donoNome.trim()) p.docs.push('Nome do proprietário');
   if (!i.donoTelefone.trim()) p.docs.push('WhatsApp do proprietário');
@@ -208,9 +238,13 @@ export function pendenciasImovel(i: Omit<ImovelLocacao, 'id' | 'imobiliariaId'>)
   if (!i.aluguel) p.adm.push('Valor do aluguel');
   if (!i.rua.trim() || !i.bairro.trim() || !i.cidade.trim()) p.adm.push('Endereço do imóvel');
 
-  if (!i.titulo.trim() || i.titulo.trim().length < 10) p.material.push('Título com 10+ caracteres');
-  if (i.descricao.trim().length < 50) p.material.push(`Descrição com 50+ caracteres (tem ${i.descricao.trim().length})`);
-  if (i.fotos.length < 5) p.material.push(`Mínimo de 5 fotos (tem ${i.fotos.length}) — regra do Grupo OLX`);
+  const nT = i.titulo.trim().length;
+  const nD = i.descricao.trim().length;
+  if (nT < R.tituloMin) p.material.push(`Título com pelo menos ${R.tituloMin} caracteres (tem ${nT})`);
+  if (nT > R.tituloMax) p.material.push(`Título passou de ${R.tituloMax} caracteres (tem ${nT}) — os portais cortam`);
+  if (nD < R.descricaoMin) p.material.push(`Descrição com pelo menos ${R.descricaoMin} caracteres (tem ${nD})`);
+  if (nD > R.descricaoMax) p.material.push(`Descrição passou de ${R.descricaoMax} caracteres (tem ${nD})`);
+  if (i.fotos.length < R.fotosMin) p.material.push(`Pelo menos ${R.fotosMin} fotos (tem ${i.fotos.length}) — quanto mais, melhor o anúncio`);
   if (!i.cep.trim()) p.material.push('CEP');
   if (!i.portais.length) p.material.push('Escolher ao menos um portal');
 
@@ -530,6 +564,42 @@ export interface Chamado {
   criadoEm?: unknown; atualizadoEm?: unknown;
 }
 
+/** A ordem natural de um conserto — o botão da caixa de entrada segue ela. */
+export const PROXIMO_STATUS_CHAMADO: Partial<Record<StatusChamado, { para: StatusChamado; rotulo: string }>> = {
+  aberto: { para: 'orcando', rotulo: '📐 Pedir orçamento' },
+  orcando: { para: 'aguardando_dono', rotulo: '📤 Mandar pro dono aprovar' },
+  aguardando_dono: { para: 'executando', rotulo: '🔨 Dono aprovou — executar' },
+  executando: { para: 'resolvido', rotulo: '✓ Concluído' },
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AS MENSAGENS DOS CLIENTES
+//
+// O recado que o dono ou o inquilino manda pelo portal (ou pelo WhatsApp, e
+// a casa registra aqui). Diferente do chamado de manutenção — que tem obra,
+// orçamento e status — a mensagem só precisa de duas coisas: ser LIDA e ser
+// RESPONDIDA. A caixa de entrada mostra as duas fontes juntas.
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface MensagemCliente {
+  id: string;
+  imobiliariaId: string;
+  /** de quem veio */
+  de: 'inquilino' | 'dono';
+  nome: string;
+  telefone: string;
+  /** a que se refere: locação (inquilino) ou imóvel (dono) */
+  locacaoId: string;
+  imovelId: string;
+  texto: string;
+  /** '' = ainda não tratada */
+  tratadaEm: string;
+  /** anotação interna de como foi resolvido */
+  resposta: string;
+  simulada: boolean;
+  criadoEm?: unknown; atualizadoEm?: unknown;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // FERRAMENTAS
 // ═══════════════════════════════════════════════════════════════════════════
@@ -629,13 +699,14 @@ export interface AlertaImovel { tipo: 'feed' | 'assinatura' | 'parado' | 'semDon
  * travalíngua. Aqui a mesma falta vira "faltam 2 fotos".
  */
 export function faltaCurta(i: ImovelLocacao): string {
-  if (i.fotos.length < 5) {
-    const n = 5 - i.fotos.length;
-    return n === 1 ? 'falta 1 foto' : `faltam ${n} fotos`;
+  const R = REGRAS_PORTAIS;
+  if (i.fotos.length < R.fotosMin) {
+    const n = R.fotosMin - i.fotos.length;
+    return n === 1 ? `falta 1 foto (mínimo ${R.fotosMin})` : `faltam ${n} fotos (mínimo ${R.fotosMin})`;
   }
-  if (i.descricao.trim().length < 50) return 'a descrição está curta demais';
+  if (i.descricao.trim().length < R.descricaoMin) return 'a descrição está curta demais';
   if (!i.cep.trim()) return 'falta o CEP';
-  if (!i.titulo.trim() || i.titulo.trim().length < 10) return 'o título está curto demais';
+  if (!i.titulo.trim() || i.titulo.trim().length < R.tituloMin) return 'o título está curto demais';
   if (!i.portais.length) return 'nenhum portal foi marcado';
   return 'o anúncio está incompleto';
 }
