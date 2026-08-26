@@ -118,9 +118,9 @@ export function PainelDono({ imobiliariaId, isEspelhoDemo, imovel, recarregar, o
         <Campo rot="E-mail"><input className={inputCls} value={form.donoEmail} onChange={(e) => f('donoEmail', e.target.value)} /></Campo>
         <Campo rot="Estado civil"><input className={inputCls} value={form.donoEstadoCivil} onChange={(e) => f('donoEstadoCivil', e.target.value)} placeholder="casado, solteira…" /></Campo>
         <Campo rot="Profissão"><input className={inputCls} value={form.donoProfissao} onChange={(e) => f('donoProfissao', e.target.value)} /></Campo>
-        <Campo rot="Endereço do dono" largura="sm:col-span-2"><input className={inputCls} value={form.donoEndereco} onChange={(e) => f('donoEndereco', e.target.value)} /></Campo>
+        <Campo rot="Onde o dono mora (endereço dele, não do imóvel)" largura="sm:col-span-2"><input className={inputCls} value={form.donoEndereco} onChange={(e) => f('donoEndereco', e.target.value)} /></Campo>
         <Campo rot="Chave PIX do repasse"><input className={inputCls} value={form.donoPix} onChange={(e) => f('donoPix', e.target.value)} placeholder="CPF, e-mail, telefone…" /></Campo>
-        <Campo rot="Taxa de administração (%)"><input className={inputCls} inputMode="decimal" value={form.taxaAdmPct ?? ''} onChange={(e) => f('taxaAdmPct', num(e.target.value))} /></Campo>
+        <Campo rot="Taxa da casa (% do aluguel, combinada com ele)"><input className={inputCls} inputMode="decimal" placeholder="10" value={form.taxaAdmPct ?? ''} onChange={(e) => f('taxaAdmPct', num(e.target.value))} /></Campo>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -468,15 +468,15 @@ export default function FichaImovel({ imobiliariaId, isEspelhoDemo, imoveis, imo
       <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
         <Campo rot="Rua" largura="col-span-2 sm:col-span-3"><input className={inputCls} value={form.rua} onChange={(e) => f('rua', e.target.value)} /></Campo>
         <Campo rot="Número"><input className={inputCls} value={form.numero} onChange={(e) => f('numero', e.target.value)} /></Campo>
-        <Campo rot="Compl." largura="col-span-1 sm:col-span-2"><input className={inputCls} value={form.complemento} onChange={(e) => f('complemento', e.target.value)} placeholder="apto 302" /></Campo>
+        <Campo rot="Complemento (apto, bloco)" largura="col-span-1 sm:col-span-2"><input className={inputCls} value={form.complemento} onChange={(e) => f('complemento', e.target.value)} placeholder="apto 302" /></Campo>
         <Campo rot="Bairro" largura="col-span-2"><input className={inputCls} value={form.bairro} onChange={(e) => f('bairro', e.target.value)} /></Campo>
         <Campo rot="Cidade" largura="col-span-2"><input className={inputCls} value={form.cidade} onChange={(e) => f('cidade', e.target.value)} placeholder="Penha/SC" /></Campo>
         <Campo rot={buscandoCep ? 'CEP · buscando…' : 'CEP (preenche o endereço)'} largura="col-span-2">
           <input className={inputCls} value={form.cep} onChange={(e) => preencherPeloCep(e.target.value)} />
         </Campo>
-        <Campo rot="Latitude" largura="col-span-2"><input className={inputCls} value={form.latitude} onChange={(e) => f('latitude', e.target.value)} placeholder="-26.7754" /></Campo>
-        <Campo rot="Longitude" largura="col-span-2"><input className={inputCls} value={form.longitude} onChange={(e) => f('longitude', e.target.value)} placeholder="-48.6461" /></Campo>
-        <p className="col-span-2 self-end text-[10.5px] text-text-secondary">Pega no Google Maps (botão direito no endereço).</p>
+        <Campo rot="Ponto no mapa — latitude (opcional)" largura="col-span-2"><input className={inputCls} value={form.latitude} onChange={(e) => f('latitude', e.target.value)} placeholder="-26.7754" /></Campo>
+        <Campo rot="Ponto no mapa — longitude (opcional)" largura="col-span-2"><input className={inputCls} value={form.longitude} onChange={(e) => f('longitude', e.target.value)} placeholder="-48.6461" /></Campo>
+        <p className="col-span-2 self-end text-[10.5px] text-text-secondary">No Google Maps: botão direito em cima do imóvel, e o primeiro item do menu copia os dois números.</p>
       </div>
 
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
@@ -484,10 +484,10 @@ export default function FichaImovel({ imobiliariaId, isEspelhoDemo, imoveis, imo
         <Campo rot="Suítes"><input className={inputCls} inputMode="numeric" value={form.suites ?? ''} onChange={(e) => f('suites', num(e.target.value))} /></Campo>
         <Campo rot="Banheiros"><input className={inputCls} inputMode="numeric" value={form.banheiros ?? ''} onChange={(e) => f('banheiros', num(e.target.value))} /></Campo>
         <Campo rot="Vagas"><input className={inputCls} inputMode="numeric" value={form.vagas ?? ''} onChange={(e) => f('vagas', num(e.target.value))} /></Campo>
-        <Campo rot="Área priv. m²"><input className={inputCls} inputMode="decimal" value={form.areaPrivativa ?? ''} onChange={(e) => f('areaPrivativa', num(e.target.value))} /></Campo>
-        <Campo rot="Área total m²"><input className={inputCls} inputMode="decimal" value={form.areaTotal ?? ''} onChange={(e) => f('areaTotal', num(e.target.value))} /></Campo>
+        <Campo rot="Área útil (m²)"><input className={inputCls} inputMode="decimal" value={form.areaPrivativa ?? ''} onChange={(e) => f('areaPrivativa', num(e.target.value))} /></Campo>
+        <Campo rot="Área total (m²)"><input className={inputCls} inputMode="decimal" value={form.areaTotal ?? ''} onChange={(e) => f('areaTotal', num(e.target.value))} /></Campo>
         <Campo rot="Andar"><input className={inputCls} value={form.andar} onChange={(e) => f('andar', e.target.value)} placeholder="3º" /></Campo>
-        <Campo rot="Mobília" largura="col-span-2">
+        <Campo rot="Mobiliado?" largura="col-span-2">
           <select className={inputCls} value={form.mobiliado} onChange={(e) => f('mobiliado', e.target.value)}>
             {MOBILIADO.map((m) => <option key={m}>{m}</option>)}
           </select>
@@ -495,10 +495,10 @@ export default function FichaImovel({ imobiliariaId, isEspelhoDemo, imoveis, imo
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Campo rot="Aluguel (R$/mês)"><input className={inputCls} inputMode="decimal" value={form.aluguel ?? ''} onChange={(e) => f('aluguel', num(e.target.value))} /></Campo>
-        <Campo rot="Condomínio (o inquilino paga direto)"><input className={inputCls} inputMode="decimal" value={form.condominio ?? ''} onChange={(e) => f('condominio', num(e.target.value))} /></Campo>
-        <Campo rot="IPTU mensal (cobramos e repassamos)"><input className={inputCls} inputMode="decimal" value={form.iptuMensal ?? ''} onChange={(e) => f('iptuMensal', num(e.target.value))} /></Campo>
-        <Campo rot="Seguro incêndio"><input className={inputCls} inputMode="decimal" value={form.seguroIncendio ?? ''} onChange={(e) => f('seguroIncendio', num(e.target.value))} /></Campo>
+        <Campo rot="Aluguel (R$/mês)"><input className={inputCls} inputMode="decimal" placeholder="1.850" value={form.aluguel ?? ''} onChange={(e) => f('aluguel', num(e.target.value))} /></Campo>
+        <Campo rot="Condomínio (o inquilino paga direto)"><input className={inputCls} inputMode="decimal" placeholder="380" value={form.condominio ?? ''} onChange={(e) => f('condominio', num(e.target.value))} /></Campo>
+        <Campo rot="IPTU dividido por 12 (R$/mês)"><input className={inputCls} inputMode="decimal" placeholder="92" value={form.iptuMensal ?? ''} onChange={(e) => f('iptuMensal', num(e.target.value))} /></Campo>
+        <Campo rot="Seguro incêndio (R$/mês)"><input className={inputCls} inputMode="decimal" placeholder="28" value={form.seguroIncendio ?? ''} onChange={(e) => f('seguroIncendio', num(e.target.value))} /></Campo>
       </div>
       <p className="text-[11.5px] text-text-secondary -mt-2">
         Custo total do inquilino: <b className="text-[#FFE9A6] tabular-nums">{fmtValor(custoTotalMensal(form))}/mês</b>
@@ -510,8 +510,8 @@ export default function FichaImovel({ imobiliariaId, isEspelhoDemo, imoveis, imo
           <Marcaveis opcoes={GARANTIAS} sel={form.garantiasAceitas} onSel={(v) => f('garantiasAceitas', v)} />
         </Campo>
         <div className="grid grid-cols-2 gap-3">
-          <Campo rot="Prazo mín. (meses)"><input className={inputCls} inputMode="numeric" value={form.prazoMinimoMeses ?? ''} onChange={(e) => f('prazoMinimoMeses', num(e.target.value))} /></Campo>
-          <Campo rot="Livre a partir"><input type="date" className={inputCls} value={form.disponivelAPartir} onChange={(e) => f('disponivelAPartir', e.target.value)} /></Campo>
+          <Campo rot="Contrato mínimo (meses)"><input className={inputCls} inputMode="numeric" value={form.prazoMinimoMeses ?? ''} onChange={(e) => f('prazoMinimoMeses', num(e.target.value))} /></Campo>
+          <Campo rot="Disponível a partir de"><input type="date" className={inputCls} value={form.disponivelAPartir} onChange={(e) => f('disponivelAPartir', e.target.value)} /></Campo>
         </div>
       </div>
 

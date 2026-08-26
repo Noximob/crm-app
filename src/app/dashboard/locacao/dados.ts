@@ -74,6 +74,14 @@ export function useDadosLocacao() {
         total: chamados.length + mensagens.length,
         meus: chamadosAbertos.length + recadosPendentes.length,
       },
+      cobranca: {
+        // o que há pra acompanhar: as competências do mês + tudo que atrasou
+        total: movimentos.filter((m) => m.statusCobranca !== 'paga'
+          && (m.competencia === hoje.slice(0, 7) || m.vencimento < hoje)).length,
+        // o que espera ação nossa: cobrar atraso e soltar repasse
+        meus: movimentos.filter((m) => (m.statusCobranca !== 'paga' && m.vencimento < hoje)
+          || m.statusRepasse === 'liberado').length,
+      },
     };
   }, [imoveis, locacoes, movimentos, chamados, mensagens]);
 

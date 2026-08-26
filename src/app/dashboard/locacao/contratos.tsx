@@ -247,30 +247,44 @@ export default function PainelLocacao({ imobiliariaId, isEspelhoDemo, locacao, i
         </div>
       )}
 
-      {/* ——— os termos ——— */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Campo rot="Início (entrega das chaves)"><input type="date" className={inputCls} value={form.inicio} onChange={(e) => f('inicio', e.target.value)} /></Campo>
-        <Campo rot="Prazo (meses)"><input className={inputCls} inputMode="numeric" value={form.prazoMeses ?? ''} onChange={(e) => f('prazoMeses', num(e.target.value))} /></Campo>
-        <Campo rot="Fim (calculado)"><input className={inputCls + ' opacity-60'} value={fmtData(fimContrato(form))} readOnly /></Campo>
-        <Campo rot="Dia do vencimento"><input className={inputCls} inputMode="numeric" value={form.diaVencimento ?? ''} onChange={(e) => f('diaVencimento', num(e.target.value))} /></Campo>
-        <Campo rot="Aluguel (R$)"><input className={inputCls} inputMode="decimal" value={form.valorAluguel ?? ''} onChange={(e) => f('valorAluguel', num(e.target.value))} /></Campo>
-        <Campo rot="IPTU mensal"><input className={inputCls} inputMode="decimal" value={form.valorIptuMensal ?? ''} onChange={(e) => f('valorIptuMensal', num(e.target.value))} /></Campo>
-        <Campo rot="Seguro incêndio"><input className={inputCls} inputMode="decimal" value={form.valorSeguroIncendio ?? ''} onChange={(e) => f('valorSeguroIncendio', num(e.target.value))} /></Campo>
-        <Campo rot="Condomínio (pago direto)"><input className={inputCls} inputMode="decimal" value={form.valorCondominio ?? ''} onChange={(e) => f('valorCondominio', num(e.target.value))} /></Campo>
-        <Campo rot="Taxa adm. % (só do aluguel)"><input className={inputCls} inputMode="decimal" value={form.taxaAdmPct ?? ''} onChange={(e) => f('taxaAdmPct', num(e.target.value))} /></Campo>
-        <Campo rot="Reajuste">
-          <select className={inputCls} value={form.indiceReajuste} onChange={(e) => f('indiceReajuste', e.target.value)}>
-            {INDICES_REAJUSTE.map((x) => <option key={x}>{x}</option>)}
-          </select>
-        </Campo>
-        <Campo rot="Garantia" largura="col-span-2">
-          <select className={inputCls} value={form.garantiaTipo} onChange={(e) => f('garantiaTipo', e.target.value)}>
-            {GARANTIAS.map((g) => <option key={g}>{g}</option>)}
-          </select>
-        </Campo>
-        <Campo rot="Nº da apólice/contrato"><input className={inputCls} value={form.garantiaNumero} onChange={(e) => f('garantiaNumero', e.target.value)} /></Campo>
-        <Campo rot="Taxa mensal da Loft (%)"><input className={inputCls} inputMode="decimal" value={form.garantiaTaxaMensalPct ?? ''} onChange={(e) => f('garantiaTaxaMensalPct', num(e.target.value))} /></Campo>
-        <Campo rot="Garantia vence em" largura="col-span-2"><input type="date" className={inputCls} value={form.garantiaVigenciaFim} onChange={(e) => f('garantiaVigenciaFim', e.target.value)} /></Campo>
+      {/* ——— o contrato: datas e valores, cada campo dizendo pra que serve ——— */}
+      <div className="rounded-lg border border-white/[0.06] p-3 space-y-3">
+        <p className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">
+          O contrato — datas e valores (é daqui que saem as cobranças)
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Campo rot="Começa em (o dia da chave)"><input type="date" className={inputCls} value={form.inicio} onChange={(e) => f('inicio', e.target.value)} /></Campo>
+          <Campo rot="Dura quantos meses"><input className={inputCls} inputMode="numeric" placeholder="30" value={form.prazoMeses ?? ''} onChange={(e) => f('prazoMeses', num(e.target.value))} /></Campo>
+          <Campo rot="Termina em (calculado sozinho)"><input className={inputCls + ' opacity-60'} value={fmtData(fimContrato(form))} readOnly /></Campo>
+          <Campo rot="Boleto vence todo dia"><input className={inputCls} inputMode="numeric" placeholder="5" value={form.diaVencimento ?? ''} onChange={(e) => f('diaVencimento', num(e.target.value))} /></Campo>
+          <Campo rot="Aluguel (R$/mês)"><input className={inputCls} inputMode="decimal" placeholder="1.850" value={form.valorAluguel ?? ''} onChange={(e) => f('valorAluguel', num(e.target.value))} /></Campo>
+          <Campo rot="IPTU do mês (cobramos e devolvemos ao dono)"><input className={inputCls} inputMode="decimal" placeholder="92" value={form.valorIptuMensal ?? ''} onChange={(e) => f('valorIptuMensal', num(e.target.value))} /></Campo>
+          <Campo rot="Seguro incêndio (por mês)"><input className={inputCls} inputMode="decimal" placeholder="28" value={form.valorSeguroIncendio ?? ''} onChange={(e) => f('valorSeguroIncendio', num(e.target.value))} /></Campo>
+          <Campo rot="Condomínio (o inquilino paga direto — só registro)"><input className={inputCls} inputMode="decimal" placeholder="380" value={form.valorCondominio ?? ''} onChange={(e) => f('valorCondominio', num(e.target.value))} /></Campo>
+          <Campo rot="Taxa da casa (% sobre o aluguel)"><input className={inputCls} inputMode="decimal" placeholder="10" value={form.taxaAdmPct ?? ''} onChange={(e) => f('taxaAdmPct', num(e.target.value))} /></Campo>
+          <Campo rot="Índice do reajuste anual">
+            <select className={inputCls} value={form.indiceReajuste} onChange={(e) => f('indiceReajuste', e.target.value)}>
+              {INDICES_REAJUSTE.map((x) => <option key={x}>{x}</option>)}
+            </select>
+          </Campo>
+        </div>
+      </div>
+
+      {/* ——— a garantia: o que a Loft devolve depois de aprovar ——— */}
+      <div className="rounded-lg border border-white/[0.06] p-3 space-y-3">
+        <p className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">
+          A garantia — preenchido com o que a Loft devolve na aprovação
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Campo rot="Tipo de garantia" largura="col-span-2">
+            <select className={inputCls} value={form.garantiaTipo} onChange={(e) => f('garantiaTipo', e.target.value)}>
+              {GARANTIAS.map((g) => <option key={g}>{g}</option>)}
+            </select>
+          </Campo>
+          <Campo rot="Nº da apólice (a Loft informa)"><input className={inputCls} placeholder="LOFT-12345" value={form.garantiaNumero} onChange={(e) => f('garantiaNumero', e.target.value)} /></Campo>
+          <Campo rot="Taxa da Loft (% — o inquilino paga a ela)"><input className={inputCls} inputMode="decimal" placeholder="10" value={form.garantiaTaxaMensalPct ?? ''} onChange={(e) => f('garantiaTaxaMensalPct', num(e.target.value))} /></Campo>
+          <Campo rot="Fiança vale até (renova todo ano)" largura="col-span-2"><input type="date" className={inputCls} value={form.garantiaVigenciaFim} onChange={(e) => f('garantiaVigenciaFim', e.target.value)} /></Campo>
+        </div>
       </div>
 
       {aluguel > 0 && form.taxaAdmPct ? (

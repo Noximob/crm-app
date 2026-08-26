@@ -258,6 +258,12 @@ export function pendenciasImovel(i: Omit<ImovelLocacao, 'id' | 'imobiliariaId'>)
 /**
  * As etapas da locação, do interessado às chaves. Cada uma tem o que falta e
  * quem está devendo — o gestor lê a linha e sabe se a bola é dele ou de fora.
+ *
+ * A ordem que o gestor definiu: quando a Loft APROVA, os dois contratos saem
+ * NO MESMO MOMENTO — a Loft dispara a fiança pro inquilino, e a casa dispara
+ * o contrato de locação + laudo de vistoria. Aí é uma espera só ("Assinando"),
+ * com dois vistos independentes: a fiança e o nosso contrato. Assinaram os
+ * dois → chaves.
  */
 export const ETAPAS_LOCACAO = {
   interessado: {
@@ -276,36 +282,37 @@ export const ETAPAS_LOCACAO = {
     ajuda: 'resposta em menos de 1 minuto quando integrado',
   },
   loft_aprovou: {
-    n: 4, rotulo: 'Loft aprovou', icone: '✅', comQuem: 'loft',
-    oQueFalta: 'a Loft envia a fiança para o inquilino assinar',
-    ajuda: 'contrato de fiança é entre o inquilino e a Loft',
-  },
-  fianca_assinada: {
-    n: 5, rotulo: 'Fiança assinada', icone: '📜', comQuem: 'nós',
-    oQueFalta: 'fazer a vistoria e gerar o nosso contrato',
-    ajuda: 'garantia válida — pode fechar a locação',
+    n: 4, rotulo: 'Aprovado', icone: '✅', comQuem: 'nós',
+    oQueFalta: 'fazer a vistoria e disparar o nosso contrato — a fiança da Loft já foi pro inquilino',
+    ajuda: 'os dois contratos saem no mesmo momento: a fiança (Loft) e o nosso (com o laudo)',
   },
   contrato_enviado: {
-    n: 6, rotulo: 'Contrato enviado', icone: '✍', comQuem: 'ambos',
-    oQueFalta: 'aguardando dono e inquilino assinarem',
-    ajuda: 'contrato + laudo de vistoria num envelope só',
+    n: 5, rotulo: 'Assinando', icone: '✍', comQuem: 'ambos',
+    oQueFalta: 'aguardando as duas assinaturas: a fiança e o nosso contrato',
+    ajuda: 'assinou os dois → avança sozinho pra entrega das chaves',
+  },
+  /** legado: etapa antiga do fluxo em fila — hoje equivale a "Assinando" */
+  fianca_assinada: {
+    n: 5, rotulo: 'Assinando', icone: '✍', comQuem: 'ambos',
+    oQueFalta: 'aguardando as duas assinaturas: a fiança e o nosso contrato',
+    ajuda: 'assinou os dois → avança sozinho pra entrega das chaves',
   },
   contrato_assinado: {
-    n: 7, rotulo: 'Tudo assinado', icone: '🤝', comQuem: 'nós',
+    n: 6, rotulo: 'Tudo assinado', icone: '🤝', comQuem: 'nós',
     oQueFalta: 'marcar e fazer a entrega das chaves',
     ajuda: 'portal do inquilino criado na entrega',
   },
   ativa: {
-    n: 8, rotulo: 'Cobrando', icone: '💰', comQuem: 'asaas',
+    n: 7, rotulo: 'Cobrando', icone: '💰', comQuem: 'asaas',
     oQueFalta: '',
-    ajuda: 'cobrança e repasse rodando',
+    ajuda: 'cobrança e repasse rodando — o dia a dia mora na aba Cobrança',
   },
   encerrando: {
-    n: 9, rotulo: 'Em saída', icone: '↪', comQuem: 'nós',
+    n: 8, rotulo: 'Em saída', icone: '↪', comQuem: 'nós',
     oQueFalta: 'vistoria de saída e distrato',
     ajuda: 'o inquilino avisou que sai',
   },
-  encerrada: { n: 10, rotulo: 'Encerrada', icone: '📁', comQuem: '', oQueFalta: '', ajuda: 'histórico' },
+  encerrada: { n: 9, rotulo: 'Encerrada', icone: '📁', comQuem: '', oQueFalta: '', ajuda: 'histórico' },
   perdida: { n: 0, rotulo: 'Não fechou', icone: '✕', comQuem: '', oQueFalta: '', ajuda: 'desistiu ou a Loft recusou' },
 } as const;
 export type EtapaLocacao = keyof typeof ETAPAS_LOCACAO;
@@ -419,7 +426,9 @@ export function pendenciasLocacao(l: Locacao): string[] {
     if (!l.doc.trim()) p.push('CPF do inquilino');
     if (!l.docsInquilino.length) p.push('Ao menos um documento (CNH/RG, renda)');
   }
-  if (l.etapa === 'fianca_assinada') {
+  // o portão de ENVIAR O NOSSO CONTRATO: sai no mesmo momento da fiança,
+  // então tudo que o contrato preenche precisa estar dentro antes
+  if (l.etapa === 'loft_aprovou' || l.etapa === 'fianca_assinada') {
     if (!l.vistoriaEntrada) p.push('Vistoria de entrada');
     if (!l.valorAluguel) p.push('Valor do aluguel');
     if (!l.inicio) p.push('Data de início prevista');

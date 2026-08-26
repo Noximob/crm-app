@@ -8,10 +8,10 @@
  *
  *   FUNIL 1 · 7 imóveis, um por etapa: captado, documentos, administração
  *             enviada, assinada, material pronto, publicado e alugado.
- *   FUNIL 2 · 8 locações, uma por etapa: interessado, documentos, na Loft,
- *             aprovado, fiança assinada, contrato enviado, tudo assinado e
- *             cobrando — esta com 11 competências, uma atrasada, mais um
- *             pedido de manutenção aberto pelo inquilino.
+ *   FUNIL 2 · uma locação por etapa: interessado, documentos, na Loft,
+ *             aprovado (fiança já disparada), assinando (fiança ✓ / nosso ○),
+ *             tudo assinado e cobrando — esta com 11 competências, uma
+ *             atrasada, mais manutenção e recados na caixa de entrada.
  *
  * Tudo nasce com demo: true — o botão "apagar exemplos" remove só o que tem
  * essa marca, sem encostar em nada real.
@@ -217,12 +217,12 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     garantiaEnviadaEm: desloca(0, -1), garantiaSimulada: true,
   });
 
-  // 5 · FIANÇA ASSINADA — falta a vistoria e o nosso contrato
+  // 5 · APROVADO — a Loft já disparou a fiança; nossa vez: vistoria + contrato
   batch.set(doc(collection(db, 'locacaoLocacoes')), {
     ...LOCACAO_VAZIA, ...marca, ...base,
     imovelId: imMaterial.id, valorAluguel: 2600, valorCondominio: null,
     valorIptuMensal: 130, valorSeguroIncendio: 35,
-    etapa: 'fianca_assinada', nome: 'Sandra Correia', telefone: '(47) 95522-7788',
+    etapa: 'loft_aprovou', nome: 'Sandra Correia', telefone: '(47) 95522-7788',
     email: 'sandra@example.com', doc: '666.777.888-99', rg: '5.223.118',
     estadoCivil: 'divorciada', profissao: 'representante comercial',
     enderecoAtual: 'Rua Blumenau, 88, Barra Velha/SC',
@@ -230,16 +230,17 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     inicio: desloca(0, 12),
     docsInquilino: [arquivoTeste('CNH ou RG'), arquivoTeste('Comprovante de renda')],
     garantiaNumero: 'LOFT-80915', garantiaTaxaMensalPct: 11,
-    garantiaEnviadaEm: desloca(0, -6), garantiaAssinadaEm: desloca(0, -3),
-    garantiaVigenciaFim: desloca(12), garantiaSimulada: true,
+    garantiaEnviadaEm: desloca(0, -1), garantiaSimulada: true,
   });
 
-  // 6 · CONTRATO ENVIADO — envelope no WhatsApp das duas partes
+  // 6 · ASSINANDO — os dois contratos na rua; a fiança já voltou assinada,
+  //     o nosso ainda não: é o estado de espera dupla que o gestor definiu
   batch.set(doc(collection(db, 'locacaoLocacoes')), {
     ...LOCACAO_VAZIA, ...marca, ...base,
     imovelId: imAdmOk.id, valorAluguel: 1600, valorCondominio: null,
     valorIptuMensal: 80, valorSeguroIncendio: 26,
     etapa: 'contrato_enviado', nome: 'Juliana Prado', telefone: '(47) 98822-3311',
+    // fiança ✓ (garantiaAssinadaEm abaixo) · nosso contrato ○ (sem contratoAssinadoEm)
     email: 'juliana@example.com', doc: '222.111.333-44', rg: '4.110.556',
     estadoCivil: 'solteira', profissao: 'designer',
     enderecoAtual: 'Rua Marechal Deodoro, 12, Penha/SC',

@@ -59,7 +59,7 @@ type Painel = 'ficha' | 'docsDono' | 'adm' | 'material' | 'portalDono'
   | 'dados' | 'loft' | 'vistoria' | 'minuta' | 'laudo' | 'extrato' | 'portalInq' | 'portalDonoLoc';
 
 const ORDEM_IMOVEL: EtapaImovel[] = ['captado', 'docs_dono', 'adm_enviada', 'adm_assinada', 'material', 'publicado', 'alugado'];
-const ORDEM_LOCACAO: EtapaLocacao[] = ['interessado', 'docs_inquilino', 'na_loft', 'loft_aprovou', 'fianca_assinada', 'contrato_enviado', 'contrato_assinado', 'ativa', 'encerrando'];
+const ORDEM_LOCACAO: EtapaLocacao[] = ['interessado', 'docs_inquilino', 'na_loft', 'loft_aprovou', 'contrato_enviado', 'contrato_assinado', 'ativa', 'encerrando'];
 
 export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelId = '' }: {
   /** qual página está montada — Imóveis e Locações agora são rotas próprias */
@@ -231,23 +231,46 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
   const respostaLoft = async (l: Locacao, ok: boolean) => {
     if (ok) {
       await upLocacao(l.id, { etapa: 'loft_aprovou', garantiaEnviadaEm: hojeYmd(), garantiaSimulada: true });
-      showToast('⚡ Loft aprovou! Agora ela envia a fiança pro inquilino assinar.', 'success');
+      showToast('⚡ Loft aprovou e JÁ disparou a fiança pro inquilino. Agora: vistoria + nosso contrato, no mesmo momento.', 'success');
     } else {
       await upLocacao(l.id, { etapa: 'perdida', motivoPerda: 'Loft recusou a garantia' });
       showToast('⚡ Loft recusou — marcado como não fechou.', 'info');
     }
   };
 
-  const fiancaAssinada = async (l: Locacao) => {
+  /**
+   * OS DOIS CONTRATOS ANDAM EM PARALELO — a ordem que o gestor definiu.
+   * Na etapa "Assinando" há dois vistos independentes: a fiança (Loft avisa)
+   * e o nosso contrato (ClickSign avisa). Cada um chega quando chega; quando
+   * os DOIS estiverem assinados, a locação avança sozinha pra "Tudo assinado".
+   */
+  const marcarFiancaAssinada = async (l: Locacao) => {
     const v = new Date(); v.setFullYear(v.getFullYear() + 1);
+    const contratoOk = !!l.contratoAssinadoEm;
     await upLocacao(l.id, {
-      etapa: 'fianca_assinada', garantiaAssinadaEm: hojeYmd(),
+      garantiaAssinadaEm: hojeYmd(),
       garantiaNumero: l.garantiaNumero || `LOFT-${Math.floor(Math.random() * 90000) + 10000}`,
       garantiaTaxaMensalPct: l.garantiaTaxaMensalPct ?? 10,
       garantiaVigenciaFim: l.garantiaVigenciaFim || ymd(v),
       garantiaSimulada: true,
+      ...(contratoOk ? { etapa: 'contrato_assinado' as const } : {}),
     });
-    showToast('⚡ Fiança assinada com a Loft. Agora a vistoria e o nosso contrato.', 'success');
+    showToast(contratoOk
+      ? '⚡ Fiança assinada — e o nosso contrato já estava. TUDO assinado: pode marcar as chaves.'
+      : '⚡ Fiança assinada com a Loft. Falta o nosso contrato.', 'success');
+  };
+
+  const marcarContratoAssinado = async (l: Locacao) => {
+    const v = l.vistoriaEntrada;
+    const fiancaOk = !!l.garantiaAssinadaEm;
+    await upLocacao(l.id, {
+      contratoAssinadoEm: hojeYmd(), contratoSimulado: true,
+      ...(v ? { vistoriaEntrada: { ...v, assinada: true, assinadaSimulada: true } } : {}),
+      ...(fiancaOk ? { etapa: 'contrato_assinado' as const } : {}),
+    });
+    showToast(fiancaOk
+      ? '⚡ Contrato assinado — e a fiança já estava. TUDO assinado: pode marcar as chaves.'
+      : '⚡ Nosso contrato assinado. Falta a fiança da Loft.', 'success');
   };
 
   const abrirVistoria = (l: Locacao) => {
@@ -268,23 +291,14 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
   };
 
   const enviarContrato = async (l: Locacao) => {
-    const p = pendenciasLocacao({ ...l, etapa: 'fianca_assinada' });
+    const p = pendenciasLocacao({ ...l, etapa: 'loft_aprovou' });
     if (p.length) {
       showToast(`Falta: ${p[0]}`, 'error');
       abrir(l.id, p[0].toLowerCase().includes('vistoria') ? 'vistoria' : 'dados');
       return;
     }
     await upLocacao(l.id, { etapa: 'contrato_enviado', contratoEnviadoEm: hojeYmd(), contratoSimulado: true });
-    showToast('⚡ Contrato + laudo no WhatsApp do dono e do inquilino (envelope único).', 'info');
-  };
-
-  const contratoAssinado = async (l: Locacao) => {
-    const v = l.vistoriaEntrada;
-    await upLocacao(l.id, {
-      etapa: 'contrato_assinado', contratoAssinadoEm: hojeYmd(),
-      ...(v ? { vistoriaEntrada: { ...v, assinada: true, assinadaSimulada: true } } : {}),
-    });
-    showToast('⚡ Todos assinaram. Pode marcar a entrega das chaves.', 'success');
+    showToast('⚡ Nosso contrato + laudo no WhatsApp do dono e do inquilino — junto da fiança que a Loft já mandou. Agora é esperar as duas assinaturas.', 'info');
   };
 
   /**
@@ -372,71 +386,6 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
 
   // ——— o dinheiro ———
 
-  const pagar = async (movs: Movimento[]) => {
-    if (guarda()) return;
-    const m = movs.filter((x) => x.statusCobranca !== 'paga').sort((a, b) => a.competencia.localeCompare(b.competencia))[0];
-    if (!m) { showToast('Tudo pago. 👏', 'info'); return; }
-    await updateDoc(doc(db, 'locacaoMovimentos', m.id), { statusCobranca: 'paga', pagoEm: hojeYmd(), statusRepasse: 'liberado', simulado: true });
-    showToast(`⚡ ${m.competencia.split('-').reverse().join('/')} paga. Repasse de ${fmtValor(m.repasseDono)} liberado.`, 'success');
-    recarregar();
-  };
-
-  /**
-   * Marcar repasse é dizer "esse dinheiro já saiu". Vai em LOTE, atômico:
-   * antes eram N gravações soltas — se a rede caísse na terceira, cinco
-   * ficavam repassadas, cinco não, e o aviso dizia que tudo tinha ido. O
-   * gestor pagaria de novo os que já saíram, ou nunca os que faltaram.
-   */
-  const marcarRepassados = async (lib: Movimento[]): Promise<boolean> => {
-    try {
-      const b = writeBatch(db);
-      const hoje = hojeYmd();
-      for (const m of lib) b.update(doc(db, 'locacaoMovimentos', m.id), { statusRepasse: 'repassado', repassadoEm: hoje, simulado: true });
-      await b.commit();
-      return true;
-    } catch (e) {
-      console.error(e);
-      showToast('Falha no repasse — NADA foi marcado. Confira o extrato e tente de novo.', 'error');
-      return false;
-    }
-  };
-
-  const repassar = async (movs: Movimento[]) => {
-    if (guarda()) return;
-    const lib = movs.filter((m) => m.statusRepasse === 'liberado');
-    if (!lib.length) return;
-    if (!(await marcarRepassados(lib))) return;
-    showToast(`⚡ ${fmtValor(cents(lib.reduce((s, m) => s + m.repasseDono, 0)))} repassado num PIX só — NF emitida.`, 'success');
-    recarregar();
-  };
-
-  const repassarTudo = async () => {
-    if (guarda()) return;
-    const lib = movimentos.filter((m) => m.statusRepasse === 'liberado');
-    if (!lib.length) { showToast('Nada liberado.', 'info'); return; }
-    const total = cents(lib.reduce((s, m) => s + m.repasseDono, 0));
-    const donos = new Set(lib.map((m) => imovelDe(locacoes.find((l) => l.id === m.locacaoId)?.imovelId || '')?.donoNome || '—'));
-    const ok = await confirmDialog({
-      title: `Repassar ${lib.length} pagamento${lib.length > 1 ? 's' : ''}?`,
-      message: `${fmtValor(total)} para ${donos.size} proprietário${donos.size > 1 ? 's' : ''}, cada um num PIX com extrato discriminado.`,
-      confirmLabel: 'Repassar todos',
-    });
-    if (!ok) return;
-    if (!(await marcarRepassados(lib))) return;
-    showToast(`⚡ ${fmtValor(total)} repassados em ${donos.size} PIX.`, 'success');
-    recarregar();
-  };
-
-  /**
-   * O reajuste anual. Duas travas que evitam cobrança indevida:
-   *
-   *   1. UMA VEZ POR CICLO. Se já houve reajuste nos últimos 11 meses, ele
-   *      recusa. Antes, o alerta continuava aceso depois de aplicado e dois
-   *      cliques subiam o aluguel duas vezes.
-   *   2. NUNCA RETROATIVO. Só corrige competências que ainda VÃO vencer. O
-   *      aluguel atrasado de três meses atrás é dívida do valor antigo —
-   *      reajustar pra trás é cobrar a mais do inquilino.
-   */
   const aplicarReajuste = async (l: Locacao, movs: Movimento[]) => {
     if (guarda()) return;
     const feitos = l.reajustes || [];
@@ -560,23 +509,6 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
         return urgente(a) - urgente(b2) || (ETAPAS_LOCACAO[a.etapa]?.n ?? 99) - (ETAPAS_LOCACAO[b2.etapa]?.n ?? 99);
       });
   }, [locacoes, etapaSel, busca, imoveis, verArquivadas, chamadosDe]);
-
-  const numeros = useMemo(() => {
-    const hoje = hojeYmd();
-    const atrasadas = movimentos.filter((m) => m.statusCobranca !== 'paga' && m.vencimento < hoje);
-    // FURO CORRIGIDO: "a receber" contava só a competência do mês. Com o mês
-    // corrente pago e três meses atrasados na rua, o card mostrava R$ 0 — o
-    // gestor lia "não tenho nada a receber" com dinheiro faltando.
-    const doMes = movimentos.filter((m) => m.statusCobranca !== 'paga' && m.vencimento >= hoje && m.competencia === hoje.slice(0, 7));
-    return {
-      publicados: imoveis.filter((i) => i.etapa === 'publicado').length,
-      ativas: locacoes.filter((l) => l.etapa === 'ativa').length,
-      aReceber: cents([...doMes, ...atrasadas].reduce((s, m) => s + m.valorTotal, 0)),
-      emAtraso: cents(atrasadas.reduce((s, m) => s + m.valorTotal, 0)),
-      aRepassar: cents(movimentos.filter((m) => m.statusRepasse === 'liberado').reduce((s, m) => s + m.repasseDono, 0)),
-      atrasadas: atrasadas.length,
-    };
-  }, [imoveis, locacoes, movimentos]);
 
   const temDemo = useMemo(
     () => imoveis.some((x) => (x as { demo?: boolean }).demo) || locacoes.some((x) => (x as { demo?: boolean }).demo),
@@ -712,21 +644,28 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
             <button onClick={() => respostaLoft(l, false)} className={btnSimula}>⚡ recusou</button>
           </span>
         );
+      // aprovou → a fiança JÁ está com o inquilino; a bola é nossa: vistoria
+      // e disparar o nosso contrato no mesmo momento
       case 'loft_aprovou':
-        return <button onClick={() => fiancaAssinada(l)} className={btnSimula}>⚡ Inquilino assinou a fiança</button>;
-      case 'fianca_assinada':
         return (
           <span className="flex flex-wrap gap-1.5">
             {!l.vistoriaEntrada
               ? <button onClick={() => abrirVistoria(l)} className={btnOuro}>📋 Fazer a vistoria</button>
               : <>
-                  <button onClick={() => enviarContrato(l)} className={btnOuro}>✍ Enviar contrato + laudo</button>
+                  <button onClick={() => enviarContrato(l)} className={btnOuro}>✍ Disparar contrato + laudo</button>
                   <button onClick={() => abrirVistoria(l)} className={btnGhost}>rever vistoria</button>
                 </>}
           </span>
         );
+      // os dois contratos na rua — cada visto chega quando chega
       case 'contrato_enviado':
-        return <button onClick={() => contratoAssinado(l)} className={btnSimula}>⚡ Todos assinaram</button>;
+      case 'fianca_assinada':
+        return (
+          <span className="flex flex-wrap gap-1.5">
+            {!l.garantiaAssinadaEm && <button onClick={() => marcarFiancaAssinada(l)} className={btnSimula}>⚡ Fiança assinada</button>}
+            {!l.contratoAssinadoEm && <button onClick={() => marcarContratoAssinado(l)} className={btnSimula}>⚡ Nosso contrato assinado</button>}
+          </span>
+        );
       case 'contrato_assinado':
         return entregando === l.id ? (
           <span className="flex flex-wrap items-center gap-1.5">
@@ -740,10 +679,12 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
         );
       case 'ativa': {
         const lib = movs.filter((m) => m.statusRepasse === 'liberado').length;
+        const atras = movs.filter((m) => m.statusCobranca !== 'paga' && m.vencimento < hojeYmd()).length;
         return (
           <span className="flex flex-wrap gap-1.5">
-            {lib > 0 && <button onClick={() => repassar(movs)} className={btnOuro}>💸 Repassar ({lib})</button>}
-            <button onClick={() => pagar(movs)} className={btnSimula}>⚡ Pagou</button>
+            <button onClick={() => router.push('/dashboard/locacao/cobranca/')} className={(lib || atras) ? btnOuro : btnGhost}>
+              💰 Cobrança{lib || atras ? ` (${lib + atras})` : ''}
+            </button>
             <button onClick={async () => {
               const ok = await confirmDialog({
                 title: `${l.nome} está saindo?`,
@@ -990,29 +931,6 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
           </div>
         </div>
 
-        {/* os números do mês */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {[
-            { v: String(numeros.publicados), r: 'no ar nos portais', cor: 'text-white' },
-            { v: String(numeros.ativas), r: 'alugados rodando', cor: 'text-white' },
-            { v: fmtValor(numeros.aReceber), r: numeros.atrasadas ? `a receber · ${fmtValor(numeros.emAtraso)} em atraso` : 'a receber no mês', cor: numeros.atrasadas ? 'text-rose-300' : 'text-white' },
-            { v: fmtValor(numeros.aRepassar), r: 'a repassar aos donos', cor: numeros.aRepassar ? 'text-amber-300' : 'text-text-secondary' },
-          ].map((x, i) => (
-            <div key={i} className="al-card px-3 py-2.5">
-              <p className={`text-[19px] font-extrabold tabular-nums leading-none ${x.cor}`}>{x.v}</p>
-              <p className="text-[10.5px] text-text-secondary mt-1">{x.r}</p>
-            </div>
-          ))}
-        </div>
-
-        {numeros.aRepassar > 0 && (
-          <button onClick={repassarTudo} className={btnOuro + ' w-full !py-2.5'}>
-            💸 Repassar {fmtValor(numeros.aRepassar)} aos donos — todos de uma vez
-          </button>
-        )}
-
-        <AbasDaArea ativa={funil} imoveis={abas.imoveis} locacoes={abas.locacoes} mensagens={abas.mensagens} />
-
         {/* a régua de etapas do funil escolhido */}
         <div className="al-card p-3">
           <div className="flex items-center gap-1 overflow-x-auto pb-1">
@@ -1165,6 +1083,16 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
                       {(l.contratoSimulado || l.garantiaSimulada) && <span className="ml-2"><SeloSimulacao /></span>}
                     </p>
                     {d?.oQueFalta && <p className="text-[12px] text-[#FFE9A6] mt-1">→ {d.oQueFalta}</p>}
+                    {['contrato_enviado', 'fianca_assinada'].includes(l.etapa) && (
+                      <p className="text-[11.5px] mt-1 flex flex-wrap gap-x-3">
+                        <span className={l.garantiaAssinadaEm ? 'text-emerald-300 font-bold' : 'text-text-secondary'}>
+                          {l.garantiaAssinadaEm ? '✓' : '○'} fiança da Loft{l.garantiaAssinadaEm ? ' assinada' : ' — com o inquilino'}
+                        </span>
+                        <span className={l.contratoAssinadoEm ? 'text-emerald-300 font-bold' : 'text-text-secondary'}>
+                          {l.contratoAssinadoEm ? '✓' : '○'} nosso contrato{l.contratoAssinadoEm ? ' assinado' : ' — com dono e inquilino'}
+                        </span>
+                      </p>
+                    )}
                     {l.mensagem && l.etapa === 'interessado' && (
                       <p className="text-[11.5px] text-text-secondary mt-1 italic">&ldquo;{l.mensagem}&rdquo;</p>
                     )}
@@ -1217,8 +1145,8 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
                   <button onClick={() => abrir(l.id, 'dados')} className={btnGhost + ' !py-1 !text-[11px]'}>📄 dados e contrato</button>
                   <button onClick={() => abrir(l.id, 'loft')} className={btnGhost + ' !py-1 !text-[11px]'}>🛡 ficha da Loft ({l.docsInquilino.length})</button>
                   {l.vistoriaEntrada && <button onClick={() => abrir(l.id, 'laudo')} className={btnGhost + ' !py-1 !text-[11px]'}>📋 laudo</button>}
-                  {ETAPAS_LOCACAO[l.etapa].n >= 5 && <button onClick={() => abrir(l.id, 'minuta')} className={btnGhost + ' !py-1 !text-[11px]'}>📜 contrato</button>}
-                  {ETAPAS_LOCACAO[l.etapa].n >= 8 && (
+                  {ETAPAS_LOCACAO[l.etapa].n >= 4 && ETAPAS_LOCACAO[l.etapa].n <= 8 && <button onClick={() => abrir(l.id, 'minuta')} className={btnGhost + ' !py-1 !text-[11px]'}>📜 contrato</button>}
+                  {ETAPAS_LOCACAO[l.etapa].n >= 7 && (
                     <>
                       <button onClick={() => abrir(l.id, 'extrato')} className={btnGhost + ' !py-1 !text-[11px]'}>💰 extrato ({movs.length})</button>
                       <button onClick={() => abrir(l.id, 'portalInq')} className={btnGhost + ' !py-1 !text-[11px]'}>👁 portal do inquilino</button>
