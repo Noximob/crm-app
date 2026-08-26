@@ -62,9 +62,15 @@ export function useDadosLocacao() {
         total: imoveis.length,
         meus: imoveis.filter((i) => ETAPAS_IMOVEL[i.etapa]?.comQuem === 'nós' && i.etapa !== 'pausado').length,
       },
-      locacoes: {
+      // o CRM cuida de TODO lead vivo; as Locações só de quem já FECHOU
+      crm: {
         total: emAndamento.length,
+        meus: emAndamento.filter((l) => (l.crmEtapa || 'entrada') === 'entrada').length,
+      },
+      locacoes: {
+        total: emAndamento.filter((l) => l.etapa !== 'interessado').length,
         meus: emAndamento.filter((l) => {
+          if (l.etapa === 'interessado') return false;   // bola do CRM
           if (ETAPAS_LOCACAO[l.etapa]?.comQuem === 'nós') return true;
           if (alertasDaLocacao(l).length) return true;
           return movimentos.some((m) => m.locacaoId === l.id && m.statusCobranca !== 'paga' && m.vencimento < hoje);

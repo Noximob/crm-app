@@ -112,28 +112,31 @@ export function Dobra({ titulo, sub, chips, aberto0 = false, children }: {
  *   · logo abaixo, uma faixa escrita "Você está em: 🏠 Funil do Imóvel";
  *   · e o subtítulo diz com QUEM se fala de cada lado.
  */
-export function AbasDaArea({ ativa, imoveis, locacoes, mensagens, cobranca }: {
-  ativa: 'imoveis' | 'locacoes' | 'mensagens' | 'cobranca';
+export function AbasDaArea({ ativa, crm, imoveis, locacoes, mensagens, cobranca }: {
+  ativa: 'crm' | 'imoveis' | 'locacoes' | 'mensagens' | 'cobranca';
+  crm: { total: number; meus: number };
   imoveis: { total: number; meus: number };
   locacoes: { total: number; meus: number };
   mensagens: { total: number; meus: number };
   cobranca: { total: number; meus: number };
 }) {
   const abas = [
+    { k: 'crm' as const, href: '/dashboard/locacao/crm', ic: '👥', t: 'CRM', sub: 'os leads do aluguel', ...crm },
     { k: 'imoveis' as const, href: '/dashboard/locacao/imoveis', ic: '🏠', t: 'Imóveis', sub: 'com o proprietário', ...imoveis },
-    { k: 'locacoes' as const, href: '/dashboard/locacao/locacoes', ic: '🔑', t: 'Locações', sub: 'com o inquilino', ...locacoes },
+    { k: 'locacoes' as const, href: '/dashboard/locacao/locacoes', ic: '🔑', t: 'Locações', sub: 'a papelada do inquilino', ...locacoes },
     { k: 'cobranca' as const, href: '/dashboard/locacao/cobranca', ic: '💰', t: 'Cobrança', sub: 'boletos e repasses', ...cobranca },
     { k: 'mensagens' as const, href: '/dashboard/locacao/mensagens', ic: '💬', t: 'Mensagens', sub: 'manutenção e recados', ...mensagens },
   ];
   const faixa = {
+    crm: ['👥 CRM da Locação', '— Entrada, Em contato, Agendamento, Negociação, Alugado: o corretor move livre'],
     imoveis: ['🏠 Funil do Imóvel', '— captar, documentar o dono, assinar a administração e publicar'],
-    locacoes: ['🔑 Funil da Locação', '— qualificar, aprovar na Loft, assinar os dois contratos e entregar a chave'],
+    locacoes: ['🔑 Funil da Locação', '— a papelada de quem FECHOU no CRM: documentos, Loft, contratos, chave'],
     cobranca: ['💰 Cobrança', '— quem pagou, quem atrasou e o que repassar aos donos'],
     mensagens: ['💬 Caixa de entrada', '— o que os donos e inquilinos mandaram: manutenção e recados'],
   }[ativa];
   return (
     <>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
         {abas.map(({ k, href, ic, t, sub, total, meus }) => {
           const on = ativa === k;
           return (

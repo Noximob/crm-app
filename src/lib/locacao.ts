@@ -252,6 +252,44 @@ export function pendenciasImovel(i: Omit<ImovelLocacao, 'id' | 'imobiliariaId'>)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// O CRM DA LOCAÇÃO · o relacionamento com o lead
+//
+// O MESMO registro da locação, visto por outra lente. O funil burocrático
+// (ETAPAS_LOCACAO) é processo — anda por regra. Este aqui é conversa — o
+// corretor move o lead livremente entre as colunas, anota o que quiser e
+// qualifica pro aluguel. Quando fecha negócio, a burocracia assume; quando
+// a chave é entregue, o CRM vira "Alugado" sozinho.
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const CRM_ETAPAS = {
+  entrada: {
+    n: 1, rotulo: 'Entrada', icone: '📥',
+    ajuda: 'chegou e ninguém falou com ele ainda',
+  },
+  contato: {
+    n: 2, rotulo: 'Em contato', icone: '💬',
+    ajuda: 'conversando — WhatsApp, ligação',
+  },
+  agendamento: {
+    n: 3, rotulo: 'Agendamento', icone: '📅',
+    ajuda: 'visita marcada no imóvel',
+  },
+  negociacao: {
+    n: 4, rotulo: 'Negociação', icone: '🤝',
+    ajuda: 'gostou — acertando valores e condições',
+  },
+  alugado: {
+    n: 5, rotulo: 'Alugado', icone: '🔑',
+    ajuda: 'chave entregue — o sistema marca sozinho',
+  },
+} as const;
+export type CrmEtapa = keyof typeof CRM_ETAPAS;
+export const CRM_ORDEM: CrmEtapa[] = ['entrada', 'contato', 'agendamento', 'negociacao', 'alugado'];
+
+/** Uma anotação livre do corretor no lead. */
+export interface NotaCrm { em: string; por: string; texto: string }
+
+// ═══════════════════════════════════════════════════════════════════════════
 // FUNIL 2 · A LOCAÇÃO
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -266,10 +304,11 @@ export function pendenciasImovel(i: Omit<ImovelLocacao, 'id' | 'imobiliariaId'>)
  * dois → chaves.
  */
 export const ETAPAS_LOCACAO = {
+  /** vive no CRM até o corretor fechar — não aparece na régua burocrática */
   interessado: {
-    n: 1, rotulo: 'Interessado', icone: '📨', comQuem: 'nós',
-    oQueFalta: 'confirmar o interesse e pedir os documentos',
-    ajuda: 'chegou de um portal ou foi cadastrado à mão',
+    n: 1, rotulo: 'No CRM', icone: '📥', comQuem: 'corretor',
+    oQueFalta: 'o corretor está trabalhando o lead no CRM',
+    ajuda: 'entrada → contato → agendamento → negociação; fechou, começa a papelada aqui',
   },
   docs_inquilino: {
     n: 2, rotulo: 'Documentos', icone: '📎', comQuem: 'inquilino',
@@ -370,6 +409,16 @@ export interface Locacao {
   mensagem: string;
   corretorNome: string;
 
+  // ——— o CRM (relacionamento — o corretor move livre) ———
+  crmEtapa: CrmEtapa;
+  crmNotas: NotaCrm[];
+  /** qualificação pro ALUGUEL — simples, sem script */
+  qParaQuando: string;
+  qPessoas: string;
+  qPet: string;
+  qRenda: string;
+  qProcura: string;
+
   // ——— a garantia (com a Loft) ———
   garantiaTipo: string;
   /** nº da apólice que a Loft devolve na aprovação — sai no contrato */
@@ -412,6 +461,8 @@ export const LOCACAO_VAZIA: Omit<Locacao, 'id' | 'imobiliariaId'> = {
   imovelId: '', etapa: 'interessado',
   nome: '', telefone: '', email: '', doc: '', rg: '', estadoCivil: '', profissao: '',
   enderecoAtual: '', docsInquilino: [], origem: 'manual', temperatura: '', mensagem: '', corretorNome: '',
+  crmEtapa: 'entrada', crmNotas: [],
+  qParaQuando: '', qPessoas: '', qPet: '', qRenda: '', qProcura: '',
   garantiaTipo: 'Seguro-fiança (Loft)', garantiaNumero: '', garantiaTaxaMensalPct: null,
   garantiaVigenciaFim: '', garantiaEnviadaEm: '', garantiaAssinadaEm: '', garantiaSimulada: false,
   inicio: '', prazoMeses: 12, valorAluguel: null, valorCondominio: null,
@@ -1230,6 +1281,8 @@ export const ANUNCIO_TESTE: Partial<Omit<ImovelLocacao, 'id' | 'imobiliariaId'>>
 
 /** O inquilino preenchido: qualificação, papelada e termos do contrato. */
 export const INQUILINO_TESTE: Partial<Locacao> = {
+  qParaQuando: 'em até 30 dias', qPessoas: '2 adultos', qPet: '1 gato',
+  qRenda: 'uns R$ 7.000 (casal)', qProcura: '2 quartos perto do Centro, com vaga',
   nome: 'Fernanda Lima (teste)', telefone: '(47) 95555-1122', email: 'fernanda.teste@example.com',
   doc: '999.888.777-66', rg: '4.001.998',
   estadoCivil: 'casada', profissao: 'fisioterapeuta',

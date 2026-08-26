@@ -59,13 +59,13 @@ type Painel = 'ficha' | 'docsDono' | 'adm' | 'material' | 'portalDono'
   | 'dados' | 'loft' | 'vistoria' | 'minuta' | 'laudo' | 'extrato' | 'portalInq' | 'portalDonoLoc';
 
 const ORDEM_IMOVEL: EtapaImovel[] = ['captado', 'docs_dono', 'adm_enviada', 'adm_assinada', 'material', 'publicado', 'alugado'];
-const ORDEM_LOCACAO: EtapaLocacao[] = ['interessado', 'docs_inquilino', 'na_loft', 'loft_aprovou', 'contrato_enviado', 'contrato_assinado', 'ativa', 'encerrando'];
+// sem 'interessado': lead que ainda não fechou vive no CRM, não aqui
+const ORDEM_LOCACAO: EtapaLocacao[] = ['docs_inquilino', 'na_loft', 'loft_aprovou', 'contrato_enviado', 'contrato_assinado', 'ativa', 'encerrando'];
 
-export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelId = '' }: {
+export default function SetorLocacao({ funil, buscaInicial = '' }: {
   /** qual página está montada — Imóveis e Locações agora são rotas próprias */
   funil: Funil;
   buscaInicial?: string;
-  novoLeadImovelId?: string;
 }) {
   const router = useRouter();
   const {
@@ -85,12 +85,6 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
   const [catDocInq, setCatDocInq] = useState<string>('CNH ou RG');
   const [itens, setItens] = useState<string[]>([]);
   const [ressalvas, setRessalvas] = useState<RessalvaVistoria[]>([]);
-  const [novoLead, setNovoLead] = useState<{ imovelId: string } | null>(
-    novoLeadImovelId ? { imovelId: novoLeadImovelId } : null,
-  );
-  const [nNome, setNNome] = useState('');
-  const [nTel, setNTel] = useState('');
-  const [nOrigem, setNOrigem] = useState('manual');
   const [entregando, setEntregando] = useState<string | null>(null);
   const [dataEntrega, setDataEntrega] = useState('');
   const [reajustando, setReajustando] = useState<string | null>(null);
@@ -180,45 +174,6 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
   };
 
   // ═══════════════ FUNIL 2 · as ações da locação ═══════════════
-
-  const criarLead = async () => {
-    if (guarda() || !imobiliariaId || !novoLead) return;
-    if (!nNome.trim()) { showToast('Falta o nome.', 'error'); return; }
-    const im = imoveis.find((x) => x.id === novoLead.imovelId);
-    if (!im) { showToast('Escolha o imóvel do interesse.', 'error'); return; }
-    await addDoc(collection(db, 'locacaoLocacoes'), {
-      ...LOCACAO_VAZIA, imobiliariaId, imovelId: im.id,
-      nome: nNome.trim(), telefone: nTel.trim(), origem: nOrigem,
-      valorAluguel: im.aluguel, valorCondominio: im.condominio,
-      valorIptuMensal: im.iptuMensal, valorSeguroIncendio: im.seguroIncendio,
-      taxaAdmPct: im.taxaAdmPct, criadoEm: serverTimestamp(),
-    });
-    setNovoLead(null); setNNome(''); setNTel(''); setNOrigem('manual');
-    setEtapaSel(null);
-    showToast('Interessado no funil de locação.', 'success');
-    recarregar();
-  };
-
-  const leadDoPortal = async () => {
-    if (guarda() || !imobiliariaId) return;
-    const pub = imoveis.filter((i) => i.etapa === 'publicado');
-    if (!pub.length) { showToast('Nenhum imóvel publicado — o lead vem de um anúncio no ar.', 'error'); return; }
-    const im = pub[Math.floor(Math.random() * pub.length)];
-    const nomes = ['Marcos Vieira', 'Camila Duarte', 'Rafael Nogueira', 'Beatriz Souza', 'Tiago Melo'];
-    const nome = nomes[Math.floor(Math.random() * nomes.length)];
-    await addDoc(collection(db, 'locacaoLocacoes'), {
-      ...LOCACAO_VAZIA, imobiliariaId, imovelId: im.id, nome,
-      telefone: `(47) 9${Math.floor(Math.random() * 9000 + 1000)}-${Math.floor(Math.random() * 9000 + 1000)}`,
-      origem: 'grupo_olx', temperatura: (['alta', 'media', 'baixa'] as const)[Math.floor(Math.random() * 3)],
-      mensagem: 'Vi o anúncio no ZAP e tenho interesse. Ainda está disponível?',
-      valorAluguel: im.aluguel, valorCondominio: im.condominio,
-      valorIptuMensal: im.iptuMensal, valorSeguroIncendio: im.seguroIncendio,
-      taxaAdmPct: im.taxaAdmPct, criadoEm: serverTimestamp(),
-    });
-    showToast(`⚡ ${nome} chegou pelo portal, interessado no ${im.codigo} — está no funil de locações.`, 'success');
-    if (funil !== 'locacoes') router.push('/dashboard/locacao/locacoes/');
-    else { setEtapaSel(null); recarregar(); }
-  };
 
   const mandarPraLoft = async (l: Locacao) => {
     const p = pendenciasLocacao({ ...l, etapa: 'docs_inquilino' });
@@ -352,7 +307,7 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
     try {
       const b = writeBatch(db);
       for (const m of movs) b.set(doc(collection(db, 'locacaoMovimentos')), { ...m, imobiliariaId, criadoEm: serverTimestamp() });
-      b.update(doc(db, 'locacaoLocacoes', l.id), { etapa: 'ativa', inicio, chavesEntreguesEm: hojeYmd(), atualizadoEm: serverTimestamp() });
+      b.update(doc(db, 'locacaoLocacoes', l.id), { etapa: 'ativa', crmEtapa: 'alugado', inicio, chavesEntreguesEm: hojeYmd(), atualizadoEm: serverTimestamp() });
       if (l.imovelId && imovelDe(l.imovelId)) {
         b.update(doc(db, 'locacaoImoveis', l.imovelId), { etapa: 'alugado', atualizadoEm: serverTimestamp() });
       }
@@ -479,6 +434,8 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
   const locacoesVisiveis = useMemo(() => {
     const b = busca.trim().toLowerCase();
     return locacoes
+      // quem ainda não fechou é assunto do CRM — esta página é só papelada
+      .filter((l) => l.etapa !== 'interessado')
       .filter((l) => (verArquivadas ? true : l.etapa !== 'encerrada' && l.etapa !== 'perdida'))
       .filter((l) => (!etapaSel || l.etapa === etapaSel))
       .filter((l) => {
@@ -574,8 +531,8 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
       case 'publicado': {
         // anúncio quebrado tira a casa inteira dos portais: corrigir vem antes
         const quebrado = pendenciasImovel(i).material.length > 0;
-        // o formulário de interessado mora na página de locações
-        const novo = () => router.push('/dashboard/locacao/locacoes/?novo=' + i.id);
+        // lead novo nasce no CRM — é lá que se trabalha o relacionamento
+        const novo = () => router.push('/dashboard/locacao/crm/?novo=' + i.id);
         return (
           <span className="flex flex-wrap gap-1.5">
             {quebrado && <button onClick={() => abrir(i.id, 'material')} className={btnOuro}>📸 Corrigir o anúncio</button>}
@@ -594,13 +551,6 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
   const acaoLocacao = (l: Locacao): React.ReactNode => {
     const movs = movsDe(l.id);
     switch (l.etapa) {
-      case 'interessado':
-        return (
-          <span className="flex flex-wrap gap-1.5">
-            <button onClick={() => upLocacao(l.id, { etapa: 'docs_inquilino' })} className={btnOuro}>✓ Fechou — pedir documentos</button>
-            <button onClick={() => perder(l)} className={btnGhost + ' !text-rose-300/70'}>não fechou</button>
-          </span>
-        );
       case 'docs_inquilino':
         return (
           <span className="flex flex-wrap items-center gap-1.5">
@@ -690,8 +640,9 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
               {l.etapa === 'encerrada' ? `encerrada em ${fmtData(l.encerradaEm)}` : l.motivoPerda || 'não fechou'}
             </span>
             {l.etapa === 'perdida' && (
-              <button onClick={() => upLocacao(l.id, { etapa: 'interessado', motivoPerda: '' })} className={btnGhost + ' !py-1 !text-[11px]'}>
-                ↩ reabrir
+              <button onClick={() => upLocacao(l.id, { etapa: 'interessado', crmEtapa: 'contato', motivoPerda: '' })}
+                className={btnGhost + ' !py-1 !text-[11px]'} title="volta a viver no CRM, em Em contato">
+                ↩ reabrir no CRM
               </button>
             )}
           </span>
@@ -896,7 +847,6 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
   const defEtapa = (k: string) => (funil === 'imoveis'
     ? ETAPAS_IMOVEL[k as EtapaImovel]
     : ETAPAS_LOCACAO[k as EtapaLocacao]);
-  const imoveisPublicaveis = imoveis.filter((i) => ['publicado', 'material', 'adm_assinada'].includes(i.etapa));
 
   return (
     <div className="min-h-screen py-8 px-4">
@@ -912,19 +862,21 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
             <p className="text-text-secondary text-[12.5px] mt-1 max-w-[64ch]">
               {funil === 'imoveis'
                 ? <>O caminho do <b className="text-white/85">proprietário</b>: captar, papelada, administração assinada, anúncio no ar. Completou uma etapa, o imóvel anda sozinho.</>
-                : <>O caminho do <b className="text-white/85">inquilino</b>: qualificar, aprovar na Loft, assinar, entregar a chave e cobrar.</>}
+                : <>A papelada de quem <b className="text-white/85">fechou no CRM</b>: documentos, Loft, os dois contratos, chave.</>}
               {' '}Os botões <b className="text-amber-300">⚡ âmbar</b> fazem o papel de quem ainda não está integrado.
             </p>
           </div>
           {/* aqui em cima ficam só as ações de simulação — as de criar moram
               dentro do funil a que pertencem, junto da busca */}
           <div className="flex flex-wrap gap-2">
-            <button onClick={leadDoPortal} className={btnSimula}>⚡ Lead do portal</button>
             {temDemo
               ? <button onClick={limpar} className={btnGhost + ' !text-rose-300'}>🧪 apagar exemplos</button>
               : <button onClick={seed} className={btnGhost}>🧪 exemplos</button>}
           </div>
         </div>
+
+        <AbasDaArea ativa={funil} crm={abas.crm} imoveis={abas.imoveis} locacoes={abas.locacoes}
+          mensagens={abas.mensagens} cobranca={abas.cobranca} />
 
         {/* a régua de etapas do funil escolhido */}
         <div className="al-card p-3">
@@ -973,49 +925,15 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
             </>
           ) : (
             <>
-              <button onClick={() => { setNovoLead({ imovelId: '' }); setNNome(''); setNTel(''); }} className={btnOuro}>+ Interessado</button>
+              <button onClick={() => router.push('/dashboard/locacao/crm/')} className={btnGhost}>
+                👥 lead novo? é no CRM →
+              </button>
               <button onClick={() => setVerArquivadas((v) => !v)} className={btnGhost}>
                 {verArquivadas ? 'esconder encerradas' : 'ver encerradas'}
               </button>
             </>
           )}
         </div>
-
-        {/* cadastrar um interessado que veio de fora dos portais */}
-        {novoLead && funil === 'locacoes' && (
-          <div className="al-card p-4 space-y-3">
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">
-              Novo interessado — indicação, Instagram, balcão, telefone
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-              <Campo rot="Nome" largura="sm:col-span-2"><input className={inputCls} value={nNome} onChange={(e) => setNNome(e.target.value)} autoFocus /></Campo>
-              <Campo rot="WhatsApp"><input className={inputCls} value={nTel} onChange={(e) => setNTel(e.target.value)} /></Campo>
-              <Campo rot="Veio de">
-                <select className={inputCls} value={nOrigem} onChange={(e) => setNOrigem(e.target.value)}>
-                  <option value="manual">indicação</option>
-                  <option value="instagram">Instagram</option>
-                  <option value="balcao">balcão / telefone</option>
-                  <option value="grupo_olx">portal</option>
-                </select>
-              </Campo>
-              <Campo rot="Interessado em qual imóvel" largura="sm:col-span-4">
-                <select className={inputCls} value={novoLead.imovelId} onChange={(e) => setNovoLead({ imovelId: e.target.value })}>
-                  <option value="">— escolha o imóvel —</option>
-                  {imoveisPublicaveis.map((i) => (
-                    <option key={i.id} value={i.id}>{i.codigo} · {i.titulo} · {fmtValor(i.aluguel)}</option>
-                  ))}
-                </select>
-              </Campo>
-            </div>
-            {!imoveisPublicaveis.length && (
-              <p className="text-[11.5px] text-amber-300">Nenhum imóvel disponível — capte e publique um antes.</p>
-            )}
-            <div className="flex flex-wrap gap-2">
-              <button onClick={criarLead} className={btnOuro}>Salvar interessado</button>
-              <button onClick={() => setNovoLead(null)} className={btnGhost}>cancelar</button>
-            </div>
-          </div>
-        )}
 
         {/* captar imóvel — nasce no mesmo lugar em que o interessado nasce */}
         {novoImovel && funil === 'imoveis' && (
@@ -1039,7 +957,7 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
               acao={acaoImovel(i)}
               painel={aberto?.id === i.id ? painelDe(i) : null}
               onAbrir={(p) => abrir(i.id, p)}
-              onVerFila={() => router.push('/dashboard/locacao/locacoes/?busca=' + encodeURIComponent(i.codigo))}
+              onVerFila={() => router.push('/dashboard/locacao/crm/?imovel=' + encodeURIComponent(i.codigo))}
               onCopiarCowork={() => copiarCowork(i)}
               onExcluir={() => excluirImovel(i)}
             />
@@ -1087,9 +1005,6 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
                           {l.contratoAssinadoEm ? '✓' : '○'} nosso contrato{l.contratoAssinadoEm ? ' assinado' : ' — com dono e inquilino'}
                         </span>
                       </p>
-                    )}
-                    {l.mensagem && l.etapa === 'interessado' && (
-                      <p className="text-[11.5px] text-text-secondary mt-1 italic">&ldquo;{l.mensagem}&rdquo;</p>
                     )}
                   </div>
                   <div className="shrink-0">{acaoLocacao(l)}</div>
@@ -1169,12 +1084,12 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
             </p>
           </div>
         )}
-        {funil === 'locacoes' && locacoesVisiveis.length === 0 && !novoLead && (
+        {funil === 'locacoes' && locacoesVisiveis.length === 0 && (
           <div className="al-card p-10 text-center">
             <p className="text-[32px] mb-2">🔑</p>
             <p className="text-[14px] font-bold text-white">{etapaSel ? 'Nenhuma locação nesta etapa.' : 'Nenhuma locação em andamento.'}</p>
             <p className="text-[12.5px] text-text-secondary mt-1 max-w-[48ch] mx-auto">
-              {etapaSel ? defEtapa(etapaSel)?.ajuda : 'As locações nascem de um interessado num imóvel publicado — dos portais ou cadastrado à mão aqui.'}
+              {etapaSel ? defEtapa(etapaSel)?.ajuda : 'A papelada nasce quando um lead FECHA no CRM — lá é onde os interessados vivem até isso.'}
             </p>
           </div>
         )}

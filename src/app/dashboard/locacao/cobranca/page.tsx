@@ -197,7 +197,7 @@ export default function PaginaCobranca() {
           </div>
         </div>
 
-        <AbasDaArea ativa="cobranca" imoveis={abas.imoveis} locacoes={abas.locacoes} mensagens={abas.mensagens} cobranca={abas.cobranca} />
+        <AbasDaArea ativa="cobranca" crm={abas.crm} imoveis={abas.imoveis} locacoes={abas.locacoes} mensagens={abas.mensagens} cobranca={abas.cobranca} />
 
         {/* o placar do mês */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">

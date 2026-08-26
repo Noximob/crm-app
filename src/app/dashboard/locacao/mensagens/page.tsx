@@ -176,7 +176,7 @@ export default function PaginaMensagens() {
           </div>
         </div>
 
-        <AbasDaArea ativa="mensagens" imoveis={abas.imoveis} locacoes={abas.locacoes} mensagens={abas.mensagens} cobranca={abas.cobranca} />
+        <AbasDaArea ativa="mensagens" crm={abas.crm} imoveis={abas.imoveis} locacoes={abas.locacoes} mensagens={abas.mensagens} cobranca={abas.cobranca} />
 
         {/* os filtros */}
         <div className="flex flex-wrap gap-1.5">

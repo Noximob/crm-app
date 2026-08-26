@@ -175,18 +175,45 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     taxaAdmPct: 10, diaVencimento: 5, prazoMeses: 12,
   };
 
-  // 1 · INTERESSADO — acabou de chegar do portal
+  // 1 · CRM · ENTRADA — acabou de chegar do portal, ninguém falou com ele
   batch.set(doc(collection(db, 'locacaoLocacoes')), {
     ...LOCACAO_VAZIA, ...marca, ...base,
-    etapa: 'interessado', nome: 'Marcos Vieira', telefone: '(47) 99911-2233',
+    etapa: 'interessado', crmEtapa: 'entrada',
+    nome: 'Marcos Vieira', telefone: '(47) 99911-2233',
     origem: 'grupo_olx', temperatura: 'alta',
     mensagem: 'Vi o anúncio no ZAP e tenho interesse. Ainda está disponível pra visitar no sábado?',
+  });
+
+  // 1b · CRM · EM CONTATO — conversando, com anotação e começo de qualificação
+  batch.set(doc(collection(db, 'locacaoLocacoes')), {
+    ...LOCACAO_VAZIA, ...marca, ...base,
+    etapa: 'interessado', crmEtapa: 'contato',
+    nome: 'Camila Duarte', telefone: '(47) 98123-9876',
+    origem: 'grupo_olx', temperatura: 'media', corretorNome: 'Breno',
+    qParaQuando: 'em até 60 dias', qPessoas: 'ela e o marido', qPet: 'não',
+    crmNotas: [
+      { em: desloca(0, -2), por: 'Breno', texto: 'Respondeu rápido no WhatsApp. Quer visitar no fim de semana, prefere de manhã.' },
+    ],
+  });
+
+  // 1c · CRM · AGENDAMENTO — visita marcada, qualificação adiantada
+  batch.set(doc(collection(db, 'locacaoLocacoes')), {
+    ...LOCACAO_VAZIA, ...marca, ...base,
+    etapa: 'interessado', crmEtapa: 'agendamento',
+    nome: 'Otávio Luz', telefone: '(47) 97456-1122',
+    origem: 'instagram', corretorNome: 'Murilo',
+    qParaQuando: 'urgente — saiu do apto atual', qPessoas: '2 adultos + 1 criança',
+    qPet: '1 cachorro pequeno', qRenda: 'uns R$ 9.000', qProcura: '2 quartos com sacada, aceita pet',
+    crmNotas: [
+      { em: desloca(0, -4), por: 'Murilo', texto: 'Veio pelo Instagram. Muito decidido, já conhece o prédio.' },
+      { em: desloca(0, -1), por: 'Murilo', texto: 'Visita marcada pra sábado 10h. Confirmar sexta.' },
+    ],
   });
 
   // 2 · DOCUMENTOS — fechou, está juntando a papelada
   batch.set(doc(collection(db, 'locacaoLocacoes')), {
     ...LOCACAO_VAZIA, ...marca, ...base,
-    etapa: 'docs_inquilino', nome: 'Carlos Mendes', telefone: '(47) 99911-7788',
+    etapa: 'docs_inquilino', crmEtapa: 'negociacao', nome: 'Carlos Mendes', telefone: '(47) 99911-7788',
     email: 'carlos@example.com', doc: '123.456.789-00', origem: 'instagram',
     corretorNome: 'Breno',
     docsInquilino: [arquivoTeste('CNH ou RG')],
@@ -196,7 +223,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
   // 3 · NA LOFT — ficha enviada, aguardando a análise
   batch.set(doc(collection(db, 'locacaoLocacoes')), {
     ...LOCACAO_VAZIA, ...marca, ...base,
-    etapa: 'na_loft', nome: 'Eduardo Ramos', telefone: '(47) 97733-6677',
+    etapa: 'na_loft', crmEtapa: 'negociacao', nome: 'Eduardo Ramos', telefone: '(47) 97733-6677',
     email: 'edu@example.com', doc: '321.654.987-11', rg: '5.112.334',
     estadoCivil: 'solteiro', profissao: 'analista de sistemas',
     enderecoAtual: 'Rua Getúlio Vargas, 200, Itajaí/SC',
@@ -207,7 +234,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
   // 4 · LOFT APROVOU — a fiança foi pro inquilino assinar
   batch.set(doc(collection(db, 'locacaoLocacoes')), {
     ...LOCACAO_VAZIA, ...marca, ...base,
-    etapa: 'loft_aprovou', nome: 'Patrícia Nunes', telefone: '(47) 96644-8899',
+    etapa: 'loft_aprovou', crmEtapa: 'negociacao', nome: 'Patrícia Nunes', telefone: '(47) 96644-8899',
     email: 'pati@example.com', doc: '444.333.222-11', rg: '4.887.221',
     estadoCivil: 'casada', profissao: 'enfermeira',
     enderecoAtual: 'Rua Dom Pedro, 45, Penha/SC',
@@ -222,7 +249,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     ...LOCACAO_VAZIA, ...marca, ...base,
     imovelId: imMaterial.id, valorAluguel: 2600, valorCondominio: null,
     valorIptuMensal: 130, valorSeguroIncendio: 35,
-    etapa: 'loft_aprovou', nome: 'Sandra Correia', telefone: '(47) 95522-7788',
+    etapa: 'loft_aprovou', crmEtapa: 'negociacao', nome: 'Sandra Correia', telefone: '(47) 95522-7788',
     email: 'sandra@example.com', doc: '666.777.888-99', rg: '5.223.118',
     estadoCivil: 'divorciada', profissao: 'representante comercial',
     enderecoAtual: 'Rua Blumenau, 88, Barra Velha/SC',
@@ -239,7 +266,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     ...LOCACAO_VAZIA, ...marca, ...base,
     imovelId: imAdmOk.id, valorAluguel: 1600, valorCondominio: null,
     valorIptuMensal: 80, valorSeguroIncendio: 26,
-    etapa: 'contrato_enviado', nome: 'Juliana Prado', telefone: '(47) 98822-3311',
+    etapa: 'contrato_enviado', crmEtapa: 'negociacao', nome: 'Juliana Prado', telefone: '(47) 98822-3311',
     // fiança ✓ (garantiaAssinadaEm abaixo) · nosso contrato ○ (sem contratoAssinadoEm)
     email: 'juliana@example.com', doc: '222.111.333-44', rg: '4.110.556',
     estadoCivil: 'solteira', profissao: 'designer',
@@ -264,7 +291,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     ...LOCACAO_VAZIA, ...marca, ...base,
     imovelId: imCaptado.id, valorAluguel: 980, valorCondominio: 150,
     valorIptuMensal: 38, valorSeguroIncendio: 18,
-    etapa: 'contrato_assinado', nome: 'Rafael Nogueira', telefone: '(47) 94477-2211',
+    etapa: 'contrato_assinado', crmEtapa: 'negociacao', nome: 'Rafael Nogueira', telefone: '(47) 94477-2211',
     email: 'rafael@example.com', doc: '333.222.111-00', rg: '3.556.001',
     estadoCivil: 'solteiro', profissao: 'cozinheiro',
     enderecoAtual: 'Rua Joinville, 300, Piçarras/SC',
@@ -287,7 +314,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
   const locAtiva: Locacao = {
     ...LOCACAO_VAZIA,
     id: locAtivaRef.id, imobiliariaId, imovelId: imAlugado.id,
-    etapa: 'ativa',
+    etapa: 'ativa', crmEtapa: 'alugado',
     nome: 'Fernanda Lima', telefone: '(47) 95555-1122', email: 'fe@example.com',
     doc: '999.888.777-66', rg: '4.001.998', estadoCivil: 'casada', profissao: 'fisioterapeuta',
     enderecoAtual: 'Rua São Cristóvão, 150, Penha/SC',
