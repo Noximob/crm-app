@@ -43,28 +43,28 @@ export const ETAPAS_IMOVEL = {
     ajuda: 'imóvel registrado; falta a papelada do dono',
   },
   docs_dono: {
-    n: 2, rotulo: 'Documentos do dono', icone: '📎',
+    n: 2, rotulo: 'Documentado', icone: '📎',
     oQueFalta: 'gerar e enviar o contrato de administração',
     ajuda: 'RG/CPF, matrícula e IPTU do proprietário',
   },
   adm_enviada: {
-    n: 3, rotulo: 'Administração enviada', icone: '✍',
+    n: 3, rotulo: 'Assinando', icone: '✍',
     oQueFalta: 'aguardando o dono assinar pela ClickSign',
     ajuda: 'contrato de administração no WhatsApp do proprietário',
   },
   adm_assinada: {
-    n: 4, rotulo: 'Administração assinada', icone: '🤝',
-    oQueFalta: 'montar o material do anúncio (fotos, vídeo, descrição)',
+    n: 4, rotulo: 'Autorizado', icone: '🤝',
+    oQueFalta: 'montar o material do anúncio',
     ajuda: 'autorizado a administrar; portal do dono já criado',
   },
   material: {
-    n: 5, rotulo: 'Material pronto', icone: '📸',
+    n: 5, rotulo: 'Anúncio pronto', icone: '📸',
     oQueFalta: 'publicar nos portais',
     ajuda: 'fotos, vídeo e descrição prontos para os portais',
   },
   publicado: {
-    n: 6, rotulo: 'Publicado', icone: '📣',
-    oQueFalta: 'recebendo interessados dos portais',
+    n: 6, rotulo: 'No ar', icone: '📣',
+    oQueFalta: '',
     ajuda: 'no ar em OLX, ZAP, VivaReal e ImovelWeb',
   },
   alugado: {
@@ -73,7 +73,7 @@ export const ETAPAS_IMOVEL = {
     ajuda: 'fora do ar — locação ativa',
   },
   pausado: {
-    n: 0, rotulo: 'Pausado', icone: '⏸',
+    n: 0, rotulo: 'Fora do ar', icone: '⏸',
     oQueFalta: 'voltar ao ar quando quiser',
     ajuda: 'retirado dos portais por decisão da casa ou do dono',
   },
@@ -617,6 +617,78 @@ export function proximoReajuste(l: Pick<Locacao, 'inicio' | 'reajustes'>): strin
 export function diasAte(ymd: string): number | null {
   if (!ymd) return null;
   return Math.ceil((new Date(ymd + 'T12:00:00').getTime() - Date.now()) / 864e5);
+}
+
+export interface AlertaImovel { tipo: 'feed' | 'assinatura' | 'parado' | 'semDono'; texto: string; grave: boolean }
+
+/**
+ * O que falta no anúncio, dito em UMA frase curta e com verbo.
+ *
+ * As pendências normais são feitas pra lista de conferência ("Mínimo de 5
+ * fotos (tem 3) — regra do Grupo OLX"). Enfiadas no meio de um alerta viram
+ * travalíngua. Aqui a mesma falta vira "faltam 2 fotos".
+ */
+export function faltaCurta(i: ImovelLocacao): string {
+  if (i.fotos.length < 5) {
+    const n = 5 - i.fotos.length;
+    return n === 1 ? 'falta 1 foto' : `faltam ${n} fotos`;
+  }
+  if (i.descricao.trim().length < 50) return 'a descrição está curta demais';
+  if (!i.cep.trim()) return 'falta o CEP';
+  if (!i.titulo.trim() || i.titulo.trim().length < 10) return 'o título está curto demais';
+  if (!i.portais.length) return 'nenhum portal foi marcado';
+  return 'o anúncio está incompleto';
+}
+
+/**
+ * O que está pegando no IMÓVEL — o espelho dos alertas da locação.
+ *
+ * O funil do proprietário não tinha nada disso: só a etapa e o que falta.
+ * Mas o lado do dono tem os seus próprios incêndios, e todos custam:
+ * anúncio no ar fora da regra derruba o feed inteiro, administração parada
+ * no WhatsApp trava a captação, e anúncio publicado há semanas sem um
+ * interessado é preço ou capa errada — dinheiro parado.
+ */
+export function alertasDoImovel(i: ImovelLocacao, interessados: number): AlertaImovel[] {
+  const out: AlertaImovel[] = [];
+  const diasDesde = (d: string): number | null => {
+    const n = diasAte(d);
+    return n === null ? null : -n;
+  };
+
+  if (i.etapa === 'publicado') {
+    const falta = pendenciasImovel(i).material;
+    if (falta.length) {
+      out.push({
+        tipo: 'feed', grave: true,
+        texto: `Saiu do ar nos portais: ${faltaCurta(i)}. Enquanto não corrigir, os outros imóveis da casa também ficam fora.`,
+      });
+    } else {
+      const dias = diasDesde(i.publicadoEm);
+      if (interessados === 0 && dias !== null && dias >= 21) {
+        out.push({
+          tipo: 'parado', grave: dias >= 45,
+          texto: `No ar há ${dias} dias e nenhum interessado — revise preço, foto de capa e título.`,
+        });
+      }
+    }
+  }
+
+  if (i.etapa === 'adm_enviada') {
+    const dias = diasDesde(i.admEnviadaEm);
+    if (dias !== null && dias >= 3) {
+      out.push({
+        tipo: 'assinatura', grave: dias >= 10,
+        texto: `Administração no WhatsApp de ${i.donoNome || 'do dono'} há ${dias} dias sem assinatura — cobrar.`,
+      });
+    }
+  }
+
+  if (i.etapa !== 'captado' && !i.donoPix.trim()) {
+    out.push({ tipo: 'semDono', grave: false, texto: 'Sem chave PIX do proprietário — o repasse não teria pra onde ir.' });
+  }
+
+  return out;
 }
 
 export interface Alerta { tipo: 'garantia' | 'reajuste' | 'vigencia' | 'chamado'; texto: string; grave: boolean }

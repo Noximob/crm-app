@@ -35,7 +35,8 @@ import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   ETAPAS_IMOVEL, ETAPAS_LOCACAO, IMOVEL_VAZIO, LOCACAO_VAZIA,
   DOCS_INQUILINO, ITENS_VISTORIA, LOCAIS_VISTORIA, PORTAIS, STATUS_CHAMADO,
-  pendenciasImovel, pendenciasLocacao, alertasDaLocacao, gerarMovimentos, calcularReajuste,
+  pendenciasImovel, pendenciasLocacao, alertasDaLocacao, alertasDoImovel, totalInquilino,
+  gerarMovimentos, calcularReajuste,
   portalDoImovel, portalDaLocacao, gerarFeedVrsync, imoveisNoFeed, imoveisForaDoFeed,
   pacoteCowork, arquivoTeste, cents, diasAte, ymd,
   hojeYmd, fmtData, fmtValor, linkWhats,
@@ -43,8 +44,9 @@ import {
   type EtapaImovel, type EtapaLocacao, type Arquivo, type RessalvaVistoria,
 } from '@/lib/locacao';
 import { VisaoDono, VisaoInquilino } from '@/lib/locacaoPortalView';
-import { inputCls, btnOuro, btnGhost, btnSimula, SeloSimulacao, Campo } from './ui';
+import { inputCls, btnOuro, btnGhost, btnSimula, SeloSimulacao, Campo, ChaveDosFunis } from './ui';
 import FichaImovel, { PainelDono } from './imoveis';
+import CartaoImovel from './cartaoImovel';
 import PainelLocacao from './contratos';
 import MinutaContrato from './minuta';
 import { MinutaAdministracao, LaudoVistoria, PacoteLoft } from './documentos';
@@ -681,23 +683,31 @@ export default function LocacaoPage() {
         );
       case 'adm_enviada':
         return <button onClick={() => admAssinada(i)} className={btnSimula}>⚡ Dono assinou</button>;
+      // O OURO É SEMPRE O PRÓXIMO PASSO. Antes "Publicar" era dourado mesmo
+      // quando a linha de cima dizia "montar o material do anúncio" — o botão
+      // principal contradizia a instrução, e o clique só dava erro.
       case 'adm_assinada':
-      case 'material':
+      case 'material': {
+        const pronto = pendenciasImovel(i).material.length === 0;
         return (
           <span className="flex flex-wrap gap-1.5">
-            <button onClick={() => abrir(i.id, 'material')} className={btnGhost}>📸 Montar o anúncio</button>
-            <button onClick={() => publicar(i)} className={btnOuro}>📣 Publicar</button>
+            <button onClick={() => abrir(i.id, 'material')} className={pronto ? btnGhost : btnOuro}>📸 Montar o anúncio</button>
+            <button onClick={() => publicar(i)} className={pronto ? btnOuro : btnGhost}>📣 Publicar</button>
           </span>
         );
-      case 'publicado':
+      }
+      case 'publicado': {
+        // anúncio quebrado tira a casa inteira dos portais: corrigir vem antes
+        const quebrado = pendenciasImovel(i).material.length > 0;
+        const novo = () => { setNovoLead({ imovelId: i.id }); setNNome(''); setNTel(''); setFunil('locacoes'); setEtapaSel(null); };
         return (
           <span className="flex flex-wrap gap-1.5">
-            <button onClick={() => { setNovoLead({ imovelId: i.id }); setNNome(''); setNTel(''); setFunil('locacoes'); setEtapaSel(null); }} className={btnOuro}>
-              + Interessado
-            </button>
+            {quebrado && <button onClick={() => abrir(i.id, 'material')} className={btnOuro}>📸 Corrigir o anúncio</button>}
+            <button onClick={novo} className={quebrado ? btnGhost : btnOuro}>+ Interessado</button>
             <button onClick={() => upImovel(i.id, { etapa: 'pausado' })} className={btnGhost}>⏸ tirar do ar</button>
           </span>
         );
+      }
       case 'alugado':
         return <span className="text-[11.5px] text-text-secondary">alugado — acompanhe no funil das locações</span>;
       default:
@@ -1006,8 +1016,9 @@ export default function LocacaoPage() {
               {' '}<b className="text-amber-300">⚡ âmbar</b> fazem o papel de quem ainda não está integrado.
             </p>
           </div>
+          {/* aqui em cima ficam só as ações de simulação — as de criar moram
+              dentro do funil a que pertencem, junto da busca */}
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => setNovoImovel((v) => !v)} className={btnOuro}>+ Captar imóvel</button>
             <button onClick={leadDoPortal} className={btnSimula}>⚡ Lead do portal</button>
             {temDemo
               ? <button onClick={limpar} className={btnGhost + ' !text-rose-300'}>🧪 apagar exemplos</button>
@@ -1036,29 +1047,12 @@ export default function LocacaoPage() {
           </button>
         )}
 
-        {/* a chave dos dois funis */}
-        <div className="flex gap-2">
-          {([
-            ['imoveis', '🏠', 'Imóveis', imoveis.length, minhaVez.imoveis],
-            ['locacoes', '🔑', 'Locações', emAndamento, minhaVez.locacoes],
-          ] as const).map(([k, ic, t, q, meus]) => (
-            <button key={k} onClick={() => { setFunil(k); setEtapaSel(null); fechar(); }}
-              className={`flex-1 al-card p-3 text-left transition-all ${funil === k ? 'ring-1 ring-[#E8C547]/50' : 'opacity-55 hover:opacity-90'}`}>
-              <p className="text-[13.5px] font-bold text-white">{ic} {t} <span className="text-[#FFE9A6] tabular-nums">{q}</span></p>
-              <p className={`text-[11px] ${meus ? 'text-amber-300 font-bold' : 'text-text-secondary'}`}>
-                {meus ? `${meus} esperando você` : 'nada esperando você'}
-              </p>
-            </button>
-          ))}
-        </div>
-
-        {novoImovel && (
-          <div className="al-card p-4">
-            <FichaImovel imobiliariaId={imobiliariaId} isEspelhoDemo={isEspelhoDemo} imoveis={imoveis}
-              imovel={null} modo="dados" recarregar={async () => { await recarregar(); setNovoImovel(false); }}
-              onFechar={() => setNovoImovel(false)} />
-          </div>
-        )}
+        <ChaveDosFunis
+          funil={funil}
+          onTrocar={(k) => { setFunil(k); setEtapaSel(null); setBusca(''); fechar(); }}
+          imoveis={{ total: imoveis.length, meus: minhaVez.imoveis }}
+          locacoes={{ total: emAndamento, meus: minhaVez.locacoes }}
+        />
 
         {/* a régua de etapas do funil escolhido */}
         <div className="al-card p-3">
@@ -1099,16 +1093,20 @@ export default function LocacaoPage() {
           <input value={busca} onChange={(e) => setBusca(e.target.value)}
             placeholder={funil === 'imoveis' ? 'buscar por código, imóvel, bairro ou dono…' : 'buscar por inquilino, telefone ou imóvel…'}
             className="flex-1 min-w-[240px] px-3 py-2 rounded-lg border border-white/10 bg-white/[0.04] text-white text-[13px] placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#E8C547]/40" />
-          {funil === 'imoveis'
-            ? <button onClick={baixarXml} className={btnGhost} title="o arquivo que os portais leem — pra testar na homologação">⬇ XML do feed</button>
-            : (
-              <>
-                <button onClick={() => { setNovoLead({ imovelId: '' }); setNNome(''); setNTel(''); }} className={btnOuro}>+ Interessado</button>
-                <button onClick={() => setVerArquivadas((v) => !v)} className={btnGhost}>
-                  {verArquivadas ? 'esconder encerradas' : 'ver encerradas'}
-                </button>
-              </>
-            )}
+          {/* cada funil tem a MESMA forma aqui: criar em ouro, secundário em ghost */}
+          {funil === 'imoveis' ? (
+            <>
+              <button onClick={() => setNovoImovel((v) => !v)} className={btnOuro}>+ Captar imóvel</button>
+              <button onClick={baixarXml} className={btnGhost} title="o arquivo que os portais leem — pra testar na homologação">⬇ XML do feed</button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => { setNovoLead({ imovelId: '' }); setNNome(''); setNTel(''); }} className={btnOuro}>+ Interessado</button>
+              <button onClick={() => setVerArquivadas((v) => !v)} className={btnGhost}>
+                {verArquivadas ? 'esconder encerradas' : 'ver encerradas'}
+              </button>
+            </>
+          )}
         </div>
 
         {/* cadastrar um interessado que veio de fora dos portais */}
@@ -1147,71 +1145,32 @@ export default function LocacaoPage() {
           </div>
         )}
 
+        {/* captar imóvel — nasce no mesmo lugar em que o interessado nasce */}
+        {novoImovel && funil === 'imoveis' && (
+          <div className="al-card p-4">
+            <FichaImovel imobiliariaId={imobiliariaId} isEspelhoDemo={isEspelhoDemo} imoveis={imoveis}
+              imovel={null} modo="dados" recarregar={async () => { await recarregar(); setNovoImovel(false); }}
+              onFechar={() => setNovoImovel(false)} />
+          </div>
+        )}
+
         {/* ═══════════ FUNIL 1 · IMÓVEIS ═══════════ */}
         {funil === 'imoveis' && imoveisVisiveis.map((i) => {
-          const d = ETAPAS_IMOVEL[i.etapa];
-          const pend = pendenciasImovel(i);
-          const zap = linkWhats(i.donoTelefone, `Olá ${(i.donoNome || '').split(' ')[0]}! Aqui é da Nox Imóveis, sobre o ${i.titulo || 'seu imóvel'}.`);
-          const nossaVez = ['captado', 'docs_dono', 'adm_assinada', 'material'].includes(i.etapa);
-          const temCowork = i.portais.some((c) => PORTAIS.find((x) => x.chave === c)?.via === 'cowork');
           const naFila = interessadosDe(i.id);
           return (
-            <div key={i.id} className={`al-card relative overflow-hidden ${nossaVez ? 'ring-1 ring-[#E8C547]/25' : ''}`}>
-              {nossaVez && <div className="absolute inset-x-0 top-0 gx-line-gold" />}
-              <div className="p-4">
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[14px] font-bold text-white">
-                      <span className="text-[#E8C547]/70 mr-1.5">{i.codigo}</span>{i.titulo || '(sem nome)'}
-                    </p>
-                    <p className="text-[11.5px] text-text-secondary mt-0.5">
-                      {[`${d?.icone} ${d?.rotulo}`, i.donoNome && `dono: ${i.donoNome}`, i.bairro,
-                        i.aluguel ? `${fmtValor(i.aluguel)}/mês` : null,
-                        `${i.fotos.length} fotos`].filter(Boolean).join(' · ')}
-                      {i.admSimulada && <span className="ml-2"><SeloSimulacao /></span>}
-                    </p>
-                    {d?.oQueFalta && <p className="text-[12px] text-[#FFE9A6] mt-1">→ {d.oQueFalta}</p>}
-                  </div>
-                  <div className="shrink-0">{acaoImovel(i)}</div>
-                </div>
-
-                {i.etapa === 'captado' && pend.docs.length > 0 && (
-                  <p className="text-[11.5px] text-amber-300 mt-2">Falta: {pend.docs.join(' · ')}</p>
-                )}
-                {['adm_assinada', 'material'].includes(i.etapa) && pend.material.length > 0 && (
-                  <p className="text-[11.5px] text-amber-300 mt-2">Pra publicar, falta: {pend.material.join(' · ')}</p>
-                )}
-                {i.etapa === 'publicado' && naFila.length === 0 && (
-                  <p className="text-[11.5px] text-text-secondary mt-2">
-                    No ar desde {fmtData(i.publicadoEm)} · nenhum interessado ainda.
-                  </p>
-                )}
-
-                <div className="flex flex-wrap gap-1.5 mt-2.5">
-                  {naFila.length > 0 && (
-                    <button onClick={() => { setFunil('locacoes'); setEtapaSel(null); setBusca(i.codigo); fechar(); }}
-                      className="px-2.5 py-1 rounded-xl text-[11px] font-bold border border-[#E8C547]/40 bg-[#E8C547]/10 text-[#FFE9A6]">
-                      🔑 {naFila.length} {naFila.length > 1 ? 'na fila' : 'na fila'} →
-                    </button>
-                  )}
-                  {zap && <a href={zap} target="_blank" rel="noreferrer" className="px-2.5 py-1 rounded-xl text-[11px] font-bold border border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-300">💬 dono</a>}
-                  <button onClick={() => abrir(i.id, 'ficha')} className={btnGhost + ' !py-1 !text-[11px]'}>🏠 dados</button>
-                  <button onClick={() => abrir(i.id, 'docsDono')} className={btnGhost + ' !py-1 !text-[11px]'}>📎 documentos ({i.docsDono.length})</button>
-                  <button onClick={() => abrir(i.id, 'adm')} className={btnGhost + ' !py-1 !text-[11px]'}>📜 administração</button>
-                  {ETAPAS_IMOVEL[i.etapa].n >= 4 && (
-                    <>
-                      <button onClick={() => abrir(i.id, 'material')} className={btnGhost + ' !py-1 !text-[11px]'}>📸 anúncio</button>
-                      <button onClick={() => abrir(i.id, 'portalDono')} className={btnGhost + ' !py-1 !text-[11px]'}>👁 portal do dono</button>
-                    </>
-                  )}
-                  {temCowork && <button onClick={() => copiarCowork(i)} className={btnGhost + ' !py-1 !text-[11px]'}>📦 pacote Cowork</button>}
-                  <button onClick={() => excluirImovel(i)} className={btnGhost + ' !py-1 !text-[11px] !text-rose-300/70 ml-auto'}>excluir</button>
-                </div>
-              </div>
-              {aberto?.id === i.id && (
-                <div className="border-t border-white/[0.08] bg-white/[0.02] p-4">{painelDe(i)}</div>
-              )}
-            </div>
+            <CartaoImovel
+              key={i.id}
+              i={i}
+              alertas={alertasDoImovel(i, naFila.length)}
+              interessados={naFila.length}
+              zap={linkWhats(i.donoTelefone, `Olá ${(i.donoNome || '').split(' ')[0]}! Aqui é da Nox Imóveis, sobre o ${i.titulo || 'seu imóvel'}.`)}
+              acao={acaoImovel(i)}
+              painel={aberto?.id === i.id ? painelDe(i) : null}
+              onAbrir={(p) => abrir(i.id, p)}
+              onVerFila={() => { setFunil('locacoes'); setEtapaSel(null); setBusca(i.codigo); fechar(); }}
+              onCopiarCowork={() => copiarCowork(i)}
+              onExcluir={() => excluirImovel(i)}
+            />
           );
         })}
 
