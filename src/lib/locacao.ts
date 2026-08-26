@@ -294,6 +294,90 @@ export const crmEtapaDe = (l: { crmEtapa?: string }): CrmEtapa =>
 export interface NotaCrm { em: string; por: string; texto: string }
 
 /**
+ * A LINHA DO TEMPO DO LEAD — o mesmo recurso que faz o CRM de vendas
+ * funcionar: uma coluna com tudo que aconteceu, em ordem, agrupado por dia.
+ *
+ * Aqui ela é DERIVADA, não gravada: as datas já existem espalhadas pelo
+ * registro (visita marcada, fiança enviada, contrato assinado, chave
+ * entregue, reajustes) e as anotações trazem o resto. Assim o histórico
+ * nasce completo mesmo pros contratos que já existiam, sem migração.
+ */
+export interface EventoLead {
+  em: string;
+  tipo: 'nota' | 'visita' | 'papelada' | 'contrato' | 'chave' | 'dinheiro' | 'perda';
+  texto: string;
+  por: string;
+}
+
+const TIPO_EVENTO: Record<EventoLead['tipo'], { chip: string; borda: string; rotulo: string }> = {
+  nota: { chip: 'bg-white/[0.06] border-white/15 text-white/70', borda: 'border-l-white/25', rotulo: 'Anotação' },
+  visita: { chip: 'bg-[#C4A6FF]/10 border-[#C4A6FF]/35 text-[#C4A6FF]', borda: 'border-l-[#C4A6FF]', rotulo: 'Visita' },
+  papelada: { chip: 'bg-[#E8C547]/10 border-[#E8C547]/35 text-[#FFE9A6]', borda: 'border-l-[#E8C547]', rotulo: 'Papelada' },
+  contrato: { chip: 'bg-[#7DD3FC]/10 border-[#7DD3FC]/35 text-[#7DD3FC]', borda: 'border-l-[#7DD3FC]', rotulo: 'Contrato' },
+  chave: { chip: 'bg-[#34D399]/10 border-[#34D399]/35 text-[#34D399]', borda: 'border-l-[#34D399]', rotulo: 'Chave' },
+  dinheiro: { chip: 'bg-emerald-500/10 border-emerald-500/35 text-emerald-300', borda: 'border-l-emerald-500', rotulo: 'Dinheiro' },
+  perda: { chip: 'bg-rose-500/10 border-rose-500/35 text-rose-300', borda: 'border-l-rose-500', rotulo: 'Perdido' },
+};
+export const corEvento = (t: EventoLead['tipo']) => TIPO_EVENTO[t] || TIPO_EVENTO.nota;
+
+export function linhaDoTempo(l: Locacao, imovel?: ImovelLocacao): EventoLead[] {
+  const ev: EventoLead[] = [];
+  const add = (em: string, tipo: EventoLead['tipo'], texto: string, por = '') => {
+    if (em) ev.push({ em, tipo, texto, por });
+  };
+
+  for (const n of l.crmNotas || []) add(n.em, 'nota', n.texto, n.por);
+
+  if (l.crmVisitaEm) {
+    const futura = (diasAte(l.crmVisitaEm) ?? 0) >= 0;
+    add(l.crmVisitaEm, 'visita',
+      futura ? `Visita marcada${imovel ? ` no ${imovel.codigo}` : ''}.` : `Visita${imovel ? ` no ${imovel.codigo}` : ''}.`);
+  }
+
+  add(l.garantiaEnviadaEm, 'papelada', 'A Loft aprovou e mandou a fiança pro inquilino assinar.');
+  add(l.garantiaAssinadaEm, 'papelada', `Fiança assinada${l.garantiaNumero ? ` — apólice ${l.garantiaNumero}` : ''}.`);
+  add(l.contratoEnviadoEm, 'contrato', 'Nosso contrato + laudo de vistoria enviados pra assinatura.');
+  add(l.contratoAssinadoEm, 'contrato', 'Contrato assinado por todas as partes.');
+  if (l.vistoriaEntrada?.feitaEm) {
+    add(l.vistoriaEntrada.feitaEm, 'papelada',
+      `Vistoria de entrada${l.vistoriaEntrada.ressalvas.length ? ` — ${l.vistoriaEntrada.ressalvas.length} ressalva(s)` : ' — sem ressalvas'}.`,
+      l.vistoriaEntrada.feitaPor);
+  }
+  add(l.chavesEntreguesEm, 'chave', `Chaves entregues${l.chavesHora ? ` às ${l.chavesHora}` : ''} — contrato em vigor.`);
+
+  for (const r of l.reajustes || []) {
+    add(r.em, 'dinheiro', `Reajuste de ${r.percentual}% pelo ${r.indice}: ${fmtValor(r.de)} → ${fmtValor(r.para)}.`);
+  }
+
+  if (l.vistoriaSaida?.feitaEm) add(l.vistoriaSaida.feitaEm, 'papelada', 'Vistoria de saída realizada.');
+  add(l.encerradaEm, 'perda', 'Locação encerrada.');
+  if (l.etapa === 'perdida' && l.motivoPerda) add(hojeYmd(), 'perda', `Não fechou — ${l.motivoPerda}.`);
+
+  return ev.sort((a, b) => b.em.localeCompare(a.em));
+}
+
+/** Os eventos agrupados por dia, com o buraco entre eles — igual no CRM de vendas. */
+export function agruparPorDia(ev: EventoLead[]): { dia: string; rotulo: string; gapDias: number; itens: EventoLead[] }[] {
+  const dias = new Map<string, EventoLead[]>();
+  for (const e of ev) {
+    const arr = dias.get(e.em) || [];
+    arr.push(e);
+    dias.set(e.em, arr);
+  }
+  const hoje = hojeYmd();
+  const ontem = ymd(new Date(Date.now() - 864e5));
+  const chaves = Array.from(dias.keys()).sort().reverse();
+  return chaves.map((dia, i) => {
+    const anterior = chaves[i - 1];
+    const gap = anterior ? Math.abs(Math.round((new Date(anterior + 'T12:00:00').getTime() - new Date(dia + 'T12:00:00').getTime()) / 864e5)) : 0;
+    return {
+      dia, itens: dias.get(dia) || [], gapDias: gap,
+      rotulo: dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : fmtData(dia),
+    };
+  });
+}
+
+/**
  * O BATIMENTO DO CRM: quando falar com essa pessoa de novo.
  *
  * É o que separa um CRM de uma lista de nomes. Sem data marcada o lead
@@ -1115,12 +1199,73 @@ export function pacoteCowork(i: ImovelLocacao): string {
 // O PORTAL DO CLIENTE
 // ═══════════════════════════════════════════════════════════════════════════
 
+/**
+ * ⚠ A JANELA DA GARANTIA — o furo mais caro da locação.
+ *
+ * Quando a garantia é seguro-fiança, a seguradora só paga se for AVISADA
+ * dentro do prazo da apólice (na prática, até 30 dias depois do vencimento,
+ * por escrito). Passou disso, a cobertura cai: o proprietário não recebe e
+ * a conta sobra pra casa, que garantiu o aluguel a ele.
+ *
+ * Um atraso de 60 dias que ninguém avisou é prejuízo direto. Por isso o
+ * aviso aparece na tela do dinheiro, com o relógio correndo à vista.
+ */
+export const PRAZO_AVISO_GARANTIA = 30;
+
+export interface AvisoGarantia {
+  /** true quando a garantia é seguradora (fiança/Loft) e há atraso */
+  vale: boolean;
+  diasAtraso: number;
+  /** quantos dias faltam pra perder a cobertura (negativo = já perdeu) */
+  diasRestantes: number;
+  tom: 'ok' | 'atencao' | 'alerta';
+  texto: string;
+}
+
+/** A garantia é de seguradora? (fiança/Loft — capitalização e caução não avisam ninguém.) */
+export const garantiaDeSeguradora = (tipo: string) =>
+  /fian|loft|seguro/i.test(tipo || '') && !/inc[eêé]nd/i.test(tipo || '');
+
+export function avisoGarantia(l: Locacao, vencimentoMaisAntigo: string): AvisoGarantia {
+  const vazio: AvisoGarantia = { vale: false, diasAtraso: 0, diasRestantes: 0, tom: 'ok', texto: '' };
+  if (!vencimentoMaisAntigo || !garantiaDeSeguradora(l.garantiaTipo)) return vazio;
+  const d = diasAte(vencimentoMaisAntigo);
+  if (d === null || d >= 0) return vazio;
+  const atraso = -d;
+  const restam = PRAZO_AVISO_GARANTIA - atraso;
+  if (restam < 0) {
+    return {
+      vale: true, diasAtraso: atraso, diasRestantes: restam, tom: 'alerta',
+      texto: `Passaram ${atraso} dias do vencimento — o prazo de ${PRAZO_AVISO_GARANTIA} dias pra avisar a seguradora VENCEU há ${-restam}. Se a garantia não foi acionada, fale com a seguradora hoje: o proprietário conta com esse dinheiro.`,
+    };
+  }
+  if (restam <= 10) {
+    return {
+      vale: true, diasAtraso: atraso, diasRestantes: restam, tom: 'alerta',
+      texto: `${atraso} dias de atraso — restam ${restam} dias pra acionar a garantia (${l.garantiaTipo}). Depois disso a seguradora não cobre.`,
+    };
+  }
+  return {
+    vale: true, diasAtraso: atraso, diasRestantes: restam, tom: 'atencao',
+    texto: `${atraso} dias de atraso. A garantia (${l.garantiaTipo}) precisa ser acionada em até ${restam} dias.`,
+  };
+}
+
 export interface DadosPortal {
   demo: boolean;
   aguardandoLocacao?: boolean;
   imovel: { titulo: string; endereco: string; codigo: string };
-  dono: { nome: string };
+  /** o dono vê a chave PIX que recebe o dinheiro — se estiver errada, o repasse não chega */
+  dono: { nome: string; pix?: string };
   inquilino: { nome: string };
+  /** quem cuida deste contrato na Nox — o cliente quer um nome, não um protocolo */
+  atendimento?: { corretor: string };
+  /**
+   * O DOSSIÊ — o que está assinado e guardado.
+   * Sem isso o cliente liga pedindo "me manda meu contrato" e alguém tem que
+   * procurar no e-mail. Aqui ele vê que existe e desde quando.
+   */
+  documentos?: { rotulo: string; quando: string; ok: boolean }[];
   contrato: {
     inicio: string; fim: string; prazoMeses: number | null;
     indiceReajuste: string; proximoReajuste: string;
@@ -1160,7 +1305,11 @@ export function portalDoImovel(i: ImovelLocacao): DadosPortal {
   return {
     demo: false, aguardandoLocacao: true,
     imovel: { titulo: i.titulo, endereco: enderecoDe(i), codigo: i.codigo },
-    dono: { nome: i.donoNome }, inquilino: { nome: '' },
+    dono: { nome: i.donoNome, pix: i.donoPix }, inquilino: { nome: '' },
+    documentos: [
+      { rotulo: 'Contrato de administração', quando: fmtData(i.admAssinadaEm), ok: !!i.admAssinadaEm },
+      { rotulo: 'Seus documentos (RG, CPF, matrícula)', quando: '', ok: (i.docsDono || []).length > 0 },
+    ],
     contrato: {
       inicio: '—', fim: '—', prazoMeses: null, indiceReajuste: '—', proximoReajuste: '—',
       diaVencimento: null, garantia: i.garantiasAceitas.join(', ') || '—',
@@ -1203,7 +1352,17 @@ export function portalDaLocacao(
   return {
     demo: false,
     imovel: { titulo: i?.titulo || 'Imóvel', endereco: enderecoDe(i), codigo: i?.codigo || '' },
-    dono: { nome: i?.donoNome || '' }, inquilino: { nome: l.nome },
+    dono: { nome: i?.donoNome || '', pix: i?.donoPix }, inquilino: { nome: l.nome },
+    atendimento: { corretor: l.corretorNome || '' },
+    documentos: [
+      { rotulo: 'Contrato de locação assinado', quando: fmtData(l.contratoAssinadoEm), ok: !!l.contratoAssinadoEm },
+      {
+        rotulo: l.garantiaTipo ? `Garantia · ${l.garantiaTipo}${l.garantiaNumero ? ` (apólice ${l.garantiaNumero})` : ''}` : 'Garantia',
+        quando: fmtData(l.garantiaAssinadaEm), ok: !!l.garantiaAssinadaEm,
+      },
+      { rotulo: 'Vistoria de entrada', quando: fmtData(l.vistoriaEntrada?.feitaEm || ''), ok: !!l.vistoriaEntrada?.feitaEm },
+      { rotulo: 'Entrega das chaves', quando: fmtData(l.chavesEntreguesEm), ok: !!l.chavesEntreguesEm },
+    ],
     contrato: {
       inicio: fmtData(l.inicio), fim: fmtData(fim), prazoMeses: l.prazoMeses,
       indiceReajuste: l.indiceReajuste, proximoReajuste: fmtData(proximoReajuste(l)),
@@ -1249,7 +1408,15 @@ export function portalDaLocacao(
 export const DEMO_PORTAL: DadosPortal = {
   demo: true,
   imovel: { titulo: 'Apartamento 2 quartos com sacada — Centro, Penha', endereco: 'Rua Nereu Ramos, 245 — apto 302, Centro, Penha/SC', codigo: 'LOC-001' },
-  dono: { nome: 'Roberto Krüger' }, inquilino: { nome: 'Fernanda Lima' },
+  dono: { nome: 'Roberto Krüger', pix: 'roberto.kruger@email.com' },
+  inquilino: { nome: 'Fernanda Lima' },
+  atendimento: { corretor: 'Jorge Nox' },
+  documentos: [
+    { rotulo: 'Contrato de locação assinado', quando: '12/03/2026', ok: true },
+    { rotulo: 'Garantia · Seguro-fiança (Loft) (apólice 8842-LF)', quando: '10/03/2026', ok: true },
+    { rotulo: 'Vistoria de entrada', quando: '14/03/2026', ok: true },
+    { rotulo: 'Entrega das chaves', quando: '15/03/2026', ok: true },
+  ],
   contrato: {
     inicio: '15/03/2026', fim: '15/03/2027', prazoMeses: 12, indiceReajuste: 'IGP-M',
     proximoReajuste: '15/03/2027', diaVencimento: 5, garantia: 'Seguro-fiança (Loft)',

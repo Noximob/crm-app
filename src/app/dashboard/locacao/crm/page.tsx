@@ -26,6 +26,7 @@
  */
 import React, { useState, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { db } from '@/lib/firebase';
 import { collection, doc, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
@@ -420,9 +421,9 @@ function CrmLocacao() {
                         {(l.nome || '?').charAt(0).toUpperCase()}
                       </span>
 
-                      <button onClick={() => { setAbertoId(aberto ? null : l.id); setQRascunho(null); setNotaTexto(''); setPerdendo(null); }}
-                        className="min-w-0 flex-1 basis-[220px] text-left">
-                        <p className="text-[14px] font-bold text-white leading-snug">
+                      <Link href={`/dashboard/locacao/crm/${l.id}`}
+                        className="min-w-0 flex-1 basis-[220px] text-left group">
+                        <p className="text-[14px] font-bold text-white leading-snug group-hover:text-[#FFE9A6] transition-colors">
                           {l.nome}
                           {ce === 'entrada' && <span className="ml-2 inline-block h-2 w-2 rounded-full bg-[#7DD3FC] shadow-[0_0_8px_rgba(125,211,252,0.8)] animate-pulse" title="ninguém falou com ele ainda" />}
                           {l.temperatura === 'alta' && <span className="ml-1.5 text-[12px]" title="lead quente">🔥</span>}
@@ -436,7 +437,7 @@ function CrmLocacao() {
                             ? <span className="text-white/80">🏠 {im.codigo} · {im.titulo} <span className="text-text-secondary">· {fmtValor(im.aluguel)}</span></span>
                             : <span className="text-white/40 italic">🔍 {l.qProcura || 'ainda não definiu o imóvel'}</span>}
                         </p>
-                      </button>
+                      </Link>
 
                       {/* os chips e as ações, sempre visíveis */}
                       <div className="shrink-0 flex flex-col items-end gap-1.5">
@@ -468,9 +469,12 @@ function CrmLocacao() {
                               📋 {ETAPAS_LOCACAO[l.etapa].rotulo}
                             </span>
                           )}
+                          <Link href={`/dashboard/locacao/crm/${l.id}`} className={btnGhost + ' !py-1.5 !text-[11px]'}>
+                            📄 ficha completa
+                          </Link>
                           <button onClick={() => { setAbertoId(aberto ? null : l.id); setQRascunho(null); setNotaTexto(''); setPerdendo(null); }}
                             className={btnGhost + ' !py-1.5 !text-[11px]'}>
-                            {aberto ? '▴ fechar' : '▾ abrir'}
+                            {aberto ? '▴ fechar' : '▾ rápido'}
                           </button>
                         </div>
                       </div>

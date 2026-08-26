@@ -26,11 +26,12 @@ import { doc, updateDoc, writeBatch } from 'firebase/firestore';
 import { showToast } from '@/components/ui/toast';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import {
-  hojeYmd, fmtData, fmtValor, cents, linkWhats, diasAte,
+  hojeYmd, fmtData, fmtValor, cents, linkWhats, diasAte, avisoGarantia,
   type Movimento, type Locacao, type ImovelLocacao,
 } from '@/lib/locacao';
 import { useDadosLocacao } from '../dados';
 import { inputCls, btnOuro, btnGhost, btnSimula, AbasDaArea } from '../ui';
+import Demonstrativo from './demonstrativo';
 
 const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const MESES_LONGO = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
@@ -51,6 +52,8 @@ export default function PaginaCobranca() {
   const [busca, setBusca] = useState('');
   const [pilhaSel, setPilhaSel] = useState<Pilha | null>(null);
   const [abertoId, setAbertoId] = useState<string | null>(null);
+  /** qual proprietário está com o demonstrativo aberto pra imprimir/enviar */
+  const [demonstrativo, setDemonstrativo] = useState<{ movs: Movimento[]; dono: string; pix: string; imovelId: string; locacaoId: string } | null>(null);
 
   const guarda = () => { if (isEspelhoDemo) { showToast('Modo demonstração.', 'info'); return true; } return false; };
 
@@ -129,12 +132,53 @@ export default function PaginaCobranca() {
       .sort((a, b) => (b.pagoEm || '').localeCompare(a.pagoEm || '')),
   }), [movimentos, doMes, hoje, busca, ctx]);
 
+  /**
+   * Um alerta por inquilino em atraso com garantia de seguradora, calculado
+   * do vencimento MAIS ANTIGO em aberto — é ele que dispara o prazo.
+   */
+  const garantias = useMemo(() => {
+    const porLoc = new Map<string, Movimento[]>();
+    for (const m of pilhas.atrasadas) {
+      const arr = porLoc.get(m.locacaoId) || [];
+      arr.push(m);
+      porLoc.set(m.locacaoId, arr);
+    }
+    return Array.from(porLoc.entries()).map(([locacaoId, movs]: [string, Movimento[]]) => {
+      const l = locacoes.find((x) => x.id === locacaoId);
+      if (!l) return null;
+      const maisAntigo = movs.map((m) => m.vencimento).sort()[0];
+      const a = avisoGarantia(l, maisAntigo);
+      return a.vale ? { locacaoId, nome: l.nome, ...a } : null;
+    }).filter((x): x is NonNullable<typeof x> => x !== null)
+      .sort((a, b) => a.diasRestantes - b.diasRestantes);
+  }, [pilhas.atrasadas, locacoes]);
+
   const totais = useMemo(() => ({
     atraso: cents(pilhas.atrasadas.reduce((s, m) => s + m.valorTotal, 0)),
     repassar: cents(pilhas.repassar.reduce((s, m) => s + m.repasseDono, 0)),
     vencendo: cents(pilhas.vencendo.reduce((s, m) => s + m.valorTotal, 0)),
     pagas: cents(pilhas.pagas.reduce((s, m) => s + m.valorTotal, 0)),
   }), [pilhas]);
+
+  /**
+   * O FECHAMENTO DA CASA no mês escolhido — a pergunta que o dono da
+   * imobiliária faz e que a tela não respondia: "quanto a Nox ganhou?".
+   * Do que o inquilino paga, três destinos: o proprietário, a seguradora
+   * (seguro incêndio) e a casa (a taxa). Só a taxa é receita.
+   */
+  const fechamento = useMemo(() => {
+    const pagasDoMes = movimentos.filter((m) => m.competencia === mes && m.statusCobranca === 'paga');
+    const previstasDoMes = movimentos.filter((m) => m.competencia === mes);
+    return {
+      recebido: cents(pagasDoMes.reduce((s, m) => s + m.valorTotal, 0)),
+      taxa: cents(pagasDoMes.reduce((s, m) => s + m.taxaAdm, 0)),
+      aoDono: cents(pagasDoMes.reduce((s, m) => s + m.repasseDono, 0)),
+      seguro: cents(pagasDoMes.reduce((s, m) => s + m.valorSeguro, 0)),
+      taxaPrevista: cents(previstasDoMes.reduce((s, m) => s + m.taxaAdm, 0)),
+      contratos: previstasDoMes.length,
+      pagos: pagasDoMes.length,
+    };
+  }, [movimentos, mes]);
 
   /** Repasses agrupados por PROPRIETÁRIO — cada grupo é um PIX só. */
   const porDono = useMemo(() => {
@@ -307,6 +351,46 @@ export default function PaginaCobranca() {
           </div>
         </div>
 
+        {/* o demonstrativo aberto ocupa a tela — é um documento */}
+        {demonstrativo && (
+          <Demonstrativo
+            movs={demonstrativo.movs}
+            dono={demonstrativo.dono}
+            pix={demonstrativo.pix}
+            imovel={imoveis.find((x) => x.id === demonstrativo.imovelId)}
+            inquilino={locacoes.find((x) => x.id === demonstrativo.locacaoId)}
+            onFechar={() => setDemonstrativo(null)}
+          />
+        )}
+
+        {/* o fechamento da casa — só na lente por mês, que é a da rotina */}
+        {lente === 'mes' && fechamento.contratos > 0 && (
+          <div className="al-card p-4">
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-2.5">
+              O mês da casa · {compLonga(mes)} — {fechamento.pagos} de {fechamento.contratos} pagos
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-5 gap-y-3">
+              {([
+                ['Entrou dos inquilinos', fechamento.recebido, 'text-white'],
+                ['Foi pros proprietários', fechamento.aoDono, 'text-emerald-300'],
+                ['Foi pra seguradora', fechamento.seguro, 'text-sky-300'],
+                ['FICOU NA CASA (taxa)', fechamento.taxa, 'text-[#FFE9A6]'],
+              ] as const).map(([rot, v, cor]) => (
+                <div key={rot}>
+                  <p className={`text-[17px] font-extrabold tabular-nums leading-none ${cor}`}>{fmtValor(v)}</p>
+                  <p className="text-[10.5px] text-text-secondary mt-1">{rot}</p>
+                </div>
+              ))}
+            </div>
+            {fechamento.taxaPrevista > fechamento.taxa && (
+              <p className="text-[11.5px] text-amber-300 mt-3 pt-2.5 border-t border-white/[0.06]">
+                Faltam {fmtValor(cents(fechamento.taxaPrevista - fechamento.taxa))} de taxa a entrar neste mês —
+                é o que está preso nas cobranças ainda não pagas.
+              </p>
+            )}
+          </div>
+        )}
+
         {/* ═══════════ LENTE: POR PESSOA ═══════════ */}
         {lente === 'pessoas' && (
           <>
@@ -374,6 +458,14 @@ export default function PaginaCobranca() {
                             ⚡ Registrar pagamento de {compCurta(p.aberta.competencia)}
                           </button>
                         )}
+                        {p.pagas.length > 0 && p.im && (
+                          <button onClick={() => setDemonstrativo({
+                            movs: [...p.pagas].sort((a, b) => a.competencia.localeCompare(b.competencia)),
+                            dono: p.im!.donoNome, pix: p.im!.donoPix, imovelId: p.im!.id, locacaoId: p.l.id,
+                          })} className={btnGhost + ' !py-2 !text-[11.5px]'}>
+                            📄 Demonstrativo pro proprietário
+                          </button>
+                        )}
                         {p.aRepassar.length > 0 && p.im && (
                           <button onClick={() => repassar(p.aRepassar, p.im!.donoNome, p.repasseAberto)} className={btnOuro + ' !py-2'}>
                             💸 Repassar {fmtValor(p.repasseAberto)} a {p.im.donoNome.split(' ')[0]}
@@ -416,6 +508,22 @@ export default function PaginaCobranca() {
           <>
             {(!pilhaSel || pilhaSel === 'atrasadas') && pilhas.atrasadas.length > 0 && (
               <Secao titulo={<>🚨 Em atraso — de qualquer mês, cobrar primeiro</>} cor="text-rose-300">
+                {/* O RELÓGIO DA GARANTIA. Um por inquilino: a seguradora só paga
+                    se for avisada no prazo, e o atraso mais antigo é que conta. */}
+                {garantias.map((g) => (
+                  <div key={g.locacaoId}
+                    className={`mx-3 mb-2 rounded-xl border px-3 py-2.5 ${g.tom === 'alerta'
+                      ? 'border-rose-500/40 bg-rose-500/[0.1]' : 'border-amber-500/30 bg-amber-500/[0.07]'}`}>
+                    <p className={`text-[12px] font-extrabold ${g.tom === 'alerta' ? 'text-rose-200' : 'text-amber-200'}`}>
+                      {g.tom === 'alerta' ? '🚨' : '⏳'} {g.nome} — acionar a garantia
+                    </p>
+                    <p className="text-[11.5px] text-white/75 mt-0.5 max-w-[70ch]">{g.texto}</p>
+                    <button onClick={() => showToast(`Aviso de sinistro enviado à seguradora (simulação) — ${g.nome}.`, 'success')}
+                      className={btnSimula + ' !py-1.5 !text-[11px] mt-2'}>
+                      ⚡ Avisar a seguradora
+                    </button>
+                  </div>
+                ))}
                 {pilhas.atrasadas.map((m) => {
                   const { l } = ctx(m);
                   const zap = l ? linkWhats(l.telefone, `Olá ${(l.nome || '').split(' ')[0]}! O aluguel de ${compCurta(m.competencia)} venceu em ${fmtData(m.vencimento)} — consegue regularizar?`) : '';
@@ -445,6 +553,10 @@ export default function PaginaCobranca() {
                       </p>
                     </div>
                     <p className="text-[14px] font-extrabold text-amber-300 tabular-nums shrink-0">{fmtValor(g.total)}</p>
+                    <button onClick={() => {
+                      const { im, l } = ctx(g.movs[0]);
+                      setDemonstrativo({ movs: g.movs, dono: g.dono, pix: g.pix, imovelId: im?.id || '', locacaoId: l?.id || '' });
+                    }} className={btnGhost + ' !py-1.5 shrink-0'}>📄 demonstrativo</button>
                     <button onClick={() => repassar(g.movs, g.dono, g.total)} className={btnOuro + ' !py-1.5 shrink-0'}>💸 Repassar</button>
                   </div>
                 ))}

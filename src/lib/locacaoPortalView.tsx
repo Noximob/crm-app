@@ -28,6 +28,46 @@ import { fmtValor, linkWhats, DADOS_IMOBILIARIA, type DadosPortal } from '@/lib/
 const btnOuro = 'px-4 py-2.5 rounded-xl text-[13px] font-bold text-[#181203] bg-gradient-to-r from-[#E8C547] to-[#C89210] hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-40';
 const btnGhost = 'px-3 py-2 rounded-xl text-[12px] font-bold border border-white/10 bg-white/[0.04] text-text-secondary hover:text-white hover:bg-white/[0.08] transition-colors';
 
+/**
+ * O CABEÇALHO DO CLIENTE — a primeira impressão da empresa.
+ *
+ * Antes as duas telas abriam com uma linha de texto ("Olá, Fulano"). Agora
+ * abrem como um extrato de banco: o nome grande, o papel da pessoa, o
+ * imóvel e a marca da casa. É a tela que o cliente mostra pros outros.
+ */
+function CabecalhoCliente({ nome, papel, imovel, endereco, codigo }: {
+  nome: string; papel: string; imovel: string; endereco: string; codigo: string;
+}) {
+  return (
+    <section className="al-card relative overflow-hidden p-5">
+      <div className="absolute inset-x-0 top-0 gx-line-gold" />
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="grid place-items-center h-12 w-12 rounded-full shrink-0 text-[19px] font-extrabold border border-[#E8C547]/40 bg-[#E8C547]/10 text-[#FFE9A6]">
+          {(nome || '?').charAt(0).toUpperCase()}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-secondary">{papel}</p>
+          <h1 className="al-display text-[19px] font-bold text-white uppercase tracking-[0.06em] leading-tight truncate">{nome}</h1>
+        </div>
+        <div className="text-right shrink-0">
+          <p className="al-display text-[11px] font-bold uppercase tracking-[0.18em] text-[#FFE9A6]">
+            {DADOS_IMOBILIARIA.razao.replace(' Ltda.', '')}
+          </p>
+          <p className="text-[10px] text-text-secondary">{DADOS_IMOBILIARIA.creci.replace(' (preencher)', '')}</p>
+        </div>
+      </div>
+      {imovel && (
+        <div className="mt-3 pt-3 border-t border-white/[0.06]">
+          <p className="text-[13px] font-bold text-white/90">
+            {codigo && <span className="text-[#E8C547]/70 mr-1.5">{codigo}</span>}{imovel}
+          </p>
+          {endereco && <p className="text-[11.5px] text-text-secondary mt-0.5">{endereco}</p>}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function Cartao({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <section className="al-card relative overflow-hidden p-4 sm:p-5">
@@ -90,6 +130,57 @@ function FalarComAImobiliaria({ assunto }: { assunto: string }) {
   );
 }
 
+/**
+ * O DOSSIÊ — o que está assinado e guardado.
+ *
+ * O telefonema "me manda meu contrato" é o segundo mais comum da locação
+ * (o primeiro é o boleto). Aqui o cliente vê que o documento existe, desde
+ * quando, e pede a via pelo WhatsApp sem depender de alguém procurar no
+ * e-mail. Enquanto o arquivo em si não é servido pelo portal, o que vale é
+ * a CERTEZA de que está tudo assinado.
+ */
+function Dossie({ docs, assunto }: { docs: { rotulo: string; quando: string; ok: boolean }[]; assunto: string }) {
+  if (!docs.length) return null;
+  const zap = linkWhats(DADOS_IMOBILIARIA.telefone, assunto);
+  return (
+    <Cartao titulo="Seus documentos">
+      <div className="space-y-1.5">
+        {docs.map((doc) => (
+          <div key={doc.rotulo} className="flex flex-wrap items-baseline gap-x-2.5 py-1 border-b border-white/[0.05] last:border-0">
+            <span className={`text-[12px] font-bold ${doc.ok ? 'text-emerald-300' : 'text-text-secondary'}`}>
+              {doc.ok ? '✓' : '○'}
+            </span>
+            <span className={`text-[12.5px] ${doc.ok ? 'text-white/85' : 'text-text-secondary'}`}>{doc.rotulo}</span>
+            <span className="text-[11px] text-text-secondary ml-auto tabular-nums">
+              {doc.ok ? (doc.quando || 'guardado') : 'pendente'}
+            </span>
+          </div>
+        ))}
+      </div>
+      {zap && (
+        <a href={zap} target="_blank" rel="noreferrer" className={btnGhost + ' inline-block mt-3'}>
+          📄 Pedir uma via por WhatsApp
+        </a>
+      )}
+    </Cartao>
+  );
+}
+
+/** Quem cuida deste contrato — o cliente quer um nome, não um protocolo. */
+function QuemCuida({ corretor }: { corretor: string }) {
+  if (!corretor) return null;
+  return (
+    <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl border border-white/[0.07] bg-white/[0.02]">
+      <span className="grid place-items-center h-8 w-8 rounded-full shrink-0 text-[13px] font-extrabold border border-white/10 bg-white/[0.05] text-white/80">
+        {corretor.charAt(0).toUpperCase()}
+      </span>
+      <p className="text-[12px] text-text-secondary">
+        Quem cuida do seu contrato: <b className="text-white/90">{corretor}</b>
+      </p>
+    </div>
+  );
+}
+
 const STATUS_PGTO = {
   pago: { txt: 'pago em dia', cor: 'text-emerald-300' },
   pago_atraso: { txt: 'pago com atraso', cor: 'text-amber-300' },
@@ -109,9 +200,8 @@ export function VisaoDono({ d }: { d: DadosPortal }) {
 
   return (
     <div className="space-y-3">
-      <p className="text-center text-[13px] text-text-secondary pt-1">
-        Olá, <b className="text-white">{d.dono.nome}</b> — aqui está o retrato do seu imóvel.
-      </p>
+      <CabecalhoCliente nome={d.dono.nome} papel="Proprietário"
+        imovel={d.imovel.titulo} endereco={d.imovel.endereco} codigo={d.imovel.codigo} />
 
       {/* o estado do mês, antes de qualquer outra coisa */}
       {!d.aguardandoLocacao && (
@@ -129,10 +219,8 @@ export function VisaoDono({ d }: { d: DadosPortal }) {
         )
       )}
 
-      <Cartao titulo="Seu imóvel">
-        <p className="text-[14px] font-bold text-white">{d.imovel.titulo}</p>
-        <p className="text-[12px] text-text-secondary mt-0.5">{d.imovel.endereco}</p>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[12px]">
+      <Cartao titulo="Situação do imóvel">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px]">
           {d.aguardandoLocacao ? (
             <>
               <span className="text-sky-300 font-bold">● Em divulgação</span>
@@ -172,6 +260,28 @@ export function VisaoDono({ d }: { d: DadosPortal }) {
           A taxa de administração é dedutível no seu Imposto de Renda, e o reembolso do IPTU não é
           rendimento tributável — o informe anual já vem separado.
         </p>
+      </Cartao>
+
+      {/* A CHAVE QUE RECEBE O DINHEIRO.
+          Chave PIX errada é o erro mais caro da locação: o repasse sai, não
+          chega, e o dono liga achando que a casa não pagou. Ele confere aqui. */}
+      <Cartao titulo="Onde o seu dinheiro cai">
+        {d.dono.pix ? (
+          <>
+            <p className="text-[11.5px] text-text-secondary mb-1.5">Todo repasse vai pra esta chave PIX:</p>
+            <p className="text-[14.5px] font-bold text-white break-all tabular-nums">{d.dono.pix}</p>
+            <p className="text-[11px] text-text-secondary mt-2 max-w-[58ch]">
+              Confira: precisa estar no <b className="text-white/85">seu CPF/CNPJ</b>. Se mudou de banco ou
+              a chave está errada, avise a gente{d.contrato.diaVencimento
+                ? <> <b className="text-white/85">antes do dia {d.contrato.diaVencimento}</b></>
+                : <> antes do primeiro repasse</>} — depois do PIX enviado não dá pra desfazer.
+            </p>
+          </>
+        ) : (
+          <p className="text-[12.5px] text-amber-300">
+            ⚠ Ainda não temos a sua chave PIX cadastrada. Sem ela o repasse não sai — mande pra gente pelo WhatsApp.
+          </p>
+        )}
       </Cartao>
 
       {/* o fechamento do ano — a pergunta que todo dono faz em abril */}
@@ -245,6 +355,11 @@ export function VisaoDono({ d }: { d: DadosPortal }) {
         </Cartao>
       )}
 
+      <Dossie docs={d.documentos || []}
+        assunto={`Olá! Sou ${d.dono.nome}, proprietário do imóvel ${d.imovel.codigo}. Gostaria de uma via dos documentos.`} />
+
+      <QuemCuida corretor={d.atendimento?.corretor || ''} />
+
       <FalarComAImobiliaria assunto={`Olá! Sou ${d.dono.nome}, proprietário do imóvel ${d.imovel.codigo}.`} />
     </div>
   );
@@ -264,9 +379,8 @@ export function VisaoInquilino({ d }: { d: DadosPortal }) {
 
   return (
     <div className="space-y-3">
-      <p className="text-center text-[13px] text-text-secondary pt-1">
-        Olá, <b className="text-white">{d.inquilino.nome}</b> — aqui está tudo sobre o seu aluguel.
-      </p>
+      <CabecalhoCliente nome={d.inquilino.nome} papel="Inquilino"
+        imovel={d.imovel.titulo} endereco={d.imovel.endereco} codigo={d.imovel.codigo} />
 
       {/* o estado hoje, antes de qualquer outra coisa */}
       {!d.proxima ? (
@@ -349,8 +463,6 @@ export function VisaoInquilino({ d }: { d: DadosPortal }) {
       </Cartao>
 
       <Cartao titulo="Seu contrato">
-        <p className="text-[12.5px] text-white/90 font-bold">{d.imovel.titulo}</p>
-        <p className="text-[11.5px] text-text-secondary mb-2">{d.imovel.endereco}</p>
         <div className="grid grid-cols-2 gap-x-6">
           <LinhaValor rot="Início" val={d.contrato.inicio} />
           <LinhaValor rot="Fim" val={d.contrato.fim} />
@@ -416,6 +528,32 @@ export function VisaoInquilino({ d }: { d: DadosPortal }) {
           </div>
         </Cartao>
       )}
+
+      <Dossie docs={d.documentos || []}
+        assunto={`Olá! Sou ${d.inquilino.nome}, inquilino(a) do imóvel ${d.imovel.codigo}. Gostaria de uma via dos documentos.`} />
+
+      {/* QUANDO EU FOR SAIR — a dúvida que o inquilino não pergunta com
+          antecedência e vira briga no fim. Escrito antes de precisar. */}
+      <Cartao titulo="Quando você for sair">
+        <ol className="space-y-2 text-[12.5px] text-white/85 leading-relaxed">
+          {[
+            ['Avise com 30 dias', 'É o aviso prévio do contrato. Se sair antes do prazo, a multa é proporcional ao que faltava — quanto mais perto do fim, menor.'],
+            ['Marcamos a vistoria de saída', 'Comparamos com a vistoria de entrada. O que estava assim quando você chegou continua sendo assim.'],
+            ['Acerte contas e devolva as chaves', 'Aluguel do período, contas de consumo e reparos, se houver. Chave entregue encerra o contrato.'],
+          ].map(([t2, sub], i) => (
+            <li key={t2} className="flex gap-2.5">
+              <span className="grid place-items-center h-5 w-5 rounded-full shrink-0 mt-0.5 text-[10.5px] font-extrabold border border-[#E8C547]/30 bg-[#E8C547]/10 text-[#FFE9A6]">{i + 1}</span>
+              <span><b className="text-white">{t2}.</b> <span className="text-text-secondary">{sub}</span></span>
+            </li>
+          ))}
+        </ol>
+        <p className="text-[11px] text-text-secondary mt-3 pt-2.5 border-t border-white/[0.06] max-w-[58ch]">
+          Não quer sair? Se ninguém avisar nada, o contrato continua valendo nas mesmas condições —
+          a gente procura você antes do fim pra combinar a renovação.
+        </p>
+      </Cartao>
+
+      <QuemCuida corretor={d.atendimento?.corretor || ''} />
 
       <FalarComAImobiliaria assunto={`Olá! Sou ${d.inquilino.nome}, inquilino(a) do imóvel ${d.imovel.codigo}.`} />
     </div>

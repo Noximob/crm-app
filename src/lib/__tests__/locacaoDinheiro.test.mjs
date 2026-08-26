@@ -184,6 +184,41 @@ console.log('\n— O FEED DOS PORTAIS —');
 }
 
 // ───────────────────────────────────────────────────────────────────────────
+console.log('\n— A JANELA DA GARANTIA —');
+{
+  // O furo: seguro-fiança só paga se a seguradora for avisada dentro do
+  // prazo. Passou, a cobertura cai e a casa fica devendo ao proprietário o
+  // aluguel que garantiu. O relógio conta do vencimento MAIS ANTIGO.
+  const hoje = L.hojeYmd();
+  const diasAtras = (n) => {
+    const d = new Date(hoje + 'T12:00:00');
+    d.setDate(d.getDate() - n);
+    return L.ymd(d);
+  };
+  const comFianca = (extra = {}) => base({ garantiaTipo: 'Seguro-fiança (Loft)', ...extra });
+
+  checa('em dia não gera aviso de garantia',
+    L.avisoGarantia(comFianca(), diasAtras(-5)).vale, false);
+  checa('atraso pequeno avisa em tom de atenção',
+    L.avisoGarantia(comFianca(), diasAtras(5)).tom, 'atencao');
+  checa('faltando 10 dias ou menos vira alerta',
+    L.avisoGarantia(comFianca(), diasAtras(22)).tom, 'alerta',
+    '22 dias de atraso = restam 8 do prazo de 30');
+  checa('prazo estourado continua alertando (a cobertura já caiu)',
+    L.avisoGarantia(comFianca(), diasAtras(45)).diasRestantes, -15);
+  checa('caução não aciona seguradora nenhuma',
+    L.avisoGarantia(comFianca({ garantiaTipo: 'Caução (3 aluguéis)' }), diasAtras(45)).vale, false);
+  checa('fiador também não é seguradora',
+    L.avisoGarantia(comFianca({ garantiaTipo: 'Fiador' }), diasAtras(45)).vale, false);
+  checa('seguro INCÊNDIO não é garantia locatícia',
+    L.garantiaDeSeguradora('Seguro incêndio'), false,
+    'os dois têm a palavra seguro — só a fiança cobre aluguel');
+  checa('sem vencimento em aberto, sem aviso',
+    L.avisoGarantia(comFianca(), '').vale, false);
+}
+
+
+// ───────────────────────────────────────────────────────────────────────────
 console.log('\n— O PREENCHIMENTO DE TESTE —');
 
 checa('preencherVazios não sobrescreve o que já foi digitado',
