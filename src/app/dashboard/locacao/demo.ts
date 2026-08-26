@@ -182,6 +182,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     nome: 'Marcos Vieira', telefone: '(47) 99911-2233',
     origem: 'grupo_olx', temperatura: 'alta',
     mensagem: 'Vi o anúncio no ZAP e tenho interesse. Ainda está disponível pra visitar no sábado?',
+    crmProximoContato: desloca(0, -2),   // atrasado: ninguém retornou
   });
 
   // 1b · CRM · EM CONTATO — conversando, com anotação e começo de qualificação
@@ -191,6 +192,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     nome: 'Camila Duarte', telefone: '(47) 98123-9876',
     origem: 'grupo_olx', temperatura: 'media', corretorNome: 'Breno',
     qParaQuando: 'em até 60 dias', qPessoas: 'ela e o marido', qPet: 'não',
+    crmProximoContato: hojeYmd(),        // falar hoje
     crmNotas: [
       { em: desloca(0, -2), por: 'Breno', texto: 'Respondeu rápido no WhatsApp. Quer visitar no fim de semana, prefere de manhã.' },
     ],
@@ -204,6 +206,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     origem: 'instagram', corretorNome: 'Murilo',
     qParaQuando: 'urgente — saiu do apto atual', qPessoas: '2 adultos + 1 criança',
     qPet: '1 cachorro pequeno', qRenda: 'uns R$ 9.000', qProcura: '2 quartos com sacada, aceita pet',
+    crmVisitaEm: desloca(0, 2), crmProximoContato: desloca(0, 1),
     crmNotas: [
       { em: desloca(0, -4), por: 'Murilo', texto: 'Veio pelo Instagram. Muito decidido, já conhece o prédio.' },
       { em: desloca(0, -1), por: 'Murilo', texto: 'Visita marcada pra sábado 10h. Confirmar sexta.' },
@@ -314,7 +317,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
   const locAtiva: Locacao = {
     ...LOCACAO_VAZIA,
     id: locAtivaRef.id, imobiliariaId, imovelId: imAlugado.id,
-    etapa: 'ativa', crmEtapa: 'alugado',
+    etapa: 'ativa',
     nome: 'Fernanda Lima', telefone: '(47) 95555-1122', email: 'fe@example.com',
     doc: '999.888.777-66', rg: '4.001.998', estadoCivil: 'casada', profissao: 'fisioterapeuta',
     enderecoAtual: 'Rua São Cristóvão, 150, Penha/SC',

@@ -307,7 +307,8 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
     try {
       const b = writeBatch(db);
       for (const m of movs) b.set(doc(collection(db, 'locacaoMovimentos')), { ...m, imobiliariaId, criadoEm: serverTimestamp() });
-      b.update(doc(db, 'locacaoLocacoes', l.id), { etapa: 'ativa', crmEtapa: 'alugado', inicio, chavesEntreguesEm: hojeYmd(), atualizadoEm: serverTimestamp() });
+      // vira CLIENTE ATIVO: sai da fila do CRM e passa a viver aqui
+      b.update(doc(db, 'locacaoLocacoes', l.id), { etapa: 'ativa', inicio, chavesEntreguesEm: hojeYmd(), atualizadoEm: serverTimestamp() });
       if (l.imovelId && imovelDe(l.imovelId)) {
         b.update(doc(db, 'locacaoImoveis', l.imovelId), { etapa: 'alugado', atualizadoEm: serverTimestamp() });
       }
@@ -316,7 +317,7 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
       }
       await b.commit();
       setEntregando(null); setDataEntrega('');
-      showToast(`🔑 Chaves entregues! Portal do inquilino criado, o imóvel saiu dos portais e as ${movs.length} cobranças começam em ${fmtData(movs[0].vencimento)}.`, 'success');
+      showToast(`🔑 Chaves entregues! ${l.nome} virou cliente ativo, saiu do CRM, e as ${movs.length} cobranças começam em ${fmtData(movs[0].vencimento)}.`, 'success');
       recarregar();
     } catch (e) {
       console.error(e);

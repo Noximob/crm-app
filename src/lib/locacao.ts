@@ -276,18 +276,56 @@ export const CRM_ETAPAS = {
   },
   negociacao: {
     n: 4, rotulo: 'Negociação', icone: '🤝',
-    ajuda: 'gostou — acertando valores e condições',
-  },
-  alugado: {
-    n: 5, rotulo: 'Alugado', icone: '🔑',
-    ajuda: 'chave entregue — o sistema marca sozinho',
+    ajuda: 'fechou com a gente — a papelada corre em Locações, o relacionamento fica aqui',
   },
 } as const;
 export type CrmEtapa = keyof typeof CRM_ETAPAS;
-export const CRM_ORDEM: CrmEtapa[] = ['entrada', 'contato', 'agendamento', 'negociacao', 'alugado'];
+export const CRM_ORDEM: CrmEtapa[] = ['entrada', 'contato', 'agendamento', 'negociacao'];
+
+/**
+ * Dado antigo (ou torto) não pode derrubar a tela: qualquer coisa fora das
+ * quatro colunas cai em Negociação — inclusive o 'alugado' que existia antes
+ * de o cliente ativo passar a morar na aba Locações.
+ */
+export const crmEtapaDe = (l: { crmEtapa?: string }): CrmEtapa =>
+  (l.crmEtapa && l.crmEtapa in CRM_ETAPAS ? l.crmEtapa : 'negociacao') as CrmEtapa;
 
 /** Uma anotação livre do corretor no lead. */
 export interface NotaCrm { em: string; por: string; texto: string }
+
+/**
+ * O BATIMENTO DO CRM: quando falar com essa pessoa de novo.
+ *
+ * É o que separa um CRM de uma lista de nomes. Sem data marcada o lead
+ * esfria em silêncio — então "sem retorno marcado" é um estado visível, não
+ * um vazio.
+ */
+export const STATUS_CONTATO = {
+  atrasado: { rotulo: 'Atrasado', chip: 'bg-rose-500/10 border-rose-500/35 text-rose-300' },
+  hoje: { rotulo: 'Falar hoje', chip: 'bg-[#E8C547]/10 border-[#E8C547]/40 text-[#FFE9A6]' },
+  futuro: { rotulo: 'Agendado', chip: 'bg-[#7DD3FC]/10 border-[#7DD3FC]/35 text-[#7DD3FC]' },
+  sem: { rotulo: 'Sem retorno marcado', chip: 'bg-white/[0.04] border-white/15 text-text-secondary' },
+} as const;
+export type StatusContato = keyof typeof STATUS_CONTATO;
+
+export function statusContato(l: { crmProximoContato?: string }): { tipo: StatusContato; dias: number } {
+  const d = l.crmProximoContato ? diasAte(l.crmProximoContato) : null;
+  if (d === null) return { tipo: 'sem', dias: 0 };
+  if (d < 0) return { tipo: 'atrasado', dias: -d };
+  if (d === 0) return { tipo: 'hoje', dias: 0 };
+  return { tipo: 'futuro', dias: d };
+}
+
+/** Por que o lead não fechou — alimenta a decisão de preço e de anúncio. */
+export const MOTIVOS_PERDA = [
+  'Achou caro',
+  'Alugou outro imóvel',
+  'Não gostou do imóvel',
+  'Sumiu / não responde',
+  'Não passou na Loft',
+  'Desistiu de alugar agora',
+  'Outro',
+] as const;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FUNIL 2 · A LOCAÇÃO
@@ -342,9 +380,9 @@ export const ETAPAS_LOCACAO = {
     ajuda: 'portal do inquilino criado na entrega',
   },
   ativa: {
-    n: 7, rotulo: 'Cobrando', icone: '💰', comQuem: 'asaas',
+    n: 7, rotulo: 'Cliente ativo', icone: '🏡', comQuem: 'asaas',
     oQueFalta: '',
-    ajuda: 'cobrança e repasse rodando — o dia a dia mora na aba Cobrança',
+    ajuda: 'morando e em dia com o contrato — boletos e repasses ficam na aba Cobrança',
   },
   encerrando: {
     n: 8, rotulo: 'Em saída', icone: '↪', comQuem: 'nós',
@@ -412,6 +450,10 @@ export interface Locacao {
   // ——— o CRM (relacionamento — o corretor move livre) ———
   crmEtapa: CrmEtapa;
   crmNotas: NotaCrm[];
+  /** quando falar com ele de novo — o batimento do CRM */
+  crmProximoContato: string;
+  /** a visita marcada no imóvel (coluna Agendamento) */
+  crmVisitaEm: string;
   /** qualificação pro ALUGUEL — simples, sem script */
   qParaQuando: string;
   qPessoas: string;
@@ -461,7 +503,7 @@ export const LOCACAO_VAZIA: Omit<Locacao, 'id' | 'imobiliariaId'> = {
   imovelId: '', etapa: 'interessado',
   nome: '', telefone: '', email: '', doc: '', rg: '', estadoCivil: '', profissao: '',
   enderecoAtual: '', docsInquilino: [], origem: 'manual', temperatura: '', mensagem: '', corretorNome: '',
-  crmEtapa: 'entrada', crmNotas: [],
+  crmEtapa: 'entrada', crmNotas: [], crmProximoContato: '', crmVisitaEm: '',
   qParaQuando: '', qPessoas: '', qPet: '', qRenda: '', qProcura: '',
   garantiaTipo: 'Seguro-fiança (Loft)', garantiaNumero: '', garantiaTaxaMensalPct: null,
   garantiaVigenciaFim: '', garantiaEnviadaEm: '', garantiaAssinadaEm: '', garantiaSimulada: false,
