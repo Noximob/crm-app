@@ -24,6 +24,62 @@ import {
 } from '@/lib/locacao';
 import { btnGhost } from './ui';
 
+export type OrdemLista = 'urgencia' | 'nome' | 'valor';
+
+/**
+ * A BARRA DA LISTA — as três alavancas que fazem a lista caber na cabeça.
+ *
+ * Fica sempre visível, inclusive com dois registros. A primeira versão só
+ * aparecia acima de 6 e o resultado foi previsível: numa carteira pequena
+ * ninguém descobria que as alavancas existem, e quando a carteira crescesse
+ * elas apareceriam do nada. Ferramenta escondida é ferramenta que não
+ * existe — e com dois registros ela não atrapalha nada.
+ */
+export function BarraDaLista({
+  funil, quantosMinhaVez, soMinhaVez, onMinhaVez, ordem, onOrdem, compacto, onCompacto,
+}: {
+  funil: 'imoveis' | 'locacoes';
+  quantosMinhaVez: number;
+  soMinhaVez: boolean;
+  onMinhaVez: (v: boolean) => void;
+  ordem: OrdemLista;
+  onOrdem: (o: OrdemLista) => void;
+  compacto: boolean;
+  onCompacto: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 -mt-1">
+      <button onClick={() => onMinhaVez(!soMinhaVez)}
+        className={soMinhaVez
+          ? 'px-3 py-1.5 rounded-xl text-[11.5px] font-bold border border-[#E8C547]/50 bg-[#E8C547]/15 text-[#FFE9A6]'
+          : btnGhost + ' !py-1.5 !text-[11.5px]'}
+        title="esconde quem está esperando o dono, a Loft ou os portais">
+        🔔 minha vez ({quantosMinhaVez})
+      </button>
+
+      <span className="inline-flex items-center gap-1.5">
+        <span className="text-[11px] text-text-secondary">ordenar</span>
+        <select value={ordem} onChange={(e) => onOrdem(e.target.value as OrdemLista)}
+          className="px-2 py-1.5 rounded-xl border border-white/10 bg-white/[0.04] text-[11.5px] text-white/85 focus:outline-none focus:ring-2 focus:ring-[#E8C547]/40">
+          <option value="urgencia">pela etapa (urgência)</option>
+          <option value="nome">{funil === 'imoveis' ? 'por imóvel (A→Z)' : 'por inquilino (A→Z)'}</option>
+          <option value="valor">pelo aluguel (maior→menor)</option>
+        </select>
+      </span>
+
+      <span className="ml-auto inline-flex rounded-xl border border-white/10 overflow-hidden">
+        {([[false, '▦ cartões'], [true, '▤ lista']] as const).map(([v, rot]) => (
+          <button key={rot} onClick={() => onCompacto(v)}
+            className={`px-2.5 py-1.5 text-[11.5px] font-bold transition-colors ${compacto === v
+              ? 'bg-[#E8C547]/15 text-[#FFE9A6]' : 'text-text-secondary hover:text-white hover:bg-white/[0.06]'}`}>
+            {rot}
+          </button>
+        ))}
+      </span>
+    </div>
+  );
+}
+
 /**
  * COLUNAS DE VERDADE, não flex solto.
  *

@@ -23,7 +23,7 @@
  * Onde a vida real dependeria da ClickSign, da Loft ou do Asaas, o botão é
  * ⚡ âmbar — quando a integração ligar, esse clique some.
  */
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useDadosLocacao } from './dados';
@@ -52,7 +52,7 @@ import CartaoImovel from './cartaoImovel';
 import PainelLocacao from './contratos';
 import MinutaContrato from './minuta';
 import { MinutaAdministracao, LaudoVistoria, PacoteLoft } from './documentos';
-import { LinhaImovel, LinhaLocacao } from './linhas';
+import { LinhaImovel, LinhaLocacao, BarraDaLista } from './linhas';
 import { criarDadosExemplo, apagarDadosExemplo } from './demo';
 
 type Funil = 'imoveis' | 'locacoes';
@@ -107,7 +107,7 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
   const [compactoManual, setCompactoManual] = useState<boolean | null>(null);
   const [expandido, setExpandido] = useState<string | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     try {
       const v = localStorage.getItem('locacao.compacto.' + funil);
       if (v === '1' || v === '0') setCompactoManual(v === '1');
@@ -543,7 +543,16 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
   [funil, imoveis, locacoes, imovelMinhaVez, locacaoMinhaVez]);
 
   const listados = funil === 'imoveis' ? imoveisVisiveis.length : locacoesVisiveis.length;
-  const compacto = compactoManual ?? listados > 10;
+  /**
+   * O automático conta a CARTEIRA, não o que está filtrado. Contando o
+   * filtrado, buscar um nome ou ligar o "minha vez" derrubava a lista pra
+   * três resultados e a tela pulava sozinha de lista pra cartões no meio do
+   * uso — o layout mudando debaixo da mão de quem está trabalhando.
+   */
+  const naCarteira = funil === 'imoveis'
+    ? imoveis.length
+    : locacoes.filter((l) => l.etapa !== 'interessado' && l.etapa !== 'encerrada' && l.etapa !== 'perdida').length;
+  const compacto = compactoManual ?? naCarteira > 10;
 
   const temDemo = useMemo(
     () => imoveis.some((x) => (x as { demo?: boolean }).demo) || locacoes.some((x) => (x as { demo?: boolean }).demo),
@@ -1060,40 +1069,12 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
           )}
         </div>
 
-        {/* A BARRA DA LISTA — o que muda quando a lista cresce.
-            Fica escondida enquanto há poucos registros: com 4 imóveis não há
-            nada pra filtrar, e um filtro à toa só ocupa tela. */}
-        {(listados > 6 || soMinhaVez || compactoManual !== null) && (
-          <div className="flex flex-wrap items-center gap-2 -mt-1">
-            <button onClick={() => setSoMinhaVez((v) => !v)}
-              className={soMinhaVez
-                ? 'px-3 py-1.5 rounded-xl text-[11.5px] font-bold border border-[#E8C547]/50 bg-[#E8C547]/15 text-[#FFE9A6]'
-                : btnGhost + ' !py-1.5 !text-[11.5px]'}
-              title="esconde quem está esperando o dono, a Loft ou os portais">
-              🔔 minha vez ({quantosMinhaVez})
-            </button>
-
-            <span className="inline-flex items-center gap-1.5">
-              <span className="text-[11px] text-text-secondary">ordenar</span>
-              <select value={ordem} onChange={(e) => setOrdem(e.target.value as typeof ordem)}
-                className="px-2 py-1.5 rounded-xl border border-white/10 bg-white/[0.04] text-[11.5px] text-white/85 focus:outline-none focus:ring-2 focus:ring-[#E8C547]/40">
-                <option value="urgencia">pela etapa (urgência)</option>
-                <option value="nome">{funil === 'imoveis' ? 'por imóvel (A→Z)' : 'por inquilino (A→Z)'}</option>
-                <option value="valor">pelo aluguel (maior→menor)</option>
-              </select>
-            </span>
-
-            <span className="ml-auto inline-flex rounded-xl border border-white/10 overflow-hidden">
-              {([[false, '▦ cartões'], [true, '▤ lista']] as const).map(([v, rot]) => (
-                <button key={rot} onClick={() => trocarDensidade(v)}
-                  className={`px-2.5 py-1.5 text-[11.5px] font-bold transition-colors ${compacto === v
-                    ? 'bg-[#E8C547]/15 text-[#FFE9A6]' : 'text-text-secondary hover:text-white hover:bg-white/[0.06]'}`}>
-                  {rot}
-                </button>
-              ))}
-            </span>
-          </div>
-        )}
+        {/* A BARRA DA LISTA — sempre à vista, mesmo com dois registros:
+            alavanca escondida é alavanca que ninguém descobre. */}
+        <BarraDaLista funil={funil} quantosMinhaVez={quantosMinhaVez}
+          soMinhaVez={soMinhaVez} onMinhaVez={setSoMinhaVez}
+          ordem={ordem} onOrdem={setOrdem}
+          compacto={compacto} onCompacto={trocarDensidade} />
 
         {soMinhaVez && listados === 0 && (
           <div className="al-card p-6 text-center">
