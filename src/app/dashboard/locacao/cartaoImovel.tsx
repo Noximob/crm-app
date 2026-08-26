@@ -23,11 +23,14 @@ import { btnOuro, btnGhost, SeloSimulacao } from './ui';
 export type PainelImovel = 'ficha' | 'docsDono' | 'adm' | 'material' | 'portalDono';
 
 export default function CartaoImovel({
-  i, alertas, interessados, zap, acao, painel, onAbrir, onVerFila, onCopiarCowork, onExcluir,
+  i, alertas, interessados, inquilino, zap, acao, painel,
+  onAbrir, onVerFila, onVerInquilino, onCopiarCowork, onExcluir,
 }: {
   i: ImovelLocacao;
   alertas: AlertaImovel[];
   interessados: number;
+  /** quem mora aqui agora — só quando o imóvel está alugado */
+  inquilino: { nome: string; desde: string } | null;
   /** link de WhatsApp do dono, ou '' quando não há telefone */
   zap: string;
   /** o botão do próximo passo, montado pela página */
@@ -36,6 +39,7 @@ export default function CartaoImovel({
   painel: React.ReactNode;
   onAbrir: (p: PainelImovel) => void;
   onVerFila: () => void;
+  onVerInquilino: () => void;
   onCopiarCowork: () => void;
   onExcluir: () => void;
 }) {
@@ -162,11 +166,24 @@ export default function CartaoImovel({
         )}
 
         {/* as gavetas */}
+        {inquilino && (
+          <p className="text-[11.5px] text-text-secondary mt-2.5">
+            🏡 <b className="text-white/85">{inquilino.nome}</b> mora aqui
+            {inquilino.desde && <> desde {fmtData(inquilino.desde)}</>}.
+          </p>
+        )}
+
         <div className="flex flex-wrap gap-1.5 mt-2.5">
+          {inquilino && (
+            <button onClick={onVerInquilino}
+              className="px-2.5 py-1 rounded-xl text-[11px] font-bold border border-[#34D399]/40 bg-[#34D399]/10 text-[#34D399]">
+              🏡 ver o contrato →
+            </button>
+          )}
           {interessados > 0 && (
             <button onClick={onVerFila}
               className="px-2.5 py-1 rounded-xl text-[11px] font-bold border border-[#E8C547]/40 bg-[#E8C547]/10 text-[#FFE9A6]">
-              🔑 {interessados} interessado{interessados > 1 ? 's' : ''} →
+              🔑 {interessados} no CRM →
             </button>
           )}
           {zap && <a href={zap} target="_blank" rel="noreferrer" className="px-2.5 py-1 rounded-xl text-[11px] font-bold border border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-300">💬 dono</a>}

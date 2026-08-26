@@ -79,6 +79,9 @@ export async function POST(req: NextRequest) {
       ...LOCACAO_VAZIA,
       imobiliariaId, imovelId,
       etapa: 'interessado',
+      // cai no CRM em "Entrada", pra falar HOJE — lead de portal esfria em horas
+      crmEtapa: 'entrada',
+      crmProximoContato: new Date().toLocaleDateString('sv-SE'),
       nome: s('name') || 'Interessado do portal',
       telefone, email: s('email'),
       origem: 'grupo_olx',

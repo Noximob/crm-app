@@ -1073,13 +1073,21 @@ export interface DadosPortal {
     inicio: string; fim: string; prazoMeses: number | null;
     indiceReajuste: string; proximoReajuste: string;
     diaVencimento: number | null; garantia: string;
+    /** quanto falta pro fim — o cliente pergunta isso o tempo todo */
+    mesesRestantes: number | null;
+    diasAteReajuste: number | null;
   };
   valores: {
     aluguel: number; condominio: number; iptuMensal: number; seguroIncendio: number;
     taxaAdmPct: number; totalInquilino: number; taxaAdm: number; repasseDono: number;
   };
-  historico: { competencia: string; vencimento: string; pagoEm: string; status: 'pago' | 'pago_atraso' | 'aberta' | 'prevista' }[];
-  proxima: { competencia: string; vencimento: string } | null;
+  historico: { competencia: string; vencimento: string; pagoEm: string; valor: number; repasse: number; status: 'pago' | 'pago_atraso' | 'aberta' | 'prevista' }[];
+  /** a cobrança da vez, com a urgência já calculada */
+  proxima: { competencia: string; vencimento: string; diasAte: number; atrasadaDias: number } | null;
+  /** o fechamento do ano — o dono usa no imposto de renda */
+  ano: { rotulo: string; pagas: number; totalPago: number; totalRepassado: number };
+  /** os pedidos de manutenção do inquilino, pra ele acompanhar */
+  chamados: { descricao: string; status: string; em: string }[];
   avisos: { data: string; texto: string }[];
 }
 
@@ -1101,7 +1109,11 @@ export function portalDoImovel(i: ImovelLocacao): DadosPortal {
     demo: false, aguardandoLocacao: true,
     imovel: { titulo: i.titulo, endereco: enderecoDe(i), codigo: i.codigo },
     dono: { nome: i.donoNome }, inquilino: { nome: '' },
-    contrato: { inicio: '—', fim: '—', prazoMeses: null, indiceReajuste: '—', proximoReajuste: '—', diaVencimento: null, garantia: i.garantiasAceitas.join(', ') || '—' },
+    contrato: {
+      inicio: '—', fim: '—', prazoMeses: null, indiceReajuste: '—', proximoReajuste: '—',
+      diaVencimento: null, garantia: i.garantiasAceitas.join(', ') || '—',
+      mesesRestantes: null, diasAteReajuste: null,
+    },
     valores: {
       aluguel: i.aluguel || 0, condominio: i.condominio || 0, iptuMensal: i.iptuMensal || 0,
       seguroIncendio: i.seguroIncendio || 0, taxaAdmPct: i.taxaAdmPct || 0,
@@ -1109,38 +1121,75 @@ export function portalDoImovel(i: ImovelLocacao): DadosPortal {
       taxaAdm: taxa, repasseDono: (i.aluguel || 0) - taxa + (i.iptuMensal || 0),
     },
     historico: [], proxima: null,
+    ano: { rotulo: String(new Date().getFullYear()), pagas: 0, totalPago: 0, totalRepassado: 0 },
+    chamados: [],
     avisos: [{ data: '', texto: `Seu imóvel está em "${et.rotulo}". Assim que for alugado, os pagamentos e repasses aparecem aqui.` }],
   };
 }
 
-export function portalDaLocacao(l: Locacao, i: ImovelLocacao | undefined, movs: Movimento[]): DadosPortal {
+export function portalDaLocacao(
+  l: Locacao,
+  i: ImovelLocacao | undefined,
+  movs: Movimento[],
+  chamados: Chamado[] = [],
+): DadosPortal {
   const aluguel = l.valorAluguel || 0;
-  const taxa = Math.round(aluguel * (l.taxaAdmPct || 0)) / 100;
+  const taxa = cents(aluguel * (l.taxaAdmPct || 0) / 100);
   const iptu = l.valorIptuMensal || 0;
   const hoje = hojeYmd();
+  const anoAtual = hoje.slice(0, 4);
   const ordenados = [...movs].sort((a, b) => b.competencia.localeCompare(a.competencia));
-  const proxima = [...movs].filter((m) => m.statusCobranca !== 'paga').sort((a, b) => a.competencia.localeCompare(b.competencia))[0] || null;
+  const proxima = [...movs].filter((m) => m.statusCobranca !== 'paga')
+    .sort((a, b) => a.vencimento.localeCompare(b.vencimento))[0] || null;
+
+  // o fechamento do ano — o dono precisa disto no imposto de renda
+  const pagasNoAno = movs.filter((m) => m.statusCobranca === 'paga' && m.competencia.startsWith(anoAtual));
+  const fim = fimContrato(l);
+  const dFim = diasAte(fim);
+  const dReaj = diasAte(proximoReajuste(l));
 
   return {
     demo: false,
     imovel: { titulo: i?.titulo || 'Imóvel', endereco: enderecoDe(i), codigo: i?.codigo || '' },
     dono: { nome: i?.donoNome || '' }, inquilino: { nome: l.nome },
     contrato: {
-      inicio: fmtData(l.inicio), fim: fmtData(fimContrato(l)), prazoMeses: l.prazoMeses,
+      inicio: fmtData(l.inicio), fim: fmtData(fim), prazoMeses: l.prazoMeses,
       indiceReajuste: l.indiceReajuste, proximoReajuste: fmtData(proximoReajuste(l)),
       diaVencimento: l.diaVencimento, garantia: l.garantiaTipo,
+      mesesRestantes: dFim === null ? null : Math.max(0, Math.round(dFim / 30)),
+      diasAteReajuste: dReaj,
     },
     valores: {
       aluguel, condominio: l.valorCondominio || 0, iptuMensal: iptu,
       seguroIncendio: l.valorSeguroIncendio || 0, taxaAdmPct: l.taxaAdmPct || 0,
-      totalInquilino: aluguel + iptu + (l.valorSeguroIncendio || 0),
-      taxaAdm: taxa, repasseDono: Math.round((aluguel - taxa + iptu) * 100) / 100,
+      totalInquilino: cents(aluguel + iptu + (l.valorSeguroIncendio || 0)),
+      taxaAdm: taxa, repasseDono: cents(aluguel - taxa + iptu),
     },
-    historico: ordenados.filter((m) => m.statusCobranca === 'paga' || m.vencimento < hoje).slice(0, 8).map((m) => ({
+    historico: ordenados.filter((m) => m.statusCobranca === 'paga' || m.vencimento < hoje).slice(0, 12).map((m) => ({
       competencia: compLegivel(m.competencia), vencimento: fmtData(m.vencimento), pagoEm: fmtData(m.pagoEm),
+      valor: m.valorTotal, repasse: m.repasseDono,
       status: m.statusCobranca === 'paga' ? (m.pagoEm && m.pagoEm > m.vencimento ? 'pago_atraso' : 'pago') : 'aberta',
     })),
-    proxima: proxima ? { competencia: compLegivel(proxima.competencia), vencimento: fmtData(proxima.vencimento) } : null,
+    proxima: proxima ? {
+      competencia: compLegivel(proxima.competencia),
+      vencimento: fmtData(proxima.vencimento),
+      diasAte: Math.max(0, diasAte(proxima.vencimento) ?? 0),
+      atrasadaDias: proxima.vencimento < hoje ? -(diasAte(proxima.vencimento) ?? 0) : 0,
+    } : null,
+    ano: {
+      rotulo: anoAtual,
+      pagas: pagasNoAno.length,
+      totalPago: cents(pagasNoAno.reduce((s, m) => s + m.valorTotal, 0)),
+      totalRepassado: cents(pagasNoAno.reduce((s, m) => s + m.repasseDono, 0)),
+    },
+    chamados: chamados
+      .filter((c) => c.locacaoId === l.id)
+      .slice(0, 5)
+      .map((c) => ({
+        descricao: c.descricao,
+        status: (STATUS_CHAMADO[c.status] || STATUS_CHAMADO.aberto).rotulo,
+        em: '',
+      })),
     avisos: [],
   };
 }
@@ -1149,15 +1198,23 @@ export const DEMO_PORTAL: DadosPortal = {
   demo: true,
   imovel: { titulo: 'Apartamento 2 quartos com sacada — Centro, Penha', endereco: 'Rua Nereu Ramos, 245 — apto 302, Centro, Penha/SC', codigo: 'LOC-001' },
   dono: { nome: 'Roberto Krüger' }, inquilino: { nome: 'Fernanda Lima' },
-  contrato: { inicio: '15/03/2026', fim: '15/09/2028', prazoMeses: 30, indiceReajuste: 'IGP-M', proximoReajuste: '15/03/2027', diaVencimento: 5, garantia: 'Seguro-fiança (Loft)' },
+  contrato: {
+    inicio: '15/03/2026', fim: '15/03/2027', prazoMeses: 12, indiceReajuste: 'IGP-M',
+    proximoReajuste: '15/03/2027', diaVencimento: 5, garantia: 'Seguro-fiança (Loft)',
+    mesesRestantes: 7, diasAteReajuste: 205,
+  },
   valores: { aluguel: 1850, condominio: 380, iptuMensal: 92, seguroIncendio: 28, taxaAdmPct: 10, totalInquilino: 1970, taxaAdm: 185, repasseDono: 1757 },
   historico: [
-    { competencia: 'julho/2026', vencimento: '05/07/2026', pagoEm: '03/07/2026', status: 'pago' },
-    { competencia: 'junho/2026', vencimento: '05/06/2026', pagoEm: '05/06/2026', status: 'pago' },
-    { competencia: 'maio/2026', vencimento: '05/05/2026', pagoEm: '08/05/2026', status: 'pago_atraso' },
-    { competencia: 'abril/2026', vencimento: '05/04/2026', pagoEm: '04/04/2026', status: 'pago' },
+    { competencia: 'julho/2026', vencimento: '05/07/2026', pagoEm: '03/07/2026', valor: 1970, repasse: 1757, status: 'pago' },
+    { competencia: 'junho/2026', vencimento: '05/06/2026', pagoEm: '05/06/2026', valor: 1970, repasse: 1757, status: 'pago' },
+    { competencia: 'maio/2026', vencimento: '05/05/2026', pagoEm: '08/05/2026', valor: 1970, repasse: 1757, status: 'pago_atraso' },
+    { competencia: 'abril/2026', vencimento: '05/04/2026', pagoEm: '04/04/2026', valor: 1970, repasse: 1757, status: 'pago' },
   ],
-  proxima: { competencia: 'agosto/2026', vencimento: '05/09/2026' },
+  proxima: { competencia: 'agosto/2026', vencimento: '05/08/2026', diasAte: 3, atrasadaDias: 0 },
+  ano: { rotulo: '2026', pagas: 4, totalPago: 7880, totalRepassado: 7028 },
+  chamados: [
+    { descricao: 'A torneira da cozinha está pingando desde ontem.', status: 'Orçando', em: '' },
+  ],
   avisos: [
     { data: '20/08/2026', texto: 'A manutenção do portão da garagem está agendada para 28/08, das 8h às 12h.' },
     { data: '05/08/2026', texto: 'O boleto de agosto já está disponível. Vencimento dia 5.' },

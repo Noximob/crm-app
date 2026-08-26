@@ -326,17 +326,6 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
     entregandoRef.current = false;
   };
 
-  const perder = async (l: Locacao) => {
-    const ok = await confirmDialog({
-      title: 'Não fechou com esta pessoa?',
-      message: `${l.nome} sai do funil. O imóvel continua publicado, recebendo outros interessados.`,
-      confirmLabel: 'Não fechou',
-    });
-    if (!ok) return;
-    await upLocacao(l.id, { etapa: 'perdida', motivoPerda: 'desistiu ou não fechou' });
-    showToast('Marcado como não fechou.', 'info');
-  };
-
   // ——— o dinheiro ———
 
   const aplicarReajuste = async (l: Locacao, movs: Movimento[]) => {
@@ -410,7 +399,13 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
   const chamadosDe = useCallback((id: string) => chamados.filter((c) => c.locacaoId === id && c.status !== 'resolvido'), [chamados]);
   /** Quem está na fila por este imóvel — a ponte entre os dois funis. */
   const interessadosDe = useCallback((imovelId: string) =>
-    locacoes.filter((l) => l.imovelId === imovelId && l.etapa !== 'encerrada' && l.etapa !== 'perdida'), [locacoes]);
+    // só quem ainda VIVE no CRM — senão a ponte levava a uma tela vazia
+    locacoes.filter((l) => l.imovelId === imovelId
+      && !['ativa', 'encerrando', 'encerrada', 'perdida'].includes(l.etapa)), [locacoes]);
+
+  /** Quem mora no imóvel agora — o cartão do alugado precisa dizer isso. */
+  const inquilinoDe = useCallback((imovelId: string) =>
+    locacoes.find((l) => l.imovelId === imovelId && (l.etapa === 'ativa' || l.etapa === 'encerrando')), [locacoes]);
 
   const contarImoveis = useMemo(() => {
     const c: Record<string, number> = {};
@@ -685,7 +680,7 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
         return (
           <>
             <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-sky-300 mb-2">O que o DONO vê no portal dele</p>
-            <VisaoDono d={portalDaLocacao(l, im, movs)} />
+            <VisaoDono d={portalDaLocacao(l, im, movs, chamados)} />
           </>
         );
       }
@@ -693,7 +688,7 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
         return (
           <>
             <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-sky-300 mb-2">O que o INQUILINO vê no portal dele</p>
-            <VisaoInquilino d={portalDaLocacao(l, im, movs)} />
+            <VisaoInquilino d={portalDaLocacao(l, im, movs, chamados)} />
           </>
         );
       }
@@ -948,12 +943,15 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
         {/* ═══════════ FUNIL 1 · IMÓVEIS ═══════════ */}
         {funil === 'imoveis' && imoveisVisiveis.map((i) => {
           const naFila = interessadosDe(i.id);
+          const morador = inquilinoDe(i.id);
           return (
             <CartaoImovel
               key={i.id}
               i={i}
               alertas={alertasDoImovel(i, naFila.length)}
               interessados={naFila.length}
+              inquilino={morador ? { nome: morador.nome, desde: morador.inicio } : null}
+              onVerInquilino={() => router.push('/dashboard/locacao/locacoes/?busca=' + encodeURIComponent(morador?.nome || ''))}
               zap={linkWhats(i.donoTelefone, `Olá ${(i.donoNome || '').split(' ')[0]}! Aqui é da Nox Imóveis, sobre o ${i.titulo || 'seu imóvel'}.`)}
               acao={acaoImovel(i)}
               painel={aberto?.id === i.id ? painelDe(i) : null}
