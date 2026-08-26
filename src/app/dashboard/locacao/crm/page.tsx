@@ -73,6 +73,7 @@ function CrmLocacao() {
   const [nNome, setNNome] = useState('');
   const [nTel, setNTel] = useState('');
   const [nOrigem, setNOrigem] = useState('manual');
+  const [nProcura, setNProcura] = useState('');
   const [notaTexto, setNotaTexto] = useState('');
   const [qRascunho, setQRascunho] = useState<Record<string, string> | null>(null);
   /** ao mover pra Agendamento a tela pergunta QUANDO é a visita */
@@ -171,18 +172,23 @@ function CrmLocacao() {
   const criarLead = async () => {
     if (guarda() || !imobiliariaId || !novo) return;
     if (!nNome.trim()) { showToast('Falta o nome.', 'error'); return; }
+    // o imóvel é OPCIONAL: nem todo lead nasce de um anúncio
     const im = imoveis.find((x) => x.id === novo.imovelId);
-    if (!im) { showToast('Escolha o imóvel do interesse.', 'error'); return; }
     await addDoc(collection(db, 'locacaoLocacoes'), {
-      ...LOCACAO_VAZIA, imobiliariaId, imovelId: im.id,
+      ...LOCACAO_VAZIA, imobiliariaId,
+      imovelId: im?.id || '',
       nome: nNome.trim(), telefone: nTel.trim(), origem: nOrigem,
       corretorNome: meuNome, crmEtapa: 'entrada', crmProximoContato: hojeYmd(),
-      valorAluguel: im.aluguel, valorCondominio: im.condominio,
-      valorIptuMensal: im.iptuMensal, valorSeguroIncendio: im.seguroIncendio,
-      taxaAdmPct: im.taxaAdmPct, criadoEm: serverTimestamp(),
+      qProcura: nProcura.trim(),
+      ...(im ? {
+        valorAluguel: im.aluguel, valorCondominio: im.condominio,
+        valorIptuMensal: im.iptuMensal, valorSeguroIncendio: im.seguroIncendio,
+        taxaAdmPct: im.taxaAdmPct,
+      } : {}),
+      criadoEm: serverTimestamp(),
     });
-    setNovo(null); setNNome(''); setNTel(''); setNOrigem('manual');
-    showToast('Lead na Entrada, pra falar hoje.', 'success');
+    setNovo(null); setNNome(''); setNTel(''); setNOrigem('manual'); setNProcura('');
+    showToast(im ? 'Lead na Entrada, pra falar hoje.' : 'Lead na Entrada — o imóvel você define quando ele escolher.', 'success');
     recarregar();
   };
 
@@ -224,6 +230,7 @@ function CrmLocacao() {
 
   /** Visitou e não gostou — o lead continua, o imóvel é que muda. */
   const trocarImovel = async (l: Locacao, imovelId: string) => {
+    if (!imovelId) { await up(l.id, { imovelId: '' }); return; }
     const im = imoveis.find((x) => x.id === imovelId);
     if (!im) return;
     await up(l.id, {
@@ -238,6 +245,11 @@ function CrmLocacao() {
 
   /** A ponte: fechou no CRM → a papelada começa no Setor de Locação. */
   const fechou = async (l: Locacao) => {
+    if (!l.imovelId) {
+      showToast('Antes de fechar, escolha por qual imóvel — é dele que sai o contrato.', 'error');
+      setAbertoId(l.id);
+      return;
+    }
     const ok = await confirmDialog({
       title: `Fechou com ${l.nome}?`,
       message: 'O lead entra no funil burocrático do Setor de Locação (documentos → Loft → contratos → chave). O relacionamento continua aqui no CRM, em Negociação.',
@@ -327,15 +339,23 @@ function CrmLocacao() {
                   <option value="grupo_olx">portal</option>
                 </select>
               </Campo>
-              <Campo rot="Interessado em qual imóvel" largura="sm:col-span-4">
+              <Campo rot="Interessado em algum imóvel? (opcional)" largura="sm:col-span-2">
                 <select className={inputCls} value={novo.imovelId} onChange={(e) => setNovo({ imovelId: e.target.value })}>
-                  <option value="">— escolha o imóvel —</option>
+                  <option value="">ainda não sabe / vou descobrir</option>
                   {imoveisNoAr.map((i) => (
                     <option key={i.id} value={i.id}>{i.codigo} · {i.titulo} · {fmtValor(i.aluguel)}</option>
                   ))}
                 </select>
               </Campo>
+              <Campo rot="O que ele procura" largura="sm:col-span-2">
+                <input className={inputCls} placeholder="ex.: 2 quartos no Centro, com vaga, até R$ 2.000"
+                  value={nProcura} onChange={(e) => setNProcura(e.target.value)} />
+              </Campo>
             </div>
+            <p className="text-[11px] text-text-secondary">
+              Lead de portal já vem com o imóvel do anúncio. O que você cadastra à mão pode não ter
+              nenhum ainda — anote o que ele procura e amarre o imóvel quando ele escolher.
+            </p>
             <div className="flex flex-wrap gap-2">
               <button onClick={criarLead} className={btnOuro}>Salvar lead</button>
               <button onClick={() => setNovo(null)} className={btnGhost}>cancelar</button>
@@ -347,7 +367,7 @@ function CrmLocacao() {
         <div className="al-card relative overflow-hidden p-3">
           <div className="absolute inset-x-0 top-0 gx-line-gold" />
 
-          <div className="flex flex-wrap items-center gap-2 mb-2.5">
+          <div className="flex flex-wrap items-center gap-2">
             <input value={busca} onChange={(e) => setBusca(e.target.value)}
               placeholder="Buscar por nome, telefone ou imóvel…"
               className="w-full sm:w-56 px-3 py-2 rounded-lg border border-white/10 bg-white/[0.04] text-white text-[13px] placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#E8C547]/40" />
@@ -375,53 +395,114 @@ function CrmLocacao() {
               {leads.length} de {vivos.length}
             </span>
           </div>
+        </div>
 
-          <div className="rounded-xl border border-white/10 overflow-hidden">
-            <div className="hidden sm:grid grid-cols-[1fr_120px_40px_1fr_120px_130px] gap-2 px-3 py-2 border-b border-white/10 bg-white/[0.03] text-[10px] font-extrabold uppercase tracking-[0.16em] text-text-secondary">
-              <span>Nome</span><span>Telefone</span><span></span><span>Imóvel</span><span>Etapa</span><span>Próximo contato</span>
-            </div>
-
+        <div className="space-y-2">
             {leads.map((l) => {
               const im = imovelDe(l.imovelId);
               const ce = crmEtapaDe(l);
               const st = statusContato(l);
               const aberto = abertoId === l.id;
-              const zap = linkWhats(l.telefone, `Olá ${(l.nome || '').split(' ')[0]}! Aqui é ${meuNome ? meuNome.split(' ')[0] : 'da Nox Imóveis'}, sobre o ${im?.titulo || 'imóvel'} que você se interessou.`);
+              const zap = linkWhats(l.telefone, `Olá ${(l.nome || '').split(' ')[0]}! Aqui é ${meuNome ? meuNome.split(' ')[0] : 'da Nox Imóveis'}${im ? `, sobre o ${im.titulo}` : ''}.`);
               const naBurocracia = ETAPAS_LOCACAO[l.etapa].n >= 2;
               const ultimaNota = (l.crmNotas || [])[(l.crmNotas || []).length - 1];
               const diasSemToque = ultimaNota ? -(diasAte(ultimaNota.em) ?? 0) : null;
+              const urgente = st.tipo === 'atrasado' || st.tipo === 'hoje' || ce === 'entrada';
               return (
-                <div key={l.id} className="border-b border-white/[0.05] last:border-0">
-                  <button onClick={() => { setAbertoId(aberto ? null : l.id); setQRascunho(null); setNotaTexto(''); setPerdendo(null); }}
-                    className={`w-full grid grid-cols-1 sm:grid-cols-[1fr_120px_40px_1fr_120px_130px] gap-x-2 gap-y-1 px-3 py-2 text-left transition-colors ${aberto ? 'bg-white/[0.04]' : 'hover:bg-white/[0.03]'}`}>
-                    <span className="text-[13px] font-bold text-white truncate">
-                      {l.nome}
-                      {ce === 'entrada' && <span className="ml-2 inline-block h-2 w-2 rounded-full bg-[#7DD3FC] shadow-[0_0_8px_rgba(125,211,252,0.8)] animate-pulse" title="ninguém falou com ele ainda" />}
-                      {l.temperatura === 'alta' && <span className="ml-1.5 text-[11px]" title="lead quente">🔥</span>}
-                    </span>
-                    <span className="text-[12px] text-text-secondary truncate self-center">{l.telefone || '—'}</span>
-                    <span className="self-center" onClick={(e) => e.stopPropagation()}>
-                      {zap && <a href={zap} target="_blank" rel="noreferrer" title="Chamar no WhatsApp"><WhatsIcon className="h-6 w-6" /></a>}
-                    </span>
-                    <span className="text-[12px] text-text-secondary truncate self-center">
-                      {im ? `${im.codigo} · ${im.titulo}` : '—'}
-                    </span>
-                    <span className="self-center">
-                      <span className={`px-2 py-0.5 rounded-full text-[10.5px] font-bold border ${CHIP_ETAPA[ce]}`}>
-                        {CRM_ETAPAS[ce].icone} {CRM_ETAPAS[ce].rotulo}
+                <div key={l.id} className={`al-card relative overflow-hidden ${urgente ? 'ring-1 ring-[#E8C547]/25' : ''}`}>
+                  {urgente && <div className="absolute inset-x-0 top-0 gx-line-gold" />}
+
+                  {/* o cabeçalho do cartão: quem é, por qual imóvel, e o que fazer */}
+                  <div className="p-3.5">
+                    <div className="flex flex-wrap items-start gap-3">
+                      {/* a inicial faz as vezes de rosto — dá âncora visual à lista */}
+                      <span className={`grid place-items-center h-11 w-11 rounded-full shrink-0 text-[16px] font-extrabold border ${CHIP_ETAPA[ce]}`}>
+                        {(l.nome || '?').charAt(0).toUpperCase()}
                       </span>
-                    </span>
-                    <span className="self-center flex flex-col gap-0.5">
-                      <span className={`px-2 py-0.5 rounded-full text-[10.5px] font-bold border w-fit ${STATUS_CONTATO[st.tipo].chip}`}>
-                        {st.tipo === 'atrasado' ? `há ${st.dias}d` : st.tipo === 'hoje' ? 'hoje' : st.tipo === 'futuro' ? fmtData(l.crmProximoContato) : 'marcar'}
-                      </span>
-                      {naBurocracia && (
-                        <span className="text-[9.5px] text-text-secondary truncate" title={`No Setor de Locação: ${ETAPAS_LOCACAO[l.etapa].rotulo}`}>
-                          📋 {ETAPAS_LOCACAO[l.etapa].rotulo}
-                        </span>
+
+                      <button onClick={() => { setAbertoId(aberto ? null : l.id); setQRascunho(null); setNotaTexto(''); setPerdendo(null); }}
+                        className="min-w-0 flex-1 basis-[220px] text-left">
+                        <p className="text-[14px] font-bold text-white leading-snug">
+                          {l.nome}
+                          {ce === 'entrada' && <span className="ml-2 inline-block h-2 w-2 rounded-full bg-[#7DD3FC] shadow-[0_0_8px_rgba(125,211,252,0.8)] animate-pulse" title="ninguém falou com ele ainda" />}
+                          {l.temperatura === 'alta' && <span className="ml-1.5 text-[12px]" title="lead quente">🔥</span>}
+                        </p>
+                        <p className="text-[11.5px] text-text-secondary mt-0.5 truncate">
+                          {[l.telefone, l.origem !== 'manual' ? `via ${l.origem.replace('_', ' ')}` : null, l.corretorNome || null]
+                            .filter(Boolean).join(' · ')}
+                        </p>
+                        <p className="text-[12px] mt-1 truncate">
+                          {im
+                            ? <span className="text-white/80">🏠 {im.codigo} · {im.titulo} <span className="text-text-secondary">· {fmtValor(im.aluguel)}</span></span>
+                            : <span className="text-white/40 italic">🔍 {l.qProcura || 'ainda não definiu o imóvel'}</span>}
+                        </p>
+                      </button>
+
+                      {/* os chips e as ações, sempre visíveis */}
+                      <div className="shrink-0 flex flex-col items-end gap-1.5">
+                        <div className="flex flex-wrap gap-1.5 justify-end">
+                          <span className={`px-2 py-0.5 rounded-full text-[10.5px] font-bold border ${CHIP_ETAPA[ce]}`}>
+                            {CRM_ETAPAS[ce].icone} {CRM_ETAPAS[ce].rotulo}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10.5px] font-bold border ${STATUS_CONTATO[st.tipo].chip}`}>
+                            {st.tipo === 'atrasado' ? `atrasado há ${st.dias}d`
+                              : st.tipo === 'hoje' ? 'falar hoje'
+                              : st.tipo === 'futuro' ? `volta ${fmtData(l.crmProximoContato)}`
+                              : 'sem retorno marcado'}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 justify-end">
+                          {zap && (
+                            <a href={zap} target="_blank" rel="noreferrer" title="Chamar no WhatsApp"
+                              className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold border border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-300">
+                              💬 WhatsApp
+                            </a>
+                          )}
+                          {!naBurocracia && ce === 'negociacao' && (
+                            <button onClick={() => fechou(l)} className={btnOuro + ' !py-1.5 !text-[11px] whitespace-nowrap'}>
+                              ✓ Fechou — começar a papelada
+                            </button>
+                          )}
+                          {naBurocracia && (
+                            <span className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold border border-[#34D399]/35 bg-[#34D399]/10 text-[#34D399]">
+                              📋 {ETAPAS_LOCACAO[l.etapa].rotulo}
+                            </span>
+                          )}
+                          <button onClick={() => { setAbertoId(aberto ? null : l.id); setQRascunho(null); setNotaTexto(''); setPerdendo(null); }}
+                            className={btnGhost + ' !py-1.5 !text-[11px]'}>
+                            {aberto ? '▴ fechar' : '▾ abrir'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* mover de coluna direto do cartão — sem precisar abrir */}
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2.5 pt-2.5 border-t border-white/[0.06]">
+                      <span className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mr-1">mover</span>
+                      {CRM_ORDEM.map((k) => (
+                        <button key={k} onClick={() => mover(l, k)} title={CRM_ETAPAS[k].ajuda}
+                          className={`px-2 py-1 rounded-lg text-[11px] font-bold border transition-colors ${
+                            ce === k ? CHIP_ETAPA[k] : 'border-white/10 bg-white/[0.03] text-text-secondary hover:text-white hover:bg-white/[0.07]'}`}>
+                          {CRM_ETAPAS[k].icone} {CRM_ETAPAS[k].rotulo}
+                        </button>
+                      ))}
+                      {l.crmVisitaEm && (
+                        <span className="text-[11px] text-[#C4A6FF] ml-1">📅 visita {fmtData(l.crmVisitaEm)}</span>
                       )}
-                    </span>
-                  </button>
+                      {diasSemToque !== null && diasSemToque >= 7 && (
+                        <span className="text-[11px] text-amber-300 ml-auto">⚠ {diasSemToque}d sem anotação</span>
+                      )}
+                    </div>
+
+                    {marcandoVisita === l.id && (
+                      <div className="flex flex-wrap items-center gap-2 mt-2 rounded-lg border border-[#C4A6FF]/30 bg-[#C4A6FF]/[0.07] px-3 py-2">
+                        <span className="text-[11.5px] font-bold text-[#C4A6FF]">📅 Quando é a visita?</span>
+                        <input type="date" className={inputCls + ' !w-auto'} value={dataVisita} onChange={(e) => setDataVisita(e.target.value)} />
+                        <button onClick={() => confirmarVisita(l)} className={btnOuro + ' !py-1.5'}>marcar</button>
+                        <button onClick={() => setMarcandoVisita(null)} className={btnGhost + ' !py-1.5'}>×</button>
+                      </div>
+                    )}
+                  </div>
 
                   {/* ——— o detalhe, embaixo da linha (padrão da área) ——— */}
                   {aberto && (
@@ -452,28 +533,6 @@ function CrmLocacao() {
                         )}
                       </div>
 
-                      {/* mover de coluna — o corretor manda */}
-                      <div>
-                        <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1.5">Mover pra</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {CRM_ORDEM.map((k) => (
-                            <button key={k} onClick={() => mover(l, k)}
-                              className={`px-3 py-1.5 rounded-xl text-[11.5px] font-bold border transition-colors ${
-                                ce === k ? CHIP_ETAPA[k] : 'border-white/10 bg-white/[0.03] text-text-secondary hover:text-white hover:bg-white/[0.07]'}`}>
-                              {CRM_ETAPAS[k].icone} {CRM_ETAPAS[k].rotulo}
-                            </button>
-                          ))}
-                        </div>
-                        {marcandoVisita === l.id && (
-                          <div className="flex flex-wrap items-center gap-2 mt-2 rounded-lg border border-[#C4A6FF]/30 bg-[#C4A6FF]/[0.07] px-3 py-2">
-                            <span className="text-[11.5px] font-bold text-[#C4A6FF]">📅 Quando é a visita?</span>
-                            <input type="date" className={inputCls + ' !w-auto'} value={dataVisita} onChange={(e) => setDataVisita(e.target.value)} />
-                            <button onClick={() => confirmarVisita(l)} className={btnOuro + ' !py-1.5'}>marcar</button>
-                            <button onClick={() => setMarcandoVisita(null)} className={btnGhost + ' !py-1.5'}>×</button>
-                          </div>
-                        )}
-                      </div>
-
                       {/* quem é, de onde veio, e por qual imóvel */}
                       <div className="rounded-lg border border-white/[0.06] p-3 space-y-3">
                         <p className="text-[12px] text-text-secondary">
@@ -485,6 +544,7 @@ function CrmLocacao() {
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                           <Campo rot="Interesse pelo imóvel" largura="sm:col-span-2">
                             <select className={inputCls} value={l.imovelId} onChange={(e) => trocarImovel(l, e.target.value)}>
+                              <option value="">ainda não definiu</option>
                               {im && !imoveisNoAr.some((x) => x.id === im.id) && (
                                 <option value={im.id}>{im.codigo} · {im.titulo}</option>
                               )}
@@ -593,7 +653,7 @@ function CrmLocacao() {
             })}
 
             {leads.length === 0 && (
-              <div className="p-10 text-center">
+              <div className="al-card p-10 text-center">
                 <p className="text-[32px] mb-2">👥</p>
                 <p className="text-[14px] font-bold text-white">
                   {etapaSel ? `Ninguém em "${CRM_ETAPAS[etapaSel].rotulo}".`
@@ -607,7 +667,6 @@ function CrmLocacao() {
                 </p>
               </div>
             )}
-          </div>
         </div>
       </div>
     </div>

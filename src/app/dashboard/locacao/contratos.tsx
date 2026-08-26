@@ -62,6 +62,7 @@ export default function PainelLocacao({ imobiliariaId, isEspelhoDemo, locacao, i
     'inicio', 'prazoMeses', 'valorAluguel', 'valorCondominio', 'valorIptuMensal',
     'valorSeguroIncendio', 'diaVencimento', 'indiceReajuste', 'taxaAdmPct',
     'garantiaTipo', 'garantiaNumero',
+    'chavesEntreguesEm', 'chavesHora',
     'observacoes',
   ] as const;
 
@@ -253,6 +254,7 @@ export default function PainelLocacao({ imobiliariaId, isEspelhoDemo, locacao, i
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Campo rot="Começa em (o dia da chave)"><input type="date" className={inputCls} value={form.inicio} onChange={(e) => f('inicio', e.target.value)} /></Campo>
+          <Campo rot="Hora combinada da entrega"><input type="time" className={inputCls} value={form.chavesHora} onChange={(e) => f('chavesHora', e.target.value)} /></Campo>
           <Campo rot="Dura quantos meses"><input className={inputCls} inputMode="numeric" placeholder="30" value={form.prazoMeses ?? ''} onChange={(e) => f('prazoMeses', num(e.target.value))} /></Campo>
           <Campo rot="Termina em (calculado sozinho)"><input className={inputCls + ' opacity-60'} value={fmtData(fimContrato(form))} readOnly /></Campo>
           <Campo rot="Boleto vence todo dia"><input className={inputCls} inputMode="numeric" placeholder="5" value={form.diaVencimento ?? ''} onChange={(e) => f('diaVencimento', num(e.target.value))} /></Campo>

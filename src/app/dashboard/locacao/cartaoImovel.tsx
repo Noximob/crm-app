@@ -166,6 +166,19 @@ export default function CartaoImovel({
         )}
 
         {/* as gavetas */}
+        {/* o portal do dono nasce na assinatura da administração — sem este
+            aviso o gestor não sabia que tinha acesso pra enviar */}
+        {ETAPAS_IMOVEL[i.etapa].n >= 4 && (
+          <div className="flex flex-wrap items-center gap-2 mt-2.5 rounded-lg px-3 py-1.5 bg-sky-500/[0.07] border border-sky-500/25">
+            <p className="text-[11.5px] font-bold text-sky-300 flex-1 min-w-[200px]">
+              🔓 Portal do proprietário no ar — acesso: nome completo + 4 primeiros dígitos do CPF
+            </p>
+            <button onClick={() => onAbrir('portalDono')} className={btnOuro + ' !py-1 !text-[10.5px] shrink-0'}>
+              enviar o acesso
+            </button>
+          </div>
+        )}
+
         {inquilino && (
           <p className="text-[11.5px] text-text-secondary mt-2.5">
             🏡 <b className="text-white/85">{inquilino.nome}</b> mora aqui

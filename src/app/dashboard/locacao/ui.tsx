@@ -11,7 +11,8 @@
  */
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ehArquivoTeste, textoDocTeste, type Arquivo } from '@/lib/locacao';
+import { ehArquivoTeste, textoDocTeste, acessoPortal, textoAcessoPortal, linkWhats, type Arquivo } from '@/lib/locacao';
+import { showToast } from '@/components/ui/toast';
 
 export const inputCls ='w-full px-3 py-2 rounded-lg border border-white/10 bg-white/[0.04] text-white text-[13px] placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#E8C547]/40';
 export const btnOuro = 'px-3.5 py-2 rounded-xl text-[12px] font-bold text-[#181203] bg-gradient-to-r from-[#E8C547] to-[#C89210] hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-40';
@@ -236,5 +237,80 @@ export function ChipsDocumentos({ docs, aoRemover }: {
         </div>
       )}
     </>
+  );
+}
+
+/**
+ * 🔓 O ACESSO DO CLIENTE AO PORTAL.
+ *
+ * Aparece no momento em que o portal daquela pessoa nasce: pro DONO quando
+ * a administração é assinada, pro INQUILINO quando tudo está assinado. Sem
+ * isto o gestor sabia que o portal existia mas não tinha o que mandar.
+ *
+ * Três coisas numa caixa só: o usuário, a senha, e o botão que manda tudo
+ * pronto no WhatsApp da pessoa.
+ */
+export function AcessoAoPortal({ quem, nome, doc, telefone, endereco, aoVerPortal }: {
+  quem: 'dono' | 'inquilino';
+  nome: string;
+  /** CPF/CNPJ — os 4 primeiros dígitos são a senha */
+  doc: string;
+  telefone: string;
+  endereco: string;
+  aoVerPortal?: () => void;
+}) {
+  const a = acessoPortal(nome, doc);
+  const zap = linkWhats(telefone, textoAcessoPortal(a, quem, endereco));
+
+  const copiar = async (txt: string, oque: string) => {
+    try { await navigator.clipboard.writeText(txt); showToast(`${oque} copiado.`, 'success'); }
+    catch { showToast('Não foi possível copiar.', 'error'); }
+  };
+
+  return (
+    <div className="rounded-xl border border-sky-500/30 bg-sky-500/[0.06] p-3.5">
+      <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-sky-300 mb-2">
+        🔓 Portal do {quem === 'dono' ? 'proprietário' : 'inquilino'} — o acesso pra enviar
+      </p>
+
+      {a.pronto ? (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button onClick={() => copiar(a.usuario, 'Usuário')}
+              className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-left hover:bg-white/[0.08] transition-colors">
+              <p className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">Usuário</p>
+              <p className="text-[13px] font-bold text-white truncate">{a.usuario}</p>
+            </button>
+            <button onClick={() => copiar(a.senha, 'Senha')}
+              className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-left hover:bg-white/[0.08] transition-colors">
+              <p className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">Senha</p>
+              <p className="text-[13px] font-bold text-white tabular-nums">
+                {a.senha} <span className="text-[10.5px] font-normal text-text-secondary">4 primeiros do CPF</span>
+              </p>
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2 mt-2.5">
+            {zap && (
+              <a href={zap} target="_blank" rel="noreferrer"
+                className="px-3.5 py-2 rounded-xl text-[12px] font-bold border border-emerald-500/35 bg-emerald-500/[0.1] text-emerald-300 hover:bg-emerald-500/20 transition-colors">
+                💬 Enviar o acesso no WhatsApp
+              </a>
+            )}
+            <button onClick={() => copiar(textoAcessoPortal(a, quem, endereco), 'Mensagem')} className={btnGhost}>
+              📋 copiar a mensagem
+            </button>
+            {aoVerPortal && <button onClick={aoVerPortal} className={btnGhost}>👁 ver o portal dele</button>}
+          </div>
+          <p className="text-[10.5px] text-text-secondary mt-2">
+            A regra é fixa pra casa toda: <b className="text-white/70">nome completo + os 4 primeiros dígitos do CPF</b> —
+            dá pra ditar por telefone e o cliente lembra sozinho.
+          </p>
+        </>
+      ) : (
+        <p className="text-[11.5px] text-amber-300">
+          ⚠ Falta {a.falta} pra gerar o acesso. Sem isso o portal existe mas não dá pra enviar.
+        </p>
+      )}
+    </div>
   );
 }

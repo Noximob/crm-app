@@ -62,8 +62,18 @@ export default function PortalCliente() {
                 </p>
               </button>
             </div>
-            <p className="text-center text-[11px] text-text-secondary pt-4">
-              O acesso com login e senha entra em breve — hoje as áreas abrem em modo demonstração.
+            {/* a regra de acesso é a mesma da casa toda — o cliente lembra
+                sozinha e o corretor consegue ditar por telefone */}
+            <div className="rounded-xl border border-sky-500/25 bg-sky-500/[0.06] px-4 py-3 mt-3">
+              <p className="text-[11.5px] font-bold text-sky-300">🔓 Como entrar, quando o login abrir</p>
+              <p className="text-[11.5px] text-text-secondary mt-1 leading-relaxed">
+                <b className="text-white/85">Usuário:</b> seu nome completo, como está no contrato.
+                {' '}<b className="text-white/85">Senha:</b> os 4 primeiros dígitos do seu CPF.
+                {' '}Se não lembrar, chame a imobiliária no WhatsApp.
+              </p>
+            </div>
+            <p className="text-center text-[11px] text-text-secondary pt-3">
+              O login entra em breve — hoje as áreas abrem em modo demonstração.
             </p>
           </>
         ) : (

@@ -185,6 +185,19 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     crmProximoContato: desloca(0, -2),   // atrasado: ninguém retornou
   });
 
+  // 1a · CRM · ENTRADA SEM IMÓVEL — indicação que ainda não escolheu nada.
+  //      É o caso que o lead de portal nunca é: chegou pela porta, não por
+  //      um anúncio, e o imóvel se define durante a conversa.
+  batch.set(doc(collection(db, 'locacaoLocacoes')), {
+    ...LOCACAO_VAZIA, ...marca,
+    etapa: 'interessado', crmEtapa: 'entrada', imovelId: '',
+    nome: 'Renata Bortolin', telefone: '(47) 99658-2214',
+    origem: 'manual', corretorNome: 'Murilo',
+    qProcura: '2 quartos no Centro ou Armação, com vaga, até R$ 2.200',
+    qParaQuando: 'sem pressa, até 3 meses',
+    crmProximoContato: hojeYmd(),
+  });
+
   // 1b · CRM · EM CONTATO — conversando, com anotação e começo de qualificação
   batch.set(doc(collection(db, 'locacaoLocacoes')), {
     ...LOCACAO_VAZIA, ...marca, ...base,
@@ -334,7 +347,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     valorAluguel: 2600, valorCondominio: null, valorIptuMensal: 130, valorSeguroIncendio: 35,
     diaVencimento: 5, indiceReajuste: 'IGP-M', taxaAdmPct: 10,
     contratoEnviadoEm: desloca(-11, -5), contratoAssinadoEm: desloca(-11, -3), contratoSimulado: true,
-    chavesEntreguesEm: desloca(-11),
+    chavesEntreguesEm: desloca(-11), chavesHora: '10:00',
     vistoriaEntrada: {
       feitaEm: desloca(-11, -1), feitaPor: 'Breno', assinada: true, assinadaSimulada: true,
       fotos: FOTOS5,

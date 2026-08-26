@@ -492,6 +492,8 @@ export interface Locacao {
   vistoriaSaida: Vistoria | null;
 
   chavesEntreguesEm: string;
+  /** a HORA combinada da entrega — chave se entrega com hora marcada, não só data */
+  chavesHora: string;
   observacoes: string;
   encerradaEm: string;
   motivoPerda: string;
@@ -512,8 +514,58 @@ export const LOCACAO_VAZIA: Omit<Locacao, 'id' | 'imobiliariaId'> = {
   indiceReajuste: 'IGP-M', taxaAdmPct: 10,
   contratoEnviadoEm: '', contratoAssinadoEm: '', contratoSimulado: false, reajustes: [],
   vistoriaEntrada: null, vistoriaSaida: null,
-  chavesEntreguesEm: '', observacoes: '', encerradaEm: '', motivoPerda: '',
+  chavesEntreguesEm: '', chavesHora: '', observacoes: '', encerradaEm: '', motivoPerda: '',
 };
+
+// ═══════════════════════════════════════════════════════════════════════════
+// O ACESSO AO PORTAL DO CLIENTE
+//
+// Enquanto não existe cadastro de senha, a casa usa uma REGRA fixa que o
+// cliente consegue lembrar sozinho e que a imobiliária consegue ditar por
+// telefone: nome completo + os 4 primeiros dígitos do CPF.
+//
+// Isso mora aqui (e não espalhado nas telas) porque no dia em que virar
+// senha de verdade, muda-se num lugar só — e as duas telas, a mensagem de
+// WhatsApp e o aviso do portal acompanham.
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface AcessoPortal {
+  usuario: string;
+  senha: string;
+  /** false quando falta o CPF — não dá pra enviar acesso sem ele */
+  pronto: boolean;
+  falta: string;
+}
+
+export function acessoPortal(nome: string, doc: string): AcessoPortal {
+  const limpo = (doc || '').replace(/\D/g, '');
+  const usuario = (nome || '').trim();
+  const senha = limpo.slice(0, 4);
+  return {
+    usuario, senha,
+    pronto: usuario.length > 2 && senha.length === 4,
+    falta: usuario.length <= 2 ? 'o nome completo' : senha.length < 4 ? 'o CPF' : '',
+  };
+}
+
+/** A mensagem pronta pra colar no WhatsApp do cliente. */
+export function textoAcessoPortal(a: AcessoPortal, quem: 'dono' | 'inquilino', endereco: string): string {
+  const o = quem === 'dono'
+    ? 'acompanhar o seu imóvel, ver quando o aluguel foi pago e quanto cai no seu repasse'
+    : 'ver o boleto, o histórico de pagamentos, o contrato e pedir manutenção';
+  return [
+    `Olá, ${a.usuario.split(' ')[0]}! Aqui é da ${DADOS_IMOBILIARIA.razao.replace(' Ltda.', '')}.`,
+    '',
+    `Seu portal do cliente já está no ar — é lá que você pode ${o}.`,
+    '',
+    '🔗 Acesse: alumma.com.br/portal',
+    `👤 Usuário: ${a.usuario}`,
+    `🔑 Senha: ${a.senha} (os 4 primeiros dígitos do seu CPF)`,
+    '',
+    endereco ? `Imóvel: ${endereco}` : '',
+    'Qualquer dúvida é só chamar por aqui.',
+  ].filter((l) => l !== undefined).join('\n');
+}
 
 /** O que falta para a locação andar. */
 export function pendenciasLocacao(l: Locacao): string[] {

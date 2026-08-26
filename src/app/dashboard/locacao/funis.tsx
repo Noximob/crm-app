@@ -46,7 +46,7 @@ import {
   type EtapaImovel, type EtapaLocacao, type Arquivo, type RessalvaVistoria,
 } from '@/lib/locacao';
 import { VisaoDono, VisaoInquilino } from '@/lib/locacaoPortalView';
-import { inputCls, btnOuro, btnGhost, btnSimula, SeloSimulacao, Campo, AbasDaArea } from './ui';
+import { inputCls, btnOuro, btnGhost, btnSimula, SeloSimulacao, Campo, AbasDaArea, AcessoAoPortal } from './ui';
 import FichaImovel, { PainelDono } from './imoveis';
 import CartaoImovel from './cartaoImovel';
 import PainelLocacao from './contratos';
@@ -87,6 +87,7 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
   const [ressalvas, setRessalvas] = useState<RessalvaVistoria[]>([]);
   const [entregando, setEntregando] = useState<string | null>(null);
   const [dataEntrega, setDataEntrega] = useState('');
+  const [horaEntrega, setHoraEntrega] = useState('10:00');
   const [reajustando, setReajustando] = useState<string | null>(null);
   const [pctReajuste, setPctReajuste] = useState('');
 
@@ -268,7 +269,7 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
    */
   const entregandoRef = React.useRef(false);
 
-  const entregarChaves = async (l: Locacao, inicio: string) => {
+  const entregarChaves = async (l: Locacao, inicio: string, hora: string) => {
     if (guarda() || !imobiliariaId || entregandoRef.current) return;
 
     if (l.etapa === 'ativa' || movsDe(l.id).length > 0) {
@@ -292,6 +293,7 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
     const ok = await confirmDialog({
       title: `Entregar as chaves para ${l.nome}?`,
       message: [
+        `Entrega marcada pra ${fmtData(inicio)}${hora ? ` às ${hora}` : ''}.`,
         `Vão nascer ${movs.length} cobranças, a primeira vencendo em ${fmtData(movs[0].vencimento)}, de ${fmtValor(movs[0].valorTotal)}.`,
         `A casa retém ${fmtValor(movs[0].taxaAdm)} e o dono recebe ${fmtValor(movs[0].repasseDono)} por mês.`,
         semTaxa ? '⚠ ATENÇÃO: a taxa de administração está ZERADA — o dono receberia o aluguel inteiro e a casa não ganharia nada. Confira antes.' : '',
@@ -308,7 +310,10 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
       const b = writeBatch(db);
       for (const m of movs) b.set(doc(collection(db, 'locacaoMovimentos')), { ...m, imobiliariaId, criadoEm: serverTimestamp() });
       // vira CLIENTE ATIVO: sai da fila do CRM e passa a viver aqui
-      b.update(doc(db, 'locacaoLocacoes', l.id), { etapa: 'ativa', inicio, chavesEntreguesEm: hojeYmd(), atualizadoEm: serverTimestamp() });
+      b.update(doc(db, 'locacaoLocacoes', l.id), {
+        etapa: 'ativa', inicio, chavesEntreguesEm: inicio, chavesHora: hora,
+        atualizadoEm: serverTimestamp(),
+      });
       if (l.imovelId && imovelDe(l.imovelId)) {
         b.update(doc(db, 'locacaoImoveis', l.imovelId), { etapa: 'alugado', atualizadoEm: serverTimestamp() });
       }
@@ -317,7 +322,7 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
       }
       await b.commit();
       setEntregando(null); setDataEntrega('');
-      showToast(`🔑 Chaves entregues! ${l.nome} virou cliente ativo, saiu do CRM, e as ${movs.length} cobranças começam em ${fmtData(movs[0].vencimento)}.`, 'success');
+      showToast(`🔑 Entrega marcada pra ${fmtData(inicio)}${hora ? ` às ${hora}` : ''}. ${l.nome} virou cliente ativo e as ${movs.length} cobranças começam em ${fmtData(movs[0].vencimento)}.`, 'success');
       recarregar();
     } catch (e) {
       console.error(e);
@@ -597,13 +602,14 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
       case 'contrato_assinado':
         return entregando === l.id ? (
           <span className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] text-text-secondary">contrato começa em</span>
+            <span className="text-[11px] text-text-secondary">dia e hora da entrega</span>
             <input type="date" className={inputCls + ' !w-auto'} value={dataEntrega} onChange={(e) => setDataEntrega(e.target.value)} />
-            <button onClick={() => entregarChaves(l, dataEntrega || hojeYmd())} className={btnOuro}>confirmar</button>
+            <input type="time" className={inputCls + ' !w-auto'} value={horaEntrega} onChange={(e) => setHoraEntrega(e.target.value)} />
+            <button onClick={() => entregarChaves(l, dataEntrega || hojeYmd(), horaEntrega)} className={btnOuro}>confirmar</button>
             <button onClick={() => setEntregando(null)} className={btnGhost}>×</button>
           </span>
         ) : (
-          <button onClick={() => { setEntregando(l.id); setDataEntrega(hojeYmd()); }} className={btnOuro}>🔑 Entregar as chaves</button>
+          <button onClick={() => { setEntregando(l.id); setDataEntrega(hojeYmd()); setHoraEntrega('10:00'); }} className={btnOuro}>🔑 Marcar a entrega das chaves</button>
         );
       case 'ativa': {
         const lib = movs.filter((m) => m.statusRepasse === 'liberado').length;
@@ -678,18 +684,24 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
       if (p === 'laudo' && l.vistoriaEntrada) return <LaudoVistoria locacao={l} imovel={im} tipo="entrada" onFechar={fechar} />;
       if (p === 'portalDonoLoc') {
         return (
-          <>
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-sky-300 mb-2">O que o DONO vê no portal dele</p>
+          <div className="space-y-3">
+            {im && (
+              <AcessoAoPortal quem="dono" nome={im.donoNome} doc={im.donoDoc}
+                telefone={im.donoTelefone} endereco={`${im.codigo} — ${im.titulo}`} />
+            )}
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-sky-300">O que o DONO vê no portal dele</p>
             <VisaoDono d={portalDaLocacao(l, im, movs, chamados)} />
-          </>
+          </div>
         );
       }
       if (p === 'portalInq') {
         return (
-          <>
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-sky-300 mb-2">O que o INQUILINO vê no portal dele</p>
+          <div className="space-y-3">
+            <AcessoAoPortal quem="inquilino" nome={l.nome} doc={l.doc}
+              telefone={l.telefone} endereco={im ? `${im.codigo} — ${im.titulo}` : ''} />
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-sky-300">O que o INQUILINO vê no portal dele</p>
             <VisaoInquilino d={portalDaLocacao(l, im, movs, chamados)} />
-          </>
+          </div>
         );
       }
       if (p === 'extrato') {
@@ -815,10 +827,12 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
     if (p === 'adm') return <MinutaAdministracao imovel={im} onFechar={fechar} />;
     if (p === 'portalDono') {
       return (
-        <>
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-sky-300 mb-2">O que o DONO vê no portal dele</p>
+        <div className="space-y-3">
+          <AcessoAoPortal quem="dono" nome={im.donoNome} doc={im.donoDoc}
+            telefone={im.donoTelefone} endereco={`${im.codigo} — ${im.titulo}`} />
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-sky-300">O que o DONO vê no portal dele</p>
           <VisaoDono d={portalDoImovel(im)} />
-        </>
+        </div>
       );
     }
     if (p === 'docsDono') {
@@ -995,6 +1009,11 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
                       {(l.contratoSimulado || l.garantiaSimulada) && <span className="ml-2"><SeloSimulacao /></span>}
                     </p>
                     {d?.oQueFalta && <p className="text-[12px] text-[#FFE9A6] mt-1">→ {d.oQueFalta}</p>}
+                    {l.chavesEntreguesEm && (
+                      <p className="text-[11.5px] text-text-secondary mt-1">
+                        🔑 Entrega das chaves: {fmtData(l.chavesEntreguesEm)}{l.chavesHora && <> às {l.chavesHora}</>}
+                      </p>
+                    )}
                     {['contrato_enviado', 'fianca_assinada'].includes(l.etapa) && (
                       <p className="text-[11.5px] mt-1 flex flex-wrap gap-x-3">
                         <span className={l.garantiaAssinadaEm ? 'text-emerald-300 font-bold' : 'text-text-secondary'}>
