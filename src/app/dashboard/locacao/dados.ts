@@ -11,7 +11,7 @@ import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import {
   IMOVEL_VAZIO, LOCACAO_VAZIA, ETAPAS_IMOVEL, ETAPAS_LOCACAO,
-  alertasDaLocacao, hojeYmd,
+  alertasDaLocacao, statusContato, hojeYmd,
   type ImovelLocacao, type Locacao, type Movimento, type Chamado, type MensagemCliente,
 } from '@/lib/locacao';
 
@@ -55,6 +55,8 @@ export function useDadosLocacao() {
   const abas = useMemo(() => {
     const hoje = hojeYmd();
     const emAndamento = locacoes.filter((l) => l.etapa !== 'encerrada' && l.etapa !== 'perdida');
+    // a MESMA régua da página do CRM — senão o contador mente
+    const naFilaDoCrm = locacoes.filter((l) => !['ativa', 'encerrando', 'encerrada', 'perdida'].includes(l.etapa));
     const chamadosAbertos = chamados.filter((c) => c.status !== 'resolvido');
     const recadosPendentes = mensagens.filter((m) => !m.tratadaEm);
     return {
@@ -62,10 +64,14 @@ export function useDadosLocacao() {
         total: imoveis.length,
         meus: imoveis.filter((i) => ETAPAS_IMOVEL[i.etapa]?.comQuem === 'nós' && i.etapa !== 'pausado').length,
       },
-      // o CRM cuida de TODO lead vivo; as Locações só de quem já FECHOU
+      // o CRM é a fila de quem ainda PODE FECHAR: quem recebeu a chave saiu
+      // daqui e virou cliente ativo, então não pode entrar na conta
       crm: {
-        total: emAndamento.length,
-        meus: emAndamento.filter((l) => (l.crmEtapa || 'entrada') === 'entrada').length,
+        total: naFilaDoCrm.length,
+        meus: naFilaDoCrm.filter((l) => {
+          if ((l.crmEtapa || 'entrada') === 'entrada') return true;   // ninguém tocou
+          return statusContato(l).tipo === 'atrasado' || statusContato(l).tipo === 'hoje';
+        }).length,
       },
       locacoes: {
         total: emAndamento.filter((l) => l.etapa !== 'interessado').length,

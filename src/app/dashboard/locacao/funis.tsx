@@ -243,6 +243,41 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
     showToast('Vistoria registrada. O laudo vai junto do contrato, no mesmo envelope.', 'success');
   };
 
+  /**
+   * VOLTAR PRO CRM — quando a papelada não anda.
+   *
+   * O documento não veio, a Loft demorou, o inquilino sumiu no meio do
+   * processo: sem isto o caso ficava preso numa etapa burocrática pra
+   * sempre, ou virava "não fechou" (que é forte demais — a pessoa ainda
+   * quer alugar). Volta pro CRM em "Em contato", com a razão anotada, e o
+   * corretor retoma a conversa. Nada do que já foi juntado se perde.
+   *
+   * Só existe ANTES da chave: depois disso há contrato e cobranças, e o
+   * caminho é a saída (distrato), não o CRM.
+   */
+  const voltarProCrm = async (l: Locacao) => {
+    const ok = await confirmDialog({
+      title: `Devolver ${l.nome} pro CRM?`,
+      message: [
+        `A papelada para em "${ETAPAS_LOCACAO[l.etapa].rotulo}" e o caso volta pro funil do corretor, em "Em contato".`,
+        'Os documentos, a qualificação e as anotações continuam guardados — é só a conversa que recomeça.',
+        'Use quando o processo travou mas a pessoa ainda quer alugar. Se ela desistiu de vez, use "não fechou" no CRM.',
+      ].join('\n\n'),
+      confirmLabel: 'Voltar pro CRM',
+    });
+    if (!ok) return;
+    await upLocacao(l.id, {
+      etapa: 'interessado',
+      crmEtapa: 'contato',
+      crmProximoContato: hojeYmd(),
+      crmNotas: [...(l.crmNotas || []), {
+        em: hojeYmd(), por: userData?.nome || '',
+        texto: `Voltou pro CRM: a papelada parou em "${ETAPAS_LOCACAO[l.etapa].rotulo}".`,
+      }],
+    });
+    showToast(`↩ ${l.nome} voltou pro CRM, em "Em contato" — retome a conversa por lá.`, 'info');
+  };
+
   const enviarContrato = async (l: Locacao) => {
     const p = pendenciasLocacao({ ...l, etapa: 'loft_aprovou' });
     if (p.length) {
@@ -1070,6 +1105,14 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
                 <div className="flex flex-wrap gap-1.5 mt-2.5">
                   {zap && <a href={zap} target="_blank" rel="noreferrer" className="px-2.5 py-1 rounded-xl text-[11px] font-bold border border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-300">💬 inquilino</a>}
                   <button onClick={() => abrir(l.id, 'dados')} className={btnGhost + ' !py-1 !text-[11px]'}>📄 dados e contrato</button>
+                  {/* a papelada travou? o caso volta pro corretor em vez de
+                      apodrecer numa etapa — só antes da chave */}
+                  {ETAPAS_LOCACAO[l.etapa].n >= 2 && ETAPAS_LOCACAO[l.etapa].n <= 6 && (
+                    <button onClick={() => voltarProCrm(l)} className={btnGhost + ' !py-1 !text-[11px]'}
+                      title="a papelada travou e a pessoa ainda quer alugar">
+                      ↩ voltar pro CRM
+                    </button>
+                  )}
                   <button onClick={() => abrir(l.id, 'loft')} className={btnGhost + ' !py-1 !text-[11px]'}>🛡 ficha da Loft ({l.docsInquilino.length})</button>
                   {ETAPAS_LOCACAO[l.etapa].n >= 4 && ETAPAS_LOCACAO[l.etapa].n <= 8 && (
                     <button onClick={() => abrir(l.id, 'minuta')} className={btnGhost + ' !py-1 !text-[11px]'}>
