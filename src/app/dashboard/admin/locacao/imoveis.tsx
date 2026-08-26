@@ -22,11 +22,129 @@ import { collection, doc, addDoc, updateDoc, serverTimestamp } from 'firebase/fi
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { showToast } from '@/components/ui/toast';
 import {
-  TIPOS_IMOVEL, MOBILIADO, COMODIDADES, GARANTIAS, PORTAIS,
+  TIPOS_IMOVEL, MOBILIADO, COMODIDADES, GARANTIAS, PORTAIS, DOCS_DONO,
   IMOVEL_VAZIO, custoTotalMensal, fmtValor, pendenciasImovel, buscarCep,
+  IMOVEL_TESTE, DONO_TESTE, ANUNCIO_TESTE, FOTOS_TESTE, arquivoTeste, preencherVazios,
   type ImovelLocacao,
 } from '@/lib/locacao';
-import { inputCls, btnOuro, btnGhost, Campo, num, Marcaveis } from './ui';
+import { inputCls, btnOuro, btnGhost, btnSimula, Campo, num, Marcaveis, ChipsDocumentos } from './ui';
+
+/**
+ * FUNIL 1 · O PROPRIETÁRIO — os dados dele e a papelada.
+ *
+ * Vive num painel separado porque é uma etapa própria do funil: sem isto,
+ * não há contrato de administração. Trabalha em rascunho local e grava uma
+ * vez no botão — digitar num campo não pode disparar escrita no banco.
+ */
+export function PainelDono({ imobiliariaId, isEspelhoDemo, imovel, recarregar, onFechar }: {
+  imobiliariaId?: string;
+  isEspelhoDemo?: boolean;
+  imovel: ImovelLocacao;
+  recarregar: () => Promise<void>;
+  onFechar: () => void;
+}) {
+  const [form, setForm] = useState({
+    donoNome: imovel.donoNome, donoDoc: imovel.donoDoc, donoRg: imovel.donoRg,
+    donoTelefone: imovel.donoTelefone, donoEmail: imovel.donoEmail, donoPix: imovel.donoPix,
+    donoEstadoCivil: imovel.donoEstadoCivil, donoProfissao: imovel.donoProfissao,
+    donoEndereco: imovel.donoEndereco, taxaAdmPct: imovel.taxaAdmPct,
+    docsDono: imovel.docsDono,
+  });
+  const [salvando, setSalvando] = useState(false);
+  const [subindo, setSubindo] = useState(false);
+  const [categoria, setCategoria] = useState<string>(DOCS_DONO[0]);
+
+  const f = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => setForm((p) => ({ ...p, [k]: v }));
+  const guarda = () => { if (isEspelhoDemo) { showToast('Modo demonstração.', 'info'); return true; } return false; };
+  const pend = pendenciasImovel({ ...imovel, ...form }).docs;
+
+  const gravar = async (avancar: boolean) => {
+    if (guarda()) return;
+    if (avancar && pend.length) { showToast(`Falta: ${pend[0]}`, 'error'); return; }
+    setSalvando(true);
+    await updateDoc(doc(db, 'locacaoImoveis', imovel.id), {
+      ...form,
+      ...(avancar && imovel.etapa === 'captado' ? { etapa: 'docs_dono' as const } : {}),
+      atualizadoEm: serverTimestamp(),
+    });
+    showToast(avancar ? 'Papelada completa — pode gerar a administração.' : 'Salvo.', 'success');
+    await recarregar();
+    setSalvando(false);
+    if (avancar) onFechar();
+  };
+
+  const anexar = async (arquivos: FileList | null) => {
+    if (!arquivos?.length || !imobiliariaId || guarda()) return;
+    setSubindo(true);
+    try {
+      const novos = [...form.docsDono];
+      for (const a of Array.from(arquivos)) {
+        const caminho = `locacao/${imobiliariaId}/imovel/${Date.now()}-${a.name}`;
+        const task = uploadBytesResumable(ref(storage, caminho), a, a.type ? { contentType: a.type } : undefined);
+        await task;
+        novos.push({ nome: a.name, url: await getDownloadURL(task.snapshot.ref), storagePath: caminho, categoria });
+      }
+      f('docsDono', novos);
+      showToast('Documento anexado — clique em salvar.', 'success');
+    } catch { showToast('Falha ao subir.', 'error'); }
+    setSubindo(false);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">
+          O proprietário — estes dados preenchem a administração e o contrato de locação
+        </p>
+        <button onClick={() => { setForm((p) => preencherVazios(p, DONO_TESTE)); showToast('Campos vazios preenchidos com dados de teste.', 'info'); }}
+          className={btnSimula + ' ml-auto !py-1 !text-[11px]'}>🧪 preencher teste</button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <Campo rot="Nome completo" largura="sm:col-span-2"><input className={inputCls} value={form.donoNome} onChange={(e) => f('donoNome', e.target.value)} /></Campo>
+        <Campo rot="CPF/CNPJ"><input className={inputCls} value={form.donoDoc} onChange={(e) => f('donoDoc', e.target.value)} /></Campo>
+        <Campo rot="RG"><input className={inputCls} value={form.donoRg} onChange={(e) => f('donoRg', e.target.value)} /></Campo>
+        <Campo rot="WhatsApp"><input className={inputCls} value={form.donoTelefone} onChange={(e) => f('donoTelefone', e.target.value)} /></Campo>
+        <Campo rot="E-mail"><input className={inputCls} value={form.donoEmail} onChange={(e) => f('donoEmail', e.target.value)} /></Campo>
+        <Campo rot="Estado civil"><input className={inputCls} value={form.donoEstadoCivil} onChange={(e) => f('donoEstadoCivil', e.target.value)} placeholder="casado, solteira…" /></Campo>
+        <Campo rot="Profissão"><input className={inputCls} value={form.donoProfissao} onChange={(e) => f('donoProfissao', e.target.value)} /></Campo>
+        <Campo rot="Endereço do dono" largura="sm:col-span-2"><input className={inputCls} value={form.donoEndereco} onChange={(e) => f('donoEndereco', e.target.value)} /></Campo>
+        <Campo rot="Chave PIX do repasse"><input className={inputCls} value={form.donoPix} onChange={(e) => f('donoPix', e.target.value)} placeholder="CPF, e-mail, telefone…" /></Campo>
+        <Campo rot="Taxa de administração (%)"><input className={inputCls} inputMode="decimal" value={form.taxaAdmPct ?? ''} onChange={(e) => f('taxaAdmPct', num(e.target.value))} /></Campo>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center">
+          <select value={categoria} onChange={(e) => setCategoria(e.target.value)}
+            className="px-2 py-2 rounded-l-xl border border-white/10 bg-white/[0.04] text-[11px] text-text-secondary focus:outline-none">
+            {DOCS_DONO.map((x) => <option key={x}>{x}</option>)}
+          </select>
+          <label className={btnGhost + ' cursor-pointer !rounded-l-none'}>
+            {subindo ? 'Subindo…' : '📎 anexar'}
+            <input type="file" multiple className="hidden" disabled={subindo}
+              onChange={(e) => { anexar(e.target.files); e.currentTarget.value = ''; }} />
+          </label>
+        </span>
+        <button type="button" onClick={() => f('docsDono', [...form.docsDono, arquivoTeste(categoria)])} className={btnSimula}>
+          🧪 documento teste
+        </button>
+      </div>
+      <ChipsDocumentos docs={form.docsDono} aoRemover={(n) => f('docsDono', form.docsDono.filter((_, j) => j !== n))} />
+
+      {pend.length > 0
+        ? <p className="text-[11.5px] text-amber-300">Falta: {pend.join(' · ')}</p>
+        : <p className="text-[11.5px] text-emerald-300">✓ Papelada completa.</p>}
+
+      <div className="flex flex-wrap gap-2">
+        {imovel.etapa === 'captado'
+          ? <button onClick={() => gravar(true)} disabled={salvando} className={btnOuro}>{salvando ? 'Salvando…' : '✓ Papelada completa'}</button>
+          : <button onClick={() => gravar(false)} disabled={salvando} className={btnOuro}>{salvando ? 'Salvando…' : 'Salvar'}</button>}
+        {imovel.etapa === 'captado' && <button onClick={() => gravar(false)} disabled={salvando} className={btnGhost}>só salvar</button>}
+        <button onClick={onFechar} className={btnGhost}>fechar</button>
+      </div>
+    </div>
+  );
+}
 
 export default function FichaImovel({ imobiliariaId, isEspelhoDemo, imoveis, imovel, modo, recarregar, onFechar }: {
   imobiliariaId?: string;
@@ -106,6 +224,15 @@ export default function FichaImovel({ imobiliariaId, isEspelhoDemo, imoveis, imo
     f('portais', form.portais.includes(chave) ? form.portais.filter((x) => x !== chave) : [...form.portais, chave]);
   };
 
+  /**
+   * Preenche SÓ o que está em branco com dado de teste — pra andar a
+   * operação inteira sem digitar. O que o operador já escreveu fica.
+   */
+  const preencherTeste = (modelo: Partial<typeof form>) => {
+    setForm((p) => preencherVazios(p, modelo));
+    showToast('Campos vazios preenchidos com dados de teste. Confira e salve.', 'info');
+  };
+
   // ═══════════════ modo ANÚNCIO: só o material ═══════════════
   if (modo === 'anuncio' && imovel) {
     return (
@@ -114,7 +241,10 @@ export default function FichaImovel({ imobiliariaId, isEspelhoDemo, imoveis, imo
           <h3 className="text-[13px] font-bold text-white uppercase tracking-[0.08em]">
             Material do anúncio · {imovel.codigo}
           </h3>
-          <button onClick={onFechar} className={btnGhost + ' ml-auto !py-1 !text-[11px]'}>fechar</button>
+          <button onClick={() => preencherTeste(ANUNCIO_TESTE)} className={btnSimula + ' ml-auto !py-1 !text-[11px]'}>
+            🧪 preencher teste
+          </button>
+          <button onClick={onFechar} className={btnGhost + ' !py-1 !text-[11px]'}>fechar</button>
         </div>
         <p className="text-[11.5px] text-text-secondary -mt-2 max-w-[68ch]">
           É isto que os portais leem. As regras abaixo são do Grupo OLX (OLX, ZAP e VivaReal) —
@@ -138,17 +268,31 @@ export default function FichaImovel({ imobiliariaId, isEspelhoDemo, imoveis, imo
               <input type="file" accept="image/*" multiple className="hidden" disabled={subindo}
                 onChange={(e) => { subirFotos(e.target.files); e.currentTarget.value = ''; }} />
             </label>
-            {form.fotos.map((url, n) => (
-              <span key={n} className="inline-flex items-center gap-1 text-[11px] text-text-secondary bg-white/[0.04] border border-white/10 rounded-lg px-2 py-1">
-                <a href={url} target="_blank" rel="noreferrer" className="hover:text-white">{n === 0 ? '★ capa' : `foto ${n + 1}`}</a>
-                {n > 0 && (
-                  <button onClick={() => { const r = [...form.fotos]; const t = r[n - 1]; r[n - 1] = r[n]; r[n] = t; f('fotos', r); }}
-                    className="text-text-secondary hover:text-white" title="mover pra frente">◂</button>
-                )}
-                <button onClick={() => f('fotos', form.fotos.filter((_, j) => j !== n))} className="text-rose-300">×</button>
-              </span>
-            ))}
+            {form.fotos.length < 5 && (
+              <button type="button" onClick={() => f('fotos', FOTOS_TESTE)} className={btnSimula}>🧪 5 fotos de teste</button>
+            )}
           </div>
+          {form.fotos.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {form.fotos.map((url, n) => (
+                <div key={n} className={`relative rounded-lg overflow-hidden border ${n === 0 ? 'border-[#E8C547]/60' : 'border-white/10'}`}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt={`foto ${n + 1}`} className="h-20 w-28 object-cover" />
+                  <span className="absolute top-0 left-0 px-1.5 py-0.5 text-[9px] font-extrabold uppercase bg-black/60 text-white">
+                    {n === 0 ? '★ capa' : n + 1}
+                  </span>
+                  <span className="absolute bottom-0 inset-x-0 flex justify-between bg-black/60">
+                    {n > 0
+                      ? <button type="button" title="usar como capa" onClick={() => { const r = [...form.fotos]; const t = r[n - 1]; r[n - 1] = r[n]; r[n] = t; f('fotos', r); }}
+                          className="px-1.5 text-[11px] text-white/70 hover:text-white">◂</button>
+                      : <span />}
+                    <button type="button" onClick={() => f('fotos', form.fotos.filter((_, j) => j !== n))}
+                      className="px-1.5 text-[11px] text-rose-300 hover:text-rose-200">×</button>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </Campo>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -209,7 +353,10 @@ export default function FichaImovel({ imobiliariaId, isEspelhoDemo, imoveis, imo
         <h3 className="text-[13px] font-bold text-white uppercase tracking-[0.08em]">
           {imovel ? `Dados do imóvel · ${imovel.codigo}` : 'Captar imóvel'}
         </h3>
-        <button onClick={onFechar} className={btnGhost + ' ml-auto !py-1 !text-[11px]'}>fechar</button>
+        <button onClick={() => preencherTeste({ ...IMOVEL_TESTE, ...DONO_TESTE })} className={btnSimula + ' ml-auto !py-1 !text-[11px]'}>
+          🧪 preencher teste
+        </button>
+        <button onClick={onFechar} className={btnGhost + ' !py-1 !text-[11px]'}>fechar</button>
       </div>
 
       {/* ——— captação rápida: o que se tem na rua ——— */}

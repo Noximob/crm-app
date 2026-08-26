@@ -28,7 +28,7 @@ import {
   fmtData, fmtValor, custoTotalMensal,
   type ImovelLocacao, type Locacao,
 } from '@/lib/locacao';
-import { btnOuro, btnGhost } from './ui';
+import { btnOuro, btnGhost, ChipsDocumentos } from './ui';
 
 const CSS_PAPEL = `
 @media print {
@@ -303,14 +303,7 @@ export function PacoteLoft({ locacao, imovel, onFechar }: {
           Nenhum documento anexado. A Loft precisa de CNH/RG, CPF e comprovante de renda — junte antes de enviar.
         </p>
       ) : (
-        <div className="flex flex-wrap gap-1.5">
-          {docs.map((d, i) => (
-            <a key={i} href={d.url} target="_blank" rel="noreferrer"
-              className="inline-flex items-center gap-1 text-[11px] text-text-secondary hover:text-white bg-white/[0.04] border border-white/10 rounded-lg px-2 py-1">
-              <b className="text-[#FFE9A6]/80 text-[9.5px] uppercase">{d.categoria}</b> {d.nome}
-            </a>
-          ))}
-        </div>
+        <ChipsDocumentos docs={docs} />
       )}
       <p className="text-[10.5px] text-text-secondary mt-3">
         Estes são os MESMOS documentos que instruem o contrato de locação — digitados uma vez, usados nos

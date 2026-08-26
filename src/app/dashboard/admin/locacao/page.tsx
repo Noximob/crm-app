@@ -34,16 +34,16 @@ import { showToast } from '@/components/ui/toast';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   ETAPAS_IMOVEL, ETAPAS_LOCACAO, IMOVEL_VAZIO, LOCACAO_VAZIA,
-  DOCS_DONO, DOCS_INQUILINO, ITENS_VISTORIA, LOCAIS_VISTORIA, PORTAIS, STATUS_CHAMADO,
+  DOCS_INQUILINO, ITENS_VISTORIA, LOCAIS_VISTORIA, PORTAIS, STATUS_CHAMADO,
   pendenciasImovel, pendenciasLocacao, alertasDaLocacao, gerarMovimentos, calcularReajuste,
-  portalDoImovel, portalDaLocacao, gerarFeedVrsync, pacoteCowork,
+  portalDoImovel, portalDaLocacao, gerarFeedVrsync, pacoteCowork, arquivoTeste,
   hojeYmd, fmtData, fmtValor, linkWhats,
   type ImovelLocacao, type Locacao, type Movimento, type Chamado,
   type EtapaImovel, type EtapaLocacao, type Arquivo, type RessalvaVistoria,
 } from '@/lib/locacao';
 import { VisaoDono, VisaoInquilino } from '@/lib/locacaoPortalView';
-import { inputCls, btnOuro, btnGhost, btnSimula, SeloSimulacao, Campo, num } from './ui';
-import FichaImovel from './imoveis';
+import { inputCls, btnOuro, btnGhost, btnSimula, SeloSimulacao, Campo } from './ui';
+import FichaImovel, { PainelDono } from './imoveis';
 import PainelLocacao from './contratos';
 import MinutaContrato from './minuta';
 import { MinutaAdministracao, LaudoVistoria, PacoteLoft } from './documentos';
@@ -54,7 +54,7 @@ type Painel = 'ficha' | 'docsDono' | 'adm' | 'material' | 'portalDono'
   | 'dados' | 'loft' | 'vistoria' | 'minuta' | 'laudo' | 'extrato' | 'portalInq' | 'portalDonoLoc';
 
 const ORDEM_IMOVEL: EtapaImovel[] = ['captado', 'docs_dono', 'adm_enviada', 'adm_assinada', 'material', 'publicado', 'alugado'];
-const ORDEM_LOCACAO: EtapaLocacao[] = ['interessado', 'docs_inquilino', 'na_loft', 'loft_aprovou', 'fianca_assinada', 'contrato_enviado', 'contrato_assinado', 'ativa'];
+const ORDEM_LOCACAO: EtapaLocacao[] = ['interessado', 'docs_inquilino', 'na_loft', 'loft_aprovou', 'fianca_assinada', 'contrato_enviado', 'contrato_assinado', 'ativa', 'encerrando'];
 
 export default function LocacaoPage() {
   const { userData, isEspelhoDemo } = useAuth();
@@ -75,7 +75,6 @@ export default function LocacaoPage() {
 
   // formulários que vivem dentro das linhas
   const [subindo, setSubindo] = useState<string | null>(null);
-  const [catDocDono, setCatDocDono] = useState<string>('RG/CPF do proprietário');
   const [catDocInq, setCatDocInq] = useState<string>('CNH ou RG');
   const [itens, setItens] = useState<string[]>([]);
   const [ressalvas, setRessalvas] = useState<RessalvaVistoria[]>([]);
@@ -121,19 +120,19 @@ export default function LocacaoPage() {
     recarregar();
   };
 
-  const anexar = async (tipo: 'imovel' | 'locacao', id: string, atuais: Arquivo[], categoria: string, arquivos: FileList | null) => {
+  /** Anexo rápido do inquilino, direto na linha da fila. */
+  const anexarInquilino = async (l: Locacao, categoria: string, arquivos: FileList | null) => {
     if (!arquivos?.length || !imobiliariaId || guarda()) return;
-    setSubindo(id);
+    setSubindo(l.id);
     try {
-      const novos = [...atuais];
+      const novos: Arquivo[] = [...l.docsInquilino];
       for (const a of Array.from(arquivos)) {
-        const caminho = `locacao/${imobiliariaId}/${tipo}/${Date.now()}-${a.name}`;
+        const caminho = `locacao/${imobiliariaId}/locacao/${Date.now()}-${a.name}`;
         const task = uploadBytesResumable(ref(storage, caminho), a, a.type ? { contentType: a.type } : undefined);
         await task;
         novos.push({ nome: a.name, url: await getDownloadURL(task.snapshot.ref), storagePath: caminho, categoria });
       }
-      if (tipo === 'imovel') await upImovel(id, { docsDono: novos });
-      else await upLocacao(id, { docsInquilino: novos });
+      await upLocacao(l.id, { docsInquilino: novos });
       showToast('Documento guardado.', 'success');
     } catch { showToast('Falha ao subir.', 'error'); }
     setSubindo(null);
@@ -298,7 +297,7 @@ export default function LocacaoPage() {
     if (l.imovelId) b.update(doc(db, 'locacaoImoveis', l.imovelId), { etapa: 'alugado', atualizadoEm: serverTimestamp() });
     await b.commit();
     setEntregando(null); setDataEntrega('');
-    showToast(`🔑 Chaves entregues! Portal do inquilino criado e ${movs.length} meses de cobrança a partir de ${fmtData(inicio)}.`, 'success');
+    showToast(`🔑 Chaves entregues! Portal do inquilino criado, o imóvel saiu dos portais e as ${movs.length} cobranças começam em ${fmtData(inicio)}.`, 'success');
     recarregar();
   };
 
@@ -410,6 +409,9 @@ export default function LocacaoPage() {
   const imovelDe = useCallback((id: string) => imoveis.find((x) => x.id === id), [imoveis]);
   const movsDe = useCallback((id: string) => movimentos.filter((m) => m.locacaoId === id), [movimentos]);
   const chamadosDe = useCallback((id: string) => chamados.filter((c) => c.locacaoId === id && c.status !== 'resolvido'), [chamados]);
+  /** Quem está na fila por este imóvel — a ponte entre os dois funis. */
+  const interessadosDe = useCallback((imovelId: string) =>
+    locacoes.filter((l) => l.imovelId === imovelId && l.etapa !== 'encerrada' && l.etapa !== 'perdida'), [locacoes]);
 
   const contarImoveis = useMemo(() => {
     const c: Record<string, number> = {};
@@ -457,6 +459,23 @@ export default function LocacaoPage() {
       atrasadas: movimentos.filter((m) => m.statusCobranca !== 'paga' && m.vencimento < hoje).length,
     };
   }, [imoveis, locacoes, movimentos]);
+
+  /**
+   * Quantos estão esperando UMA AÇÃO NOSSA em cada funil. É o número que o
+   * gestor procura ao abrir a tela: não "quantos imóveis eu tenho", e sim
+   * "onde a bola está comigo".
+   */
+  const minhaVez = useMemo(() => {
+    const hoje = hojeYmd();
+    const imv = imoveis.filter((i) => ['captado', 'docs_dono', 'adm_assinada', 'material'].includes(i.etapa)).length;
+    const loc = locacoes.filter((l) => {
+      if (l.etapa === 'encerrada' || l.etapa === 'perdida') return false;
+      if (ETAPAS_LOCACAO[l.etapa]?.comQuem === 'nós') return true;
+      if (alertasDaLocacao(l).length || chamadosDe(l.id).length) return true;
+      return movimentos.some((m) => m.locacaoId === l.id && m.statusCobranca !== 'paga' && m.vencimento < hoje);
+    }).length;
+    return { imoveis: imv, locacoes: loc };
+  }, [imoveis, locacoes, movimentos, chamadosDe]);
 
   const temDemo = useMemo(
     () => imoveis.some((x) => (x as { demo?: boolean }).demo) || locacoes.some((x) => (x as { demo?: boolean }).demo),
@@ -561,9 +580,10 @@ export default function LocacaoPage() {
               <label className={btnGhost + ' cursor-pointer !rounded-l-none'}>
                 {subindo === l.id ? '…' : `📎 ${l.docsInquilino.length}`}
                 <input type="file" multiple className="hidden" disabled={subindo === l.id}
-                  onChange={(e) => { anexar('locacao', l.id, l.docsInquilino, catDocInq, e.target.files); e.currentTarget.value = ''; }} />
+                  onChange={(e) => { anexarInquilino(l, catDocInq, e.target.files); e.currentTarget.value = ''; }} />
               </label>
             </span>
+            <button onClick={() => upLocacao(l.id, { docsInquilino: [...l.docsInquilino, arquivoTeste(catDocInq)] })} className={btnSimula}>🧪</button>
             <button onClick={() => mandarPraLoft(l)} className={btnOuro}>🛡 Mandar pra Loft</button>
           </span>
         );
@@ -613,7 +633,15 @@ export default function LocacaoPage() {
       case 'encerrando':
         return <button onClick={() => abrir(l.id, 'dados')} className={btnOuro}>↪ Concluir a saída</button>;
       default:
-        return <span className="text-[11.5px] text-text-secondary">{l.motivoPerda || 'arquivada'}</span>;
+        // arquivada (não fechou / encerrada) — dá pra voltar, erro de clique acontece
+        return (
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="text-[11.5px] text-text-secondary">{l.motivoPerda || 'encerrada'}</span>
+            <button onClick={() => upLocacao(l.id, { etapa: 'interessado', motivoPerda: '' })} className={btnGhost + ' !py-1 !text-[11px]'}>
+              ↩ reabrir
+            </button>
+          </span>
+        );
     }
   };
 
@@ -761,53 +789,8 @@ export default function LocacaoPage() {
       );
     }
     if (p === 'docsDono') {
-      return (
-        <div className="space-y-3">
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">
-            O proprietário — estes dados preenchem o contrato de administração e o de locação
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-            <Campo rot="Nome completo" largura="sm:col-span-2"><input className={inputCls} defaultValue={im.donoNome} onBlur={(e) => upImovel(im.id, { donoNome: e.target.value })} /></Campo>
-            <Campo rot="CPF/CNPJ"><input className={inputCls} defaultValue={im.donoDoc} onBlur={(e) => upImovel(im.id, { donoDoc: e.target.value })} /></Campo>
-            <Campo rot="RG"><input className={inputCls} defaultValue={im.donoRg} onBlur={(e) => upImovel(im.id, { donoRg: e.target.value })} /></Campo>
-            <Campo rot="WhatsApp"><input className={inputCls} defaultValue={im.donoTelefone} onBlur={(e) => upImovel(im.id, { donoTelefone: e.target.value })} /></Campo>
-            <Campo rot="E-mail"><input className={inputCls} defaultValue={im.donoEmail} onBlur={(e) => upImovel(im.id, { donoEmail: e.target.value })} /></Campo>
-            <Campo rot="Estado civil"><input className={inputCls} defaultValue={im.donoEstadoCivil} onBlur={(e) => upImovel(im.id, { donoEstadoCivil: e.target.value })} placeholder="casado, solteira…" /></Campo>
-            <Campo rot="Profissão"><input className={inputCls} defaultValue={im.donoProfissao} onBlur={(e) => upImovel(im.id, { donoProfissao: e.target.value })} /></Campo>
-            <Campo rot="Endereço do dono" largura="sm:col-span-2"><input className={inputCls} defaultValue={im.donoEndereco} onBlur={(e) => upImovel(im.id, { donoEndereco: e.target.value })} /></Campo>
-            <Campo rot="Chave PIX do repasse"><input className={inputCls} defaultValue={im.donoPix} onBlur={(e) => upImovel(im.id, { donoPix: e.target.value })} placeholder="CPF, e-mail, telefone…" /></Campo>
-            <Campo rot="Taxa de administração (%)"><input className={inputCls} inputMode="decimal" defaultValue={im.taxaAdmPct ?? ''} onBlur={(e) => upImovel(im.id, { taxaAdmPct: num(e.target.value) })} /></Campo>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center">
-              <select value={catDocDono} onChange={(e) => setCatDocDono(e.target.value)}
-                className="px-2 py-2 rounded-l-xl border border-white/10 bg-white/[0.04] text-[11px] text-text-secondary focus:outline-none">
-                {DOCS_DONO.map((x) => <option key={x}>{x}</option>)}
-              </select>
-              <label className={btnGhost + ' cursor-pointer !rounded-l-none'}>
-                {subindo === im.id ? 'Subindo…' : '📎 anexar'}
-                <input type="file" multiple className="hidden" disabled={subindo === im.id}
-                  onChange={(e) => { anexar('imovel', im.id, im.docsDono, catDocDono, e.target.files); e.currentTarget.value = ''; }} />
-              </label>
-            </span>
-            {im.docsDono.map((d, n) => (
-              <a key={n} href={d.url} target="_blank" rel="noreferrer"
-                className="inline-flex items-center gap-1 text-[11px] text-text-secondary hover:text-white bg-white/[0.04] border border-white/10 rounded-lg px-2 py-1">
-                <b className="text-[#FFE9A6]/80 text-[9.5px] uppercase">{d.categoria}</b> {d.nome}
-              </a>
-            ))}
-          </div>
-          {pendenciasImovel(im).docs.length > 0 ? (
-            <p className="text-[11.5px] text-amber-300">Falta: {pendenciasImovel(im).docs.join(' · ')}</p>
-          ) : (
-            <p className="text-[11.5px] text-emerald-300">✓ Papelada completa.</p>
-          )}
-          <div className="flex flex-wrap gap-2">
-            {im.etapa === 'captado' && <button onClick={() => guardarDocsDono(im)} className={btnOuro}>✓ Papelada completa</button>}
-            <button onClick={fechar} className={btnGhost}>fechar</button>
-          </div>
-        </div>
-      );
+      return <PainelDono key={im.id} imobiliariaId={imobiliariaId} isEspelhoDemo={isEspelhoDemo}
+        imovel={im} recarregar={recarregar} onFechar={fechar} />;
     }
     return null;
   };
@@ -818,7 +801,11 @@ export default function LocacaoPage() {
     return <div className="min-h-screen py-8 px-4"><div className="max-w-5xl mx-auto al-card p-8 text-center text-sm text-text-secondary">Carregando…</div></div>;
   }
 
-  const etapas: string[] = funil === 'imoveis' ? ORDEM_IMOVEL : ORDEM_LOCACAO;
+  // as etapas de arquivo (pausado, encerrada, não fechou) só entram na régua
+  // quando existe alguém nelas — caixinha zerada sem motivo confunde
+  const etapas: string[] = funil === 'imoveis'
+    ? [...ORDEM_IMOVEL, ...(contarImoveis.pausado ? ['pausado'] : [])]
+    : [...ORDEM_LOCACAO, ...(verArquivadas ? ['encerrada', 'perdida'] : [])];
   const contagem = funil === 'imoveis' ? contarImoveis : contarLocacoes;
   const defEtapa = (k: string) => (funil === 'imoveis'
     ? ETAPAS_IMOVEL[k as EtapaImovel]
@@ -874,13 +861,15 @@ export default function LocacaoPage() {
         {/* a chave dos dois funis */}
         <div className="flex gap-2">
           {([
-            ['imoveis', '🏠', 'Imóveis', 'com o proprietário', imoveis.length],
-            ['locacoes', '🔑', 'Locações', 'com o inquilino', emAndamento],
-          ] as const).map(([k, ic, t, sub, q]) => (
+            ['imoveis', '🏠', 'Imóveis', imoveis.length, minhaVez.imoveis],
+            ['locacoes', '🔑', 'Locações', emAndamento, minhaVez.locacoes],
+          ] as const).map(([k, ic, t, q, meus]) => (
             <button key={k} onClick={() => { setFunil(k); setEtapaSel(null); fechar(); }}
               className={`flex-1 al-card p-3 text-left transition-all ${funil === k ? 'ring-1 ring-[#E8C547]/50' : 'opacity-55 hover:opacity-90'}`}>
               <p className="text-[13.5px] font-bold text-white">{ic} {t} <span className="text-[#FFE9A6] tabular-nums">{q}</span></p>
-              <p className="text-[11px] text-text-secondary">{sub}</p>
+              <p className={`text-[11px] ${meus ? 'text-amber-300 font-bold' : 'text-text-secondary'}`}>
+                {meus ? `${meus} esperando você` : 'nada esperando você'}
+              </p>
             </button>
           ))}
         </div>
@@ -987,6 +976,7 @@ export default function LocacaoPage() {
           const zap = linkWhats(i.donoTelefone, `Olá ${(i.donoNome || '').split(' ')[0]}! Aqui é da Nox Imóveis, sobre o ${i.titulo || 'seu imóvel'}.`);
           const nossaVez = ['captado', 'docs_dono', 'adm_assinada', 'material'].includes(i.etapa);
           const temCowork = i.portais.some((c) => PORTAIS.find((x) => x.chave === c)?.via === 'cowork');
+          const naFila = interessadosDe(i.id);
           return (
             <div key={i.id} className={`al-card relative overflow-hidden ${nossaVez ? 'ring-1 ring-[#E8C547]/25' : ''}`}>
               {nossaVez && <div className="absolute inset-x-0 top-0 gx-line-gold" />}
@@ -1013,8 +1003,19 @@ export default function LocacaoPage() {
                 {['adm_assinada', 'material'].includes(i.etapa) && pend.material.length > 0 && (
                   <p className="text-[11.5px] text-amber-300 mt-2">Pra publicar, falta: {pend.material.join(' · ')}</p>
                 )}
+                {i.etapa === 'publicado' && naFila.length === 0 && (
+                  <p className="text-[11.5px] text-text-secondary mt-2">
+                    No ar desde {fmtData(i.publicadoEm)} · nenhum interessado ainda.
+                  </p>
+                )}
 
                 <div className="flex flex-wrap gap-1.5 mt-2.5">
+                  {naFila.length > 0 && (
+                    <button onClick={() => { setFunil('locacoes'); setEtapaSel(null); setBusca(i.codigo); fechar(); }}
+                      className="px-2.5 py-1 rounded-xl text-[11px] font-bold border border-[#E8C547]/40 bg-[#E8C547]/10 text-[#FFE9A6]">
+                      🔑 {naFila.length} {naFila.length > 1 ? 'na fila' : 'na fila'} →
+                    </button>
+                  )}
                   {zap && <a href={zap} target="_blank" rel="noreferrer" className="px-2.5 py-1 rounded-xl text-[11px] font-bold border border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-300">💬 dono</a>}
                   <button onClick={() => abrir(i.id, 'ficha')} className={btnGhost + ' !py-1 !text-[11px]'}>🏠 dados</button>
                   <button onClick={() => abrir(i.id, 'docsDono')} className={btnGhost + ' !py-1 !text-[11px]'}>📎 documentos ({i.docsDono.length})</button>

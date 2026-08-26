@@ -10,8 +10,9 @@
  * webhooks.
  */
 import React, { useState } from 'react';
+import { ehArquivoTeste, textoDocTeste, type Arquivo } from '@/lib/locacao';
 
-export const inputCls = 'w-full px-3 py-2 rounded-lg border border-white/10 bg-white/[0.04] text-white text-[13px] placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#E8C547]/40';
+export const inputCls ='w-full px-3 py-2 rounded-lg border border-white/10 bg-white/[0.04] text-white text-[13px] placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#E8C547]/40';
 export const btnOuro = 'px-3.5 py-2 rounded-xl text-[12px] font-bold text-[#181203] bg-gradient-to-r from-[#E8C547] to-[#C89210] hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-40';
 export const btnGhost = 'px-3 py-2 rounded-xl text-[12px] font-bold border border-white/10 bg-white/[0.04] text-text-secondary hover:text-white hover:bg-white/[0.08] transition-colors disabled:opacity-40';
 /** ação de simulação: âmbar e explícita — some quando a integração real ligar */
@@ -97,5 +98,73 @@ export function Dobra({ titulo, sub, chips, aberto0 = false, children }: {
       </button>
       {aberto && <div className="px-4 pb-4">{children}</div>}
     </div>
+  );
+}
+
+/**
+ * A gaveta de documentos.
+ *
+ * Documento de verdade (com URL no Storage) abre num link normal. Documento
+ * de TESTE — os que o botão 🧪 cria — não tem arquivo nenhum atrás; em vez
+ * de um link morto, abre aqui embaixo um papel dizendo o que estaria ali.
+ * Assim dá pra andar a operação inteira sem subir arquivo, e continua óbvio
+ * o que é de mentira.
+ */
+export function ChipsDocumentos({ docs, aoRemover }: {
+  docs: Arquivo[];
+  aoRemover?: (indice: number) => void;
+}) {
+  const [vendo, setVendo] = useState<number | null>(null);
+  const doc = vendo !== null ? docs[vendo] : null;
+  const t = doc ? textoDocTeste(doc.categoria) : null;
+
+  return (
+    <>
+      <div className="flex flex-wrap gap-1.5">
+        {docs.map((d, n) => {
+          const teste = ehArquivoTeste(d);
+          const corpo = (
+            <>
+              {d.categoria && <b className="text-[#FFE9A6]/80 text-[9.5px] uppercase">{d.categoria}</b>}
+              {' '}{d.nome}
+              {teste && <span className="text-amber-300 text-[9.5px] font-extrabold uppercase ml-1">⚡ teste</span>}
+            </>
+          );
+          const cls = `inline-flex items-center gap-1 text-[11px] rounded-lg px-2 py-1 border ${
+            teste ? 'border-amber-500/30 bg-amber-500/[0.06] text-amber-200/80 hover:text-amber-100'
+              : 'border-white/10 bg-white/[0.04] text-text-secondary hover:text-white'}`;
+          return (
+            <span key={n} className="inline-flex items-center gap-1">
+              {teste
+                ? <button type="button" onClick={() => setVendo(vendo === n ? null : n)} className={cls}>{corpo}</button>
+                : <a href={d.url} target="_blank" rel="noreferrer" className={cls}>{corpo}</a>}
+              {aoRemover && <button type="button" onClick={() => { setVendo(null); aoRemover(n); }} className="text-rose-300 text-[12px] leading-none">×</button>}
+            </span>
+          );
+        })}
+      </div>
+
+      {doc && t && (
+        <div className="mt-2 rounded-xl overflow-hidden border border-amber-500/30">
+          <div className="flex items-center gap-2 bg-amber-500/[0.08] px-3 py-1.5">
+            <span className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-amber-300">
+              ⚡ Documento de teste — não existe arquivo no servidor
+            </span>
+            <button onClick={() => setVendo(null)} className="ml-auto text-[11px] font-bold text-text-secondary hover:text-white">fechar</button>
+          </div>
+          <div className="bg-white text-neutral-900 px-6 py-6 font-serif">
+            <p className="text-center text-[9.5px] font-bold tracking-[0.3em] uppercase text-red-600 border border-red-300 rounded py-1 mb-5">
+              Conteúdo de demonstração · sem validade
+            </p>
+            <h3 className="text-center text-[14px] font-bold uppercase tracking-wide mb-4">{t.titulo}</h3>
+            <p className="text-[15px] font-bold text-center mb-4">{t.linhas[0]}</p>
+            {t.linhas.slice(1).map((l, i) => (
+              <p key={i} className="text-[12px] leading-relaxed text-neutral-700 max-w-[64ch] mx-auto text-center">{l}</p>
+            ))}
+            <p className="text-center text-[9px] text-neutral-400 mt-6">{doc.nome}</p>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

@@ -24,9 +24,10 @@ import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   INDICES_REAJUSTE, GARANTIAS, DOCS_INQUILINO, LOCAIS_VISTORIA,
   fimContrato, fmtData, fmtValor, hojeYmd,
+  INQUILINO_TESTE, arquivoTeste, preencherVazios,
   type Locacao, type ImovelLocacao, type RessalvaVistoria,
 } from '@/lib/locacao';
-import { inputCls, btnOuro, btnGhost, btnSimula, Campo, num } from './ui';
+import { inputCls, btnOuro, btnGhost, btnSimula, Campo, num, ChipsDocumentos } from './ui';
 
 export default function PainelLocacao({ imobiliariaId, isEspelhoDemo, locacao, imovel, recarregar, onFechar }: {
   imobiliariaId?: string;
@@ -73,6 +74,38 @@ export default function PainelLocacao({ imobiliariaId, isEspelhoDemo, locacao, i
       await recarregar();
     } catch { showToast('Falha ao subir.', 'error'); }
     setSubindo(false);
+  };
+
+  /**
+   * Preenche SÓ o que está em branco com dado de teste — inclusive os valores
+   * do imóvel, que na vida real vêm do anúncio. Nada do que o operador já
+   * escreveu é sobrescrito.
+   */
+  const preencherTeste = () => {
+    setForm((p) => preencherVazios(p, {
+      ...INQUILINO_TESTE,
+      valorAluguel: imovel?.aluguel ?? 1850,
+      valorCondominio: imovel?.condominio ?? null,
+      valorIptuMensal: imovel?.iptuMensal ?? 92,
+      valorSeguroIncendio: imovel?.seguroIncendio ?? 28,
+      inicio: hojeYmd(),
+      garantiaNumero: `LOFT-${Math.floor(Math.random() * 90000) + 10000}`,
+      garantiaTaxaMensalPct: 10,
+    }));
+    showToast('Campos vazios preenchidos com dados de teste. Confira e salve.', 'info');
+  };
+
+  /** Um documento que não existe no Storage — só pra passar pela etapa. */
+  const anexarTeste = () => {
+    const novos = [...form.docsInquilino, arquivoTeste(categoria)];
+    f('docsInquilino', novos);
+    if (!guarda()) updateDoc(doc(db, 'locacaoLocacoes', form.id), { docsInquilino: novos, atualizadoEm: serverTimestamp() }).then(recarregar);
+  };
+
+  const removerDoc = (n: number) => {
+    const novos = form.docsInquilino.filter((_, j) => j !== n);
+    f('docsInquilino', novos);
+    if (!guarda()) updateDoc(doc(db, 'locacaoLocacoes', form.id), { docsInquilino: novos, atualizadoEm: serverTimestamp() }).then(recarregar);
   };
 
   const excluir = async () => {
@@ -131,7 +164,8 @@ export default function PainelLocacao({ imobiliariaId, isEspelhoDemo, locacao, i
         <h3 className="text-[13px] font-bold text-white uppercase tracking-[0.08em]">
           {form.nome || 'Interessado'} {imovel ? `· ${imovel.codigo}` : ''}
         </h3>
-        <button onClick={onFechar} className={btnGhost + ' ml-auto !py-1 !text-[11px]'}>fechar</button>
+        <button onClick={preencherTeste} className={btnSimula + ' ml-auto !py-1 !text-[11px]'}>🧪 preencher teste</button>
+        <button onClick={onFechar} className={btnGhost + ' !py-1 !text-[11px]'}>fechar</button>
       </div>
 
       {/* ——— o inquilino: o que o contrato precisa saber dele ——— */}
@@ -230,13 +264,9 @@ export default function PainelLocacao({ imobiliariaId, isEspelhoDemo, locacao, i
                 onChange={(e) => { anexar(e.target.files); e.currentTarget.value = ''; }} />
             </label>
           </span>
-          {form.docsInquilino.map((d, n) => (
-            <a key={n} href={d.url} target="_blank" rel="noreferrer"
-              className="inline-flex items-center gap-1 text-[11px] text-text-secondary hover:text-white bg-white/[0.04] border border-white/10 rounded-lg px-2 py-1">
-              {d.categoria && <b className="text-[#FFE9A6]/80 text-[9.5px] uppercase">{d.categoria}</b>} {d.nome}
-            </a>
-          ))}
+          <button type="button" onClick={anexarTeste} className={btnSimula}>🧪 documento teste</button>
         </div>
+        <div className="mt-2"><ChipsDocumentos docs={form.docsInquilino} aoRemover={removerDoc} /></div>
       </Campo>
 
       {/* a vistoria de entrada, só pra consulta */}

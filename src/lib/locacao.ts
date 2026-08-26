@@ -850,3 +850,151 @@ export const INTEGRACOES: DefIntegracao[] = [
     falta: ['Chave de serviço do Firebase', 'Formulário de homologação do Grupo OLX'],
   },
 ];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// OS DADOS DE TESTE
+//
+// Pra andar a operação inteira sem ter cliente real: fotos que aparecem,
+// documentos que abrem e fichas que preenchem sozinhas. Nada disso encosta
+// no Storage nem em conta de terceiro — é tudo desenhado na hora, na tela.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** Uma foto desenhada em SVG — aparece de verdade no anúncio e no laudo. */
+export const fotoExemplo = (n: number): string =>
+  'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420">`
+    + `<rect width="640" height="420" fill="#17171b"/>`
+    + `<rect x="14" y="14" width="612" height="392" fill="none" stroke="#E8C547" stroke-opacity="0.5" stroke-width="2" stroke-dasharray="9 7"/>`
+    + `<text x="320" y="196" font-family="system-ui,sans-serif" font-size="27" font-weight="700" fill="#E8C547" text-anchor="middle">FOTO DE TESTE ${n}</text>`
+    + `<text x="320" y="232" font-family="system-ui,sans-serif" font-size="15" fill="#8c8c95" text-anchor="middle">troque pelas fotos reais antes de publicar</text>`
+    + `</svg>`,
+  );
+
+export const FOTOS_TESTE = [1, 2, 3, 4, 5].map(fotoExemplo);
+
+/**
+ * Um documento que não existe no Storage. Guarda url vazia de propósito: a
+ * tela reconhece isso e, em vez de um link morto, abre um visor com o
+ * conteúdo de teste desenhado na hora.
+ */
+export const arquivoTeste = (categoria: string): Arquivo => ({
+  categoria,
+  nome: categoria.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-teste.pdf',
+  url: '',
+});
+
+export const ehArquivoTeste = (a: Arquivo): boolean => !a.url;
+
+/** O que o visor mostra pra cada gaveta de documento. */
+export function textoDocTeste(categoria = ''): { titulo: string; linhas: string[] } {
+  const m: Record<string, { titulo: string; linhas: string[] }> = {
+    'Contrato assinado': {
+      titulo: 'Contrato de Locação — TESTE',
+      linhas: [
+        'contrato teste',
+        'No lugar deste papel entra o PDF assinado que a ClickSign devolve, com o log de assinatura das duas partes e o carimbo de tempo.',
+      ],
+    },
+    'Laudo de vistoria': {
+      titulo: 'Laudo de Vistoria — TESTE',
+      linhas: [
+        'laudo teste',
+        'O laudo real sai do próprio sistema (botão 📋 laudo) com as fotos do anúncio, os itens que ficam e as ressalvas.',
+      ],
+    },
+    'Fiança da Loft': {
+      titulo: 'Apólice de Fiança Locatícia — TESTE',
+      linhas: [
+        'apólice teste',
+        'A Loft devolve a apólice em PDF com número, vigência e valor garantido. É este arquivo que fica aqui.',
+      ],
+    },
+    'Matrícula do imóvel': {
+      titulo: 'Matrícula do Imóvel — TESTE',
+      linhas: ['matrícula teste', 'Certidão atualizada do Registro de Imóveis, que prova quem é o dono.'],
+    },
+    'Carnê do IPTU': {
+      titulo: 'Carnê do IPTU — TESTE',
+      linhas: ['carnê teste', 'Serve pra conferir a inscrição imobiliária e o valor anual que vira a fração mensal.'],
+    },
+    'Comprovante de renda': {
+      titulo: 'Comprovante de Renda — TESTE',
+      linhas: ['comprovante teste', 'Holerites, extrato ou declaração — é o que a Loft analisa pra aprovar a garantia.'],
+    },
+  };
+  return m[categoria] || {
+    titulo: `${categoria || 'Documento'} — TESTE`,
+    linhas: ['documento teste', 'Quando o arquivo real for anexado, este visor some e o clique abre o PDF de verdade.'],
+  };
+}
+
+/** A ficha do imóvel preenchida — o que o corretor teria depois da visita. */
+export const IMOVEL_TESTE: Partial<Omit<ImovelLocacao, 'id' | 'imobiliariaId'>> = {
+  titulo: 'Apartamento 2 quartos com sacada — Centro, Penha',
+  tipo: 'Apartamento',
+  rua: 'Rua Nereu Ramos', numero: '245', complemento: 'apto 302',
+  bairro: 'Centro', cidade: 'Penha/SC', cep: '88385-000',
+  latitude: '-26.7754', longitude: '-48.6461',
+  quartos: 2, suites: 1, banheiros: 2, vagas: 1,
+  areaPrivativa: 68, areaTotal: 85, andar: '3º', mobiliado: 'Semimobiliado',
+  comodidades: ['Sacada', 'Churrasqueira', 'Elevador', 'Aceita pet'],
+  aluguel: 1850, condominio: 380, iptuMensal: 92, seguroIncendio: 28,
+  prazoMinimoMeses: 12, taxaAdmPct: 10,
+};
+
+/** O proprietário preenchido, com a papelada dele. */
+export const DONO_TESTE: Partial<Omit<ImovelLocacao, 'id' | 'imobiliariaId'>> = {
+  donoNome: 'Roberto Krüger (teste)', donoDoc: '111.222.333-44', donoRg: '2.114.887',
+  donoTelefone: '(47) 98888-1111', donoEmail: 'roberto.teste@example.com',
+  donoPix: 'roberto.teste@example.com',
+  donoEstadoCivil: 'casado', donoProfissao: 'comerciante',
+  donoEndereco: 'Rua Santa Catarina, 78, Centro, Penha/SC',
+  docsDono: [
+    arquivoTeste('RG/CPF do proprietário'),
+    arquivoTeste('Matrícula do imóvel'),
+    arquivoTeste('Carnê do IPTU'),
+  ],
+};
+
+/** O material do anúncio pronto — passa nas regras do Grupo OLX. */
+export const ANUNCIO_TESTE: Partial<Omit<ImovelLocacao, 'id' | 'imobiliariaId'>> = {
+  descricao: 'Apartamento arejado no coração de Penha, a duas quadras da praia. Sacada com churrasqueira, sol da manhã, cozinha com armários planejados, condomínio com elevador e salão de festas. Uma vaga coberta. Aceita pet de pequeno porte.',
+  fotos: FOTOS_TESTE,
+  videoUrl: 'https://www.youtube.com/watch?v=teste',
+  tourVirtualUrl: '',
+  portais: ['grupo_olx', 'imovelweb', 'instagram'],
+};
+
+/** O inquilino preenchido: qualificação, papelada e termos do contrato. */
+export const INQUILINO_TESTE: Partial<Locacao> = {
+  nome: 'Fernanda Lima (teste)', telefone: '(47) 95555-1122', email: 'fernanda.teste@example.com',
+  doc: '999.888.777-66', rg: '4.001.998',
+  estadoCivil: 'casada', profissao: 'fisioterapeuta',
+  enderecoAtual: 'Rua Blumenau, 120, Centro, Itajaí/SC',
+  corretorNome: 'Breno',
+  docsInquilino: [
+    arquivoTeste('CNH ou RG'),
+    arquivoTeste('CPF'),
+    arquivoTeste('Comprovante de renda'),
+    arquivoTeste('Comprovante de endereço'),
+  ],
+  prazoMeses: 30, diaVencimento: 5, indiceReajuste: 'IGP-M', taxaAdmPct: 10,
+  garantiaTipo: 'Seguro-fiança (Loft)',
+};
+
+/**
+ * Copia do modelo SÓ o que está vazio no formulário — o que o operador já
+ * digitou nunca é sobrescrito por dado de teste.
+ */
+export function preencherVazios<T extends object>(atual: T, modelo: Partial<T>): T {
+  const out = { ...atual };
+  for (const chave of Object.keys(modelo) as (keyof T)[]) {
+    const v = out[chave];
+    const vazio = v === null || v === undefined || v === ''
+      || (Array.isArray(v) && v.length === 0);
+    const doModelo = modelo[chave];
+    if (vazio && doModelo !== undefined) out[chave] = doModelo as T[keyof T];
+  }
+  return out;
+}

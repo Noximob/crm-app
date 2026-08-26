@@ -18,11 +18,13 @@
  */
 import { db } from '@/lib/firebase';
 import { collection, doc, writeBatch, getDocs, query, where, serverTimestamp } from 'firebase/firestore';
-import { IMOVEL_VAZIO, LOCACAO_VAZIA, gerarMovimentos, hojeYmd, type Locacao } from '@/lib/locacao';
+import {
+  IMOVEL_VAZIO, LOCACAO_VAZIA, gerarMovimentos, hojeYmd,
+  FOTOS_TESTE, fotoExemplo, arquivoTeste, type Locacao,
+} from '@/lib/locacao';
 
-const FOTO = 'https://firebasestorage.googleapis.com/v0/b/demo/foto-exemplo.jpg';
-const FOTOS5 = [FOTO, FOTO, FOTO, FOTO, FOTO];
-const DOC_EX = (nome: string, categoria: string) => ({ nome, url: '#', categoria });
+const FOTO = fotoExemplo(1);
+const FOTOS5 = FOTOS_TESTE;
 
 /** Data ymd deslocada N meses/dias de hoje. */
 const desloca = (meses: number, dias = 0): string => {
@@ -62,7 +64,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     donoTelefone: '(47) 99123-4567', donoEmail: 'ivete@example.com', donoPix: 'ivete@example.com',
     donoEstadoCivil: 'divorciada', donoProfissao: 'contadora',
     donoEndereco: 'Rua Getúlio Vargas, 90, Centro, Penha/SC',
-    docsDono: [DOC_EX('rg-ivete.pdf', 'RG/CPF do proprietário'), DOC_EX('matricula-4488.pdf', 'Matrícula do imóvel')],
+    docsDono: [arquivoTeste('RG/CPF do proprietário'), arquivoTeste('Matrícula do imóvel')],
   });
 
   // 3 · ADMINISTRAÇÃO ENVIADA — no WhatsApp do dono, aguardando assinatura
@@ -80,7 +82,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     donoTelefone: '(47) 98111-4455', donoEmail: 'heloisa@example.com', donoPix: '47981114455',
     donoEstadoCivil: 'casada', donoProfissao: 'médica',
     donoEndereco: 'Rua Alvorada, 55, Itajaí/SC',
-    docsDono: [DOC_EX('cnh-heloisa.pdf', 'RG/CPF do proprietário'), DOC_EX('iptu-2026.pdf', 'Carnê do IPTU')],
+    docsDono: [arquivoTeste('RG/CPF do proprietário'), arquivoTeste('Carnê do IPTU')],
   });
 
   // 4 · ADMINISTRAÇÃO ASSINADA — autorizado; falta o material do anúncio
@@ -98,7 +100,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     donoTelefone: '(47) 99444-1122', donoEmail: 'jonas@example.com', donoPix: '47994441122',
     donoEstadoCivil: 'solteiro', donoProfissao: 'engenheiro',
     donoEndereco: 'Rua XV de Novembro, 12, Navegantes/SC',
-    docsDono: [DOC_EX('rg-jonas.pdf', 'RG/CPF do proprietário'), DOC_EX('matricula-9912.pdf', 'Matrícula do imóvel')],
+    docsDono: [arquivoTeste('RG/CPF do proprietário'), arquivoTeste('Matrícula do imóvel')],
     fotos: [FOTO, FOTO], descricao: 'Sobrado em rua tranquila.',
   });
 
@@ -117,7 +119,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     donoTelefone: '(47) 97777-5544', donoEmail: 'marlene@example.com', donoPix: '47977775544',
     donoEstadoCivil: 'viúva', donoProfissao: 'aposentada',
     donoEndereco: 'Rua Rio Branco, 400, Penha/SC',
-    docsDono: [DOC_EX('rg-marlene.pdf', 'RG/CPF do proprietário')],
+    docsDono: [arquivoTeste('RG/CPF do proprietário')],
     descricao: 'Casa ampla com quintal gramado no bairro Armação, ideal pra família com crianças e pets. Três quartos sendo uma suíte, churrasqueira coberta e duas vagas na frente.',
     fotos: FOTOS5, videoUrl: 'https://www.youtube.com/watch?v=exemplo',
     portais: ['grupo_olx', 'imovelweb', 'instagram'],
@@ -139,7 +141,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     donoTelefone: '(47) 98888-1111', donoEmail: 'roberto@example.com', donoPix: 'roberto@example.com',
     donoEstadoCivil: 'casado', donoProfissao: 'comerciante',
     donoEndereco: 'Rua Santa Catarina, 78, Penha/SC',
-    docsDono: [DOC_EX('rg-roberto.pdf', 'RG/CPF do proprietário'), DOC_EX('matricula-1122.pdf', 'Matrícula do imóvel'), DOC_EX('iptu-2026.pdf', 'Carnê do IPTU')],
+    docsDono: [arquivoTeste('RG/CPF do proprietário'), arquivoTeste('Matrícula do imóvel'), arquivoTeste('Carnê do IPTU')],
     descricao: 'Apartamento arejado no coração de Penha, a duas quadras da praia. Sacada com churrasqueira, sol da manhã, condomínio com elevador e salão de festas. Aceita pet de pequeno porte.',
     fotos: FOTOS5, portais: ['grupo_olx', 'imovelweb', 'instagram'],
   });
@@ -160,7 +162,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     donoTelefone: '(47) 99777-8899', donoEmail: 'tereza@example.com', donoPix: '47997778899',
     donoEstadoCivil: 'casada', donoProfissao: 'professora',
     donoEndereco: 'Rua Pedro Álvares, 33, Barra Velha/SC',
-    docsDono: [DOC_EX('rg-tereza.pdf', 'RG/CPF do proprietário')],
+    docsDono: [arquivoTeste('RG/CPF do proprietário')],
     descricao: 'Casa térrea com churrasqueira e quintal fechado, a 400 metros da praia, três quartos sendo uma suíte.',
     fotos: FOTOS5, portais: ['grupo_olx'],
   });
@@ -187,7 +189,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     etapa: 'docs_inquilino', nome: 'Carlos Mendes', telefone: '(47) 99911-7788',
     email: 'carlos@example.com', doc: '123.456.789-00', origem: 'instagram',
     corretorNome: 'Breno',
-    docsInquilino: [DOC_EX('cnh-carlos.pdf', 'CNH ou RG')],
+    docsInquilino: [arquivoTeste('CNH ou RG')],
     observacoes: 'Falta o comprovante de renda dos últimos 3 meses.',
   });
 
@@ -199,7 +201,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     estadoCivil: 'solteiro', profissao: 'analista de sistemas',
     enderecoAtual: 'Rua Getúlio Vargas, 200, Itajaí/SC',
     origem: 'grupo_olx', temperatura: 'media', corretorNome: 'Breno',
-    docsInquilino: [DOC_EX('cnh-eduardo.pdf', 'CNH ou RG'), DOC_EX('holerites.pdf', 'Comprovante de renda')],
+    docsInquilino: [arquivoTeste('CNH ou RG'), arquivoTeste('Comprovante de renda')],
   });
 
   // 4 · LOFT APROVOU — a fiança foi pro inquilino assinar
@@ -210,7 +212,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     estadoCivil: 'casada', profissao: 'enfermeira',
     enderecoAtual: 'Rua Dom Pedro, 45, Penha/SC',
     origem: 'grupo_olx', temperatura: 'alta', corretorNome: 'Murilo',
-    docsInquilino: [DOC_EX('rg-patricia.pdf', 'CNH ou RG'), DOC_EX('renda-patricia.pdf', 'Comprovante de renda')],
+    docsInquilino: [arquivoTeste('CNH ou RG'), arquivoTeste('Comprovante de renda')],
     garantiaNumero: 'LOFT-73421', garantiaTaxaMensalPct: 9.5,
     garantiaEnviadaEm: desloca(0, -1), garantiaSimulada: true,
   });
@@ -226,7 +228,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     enderecoAtual: 'Rua Blumenau, 88, Barra Velha/SC',
     origem: 'manual', corretorNome: 'Murilo',
     inicio: desloca(0, 12),
-    docsInquilino: [DOC_EX('cnh-sandra.pdf', 'CNH ou RG'), DOC_EX('irpf-sandra.pdf', 'Comprovante de renda')],
+    docsInquilino: [arquivoTeste('CNH ou RG'), arquivoTeste('Comprovante de renda')],
     garantiaNumero: 'LOFT-80915', garantiaTaxaMensalPct: 11,
     garantiaEnviadaEm: desloca(0, -6), garantiaAssinadaEm: desloca(0, -3),
     garantiaVigenciaFim: desloca(12), garantiaSimulada: true,
@@ -243,7 +245,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     enderecoAtual: 'Rua Marechal Deodoro, 12, Penha/SC',
     origem: 'grupo_olx', corretorNome: 'Breno',
     inicio: desloca(0, 8),
-    docsInquilino: [DOC_EX('cnh-juliana.pdf', 'CNH ou RG'), DOC_EX('renda-juliana.pdf', 'Comprovante de renda')],
+    docsInquilino: [arquivoTeste('CNH ou RG'), arquivoTeste('Comprovante de renda')],
     garantiaNumero: 'LOFT-88420', garantiaTaxaMensalPct: 10.5,
     garantiaEnviadaEm: desloca(0, -12), garantiaAssinadaEm: desloca(0, -8),
     garantiaVigenciaFim: desloca(12), garantiaSimulada: true,
@@ -266,7 +268,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     estadoCivil: 'solteiro', profissao: 'cozinheiro',
     enderecoAtual: 'Rua Joinville, 300, Piçarras/SC',
     origem: 'balcao', corretorNome: 'Murilo',
-    docsInquilino: [DOC_EX('cnh-rafael.pdf', 'CNH ou RG'), DOC_EX('contrato-assinado.pdf', 'Contrato assinado')],
+    docsInquilino: [arquivoTeste('CNH ou RG'), arquivoTeste('Contrato assinado')],
     garantiaNumero: 'LOFT-91007', garantiaTaxaMensalPct: 12,
     garantiaEnviadaEm: desloca(0, -14), garantiaAssinadaEm: desloca(0, -10),
     garantiaVigenciaFim: desloca(12), garantiaSimulada: true,
@@ -290,10 +292,10 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     enderecoAtual: 'Rua São Cristóvão, 150, Penha/SC',
     origem: 'grupo_olx', temperatura: 'alta', corretorNome: 'Breno',
     docsInquilino: [
-      DOC_EX('cnh-fernanda.pdf', 'CNH ou RG'),
-      DOC_EX('renda-fernanda.pdf', 'Comprovante de renda'),
-      DOC_EX('contrato-assinado.pdf', 'Contrato assinado'),
-      DOC_EX('apolice-loft.pdf', 'Fiança da Loft'),
+      arquivoTeste('CNH ou RG'),
+      arquivoTeste('Comprovante de renda'),
+      arquivoTeste('Contrato assinado'),
+      arquivoTeste('Fiança da Loft'),
     ],
     garantiaTipo: 'Seguro-fiança (Loft)', garantiaNumero: 'LOFT-58112',
     garantiaTaxaMensalPct: 10, garantiaVigenciaFim: desloca(0, 40),
