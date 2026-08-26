@@ -172,7 +172,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
   const base = {
     imovelId: imPublicado.id,
     valorAluguel: 1850, valorCondominio: 380, valorIptuMensal: 92, valorSeguroIncendio: 28,
-    taxaAdmPct: 10, diaVencimento: 5, prazoMeses: 30,
+    taxaAdmPct: 10, diaVencimento: 5, prazoMeses: 12,
   };
 
   // 1 · INTERESSADO — acabou de chegar do portal
@@ -213,7 +213,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     enderecoAtual: 'Rua Dom Pedro, 45, Penha/SC',
     origem: 'grupo_olx', temperatura: 'alta', corretorNome: 'Murilo',
     docsInquilino: [arquivoTeste('CNH ou RG'), arquivoTeste('Comprovante de renda')],
-    garantiaNumero: 'LOFT-73421', garantiaTaxaMensalPct: 9.5,
+    garantiaNumero: 'LOFT-73421',
     garantiaEnviadaEm: desloca(0, -1), garantiaSimulada: true,
   });
 
@@ -229,7 +229,7 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     origem: 'manual', corretorNome: 'Murilo',
     inicio: desloca(0, 12),
     docsInquilino: [arquivoTeste('CNH ou RG'), arquivoTeste('Comprovante de renda')],
-    garantiaNumero: 'LOFT-80915', garantiaTaxaMensalPct: 11,
+    garantiaNumero: 'LOFT-80915',
     garantiaEnviadaEm: desloca(0, -1), garantiaSimulada: true,
   });
 
@@ -247,9 +247,9 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     origem: 'grupo_olx', corretorNome: 'Breno',
     inicio: desloca(0, 8),
     docsInquilino: [arquivoTeste('CNH ou RG'), arquivoTeste('Comprovante de renda')],
-    garantiaNumero: 'LOFT-88420', garantiaTaxaMensalPct: 10.5,
+    garantiaNumero: 'LOFT-88420',
     garantiaEnviadaEm: desloca(0, -12), garantiaAssinadaEm: desloca(0, -8),
-    garantiaVigenciaFim: desloca(12), garantiaSimulada: true,
+    garantiaSimulada: true,
     contratoEnviadoEm: desloca(0, -2), contratoSimulado: true,
     vistoriaEntrada: {
       feitaEm: desloca(0, -3), feitaPor: 'Breno', assinada: false, assinadaSimulada: false,
@@ -270,9 +270,9 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
     enderecoAtual: 'Rua Joinville, 300, Piçarras/SC',
     origem: 'balcao', corretorNome: 'Murilo',
     docsInquilino: [arquivoTeste('CNH ou RG'), arquivoTeste('Contrato assinado')],
-    garantiaNumero: 'LOFT-91007', garantiaTaxaMensalPct: 12,
+    garantiaNumero: 'LOFT-91007',
     garantiaEnviadaEm: desloca(0, -14), garantiaAssinadaEm: desloca(0, -10),
-    garantiaVigenciaFim: desloca(12), garantiaSimulada: true,
+    garantiaSimulada: true,
     contratoEnviadoEm: desloca(0, -4), contratoAssinadoEm: desloca(0, -1), contratoSimulado: true,
     vistoriaEntrada: {
       feitaEm: desloca(0, -5), feitaPor: 'Murilo', assinada: true, assinadaSimulada: true,
@@ -299,9 +299,8 @@ export async function criarDadosExemplo(imobiliariaId: string): Promise<string> 
       arquivoTeste('Fiança da Loft'),
     ],
     garantiaTipo: 'Seguro-fiança (Loft)', garantiaNumero: 'LOFT-58112',
-    garantiaTaxaMensalPct: 10, garantiaVigenciaFim: desloca(0, 40),
     garantiaEnviadaEm: desloca(-11, -8), garantiaAssinadaEm: desloca(-11, -6), garantiaSimulada: true,
-    inicio: desloca(-11), prazoMeses: 30,
+    inicio: desloca(-11), prazoMeses: 12,
     valorAluguel: 2600, valorCondominio: null, valorIptuMensal: 130, valorSeguroIncendio: 35,
     diaVencimento: 5, indiceReajuste: 'IGP-M', taxaAdmPct: 10,
     contratoEnviadoEm: desloca(-11, -5), contratoAssinadoEm: desloca(-11, -3), contratoSimulado: true,

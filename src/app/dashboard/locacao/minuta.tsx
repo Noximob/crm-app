@@ -19,7 +19,7 @@
  * garantia Loft com renovação anual, taxa só sobre o aluguel.
  */
 import React from 'react';
-import { fimContrato, fmtData, fmtValor, type Locacao, type ImovelLocacao } from '@/lib/locacao';
+import { fimContrato, fmtData, fmtValor, DADOS_IMOBILIARIA, type Locacao, type ImovelLocacao } from '@/lib/locacao';
 import { btnOuro, btnGhost } from './ui';
 
 const porExtensoMeses = (m: number | null): string =>
@@ -90,8 +90,10 @@ export default function MinutaContrato({ l, imovel, onFechar }: {
           {' '}telefone <Lacuna v={l.telefone} largura="min-w-[110px]" />, e-mail <Lacuna v={l.email} largura="min-w-[140px]" />.
         </p>
         <p className="mb-5">
-          <b>ADMINISTRADORA:</b> <b>Nox Imóveis</b>, que administra a presente locação por conta e ordem
-          do LOCADOR, nos termos do contrato de administração firmado entre as partes.
+          <b>ADMINISTRADORA:</b> <b>{DADOS_IMOBILIARIA.razao}</b>, CNPJ {DADOS_IMOBILIARIA.cnpj},
+          {' '}{DADOS_IMOBILIARIA.creci}, com sede em {DADOS_IMOBILIARIA.endereco}, que administra a
+          presente locação por conta e ordem do LOCADOR, nos termos do contrato de administração
+          firmado entre as partes.
         </p>
 
         <h2 className="font-bold text-[13px] mt-5 mb-1">Cláusula 1ª — Do imóvel</h2>
@@ -141,10 +143,10 @@ export default function MinutaContrato({ l, imovel, onFechar }: {
         <h2 className="font-bold text-[13px] mt-5 mb-1">Cláusula 5ª — Da garantia</h2>
         <p>
           A presente locação é garantida por <b>{l.garantiaTipo || 'seguro-fiança'}</b>
-          {l.garantiaNumero ? <>, contrato/apólice nº <b>{l.garantiaNumero}</b></> : null}
-          {l.garantiaVigenciaFim ? <>, com vigência até <b>{fmtData(l.garantiaVigenciaFim)}</b> e renovação anual obrigatória
-          enquanto durar a locação</> : null}, respondendo a garantidora pelos aluguéis e encargos
-          inadimplidos na forma das condições da garantia.
+          {l.garantiaNumero ? <>, apólice nº <b>{l.garantiaNumero}</b></> : null}, com vigência
+          atrelada a este contrato e renovação automática junto com ele enquanto durar a locação,
+          respondendo a garantidora pelos aluguéis e encargos inadimplidos na forma das condições
+          da garantia.
         </p>
 
         <h2 className="font-bold text-[13px] mt-5 mb-1">Cláusula 6ª — Da conservação e vistorias</h2>

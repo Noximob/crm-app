@@ -25,7 +25,7 @@
  */
 import React from 'react';
 import {
-  fmtData, fmtValor, custoTotalMensal,
+  fmtData, fmtValor, custoTotalMensal, DADOS_IMOBILIARIA,
   type ImovelLocacao, type Locacao,
 } from '@/lib/locacao';
 import { btnOuro, btnGhost, ChipsDocumentos } from './ui';
@@ -91,7 +91,9 @@ export function MinutaAdministracao({ imovel, onFechar }: { imovel: ImovelLocaca
         {' '}telefone <Lacuna v={imovel.donoTelefone} />, e-mail <Lacuna v={imovel.donoEmail} />.
       </p>
       <p className="mb-5">
-        <b>ADMINISTRADORA:</b> <b>Nox Imóveis</b>, inscrita no CRECI, doravante denominada ADMINISTRADORA.
+        <b>ADMINISTRADORA:</b> <b>{DADOS_IMOBILIARIA.razao}</b>, inscrita no CNPJ sob
+        nº {DADOS_IMOBILIARIA.cnpj}, {DADOS_IMOBILIARIA.creci}, com sede
+        em {DADOS_IMOBILIARIA.endereco}, doravante denominada ADMINISTRADORA.
       </p>
 
       <h2 className="font-bold text-[13px] mt-5 mb-1">Cláusula 1ª — Do objeto</h2>

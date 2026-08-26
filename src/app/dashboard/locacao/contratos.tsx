@@ -61,7 +61,7 @@ export default function PainelLocacao({ imobiliariaId, isEspelhoDemo, locacao, i
     'enderecoAtual', 'corretorNome',
     'inicio', 'prazoMeses', 'valorAluguel', 'valorCondominio', 'valorIptuMensal',
     'valorSeguroIncendio', 'diaVencimento', 'indiceReajuste', 'taxaAdmPct',
-    'garantiaTipo', 'garantiaNumero', 'garantiaTaxaMensalPct', 'garantiaVigenciaFim',
+    'garantiaTipo', 'garantiaNumero',
     'observacoes',
   ] as const;
 
@@ -111,7 +111,6 @@ export default function PainelLocacao({ imobiliariaId, isEspelhoDemo, locacao, i
       valorSeguroIncendio: imovel?.seguroIncendio ?? 28,
       inicio: hojeYmd(),
       garantiaNumero: `LOFT-${Math.floor(Math.random() * 90000) + 10000}`,
-      garantiaTaxaMensalPct: 10,
     }));
     showToast('Campos vazios preenchidos com dados de teste. Confira e salve.', 'info');
   };
@@ -270,10 +269,12 @@ export default function PainelLocacao({ imobiliariaId, isEspelhoDemo, locacao, i
         </div>
       </div>
 
-      {/* ——— a garantia: o que a Loft devolve depois de aprovar ——— */}
+      {/* ——— a garantia: só o que a casa precisa guardar.
+          A taxa é assunto entre a Loft e o inquilino, e a vigência
+          acompanha o contrato (anual) — nada disso se digita aqui. ——— */}
       <div className="rounded-lg border border-white/[0.06] p-3 space-y-3">
         <p className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">
-          A garantia — preenchido com o que a Loft devolve na aprovação
+          A garantia — renova sozinha junto com o contrato
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Campo rot="Tipo de garantia" largura="col-span-2">
@@ -281,9 +282,7 @@ export default function PainelLocacao({ imobiliariaId, isEspelhoDemo, locacao, i
               {GARANTIAS.map((g) => <option key={g}>{g}</option>)}
             </select>
           </Campo>
-          <Campo rot="Nº da apólice (a Loft informa)"><input className={inputCls} placeholder="LOFT-12345" value={form.garantiaNumero} onChange={(e) => f('garantiaNumero', e.target.value)} /></Campo>
-          <Campo rot="Taxa da Loft (% — o inquilino paga a ela)"><input className={inputCls} inputMode="decimal" placeholder="10" value={form.garantiaTaxaMensalPct ?? ''} onChange={(e) => f('garantiaTaxaMensalPct', num(e.target.value))} /></Campo>
-          <Campo rot="Fiança vale até (renova todo ano)" largura="col-span-2"><input type="date" className={inputCls} value={form.garantiaVigenciaFim} onChange={(e) => f('garantiaVigenciaFim', e.target.value)} /></Campo>
+          <Campo rot="Nº da apólice (a Loft informa)" largura="col-span-2"><input className={inputCls} placeholder="LOFT-12345" value={form.garantiaNumero} onChange={(e) => f('garantiaNumero', e.target.value)} /></Campo>
         </div>
       </div>
 

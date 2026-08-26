@@ -245,13 +245,10 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
    * os DOIS estiverem assinados, a locação avança sozinha pra "Tudo assinado".
    */
   const marcarFiancaAssinada = async (l: Locacao) => {
-    const v = new Date(); v.setFullYear(v.getFullYear() + 1);
     const contratoOk = !!l.contratoAssinadoEm;
     await upLocacao(l.id, {
       garantiaAssinadaEm: hojeYmd(),
       garantiaNumero: l.garantiaNumero || `LOFT-${Math.floor(Math.random() * 90000) + 10000}`,
-      garantiaTaxaMensalPct: l.garantiaTaxaMensalPct ?? 10,
-      garantiaVigenciaFim: l.garantiaVigenciaFim || ymd(v),
       garantiaSimulada: true,
       ...(contratoOk ? { etapa: 'contrato_assinado' as const } : {}),
     });
@@ -441,21 +438,6 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
       console.error(e);
       showToast('Falha ao aplicar — nada foi alterado.', 'error');
     }
-  };
-
-  const renovarGarantia = async (l: Locacao) => {
-    const base = l.garantiaVigenciaFim ? new Date(l.garantiaVigenciaFim + 'T12:00:00') : new Date();
-    if (base.getTime() < Date.now()) base.setTime(Date.now());
-    base.setFullYear(base.getFullYear() + 1);
-    const nova = ymd(base);
-    const ok = await confirmDialog({
-      title: 'Renovar a garantia por 1 ano?',
-      message: `A vigência passa para ${fmtData(nova)}. Só confirme depois que a Loft renovou de fato — garantia vencida deixa o dono descoberto.`,
-      confirmLabel: 'Renovar',
-    });
-    if (!ok) return;
-    await upLocacao(l.id, { garantiaVigenciaFim: nova, garantiaSimulada: true });
-    showToast(`⚡ Garantia renovada até ${fmtData(nova)}.`, 'success');
   };
 
   const resolverChamado = async (c: Chamado) => {
@@ -732,7 +714,20 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
           recarregar={recarregar} onFechar={fechar} />;
       }
       if (p === 'loft') return <PacoteLoft locacao={l} imovel={im} onFechar={fechar} />;
-      if (p === 'minuta') return <MinutaContrato l={l} imovel={im} onFechar={fechar} />;
+      // o ENVELOPE: contrato + laudo empilhados, como vão pra assinatura
+      if (p === 'minuta') {
+        return (
+          <div className="space-y-3">
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">
+              O envelope da assinatura — o contrato e o laudo viajam juntos, num envio só da ClickSign
+            </p>
+            <MinutaContrato l={l} imovel={im} onFechar={fechar} />
+            {l.vistoriaEntrada
+              ? <LaudoVistoria locacao={l} imovel={im} tipo="entrada" onFechar={fechar} />
+              : <p className="text-[11.5px] text-amber-300">O laudo entra aqui assim que a vistoria for feita.</p>}
+          </div>
+        );
+      }
       if (p === 'laudo' && l.vistoriaEntrada) return <LaudoVistoria locacao={l} imovel={im} tipo="entrada" onFechar={fechar} />;
       if (p === 'portalDonoLoc') {
         return (
@@ -1125,7 +1120,6 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
                 {alertas.map((a, n) => (
                   <div key={n} className={`flex flex-wrap items-center gap-2 mt-2 rounded-lg px-3 py-1.5 ${a.grave ? 'bg-rose-500/10 border border-rose-500/30' : 'bg-amber-500/[0.07] border border-amber-500/20'}`}>
                     <p className={`text-[11.5px] font-bold flex-1 min-w-[200px] ${a.grave ? 'text-rose-300' : 'text-amber-300'}`}>{a.grave ? '🚨' : '⚠'} {a.texto}</p>
-                    {a.tipo === 'garantia' && <button onClick={() => renovarGarantia(l)} className={btnSimula + ' !py-1 !text-[10.5px] shrink-0'}>⚡ renovar 1 ano</button>}
                     {a.tipo === 'vigencia' && <button onClick={() => abrir(l.id, 'dados')} className={btnGhost + ' !py-1 !text-[10.5px] shrink-0'}>renovar ou encerrar</button>}
                     {a.tipo === 'reajuste' && (reajustando === l.id ? (
                       <span className="flex items-center gap-1.5 shrink-0">
@@ -1144,8 +1138,11 @@ export default function SetorLocacao({ funil, buscaInicial = '', novoLeadImovelI
                   {zap && <a href={zap} target="_blank" rel="noreferrer" className="px-2.5 py-1 rounded-xl text-[11px] font-bold border border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-300">💬 inquilino</a>}
                   <button onClick={() => abrir(l.id, 'dados')} className={btnGhost + ' !py-1 !text-[11px]'}>📄 dados e contrato</button>
                   <button onClick={() => abrir(l.id, 'loft')} className={btnGhost + ' !py-1 !text-[11px]'}>🛡 ficha da Loft ({l.docsInquilino.length})</button>
-                  {l.vistoriaEntrada && <button onClick={() => abrir(l.id, 'laudo')} className={btnGhost + ' !py-1 !text-[11px]'}>📋 laudo</button>}
-                  {ETAPAS_LOCACAO[l.etapa].n >= 4 && ETAPAS_LOCACAO[l.etapa].n <= 8 && <button onClick={() => abrir(l.id, 'minuta')} className={btnGhost + ' !py-1 !text-[11px]'}>📜 contrato</button>}
+                  {ETAPAS_LOCACAO[l.etapa].n >= 4 && ETAPAS_LOCACAO[l.etapa].n <= 8 && (
+                    <button onClick={() => abrir(l.id, 'minuta')} className={btnGhost + ' !py-1 !text-[11px]'}>
+                      📜 contrato{l.vistoriaEntrada ? ' + laudo' : ''}
+                    </button>
+                  )}
                   {ETAPAS_LOCACAO[l.etapa].n >= 7 && (
                     <>
                       <button onClick={() => abrir(l.id, 'extrato')} className={btnGhost + ' !py-1 !text-[11px]'}>💰 extrato ({movs.length})</button>

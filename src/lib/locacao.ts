@@ -372,8 +372,11 @@ export interface Locacao {
 
   // ——— a garantia (com a Loft) ———
   garantiaTipo: string;
+  /** nº da apólice que a Loft devolve na aprovação — sai no contrato */
   garantiaNumero: string;
+  /** legado — a taxa é assunto entre a Loft e o inquilino, não se digita aqui */
   garantiaTaxaMensalPct: number | null;
+  /** legado — a fiança renova junto com o contrato, não tem data própria */
   garantiaVigenciaFim: string;
   garantiaEnviadaEm: string;
   garantiaAssinadaEm: string;
@@ -411,7 +414,7 @@ export const LOCACAO_VAZIA: Omit<Locacao, 'id' | 'imobiliariaId'> = {
   enderecoAtual: '', docsInquilino: [], origem: 'manual', temperatura: '', mensagem: '', corretorNome: '',
   garantiaTipo: 'Seguro-fiança (Loft)', garantiaNumero: '', garantiaTaxaMensalPct: null,
   garantiaVigenciaFim: '', garantiaEnviadaEm: '', garantiaAssinadaEm: '', garantiaSimulada: false,
-  inicio: '', prazoMeses: 30, valorAluguel: null, valorCondominio: null,
+  inicio: '', prazoMeses: 12, valorAluguel: null, valorCondominio: null,
   valorIptuMensal: null, valorSeguroIncendio: null, diaVencimento: 5,
   indiceReajuste: 'IGP-M', taxaAdmPct: 10,
   contratoEnviadoEm: '', contratoAssinadoEm: '', contratoSimulado: false, reajustes: [],
@@ -479,6 +482,23 @@ export interface Movimento {
   simulado: boolean;
   criadoEm?: unknown;
 }
+
+/**
+ * OS DADOS DA IMOBILIÁRIA NOS PAPÉIS — de mentira, e com cara de mentira.
+ *
+ * O gestor ainda não passou CNPJ, CRECI e endereço da Nox; os contratos
+ * precisam deles pra ele VER o documento 100% preenchido. Quando vierem os
+ * reais, troca-se AQUI e todos os papéis (administração, locação, laudo)
+ * atualizam juntos.
+ */
+export const DADOS_IMOBILIARIA = {
+  razao: 'Nox Imóveis Ltda.',
+  cnpj: '00.000.000/0001-00 (preencher)',
+  creci: 'CRECI/SC 00000-J (preencher)',
+  endereco: 'Av. Eugênio Krause, 100, Centro, Penha/SC (preencher)',
+  telefone: '(47) 90000-0000',
+  email: 'contato@noximobiliaria.com.br',
+} as const;
 
 /** Dinheiro nunca fica com fração de centavo. */
 export const cents = (v: number): number => Math.round(v * 100) / 100;
@@ -771,17 +791,14 @@ export function alertasDoImovel(i: ImovelLocacao, interessados: number): AlertaI
   return out;
 }
 
-export interface Alerta { tipo: 'garantia' | 'reajuste' | 'vigencia' | 'chamado'; texto: string; grave: boolean }
+export interface Alerta { tipo: 'reajuste' | 'vigencia' | 'chamado'; texto: string; grave: boolean }
 
 export function alertasDaLocacao(l: Locacao): Alerta[] {
   if (l.etapa !== 'ativa') return [];
   const out: Alerta[] = [];
 
-  const dg = diasAte(l.garantiaVigenciaFim);
-  if (l.garantiaVigenciaFim && dg !== null) {
-    if (dg < 0) out.push({ tipo: 'garantia', grave: true, texto: `Garantia VENCIDA há ${-dg} dias — o dono está descoberto. Renovar com a Loft agora.` });
-    else if (dg <= 45) out.push({ tipo: 'garantia', grave: dg <= 15, texto: `Garantia vence em ${dg} dias (${fmtData(l.garantiaVigenciaFim)}) — renovar com a Loft.` });
-  }
+  // a fiança da Loft não tem relógio próprio: ela renova junto com o
+  // contrato, então o alerta de fim de vigência (abaixo) já cobre as duas
 
   const rj = proximoReajuste(l);
   const dr = diasAte(rj);
@@ -1224,7 +1241,7 @@ export const INQUILINO_TESTE: Partial<Locacao> = {
     arquivoTeste('Comprovante de renda'),
     arquivoTeste('Comprovante de endereço'),
   ],
-  prazoMeses: 30, diaVencimento: 5, indiceReajuste: 'IGP-M', taxaAdmPct: 10,
+  prazoMeses: 12, diaVencimento: 5, indiceReajuste: 'IGP-M', taxaAdmPct: 10,
   garantiaTipo: 'Seguro-fiança (Loft)',
 };
 
