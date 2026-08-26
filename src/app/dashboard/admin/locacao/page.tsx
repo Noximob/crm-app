@@ -622,7 +622,13 @@ export default function LocacaoPage() {
   };
   const limpar = async () => {
     if (!imobiliariaId) return;
-    const ok = await confirmDialog({ title: 'Apagar os exemplos?', message: 'Remove só o que tem a marca de exemplo.', confirmLabel: 'Apagar', danger: true });
+    // ARMADILHA: quem usa um exemplo como ponto de partida e edita por cima
+    // continua com a marca de exemplo — e some aqui junto com os outros.
+    const ok = await confirmDialog({
+      title: 'Apagar os exemplos?',
+      message: 'Remove tudo que foi criado pelo botão 🧪 exemplos.\n\nATENÇÃO: se você editou um exemplo e transformou num imóvel ou locação de verdade, ele ainda carrega a marca e vai ser apagado junto. Nesses casos, capte de novo do zero.',
+      confirmLabel: 'Apagar os exemplos', danger: true,
+    });
     if (!ok) return;
     showToast(`${await apagarDadosExemplo(imobiliariaId)} registros apagados.`, 'info');
     recarregar();
