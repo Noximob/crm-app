@@ -225,6 +225,32 @@ export const IMOVEL_VAZIO: Omit<ImovelLocacao, 'id' | 'imobiliariaId'> = {
 };
 
 /** O que falta para o imóvel andar de etapa — a lista que a tela mostra. */
+/**
+ * AS LACUNAS DO CONTRATO DE CAPTAÇÃO.
+ *
+ * O contrato de administração é montado do cadastro: cada dado que falta
+ * vira uma linha pontilhada no papel. Antes o gestor só descobria isso
+ * abrindo o documento e lendo cláusula por cláusula. Agora a tela diz de
+ * fora quantas lacunas restam — e quais — antes de mandar pro dono assinar.
+ *
+ * Ordem igual à do papel, pra quem for preencher achar rápido.
+ */
+export function lacunasAdministracao(i: Omit<ImovelLocacao, 'id' | 'imobiliariaId'>): string[] {
+  const falta: string[] = [];
+  if (!i.donoNome.trim()) falta.push('nome do proprietário');
+  if (!i.donoEstadoCivil.trim()) falta.push('estado civil do dono');
+  if (!i.donoProfissao.trim()) falta.push('profissão do dono');
+  if (!i.donoDoc.trim()) falta.push('CPF/CNPJ do dono');
+  if (!i.donoRg.trim()) falta.push('RG do dono');
+  if (!i.donoEndereco.trim()) falta.push('endereço do dono');
+  if (!i.donoTelefone.trim()) falta.push('telefone do dono');
+  if (!i.donoEmail.trim()) falta.push('e-mail do dono');
+  if (!i.rua.trim() || !i.bairro.trim() || !i.cidade.trim()) falta.push('endereço do imóvel');
+  if (!i.aluguel) falta.push('valor do aluguel');
+  if (!i.donoPix.trim()) falta.push('chave PIX do repasse');
+  return falta;
+}
+
 export function pendenciasImovel(i: Omit<ImovelLocacao, 'id' | 'imobiliariaId'>): Record<string, string[]> {
   const p: Record<string, string[]> = { docs: [], adm: [], material: [] };
   const R = REGRAS_PORTAIS;

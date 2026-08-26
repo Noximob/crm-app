@@ -25,7 +25,7 @@
  */
 import React from 'react';
 import {
-  fmtData, fmtValor, custoTotalMensal, DADOS_IMOBILIARIA,
+  fmtData, fmtValor, custoTotalMensal, lacunasAdministracao, DADOS_IMOBILIARIA,
   type ImovelLocacao, type Locacao,
 } from '@/lib/locacao';
 import { btnOuro, btnGhost, ChipsDocumentos } from './ui';
@@ -81,9 +81,22 @@ const enderecoDoImovel = (i?: ImovelLocacao) => i
 
 export function MinutaAdministracao({ imovel, onFechar }: { imovel: ImovelLocacao; onFechar: () => void }) {
   const pct = imovel.taxaAdmPct ?? 10;
+  // "vai conseguir preencher com os dados que já tem?" — a resposta, de fora
+  const falta = lacunasAdministracao(imovel);
   return (
     <Papel titulo="Contrato de Administração de Imóvel"
       aviso="Minuta gerada do cadastro — vai pro WhatsApp do dono pela ClickSign" onFechar={onFechar}>
+      <div className={`no-print mb-5 rounded-lg border px-3 py-2 ${falta.length
+        ? 'border-amber-400 bg-amber-50 text-amber-900' : 'border-emerald-500 bg-emerald-50 text-emerald-900'}`}>
+        {falta.length ? (
+          <p className="text-[11px] leading-relaxed">
+            <b>{falta.length} {falta.length === 1 ? 'lacuna' : 'lacunas'} em branco</b> — o resto o sistema
+            preencheu do cadastro. Falta: {falta.join(', ')}. As linhas pontilhadas abaixo mostram onde.
+          </p>
+        ) : (
+          <p className="text-[11px]"><b>✓ Contrato completo</b> — todos os dados do cadastro entraram. Pode mandar pra assinatura.</p>
+        )}
+      </div>
       <p className="mb-3">
         <b>PROPRIETÁRIO:</b> <Lacuna v={imovel.donoNome} />, <Lacuna v={imovel.donoEstadoCivil} />,
         {' '}<Lacuna v={imovel.donoProfissao} />, portador do CPF/CNPJ nº <Lacuna v={imovel.donoDoc} /> e

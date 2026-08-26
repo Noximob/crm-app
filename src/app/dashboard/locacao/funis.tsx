@@ -37,7 +37,7 @@ import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   ETAPAS_IMOVEL, ETAPAS_LOCACAO, IMOVEL_VAZIO, LOCACAO_VAZIA,
   DOCS_INQUILINO, ITENS_VISTORIA, LOCAIS_VISTORIA, PORTAIS, STATUS_CHAMADO,
-  pendenciasImovel, pendenciasLocacao, alertasDaLocacao, alertasDoImovel, totalInquilino,
+  pendenciasImovel, lacunasAdministracao, pendenciasLocacao, alertasDaLocacao, alertasDoImovel, totalInquilino,
   gerarMovimentos, calcularReajuste,
   portalDoImovel, portalDaLocacao, gerarFeedVrsync, imoveisNoFeed, imoveisForaDoFeed,
   pacoteCowork, arquivoTeste, cents, diasAte, ymd,
@@ -52,6 +52,7 @@ import CartaoImovel from './cartaoImovel';
 import PainelLocacao from './contratos';
 import MinutaContrato from './minuta';
 import { MinutaAdministracao, LaudoVistoria, PacoteLoft } from './documentos';
+import { LinhaImovel, LinhaLocacao } from './linhas';
 import { criarDadosExemplo, apagarDadosExemplo } from './demo';
 
 type Funil = 'imoveis' | 'locacoes';
@@ -90,6 +91,34 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
   const [horaEntrega, setHoraEntrega] = useState('10:00');
   const [reajustando, setReajustando] = useState<string | null>(null);
   const [pctReajuste, setPctReajuste] = useState('');
+  /**
+   * A ESCALA. Com 5 imóveis a lista de cartões é ótima; com 80 vira um
+   * rolo de scroll onde ninguém acha nada. Daí três coisas:
+   *   · MINHA VEZ    esconde quem está esperando terceiros (dono, Loft,
+   *                  portais) e deixa só o que trava na nossa mão;
+   *   · ORDEM        urgência é o padrão, mas às vezes se procura por nome
+   *                  ou por código, e aí ordem alfabética acha mais rápido;
+   *   · COMPACTO     uma linha por registro, com o botão da vez ainda ali.
+   *                  Liga sozinho acima de 10 — antes disso cartão é melhor.
+   * A escolha de compacto fica guardada no navegador de quem usa.
+   */
+  const [soMinhaVez, setSoMinhaVez] = useState(false);
+  const [ordem, setOrdem] = useState<'urgencia' | 'nome' | 'valor'>('urgencia');
+  const [compactoManual, setCompactoManual] = useState<boolean | null>(null);
+  const [expandido, setExpandido] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    try {
+      const v = localStorage.getItem('locacao.compacto.' + funil);
+      if (v === '1' || v === '0') setCompactoManual(v === '1');
+    } catch { /* navegador sem storage */ }
+  }, [funil]);
+
+  const trocarDensidade = (v: boolean) => {
+    setCompactoManual(v);
+    setExpandido(null);
+    try { localStorage.setItem('locacao.compacto.' + funil, v ? '1' : '0'); } catch { /* ok */ }
+  };
 
 
   const guarda = () => { if (isEspelhoDemo) { showToast('Modo demonstração.', 'info'); return true; } return false; };
@@ -459,13 +488,32 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
     return c;
   }, [locacoes]);
 
+  /** A bola está com a CASA? — etapa nossa, ou alerta aceso. */
+  const imovelMinhaVez = useCallback((i: ImovelLocacao) =>
+    (ETAPAS_IMOVEL[i.etapa]?.comQuem === 'nós' && i.etapa !== 'pausado')
+    || alertasDoImovel(i, interessadosDe(i.id).length).length > 0,
+  [alertasDoImovel, interessadosDe]);
+
+  const locacaoMinhaVez = useCallback((l: Locacao) =>
+    ETAPAS_LOCACAO[l.etapa]?.comQuem === 'nós'
+    || alertasDaLocacao(l).length > 0
+    || chamadosDe(l.id).length > 0
+    || movsDe(l.id).some((m) => m.statusCobranca !== 'paga' && m.vencimento < hojeYmd()),
+  [alertasDaLocacao, chamadosDe, movsDe]);
+
   const imoveisVisiveis = useMemo(() => {
     const b = busca.trim().toLowerCase();
     return imoveis
       .filter((i) => (!etapaSel || i.etapa === etapaSel))
+      .filter((i) => !soMinhaVez || imovelMinhaVez(i))
       .filter((i) => !b || [i.codigo, i.titulo, i.bairro, i.donoNome].filter(Boolean).join(' ').toLowerCase().includes(b))
-      .sort((a, b2) => (ETAPAS_IMOVEL[a.etapa]?.n ?? 9) - (ETAPAS_IMOVEL[b2.etapa]?.n ?? 9));
-  }, [imoveis, etapaSel, busca]);
+      .sort((a, b2) => {
+        if (ordem === 'nome') return (a.titulo || '').localeCompare(b2.titulo || '');
+        if (ordem === 'valor') return (b2.aluguel || 0) - (a.aluguel || 0);
+        return (ETAPAS_IMOVEL[a.etapa]?.n ?? 9) - (ETAPAS_IMOVEL[b2.etapa]?.n ?? 9)
+          || (a.codigo || '').localeCompare(b2.codigo || '');
+      });
+  }, [imoveis, etapaSel, busca, soMinhaVez, imovelMinhaVez, ordem]);
 
   const locacoesVisiveis = useMemo(() => {
     const b = busca.trim().toLowerCase();
@@ -479,11 +527,23 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
         const im = imoveis.find((x) => x.id === l.imovelId);
         return [l.nome, l.telefone, im?.codigo || '', im?.titulo || ''].filter(Boolean).join(' ').toLowerCase().includes(b);
       })
+      .filter((l) => !soMinhaVez || locacaoMinhaVez(l))
       .sort((a, b2) => {
+        if (ordem === 'nome') return (a.nome || '').localeCompare(b2.nome || '');
+        if (ordem === 'valor') return (b2.valorAluguel || 0) - (a.valorAluguel || 0);
         const urgente = (l: Locacao) => (chamadosDe(l.id).length || alertasDaLocacao(l).length ? 0 : 1);
         return urgente(a) - urgente(b2) || (ETAPAS_LOCACAO[a.etapa]?.n ?? 99) - (ETAPAS_LOCACAO[b2.etapa]?.n ?? 99);
       });
-  }, [locacoes, etapaSel, busca, imoveis, verArquivadas, chamadosDe]);
+  }, [locacoes, etapaSel, busca, imoveis, verArquivadas, chamadosDe, soMinhaVez, locacaoMinhaVez, ordem, alertasDaLocacao]);
+
+  /** Quantos estão na nossa mão AGORA — o número do chip do filtro. */
+  const quantosMinhaVez = useMemo(() => funil === 'imoveis'
+    ? imoveis.filter(imovelMinhaVez).length
+    : locacoes.filter((l) => l.etapa !== 'interessado' && l.etapa !== 'encerrada' && l.etapa !== 'perdida').filter(locacaoMinhaVez).length,
+  [funil, imoveis, locacoes, imovelMinhaVez, locacaoMinhaVez]);
+
+  const listados = funil === 'imoveis' ? imoveisVisiveis.length : locacoesVisiveis.length;
+  const compacto = compactoManual ?? listados > 10;
 
   const temDemo = useMemo(
     () => imoveis.some((x) => (x as { demo?: boolean }).demo) || locacoes.some((x) => (x as { demo?: boolean }).demo),
@@ -538,7 +598,12 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
 
   // ═══════════════ o botão de cada etapa ═══════════════
 
-  const acaoImovel = (i: ImovelLocacao): React.ReactNode => {
+  /**
+   * @param so1 no modo lista só o botão DA VEZ aparece. Uma linha com três
+   *   botões quebra em três alturas diferentes e a lista perde a régua —
+   *   e, de todo modo, o secundário é coisa de quem já abriu o cartão.
+   */
+  const acaoImovel = (i: ImovelLocacao, so1 = false): React.ReactNode => {
     switch (i.etapa) {
       case 'captado':
         // completou a papelada no painel → avança sozinho pra "Papelada OK"
@@ -546,8 +611,14 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
       case 'docs_dono':
         return (
           <span className="flex flex-wrap gap-1.5">
-            <button onClick={() => enviarAdm(i)} className={btnOuro}>✍ Enviar administração</button>
-            <button onClick={() => abrir(i.id, 'adm')} className={btnGhost}>ver o contrato</button>
+            <button onClick={() => enviarAdm(i)} className={btnOuro}>✍ Enviar pra assinatura</button>
+            {/* MESMO rótulo do chip lá de baixo, de propósito: dois nomes
+                diferentes pro mesmo papel foi o que confundiu. */}
+            {!so1 && <button onClick={() => abrir(i.id, 'adm')} className={btnGhost}>
+              📜 contrato de captação{lacunasAdministracao(i).length > 0 && (
+                <span className="text-amber-300 font-bold"> · {lacunasAdministracao(i).length} lacunas</span>
+              )}
+            </button>}
           </span>
         );
       case 'adm_enviada':
@@ -561,7 +632,7 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
         return (
           <span className="flex flex-wrap gap-1.5">
             <button onClick={() => publicar(i)} className={btnOuro}>📣 Publicar</button>
-            <button onClick={() => abrir(i.id, 'material')} className={btnGhost}>reabrir o anúncio</button>
+            {!so1 && <button onClick={() => abrir(i.id, 'material')} className={btnGhost}>reabrir o anúncio</button>}
           </span>
         );
       case 'publicado': {
@@ -572,25 +643,30 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
         return (
           <span className="flex flex-wrap gap-1.5">
             {quebrado && <button onClick={() => abrir(i.id, 'material')} className={btnOuro}>📸 Corrigir o anúncio</button>}
-            <button onClick={novo} className={quebrado ? btnGhost : btnOuro}>+ Interessado</button>
-            <button onClick={() => upImovel(i.id, { etapa: 'pausado' })} className={btnGhost}>⏸ tirar do ar</button>
+            {!(so1 && quebrado) && <button onClick={novo} className={quebrado ? btnGhost : btnOuro}>+ Interessado</button>}
+            {!so1 && <button onClick={() => upImovel(i.id, { etapa: 'pausado' })} className={btnGhost}>⏸ tirar do ar</button>}
           </span>
         );
       }
-      case 'alugado':
-        return <span className="text-[11.5px] text-text-secondary">alugado — acompanhe no funil das locações</span>;
+      case 'alugado': {
+        const morador = inquilinoDe(i.id);
+        const irPraLocacao = () => router.push('/dashboard/locacao/locacoes/?busca=' + encodeURIComponent(morador?.nome || ''));
+        return so1
+          ? <button onClick={irPraLocacao} className={btnGhost}>🔑 ver locação →</button>
+          : <span className="text-[11.5px] text-text-secondary">alugado — acompanhe no funil das locações</span>;
+      }
       default:
         return <button onClick={() => upImovel(i.id, { etapa: 'publicado' })} className={btnOuro}>▶ Voltar ao ar</button>;
     }
   };
 
-  const acaoLocacao = (l: Locacao): React.ReactNode => {
+  const acaoLocacao = (l: Locacao, so1 = false): React.ReactNode => {
     const movs = movsDe(l.id);
     switch (l.etapa) {
       case 'docs_inquilino':
         return (
           <span className="flex flex-wrap items-center gap-1.5">
-            <span className="inline-flex items-center">
+            <span className={`inline-flex items-center ${so1 ? 'hidden' : ''}`}>
               <select value={catDocInq} onChange={(e) => setCatDocInq(e.target.value)}
                 className="px-2 py-2 rounded-l-xl border border-white/10 bg-white/[0.04] text-[11px] text-text-secondary focus:outline-none">
                 {DOCS_INQUILINO.map((x) => <option key={x}>{x}</option>)}
@@ -601,7 +677,7 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
                   onChange={(e) => { anexarInquilino(l, catDocInq, e.target.files); e.currentTarget.value = ''; }} />
               </label>
             </span>
-            <button onClick={() => upLocacao(l.id, { docsInquilino: [...l.docsInquilino, arquivoTeste(catDocInq)] })} className={btnSimula}>🧪</button>
+            {!so1 && <button onClick={() => upLocacao(l.id, { docsInquilino: [...l.docsInquilino, arquivoTeste(catDocInq)] })} className={btnSimula}>🧪</button>}
             <button onClick={() => mandarPraLoft(l)} className={btnOuro}>🛡 Mandar pra Loft</button>
           </span>
         );
@@ -609,7 +685,7 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
         return (
           <span className="flex flex-wrap gap-1.5">
             <button onClick={() => respostaLoft(l, true)} className={btnSimula}>⚡ Loft aprovou</button>
-            <button onClick={() => respostaLoft(l, false)} className={btnSimula}>⚡ recusou</button>
+            {!so1 && <button onClick={() => respostaLoft(l, false)} className={btnSimula}>⚡ recusou</button>}
           </span>
         );
       // aprovou → a fiança JÁ está com o inquilino; a bola é nossa: vistoria
@@ -621,7 +697,7 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
               ? <button onClick={() => abrirVistoria(l)} className={btnOuro}>📋 Fazer a vistoria</button>
               : <>
                   <button onClick={() => enviarContrato(l)} className={btnOuro}>✍ Disparar contrato + laudo</button>
-                  <button onClick={() => abrirVistoria(l)} className={btnGhost}>rever vistoria</button>
+                  {!so1 && <button onClick={() => abrirVistoria(l)} className={btnGhost}>rever vistoria</button>}
                 </>}
           </span>
         );
@@ -631,7 +707,9 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
         return (
           <span className="flex flex-wrap gap-1.5">
             {!l.garantiaAssinadaEm && <button onClick={() => marcarFiancaAssinada(l)} className={btnSimula}>⚡ Fiança assinada</button>}
-            {!l.contratoAssinadoEm && <button onClick={() => marcarContratoAssinado(l)} className={btnSimula}>⚡ Nosso contrato assinado</button>}
+            {!l.contratoAssinadoEm && (!so1 || !!l.garantiaAssinadaEm) && (
+              <button onClick={() => marcarContratoAssinado(l)} className={btnSimula}>⚡ {so1 ? 'Contrato assinado' : 'Nosso contrato assinado'}</button>
+            )}
           </span>
         );
       case 'contrato_assinado':
@@ -644,7 +722,9 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
             <button onClick={() => setEntregando(null)} className={btnGhost}>×</button>
           </span>
         ) : (
-          <button onClick={() => { setEntregando(l.id); setDataEntrega(hojeYmd()); setHoraEntrega('10:00'); }} className={btnOuro}>🔑 Marcar a entrega das chaves</button>
+          <button onClick={() => { setEntregando(l.id); setExpandido(l.id); setDataEntrega(hojeYmd()); setHoraEntrega('10:00'); }} className={btnOuro}>
+            🔑 {so1 ? 'Entregar as chaves' : 'Marcar a entrega das chaves'}
+          </button>
         );
       case 'ativa': {
         const lib = movs.filter((m) => m.statusRepasse === 'liberado').length;
@@ -661,7 +741,7 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
                 confirmLabel: 'Iniciar a saída',
               });
               if (ok) upLocacao(l.id, { etapa: 'encerrando' });
-            }} className={btnGhost}>↪ saída</button>
+            }} className={`${btnGhost} ${so1 ? 'hidden' : ''}`}>↪ saída</button>
           </span>
         );
       }
@@ -980,6 +1060,51 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
           )}
         </div>
 
+        {/* A BARRA DA LISTA — o que muda quando a lista cresce.
+            Fica escondida enquanto há poucos registros: com 4 imóveis não há
+            nada pra filtrar, e um filtro à toa só ocupa tela. */}
+        {(listados > 6 || soMinhaVez || compactoManual !== null) && (
+          <div className="flex flex-wrap items-center gap-2 -mt-1">
+            <button onClick={() => setSoMinhaVez((v) => !v)}
+              className={soMinhaVez
+                ? 'px-3 py-1.5 rounded-xl text-[11.5px] font-bold border border-[#E8C547]/50 bg-[#E8C547]/15 text-[#FFE9A6]'
+                : btnGhost + ' !py-1.5 !text-[11.5px]'}
+              title="esconde quem está esperando o dono, a Loft ou os portais">
+              🔔 minha vez ({quantosMinhaVez})
+            </button>
+
+            <span className="inline-flex items-center gap-1.5">
+              <span className="text-[11px] text-text-secondary">ordenar</span>
+              <select value={ordem} onChange={(e) => setOrdem(e.target.value as typeof ordem)}
+                className="px-2 py-1.5 rounded-xl border border-white/10 bg-white/[0.04] text-[11.5px] text-white/85 focus:outline-none focus:ring-2 focus:ring-[#E8C547]/40">
+                <option value="urgencia">pela etapa (urgência)</option>
+                <option value="nome">{funil === 'imoveis' ? 'por imóvel (A→Z)' : 'por inquilino (A→Z)'}</option>
+                <option value="valor">pelo aluguel (maior→menor)</option>
+              </select>
+            </span>
+
+            <span className="ml-auto inline-flex rounded-xl border border-white/10 overflow-hidden">
+              {([[false, '▦ cartões'], [true, '▤ lista']] as const).map(([v, rot]) => (
+                <button key={rot} onClick={() => trocarDensidade(v)}
+                  className={`px-2.5 py-1.5 text-[11.5px] font-bold transition-colors ${compacto === v
+                    ? 'bg-[#E8C547]/15 text-[#FFE9A6]' : 'text-text-secondary hover:text-white hover:bg-white/[0.06]'}`}>
+                  {rot}
+                </button>
+              ))}
+            </span>
+          </div>
+        )}
+
+        {soMinhaVez && listados === 0 && (
+          <div className="al-card p-6 text-center">
+            <p className="text-[14px] font-bold text-emerald-300">✓ Nada esperando por você aqui.</p>
+            <p className="text-[12.5px] text-text-secondary mt-1">
+              Tudo que resta está com o dono, a Loft ou os portais.
+              <button onClick={() => setSoMinhaVez(false)} className="ml-2 text-[#E8C547] font-bold">ver todos</button>
+            </p>
+          </div>
+        )}
+
         {/* captar imóvel — nasce no mesmo lugar em que o interessado nasce */}
         {novoImovel && funil === 'imoveis' && (
           <div className="al-card p-4">
@@ -993,6 +1118,16 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
         {funil === 'imoveis' && imoveisVisiveis.map((i) => {
           const naFila = interessadosDe(i.id);
           const morador = inquilinoDe(i.id);
+          const d = ETAPAS_IMOVEL[i.etapa];
+          const alertas = alertasDoImovel(i, naFila.length);
+          // painel aberto força o cartão inteiro: ninguém edita numa linha
+          const cheio = !compacto || expandido === i.id || aberto?.id === i.id;
+
+          if (!cheio) return (
+            <LinhaImovel key={i.id} i={i} alertas={alertas} minhaVez={imovelMinhaVez(i)}
+              acao={acaoImovel(i, true)} onAbrir={() => setExpandido(i.id)} />
+          );
+
           return (
             <CartaoImovel
               key={i.id}
@@ -1008,6 +1143,7 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
               onVerFila={() => router.push('/dashboard/locacao/crm/?imovel=' + encodeURIComponent(i.codigo))}
               onCopiarCowork={() => copiarCowork(i)}
               onExcluir={() => excluirImovel(i)}
+              onRecolher={compacto && expandido === i.id && !aberto ? () => setExpandido(null) : undefined}
             />
           );
         })}
@@ -1023,6 +1159,13 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
           const pendLoc = pendenciasLocacao(l);
           const zap = linkWhats(l.telefone, `Olá ${(l.nome || '').split(' ')[0]}! Aqui é da Nox Imóveis.`);
           const nossaVez = d?.comQuem === 'nós' || alertas.length > 0 || chs.length > 0 || atrasadas.length > 0;
+          const cheio = !compacto || expandido === l.id || aberto?.id === l.id;
+
+          if (!cheio) return (
+            <LinhaLocacao key={l.id} l={l} imovel={im} atrasadas={atrasadas.length} chamados={chs.length}
+              alertas={alertas} minhaVez={nossaVez} acao={acaoLocacao(l, true)} onAbrir={() => setExpandido(l.id)} />
+          );
+
           return (
             <div key={l.id} className={`al-card relative overflow-hidden ${nossaVez ? 'ring-1 ring-[#E8C547]/25' : ''}`}>
               {nossaVez && <div className="absolute inset-x-0 top-0 gx-line-gold" />}
@@ -1060,7 +1203,12 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
                       </p>
                     )}
                   </div>
-                  <div className="shrink-0">{acaoLocacao(l)}</div>
+                  <div className="shrink-0 flex items-center gap-1.5">
+                    {acaoLocacao(l)}
+                    {compacto && expandido === l.id && !aberto && (
+                      <button onClick={() => setExpandido(null)} className={btnGhost + ' !py-1 !px-2 !text-[11px]'} title="recolher">▴</button>
+                    )}
+                  </div>
                 </div>
 
                 {pendLoc.length > 0 && (
@@ -1104,7 +1252,7 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
 
                 <div className="flex flex-wrap gap-1.5 mt-2.5">
                   {zap && <a href={zap} target="_blank" rel="noreferrer" className="px-2.5 py-1 rounded-xl text-[11px] font-bold border border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-300">💬 inquilino</a>}
-                  <button onClick={() => abrir(l.id, 'dados')} className={btnGhost + ' !py-1 !text-[11px]'}>📄 dados e contrato</button>
+                  <button onClick={() => abrir(l.id, 'dados')} className={btnGhost + ' !py-1 !text-[11px]'}>✏️ editar</button>
                   {/* a papelada travou? o caso volta pro corretor em vez de
                       apodrecer numa etapa — só antes da chave */}
                   {ETAPAS_LOCACAO[l.etapa].n >= 2 && ETAPAS_LOCACAO[l.etapa].n <= 6 && (
@@ -1113,17 +1261,20 @@ export default function SetorLocacao({ funil, buscaInicial = '' }: {
                       ↩ voltar pro CRM
                     </button>
                   )}
-                  <button onClick={() => abrir(l.id, 'loft')} className={btnGhost + ' !py-1 !text-[11px]'}>🛡 ficha da Loft ({l.docsInquilino.length})</button>
-                  {ETAPAS_LOCACAO[l.etapa].n >= 4 && ETAPAS_LOCACAO[l.etapa].n <= 8 && (
-                    <button onClick={() => abrir(l.id, 'minuta')} className={btnGhost + ' !py-1 !text-[11px]'}>
-                      📜 contrato{l.vistoriaEntrada ? ' + laudo' : ''}
+                  <button onClick={() => abrir(l.id, 'loft')} className={btnGhost + ' !py-1 !text-[11px]'}>🛡 Loft ({l.docsInquilino.length})</button>
+                  {/* O CONTRATO DE LOCAÇÃO fica legível ATÉ O FIM: quem está
+                      morando também pergunta o que assinou, e antes o botão
+                      sumia justo em quem tem contrato pra ler. */}
+                  {ETAPAS_LOCACAO[l.etapa].n >= 4 && (
+                    <button onClick={() => abrir(l.id, 'minuta')} className={btnGhost + ' !py-1 !text-[11px] !text-[#FFE9A6] !border-[#E8C547]/30'}>
+                      📜 contrato de locação{l.vistoriaEntrada ? ' + laudo' : ''}
                     </button>
                   )}
                   {ETAPAS_LOCACAO[l.etapa].n >= 7 && (
                     <>
                       <button onClick={() => abrir(l.id, 'extrato')} className={btnGhost + ' !py-1 !text-[11px]'}>💰 extrato ({movs.length})</button>
-                      <button onClick={() => abrir(l.id, 'portalInq')} className={btnGhost + ' !py-1 !text-[11px]'}>👁 portal do inquilino</button>
-                      <button onClick={() => abrir(l.id, 'portalDonoLoc')} className={btnGhost + ' !py-1 !text-[11px]'}>👁 portal do dono</button>
+                      <button onClick={() => abrir(l.id, 'portalInq')} className={btnGhost + ' !py-1 !text-[11px]'}>👁 como o inquilino vê</button>
+                      <button onClick={() => abrir(l.id, 'portalDonoLoc')} className={btnGhost + ' !py-1 !text-[11px]'}>👁 como o dono vê</button>
                     </>
                   )}
                 </div>

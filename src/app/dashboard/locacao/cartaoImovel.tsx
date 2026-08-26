@@ -15,7 +15,8 @@
  */
 import React from 'react';
 import {
-  ETAPAS_IMOVEL, PORTAIS, REGRAS_PORTAIS, pendenciasImovel, totalInquilino, cents, fmtValor, fmtData,
+  ETAPAS_IMOVEL, PORTAIS, REGRAS_PORTAIS, pendenciasImovel, lacunasAdministracao,
+  totalInquilino, cents, fmtValor, fmtData,
   type ImovelLocacao, type AlertaImovel,
 } from '@/lib/locacao';
 import { btnOuro, btnGhost, SeloSimulacao } from './ui';
@@ -24,7 +25,7 @@ export type PainelImovel = 'ficha' | 'docsDono' | 'adm' | 'material' | 'portalDo
 
 export default function CartaoImovel({
   i, alertas, interessados, inquilino, zap, acao, painel,
-  onAbrir, onVerFila, onVerInquilino, onCopiarCowork, onExcluir,
+  onAbrir, onVerFila, onVerInquilino, onCopiarCowork, onExcluir, onRecolher,
 }: {
   i: ImovelLocacao;
   alertas: AlertaImovel[];
@@ -42,9 +43,12 @@ export default function CartaoImovel({
   onVerInquilino: () => void;
   onCopiarCowork: () => void;
   onExcluir: () => void;
+  /** no modo lista, o cartao aberto precisa saber voltar a ser linha */
+  onRecolher?: () => void;
 }) {
   const d = ETAPAS_IMOVEL[i.etapa];
   const pend = pendenciasImovel(i);
+  const lacunas = lacunasAdministracao(i);
   // a bola está com a gente? — vem da definição da etapa, igual na locação
   const nossaVez = d?.comQuem === 'nós' && i.etapa !== 'pausado';
   const urgente = nossaVez || alertas.some((a) => a.grave);
@@ -101,7 +105,12 @@ export default function CartaoImovel({
             {d?.oQueFalta && <p className="text-[12px] text-[#FFE9A6] mt-1">→ {d.oQueFalta}</p>}
           </div>
 
-          <div className="shrink-0">{acao}</div>
+          <div className="shrink-0 flex items-center gap-1.5">
+            {acao}
+            {onRecolher && (
+              <button onClick={onRecolher} className={btnGhost + " !py-1 !px-2 !text-[11px]"} title="recolher">▴</button>
+            )}
+          </div>
         </div>
 
         {/* o dinheiro combinado com o dono */}
@@ -202,7 +211,11 @@ export default function CartaoImovel({
           {zap && <a href={zap} target="_blank" rel="noreferrer" className="px-2.5 py-1 rounded-xl text-[11px] font-bold border border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-300">💬 dono</a>}
           <button onClick={() => onAbrir('ficha')} className={btnGhost + ' !py-1 !text-[11px]'}>🏠 dados</button>
           <button onClick={() => onAbrir('docsDono')} className={btnGhost + ' !py-1 !text-[11px]'}>📎 documentos ({i.docsDono.length})</button>
-          <button onClick={() => onAbrir('adm')} className={btnGhost + ' !py-1 !text-[11px]'}>📜 administração</button>
+          <button onClick={() => onAbrir('adm')} className={btnGhost + ' !py-1 !text-[11px]'}
+            title="o contrato que o dono assina — montado sozinho com os dados do cadastro">
+            📜 contrato de captação
+            {lacunas.length > 0 && <span className="text-amber-300 font-bold"> · {lacunas.length} lacunas</span>}
+          </button>
           {noAr && (
             <>
               <button onClick={() => onAbrir('material')} className={btnGhost + ' !py-1 !text-[11px]'}>📸 anúncio</button>
