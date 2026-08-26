@@ -20,7 +20,7 @@ import { db } from '@/lib/firebase';
 import { collection, doc, writeBatch, getDocs, query, where, serverTimestamp } from 'firebase/firestore';
 import {
   IMOVEL_VAZIO, LOCACAO_VAZIA, gerarMovimentos, hojeYmd,
-  FOTOS_TESTE, fotoExemplo, arquivoTeste, type Locacao,
+  FOTOS_TESTE, fotoExemplo, arquivoTeste, ymd, type Locacao,
 } from '@/lib/locacao';
 
 const FOTO = fotoExemplo(1);
@@ -31,7 +31,7 @@ const desloca = (meses: number, dias = 0): string => {
   const d = new Date();
   d.setMonth(d.getMonth() + meses);
   d.setDate(d.getDate() + dias);
-  return d.toISOString().slice(0, 10);
+  return ymd(d);   // nunca UTC: às 21h no Brasil o ISO já virou o dia
 };
 
 export async function criarDadosExemplo(imobiliariaId: string): Promise<string> {

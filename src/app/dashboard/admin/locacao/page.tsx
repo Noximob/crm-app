@@ -36,7 +36,8 @@ import {
   ETAPAS_IMOVEL, ETAPAS_LOCACAO, IMOVEL_VAZIO, LOCACAO_VAZIA,
   DOCS_INQUILINO, ITENS_VISTORIA, LOCAIS_VISTORIA, PORTAIS, STATUS_CHAMADO,
   pendenciasImovel, pendenciasLocacao, alertasDaLocacao, gerarMovimentos, calcularReajuste,
-  portalDoImovel, portalDaLocacao, gerarFeedVrsync, pacoteCowork, arquivoTeste,
+  portalDoImovel, portalDaLocacao, gerarFeedVrsync, imoveisNoFeed, imoveisForaDoFeed,
+  pacoteCowork, arquivoTeste, cents, diasAte, ymd,
   hojeYmd, fmtData, fmtValor, linkWhats,
   type ImovelLocacao, type Locacao, type Movimento, type Chamado,
   type EtapaImovel, type EtapaLocacao, type Arquivo, type RessalvaVistoria,
@@ -167,10 +168,24 @@ export default function LocacaoPage() {
     showToast('📣 No ar! Os feeds levam pros portais (depois da homologação).', 'success');
   };
 
+  /**
+   * FURO CORRIGIDO: dava pra excluir um imóvel com locação em andamento. Os
+   * dados do PROPRIETÁRIO — nome, CPF, chave PIX do repasse — moram só no
+   * imóvel. Excluído, o contrato ficava sem LOCADOR e o repasse sem destino,
+   * com o inquilino continuando a ser cobrado. Agora só sai o que está livre.
+   */
   const excluirImovel = async (i: ImovelLocacao) => {
+    const presas = locacoes.filter((l) => l.imovelId === i.id && l.etapa !== 'encerrada' && l.etapa !== 'perdida');
+    if (presas.length) {
+      showToast(
+        `Não dá: ${presas.length} locação${presas.length > 1 ? 'ões' : ''} depende${presas.length > 1 ? 'm' : ''} deste imóvel (${presas.map((l) => l.nome).join(', ')}). Os dados do proprietário estão aqui. Encerre ou descarte antes.`,
+        'error',
+      );
+      return;
+    }
     const ok = await confirmDialog({
       title: 'Excluir este imóvel?',
-      message: `${i.codigo} — ${i.titulo}. As locações dele NÃO são excluídas.`,
+      message: `${i.codigo} — ${i.titulo}. Some junto a papelada do proprietário anexada nele. Se ele já teve locação encerrada, prefira "⏸ tirar do ar" e guardar o histórico.`,
       confirmLabel: 'Excluir', danger: true,
     });
     if (!ok || guarda()) return;
@@ -244,7 +259,7 @@ export default function LocacaoPage() {
       etapa: 'fianca_assinada', garantiaAssinadaEm: hojeYmd(),
       garantiaNumero: l.garantiaNumero || `LOFT-${Math.floor(Math.random() * 90000) + 10000}`,
       garantiaTaxaMensalPct: l.garantiaTaxaMensalPct ?? 10,
-      garantiaVigenciaFim: l.garantiaVigenciaFim || v.toISOString().slice(0, 10),
+      garantiaVigenciaFim: l.garantiaVigenciaFim || ymd(v),
       garantiaSimulada: true,
     });
     showToast('⚡ Fiança assinada com a Loft. Agora a vistoria e o nosso contrato.', 'success');
@@ -287,18 +302,76 @@ export default function LocacaoPage() {
     showToast('⚡ Todos assinaram. Pode marcar a entrega das chaves.', 'success');
   };
 
+  /**
+   * A entrega das chaves é o ato mais perigoso da tela: cria o contrato
+   * ativo e TODAS as cobranças de uma vez. Quatro travas antes de commitar:
+   *
+   *   1. já ativa ou já com cobranças geradas → não faz de novo (duplo
+   *      clique ou rede lenta cobrariam o inquilino duas vezes);
+   *   2. imóvel já alugado por outra locação → recusa, senão a casa fica com
+   *      dois contratos vigentes no mesmo apartamento;
+   *   3. taxa de administração zerada → avisa antes, senão a casa administra
+   *      de graça pelos 30 meses e ninguém percebe;
+   *   4. os outros interessados no mesmo imóvel são encerrados no MESMO
+   *      lote, e o gestor vê quantos são antes de confirmar.
+   */
+  const entregandoRef = React.useRef(false);
+
   const entregarChaves = async (l: Locacao, inicio: string) => {
-    if (guarda() || !imobiliariaId) return;
+    if (guarda() || !imobiliariaId || entregandoRef.current) return;
+
+    if (l.etapa === 'ativa' || movsDe(l.id).length > 0) {
+      showToast('Esta locação já está cobrando — as chaves já foram entregues.', 'error');
+      setEntregando(null);
+      return;
+    }
+    const outraAtiva = locacoes.find((x) => x.imovelId === l.imovelId && x.id !== l.id && x.etapa === 'ativa');
+    if (outraAtiva) {
+      showToast(`O imóvel já está alugado para ${outraAtiva.nome}. Encerre aquela locação antes.`, 'error');
+      setEntregando(null);
+      return;
+    }
     const movs = gerarMovimentos({ ...l, inicio });
     if (!movs.length) { showToast('Faltam aluguel, prazo ou dia de vencimento.', 'error'); abrir(l.id, 'dados'); return; }
-    const b = writeBatch(db);
-    for (const m of movs) b.set(doc(collection(db, 'locacaoMovimentos')), { ...m, imobiliariaId, criadoEm: serverTimestamp() });
-    b.update(doc(db, 'locacaoLocacoes', l.id), { etapa: 'ativa', inicio, chavesEntreguesEm: hojeYmd(), atualizadoEm: serverTimestamp() });
-    if (l.imovelId) b.update(doc(db, 'locacaoImoveis', l.imovelId), { etapa: 'alugado', atualizadoEm: serverTimestamp() });
-    await b.commit();
-    setEntregando(null); setDataEntrega('');
-    showToast(`🔑 Chaves entregues! Portal do inquilino criado, o imóvel saiu dos portais e as ${movs.length} cobranças começam em ${fmtData(inicio)}.`, 'success');
-    recarregar();
+
+    const concorrentes = locacoes.filter((x) =>
+      x.imovelId === l.imovelId && x.id !== l.id && !['encerrada', 'perdida', 'ativa'].includes(x.etapa));
+
+    const semTaxa = !l.taxaAdmPct;
+    const ok = await confirmDialog({
+      title: `Entregar as chaves para ${l.nome}?`,
+      message: [
+        `Vão nascer ${movs.length} cobranças, a primeira vencendo em ${fmtData(movs[0].vencimento)}, de ${fmtValor(movs[0].valorTotal)}.`,
+        `A casa retém ${fmtValor(movs[0].taxaAdm)} e o dono recebe ${fmtValor(movs[0].repasseDono)} por mês.`,
+        semTaxa ? '⚠ ATENÇÃO: a taxa de administração está ZERADA — o dono receberia o aluguel inteiro e a casa não ganharia nada. Confira antes.' : '',
+        concorrentes.length ? `Os outros ${concorrentes.length} interessados neste imóvel serão marcados como "não fechou".` : '',
+        'O imóvel sai dos portais.',
+      ].filter(Boolean).join('\n\n'),
+      confirmLabel: 'Entregar as chaves',
+      danger: semTaxa,
+    });
+    if (!ok) return;
+
+    entregandoRef.current = true;
+    try {
+      const b = writeBatch(db);
+      for (const m of movs) b.set(doc(collection(db, 'locacaoMovimentos')), { ...m, imobiliariaId, criadoEm: serverTimestamp() });
+      b.update(doc(db, 'locacaoLocacoes', l.id), { etapa: 'ativa', inicio, chavesEntreguesEm: hojeYmd(), atualizadoEm: serverTimestamp() });
+      if (l.imovelId && imovelDe(l.imovelId)) {
+        b.update(doc(db, 'locacaoImoveis', l.imovelId), { etapa: 'alugado', atualizadoEm: serverTimestamp() });
+      }
+      for (const c of concorrentes) {
+        b.update(doc(db, 'locacaoLocacoes', c.id), { etapa: 'perdida', motivoPerda: 'imóvel alugado para outra pessoa', atualizadoEm: serverTimestamp() });
+      }
+      await b.commit();
+      setEntregando(null); setDataEntrega('');
+      showToast(`🔑 Chaves entregues! Portal do inquilino criado, o imóvel saiu dos portais e as ${movs.length} cobranças começam em ${fmtData(movs[0].vencimento)}.`, 'success');
+      recarregar();
+    } catch (e) {
+      console.error(e);
+      showToast('Não foi possível concluir a entrega — nada foi gravado. Tente de novo.', 'error');
+    }
+    entregandoRef.current = false;
   };
 
   const perder = async (l: Locacao) => {
@@ -323,12 +396,32 @@ export default function LocacaoPage() {
     recarregar();
   };
 
+  /**
+   * Marcar repasse é dizer "esse dinheiro já saiu". Vai em LOTE, atômico:
+   * antes eram N gravações soltas — se a rede caísse na terceira, cinco
+   * ficavam repassadas, cinco não, e o aviso dizia que tudo tinha ido. O
+   * gestor pagaria de novo os que já saíram, ou nunca os que faltaram.
+   */
+  const marcarRepassados = async (lib: Movimento[]): Promise<boolean> => {
+    try {
+      const b = writeBatch(db);
+      const hoje = hojeYmd();
+      for (const m of lib) b.update(doc(db, 'locacaoMovimentos', m.id), { statusRepasse: 'repassado', repassadoEm: hoje, simulado: true });
+      await b.commit();
+      return true;
+    } catch (e) {
+      console.error(e);
+      showToast('Falha no repasse — NADA foi marcado. Confira o extrato e tente de novo.', 'error');
+      return false;
+    }
+  };
+
   const repassar = async (movs: Movimento[]) => {
     if (guarda()) return;
     const lib = movs.filter((m) => m.statusRepasse === 'liberado');
     if (!lib.length) return;
-    for (const m of lib) await updateDoc(doc(db, 'locacaoMovimentos', m.id), { statusRepasse: 'repassado', repassadoEm: hojeYmd(), simulado: true });
-    showToast(`⚡ ${fmtValor(lib.reduce((s, m) => s + m.repasseDono, 0))} repassado num PIX só — NF emitida.`, 'success');
+    if (!(await marcarRepassados(lib))) return;
+    showToast(`⚡ ${fmtValor(cents(lib.reduce((s, m) => s + m.repasseDono, 0)))} repassado num PIX só — NF emitida.`, 'success');
     recarregar();
   };
 
@@ -336,57 +429,91 @@ export default function LocacaoPage() {
     if (guarda()) return;
     const lib = movimentos.filter((m) => m.statusRepasse === 'liberado');
     if (!lib.length) { showToast('Nada liberado.', 'info'); return; }
-    const total = lib.reduce((s, m) => s + m.repasseDono, 0);
+    const total = cents(lib.reduce((s, m) => s + m.repasseDono, 0));
+    const donos = new Set(lib.map((m) => imovelDe(locacoes.find((l) => l.id === m.locacaoId)?.imovelId || '')?.donoNome || '—'));
     const ok = await confirmDialog({
       title: `Repassar ${lib.length} pagamento${lib.length > 1 ? 's' : ''}?`,
-      message: `${fmtValor(total)} vão pros donos, cada um num PIX com extrato discriminado.`,
+      message: `${fmtValor(total)} para ${donos.size} proprietário${donos.size > 1 ? 's' : ''}, cada um num PIX com extrato discriminado.`,
       confirmLabel: 'Repassar todos',
     });
     if (!ok) return;
-    for (const m of lib) await updateDoc(doc(db, 'locacaoMovimentos', m.id), { statusRepasse: 'repassado', repassadoEm: hojeYmd(), simulado: true });
-    showToast(`⚡ ${fmtValor(total)} repassados em ${lib.length} PIX.`, 'success');
+    if (!(await marcarRepassados(lib))) return;
+    showToast(`⚡ ${fmtValor(total)} repassados em ${donos.size} PIX.`, 'success');
     recarregar();
   };
 
+  /**
+   * O reajuste anual. Duas travas que evitam cobrança indevida:
+   *
+   *   1. UMA VEZ POR CICLO. Se já houve reajuste nos últimos 11 meses, ele
+   *      recusa. Antes, o alerta continuava aceso depois de aplicado e dois
+   *      cliques subiam o aluguel duas vezes.
+   *   2. NUNCA RETROATIVO. Só corrige competências que ainda VÃO vencer. O
+   *      aluguel atrasado de três meses atrás é dívida do valor antigo —
+   *      reajustar pra trás é cobrar a mais do inquilino.
+   */
   const aplicarReajuste = async (l: Locacao, movs: Movimento[]) => {
     if (guarda()) return;
+    const feitos = l.reajustes || [];
+    const ultimo = feitos.length ? feitos[feitos.length - 1] : null;
+    if (ultimo && diasAte(ultimo.em) !== null && -(diasAte(ultimo.em) as number) < 330) {
+      showToast(`Já houve reajuste em ${fmtData(ultimo.em)} (${fmtValor(ultimo.de)} → ${fmtValor(ultimo.para)}). O próximo só daqui a um ano.`, 'error');
+      setReajustando(null);
+      return;
+    }
     const pct = Number(pctReajuste.replace(',', '.'));
-    if (!Number.isFinite(pct) || pct <= 0) { showToast('Informe o percentual (ex.: 4,5).', 'error'); return; }
+    if (!Number.isFinite(pct) || pct <= 0 || pct > 100) { showToast('Informe o percentual do índice (ex.: 4,5).', 'error'); return; }
+
     const atual = l.valorAluguel || 0;
     const novo = calcularReajuste(atual, pct);
+    const hoje = hojeYmd();
+    // só o que ainda vai vencer: o passado é dívida do valor antigo
+    const aCorrigir = movs.filter((m) => m.statusCobranca !== 'paga' && m.vencimento >= hoje);
+    const atrasados = movs.filter((m) => m.statusCobranca !== 'paga' && m.vencimento < hoje);
+
     const ok = await confirmDialog({
       title: 'Aplicar o reajuste?',
-      message: `O aluguel passa de ${fmtValor(atual)} para ${fmtValor(novo)} (+${pct}% por ${l.indiceReajuste}). As competências já pagas não mudam; as futuras são corrigidas.`,
+      message: [
+        `O aluguel passa de ${fmtValor(atual)} para ${fmtValor(novo)} (+${pct}% por ${l.indiceReajuste}).`,
+        `${aCorrigir.length} competências futuras serão corrigidas.`,
+        atrasados.length ? `${atrasados.length} em atraso ficam no valor antigo — dívida não se reajusta.` : '',
+        'O inquilino precisa ser comunicado por escrito.',
+      ].filter(Boolean).join('\n\n'),
       confirmLabel: 'Aplicar',
     });
     if (!ok) return;
-    const taxa = Math.round(novo * (l.taxaAdmPct || 0)) / 100;
+
+    const taxa = cents(novo * (l.taxaAdmPct || 0) / 100);
     const iptu = l.valorIptuMensal || 0;
     const seguro = l.valorSeguroIncendio || 0;
-    const b = writeBatch(db);
-    b.update(doc(db, 'locacaoLocacoes', l.id), {
-      valorAluguel: novo,
-      reajustes: [...(l.reajustes || []), { em: hojeYmd(), de: atual, para: novo, indice: l.indiceReajuste, percentual: pct }],
-      atualizadoEm: serverTimestamp(),
-    });
-    for (const m of movs) {
-      if (m.statusCobranca === 'paga') continue;   // o passado não se reajusta
-      b.update(doc(db, 'locacaoMovimentos', m.id), {
-        valorAluguel: novo, valorTotal: novo + iptu + seguro, taxaAdm: taxa,
-        repasseDono: Math.round((novo - taxa + iptu) * 100) / 100,
+    try {
+      const b = writeBatch(db);
+      b.update(doc(db, 'locacaoLocacoes', l.id), {
+        valorAluguel: novo,
+        reajustes: [...feitos, { em: hoje, de: atual, para: novo, indice: l.indiceReajuste, percentual: pct }],
+        atualizadoEm: serverTimestamp(),
       });
+      for (const m of aCorrigir) {
+        b.update(doc(db, 'locacaoMovimentos', m.id), {
+          valorAluguel: novo, valorTotal: cents(novo + iptu + seguro), taxaAdm: taxa,
+          repasseDono: cents(novo - taxa + iptu),
+        });
+      }
+      await b.commit();
+      setReajustando(null); setPctReajuste('');
+      showToast(`Reajuste aplicado: ${fmtValor(atual)} → ${fmtValor(novo)}. Avise o inquilino.`, 'success');
+      recarregar();
+    } catch (e) {
+      console.error(e);
+      showToast('Falha ao aplicar — nada foi alterado.', 'error');
     }
-    await b.commit();
-    setReajustando(null); setPctReajuste('');
-    showToast(`Reajuste aplicado: ${fmtValor(atual)} → ${fmtValor(novo)}. Avise o inquilino.`, 'success');
-    recarregar();
   };
 
   const renovarGarantia = async (l: Locacao) => {
     const base = l.garantiaVigenciaFim ? new Date(l.garantiaVigenciaFim + 'T12:00:00') : new Date();
     if (base.getTime() < Date.now()) base.setTime(Date.now());
     base.setFullYear(base.getFullYear() + 1);
-    const nova = base.toISOString().slice(0, 10);
+    const nova = ymd(base);
     const ok = await confirmDialog({
       title: 'Renovar a garantia por 1 ano?',
       message: `A vigência passa para ${fmtData(nova)}. Só confirme depois que a Loft renovou de fato — garantia vencida deixa o dono descoberto.`,
@@ -451,12 +578,18 @@ export default function LocacaoPage() {
 
   const numeros = useMemo(() => {
     const hoje = hojeYmd();
+    const atrasadas = movimentos.filter((m) => m.statusCobranca !== 'paga' && m.vencimento < hoje);
+    // FURO CORRIGIDO: "a receber" contava só a competência do mês. Com o mês
+    // corrente pago e três meses atrasados na rua, o card mostrava R$ 0 — o
+    // gestor lia "não tenho nada a receber" com dinheiro faltando.
+    const doMes = movimentos.filter((m) => m.statusCobranca !== 'paga' && m.vencimento >= hoje && m.competencia === hoje.slice(0, 7));
     return {
       publicados: imoveis.filter((i) => i.etapa === 'publicado').length,
       ativas: locacoes.filter((l) => l.etapa === 'ativa').length,
-      aReceber: movimentos.filter((m) => m.statusCobranca !== 'paga' && m.competencia === hoje.slice(0, 7)).reduce((s, m) => s + m.valorTotal, 0),
-      aRepassar: movimentos.filter((m) => m.statusRepasse === 'liberado').reduce((s, m) => s + m.repasseDono, 0),
-      atrasadas: movimentos.filter((m) => m.statusCobranca !== 'paga' && m.vencimento < hoje).length,
+      aReceber: cents([...doMes, ...atrasadas].reduce((s, m) => s + m.valorTotal, 0)),
+      emAtraso: cents(atrasadas.reduce((s, m) => s + m.valorTotal, 0)),
+      aRepassar: cents(movimentos.filter((m) => m.statusRepasse === 'liberado').reduce((s, m) => s + m.repasseDono, 0)),
+      atrasadas: atrasadas.length,
     };
   }, [imoveis, locacoes, movimentos]);
 
@@ -496,6 +629,8 @@ export default function LocacaoPage() {
   };
 
   const baixarXml = () => {
+    const dentro = imoveisNoFeed(imoveis);
+    const fora = imoveisForaDoFeed(imoveis);
     const xml = gerarFeedVrsync(imoveis, {
       nome: 'Nox Imóveis',
       email: userData?.email || 'contato@noximobiliaria.com.br',
@@ -505,7 +640,12 @@ export default function LocacaoPage() {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = 'feed-vrsync-nox.xml'; a.click();
     URL.revokeObjectURL(a.href);
-    showToast('XML gerado — valide no validador do Grupo OLX.', 'success');
+    showToast(
+      fora.length
+        ? `${dentro.length} no arquivo. ${fora.length} ficou de fora por anúncio incompleto (${fora[0].imovel.codigo}: ${fora[0].falta[0]}) — anúncio fora da regra reprova o feed inteiro.`
+        : `${dentro.length} imóveis no arquivo. Valide no validador do Grupo OLX.`,
+      fora.length ? 'error' : 'success',
+    );
   };
 
   const copiarCowork = async (i: ImovelLocacao) => {
@@ -626,20 +766,33 @@ export default function LocacaoPage() {
           <span className="flex flex-wrap gap-1.5">
             {lib > 0 && <button onClick={() => repassar(movs)} className={btnOuro}>💸 Repassar ({lib})</button>}
             <button onClick={() => pagar(movs)} className={btnSimula}>⚡ Pagou</button>
-            <button onClick={() => upLocacao(l.id, { etapa: 'encerrando' })} className={btnGhost}>↪ saída</button>
+            <button onClick={async () => {
+              const ok = await confirmDialog({
+                title: `${l.nome} está saindo?`,
+                message: 'A locação vai pra "Em saída": vistoria de saída e distrato. Use só quando o inquilino avisou de fato.',
+                confirmLabel: 'Iniciar a saída',
+              });
+              if (ok) upLocacao(l.id, { etapa: 'encerrando' });
+            }} className={btnGhost}>↪ saída</button>
           </span>
         );
       }
       case 'encerrando':
         return <button onClick={() => abrir(l.id, 'dados')} className={btnOuro}>↪ Concluir a saída</button>;
       default:
-        // arquivada (não fechou / encerrada) — dá pra voltar, erro de clique acontece
+        // Só "não fechou" volta atrás: erro de clique acontece. Locação
+        // ENCERRADA é história — reabrir devolveria um contrato extinto ao
+        // funil, com o imóvel talvez já alugado pra outra pessoa.
         return (
           <span className="flex flex-wrap items-center gap-2">
-            <span className="text-[11.5px] text-text-secondary">{l.motivoPerda || 'encerrada'}</span>
-            <button onClick={() => upLocacao(l.id, { etapa: 'interessado', motivoPerda: '' })} className={btnGhost + ' !py-1 !text-[11px]'}>
-              ↩ reabrir
-            </button>
+            <span className="text-[11.5px] text-text-secondary">
+              {l.etapa === 'encerrada' ? `encerrada em ${fmtData(l.encerradaEm)}` : l.motivoPerda || 'não fechou'}
+            </span>
+            {l.etapa === 'perdida' && (
+              <button onClick={() => upLocacao(l.id, { etapa: 'interessado', motivoPerda: '' })} className={btnGhost + ' !py-1 !text-[11px]'}>
+                ↩ reabrir
+              </button>
+            )}
           </span>
         );
     }
@@ -655,8 +808,9 @@ export default function LocacaoPage() {
     // ——— painéis da LOCAÇÃO (funil 2) ———
     if (l) {
       if (p === 'dados') {
-        return <PainelLocacao imobiliariaId={imobiliariaId} isEspelhoDemo={isEspelhoDemo}
-          locacao={l} imovel={im} recarregar={recarregar} onFechar={fechar} />;
+        return <PainelLocacao key={l.id} imobiliariaId={imobiliariaId} isEspelhoDemo={isEspelhoDemo}
+          locacao={l} imovel={im} movimentosAbertos={movs.filter((m) => m.statusCobranca !== 'paga').length}
+          recarregar={recarregar} onFechar={fechar} />;
       }
       if (p === 'loft') return <PacoteLoft locacao={l} imovel={im} onFechar={fechar} />;
       if (p === 'minuta') return <MinutaContrato l={l} imovel={im} onFechar={fechar} />;
@@ -702,9 +856,27 @@ export default function LocacaoPage() {
                 })}
               </tbody>
             </table>
-            <p className="text-[10.5px] text-text-secondary mt-2">
-              Cobrança = aluguel + IPTU + seguro (o condomínio o inquilino paga direto). Repasse = aluguel − taxa + IPTU, num PIX só.
-            </p>
+            {movs[0] && (
+              <div className="mt-3 rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
+                <p className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-text-secondary mb-1.5">
+                  Pra onde vai cada real da mensalidade de {fmtValor(movs[0].valorTotal)}
+                </p>
+                {([
+                  ['Dono do imóvel (aluguel − taxa + reembolso do IPTU)', movs[0].repasseDono, 'text-emerald-300'],
+                  [`Nox — taxa de administração (${l.taxaAdmPct || 0}% do aluguel)`, movs[0].taxaAdm, 'text-[#FFE9A6]'],
+                  ['Seguradora — seguro incêndio (não é receita da casa)', movs[0].valorSeguro, 'text-sky-300'],
+                ] as const).map(([r, v, cor]) => (
+                  <div key={r} className="flex items-baseline justify-between gap-3 border-b border-white/[0.05] py-1 last:border-0">
+                    <span className="text-[11.5px] text-text-secondary">{r}</span>
+                    <span className={`text-[12px] font-bold tabular-nums ${cor}`}>{fmtValor(v)}</span>
+                  </div>
+                ))}
+                <p className="text-[10.5px] text-text-secondary mt-2">
+                  O condomínio{l.valorCondominio ? ` (${fmtValor(l.valorCondominio)})` : ''} não entra nesta conta:
+                  o inquilino paga direto à administradora do condomínio.
+                </p>
+              </div>
+            )}
             <button onClick={fechar} className={btnGhost + ' mt-2'}>fechar</button>
           </div>
         );
@@ -842,7 +1014,7 @@ export default function LocacaoPage() {
           {[
             { v: String(numeros.publicados), r: 'no ar nos portais', cor: 'text-white' },
             { v: String(numeros.ativas), r: 'alugados rodando', cor: 'text-white' },
-            { v: fmtValor(numeros.aReceber), r: numeros.atrasadas ? `a receber · ${numeros.atrasadas} atrasada${numeros.atrasadas > 1 ? 's' : ''}` : 'a receber no mês', cor: numeros.atrasadas ? 'text-rose-300' : 'text-white' },
+            { v: fmtValor(numeros.aReceber), r: numeros.atrasadas ? `a receber · ${fmtValor(numeros.emAtraso)} em atraso` : 'a receber no mês', cor: numeros.atrasadas ? 'text-rose-300' : 'text-white' },
             { v: fmtValor(numeros.aRepassar), r: 'a repassar aos donos', cor: numeros.aRepassar ? 'text-amber-300' : 'text-text-secondary' },
           ].map((x, i) => (
             <div key={i} className="al-card px-3 py-2.5">

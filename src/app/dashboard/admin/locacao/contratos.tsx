@@ -23,17 +23,19 @@ import { showToast } from '@/components/ui/toast';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   INDICES_REAJUSTE, GARANTIAS, DOCS_INQUILINO, LOCAIS_VISTORIA,
-  fimContrato, fmtData, fmtValor, hojeYmd,
+  fimContrato, fmtData, fmtValor, hojeYmd, cents, pendenciasImovel,
   INQUILINO_TESTE, arquivoTeste, preencherVazios,
   type Locacao, type ImovelLocacao, type RessalvaVistoria,
 } from '@/lib/locacao';
 import { inputCls, btnOuro, btnGhost, btnSimula, Campo, num, ChipsDocumentos } from './ui';
 
-export default function PainelLocacao({ imobiliariaId, isEspelhoDemo, locacao, imovel, recarregar, onFechar }: {
+export default function PainelLocacao({ imobiliariaId, isEspelhoDemo, locacao, imovel, movimentosAbertos = 0, recarregar, onFechar }: {
   imobiliariaId?: string;
   isEspelhoDemo?: boolean;
   locacao: Locacao;
   imovel?: ImovelLocacao;
+  /** cobranças ainda não pagas — o encerramento avisa sobre elas */
+  movimentosAbertos?: number;
   recarregar: () => Promise<void>;
   onFechar: () => void;
 }) {
@@ -47,13 +49,32 @@ export default function PainelLocacao({ imobiliariaId, isEspelhoDemo, locacao, i
   const f = <K extends keyof Locacao>(k: K, v: Locacao[K]) => setForm((p) => ({ ...p, [k]: v }));
   const guarda = () => { if (isEspelhoDemo) { showToast('Modo demonstração.', 'info'); return true; } return false; };
 
+  /**
+   * FURO CORRIGIDO: gravava a locação INTEIRA a partir do rascunho carregado
+   * quando o painel abriu — inclusive `etapa`, `docsInquilino` e as datas de
+   * assinatura. Mexer aqui depois de a fila ter avançado a etapa jogava o
+   * caso pra trás no funil e apagava documento anexado por fora. Agora este
+   * painel grava só o que ele mostra.
+   */
+  const CAMPOS_MEUS = [
+    'nome', 'telefone', 'email', 'doc', 'rg', 'estadoCivil', 'profissao',
+    'enderecoAtual', 'corretorNome',
+    'inicio', 'prazoMeses', 'valorAluguel', 'valorCondominio', 'valorIptuMensal',
+    'valorSeguroIncendio', 'diaVencimento', 'indiceReajuste', 'taxaAdmPct',
+    'garantiaTipo', 'garantiaNumero', 'garantiaTaxaMensalPct', 'garantiaVigenciaFim',
+    'observacoes',
+  ] as const;
+
   const salvar = async () => {
     if (guarda()) return;
     setSalvando(true);
-    const { id, imobiliariaId: _i, ...campos } = form;
-    await updateDoc(doc(db, 'locacaoLocacoes', id), { ...campos, atualizadoEm: serverTimestamp() });
-    showToast('Salvo.', 'success');
-    await recarregar();
+    try {
+      const meus: Record<string, unknown> = {};
+      for (const k of CAMPOS_MEUS) meus[k] = form[k];
+      await updateDoc(doc(db, 'locacaoLocacoes', form.id), { ...meus, atualizadoEm: serverTimestamp() });
+      showToast('Salvo.', 'success');
+      await recarregar();
+    } catch (e) { console.error(e); showToast('Não foi possível salvar.', 'error'); }
     setSalvando(false);
   };
 
@@ -139,24 +160,47 @@ export default function PainelLocacao({ imobiliariaId, isEspelhoDemo, locacao, i
     await recarregar();
   };
 
+  /**
+   * O fim da linha. Duas travas:
+   *   · o imóvel pode ter sido excluído — atualizar um documento que não
+   *     existe derruba o lote inteiro e a locação ficaria eternamente "em
+   *     saída", sem forma de fechar;
+   *   · o imóvel só volta pro ar se o anúncio ainda estiver completo. Senão
+   *     volta pra "material pronto", pra não entrar quebrado no feed.
+   */
   const encerrar = async () => {
+    const abertas = movimentosAbertos;
     const ok = await confirmDialog({
       title: 'Encerrar a locação?',
-      message: 'O distrato deve estar assinado. O imóvel volta pra "publicado" e reentra nos feeds sozinho.',
-      confirmLabel: 'Encerrar',
+      message: [
+        'O distrato deve estar assinado e as chaves devolvidas.',
+        abertas > 0 ? `⚠ Ainda existem ${abertas} cobranças em aberto nesta locação. Encerrar não as cancela — acerte no Asaas.` : '',
+        imovel ? 'O imóvel volta a ficar disponível e reentra nos feeds.' : 'O imóvel deste contrato não existe mais no sistema.',
+      ].filter(Boolean).join('\n\n'),
+      confirmLabel: 'Encerrar', danger: abertas > 0,
     });
     if (!ok || guarda()) return;
-    const b = writeBatch(db);
-    b.update(doc(db, 'locacaoLocacoes', form.id), { etapa: 'encerrada', encerradaEm: hojeYmd(), atualizadoEm: serverTimestamp() });
-    if (form.imovelId) b.update(doc(db, 'locacaoImoveis', form.imovelId), { etapa: 'publicado', atualizadoEm: serverTimestamp() });
-    await b.commit();
-    showToast('Encerrada. O imóvel voltou ao ar — o círculo fechou.', 'success');
-    await recarregar();
-    onFechar();
+    try {
+      const b = writeBatch(db);
+      b.update(doc(db, 'locacaoLocacoes', form.id), { etapa: 'encerrada', encerradaEm: hojeYmd(), atualizadoEm: serverTimestamp() });
+      if (imovel) {
+        const completo = pendenciasImovel(imovel).material.length === 0;
+        b.update(doc(db, 'locacaoImoveis', imovel.id), {
+          etapa: completo ? 'publicado' : 'material',
+          ...(completo ? { publicadoEm: hojeYmd() } : {}),
+          atualizadoEm: serverTimestamp(),
+        });
+      }
+      await b.commit();
+      showToast(imovel ? 'Encerrada. O imóvel voltou ao ar — o círculo fechou.' : 'Encerrada.', 'success');
+      await recarregar();
+      onFechar();
+    } catch (e) { console.error(e); showToast('Falha ao encerrar — nada foi alterado.', 'error'); }
   };
 
+  // mesma conta de gerarMovimentos, pra tela e cobrança nunca divergirem
   const aluguel = form.valorAluguel || 0;
-  const taxa = Math.round(aluguel * (form.taxaAdmPct || 0)) / 100;
+  const taxa = cents(aluguel * (form.taxaAdmPct || 0) / 100);
 
   return (
     <div className="space-y-4">
@@ -231,9 +275,9 @@ export default function PainelLocacao({ imobiliariaId, isEspelhoDemo, locacao, i
 
       {aluguel > 0 && form.taxaAdmPct ? (
         <p className="text-[12px] text-text-secondary">
-          Inquilino paga <b className="text-[#FFE9A6]">{fmtValor(aluguel + (form.valorIptuMensal || 0) + (form.valorSeguroIncendio || 0))}</b> ·
+          Inquilino paga <b className="text-[#FFE9A6]">{fmtValor(cents(aluguel + (form.valorIptuMensal || 0) + (form.valorSeguroIncendio || 0)))}</b> ·
           {' '}Nox retém <b className="text-[#FFE9A6]">{fmtValor(taxa)}</b> ·
-          {' '}dono recebe <b className="text-emerald-300">{fmtValor(aluguel - taxa + (form.valorIptuMensal || 0))}</b>
+          {' '}dono recebe <b className="text-emerald-300">{fmtValor(cents(aluguel - taxa + (form.valorIptuMensal || 0)))}</b>
           {form.valorCondominio ? <span className="text-white/40"> · condomínio de {fmtValor(form.valorCondominio)} fora da cobrança</span> : null}
         </p>
       ) : null}

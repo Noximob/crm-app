@@ -183,14 +183,42 @@ export default function FichaImovel({ imobiliariaId, isEspelhoDemo, imoveis, imo
     setBuscandoCep(false);
   };
 
+  /**
+   * FURO CORRIGIDO — o mais perigoso da tela.
+   *
+   * O painel gravava o registro INTEIRO a partir do rascunho carregado na
+   * hora em que abriu. Se enquanto ele estava aberto a fila mudasse a etapa
+   * ("⚡ dono assinou"), ou o painel do proprietário anexasse um documento,
+   * clicar em Salvar aqui devolvia o registro ao estado antigo: etapa
+   * voltava atrás, documento anexado sumia, data de assinatura evaporava.
+   *
+   * Agora cada painel grava SÓ os campos que ele mostra. O que ele não
+   * mostra, ele não tem o direito de escrever.
+   */
+  const CAMPOS_DADOS = [
+    'titulo', 'tipo', 'rua', 'numero', 'complemento', 'bairro', 'cidade', 'cep',
+    'latitude', 'longitude', 'quartos', 'suites', 'banheiros', 'vagas',
+    'areaPrivativa', 'areaTotal', 'andar', 'mobiliado',
+    'aluguel', 'condominio', 'iptuMensal', 'seguroIncendio',
+    'garantiasAceitas', 'prazoMinimoMeses', 'disponivelAPartir',
+  ] as const;
+
+  const CAMPOS_ANUNCIO = [
+    'titulo', 'descricao', 'fotos', 'videoUrl', 'tourVirtualUrl', 'comodidades', 'portais',
+  ] as const;
+
   const salvar = async () => {
     if (guarda() || !imobiliariaId) return;
     if (!form.titulo.trim()) { showToast('O imóvel precisa de um nome.', 'error'); return; }
     setSalvando(true);
     try {
       if (imovel) {
-        await updateDoc(doc(db, 'locacaoImoveis', imovel.id), { ...form, atualizadoEm: serverTimestamp() });
+        const chaves: readonly string[] = modo === 'anuncio' ? CAMPOS_ANUNCIO : CAMPOS_DADOS;
+        const meus: Record<string, unknown> = {};
+        for (const k of chaves) meus[k] = form[k as keyof typeof form];
+        await updateDoc(doc(db, 'locacaoImoveis', imovel.id), { ...meus, atualizadoEm: serverTimestamp() });
       } else {
+        // imóvel novo: aí sim nasce inteiro, com os dois campos do dono da captação
         const codigo = form.codigo.trim() || `LOC-${String(imoveis.length + 1).padStart(3, '0')}`;
         await addDoc(collection(db, 'locacaoImoveis'), { ...form, codigo, imobiliariaId, criadoEm: serverTimestamp() });
       }

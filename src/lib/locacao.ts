@@ -390,6 +390,10 @@ export function pendenciasLocacao(l: Locacao): string[] {
     if (!l.valorAluguel) p.push('Valor do aluguel');
     if (!l.inicio) p.push('Data de início prevista');
     if (!l.rg.trim() || !l.estadoCivil.trim()) p.push('Qualificação completa do inquilino (RG, estado civil, profissão)');
+    // sem taxa a casa administra de graça e ninguém percebe até o repasse
+    if (!l.taxaAdmPct) p.push('Taxa de administração (%) — sem ela o repasse sai sem a comissão da casa');
+    if (!l.diaVencimento) p.push('Dia do vencimento');
+    if (!l.prazoMeses) p.push('Prazo em meses');
   }
   return p;
 }
@@ -433,26 +437,61 @@ export interface Movimento {
   criadoEm?: unknown;
 }
 
+/** Dinheiro nunca fica com fração de centavo. */
+export const cents = (v: number): number => Math.round(v * 100) / 100;
+
+/** Teto de segurança: contrato longo demais estoura o lote do Firestore (500). */
+export const MAX_PARCELAS = 120;
+
+/**
+ * As cobranças do contrato, uma por competência.
+ *
+ * Três armadilhas que a versão ingênua tinha e que custariam dinheiro:
+ *
+ *   1. VENCIMENTO DIA 29–31. `new Date(2027, 1, 31)` vira 3 de março. O
+ *      inquilino receberia boleto vencendo fora do mês da competência. Aqui
+ *      o dia é limitado ao último dia de cada mês.
+ *   2. PRIMEIRA COBRANÇA NO PASSADO. Chave entregue dia 20 com vencimento
+ *      dia 5 gerava uma cobrança vencida dia 5 do mesmo mês — nascia
+ *      atrasada e disparava alerta de inadimplência no primeiro dia. Agora
+ *      a primeira competência é a primeira cujo vencimento cai depois da
+ *      entrega da chave.
+ *   3. CENTAVOS. Soma de float virava 1970.0000000000002 no extrato.
+ */
 export function gerarMovimentos(l: Locacao): Omit<Movimento, 'id' | 'imobiliariaId' | 'criadoEm'>[] {
   if (!l.inicio || !l.valorAluguel || !l.diaVencimento || !l.prazoMeses) return [];
   const out: Omit<Movimento, 'id' | 'imobiliariaId' | 'criadoEm'>[] = [];
   const ini = new Date(l.inicio + 'T12:00:00');
+  if (Number.isNaN(ini.getTime())) return [];
+
   const aluguel = l.valorAluguel;
   const iptu = l.valorIptuMensal || 0;   // cobrado e repassado inteiro ao dono
   const seguro = l.valorSeguroIncendio || 0;
-  const taxa = Math.round(aluguel * (l.taxaAdmPct || 0)) / 100;
+  const taxa = cents(aluguel * (l.taxaAdmPct || 0) / 100);
+  const dia = Math.min(Math.max(Math.trunc(l.diaVencimento), 1), 31);
+  const parcelas = Math.min(Math.max(Math.trunc(l.prazoMeses), 1), MAX_PARCELAS);
 
-  for (let m = 0; m < l.prazoMeses; m++) {
-    const comp = new Date(ini.getFullYear(), ini.getMonth() + m, 1);
-    const venc = new Date(comp.getFullYear(), comp.getMonth(), l.diaVencimento);
+  /** Vencimento do mês, sem transbordar pro mês seguinte. */
+  const vencimentoDe = (ano: number, mes: number): Date => {
+    const ultimoDia = new Date(ano, mes + 1, 0).getDate();
+    return new Date(ano, mes, Math.min(dia, ultimoDia), 12);
+  };
+
+  // a primeira competência é a primeira que vence DEPOIS da entrega da chave
+  let desloc = 0;
+  if (vencimentoDe(ini.getFullYear(), ini.getMonth()) < ini) desloc = 1;
+
+  for (let m = 0; m < parcelas; m++) {
+    const comp = new Date(ini.getFullYear(), ini.getMonth() + m + desloc, 1);
+    const venc = vencimentoDe(comp.getFullYear(), comp.getMonth());
     out.push({
       locacaoId: l.id,
       competencia: `${comp.getFullYear()}-${String(comp.getMonth() + 1).padStart(2, '0')}`,
-      vencimento: venc.toISOString().slice(0, 10),
+      vencimento: ymd(venc),
       valorAluguel: aluguel, valorIptu: iptu, valorSeguro: seguro,
-      valorTotal: aluguel + iptu + seguro,   // condomínio fica fora
+      valorTotal: cents(aluguel + iptu + seguro),   // condomínio fica fora
       taxaAdm: taxa,
-      repasseDono: Math.round((aluguel - taxa + iptu) * 100) / 100,
+      repasseDono: cents(aluguel - taxa + iptu),
       statusCobranca: 'prevista', pagoEm: '',
       statusRepasse: 'aguardando', repassadoEm: '',
       simulado: false,
@@ -500,8 +539,20 @@ export const fmtValor = (v: number | null | undefined): string =>
     ? '—'
     : v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: v % 1 ? 2 : 0 });
 
-export const fmtData = (ymd?: string): string => (ymd ? ymd.split('-').reverse().join('/') : '—');
-export const hojeYmd = (): string => new Date().toISOString().slice(0, 10);
+export const fmtData = (data?: string): string => (data ? data.split('-').reverse().join('/') : '—');
+
+/**
+ * Data no fuso de quem está usando — nunca em UTC.
+ *
+ * FURO CORRIGIDO: `toISOString().slice(0,10)` a partir das 21h no Brasil já
+ * devolve o dia SEGUINTE. Contrato assinado às 22h nascia datado de amanhã,
+ * pagamento registrado à noite entrava no dia errado e o cálculo de atraso
+ * pulava um dia. Em documento com valor jurídico isso não pode acontecer.
+ */
+export const ymd = (d: Date): string =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+export const hojeYmd = (): string => ymd(new Date());
 
 export const totalInquilino = (x: { aluguel?: number | null; iptuMensal?: number | null; seguroIncendio?: number | null }): number =>
   (x.aluguel || 0) + (x.iptuMensal || 0) + (x.seguroIncendio || 0);
@@ -530,19 +581,37 @@ export async function buscarCep(cep: string): Promise<{ rua: string; bairro: str
   } catch { return null; }
 }
 
-export function fimContrato(l: Pick<Locacao, 'inicio' | 'prazoMeses'>): string {
-  if (!l.inicio || !l.prazoMeses) return '';
-  const d = new Date(l.inicio + 'T12:00:00');
-  d.setMonth(d.getMonth() + l.prazoMeses);
-  return d.toISOString().slice(0, 10);
+/** Soma meses sem transbordar: 31/01 + 1 mês = 28/02, não 03/03. */
+function somaMeses(d: Date, meses: number): Date {
+  const dia = d.getDate();
+  const alvo = new Date(d.getFullYear(), d.getMonth() + meses, 1, 12);
+  const ultimo = new Date(alvo.getFullYear(), alvo.getMonth() + 1, 0).getDate();
+  alvo.setDate(Math.min(dia, ultimo));
+  return alvo;
 }
 
-export function proximoReajuste(l: Pick<Locacao, 'inicio'>): string {
+export function fimContrato(l: Pick<Locacao, 'inicio' | 'prazoMeses'>): string {
+  if (!l.inicio || !l.prazoMeses) return '';
+  return ymd(somaMeses(new Date(l.inicio + 'T12:00:00'), l.prazoMeses));
+}
+
+/**
+ * Quando cai o próximo reajuste anual.
+ *
+ * FURO CORRIGIDO: antes contava sempre do INÍCIO do contrato. Depois de
+ * aplicar o reajuste o alerta continuava aceso até passar o aniversário —
+ * e o botão "aplicar" continuava lá. Dois cliques no mesmo ciclo dobravam
+ * o aluguel do inquilino. Agora o relógio parte do ÚLTIMO reajuste
+ * aplicado, então o alerta apaga no instante em que o trabalho é feito.
+ */
+export function proximoReajuste(l: Pick<Locacao, 'inicio' | 'reajustes'>): string {
   if (!l.inicio) return '';
-  const d = new Date(l.inicio + 'T12:00:00');
+  const feitos = l.reajustes || [];
+  const ultimo = feitos.length ? feitos[feitos.length - 1].em : '';
+  let d = somaMeses(new Date((ultimo || l.inicio) + 'T12:00:00'), 12);
   const hoje = new Date();
-  while (d <= hoje) d.setFullYear(d.getFullYear() + 1);
-  return d.toISOString().slice(0, 10);
+  while (d <= hoje) d = somaMeses(d, 12);
+  return ymd(d);
 }
 
 export function diasAte(ymd: string): number | null {
@@ -587,6 +656,30 @@ export function alertasDaLocacao(l: Locacao): Alerta[] {
 const xmlEsc = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+/**
+ * Quem realmente entra no XML.
+ *
+ * FURO CORRIGIDO: bastava editar um anúncio já publicado e apagar duas
+ * fotos pra ele continuar "publicado" com 3 fotos. O feed sairia fora da
+ * regra do Grupo OLX e eles reprovam o ARQUIVO INTEIRO — todos os imóveis
+ * da casa saem do ar por causa de um. Agora o anúncio incompleto é deixado
+ * de fora do arquivo, e a tela avisa quem ficou de fora.
+ */
+export function imoveisNoFeed(imoveis: ImovelLocacao[]): ImovelLocacao[] {
+  return imoveis.filter((i) =>
+    i.etapa === 'publicado'
+    && i.portais.includes('grupo_olx')
+    && pendenciasImovel(i).material.length === 0);
+}
+
+/** Publicados que estão fora do feed por anúncio incompleto. */
+export function imoveisForaDoFeed(imoveis: ImovelLocacao[]): { imovel: ImovelLocacao; falta: string[] }[] {
+  return imoveis
+    .filter((i) => i.etapa === 'publicado' && i.portais.includes('grupo_olx'))
+    .map((i) => ({ imovel: i, falta: pendenciasImovel(i).material }))
+    .filter((x) => x.falta.length > 0);
+}
+
 /** O feed VRSync (OLX + ZAP + VivaReal), gerado dos imóveis publicados. */
 export function gerarFeedVrsync(
   imoveis: ImovelLocacao[],
@@ -608,7 +701,7 @@ export function gerarFeedVrsync(
   p('  </Header>');
   p('  <Listings>');
 
-  for (const i of imoveis.filter((x) => x.etapa === 'publicado' && x.portais.includes('grupo_olx'))) {
+  for (const i of imoveisNoFeed(imoveis)) {
     p('    <Listing>');
     p(`      <ListingID>${xmlEsc(i.codigo || i.id)}</ListingID>`);
     p(`      <Title><![CDATA[${i.titulo}]]></Title>`);
