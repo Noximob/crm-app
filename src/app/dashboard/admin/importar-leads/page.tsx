@@ -20,6 +20,8 @@ import { QUALIFICATION_QUESTIONS } from '@/lib/qualificacao';
 import { ETAPAS_DO_ADMIN, MOTIVOS_DESCARTE, mapEtapaCircuito } from '@/lib/circuito';
 import { deleteLeadsComSubcolecoes } from '@/lib/leadDelete';
 import ListasAtivas from './listas';
+import PainelCentral from './painel';
+import { topicoDoMotivo, ordemDoTopico } from '@/lib/centralLeads';
 
 /**
  * Bucket do motivo de descarte pro filtro: motivos padrão passam direto;
@@ -271,7 +273,7 @@ export default function ImportarLigacaoAtivaPage() {
     const termo = bolsaoBusca.trim().toLowerCase();
     return bolsao.filter(b => {
       if (bolsaoLista !== 'todas' && b.listaId !== bolsaoLista) return false;
-      if (bolsaoMotivo !== 'todos' && (b.motivo || 'Sem motivo') !== bolsaoMotivo) return false;
+      if (bolsaoMotivo !== 'todos' && topicoDoMotivo(b.motivo) !== bolsaoMotivo) return false;
       if (termo && !(`${b.nome} ${b.telefone}`.toLowerCase().includes(termo))) return false;
       return true;
     });
@@ -285,6 +287,28 @@ export default function ImportarLigacaoAtivaPage() {
 
   const bolsaoMotivos = useMemo(() => Array.from(new Set(bolsao.map(b => b.motivo || 'Sem motivo'))), [bolsao]);
 
+  /**
+   * A SOBRA AGRUPADA POR MOTIVO.
+   *
+   * Antes cada bolsão era uma lista corrida com o motivo escrito num chip no
+   * fim de cada linha. Com seis listas de vinte, os "Interesse futuro" ficam
+   * espalhados entre trezentas linhas e não existem como grupo — e é
+   * justamente por motivo que se decide se vale ligar de novo: um "Não
+   * atende" na quarta tentativa é osso, um "Interesse futuro" de três meses
+   * atrás é a melhor ligação do dia.
+   *
+   * Ordena pelo tamanho do grupo: o padrão que mais se repete na operação
+   * aparece primeiro. "Sem motivo" desce pro fim — é ruído, não decisão.
+   */
+  const bolsaoPorMotivo = useMemo(() => {
+    const m = new Map<string, typeof bolsaoFiltrado>();
+    bolsaoFiltrado.forEach(b => {
+      const k = topicoDoMotivo(b.motivo);
+      m.set(k, [...(m.get(k) || []), b]);
+    });
+    return Array.from(m.entries()).sort((a, b) => ordemDoTopico(a[0]) - ordemDoTopico(b[0]));
+  }, [bolsaoFiltrado]);
+
   // --- Bolsão do CRM: leads descartados pelos corretores, organizados POR CORRETOR ---
   const [crmBolsao, setCrmBolsao] = useState<LeadDescartado[]>([]);
   const [crmBolsaoCarregado, setCrmBolsaoCarregado] = useState(false);
@@ -292,8 +316,9 @@ export default function ImportarLigacaoAtivaPage() {
   const [crmDestino, setCrmDestino] = useState('');
   const [redistribuindo, setRedistribuindo] = useState(false);
   const [excluindoCrm, setExcluindoCrm] = useState(false);
+  const [crmAgrupar, setCrmAgrupar] = useState<'motivo' | 'corretor'>('motivo');
   // Aba ativa da Central de Leads
-  const [secao, setSecao] = useState<'importar' | 'listas' | 'redistribuir' | 'transferir'>('importar');
+  const [secao, setSecao] = useState<'painel' | 'importar' | 'listas' | 'redistribuir' | 'transferir'>('painel');
   // --- Transferência de carteira entre corretores (função da antiga Gestão de Corretores) ---
   const [transfOrigem, setTransfOrigem] = useState('');
   const [transfDestino, setTransfDestino] = useState('');
@@ -521,7 +546,7 @@ export default function ImportarLigacaoAtivaPage() {
         const telOk = buscaDigitos.length >= 3 && (l.telefone || '').replace(/\D/g, '').includes(buscaDigitos);
         if (!nomeOk && !telOk) return false;
       }
-      if (crmMotivoF && motivoBucket(l.motivo) !== crmMotivoF) return false;
+      if (crmMotivoF && topicoDoMotivo(l.motivo) !== crmMotivoF) return false;
       if (crmCorretorF && (l.descartadoPor || '') !== crmCorretorF) return false;
       for (const [key, valor] of qualAtivas) {
         const v = l.qualificacao?.[key];
@@ -548,14 +573,41 @@ export default function ImportarLigacaoAtivaPage() {
   const temFiltroCrm = !!(crmBusca.trim() || crmMotivoF || crmCorretorF || Object.values(crmQualF).some(Boolean));
 
   // Agrupa (JÁ FILTRADO) pelo corretor que descartou
+  /**
+   * O bolsão do CRM agrupa por MOTIVO por padrão, pela mesma razão do frio.
+   * Por corretor continua disponível no botão — serve pra outra pergunta
+   * ("quem está largando lead?"), que também é legítima, só não é a da
+   * redistribuição.
+   */
   const crmGrupos = useMemo(() => {
     const m = new Map<string, LeadDescartado[]>();
     crmFiltrado.forEach(l => {
-      const k = l.descartadoPor || '';
+      const k = crmAgrupar === 'motivo' ? topicoDoMotivo(l.motivo) : (l.descartadoPor || '');
       m.set(k, [...(m.get(k) || []), l]);
     });
-    return Array.from(m.entries()).sort((a, b) => b[1].length - a[1].length);
-  }, [crmFiltrado]);
+    return Array.from(m.entries()).sort((a, b) => crmAgrupar === 'motivo'
+      ? ordemDoTopico(a[0]) - ordemDoTopico(b[0])
+      : b[1].length - a[1].length);
+  }, [crmFiltrado, crmAgrupar]);
+
+  /**
+   * OS MOTIVOS DA CASA — os dois bolsões somados, um chip por motivo.
+   * É o índice do "achar por tópico": o gestor não procura "a sobra do
+   * Feirão", procura "quem vale ligar de novo", e isso está no motivo.
+   */
+  const motivosDaCasa = useMemo(() => {
+    const m = new Map<string, [number, number]>();
+    const por = (motivo: string, i: 0 | 1) => {
+      const k = topicoDoMotivo(motivo);
+      const [a, b] = m.get(k) || [0, 0];
+      m.set(k, i === 0 ? [a + 1, b] : [a, b + 1]);
+    };
+    bolsao.forEach(b => por(b.motivo || '', 0));
+    crmBolsao.forEach(l => por(l.motivo || '', 1));
+    return Array.from(m.entries())
+      .map(([motivo, [frios, doCrm]]) => [motivo, frios, doCrm] as const)
+      .sort((a, b) => ordemDoTopico(a[0]) - ordemDoTopico(b[0]));
+  }, [bolsao, crmBolsao]);
 
   /** Excluir DE VEZ os selecionados (lead + tarefas + interações — sem volta). */
   const excluirCrmSelecionados = async () => {
@@ -745,11 +797,12 @@ export default function ImportarLigacaoAtivaPage() {
   return (
     <div className="min-h-screen py-8 px-4">
       {/* Cabeçalho + navegação da Central de Leads */}
-      <div className="max-w-2xl mx-auto mb-5">
+      <div className="max-w-4xl mx-auto mb-5">
         <span className="gx-tag mb-2 inline-flex"><span>Central de Leads</span></span>
         <h1 className="al-display text-[22px] font-bold text-white uppercase tracking-[0.1em]">Central de Leads</h1>
         <p className="text-text-secondary text-sm mt-1 mb-3">Importe listas frias, redistribua descartados e passe carteiras entre corretores — tudo num lugar.</p>
         <div className="flex flex-wrap gap-1.5">
+          <button type="button" onClick={() => setSecao('painel')} className={pillCls(secao === 'painel')}>📊 Painel</button>
           <button type="button" onClick={() => setSecao('importar')} className={pillCls(secao === 'importar')}>📥 Importar lista</button>
           <button type="button" onClick={() => setSecao('listas')} className={pillCls(secao === 'listas')}>📋 As listas</button>
           <button type="button" onClick={() => setSecao('redistribuir')} className={pillCls(secao === 'redistribuir')}>♻️ Redistribuir descartados</button>
@@ -757,8 +810,18 @@ export default function ImportarLigacaoAtivaPage() {
         </div>
       </div>
 
+      {secao === 'painel' && (
+        <PainelCentral
+          imobiliariaId={userData?.imobiliariaId}
+          corretores={corretores}
+          isEspelhoDemo={isEspelhoDemo}
+          crmDescartados={crmBolsao.length}
+          irPara={setSecao}
+        />
+      )}
+
       {secao === 'importar' && (
-      <div className="max-w-2xl mx-auto al-card relative overflow-hidden p-6">
+      <div className="max-w-4xl mx-auto al-card relative overflow-hidden p-6">
         <div className="absolute inset-x-0 top-0 gx-line" />
         <h2 className="al-display text-[18px] font-bold text-white uppercase tracking-[0.1em] mb-2 text-left">Importar Lista de Ligação</h2>
         <p className="text-text-secondary mb-6 text-left text-sm">
@@ -841,8 +904,59 @@ export default function ImportarLigacaoAtivaPage() {
       )}
 
       {secao === 'redistribuir' && (<>
+      {/* ═══ O CABEÇALHO ÚNICO — a sobra existe em dois lugares, o total é um só.
+          Os chips de motivo daqui filtram OS DOIS bolsões ao mesmo tempo: é o
+          "achar por tópico". Antes cada bolsão tinha os seus, e clicar num
+          escondia metade do que se procurava. ═══ */}
+      <div className="max-w-4xl mx-auto al-card relative overflow-hidden p-4 mb-3">
+        <div className="absolute inset-x-0 top-0 gx-line" />
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-2.5">
+          <h2 className="al-display text-[15px] font-bold text-white uppercase tracking-[0.1em]">
+            O que sobra pra redistribuir
+          </h2>
+          <span className="text-[12px] text-text-secondary">
+            <b className="text-white tabular-nums">{bolsao.length + crmBolsao.length}</b> ao todo —
+            {' '}{bolsao.length} de lista fria, {crmBolsao.length} do CRM
+          </span>
+        </div>
+        {motivosDaCasa.length > 0 && (
+          <>
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-text-secondary mb-1.5">
+              Achar por motivo — filtra os dois de uma vez
+            </p>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                onClick={() => { setBolsaoMotivo('todos'); setCrmMotivoF(''); }}
+                className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors ${
+                  bolsaoMotivo === 'todos' && !crmMotivoF
+                    ? 'bg-[#FF1E56]/15 border-[#FF3364]/60 text-[#FF9EB5]'
+                    : 'bg-white/[0.04] border-white/10 text-text-secondary hover:bg-white/[0.08]'}`}>
+                Tudo ({bolsao.length + crmBolsao.length})
+              </button>
+              {motivosDaCasa.map(([motivo, frios, doCrm]) => {
+                const ativo = bolsaoMotivo === motivo || crmMotivoF === motivo;
+                return (
+                  <button key={motivo}
+                    onClick={() => {
+                      const desligar = ativo;
+                      setBolsaoMotivo(desligar ? 'todos' : motivo);
+                      setCrmMotivoF(desligar ? '' : motivo);
+                    }}
+                    title={`${frios} de lista fria · ${doCrm} do CRM`}
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors ${ativo
+                      ? 'bg-[#E8C547]/15 border-[#E8C547]/60 text-[#FFE9A6]'
+                      : 'bg-white/[0.04] border-white/10 text-text-secondary hover:bg-white/[0.08]'}`}>
+                    {motivo} <span className="tabular-nums opacity-70">{frios + doCrm}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
+
       {/* ===== Bolsão de descartados — achar, retirar, realocar ===== */}
-      <div className="max-w-2xl mx-auto al-card relative overflow-hidden p-6">
+      <div className="max-w-4xl mx-auto al-card relative overflow-hidden p-6">
         <div className="absolute inset-x-0 top-0 gx-line" />
         <div className="flex items-center justify-between gap-3 mb-1">
           <h2 className="al-display text-[17px] font-bold text-white uppercase tracking-[0.1em]">🧊 Bolsão da Ligação Ativa</h2>
@@ -851,7 +965,7 @@ export default function ImportarLigacaoAtivaPage() {
           )}
         </div>
         <p className="text-text-secondary mb-4 text-sm">
-          Contatos FRIOS descartados nas listas de ligação — organizados <b className="text-white">por lista</b>, com motivo e histórico. Ache, selecione e: <b className="text-white">realoque</b> pra outro corretor tentar de novo, ou <b className="text-white">retire de vez</b>.
+          Contatos FRIOS descartados nas listas de ligação, agrupados <b className="text-white">pelo motivo</b> — clicar no motivo marca o grupo inteiro. Depois: <b className="text-white">realoque</b> pra outro corretor tentar de novo, ou <b className="text-white">retire de vez</b>.
         </p>
 
         {!bolsaoCarregado ? (
@@ -876,22 +990,9 @@ export default function ImportarLigacaoAtivaPage() {
                   ))}
                 </select>
               </div>
+              {/* os chips de motivo subiram pro cabeçalho da aba, onde
+                  filtram os DOIS bolsões de uma vez */}
               <div className="flex flex-wrap items-center gap-1.5">
-                <button
-                  onClick={() => setBolsaoMotivo('todos')}
-                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors ${bolsaoMotivo === 'todos' ? 'bg-[#FF1E56]/15 border-[#FF3364]/60 text-[#FF9EB5]' : 'bg-white/[0.04] border-white/10 text-text-secondary hover:bg-white/[0.08]'}`}
-                >
-                  Todos os motivos
-                </button>
-                {bolsaoMotivos.map(m => (
-                  <button
-                    key={m}
-                    onClick={() => setBolsaoMotivo(prev => prev === m ? 'todos' : m)}
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors ${bolsaoMotivo === m ? 'bg-[#FF1E56]/15 border-[#FF3364]/60 text-[#FF9EB5]' : 'bg-white/[0.04] border-white/10 text-text-secondary hover:bg-white/[0.08]'}`}
-                  >
-                    {m} ({bolsao.filter(b => (b.motivo || 'Sem motivo') === m).length})
-                  </button>
-                ))}
                 <button
                   onClick={() => {
                     const todosSel = bolsaoFiltrado.every(b => selBolsao.has(`${b.listaId}:${b.contatoId}`));
@@ -912,7 +1013,26 @@ export default function ImportarLigacaoAtivaPage() {
             <div className="mb-4 max-h-80 overflow-y-auto rounded-xl border border-white/[0.08] bg-white/[0.02] divide-y divide-white/[0.05]">
               {bolsaoFiltrado.length === 0 ? (
                 <p className="text-sm text-text-secondary p-4">Nada com esses filtros.</p>
-              ) : bolsaoFiltrado.map(b => {
+              ) : bolsaoPorMotivo.map(([motivo, doGrupo]) => (
+                <div key={motivo}>
+                  {/* clicar no cabeçalho marca/desmarca o grupo inteiro: quase
+                      sempre a decisão é do motivo todo, não de um por um */}
+                  <button
+                    onClick={() => {
+                      const todos = doGrupo.every(x => selBolsao.has(`${x.listaId}:${x.contatoId}`));
+                      setSelBolsao(prev => {
+                        const nn = new Set(prev);
+                        doGrupo.forEach(x => { const k = `${x.listaId}:${x.contatoId}`; if (todos) nn.delete(k); else nn.add(k); });
+                        return nn;
+                      });
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 bg-white/[0.03] text-left hover:bg-white/[0.05] transition-colors"
+                  >
+                    <span className={`h-3.5 w-3.5 rounded border grid place-items-center text-[9px] ${doGrupo.every(x => selBolsao.has(`${x.listaId}:${x.contatoId}`)) ? 'bg-[#E8C547]/20 border-[#E8C547]/60 text-[#FFE9A6]' : 'border-white/20 text-transparent'}`}>✓</span>
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#FFE9A6]">{motivo}</span>
+                    <span className="text-[11px] text-text-secondary tabular-nums">({doGrupo.length})</span>
+                  </button>
+                  {doGrupo.map(b => {
                 const chave = `${b.listaId}:${b.contatoId}`;
                 const marcado = selBolsao.has(chave);
                 const expandido = bolsaoExpandido === chave;
@@ -925,11 +1045,12 @@ export default function ImportarLigacaoAtivaPage() {
                       <span className={`h-3.5 w-3.5 rounded border grid place-items-center text-[9px] shrink-0 ${marcado ? 'bg-[#E8C547]/20 border-[#E8C547]/60 text-[#FFE9A6]' : 'border-white/20 text-transparent'}`}>✓</span>
                       <span className="flex-1 min-w-0">
                         <span className="block text-[13px] font-semibold text-white truncate">{b.nome || <span className="text-white/40 italic font-normal">Sem nome</span>}</span>
-                        {bolsaoLista === 'todas' && <span className="block text-[10px] text-[#FFE9A6]/60 truncate">{b.listaNome}</span>}
+                        <span className="block text-[10px] text-[#FFE9A6]/60 truncate">{b.listaNome}</span>
                       </span>
                       <span className="text-[12px] text-text-secondary tabular-nums shrink-0">{b.telefone}</span>
-                      {b.motivo && <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-white/[0.05] border border-white/15 text-text-secondary">{b.motivo}</span>}
-                      {(b.tentativas || 0) > 0 && <span className="shrink-0 text-[10px] text-[#FFE9A6]/70 tabular-nums">💬 {b.tentativas}×</span>}
+                      {/* o motivo já é o cabeçalho do grupo — aqui vale o que
+                          o grupo não diz: quantas vezes se tentou */}
+                      {(b.tentativas || 0) > 0 && <span className="shrink-0 text-[10px] text-[#FFE9A6]/70 tabular-nums" title={`${b.tentativas} tentativas de contato`}>💬 {b.tentativas}×</span>}
                       <button
                         onClick={e => { e.stopPropagation(); setBolsaoExpandido(expandido ? null : chave); }}
                         className="shrink-0 px-1.5 py-0.5 rounded text-[11px] text-white/40 hover:text-white hover:bg-white/10 transition-colors"
@@ -953,7 +1074,9 @@ export default function ImportarLigacaoAtivaPage() {
                     )}
                   </div>
                 );
-              })}
+                  })}
+                </div>
+              ))}
             </div>
 
             {/* Realocar ou retirar */}
@@ -990,7 +1113,7 @@ export default function ImportarLigacaoAtivaPage() {
       </div>
 
       {/* ===== Bolsão do CRM — leads descartados, organizados POR CORRETOR ===== */}
-      <div className="max-w-2xl mx-auto al-card relative overflow-hidden p-6 mt-6">
+      <div className="max-w-4xl mx-auto al-card relative overflow-hidden p-6 mt-6">
         <div className="absolute inset-x-0 top-0 gx-line" />
         <div className="flex items-center justify-between gap-3 mb-1">
           <h2 className="al-display text-[17px] font-bold text-white uppercase tracking-[0.1em]">🗑 Bolsão do CRM</h2>
@@ -1001,8 +1124,8 @@ export default function ImportarLigacaoAtivaPage() {
           )}
         </div>
         <p className="text-text-secondary mb-4 text-sm">
-          LEADS descartados pelos corretores no circuito — organizados <b className="text-white">por quem descartou</b>, com o motivo.
-          Selecione (um grupo inteiro ou avulsos) e envie pra outro corretor: o lead <b className="text-white">renasce em Entrada</b> com todo o histórico na linha do tempo.
+          LEADS descartados pelos corretores no circuito, agrupados <b className="text-white">pelo motivo</b> (dá pra ver por corretor no botão à direita).
+          Selecione um grupo inteiro ou avulsos e envie pra outro corretor: o lead <b className="text-white">renasce em Entrada</b> com todo o histórico na linha do tempo.
         </p>
 
         {!crmBolsaoCarregado ? (
@@ -1047,23 +1170,6 @@ export default function ImportarLigacaoAtivaPage() {
                   </button>
                 )}
               </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[9.5px] font-extrabold uppercase tracking-[0.16em] text-text-secondary shrink-0">Motivo</span>
-                {crmMotivos.map(([motivo, n]) => (
-                  <button
-                    key={motivo}
-                    type="button"
-                    onClick={() => setCrmMotivoF(prev => prev === motivo ? '' : motivo)}
-                    className={`px-2 py-1 rounded-full text-[10px] font-bold border transition-colors ${
-                      crmMotivoF === motivo
-                        ? 'bg-[#E8C547]/15 border-[#E8C547]/60 text-[#FFE9A6]'
-                        : 'bg-white/[0.04] border-white/12 text-text-secondary hover:border-white/30'
-                    }`}
-                  >
-                    {motivo} <span className="tabular-nums opacity-70">{n}</span>
-                  </button>
-                ))}
-              </div>
               {crmPerfilAberto && (
                 <div className="rounded-xl border border-[#9F6BFF]/25 bg-[#9F6BFF]/[0.04] p-2.5">
                   <p className="text-[10px] text-[#C4A6FF]/80 mb-2">Apareceu um produto? Filtra aqui quem procura esse perfil — ex.: Apartamento · &lt; 500k · Penha.</p>
@@ -1093,6 +1199,15 @@ export default function ImportarLigacaoAtivaPage() {
                   ✓ Selecionar os {crmFiltrado.length} filtrados
                 </button>
               )}
+              <span className="ml-auto inline-flex rounded-lg border border-white/10 overflow-hidden">
+                {([['motivo', 'por motivo'], ['corretor', 'por corretor']] as const).map(([v, rot]) => (
+                  <button key={v} type="button" onClick={() => setCrmAgrupar(v)}
+                    className={`px-2 py-1 text-[10.5px] font-bold transition-colors ${crmAgrupar === v
+                      ? 'bg-[#E8C547]/15 text-[#FFE9A6]' : 'text-text-secondary hover:text-white hover:bg-white/[0.06]'}`}>
+                    {rot}
+                  </button>
+                ))}
+              </span>
             </div>
 
             {crmFiltrado.length === 0 ? (
@@ -1114,7 +1229,9 @@ export default function ImportarLigacaoAtivaPage() {
                       className="w-full flex items-center gap-2 px-3 py-2 bg-white/[0.03] text-left hover:bg-white/[0.05] transition-colors"
                     >
                       <span className={`h-3.5 w-3.5 rounded border grid place-items-center text-[9px] ${todos ? 'bg-[#E8C547]/20 border-[#E8C547]/60 text-[#FFE9A6]' : 'border-white/20 text-transparent'}`}>✓</span>
-                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#FF9EB5]">Descartados por {nomeCorretor(uid || undefined)}</span>
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#FFE9A6]">
+                        {crmAgrupar === 'motivo' ? uid : `Descartados por ${nomeCorretor(uid || undefined)}`}
+                      </span>
                       <span className="text-[11px] text-text-secondary tabular-nums">({doGrupo.length})</span>
                     </button>
                     {doGrupo.map(l => {
@@ -1179,7 +1296,7 @@ export default function ImportarLigacaoAtivaPage() {
       </>)}
 
       {secao === 'transferir' && (
-      <div className="max-w-2xl mx-auto al-card relative overflow-hidden p-6">
+      <div className="max-w-4xl mx-auto al-card relative overflow-hidden p-6">
         <div className="absolute inset-x-0 top-0 gx-line" />
         <h2 className="al-display text-[18px] font-bold text-white uppercase tracking-[0.1em] mb-1">🔁 Transferir carteira</h2>
         <p className="text-text-secondary mb-4 text-sm">
